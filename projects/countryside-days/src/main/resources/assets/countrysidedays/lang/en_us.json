@@ -12,5 +12,8 @@
   "message.countrysidedays.stew_completed": "Country stew completed! Total meals prepared: %s.",
   "message.countrysidedays.notebook_status": "Restaurant anchor: %s, %s, %s / Meals prepared: %s\nCooking order: wild herb → river fish",
   "message.countrysidedays.counter_waiting_for_fish": "The prepared herb is ready. Add river fish next.",
-  "message.countrysidedays.counter_waiting_for_herb": "Use this counter while holding wild herb to begin preparing a meal."
+  "message.countrysidedays.counter_waiting_for_herb": "Use this counter while holding wild herb to begin preparing a meal.",
+  "message.countrysidedays.starter_kit": "Your first countryside supplies are ready. Place the kitchen counter wherever you want to begin the restaurant.",
+  "message.countrysidedays.wild_herb_found": "You found an edible wild herb in the grass.",
+  "message.countrysidedays.river_fish_caught": "You brought up an extra fresh river fish."
 }
