@@ -19,7 +19,10 @@ public final class VillageSavedData extends SavedData {
             Codec.STRING.optionalFieldOf("time_phase", VillageTimePhase.MORNING.name()).forGetter(data -> data.timePhase),
             Codec.unboundedMap(Codec.STRING, Codec.STRING)
                     .optionalFieldOf("roles", Map.of())
-                    .forGetter(data -> data.roles)
+                    .forGetter(data -> data.roles),
+            Codec.unboundedMap(Codec.STRING, RpgProgress.CODEC)
+                    .optionalFieldOf("rpg_progression", Map.of())
+                    .forGetter(data -> data.rpgProgression)
     ).apply(instance, VillageSavedData::new));
 
     public static final SavedDataType<VillageSavedData> TYPE = new SavedDataType<>(
@@ -32,9 +35,10 @@ public final class VillageSavedData extends SavedData {
     private int villageDay;
     private String timePhase;
     private Map<String, String> roles;
+    private Map<String, RpgProgress> rpgProgression;
 
     public VillageSavedData() {
-        this("", "없음", 1, VillageTimePhase.MORNING.name(), Map.of());
+        this("", "없음", 1, VillageTimePhase.MORNING.name(), Map.of(), Map.of());
     }
 
     private VillageSavedData(
@@ -42,12 +46,14 @@ public final class VillageSavedData extends SavedData {
             String mayorName,
             int villageDay,
             String timePhase,
-            Map<String, String> roles) {
+            Map<String, String> roles,
+            Map<String, RpgProgress> rpgProgression) {
         this.mayorId = mayorId;
         this.mayorName = mayorName;
         this.villageDay = Math.max(1, villageDay);
         this.timePhase = timePhase;
         this.roles = new LinkedHashMap<>(roles);
+        this.rpgProgression = new LinkedHashMap<>(rpgProgression);
     }
 
     public Optional<UUID> mayorId() {
@@ -90,12 +96,25 @@ public final class VillageSavedData extends SavedData {
         return parsed;
     }
 
+    public Map<UUID, RpgProgress> rpgProgression() {
+        Map<UUID, RpgProgress> parsed = new LinkedHashMap<>();
+        rpgProgression.forEach((uuidText, progress) -> {
+            try {
+                parsed.put(UUID.fromString(uuidText), progress == null ? RpgProgress.initial() : progress);
+            } catch (IllegalArgumentException ignored) {
+                // Ignore only the damaged player entry.
+            }
+        });
+        return parsed;
+    }
+
     public void replaceState(
             UUID mayorId,
             String mayorName,
             int villageDay,
             VillageTimePhase timePhase,
-            Map<UUID, VillageRole> roles) {
+            Map<UUID, VillageRole> roles,
+            Map<UUID, RpgProgress> rpgProgression) {
         this.mayorId = mayorId == null ? "" : mayorId.toString();
         this.mayorName = mayorName == null || mayorName.isBlank() ? "없음" : mayorName;
         this.villageDay = Math.max(1, villageDay);
@@ -104,6 +123,10 @@ public final class VillageSavedData extends SavedData {
         Map<String, String> encodedRoles = new LinkedHashMap<>();
         roles.forEach((uuid, role) -> encodedRoles.put(uuid.toString(), role.id()));
         this.roles = encodedRoles;
+
+        Map<String, RpgProgress> encodedProgression = new LinkedHashMap<>();
+        rpgProgression.forEach((uuid, progress) -> encodedProgression.put(uuid.toString(), progress));
+        this.rpgProgression = encodedProgression;
         setDirty();
     }
 }
