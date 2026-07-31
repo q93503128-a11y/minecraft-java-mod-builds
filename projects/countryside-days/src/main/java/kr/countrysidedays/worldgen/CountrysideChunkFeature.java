@@ -13,11 +13,11 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 
 /**
  * Builds the rural landscape while a superflat chunk is being generated.
- * Unlike the old runtime painter, blocks are complete before the chunk is sent
- * to the client, so there is no approach-triggered pop-in or stale black light.
+ * Chunks are complete before reaching the client, so no approach-triggered
+ * repainting or stale black lighting is possible.
  */
 public final class CountrysideChunkFeature extends Feature<NoneFeatureConfiguration> {
-    private static final int CLEAR_HEIGHT = 24;
+    private static final int VEGETATION_CLEAR_HEIGHT = 10;
 
     public CountrysideChunkFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -36,8 +36,7 @@ public final class CountrysideChunkFeature extends Feature<NoneFeatureConfigurat
 
         for (int x = minX; x < minX + 16; x++) {
             for (int z = minZ; z < minZ + 16; z++) {
-                clearSurface(level, x, groundY, z);
-                restoreSoil(level, x, groundY, z);
+                clearVanillaVegetation(level, x, groundY, z);
                 decorateColumn(level, x, groundY, z);
             }
         }
@@ -50,24 +49,21 @@ public final class CountrysideChunkFeature extends Feature<NoneFeatureConfigurat
         int groundY = Integer.MAX_VALUE;
         for (int dx = 1; dx <= 14; dx += 4) {
             for (int dz = 1; dz <= 14; dz += 4) {
-                int sample = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, minX + dx, minZ + dz) - 1;
+                int sample = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, minX + dx, minZ + dz) - 1;
                 groundY = Math.min(groundY, sample);
             }
         }
-        return groundY == Integer.MAX_VALUE ? level.getMinY() + 4 : groundY;
+        return groundY == Integer.MAX_VALUE ? level.getMinY() + 9 : groundY;
     }
 
-    private static void clearSurface(WorldGenLevel level, int x, int groundY, int z) {
-        for (int y = groundY + 1; y <= groundY + CLEAR_HEIGHT; y++) {
-            level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 2);
+    private static void clearVanillaVegetation(WorldGenLevel level, int x, int groundY, int z) {
+        for (int y = groundY + 1; y <= groundY + VEGETATION_CLEAR_HEIGHT; y++) {
+            BlockPos pos = new BlockPos(x, y, z);
+            if (!level.getBlockState(pos).isAir()) {
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+            }
         }
-    }
-
-    private static void restoreSoil(WorldGenLevel level, int x, int groundY, int z) {
         level.setBlock(new BlockPos(x, groundY, z), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
-        for (int depth = 1; depth <= 4; depth++) {
-            level.setBlock(new BlockPos(x, groundY - depth, z), Blocks.DIRT.defaultBlockState(), 2);
-        }
     }
 
     private static void decorateColumn(WorldGenLevel level, int x, int groundY, int z) {
