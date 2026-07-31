@@ -9,6 +9,7 @@ import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.registry.ModCreativeTabs;
 import kr.countrysidedays.registry.ModFeatures;
 import kr.countrysidedays.registry.ModItems;
+import kr.countrysidedays.world.CountrysidePropertyManager;
 import kr.countrysidedays.worldgen.CountrysideWorldgenAudit;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -29,6 +30,8 @@ public final class CountrysideDays {
         ModGameTests.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
 
+        NeoForge.EVENT_BUS.addListener(CountrysidePropertyManager::onUseBlock);
+        NeoForge.EVENT_BUS.addListener(CountrysidePropertyManager::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(KitchenInteractionHandler::onUseItemOnBlock);
         NeoForge.EVENT_BUS.addListener(KitchenInteractionHandler::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onPlayerLoggedIn);
@@ -41,6 +44,6 @@ public final class CountrysideDays {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.5");
+        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.6");
     }
 }
