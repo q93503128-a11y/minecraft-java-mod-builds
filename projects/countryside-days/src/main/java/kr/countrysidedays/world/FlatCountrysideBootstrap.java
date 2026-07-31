@@ -6,7 +6,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.Optional;
 
-/** Creates the shared countryside directly on a superflat world. */
+/** Creates the shared village at the centre of a generated superflat countryside. */
 public final class FlatCountrysideBootstrap {
     private FlatCountrysideBootstrap() {
     }
@@ -22,9 +22,8 @@ public final class FlatCountrysideBootstrap {
 
         BlockPos origin = level.getHeightmapPos(
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                new BlockPos(requestedCenter.getX(), 0, requestedCenter.getZ())
+                new BlockPos(0, 0, 0)
         );
-        CountrysideRegionManager.prepareInitialArea(level, origin);
         StarterHomesteadGenerator.buildHomestead(level, origin);
         data.claimHomesteadOrigin(origin);
         data.claimRestaurantAnchor(StarterHomesteadGenerator.kitchenCounterPos(origin));
