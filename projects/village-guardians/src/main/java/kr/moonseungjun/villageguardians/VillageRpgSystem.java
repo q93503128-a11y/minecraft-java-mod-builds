@@ -144,10 +144,13 @@ public final class VillageRpgSystem {
 
         int cooldownSeconds = Math.max(18, 36 - level / 2);
         NEXT_SKILL_USE_MILLIS.put(player.getUUID(), now + cooldownSeconds * 1000L);
-        player.getServer().getPlayerList().broadcastSystemMessage(
-                Component.literal("§b[역할 스킬] §f" + player.getGameProfile().name() + " 님이 " + skillName
-                        + "을 사용했습니다. 주변 아군 " + allies.size() + "명 적용."),
-                false);
+        MinecraftServer server = player.level().getServer();
+        if (server != null) {
+            server.getPlayerList().broadcastSystemMessage(
+                    Component.literal("§b[역할 스킬] §f" + player.getGameProfile().name() + " 님이 " + skillName
+                            + "을 사용했습니다. 주변 아군 " + allies.size() + "명 적용."),
+                    false);
+        }
         return skillName + " 사용 완료. 재사용 대기시간 " + cooldownSeconds + "초";
     }
 
@@ -169,8 +172,12 @@ public final class VillageRpgSystem {
     }
 
     private static List<ServerPlayer> nearbyAllies(ServerPlayer player, double radius) {
+        MinecraftServer server = player.level().getServer();
+        if (server == null) {
+            return List.of(player);
+        }
         double radiusSquared = radius * radius;
-        return player.getServer().getPlayerList().getPlayers().stream()
+        return server.getPlayerList().getPlayers().stream()
                 .filter(other -> other.level() == player.level())
                 .filter(other -> other.distanceToSqr(player) <= radiusSquared)
                 .toList();
