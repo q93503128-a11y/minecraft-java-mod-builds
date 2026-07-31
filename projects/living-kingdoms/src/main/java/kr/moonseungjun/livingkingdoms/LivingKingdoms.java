@@ -5,6 +5,7 @@ import kr.moonseungjun.livingkingdoms.crime.CrimeManager;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
+import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.RealmRevisionFourManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
@@ -92,6 +93,7 @@ public final class LivingKingdoms {
             });
         }
         SkillProgressionManager.tick(player);
+        SkillCrimeHooks.tick(player);
         CrimeManager.tickPlayer(player);
     }
 
