@@ -35,12 +35,24 @@ def main() -> None:
             "META-INF/neoforge.mods.toml",
             "assets/countrysidedays/items/village_coin.json",
             "assets/countrysidedays/models/item/village_coin.json",
+            "kr/countrysidedays/item/RecipeNotebookItem.class",
+            "kr/countrysidedays/world/CountrysidePropertyManager.class",
             "kr/countrysidedays/world/CountrysideRegionManager.class",
             "kr/countrysidedays/world/FlatCountrysideBootstrap.class",
+            "data/countrysidedays/worldgen/biome/rural_plains.json",
+            "data/minecraft/worldgen/world_preset/flat.json",
+            "data/minecraft/worldgen/flat_level_generator_preset/classic_flat.json",
         }
         for required in required_exact:
             if required not in unique_names:
                 fail(f"required entry missing: {required}")
+
+        removed_in_alpha6 = {
+            "data/countrysidedays/neoforge/biome_modifier/countryside_generation.json",
+        }
+        leaked = sorted(removed_in_alpha6.intersection(unique_names))
+        if leaked:
+            fail(f"obsolete ordinary-plains worldgen injection leaked into JAR: {leaked}")
 
         required_prefixes = {
             "kr/countrysidedays/": ".class",
