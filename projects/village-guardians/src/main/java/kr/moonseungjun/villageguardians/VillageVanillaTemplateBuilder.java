@@ -105,7 +105,10 @@ final class VillageVanillaTemplateBuilder {
                             + relativeZ2 * front.getStepZ();
                     int lateral = Math.abs(relativeX2 * sideways.getStepX()
                             + relativeZ2 * sideways.getStepZ());
-                    score = Math.max(score, 10_000 + projection * 100 - lateral * 3);
+                    int floorPenalty = Math.max(0, pos.getY() - bounds.minY()) * 500;
+                    score = Math.max(
+                            score,
+                            10_000 + projection * 100 - lateral * 3 - floorPenalty);
                     foundDoor = true;
                 }
             }
