@@ -24,7 +24,7 @@ public final class FlatCountrysideBootstrap {
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 new BlockPos(0, 0, 0)
         );
-        StarterHomesteadGenerator.buildHomestead(level, origin);
+        StarterHomesteadGenerator.buildCompleteVillage(level, origin);
         data.claimHomesteadOrigin(origin);
         data.claimRestaurantAnchor(StarterHomesteadGenerator.kitchenCounterPos(origin));
         return Optional.of(origin);
