@@ -5,7 +5,10 @@ import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
+import kr.moonseungjun.livingkingdoms.world.RealmSiteLayoutSavedData;
+import kr.moonseungjun.livingkingdoms.world.RealmSitePlanner;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -26,6 +29,7 @@ public final class RealmCodexSnapshotBuilder {
         };
         Map<String, String> values = new LinkedHashMap<>();
         OriginProfile profile = OriginProfileManager.profile(player.getUUID()).orElse(null);
+        ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
 
         values.put("player", player.getGameProfile().name());
         values.put("species_id", profile == null ? "human" : profile.speciesId());
@@ -45,7 +49,7 @@ public final class RealmCodexSnapshotBuilder {
         values.put("experience", Integer.toString(player.totalExperience));
         values.put("position", player.blockPosition().getX() + ", " + player.blockPosition().getY()
                 + ", " + player.blockPosition().getZ());
-        values.put("region", regionName(player.blockPosition().getX(), player.blockPosition().getZ()));
+        values.put("region", regionName(realm, player.blockPosition().getX(), player.blockPosition().getZ()));
         values.put("realm", player.level().dimension().equals(StarterRealmManager.REALM_KEY)
                 ? "살아있는 왕국 대륙" : "외부 차원");
 
@@ -56,7 +60,6 @@ public final class RealmCodexSnapshotBuilder {
         values.put("legs", itemName(player.getItemBySlot(EquipmentSlot.LEGS)));
         values.put("feet", itemName(player.getItemBySlot(EquipmentSlot.FEET)));
 
-        ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
         CrimeSavedData.CrimeRecord crime = realm == null
                 ? new CrimeSavedData.CrimeRecord(0, 0L, "wilderness", 0, 0)
                 : realm.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE).record(player.getUUID());
@@ -70,12 +73,14 @@ public final class RealmCodexSnapshotBuilder {
         values.put("skill_milestone", Integer.toString(skills.levelMilestone()));
         values.put("unlocked_skills", String.join(",", skills.unlocked()));
 
-        if (profile != null) {
-            PlayableOriginCatalog.ResidenceOption home = PlayableOriginCatalog.residences().get(profile.residenceId());
-            if (home != null) {
-                values.put("home_x", Integer.toString(home.spawnX()));
-                values.put("home_z", Integer.toString(home.spawnZ()));
-            }
+        putSite(values, realm, "erden_kingdom", "erden");
+        putSite(values, realm, "silvana_forest", "silvana");
+        putSite(values, realm, "kardum_league", "kardum");
+
+        if (profile != null && realm != null) {
+            BlockPos home = RealmSitePlanner.residencePosition(realm, profile.homelandId(), profile.residenceId());
+            values.put("home_x", Integer.toString(home.getX()));
+            values.put("home_z", Integer.toString(home.getZ()));
         }
         values.putIfAbsent("home_x", "0");
         values.putIfAbsent("home_z", "0");
@@ -83,6 +88,22 @@ public final class RealmCodexSnapshotBuilder {
         values.put("player_z", Integer.toString(player.blockPosition().getZ()));
 
         return new OpenCodexPayload(page, encode(values));
+    }
+
+    private static void putSite(Map<String, String> values, ServerLevel realm, String homelandId, String prefix) {
+        RealmSiteLayoutSavedData.RealmSite site = realm == null ? null : RealmSitePlanner.site(realm, homelandId);
+        if (site == null) {
+            int[] fallback = switch (homelandId) {
+                case "silvana_forest" -> new int[]{1500, 250};
+                case "kardum_league" -> new int[]{-1500, 250};
+                default -> new int[]{0, 0};
+            };
+            values.put(prefix + "_x", Integer.toString(fallback[0]));
+            values.put(prefix + "_z", Integer.toString(fallback[1]));
+        } else {
+            values.put(prefix + "_x", Integer.toString(site.centerX()));
+            values.put(prefix + "_z", Integer.toString(site.centerZ()));
+        }
     }
 
     private static String encode(Map<String, String> values) {
@@ -159,16 +180,21 @@ public final class RealmCodexSnapshotBuilder {
         };
     }
 
-    private static String regionName(int x, int z) {
-        if (distanceSquared(x, z, 0, 0) <= 360 * 360) return "에르덴 로엔 변경백령";
-        if (distanceSquared(x, z, 1240, 35) <= 320 * 320) return "실바나 수림권";
-        if (distanceSquared(x, z, -1170, 38) <= 320 * 320) return "카르둠 산악권";
+    private static String regionName(ServerLevel realm, int x, int z) {
+        if (realm == null) return "미개척 대륙";
+        RealmSiteLayoutSavedData.RealmSite erden = RealmSitePlanner.site(realm, "erden_kingdom");
+        RealmSiteLayoutSavedData.RealmSite silvana = RealmSitePlanner.site(realm, "silvana_forest");
+        RealmSiteLayoutSavedData.RealmSite kardum = RealmSitePlanner.site(realm, "kardum_league");
+        if (near(x, z, erden, 360)) return "에르덴 로엔 변경백령";
+        if (near(x, z, silvana, 320)) return "실바나 수림권";
+        if (near(x, z, kardum, 320)) return "카르둠 산악권";
         return "미개척 대륙";
     }
 
-    private static int distanceSquared(int x, int z, int cx, int cz) {
-        int dx = x - cx;
-        int dz = z - cz;
-        return dx * dx + dz * dz;
+    private static boolean near(int x, int z, RealmSiteLayoutSavedData.RealmSite site, int radius) {
+        if (site == null) return false;
+        long dx = x - site.centerX();
+        long dz = z - site.centerZ();
+        return dx * dx + dz * dz <= (long) radius * radius;
     }
 }
