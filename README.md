@@ -8,22 +8,24 @@
 - 모든 모드는 `projects/<project-slug>/` 아래에서 분리한다.
 - 2026-07-31 이전에 저장되어 있던 Countryside Days, Wildbound, 기존 Village Guardians 소스·로그·워크플로는 폐기했다.
 - 폐기된 프로젝트의 코드나 설계를 새 작업의 기준으로 사용하지 않는다.
-- 현재 활성 프로젝트는 새로 시작한 **Village Guardians(마을지키기)**다.
-- 활성 경로: [`projects/village-guardians/`](./projects/village-guardians/)
+- 현재 활성 프로젝트는 **Village Guardians(마을지키기)**와 새로 시작한 **Countryside Days(시골식당)**다.
 
-## Village Guardians 현재 단계
+## 활성 프로젝트
 
-`0.1.0-alpha.1` 통치 코어가 구현되어 있다.
+### Village Guardians
 
-- 촌장 한 명
-- 플레이어별 실무 역할
-- 촌장의 안건 발의
-- 온라인 플레이어 과반수 투표
-- 자연 일주기 강제 정지
-- 투표 통과 시에만 시간 단계 진행
-- 명령 기반 상태 조회와 촌장직 이전
+- 경로: [`projects/village-guardians/`](./projects/village-guardians/)
+- 현재 버전: `0.2.0-alpha.1`
+- 촌장, 역할, 투표, 정지형 시간, 강한 RPG 성장을 결합한 마을 방어 모드
+- 아직 실제 Java 25 + NeoForge 26.2 빌드와 게임 실행 검증 전이므로 배포 완료 상태는 아니다.
 
-아직 실제 Java 25 + NeoForge 26.2 빌드와 게임 실행 검증 전이므로 배포 완료 상태는 아니다.
+### Countryside Days
+
+- 경로: [`projects/countryside-days/`](./projects/countryside-days/)
+- 현재 버전: `0.1.0-alpha.1`
+- 넓고 현실적인 시골 생활권에서 식당을 중심 거점으로 농사, 채집, 낚시, 주민 관계, 배달, 꾸미기, 탐험을 즐기는 힐링 생활 모드
+- 폐기된 옛 Countryside Days 소스와 설계를 복구하지 않고 2026-07-31부터 새로 시작했다.
+- 현재는 프로젝트 계약과 게임 비전만 고정된 단계이며 실행 가능한 JAR은 아직 없다.
 
 ## 작업자가 먼저 읽을 문서
 
@@ -44,7 +46,8 @@
 ```text
 minecraft-java-mod-builds/
 ├─ projects/
-│  └─ village-guardians/
+│  ├─ village-guardians/
+│  └─ countryside-days/
 ├─ docs/
 │  └─ BUILD_STANDARD.md
 ├─ AGENTS.md
