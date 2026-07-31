@@ -73,20 +73,20 @@ public final class StarterRealmDiagnostics {
         int cx = site.centerX();
         int cz = site.centerZ();
         int y = Math.max(68, Math.min(112, site.baseY()));
-        requireSolid(realm, new BlockPos(cx - 31, y + 1, cz - 92), "citadel");
-        requireSolid(realm, new BlockPos(cx + 20, y + 1, cz - 83), "administration hall");
+        requireSolid(realm, new BlockPos(cx - 34, y + 1, cz - 91), "citadel");
+        requireSolid(realm, new BlockPos(cx + 18, y + 1, cz - 82), "administration hall");
         requireSolid(realm, new BlockPos(cx - 74, y + 1, cz - 78), "temple");
         requireSolid(realm, new BlockPos(cx, y, cz), "market square");
-        requireSolid(realm, new BlockPos(cx + 46, y + 1, cz + 14), "inn");
-        requireSolid(realm, new BlockPos(cx - 75, y + 1, cz + 18), "guild hall");
-        requireSolid(realm, new BlockPos(cx + 79, y + 1, cz - 34), "smithy");
-        requireSolid(realm, new BlockPos(cx - 106, y + 1, cz - 38), "barracks");
-        requireSolid(realm, new BlockPos(cx + 82, y + 1, cz + 73), "granary");
-        requireSolid(realm, new BlockPos(cx - 124, y + 3, cz + 80), "city wall");
-        if (realm.getBlockState(new BlockPos(cx - 166, y - 2, cz)).getBlock() != Blocks.WATER) {
+        requireSolid(realm, new BlockPos(cx + 47, y + 1, cz + 14), "inn");
+        requireSolid(realm, new BlockPos(cx - 77, y + 1, cz + 17), "guild hall");
+        requireSolid(realm, new BlockPos(cx + 78, y + 1, cz - 35), "smithy");
+        requireSolid(realm, new BlockPos(cx - 106, y + 1, cz - 39), "barracks");
+        requireSolid(realm, new BlockPos(cx + 82, y + 1, cz + 72), "granary");
+        requireSolid(realm, new BlockPos(cx - 120, y + 3, cz + 80), "city wall");
+        if (realm.getBlockState(new BlockPos(cx - 164, y - 2, cz)).getBlock() != Blocks.WATER) {
             throw new IllegalStateException("Erden canal was not integrated with the capital");
         }
-        verifyRoofSupport(realm, new BlockPos(cx - 55, y + 6, cz - 39));
+        verifyRoofSupport(realm, new BlockPos(cx - 56, y + 6, cz - 40));
     }
 
     private static void requireSolid(ServerLevel realm, BlockPos pos, String facility) {
