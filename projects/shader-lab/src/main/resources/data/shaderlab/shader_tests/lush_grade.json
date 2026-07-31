@@ -2,5 +2,14 @@
   "id": "shaderlab:lush_grade",
   "kind": "client_post_effect",
   "persistent_world_data": false,
-  "expected_passes": 2
+  "expected_passes": 7,
+  "features": [
+    "bright_pass_extraction",
+    "dual_scale_gaussian_bloom",
+    "pearlescent_composite",
+    "reversed_depth_atmosphere",
+    "aces_tonemapping",
+    "edge_chromatic_aberration",
+    "cinematic_vignette"
+  ]
 }
