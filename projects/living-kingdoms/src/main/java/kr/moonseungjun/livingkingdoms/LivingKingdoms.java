@@ -31,7 +31,6 @@ public final class LivingKingdoms {
     public LivingKingdoms(IEventBus modEventBus) {
         FoundationCatalog.bootstrap();
         modEventBus.addListener(LivingKingdomsNetwork::register);
-
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
@@ -40,14 +39,9 @@ public final class LivingKingdoms {
         NeoForge.EVENT_BUS.addListener(this::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(this::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
-
-        LOGGER.info(
-                "Living Kingdoms loaded: {} species, {} homelands, {} backgrounds, {} residences",
-                FoundationCatalog.species().size(),
-                FoundationCatalog.homelands().size(),
-                FoundationCatalog.backgrounds().size(),
-                FoundationCatalog.residences().size()
-        );
+        LOGGER.info("Living Kingdoms loaded: {} species, {} homelands, {} backgrounds, {} residences",
+                FoundationCatalog.species().size(), FoundationCatalog.homelands().size(),
+                FoundationCatalog.backgrounds().size(), FoundationCatalog.residences().size());
     }
 
     private void onServerStarting(ServerStartingEvent event) {
@@ -56,39 +50,31 @@ public final class LivingKingdoms {
     }
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            OriginProfileManager.requestSelection(player);
-            OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-                LivingRealmWorldManager.ensureForPlayer(player, profile);
-                StarterNpcManager.ensureForPlayer(player, profile);
-                SkillProgressionManager.state(player);
-            });
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        OriginProfileManager.requestSelection(player);
+        OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
+            LivingRealmWorldManager.requestPlacement(player, profile);
+            SkillProgressionManager.state(player);
+        });
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-                LivingRealmWorldManager.placePlayer(player, profile);
-                StarterNpcManager.ensureForPlayer(player, profile);
-                SkillProgressionManager.state(player);
-            });
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
+            LivingRealmWorldManager.requestPlacement(player, profile);
+            SkillProgressionManager.state(player);
+        });
     }
 
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-
         if (OriginProfileManager.requiresSelection(player.getUUID())) {
             if (player.level().getGameTime() % 40L == 0L) OriginProfileManager.requestSelection(player);
             return;
         }
-
         if (player.level().getGameTime() % 200L == 0L) {
-            OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-                LivingRealmWorldManager.ensureForPlayer(player, profile);
-                StarterNpcManager.ensureForPlayer(player, profile);
-            });
+            OriginProfileManager.profile(player.getUUID()).ifPresent(profile ->
+                    StarterNpcManager.ensureForPlayer(player, profile));
         }
         SkillProgressionManager.tick(player);
         SkillCrimeHooks.tick(player);
