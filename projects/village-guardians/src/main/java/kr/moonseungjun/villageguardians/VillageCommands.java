@@ -18,6 +18,11 @@ public final class VillageCommands {
         dispatcher.register(Commands.literal("vg")
                 .then(Commands.literal("status")
                         .executes(context -> status(context.getSource())))
+                .then(Commands.literal("village")
+                        .then(Commands.literal("status")
+                                .executes(context -> villageStatus(context.getSource())))
+                        .then(Commands.literal("set_center")
+                                .executes(context -> setVillageCenter(context.getSource()))))
                 .then(Commands.literal("role")
                         .then(Commands.argument("role", StringArgumentType.word())
                                 .executes(context -> chooseRole(
@@ -55,6 +60,24 @@ public final class VillageCommands {
                 () -> Component.literal(VillageCouncilState.status(source.getServer(), player)),
                 false);
         return 1;
+    }
+
+    private static int villageStatus(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        source.sendSuccess(() -> Component.literal(VillageCouncilState.villageStatus(player)), false);
+        return 1;
+    }
+
+    private static int setVillageCenter(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        String result = VillageCouncilState.setVillageCenter(player);
+        boolean success = result.startsWith("마을 중심 지정 완료");
+        if (success) {
+            source.sendSuccess(() -> Component.literal(result), true);
+            return 1;
+        }
+        source.sendFailure(Component.literal(result));
+        return 0;
     }
 
     private static int chooseRole(CommandSourceStack source, String roleId) throws CommandSyntaxException {
