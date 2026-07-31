@@ -21,9 +21,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import java.util.List;
 
 public final class StarterNpcManager {
-    private static final String NPC_PREFIX = "lk_npc_";
-    private static final String MET_PREFIX = "lk_met_";
-    private static final String DONE_PREFIX = "lk_intro_done_";
+    private static final String DONE_PREFIX = "done:";
     private static final Identifier VILLAGER_ID = Identifier.fromNamespaceAndPath("minecraft", "villager");
 
     private StarterNpcManager() {
@@ -49,15 +47,7 @@ public final class StarterNpcManager {
             return;
         }
 
-        String npcId = villager.getCommandTags().stream()
-                .filter(tag -> tag.startsWith(NPC_PREFIX))
-                .findFirst()
-                .orElse(null);
-        if (npcId == null) {
-            return;
-        }
-
-        NpcDefinition definition = definitionByTag(npcId);
+        NpcDefinition definition = definitionByVillager(villager);
         if (definition == null) {
             return;
         }
@@ -66,15 +56,16 @@ public final class StarterNpcManager {
         event.setCanceled(true);
         player.sendSystemMessage(Component.literal("§6[" + definition.name() + "] §f" + definition.dialogue()));
 
-        String metTag = MET_PREFIX + definition.id();
-        if (player.addCommandTag(metTag)) {
+        ServerLevel level = player.level();
+        StarterNpcProgressSavedData progress = level.getDataStorage().computeIfAbsent(StarterNpcProgressSavedData.TYPE);
+        if (progress.markMet(player.getUUID(), definition.id())) {
             player.sendSystemMessage(Component.literal("§7새로운 이웃을 알게 되었습니다."));
         }
 
-        String homelandId = definition.homelandId();
-        String doneTag = DONE_PREFIX + homelandId;
-        if (!player.getCommandTags().contains(doneTag) && metAll(player, homelandId)) {
-            player.addCommandTag(doneTag);
+        String completionId = DONE_PREFIX + definition.homelandId();
+        if (!progress.hasMet(player.getUUID(), completionId)
+                && metAll(progress, player, definition.homelandId())) {
+            progress.markMet(player.getUUID(), completionId);
             give(player, new ItemStack(Items.EMERALD, 3));
             player.giveExperiencePoints(20);
             player.sendSystemMessage(Component.literal(
@@ -83,9 +74,13 @@ public final class StarterNpcManager {
         }
     }
 
-    private static boolean metAll(ServerPlayer player, String homelandId) {
+    private static boolean metAll(
+            StarterNpcProgressSavedData progress,
+            ServerPlayer player,
+            String homelandId
+    ) {
         for (NpcDefinition definition : definitions(homelandId)) {
-            if (!player.getCommandTags().contains(MET_PREFIX + definition.id())) {
+            if (!progress.hasMet(player.getUUID(), definition.id())) {
                 return false;
             }
         }
@@ -100,7 +95,7 @@ public final class StarterNpcManager {
         return !level.getEntitiesOfClass(
                 Villager.class,
                 area,
-                villager -> villager.getCommandTags().contains(NPC_PREFIX + definition.id())
+                villager -> definition.name().equals(villager.getName().getString())
         ).isEmpty();
     }
 
@@ -122,16 +117,16 @@ public final class StarterNpcManager {
         villager.setCustomNameVisible(true);
         villager.setPersistenceRequired();
         villager.setInvulnerable(true);
-        villager.addCommandTag(NPC_PREFIX + definition.id());
         if (!level.addFreshEntity(villager)) {
             LivingKingdoms.LOGGER.error("Failed to add starter NPC {} to the realm", definition.id());
         }
     }
 
-    private static NpcDefinition definitionByTag(String tag) {
+    private static NpcDefinition definitionByVillager(Villager villager) {
+        String name = villager.getName().getString();
         for (String homelandId : List.of("erden_kingdom", "silvana_forest", "kardum_league")) {
             for (NpcDefinition definition : definitions(homelandId)) {
-                if ((NPC_PREFIX + definition.id()).equals(tag)) {
+                if (definition.name().equals(name)) {
                     return definition;
                 }
             }
