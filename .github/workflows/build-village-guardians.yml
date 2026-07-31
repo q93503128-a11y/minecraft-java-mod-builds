@@ -13,9 +13,9 @@ permissions:
 
 env:
   PROJECT_DIR: projects/village-guardians
-  MOD_VERSION: 0.3.0-alpha.1
-  EXPECTED_JAR: villageguardians-0.3.0-alpha.1.jar
-  RELEASE_TAG: village-guardians-v0.3.0-alpha.1
+  MOD_VERSION: 0.4.0-alpha.1
+  EXPECTED_JAR: villageguardians-0.4.0-alpha.1.jar
+  RELEASE_TAG: village-guardians-v0.4.0-alpha.1
   PUBLISHED_DIR: published/village-guardians
   CI_RESULT_DIR: ci-results/village-guardians
 
@@ -46,6 +46,7 @@ jobs:
         run: |
           python3 tools/test_rpg_balance.py
           python3 tools/test_village_zone.py
+          python3 tools/test_progression_loop.py
 
       - name: Clean NeoForge build
         working-directory: ${{ env.PROJECT_DIR }}
@@ -66,7 +67,7 @@ jobs:
       - name: Upload verified JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: villageguardians-0.3.0-alpha.1
+          name: villageguardians-0.4.0-alpha.1
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
@@ -82,7 +83,7 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Published JAR already matches this build.'
           else
-            git commit -m 'Publish verified Village Guardians v0.3.0-alpha.1 JAR'
+            git commit -m 'Publish verified Village Guardians v0.4.0-alpha.1 JAR'
             git pull --rebase origin main
             git push
           fi
@@ -95,8 +96,8 @@ jobs:
             gh release upload "$RELEASE_TAG" deliverables/* --clobber
           else
             gh release create "$RELEASE_TAG" deliverables/* \
-              --title 'Village Guardians v0.3.0-alpha.1' \
-              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2.0.38-beta. Fortified flat-village generation, natural mob suppression, clean Gradle build, and JAR verification.'
+              --title 'Village Guardians v0.4.0-alpha.1' \
+              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2.0.38-beta. Rebuilt fortress architecture, functional building upgrades, starter manual, mayor caller, and first playable raid loop.'
           fi
 
       - name: Record CI result in repository
