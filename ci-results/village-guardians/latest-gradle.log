@@ -15,13 +15,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.54s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.51s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
 [1m*** Started working on [4mdownloadClient[0m[0m
 [1m*** Started working on [4mdownloadServer[0m[0m
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
  [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -30,7 +30,7 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.96s
+Total runtime: 1.79s
 
 
 > Task :compileJava
@@ -71,12 +71,27 @@ import net.minecraft.client.gui.GuiGraphics;
                                                              ^
   symbol:   method setScreen(VillageUiScreen)
   location: class Minecraft
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:25: error: cannot find symbol
+    private static VillageTimePhase timePhase = VillageTimePhase.MORNING;
+                                                                ^
+  symbol:   variable MORNING
+  location: class VillageTimePhase
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:266: error: cannot find symbol
+        timePhase = VillageTimePhase.MORNING;
+                                    ^
+  symbol:   variable MORNING
+  location: class VillageTimePhase
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:298: error: cannot find symbol
+        if (previous == VillageTimePhase.NIGHT && timePhase == VillageTimePhase.MORNING) {
+                                                                               ^
+  symbol:   variable MORNING
+  location: class VillageTimePhase
 Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
-8 errors
+11 errors
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785485982975.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785486054587.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
 
@@ -108,6 +123,21 @@ Execution failed for task ':compileJava'.
                           ^
     symbol:   variable VillageUiService
     location: class VillageNetwork
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:25: error: cannot find symbol
+      private static VillageTimePhase timePhase = VillageTimePhase.MORNING;
+                                                                  ^
+    symbol:   variable MORNING
+    location: class VillageTimePhase
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:266: error: cannot find symbol
+          timePhase = VillageTimePhase.MORNING;
+                                      ^
+    symbol:   variable MORNING
+    location: class VillageTimePhase
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:298: error: cannot find symbol
+          if (previous == VillageTimePhase.NIGHT && timePhase == VillageTimePhase.MORNING) {
+                                                                                 ^
+    symbol:   variable MORNING
+    location: class VillageTimePhase
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:41: error: method does not override or implement a method from a supertype
       @Override
       ^
@@ -124,7 +154,7 @@ Execution failed for task ':compileJava'.
                                                                ^
     symbol:   method setScreen(VillageUiScreen)
     location: class Minecraft
-  8 errors
+  11 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -189,6 +219,21 @@ import net.minecraft.client.gui.GuiGraphics;
                         ^
   symbol:   variable VillageUiService
   location: class VillageNetwork
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:25: error: cannot find symbol
+    private static VillageTimePhase timePhase = VillageTimePhase.MORNING;
+                                                                ^
+  symbol:   variable MORNING
+  location: class VillageTimePhase
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:266: error: cannot find symbol
+        timePhase = VillageTimePhase.MORNING;
+                                    ^
+  symbol:   variable MORNING
+  location: class VillageTimePhase
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:298: error: cannot find symbol
+        if (previous == VillageTimePhase.NIGHT && timePhase == VillageTimePhase.MORNING) {
+                                                                               ^
+  symbol:   variable MORNING
+  location: class VillageTimePhase
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:41: error: method does not override or implement a method from a supertype
     @Override
     ^
@@ -205,7 +250,7 @@ import net.minecraft.client.gui.GuiGraphics;
                                                              ^
   symbol:   method setScreen(VillageUiScreen)
   location: class Minecraft
-8 errors
+11 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -334,6 +379,6 @@ import net.minecraft.client.gui.GuiGraphics;
 	... 30 more
 
 
-BUILD FAILED in 16s
+BUILD FAILED in 23s
 5 actionable tasks: 4 executed, 1 up-to-date
 Configuration cache entry stored.
