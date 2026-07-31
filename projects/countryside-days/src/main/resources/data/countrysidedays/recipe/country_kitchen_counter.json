@@ -7,15 +7,9 @@
     "PPP"
   ],
   "key": {
-    "P": {
-      "tag": "minecraft:planks"
-    },
-    "B": {
-      "item": "minecraft:brick"
-    },
-    "C": {
-      "item": "minecraft:campfire"
-    }
+    "P": "#minecraft:planks",
+    "B": "minecraft:brick",
+    "C": "minecraft:campfire"
   },
   "result": {
     "count": 1,
