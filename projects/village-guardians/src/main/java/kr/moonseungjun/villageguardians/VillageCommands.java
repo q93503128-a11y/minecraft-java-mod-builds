@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -22,6 +23,16 @@ public final class VillageCommands {
                                 .executes(context -> chooseRole(
                                         context.getSource(),
                                         StringArgumentType.getString(context, "role")))))
+                .then(Commands.literal("skill")
+                        .executes(context -> useSkill(context.getSource())))
+                .then(Commands.literal("rpg")
+                        .then(Commands.literal("status")
+                                .executes(context -> rpgStatus(context.getSource())))
+                        .then(Commands.literal("test_xp")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(1, 5000))
+                                        .executes(context -> grantTestExperience(
+                                                context.getSource(),
+                                                IntegerArgumentType.getInteger(context, "amount"))))))
                 .then(Commands.literal("propose")
                         .then(Commands.literal("advance_time")
                                 .executes(context -> proposeAdvanceTime(context.getSource()))))
@@ -56,6 +67,40 @@ public final class VillageCommands {
 
         String result = VillageCouncilState.chooseRole(player, role);
         source.sendSuccess(() -> Component.literal(result), true);
+        return 1;
+    }
+
+    private static int useSkill(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        String result = VillageRpgSystem.useRoleSkill(player);
+        boolean success = result.contains("사용 완료");
+        if (success) {
+            source.sendSuccess(() -> Component.literal(result), false);
+            return 1;
+        }
+        source.sendFailure(Component.literal(result));
+        return 0;
+    }
+
+    private static int rpgStatus(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        source.sendSuccess(() -> Component.literal(VillageCouncilState.rpgStatus(player)), false);
+        return 1;
+    }
+
+    private static int grantTestExperience(CommandSourceStack source, int amount) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        if (!VillageCouncilState.isMayor(player)) {
+            source.sendFailure(Component.literal("알파 테스트 경험치 지급은 촌장만 사용할 수 있습니다."));
+            return 0;
+        }
+
+        VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(player, amount);
+        VillageRpgSystem.refreshPlayerPassive(player);
+        player.heal(player.getMaxHealth());
+        source.sendSuccess(() -> Component.literal("§d테스트 XP " + result.awardedExperience()
+                + " 지급 | 현재 레벨 " + result.current().level()
+                + " | 현재 XP " + result.current().experience()), true);
         return 1;
     }
 
