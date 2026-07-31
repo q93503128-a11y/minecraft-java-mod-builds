@@ -1,14 +1,17 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 import java.util.HashSet;
@@ -21,6 +24,8 @@ public final class VillageRaidSystem {
     private static final int FIRST_WAVE_COUNTDOWN_TICKS = 240;
     private static final int BETWEEN_WAVE_TICKS = 120;
     private static final int STRUCTURE_ATTACK_INTERVAL = 20;
+    private static final double PLAYER_PRIORITY_RANGE = 16.0;
+    private static final String RAID_TEAM_NAME = "vg_raid";
 
     private static boolean active;
     private static int wave;
@@ -29,10 +34,12 @@ public final class VillageRaidSystem {
     private static int betweenWaveTicks;
     private static int structureAttackTicks;
 
-    private VillageRaidSystem() {}
+    private VillageRaidSystem() {
+    }
 
     public static void resetTransientState(MinecraftServer server) {
         clearState();
+        ensureRaidTeam(server);
         if (VillageCouncilState.currentPhase() == VillageTimePhase.NIGHT
                 && !VillageProgressionSystem.isGameOver()) {
             scheduleRaid(server);
@@ -45,11 +52,15 @@ public final class VillageRaidSystem {
     }
 
     public static void onPhaseChanged(MinecraftServer server, VillageTimePhase phase) {
-        if (phase == VillageTimePhase.NIGHT) scheduleRaid(server);
+        if (phase == VillageTimePhase.NIGHT) {
+            scheduleRaid(server);
+        }
     }
 
     public static void tick(MinecraftServer server) {
-        if (VillageProgressionSystem.isGameOver()) return;
+        if (VillageProgressionSystem.isGameOver()) {
+            return;
+        }
         if (countdownTicks > 0) {
             countdownTicks--;
             if (countdownTicks == 0) {
@@ -59,11 +70,15 @@ public final class VillageRaidSystem {
             }
             return;
         }
-        if (!active) return;
+        if (!active) {
+            return;
+        }
 
         purgeMissingEnemies(server);
         directEnemies(server);
-        if (!ACTIVE_ENEMIES.isEmpty()) return;
+        if (!ACTIVE_ENEMIES.isEmpty()) {
+            return;
+        }
 
         if (wave >= maxWaves) {
             finishVictory(server);
@@ -92,9 +107,15 @@ public final class VillageRaidSystem {
     }
 
     public static String status() {
-        if (VillageProgressionSystem.isGameOver()) return "§c마을 방어 실패 상태";
-        if (countdownTicks > 0) return "습격 시작까지 " + Math.max(1, (countdownTicks + 19) / 20) + "초";
-        if (active) return "웨이브 " + wave + "/" + maxWaves + " | 남은 적 " + ACTIVE_ENEMIES.size();
+        if (VillageProgressionSystem.isGameOver()) {
+            return "§c마을 방어 실패 상태";
+        }
+        if (countdownTicks > 0) {
+            return "습격 시작까지 " + Math.max(1, (countdownTicks + 19) / 20) + "초";
+        }
+        if (active) {
+            return "웨이브 " + wave + "/" + maxWaves + " | 남은 적 " + ACTIVE_ENEMIES.size();
+        }
         return "현재 안전합니다. 밤으로 전환하면 북쪽 성문 습격이 시작됩니다.";
     }
 
@@ -107,13 +128,15 @@ public final class VillageRaidSystem {
     }
 
     private static void scheduleRaid(MinecraftServer server) {
-        if (isRaidLocked() || VillageProgressionSystem.isGameOver()) return;
+        if (isRaidLocked() || VillageProgressionSystem.isGameOver()) {
+            return;
+        }
         maxWaves = Math.min(6, 3 + Math.max(0, VillageCouncilState.currentDay() - 1) / 2);
         countdownTicks = FIRST_WAVE_COUNTDOWN_TICKS;
         wave = 0;
         betweenWaveTicks = 0;
         server.getPlayerList().broadcastSystemMessage(
-                Component.literal("§c[야간 습격] §f12초 뒤 북쪽 성문으로 " + maxWaves + "개 웨이브가 접근합니다."),
+                Component.literal("§c[야간 습격] §f12초 뒤 북쪽 외곽에서 " + maxWaves + "개 웨이브가 접근합니다."),
                 false);
     }
 
@@ -124,17 +147,23 @@ public final class VillageRaidSystem {
         int day = VillageCouncilState.currentDay();
         int count = 5 + wave * 2 + players * 2 + Math.min(10, day - 1);
         ACTIVE_ENEMIES.clear();
+        PlayerTeam raidTeam = ensureRaidTeam(server);
 
         for (int index = 0; index < count; index++) {
             Mob mob = createRaidMob(level, wave, index);
-            if (mob == null) continue;
+            if (mob == null) {
+                continue;
+            }
             int row = index / 9;
             int spread = (index % 9) - 4;
             BlockPos spawn = origin.offset(spread * 2, 0, -row * 3);
             mob.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawn), EntitySpawnReason.EVENT, null);
             VillageWorldSystem.markAllowedGameMob(mob);
-            if (level.addFreshEntity(mob)) ACTIVE_ENEMIES.add(mob.getUUID());
+            server.getScoreboard().addPlayerToTeam(mob.getScoreboardName(), raidTeam);
+            if (level.addFreshEntity(mob)) {
+                ACTIVE_ENEMIES.add(mob.getUUID());
+            }
         }
         structureAttackTicks = 0;
         server.getPlayerList().broadcastSystemMessage(
@@ -153,31 +182,83 @@ public final class VillageRaidSystem {
         ServerLevel level = server.overworld();
         structureAttackTicks++;
         boolean attackTick = structureAttackTicks >= STRUCTURE_ATTACK_INTERVAL;
-        if (attackTick) structureAttackTicks = 0;
+        if (attackTick) {
+            structureAttackTicks = 0;
+        }
+
+        BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
+        boolean gatePassable = VillageWorldSystem.isNorthGatePassable(level)
+                || !VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.WALLS);
 
         for (UUID id : ACTIVE_ENEMIES) {
             Entity entity = level.getEntity(id);
-            if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
-            VillageProgressionSystem.Building targetBuilding = chooseTarget(mob.blockPosition());
-            if (targetBuilding == null) continue;
+            if (!(entity instanceof Mob mob) || !mob.isAlive()) {
+                continue;
+            }
+            updateEnemyOutline(server, mob);
+
+            ServerPlayer nearbyPlayer = nearestPriorityPlayer(server, mob);
+            if (nearbyPlayer != null) {
+                mob.setTarget(nearbyPlayer);
+                mob.getNavigation().moveTo(
+                        nearbyPlayer.getX(), nearbyPlayer.getY(), nearbyPlayer.getZ(), 1.18);
+                continue;
+            }
+            mob.setTarget(null);
+
+            if (gatePassable && villageCenter != null
+                    && mob.getZ() < villageCenter.getZ() - VillageWorldSystem.FORTRESS_RADIUS + 8) {
+                BlockPos approach = VillageWorldSystem.northInnerApproach();
+                mob.getNavigation().moveTo(
+                        approach.getX() + 0.5,
+                        approach.getY(),
+                        approach.getZ() + 0.5,
+                        1.12);
+                continue;
+            }
+
+            VillageProgressionSystem.Building targetBuilding = chooseTarget(mob.blockPosition(), gatePassable);
+            if (targetBuilding == null) {
+                continue;
+            }
             BlockPos target = VillageWorldSystem.buildingCenter(targetBuilding);
+            mob.getLookControl().setLookAt(target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5);
             mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.08);
-            if (attackTick && distanceSquared(mob.blockPosition(), target) <= 30L) {
+            if (attackTick && distanceSquared(mob.blockPosition(), target) <= 36L) {
+                mob.swing(InteractionHand.MAIN_HAND);
                 int damage = 9 + wave * 2 + Math.min(8, VillageCouncilState.currentDay() / 2);
                 VillageProgressionSystem.damageBuilding(server, targetBuilding, damage);
             }
         }
     }
 
-    private static VillageProgressionSystem.Building chooseTarget(BlockPos enemyPos) {
-        if (VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.WALLS)) {
+    private static ServerPlayer nearestPriorityPlayer(MinecraftServer server, Mob mob) {
+        ServerPlayer chosen = null;
+        double chosenDistance = PLAYER_PRIORITY_RANGE * PLAYER_PRIORITY_RANGE;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()) {
+                continue;
+            }
+            double distance = player.distanceToSqr(mob);
+            if (distance <= chosenDistance) {
+                chosenDistance = distance;
+                chosen = player;
+            }
+        }
+        return chosen;
+    }
+
+    private static VillageProgressionSystem.Building chooseTarget(BlockPos enemyPos, boolean gatePassable) {
+        if (!gatePassable && VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.WALLS)) {
             return VillageProgressionSystem.Building.WALLS;
         }
         VillageProgressionSystem.Building chosen = null;
         long chosenDistance = Long.MAX_VALUE;
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
             if (building == VillageProgressionSystem.Building.WALLS
-                    || !VillageProgressionSystem.isOperational(building)) continue;
+                    || !VillageProgressionSystem.isOperational(building)) {
+                continue;
+            }
             long distance = distanceSquared(enemyPos, VillageWorldSystem.buildingCenter(building));
             if (distance < chosenDistance) {
                 chosenDistance = distance;
@@ -187,11 +268,37 @@ public final class VillageRaidSystem {
         return chosen;
     }
 
+    private static void updateEnemyOutline(MinecraftServer server, Mob mob) {
+        boolean visibleToAnyPlayer = false;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() == mob.level()
+                    && player.isAlive()
+                    && player.distanceToSqr(mob) <= 160.0 * 160.0
+                    && player.hasLineOfSight(mob)) {
+                visibleToAnyPlayer = true;
+                break;
+            }
+        }
+        mob.setGlowingTag(!visibleToAnyPlayer);
+    }
+
+    private static PlayerTeam ensureRaidTeam(MinecraftServer server) {
+        PlayerTeam team = server.getScoreboard().getPlayerTeam(RAID_TEAM_NAME);
+        if (team == null) {
+            team = server.getScoreboard().addPlayerTeam(RAID_TEAM_NAME);
+        }
+        team.setColor(ChatFormatting.RED);
+        team.setAllowFriendlyFire(false);
+        return team;
+    }
+
     private static void purgeMissingEnemies(MinecraftServer server) {
         Iterator<UUID> iterator = ACTIVE_ENEMIES.iterator();
         while (iterator.hasNext()) {
             Entity entity = server.overworld().getEntity(iterator.next());
-            if (entity == null || !entity.isAlive()) iterator.remove();
+            if (entity == null || !entity.isAlive()) {
+                iterator.remove();
+            }
         }
     }
 
@@ -216,7 +323,10 @@ public final class VillageRaidSystem {
     private static void discardEnemies(MinecraftServer server) {
         for (UUID id : ACTIVE_ENEMIES) {
             Entity entity = server.overworld().getEntity(id);
-            if (entity != null) entity.discard();
+            if (entity != null) {
+                entity.setGlowingTag(false);
+                entity.discard();
+            }
         }
     }
 
