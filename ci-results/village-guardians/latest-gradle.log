@@ -15,13 +15,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.45s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.67s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
 [1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.03s
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.03s
+[1m*** Started working on [4mdownloadServer[0m[0m
+ [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -30,7 +30,7 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.33s
+Total runtime: 2.62s
 
 
 > Task :compileJava
@@ -61,16 +61,6 @@ import net.minecraft.client.gui.GuiGraphics;
                                ^
   symbol:   method setScreen(<null>)
   location: class Minecraft
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStructureShell.java:10: error: cannot find symbol
-        VillageSimpleBuildingBuilder.build(level, origin, groundY, spec);
-        ^
-  symbol:   variable VillageSimpleBuildingBuilder
-  location: class VillageStructureShell
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStructureShell.java:14: error: cannot find symbol
-        VillageSimpleBuildingBuilder.clear(level, center, spec);
-        ^
-  symbol:   variable VillageSimpleBuildingBuilder
-  location: class VillageStructureShell
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:411: error: cannot find symbol
             VillageWorldSystem.rebuildStructure(level, building);
                               ^
@@ -143,10 +133,10 @@ import net.minecraft.client.gui.GuiGraphics;
   reason: actual and formal argument lists differ in length
 Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
-22 errors
+20 errors
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785487516583.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785487574846.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
 
@@ -185,16 +175,6 @@ Execution failed for task ':compileJava'.
                          ^
     symbol:   class GuiGraphics
     location: class VillageUiScreen
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStructureShell.java:10: error: cannot find symbol
-          VillageSimpleBuildingBuilder.build(level, origin, groundY, spec);
-          ^
-    symbol:   variable VillageSimpleBuildingBuilder
-    location: class VillageStructureShell
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStructureShell.java:14: error: cannot find symbol
-          VillageSimpleBuildingBuilder.clear(level, center, spec);
-          ^
-    symbol:   variable VillageSimpleBuildingBuilder
-    location: class VillageStructureShell
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:20: error: cannot find symbol
           VillageBuildingShell.build(level, origin, center.getY() - 1, spec);
           ^
@@ -264,7 +244,7 @@ Execution failed for task ':compileJava'.
                                                         ^
     symbol:   method armoryDamageMultiplier()
     location: class VillageProgressionSystem
-  22 errors
+  20 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -336,16 +316,6 @@ import net.minecraft.client.gui.GuiGraphics;
                        ^
   symbol:   class GuiGraphics
   location: class VillageUiScreen
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStructureShell.java:10: error: cannot find symbol
-        VillageSimpleBuildingBuilder.build(level, origin, groundY, spec);
-        ^
-  symbol:   variable VillageSimpleBuildingBuilder
-  location: class VillageStructureShell
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStructureShell.java:14: error: cannot find symbol
-        VillageSimpleBuildingBuilder.clear(level, center, spec);
-        ^
-  symbol:   variable VillageSimpleBuildingBuilder
-  location: class VillageStructureShell
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:20: error: cannot find symbol
         VillageBuildingShell.build(level, origin, center.getY() - 1, spec);
         ^
@@ -415,7 +385,7 @@ import net.minecraft.client.gui.GuiGraphics;
                                                       ^
   symbol:   method armoryDamageMultiplier()
   location: class VillageProgressionSystem
-22 errors
+20 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -544,6 +514,6 @@ import net.minecraft.client.gui.GuiGraphics;
 	... 30 more
 
 
-BUILD FAILED in 15s
+BUILD FAILED in 24s
 5 actionable tasks: 4 executed, 1 up-to-date
 Configuration cache entry stored.
