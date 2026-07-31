@@ -278,6 +278,7 @@ jobs:
           git add BUILD_AND_RUNTIME_REPORT.md
           if [ "${BUILD_OUTCOME}" = "success" ] && [ "${JAR_OUTCOME}" = "success" ]; then
             git add gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties
+            git add -f build/libs/countrysidedays-0.1.0-alpha.3.jar
           fi
           if git diff --cached --quiet; then
             echo "No CI records changed."
