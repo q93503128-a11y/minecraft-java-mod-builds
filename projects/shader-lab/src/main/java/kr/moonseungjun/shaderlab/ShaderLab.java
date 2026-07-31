@@ -21,8 +21,11 @@ public final class ShaderLab {
     public static final String MOD_ID = "shaderlab";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String SHADERPACK_FILE = "ShaderLab-Dreamscape-0.4.zip";
+    private static final String SHADERPACK_FILE = "ShaderLab-Dreamscape-0.5.zip";
     private static final String SHADERPACK_RESOURCE = "/shaderpacks/" + SHADERPACK_FILE;
+    private static final String[] OBSOLETE_SHADERPACKS = {
+            "ShaderLab-Dreamscape-0.4.zip"
+    };
 
     public ShaderLab(IEventBus modEventBus) {
         try {
@@ -53,6 +56,10 @@ public final class ShaderLab {
         Path shaderpacksDirectory = gameDirectory.resolve("shaderpacks");
         Path destination = shaderpacksDirectory.resolve(SHADERPACK_FILE);
         Files.createDirectories(shaderpacksDirectory);
+
+        for (String obsoleteName : OBSOLETE_SHADERPACKS) {
+            Files.deleteIfExists(shaderpacksDirectory.resolve(obsoleteName));
+        }
 
         try (InputStream input = ShaderLab.class.getResourceAsStream(SHADERPACK_RESOURCE)) {
             if (input == null) {
