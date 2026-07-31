@@ -80,6 +80,23 @@ public final class CountrysideWorldData extends SavedData {
         return removed;
     }
 
+    /**
+     * Removes temporary cooking state when a kitchen counter is destroyed.
+     * If the destroyed counter was the restaurant anchor, a future counter can claim the anchor.
+     */
+    public boolean removeKitchenState(BlockPos pos) {
+        long packedPos = pos.asLong();
+        boolean changed = herbPreparations.remove(packedPos);
+        if (restaurantAnchor.isPresent() && restaurantAnchor.get() == packedPos) {
+            restaurantAnchor = Optional.empty();
+            changed = true;
+        }
+        if (changed) {
+            setDirty();
+        }
+        return changed;
+    }
+
     public int mealsPrepared() {
         return mealsPrepared;
     }
