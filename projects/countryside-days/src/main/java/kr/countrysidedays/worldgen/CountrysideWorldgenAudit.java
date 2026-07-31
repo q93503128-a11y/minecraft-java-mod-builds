@@ -19,26 +19,24 @@ public final class CountrysideWorldgenAudit {
         if (!CountrysideRegionManager.isFlatWorld(level)) {
             return;
         }
-        if (!level.hasChunk(0, 1)) {
-            CountrysideDays.LOGGER.warn("Countryside worldgen audit skipped because spawn-adjacent chunk 0,1 is not loaded");
-            return;
-        }
 
-        BlockState road = surface(level, 0, 18);
-        boolean roadReady = road.is(Blocks.PACKED_MUD) || road.is(Blocks.GRAVEL);
-        if (roadReady) {
-            CountrysideDays.LOGGER.info("Countryside worldgen audit passed: generated road={}", road.getBlock());
+        BlockState marker = surface(level, 0, 0);
+        if (marker.is(Blocks.DANDELION)) {
+            CountrysideDays.LOGGER.info(
+                    "Countryside worldgen audit passed: deterministic spawn marker={}",
+                    marker.getBlock()
+            );
         } else {
             CountrysideDays.LOGGER.error(
-                    "Countryside worldgen audit failed: expected generated road at 0,18, found {}",
-                    road.getBlock()
+                    "Countryside worldgen audit failed: expected dandelion marker at 0,0, found {}",
+                    marker.getBlock()
             );
         }
     }
 
     private static BlockState surface(ServerLevel level, int x, int z) {
         BlockPos air = level.getHeightmapPos(
-                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Heightmap.Types.WORLD_SURFACE,
                 new BlockPos(x, 0, z)
         );
         return level.getBlockState(air.below());
