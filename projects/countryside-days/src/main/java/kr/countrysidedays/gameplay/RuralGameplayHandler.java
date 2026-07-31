@@ -35,9 +35,10 @@ public final class RuralGameplayHandler {
         Optional<BlockPos> homestead = Optional.empty();
         if (serverLevel.dimension() == Level.OVERWORLD) {
             homestead = StarterHomesteadGenerator.ensureGenerated(serverLevel, player.blockPosition());
+            homestead.ifPresent(origin -> RuralNpcManager.ensureForHomestead(serverLevel, origin));
         }
 
-        if (!player.addTag(STARTER_KIT_TAG)) {
+        if (!player.addCommandTag(STARTER_KIT_TAG)) {
             return;
         }
 
@@ -54,6 +55,7 @@ public final class RuralGameplayHandler {
                     origin.getY(),
                     origin.getZ()
             ));
+            player.sendSystemMessage(Component.translatable("message.countrysidedays.meet_resident"));
         } else if (serverLevel.dimension() == Level.OVERWORLD) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.homestead_deferred"));
         }
