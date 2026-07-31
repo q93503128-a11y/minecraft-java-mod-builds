@@ -2,6 +2,7 @@ package kr.countrysidedays;
 
 import com.mojang.logging.LogUtils;
 import kr.countrysidedays.gameplay.KitchenInteractionHandler;
+import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.gametest.ModGameTests;
 import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.registry.ModCreativeTabs;
@@ -23,8 +24,12 @@ public final class CountrysideDays {
         ModCreativeTabs.register(modEventBus);
         ModGameTests.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
+
         NeoForge.EVENT_BUS.addListener(KitchenInteractionHandler::onUseItemOnBlock);
         NeoForge.EVENT_BUS.addListener(KitchenInteractionHandler::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onBlockDrops);
+        NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onItemFished);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
