@@ -4,6 +4,7 @@ import kr.moonseungjun.livingkingdoms.crime.CrimeSavedData;
 import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
+import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,15 +20,23 @@ public final class RealmCodexSnapshotBuilder {
     }
 
     public static OpenCodexPayload build(ServerPlayer player, String requestedPage) {
-        String page = "status".equals(requestedPage) ? "status" : "map";
+        String page = switch (requestedPage) {
+            case "equipment", "map", "skills" -> requestedPage;
+            default -> "overview";
+        };
         Map<String, String> values = new LinkedHashMap<>();
         OriginProfile profile = OriginProfileManager.profile(player.getUUID()).orElse(null);
 
         values.put("player", player.getGameProfile().name());
+        values.put("species_id", profile == null ? "human" : profile.speciesId());
         values.put("species", profile == null ? "미정" : speciesName(profile.speciesId()));
         values.put("homeland", profile == null ? "미정" : homelandName(profile.homelandId()));
+        values.put("affiliation", profile == null ? "무소속" : affiliationName(profile.homelandId()));
+        values.put("citizenship", profile == null ? "등록되지 않음" : citizenshipName(profile.homelandId()));
         values.put("background", profile == null ? "미정" : backgroundName(profile.backgroundId()));
         values.put("residence", profile == null ? "미정" : residenceName(profile.residenceId()));
+        values.put("trait_title", SkillProgressionManager.traitTitle(player));
+        values.put("trait_description", SkillProgressionManager.traitDescription(player));
 
         values.put("health", oneDecimal(player.getHealth()) + " / " + oneDecimal(player.getMaxHealth()));
         values.put("armor", Integer.toString(player.getArmorValue()));
@@ -55,6 +64,11 @@ public final class RealmCodexSnapshotBuilder {
         values.put("resistance", Integer.toString(crime.resistance()));
         values.put("jurisdiction", jurisdictionName(crime.jurisdiction()));
         values.put("arrest", Integer.toString(Math.min(100, crime.arrestTicks())) + "%");
+
+        var skills = SkillProgressionManager.state(player);
+        values.put("skill_points", Integer.toString(skills.points()));
+        values.put("skill_milestone", Integer.toString(skills.levelMilestone()));
+        values.put("unlocked_skills", String.join(",", skills.unlocked()));
 
         if (profile != null) {
             PlayableOriginCatalog.ResidenceOption home = PlayableOriginCatalog.residences().get(profile.residenceId());
@@ -86,7 +100,8 @@ public final class RealmCodexSnapshotBuilder {
     }
 
     private static String itemName(ItemStack stack) {
-        return stack.isEmpty() ? "없음" : stack.getHoverName().getString() + (stack.getCount() > 1 ? " ×" + stack.getCount() : "");
+        return stack.isEmpty() ? "없음" : stack.getHoverName().getString()
+                + (stack.getCount() > 1 ? " ×" + stack.getCount() : "");
     }
 
     private static String speciesName(String id) {
@@ -102,6 +117,22 @@ public final class RealmCodexSnapshotBuilder {
             case "silvana_forest" -> "실바나 수림 공동체";
             case "kardum_league" -> "카르둠 산악 연맹";
             default -> "에르덴 왕국";
+        };
+    }
+
+    private static String affiliationName(String id) {
+        return switch (id) {
+            case "silvana_forest" -> "실바나 수림 의회";
+            case "kardum_league" -> "카르둠 산악 연맹";
+            default -> "에르덴 왕국 · 로엔 변경백령";
+        };
+    }
+
+    private static String citizenshipName(String id) {
+        return switch (id) {
+            case "silvana_forest" -> "수림 공동체 구성원";
+            case "kardum_league" -> "연맹 등록 자유민";
+            default -> "에르덴 왕국 시민";
         };
     }
 
@@ -129,10 +160,10 @@ public final class RealmCodexSnapshotBuilder {
     }
 
     private static String regionName(int x, int z) {
-        if (distanceSquared(x, z, 0, 0) <= 280 * 280) return "에르덴 변경";
-        if (distanceSquared(x, z, 1240, 35) <= 260 * 260) return "실바나 수림";
-        if (distanceSquared(x, z, -1170, 38) <= 260 * 260) return "카르둠 산맥";
-        return "미개척 변경";
+        if (distanceSquared(x, z, 0, 0) <= 360 * 360) return "에르덴 로엔 변경백령";
+        if (distanceSquared(x, z, 1240, 35) <= 320 * 320) return "실바나 수림권";
+        if (distanceSquared(x, z, -1170, 38) <= 320 * 320) return "카르둠 산악권";
+        return "미개척 대륙";
     }
 
     private static int distanceSquared(int x, int z, int cx, int cz) {
