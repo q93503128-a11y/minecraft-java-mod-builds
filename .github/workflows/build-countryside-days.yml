@@ -9,13 +9,14 @@ on:
       - '.github/workflows/build-countryside-days.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   PROJECT_DIR: projects/countryside-days
   WORK_DIR: work/countryside-days
   GRADLE_VERSION: '9.2.1'
   EXPECTED_PAYLOAD_SHA256: '656d74fab5ed88c1102c6e1c0c5ec376e9ef5487a191245a9127ebc57760d701'
+  RELEASE_TAG: countryside-days-v0.20.1
 
 jobs:
   build:
@@ -100,6 +101,21 @@ jobs:
           fi
           sha256sum "$JAR" | tee logs/jar-sha256.txt
 
+      - name: Publish verified release assets
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" deliverables/* --clobber
+          else
+            gh release create "$RELEASE_TAG" deliverables/* \
+              --title 'Countryside Days v0.20.1 verified build' \
+              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2.0.38-beta. Built and structurally verified by GitHub Actions.'
+          fi
+
       - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -117,3 +133,45 @@ jobs:
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Commit latest status and logs
+        if: always()
+        shell: bash
+        env:
+          BUILD_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/countryside-build-result
+          mkdir -p /tmp/countryside-build-result/logs
+          if [ -d logs ]; then cp -a logs/. /tmp/countryside-build-result/logs/; fi
+          if [ -d deliverables ]; then cp -a deliverables /tmp/countryside-build-result/; fi
+          cat > /tmp/countryside-build-result/LATEST_STATUS.md <<EOF
+          # Countryside Days latest GitHub build
+
+          - Status: **${BUILD_STATUS}**
+          - Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          - Source commit: \`${GITHUB_SHA}\`
+          - Run number: \`${GITHUB_RUN_NUMBER}\`
+          - Java: \`25\`
+          - Minecraft: \`26.2\`
+          - NeoForge: \`26.2.0.38-beta\`
+          - Gradle: \`9.2.1\`
+          - Release tag: \`${RELEASE_TAG}\`
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git reset --hard origin/main
+          git clean -fdx
+          mkdir -p build-results/countryside-days
+          cp -a /tmp/countryside-build-result/. build-results/countryside-days/
+          git add build-results/countryside-days
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record Countryside Days build ${GITHUB_RUN_NUMBER}: ${BUILD_STATUS}"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          echo 'Failed to publish build status after three attempts' >&2
+          exit 1
