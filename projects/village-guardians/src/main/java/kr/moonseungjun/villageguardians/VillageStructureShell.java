@@ -4,7 +4,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
 final class VillageStructureShell {
-    private VillageStructureShell() {}
+    private VillageStructureShell() {
+    }
 
     static void build(ServerLevel level, BlockPos origin, int groundY, VillageBuildingCatalog.Spec spec) {
         VillageSimpleBuildingBuilder.build(level, origin, groundY, spec);
@@ -12,5 +13,9 @@ final class VillageStructureShell {
 
     static void clear(ServerLevel level, BlockPos center, VillageBuildingCatalog.Spec spec) {
         VillageSimpleBuildingBuilder.clear(level, center, spec);
+    }
+
+    static void ruin(ServerLevel level, BlockPos center, VillageBuildingCatalog.Spec spec) {
+        VillageSimpleBuildingBuilder.ruin(level, center, spec);
     }
 }
