@@ -7,6 +7,11 @@ on:
     paths:
       - 'projects/shader-lab/**'
       - '.github/workflows/build-shader-lab.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'projects/shader-lab/**'
+      - '.github/workflows/build-shader-lab.yml'
 
 permissions:
   contents: read
