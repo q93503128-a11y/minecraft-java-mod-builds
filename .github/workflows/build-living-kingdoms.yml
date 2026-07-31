@@ -77,14 +77,20 @@ jobs:
           trap cleanup EXIT
 
           ready=0
-          for attempt in $(seq 1 180); do
+          diagnostic=0
+          for attempt in $(seq 1 240); do
             if grep -Eq 'Done \(|For help, type "help"' ../../logs/server-smoke.log; then
               ready=1
+            fi
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log; then
+              diagnostic=1
+            fi
+            if [ "$ready" -eq 1 ] && [ "$diagnostic" -eq 1 ]; then
               break
             fi
             if ! kill -0 "$server_pid" 2>/dev/null; then
               cat ../../logs/server-smoke.log
-              echo 'Dedicated server exited before reaching ready state.' >&2
+              echo 'Dedicated server exited before completing startup diagnostics.' >&2
               exit 1
             fi
             sleep 1
@@ -92,14 +98,17 @@ jobs:
 
           cat ../../logs/server-smoke.log
           if [ "$ready" -ne 1 ]; then
-            echo 'Dedicated server did not reach ready state within 180 seconds.' >&2
+            echo 'Dedicated server did not reach ready state within 240 seconds.' >&2
+            exit 1
+          fi
+          if [ "$diagnostic" -ne 1 ]; then
+            echo 'Authored starter realm diagnostics did not complete within 240 seconds.' >&2
             exit 1
           fi
           if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms' ../../logs/server-smoke.log; then
             echo 'Living Kingdoms datapack or dimension loading error detected.' >&2
             exit 1
           fi
-          grep -F 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log
 
       - name: Package and inspect test JAR
         shell: bash
