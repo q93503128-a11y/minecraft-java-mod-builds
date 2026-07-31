@@ -8,7 +8,6 @@ import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -26,7 +25,13 @@ public final class LivingKingdoms {
     public LivingKingdoms(IEventBus modEventBus) {
         FoundationCatalog.bootstrap();
         modEventBus.addListener(LivingKingdomsNetwork::register);
-        NeoForge.EVENT_BUS.register(this);
+
+        NeoForge.EVENT_BUS.addListener(this::onServerStarting);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(this::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
+
         LOGGER.info(
                 "Living Kingdoms foundation loaded: {} species, {} homelands, {} backgrounds, {} residences",
                 FoundationCatalog.species().size(),
@@ -36,21 +41,18 @@ public final class LivingKingdoms {
         );
     }
 
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
+    private void onServerStarting(ServerStartingEvent event) {
         OriginProfileManager.initialize(event.getServer());
         StarterRealmDiagnostics.runIfRequested(event.getServer());
     }
 
-    @SubscribeEvent
-    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+    private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             OriginProfileManager.requestSelection(player);
         }
     }
 
-    @SubscribeEvent
-    public void onPlayerTick(PlayerTickEvent.Post event) {
+    private void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player
                 && OriginProfileManager.requiresSelection(player.getUUID())
                 && player.level().getGameTime() % 40L == 0L) {
@@ -58,16 +60,14 @@ public final class LivingKingdoms {
         }
     }
 
-    @SubscribeEvent
-    public void onIncomingDamage(LivingIncomingDamageEvent event) {
+    private void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof ServerPlayer player
                 && OriginProfileManager.requiresSelection(player.getUUID())) {
             event.setAmount(0.0F);
         }
     }
 
-    @SubscribeEvent
-    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+    private void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         StarterNpcManager.handleInteraction(event);
     }
 }
