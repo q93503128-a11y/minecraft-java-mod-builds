@@ -9,7 +9,7 @@ on:
       - '.github/workflows/build-shader-lab.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: shader-lab-${{ github.ref }}
@@ -22,69 +22,44 @@ defaults:
 
 jobs:
   build:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Read project metadata
+      - name: Read metadata
         run: |
           echo "MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
-          echo "NEO_VERSION=$(grep '^neo_version=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
-          echo "PHOTON_COMMIT=$(grep '^photon_commit=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
-          echo "SHADER_PACK=$(grep '^shader_pack_name=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "SARP_VERSION_ID=$(grep '^sarp_version_id=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
 
-      - name: Set up Java 25
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
 
-      - name: Set up Gradle 9.2.1
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
 
-      - name: Generate Gradle wrapper
-        id: wrapper
+      - name: Generate wrapper
         run: |
           gradle wrapper --gradle-version 9.2.1 --distribution-type bin
           chmod +x gradlew
 
-      - name: Prepare persistent directories
-        run: mkdir -p ci-logs build/deliverables build/test-kit/mods
-
-      - name: Verify toolchain
-        id: toolchain
+      - name: Clean build and Sarp source audit
         run: |
-          set -o pipefail
-          {
-            java -version
-            ./gradlew --version
-          } 2>&1 | tee ci-logs/toolchain.log
-
-      - name: Clean build
-        id: build
-        continue-on-error: true
-        run: |
+          mkdir -p ci-logs build/test-kit/mods build/deliverables
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
 
-      - name: Inspect executable JAR
-        id: jarcheck
-        if: steps.build.outcome == 'success'
-        continue-on-error: true
+      - name: Verify final JAR
         run: |
           set -o pipefail
-          python3 scripts/verify_jar.py "build/libs/shaderlab-${MOD_VERSION}.jar" 2>&1 | tee ci-logs/jar-verification.log
+          python3 scripts/verify_jar.py "build/libs/shaderlab-${MOD_VERSION}.jar" \
+            2>&1 | tee ci-logs/jar-verification.log
 
-      - name: Download pinned Iris and Sodium test dependencies
-        id: dependencies
-        if: steps.build.outcome == 'success' && steps.jarcheck.outcome == 'success'
-        continue-on-error: true
+      - name: Download official Iris and Sodium 26.2 JARs
         run: |
           python3 - <<'PY'
           import json
@@ -93,93 +68,57 @@ jobs:
           import zipfile
 
           targets = [
-              ("bXt6zsZT", "iris-1.11.2+26.2-neoforge.jar", "iris"),
-              ("KHPycol7", "sodium-0.9.1+26.2-neoforge.jar", "sodium"),
+              ("bXt6zsZT", "iris-1.11.2+26.2-neoforge.jar"),
+              ("KHPycol7", "sodium-0.9.1+26.2-neoforge.jar"),
           ]
           output = pathlib.Path("build/test-kit/mods")
           output.mkdir(parents=True, exist_ok=True)
+          headers = {"User-Agent": "ShaderLab-private-build/0.4"}
 
-          for version_id, filename, expected_mod in targets:
-              with urllib.request.urlopen(
-                  f"https://api.modrinth.com/v2/version/{version_id}", timeout=60
-              ) as response:
+          for version_id, filename in targets:
+              request = urllib.request.Request(
+                  f"https://api.modrinth.com/v2/version/{version_id}", headers=headers
+              )
+              with urllib.request.urlopen(request, timeout=60) as response:
                   metadata = json.load(response)
-              files = metadata.get("files", [])
+              files = metadata.get("files") or []
+              if not files:
+                  raise RuntimeError(f"No files for Modrinth version {version_id}")
               selected = next((item for item in files if item.get("primary")), files[0])
+              request = urllib.request.Request(selected["url"], headers=headers)
               destination = output / filename
-              urllib.request.urlretrieve(selected["url"], destination)
-              if destination.stat().st_size < 100_000:
-                  raise RuntimeError(f"downloaded dependency is unexpectedly small: {destination}")
+              with urllib.request.urlopen(request, timeout=120) as response:
+                  destination.write_bytes(response.read())
               with zipfile.ZipFile(destination) as jar:
-                  names = set(jar.namelist())
-                  if "META-INF/neoforge.mods.toml" not in names:
-                      raise RuntimeError(f"{destination} is not a NeoForge mod JAR")
-              print(f"downloaded {expected_mod}: {destination} ({destination.stat().st_size} bytes)")
+                  if "META-INF/neoforge.mods.toml" not in set(jar.namelist()):
+                      raise RuntimeError(f"Not a NeoForge mod JAR: {destination}")
+              print(destination, destination.stat().st_size)
           PY
 
-      - name: Assemble report and test kit
-        if: >-
-          steps.build.outcome == 'success' &&
-          steps.jarcheck.outcome == 'success' &&
-          steps.dependencies.outcome == 'success'
-        env:
-          COMMIT_SHA: ${{ github.sha }}
+      - name: Assemble private test kit
         run: |
           JAR="build/libs/shaderlab-${MOD_VERSION}.jar"
-          SHA_FILE="${JAR}.sha256"
-          {
-            echo "# Shader Lab Dreamscape Build and Runtime Report"
-            echo
-            echo "- Commit: ${COMMIT_SHA}"
-            echo "- Version: ${MOD_VERSION}"
-            echo "- Minecraft: 26.2"
-            echo "- Java: 25"
-            echo "- NeoForge: ${NEO_VERSION}"
-            echo "- Gradle: 9.2.1"
-            echo "- Renderer architecture: Iris shaderpack bootstrap"
-            echo "- Photon upstream revision: ${PHOTON_COMMIT}"
-            echo "- Photon MIT license and attribution: PRESERVED"
-            echo "- Legacy screen-space overlay: REMOVED"
-            echo "- Water/terrain/sky render separation: PASS"
-            echo "- World-space low volumetric mist patch: PASS"
-            echo "- Clean build: PASS"
-            echo "- JAR inspection: PASS"
-            echo "- Iris 1.11.2 NeoForge dependency download: PASS"
-            echo "- Sodium 0.9.1 NeoForge dependency download: PASS"
-            echo "- Interactive client visual test: NOT RUN"
-            echo
-            echo "## JAR verification"
-            echo
-            echo '```text'
-            cat build/reports/jar-verification.txt
-            echo '```'
-          } > build/BUILD_AND_RUNTIME_REPORT.md
-
           cp "$JAR" build/test-kit/mods/
-          cp "$SHA_FILE" build/test-kit/
-          cp build/BUILD_AND_RUNTIME_REPORT.md build/test-kit/
+          cp "${JAR}.sha256" build/test-kit/
+          cp build/reports/jar-verification.txt build/test-kit/
+          cp build/reports/sarp-source-audit.txt build/test-kit/
           cat > build/test-kit/INSTALL.txt <<'TXT'
           Shader Lab Dreamscape 0.4 private test
 
           1. Delete every older shaderlab JAR from the instance mods folder.
           2. Copy all three JAR files from this kit's mods folder into the instance mods folder.
-          3. Start the game. Shader Lab installs and selects ShaderLab-Dreamscape-0.4.zip.
-          4. If Iris initialized before the bootstrap on the first launch, restart the game once.
-          5. Do not enable the removed 0.3 post effect.
+          3. Start Minecraft. Shader Lab installs and selects ShaderLab-Dreamscape-0.4.zip.
+          4. Restart once if Iris read its configuration before Shader Lab on the first launch.
+          5. Shader Lab 0.3 must not remain installed.
           TXT
-
           (cd build/test-kit && zip -qr "../shader-lab-${MOD_VERSION}-test-kit.zip" .)
-
           cp "$JAR" build/deliverables/
-          cp "$SHA_FILE" build/deliverables/
-          cp build/BUILD_AND_RUNTIME_REPORT.md build/deliverables/
+          cp "${JAR}.sha256" build/deliverables/
+          cp build/reports/jar-verification.txt build/deliverables/
+          cp build/reports/sarp-source-audit.txt build/deliverables/
           cp "build/shader-lab-${MOD_VERSION}-test-kit.zip" build/deliverables/
 
       - name: Upload deliverables
-        if: >-
-          steps.build.outcome == 'success' &&
-          steps.jarcheck.outcome == 'success' &&
-          steps.dependencies.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: shader-lab-${{ env.MOD_VERSION }}-deliverables
@@ -187,7 +126,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload raw logs
+      - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -195,86 +134,3 @@ jobs:
           path: projects/shader-lab/ci-logs/
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Record CI result
-        if: always()
-        env:
-          SOURCE_SHA: ${{ github.sha }}
-          WRAPPER_OUTCOME: ${{ steps.wrapper.outcome }}
-          TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
-          JAR_OUTCOME: ${{ steps.jarcheck.outcome }}
-          DEPENDENCY_OUTCOME: ${{ steps.dependencies.outcome }}
-        run: |
-          cat > BUILD_AND_RUNTIME_REPORT.md <<REPORT
-          # Shader Lab Dreamscape Build and Runtime Report
-
-          - Source commit: ${SOURCE_SHA}
-          - Mod version: ${MOD_VERSION}
-          - Minecraft: 26.2
-          - Java: 25
-          - Gradle: 9.2.1
-          - NeoForge: ${NEO_VERSION}
-          - Photon revision: ${PHOTON_COMMIT}
-          - Shaderpack: ${SHADER_PACK}
-          - Wrapper generation: ${WRAPPER_OUTCOME}
-          - Toolchain verification: ${TOOLCHAIN_OUTCOME}
-          - Clean build: ${BUILD_OUTCOME}
-          - Embedded Iris shaderpack/JAR verification: ${JAR_OUTCOME}
-          - Pinned Iris/Sodium test-kit dependencies: ${DEPENDENCY_OUTCOME}
-          - Legacy screen-space post effect: REMOVED
-          - Interactive client visual test: NOT RUN — requires a real game window and GPU
-
-          A successful build proves compilation, licensing files, shaderpack structure, and dependency artifacts. Final visual quality is decided by the in-game test.
-          REPORT
-
-          if [ -f build/reports/jar-verification.txt ]; then
-            {
-              echo
-              echo '## JAR verification'
-              echo '```text'
-              cat build/reports/jar-verification.txt
-              echo '```'
-            } >> BUILD_AND_RUNTIME_REPORT.md
-          fi
-
-          if [ -f ci-logs/clean-build.log ]; then
-            {
-              echo
-              echo '## Clean-build log tail'
-              echo '```text'
-              tail -n 180 ci-logs/clean-build.log
-              echo '```'
-            } >> BUILD_AND_RUNTIME_REPORT.md
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add BUILD_AND_RUNTIME_REPORT.md
-
-          if [ "${BUILD_OUTCOME}" = "success" ] && [ "${JAR_OUTCOME}" = "success" ]; then
-            git add gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties
-          fi
-
-          if git diff --cached --quiet; then
-            echo "No Shader Lab CI records changed."
-            exit 0
-          fi
-
-          git commit -m "Record Shader Lab Dreamscape CI result for ${SOURCE_SHA:0:7}"
-          git pull --rebase origin main
-          git push origin HEAD:main
-
-      - name: Enforce validation result
-        if: always()
-        env:
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
-          JAR_OUTCOME: ${{ steps.jarcheck.outcome }}
-          DEPENDENCY_OUTCOME: ${{ steps.dependencies.outcome }}
-        run: |
-          if [ "${BUILD_OUTCOME}" != "success" ] || \
-             [ "${JAR_OUTCOME}" != "success" ] || \
-             [ "${DEPENDENCY_OUTCOME}" != "success" ]; then
-            echo "Shader Lab validation failed: build=${BUILD_OUTCOME}, jar=${JAR_OUTCOME}, dependencies=${DEPENDENCY_OUTCOME}"
-            exit 1
-          fi
