@@ -126,17 +126,8 @@ dependencies {
     jarJar files(bundledIrisJar, bundledSodiumJar)
 }
 
-tasks.named('jar') {
-    archiveClassifier = 'thin'
-}
-
 tasks.named('jarJar') {
     dependsOn tasks.named('downloadBundledRendererMods')
-    archiveClassifier = ''
-}
-
-tasks.named('assemble') {
-    dependsOn tasks.named('jarJar')
 }
 
 tasks.register('verifyShaderpackResources') {
@@ -188,10 +179,10 @@ tasks.register('verifyShaderpackResources') {
 tasks.register('verifySingleJar') {
     group = 'verification'
     description = 'Verifies that the deliverable contains Shader Lab, Noble, Iris and Sodium in one JAR.'
-    dependsOn tasks.named('jarJar')
+    dependsOn tasks.named('jar')
 
     doLast {
-        def output = tasks.named('jarJar').get().archiveFile.get().asFile
+        def output = tasks.named('jar').get().archiveFile.get().asFile
         if (!output.isFile() || output.length() < 3_000_000L) {
             throw new GradleException("Single JAR output is missing or too small: ${output}")
         }
@@ -200,10 +191,10 @@ tasks.register('verifySingleJar') {
             if (!entries.contains('META-INF/jarjar/metadata.json')) {
                 throw new GradleException('Single JAR is missing NeoForge Jar-in-Jar metadata')
             }
-            if (!entries.any { it.startsWith('META-INF/jarjar/') && it.contains('iris') && it.endsWith('.jar') }) {
+            if (!entries.any { it.startsWith('META-INF/jarjar/') && it.toLowerCase().contains('iris') && it.endsWith('.jar') }) {
                 throw new GradleException('Single JAR is missing bundled Iris')
             }
-            if (!entries.any { it.startsWith('META-INF/jarjar/') && it.contains('sodium') && it.endsWith('.jar') }) {
+            if (!entries.any { it.startsWith('META-INF/jarjar/') && it.toLowerCase().contains('sodium') && it.endsWith('.jar') }) {
                 throw new GradleException('Single JAR is missing bundled Sodium')
             }
             if (!entries.contains("shaderpacks/${reveriePackName}")) {
@@ -226,7 +217,7 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 25
 }
 
-tasks.named('jarJar') {
+tasks.named('jar') {
     manifest {
         attributes(
                 'Specification-Title': mod_name,
@@ -242,10 +233,10 @@ tasks.named('jarJar') {
 }
 
 tasks.register('writeJarChecksum') {
-    dependsOn tasks.named('jarJar')
+    dependsOn tasks.named('jar')
 
     doLast {
-        def jarFile = tasks.named('jarJar').get().archiveFile.get().asFile
+        def jarFile = tasks.named('jar').get().archiveFile.get().asFile
         def digest = java.security.MessageDigest.getInstance('SHA-256')
         jarFile.withInputStream { stream ->
             byte[] buffer = new byte[8192]
