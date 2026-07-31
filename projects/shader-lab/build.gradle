@@ -65,40 +65,77 @@ neoForge.ideSyncTask generateModMetadata
 
 tasks.register('verifyShaderResources') {
     group = 'verification'
-    description = 'Validates required Shader Lab 26.2 JSON resources and GLSL source presence.'
+    description = 'Validates the Shader Lab 26.2 seven-pass bloom pipeline and GLSL sources.'
 
     doLast {
         def effectFile = file('src/main/resources/assets/shaderlab/post_effect/lush_grade.json')
-        def fragmentFile = file('src/main/resources/assets/shaderlab/shaders/post/lush_grade.fsh')
+        def extractFile = file('src/main/resources/assets/shaderlab/shaders/post/bloom_extract.fsh')
+        def blurFile = file('src/main/resources/assets/shaderlab/shaders/post/bloom_blur.fsh')
+        def compositeFile = file('src/main/resources/assets/shaderlab/shaders/post/lush_grade.fsh')
         def packFile = file('src/main/resources/pack.mcmeta')
 
-        [effectFile, fragmentFile, packFile].each { required ->
+        [effectFile, extractFile, blurFile, compositeFile, packFile].each { required ->
             if (!required.isFile() || required.length() == 0L) {
                 throw new GradleException("Missing or empty required shader resource: ${required}")
             }
         }
 
         def effect = new JsonSlurper().parse(effectFile)
-        if (!(effect.targets instanceof Map) || !(effect.passes instanceof List) || effect.passes.size() != 2) {
-            throw new GradleException('lush_grade.json must declare one intermediate target and exactly two passes')
+        if (!(effect.targets instanceof Map)
+                || !effect.targets.keySet().containsAll(['bloom_a', 'bloom_b', 'final'])
+                || !(effect.passes instanceof List)
+                || effect.passes.size() != 7) {
+            throw new GradleException('lush_grade.json must declare bloom_a, bloom_b and final targets with exactly seven passes')
         }
 
         def firstPass = effect.passes[0]
+        def compositePass = effect.passes[5]
+        def finalPass = effect.passes[6]
+
         if (firstPass.vertex_shader != 'minecraft:core/screenquad'
-                || firstPass.fragment_shader != 'shaderlab:post/lush_grade'
-                || firstPass.output != 'graded') {
-            throw new GradleException('The colour-grade pass does not match the Minecraft 26.2 post-effect contract')
+                || firstPass.fragment_shader != 'shaderlab:post/bloom_extract'
+                || firstPass.output != 'bloom_a') {
+            throw new GradleException('The bright-pass extraction stage does not match the Minecraft 26.2 post-effect contract')
+        }
+
+        if (compositePass.fragment_shader != 'shaderlab:post/lush_grade'
+                || compositePass.output != 'final'
+                || !(compositePass.inputs instanceof List)
+                || compositePass.inputs.size() != 3) {
+            throw new GradleException('The cinematic composite stage must consume scene, bloom and depth inputs')
+        }
+
+        if (finalPass.fragment_shader != 'minecraft:post/blit'
+                || finalPass.output != 'minecraft:main') {
+            throw new GradleException('The final pass must blit the composited target back to minecraft:main')
+        }
+
+        def blurPasses = effect.passes.subList(1, 5)
+        if (!blurPasses.every { pass ->
+            pass.fragment_shader == 'shaderlab:post/bloom_blur'
+                    && pass.uniforms?.BloomBlurConfig instanceof List
+        }) {
+            throw new GradleException('All four glow-spread passes must use bloom_blur and BloomBlurConfig')
         }
 
         def pack = new JsonSlurper().parse(packFile)
-        if (pack?.pack?.pack_format != 88) {
-            throw new GradleException('Minecraft 26.2 client resources must use pack format 88')
+        if (pack?.pack?.min_format != [88, 0] || pack?.pack?.max_format != [107, 1]) {
+            throw new GradleException('Minecraft 26.2 mod resources must cover resource format 88.0 and data format 107.1')
         }
 
-        def shaderText = fragmentFile.getText('UTF-8')
-        ['#version 330', 'uniform sampler2D InSampler', 'out vec4 fragColor'].each { token ->
-            if (!shaderText.contains(token)) {
-                throw new GradleException("Fragment shader is missing required token: ${token}")
+        [extractFile, blurFile, compositeFile].each { shaderFile ->
+            def shaderText = shaderFile.getText('UTF-8')
+            ['#version 330', 'out vec4 fragColor'].each { token ->
+                if (!shaderText.contains(token)) {
+                    throw new GradleException("${shaderFile.name} is missing required token: ${token}")
+                }
+            }
+        }
+
+        def compositeText = compositeFile.getText('UTF-8')
+        ['SceneSampler', 'BloomSampler', 'SceneDepthSampler', 'acesTonemap', 'pearlescentBloom'].each { token ->
+            if (!compositeText.contains(token)) {
+                throw new GradleException("Cinematic composite shader is missing required token: ${token}")
             }
         }
     }
