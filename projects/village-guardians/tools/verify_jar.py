@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -21,6 +22,14 @@ REQUIRED_LICENSED_ASSETS = {
     "META-INF/villageguardians/THIRD_PARTY_NOTICES.txt",
     "META-INF/villageguardians/towns-and-towers-selection.txt",
 }
+TOWN_HALL_LINE = re.compile(
+    r"^town_hall \((\d+), (\d+), (\d+)\) <- (.+)$",
+    re.MULTILINE,
+)
+NON_BUILDING_TOKENS = (
+    "meeting_point", "/streets/", "/street/", "corner_",
+    "town_centers", "town_centres", "well", "fountain", "/roads/", "/paths/",
+)
 
 
 def fail(message: str) -> None:
@@ -67,6 +76,21 @@ def main() -> None:
             ).decode("utf-8")
             if "Default Dark Mode" not in notice or "Towns and Towers" not in notice:
                 fail("Third-party notice does not identify both licensed asset sources")
+
+            selection = jar.read(
+                "META-INF/villageguardians/towns-and-towers-selection.txt"
+            ).decode("utf-8")
+            match = TOWN_HALL_LINE.search(selection)
+            if match is None:
+                fail("Town hall selection manifest does not expose its dimensions")
+            width, height, depth = map(int, match.group(1, 2, 3))
+            source_path = match.group(4).lower()
+            if width < 8 or depth < 8 or height < 8:
+                fail(f"Town hall is not a real multi-level building: {(width, height, depth)}")
+            if width * depth < 80:
+                fail(f"Town hall footprint is too small: {(width, height, depth)}")
+            if any(token in source_path for token in NON_BUILDING_TOKENS):
+                fail(f"Town hall incorrectly selected a road/plaza structure: {source_path}")
     except zipfile.BadZipFile as exc:
         fail(f"Invalid JAR/ZIP: {exc}")
 
@@ -76,6 +100,7 @@ def main() -> None:
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
     print("[PASS] Licensed GUI and six external building structures are present")
+    print(f"[PASS] Town hall dimensions: {width} x {height} x {depth}")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
 
