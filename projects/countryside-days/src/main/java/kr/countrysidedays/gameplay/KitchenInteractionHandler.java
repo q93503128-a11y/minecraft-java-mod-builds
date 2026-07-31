@@ -46,22 +46,22 @@ public final class KitchenInteractionHandler {
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
         boolean firstAnchor = data.claimRestaurantAnchor(pos);
         if (firstAnchor) {
-            player.displayClientMessage(Component.translatable("message.countrysidedays.restaurant_anchor_set"), false);
+            player.sendSystemMessage(Component.translatable("message.countrysidedays.restaurant_anchor_set"));
         }
 
         if (heldItem.is(ModItems.WILD_HERB.get())) {
             if (data.addHerbPreparation(pos)) {
                 consumeOneUnlessCreative(player, heldItem);
-                player.displayClientMessage(Component.translatable("message.countrysidedays.herb_prepared"), true);
+                player.sendOverlayMessage(Component.translatable("message.countrysidedays.herb_prepared"));
             } else {
-                player.displayClientMessage(Component.translatable("message.countrysidedays.herb_already_prepared"), true);
+                player.sendOverlayMessage(Component.translatable("message.countrysidedays.herb_already_prepared"));
             }
             return;
         }
 
         if (heldItem.is(ModItems.RIVER_FISH.get())) {
             if (!data.consumeHerbPreparation(pos)) {
-                player.displayClientMessage(Component.translatable("message.countrysidedays.need_herb_first"), true);
+                player.sendOverlayMessage(Component.translatable("message.countrysidedays.need_herb_first"));
                 return;
             }
 
@@ -71,24 +71,22 @@ public final class KitchenInteractionHandler {
                 player.drop(result, false);
             }
             data.recordPreparedMeal();
-            player.displayClientMessage(
-                    Component.translatable("message.countrysidedays.stew_completed", data.mealsPrepared()),
-                    true
+            player.sendOverlayMessage(
+                    Component.translatable("message.countrysidedays.stew_completed", data.mealsPrepared())
             );
             return;
         }
 
         if (heldItem.is(ModItems.RECIPE_NOTEBOOK.get())) {
             BlockPos anchor = data.restaurantAnchor().orElse(pos);
-            player.displayClientMessage(
+            player.sendSystemMessage(
                     Component.translatable(
                             "message.countrysidedays.notebook_status",
                             anchor.getX(),
                             anchor.getY(),
                             anchor.getZ(),
                             data.mealsPrepared()
-                    ),
-                    false
+                    )
             );
             return;
         }
@@ -96,7 +94,7 @@ public final class KitchenInteractionHandler {
         String statusKey = data.hasHerbPreparation(pos)
                 ? "message.countrysidedays.counter_waiting_for_fish"
                 : "message.countrysidedays.counter_waiting_for_herb";
-        player.displayClientMessage(Component.translatable(statusKey), true);
+        player.sendOverlayMessage(Component.translatable(statusKey));
     }
 
     private static void consumeOneUnlessCreative(Player player, ItemStack stack) {
