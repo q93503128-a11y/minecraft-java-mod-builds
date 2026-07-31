@@ -2,6 +2,6 @@
   "pack": {
     "min_format": [88, 0],
     "max_format": [107, 1],
-    "description": "Shader Lab Dreamscape 0.4 Iris shaderpack bootstrap resources"
+    "description": "Shader Lab Dreamscape 0.5 Iris world shader bootstrap resources"
   }
 }
