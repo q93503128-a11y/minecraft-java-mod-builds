@@ -23,6 +23,7 @@ public final class CountrysideWorldData extends SavedData {
             CountrysideWorldData::new,
             RecordCodecBuilder.create(instance -> instance.group(
                     Codec.LONG.optionalFieldOf("restaurant_anchor").forGetter(data -> data.restaurantAnchor),
+                    Codec.LONG.optionalFieldOf("homestead_origin").forGetter(data -> data.homesteadOrigin),
                     Codec.LONG.listOf().optionalFieldOf("herb_preparations", List.of())
                             .forGetter(data -> List.copyOf(data.herbPreparations)),
                     Codec.INT.optionalFieldOf("meals_prepared", 0).forGetter(CountrysideWorldData::mealsPrepared)
@@ -30,15 +31,22 @@ public final class CountrysideWorldData extends SavedData {
     );
 
     private Optional<Long> restaurantAnchor;
+    private Optional<Long> homesteadOrigin;
     private final Set<Long> herbPreparations;
     private int mealsPrepared;
 
     public CountrysideWorldData() {
-        this(Optional.empty(), List.of(), 0);
+        this(Optional.empty(), Optional.empty(), List.of(), 0);
     }
 
-    private CountrysideWorldData(Optional<Long> restaurantAnchor, List<Long> herbPreparations, int mealsPrepared) {
+    private CountrysideWorldData(
+            Optional<Long> restaurantAnchor,
+            Optional<Long> homesteadOrigin,
+            List<Long> herbPreparations,
+            int mealsPrepared
+    ) {
         this.restaurantAnchor = restaurantAnchor;
+        this.homesteadOrigin = homesteadOrigin;
         this.herbPreparations = new HashSet<>(herbPreparations);
         this.mealsPrepared = Math.max(0, mealsPrepared);
     }
@@ -51,11 +59,24 @@ public final class CountrysideWorldData extends SavedData {
         return restaurantAnchor.map(BlockPos::of);
     }
 
+    public Optional<BlockPos> homesteadOrigin() {
+        return homesteadOrigin.map(BlockPos::of);
+    }
+
     public boolean claimRestaurantAnchor(BlockPos pos) {
         if (restaurantAnchor.isPresent()) {
             return false;
         }
         restaurantAnchor = Optional.of(pos.asLong());
+        setDirty();
+        return true;
+    }
+
+    public boolean claimHomesteadOrigin(BlockPos pos) {
+        if (homesteadOrigin.isPresent()) {
+            return false;
+        }
+        homesteadOrigin = Optional.of(pos.asLong());
         setDirty();
         return true;
     }
@@ -82,7 +103,8 @@ public final class CountrysideWorldData extends SavedData {
 
     /**
      * Removes temporary cooking state when a kitchen counter is destroyed.
-     * If the destroyed counter was the restaurant anchor, a future counter can claim the anchor.
+     * The homestead origin remains permanent so the whole settlement is never
+     * duplicated merely because a player remodelled or removed the first counter.
      */
     public boolean removeKitchenState(BlockPos pos) {
         long packedPos = pos.asLong();
