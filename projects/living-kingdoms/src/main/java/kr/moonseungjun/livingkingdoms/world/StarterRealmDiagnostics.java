@@ -11,24 +11,18 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Bounded startup diagnostic used by CI and explicit developer verification.
- * It is inert in normal games unless LIVING_KINGDOMS_CI_REALM_TEST=1.
- */
+/** Bounded CI-only verification for the authored starter realm. */
 public final class StarterRealmDiagnostics {
     private StarterRealmDiagnostics() {
     }
 
     public static void runIfRequested(MinecraftServer server) {
-        if (!"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) {
-            return;
-        }
+        if (!"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
 
         ServerLevel realm = server.getLevel(StarterRealmManager.REALM_KEY);
-        if (realm == null) {
-            throw new IllegalStateException("Living Kingdoms realm is unavailable during diagnostics");
-        }
+        if (realm == null) throw new IllegalStateException("Living Kingdoms realm is unavailable during diagnostics");
 
+        long started = System.nanoTime();
         try {
             Method ensureHomeland = StarterRealmManager.class.getDeclaredMethod(
                     "ensureHomeland", ServerLevel.class, String.class
@@ -41,7 +35,7 @@ public final class StarterRealmDiagnostics {
 
             for (String homelandId : PlayableOriginCatalog.HOMELANDS) {
                 invoke(ensureHomeland, realm, homelandId);
-                StarterRealmUpgradeManager.ensureRegion(realm, homelandId);
+                AuthoredRealmManager.ensureRegion(realm, homelandId);
             }
             for (PlayableOriginCatalog.ResidenceOption residence : PlayableOriginCatalog.residences().values()) {
                 invoke(prepareSpawn, realm, residence);
@@ -50,17 +44,15 @@ public final class StarterRealmDiagnostics {
 
             StarterRealmSavedData state = realm.getDataStorage().computeIfAbsent(StarterRealmSavedData.TYPE);
             if (state.generatedRegionCount() != PlayableOriginCatalog.HOMELANDS.size()) {
-                throw new IllegalStateException(
-                        "Expected " + PlayableOriginCatalog.HOMELANDS.size()
-                                + " generated starter homelands but found " + state.generatedRegionCount()
-                );
+                throw new IllegalStateException("Expected " + PlayableOriginCatalog.HOMELANDS.size()
+                        + " generated starter homelands but found " + state.generatedRegionCount());
             }
 
             StarterRealmUpgradeSavedData upgrades = realm.getDataStorage()
                     .computeIfAbsent(StarterRealmUpgradeSavedData.TYPE);
             for (String homelandId : PlayableOriginCatalog.HOMELANDS) {
-                if (upgrades.revision(homelandId) < 2) {
-                    throw new IllegalStateException("Missing authored terrain upgrade for " + homelandId);
+                if (upgrades.revision(homelandId) < AuthoredRealmManager.CURRENT_REVISION) {
+                    throw new IllegalStateException("Missing authored terrain revision for " + homelandId);
                 }
             }
 
@@ -69,10 +61,13 @@ public final class StarterRealmDiagnostics {
             verifyTerrainVariation(realm, -1170, 38, "kardum_league");
             verifyErdenLotDrainage(realm);
 
+            long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
+            if (elapsedMs > 180_000L) {
+                throw new IllegalStateException("Authored realm migration exceeded 180 seconds: " + elapsedMs + "ms");
+            }
             LivingKingdoms.LOGGER.info(
-                    "LK_REALM_DIAGNOSTIC_PASS regions={} residences={} upgrades=2 terrain_varied=true lots_drained=true",
-                    state.generatedRegionCount(),
-                    PlayableOriginCatalog.residences().size()
+                    "LK_REALM_DIAGNOSTIC_PASS regions={} residences={} upgrades=3 terrain_varied=true lots_drained=true migration_ms={}",
+                    state.generatedRegionCount(), PlayableOriginCatalog.residences().size(), elapsedMs
             );
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Living Kingdoms starter realm diagnostic could not run", exception);
@@ -84,10 +79,7 @@ public final class StarterRealmDiagnostics {
         method.invoke(null, arguments);
     }
 
-    private static void verifySpawn(
-            ServerLevel realm,
-            PlayableOriginCatalog.ResidenceOption residence
-    ) {
+    private static void verifySpawn(ServerLevel realm, PlayableOriginCatalog.ResidenceOption residence) {
         BlockPos feet = new BlockPos(residence.spawnX(), residence.spawnY(), residence.spawnZ());
         BlockPos floor = feet.below();
         if (realm.getBlockState(floor).isAir()) {
@@ -104,7 +96,7 @@ public final class StarterRealmDiagnostics {
     private static void verifyTerrainVariation(ServerLevel realm, int cx, int cz, String regionId) {
         Set<Integer> heights = new HashSet<>();
         for (int[] offset : new int[][]{
-                {90, 0}, {110, 35}, {-125, 42}, {75, -130}, {-150, -60}, {165, 70}
+                {92, 4}, {112, 36}, {-124, 44}, {76, -128}, {-148, -60}, {164, 72}
         }) {
             heights.add(surfaceY(realm, cx + offset[0], cz + offset[1]));
         }
@@ -115,10 +107,8 @@ public final class StarterRealmDiagnostics {
 
     private static void verifyErdenLotDrainage(ServerLevel realm) {
         for (BlockPos pos : new BlockPos[]{
-                new BlockPos(6, 66, 4),
-                new BlockPos(18, 66, 10),
-                new BlockPos(103, 66, 65),
-                new BlockPos(-113, 66, 84)
+                new BlockPos(6, 66, 4), new BlockPos(18, 66, 10),
+                new BlockPos(103, 66, 65), new BlockPos(-113, 66, 84)
         }) {
             if (!realm.getBlockState(pos).isAir()) {
                 throw new IllegalStateException("Erden building approach remains blocked or buried at " + pos);
