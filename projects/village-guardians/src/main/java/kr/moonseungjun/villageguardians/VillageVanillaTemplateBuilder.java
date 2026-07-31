@@ -20,10 +20,22 @@ final class VillageVanillaTemplateBuilder {
             BlockPos footprintOrigin,
             int groundY,
             VillageBuildingCatalog.Spec spec) {
-        if (spec.templateId().isBlank()) {
+        if (place(level, footprintOrigin, groundY, spec, spec.templateId())) {
+            return true;
+        }
+        return place(level, footprintOrigin, groundY, spec, spec.fallbackTemplateId());
+    }
+
+    private static boolean place(
+            ServerLevel level,
+            BlockPos footprintOrigin,
+            int groundY,
+            VillageBuildingCatalog.Spec spec,
+            String templateId) {
+        if (templateId.isBlank()) {
             return false;
         }
-        Identifier id = Identifier.tryParse(spec.templateId());
+        Identifier id = Identifier.tryParse(templateId);
         if (id == null) {
             return false;
         }
