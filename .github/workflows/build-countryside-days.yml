@@ -127,6 +127,11 @@ jobs:
           if [ -f ci-logs/clean-build.log ]; then
             {
               echo
+              echo '## First compiler/build errors'
+              echo '```text'
+              grep -n -B 5 -A 12 -E '(^|[[:space:]])error:|FAILURE: Build failed|What went wrong:' ci-logs/clean-build.log | head -n 220 || true
+              echo '```'
+              echo
               echo '## Clean-build log tail'
               echo '```text'
               tail -n 120 ci-logs/clean-build.log
