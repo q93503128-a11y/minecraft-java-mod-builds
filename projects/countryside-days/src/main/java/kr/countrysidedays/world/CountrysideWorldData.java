@@ -6,6 +6,7 @@ import kr.countrysidedays.CountrysideDays;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
@@ -30,20 +31,23 @@ public final class CountrysideWorldData extends SavedData {
                     Codec.INT.optionalFieldOf("customers_served", 0).forGetter(CountrysideWorldData::customersServed),
                     Codec.INT.optionalFieldOf("village_coins_earned", 0).forGetter(CountrysideWorldData::villageCoinsEarned),
                     Codec.LONG.optionalFieldOf("last_customer_service_day", -1L)
-                            .forGetter(CountrysideWorldData::lastCustomerServiceDay)
+                            .forGetter(CountrysideWorldData::lastCustomerServiceDay),
+                    Codec.LONG.listOf().optionalFieldOf("terrain_chunks", List.of())
+                            .forGetter(data -> List.copyOf(data.terrainChunks))
             ).apply(instance, CountrysideWorldData::new))
     );
 
     private Optional<Long> restaurantAnchor;
     private Optional<Long> homesteadOrigin;
     private final Set<Long> herbPreparations;
+    private final Set<Long> terrainChunks;
     private int mealsPrepared;
     private int customersServed;
     private int villageCoinsEarned;
     private long lastCustomerServiceDay;
 
     public CountrysideWorldData() {
-        this(Optional.empty(), Optional.empty(), List.of(), 0, 0, 0, -1L);
+        this(Optional.empty(), Optional.empty(), List.of(), 0, 0, 0, -1L, List.of());
     }
 
     private CountrysideWorldData(
@@ -53,11 +57,13 @@ public final class CountrysideWorldData extends SavedData {
             int mealsPrepared,
             int customersServed,
             int villageCoinsEarned,
-            long lastCustomerServiceDay
+            long lastCustomerServiceDay,
+            List<Long> terrainChunks
     ) {
         this.restaurantAnchor = restaurantAnchor;
         this.homesteadOrigin = homesteadOrigin;
         this.herbPreparations = new HashSet<>(herbPreparations);
+        this.terrainChunks = new HashSet<>(terrainChunks);
         this.mealsPrepared = Math.max(0, mealsPrepared);
         this.customersServed = Math.max(0, customersServed);
         this.villageCoinsEarned = Math.max(0, villageCoinsEarned);
@@ -112,6 +118,18 @@ public final class CountrysideWorldData extends SavedData {
             setDirty();
         }
         return removed;
+    }
+
+    public boolean isTerrainChunkPrepared(int chunkX, int chunkZ) {
+        return terrainChunks.contains(ChunkPos.asLong(chunkX, chunkZ));
+    }
+
+    public boolean markTerrainChunkPrepared(int chunkX, int chunkZ) {
+        boolean added = terrainChunks.add(ChunkPos.asLong(chunkX, chunkZ));
+        if (added) {
+            setDirty();
+        }
+        return added;
     }
 
     /**
