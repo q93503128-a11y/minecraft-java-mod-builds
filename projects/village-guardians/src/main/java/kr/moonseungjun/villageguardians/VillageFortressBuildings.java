@@ -17,7 +17,7 @@ final class VillageFortressBuildings {
     static void build(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
         VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
         BlockPos origin = center.offset(spec.dx(), 0, spec.dz());
-        VillageBuildingShell.build(level, origin, center.getY() - 1, spec);
+        VillageStructureShell.build(level, origin, center.getY() - 1, spec);
         VillageBuildingCatalog.furnish(level, origin, spec, building);
     }
 
@@ -28,8 +28,7 @@ final class VillageFortressBuildings {
 
     static void remove(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
         if (building == VillageProgressionSystem.Building.WALLS) return;
-        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
-        VillageBuildingShell.clear(level, center, spec);
+        VillageStructureShell.clear(level, center, VillageBuildingCatalog.spec(building));
     }
 
     static BlockPos center(BlockPos villageCenter, VillageProgressionSystem.Building building) {
