@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
+import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -11,6 +12,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
@@ -60,5 +62,10 @@ public final class LivingKingdoms {
                 && OriginProfileManager.requiresSelection(player.getUUID())) {
             event.setAmount(0.0F);
         }
+    }
+
+    @SubscribeEvent
+    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        StarterNpcManager.handleInteraction(event);
     }
 }
