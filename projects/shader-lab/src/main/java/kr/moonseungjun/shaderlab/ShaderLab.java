@@ -14,34 +14,41 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.Properties;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Mod(value = ShaderLab.MOD_ID, dist = Dist.CLIENT)
 public final class ShaderLab {
     public static final String MOD_ID = "shaderlab";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String SHADERPACK_FILE = "ShaderLab-Reverie-0.6.zip";
-    private static final String SHADERPACK_RESOURCE = "/shaderpacks/" + SHADERPACK_FILE;
+    private static final String SHADERPACK_ARCHIVE = "ShaderLab-Reverie-0.7.zip";
+    private static final String SHADERPACK_DIRECTORY = "ShaderLab-Reverie-0.7";
+    private static final String SHADERPACK_RESOURCE = "/shaderpacks/" + SHADERPACK_ARCHIVE;
     private static final String[] OBSOLETE_SHADERPACKS = {
             "ShaderLab-Dreamscape-0.4.zip",
-            "ShaderLab-Dreamscape-0.5.zip"
+            "ShaderLab-Dreamscape-0.5.zip",
+            "ShaderLab-Reverie-0.6.zip",
+            "ShaderLab-Reverie-0.6",
+            "ShaderLab-Reverie-0.7.zip"
     };
 
     public ShaderLab(IEventBus modEventBus) {
         try {
-            installReverieShaderpack();
+            installReverieShaderpackDirectory();
         } catch (IOException exception) {
-            LOGGER.error("Shader Lab could not install the Reverie shaderpack", exception);
+            LOGGER.error("Shader Lab could not install the Reverie shaderpack directory", exception);
         }
 
         boolean irisLoaded = ModList.get().isLoaded("iris");
         boolean sodiumLoaded = ModList.get().isLoaded("sodium");
         LOGGER.info(
-                "Shader Lab Reverie bootstrap loaded (Iris={}, Sodium={}, pack={})",
+                "Shader Lab Reverie bootstrap loaded (Iris={}, Sodium={}, packDirectory={})",
                 irisLoaded,
                 sodiumLoaded,
-                SHADERPACK_FILE
+                SHADERPACK_DIRECTORY
         );
 
         if (!irisLoaded || !sodiumLoaded) {
@@ -52,28 +59,53 @@ public final class ShaderLab {
         }
     }
 
-    private static void installReverieShaderpack() throws IOException {
+    private static void installReverieShaderpackDirectory() throws IOException {
         Path gameDirectory = FMLPaths.GAMEDIR.get();
         Path shaderpacksDirectory = gameDirectory.resolve("shaderpacks");
-        Path destination = shaderpacksDirectory.resolve(SHADERPACK_FILE);
+        Path destination = shaderpacksDirectory.resolve(SHADERPACK_DIRECTORY);
+        Path temporary = shaderpacksDirectory.resolve(SHADERPACK_DIRECTORY + ".tmp");
         Files.createDirectories(shaderpacksDirectory);
 
         for (String obsoleteName : OBSOLETE_SHADERPACKS) {
-            Files.deleteIfExists(shaderpacksDirectory.resolve(obsoleteName));
+            deleteRecursively(shaderpacksDirectory.resolve(obsoleteName));
         }
+        deleteRecursively(temporary);
+        Files.createDirectories(temporary);
 
-        try (InputStream input = ShaderLab.class.getResourceAsStream(SHADERPACK_RESOURCE)) {
-            if (input == null) {
+        try (InputStream resource = ShaderLab.class.getResourceAsStream(SHADERPACK_RESOURCE)) {
+            if (resource == null) {
                 throw new IOException("Missing embedded shaderpack resource: " + SHADERPACK_RESOURCE);
             }
-
-            Path temporary = destination.resolveSibling(destination.getFileName() + ".tmp");
-            Files.copy(input, temporary, StandardCopyOption.REPLACE_EXISTING);
-            moveReplacing(temporary, destination);
+            try (ZipInputStream zip = new ZipInputStream(resource)) {
+                ZipEntry entry;
+                while ((entry = zip.getNextEntry()) != null) {
+                    Path output = temporary.resolve(entry.getName()).normalize();
+                    if (!output.startsWith(temporary)) {
+                        throw new IOException("Rejected unsafe shaderpack entry: " + entry.getName());
+                    }
+                    if (entry.isDirectory()) {
+                        Files.createDirectories(output);
+                    } else {
+                        Files.createDirectories(output.getParent());
+                        Files.copy(zip, output, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    zip.closeEntry();
+                }
+            }
+        } catch (IOException exception) {
+            deleteRecursively(temporary);
+            throw exception;
         }
 
+        if (!Files.isDirectory(temporary.resolve("shaders"))) {
+            deleteRecursively(temporary);
+            throw new IOException("Embedded Reverie archive did not contain a shaders directory");
+        }
+
+        deleteRecursively(destination);
+        moveReplacing(temporary, destination);
         configureIris(gameDirectory.resolve("config").resolve("iris.properties"));
-        LOGGER.info("Installed Shader Lab Reverie shaderpack at {}", destination);
+        LOGGER.info("Installed Shader Lab Reverie shaderpack directory at {}", destination);
     }
 
     private static void configureIris(Path irisConfig) throws IOException {
@@ -91,14 +123,29 @@ public final class ShaderLab {
             }
         }
 
-        properties.setProperty("shaderPack", SHADERPACK_FILE);
+        properties.setProperty("shaderPack", SHADERPACK_DIRECTORY);
         properties.setProperty("enableShaders", "true");
 
         Path temporary = irisConfig.resolveSibling("iris.properties.tmp");
         try (OutputStream output = Files.newOutputStream(temporary)) {
-            properties.store(output, "Shader Lab Reverie private test preset");
+            properties.store(output, "Shader Lab Reverie 0.7 dream PBR preset");
         }
         moveReplacing(temporary, irisConfig);
+    }
+
+    private static void deleteRecursively(Path root) throws IOException {
+        if (!Files.exists(root)) {
+            return;
+        }
+        if (Files.isDirectory(root)) {
+            try (var paths = Files.walk(root)) {
+                for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                    Files.deleteIfExists(path);
+                }
+            }
+        } else {
+            Files.deleteIfExists(root);
+        }
     }
 
     private static void moveReplacing(Path source, Path destination) throws IOException {
