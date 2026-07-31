@@ -27,6 +27,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.RIVER_FISH.get());
                         output.accept(ModItems.COUNTRY_STEW.get());
                         output.accept(ModItems.RECIPE_NOTEBOOK.get());
+                        output.accept(ModItems.VILLAGE_COIN.get());
                     })
                     .build()
     );
