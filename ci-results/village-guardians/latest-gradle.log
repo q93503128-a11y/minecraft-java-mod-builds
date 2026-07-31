@@ -15,13 +15,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.57s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.51s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
 [1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
+[1m*** Started working on [4mdownloadServer[0m[0m
  [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -30,7 +30,7 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 2.24s
+Total runtime: 1.88s
 
 
 > Task :compileJava
@@ -39,11 +39,34 @@ Total runtime: 2.24s
                                                         ^
   symbol:   method getTags()
   location: variable player of type ServerPlayer
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:241: error: cannot find symbol
-            VillageWorldSystem.applyUpgradeVisual(level, building, next);
-                              ^
-  symbol:   method applyUpgradeVisual(ServerLevel,Building,int)
-  location: class VillageWorldSystem
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:95: error: incompatible types: WeatheringCopperCollection<Block> cannot be converted to Block
+            case STOREHOUSE -> decorateUpgradePedestal(level, center.offset(-38, 0, 27), upgradeLevel, Blocks.COPPER_BLOCK);
+                                                                                                             ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:96: error: cannot find symbol
+            case BARRACKS -> decorateUpgradePedestal(level, center.offset(-38, 0, -17), upgradeLevel, Blocks.RED_WOOL);
+                                                                                                            ^
+  symbol:   variable RED_WOOL
+  location: class Blocks
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:289: error: cannot find symbol
+            setAbsolute(level, origin.getX() + 4, groundY + 2, origin.getZ() + z, Blocks.WHITE_WOOL);
+                                                                                        ^
+  symbol:   variable WHITE_WOOL
+  location: class Blocks
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:290: error: cannot find symbol
+            setAbsolute(level, origin.getX() + 16, groundY + 2, origin.getZ() + z, Blocks.WHITE_WOOL);
+                                                                                         ^
+  symbol:   variable WHITE_WOOL
+  location: class Blocks
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:406: error: cannot find symbol
+                    setAbsolute(level, x + dx, groundY + 4, absoluteZ, side > 0 ? Blocks.RED_WOOL : Blocks.WHITE_WOOL);
+                                                                                        ^
+  symbol:   variable RED_WOOL
+  location: class Blocks
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:406: error: cannot find symbol
+                    setAbsolute(level, x + dx, groundY + 4, absoluteZ, side > 0 ? Blocks.RED_WOOL : Blocks.WHITE_WOOL);
+                                                                                                          ^
+  symbol:   variable WHITE_WOOL
+  location: class Blocks
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java:130: error: cannot find symbol
         BlockPos center = VillageCouncilState.villageCenter().orElse(level.getSharedSpawnPos());
                                                                           ^
@@ -56,10 +79,11 @@ Total runtime: 2.24s
   location: variable mob of type Mob
 Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
-4 errors
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+9 errors
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785483829373.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785484036122.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
 
@@ -70,16 +94,40 @@ Execution failed for task ':compileJava'.
 > Compilation failed; see the compiler output below.
   Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java uses or overrides a deprecated API.
   Note: Recompile with -Xlint:deprecation for details.
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:95: error: incompatible types: WeatheringCopperCollection<Block> cannot be converted to Block
+              case STOREHOUSE -> decorateUpgradePedestal(level, center.offset(-38, 0, 27), upgradeLevel, Blocks.COPPER_BLOCK);
+                                                                                                               ^
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:96: error: cannot find symbol
+              case BARRACKS -> decorateUpgradePedestal(level, center.offset(-38, 0, -17), upgradeLevel, Blocks.RED_WOOL);
+                                                                                                              ^
+    symbol:   variable RED_WOOL
+    location: class Blocks
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:289: error: cannot find symbol
+              setAbsolute(level, origin.getX() + 4, groundY + 2, origin.getZ() + z, Blocks.WHITE_WOOL);
+                                                                                          ^
+    symbol:   variable WHITE_WOOL
+    location: class Blocks
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:290: error: cannot find symbol
+              setAbsolute(level, origin.getX() + 16, groundY + 2, origin.getZ() + z, Blocks.WHITE_WOOL);
+                                                                                           ^
+    symbol:   variable WHITE_WOOL
+    location: class Blocks
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:406: error: cannot find symbol
+                      setAbsolute(level, x + dx, groundY + 4, absoluteZ, side > 0 ? Blocks.RED_WOOL : Blocks.WHITE_WOOL);
+                                                                                          ^
+    symbol:   variable RED_WOOL
+    location: class Blocks
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:406: error: cannot find symbol
+                      setAbsolute(level, x + dx, groundY + 4, absoluteZ, side > 0 ? Blocks.RED_WOOL : Blocks.WHITE_WOOL);
+                                                                                                            ^
+    symbol:   variable WHITE_WOOL
+    location: class Blocks
+  Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java:64: error: cannot find symbol
           if (stack.getItem() == Items.GOAT_HORN && player.getTags().contains(MAYOR_CALLER_TAG)) {
                                                           ^
     symbol:   method getTags()
     location: variable player of type ServerPlayer
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:241: error: cannot find symbol
-              VillageWorldSystem.applyUpgradeVisual(level, building, next);
-                                ^
-    symbol:   method applyUpgradeVisual(ServerLevel,Building,int)
-    location: class VillageWorldSystem
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java:130: error: cannot find symbol
           BlockPos center = VillageCouncilState.villageCenter().orElse(level.getSharedSpawnPos());
                                                                             ^
@@ -90,7 +138,7 @@ Execution failed for task ':compileJava'.
                  ^
     symbol:   method moveTo(double,int,double,float,float)
     location: variable mob of type Mob
-  4 errors
+  9 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -129,52 +177,45 @@ org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':compile
 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
-	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:146)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:131)
-	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
-	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$10(DefaultBuildLifecycleController.java:313)
-	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
-	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$8(StateTransitionController.java:177)
-	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:45)
-	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:177)
-	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:304)
-	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:269)
-	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:42)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:267)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:259)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
-	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:181)
-	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
-	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:198)
-	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
-	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:198)
 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
 Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Compilation failed; see the compiler output below.
 Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:95: error: incompatible types: WeatheringCopperCollection<Block> cannot be converted to Block
+            case STOREHOUSE -> decorateUpgradePedestal(level, center.offset(-38, 0, 27), upgradeLevel, Blocks.COPPER_BLOCK);
+                                                                                                             ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:96: error: cannot find symbol
+            case BARRACKS -> decorateUpgradePedestal(level, center.offset(-38, 0, -17), upgradeLevel, Blocks.RED_WOOL);
+                                                                                                            ^
+  symbol:   variable RED_WOOL
+  location: class Blocks
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:289: error: cannot find symbol
+            setAbsolute(level, origin.getX() + 4, groundY + 2, origin.getZ() + z, Blocks.WHITE_WOOL);
+                                                                                        ^
+  symbol:   variable WHITE_WOOL
+  location: class Blocks
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:290: error: cannot find symbol
+            setAbsolute(level, origin.getX() + 16, groundY + 2, origin.getZ() + z, Blocks.WHITE_WOOL);
+                                                                                         ^
+  symbol:   variable WHITE_WOOL
+  location: class Blocks
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:406: error: cannot find symbol
+                    setAbsolute(level, x + dx, groundY + 4, absoluteZ, side > 0 ? Blocks.RED_WOOL : Blocks.WHITE_WOOL);
+                                                                                        ^
+  symbol:   variable RED_WOOL
+  location: class Blocks
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:406: error: cannot find symbol
+                    setAbsolute(level, x + dx, groundY + 4, absoluteZ, side > 0 ? Blocks.RED_WOOL : Blocks.WHITE_WOOL);
+                                                                                                          ^
+  symbol:   variable WHITE_WOOL
+  location: class Blocks
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java:64: error: cannot find symbol
         if (stack.getItem() == Items.GOAT_HORN && player.getTags().contains(MAYOR_CALLER_TAG)) {
                                                         ^
   symbol:   method getTags()
   location: variable player of type ServerPlayer
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:241: error: cannot find symbol
-            VillageWorldSystem.applyUpgradeVisual(level, building, next);
-                              ^
-  symbol:   method applyUpgradeVisual(ServerLevel,Building,int)
-  location: class VillageWorldSystem
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java:130: error: cannot find symbol
         BlockPos center = VillageCouncilState.villageCenter().orElse(level.getSharedSpawnPos());
                                                                           ^
@@ -185,7 +226,7 @@ Note: Recompile with -Xlint:deprecation for details.
                ^
   symbol:   method moveTo(double,int,double,float,float)
   location: variable mob of type Mob
-4 errors
+9 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -311,9 +352,9 @@ Note: Recompile with -Xlint:deprecation for details.
 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:31)
 	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:64)
 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:132)
-	... 61 more
+	... 30 more
 
 
-BUILD FAILED in 22s
+BUILD FAILED in 20s
 5 actionable tasks: 4 executed, 1 up-to-date
 Configuration cache entry stored.
