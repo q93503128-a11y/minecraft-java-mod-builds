@@ -1,10 +1,10 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Vec3i;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.BlockIgnoreProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -32,20 +32,24 @@ final class VillageVanillaTemplateBuilder {
             return false;
         }
 
-        Vec3i size = template.getSize();
-        int offsetX = Math.max(0, (spec.width() - size.getX()) / 2);
-        int offsetZ = Math.max(0, (spec.depth() - size.getZ()) / 2);
-        BlockPos placement = new BlockPos(
-                footprintOrigin.getX() + offsetX,
-                groundY + 1,
-                footprintOrigin.getZ() + offsetZ);
         StructurePlaceSettings settings = new StructurePlaceSettings()
+                .setRotation(spec.rotation())
                 .setIgnoreEntities(true)
                 .setKnownShape(true)
                 .addProcessor(new BlockIgnoreProcessor(List.of(
                         Blocks.STRUCTURE_BLOCK,
                         Blocks.STRUCTURE_VOID,
                         Blocks.JIGSAW)));
+
+        BoundingBox localBounds = template.getBoundingBox(settings, BlockPos.ZERO);
+        int rotatedWidth = localBounds.maxX() - localBounds.minX() + 1;
+        int rotatedDepth = localBounds.maxZ() - localBounds.minZ() + 1;
+        int offsetX = Math.max(0, (spec.width() - rotatedWidth) / 2) - localBounds.minX();
+        int offsetZ = Math.max(0, (spec.depth() - rotatedDepth) / 2) - localBounds.minZ();
+        BlockPos placement = new BlockPos(
+                footprintOrigin.getX() + offsetX,
+                groundY + 1,
+                footprintOrigin.getZ() + offsetZ);
         return template.placeInWorld(level, placement, placement, settings, level.getRandom(), 2);
     }
 }
