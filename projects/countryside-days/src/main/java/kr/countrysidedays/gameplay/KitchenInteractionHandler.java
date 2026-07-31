@@ -17,46 +17,32 @@ public final class KitchenInteractionHandler {
     }
 
     public static void onUseItemOnBlock(UseItemOnBlockEvent event) {
-        if (event.getUsePhase() != UseItemOnBlockEvent.UsePhase.BLOCK) {
-            return;
-        }
-        if (!event.getLevel().getBlockState(event.getPos()).is(ModBlocks.COUNTRY_KITCHEN_COUNTER.get())) {
-            return;
-        }
+        if (event.getUsePhase() != UseItemOnBlockEvent.UsePhase.BLOCK) return;
+        if (!event.getLevel().getBlockState(event.getPos()).is(ModBlocks.COUNTRY_KITCHEN_COUNTER.get())) return;
 
         ItemStack heldItem = event.getItemStack();
         boolean supportedInteraction = heldItem.isEmpty()
                 || heldItem.is(ModItems.WILD_HERB.get())
-                || heldItem.is(ModItems.RIVER_FISH.get())
-                || heldItem.is(ModItems.RECIPE_NOTEBOOK.get());
-        if (!supportedInteraction) {
-            return;
-        }
+                || heldItem.is(ModItems.RIVER_FISH.get());
+        if (!supportedInteraction) return;
 
         if (event.getLevel() instanceof ServerLevel serverLevel) {
             Player player = event.getPlayer();
-            if (player != null) {
-                handleServerInteraction(serverLevel, event.getPos(), player, heldItem);
-            }
+            if (player != null) handleServerInteraction(serverLevel, event.getPos(), player, heldItem);
         }
 
         event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
     }
 
     public static void onBlockBreak(BreakBlockEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel serverLevel)) {
-            return;
-        }
-        if (!event.getState().is(ModBlocks.COUNTRY_KITCHEN_COUNTER.get())) {
-            return;
-        }
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
+        if (!event.getState().is(ModBlocks.COUNTRY_KITCHEN_COUNTER.get())) return;
         CountrysideWorldData.get(serverLevel.getServer()).removeKitchenState(event.getPos());
     }
 
     private static void handleServerInteraction(ServerLevel level, BlockPos pos, Player player, ItemStack heldItem) {
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        boolean firstAnchor = data.claimRestaurantAnchor(pos);
-        if (firstAnchor) {
+        if (data.claimRestaurantAnchor(pos)) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.restaurant_anchor_set"));
         }
 
@@ -75,44 +61,25 @@ public final class KitchenInteractionHandler {
                 player.sendOverlayMessage(Component.translatable("message.countrysidedays.need_herb_first"));
                 return;
             }
-
             consumeOneUnlessCreative(player, heldItem);
             ItemStack result = ModItems.COUNTRY_STEW.get().getDefaultInstance();
-            if (!player.addItem(result)) {
-                player.drop(result, false);
-            }
+            if (!player.addItem(result)) player.drop(result, false);
             data.recordPreparedMeal();
-            player.sendOverlayMessage(
-                    Component.translatable("message.countrysidedays.stew_completed", data.mealsPrepared())
-            );
+            player.sendOverlayMessage(Component.translatable(
+                    "message.countrysidedays.stew_completed",
+                    data.mealsPrepared()
+            ));
             return;
         }
 
-        if (heldItem.is(ModItems.RECIPE_NOTEBOOK.get())) {
-            BlockPos anchor = data.restaurantAnchor().orElse(pos);
-            player.sendSystemMessage(
-                    Component.translatable(
-                            "message.countrysidedays.notebook_status",
-                            anchor.getX(),
-                            anchor.getY(),
-                            anchor.getZ(),
-                            data.mealsPrepared(),
-                            data.customersServed(),
-                            data.villageCoinsEarned()
-                    )
-            );
-            return;
-        }
-
-        String statusKey = data.hasHerbPreparation(pos)
-                ? "message.countrysidedays.counter_waiting_for_fish"
-                : "message.countrysidedays.counter_waiting_for_herb";
-        player.sendOverlayMessage(Component.translatable(statusKey));
+        player.sendOverlayMessage(Component.translatable(
+                data.hasHerbPreparation(pos)
+                        ? "message.countrysidedays.counter_waiting_for_fish"
+                        : "message.countrysidedays.counter_waiting_for_herb"
+        ));
     }
 
     private static void consumeOneUnlessCreative(Player player, ItemStack stack) {
-        if (!player.getAbilities().instabuild) {
-            stack.shrink(1);
-        }
+        if (!player.getAbilities().instabuild) stack.shrink(1);
     }
 }
