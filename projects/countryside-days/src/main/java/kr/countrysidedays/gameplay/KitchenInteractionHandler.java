@@ -1,0 +1,107 @@
+package kr.countrysidedays.gameplay;
+
+import kr.countrysidedays.registry.ModBlocks;
+import kr.countrysidedays.registry.ModItems;
+import kr.countrysidedays.world.CountrysideWorldData;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.event.entity.player.UseItemOnBlockEvent;
+
+public final class KitchenInteractionHandler {
+    private KitchenInteractionHandler() {
+    }
+
+    public static void onUseItemOnBlock(UseItemOnBlockEvent event) {
+        if (event.getUsePhase() != UseItemOnBlockEvent.UsePhase.BLOCK) {
+            return;
+        }
+        if (!event.getLevel().getBlockState(event.getPos()).is(ModBlocks.COUNTRY_KITCHEN_COUNTER.get())) {
+            return;
+        }
+
+        ItemStack heldItem = event.getItemStack();
+        boolean supportedInteraction = heldItem.isEmpty()
+                || heldItem.is(ModItems.WILD_HERB.get())
+                || heldItem.is(ModItems.RIVER_FISH.get())
+                || heldItem.is(ModItems.RECIPE_NOTEBOOK.get());
+        if (!supportedInteraction) {
+            return;
+        }
+
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            Player player = event.getPlayer();
+            if (player != null) {
+                handleServerInteraction(serverLevel, event.getPos(), player, heldItem);
+            }
+        }
+
+        event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
+    }
+
+    private static void handleServerInteraction(ServerLevel level, BlockPos pos, Player player, ItemStack heldItem) {
+        CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
+        boolean firstAnchor = data.claimRestaurantAnchor(pos);
+        if (firstAnchor) {
+            player.displayClientMessage(Component.translatable("message.countrysidedays.restaurant_anchor_set"), false);
+        }
+
+        if (heldItem.is(ModItems.WILD_HERB.get())) {
+            if (data.addHerbPreparation(pos)) {
+                consumeOneUnlessCreative(player, heldItem);
+                player.displayClientMessage(Component.translatable("message.countrysidedays.herb_prepared"), true);
+            } else {
+                player.displayClientMessage(Component.translatable("message.countrysidedays.herb_already_prepared"), true);
+            }
+            return;
+        }
+
+        if (heldItem.is(ModItems.RIVER_FISH.get())) {
+            if (!data.consumeHerbPreparation(pos)) {
+                player.displayClientMessage(Component.translatable("message.countrysidedays.need_herb_first"), true);
+                return;
+            }
+
+            consumeOneUnlessCreative(player, heldItem);
+            ItemStack result = ModItems.COUNTRY_STEW.get().getDefaultInstance();
+            if (!player.addItem(result)) {
+                player.drop(result, false);
+            }
+            data.recordPreparedMeal();
+            player.displayClientMessage(
+                    Component.translatable("message.countrysidedays.stew_completed", data.mealsPrepared()),
+                    true
+            );
+            return;
+        }
+
+        if (heldItem.is(ModItems.RECIPE_NOTEBOOK.get())) {
+            BlockPos anchor = data.restaurantAnchor().orElse(pos);
+            player.displayClientMessage(
+                    Component.translatable(
+                            "message.countrysidedays.notebook_status",
+                            anchor.getX(),
+                            anchor.getY(),
+                            anchor.getZ(),
+                            data.mealsPrepared()
+                    ),
+                    false
+            );
+            return;
+        }
+
+        String statusKey = data.hasHerbPreparation(pos)
+                ? "message.countrysidedays.counter_waiting_for_fish"
+                : "message.countrysidedays.counter_waiting_for_herb";
+        player.displayClientMessage(Component.translatable(statusKey), true);
+    }
+
+    private static void consumeOneUnlessCreative(Player player, ItemStack stack) {
+        if (!player.getAbilities().instabuild) {
+            stack.shrink(1);
+        }
+    }
+}
