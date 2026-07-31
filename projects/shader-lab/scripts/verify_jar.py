@@ -9,7 +9,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-SHADERPACK = "shaderpacks/ShaderLab-Reverie-0.7.zip"
+SHADERPACK = "shaderpacks/ShaderLab-Reverie-0.8.zip"
 OS_UTILS = "net/caffeinemc/mods/sodium/client/compatibility/environment/OsUtils.class"
 REQUIRED_EXACT = {
     "META-INF/neoforge.mods.toml",
@@ -102,7 +102,7 @@ def main() -> None:
             fail("pack.mcmeta does not cover Minecraft 26.2 formats")
 
         mods_toml = jar.read("META-INF/neoforge.mods.toml").decode("utf-8")
-        for token in ('modId="iris"', 'modId="sodium"', 'type="required"', 'version="0.7.0-alpha.8"'):
+        for token in ('modId="iris"', 'modId="sodium"', 'type="required"', 'version="0.8.0-alpha.9"'):
             if token not in mods_toml:
                 fail(f"NeoForge metadata is missing {token}")
 
@@ -133,6 +133,7 @@ def main() -> None:
                 "shaders/settings.glsl",
                 "shaders/programs/gbuffers/opaque.glsl",
                 "shaders/include/atmospherics/fog.glsl",
+                "shaders/include/atmospherics/atmosphere.glsl",
             ):
                 if required not in shader_names:
                     fail(f"embedded shaderpack is missing {required}")
@@ -140,19 +141,26 @@ def main() -> None:
                 fail("embedded Noble shaderpack is missing GPLv3 license text")
 
             settings = shaderpack.read("shaders/settings.glsl").decode("utf-8", errors="ignore")
-            require_regex(settings, r"const\s+int\s+shadowMapResolution\s*=\s*2048\s*;", "shadow map resolution")
-            require_regex(settings, r"const\s+float\s+shadowDistance\s*=\s*128\s*;", "shadow distance")
+            require_regex(settings, r"const\s+int\s+shadowMapResolution\s*=\s*1024\s*;", "shadow map resolution")
+            require_regex(settings, r"const\s+float\s+shadowDistance\s*=\s*64\s*;", "shadow distance")
             for name, value in (
-                ("SHADOW_SAMPLES", "6"),
-                ("REFLECTIONS", "1"),
+                ("SUNLIGHT_STRENGTH", "0.65"),
+                ("SHADOW_SAMPLES", "4"),
+                ("REFLECTIONS", "0"),
                 ("REFRACTIONS", "1"),
-                ("FOG_ALTITUDE", "72"),
-                ("FOG_THICKNESS", "40"),
-                ("FOG_DENSITY", "0.45"),
-                ("WATER_OCTAVES", "12"),
+                ("CLOUDMAP", "0"),
+                ("CLOUDS_LAYER0_ENABLED", "0"),
+                ("CLOUDS_LAYER1_ENABLED", "0"),
+                ("AIR_FOG", "1"),
+                ("FOG_ALTITUDE", "36"),
+                ("FOG_THICKNESS", "100"),
+                ("FOG_DENSITY", "0.55"),
+                ("WATER_OCTAVES", "6"),
                 ("POM", "0"),
-                ("LUT", "15"),
-                ("BLOOM_STRENGTH", "0.20"),
+                ("EXPOSURE", "1"),
+                ("LUT", "0"),
+                ("BLOOM_STRENGTH", "0.08"),
+                ("GLARE", "0"),
                 ("DOF", "0"),
                 ("VIGNETTE", "0"),
             ):
@@ -160,20 +168,45 @@ def main() -> None:
 
             opaque = shaderpack.read("shaders/programs/gbuffers/opaque.glsl").decode("utf-8", errors="ignore")
             require(opaque, "discard; return;", "foliage alpha fix")
+
             fog = shaderpack.read("shaders/include/atmospherics/fog.glsl").decode("utf-8", errors="ignore")
             for token in (
                 "reverieFogAttenuation",
                 "reverieFogScattering",
-                "densityMult     = mix(0.55, 0.80",
-                "fogFrequency    = mix(0.42, 0.80",
+                "0.45 + wetness * 0.35",
+                "mix(0.95, 1.0",
+                "reverieGroundLayer",
             ):
-                require(fog, token, "Reverie low fog patch")
+                require(fog, token, "Reverie visible low fog patch")
+
+            atmosphere = shaderpack.read("shaders/include/atmospherics/atmosphere.glsl").decode("utf-8", errors="ignore")
+            for token in (
+                "vec3 physicalSky",
+                "nightHorizon",
+                "dayZenith",
+                "ribbonWave",
+                "return mix(physicalSky, dreamSky, 0.76)",
+            ):
+                require(atmosphere, token, "Reverie lightweight dream sky")
+
+            workgroup_lines: list[str] = []
+            for name in shader_names:
+                if not name.endswith((".glsl", ".csh", ".fsh", ".vsh")):
+                    continue
+                text = shaderpack.read(name).decode("utf-8", errors="ignore")
+                workgroup_lines.extend(
+                    line.strip() for line in text.splitlines() if "workGroupsRender" in line and "const vec2" in line
+                )
+            if not workgroup_lines:
+                fail("no compute workGroupsRender directives were found")
+            if any("vec2(1.0, 1.0)" not in line for line in workgroup_lines):
+                fail(f"non-literal Iris workGroupsRender directive remains: {workgroup_lines[:5]}")
 
             evidence = json.loads(shaderpack.read("MODRINTH_LICENSE_EVIDENCE.json"))
             if evidence.get("project_slug") != "noble" or evidence.get("version_id") != "3cIADbit":
                 fail("Noble Modrinth evidence is invalid")
-            if evidence.get("shaderlab_release") != "Reverie 0.7":
-                fail("embedded preset metadata is not Reverie 0.7")
+            if evidence.get("shaderlab_release") != "Reverie 0.8":
+                fail("embedded preset metadata is not Reverie 0.8")
 
             license_text = ""
             for name in shader_names:
@@ -197,7 +230,7 @@ def main() -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
         "\n".join([
-            "Shader Lab Reverie 0.7 single-JAR verification: PASS",
+            "Shader Lab Reverie 0.8 single-JAR verification: PASS",
             f"JAR: {jar_path.name}",
             f"Bytes: {jar_path.stat().st_size}",
             f"SHA-256: {digest}",
@@ -205,8 +238,11 @@ def main() -> None:
             "Flattened Sodium NeoForge with OsUtils: PASS",
             f"Embedded SPBR LabPBR maps: {len(pbr_maps)}",
             "Noble foliage alpha discard patch: PASS",
-            "GTX 1660 SUPER balanced preset: PASS",
-            "Persistent low blue-lilac world fog: PASS",
+            "Iris literal compute work-group directives: PASS",
+            "Volumetric cloud and reflection compute disabled: PASS",
+            "Lightweight violet-blue dream sky: PASS",
+            "Persistent raymarched blue-lilac ground mist: PASS",
+            "GTX 1660 SUPER reduced-cost preset: PASS",
             "Runtime external shaderpack ZIP not required: PASS",
         ]) + "\n",
         encoding="utf-8",
