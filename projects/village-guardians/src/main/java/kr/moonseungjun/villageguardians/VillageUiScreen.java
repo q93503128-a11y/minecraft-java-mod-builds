@@ -12,18 +12,19 @@ import java.util.List;
 
 public final class VillageUiScreen extends Screen {
     private static final String SEP = "\u001F";
-    private static final int OVERLAY = 0xD90A0D12;
+    private static final int OVERLAY = 0xC9080B10;
     private static final int SHADOW = 0x99000000;
-    private static final int PANEL = 0xFF141920;
-    private static final int PANEL_SOFT = 0xFF1B222B;
-    private static final int PANEL_RAISED = 0xFF222B35;
-    private static final int BORDER = 0xFF3B4653;
-    private static final int ACCENT = 0xFF43C6AC;
-    private static final int ACCENT_DARK = 0xFF237A70;
-    private static final int GOLD = 0xFFE6B65A;
-    private static final int DANGER = 0xFFB94B55;
+    private static final int PANEL = 0xFF0F141B;
+    private static final int PANEL_SOFT = 0xFF171E27;
+    private static final int PANEL_RAISED = 0xFF202A35;
+    private static final int PANEL_HOVER = 0xFF293744;
+    private static final int BORDER = 0xFF344250;
+    private static final int ACCENT = 0xFF3ED0B4;
+    private static final int ACCENT_DARK = 0xFF1E776B;
+    private static final int GOLD = 0xFFF1BC57;
+    private static final int DANGER = 0xFFDC6570;
     private static final int TEXT = 0xFFF3F6F8;
-    private static final int MUTED = 0xFF9BA7B4;
+    private static final int MUTED = 0xFF94A0AD;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final String[] actions;
@@ -52,9 +53,6 @@ public final class VillageUiScreen extends Screen {
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, width, height, OVERLAY);
-        for (int x = 0; x < width; x += 28) {
-            graphics.fill(x, 0, x + 1, height, 0x12000000);
-        }
     }
 
     @Override
@@ -65,99 +63,141 @@ public final class VillageUiScreen extends Screen {
         int panelWidth = layout.width();
         int panelHeight = layout.height();
 
-        graphics.fill(left + 7, top + 8, left + panelWidth + 7, top + panelHeight + 8, SHADOW);
+        graphics.fill(left + 5, top + 6, left + panelWidth + 5, top + panelHeight + 6, SHADOW);
         graphics.fill(left - 1, top - 1, left + panelWidth + 1, top + panelHeight + 1, BORDER);
         graphics.fill(left, top, left + panelWidth, top + panelHeight, PANEL);
-        graphics.fill(left, top, left + panelWidth, top + 4, ACCENT);
+        graphics.fill(left, top, left + 3, top + panelHeight, ACCENT);
 
-        graphics.fill(left + 18, top + 17, left + 54, top + 53, PANEL_RAISED);
-        graphics.fill(left + 18, top + 17, left + 22, top + 53, GOLD);
-        graphics.centeredText(font, "VG", left + 37, top + 31, TEXT);
-        graphics.text(font, "VILLAGE COMMAND", left + 66, top + 19, MUTED, false);
-        graphics.text(font, payload.title(), left + 66, top + 35, TEXT, false);
+        graphics.fill(left + 12, top + 10, left + 38, top + 36, PANEL_RAISED);
+        graphics.fill(left + 12, top + 10, left + 15, top + 36, GOLD);
+        graphics.centeredText(font, "VG", left + 25, top + 19, TEXT);
+        graphics.text(font, payload.title(), left + 48, top + 13, TEXT, false);
+        graphics.text(font, subtitle(), left + 48, top + 26, MUTED, false);
 
-        int closeLeft = left + panelWidth - 43;
-        int closeTop = top + 17;
-        boolean closeHovered = isInside(mouseX, mouseY, closeLeft, closeTop, 25, 25);
-        graphics.fill(closeLeft, closeTop, closeLeft + 25, closeTop + 25,
-                closeHovered ? 0xFF7B3038 : PANEL_RAISED);
-        graphics.centeredText(font, "×", closeLeft + 12, closeTop + 8,
+        int closeLeft = left + panelWidth - 31;
+        int closeTop = top + 10;
+        boolean closeHovered = isInside(mouseX, mouseY, closeLeft, closeTop, 20, 20);
+        graphics.fill(closeLeft, closeTop, closeLeft + 20, closeTop + 20,
+                closeHovered ? 0xFF76343B : PANEL_RAISED);
+        graphics.centeredText(font, "×", closeLeft + 10, closeTop + 6,
                 closeHovered ? 0xFFFFFFFF : MUTED);
 
-        graphics.fill(left + 18, top + 65, left + panelWidth - 18, top + 66, BORDER);
+        int contentTop = top + 46;
+        int contentBottom = top + panelHeight - 12;
+        int innerLeft = left + 13;
+        int innerRight = left + panelWidth - 12;
+        boolean split = panelWidth >= 390;
 
-        int buttonCount = Math.min(actions.length, labels.length);
-        int columns = panelWidth < 440 ? 1 : 2;
-        int buttonRows = (buttonCount + columns - 1) / columns;
-        int buttonHeight = 30;
-        int buttonGap = 8;
-        int buttonAreaHeight = buttonRows * buttonHeight + Math.max(0, buttonRows - 1) * buttonGap;
-        int startY = top + panelHeight - 18 - buttonAreaHeight;
+        int actionLeft;
+        int actionRight;
+        if (split) {
+            int divider = left + Math.max(170, panelWidth * 43 / 100);
+            bodyLeft = innerLeft + 8;
+            bodyTop = contentTop + 19;
+            bodyRight = divider - 14;
+            bodyBottom = contentBottom - 8;
+            actionLeft = divider + 8;
+            actionRight = innerRight;
 
-        bodyLeft = left + 24;
-        bodyTop = top + 82;
-        bodyRight = left + panelWidth - 24;
-        bodyBottom = Math.max(bodyTop + 28, startY - 16);
+            graphics.fill(innerLeft, contentTop, divider - 6, contentBottom, PANEL_SOFT);
+            graphics.fill(divider + 1, contentTop, innerRight, contentBottom, PANEL_SOFT);
+            graphics.fill(divider - 2, contentTop, divider - 1, contentBottom, BORDER);
+            graphics.text(font, "현황", bodyLeft, contentTop + 7, GOLD, false);
+            graphics.text(font, "명령", actionLeft + 8, contentTop + 7, ACCENT, false);
+        } else {
+            int infoBottom = Math.min(contentBottom - 72, contentTop + 76);
+            bodyLeft = innerLeft + 8;
+            bodyTop = contentTop + 18;
+            bodyRight = innerRight - 8;
+            bodyBottom = infoBottom - 6;
+            actionLeft = innerLeft;
+            actionRight = innerRight;
 
-        graphics.fill(bodyLeft - 8, bodyTop - 9, bodyRight + 8, bodyBottom + 5, PANEL_SOFT);
-        graphics.fill(bodyLeft - 8, bodyTop - 9, bodyLeft - 4, bodyBottom + 5, ACCENT_DARK);
-        graphics.text(font, "현황 및 명령 정보", bodyLeft, bodyTop - 2, GOLD, false);
+            graphics.fill(innerLeft, contentTop, innerRight, infoBottom, PANEL_SOFT);
+            graphics.fill(innerLeft, infoBottom + 5, innerRight, contentBottom, PANEL_SOFT);
+            graphics.text(font, "현황", bodyLeft, contentTop + 6, GOLD, false);
+            graphics.text(font, "명령", actionLeft + 8, infoBottom + 12, ACCENT, false);
+        }
 
-        List<FormattedCharSequence> lines = bodyLines(panelWidth - 64);
-        int contentHeight = lines.size() * 13;
-        int visibleHeight = Math.max(1, bodyBottom - bodyTop - 16);
+        renderBody(graphics, panelWidth);
+        renderActions(graphics, mouseX, mouseY, actionLeft, actionRight,
+                split ? contentTop + 24 : bodyBottom + 32,
+                contentBottom - 7);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderBody(GuiGraphicsExtractor graphics, int panelWidth) {
+        List<FormattedCharSequence> lines = bodyLines(Math.max(90, bodyRight - bodyLeft));
+        int lineHeight = 11;
+        int contentHeight = lines.size() * lineHeight;
+        int visibleHeight = Math.max(1, bodyBottom - bodyTop);
         maxScroll = Math.max(0, contentHeight - visibleHeight);
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset));
 
-        int textTop = bodyTop + 15;
-        graphics.enableScissor(bodyLeft - 1, textTop, bodyRight + 1, bodyBottom);
-        int y = textTop - scrollOffset;
+        graphics.enableScissor(bodyLeft - 1, bodyTop, bodyRight + 1, bodyBottom);
+        int y = bodyTop - scrollOffset;
         for (FormattedCharSequence line : lines) {
-            if (y + 10 >= textTop && y <= bodyBottom) {
+            if (y + 9 >= bodyTop && y <= bodyBottom) {
                 graphics.text(font, line, bodyLeft, y, TEXT, false);
             }
-            y += 13;
+            y += lineHeight;
         }
         graphics.disableScissor();
 
         if (maxScroll > 0) {
-            int trackTop = textTop;
-            int trackBottom = bodyBottom - 3;
-            int trackHeight = Math.max(1, trackBottom - trackTop);
-            int thumbHeight = Math.max(14, trackHeight * visibleHeight / Math.max(visibleHeight, contentHeight));
+            int trackHeight = Math.max(1, bodyBottom - bodyTop);
+            int thumbHeight = Math.max(10, trackHeight * visibleHeight / Math.max(visibleHeight, contentHeight));
             int thumbTravel = Math.max(0, trackHeight - thumbHeight);
-            int thumbTop = trackTop + (maxScroll == 0 ? 0 : thumbTravel * scrollOffset / maxScroll);
-            graphics.fill(bodyRight + 3, trackTop, bodyRight + 5, trackBottom, 0xFF0B0E12);
+            int thumbTop = bodyTop + (maxScroll == 0 ? 0 : thumbTravel * scrollOffset / maxScroll);
+            graphics.fill(bodyRight + 3, bodyTop, bodyRight + 5, bodyBottom, 0xFF080B0F);
             graphics.fill(bodyRight + 3, thumbTop, bodyRight + 5, thumbTop + thumbHeight, ACCENT);
         }
+    }
 
+    private void renderActions(
+            GuiGraphicsExtractor graphics,
+            int mouseX,
+            int mouseY,
+            int actionLeft,
+            int actionRight,
+            int actionTop,
+            int actionBottom) {
         clickRegions.clear();
-        int horizontalGap = 12;
-        int buttonWidth = columns == 1
-                ? panelWidth - 48
-                : (panelWidth - 48 - horizontalGap) / 2;
-        for (int index = 0; index < buttonCount; index++) {
+        int count = Math.min(actions.length, labels.length);
+        if (count == 0) {
+            graphics.text(font, "사용 가능한 명령이 없습니다.", actionLeft + 8, actionTop + 8, MUTED, false);
+            return;
+        }
+
+        int availableWidth = Math.max(80, actionRight - actionLeft - 14);
+        int columns = availableWidth >= 210 && count >= 4 ? 2 : 1;
+        int gap = 5;
+        int buttonWidth = (availableWidth - (columns - 1) * gap) / columns;
+        int buttonHeight = 20;
+        int rows = (count + columns - 1) / columns;
+        int totalHeight = rows * buttonHeight + Math.max(0, rows - 1) * gap;
+        int startY = actionTop + Math.max(0, (actionBottom - actionTop - totalHeight) / 2);
+
+        for (int index = 0; index < count; index++) {
             int column = index % columns;
             int row = index / columns;
-            int x = left + 24 + column * (buttonWidth + horizontalGap);
-            int by = startY + row * (buttonHeight + buttonGap);
+            int x = actionLeft + 7 + column * (buttonWidth + gap);
+            int y = startY + row * (buttonHeight + gap);
             String action = actions[index];
             int accent = actionAccent(action);
-            boolean hovered = isInside(mouseX, mouseY, x, by, buttonWidth, buttonHeight);
+            boolean hovered = isInside(mouseX, mouseY, x, y, buttonWidth, buttonHeight);
 
-            graphics.fill(x + 2, by + 3, x + buttonWidth + 2, by + buttonHeight + 3, 0x66000000);
-            graphics.fill(x - 1, by - 1, x + buttonWidth + 1, by + buttonHeight + 1,
+            graphics.fill(x + 2, y + 2, x + buttonWidth + 2, y + buttonHeight + 2, 0x55000000);
+            graphics.fill(x - 1, y - 1, x + buttonWidth + 1, y + buttonHeight + 1,
                     hovered ? accent : BORDER);
-            graphics.fill(x, by, x + buttonWidth, by + buttonHeight,
-                    hovered ? 0xFF2B3540 : PANEL_RAISED);
-            graphics.fill(x, by, x + 4, by + buttonHeight, accent);
-            graphics.fill(x + 12, by + 9, x + 18, by + 15, accent);
-            graphics.text(font, labels[index], x + 25, by + 10, TEXT, false);
-            graphics.text(font, "›", x + buttonWidth - 16, by + 10,
-                    hovered ? 0xFFFFFFFF : MUTED, false);
-            clickRegions.add(new ClickRegion(x, by, buttonWidth, buttonHeight, action));
+            graphics.fill(x, y, x + buttonWidth, y + buttonHeight,
+                    hovered ? PANEL_HOVER : PANEL_RAISED);
+            graphics.fill(x, y, x + 3, y + buttonHeight, accent);
+            graphics.text(font, compact(labels[index], columns == 2 ? 13 : 24), x + 9, y + 6, TEXT, false);
+            graphics.text(font, ">", x + buttonWidth - 10, y + 6,
+                    hovered ? GOLD : MUTED, false);
+            clickRegions.add(new ClickRegion(x, y, buttonWidth, buttonHeight, action));
         }
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -165,9 +205,9 @@ public final class VillageUiScreen extends Screen {
         double mouseX = click.x();
         double mouseY = click.y();
         Layout layout = layout();
-        int closeLeft = layout.left() + layout.width() - 43;
-        int closeTop = layout.top() + 17;
-        if (click.button() == 0 && isInside(mouseX, mouseY, closeLeft, closeTop, 25, 25)) {
+        int closeLeft = layout.left() + layout.width() - 31;
+        int closeTop = layout.top() + 10;
+        if (click.button() == 0 && isInside(mouseX, mouseY, closeLeft, closeTop, 20, 20)) {
             onClose();
             return true;
         }
@@ -187,11 +227,11 @@ public final class VillageUiScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         if (maxScroll > 0
-                && mouseX >= bodyLeft - 8
-                && mouseX <= bodyRight + 8
+                && mouseX >= bodyLeft - 4
+                && mouseX <= bodyRight + 6
                 && mouseY >= bodyTop
                 && mouseY <= bodyBottom) {
-            int delta = (int) Math.round(vertical * 26.0);
+            int delta = (int) Math.round(vertical * 22.0);
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - delta));
             return true;
         }
@@ -203,6 +243,16 @@ public final class VillageUiScreen extends Screen {
         if (minecraft != null) {
             minecraft.gui.setScreen(null);
         }
+    }
+
+    private String subtitle() {
+        return switch (payload.screenId()) {
+            case "status" -> "CHARACTER & ROLE";
+            case "building" -> "FACILITY CONTROL";
+            case "vote" -> "MULTIPLAYER VOTE";
+            case "game_over" -> "DEFENCE FAILED";
+            default -> "VILLAGE COMMAND";
+        };
     }
 
     private List<FormattedCharSequence> bodyLines(int lineWidth) {
@@ -228,12 +278,19 @@ public final class VillageUiScreen extends Screen {
         if (normalized.contains("repair") || normalized.contains("upgrade") || normalized.contains("buy")) {
             return GOLD;
         }
-        return 0xFF7F95B8;
+        return 0xFF86A8E8;
+    }
+
+    private String compact(String value, int maxCharacters) {
+        if (value.length() <= maxCharacters) {
+            return value;
+        }
+        return value.substring(0, Math.max(1, maxCharacters - 1)) + "…";
     }
 
     private Layout layout() {
-        int panelWidth = Math.min(670, Math.max(318, width - 34));
-        int panelHeight = Math.min(455, Math.max(218, height - 26));
+        int panelWidth = Math.min(530, Math.max(300, width - 18));
+        int panelHeight = Math.min(330, Math.max(188, height - 14));
         return new Layout(
                 (width - panelWidth) / 2,
                 (height - panelHeight) / 2,
