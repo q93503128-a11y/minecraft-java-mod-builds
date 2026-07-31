@@ -30,19 +30,20 @@ public final class CountrysideHud {
     private static void render(GuiGraphicsExtractor graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null) {
-            return;
-        }
+        if (player == null) return;
 
         Component objective = currentObjective(player);
         int x = 7;
         int y = 7;
-        int width = Math.max(82, Math.min(148, minecraft.font.width(objective) + 17));
-        int height = 20;
-        graphics.fill(x, y, x + width, y + height, 0xA826211A);
-        graphics.fill(x, y, x + 3, y + height, 0xFFD7AE67);
-        graphics.fill(x + 3, y, x + width, y + 1, 0x705C452F);
-        graphics.text(minecraft.font, objective, x + 9, y + 6, 0xFFE8E1C7);
+        int width = Math.max(78, Math.min(145, minecraft.font.width(objective) + 17));
+        int height = 18;
+
+        graphics.fill(x + 2, y + 2, x + width + 2, y + height + 2, 0x55281712);
+        graphics.fill(x, y, x + width, y + height, 0xD96B4329);
+        graphics.fill(x, y, x + 3, y + height, 0xFFF0B56A);
+        graphics.fill(x + 3, y, x + width, y + 1, 0x99FFD99B);
+        graphics.fill(x + 3, y + height - 1, x + width, y + height, 0x9942261A);
+        graphics.text(minecraft.font, objective, x + 9, y + 5, 0xFFFFF0CE);
     }
 
     private static Component currentObjective(LocalPlayer player) {
@@ -51,21 +52,15 @@ public final class CountrysideHud {
         }
         boolean hasHerb = hasItem(player, ModItems.WILD_HERB.get());
         boolean hasFish = hasItem(player, ModItems.RIVER_FISH.get());
-        if (hasHerb && hasFish) {
-            return Component.translatable("hud.countrysidedays.cook");
-        }
-        if (hasHerb) {
-            return Component.translatable("hud.countrysidedays.fish");
-        }
+        if (hasHerb && hasFish) return Component.translatable("hud.countrysidedays.cook");
+        if (hasHerb) return Component.translatable("hud.countrysidedays.fish");
         return Component.translatable("hud.countrysidedays.forage");
     }
 
     private static boolean hasItem(LocalPlayer player, Item item) {
         for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (stack.is(item)) {
-                return true;
-            }
+            if (stack.is(item)) return true;
         }
         return false;
     }
