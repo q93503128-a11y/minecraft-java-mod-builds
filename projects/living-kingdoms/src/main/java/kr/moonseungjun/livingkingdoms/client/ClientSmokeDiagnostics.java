@@ -38,7 +38,7 @@ final class ClientSmokeDiagnostics {
                 throw new IllegalStateException("Responsive origin controls extend outside the current client viewport");
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_DIAGNOSTIC_PASS screen=responsive_origin_selection rendered_window=true viewport={}x{} controls_fit=true",
+                    "LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true responsive=true viewport={}x{} controls_fit=true",
                     diagnosticScreen.width,
                     diagnosticScreen.height
             );
