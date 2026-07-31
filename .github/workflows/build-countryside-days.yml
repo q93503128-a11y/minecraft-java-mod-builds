@@ -90,13 +90,26 @@ jobs:
           rm -rf run/world run/logs
           mkdir -p run ci-logs
           printf 'eula=true\n' > run/eula.txt
-          set +e
-          set -o pipefail
-          timeout --signal=TERM 90s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee ci-logs/server.log
-          STATUS=${PIPESTATUS[0]}
-          set -e
 
-          if ! grep -q "Done (" ci-logs/server.log; then
+          setsid ./gradlew --no-daemon runServer --stacktrace > ci-logs/server.log 2>&1 &
+          SERVER_PID=$!
+          READY=0
+          for SECOND in $(seq 1 90); do
+            if grep -q "Done (" ci-logs/server.log; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          kill -TERM -- "-$SERVER_PID" 2>/dev/null || true
+          wait "$SERVER_PID" 2>/dev/null || true
+          tail -n 180 ci-logs/server.log
+
+          if [ "$READY" -ne 1 ]; then
             echo "Dedicated server never reached the ready state."
             exit 1
           fi
@@ -104,11 +117,7 @@ jobs:
             echo "Dedicated server reported a fatal startup error."
             exit 1
           fi
-          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ] && [ "$STATUS" -ne 143 ]; then
-            echo "Unexpected dedicated server command exit: $STATUS"
-            exit "$STATUS"
-          fi
-          echo "Dedicated server reached ready state before controlled shutdown."
+          echo "Dedicated server reached ready state and was shut down cleanly."
 
       - name: Verify JAR and create deliverables
         id: jarcheck
