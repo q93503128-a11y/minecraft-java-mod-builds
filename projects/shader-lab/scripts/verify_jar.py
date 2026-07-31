@@ -8,11 +8,13 @@ import sys
 import zipfile
 from pathlib import Path
 
-SHADERPACK = "shaderpacks/ShaderLab-Reverie-0.6.zip"
-SODIUM_OS_UTILS = "net/caffeinemc/mods/sodium/client/compatibility/environment/OsUtils.class"
+SHADERPACK = "shaderpacks/ShaderLab-Reverie-0.7.zip"
+OS_UTILS = "net/caffeinemc/mods/sodium/client/compatibility/environment/OsUtils.class"
 REQUIRED_EXACT = {
     "META-INF/neoforge.mods.toml",
     "META-INF/jarjar/metadata.json",
+    "META-INF/shaderlab/SPBR_MODRINTH_EVIDENCE.json",
+    "META-INF/shaderlab/SPBR_ATTRIBUTION.md",
     "kr/moonseungjun/shaderlab/ShaderLab.class",
     SHADERPACK,
     "assets/shaderlab/lang/ko_kr.json",
@@ -30,12 +32,17 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
+def require(source: str, token: str, label: str) -> None:
+    if token not in source:
+        fail(f"{label} is missing {token!r}")
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: verify_jar.py <jar>")
 
     jar_path = Path(sys.argv[1])
-    if not jar_path.is_file() or jar_path.stat().st_size < 3_000_000:
+    if not jar_path.is_file() or jar_path.stat().st_size < 10_000_000:
         fail(f"missing or unexpectedly small single JAR: {jar_path}")
 
     with zipfile.ZipFile(jar_path) as jar:
@@ -73,14 +80,10 @@ def main() -> None:
                 if expected_mod_id not in toml:
                     fail(f"bundled renderer does not declare {expected_mod_id}")
                 if expected_mod_id == "sodium":
-                    if SODIUM_OS_UTILS not in nested_names:
-                        fail("bundled Sodium keeps OsUtils outside the loaded Sodium module")
-                    double_nested = [
-                        name for name in nested_names
-                        if name.startswith("META-INF/jarjar/") and name.endswith(".jar")
-                    ]
-                    if double_nested:
-                        fail(f"bundled Sodium still has an unsupported second Jar-in-Jar layer: {double_nested}")
+                    if OS_UTILS not in nested_names:
+                        fail("flattened Sodium module is missing OsUtils")
+                    if any(name.startswith("META-INF/jarjar/") and name.endswith(".jar") for name in nested_names):
+                        fail("Sodium is still double nested")
                 if nested.testzip() is not None:
                     fail(f"bundled {expected_mod_id} JAR is corrupt")
 
@@ -89,41 +92,86 @@ def main() -> None:
             fail("pack.mcmeta does not cover Minecraft 26.2 formats")
 
         mods_toml = jar.read("META-INF/neoforge.mods.toml").decode("utf-8")
-        for token in ('modId="iris"', 'modId="sodium"', 'type="required"'):
+        for token in ('modId="iris"', 'modId="sodium"', 'type="required"', 'version="0.7.0-alpha.8"'):
             if token not in mods_toml:
                 fail(f"NeoForge metadata is missing {token}")
 
+        pbr_maps = [
+            name for name in names
+            if name.startswith("assets/minecraft/")
+            and name.endswith(".png")
+            and Path(name).stem.endswith(("_n", "_s"))
+        ]
+        if len(pbr_maps) < 200:
+            fail(f"too few embedded SPBR LabPBR maps: {len(pbr_maps)}")
+        spbr = json.loads(jar.read("META-INF/shaderlab/SPBR_MODRINTH_EVIDENCE.json"))
+        if spbr.get("project_slug") != "spbr" or spbr.get("version_id") != "S17DzSfS":
+            fail("SPBR evidence does not match the pinned 26.2 release")
+        if int(spbr.get("merged_pbr_png_count", 0)) != len(pbr_maps):
+            fail("SPBR evidence count does not match embedded LabPBR maps")
+
         shaderpack_bytes = jar.read(SHADERPACK)
-        if len(shaderpack_bytes) < 100_000:
+        if len(shaderpack_bytes) < 1_000_000:
             fail("embedded Noble shaderpack is unexpectedly small")
 
         with zipfile.ZipFile(io.BytesIO(shaderpack_bytes)) as shaderpack:
             shader_names = set(shaderpack.namelist())
-            for required in ("SHADERLAB_ATTRIBUTION.md", "MODRINTH_LICENSE_EVIDENCE.json"):
+            for required in (
+                "SHADERLAB_ATTRIBUTION.md",
+                "SHADERLAB_REVERIE_PRESET.md",
+                "MODRINTH_LICENSE_EVIDENCE.json",
+                "shaders/settings.glsl",
+                "shaders/programs/gbuffers/opaque.glsl",
+                "shaders/include/atmospherics/fog.glsl",
+            ):
                 if required not in shader_names:
                     fail(f"embedded shaderpack is missing {required}")
             if not any("license" in name.lower() or "copying" in name.lower() for name in shader_names):
                 fail("embedded Noble shaderpack is missing GPLv3 license text")
 
-            source_text: list[str] = []
+            settings = shaderpack.read("shaders/settings.glsl").decode("utf-8", errors="ignore")
+            for token in (
+                "const int shadowMapResolution = 2048",
+                "const float shadowDistance = 128",
+                "#define SHADOW_SAMPLES 6",
+                "#define REFLECTIONS 1",
+                "#define REFRACTIONS 1",
+                "#define FOG_ALTITUDE 72",
+                "#define FOG_THICKNESS 40",
+                "#define FOG_DENSITY 0.45",
+                "#define WATER_OCTAVES 12",
+                "#define POM 0",
+                "#define LUT 15",
+                "#define BLOOM_STRENGTH 0.20",
+                "#define DOF 0",
+                "#define VIGNETTE 0",
+            ):
+                require(settings, token, "Reverie settings")
+
+            opaque = shaderpack.read("shaders/programs/gbuffers/opaque.glsl").decode("utf-8", errors="ignore")
+            require(opaque, "discard; return;", "foliage alpha fix")
+            fog = shaderpack.read("shaders/include/atmospherics/fog.glsl").decode("utf-8", errors="ignore")
+            for token in (
+                "reverieFogAttenuation",
+                "reverieFogScattering",
+                "densityMult     = mix(0.55, 0.80",
+                "fogFrequency    = mix(0.42, 0.80",
+            ):
+                require(fog, token, "Reverie low fog patch")
+
+            evidence = json.loads(shaderpack.read("MODRINTH_LICENSE_EVIDENCE.json"))
+            if evidence.get("project_slug") != "noble" or evidence.get("version_id") != "3cIADbit":
+                fail("Noble Modrinth evidence is invalid")
+            if evidence.get("shaderlab_release") != "Reverie 0.7":
+                fail("embedded preset metadata is not Reverie 0.7")
+
             license_text = ""
             for name in shader_names:
                 lower = name.lower()
-                if lower.endswith((".glsl", ".fsh", ".vsh", ".properties")):
-                    source_text.append(shaderpack.read(name).decode("utf-8", errors="ignore"))
                 if "license" in lower or "copying" in lower:
                     license_text += shaderpack.read(name).decode("utf-8", errors="ignore")
-
-            searchable = "\n".join(source_text).lower()
-            for token in ("water", "fog", "bloom", "sun", "pbr", "shadow"):
-                if token not in searchable:
-                    fail(f"Noble shader source is missing feature token: {token}")
             if "GNU GENERAL PUBLIC LICENSE" not in license_text or "Version 3" not in license_text:
                 fail("embedded Noble license is not GPLv3")
-
-            evidence = json.loads(shaderpack.read("MODRINTH_LICENSE_EVIDENCE.json"))
-            if evidence.get("project_slug") != "noble":
-                fail("Noble Modrinth evidence is invalid")
             if shaderpack.testzip() is not None:
                 fail("corrupt embedded shaderpack member detected")
 
@@ -139,18 +187,17 @@ def main() -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
         "\n".join([
-            "Shader Lab Reverie 0.6.1 single-JAR verification: PASS",
+            "Shader Lab Reverie 0.7 single-JAR verification: PASS",
             f"JAR: {jar_path.name}",
             f"Bytes: {jar_path.stat().st_size}",
             f"SHA-256: {digest}",
             "Bundled Iris NeoForge: PASS",
-            "Bundled Sodium NeoForge single module: PASS",
-            "Sodium OsUtils class availability: PASS",
-            "Unsupported double Jar-in-Jar layer absent: PASS",
-            "Upstream shader: Noble Shaders GPLv3",
-            "Noble source and license included: PASS",
-            "Real water/PBR/sun/lighting/fog/bloom source features: PASS",
-            "Rejected screen-space material guessing overlay absent: PASS",
+            "Flattened Sodium NeoForge with OsUtils: PASS",
+            f"Embedded SPBR LabPBR maps: {len(pbr_maps)}",
+            "Noble foliage alpha discard patch: PASS",
+            "GTX 1660 SUPER balanced preset: PASS",
+            "Persistent low blue-lilac world fog: PASS",
+            "Runtime external shaderpack ZIP not required: PASS",
         ]) + "\n",
         encoding="utf-8",
     )
