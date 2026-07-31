@@ -199,7 +199,7 @@ tasks.register('verifySingleJar') {
             throw new GradleException("Single JAR output is missing or too small: ${output}")
         }
         new ZipFile(output).withCloseable { jarFile ->
-            Set<String> entries = jarFile.entries().collect { it.name } as Set
+            Set<String> entries = jarFile.entries().collect { it.name as String } as Set<String>
             if (!entries.contains('META-INF/jarjar/metadata.json')) {
                 throw new GradleException('Single JAR is missing NeoForge Jar-in-Jar metadata')
             }
@@ -209,9 +209,10 @@ tasks.register('verifySingleJar') {
             if (!entries.any { it.startsWith('META-INF/jarjar/') && it.toLowerCase().contains('sodium') && it.endsWith('.jar') }) {
                 throw new GradleException('Single JAR is missing bundled Sodium')
             }
-            if (!entries.contains("shaderpacks/${reveriePackName}")) {
+            String expectedShaderpackEntry = "shaderpacks/${reveriePackName}".toString()
+            if (!entries.contains(expectedShaderpackEntry)) {
                 def shaderEntries = entries.findAll { it.toLowerCase().contains('shader') }.sort()
-                throw new GradleException("Single JAR is missing the Reverie shaderpack; shader entries=${shaderEntries}")
+                throw new GradleException("Single JAR is missing the Reverie shaderpack; expected=${expectedShaderpackEntry}; shader entries=${shaderEntries}")
             }
         }
     }
