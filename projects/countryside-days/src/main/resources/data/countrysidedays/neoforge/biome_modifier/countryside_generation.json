@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "minecraft:plains",
+  "features": "countrysidedays:countryside_chunk",
+  "step": "top_layer_modification"
+}
