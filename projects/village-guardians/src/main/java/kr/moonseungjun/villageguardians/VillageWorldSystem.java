@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class VillageWorldSystem {
     public static final int FORTRESS_RADIUS = 76;
     public static final int ENEMY_SPAWN_DISTANCE = 112;
-    private static final int CLEAN_RADIUS = 138;
+    private static final int CLEAN_RADIUS = 512;
     private static final Set<UUID> ALLOWED_GAME_MOBS = ConcurrentHashMap.newKeySet();
     private static boolean generationInProgress;
 
@@ -43,11 +43,11 @@ public final class VillageWorldSystem {
             VillageCouncilState.setVillageCenter(player);
         }
         BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition()).immutable();
-        if (!level.getBlockState(center.below(2)).is(Blocks.RESPAWN_ANCHOR)) {
+        if (!level.getBlockState(center.below(2)).is(Blocks.CRYING_OBSIDIAN)) {
             generationInProgress = true;
             try {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 재건] §f건물 방향, 북문, 성벽 진입로와 외부 UI 자산을 새 기준으로 갱신합니다."));
+                        "§6[마을 재건] §f대형 회관, 단일 종, 성벽 계단과 시설 배치를 새 기준으로 갱신합니다."));
                 buildAll(level, center);
                 for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
                     if (!VillageProgressionSystem.isOperational(building)) {
@@ -55,7 +55,7 @@ public final class VillageWorldSystem {
                     }
                 }
                 player.sendSystemMessage(Component.literal(
-                        "§a[마을 준비 완료] §f건물 입구와 기능 단말은 모두 중앙 광장을 향합니다."));
+                        "§a[마을 준비 완료] §f중앙 종은 낮·밤 전환, 회관 관리대는 마을 관리 전용입니다."));
             } finally {
                 generationInProgress = false;
             }
@@ -79,6 +79,24 @@ public final class VillageWorldSystem {
         } finally {
             generationInProgress = false;
         }
+    }
+
+    public static boolean handleCentralBellInteraction(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getHand() != InteractionHand.MAIN_HAND
+                || !(event.getEntity() instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (center == null
+                || !VillageFortressTerrain.isCentralBell(center, event.getPos())
+                || !level.getBlockState(event.getPos()).is(Blocks.BELL)) {
+            return false;
+        }
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        player.sendSystemMessage(Component.literal(VillageCouncilState.proposeAdvanceTime(player)));
+        return true;
     }
 
     public static boolean handleGateInteraction(PlayerInteractEvent.RightClickBlock event) {
@@ -129,12 +147,12 @@ public final class VillageWorldSystem {
 
     public static BlockPos northGateTarget() {
         return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0))
-                .offset(0, 0, -FORTRESS_RADIUS + 3);
+                .offset(0, 0, -FORTRESS_RADIUS - 3);
     }
 
     public static BlockPos northInnerApproach() {
         return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0))
-                .offset(0, 0, -FORTRESS_RADIUS + 12);
+                .offset(0, 0, -FORTRESS_RADIUS + 14);
     }
 
     public static BlockPos northSpawnOrigin() {
@@ -193,12 +211,14 @@ public final class VillageWorldSystem {
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
             applyUpgradeVisual(level, building, VillageProgressionSystem.level(building));
         }
-        VillageFortressTerrain.set(level, center.below(2), Blocks.RESPAWN_ANCHOR);
+        VillageFortressBuildings.removeEmbeddedBells(level, center);
+        VillageFortressTerrain.restoreCentralBell(level, center);
+        VillageFortressTerrain.set(level, center.below(2), Blocks.CRYING_OBSIDIAN);
         VillageFortressTerrain.set(level, center.below(), Blocks.CHISELED_STONE_BRICKS);
     }
 
     private static void removeUnauthorizedMobs(ServerLevel level, BlockPos center) {
-        AABB area = new AABB(center).inflate(CLEAN_RADIUS, 42, CLEAN_RADIUS);
+        AABB area = new AABB(center).inflate(CLEAN_RADIUS, 128, CLEAN_RADIUS);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
             if (!isAllowedGameMob(mob)) {
                 mob.discard();
