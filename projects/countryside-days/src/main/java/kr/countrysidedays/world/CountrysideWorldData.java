@@ -6,7 +6,6 @@ import kr.countrysidedays.CountrysideDays;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
@@ -121,15 +120,19 @@ public final class CountrysideWorldData extends SavedData {
     }
 
     public boolean isTerrainChunkPrepared(int chunkX, int chunkZ) {
-        return terrainChunks.contains(ChunkPos.asLong(chunkX, chunkZ));
+        return terrainChunks.contains(packChunk(chunkX, chunkZ));
     }
 
     public boolean markTerrainChunkPrepared(int chunkX, int chunkZ) {
-        boolean added = terrainChunks.add(ChunkPos.asLong(chunkX, chunkZ));
+        boolean added = terrainChunks.add(packChunk(chunkX, chunkZ));
         if (added) {
             setDirty();
         }
         return added;
+    }
+
+    private static long packChunk(int chunkX, int chunkZ) {
+        return ((long) chunkX & 0xFFFFFFFFL) | (((long) chunkZ & 0xFFFFFFFFL) << 32);
     }
 
     /**
