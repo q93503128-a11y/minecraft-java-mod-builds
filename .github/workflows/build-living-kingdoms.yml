@@ -59,6 +59,46 @@ jobs:
           set -o pipefail
           gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee ../../logs/clean-build.log
 
+      - name: Dedicated server smoke test
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          rm -f ../../logs/server-smoke.log
+          gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/server-smoke.log 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for attempt in $(seq 1 150); do
+            if grep -Eq 'Done \(|For help, type "help"' ../../logs/server-smoke.log; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat ../../logs/server-smoke.log
+              echo 'Dedicated server exited before reaching ready state.' >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/server-smoke.log
+          if [ "$ready" -ne 1 ]; then
+            echo 'Dedicated server did not reach ready state within 150 seconds.' >&2
+            exit 1
+          fi
+          if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms' ../../logs/server-smoke.log; then
+            echo 'Living Kingdoms datapack or dimension loading error detected.' >&2
+            exit 1
+          fi
+
       - name: Package and inspect test JAR
         shell: bash
         run: |
@@ -79,6 +119,8 @@ jobs:
           unzip -Z1 "$JAR" | grep -Eq '^kr/moonseungjun/livingkingdoms/.+\.class$'
           unzip -Z1 "$JAR" | grep -Eq '^assets/livingkingdoms/'
           unzip -Z1 "$JAR" | grep -Eq '^data/livingkingdoms/'
+          unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension/living_realm.json'
+          unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension_type/living_realm.json'
           if unzip -Z1 "$JAR" | grep -Eq '(^|/)(tools|\.github)/|\.java$'; then
             echo 'Forbidden development content found in runtime JAR' >&2
             exit 1
@@ -100,6 +142,8 @@ jobs:
           - Java: 25
           - Gradle: 9.2.1
           - Clean build: PASS
+          - Dedicated server startup: PASS
+          - Datapack and custom dimension load: PASS
           - Runtime JAR ZIP integrity: PASS
           - Required metadata: PASS
           - Compiled classes: PASS
@@ -108,10 +152,9 @@ jobs:
           - Duplicate ZIP entries: NONE
           - Datagen: NOT RUN
           - GameTest: NOT IMPLEMENTED
-          - Dedicated server smoke test: NOT RUN
           - Client smoke test: NOT RUN
 
-          This is an early foundation test build. It contains the current world, origin catalog, metadata and localization foundation, not the planned full playable world or character creation UI.
+          This remains an internal foundation build. A user-facing playable test JAR is not released until the origin flow, authored starting realm, safe choice-based spawn, and first life activity are present together.
           EOF
 
       - name: Upload build logs
