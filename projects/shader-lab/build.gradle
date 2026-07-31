@@ -1,4 +1,9 @@
 import groovy.json.JsonSlurper
+import java.net.URI
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.regex.Pattern
+import java.util.zip.ZipFile
 
 plugins {
     id 'java-library'
@@ -17,10 +22,6 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
-}
-
-sourceSets.main.resources {
-    srcDir 'src/generated/resources'
 }
 
 neoForge {
@@ -47,6 +48,8 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
             minecraft_version       : minecraft_version,
             minecraft_version_range : minecraft_version_range,
             neo_version             : neo_version,
+            iris_version_range      : iris_version_range,
+            sodium_version_range    : sodium_version_range,
             mod_id                  : mod_id,
             mod_name                : mod_name,
             mod_license             : mod_license,
@@ -63,86 +66,206 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
-tasks.register('verifyShaderResources') {
-    group = 'verification'
-    description = 'Validates the Shader Lab 26.2 seven-pass bloom pipeline and GLSL sources.'
+final String photonCommit = project.photon_commit
+final String dreamscapePackName = project.shader_pack_name
+final File photonArchive = layout.buildDirectory.file("photon/photon-${photonCommit}.zip").get().asFile
+final File photonUnpack = layout.buildDirectory.dir('photon/unpack').get().asFile
+final File photonStage = layout.buildDirectory.dir('photon/stage').get().asFile
+final File generatedResources = layout.buildDirectory.dir('generated/shaderlabResources').get().asFile
+final File generatedShaderpack = new File(generatedResources, "shaderpacks/${dreamscapePackName}")
+
+static String replaceNumericOption(String text, String option, String value) {
+    String expression = "(?m)^(\\s*)#define\\s+${Pattern.quote(option)}\\s+\\S+"
+    String updated = text.replaceFirst(expression, "\$1#define ${option} ${value}")
+    if (updated == text) {
+        throw new GradleException("Photon option was not found: ${option}")
+    }
+    return updated
+}
+
+static String enableBooleanOption(String text, String option) {
+    String expression = "(?m)^(\\s*)(?://\\s*)?#define\\s+${Pattern.quote(option)}\\b"
+    String updated = text.replaceFirst(expression, "\$1#define ${option}")
+    if (updated == text && !text.contains("#define ${option}")) {
+        throw new GradleException("Photon boolean option was not found: ${option}")
+    }
+    return updated
+}
+
+static String disableBooleanOption(String text, String option) {
+    String expression = "(?m)^(\\s*)#define\\s+${Pattern.quote(option)}\\b"
+    return text.replaceFirst(expression, "\$1//#define ${option}")
+}
+
+tasks.register('prepareDreamscapeShaderpack') {
+    group = 'shaderlab'
+    description = 'Downloads a pinned MIT Photon revision and builds the Dreamscape Iris shaderpack.'
+    outputs.file generatedShaderpack
 
     doLast {
-        def effectFile = file('src/main/resources/assets/shaderlab/post_effect/lush_grade.json')
-        def extractFile = file('src/main/resources/assets/shaderlab/shaders/post/bloom_extract.fsh')
-        def blurFile = file('src/main/resources/assets/shaderlab/shaders/post/bloom_blur.fsh')
-        def compositeFile = file('src/main/resources/assets/shaderlab/shaders/post/lush_grade.fsh')
-        def packFile = file('src/main/resources/pack.mcmeta')
+        photonArchive.parentFile.mkdirs()
+        if (!photonArchive.isFile() || photonArchive.length() == 0L) {
+            URI.create("https://codeload.github.com/sixthsurge/photon/zip/${photonCommit}")
+                    .toURL()
+                    .withInputStream { input ->
+                        Files.copy(input, photonArchive.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    }
+        }
 
-        [effectFile, extractFile, blurFile, compositeFile, packFile].each { required ->
-            if (!required.isFile() || required.length() == 0L) {
-                throw new GradleException("Missing or empty required shader resource: ${required}")
+        delete photonUnpack, photonStage
+        photonUnpack.mkdirs()
+        photonStage.mkdirs()
+
+        copy {
+            from zipTree(photonArchive)
+            into photonUnpack
+        }
+
+        File photonRoot = new File(photonUnpack, "photon-${photonCommit}")
+        File photonShaders = new File(photonRoot, 'shaders')
+        File photonLicense = new File(photonRoot, 'LICENSE')
+        if (!photonShaders.isDirectory() || !photonLicense.isFile()) {
+            throw new GradleException("Pinned Photon archive has an unexpected layout: ${photonArchive}")
+        }
+
+        copy {
+            from photonRoot
+            include 'shaders/**', 'LICENSE', 'README.md'
+            into photonStage
+        }
+
+        File settingsFile = new File(photonStage, 'shaders/settings.glsl')
+        String settings = settingsFile.getText('UTF-8')
+        settings = replaceNumericOption(settings, 'AURORA_NORMAL', 'AURORA_ALWAYS')
+        settings = replaceNumericOption(settings, 'AURORA_BRIGHTNESS', '1.20')
+        settings = replaceNumericOption(settings, 'OVERWORLD_FOG_INTENSITY', '1.28')
+        settings = replaceNumericOption(settings, 'BLOOM_INTENSITY', '0.32')
+        settings = replaceNumericOption(settings, 'BLOOM_SPREAD', '0.62')
+        settings = replaceNumericOption(settings, 'CAS_INTENSITY', '0.70')
+
+        [
+                'WATER_CAUSTICS',
+                'WATER_PARALLAX',
+                'WATER_DISPLACEMENT',
+                'ENVIRONMENT_REFLECTIONS',
+                'SKY_REFLECTIONS',
+                'SSR',
+                'TAA',
+                'FXAA',
+                'CAS'
+        ].each { option -> settings = enableBooleanOption(settings, option) }
+        ['DOF', 'MOTION_BLUR'].each { option -> settings = disableBooleanOption(settings, option) }
+        settingsFile.setText(settings, 'UTF-8')
+
+        File fogProgram = new File(photonStage, 'shaders/program/c0_vl.fsh')
+        String fogText = fogProgram.getText('UTF-8')
+        String fogMarker = '''            fog_scattering = fog[0];
+            fog_transmittance = fog[1];
+'''
+        String fogPatch = fogMarker + '''
+            // Shader Lab Dreamscape: local, world-space low mist. This is intentionally
+            // applied inside Photon's volumetric pass instead of as a screen overlay.
+            float shaderlab_ray_length = length(world_end_pos - world_start_pos);
+            float shaderlab_upper_falloff = exp(-max(world_end_pos.y - 70.0, 0.0) * 0.16);
+            float shaderlab_lower_falloff = exp(-max(56.0 - world_end_pos.y, 0.0) * 0.12);
+            float shaderlab_distance_mist = smoothstep(14.0, 92.0, shaderlab_ray_length);
+            float shaderlab_low_mist = shaderlab_upper_falloff
+                                     * shaderlab_lower_falloff
+                                     * shaderlab_distance_mist
+                                     * (0.15 + 0.12 * wetness);
+            vec3 shaderlab_mist_color = mix(vec3(0.42, 0.54, 0.62), ambient_color, 0.76);
+            fog_scattering += shaderlab_mist_color * shaderlab_low_mist;
+            fog_transmittance *= exp(-vec3(shaderlab_low_mist * 0.78));
+'''
+        if (!fogText.contains(fogMarker)) {
+            throw new GradleException('Photon volumetric-fog injection point was not found')
+        }
+        fogProgram.setText(fogText.replace(fogMarker, fogPatch), 'UTF-8')
+
+        new File(photonStage, 'SHADERLAB_ATTRIBUTION.md').setText(
+                """# Shader Lab Dreamscape attribution\n\n""" +
+                "This shaderpack is a private test derivative of Photon Shader by SixthSurge.\n\n" +
+                "- Upstream: https://github.com/sixthsurge/photon\n" +
+                "- Pinned revision: ${photonCommit}\n" +
+                "- Upstream license: MIT (preserved as LICENSE)\n" +
+                "- Shader Lab changes: calmer bloom, always-available night aurora, enhanced water features, and low world-space mist.\n",
+                'UTF-8'
+        )
+
+        generatedShaderpack.parentFile.mkdirs()
+        delete generatedShaderpack
+        ant.zip(destfile: generatedShaderpack, basedir: photonStage, level: 9)
+    }
+}
+
+sourceSets.main.resources.srcDir generatedResources
+
+tasks.named('processResources') {
+    dependsOn tasks.named('prepareDreamscapeShaderpack')
+}
+
+tasks.register('verifyShaderpackResources') {
+    group = 'verification'
+    description = 'Validates the embedded Iris shaderpack, Photon attribution, and removal of the failed post effect.'
+    dependsOn tasks.named('prepareDreamscapeShaderpack')
+
+    doLast {
+        if (!generatedShaderpack.isFile() || generatedShaderpack.length() < 250_000L) {
+            throw new GradleException("Generated shaderpack is missing or unexpectedly small: ${generatedShaderpack}")
+        }
+
+        new ZipFile(generatedShaderpack).withCloseable { pack ->
+            Set<String> entries = pack.entries().collect { it.name } as Set
+            [
+                    'shaders/shaders.properties',
+                    'shaders/settings.glsl',
+                    'shaders/program/c0_vl.fsh',
+                    'LICENSE',
+                    'SHADERLAB_ATTRIBUTION.md'
+            ].each { required ->
+                if (!entries.contains(required)) {
+                    throw new GradleException("Dreamscape shaderpack is missing ${required}")
+                }
+            }
+
+            String settings = pack.getInputStream(pack.getEntry('shaders/settings.glsl')).getText('UTF-8')
+            [
+                    '#define AURORA_NORMAL AURORA_ALWAYS',
+                    '#define WATER_CAUSTICS',
+                    '#define WATER_PARALLAX',
+                    '#define WATER_DISPLACEMENT',
+                    '#define ENVIRONMENT_REFLECTIONS',
+                    '#define SKY_REFLECTIONS',
+                    '#define TAA',
+                    '#define FXAA',
+                    '#define CAS'
+            ].each { token ->
+                if (!settings.contains(token)) {
+                    throw new GradleException("Dreamscape settings are missing ${token}")
+                }
+            }
+
+            String fog = pack.getInputStream(pack.getEntry('shaders/program/c0_vl.fsh')).getText('UTF-8')
+            if (!fog.contains('shaderlab_low_mist') || !fog.contains('world_end_pos.y')) {
+                throw new GradleException('World-space low mist patch is missing')
             }
         }
 
-        def effect = new JsonSlurper().parse(effectFile)
-        if (!(effect.targets instanceof Map)
-                || !effect.targets.keySet().containsAll(['bloom_a', 'bloom_b', 'final'])
-                || !(effect.passes instanceof List)
-                || effect.passes.size() != 7) {
-            throw new GradleException('lush_grade.json must declare bloom_a, bloom_b and final targets with exactly seven passes')
-        }
-
-        def firstPass = effect.passes[0]
-        def compositePass = effect.passes[5]
-        def finalPass = effect.passes[6]
-
-        if (firstPass.vertex_shader != 'minecraft:core/screenquad'
-                || firstPass.fragment_shader != 'shaderlab:post/bloom_extract'
-                || firstPass.output != 'bloom_a') {
-            throw new GradleException('The bright-pass extraction stage does not match the Minecraft 26.2 post-effect contract')
-        }
-
-        if (compositePass.fragment_shader != 'shaderlab:post/lush_grade'
-                || compositePass.output != 'final'
-                || !(compositePass.inputs instanceof List)
-                || compositePass.inputs.size() != 3) {
-            throw new GradleException('The cinematic composite stage must consume scene, bloom and depth inputs')
-        }
-
-        if (finalPass.fragment_shader != 'minecraft:post/blit'
-                || finalPass.output != 'minecraft:main') {
-            throw new GradleException('The final pass must blit the composited target back to minecraft:main')
-        }
-
-        def blurPasses = effect.passes.subList(1, 5)
-        if (!blurPasses.every { pass ->
-            pass.fragment_shader == 'shaderlab:post/bloom_blur'
-                    && pass.uniforms?.BloomBlurConfig instanceof List
-        }) {
-            throw new GradleException('All four glow-spread passes must use bloom_blur and BloomBlurConfig')
-        }
-
-        def pack = new JsonSlurper().parse(packFile)
-        if (pack?.pack?.min_format != [88, 0] || pack?.pack?.max_format != [107, 1]) {
+        File packFile = file('src/main/resources/pack.mcmeta')
+        def packMeta = new JsonSlurper().parse(packFile)
+        if (packMeta?.pack?.min_format != [88, 0] || packMeta?.pack?.max_format != [107, 1]) {
             throw new GradleException('Minecraft 26.2 mod resources must cover resource format 88.0 and data format 107.1')
         }
 
-        [extractFile, blurFile, compositeFile].each { shaderFile ->
-            def shaderText = shaderFile.getText('UTF-8')
-            ['#version 330', 'out vec4 fragColor'].each { token ->
-                if (!shaderText.contains(token)) {
-                    throw new GradleException("${shaderFile.name} is missing required token: ${token}")
-                }
-            }
-        }
-
-        def compositeText = compositeFile.getText('UTF-8')
-        ['SceneSampler', 'BloomSampler', 'SceneDepthSampler', 'acesTonemap', 'pearlescentBloom'].each { token ->
-            if (!compositeText.contains(token)) {
-                throw new GradleException("Cinematic composite shader is missing required token: ${token}")
-            }
+        String bootstrap = file('src/main/java/kr/moonseungjun/shaderlab/ShaderLab.java').getText('UTF-8')
+        if (bootstrap.contains('setPostEffect') || bootstrap.contains('lush_grade')) {
+            throw new GradleException('The rejected screen-space post-effect path is still referenced by Java code')
         }
     }
 }
 
 tasks.named('check') {
-    dependsOn tasks.named('verifyShaderResources')
+    dependsOn tasks.named('verifyShaderpackResources')
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -157,7 +280,9 @@ jar {
                 'Specification-Version': mod_version,
                 'Implementation-Title': mod_name,
                 'Implementation-Version': mod_version,
-                'Automatic-Module-Name': mod_group_id
+                'Automatic-Module-Name': mod_group_id,
+                'ShaderLab-Photon-Commit': photonCommit,
+                'ShaderLab-Shaderpack': dreamscapePackName
         )
     }
 }
