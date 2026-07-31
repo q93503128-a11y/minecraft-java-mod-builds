@@ -12,6 +12,7 @@ import java.util.UUID;
 public final class VillageCouncilState {
     private static final Map<UUID, VillageRole> ROLES = new LinkedHashMap<>();
 
+    private static VillageSavedData savedData;
     private static UUID mayorId;
     private static String mayorName = "없음";
     private static int villageDay = 1;
@@ -22,11 +23,14 @@ public final class VillageCouncilState {
     }
 
     public static synchronized void initializeServer(MinecraftServer server) {
+        savedData = server.overworld().getDataStorage().computeIfAbsent(VillageSavedData.TYPE);
+
         ROLES.clear();
-        mayorId = null;
-        mayorName = "없음";
-        villageDay = 1;
-        timePhase = VillageTimePhase.MORNING;
+        ROLES.putAll(savedData.roles());
+        mayorId = savedData.mayorId().orElse(null);
+        mayorName = mayorId == null ? "없음" : savedData.mayorName();
+        villageDay = savedData.villageDay();
+        timePhase = savedData.timePhase();
         activeProposal = null;
         freezeAndApplyTime(server);
     }
@@ -35,6 +39,7 @@ public final class VillageCouncilState {
         if (mayorId == null) {
             mayorId = player.getUUID();
             mayorName = player.getGameProfile().name();
+            persist();
             broadcast(player.getServer(), "§6" + mayorName + "§f 님이 첫 임시 촌장이 되었습니다.");
         }
     }
@@ -45,6 +50,7 @@ public final class VillageCouncilState {
 
     public static synchronized String chooseRole(ServerPlayer player, VillageRole role) {
         ROLES.put(player.getUUID(), role);
+        persist();
         return player.getGameProfile().name() + "님의 역할이 " + role.displayName() + "(으)로 정해졌습니다.";
     }
 
@@ -55,6 +61,7 @@ public final class VillageCouncilState {
         mayorId = target.getUUID();
         mayorName = target.getGameProfile().name();
         activeProposal = null;
+        persist();
         broadcast(actor.getServer(), "§6촌장직이 " + mayorName + "§f 님에게 넘어갔습니다.");
         return "촌장직 이전 완료";
     }
@@ -134,8 +141,15 @@ public final class VillageCouncilState {
         if (previous == VillageTimePhase.NIGHT && timePhase == VillageTimePhase.MORNING) {
             villageDay++;
         }
+        persist();
         freezeAndApplyTime(server);
         broadcast(server, "§b마을 시간이 제 " + villageDay + "일 " + timePhase.koreanName() + "(으)로 진행되었습니다.");
+    }
+
+    private static void persist() {
+        if (savedData != null) {
+            savedData.replaceState(mayorId, mayorName, villageDay, timePhase, ROLES);
+        }
     }
 
     private static void freezeAndApplyTime(MinecraftServer server) {
