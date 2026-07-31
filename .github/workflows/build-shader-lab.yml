@@ -47,8 +47,8 @@ jobs:
           gradle wrapper --gradle-version 9.2.1 --distribution-type bin
           chmod +x gradlew
 
-      - name: Prepare log directories
-        run: mkdir -p build/logs build/reports build/deliverables
+      - name: Prepare persistent log directories
+        run: mkdir -p ci-logs build/deliverables
 
       - name: Verify toolchain
         id: toolchain
@@ -57,14 +57,14 @@ jobs:
           {
             java -version
             ./gradlew --version
-          } 2>&1 | tee build/logs/toolchain.log
+          } 2>&1 | tee ci-logs/toolchain.log
 
       - name: Clean build
         id: build
         continue-on-error: true
         run: |
           set -o pipefail
-          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build/logs/clean-build.log
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
 
       - name: Inspect executable JAR
         id: jarcheck
@@ -72,7 +72,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          python3 scripts/verify_jar.py build/libs/shaderlab-0.1.0-alpha.1.jar 2>&1 | tee build/logs/jar-verification.log
+          python3 scripts/verify_jar.py build/libs/shaderlab-0.1.0-alpha.1.jar 2>&1 | tee ci-logs/jar-verification.log
 
       - name: Assemble report and deliverables
         if: steps.build.outcome == 'success' && steps.jarcheck.outcome == 'success'
@@ -124,7 +124,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: shader-lab-0.1.0-alpha.1-logs
-          path: projects/shader-lab/build/logs/
+          path: projects/shader-lab/ci-logs/
           if-no-files-found: warn
           retention-days: 14
 
@@ -168,12 +168,12 @@ jobs:
             } >> BUILD_AND_RUNTIME_REPORT.md
           fi
 
-          if [ -f build/logs/clean-build.log ]; then
+          if [ -f ci-logs/clean-build.log ]; then
             {
               echo
               echo '## Clean-build log tail'
               echo '```text'
-              tail -n 160 build/logs/clean-build.log
+              tail -n 180 ci-logs/clean-build.log
               echo '```'
             } >> BUILD_AND_RUNTIME_REPORT.md
           fi
