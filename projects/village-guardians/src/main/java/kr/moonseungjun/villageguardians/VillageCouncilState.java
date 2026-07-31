@@ -276,7 +276,7 @@ public final class VillageCouncilState {
     }
 
     private static void freezeAndApplyTime(MinecraftServer server) {
-        server.getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false, server);
+        server.overworld().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false, server);
         server.overworld().setDayTime(timePhase.minecraftTime());
     }
 
