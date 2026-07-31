@@ -54,7 +54,7 @@ jobs:
 
       - name: Clean build and Sarp source audit
         run: |
-          mkdir -p ci-logs build/test-kit/mods build/deliverables
+          mkdir -p ci-logs
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
 
@@ -102,6 +102,7 @@ jobs:
 
       - name: Assemble private test kit
         run: |
+          mkdir -p build/test-kit/mods build/deliverables
           JAR="build/libs/shaderlab-${MOD_VERSION}.jar"
           cp "$JAR" build/test-kit/mods/
           cp "${JAR}.sha256" build/test-kit/
