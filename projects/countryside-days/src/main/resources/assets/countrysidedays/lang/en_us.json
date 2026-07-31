@@ -13,7 +13,9 @@
   "message.countrysidedays.notebook_status": "Restaurant anchor: %s, %s, %s / Meals prepared: %s\nCooking order: wild herb → river fish",
   "message.countrysidedays.counter_waiting_for_fish": "The prepared herb is ready. Add river fish next.",
   "message.countrysidedays.counter_waiting_for_herb": "Use this counter while holding wild herb to begin preparing a meal.",
-  "message.countrysidedays.starter_kit": "Your first countryside supplies are ready. Place the kitchen counter wherever you want to begin the restaurant.",
+  "message.countrysidedays.starter_kit": "Your first countryside supplies are ready. Take your time exploring the restaurant and fields.",
+  "message.countrysidedays.homestead_ready": "The first rural homestead was prepared on safe ground. Centre: %s, %s, %s",
+  "message.countrysidedays.homestead_deferred": "No wide and safe patch of land was found nearby. The search will run again next login.",
   "message.countrysidedays.wild_herb_found": "You found an edible wild herb in the grass.",
   "message.countrysidedays.river_fish_caught": "You brought up an extra fresh river fish."
 }
