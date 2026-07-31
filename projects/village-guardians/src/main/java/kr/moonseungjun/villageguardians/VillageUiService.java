@@ -10,28 +10,12 @@ import java.util.List;
 public final class VillageUiService {
     private static final String SEP = "\u001F";
 
-    private VillageUiService() {}
-
-    public static void openManual(ServerPlayer player) {
-        String body = "§6마을 수호대 작전 지침\n"
-                + "§f낮에는 시설을 수리·강화하고 대장간과 스킬 습득소에서 성장합니다.\n"
-                + "§f밤에는 북쪽 단일 성문으로 적이 접근합니다. 성문 내구도가 0이 되면 한 번에 무너집니다.\n"
-                + "§f적은 안으로 들어와 핵심 건물을 공격하며, 파괴된 시설은 수리 전까지 사용할 수 없습니다.\n"
-                + "§f모든 핵심 건물이 파괴되면 이전 날 또는 처음부터 다시 시작할 수 있습니다.\n"
-                + "§e수호 주화§f는 적 처치와 방어 성공으로 얻고, 화살은 첫 지급 이후 창고 상점에서 구매합니다.\n"
-                + "§f죽어도 소지품은 유지되며 장비 내구도는 감소하지 않습니다.";
-        if (VillageCouncilState.isMayor(player)) {
-            send(player, "manual", "마을 수호대 작전 설명서", body,
-                    List.of("open_mayor"), List.of("촌장 호출기 열기"));
-        } else {
-            send(player, "manual", "마을 수호대 작전 설명서", body, List.of(), List.of());
-        }
+    private VillageUiService() {
     }
 
-    public static void openMayor(ServerPlayer player) {
+    public static void openDashboard(ServerPlayer player) {
         MinecraftServer server = player.level().getServer();
-        if (server == null || !VillageCouncilState.isMayor(player)) {
-            player.sendSystemMessage(Component.literal("§c촌장만 마을 호출기를 사용할 수 있습니다."));
+        if (server == null) {
             return;
         }
         boolean multiplayer = server.getPlayerList().getPlayerCount() > 1;
@@ -40,16 +24,45 @@ public final class VillageUiService {
                 + VillageCouncilState.status(server, player) + "\n"
                 + VillageProgressionSystem.status(player) + "\n"
                 + VillageRaidSystem.status() + "\n\n"
-                + "§7성문 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.WALLS)
+                + "§7북문 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.WALLS)
                 + " | 회관 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.TOWN_HALL);
-        send(player, "mayor", "촌장 전용 마을 호출기", body,
-                List.of("advance_time", "chat_ready", "chat_gate", "chat_repair", "chat_help", "open_manual"),
-                List.of(multiplayer ? "다음 단계 투표 열기" : "낮·밤 전환",
-                        "준비 완료 신호", "성문 집결 신호", "수리 요청 신호", "지원 요청 신호", "작전 설명서"));
+        send(player, "dashboard", "마을 수호단 운영", body,
+                List.of("advance_time", "open_status", "chat_ready", "chat_gate", "chat_repair", "chat_help"),
+                List.of(multiplayer ? "낮·밤 전환 투표" : "낮·밤 전환",
+                        "내 상태·역할",
+                        "준비 완료 신호",
+                        "북문 집결 신호",
+                        "수리 요청 신호",
+                        "지원 요청 신호"));
     }
 
-    public static void openVoteForAll(MinecraftServer server) {
-        String body = "§e촌장이 다음 시간 단계로 진행하는 안건을 올렸습니다.\n"
+    public static void openMayor(ServerPlayer player) {
+        openDashboard(player);
+    }
+
+    public static void openManual(ServerPlayer player) {
+        openDashboard(player);
+    }
+
+    public static void openPlayerStatus(ServerPlayer player) {
+        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        String body = "§6내 상태\n"
+                + "§f" + VillageCouncilState.rpgStatus(player) + "\n"
+                + "§f역할: " + (role == null ? "미선택" : role.displayName()) + "\n"
+                + "§e수호 주화: " + VillageProgressionSystem.coins(player) + "\n"
+                + "§f장비 강화: " + VillageProgressionSystem.forgeRank(player) + " / "
+                + VillageProgressionSystem.MAX_PERSONAL_RANK + "\n"
+                + "§f능력 습득: " + VillageProgressionSystem.skillRank(player) + " / "
+                + VillageProgressionSystem.MAX_PERSONAL_RANK + "\n\n"
+                + "§7역할은 언제든 바꿀 수 있으며 역할 스킬은 /vg skill 또는 상태창에서 사용합니다.";
+        send(player, "status", "상태·역할", body,
+                List.of("use_skill", "role:guard_captain", "role:builder", "role:quartermaster",
+                        "role:scout", "role:steward", "role:medic"),
+                List.of("역할 스킬 사용", "수비대장", "건축가", "보급관", "정찰병", "관리관", "의무병"));
+    }
+
+    public static void openVoteForAll(MinecraftServer server, String proposerName) {
+        String body = "§e" + proposerName + " 님이 다음 시간 단계로 진행하는 투표를 열었습니다.\n"
                 + "§f현재 제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName() + "입니다.";
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -96,7 +109,7 @@ public final class VillageUiService {
                 + durabilitySummary();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             send(player, "victory", "방어 성공 · 정비 시간", body,
-                    List.of("open_mayor", "open_manual"), List.of("마을 현황", "수리 안내"));
+                    List.of("open_dashboard", "open_status"), List.of("마을 운영", "내 상태"));
         }
     }
 
@@ -118,9 +131,17 @@ public final class VillageUiService {
             return;
         }
 
+        if (action.startsWith("role:")) {
+            VillageRole.parse(action.substring(5)).ifPresentOrElse(role -> {
+                player.sendSystemMessage(Component.literal("§b" + VillageCouncilState.chooseRole(player, role)));
+                openPlayerStatus(player);
+            }, () -> player.sendSystemMessage(Component.literal("§c알 수 없는 역할입니다.")));
+            return;
+        }
+
         switch (action) {
-            case "open_manual" -> openManual(player);
-            case "open_mayor" -> openMayor(player);
+            case "open_dashboard", "open_mayor", "open_manual" -> openDashboard(player);
+            case "open_status" -> openPlayerStatus(player);
             case "advance_time" -> player.sendSystemMessage(Component.literal(VillageCouncilState.proposeAdvanceTime(player)));
             case "vote_yes" -> player.sendSystemMessage(Component.literal(VillageCouncilState.vote(player, true)));
             case "vote_no" -> player.sendSystemMessage(Component.literal(VillageCouncilState.vote(player, false)));
@@ -128,10 +149,15 @@ public final class VillageUiService {
             case "chat_gate" -> broadcastQuick(server, player, "전원 북쪽 성문으로 집결!");
             case "chat_repair" -> broadcastQuick(server, player, "손상 시설 확인 후 수리 바랍니다.");
             case "chat_help" -> broadcastQuick(server, player, "지원 요청! 제 위치로 모여 주세요.");
+            case "claim_bread" -> actAndReopen(player, VillageProgressionSystem.claimDailyBread(player), VillageProgressionSystem.Building.STOREHOUSE);
             case "buy_arrows" -> actAndReopen(player, VillageProgressionSystem.buyArrows(player), VillageProgressionSystem.Building.STOREHOUSE);
             case "buy_food" -> actAndReopen(player, VillageProgressionSystem.buyFood(player), VillageProgressionSystem.Building.STOREHOUSE);
             case "forge_upgrade" -> actAndReopen(player, VillageProgressionSystem.improveForgeRank(player), VillageProgressionSystem.Building.SMITHY);
             case "skill_learn" -> actAndReopen(player, VillageProgressionSystem.learnNextSkill(player), VillageProgressionSystem.Building.SKILL_HALL);
+            case "use_skill" -> {
+                player.sendSystemMessage(Component.literal("§b" + VillageRpgSystem.useRoleSkill(player)));
+                openPlayerStatus(player);
+            }
             case "use_infirmary" -> actAndReopen(player, VillageProgressionSystem.useInfirmary(player), VillageProgressionSystem.Building.INFIRMARY);
             case "train" -> actAndReopen(player, VillageProgressionSystem.train(player), VillageProgressionSystem.Building.BARRACKS);
             case "restart_previous" -> VillageProgressionSystem.resetForRestart(server, false);
@@ -142,26 +168,26 @@ public final class VillageUiService {
 
     private static void fillBuildingActions(VillageProgressionSystem.Building building, List<String> actions, List<String> labels) {
         switch (building) {
-            case TOWN_HALL -> add(actions, labels, "open_mayor", "마을 운영 화면", "advance_time", "시간 진행");
-            case WALLS -> add(actions, labels, "repair:walls", "손상 수리", "upgrade:walls", "성문·성벽 강화");
+            case TOWN_HALL -> add(actions, labels, "open_dashboard", "마을 운영 화면", "open_status", "내 상태·역할", "advance_time", "시간 진행");
+            case WALLS -> add(actions, labels, "repair:walls", "손상 수리", "upgrade:walls", "북문·성벽 강화");
             case SMITHY -> add(actions, labels, "forge_upgrade", "개인 장비 강화", "repair:smithy", "손상 수리", "upgrade:smithy", "대장간 증축");
-            case SKILL_HALL -> add(actions, labels, "skill_learn", "새 전투 기술 습득", "repair:skill_hall", "손상 수리", "upgrade:skill_hall", "스킬관 증축");
+            case SKILL_HALL -> add(actions, labels, "skill_learn", "새 능력 습득", "use_skill", "역할 스킬 사용", "repair:skill_hall", "손상 수리", "upgrade:skill_hall", "연구소 증축");
             case INFIRMARY -> add(actions, labels, "use_infirmary", "치료받기", "repair:infirmary", "손상 수리", "upgrade:infirmary", "의무소 증축");
-            case STOREHOUSE -> add(actions, labels, "buy_arrows", "화살 묶음 구매", "buy_food", "전투 식량 구매", "repair:storehouse", "손상 수리", "upgrade:storehouse", "창고·상점 증축");
+            case STOREHOUSE -> add(actions, labels, "claim_bread", "오늘의 빵 받기", "buy_arrows", "화살 묶음 구매", "buy_food", "전투 식량 구매", "repair:storehouse", "손상 수리", "upgrade:storehouse", "상점·보급소 증축");
             case BARRACKS -> add(actions, labels, "train", "전투 훈련", "repair:barracks", "손상 수리", "upgrade:barracks", "병영 증축");
         }
     }
 
     private static String description(ServerPlayer player, VillageProgressionSystem.Building building, boolean usable) {
-        if (!usable) return "§c시설이 완전히 파괴되었습니다. 수리 전까지 모든 기능이 잠깁니다.";
+        if (!usable) return "§c시설이 완전히 파괴되었습니다. 잔해만 남아 있으며 수리 전까지 모든 기능이 잠깁니다.";
         return switch (building) {
-            case TOWN_HALL -> "§f중앙 종에서 마을 현황, 빠른 신호, 낮·밤 전환을 관리합니다.";
-            case WALLS -> "§f적은 북쪽 성문만 공격하며, 내구도가 0이면 성문 구간이 한 번에 무너집니다.";
-            case SMITHY -> "§f개인 장비 강화 " + VillageProgressionSystem.forgeRank(player) + " / " + VillageProgressionSystem.MAX_PERSONAL_RANK;
-            case SKILL_HALL -> "§f전투 기술 " + VillageProgressionSystem.skillRank(player) + " / " + VillageProgressionSystem.MAX_PERSONAL_RANK;
+            case TOWN_HALL -> "§f마을 현황, 빠른 신호, 낮·밤 전환과 개인 상태를 관리합니다.";
+            case WALLS -> "§f적은 북쪽 성문으로 진입하며, 내구도가 0이면 북문이 무너집니다.";
+            case SMITHY -> "§f아이템과 장비를 강화합니다. 내 강화 " + VillageProgressionSystem.forgeRank(player) + " / " + VillageProgressionSystem.MAX_PERSONAL_RANK;
+            case SKILL_HALL -> "§f스킬·마법·특수능력을 배웁니다. 내 능력 " + VillageProgressionSystem.skillRank(player) + " / " + VillageProgressionSystem.MAX_PERSONAL_RANK;
             case INFIRMARY -> "§f즉시 치료와 웨이브 사이 회복을 담당합니다.";
-            case STOREHOUSE -> "§f첫 지급 이후 화살과 식량은 수호 주화로 구매합니다.";
-            case BARRACKS -> "§f훈련으로 RPG 경험치를 얻고 역할 스킬 효율을 강화합니다.";
+            case STOREHOUSE -> "§f매일 빵 3개부터 지급하며 강화할수록 식량과 상점 물량이 늘어납니다.";
+            case BARRACKS -> "§f훈련으로 XP를 얻고 역할 스킬 효율을 강화합니다.";
         };
     }
 
