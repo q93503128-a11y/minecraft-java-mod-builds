@@ -43,16 +43,25 @@ public final class VillageRpgSystem {
         if (event.getSource().getEntity() instanceof ServerPlayer attacker
                 && !(event.getEntity() instanceof ServerPlayer)) {
             int level = VillageCouncilState.levelOf(attacker.getUUID());
-            event.setAmount(event.getAmount() * outgoingDamageMultiplier(level));
+            float multiplier = outgoingDamageMultiplier(level);
+            if (VillageCouncilState.isInsideVillage(attacker)) {
+                multiplier *= VillageProgressionSystem.armoryDamageMultiplier();
+            }
+            event.setAmount(event.getAmount() * multiplier);
         }
 
         if (event.getEntity() instanceof ServerPlayer defender) {
             int level = VillageCouncilState.levelOf(defender.getUUID());
-            event.setAmount(event.getAmount() * incomingDamageMultiplier(level));
+            float multiplier = incomingDamageMultiplier(level);
+            if (VillageCouncilState.isInsideVillage(defender)) {
+                multiplier *= VillageProgressionSystem.wallDamageMultiplier();
+            }
+            event.setAmount(event.getAmount() * multiplier);
         }
     }
 
     public static void handleDeath(LivingDeathEvent event) {
+        VillageRaidSystem.onLivingDeath(event);
         if (!(event.getEntity() instanceof Monster defeated)) {
             return;
         }
@@ -89,7 +98,7 @@ public final class VillageRpgSystem {
 
         int level = VillageCouncilState.levelOf(player.getUUID());
         int tier = Math.min(2, (level - 1) / 10);
-        int duration = 200 + level * 10;
+        int duration = 200 + level * 10 + VillageProgressionSystem.skillDurationBonusTicks();
         List<ServerPlayer> allies = nearbyAllies(player, 12.0);
         String skillName;
 
@@ -142,7 +151,9 @@ public final class VillageRpgSystem {
             default -> throw new IllegalStateException("Unhandled role: " + role);
         }
 
-        int cooldownSeconds = Math.max(18, 36 - level / 2);
+        int cooldownSeconds = Math.max(
+                12,
+                36 - level / 2 - VillageProgressionSystem.skillCooldownReductionSeconds());
         NEXT_SKILL_USE_MILLIS.put(player.getUUID(), now + cooldownSeconds * 1000L);
         MinecraftServer server = player.level().getServer();
         if (server != null) {
