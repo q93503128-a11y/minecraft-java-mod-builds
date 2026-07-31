@@ -51,6 +51,20 @@ jobs:
           gradle wrapper --gradle-version 9.2.1 --distribution-type bin
           chmod +x gradlew
 
+      - name: Normalize pinned Noble fog matcher
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/prepare_noble.py")
+          source = path.read_text(encoding="utf-8")
+          old = r'''        (r"float\s+densityMult\s*=\s*mix\(0\.0?3,\s*0\.7,\s*biome_may_sandstorm\);", "float densityMult     = mix(0.95, 1.0, biome_may_sandstorm);", "fog density multiplier"),'''
+          new = r'''        (r"^[ \t]*float\s+densityMult\s*=\s*[^;]+;[ \t]*$", "float densityMult     = mix(0.95, 1.0, biome_may_sandstorm);", "fog density multiplier"),'''
+          if old not in source:
+              raise SystemExit("Expected pinned Noble density matcher was not found")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          PY
+
       - name: Clean single-JAR build
         run: |
           mkdir -p ci-logs
