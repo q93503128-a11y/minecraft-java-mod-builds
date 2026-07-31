@@ -17,7 +17,7 @@ final class VillageBuildingCatalog {
             case TOWN_HALL -> new Spec(
                     -18, 40, 37, 27, 9,
                     Blocks.OAK_PLANKS, Blocks.DEEPSLATE_TILES,
-                    "minecraft:village/plains/town_centers/plains_meeting_point_1",
+                    "minecraft:village/plains/houses/plains_big_house_1",
                     "마을", "회관");
             case BARRACKS -> new Spec(
                     -71, -54, 31, 25, 8,
