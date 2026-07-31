@@ -44,12 +44,12 @@ public final class VillageNetwork {
                 .map(VillageRole::displayName)
                 .orElse("미선택");
         PacketDistributor.sendToPlayer(player, new PlayerStatusPayload(
-                "레벨 " + progress.level() + "  ·  " + xp,
-                "역할 " + role,
+                "레벨 " + progress.level() + " · " + xp,
+                role,
                 "주화 " + VillageProgressionSystem.coins(player)
-                        + "  ·  장비 +" + VillageProgressionSystem.forgeRank(player),
+                        + " · 장비 +" + VillageProgressionSystem.forgeRank(player),
                 "능력 +" + VillageProgressionSystem.skillRank(player)
-                        + "  ·  " + VillageCouncilState.currentDay() + "일 "
+                        + " · " + VillageCouncilState.currentDay() + "일 "
                         + VillageCouncilState.currentPhase().koreanName()));
     }
 
