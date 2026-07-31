@@ -1,12 +1,12 @@
 # Countryside Days Build and Runtime Report
 
-- Source commit: ac647cf821c051f83e24c43c56e7a580660eed10
+- Source commit: 1bb03d280c8864ba223d1eb2d5f9ec0f12f7a879
 - Mod version: 0.1.0-alpha.2
 - Minecraft: 26.2
 - Java: 25
 - Gradle: 9.2.1
 - NeoForge: 26.2.0.38-beta
-- Wrapper generation: skipped
+- Wrapper generation: cancelled
 - Toolchain verification: skipped
 - Clean build: skipped
 - Datagen: skipped
