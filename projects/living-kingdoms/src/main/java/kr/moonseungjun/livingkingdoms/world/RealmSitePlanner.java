@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Surveys real noise terrain before any kingdom is placed. */
+/** Surveys generated noise terrain before any kingdom is placed. */
 public final class RealmSitePlanner {
     public static final int LAYOUT_REVISION = 1;
 
@@ -52,14 +52,15 @@ public final class RealmSitePlanner {
     }
 
     public static int surfaceY(ServerLevel level, int x, int z) {
+        level.getChunk(x >> 4, z >> 4);
         return level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
     }
 
     private static RealmSiteLayoutSavedData.RealmSite survey(ServerLevel level, String homelandId) {
         int[] nominal = nominalCenter(homelandId);
         List<Candidate> candidates = new ArrayList<>();
-        for (int dx = -256; dx <= 256; dx += 64) {
-            for (int dz = -256; dz <= 256; dz += 64) {
+        for (int dx = -192; dx <= 192; dx += 96) {
+            for (int dz = -192; dz <= 192; dz += 96) {
                 candidates.add(sample(level, homelandId, nominal[0] + dx, nominal[1] + dz));
             }
         }
@@ -83,12 +84,14 @@ public final class RealmSitePlanner {
         int samples = 0;
         for (int ox = -48; ox <= 48; ox += 24) {
             for (int oz = -48; oz <= 48; oz += 24) {
-                int y = surfaceY(level, x + ox, z + oz);
+                int sx = x + ox;
+                int sz = z + oz;
+                int y = surfaceY(level, sx, sz);
                 min = Math.min(min, y);
                 max = Math.max(max, y);
                 sum += y;
                 samples++;
-                if (!level.getFluidState(new BlockPos(x + ox, y, z + oz)).isEmpty()) water++;
+                if (!level.getFluidState(new BlockPos(sx, y, sz)).isEmpty()) water++;
             }
         }
         int average = Math.round(sum / (float) Math.max(1, samples));
