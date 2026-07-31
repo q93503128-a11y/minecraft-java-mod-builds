@@ -70,8 +70,8 @@ var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
             if (!details.directory) {
                 String path = details.relativePath.pathString.replace('\\', '/')
                 String lower = path.toLowerCase(Locale.ROOT)
-                boolean structure = (lower.startsWith('data/towns_and_towers/structure/')
-                        || lower.startsWith('data/towns_and_towers/structures/'))
+                boolean structure = (lower.contains('data/towns_and_towers/structure/')
+                        || lower.contains('data/towns_and_towers/structures/'))
                         && lower.endsWith('.nbt')
                 boolean usableVillageHouse = structure
                         && lower.contains('village')
@@ -121,13 +121,13 @@ var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
             List<Map<String, Object>> ranked = candidates.collect { candidate ->
                 String lower = candidate.lower as String
                 int score = 0
-                if (lower.contains(selectedStyle)) score += 90
+                if (lower.contains(selectedStyle)) score += 1_000
                 if (lower.contains('/houses/')) score += 30
                 if (lower.contains('/house')) score += 15
                 keywords.eachWithIndex { keyword, index ->
                     if (lower.contains(keyword)) score += 120 - index * 8
                 }
-                if (usedPaths.contains(candidate.path as String)) score -= 500
+                if (usedPaths.contains(candidate.path as String)) score -= 2_000
                 [candidate: candidate, score: score]
             }.findAll { rankedCandidate -> (rankedCandidate.score as int) > 0 }
              .sort { first, second ->
