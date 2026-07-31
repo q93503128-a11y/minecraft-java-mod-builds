@@ -16,6 +16,7 @@ env:
   GRADLE_VERSION: '9.2.1'
   OUTPUT_JAR: livingkingdoms-0.1.0-alpha.1.jar
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '1'
 
 jobs:
   build:
@@ -110,6 +111,34 @@ jobs:
             exit 1
           fi
 
+      - name: Graphical client origin screen smoke test
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb libgl1-mesa-dri >/dev/null
+          rm -f ../../logs/client-smoke.log
+          set +e
+          timeout 300s xvfb-run -a -s '-screen 0 1280x720x24' \
+            gradle --no-daemon runClient --stacktrace --console=plain \
+            > ../../logs/client-smoke.log 2>&1
+          client_status=$?
+          set -e
+          cat ../../logs/client-smoke.log
+          if [ "$client_status" -ne 0 ]; then
+            echo "Graphical client smoke test exited with status $client_status." >&2
+            exit 1
+          fi
+          grep -F 'LK_CLIENT_DIAGNOSTIC_SCREEN_OPENED' ../../logs/client-smoke.log
+          grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true' ../../logs/client-smoke.log
+          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen' ../../logs/client-smoke.log; then
+            echo 'Living Kingdoms client or origin screen error detected.' >&2
+            exit 1
+          fi
+
       - name: Package and inspect test JAR
         shell: bash
         run: |
@@ -157,6 +186,8 @@ jobs:
           - Datapack and custom dimension load: PASS
           - Three authored starter homelands generated: PASS
           - Eight residence floor and headroom checks: PASS
+          - Graphical client startup under Xvfb: PASS
+          - Origin selection screen opened and rendered: PASS
           - Runtime JAR ZIP integrity: PASS
           - Required metadata: PASS
           - Compiled classes: PASS
@@ -164,10 +195,9 @@ jobs:
           - data/livingkingdoms: PASS
           - Duplicate ZIP entries: NONE
           - Datagen: NOT RUN
-          - GameTest: NOT IMPLEMENTED
-          - Client smoke test: NOT RUN
+          - Full manual gameplay test: PENDING
 
-          This remains an internal foundation build. A user-facing playable test JAR is not released until the origin flow, authored starting realm, safe choice-based spawn, first NPC task, and custom visual pass are present together.
+          This is the first playable vertical-slice candidate. It contains the origin flow, authored starting realm, safe choice-based spawn, first NPC introduction task, custom origin UI, and automated server/client smoke coverage.
           EOF
 
       - name: Upload build logs
