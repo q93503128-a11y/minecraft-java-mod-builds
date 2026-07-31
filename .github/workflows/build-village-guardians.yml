@@ -2,11 +2,6 @@ name: Build Village Guardians
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'projects/village-guardians/**'
-      - '.github/workflows/build-village-guardians.yml'
 
 permissions:
   contents: write
@@ -97,7 +92,7 @@ jobs:
           else
             gh release create "$RELEASE_TAG" deliverables/* \
               --title 'Village Guardians v0.5.0-alpha.1' \
-              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2.0.38-beta. Styled UI, day-night voting, keep inventory, unbreakable equipment, one-gate siege AI, currency, shop, smithy, skill hall, building durability, repairs, and game-over restart.'
+              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2.0.38-beta.'
           fi
 
       - name: Record CI result in repository
