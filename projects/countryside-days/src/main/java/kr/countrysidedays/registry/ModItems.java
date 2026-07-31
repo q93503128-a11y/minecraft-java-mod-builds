@@ -39,6 +39,11 @@ public final class ModItems {
             properties -> properties.stacksTo(1)
     );
 
+    public static final DeferredItem<Item> VILLAGE_COIN = ITEMS.registerSimpleItem(
+            "village_coin",
+            properties -> properties.stacksTo(64)
+    );
+
     private ModItems() {
     }
 
