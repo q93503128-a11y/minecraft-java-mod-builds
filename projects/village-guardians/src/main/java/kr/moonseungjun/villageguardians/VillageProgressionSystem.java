@@ -12,23 +12,32 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public final class VillageProgressionSystem {
     public static final int MAX_BUILDING_LEVEL = 5;
+    public static final int MAX_PERSONAL_RANK = 5;
+    public static final int STARTING_COINS = 120;
 
     private static final Map<UUID, Integer> CLAIM_DAYS = new LinkedHashMap<>();
     private static final Map<UUID, Long> TRAINING_READY_AT = new LinkedHashMap<>();
+    private static final Map<UUID, Integer> COINS = new LinkedHashMap<>();
+    private static final Map<UUID, Integer> FORGE_RANKS = new LinkedHashMap<>();
+    private static final Map<UUID, Integer> SKILL_RANKS = new LinkedHashMap<>();
+    private static final EnumMap<Building, Integer> DURABILITY = new EnumMap<>(Building.class);
 
     private static VillageProgressionData savedData;
     private static int supplies = 180;
     private static int wallLevel;
-    private static int armoryLevel;
+    private static int smithyLevel;
     private static int infirmaryLevel;
     private static int storehouseLevel;
     private static int barracksLevel;
+    private static int skillHallLevel;
+    private static boolean gameOver;
 
     private VillageProgressionSystem() {
     }
@@ -37,13 +46,49 @@ public final class VillageProgressionSystem {
         savedData = server.overworld().getDataStorage().computeIfAbsent(VillageProgressionData.TYPE);
         supplies = savedData.supplies();
         wallLevel = savedData.wallLevel();
-        armoryLevel = savedData.armoryLevel();
+        smithyLevel = savedData.smithyLevel();
         infirmaryLevel = savedData.infirmaryLevel();
         storehouseLevel = savedData.storehouseLevel();
         barracksLevel = savedData.barracksLevel();
+        skillHallLevel = savedData.skillHallLevel();
+        gameOver = savedData.gameOver();
+
         CLAIM_DAYS.clear();
         CLAIM_DAYS.putAll(savedData.claimDays());
+        COINS.clear();
+        COINS.putAll(savedData.coins());
+        FORGE_RANKS.clear();
+        FORGE_RANKS.putAll(savedData.forgeRanks());
+        SKILL_RANKS.clear();
+        SKILL_RANKS.putAll(savedData.skillRanks());
         TRAINING_READY_AT.clear();
+
+        DURABILITY.clear();
+        Map<String, Integer> loadedDurability = savedData.buildingDurability();
+        for (Building building : Building.values()) {
+            int loaded = loadedDurability.getOrDefault(building.id(), maxDurability(building));
+            DURABILITY.put(building, Math.max(0, Math.min(maxDurability(building), loaded)));
+        }
+        persist();
+    }
+
+    public static synchronized void registerPlayer(ServerPlayer player) {
+        boolean changed = false;
+        if (!COINS.containsKey(player.getUUID())) {
+            COINS.put(player.getUUID(), STARTING_COINS);
+            changed = true;
+        }
+        if (!FORGE_RANKS.containsKey(player.getUUID())) {
+            FORGE_RANKS.put(player.getUUID(), 0);
+            changed = true;
+        }
+        if (!SKILL_RANKS.containsKey(player.getUUID())) {
+            SKILL_RANKS.put(player.getUUID(), 0);
+            changed = true;
+        }
+        if (changed) {
+            persist();
+        }
     }
 
     public static void handleBuildingInteraction(PlayerInteractEvent.RightClickBlock event) {
@@ -62,32 +107,49 @@ public final class VillageProgressionSystem {
 
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
-
-        String message = player.isShiftKeyDown()
-                ? useShiftAction(player, building)
-                : useNormalAction(player, building);
-        player.sendSystemMessage(Component.literal(message));
+        VillageUiService.openBuilding(player, building);
     }
 
     public static synchronized String status() {
-        return "§6[마을 발전] §f보급품 " + supplies
-                + " | 성벽 " + wallLevel
-                + " | 무기고 " + armoryLevel
-                + " | 의무소 " + infirmaryLevel
-                + " | 창고 " + storehouseLevel
-                + " | 병영 " + barracksLevel;
+        return "보급품 " + supplies
+                + " | 성벽 Lv." + wallLevel
+                + " | 대장간 Lv." + smithyLevel
+                + " | 스킬관 Lv." + skillHallLevel
+                + " | 의무소 Lv." + infirmaryLevel
+                + " | 창고 Lv." + storehouseLevel
+                + " | 병영 Lv." + barracksLevel;
+    }
+
+    public static synchronized String status(ServerPlayer player) {
+        return status() + " | 내 수호 주화 " + coins(player);
     }
 
     public static synchronized int supplies() {
         return supplies;
     }
 
+    public static synchronized int coins(ServerPlayer player) {
+        return COINS.getOrDefault(player.getUUID(), STARTING_COINS);
+    }
+
+    public static synchronized int forgeRank(ServerPlayer player) {
+        return FORGE_RANKS.getOrDefault(player.getUUID(), 0);
+    }
+
+    public static synchronized int skillRank(ServerPlayer player) {
+        return SKILL_RANKS.getOrDefault(player.getUUID(), 0);
+    }
+
     public static synchronized int wallLevel() {
         return wallLevel;
     }
 
+    public static synchronized int smithyLevel() {
+        return smithyLevel;
+    }
+
     public static synchronized int armoryLevel() {
-        return armoryLevel;
+        return smithyLevel;
     }
 
     public static synchronized int infirmaryLevel() {
@@ -102,20 +164,72 @@ public final class VillageProgressionSystem {
         return barracksLevel;
     }
 
-    public static synchronized float armoryDamageMultiplier() {
-        return 1.0f + armoryLevel * 0.08f;
+    public static synchronized int skillHallLevel() {
+        return skillHallLevel;
+    }
+
+    public static synchronized boolean isGameOver() {
+        return gameOver;
+    }
+
+    public static synchronized int level(Building building) {
+        return switch (building) {
+            case WALLS -> wallLevel;
+            case SMITHY -> smithyLevel;
+            case SKILL_HALL -> skillHallLevel;
+            case INFIRMARY -> infirmaryLevel;
+            case STOREHOUSE -> storehouseLevel;
+            case BARRACKS -> barracksLevel;
+            case TOWN_HALL -> 0;
+        };
+    }
+
+    public static synchronized int maxDurability(Building building) {
+        int level = level(building);
+        return switch (building) {
+            case WALLS -> 1200 + level * 350;
+            case TOWN_HALL -> 800;
+            case SMITHY -> 560 + level * 120;
+            case SKILL_HALL -> 520 + level * 110;
+            case INFIRMARY -> 520 + level * 110;
+            case STOREHOUSE -> 560 + level * 120;
+            case BARRACKS -> 620 + level * 130;
+        };
+    }
+
+    public static synchronized int durability(Building building) {
+        return DURABILITY.getOrDefault(building, maxDurability(building));
+    }
+
+    public static synchronized boolean isOperational(Building building) {
+        return durability(building) > 0;
+    }
+
+    public static synchronized String durabilityText(Building building) {
+        return durability(building) + " / " + maxDurability(building);
+    }
+
+    public static synchronized float smithyDamageMultiplier(ServerPlayer player) {
+        return 1.0f + smithyLevel * 0.04f + forgeRank(player) * 0.12f;
+    }
+
+    public static synchronized float learnedSkillDamageMultiplier(ServerPlayer player) {
+        return 1.0f + skillRank(player) * 0.08f;
     }
 
     public static synchronized float wallDamageMultiplier() {
-        return Math.max(0.65f, 1.0f - wallLevel * 0.06f);
+        if (!isOperational(Building.WALLS)) {
+            return 1.0f;
+        }
+        return Math.max(0.62f, 0.94f - wallLevel * 0.064f);
     }
 
-    public static synchronized int skillDurationBonusTicks() {
-        return barracksLevel * 40;
+    public static synchronized int skillDurationBonusTicks(ServerPlayer player) {
+        return barracksLevel * 40 + skillRank(player) * 60;
     }
 
-    public static synchronized int skillCooldownReductionSeconds() {
-        return barracksLevel * 2;
+    public static synchronized int skillCooldownReductionSeconds(ServerPlayer player) {
+        return barracksLevel * 2 + skillRank(player);
     }
 
     public static synchronized int raidRewardMultiplierPercent() {
@@ -128,17 +242,207 @@ public final class VillageProgressionSystem {
         persist();
         if (granted > 0) {
             server.getPlayerList().broadcastSystemMessage(
-                    Component.literal("§6[보급품] §f+" + granted + " | " + reason + " | 현재 " + supplies),
+                    Component.literal("§6[공동 보급품] §f+" + granted + " | " + reason + " | 현재 " + supplies),
                     false);
+        }
+    }
+
+    public static synchronized void addCoins(ServerPlayer player, int amount, String reason) {
+        int granted = Math.max(0, amount);
+        if (granted <= 0) {
+            return;
+        }
+        COINS.put(player.getUUID(), coins(player) + granted);
+        persist();
+        player.sendSystemMessage(Component.literal("§e+" + granted + " 수호 주화 §7(" + reason + ")"));
+    }
+
+    public static void awardRaidCoins(MinecraftServer server, int amount) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            addCoins(player, amount, "습격 방어 보상");
+        }
+    }
+
+    public static synchronized String buyArrows(ServerPlayer player) {
+        if (!isOperational(Building.STOREHOUSE)) {
+            return "창고가 파괴되어 상점을 이용할 수 없습니다.";
+        }
+        int count = 16 + storehouseLevel * 4;
+        int cost = 14;
+        if (!spendCoins(player, cost)) {
+            return "수호 주화가 부족합니다. 화살 " + count + "개 가격: " + cost;
+        }
+        ItemStack arrows = Items.ARROW.getDefaultInstance();
+        arrows.setCount(count);
+        giveOrDrop(player, arrows);
+        return "화살 " + count + "개 구매 완료 | 남은 주화 " + coins(player);
+    }
+
+    public static synchronized String buyFood(ServerPlayer player) {
+        if (!isOperational(Building.STOREHOUSE)) {
+            return "창고가 파괴되어 상점을 이용할 수 없습니다.";
+        }
+        int count = 6 + storehouseLevel * 2;
+        int cost = 18;
+        if (!spendCoins(player, cost)) {
+            return "수호 주화가 부족합니다. 전투 식량 가격: " + cost;
+        }
+        ItemStack food = Items.COOKED_BEEF.getDefaultInstance();
+        food.setCount(count);
+        giveOrDrop(player, food);
+        return "전투 식량 " + count + "개 구매 완료 | 남은 주화 " + coins(player);
+    }
+
+    public static synchronized String improveForgeRank(ServerPlayer player) {
+        if (!isOperational(Building.SMITHY)) {
+            return "대장간이 파괴되어 장비 강화를 할 수 없습니다.";
+        }
+        int current = forgeRank(player);
+        if (current >= MAX_PERSONAL_RANK) {
+            return "대장간 장비 강화가 최고 단계입니다.";
+        }
+        int cost = 80 + current * 100;
+        if (!spendCoins(player, cost)) {
+            return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + coins(player);
+        }
+        FORGE_RANKS.put(player.getUUID(), current + 1);
+        persist();
+        return "장비 강화 단계 " + (current + 1) + " 달성 | 공격력 보너스 상승";
+    }
+
+    public static synchronized String learnNextSkill(ServerPlayer player) {
+        if (!isOperational(Building.SKILL_HALL)) {
+            return "스킬 습득소가 파괴되어 기술을 배울 수 없습니다.";
+        }
+        int current = skillRank(player);
+        if (current >= MAX_PERSONAL_RANK) {
+            return "전투 기술이 최고 단계입니다.";
+        }
+        int cost = 100 + current * 120;
+        if (!spendCoins(player, cost)) {
+            return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + coins(player);
+        }
+        SKILL_RANKS.put(player.getUUID(), current + 1);
+        persist();
+        return "전투 기술 단계 " + (current + 1) + " 습득 | 역할 스킬과 공격력 강화";
+    }
+
+    public static synchronized String train(ServerPlayer player) {
+        if (!isOperational(Building.BARRACKS)) {
+            return "병영이 파괴되어 훈련할 수 없습니다.";
+        }
+        long now = System.currentTimeMillis();
+        long readyAt = TRAINING_READY_AT.getOrDefault(player.getUUID(), 0L);
+        if (readyAt > now) {
+            long seconds = Math.max(1L, (readyAt - now + 999L) / 1000L);
+            return "다음 훈련까지 " + seconds + "초 남았습니다.";
+        }
+        int xp = 30 + barracksLevel * 18;
+        VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(player, xp);
+        TRAINING_READY_AT.put(player.getUUID(), now + 180_000L);
+        return "병영 훈련 완료 | RPG XP " + result.awardedExperience()
+                + " | 현재 레벨 " + result.current().level();
+    }
+
+    public static synchronized String useInfirmary(ServerPlayer player) {
+        if (!isOperational(Building.INFIRMARY)) {
+            return "의무소가 파괴되어 치료할 수 없습니다.";
+        }
+        float heal = 6.0f + infirmaryLevel * 4.0f;
+        player.heal(heal);
+        return "의무소 치료 완료 | 체력 " + Math.round(heal / 2.0f) + "칸 회복";
+    }
+
+    public static synchronized String upgrade(ServerPlayer player, Building building) {
+        if (building == Building.TOWN_HALL) {
+            return "회관은 직접 업그레이드하지 않습니다.";
+        }
+        if (!VillageCouncilState.isMayor(player)) {
+            return "건물 업그레이드는 촌장만 승인할 수 있습니다.";
+        }
+        if (VillageRaidSystem.isRaidLocked()) {
+            return "습격 중에는 업그레이드할 수 없습니다.";
+        }
+        if (!isOperational(building)) {
+            return "파괴된 건물은 먼저 수리해야 합니다.";
+        }
+
+        int current = level(building);
+        if (current >= MAX_BUILDING_LEVEL) {
+            return building.displayName() + "은(는) 최고 레벨입니다.";
+        }
+        int cost = upgradeCost(current);
+        if (supplies < cost) {
+            return "공동 보급품 부족: 필요 " + cost + ", 현재 " + supplies;
+        }
+
+        supplies -= cost;
+        setLevel(building, current + 1);
+        DURABILITY.put(building, maxDurability(building));
+        persist();
+        if (player.level() instanceof ServerLevel level) {
+            VillageWorldSystem.applyUpgradeVisual(level, building, current + 1);
+        }
+        return building.displayName() + " Lv." + (current + 1)
+                + " 업그레이드 완료 | 보급품 " + supplies;
+    }
+
+    public static synchronized String repair(ServerPlayer player, Building building) {
+        if (!VillageCouncilState.isMayor(player)) {
+            return "건물 수리는 촌장이 공동 보급품으로 승인해야 합니다.";
+        }
+        if (VillageRaidSystem.isRaidLocked()) {
+            return "습격 중에는 수리할 수 없습니다.";
+        }
+        int current = durability(building);
+        int maximum = maxDurability(building);
+        if (current >= maximum) {
+            return building.displayName() + "은(는) 이미 완전한 상태입니다.";
+        }
+        int missing = maximum - current;
+        int cost = Math.max(20, (missing + 7) / 8);
+        if (supplies < cost) {
+            return "수리비 부족: 보급품 " + cost + " 필요, 현재 " + supplies;
+        }
+        supplies -= cost;
+        DURABILITY.put(building, maximum);
+        persist();
+        if (player.level() instanceof ServerLevel level) {
+            VillageWorldSystem.rebuildStructure(level, building);
+        }
+        return building.displayName() + " 수리 완료 | 보급품 " + supplies;
+    }
+
+    public static synchronized void damageBuilding(MinecraftServer server, Building building, int damage) {
+        if (gameOver || damage <= 0 || !isOperational(building)) {
+            return;
+        }
+        int previous = durability(building);
+        int next = Math.max(0, previous - damage);
+        DURABILITY.put(building, next);
+        persist();
+
+        if (next == 0) {
+            VillageWorldSystem.destroyStructure(server.overworld(), building);
+            server.getPlayerList().broadcastSystemMessage(
+                    Component.literal("§c[시설 파괴] §f" + building.displayName()
+                            + "이(가) 무너졌습니다. 방어 성공 후 수리 전까지 이용할 수 없습니다."),
+                    false);
+        }
+
+        if (allCoreBuildingsDestroyed()) {
+            gameOver = true;
+            persist();
+            VillageRaidSystem.triggerGameOver(server);
         }
     }
 
     public static void healRaidParty(MinecraftServer server, boolean victory) {
         int level = infirmaryLevel();
-        if (level <= 0 && !victory) {
+        if (!isOperational(Building.INFIRMARY) || (level <= 0 && !victory)) {
             return;
         }
-        float heal = victory ? 6.0f + level * 4.0f : level * 2.0f;
+        float heal = victory ? 8.0f + level * 4.0f : level * 2.0f;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (VillageCouncilState.isInsideVillage(player)) {
                 player.heal(heal);
@@ -146,130 +450,68 @@ public final class VillageProgressionSystem {
         }
     }
 
-    private static String useShiftAction(ServerPlayer player, Building building) {
-        if (building == Building.TOWN_HALL) {
-            return VillageCouncilState.proposeAdvanceTime(player);
-        }
-        return upgrade(player, building);
-    }
-
-    private static String useNormalAction(ServerPlayer player, Building building) {
-        return switch (building) {
-            case TOWN_HALL -> VillageCouncilState.status(player.level().getServer(), player)
-                    + "\n" + status()
-                    + "\n" + VillageRaidSystem.status();
-            case STOREHOUSE -> claimDailyRations(player);
-            case ARMORY -> "§6[무기고] §f레벨 " + armoryLevel()
-                    + " | 마을 안에서 공격력 +" + (armoryLevel() * 8) + "%"
-                    + " | 웅크리고 사용하면 업그레이드";
-            case INFIRMARY -> useInfirmary(player);
-            case BARRACKS -> train(player);
-            case WALLS -> "§6[성벽 관리소] §f레벨 " + wallLevel()
-                    + " | 마을 안에서 받는 피해 " + Math.round(wallDamageMultiplier() * 100.0f) + "%"
-                    + " | 웅크리고 사용하면 업그레이드";
-        };
-    }
-
-    private static synchronized String claimDailyRations(ServerPlayer player) {
-        int day = VillageCouncilState.currentDay();
-        if (CLAIM_DAYS.getOrDefault(player.getUUID(), 0) >= day) {
-            return "§6[창고] §f오늘의 전투 보급을 이미 받았습니다.";
-        }
-        int cost = Math.max(4, 10 - storehouseLevel);
-        if (supplies < cost) {
-            return "§c[창고] 보급품이 부족합니다. 필요 " + cost + ", 현재 " + supplies;
+    public static synchronized void resetForRestart(MinecraftServer server, boolean fromStart) {
+        gameOver = false;
+        if (fromStart) {
+            supplies = 180;
+            wallLevel = 0;
+            smithyLevel = 0;
+            infirmaryLevel = 0;
+            storehouseLevel = 0;
+            barracksLevel = 0;
+            skillHallLevel = 0;
+            CLAIM_DAYS.clear();
+            FORGE_RANKS.clear();
+            SKILL_RANKS.clear();
+            COINS.clear();
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                COINS.put(player.getUUID(), STARTING_COINS);
+                FORGE_RANKS.put(player.getUUID(), 0);
+                SKILL_RANKS.put(player.getUUID(), 0);
+            }
+        } else {
+            supplies = Math.max(100, supplies);
         }
 
-        supplies -= cost;
-        CLAIM_DAYS.put(player.getUUID(), day);
-        ItemStack food = Items.COOKED_BEEF.getDefaultInstance();
-        food.setCount(6 + storehouseLevel * 2);
-        ItemStack arrows = Items.ARROW.getDefaultInstance();
-        arrows.setCount(12 + storehouseLevel * 6);
-        giveOrDrop(player, food);
-        giveOrDrop(player, arrows);
+        DURABILITY.clear();
+        for (Building building : Building.values()) {
+            DURABILITY.put(building, maxDurability(building));
+        }
         persist();
-        return "§a[창고] §f제 " + day + "일 전투 보급 지급 완료. 보급품 " + supplies + " 남음.";
-    }
-
-    private static String useInfirmary(ServerPlayer player) {
-        int level = infirmaryLevel();
-        float heal = 4.0f + level * 4.0f;
-        player.heal(heal);
-        return "§d[의무소] §f체력을 " + Math.round(heal / 2.0f) + "칸 회복했습니다."
-                + " | 레벨 " + level + " | 웅크리고 사용하면 업그레이드";
-    }
-
-    private static String train(ServerPlayer player) {
-        long now = System.currentTimeMillis();
-        long readyAt = TRAINING_READY_AT.getOrDefault(player.getUUID(), 0L);
-        if (readyAt > now) {
-            long seconds = Math.max(1L, (readyAt - now + 999L) / 1000L);
-            return "§e[병영] §f다음 훈련까지 " + seconds + "초 남았습니다.";
-        }
-
-        int xp = 25 + barracksLevel() * 15;
-        VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(player, xp);
-        TRAINING_READY_AT.put(player.getUUID(), now + 180_000L);
-        return "§a[병영 훈련] §fRPG XP " + result.awardedExperience()
-                + " 획득 | 현재 레벨 " + result.current().level()
-                + " | 웅크리고 사용하면 업그레이드";
-    }
-
-    private static synchronized String upgrade(ServerPlayer player, Building building) {
-        if (!VillageCouncilState.isMayor(player)) {
-            return "§c건물 업그레이드는 촌장만 승인할 수 있습니다.";
-        }
-
-        int current = level(building);
-        if (current >= MAX_BUILDING_LEVEL) {
-            return "§e" + building.displayName + "은(는) 최고 레벨입니다.";
-        }
-
-        int cost = upgradeCost(current);
-        if (supplies < cost) {
-            return "§c보급품 부족: " + building.displayName + " 업그레이드에 " + cost
-                    + " 필요, 현재 " + supplies;
-        }
-
-        supplies -= cost;
-        int next = current + 1;
-        setLevel(building, next);
-        persist();
-
-        if (player.level() instanceof ServerLevel level) {
-            VillageWorldSystem.applyUpgradeVisual(level, building, next);
-        }
-        MinecraftServer server = player.level().getServer();
-        if (server != null) {
-            server.getPlayerList().broadcastSystemMessage(
-                    Component.literal("§a[마을 발전] §f" + building.displayName + " 레벨 " + next
-                            + " 달성 | 보급품 " + supplies + " 남음"),
-                    false);
-        }
-        return building.displayName + " 업그레이드 완료";
+        VillageCouncilState.restartGameDay(server, fromStart);
+        VillageWorldSystem.forceRebuild(server);
+        VillageRaidSystem.resetAfterRestart(server);
     }
 
     public static int upgradeCost(int currentLevel) {
         return 120 + Math.max(0, currentLevel) * 140;
     }
 
-    private static int level(Building building) {
-        return switch (building) {
-            case WALLS -> wallLevel;
-            case ARMORY -> armoryLevel;
-            case INFIRMARY -> infirmaryLevel;
-            case STOREHOUSE -> storehouseLevel;
-            case BARRACKS -> barracksLevel;
-            case TOWN_HALL -> 0;
-        };
+    private static boolean spendCoins(ServerPlayer player, int amount) {
+        int current = coins(player);
+        if (current < amount) {
+            return false;
+        }
+        COINS.put(player.getUUID(), current - amount);
+        persist();
+        return true;
+    }
+
+    private static boolean allCoreBuildingsDestroyed() {
+        for (Building building : Building.values()) {
+            if (building != Building.WALLS && isOperational(building)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void setLevel(Building building, int value) {
         int level = Math.max(0, Math.min(MAX_BUILDING_LEVEL, value));
         switch (building) {
             case WALLS -> wallLevel = level;
-            case ARMORY -> armoryLevel = level;
+            case SMITHY -> smithyLevel = level;
+            case SKILL_HALL -> skillHallLevel = level;
             case INFIRMARY -> infirmaryLevel = level;
             case STOREHOUSE -> storehouseLevel = level;
             case BARRACKS -> barracksLevel = level;
@@ -279,16 +521,25 @@ public final class VillageProgressionSystem {
     }
 
     private static void persist() {
-        if (savedData != null) {
-            savedData.replaceState(
-                    supplies,
-                    wallLevel,
-                    armoryLevel,
-                    infirmaryLevel,
-                    storehouseLevel,
-                    barracksLevel,
-                    CLAIM_DAYS);
+        if (savedData == null) {
+            return;
         }
+        Map<String, Integer> encodedDurability = new LinkedHashMap<>();
+        DURABILITY.forEach((building, hp) -> encodedDurability.put(building.id(), hp));
+        savedData.replaceState(
+                supplies,
+                wallLevel,
+                smithyLevel,
+                infirmaryLevel,
+                storehouseLevel,
+                barracksLevel,
+                skillHallLevel,
+                CLAIM_DAYS,
+                COINS,
+                FORGE_RANKS,
+                SKILL_RANKS,
+                encodedDurability,
+                gameOver);
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
@@ -298,19 +549,26 @@ public final class VillageProgressionSystem {
     }
 
     public enum Building {
-        TOWN_HALL("회관", Blocks.BELL),
-        WALLS("성벽", Blocks.STONECUTTER),
-        ARMORY("무기고", Blocks.SMITHING_TABLE),
-        INFIRMARY("의무소", Blocks.BREWING_STAND),
-        STOREHOUSE("창고", Blocks.BARREL),
-        BARRACKS("병영", Blocks.TARGET);
+        TOWN_HALL("town_hall", "회관", Blocks.BELL),
+        WALLS("walls", "성문·성벽", Blocks.STONECUTTER),
+        SMITHY("smithy", "대장간", Blocks.SMITHING_TABLE),
+        SKILL_HALL("skill_hall", "스킬 습득소", Blocks.ENCHANTING_TABLE),
+        INFIRMARY("infirmary", "의무소", Blocks.BREWING_STAND),
+        STOREHOUSE("storehouse", "창고·상점", Blocks.BARREL),
+        BARRACKS("barracks", "병영", Blocks.TARGET);
 
+        private final String id;
         private final String displayName;
         private final Block terminal;
 
-        Building(String displayName, Block terminal) {
+        Building(String id, String displayName, Block terminal) {
+            this.id = id;
             this.displayName = displayName;
             this.terminal = terminal;
+        }
+
+        public String id() {
+            return id;
         }
 
         public String displayName() {
@@ -320,6 +578,15 @@ public final class VillageProgressionSystem {
         public static Building fromTerminal(Block block) {
             for (Building building : values()) {
                 if (building.terminal == block) {
+                    return building;
+                }
+            }
+            return null;
+        }
+
+        public static Building fromId(String id) {
+            for (Building building : values()) {
+                if (building.id.equals(id)) {
                     return building;
                 }
             }
