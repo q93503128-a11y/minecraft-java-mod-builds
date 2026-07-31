@@ -10,15 +10,24 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
-public final class VillageWorldSystem {
-    public static final String ALLOWED_MOB_TAG = "villageguardians_allowed";
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
+public final class VillageWorldSystem {
     private static final int FORTRESS_RADIUS = 46;
     private static final int TERRAFORM_RADIUS = 52;
     private static final int CLEAR_HEIGHT = 15;
+    private static final Set<UUID> ALLOWED_GAME_MOBS = ConcurrentHashMap.newKeySet();
+
     private static boolean generationInProgress;
 
     private VillageWorldSystem() {
+    }
+
+    public static synchronized void resetTransientState() {
+        generationInProgress = false;
+        ALLOWED_GAME_MOBS.clear();
     }
 
     public static synchronized void ensureFortifiedVillage(ServerPlayer player) {
@@ -52,11 +61,11 @@ public final class VillageWorldSystem {
     }
 
     public static boolean isAllowedGameMob(Mob mob) {
-        return mob.getTags().contains(ALLOWED_MOB_TAG);
+        return ALLOWED_GAME_MOBS.contains(mob.getUUID());
     }
 
     public static void markAllowedGameMob(Mob mob) {
-        mob.addTag(ALLOWED_MOB_TAG);
+        ALLOWED_GAME_MOBS.add(mob.getUUID());
     }
 
     private static boolean isFortressBuilt(ServerLevel level, BlockPos center) {
@@ -80,7 +89,7 @@ public final class VillageWorldSystem {
         furnishSmithy(level, center.offset(25, 0, -23), baseY, 14, 11);
         buildHouse(level, center.offset(-39, 0, 13), baseY, 15, 11, 6, Blocks.OAK_PLANKS, Blocks.SPRUCE_PLANKS);
         furnishStorehouse(level, center.offset(-39, 0, 13), baseY, 15, 11);
-        buildHouse(level, center.offset(25, 0, 13), baseY, 14, 11, 6, Blocks.WHITE_TERRACOTTA, Blocks.BRICKS);
+        buildHouse(level, center.offset(25, 0, 13), baseY, 14, 11, 6, Blocks.BRICKS, Blocks.STONE_BRICKS);
         furnishInfirmary(level, center.offset(25, 0, 13), baseY, 14, 11);
 
         buildHouse(level, center.offset(-38, 0, -40), baseY, 11, 9, 5, Blocks.STRIPPED_SPRUCE_WOOD, Blocks.DARK_OAK_PLANKS);
@@ -269,8 +278,8 @@ public final class VillageWorldSystem {
 
     private static void furnishBarracks(ServerLevel level, BlockPos origin, int baseY, int width, int depth) {
         for (int i = 2; i < depth - 2; i += 3) {
-            setAbsolute(level, origin.getX() + 2, baseY + 2, origin.getZ() + i, Blocks.RED_BED);
-            setAbsolute(level, origin.getX() + width - 3, baseY + 2, origin.getZ() + i, Blocks.RED_BED);
+            setAbsolute(level, origin.getX() + 2, baseY + 2, origin.getZ() + i, Blocks.SPRUCE_PLANKS);
+            setAbsolute(level, origin.getX() + width - 3, baseY + 2, origin.getZ() + i, Blocks.SPRUCE_PLANKS);
         }
     }
 
@@ -289,8 +298,8 @@ public final class VillageWorldSystem {
 
     private static void furnishInfirmary(ServerLevel level, BlockPos origin, int baseY, int width, int depth) {
         for (int z = 2; z < depth - 2; z += 3) {
-            setAbsolute(level, origin.getX() + 2, baseY + 2, origin.getZ() + z, Blocks.WHITE_BED);
-            setAbsolute(level, origin.getX() + width - 3, baseY + 2, origin.getZ() + z, Blocks.WHITE_BED);
+            setAbsolute(level, origin.getX() + 2, baseY + 2, origin.getZ() + z, Blocks.OAK_PLANKS);
+            setAbsolute(level, origin.getX() + width - 3, baseY + 2, origin.getZ() + z, Blocks.OAK_PLANKS);
         }
         setAbsolute(level, origin.getX() + width / 2, baseY + 2, origin.getZ() + depth - 3, Blocks.BREWING_STAND);
     }
