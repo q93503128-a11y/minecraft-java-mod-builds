@@ -29,12 +29,14 @@ public final class CountrysideDays {
         NeoForge.EVENT_BUS.addListener(KitchenInteractionHandler::onUseItemOnBlock);
         NeoForge.EVENT_BUS.addListener(KitchenInteractionHandler::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onEntityJoinLevel);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onBlockDrops);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onItemFished);
         NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.3");
+        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.4");
     }
 }
