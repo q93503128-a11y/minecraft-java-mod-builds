@@ -89,12 +89,13 @@ final class VillageBuildingCatalog {
         int footprintCenterX2 = origin.getX() * 2 + spec.width() - 1;
         int footprintCenterZ2 = origin.getZ() * 2 + spec.depth() - 1;
         BlockPos selectedDoor = null;
+        int selectedY = Integer.MAX_VALUE;
         int selectedProjection = Integer.MIN_VALUE;
         int selectedLateral = Integer.MAX_VALUE;
 
         for (int x = origin.getX(); x < origin.getX() + spec.width(); x++) {
             for (int z = origin.getZ(); z < origin.getZ() + spec.depth(); z++) {
-                for (int y = origin.getY(); y <= origin.getY() + Math.min(7, spec.height()); y++) {
+                for (int y = origin.getY(); y <= origin.getY() + spec.height(); y++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (!level.getBlockState(pos).is(BlockTags.DOORS)) {
                         continue;
@@ -105,9 +106,14 @@ final class VillageBuildingCatalog {
                             + relativeZ2 * front.getStepZ();
                     int lateral = Math.abs(relativeX2 * sideways.getStepX()
                             + relativeZ2 * sideways.getStepZ());
-                    if (projection > selectedProjection
-                            || projection == selectedProjection && lateral < selectedLateral) {
+                    boolean betterFloor = y < selectedY;
+                    boolean sameFloorBetterProjection = y == selectedY && projection > selectedProjection;
+                    boolean sameProjectionMoreCentral = y == selectedY
+                            && projection == selectedProjection
+                            && lateral < selectedLateral;
+                    if (betterFloor || sameFloorBetterProjection || sameProjectionMoreCentral) {
                         selectedDoor = pos;
+                        selectedY = y;
                         selectedProjection = projection;
                         selectedLateral = lateral;
                     }
