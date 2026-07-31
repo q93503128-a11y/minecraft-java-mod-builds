@@ -3,7 +3,7 @@
 
 import math
 
-VILLAGE_RADIUS = 64
+VILLAGE_RADIUS = 96
 DEFENSE_XP_MULTIPLIER = 1.5
 
 
@@ -27,16 +27,16 @@ def main() -> None:
     center = (0, 64, 0)
 
     assert is_inside_village(center, center)
-    assert is_inside_village((64, 64, 0), center)
-    assert not is_inside_village((65, 64, 0), center)
-    assert is_inside_village((32, 96, 32), center)
-    assert not is_inside_village((40, 104, 40), center)
+    assert is_inside_village((96, 64, 0), center)
+    assert not is_inside_village((97, 64, 0), center)
+    assert is_inside_village((48, 96, 48), center)
+    assert not is_inside_village((70, 134, 70), center)
 
     assert rewarded_xp(100, False) == 100
     assert rewarded_xp(100, True) == 150
     assert rewarded_xp(47, True) == 71
 
-    print("PASS: village territory contract")
+    print("PASS: expanded village territory contract")
     print(f"radius={VILLAGE_RADIUS}")
     print(f"defense_xp_multiplier={DEFENSE_XP_MULTIPLIER}")
 
