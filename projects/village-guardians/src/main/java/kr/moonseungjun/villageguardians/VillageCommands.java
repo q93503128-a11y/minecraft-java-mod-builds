@@ -18,6 +18,11 @@ public final class VillageCommands {
         var root = Commands.literal("vg")
                 .then(Commands.literal("status")
                         .executes(context -> status(context.getSource())))
+                .then(Commands.literal("progression")
+                        .executes(context -> progressionStatus(context.getSource())))
+                .then(Commands.literal("raid")
+                        .then(Commands.literal("status")
+                                .executes(context -> raidStatus(context.getSource()))))
                 .then(Commands.literal("village")
                         .then(Commands.literal("status")
                                 .executes(context -> villageStatus(context.getSource())))
@@ -61,6 +66,18 @@ public final class VillageCommands {
         source.sendSuccess(
                 () -> Component.literal(VillageCouncilState.status(source.getServer(), player)),
                 false);
+        source.sendSuccess(() -> Component.literal(VillageProgressionSystem.status()), false);
+        source.sendSuccess(() -> Component.literal(VillageRaidSystem.status()), false);
+        return 1;
+    }
+
+    private static int progressionStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(VillageProgressionSystem.status()), false);
+        return 1;
+    }
+
+    private static int raidStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(VillageRaidSystem.status()), false);
         return 1;
     }
 
