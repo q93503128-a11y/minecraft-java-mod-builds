@@ -1,0 +1,13 @@
+{
+  "environment": "minecraft:default",
+  "structure": "countrysidedays:empty",
+  "max_ticks": 200,
+  "setup_ticks": 0,
+  "required": true,
+  "manual_only": false,
+  "max_attempts": 1,
+  "required_successes": 1,
+  "sky_access": false,
+  "type": "minecraft:function",
+  "function": "countrysidedays:homestead_layout"
+}
