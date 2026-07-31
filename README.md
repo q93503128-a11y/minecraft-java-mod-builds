@@ -8,13 +8,28 @@
 - 모든 모드는 `projects/<project-slug>/` 아래에서 분리한다.
 - 2026-07-31 이전에 저장되어 있던 Countryside Days, Wildbound, 기존 Village Guardians 소스·로그·워크플로는 폐기했다.
 - 폐기된 프로젝트의 코드나 설계를 새 작업의 기준으로 사용하지 않는다.
-- 현재 새로 시작할 대상은 **Village Guardians(마을지키기)**이며, 기존 구현을 복원하지 않고 처음부터 설계·구현한다.
+- 현재 활성 프로젝트는 새로 시작한 **Village Guardians(마을지키기)**다.
+- 활성 경로: [`projects/village-guardians/`](./projects/village-guardians/)
+
+## Village Guardians 현재 단계
+
+`0.1.0-alpha.1` 통치 코어가 구현되어 있다.
+
+- 촌장 한 명
+- 플레이어별 실무 역할
+- 촌장의 안건 발의
+- 온라인 플레이어 과반수 투표
+- 자연 일주기 강제 정지
+- 투표 통과 시에만 시간 단계 진행
+- 명령 기반 상태 조회와 촌장직 이전
+
+아직 실제 Java 25 + NeoForge 26.2 빌드와 게임 실행 검증 전이므로 배포 완료 상태는 아니다.
 
 ## 작업자가 먼저 읽을 문서
 
 1. [`AGENTS.md`](./AGENTS.md)
 2. [`docs/BUILD_STANDARD.md`](./docs/BUILD_STANDARD.md)
-3. 작업 대상 프로젝트가 생긴 뒤 해당 폴더의 `PROJECT.md`
+3. 대상 프로젝트의 `PROJECT.md`
 
 ## 공용 저장소 원칙
 
@@ -29,11 +44,9 @@
 ```text
 minecraft-java-mod-builds/
 ├─ projects/
-│  └─ <project-slug>/
+│  └─ village-guardians/
 ├─ docs/
 │  └─ BUILD_STANDARD.md
 ├─ AGENTS.md
 └─ README.md
 ```
-
-현재 `projects/`에는 유지할 기존 프로젝트가 없다. 새 프로젝트는 과거 소스를 복원하거나 복제하지 말고 새로운 명세와 소스에서 시작한다.
