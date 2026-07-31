@@ -5,6 +5,7 @@ import kr.moonseungjun.livingkingdoms.crime.CrimeManager;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
+import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.RealmRevisionFourManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
@@ -41,7 +42,7 @@ public final class LivingKingdoms {
         NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
 
         LOGGER.info(
-                "Living Kingdoms foundation loaded: {} species, {} homelands, {} backgrounds, {} residences",
+                "Living Kingdoms loaded: {} species, {} homelands, {} backgrounds, {} residences",
                 FoundationCatalog.species().size(),
                 FoundationCatalog.homelands().size(),
                 FoundationCatalog.backgrounds().size(),
@@ -60,6 +61,7 @@ public final class LivingKingdoms {
             OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
                 RealmRevisionFourManager.ensureForPlayer(player, profile);
                 StarterNpcManager.ensureForPlayer(player, profile);
+                SkillProgressionManager.state(player);
             });
         }
     }
@@ -70,19 +72,16 @@ public final class LivingKingdoms {
                 RealmRevisionFourManager.ensureForPlayer(player, profile);
                 StarterRealmManager.placePlayer(player, profile);
                 StarterNpcManager.ensureForPlayer(player, profile);
+                SkillProgressionManager.state(player);
             });
         }
     }
 
     private void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
         if (OriginProfileManager.requiresSelection(player.getUUID())) {
-            if (player.level().getGameTime() % 40L == 0L) {
-                OriginProfileManager.requestSelection(player);
-            }
+            if (player.level().getGameTime() % 40L == 0L) OriginProfileManager.requestSelection(player);
             return;
         }
 
@@ -92,6 +91,7 @@ public final class LivingKingdoms {
                 StarterNpcManager.ensureForPlayer(player, profile);
             });
         }
+        SkillProgressionManager.tick(player);
         CrimeManager.tickPlayer(player);
     }
 
@@ -101,6 +101,7 @@ public final class LivingKingdoms {
             event.setAmount(0.0F);
             return;
         }
+        SkillProgressionManager.modifyDamage(event);
         CrimeManager.handleDamage(event);
     }
 
@@ -109,6 +110,7 @@ public final class LivingKingdoms {
     }
 
     private void onBlockBreak(BlockDropsEvent event) {
+        SkillProgressionManager.modifyDrops(event);
         CrimeManager.handleBlockBreak(event);
     }
 
