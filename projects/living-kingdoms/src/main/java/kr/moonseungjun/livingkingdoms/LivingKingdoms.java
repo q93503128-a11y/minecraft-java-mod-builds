@@ -8,7 +8,6 @@ import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
-import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -72,10 +71,6 @@ public final class LivingKingdoms {
             if (player.level().getGameTime() % 40L == 0L) OriginProfileManager.requestSelection(player);
             return;
         }
-        if (player.level().getGameTime() % 200L == 0L) {
-            OriginProfileManager.profile(player.getUUID()).ifPresent(profile ->
-                    StarterNpcManager.ensureForPlayer(player, profile));
-        }
         SkillProgressionManager.tick(player);
         SkillCrimeHooks.tick(player);
         CrimeManager.tickPlayer(player);
@@ -101,6 +96,6 @@ public final class LivingKingdoms {
     }
 
     private void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        StarterNpcManager.handleInteraction(event);
+        kr.moonseungjun.livingkingdoms.world.StarterNpcManager.handleInteraction(event);
     }
 }
