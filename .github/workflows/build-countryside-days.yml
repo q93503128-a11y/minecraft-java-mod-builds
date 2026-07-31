@@ -15,6 +15,7 @@ env:
   PROJECT_DIR: projects/countryside-days
   WORK_DIR: work/countryside-days
   GRADLE_VERSION: '9.2.1'
+  EXPECTED_PAYLOAD_SHA256: '656d74fab5ed88c1102c6e1c0c5ec376e9ef5487a191245a9127ebc57760d701'
   RELEASE_TAG: countryside-days-v0.20.1
 
 jobs:
@@ -39,15 +40,16 @@ jobs:
           gradle-version: ${{ env.GRADLE_VERSION }}
           cache-read-only: false
 
-      - name: Reconstruct source payload
+      - name: Reconstruct exact source payload
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$WORK_DIR" logs
-          cat "$PROJECT_DIR"/source/source-min.tar.xz.b64.part* > source.tar.xz.b64
+          cat "$PROJECT_DIR"/source-payload/part*.b64 > source.tar.xz.b64
           wc -c source.tar.xz.b64 | tee logs/payload-base64-size.txt
           base64 --decode source.tar.xz.b64 > source.tar.xz
           sha256sum source.tar.xz | tee logs/payload-sha256.txt
+          echo "$EXPECTED_PAYLOAD_SHA256  source.tar.xz" | sha256sum --check --strict
           xz -t source.tar.xz
           tar -xJf source.tar.xz -C "$WORK_DIR"
           test -f "$WORK_DIR/build.gradle"
