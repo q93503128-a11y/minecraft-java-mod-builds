@@ -62,8 +62,8 @@ public final class RealmSitePlanner {
     private static RealmSiteLayoutSavedData.RealmSite survey(ServerLevel level, String homelandId) {
         int[] nominal = nominalCenter(homelandId);
         List<Candidate> candidates = new ArrayList<>();
-        for (int dx = -192; dx <= 192; dx += 96) {
-            for (int dz = -192; dz <= 192; dz += 96) {
+        for (int dx = -128; dx <= 128; dx += 64) {
+            for (int dz = -128; dz <= 128; dz += 64) {
                 candidates.add(sample(level, homelandId, nominal[0] + dx, nominal[1] + dz));
             }
         }
