@@ -24,6 +24,7 @@ public final class CountrysideHud {
     @SubscribeEvent
     private static void registerLayers(RegisterGuiLayersEvent event) {
         event.registerAboveAll(LAYER_ID, (graphics, deltaTracker) -> render(graphics));
+        CountrysideDays.LOGGER.info("Countryside Days rural objective HUD registered");
     }
 
     private static void render(GuiGraphicsExtractor graphics) {
