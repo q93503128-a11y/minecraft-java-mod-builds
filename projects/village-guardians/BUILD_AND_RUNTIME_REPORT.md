@@ -2,109 +2,120 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Version: `0.2.0-alpha.1`
+- Current source version: `0.7.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
+- Target JAR: `villageguardians-0.7.0-alpha.1.jar`
 
-## 구현 상태
+## 0.7 변경 범위
 
-### 통치와 마을 영역
+### 외부 공개 자산
 
-- 촌장 한 명 자동 지정 및 촌장직 이전
-- 플레이어별 실무 역할 선택
-- 온라인 플레이어 과반수 투표
-- 자연 일주기 비활성화와 결정 기반 시간 진행
-- 촌장, 역할, 날짜와 시간 단계 영구 저장
-- 촌장 전용 오버월드 마을 중심 지정
-- 중심 기준 3차원 반경 64블록 마을 영역 판정
-- 마을 중심의 기존 월드 호환 영구 저장
-- `/vg village status`, `/vg village set_center` 명령
+- Default Dark Mode 고정 커밋에서 26.2 인벤토리와 버튼 GUI 3개를 빌드 시 포함
+- Towns and Towers 고정 Modrinth 버전에서 마을 구조 NBT만 탐색
+- 좀비 마을, 전초기지, 선박, 폐허와 월드젠 설정 제외
+- 같은 건축 스타일에서 회관, 병영, 대장간, 연구소, 상점, 의무소 6개를 선별
+- 최종 선택 경로와 제3자 라이선스 고지를 JAR 내부에 기록
+- 외부 구조가 없거나 지정 부지보다 크면 바닐라 구조, 이후 자체 구조로 안전하게 대체
 
-### RPG 알파
+### 건물 배치
 
-- 플레이어별 레벨과 경험치 영구 저장
-- 적대 몬스터 처치 경험치
-- 마을 내부 방어 처치 경험치 50% 보너스
-- 최고 레벨 30
-- 레벨 비례 가하는 피해 증가와 받는 피해 감소
-- 3레벨 단위 추가 최대 체력
-- 5레벨 단위 전투력 급상승
-- 접속, 리스폰, 서버 유지 틱에서 성장 체력 패시브 복구
-- 역할별 첫 액티브 스킬
-- 주변 12블록 같은 차원의 아군 대상 역할 버프
-- 레벨 11과 21에서 역할 스킬 단계 상승
-- 레벨에 따라 감소하는 스킬 재사용 대기시간
+- 구조 NBT 안의 모든 문 블록을 네 회전 방향으로 검사
+- 문이 중앙 광장 쪽 외벽에 오는 회전을 자동 선택
+- 실제 월드에 배치된 문 위치를 다시 탐색
+- 실제 문 바로 밖에 진입로, 기능 단말과 벽면 간판 배치
+- 임의 중앙 좌표에 책장, 양조기, 가마솥 등을 덧씌우던 코드 제거
+- 강화 표시 블록을 입구 옆 지면 받침대로 이동
 
-### 30레벨 성장 수치
+### 북문과 성벽
 
-- 가하는 피해: 약 `6.23배`
-- 받는 피해: 원래 피해의 `28%`
-- 추가 최대 체력: `36포인트` (`18하트`)
-- 레벨 1부터 30까지 필요한 누적 경험치: `19,140 XP`
+- 기존 석재 절단기 임시 조작 블록 제거
+- 17×8 크기의 틈 없는 목제 성문
+- 통나무 외곽틀, 중앙 보강대와 상하 보강대
+- 내부 바닥 부착 레버로 개폐
+- 성문 파괴 시 개폐 거부
+- 레버 상태와 실제 성문 상태 동기화
+- 북문 양쪽 계단을 성벽 상단 발판까지 직접 연결
 
-### 아직 미구현
+### UI
 
-- 실제 습격 웨이브와 습격 상태
-- 경비병, 방어 시설, 마을 성장
-- 역할별 고유 작업과 생산 시스템
-- 촌장 NPC 또는 정식 촌장 선출 절차
-- 디자인이 완성된 전용 UI
-- 진행 중인 투표 안건의 재시작 복구
-- RPG 전용 적과 보스, 장비, 다단계 스킬 트리
+- 인벤토리 GUI를 공개 어두운 자산으로 교체
+- 인벤토리 보조 패널을 어두운 RPG 대시보드로 재설계
+- 레벨 배지, 실제 XP 진행바, 역할·자산·마을 정보 행
+- 전체 운영 UI를 전술형 어두운 패널로 재설계
+- 무지개 버튼과 두꺼운 금색 외곽선 제거
+- 행동 종류에 따른 제한된 청록·금색·위험색 사용
+- 작은 화면에서 1열 버튼과 본문 스크롤 유지
 
 ## 검증 결과
 
 | 단계 | 상태 | 비고 |
 |---|---|---|
-| 정적 소스 구성 | 완료 | 프로젝트 구조, Java 소스, 메타데이터, 리소스 구성 |
-| 26.2 공식 MDK 대조 | 완료 | Java 25, Gradle 9.2.1, ModDevGradle 2.0.143, NeoForge 26.2.0.37-beta 반영 |
-| 26.2 저장 API 대조 | 완료 | 기존 선택 필드와 호환되는 마을 중심 저장 구조 |
-| 전투 이벤트 API 대조 | 완료 | 피해 보정, 처치 경험치와 마을 방어 보너스 연결 |
-| RPG 밸런스 계약 테스트 | PASS | 성장 단조성, 레벨 30 수치, 누적 XP 검사 |
-| 마을 영역 계약 테스트 | PASS | 64블록 경계, 65블록 외부, 3차원 거리, XP 1.5배 검사 |
-| Java 25 실행 확인 | BLOCKED | 기본 실행 환경에는 Java 21만 존재 |
-| Gradle `clean build` | NOT RUN | 현재 환경에서 Java 25와 외부 의존성 다운로드 불가 |
-| 원격 빌드 경로 | 설정 완료 / 결과 회수 BLOCKED | 루트 `jitpack.yml`에 Java 25 빌드 경로 추가, 현재 환경에서 외부 결과 접근 불가 |
-| 전용 서버 부팅 | NOT RUN | 실행용 JAR 미생성 |
-| 클라이언트 로딩 | NOT RUN | 실행용 JAR 미생성 |
-| JAR 내부 검사 | NOT RUN | 실행용 JAR 미생성 |
-| SHA-256 | NOT RUN | 실행용 JAR 미생성 |
+| 0.6 Java 25 `clean build` | PASS | 이전 기준 소스 컴파일 성공 |
+| 0.6 계약 테스트 | PASS | RPG, 영역, 시설 성장 |
+| 0.6 JAR 내부 검사 | PASS | 실행 JAR, 클래스, 리소스, SHA-256 |
+| 0.7 요새 배치 계약 | PASS | 대로 무건물, 중앙 방향, 성문 무틈, 계단 연결 |
+| 0.7 Direction API 대조 | PASS | 26.2 `getClockWise`, 방향 벡터 확인 |
+| 0.7 간판 API 대조 | PASS | 26.2 `WallSignBlock.FACING` 확인 |
+| 0.7 계단·레버 API 대조 | PASS | `StairBlock.FACING`, 바닥 부착 레버 속성 확인 |
+| 0.7 구조 경계 API 대조 | PASS | 회전 경계와 `StructureTemplate#getBoundingBox` 확인 |
+| 0.7 문 태그·구조 블록 조회 | PASS | `BlockTags.DOORS`, 구조 블록 정보 접근 확인 |
+| 0.7 Python 전체 계약 실행 | PARTIAL PASS | 신규 요새 계약은 현재 환경에서 직접 실행해 통과 |
+| 0.7 Java 25 컴파일 | NOT RUN | 현재 실행 환경은 Java 21이며 외부 도구 다운로드 차단 |
+| 0.7 외부 자산 다운로드 | NOT RUN | 빌드 단계에서만 고정 URL·Maven 좌표로 실행 예정 |
+| 0.7 JAR 내부 외부 자산 검사 | NOT RUN | 0.7 JAR 미생성 |
+| 0.7 전용 서버 부팅 | NOT RUN | 0.7 JAR 미생성 |
+| 0.7 클라이언트 로딩 | NOT RUN | 0.7 JAR 미생성 |
+| 0.7 SHA-256 | NOT RUN | 0.7 JAR 미생성 |
 
-## 실행한 계약 테스트
+## 신규 요새 계약 테스트
 
-```bash
-python tools/test_rpg_balance.py
-python tools/test_village_zone.py
-```
+`tools/test_fortress_layout.py`가 다음을 확인한다.
 
-확인 항목:
+- 모든 기능 건물과 중앙–북문 전투로의 비충돌
+- 서쪽 건물은 동쪽, 동쪽 건물은 서쪽, 남쪽 회관은 북쪽을 향함
+- 닫힌 성문 136칸이 모두 채워짐
+- 계단 마지막 발판과 성벽 상단 발판이 같은 Z 좌표에서 연결됨
 
-- 레벨 30 공격 배율 `6.23`
-- 레벨 30 받는 피해 비율 `0.28`
-- 레벨 30 추가 체력 `36`
-- 레벨 30까지 누적 필요 경험치 `19,140`
-- 중심에서 정확히 64블록까지 마을 내부
-- 중심에서 65블록부터 마을 외부
-- 수직 거리를 포함하는 3차원 영역 판정
-- 마을 내부 처치 XP `1.5배`
-
-## 첫 인게임 테스트 후보
+실행 결과:
 
 ```text
-/vg village set_center
-/vg village status
-/vg status
-/vg role guard_captain
-/vg skill
-/vg rpg status
-/vg rpg test_xp 3000
+[PASS] Buildings do not block the north-gate avenue
+[PASS] Every functional building faces the central plaza
+[PASS] Closed gate has no missing columns or slit
+[PASS] Wall stairs connect directly to the wall-top platform
 ```
 
-이후 마을 안팎의 적대 몬스터 처치 XP, 서버 재시작 후 중심 저장, 멀티 아군 스킬과 투표 과반수를 확인한다.
+## 최종 JAR 검증 강화
+
+`tools/verify_jar.py`는 기존 검사에 더해 아래 파일을 필수로 요구한다.
+
+```text
+assets/minecraft/textures/gui/container/inventory.png
+assets/minecraft/textures/gui/sprites/widget/button.png
+assets/minecraft/textures/gui/sprites/widget/button_highlighted.png
+data/villageguardians/structure/external/town_hall.nbt
+data/villageguardians/structure/external/barracks.nbt
+data/villageguardians/structure/external/smithy.nbt
+data/villageguardians/structure/external/skill_hall.nbt
+data/villageguardians/structure/external/storehouse.nbt
+data/villageguardians/structure/external/infirmary.nbt
+META-INF/villageguardians/THIRD_PARTY_NOTICES.txt
+META-INF/villageguardians/towns-and-towers-selection.txt
+```
+
+## 자동 빌드 정책
+
+GitHub Actions는 소스 커밋마다 실행되지 않는다. 워크플로는 다음 경우에만 실행된다.
+
+- 수동 `workflow_dispatch`
+- `projects/village-guardians/.build-trigger` 파일 변경
+
+이번 0.7 수정에서는 `.build-trigger`를 변경하지 않았으므로 Actions 실행과 사용량 소비가 발생하지 않았다.
 
 ## 완료 판정
 
-현재 상태는 **마을 영역과 RPG 방어 보상까지 포함된 소스 기반 플레이 테스트 후보**다. 두 계약 테스트는 통과했지만 실제 Java 25 Gradle 빌드와 서버·클라이언트 로딩 검증 전에는 실행용 JAR 완료로 판정하지 않는다.
+0.7 소스 수정과 수치 계약은 완료됐지만 Java 25 컴파일, 외부 자산 포함 JAR 검사와 실제 클라이언트 로딩은 아직 실행하지 않았다. 따라서 현재 상태를 **0.7 소스 구현 완료 / 실행 JAR 미검증**으로 판정한다. 이전 0.6 JAR을 0.7 결과물로 재사용하거나 최신 빌드라고 표시하지 않는다.
