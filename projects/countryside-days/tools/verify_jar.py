@@ -33,6 +33,10 @@ def main() -> None:
 
         required_exact = {
             "META-INF/neoforge.mods.toml",
+            "assets/countrysidedays/items/village_coin.json",
+            "assets/countrysidedays/models/item/village_coin.json",
+            "kr/countrysidedays/world/CountrysideRegionManager.class",
+            "kr/countrysidedays/world/FlatCountrysideBootstrap.class",
         }
         for required in required_exact:
             if required not in unique_names:
