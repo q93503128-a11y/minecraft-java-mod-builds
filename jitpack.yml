@@ -1,0 +1,10 @@
+jdk:
+  - openjdk21
+
+before_install:
+  - source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk install java 25.0.3-tem
+  - source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk install gradle 9.2.1
+
+install:
+  - source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk use java 25.0.3-tem && sdk use gradle 9.2.1 && cd projects/village-guardians && gradle --no-daemon clean build --stacktrace
+  - JAR=$(find projects/village-guardians/build/libs -maxdepth 1 -type f -name 'villageguardians-*.jar' ! -name '*-sources.jar' | head -n 1) && test -n "$JAR" && mvn install:install-file -Dfile="$JAR" -DgroupId=com.github.q93503128-a11y -DartifactId=minecraft-java-mod-builds -Dversion="$VERSION" -Dpackaging=jar -DgeneratePom=true
