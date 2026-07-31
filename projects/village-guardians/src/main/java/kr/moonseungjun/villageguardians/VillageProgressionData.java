@@ -81,8 +81,16 @@ public final class VillageProgressionData extends SavedData {
         return barracksLevel;
     }
 
-    public int lastSupplyClaimDay(UUID playerId) {
-        return lastSupplyClaimDay.getOrDefault(playerId.toString(), 0);
+    public Map<UUID, Integer> claimDays() {
+        Map<UUID, Integer> parsed = new LinkedHashMap<>();
+        lastSupplyClaimDay.forEach((uuidText, day) -> {
+            try {
+                parsed.put(UUID.fromString(uuidText), Math.max(0, day));
+            } catch (IllegalArgumentException ignored) {
+                // Preserve all valid player claims when one entry is damaged.
+            }
+        });
+        return parsed;
     }
 
     public void replaceState(
