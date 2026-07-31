@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-USER_AGENT = "ShaderLab-Reverie/0.7 (github.com/q93503128-a11y/minecraft-java-mod-builds)"
+USER_AGENT = "ShaderLab-Reverie/0.8 (github.com/q93503128-a11y/minecraft-java-mod-builds)"
 SPBR_PROJECT = "spbr"
 SPBR_VERSION_ID = "S17DzSfS"
 
@@ -88,76 +88,105 @@ def replace_const(source: str, type_name: str, name: str, value: str) -> tuple[s
     return updated, f"{name}: {previous} -> {value}"
 
 
-def apply_reverie_07(staged: Path) -> list[str]:
+def patch_compute_directives(staged: Path) -> int:
+    pattern = re.compile(
+        r"(?m)^(?P<indent>\s*)const\s+vec2\s+workGroupsRender\s*=\s*vec2\([^;]+\);\s*$"
+    )
+    total = 0
+    for path in staged.rglob("*.glsl"):
+        source = path.read_text("utf-8", errors="ignore")
+        updated, count = pattern.subn(
+            lambda match: f"{match.group('indent')}const vec2 workGroupsRender = vec2(1.0, 1.0);",
+            source,
+        )
+        if count:
+            path.write_text(updated, encoding="utf-8")
+            total += count
+    if total < 1:
+        fail("No Iris compute work-group directive was found to normalize")
+    return total
+
+
+def apply_reverie_08(staged: Path) -> list[str]:
     settings_path = staged / "shaders" / "settings.glsl"
     opaque_path = staged / "shaders" / "programs" / "gbuffers" / "opaque.glsl"
     fog_path = staged / "shaders" / "include" / "atmospherics" / "fog.glsl"
-    for path in (settings_path, opaque_path, fog_path):
+    atmosphere_path = staged / "shaders" / "include" / "atmospherics" / "atmosphere.glsl"
+    for path in (settings_path, opaque_path, fog_path, atmosphere_path):
         if not path.is_file():
             fail(f"Required Noble source file is missing: {path.relative_to(staged)}")
 
     source = settings_path.read_text("utf-8")
     changes: list[str] = []
 
-    source, change = replace_const(source, "int", "shadowMapResolution", "2048")
+    source, change = replace_const(source, "int", "shadowMapResolution", "1024")
     changes.append(change)
-    source, change = replace_const(source, "float", "shadowDistance", "128")
+    source, change = replace_const(source, "float", "shadowDistance", "64")
     changes.append(change)
 
-    # Balanced for GTX 1660 SUPER: preserve water/sky quality while cutting the costly terrain path.
+    # GTX 1660 SUPER preset: keep material response and water while removing the expensive sky,
+    # reflection compute, histogram exposure and oversized shadow paths.
     define_changes: list[tuple[str, str, bool]] = [
         ("BLOCKLIGHT_TEMPERATURE", "3000", True),
-        ("EMISSIVE_INTENSITY", "420", True),
-        ("SUNLIGHT_STRENGTH", "0.95", True),
-        ("SKYLIGHT_STRENGTH", "1.20", True),
-        ("SHADOW_SAMPLES", "6", True),
-        ("CONTACT_SHADOWS_STEPS", "8", False),
-        ("AO_STRENGTH", "0.65", False),
+        ("EMISSIVE_INTENSITY", "340", True),
+        ("SUNLIGHT_STRENGTH", "0.65", True),
+        ("SKYLIGHT_STRENGTH", "0.90", True),
+        ("SHADOW_SAMPLES", "4", True),
+        ("CONTACT_SHADOWS", "0", False),
+        ("CONTACT_SHADOWS_STEPS", "4", False),
+        ("AO", "1", False),
+        ("AO_STRENGTH", "0.45", False),
         ("AO_SCALE", "50", False),
-        ("SSAO_SAMPLES", "8", False),
-        ("GTAO_SLICES", "2", False),
-        ("REFLECTIONS", "1", True),
-        ("REFLECTIONS_SCALE", "50", False),
-        ("REFLECTIONS_STRIDE", "32", False),
-        ("ROUGH_REFLECTIONS_SAMPLES", "1", False),
+        ("SSAO_SAMPLES", "4", False),
+        ("GTAO_SLICES", "1", False),
+        ("REFLECTIONS", "0", True),
+        ("REFLECTIONS_SCALE", "25", False),
+        ("REFLECTIONS_STRIDE", "64", False),
         ("REFRACTIONS", "1", True),
-        ("REFRACTIONS_NEWTON_ITERATIONS", "12", False),
-        ("ATMOSPHERE_SCALE", "12", False),
-        ("ATMOSPHERE_SCATTERING_STEPS", "12", False),
+        ("REFRACTIONS_NEWTON_ITERATIONS", "8", False),
+        ("ATMOSPHERE_SCALE", "10", False),
+        ("ATMOSPHERE_SCATTERING_STEPS", "8", False),
         ("ATMOSPHERE_TRANSMITTANCE_STEPS", "8", False),
-        ("CLOUDS_SCALE", "40", False),
-        ("CLOUDS_LAYER0_SCATTERING_STEPS", "8", False),
-        ("CLOUDS_LAYER1_SCATTERING_STEPS", "4", False),
-        ("AIR_FOG", "2", True),
-        ("AIR_FOG_SCATTERING_STEPS", "8", True),
-        ("FOG_SHAPE_SCALE", "28", True),
-        ("FOG_ALTITUDE", "72", True),
-        ("FOG_THICKNESS", "40", True),
-        ("FOG_DENSITY", "0.45", True),
-        ("AERIAL_PERSPECTIVE_DENSITY", "1.5", False),
-        ("WATER_OCTAVES", "12", True),
-        ("WATER_NORMALS_STRENGTH_MULTIPLIER", "1.1", True),
-        ("WAVE_SPEED", "0.08", True),
-        ("WAVE_AMPLITUDE", "0.55", True),
-        ("WATER_CAUSTICS_STRENGTH", "1.1", True),
-        ("WATER_PARALLAX_DEPTH", "0.2", True),
-        ("WATER_PARALLAX_LAYERS", "4", False),
-        ("WATER_FOG_STEPS", "4", True),
-        # POM on vanilla cutout textures caused opaque black grass/flower quads and major frame loss.
+        ("CLOUDMAP", "0", True),
+        ("CLOUDS_LAYER0_ENABLED", "0", True),
+        ("CLOUDS_LAYER1_ENABLED", "0", True),
+        ("CLOUDS_SHADOWS", "0", False),
+        ("CLOUDS_SCALE", "25", False),
+        ("AIR_FOG", "1", True),
+        ("AIR_FOG_SCATTERING_STEPS", "4", False),
+        ("AIR_FOG_MIN_SCATTERING_STEPS", "4", False),
+        ("AIR_FOG_MAX_SCATTERING_STEPS", "8", False),
+        ("FOG_SHAPE_SCALE", "18", True),
+        ("FOG_ALTITUDE", "36", True),
+        ("FOG_THICKNESS", "100", True),
+        ("FOG_DENSITY", "0.55", True),
+        ("AERIAL_PERSPECTIVE", "0", False),
+        ("AERIAL_PERSPECTIVE_DENSITY", "0.8", False),
+        ("WATER_OCTAVES", "6", True),
+        ("WATER_NORMALS_STRENGTH_MULTIPLIER", "1.0", True),
+        ("WAVE_SPEED", "0.07", True),
+        ("WAVE_AMPLITUDE", "0.50", True),
+        ("WATER_CAUSTICS_STRENGTH", "0.8", True),
+        ("WATER_PARALLAX_DEPTH", "0.15", True),
+        ("WATER_PARALLAX_LAYERS", "2", False),
+        ("WATER_FOG_STEPS", "3", True),
         ("POM", "0", True),
-        ("POM_LAYERS", "32", True),
-        ("POM_DISTANCE", "24", False),
-        ("TAA_STRENGTH", "0.88", False),
-        ("LUT", "15", True),
-        ("VIBRANCE", "0.15", False),
-        ("SATURATION", "-0.05", False),
-        ("CONTRAST", "-0.10", False),
-        ("GAMMA", "0.10", False),
-        ("LIFT", "0.10", False),
-        ("BLOOM_STRENGTH", "0.20", True),
-        ("GLARE", "1", True),
-        ("GLARE_STEPS", "16", False),
-        ("GLARE_STRENGTH", "0.2", True),
+        ("POM_LAYERS", "16", True),
+        ("POM_DISTANCE", "16", False),
+        ("TAA_STRENGTH", "0.80", False),
+        ("EXPOSURE", "1", True),
+        ("EXPOSURE_GROWTH", "0.80", False),
+        ("EXPOSURE_DECAY", "0.35", False),
+        ("LUT", "0", True),
+        ("VIBRANCE", "0.10", False),
+        ("SATURATION", "-0.10", False),
+        ("CONTRAST", "-0.05", False),
+        ("GAMMA", "-0.05", False),
+        ("LIFT", "0.03", False),
+        ("BLOOM_STRENGTH", "0.08", True),
+        ("GLARE", "0", True),
+        ("GLARE_STEPS", "8", False),
+        ("GLARE_STRENGTH", "0.1", False),
         ("DOF", "0", True),
         ("VIGNETTE", "0", True),
         ("FILM_GRAIN", "0", False),
@@ -169,8 +198,6 @@ def apply_reverie_07(staged: Path) -> list[str]:
             fail(f"Required Reverie setting was not changed: {name}")
     settings_path.write_text(source, encoding="utf-8")
 
-    # Noble 1.9.x returned from the fragment shader before writing its G-buffer for textures
-    # without normal maps. On cutout plants this became a solid black rectangle. Use discard.
     opaque = opaque_path.read_text("utf-8")
     old_alpha_guard = (
         "if (texture(normals, textureCoords).a < EPS || texture(gtexture, textureCoords).a < alphaTestThreshold) {\n"
@@ -188,17 +215,16 @@ def apply_reverie_07(staged: Path) -> list[str]:
     opaque_path.write_text(opaque, encoding="utf-8")
     changes.append("foliage alpha guard: empty G-buffer return -> discard")
 
-    # Make fog visible in dry weather and tint it toward a soft blue/lilac dream palette.
     fog = fog_path.read_text("utf-8")
     old_fog_block = (
         "vec3 airFogAttenuationCoefficients = mix(vec3(airFogExtinctionCoefficient), sandFogExtinctionCoefficients, biome_may_sandstorm);\n"
         "    vec3 airFogScatteringCoefficients  = mix(vec3(airFogScatteringCoefficient), sandFogScatteringCoefficients, biome_may_sandstorm);"
     )
     new_fog_block = (
-        "const vec3 reverieFogAttenuation = vec3(0.10, 0.085, 0.125);\n"
-        "    const vec3 reverieFogScattering  = vec3(0.72, 0.84, 1.00);\n"
-        "    vec3 clearFogAttenuation = mix(vec3(airFogExtinctionCoefficient), reverieFogAttenuation, 0.28);\n"
-        "    vec3 clearFogScattering  = mix(vec3(airFogScatteringCoefficient), reverieFogScattering, 0.20);\n"
+        "const vec3 reverieFogAttenuation = vec3(0.16, 0.13, 0.20);\n"
+        "    const vec3 reverieFogScattering  = vec3(0.46, 0.58, 0.86);\n"
+        "    vec3 clearFogAttenuation = mix(vec3(airFogExtinctionCoefficient), reverieFogAttenuation, 0.52);\n"
+        "    vec3 clearFogScattering  = mix(vec3(airFogScatteringCoefficient), reverieFogScattering, 0.48);\n"
         "    vec3 airFogAttenuationCoefficients = mix(clearFogAttenuation, sandFogExtinctionCoefficients, biome_may_sandstorm);\n"
         "    vec3 airFogScatteringCoefficients  = mix(clearFogScattering, sandFogScatteringCoefficients, biome_may_sandstorm);"
     )
@@ -207,24 +233,83 @@ def apply_reverie_07(staged: Path) -> list[str]:
     fog = fog.replace(old_fog_block, new_fog_block, 1)
     fog = fog.replace(
         "float fogFrequency    = mix(0.7, 1.0, biome_may_sandstorm);",
-        "float fogFrequency    = mix(0.42, 0.80, biome_may_sandstorm);",
+        "float fogFrequency    = mix(0.28, 0.70, biome_may_sandstorm);",
         1,
     )
     fog = fog.replace(
-        "float densityMult     = mix(0.1, 0.7, biome_may_sandstorm);",
-        "float densityMult     = mix(0.55, 0.80, biome_may_sandstorm);",
+        "float densityFactor   = wetness;",
+        "float densityFactor   = 0.45 + wetness * 0.35;",
         1,
     )
-    if "densityMult     = mix(0.55, 0.80" not in fog:
-        fail("Reverie dry-weather fog density patch was not applied")
+    fog = fog.replace(
+        "float densityMult     = mix(0.03, 0.7, biome_may_sandstorm);",
+        "float densityMult     = mix(0.95, 1.0, biome_may_sandstorm);",
+        1,
+    )
+    old_ground_shape = "shapeNoise *= smoothstep(0.0, 1.0, exp(-abs(position.y - fogAltitude) * 0.03));"
+    new_ground_shape = (
+        "float reverieGroundLayer = exp(-abs(position.y - (fogAltitude + 10.0)) * 0.045);\n"
+        "            shapeNoise = max(shapeNoise * smoothstep(0.0, 1.0, exp(-abs(position.y - fogAltitude) * 0.025)), "
+        "reverieGroundLayer * 0.28);"
+    )
+    if old_ground_shape not in fog and "reverieGroundLayer" not in fog:
+        fail("Noble ground fog shape changed upstream")
+    fog = fog.replace(old_ground_shape, new_ground_shape, 1)
+    for token in ("0.45 + wetness * 0.35", "mix(0.95, 1.0", "reverieGroundLayer"):
+        if token not in fog:
+            fail(f"Reverie visible fog patch was not applied: {token}")
     fog_path.write_text(fog, encoding="utf-8")
-    changes.append("overworld fog: persistent low dry-weather mist + blue/lilac scattering")
+    changes.append("overworld fog: persistent blue-lilac ground layer with dry-weather density")
+
+    atmosphere = atmosphere_path.read_text("utf-8")
+    old_return = "return scattering[0] + scattering[1] + multipleScattering;"
+    new_return = """vec3 physicalSky = scattering[0] + scattering[1] + multipleScattering;
+
+        #if defined WORLD_OVERWORLD
+            float elevation = saturate(rayDirection.y * 0.5 + 0.5);
+            float dayFactor = smoothstep(-0.10, 0.12, sunVector.y);
+            float duskFactor = exp(-abs(sunVector.y) * 10.0);
+
+            vec3 nightHorizon = vec3(0.20, 0.08, 0.30);
+            vec3 nightZenith  = vec3(0.018, 0.028, 0.13);
+            vec3 dayHorizon   = vec3(0.88, 0.62, 0.86);
+            vec3 dayZenith    = vec3(0.20, 0.38, 0.72);
+
+            vec3 dreamHorizon = mix(nightHorizon, dayHorizon, dayFactor);
+            vec3 dreamZenith  = mix(nightZenith, dayZenith, dayFactor);
+            dreamHorizon = mix(dreamHorizon, vec3(1.00, 0.34, 0.62), duskFactor * 0.38);
+
+            vec3 dreamPalette = mix(dreamHorizon, dreamZenith, pow(elevation, 0.62));
+            float skyEnergy = max(dot(physicalSky, vec3(0.2126, 0.7152, 0.0722)), 0.02);
+
+            float ribbonWave = sin(rayDirection.x * 10.0 + rayDirection.z * 7.0 + frameTimeCounter * 0.035);
+            float ribbons = pow(saturate(ribbonWave * 0.5 + 0.5), 9.0);
+            ribbons *= smoothstep(-0.02, 0.50, rayDirection.y) * (0.30 + 0.70 * (1.0 - dayFactor));
+
+            float horizonVeil = pow(1.0 - saturate(abs(rayDirection.y)), 3.0);
+            vec3 dreamSky = dreamPalette * skyEnergy * 1.12;
+            dreamSky += ribbons * skyEnergy * vec3(0.22, 0.72, 1.00) * 0.34;
+            dreamSky += horizonVeil * skyEnergy * vec3(0.30, 0.10, 0.42) * 0.18;
+
+            return mix(physicalSky, dreamSky, 0.76);
+        #else
+            return physicalSky;
+        #endif"""
+    if old_return not in atmosphere and "vec3 physicalSky =" not in atmosphere:
+        fail("Noble atmosphere return changed upstream")
+    atmosphere = atmosphere.replace(old_return, new_return, 1)
+    atmosphere_path.write_text(atmosphere, encoding="utf-8")
+    changes.append("sky: volumetric clouds disabled; lightweight violet-blue dream gradient and ribbons")
+
+    compute_count = patch_compute_directives(staged)
+    changes.append(f"Iris compute directives: normalized {compute_count} workGroupsRender constants")
 
     (staged / "SHADERLAB_REVERIE_PRESET.md").write_text(
-        "# Shader Lab Reverie 0.7\n\n"
+        "# Shader Lab Reverie 0.8\n\n"
         "Modified Noble Shaders under GPLv3.\n\n"
-        "Target: realistic water, sky, lighting and LabPBR materials with a clearly visible, "
-        "slow low-lying dream mist. Full-screen blur, black cutout quads and expensive vanilla POM are disabled.\n\n"
+        "Target: realistic material response, water and directional light with a lightweight, "
+        "deliberately unreal dream sky and an unmistakable low blue-lilac mist. Heavy volumetric "
+        "clouds, reflection compute, histogram exposure, global blur and black cutout quads are disabled.\n\n"
         "## Applied changes\n\n" + "\n".join(f"- {item}" for item in changes) + "\n",
         encoding="utf-8",
     )
@@ -263,7 +348,10 @@ def add_spbr_resources(generated_root: Path, work_dir: Path) -> dict[str, Any]:
         fail("SPBR does not contain assets/minecraft")
     shutil.copytree(assets, generated_root / "assets", dirs_exist_ok=True)
 
-    pbr_files = [path for path in (generated_root / "assets" / "minecraft").rglob("*.png") if path.stem.endswith(("_n", "_s"))]
+    pbr_files = [
+        path for path in (generated_root / "assets" / "minecraft").rglob("*.png")
+        if path.stem.endswith(("_n", "_s"))
+    ]
     if len(pbr_files) < 200:
         fail(f"SPBR merge produced too few LabPBR maps: {len(pbr_files)}")
 
@@ -338,12 +426,15 @@ def main() -> None:
 
     root = find_root(extracted, "shaders")
     shutil.copytree(root, staged, dirs_exist_ok=True)
-    license_files = [path for path in staged.rglob("*") if path.is_file() and ("license" in path.name.lower() or "copying" in path.name.lower())]
+    license_files = [
+        path for path in staged.rglob("*")
+        if path.is_file() and ("license" in path.name.lower() or "copying" in path.name.lower())
+    ]
     license_text = "\n".join(path.read_text("utf-8", errors="ignore") for path in license_files)
     if "GNU GENERAL PUBLIC LICENSE" not in license_text or "Version 3" not in license_text:
         fail("Noble archive does not preserve GPLv3 text")
 
-    changes = apply_reverie_07(staged)
+    changes = apply_reverie_08(staged)
     evidence = {
         "project_id": project.get("id"),
         "project_slug": project.get("slug"),
@@ -355,9 +446,8 @@ def main() -> None:
         "loaders": version.get("loaders"),
         "original_filename": selected.get("filename"),
         "original_sha512": actual_sha512,
-        # Retained for compatibility with the existing Gradle audit; the release field is authoritative.
-        "shaderlab_preset": "Reverie 0.6",
-        "shaderlab_release": "Reverie 0.7",
+        "shaderlab_preset": "Reverie 0.8",
+        "shaderlab_release": "Reverie 0.8",
         "shaderlab_setting_changes": changes,
     }
     (staged / "MODRINTH_LICENSE_EVIDENCE.json").write_text(
@@ -371,7 +461,7 @@ def main() -> None:
         f"- Version ID: {version.get('id')}\n"
         f"- Original filename: {selected.get('filename')}\n"
         f"- License: {license_id}\n"
-        "- Modification: Reverie 0.7 performance, foliage, LabPBR and persistent dream-mist preset\n",
+        "- Modification: Reverie 0.8 lightweight dream sky, visible ground mist and performance preset\n",
         encoding="utf-8",
     )
 
@@ -388,7 +478,7 @@ def main() -> None:
 
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(
-        "Noble + SPBR Shader Lab Reverie 0.7 audit: PASS\n"
+        "Noble + SPBR Shader Lab Reverie 0.8 audit: PASS\n"
         f"Noble: {version.get('version_number')} / {version.get('id')} / {license_id}\n"
         f"Noble SHA-512: {actual_sha512}\n"
         f"Shaderpack bytes: {args.output.stat().st_size}\n"
