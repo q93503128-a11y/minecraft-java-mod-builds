@@ -40,9 +40,7 @@ public final class RuralGameplayHandler {
         }
 
         enforceHealingRules(serverLevel);
-        if (serverLevel.dimension() != Level.OVERWORLD) {
-            return;
-        }
+        if (serverLevel.dimension() != Level.OVERWORLD) return;
         if (!CountrysideRegionManager.isFlatWorld(serverLevel)) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.flat_world_required"));
             return;
@@ -51,23 +49,28 @@ public final class RuralGameplayHandler {
         CountrysideWorldData data = CountrysideWorldData.get(serverLevel.getServer());
         boolean hadHomestead = data.homesteadOrigin().isPresent();
         Optional<BlockPos> homestead = FlatCountrysideBootstrap.ensureGenerated(serverLevel, player.blockPosition());
+        boolean becameOwner = data.claimHomesteadOwner(player.getUUID(), player.getScoreboardName());
         homestead.ifPresent(origin -> RuralNpcManager.ensureForHomestead(serverLevel, origin));
 
         boolean firstArrival = player.addTag(STARTER_KIT_TAG);
         if (firstArrival) {
-            giveOrDrop(player, ModItems.COUNTRY_KITCHEN_COUNTER.get().getDefaultInstance());
             giveOrDrop(player, ModItems.RECIPE_NOTEBOOK.get().getDefaultInstance());
             giveOrDrop(player, Items.FISHING_ROD.getDefaultInstance());
             player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_kit"));
         }
 
-        if (homestead.isPresent() && (firstArrival || !hadHomestead)) {
+        if (homestead.isPresent() && (firstArrival || !hadHomestead || becameOwner)) {
             BlockPos origin = homestead.get();
             player.sendSystemMessage(Component.translatable(
                     "message.countrysidedays.homestead_ready",
-                    origin.getX(),
-                    origin.getY(),
-                    origin.getZ()
+                    origin.getX(), origin.getY(), origin.getZ()
+            ));
+            player.sendSystemMessage(Component.translatable(
+                    "message.countrysidedays.property_deed",
+                    origin.getX() - 34, origin.getY(), origin.getZ() - 25,
+                    origin.getX() + 10, origin.getY(), origin.getZ() - 4,
+                    origin.getX() - 7, origin.getY(), origin.getZ() - 5,
+                    origin.getX() + 9, origin.getY(), origin.getZ() + 52
             ));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.meet_resident"));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.keep_inventory_enabled"));
@@ -100,15 +103,9 @@ public final class RuralGameplayHandler {
     }
 
     public static void onBlockDrops(BlockDropsEvent event) {
-        if (event.isCanceled() || !(event.getBreaker() instanceof Player player)) {
-            return;
-        }
-        if (!isForagePlant(event.getState())) {
-            return;
-        }
-        if (event.getLevel().getRandom().nextFloat() >= WILD_HERB_CHANCE) {
-            return;
-        }
+        if (event.isCanceled() || !(event.getBreaker() instanceof Player player)) return;
+        if (!isForagePlant(event.getState())) return;
+        if (event.getLevel().getRandom().nextFloat() >= WILD_HERB_CHANCE) return;
 
         giveOrDrop(player, ModItems.WILD_HERB.get().getDefaultInstance());
         player.sendOverlayMessage(Component.translatable("message.countrysidedays.wild_herb_found"));
@@ -120,9 +117,7 @@ public final class RuralGameplayHandler {
                 || !(player.level() instanceof ServerLevel serverLevel)) {
             return;
         }
-        if (serverLevel.getRandom().nextFloat() >= RIVER_FISH_CHANCE) {
-            return;
-        }
+        if (serverLevel.getRandom().nextFloat() >= RIVER_FISH_CHANCE) return;
 
         giveOrDrop(player, ModItems.RIVER_FISH.get().getDefaultInstance());
         player.sendOverlayMessage(Component.translatable("message.countrysidedays.river_fish_caught"));
@@ -140,8 +135,6 @@ public final class RuralGameplayHandler {
     }
 
     private static void giveOrDrop(Player player, ItemStack stack) {
-        if (!player.addItem(stack)) {
-            player.drop(stack, false);
-        }
+        if (!player.addItem(stack)) player.drop(stack, false);
     }
 }
