@@ -4,7 +4,7 @@
 - Mod ID: `villageguardians`
 - Version: `0.1.0-alpha.1`
 - Minecraft: `26.2`
-- NeoForge: `26.2.0.35-beta`
+- NeoForge: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
@@ -40,8 +40,9 @@
 | 단계 | 상태 | 비고 |
 |---|---|---|
 | 정적 소스 구성 | 완료 | 프로젝트 구조, Java 소스, 메타데이터, 리소스 구성 |
+| 26.2 공식 MDK 대조 | 완료 | Java 25, Gradle 9.2.1, ModDevGradle 2.0.143, NeoForge 26.2.0.37-beta 반영 |
 | 공식 API 대조 | 부분 완료 | 명령 등록과 서버 틱 이벤트 패턴을 NeoForge 공식 소스와 대조 |
-| Java 25 확인 | BLOCKED | 현재 실행 환경에는 Java 21만 존재 |
+| Java 25 실행 확인 | BLOCKED | 현재 실행 환경에는 Java 21만 존재 |
 | Gradle `clean build` | NOT RUN | 현재 실행 환경에 Gradle이 없고 외부 다운로드가 차단됨 |
 | Datagen | NOT RUN | 빌드 선행 필요 |
 | GameTest | NOT RUN | 테스트 미구현 |
