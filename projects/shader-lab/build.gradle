@@ -14,6 +14,20 @@ base {
     archivesName = mod_id
 }
 
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = uri('https://api.modrinth.com/maven')
+            }
+        }
+        filter {
+            includeGroup 'maven.modrinth'
+        }
+    }
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
@@ -70,14 +84,12 @@ final File generatedShaderpack = new File(generatedResources, "shaderpacks/${rev
 final File nobleAuditReport = layout.buildDirectory.file('reports/noble-source-audit.txt').get().asFile
 final File nobleWorkDirectory = layout.buildDirectory.dir('noble').get().asFile
 
-final File bundledModsDirectory = layout.buildDirectory.dir('bundled-renderer-mods').get().asFile
-final File bundledIrisJar = new File(bundledModsDirectory, 'iris-1.11.2+26.2-neoforge.jar')
-final File bundledSodiumJar = new File(bundledModsDirectory, 'sodium-0.9.1+26.2-neoforge.jar')
-final File bundledRendererReport = layout.buildDirectory.file('reports/bundled-renderer-mods.json').get().asFile
+final File rendererAuditDirectory = layout.buildDirectory.dir('renderer-audit').get().asFile
+final File rendererAuditReport = layout.buildDirectory.file('reports/bundled-renderer-mods.json').get().asFile
 
 tasks.register('prepareReverieShaderpack', Exec) {
     group = 'shaderlab'
-    description = 'Downloads, verifies and stages the official Noble shader release.'
+    description = 'Downloads, verifies and stages the pinned official Noble shader release.'
 
     inputs.file file('scripts/prepare_noble.py')
     inputs.property 'nobleProject', nobleProject
@@ -96,14 +108,15 @@ tasks.register('prepareReverieShaderpack', Exec) {
     )
 }
 
-tasks.register('downloadBundledRendererMods', Exec) {
-    group = 'shaderlab'
-    description = 'Downloads and verifies pinned NeoForge Iris and Sodium builds for Jar-in-Jar.'
+tasks.register('auditBundledRendererMods', Exec) {
+    group = 'verification'
+    description = 'Audits the exact Iris and Sodium files that are also resolved through Modrinth Maven.'
 
     inputs.file file('scripts/download_renderer_mods.py')
     inputs.property 'irisVersion', project.iris_modrinth_version_id
     inputs.property 'sodiumVersion', project.sodium_modrinth_version_id
-    outputs.files bundledIrisJar, bundledSodiumJar, bundledRendererReport
+    outputs.dir rendererAuditDirectory
+    outputs.file rendererAuditReport
 
     workingDir projectDir
     commandLine(
@@ -111,8 +124,8 @@ tasks.register('downloadBundledRendererMods', Exec) {
             'scripts/download_renderer_mods.py',
             '--iris-version', project.iris_modrinth_version_id,
             '--sodium-version', project.sodium_modrinth_version_id,
-            '--output-dir', bundledModsDirectory.absolutePath,
-            '--report', bundledRendererReport.absolutePath
+            '--output-dir', rendererAuditDirectory.absolutePath,
+            '--report', rendererAuditReport.absolutePath
     )
 }
 
@@ -123,11 +136,8 @@ tasks.named('processResources') {
 }
 
 dependencies {
-    jarJar files(bundledIrisJar, bundledSodiumJar)
-}
-
-tasks.named('jarJar') {
-    dependsOn tasks.named('downloadBundledRendererMods')
+    jarJar("maven.modrinth:iris:${project.iris_modrinth_version_id}")
+    jarJar("maven.modrinth:sodium:${project.sodium_modrinth_version_id}")
 }
 
 tasks.register('verifyShaderpackResources') {
@@ -136,7 +146,7 @@ tasks.register('verifyShaderpackResources') {
     dependsOn tasks.named('prepareReverieShaderpack')
 
     doLast {
-        if (!generatedShaderpack.isFile() || generatedShaderpack.length() < 100_000L) {
+        if (!generatedShaderpack.isFile() || generatedShaderpack.length() < 1_000_000L) {
             throw new GradleException("Generated Reverie shaderpack is missing or unexpectedly small: ${generatedShaderpack}")
         }
 
@@ -159,8 +169,9 @@ tasks.register('verifyShaderpackResources') {
 
             def evidence = new JsonSlurper().parse(pack.getInputStream(pack.getEntry('MODRINTH_LICENSE_EVIDENCE.json')))
             if (!(evidence?.project_license?.id in ['GPL-3.0-only', 'GPL-3.0-or-later'])
-                    || evidence?.project_slug != nobleProject) {
-                throw new GradleException('Embedded Noble license evidence is invalid')
+                    || evidence?.project_slug != nobleProject
+                    || evidence?.version_id != nobleVersionId) {
+                throw new GradleException('Embedded Noble license or version evidence is invalid')
             }
         }
 
@@ -183,7 +194,7 @@ tasks.register('verifySingleJar') {
 
     doLast {
         def output = tasks.named('jar').get().archiveFile.get().asFile
-        if (!output.isFile() || output.length() < 3_000_000L) {
+        if (!output.isFile() || output.length() < 10_000_000L) {
             throw new GradleException("Single JAR output is missing or too small: ${output}")
         }
         new ZipFile(output).withCloseable { jarFile ->
@@ -206,6 +217,7 @@ tasks.register('verifySingleJar') {
 
 tasks.named('check') {
     dependsOn tasks.named('verifyShaderpackResources')
+    dependsOn tasks.named('auditBundledRendererMods')
 }
 
 tasks.named('build') {
