@@ -8,7 +8,7 @@ displayName="${mod_name}"
 displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
 authors="문승준"
 description='''
-촌장 한 명과 여러 플레이어 역할, 투표식 의사결정, 정지된 자연 시간을 기반으로 마을을 성장시키고 방어하는 생존형 마을 운영 모드.
+모든 플레이어가 역할, 빠른 신호, 투표, 시설 성장과 방어에 참여하는 협동형 마을 운영·공성 RPG 모드.
 '''
 
 [[dependencies.${mod_id}]]
