@@ -8,7 +8,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -82,26 +83,20 @@ public final class RuralGameplayHandler {
             return;
         }
 
-        CountrysideRegionManager.prepareAroundPlayer(serverLevel, player.blockPosition());
-        if (!CountrysideRegionManager.isInsideCountryside(serverLevel, player.blockPosition())) {
-            return;
-        }
-
         serverLevel.getEntitiesOfClass(
-                Monster.class,
-                player.getBoundingBox().inflate(96.0),
-                monster -> CountrysideRegionManager.isInsideCountryside(serverLevel, monster.blockPosition())
-        ).forEach(Monster::discard);
+                Mob.class,
+                player.getBoundingBox().inflate(128.0),
+                mob -> mob instanceof Enemy
+        ).forEach(Mob::discard);
     }
 
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (!(event.getLevel() instanceof ServerLevel serverLevel)
-                || !(event.getEntity() instanceof Monster monster)) {
+                || !(event.getEntity() instanceof Enemy)
+                || !CountrysideRegionManager.isInsideCountryside(serverLevel, event.getEntity().blockPosition())) {
             return;
         }
-        if (CountrysideRegionManager.isInsideCountryside(serverLevel, monster.blockPosition())) {
-            event.setCanceled(true);
-        }
+        event.setCanceled(true);
     }
 
     public static void onBlockDrops(BlockDropsEvent event) {
