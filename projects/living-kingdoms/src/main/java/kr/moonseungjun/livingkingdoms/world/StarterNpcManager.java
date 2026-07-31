@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -33,9 +34,16 @@ public final class StarterNpcManager {
             return;
         }
 
+        StarterNpcLifeSavedData life = realm.getDataStorage().computeIfAbsent(StarterNpcLifeSavedData.TYPE);
         for (NpcDefinition definition : definitions(profile.homelandId())) {
-            if (!exists(realm, definition)) {
+            if (life.isDead(definition.id())) {
+                continue;
+            }
+            Villager existing = findExisting(realm, definition);
+            if (existing == null) {
                 spawn(realm, definition);
+            } else {
+                repairExisting(realm, existing, definition);
             }
         }
     }
@@ -74,6 +82,20 @@ public final class StarterNpcManager {
         }
     }
 
+    public static void markDeadIfStarter(ServerLevel level, Villager villager) {
+        NpcDefinition definition = definitionByVillager(villager);
+        if (definition == null) {
+            return;
+        }
+        StarterNpcLifeSavedData life = level.getDataStorage().computeIfAbsent(StarterNpcLifeSavedData.TYPE);
+        life.markDead(definition.id());
+        LivingKingdoms.LOGGER.info("Named citizen {} died and will remain dead", definition.id());
+    }
+
+    public static boolean isStarterNpc(Villager villager) {
+        return definitionByVillager(villager) != null;
+    }
+
     private static boolean metAll(
             StarterNpcProgressSavedData progress,
             ServerPlayer player,
@@ -87,16 +109,17 @@ public final class StarterNpcManager {
         return true;
     }
 
-    private static boolean exists(ServerLevel level, NpcDefinition definition) {
+    private static Villager findExisting(ServerLevel level, NpcDefinition definition) {
         AABB area = new AABB(
-                definition.x() - 10.0, definition.y() - 5.0, definition.z() - 10.0,
-                definition.x() + 10.0, definition.y() + 8.0, definition.z() + 10.0
+                definition.x() - 14.0, definition.y() - 12.0, definition.z() - 14.0,
+                definition.x() + 14.0, definition.y() + 14.0, definition.z() + 14.0
         );
-        return !level.getEntitiesOfClass(
+        List<Villager> matches = level.getEntitiesOfClass(
                 Villager.class,
                 area,
                 villager -> definition.name().equals(villager.getName().getString())
-        ).isEmpty();
+        );
+        return matches.isEmpty() ? null : matches.getFirst();
     }
 
     private static void spawn(ServerLevel level, NpcDefinition definition) {
@@ -112,14 +135,44 @@ public final class StarterNpcManager {
             return;
         }
 
-        villager.setPos(definition.x() + 0.5, definition.y(), definition.z() + 0.5);
+        int standingY = safeStandingY(level, definition.x(), definition.y(), definition.z());
+        villager.setPos(definition.x() + 0.5, standingY, definition.z() + 0.5);
         villager.setCustomName(Component.literal(definition.name()));
         villager.setCustomNameVisible(true);
         villager.setPersistenceRequired();
-        villager.setInvulnerable(true);
+        villager.setInvulnerable(false);
         if (!level.addFreshEntity(villager)) {
             LivingKingdoms.LOGGER.error("Failed to add starter NPC {} to the realm", definition.id());
         }
+    }
+
+    private static void repairExisting(ServerLevel level, Villager villager, NpcDefinition definition) {
+        int standingY = safeStandingY(level, definition.x(), definition.y(), definition.z());
+        boolean unsafe = villager.getY() < standingY - 0.5
+                || !level.getBlockState(villager.blockPosition()).isAir()
+                || !level.getBlockState(villager.blockPosition().above()).isAir();
+        if (unsafe || villager.distanceToSqr(definition.x() + 0.5, standingY, definition.z() + 0.5) > 196.0) {
+            villager.setPos(definition.x() + 0.5, standingY, definition.z() + 0.5);
+        }
+        villager.setInvulnerable(false);
+        villager.setPersistenceRequired();
+    }
+
+    private static int safeStandingY(ServerLevel level, int x, int preferredY, int z) {
+        for (int offset = 0; offset <= 12; offset++) {
+            int[] candidates = offset == 0
+                    ? new int[]{preferredY}
+                    : new int[]{preferredY + offset, preferredY - offset};
+            for (int standingY : candidates) {
+                BlockPos feet = new BlockPos(x, standingY, z);
+                if (!level.getBlockState(feet.below()).isAir()
+                        && level.getBlockState(feet).isAir()
+                        && level.getBlockState(feet.above()).isAir()) {
+                    return standingY;
+                }
+            }
+        }
+        return preferredY;
     }
 
     private static NpcDefinition definitionByVillager(Villager villager) {
