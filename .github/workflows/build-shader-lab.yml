@@ -9,7 +9,7 @@ on:
       - '.github/workflows/build-shader-lab.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: shader-lab-${{ github.ref }}
@@ -22,6 +22,7 @@ defaults:
 
 jobs:
   build:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
@@ -41,6 +42,7 @@ jobs:
           gradle-version: '9.2.1'
 
       - name: Generate Gradle wrapper
+        id: wrapper
         run: |
           gradle wrapper --gradle-version 9.2.1 --distribution-type bin
           chmod +x gradlew
@@ -49,6 +51,7 @@ jobs:
         run: mkdir -p build/logs build/reports build/deliverables
 
       - name: Verify toolchain
+        id: toolchain
         run: |
           set -o pipefail
           {
@@ -58,18 +61,21 @@ jobs:
 
       - name: Clean build
         id: build
+        continue-on-error: true
         run: |
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build/logs/clean-build.log
 
       - name: Inspect executable JAR
+        id: jarcheck
         if: steps.build.outcome == 'success'
+        continue-on-error: true
         run: |
           set -o pipefail
           python3 scripts/verify_jar.py build/libs/shaderlab-0.1.0-alpha.1.jar 2>&1 | tee build/logs/jar-verification.log
 
       - name: Assemble report and deliverables
-        if: steps.build.outcome == 'success'
+        if: steps.build.outcome == 'success' && steps.jarcheck.outcome == 'success'
         env:
           COMMIT_SHA: ${{ github.sha }}
         run: |
@@ -85,7 +91,7 @@ jobs:
             echo "- Java: 25"
             echo "- NeoForge: 26.2.0.38-beta"
             echo "- Gradle: 9.2.1"
-            echo "- clean build: PASS"
+            echo "- Clean build: PASS"
             echo "- Shader resource contract: PASS"
             echo "- JAR inspection: PASS"
             echo "- Datagen: NOT APPLICABLE"
@@ -105,7 +111,7 @@ jobs:
           cp build/BUILD_AND_RUNTIME_REPORT.md build/deliverables/
 
       - name: Upload deliverables
-        if: steps.build.outcome == 'success'
+        if: steps.build.outcome == 'success' && steps.jarcheck.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: shader-lab-0.1.0-alpha.1-deliverables
@@ -121,3 +127,81 @@ jobs:
           path: projects/shader-lab/build/logs/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Record CI result
+        if: always()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          WRAPPER_OUTCOME: ${{ steps.wrapper.outcome }}
+          TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          JAR_OUTCOME: ${{ steps.jarcheck.outcome }}
+        run: |
+          cat > BUILD_AND_RUNTIME_REPORT.md <<REPORT
+          # Shader Lab Build and Runtime Report
+
+          - Source commit: ${SOURCE_SHA}
+          - Mod version: 0.1.0-alpha.1
+          - Minecraft: 26.2
+          - Java: 25
+          - Gradle: 9.2.1
+          - NeoForge: 26.2.0.38-beta
+          - Wrapper generation: ${WRAPPER_OUTCOME}
+          - Toolchain verification: ${TOOLCHAIN_OUTCOME}
+          - Clean build: ${BUILD_OUTCOME}
+          - Shader resource and JAR verification: ${JAR_OUTCOME}
+          - Datagen: NOT APPLICABLE
+          - GameTest: NOT APPLICABLE — GPU post-processing cannot be validated by server GameTest
+          - Dedicated server smoke test: NOT APPLICABLE — client-only mod
+          - Interactive client visual test: NOT RUN — requires a real game window and GPU
+
+          A successful build proves compilation and JAR structure only. Final visual compatibility is decided by the in-game test.
+          REPORT
+
+          if [ -f build/reports/jar-verification.txt ]; then
+            {
+              echo
+              echo '## JAR verification'
+              echo '```text'
+              cat build/reports/jar-verification.txt
+              echo '```'
+            } >> BUILD_AND_RUNTIME_REPORT.md
+          fi
+
+          if [ -f build/logs/clean-build.log ]; then
+            {
+              echo
+              echo '## Clean-build log tail'
+              echo '```text'
+              tail -n 160 build/logs/clean-build.log
+              echo '```'
+            } >> BUILD_AND_RUNTIME_REPORT.md
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add BUILD_AND_RUNTIME_REPORT.md
+
+          if [ "${BUILD_OUTCOME}" = "success" ] && [ "${JAR_OUTCOME}" = "success" ]; then
+            git add gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties
+          fi
+
+          if git diff --cached --quiet; then
+            echo "No Shader Lab CI records changed."
+            exit 0
+          fi
+
+          git commit -m "Record Shader Lab CI result for ${SOURCE_SHA:0:7}"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Enforce validation result
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          JAR_OUTCOME: ${{ steps.jarcheck.outcome }}
+        run: |
+          if [ "${BUILD_OUTCOME}" != "success" ] || [ "${JAR_OUTCOME}" != "success" ]; then
+            echo "Shader Lab validation failed: build=${BUILD_OUTCOME}, jar=${JAR_OUTCOME}"
+            exit 1
+          fi
