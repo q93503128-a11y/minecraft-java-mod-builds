@@ -43,6 +43,10 @@ def require_regex(source: str, pattern: str, label: str) -> None:
         fail(f"{label} does not match {pattern!r}")
 
 
+def require_define(source: str, name: str, value: str) -> None:
+    require_regex(source, rf"^\s*#define\s+{re.escape(name)}\s+{re.escape(value)}(?:\s|$)", f"Reverie setting {name}")
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: verify_jar.py <jar>")
@@ -138,21 +142,21 @@ def main() -> None:
             settings = shaderpack.read("shaders/settings.glsl").decode("utf-8", errors="ignore")
             require_regex(settings, r"const\s+int\s+shadowMapResolution\s*=\s*2048\s*;", "shadow map resolution")
             require_regex(settings, r"const\s+float\s+shadowDistance\s*=\s*128\s*;", "shadow distance")
-            for token in (
-                "#define SHADOW_SAMPLES 6",
-                "#define REFLECTIONS 1",
-                "#define REFRACTIONS 1",
-                "#define FOG_ALTITUDE 72",
-                "#define FOG_THICKNESS 40",
-                "#define FOG_DENSITY 0.45",
-                "#define WATER_OCTAVES 12",
-                "#define POM 0",
-                "#define LUT 15",
-                "#define BLOOM_STRENGTH 0.20",
-                "#define DOF 0",
-                "#define VIGNETTE 0",
+            for name, value in (
+                ("SHADOW_SAMPLES", "6"),
+                ("REFLECTIONS", "1"),
+                ("REFRACTIONS", "1"),
+                ("FOG_ALTITUDE", "72"),
+                ("FOG_THICKNESS", "40"),
+                ("FOG_DENSITY", "0.45"),
+                ("WATER_OCTAVES", "12"),
+                ("POM", "0"),
+                ("LUT", "15"),
+                ("BLOOM_STRENGTH", "0.20"),
+                ("DOF", "0"),
+                ("VIGNETTE", "0"),
             ):
-                require(settings, token, "Reverie settings")
+                require_define(settings, name, value)
 
             opaque = shaderpack.read("shaders/programs/gbuffers/opaque.glsl").decode("utf-8", errors="ignore")
             require(opaque, "discard; return;", "foliage alpha fix")
