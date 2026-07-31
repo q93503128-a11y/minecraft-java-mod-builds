@@ -9,7 +9,7 @@ on:
       - '.github/workflows/build-living-kingdoms.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   PROJECT_DIR: projects/living-kingdoms
@@ -115,6 +115,7 @@ jobs:
           EOF
 
       - name: Upload build logs
+        id: upload_logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -124,6 +125,7 @@ jobs:
           retention-days: 30
 
       - name: Upload verified test build
+        id: upload_build
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -131,3 +133,33 @@ jobs:
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish build pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+          BUILD_ARTIFACT_ID: ${{ steps.upload_build.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID",
+            "build_artifact_id": "$BUILD_ARTIFACT_ID"
+          }
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/living-kingdoms.json
+          git commit -m "Record Living Kingdoms build $GITHUB_RUN_NUMBER" || exit 0
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 3
+          done
+          exit 1
