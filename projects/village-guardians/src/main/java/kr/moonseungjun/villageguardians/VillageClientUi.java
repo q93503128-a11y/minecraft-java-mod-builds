@@ -8,12 +8,11 @@ import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlers
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageClientUi {
-    private VillageClientUi() {
-    }
+    private VillageClientUi() {}
 
     @SubscribeEvent
     public static void registerClientPayloads(RegisterClientPayloadHandlersEvent event) {
         event.register(VillageNetwork.OpenVillageUiPayload.TYPE,
-                (payload, context) -> Minecraft.getInstance().setScreen(new VillageUiScreen(payload)));
+                (payload, context) -> Minecraft.getInstance().gui.setScreen(new VillageUiScreen(payload)));
     }
 }
