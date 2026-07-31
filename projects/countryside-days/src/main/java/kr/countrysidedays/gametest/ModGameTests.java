@@ -62,16 +62,16 @@ public final class ModGameTests {
     }
 
     private static void homesteadLayout(GameTestHelper helper) {
-        BlockPos relativeOrigin = new BlockPos(20, 1, 20);
+        BlockPos relativeOrigin = new BlockPos(20, 4, 20);
         BlockPos absoluteOrigin = helper.absolutePos(relativeOrigin);
         StarterHomesteadGenerator.buildHomestead(helper.getLevel(), absoluteOrigin);
 
-        helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(10, 2, 14));
-        helper.assertBlockPresent(Blocks.FURNACE, new BlockPos(9, 2, 14));
-        helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(24, 1, 13));
-        helper.assertBlockPresent(Blocks.WATER, new BlockPos(27, 1, 27));
-        helper.assertBlockPresent(Blocks.DEEPSLATE_TILES, new BlockPos(7, 6, 11));
-        helper.assertBlockPresent(Blocks.OAK_LOG, new BlockPos(10, 1, 27));
+        helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(10, 5, 14));
+        helper.assertBlockPresent(Blocks.FURNACE, new BlockPos(9, 5, 14));
+        helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(24, 4, 13));
+        helper.assertBlockPresent(Blocks.WATER, new BlockPos(27, 4, 27));
+        helper.assertBlockPresent(Blocks.DEEPSLATE_TILES, new BlockPos(7, 9, 11));
+        helper.assertBlockPresent(Blocks.OAK_LOG, new BlockPos(10, 4, 27));
 
         helper.succeed();
     }
