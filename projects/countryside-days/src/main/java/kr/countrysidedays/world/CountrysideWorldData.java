@@ -26,7 +26,11 @@ public final class CountrysideWorldData extends SavedData {
                     Codec.LONG.optionalFieldOf("homestead_origin").forGetter(data -> data.homesteadOrigin),
                     Codec.LONG.listOf().optionalFieldOf("herb_preparations", List.of())
                             .forGetter(data -> List.copyOf(data.herbPreparations)),
-                    Codec.INT.optionalFieldOf("meals_prepared", 0).forGetter(CountrysideWorldData::mealsPrepared)
+                    Codec.INT.optionalFieldOf("meals_prepared", 0).forGetter(CountrysideWorldData::mealsPrepared),
+                    Codec.INT.optionalFieldOf("customers_served", 0).forGetter(CountrysideWorldData::customersServed),
+                    Codec.INT.optionalFieldOf("village_coins_earned", 0).forGetter(CountrysideWorldData::villageCoinsEarned),
+                    Codec.LONG.optionalFieldOf("last_customer_service_day", -1L)
+                            .forGetter(CountrysideWorldData::lastCustomerServiceDay)
             ).apply(instance, CountrysideWorldData::new))
     );
 
@@ -34,21 +38,30 @@ public final class CountrysideWorldData extends SavedData {
     private Optional<Long> homesteadOrigin;
     private final Set<Long> herbPreparations;
     private int mealsPrepared;
+    private int customersServed;
+    private int villageCoinsEarned;
+    private long lastCustomerServiceDay;
 
     public CountrysideWorldData() {
-        this(Optional.empty(), Optional.empty(), List.of(), 0);
+        this(Optional.empty(), Optional.empty(), List.of(), 0, 0, 0, -1L);
     }
 
     private CountrysideWorldData(
             Optional<Long> restaurantAnchor,
             Optional<Long> homesteadOrigin,
             List<Long> herbPreparations,
-            int mealsPrepared
+            int mealsPrepared,
+            int customersServed,
+            int villageCoinsEarned,
+            long lastCustomerServiceDay
     ) {
         this.restaurantAnchor = restaurantAnchor;
         this.homesteadOrigin = homesteadOrigin;
         this.herbPreparations = new HashSet<>(herbPreparations);
         this.mealsPrepared = Math.max(0, mealsPrepared);
+        this.customersServed = Math.max(0, customersServed);
+        this.villageCoinsEarned = Math.max(0, villageCoinsEarned);
+        this.lastCustomerServiceDay = lastCustomerServiceDay;
     }
 
     public static CountrysideWorldData get(MinecraftServer server) {
@@ -126,5 +139,28 @@ public final class CountrysideWorldData extends SavedData {
     public void recordPreparedMeal() {
         mealsPrepared++;
         setDirty();
+    }
+
+    public int customersServed() {
+        return customersServed;
+    }
+
+    public int villageCoinsEarned() {
+        return villageCoinsEarned;
+    }
+
+    public long lastCustomerServiceDay() {
+        return lastCustomerServiceDay;
+    }
+
+    public boolean recordCustomerService(long day, int rewardCoins) {
+        if (day <= lastCustomerServiceDay) {
+            return false;
+        }
+        lastCustomerServiceDay = day;
+        customersServed++;
+        villageCoinsEarned += Math.max(0, rewardCoins);
+        setDirty();
+        return true;
     }
 }
