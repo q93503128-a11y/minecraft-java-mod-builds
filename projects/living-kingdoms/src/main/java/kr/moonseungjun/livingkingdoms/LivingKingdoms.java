@@ -5,7 +5,7 @@ import kr.moonseungjun.livingkingdoms.crime.CrimeManager;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
-import kr.moonseungjun.livingkingdoms.world.AuthoredRealmManager;
+import kr.moonseungjun.livingkingdoms.world.RealmRevisionFourManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
@@ -58,7 +58,7 @@ public final class LivingKingdoms {
         if (event.getEntity() instanceof ServerPlayer player) {
             OriginProfileManager.requestSelection(player);
             OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-                AuthoredRealmManager.ensureForPlayer(player, profile);
+                RealmRevisionFourManager.ensureForPlayer(player, profile);
                 StarterNpcManager.ensureForPlayer(player, profile);
             });
         }
@@ -67,7 +67,7 @@ public final class LivingKingdoms {
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-                AuthoredRealmManager.ensureForPlayer(player, profile);
+                RealmRevisionFourManager.ensureForPlayer(player, profile);
                 StarterRealmManager.placePlayer(player, profile);
                 StarterNpcManager.ensureForPlayer(player, profile);
             });
@@ -88,7 +88,7 @@ public final class LivingKingdoms {
 
         if (player.level().getGameTime() % 200L == 0L) {
             OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-                AuthoredRealmManager.ensureForPlayer(player, profile);
+                RealmRevisionFourManager.ensureForPlayer(player, profile);
                 StarterNpcManager.ensureForPlayer(player, profile);
             });
         }
