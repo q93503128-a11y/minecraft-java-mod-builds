@@ -152,7 +152,7 @@ tasks.register('verifyShaderpackResources') {
 
         new ZipFile(generatedShaderpack).withCloseable { pack ->
             Set<String> entries = pack.entries().collect { it.name } as Set
-            ['SHADERLAB_ATTRIBUTION.md', 'MODRINTH_LICENSE_EVIDENCE.json'].each { required ->
+            ['SHADERLAB_ATTRIBUTION.md', 'SHADERLAB_REVERIE_PRESET.md', 'MODRINTH_LICENSE_EVIDENCE.json'].each { required ->
                 if (!entries.contains(required)) {
                     throw new GradleException("Reverie shaderpack is missing ${required}")
                 }
@@ -170,8 +170,9 @@ tasks.register('verifyShaderpackResources') {
             def evidence = new JsonSlurper().parse(pack.getInputStream(pack.getEntry('MODRINTH_LICENSE_EVIDENCE.json')))
             if (!(evidence?.project_license?.id in ['GPL-3.0-only', 'GPL-3.0-or-later'])
                     || evidence?.project_slug != nobleProject
-                    || evidence?.version_id != nobleVersionId) {
-                throw new GradleException('Embedded Noble license or version evidence is invalid')
+                    || evidence?.version_id != nobleVersionId
+                    || evidence?.shaderlab_preset != 'Reverie 0.6') {
+                throw new GradleException('Embedded Noble license, version or preset evidence is invalid')
             }
         }
 
@@ -209,7 +210,8 @@ tasks.register('verifySingleJar') {
                 throw new GradleException('Single JAR is missing bundled Sodium')
             }
             if (!entries.contains("shaderpacks/${reveriePackName}")) {
-                throw new GradleException('Single JAR is missing the Reverie shaderpack')
+                def shaderEntries = entries.findAll { it.toLowerCase().contains('shader') }.sort()
+                throw new GradleException("Single JAR is missing the Reverie shaderpack; shader entries=${shaderEntries}")
             }
         }
     }
@@ -230,6 +232,13 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named('jar') {
+    dependsOn tasks.named('prepareReverieShaderpack')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from(generatedShaderpack) {
+        into 'shaderpacks'
+    }
+
     manifest {
         attributes(
                 'Specification-Title': mod_name,
