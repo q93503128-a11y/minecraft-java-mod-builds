@@ -1,6 +1,6 @@
 # Shader Lab Build and Runtime Report
 
-- Source commit: f473120607aeeaa748b0b2aae64b1f597c010488
+- Source commit: 86845e6bb6e99f97f9f23d7b5da0ec724adbefe0
 - Mod version: 0.2.0-alpha.2
 - Minecraft: 26.2
 - Java: 25
@@ -42,13 +42,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/shader-lab/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.37s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.35s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadClient[0m[0m
 [1m*** Started working on [4mdownloadServer[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
+[1m*** Started working on [4mdownloadClient[0m[0m
  [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -57,7 +57,7 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.12s
+Total runtime: 1.07s
 
 
 > Task :compileJava FROM-CACHE
@@ -75,8 +75,8 @@ Total runtime: 1.12s
 > Task :check
 > Task :build
 > Task :writeJarChecksum
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1785482373184.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1785482480820.json
 
-BUILD SUCCESSFUL in 13s
+BUILD SUCCESSFUL in 14s
 8 actionable tasks: 7 executed, 1 from cache
 ```
