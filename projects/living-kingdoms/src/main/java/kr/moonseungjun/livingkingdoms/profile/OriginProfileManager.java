@@ -6,7 +6,7 @@ import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.network.OpenOriginScreenPayload;
 import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
 import kr.moonseungjun.livingkingdoms.network.SubmitOriginPayload;
-import kr.moonseungjun.livingkingdoms.world.AuthoredRealmManager;
+import kr.moonseungjun.livingkingdoms.world.RealmRevisionFourManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
 import net.minecraft.server.MinecraftServer;
@@ -72,12 +72,10 @@ public final class OriginProfileManager {
                 player.level().getGameTime()
         );
 
-        // Base generation owns dimension registration and first safe teleport. The authored revision
-        // then replaces the prototype structures before NPCs and loadout are installed.
         if (!StarterRealmManager.placePlayer(player, profile)) {
             return new OriginSubmissionResultPayload(false, "시작 지역을 준비하지 못했습니다. 잠시 후 다시 선택하십시오.");
         }
-        AuthoredRealmManager.ensureForPlayer(player, profile);
+        RealmRevisionFourManager.ensureForPlayer(player, profile);
 
         StarterNpcManager.ensureForPlayer(player, profile);
         StarterLoadoutManager.grant(player, profile);
