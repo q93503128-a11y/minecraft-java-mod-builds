@@ -1,14 +1,18 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.StairBlock;
 
 final class VillageFortressTerrain {
     private static final int TERRAFORM_RADIUS = 86;
     private static final int WALL_RADIUS = VillageWorldSystem.FORTRESS_RADIUS;
     private static final int ROAD_HALF_WIDTH = 4;
+    private static final int GATE_HALF_WIDTH = 8;
+    private static final int GATE_HEIGHT = 8;
 
     private VillageFortressTerrain() {
     }
@@ -22,6 +26,8 @@ final class VillageFortressTerrain {
         buildTower(level, center.offset(WALL_RADIUS, 0, -WALL_RADIUS), groundY);
         buildTower(level, center.offset(-WALL_RADIUS, 0, WALL_RADIUS), groundY);
         buildTower(level, center.offset(WALL_RADIUS, 0, WALL_RADIUS), groundY);
+        buildWallAccess(level, center, groundY);
+        buildGateControl(level, center, groundY);
         clearMainAvenue(level, center, groundY);
         buildCentralBell(level, center, groundY);
         buildLamps(level, center, groundY);
@@ -29,13 +35,14 @@ final class VillageFortressTerrain {
 
     static void rebuildNorthGate(ServerLevel level, BlockPos center) {
         buildNorthGate(level, center, center.getY() - 1);
+        buildGateControl(level, center, center.getY() - 1);
         clearMainAvenue(level, center, center.getY() - 1);
     }
 
     static void destroyNorthGate(ServerLevel level, BlockPos center) {
         int groundY = center.getY() - 1;
         int gateZ = center.getZ() - WALL_RADIUS;
-        for (int x = center.getX() - 9; x <= center.getX() + 9; x++) {
+        for (int x = center.getX() - 12; x <= center.getX() + 12; x++) {
             for (int z = gateZ - 3; z <= gateZ + 4; z++) {
                 for (int y = groundY + 1; y <= groundY + 13; y++) {
                     set(level, new BlockPos(x, y, z), Blocks.AIR);
@@ -43,7 +50,7 @@ final class VillageFortressTerrain {
             }
         }
 
-        for (int side : new int[]{-9, 9}) {
+        for (int side : new int[]{-11, 11}) {
             for (int dx = -2; dx <= 2; dx++) {
                 for (int dz = -2; dz <= 2; dz++) {
                     int hash = Math.floorMod(side * 17 + dx * 11 + dz * 7, 5);
@@ -55,20 +62,30 @@ final class VillageFortressTerrain {
                 }
             }
         }
-        for (int x : new int[]{-7, -6, 6, 7}) {
-            set(level, center.offset(x, 0, -WALL_RADIUS + 2), Blocks.COBBLESTONE);
-            if ((x & 1) == 0) {
-                set(level, center.offset(x, 1, -WALL_RADIUS + 2), Blocks.DARK_OAK_PLANKS);
-            }
-        }
         clearPassageFloor(level, center, groundY);
+    }
+
+    static void openNorthGate(ServerLevel level, BlockPos center) {
+        setGateLeaf(level, center, Blocks.AIR);
+    }
+
+    static void closeNorthGate(ServerLevel level, BlockPos center) {
+        setGateLeaf(level, center, Blocks.DARK_OAK_PLANKS);
+    }
+
+    static BlockPos gateControlPosition(BlockPos center) {
+        return center.offset(13, 1, -WALL_RADIUS + 11);
+    }
+
+    static boolean isGateControl(BlockPos center, BlockPos clicked) {
+        return gateControlPosition(center).equals(clicked);
     }
 
     static boolean isNorthGatePassable(ServerLevel level, BlockPos center) {
         int groundY = center.getY() - 1;
         int gateZ = center.getZ() - WALL_RADIUS + 1;
         int openColumns = 0;
-        for (int x = center.getX() - 4; x <= center.getX() + 4; x++) {
+        for (int x = center.getX() - GATE_HALF_WIDTH; x <= center.getX() + GATE_HALF_WIDTH; x++) {
             boolean open = true;
             for (int y = groundY + 1; y <= groundY + 3; y++) {
                 if (!level.getBlockState(new BlockPos(x, y, gateZ)).isAir()) {
@@ -80,7 +97,7 @@ final class VillageFortressTerrain {
                 openColumns++;
             }
         }
-        return openColumns >= 3;
+        return openColumns >= 5;
     }
 
     private static void terraform(ServerLevel level, BlockPos center, int groundY) {
@@ -132,7 +149,7 @@ final class VillageFortressTerrain {
         for (int dx = -WALL_RADIUS; dx <= WALL_RADIUS; dx++) {
             for (int dz = -WALL_RADIUS; dz <= WALL_RADIUS; dz++) {
                 boolean edge = Math.abs(dx) >= WALL_RADIUS - 2 || Math.abs(dz) >= WALL_RADIUS - 2;
-                boolean northGate = dz <= -WALL_RADIUS + 2 && Math.abs(dx) <= 8;
+                boolean northGate = dz <= -WALL_RADIUS + 2 && Math.abs(dx) <= 10;
                 if (!edge || northGate) {
                     continue;
                 }
@@ -146,12 +163,11 @@ final class VillageFortressTerrain {
             }
         }
         buildNorthGate(level, center, groundY);
-        set(level, center.offset(11, 1, -WALL_RADIUS + 8), Blocks.STONECUTTER);
     }
 
     private static void buildNorthGate(ServerLevel level, BlockPos center, int groundY) {
         int gateZ = center.getZ() - WALL_RADIUS;
-        for (int side : new int[]{-12, 12}) {
+        for (int side : new int[]{-13, 13}) {
             for (int xOffset = -3; xOffset <= 3; xOffset++) {
                 for (int zOffset = -3; zOffset <= 3; zOffset++) {
                     for (int y = 1; y <= 14; y++) {
@@ -163,17 +179,70 @@ final class VillageFortressTerrain {
                 }
             }
         }
-        for (int x = -12; x <= 12; x++) {
+        for (int x = -13; x <= 13; x++) {
             for (int y = 9; y <= 12; y++) {
                 set(level, new BlockPos(center.getX() + x, groundY + y, gateZ), Blocks.STONE_BRICKS);
             }
         }
-        for (int x = -7; x <= 7; x++) {
+        for (int x = -10; x <= 10; x++) {
             for (int y = 1; y <= 8; y++) {
-                set(level, new BlockPos(center.getX() + x, groundY + y, gateZ + 1), Blocks.DARK_OAK_PLANKS);
+                if (Math.abs(x) > GATE_HALF_WIDTH) {
+                    set(level, new BlockPos(center.getX() + x, groundY + y, gateZ + 1), Blocks.STONE_BRICKS);
+                }
             }
         }
+        closeNorthGate(level, center);
         clearPassageFloor(level, center, groundY);
+    }
+
+    private static void setGateLeaf(ServerLevel level, BlockPos center, Block block) {
+        int groundY = center.getY() - 1;
+        int gateZ = center.getZ() - WALL_RADIUS + 1;
+        for (int x = -GATE_HALF_WIDTH; x <= GATE_HALF_WIDTH; x++) {
+            for (int y = 1; y <= GATE_HEIGHT; y++) {
+                set(level, new BlockPos(center.getX() + x, groundY + y, gateZ), block);
+            }
+        }
+    }
+
+    private static void buildGateControl(ServerLevel level, BlockPos center, int groundY) {
+        BlockPos control = gateControlPosition(center);
+        set(level, control.below(2), Blocks.STONE_BRICKS);
+        set(level, control.below(), Blocks.CHISELED_STONE_BRICKS);
+        level.setBlockAndUpdate(control, Blocks.LEVER.defaultBlockState());
+        set(level, control.above(), Blocks.LANTERN);
+    }
+
+    private static void buildWallAccess(ServerLevel level, BlockPos center, int groundY) {
+        for (int side : new int[]{-22, 22}) {
+            for (int step = 0; step < 9; step++) {
+                int z = -WALL_RADIUS + 15 - step;
+                int y = groundY + 1 + step;
+                for (int width = -1; width <= 1; width++) {
+                    BlockPos stairPos = new BlockPos(center.getX() + side + width, y, center.getZ() + z);
+                    for (int supportY = groundY + 1; supportY < y; supportY++) {
+                        set(level, new BlockPos(stairPos.getX(), supportY, stairPos.getZ()), Blocks.STONE_BRICKS);
+                    }
+                    level.setBlockAndUpdate(
+                            stairPos,
+                            Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+                                    .setValue(StairBlock.FACING, Direction.NORTH));
+                    for (int clearY = 1; clearY <= 3; clearY++) {
+                        set(level, stairPos.above(clearY), Blocks.AIR);
+                    }
+                }
+            }
+            for (int z = -WALL_RADIUS + 6; z <= -WALL_RADIUS + 8; z++) {
+                for (int width = -2; width <= 2; width++) {
+                    set(level,
+                            new BlockPos(center.getX() + side + width, groundY + 9, center.getZ() + z),
+                            Blocks.STONE_BRICKS);
+                    for (int y = groundY + 10; y <= groundY + 12; y++) {
+                        set(level, new BlockPos(center.getX() + side + width, y, center.getZ() + z), Blocks.AIR);
+                    }
+                }
+            }
+        }
     }
 
     private static void buildTower(ServerLevel level, BlockPos corner, int groundY) {
