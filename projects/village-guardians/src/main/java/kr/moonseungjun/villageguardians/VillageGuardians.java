@@ -32,6 +32,7 @@ public final class VillageGuardians {
     public void onServerStarting(ServerStartingEvent event) {
         VillageCouncilState.initializeServer(event.getServer());
         VillageRpgSystem.resetTransientState();
+        VillageWorldSystem.resetTransientState();
         maintenanceTicks = 0;
         LOGGER.info("Village time, persistent RPG progression, and fortress state initialized");
     }
