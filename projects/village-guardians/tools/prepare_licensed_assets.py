@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import gzip
+import io
 import shutil
+import struct
 import sys
 import urllib.request
 import zipfile
@@ -15,7 +18,7 @@ TOWNS_AND_TOWERS_URL = (
     "https://cdn.modrinth.com/data/DjLobEOy/versions/"
     "E39wx2BN/t_and_t-datapack-26.x.zip"
 )
-USER_AGENT = "VillageGuardiansBuild/0.7 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
+USER_AGENT = "VillageGuardiansBuild/0.8 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
 
 GUI_ASSETS = {
     "assets/minecraft/textures/gui/container/inventory.png": (
@@ -33,7 +36,7 @@ GUI_ASSETS = {
 }
 
 ROLES = {
-    "town_hall": ["meeting", "town_center", "town_centre", "manor", "hall", "big_house"],
+    "town_hall": ["manor", "big_house", "large_house", "town_hall", "hall", "house"],
     "barracks": ["barracks", "guard", "armorer", "weaponsmith"],
     "smithy": ["weaponsmith", "toolsmith", "blacksmith", "smith", "armorer"],
     "skill_hall": ["library", "librarian", "cartographer", "cleric"],
@@ -56,34 +59,115 @@ def download(url: str, destination: Path) -> None:
         raise RuntimeError(f"Downloaded empty file: {url}")
 
 
-def structure_candidates(archive: zipfile.ZipFile) -> list[str]:
-    all_nbt = []
-    preferred = []
+def _read_exact(stream: io.BytesIO, count: int) -> bytes:
+    data = stream.read(count)
+    if len(data) != count:
+        raise ValueError("Unexpected end of NBT data")
+    return data
+
+
+def _read_u8(stream: io.BytesIO) -> int:
+    return struct.unpack(">B", _read_exact(stream, 1))[0]
+
+
+def _read_i32(stream: io.BytesIO) -> int:
+    return struct.unpack(">i", _read_exact(stream, 4))[0]
+
+
+def _read_string(stream: io.BytesIO) -> str:
+    length = struct.unpack(">H", _read_exact(stream, 2))[0]
+    return _read_exact(stream, length).decode("utf-8")
+
+
+def _skip_payload(stream: io.BytesIO, tag_type: int) -> None:
+    fixed_sizes = {1: 1, 2: 2, 3: 4, 4: 8, 5: 4, 6: 8}
+    if tag_type in fixed_sizes:
+        _read_exact(stream, fixed_sizes[tag_type])
+    elif tag_type == 7:
+        _read_exact(stream, max(0, _read_i32(stream)))
+    elif tag_type == 8:
+        _read_string(stream)
+    elif tag_type == 9:
+        element_type = _read_u8(stream)
+        length = max(0, _read_i32(stream))
+        for _ in range(length):
+            _skip_payload(stream, element_type)
+    elif tag_type == 10:
+        while True:
+            child_type = _read_u8(stream)
+            if child_type == 0:
+                break
+            _read_string(stream)
+            _skip_payload(stream, child_type)
+    elif tag_type == 11:
+        _read_exact(stream, max(0, _read_i32(stream)) * 4)
+    elif tag_type == 12:
+        _read_exact(stream, max(0, _read_i32(stream)) * 8)
+    else:
+        raise ValueError(f"Unknown NBT tag type: {tag_type}")
+
+
+def structure_size(data: bytes) -> tuple[int, int, int]:
+    try:
+        if data[:2] == b"\x1f\x8b":
+            data = gzip.decompress(data)
+        stream = io.BytesIO(data)
+        root_type = _read_u8(stream)
+        _read_string(stream)
+        if root_type != 10:
+            return 0, 0, 0
+        while True:
+            tag_type = _read_u8(stream)
+            if tag_type == 0:
+                break
+            name = _read_string(stream)
+            if name == "size" and tag_type == 9:
+                element_type = _read_u8(stream)
+                length = _read_i32(stream)
+                if element_type == 3 and length == 3:
+                    return _read_i32(stream), _read_i32(stream), _read_i32(stream)
+                for _ in range(max(0, length)):
+                    _skip_payload(stream, element_type)
+            else:
+                _skip_payload(stream, tag_type)
+    except (OSError, ValueError, struct.error, UnicodeDecodeError):
+        return 0, 0, 0
+    return 0, 0, 0
+
+
+def structure_candidates(archive: zipfile.ZipFile) -> list[dict[str, object]]:
+    all_nbt: list[dict[str, object]] = []
+    preferred: list[dict[str, object]] = []
     for name in archive.namelist():
         lower = name.replace("\\", "/").lower()
         if not lower.endswith(".nbt") or any(token in lower for token in EXCLUDED):
             continue
-        all_nbt.append(name)
+        size = structure_size(archive.read(name))
+        candidate = {"path": name, "lower": lower, "size": size}
+        all_nbt.append(candidate)
         if (
             "structure" in lower
             and any(token in lower for token in ("village", "house", "town", "building"))
         ):
-            preferred.append(name)
+            preferred.append(candidate)
     candidates = preferred or all_nbt
     if not candidates:
         raise RuntimeError("No usable NBT structures exist in the Towns and Towers archive.")
-    return sorted(candidates)
+    return sorted(candidates, key=lambda candidate: str(candidate["path"]))
 
 
-def choose_style(candidates: list[str]) -> str:
-    lowered = [path.lower() for path in candidates]
+def choose_style(candidates: list[dict[str, object]]) -> str:
     best_style = ""
     best_score = -1
     for style in STYLE_PREFERENCES:
         score = sum(
             1
             for keywords in ROLES.values()
-            if any(style in path and any(keyword in path for keyword in keywords) for path in lowered)
+            if any(
+                style in str(candidate["lower"])
+                and any(keyword in str(candidate["lower"]) for keyword in keywords)
+                for candidate in candidates
+            )
         )
         if score > best_score:
             best_style = style
@@ -91,38 +175,55 @@ def choose_style(candidates: list[str]) -> str:
     return best_style if best_score > 0 else ""
 
 
-def select_structures(candidates: list[str]) -> tuple[str, dict[str, str]]:
+def role_score(role: str, candidate: dict[str, object], selected_style: str) -> int:
+    lower = str(candidate["lower"])
+    width, height, depth = candidate["size"]  # type: ignore[misc]
+    score = 0
+    if selected_style and selected_style in lower:
+        score += 1000
+    if "/houses/" in lower:
+        score += 40
+    if "house" in lower:
+        score += 20
+    if "village" in lower or "town" in lower:
+        score += 15
+    for index, keyword in enumerate(ROLES[role]):
+        if keyword in lower:
+            score += 170 - index * 10
+
+    footprint = max(0, width) * max(0, depth)
+    volume = footprint * max(0, height)
+    if role == "town_hall":
+        score += min(900, footprint * 2 + height * 24 + volume // 25)
+        if width >= 15 and depth >= 14:
+            score += 260
+        if height >= 9:
+            score += 220
+        if any(token in lower for token in ("meeting_point", "meeting-point", "well", "fountain")):
+            score -= 3000
+    else:
+        score += min(140, footprint // 2 + height * 3)
+    return score
+
+
+def select_structures(candidates: list[dict[str, object]]) -> tuple[str, dict[str, dict[str, object]]]:
     selected_style = choose_style(candidates)
     used: set[str] = set()
-    selections: dict[str, str] = {}
+    selections: dict[str, dict[str, object]] = {}
 
-    for role, keywords in ROLES.items():
-        ranked: list[tuple[int, str]] = []
-        for path in candidates:
-            lower = path.lower()
-            score = 0
-            if selected_style and selected_style in lower:
-                score += 1000
-            if "/houses/" in lower:
-                score += 40
-            if "house" in lower:
-                score += 20
-            if "village" in lower or "town" in lower:
-                score += 15
-            for index, keyword in enumerate(keywords):
-                if keyword in lower:
-                    score += 140 - index * 8
-            if path in used:
-                score -= 3000
-            ranked.append((score, path))
-
-        ranked.sort(key=lambda item: (-item[0], item[1]))
-        choice = next((path for score, path in ranked if score > 0 and path not in used), None)
-        if choice is None:
-            choice = next((path for _, path in ranked if path not in used), None)
+    for role in ROLES:
+        ranked = sorted(
+            (
+                (role_score(role, candidate, selected_style), candidate)
+                for candidate in candidates
+                if str(candidate["path"]) not in used
+            ),
+            key=lambda item: (-item[0], str(item[1]["path"])),
+        )
+        choice = next((candidate for score, candidate in ranked if score > 0), None)
         if choice is None:
             raise RuntimeError(f"Not enough distinct licensed structures for role: {role}")
-        used.add(choice)
+        used.add(str(choice["path"]))
         selections[role] = choice
 
     return selected_style or "mixed-compatible", selections
@@ -155,11 +256,13 @@ def main() -> int:
             f"Usable NBT candidates discovered: {len(candidates)}",
             "",
         ]
-        for role, source_path in selections.items():
+        for role, candidate in selections.items():
+            source_path = str(candidate["path"])
+            size = candidate["size"]
             destination = output_root / f"data/villageguardians/structure/external/{role}.nbt"
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(archive.read(source_path))
-            manifest.append(f"{role} <- {source_path}")
+            manifest.append(f"{role} {size} <- {source_path}")
 
     manifest_path = output_root / "META-INF/villageguardians/towns-and-towers-selection.txt"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
