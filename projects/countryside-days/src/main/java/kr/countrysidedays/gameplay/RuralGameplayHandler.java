@@ -12,10 +12,10 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -141,7 +141,7 @@ public final class RuralGameplayHandler {
     }
 
     private static void enforceHealingRules(ServerLevel level) {
-        level.getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true, level.getServer());
+        level.getServer().getGameRules().set(GameRules.KEEP_INVENTORY, true, level.getServer());
     }
 
     private static void giveOrDrop(Player player, ItemStack stack) {
