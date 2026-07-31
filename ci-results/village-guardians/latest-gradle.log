@@ -15,13 +15,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.33s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.60s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
 [1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.03s
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.03s
+[1m*** Started working on [4mdownloadServer[0m[0m
+ [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -30,7 +30,7 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 0.90s
+Total runtime: 1.99s
 
 
 > Task :compileJava
@@ -61,6 +61,48 @@ import net.minecraft.client.gui.GuiGraphics;
                                ^
   symbol:   method setScreen(<null>)
   location: class Minecraft
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:18: error: package VillageBuildingCatalog does not exist
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                              ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:18: error: cannot find symbol
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                           ^
+  symbol:   variable VillageBuildingCatalog
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:20: error: cannot find symbol
+        VillageBuildingShell.build(level, origin, center.getY() - 1, spec);
+        ^
+  symbol:   variable VillageBuildingShell
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:21: error: cannot find symbol
+        VillageBuildingCatalog.furnish(level, origin, spec, building);
+        ^
+  symbol:   variable VillageBuildingCatalog
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:31: error: package VillageBuildingCatalog does not exist
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                              ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:31: error: cannot find symbol
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                           ^
+  symbol:   variable VillageBuildingCatalog
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:32: error: cannot find symbol
+        VillageBuildingShell.clear(level, center, spec);
+        ^
+  symbol:   variable VillageBuildingShell
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:37: error: FORTRESS_RADIUS has private access in VillageWorldSystem
+            return villageCenter.offset(0, 0, -VillageWorldSystem.FORTRESS_RADIUS + 2);
+                                                                 ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:39: error: package VillageBuildingCatalog does not exist
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                              ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:39: error: cannot find symbol
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                           ^
+  symbol:   variable VillageBuildingCatalog
+  location: class VillageFortressBuildings
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:411: error: cannot find symbol
             VillageWorldSystem.rebuildStructure(level, building);
                               ^
@@ -120,10 +162,10 @@ import net.minecraft.client.gui.GuiGraphics;
   reason: actual and formal argument lists differ in length
 Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
-17 errors
+27 errors
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785486952946.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785487040671.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
 
@@ -162,6 +204,36 @@ Execution failed for task ':compileJava'.
                          ^
     symbol:   class GuiGraphics
     location: class VillageUiScreen
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:18: error: cannot find symbol
+          VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                             ^
+    symbol:   variable VillageBuildingCatalog
+    location: class VillageFortressBuildings
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:20: error: cannot find symbol
+          VillageBuildingShell.build(level, origin, center.getY() - 1, spec);
+          ^
+    symbol:   variable VillageBuildingShell
+    location: class VillageFortressBuildings
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:21: error: cannot find symbol
+          VillageBuildingCatalog.furnish(level, origin, spec, building);
+          ^
+    symbol:   variable VillageBuildingCatalog
+    location: class VillageFortressBuildings
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:31: error: cannot find symbol
+          VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                             ^
+    symbol:   variable VillageBuildingCatalog
+    location: class VillageFortressBuildings
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:32: error: cannot find symbol
+          VillageBuildingShell.clear(level, center, spec);
+          ^
+    symbol:   variable VillageBuildingShell
+    location: class VillageFortressBuildings
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:39: error: cannot find symbol
+          VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                             ^
+    symbol:   variable VillageBuildingCatalog
+    location: class VillageFortressBuildings
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:82: error: cannot find symbol
               case ARMORY -> decoratePedestal(level, center.offset(42, 0, -14), upgradeLevel, Blocks.IRON_BLOCK);
                    ^
@@ -172,12 +244,24 @@ Execution failed for task ':compileJava'.
                                                                      ^
     symbol:   variable ARMORY
     location: class Building
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:37: error: FORTRESS_RADIUS has private access in VillageWorldSystem
+              return villageCenter.offset(0, 0, -VillageWorldSystem.FORTRESS_RADIUS + 2);
+                                                                   ^
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:41: error: method does not override or implement a method from a supertype
       @Override
       ^
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:109: error: method does not override or implement a method from a supertype
       @Override
       ^
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:18: error: package VillageBuildingCatalog does not exist
+          VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                ^
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:31: error: package VillageBuildingCatalog does not exist
+          VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                ^
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:39: error: package VillageBuildingCatalog does not exist
+          VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                ^
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:137: error: cannot find symbol
           Minecraft.getInstance().setScreen(null);
                                  ^
@@ -218,7 +302,7 @@ Execution failed for task ':compileJava'.
                                                         ^
     symbol:   method armoryDamageMultiplier()
     location: class VillageProgressionSystem
-  17 errors
+  27 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -290,6 +374,36 @@ import net.minecraft.client.gui.GuiGraphics;
                        ^
   symbol:   class GuiGraphics
   location: class VillageUiScreen
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:18: error: cannot find symbol
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                           ^
+  symbol:   variable VillageBuildingCatalog
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:20: error: cannot find symbol
+        VillageBuildingShell.build(level, origin, center.getY() - 1, spec);
+        ^
+  symbol:   variable VillageBuildingShell
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:21: error: cannot find symbol
+        VillageBuildingCatalog.furnish(level, origin, spec, building);
+        ^
+  symbol:   variable VillageBuildingCatalog
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:31: error: cannot find symbol
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                           ^
+  symbol:   variable VillageBuildingCatalog
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:32: error: cannot find symbol
+        VillageBuildingShell.clear(level, center, spec);
+        ^
+  symbol:   variable VillageBuildingShell
+  location: class VillageFortressBuildings
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:39: error: cannot find symbol
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                                           ^
+  symbol:   variable VillageBuildingCatalog
+  location: class VillageFortressBuildings
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java:82: error: cannot find symbol
             case ARMORY -> decoratePedestal(level, center.offset(42, 0, -14), upgradeLevel, Blocks.IRON_BLOCK);
                  ^
@@ -300,12 +414,24 @@ import net.minecraft.client.gui.GuiGraphics;
                                                                    ^
   symbol:   variable ARMORY
   location: class Building
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:37: error: FORTRESS_RADIUS has private access in VillageWorldSystem
+            return villageCenter.offset(0, 0, -VillageWorldSystem.FORTRESS_RADIUS + 2);
+                                                                 ^
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:41: error: method does not override or implement a method from a supertype
     @Override
     ^
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:109: error: method does not override or implement a method from a supertype
     @Override
     ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:18: error: package VillageBuildingCatalog does not exist
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                              ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:31: error: package VillageBuildingCatalog does not exist
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                              ^
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressBuildings.java:39: error: package VillageBuildingCatalog does not exist
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+                              ^
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:137: error: cannot find symbol
         Minecraft.getInstance().setScreen(null);
                                ^
@@ -346,7 +472,7 @@ import net.minecraft.client.gui.GuiGraphics;
                                                       ^
   symbol:   method armoryDamageMultiplier()
   location: class VillageProgressionSystem
-17 errors
+27 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -475,6 +601,6 @@ import net.minecraft.client.gui.GuiGraphics;
 	... 30 more
 
 
-BUILD FAILED in 15s
+BUILD FAILED in 19s
 5 actionable tasks: 4 executed, 1 up-to-date
 Configuration cache entry stored.
