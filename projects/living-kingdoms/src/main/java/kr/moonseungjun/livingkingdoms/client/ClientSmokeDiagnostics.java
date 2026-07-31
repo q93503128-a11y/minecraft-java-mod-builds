@@ -13,7 +13,7 @@ final class ClientSmokeDiagnostics {
     private static final int PASS_AFTER_TICKS = 100;
 
     private static int ticks;
-    private static OriginSelectionScreen diagnosticScreen;
+    private static ResponsiveOriginSelectionScreen diagnosticScreen;
 
     private ClientSmokeDiagnostics() {
     }
@@ -27,14 +27,14 @@ final class ClientSmokeDiagnostics {
         Minecraft minecraft = Minecraft.getInstance();
 
         if (diagnosticScreen == null && ticks >= OPEN_AFTER_TICKS) {
-            diagnosticScreen = new OriginSelectionScreen(1);
+            diagnosticScreen = new ResponsiveOriginSelectionScreen(1);
             minecraft.gui.setScreen(diagnosticScreen);
-            LivingKingdoms.LOGGER.info("LK_CLIENT_DIAGNOSTIC_SCREEN_OPENED");
+            LivingKingdoms.LOGGER.info("LK_CLIENT_DIAGNOSTIC_SCREEN_OPENED responsive=true");
             return;
         }
 
         if (diagnosticScreen != null && ticks >= PASS_AFTER_TICKS) {
-            LivingKingdoms.LOGGER.info("LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true");
+            LivingKingdoms.LOGGER.info("LK_CLIENT_DIAGNOSTIC_PASS screen=responsive_origin_selection rendered_window=true");
             System.exit(0);
         }
     }
