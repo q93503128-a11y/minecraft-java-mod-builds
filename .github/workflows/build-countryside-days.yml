@@ -6,13 +6,14 @@ on:
     branches: [main]
     paths:
       - 'projects/countryside-days/**'
+      - '!projects/countryside-days/BUILD_AND_RUNTIME_REPORT.md'
       - '.github/workflows/build-countryside-days.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: countryside-days-${{ github.ref }}
+  group: countryside-days-${{ github.ref }}-${{ github.actor }}
   cancel-in-progress: true
 
 defaults:
