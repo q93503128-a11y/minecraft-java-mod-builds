@@ -4,5 +4,13 @@
   "item.countrysidedays.wild_herb": "들나물",
   "item.countrysidedays.river_fish": "민물고기",
   "item.countrysidedays.country_stew": "시골 전골",
-  "item.countrysidedays.recipe_notebook": "요리 수첩"
+  "item.countrysidedays.recipe_notebook": "요리 수첩",
+  "message.countrysidedays.restaurant_anchor_set": "이 주방을 마을 식당의 첫 기준점으로 정했습니다.",
+  "message.countrysidedays.herb_prepared": "들나물을 다듬어 작업대에 올렸습니다.",
+  "message.countrysidedays.herb_already_prepared": "이미 손질한 들나물이 놓여 있습니다.",
+  "message.countrysidedays.need_herb_first": "민물고기를 익히기 전에 들나물을 먼저 손질해야 합니다.",
+  "message.countrysidedays.stew_completed": "시골 전골이 완성되었습니다! 지금까지 %s그릇을 만들었습니다.",
+  "message.countrysidedays.notebook_status": "식당 기준점: %s, %s, %s / 완성한 요리: %s그릇\n조리 순서: 들나물 → 민물고기",
+  "message.countrysidedays.counter_waiting_for_fish": "손질한 들나물이 준비되었습니다. 민물고기를 올려보세요.",
+  "message.countrysidedays.counter_waiting_for_herb": "들나물을 든 채 작업대를 사용해 첫 손질을 시작하세요."
 }
