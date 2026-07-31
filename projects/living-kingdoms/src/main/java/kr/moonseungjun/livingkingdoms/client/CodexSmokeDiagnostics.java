@@ -4,12 +4,11 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
-/** CI-only atlas and status renderer verification. Dormant during normal launches. */
+/** CI-only graphical verification for all codex v2 pages. */
 final class CodexSmokeDiagnostics {
     private static final boolean ENABLED = "1".equals(System.getenv("LIVING_KINGDOMS_CI_CLIENT_TEST"));
     private static int ticks;
-    private static RealmCodexScreen mapScreen;
-    private static RealmCodexScreen statusScreen;
+    private static RealmCodexScreenV2 active;
 
     private CodexSmokeDiagnostics() {
     }
@@ -19,63 +18,52 @@ final class CodexSmokeDiagnostics {
         ticks++;
         Minecraft minecraft = Minecraft.getInstance();
 
-        if (ticks == 40) {
-            mapScreen = new RealmCodexScreen("map", sampleSnapshot());
-            minecraft.gui.setScreen(mapScreen);
-            LivingKingdoms.LOGGER.info("LK_CLIENT_CODEX_SCREEN_OPENED page=map");
-            return;
-        }
-        if (ticks == 68) {
-            if (mapScreen == null || !fits(mapScreen)) {
-                throw new IllegalStateException("Realm atlas extends outside the current client viewport");
-            }
-            statusScreen = new RealmCodexScreen("status", sampleSnapshot());
-            minecraft.gui.setScreen(statusScreen);
-            LivingKingdoms.LOGGER.info("LK_CLIENT_CODEX_SCREEN_OPENED page=status map_fit=true");
-            return;
-        }
-        if (ticks == 94) {
-            if (statusScreen == null || !fits(statusScreen)) {
-                throw new IllegalStateException("Detailed character status extends outside the current client viewport");
-            }
+        if (ticks == 36) open(minecraft, "map");
+        if (ticks == 54) verify("map");
+        if (ticks == 56) open(minecraft, "overview");
+        if (ticks == 72) verify("overview");
+        if (ticks == 74) open(minecraft, "equipment");
+        if (ticks == 86) verify("equipment");
+        if (ticks == 88) open(minecraft, "skills");
+        if (ticks == 96) {
+            verify("skills");
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=map,status rendered_window=true responsive=true viewport={}x{} controls_fit=true",
-                    statusScreen.width, statusScreen.height
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true",
+                    active.width, active.height
             );
         }
     }
 
-    private static boolean fits(RealmCodexScreen screen) {
-        int panelW = Math.min(650, Math.max(390, screen.width - 16));
-        int panelH = Math.min(390, Math.max(220, screen.height - 12));
-        panelW = Math.min(panelW, screen.width - 8);
-        panelH = Math.min(panelH, screen.height - 6);
-        int left = (screen.width - panelW) / 2;
-        int top = Math.max(3, (screen.height - panelH) / 2);
-        int right = left + panelW;
-        int bottom = top + panelH;
-        int mapW = panelW - 36;
-        int mapH = panelH - 76;
-        int cardW = (panelW - 44) / 2;
-        int cardH = panelH - 70;
-        return left >= 0 && top >= 0 && right <= screen.width && bottom <= screen.height
-                && mapW >= 250 && mapH >= 130 && cardW >= 160 && cardH >= 150
-                && top + 52 + cardH <= bottom;
+    private static void open(Minecraft minecraft, String page) {
+        active = new RealmCodexScreenV2(page, sampleSnapshot());
+        minecraft.gui.setScreen(active);
+        LivingKingdoms.LOGGER.info("LK_CLIENT_CODEX_SCREEN_OPENED page={}", page);
+    }
+
+    private static void verify(String page) {
+        if (active == null || !active.allRequiredControlsFit()) {
+            throw new IllegalStateException("Codex page extends outside the current client viewport: " + page);
+        }
     }
 
     private static String sampleSnapshot() {
         return "player\tCI Wanderer\n"
+                + "species_id\thuman\n"
                 + "species\t인간\n"
                 + "homeland\t에르덴 왕국\n"
+                + "affiliation\t에르덴 왕국 · 로엔 변경백령\n"
+                + "citizenship\t에르덴 왕국 시민\n"
                 + "background\t방랑자\n"
                 + "residence\t왕국 북로의 방랑자 야영지\n"
-                + "health\t20.0 / 20.0\n"
+                + "trait_title\t다재다능\n"
+                + "trait_description\t다른 종족보다 초기 기술 점수를 1점 더 받습니다.\n"
+                + "health\t17.0 / 20.0\n"
                 + "armor\t7\n"
                 + "food\t18 / 20\n"
                 + "level\t12\n"
                 + "experience\t540\n"
-                + "position\t84, 66, -112\n"
-                + "region\t에르덴 변경\n"
+                + "position\t84, 78, -112\n"
+                + "region\t에르덴 로엔 변경백령\n"
                 + "realm\t살아있는 왕국 대륙\n"
                 + "mainhand\t철제 장검\n"
                 + "offhand\t여행자의 등불\n"
@@ -87,6 +75,9 @@ final class CodexSmokeDiagnostics {
                 + "resistance\t3\n"
                 + "jurisdiction\t에르덴 사법권\n"
                 + "arrest\t40%\n"
+                + "skill_points\t4\n"
+                + "skill_milestone\t2\n"
+                + "unlocked_skills\tcombat_endurance,explore_trailblazer\n"
                 + "home_x\t84\n"
                 + "home_z\t-112\n"
                 + "player_x\t12\n"
