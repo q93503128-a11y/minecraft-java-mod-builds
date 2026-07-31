@@ -8,7 +8,7 @@
 - 모든 모드는 `projects/<project-slug>/` 아래에서 분리한다.
 - 2026-07-31 이전에 저장되어 있던 Countryside Days, Wildbound, 기존 Village Guardians 소스·로그·워크플로는 폐기했다.
 - 폐기된 프로젝트의 코드나 설계를 새 작업의 기준으로 사용하지 않는다.
-- 현재 활성 프로젝트는 **Village Guardians(마을지키기)**와 새로 시작한 **Countryside Days(시골식당)**다.
+- 현재 활성 프로젝트는 **Village Guardians(마을지키기)**, **Countryside Days(시골식당)**, **Living Kingdoms(살아있는 왕국)**다.
 
 ## 활성 프로젝트
 
@@ -26,6 +26,14 @@
 - 넓고 현실적인 시골 생활권에서 식당을 중심 거점으로 농사, 채집, 낚시, 주민 관계, 배달, 꾸미기, 탐험을 즐기는 힐링 생활 모드
 - 폐기된 옛 Countryside Days 소스와 설계를 복구하지 않고 2026-07-31부터 새로 시작했다.
 - 현재는 프로젝트 계약과 게임 비전만 고정된 단계이며 실행 가능한 JAR은 아직 없다.
+
+### Living Kingdoms
+
+- 경로: [`projects/living-kingdoms/`](./projects/living-kingdoms/)
+- 현재 버전: `0.1.0-alpha.1`
+- 설계된 대륙과 왕국에서 주민, 낚시꾼, 장인, 학자, 상인, 방랑자, 부족민, 전사, 영웅과 통치자 등 무엇이든 되어 살아가는 대형 판타지 세계 시뮬레이션 RPG
+- 종족·출신 세력·사회 배경·시작 거주지를 분리한 초기 출신 카탈로그와 세계 설계 문서가 구현되어 있다.
+- 아직 Gradle wrapper, 영구 저장, 캐릭터 생성 UI와 실제 빌드 검증이 남아 있으므로 실행 가능한 JAR은 없다.
 
 ## 작업자가 먼저 읽을 문서
 
@@ -47,7 +55,8 @@
 minecraft-java-mod-builds/
 ├─ projects/
 │  ├─ village-guardians/
-│  └─ countryside-days/
+│  ├─ countryside-days/
+│  └─ living-kingdoms/
 ├─ docs/
 │  └─ BUILD_STANDARD.md
 ├─ AGENTS.md
