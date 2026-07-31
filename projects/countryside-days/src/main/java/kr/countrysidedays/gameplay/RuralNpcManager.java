@@ -45,7 +45,7 @@ public final class RuralNpcManager {
     }
 
     public static void tickVillage(ServerLevel level, BlockPos origin) {
-        long time = Math.floorMod(level.getDayTime(), 24000L);
+        long time = Math.floorMod(level.getGameTime(), 24000L);
         boolean open = time >= OPEN_TIME && time < CLOSE_TIME;
         AABB village = new AABB(origin).inflate(96.0, 18.0, 96.0);
         for (Villager villager : level.getEntitiesOfClass(Villager.class, village)) {
@@ -66,9 +66,7 @@ public final class RuralNpcManager {
     public static void handleInteraction(PlayerInteractEvent.EntityInteract event) {
         if (!(event.getEntity() instanceof ServerPlayer player)
                 || event.getHand() != InteractionHand.MAIN_HAND
-                || !(event.getTarget() instanceof Villager villager)) {
-            return;
-        }
+                || !(event.getTarget() instanceof Villager villager)) return;
 
         String name = villager.getName().getString();
         if (!isCountrysideNpc(name)) return;
@@ -109,7 +107,7 @@ public final class RuralNpcManager {
 
     private static void handleCustomer(ServerPlayer player) {
         ServerLevel level = player.level();
-        long time = Math.floorMod(level.getDayTime(), 24000L);
+        long time = Math.floorMod(level.getGameTime(), 24000L);
         if (time < OPEN_TIME || time >= CLOSE_TIME) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.restaurant_closed"));
             return;
@@ -171,7 +169,14 @@ public final class RuralNpcManager {
     }
 
     private static void ensureRanchAnimals(ServerLevel level, BlockPos origin) {
-        AABB ranch = new AABB(origin.offset(10, 0, 44), origin.offset(27, 6, 66));
+        AABB ranch = new AABB(
+                origin.getX() + 10.0,
+                origin.getY(),
+                origin.getZ() + 44.0,
+                origin.getX() + 28.0,
+                origin.getY() + 7.0,
+                origin.getZ() + 67.0
+        );
         if (level.getEntitiesOfClass(Mob.class, ranch, mob -> mob.getType().toString().contains("cow")).isEmpty()) {
             spawnAnimal(level, "cow", origin.offset(16, 1, 51));
             spawnAnimal(level, "cow", origin.offset(21, 1, 58));
