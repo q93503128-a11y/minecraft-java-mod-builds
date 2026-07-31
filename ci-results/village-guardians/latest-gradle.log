@@ -15,11 +15,11 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.37s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.55s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadClient[0m[0m
 [1m*** Started working on [4mdownloadServer[0m[0m
+[1m*** Started working on [4mdownloadClient[0m[0m
  [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
  [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
@@ -30,19 +30,39 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.13s
+Total runtime: 1.88s
 
 
 > Task :compileJava
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:109: error: cannot find symbol
-        return Math.max(0, Math.min(VillageProgressionSystem.MAX_BUILDING_LEVEL, value));
-                                    ^
-  symbol:   variable VillageProgressionSystem
-  location: class VillageProgressionData
-1 error
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java:64: error: cannot find symbol
+        if (stack.getItem() == Items.GOAT_HORN && player.getTags().contains(MAYOR_CALLER_TAG)) {
+                                                        ^
+  symbol:   method getTags()
+  location: variable player of type ServerPlayer
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java:97: error: cannot find symbol
+        player.sendSystemMessage(Component.literal(VillageRaidSystem.status()));
+                                                   ^
+  symbol:   variable VillageRaidSystem
+  location: class VillageStarterKit
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:160: error: cannot find symbol
+                    + "\n" + VillageRaidSystem.status();
+                             ^
+  symbol:   variable VillageRaidSystem
+  location: class VillageProgressionSystem
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:174: error: cannot find symbol
+        int day = VillageCouncilState.currentDay();
+                                     ^
+  symbol:   method currentDay()
+  location: class VillageCouncilState
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:241: error: cannot find symbol
+            VillageWorldSystem.applyUpgradeVisual(level, building, next);
+                              ^
+  symbol:   method applyUpgradeVisual(ServerLevel,Building,int)
+  location: class VillageWorldSystem
+5 errors
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785483498570.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785483662479.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
 
@@ -51,12 +71,32 @@ FAILURE: Build failed with an exception.
 * What went wrong:
 Execution failed for task ':compileJava'.
 > Compilation failed; see the compiler output below.
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:109: error: cannot find symbol
-          return Math.max(0, Math.min(VillageProgressionSystem.MAX_BUILDING_LEVEL, value));
-                                      ^
-    symbol:   variable VillageProgressionSystem
-    location: class VillageProgressionData
-  1 error
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java:97: error: cannot find symbol
+          player.sendSystemMessage(Component.literal(VillageRaidSystem.status()));
+                                                     ^
+    symbol:   variable VillageRaidSystem
+    location: class VillageStarterKit
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:160: error: cannot find symbol
+                      + "\n" + VillageRaidSystem.status();
+                               ^
+    symbol:   variable VillageRaidSystem
+    location: class VillageProgressionSystem
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java:64: error: cannot find symbol
+          if (stack.getItem() == Items.GOAT_HORN && player.getTags().contains(MAYOR_CALLER_TAG)) {
+                                                          ^
+    symbol:   method getTags()
+    location: variable player of type ServerPlayer
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:174: error: cannot find symbol
+          int day = VillageCouncilState.currentDay();
+                                       ^
+    symbol:   method currentDay()
+    location: class VillageCouncilState
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:241: error: cannot find symbol
+              VillageWorldSystem.applyUpgradeVisual(level, building, next);
+                                ^
+    symbol:   method applyUpgradeVisual(ServerLevel,Building,int)
+    location: class VillageWorldSystem
+  5 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -98,12 +138,32 @@ org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':compile
 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
 Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Compilation failed; see the compiler output below.
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:109: error: cannot find symbol
-        return Math.max(0, Math.min(VillageProgressionSystem.MAX_BUILDING_LEVEL, value));
-                                    ^
-  symbol:   variable VillageProgressionSystem
-  location: class VillageProgressionData
-1 error
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java:97: error: cannot find symbol
+        player.sendSystemMessage(Component.literal(VillageRaidSystem.status()));
+                                                   ^
+  symbol:   variable VillageRaidSystem
+  location: class VillageStarterKit
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:160: error: cannot find symbol
+                    + "\n" + VillageRaidSystem.status();
+                             ^
+  symbol:   variable VillageRaidSystem
+  location: class VillageProgressionSystem
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java:64: error: cannot find symbol
+        if (stack.getItem() == Items.GOAT_HORN && player.getTags().contains(MAYOR_CALLER_TAG)) {
+                                                        ^
+  symbol:   method getTags()
+  location: variable player of type ServerPlayer
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:174: error: cannot find symbol
+        int day = VillageCouncilState.currentDay();
+                                     ^
+  symbol:   method currentDay()
+  location: class VillageCouncilState
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:241: error: cannot find symbol
+            VillageWorldSystem.applyUpgradeVisual(level, building, next);
+                              ^
+  symbol:   method applyUpgradeVisual(ServerLevel,Building,int)
+  location: class VillageWorldSystem
+5 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -232,6 +292,6 @@ Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Com
 	... 30 more
 
 
-BUILD FAILED in 23s
+BUILD FAILED in 15s
 5 actionable tasks: 4 executed, 1 up-to-date
 Configuration cache entry stored.
