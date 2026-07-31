@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms.profile;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
+import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.network.OpenOriginScreenPayload;
 import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
 import kr.moonseungjun.livingkingdoms.network.SubmitOriginPayload;
@@ -10,17 +11,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 public final class OriginProfileManager {
     public static final int ORIGIN_SCHEMA_VERSION = 1;
-
-    private static final Set<String> TEST_SPECIES = Set.of("human", "elf", "dwarf");
-    private static final Set<String> TEST_HOMELANDS = Set.of("erden_kingdom", "silvana_forest", "kardum_league");
-    private static final Set<String> TEST_BACKGROUNDS = Set.of(
-            "common_resident", "fisher_family", "wanderer", "scholar_student"
-    );
 
     private static LivingKingdomsSavedData savedData;
 
@@ -29,6 +23,7 @@ public final class OriginProfileManager {
 
     public static synchronized void initialize(MinecraftServer server) {
         FoundationCatalog.bootstrap();
+        PlayableOriginCatalog.residences();
         savedData = server.overworld().getDataStorage().computeIfAbsent(LivingKingdomsSavedData.TYPE);
         LivingKingdoms.LOGGER.info("Loaded {} Living Kingdoms player origin profile(s)", savedData.profileCount());
     }
@@ -58,16 +53,10 @@ public final class OriginProfileManager {
                 || !isSafeId(payload.backgroundId()) || !isSafeId(payload.residenceId())) {
             return new OriginSubmissionResultPayload(false, "허용되지 않은 선택 ID입니다.");
         }
-        if (!TEST_SPECIES.contains(payload.speciesId())
-                || !TEST_HOMELANDS.contains(payload.homelandId())
-                || !TEST_BACKGROUNDS.contains(payload.backgroundId())) {
-            return new OriginSubmissionResultPayload(false, "현재 테스트에서 아직 개방되지 않은 출신입니다.");
-        }
 
-        FoundationCatalog.OriginSelection selection = new FoundationCatalog.OriginSelection(
+        PlayableOriginCatalog.ValidationResult validation = PlayableOriginCatalog.validate(
                 payload.speciesId(), payload.homelandId(), payload.backgroundId(), payload.residenceId()
         );
-        FoundationCatalog.ValidationResult validation = FoundationCatalog.validate(selection);
         if (!validation.valid()) {
             String reason = validation.errors().isEmpty()
                     ? "선택 조합이 유효하지 않습니다."
