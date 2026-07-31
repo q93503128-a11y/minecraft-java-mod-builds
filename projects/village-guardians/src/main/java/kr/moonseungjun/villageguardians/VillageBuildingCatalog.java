@@ -20,12 +20,12 @@ final class VillageBuildingCatalog {
     static Spec spec(VillageProgressionSystem.Building building) {
         return switch (building) {
             case TOWN_HALL -> new Spec(
-                    -18, 40, 37, 27, 18,
+                    -25, 34, 51, 35, 24,
                     Blocks.OAK_PLANKS, Blocks.DEEPSLATE_TILES,
                     "villageguardians:external/town_hall",
                     "minecraft:village/plains/houses/plains_big_house_1",
                     Rotation.CLOCKWISE_180, Direction.NORTH,
-                    "마을 회관", "공동 운영");
+                    "마을 회관", "회의 / 마을 관리");
             case BARRACKS -> new Spec(
                     -71, -54, 31, 25, 18,
                     Blocks.SPRUCE_PLANKS, Blocks.DARK_OAK_PLANKS,
@@ -125,18 +125,18 @@ final class VillageBuildingCatalog {
         }
 
         BlockPos fallback = switch (front) {
-            case NORTH -> origin.offset(spec.width() / 2, 0, 0);
-            case SOUTH -> origin.offset(spec.width() / 2, 0, spec.depth() - 1);
-            case WEST -> origin.offset(0, 0, spec.depth() / 2);
-            case EAST -> origin.offset(spec.width() - 1, 0, spec.depth() / 2);
-            default -> origin.offset(spec.width() / 2, 0, spec.depth() / 2);
+            case NORTH -> origin.offset(spec.width() / 2, 1, 0);
+            case SOUTH -> origin.offset(spec.width() / 2, 1, spec.depth() - 1);
+            case WEST -> origin.offset(0, 1, spec.depth() / 2);
+            case EAST -> origin.offset(spec.width() - 1, 1, spec.depth() / 2);
+            default -> origin.offset(spec.width() / 2, 1, spec.depth() / 2);
         };
         return fallback.relative(front);
     }
 
     private static Block terminalBlock(VillageProgressionSystem.Building building) {
         return switch (building) {
-            case TOWN_HALL -> Blocks.BELL;
+            case TOWN_HALL -> Blocks.LECTERN;
             case BARRACKS -> Blocks.TARGET;
             case SMITHY -> Blocks.SMITHING_TABLE;
             case SKILL_HALL -> Blocks.ENCHANTING_TABLE;
@@ -148,7 +148,7 @@ final class VillageBuildingCatalog {
 
     private static void placeEntrancePath(ServerLevel level, BlockPos entrance, Spec spec) {
         Direction sideways = spec.entranceFacing().getClockWise();
-        for (int forward = 0; forward <= 6; forward++) {
+        for (int forward = 0; forward <= 5; forward++) {
             BlockPos row = entrance.relative(spec.entranceFacing(), forward);
             for (int side = -2; side <= 2; side++) {
                 BlockPos floor = row.relative(sideways, side).below();
@@ -166,17 +166,16 @@ final class VillageBuildingCatalog {
             Spec spec,
             Block terminal) {
         Direction sideways = spec.entranceFacing().getClockWise();
-        BlockPos terminalPos = entrance.relative(sideways, 4);
+        BlockPos terminalPos = entrance.relative(sideways, 3);
         set(level, terminalPos.below(), Blocks.CHISELED_STONE_BRICKS);
         set(level, terminalPos, terminal);
-        set(level, terminalPos.above(), Blocks.LANTERN);
+        set(level, terminalPos.above(), Blocks.AIR);
     }
 
     private static void placeEntrancePlaque(ServerLevel level, BlockPos entrance, Spec spec) {
         Direction sideways = spec.entranceFacing().getClockWise();
-        BlockPos signPos = entrance.relative(sideways.getOpposite(), 4).above(2);
+        BlockPos signPos = entrance.relative(sideways.getOpposite(), 3).above();
         BlockPos backing = signPos.relative(spec.entranceFacing().getOpposite());
-        set(level, backing.below(2), Blocks.STONE_BRICKS);
         set(level, backing.below(), Blocks.STRIPPED_DARK_OAK_WOOD);
         set(level, backing, Blocks.STRIPPED_DARK_OAK_WOOD);
 
