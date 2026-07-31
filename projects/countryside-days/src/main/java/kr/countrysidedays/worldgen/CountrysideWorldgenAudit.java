@@ -9,12 +9,16 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 
-/** Logs a non-blocking proof that the loaded superflat spawn used countryside worldgen. */
+/** Logs a deterministic proof that a normal superflat server used countryside worldgen. */
 public final class CountrysideWorldgenAudit {
     private CountrysideWorldgenAudit() {
     }
 
     public static void onServerStarted(ServerStartedEvent event) {
+        if (event.getServer().getClass().getSimpleName().contains("GameTest")) {
+            return;
+        }
+
         ServerLevel level = event.getServer().overworld();
         if (!CountrysideRegionManager.isFlatWorld(level)) {
             return;
