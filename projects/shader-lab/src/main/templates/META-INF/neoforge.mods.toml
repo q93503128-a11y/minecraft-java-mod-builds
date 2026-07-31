@@ -22,3 +22,19 @@ type="required"
 versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="CLIENT"
+
+[[dependencies.${mod_id}]]
+modId="iris"
+type="optional"
+versionRange="${iris_version_range}"
+ordering="AFTER"
+side="CLIENT"
+reason="Dreamscape rendering requires Iris; the bootstrap still starts without it so it can install the shaderpack."
+
+[[dependencies.${mod_id}]]
+modId="sodium"
+type="optional"
+versionRange="${sodium_version_range}"
+ordering="AFTER"
+side="CLIENT"
+reason="Iris on NeoForge 26.2 requires Sodium."
