@@ -10,7 +10,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.entity.player.UseItemOnBlockEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 public final class KitchenInteractionHandler {
     private KitchenInteractionHandler() {
@@ -43,7 +43,7 @@ public final class KitchenInteractionHandler {
         event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
     }
 
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+    public static void onBlockBreak(BreakBlockEvent event) {
         if (!(event.getLevel() instanceof ServerLevel serverLevel)) {
             return;
         }
