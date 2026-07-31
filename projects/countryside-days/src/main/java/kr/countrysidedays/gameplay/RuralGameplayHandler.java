@@ -1,7 +1,6 @@
 package kr.countrysidedays.gameplay;
 
 import kr.countrysidedays.registry.ModItems;
-import kr.countrysidedays.world.CountrysideWorldData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +14,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 
 public final class RuralGameplayHandler {
+    private static final String STARTER_KIT_TAG = "countrysidedays_starter_kit";
     private static final float WILD_HERB_CHANCE = 0.32F;
     private static final float RIVER_FISH_CHANCE = 0.45F;
 
@@ -22,13 +22,10 @@ public final class RuralGameplayHandler {
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)
-                || !(player.level() instanceof ServerLevel serverLevel)) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-
-        CountrysideWorldData data = CountrysideWorldData.get(serverLevel.getServer());
-        if (!data.claimStarterKit()) {
+        if (!player.addTag(STARTER_KIT_TAG)) {
             return;
         }
 
