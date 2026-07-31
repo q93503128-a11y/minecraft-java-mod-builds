@@ -1,6 +1,5 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -12,10 +11,12 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.TeamColor;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -287,7 +288,7 @@ public final class VillageRaidSystem {
         if (team == null) {
             team = server.getScoreboard().addPlayerTeam(RAID_TEAM_NAME);
         }
-        team.setColor(ChatFormatting.RED);
+        team.setColor(Optional.of(TeamColor.byName("red")));
         team.setAllowFriendlyFire(false);
         return team;
     }
