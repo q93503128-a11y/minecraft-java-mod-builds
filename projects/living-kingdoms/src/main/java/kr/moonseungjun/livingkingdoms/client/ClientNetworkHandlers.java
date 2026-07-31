@@ -29,13 +29,11 @@ public final class ClientNetworkHandlers {
     private static void handleSubmissionResult(OriginSubmissionResultPayload payload, IPayloadContext context) {
         if (activeOriginScreen != null) {
             activeOriginScreen.handleServerResult(payload.accepted(), payload.message());
-            if (payload.accepted()) {
-                activeOriginScreen = null;
-            }
+            if (payload.accepted()) activeOriginScreen = null;
         }
     }
 
     private static void handleOpenCodex(OpenCodexPayload payload, IPayloadContext context) {
-        Minecraft.getInstance().gui.setScreen(new RealmCodexScreen(payload.page(), payload.snapshot()));
+        Minecraft.getInstance().gui.setScreen(new RealmCodexScreenV2(payload.page(), payload.snapshot()));
     }
 }
