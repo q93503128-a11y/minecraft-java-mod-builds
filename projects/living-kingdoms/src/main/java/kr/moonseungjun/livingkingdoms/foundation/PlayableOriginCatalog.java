@@ -23,30 +23,30 @@ public final class PlayableOriginCatalog {
 
     static {
         register(new ResidenceOption(
-                "erden_city_room", "에르덴 변경도시의 임대방", "erden_kingdom", "erden_city", 12, 70, 10
+                "erden_city_room", "에르덴 변경도시의 임대방", "erden_kingdom", "erden_city", 12, 66, 10
         ));
         register(new ResidenceOption(
-                "erden_farm_home", "로엔 들판의 가족 주택", "erden_kingdom", "erden_fields", 112, 69, 74
+                "erden_farm_home", "로엔 들판의 가족 주택", "erden_kingdom", "erden_fields", 112, 66, 74
         ));
         register(new ResidenceOption(
-                "river_fishing_hut", "은빛강 어촌의 작은 집", "erden_kingdom", "erden_river", -104, 68, 92
+                "river_fishing_hut", "은빛강 어촌의 작은 집", "erden_kingdom", "erden_river", -104, 66, 92
         ));
         register(new ResidenceOption(
-                "forest_camp", "왕국 북로의 방랑자 야영지", "erden_kingdom", "erden_road", 86, 69, -112
+                "forest_camp", "왕국 북로의 방랑자 야영지", "erden_kingdom", "erden_road", 86, 66, -112
         ));
 
         register(new ResidenceOption(
                 "silvana_tree_home", "실바나 수관 주거지", "silvana_forest", "silvana_canopy", 1210, 82, 8
         ));
         register(new ResidenceOption(
-                "silvana_moonwell_lodge", "달샘 숲지기의 숙소", "silvana_forest", "silvana_moonwell", 1290, 70, 84
+                "silvana_moonwell_lodge", "달샘 숲지기의 숙소", "silvana_forest", "silvana_moonwell", 1284, 67, 78
         ));
 
         register(new ResidenceOption(
-                "kardum_worker_quarters", "카르둠 작업자 숙소", "kardum_league", "kardum_hall", -1210, 72, 8
+                "kardum_worker_quarters", "카르둠 작업자 숙소", "kardum_league", "kardum_hall", -1210, 68, 8
         ));
         register(new ResidenceOption(
-                "kardum_gate_lodge", "산문 경비대의 객실", "kardum_league", "kardum_gate", -1128, 76, 92
+                "kardum_gate_lodge", "산문 경비대의 객실", "kardum_league", "kardum_gate", -1128, 68, 92
         ));
     }
 
