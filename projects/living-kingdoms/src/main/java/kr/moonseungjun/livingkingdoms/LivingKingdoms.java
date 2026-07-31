@@ -2,8 +2,15 @@ package kr.moonseungjun.livingkingdoms;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
+import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
+import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
 
 @Mod(LivingKingdoms.MOD_ID)
@@ -13,6 +20,8 @@ public final class LivingKingdoms {
 
     public LivingKingdoms(IEventBus modEventBus) {
         FoundationCatalog.bootstrap();
+        modEventBus.addListener(LivingKingdomsNetwork::register);
+        NeoForge.EVENT_BUS.register(this);
         LOGGER.info(
                 "Living Kingdoms foundation loaded: {} species, {} homelands, {} backgrounds, {} residences",
                 FoundationCatalog.species().size(),
@@ -20,5 +29,17 @@ public final class LivingKingdoms {
                 FoundationCatalog.backgrounds().size(),
                 FoundationCatalog.residences().size()
         );
+    }
+
+    @SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event) {
+        OriginProfileManager.initialize(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            OriginProfileManager.requestSelection(player);
+        }
     }
 }
