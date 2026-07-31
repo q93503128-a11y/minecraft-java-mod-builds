@@ -1,8 +1,8 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
@@ -13,12 +13,8 @@ import java.util.List;
 public final class VillageUiScreen extends Screen {
     private static final String SEP = "\u001F";
     private static final int[] BUTTON_COLORS = {
-            0xFF7E2A35,
-            0xFF176B68,
-            0xFF8C5A16,
-            0xFF274C77,
-            0xFF4D6A34,
-            0xFF6B3E75
+            0xFF7E2A35, 0xFF176B68, 0xFF8C5A16,
+            0xFF274C77, 0xFF4D6A34, 0xFF6B3E75
     };
 
     private final VillageNetwork.OpenVillageUiPayload payload;
@@ -39,9 +35,12 @@ public final class VillageUiScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, width, height, 0xD40A0908);
+    }
 
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         int panelWidth = Math.min(620, Math.max(300, width - 44));
         int panelHeight = Math.min(390, Math.max(250, height - 44));
         int left = (width - panelWidth) / 2;
@@ -50,39 +49,30 @@ public final class VillageUiScreen extends Screen {
         graphics.fill(left - 3, top - 3, left + panelWidth + 3, top + panelHeight + 3, 0xFFB6863A);
         graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xFF201713);
         graphics.fill(left + 8, top + 8, left + panelWidth - 8, top + 42, 0xFF3A211D);
-        graphics.drawCenteredString(font, payload.title(), width / 2, top + 20, 0xFFFFD98A);
+        graphics.centeredText(font, payload.title(), width / 2, top + 20, 0xFFFFD98A);
 
         int closeLeft = left + panelWidth - 34;
         int closeTop = top + 12;
-        int closeColor = isInside(mouseX, mouseY, closeLeft, closeTop, 20, 20) ? 0xFFB84444 : 0xFF722A2A;
-        graphics.fill(closeLeft, closeTop, closeLeft + 20, closeTop + 20, closeColor);
-        graphics.drawCenteredString(font, "×", closeLeft + 10, closeTop + 6, 0xFFFFFFFF);
+        graphics.fill(closeLeft, closeTop, closeLeft + 20, closeTop + 20,
+                isInside(mouseX, mouseY, closeLeft, closeTop, 20, 20) ? 0xFFB84444 : 0xFF722A2A);
+        graphics.centeredText(font, "×", closeLeft + 10, closeTop + 6, 0xFFFFFFFF);
 
-        int bodyLeft = left + 22;
-        int bodyTop = top + 58;
         int buttonCount = Math.min(actions.length, labels.length);
         int buttonRows = (buttonCount + 1) / 2;
-        int buttonAreaHeight = buttonCount == 0 ? 0 : buttonRows * 34 + 10;
-        int bodyBottom = top + panelHeight - 20 - buttonAreaHeight;
-        int bodyWidth = panelWidth - 44;
-        int y = bodyTop;
-
+        int bodyBottom = top + panelHeight - 30 - buttonRows * 34;
+        int bodyLeft = left + 22;
+        int y = top + 58;
         for (String paragraph : payload.body().split("\n", -1)) {
             if (paragraph.isBlank()) {
                 y += 7;
                 continue;
             }
-            List<FormattedCharSequence> lines = font.split(Component.literal(paragraph), bodyWidth);
-            for (FormattedCharSequence line : lines) {
-                if (y + 10 > bodyBottom) {
-                    break;
-                }
-                graphics.drawString(font, line, bodyLeft, y, 0xFFEADCC6, false);
+            for (FormattedCharSequence line : font.split(Component.literal(paragraph), panelWidth - 44)) {
+                if (y + 10 > bodyBottom) break;
+                graphics.text(font, line, bodyLeft, y, 0xFFEADCC6, false);
                 y += 12;
             }
-            if (y + 10 > bodyBottom) {
-                break;
-            }
+            if (y + 10 > bodyBottom) break;
             y += 3;
         }
 
@@ -90,37 +80,31 @@ public final class VillageUiScreen extends Screen {
         int buttonWidth = (panelWidth - 54) / 2;
         int startY = top + panelHeight - 20 - buttonRows * 34;
         for (int index = 0; index < buttonCount; index++) {
-            int column = index % 2;
-            int row = index / 2;
-            int x = left + 18 + column * (buttonWidth + 18);
-            int by = startY + row * 34;
-            boolean hovered = isInside(mouseX, mouseY, x, by, buttonWidth, 26);
-            int baseColor = BUTTON_COLORS[index % BUTTON_COLORS.length];
-            int color = hovered ? brighten(baseColor, 30) : baseColor;
+            int x = left + 18 + (index % 2) * (buttonWidth + 18);
+            int by = startY + (index / 2) * 34;
+            int base = BUTTON_COLORS[index % BUTTON_COLORS.length];
+            int color = isInside(mouseX, mouseY, x, by, buttonWidth, 26) ? brighten(base, 30) : base;
             graphics.fill(x - 1, by - 1, x + buttonWidth + 1, by + 27, 0xFFC89C54);
             graphics.fill(x, by, x + buttonWidth, by + 26, color);
-            graphics.drawCenteredString(font, labels[index], x + buttonWidth / 2, by + 9, 0xFFFFFFFF);
+            graphics.centeredText(font, labels[index], x + buttonWidth / 2, by + 9, 0xFFFFFFFF);
             clickRegions.add(new ClickRegion(x, by, buttonWidth, 26, actions[index]));
         }
-
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
+        double mouseX = click.x();
+        double mouseY = click.y();
         int panelWidth = Math.min(620, Math.max(300, width - 44));
         int panelHeight = Math.min(390, Math.max(250, height - 44));
         int left = (width - panelWidth) / 2;
         int top = (height - panelHeight) / 2;
-        int closeLeft = left + panelWidth - 34;
-        int closeTop = top + 12;
-
-        if (button == 0 && isInside(mouseX, mouseY, closeLeft, closeTop, 20, 20)) {
+        if (click.button() == 0 && isInside(mouseX, mouseY, left + panelWidth - 34, top + 12, 20, 20)) {
             onClose();
             return true;
         }
-
-        if (button == 0) {
+        if (click.button() == 0) {
             for (ClickRegion region : clickRegions) {
                 if (region.contains(mouseX, mouseY)) {
                     ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(region.action()));
@@ -129,12 +113,12 @@ public final class VillageUiScreen extends Screen {
                 }
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(click, doubled);
     }
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(null);
+        if (minecraft != null) minecraft.gui.setScreen(null);
     }
 
     private static boolean isInside(double mouseX, double mouseY, int x, int y, int width, int height) {
