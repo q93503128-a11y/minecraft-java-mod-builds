@@ -52,6 +52,9 @@ jobs:
           echo "$EXPECTED_PAYLOAD_SHA256  source.tar.xz" | sha256sum --check --strict
           xz -t source.tar.xz
           tar -xJf source.tar.xz -C "$WORK_DIR"
+          if [ -d "$PROJECT_DIR/overlay" ]; then
+            cp -a "$PROJECT_DIR/overlay/." "$WORK_DIR/"
+          fi
           test -f "$WORK_DIR/build.gradle"
           test -f "$WORK_DIR/gradle.properties"
           test -d "$WORK_DIR/src/main/java/kr/countrysidedays"
@@ -68,6 +71,74 @@ jobs:
             java -version
             gradle --version
           } 2>&1 | tee logs/toolchain.log
+
+      - name: Collect mapped Minecraft and NeoForge API signatures
+        working-directory: ${{ env.WORK_DIR }}
+        shell: bash
+        run: |
+          set -u
+          cat > /tmp/countryside-diagnostics.init.gradle <<'EOF'
+          gradle.projectsEvaluated {
+              def root = gradle.rootProject
+              if (root.configurations.findByName('compileClasspath') != null && root.tasks.findByName('printCompileClasspathForDiagnostics') == null) {
+                  root.tasks.register('printCompileClasspathForDiagnostics') {
+                      doLast {
+                          root.configurations.getByName('compileClasspath').files.each {
+                              println('CPFILE=' + it.absolutePath)
+                          }
+                      }
+                  }
+              }
+          }
+          EOF
+          gradle --no-daemon -I /tmp/countryside-diagnostics.init.gradle printCompileClasspathForDiagnostics --console=plain > ../../logs/compile-classpath.txt 2>&1 || true
+          grep '^CPFILE=' ../../logs/compile-classpath.txt | sed 's/^CPFILE=//' > /tmp/countryside-cp-files.txt || true
+          paste -sd: /tmp/countryside-cp-files.txt > /tmp/countryside-classpath.txt || true
+          CP="$(cat /tmp/countryside-classpath.txt 2>/dev/null || true)"
+          : > ../../logs/api-matching-classes.txt
+          while IFS= read -r archive; do
+            [ -f "$archive" ] || continue
+            case "$archive" in
+              *.jar)
+                jar tf "$archive" 2>/dev/null | grep -E '(^net/minecraft/world/entity/npc/.*(Villager|Trader).*\.class$)|(^net/minecraft/world/entity/decoration/ArmorStand\.class$)|EventBusSubscriber\.class$' >> ../../logs/api-matching-classes.txt || true
+                ;;
+            esac
+          done < /tmp/countryside-cp-files.txt
+          sort -u -o ../../logs/api-matching-classes.txt ../../logs/api-matching-classes.txt
+          {
+            echo '=== COMPILE CLASSPATH ==='
+            cat /tmp/countryside-cp-files.txt
+            echo '=== MATCHING CLASSES ==='
+            cat ../../logs/api-matching-classes.txt
+            for cls in \
+              net.minecraft.server.level.ServerPlayer \
+              net.minecraft.server.level.ServerLevel \
+              net.minecraft.world.level.Level \
+              net.minecraft.world.entity.player.Player \
+              net.minecraft.world.entity.Entity \
+              net.minecraft.world.entity.decoration.ArmorStand \
+              net.minecraft.core.BlockPos \
+              net.minecraft.sounds.SoundEvents \
+              net.minecraft.sounds.SoundEvent \
+              net.neoforged.fml.common.EventBusSubscriber \
+              net.neoforged.neoforge.network.registration.PayloadRegistrar \
+              net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent \
+              net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent \
+              net.neoforged.neoforge.data.event.GatherDataEvent; do
+                echo "=== JAVAP $cls ==="
+                javap -public -classpath "$CP" "$cls" 2>&1 || true
+            done
+            while IFS= read -r classfile; do
+              case "$classfile" in
+                *'$'*) continue ;;
+              esac
+              cls="${classfile%.class}"
+              cls="${cls//\//.}"
+              echo "=== JAVAP DISCOVERED $cls ==="
+              javap -public -classpath "$CP" "$cls" 2>&1 || true
+            done < ../../logs/api-matching-classes.txt
+          } > ../../logs/api-diagnostics.txt 2>&1
+          exit 0
 
       - name: Generate resources with runData
         working-directory: ${{ env.WORK_DIR }}
