@@ -11,7 +11,7 @@ import java.util.List;
 
 /** Surveys generated noise terrain before any kingdom is placed. */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 1;
+    public static final int LAYOUT_REVISION = 2;
 
     private RealmSitePlanner() {
     }
@@ -24,13 +24,13 @@ public final class RealmSitePlanner {
             return surveyed;
         });
         if (!site.built() || site.revision() < LAYOUT_REVISION) {
-            KingdomSettlementBuilder.build(level, homelandId, site);
+            TerrainIntegratedCapitalBuilder.build(level, homelandId, site);
             data.markBuilt(homelandId, LAYOUT_REVISION);
             site = new RealmSiteLayoutSavedData.RealmSite(
                     site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION, true
             );
             LivingKingdoms.LOGGER.info(
-                    "Built terrain-integrated homeland {} at {},{}, baseY={}, revision={}",
+                    "Built optimized terrain-integrated homeland {} at {},{}, baseY={}, revision={}",
                     homelandId, site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION
             );
         }
@@ -67,9 +67,9 @@ public final class RealmSitePlanner {
         Candidate selected = candidates.stream().min(Comparator.comparingDouble(Candidate::score))
                 .orElseThrow(() -> new IllegalStateException("No terrain candidate for " + homelandId));
         LivingKingdoms.LOGGER.info(
-                "Terrain survey {} selected {},{} range={} water={}/25 score={}",
+                "Terrain survey {} selected {},{} range={} water={}/25 average={} score={}",
                 homelandId, selected.x(), selected.z(), selected.maxY() - selected.minY(),
-                selected.waterSamples(), selected.score()
+                selected.waterSamples(), selected.averageY(), selected.score()
         );
         return new RealmSiteLayoutSavedData.RealmSite(
                 selected.x(), selected.z(), selected.averageY(), LAYOUT_REVISION, false
@@ -96,13 +96,18 @@ public final class RealmSitePlanner {
         }
         int average = Math.round(sum / (float) Math.max(1, samples));
         int range = max - min;
+        double submergedPenalty = water > 8 ? 20_000.0 + water * 500.0 : water * 40.0;
+        double lowPenalty = average < 64 ? 20_000.0 + (64 - average) * 500.0 : 0.0;
         double score;
         if ("kardum_league".equals(homelandId)) {
-            score = Math.abs(range - 18) * 3.0 + Math.max(0, 78 - average) * 2.0 + water * 12.0;
+            score = Math.abs(range - 18) * 3.0 + Math.max(0, 78 - average) * 4.0
+                    + submergedPenalty + lowPenalty;
         } else if ("silvana_forest".equals(homelandId)) {
-            score = Math.max(0, range - 14) * 5.0 + Math.abs(range - 8) * 1.5 + water * 5.0;
+            score = Math.max(0, range - 16) * 6.0 + Math.abs(range - 8) * 1.5
+                    + submergedPenalty + lowPenalty;
         } else {
-            score = range * 8.0 + Math.abs(water - 2) * 4.0 + Math.max(0, average - 105) * 1.5;
+            score = range * 8.0 + Math.abs(water - 1) * 12.0
+                    + Math.max(0, average - 105) * 1.5 + submergedPenalty + lowPenalty;
         }
         return new Candidate(x, z, min, max, average, water, score);
     }
@@ -120,10 +125,10 @@ public final class RealmSitePlanner {
             case "erden_farm_home" -> new int[]{175, 105};
             case "river_fishing_hut" -> new int[]{-170, 115};
             case "forest_camp" -> new int[]{135, -165};
-            case "silvana_moonwell_lodge" -> new int[]{90, 85};
-            case "kardum_gate_lodge" -> new int[]{105, 65};
-            case "kardum_worker_quarters" -> new int[]{-30, 18};
-            default -> new int[]{10, 12};
+            case "silvana_moonwell_lodge" -> new int[]{86, 85};
+            case "kardum_gate_lodge" -> new int[]{0, -76};
+            case "kardum_worker_quarters" -> new int[]{-72, 42};
+            default -> new int[]{26, 36};
         };
     }
 
