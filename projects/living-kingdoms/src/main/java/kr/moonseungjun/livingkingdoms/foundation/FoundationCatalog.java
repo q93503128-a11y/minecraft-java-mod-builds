@@ -26,7 +26,7 @@ public final class FoundationCatalog {
 
         registerHomeland(new HomelandDefinition(
                 "erden_kingdom", "에르덴 왕국", 0, 0,
-                Set.of("urban", "rural", "military", "academic", "trade", "fishing")
+                Set.of("urban", "rural", "military", "academic", "trade", "fishing", "craft", "survival")
         ));
         registerHomeland(new HomelandDefinition(
                 "silvana_forest", "실바나 대삼림", -9000, -1500,
@@ -227,6 +227,16 @@ public final class FoundationCatalog {
     }
 
     private static void registerResidence(ResidenceDefinition definition) {
+        HomelandDefinition homeland = HOMELANDS.get(definition.homelandId());
+        if (homeland == null) {
+            throw new IllegalStateException("Residence references unknown homeland: " + definition.homelandId());
+        }
+        if (!homeland.lifestyleTags().contains(definition.lifestyleTag())) {
+            throw new IllegalStateException(
+                    "Residence lifestyle tag " + definition.lifestyleTag()
+                            + " is not supported by homeland " + definition.homelandId()
+            );
+        }
         putUnique(RESIDENCES, definition.id(), definition);
     }
 
