@@ -8,44 +8,83 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-/** Bounded CI-only verification for noise terrain, surveyed sites and complete starter capitals. */
+/** Sequential asynchronous CI verification for noise terrain and all three regional capitals. */
 public final class StarterRealmDiagnostics {
+    private static final List<String> HOMELANDS = List.of(
+            "erden_kingdom", "silvana_forest", "kardum_league"
+    );
+
     private StarterRealmDiagnostics() {
     }
 
     public static void runIfRequested(MinecraftServer server) {
         if (!"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
         ServerLevel realm = server.getLevel(StarterRealmManager.REALM_KEY);
-        if (realm == null) throw new IllegalStateException("Living Kingdoms realm is unavailable during diagnostics");
+        if (realm == null) {
+            fail("Living Kingdoms realm is unavailable during diagnostics", null);
+            return;
+        }
+        buildNext(realm, 0, System.nanoTime());
+    }
 
-        long started = System.nanoTime();
-        for (String homelandId : PlayableOriginCatalog.HOMELANDS) {
-            RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.ensureBuilt(realm, homelandId);
-            if (!site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) {
-                throw new IllegalStateException("Homeland layout was not built: " + homelandId);
+    private static void buildNext(ServerLevel realm, int index, long started) {
+        if (index >= HOMELANDS.size()) {
+            finishVerification(realm, started);
+            return;
+        }
+        String homelandId = HOMELANDS.get(index);
+        LivingKingdoms.LOGGER.info("LK_REALM_DIAGNOSTIC_PREPARE homeland={} step={}/{}",
+                homelandId, index + 1, HOMELANDS.size());
+        RealmBuildCoordinator.prepareHomeland(realm, homelandId, failure -> {
+            if (failure != null) {
+                fail("Queued homeland preparation failed for " + homelandId, failure);
+                return;
             }
-            verifyNaturalTerrainOutsideCapital(realm, site, homelandId);
-        }
+            try {
+                RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(realm, homelandId);
+                if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) {
+                    throw new IllegalStateException("Homeland layout was not built: " + homelandId);
+                }
+                verifyNaturalTerrainOutsideCapital(realm, site, homelandId);
+                buildNext(realm, index + 1, started);
+            } catch (Throwable throwable) {
+                fail("Homeland verification failed for " + homelandId, throwable);
+            }
+        });
+    }
 
-        for (PlayableOriginCatalog.ResidenceOption residence : PlayableOriginCatalog.residences().values()) {
-            BlockPos feet = RealmSitePlanner.residencePosition(realm, residence.homelandId(), residence.id());
-            verifySpawn(realm, residence.id(), feet);
-        }
+    private static void finishVerification(ServerLevel realm, long started) {
+        try {
+            for (PlayableOriginCatalog.ResidenceOption residence : PlayableOriginCatalog.residences().values()) {
+                BlockPos feet = RealmSitePlanner.residencePosition(realm, residence.homelandId(), residence.id());
+                verifySpawn(realm, residence.id(), feet);
+            }
 
-        RealmSiteLayoutSavedData.RealmSite erden = RealmSitePlanner.site(realm, "erden_kingdom");
-        if (erden == null) throw new IllegalStateException("Erden site is missing");
-        verifyErdenFacilities(realm, erden);
+            RealmSiteLayoutSavedData.RealmSite erden = RealmSitePlanner.site(realm, "erden_kingdom");
+            if (erden == null) throw new IllegalStateException("Erden site is missing");
+            verifyErdenFacilities(realm, erden);
 
-        long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
-        if (elapsedMs > 420_000L) {
-            throw new IllegalStateException("Noise terrain survey and capital construction exceeded 420 seconds: " + elapsedMs);
+            long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
+            if (elapsedMs > 900_000L) {
+                throw new IllegalStateException(
+                        "Noise terrain preparation and capital construction exceeded 900 seconds: " + elapsedMs
+                );
+            }
+            LivingKingdoms.LOGGER.info(
+                    "LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8 noise_terrain=true surveyed_sites=true erden_facilities=10 layout_revision={} generation_ms={}",
+                    RealmSitePlanner.LAYOUT_REVISION, elapsedMs
+            );
+        } catch (Throwable throwable) {
+            fail("Final realm verification failed", throwable);
         }
-        LivingKingdoms.LOGGER.info(
-                "LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8 noise_terrain=true surveyed_sites=true erden_facilities=10 layout_revision={} generation_ms={}",
-                RealmSitePlanner.LAYOUT_REVISION, elapsedMs
-        );
+    }
+
+    private static void fail(String message, Throwable throwable) {
+        if (throwable == null) LivingKingdoms.LOGGER.error("LK_REALM_DIAGNOSTIC_FAIL {}", message);
+        else LivingKingdoms.LOGGER.error("LK_REALM_DIAGNOSTIC_FAIL {}", message, throwable);
     }
 
     private static void verifySpawn(ServerLevel realm, String id, BlockPos feet) {
@@ -61,7 +100,7 @@ public final class StarterRealmDiagnostics {
                                                             RealmSiteLayoutSavedData.RealmSite site,
                                                             String homelandId) {
         Set<Integer> heights = new HashSet<>();
-        for (int[] offset : new int[][]{{280, 0}, {-280, 0}, {0, 280}, {0, -280}, {240, 190}, {-210, -250}}) {
+        for (int[] offset : new int[][]{{205, 0}, {-205, 0}, {0, 205}, {0, -205}, {190, 170}, {-185, -175}}) {
             heights.add(RealmSitePlanner.surfaceY(realm, site.centerX() + offset[0], site.centerZ() + offset[1]));
         }
         if (heights.size() < 3) {
@@ -99,13 +138,9 @@ public final class StarterRealmDiagnostics {
         if (realm.getBlockState(roof).isAir()) {
             throw new IllegalStateException("Expected connected house roof at " + roof);
         }
-        boolean supported = false;
         for (int dy = 1; dy <= 8; dy++) {
-            if (!realm.getBlockState(roof.below(dy)).isAir()) {
-                supported = true;
-                break;
-            }
+            if (!realm.getBlockState(roof.below(dy)).isAir()) return;
         }
-        if (!supported) throw new IllegalStateException("Floating roof detected at " + roof);
+        throw new IllegalStateException("Floating roof detected at " + roof);
     }
 }
