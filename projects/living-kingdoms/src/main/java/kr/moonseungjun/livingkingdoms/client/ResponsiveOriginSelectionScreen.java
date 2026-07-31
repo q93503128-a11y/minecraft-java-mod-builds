@@ -61,6 +61,16 @@ public final class ResponsiveOriginSelectionScreen extends Screen {
         }
     }
 
+    boolean allRequiredControlsFit() {
+        Layout l = layout();
+        return l.top() >= 0
+                && l.cardX() >= 0
+                && l.cardX() + l.cardW() <= width
+                && l.residenceY() + l.cardH() < l.confirmY()
+                && l.confirmY() + l.confirmH() <= height
+                && l.statusY() < height;
+    }
+
     @Override
     public boolean shouldCloseOnEsc() {
         return false;
@@ -115,17 +125,31 @@ public final class ResponsiveOriginSelectionScreen extends Screen {
         int side = compact ? Math.max(12, Math.min(24, panelW / 12)) : 38;
         int cardX = left + side;
         int cardW = panelW - side * 2;
-        int cardH = compact ? 22 : 28;
-        int gap = compact ? 4 : 10;
-        int speciesY = top + (compact ? 44 : 62);
+
+        if (!compact) {
+            int cardH = 28;
+            int speciesY = top + 62;
+            int homelandY = speciesY + 38;
+            int backgroundY = homelandY + 38;
+            int residenceY = backgroundY + 38;
+            return new Layout(false, panelW, panelH, left, top, cardX, cardW, cardH, 32,
+                    speciesY, homelandY, backgroundY, residenceY, top + panelH - 65,
+                    top + 16, top + 33, top + 46, residenceY + cardH + 9, top + panelH - 20);
+        }
+
+        boolean tiny = panelH < 205;
+        int cardH = tiny ? 18 : 22;
+        int gap = tiny ? 2 : 4;
+        int speciesY = top + (tiny ? 32 : 44);
         int homelandY = speciesY + cardH + gap;
         int backgroundY = homelandY + cardH + gap;
         int residenceY = backgroundY + cardH + gap;
-        return new Layout(compact, panelW, panelH, left, top, cardX, cardW, cardH,
-                compact ? 26 : 32, speciesY, homelandY, backgroundY, residenceY,
-                top + panelH - (compact ? 61 : 65), top + (compact ? 11 : 16),
-                top + (compact ? 25 : 33), top + (compact ? 36 : 46),
-                residenceY + cardH + (compact ? 5 : 9), top + panelH - (compact ? 17 : 20));
+        int confirmH = tiny ? 22 : 26;
+        int confirmY = top + panelH - (tiny ? 56 : 61);
+        return new Layout(true, panelW, panelH, left, top, cardX, cardW, cardH, confirmH,
+                speciesY, homelandY, backgroundY, residenceY, confirmY,
+                top + (tiny ? 6 : 11), top + (tiny ? 18 : 25), top + (tiny ? 28 : 36),
+                residenceY + cardH + (tiny ? 3 : 5), top + panelH - (tiny ? 13 : 17));
     }
 
     private void card(GuiGraphicsExtractor g, Layout l, int y, String text, boolean hovered, boolean confirm, boolean enabled) {
