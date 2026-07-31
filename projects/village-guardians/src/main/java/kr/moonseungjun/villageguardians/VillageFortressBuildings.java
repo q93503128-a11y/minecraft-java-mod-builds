@@ -1,0 +1,59 @@
+package kr.moonseungjun.villageguardians;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+
+final class VillageFortressBuildings {
+    private VillageFortressBuildings() {}
+
+    static void buildAll(ServerLevel level, BlockPos center) {
+        for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
+            if (building != VillageProgressionSystem.Building.WALLS) build(level, center, building);
+        }
+    }
+
+    static void build(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+        BlockPos origin = center.offset(spec.dx(), 0, spec.dz());
+        VillageBuildingShell.build(level, origin, center.getY() - 1, spec);
+        VillageBuildingCatalog.furnish(level, origin, spec, building);
+    }
+
+    static void rebuild(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
+        remove(level, center, building);
+        build(level, center, building);
+    }
+
+    static void remove(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
+        if (building == VillageProgressionSystem.Building.WALLS) return;
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+        VillageBuildingShell.clear(level, center, spec);
+    }
+
+    static BlockPos center(BlockPos villageCenter, VillageProgressionSystem.Building building) {
+        if (building == VillageProgressionSystem.Building.WALLS) {
+            return villageCenter.offset(0, 0, -VillageWorldSystem.FORTRESS_RADIUS + 2);
+        }
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+        return villageCenter.offset(spec.dx() + spec.width() / 2, 1, spec.dz() + spec.depth() / 2);
+    }
+
+    static void applyUpgradeVisual(ServerLevel level, BlockPos center,
+                                   VillageProgressionSystem.Building building, int upgradeLevel) {
+        if (upgradeLevel <= 0) return;
+        BlockPos terminal = center(center, building);
+        Block decoration = switch (building) {
+            case WALLS, SMITHY -> Blocks.IRON_BLOCK;
+            case SKILL_HALL -> Blocks.BOOKSHELF;
+            case INFIRMARY -> Blocks.QUARTZ_BLOCK;
+            case STOREHOUSE -> Blocks.GOLD_BLOCK;
+            case BARRACKS -> Blocks.BRICKS;
+            case TOWN_HALL -> Blocks.CHISELED_STONE_BRICKS;
+        };
+        for (int i = 0; i < upgradeLevel; i++) {
+            VillageFortressTerrain.set(level, terminal.offset(-upgradeLevel / 2 + i, 1, 3), decoration);
+        }
+    }
+}
