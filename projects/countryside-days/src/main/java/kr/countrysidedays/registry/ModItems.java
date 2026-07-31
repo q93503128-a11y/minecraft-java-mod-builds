@@ -35,9 +35,10 @@ public final class ModItems {
                     .build())
     );
 
-    public static final DeferredItem<RecipeNotebookItem> RECIPE_NOTEBOOK = ITEMS.register(
+    public static final DeferredItem<RecipeNotebookItem> RECIPE_NOTEBOOK = ITEMS.registerItem(
             "recipe_notebook",
-            () -> new RecipeNotebookItem(new Item.Properties().stacksTo(1))
+            RecipeNotebookItem::new,
+            properties -> properties.stacksTo(1)
     );
 
     public static final DeferredItem<Item> VILLAGE_COIN = ITEMS.registerSimpleItem(
