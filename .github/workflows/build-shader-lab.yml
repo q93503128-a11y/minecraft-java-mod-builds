@@ -30,6 +30,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Read project metadata
+        run: |
+          echo "MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "NEO_VERSION=$(grep '^neo_version=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
+
       - name: Set up Java 25
         uses: actions/setup-java@v4
         with:
@@ -72,27 +77,27 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          python3 scripts/verify_jar.py build/libs/shaderlab-0.1.0-alpha.1.jar 2>&1 | tee ci-logs/jar-verification.log
+          python3 scripts/verify_jar.py "build/libs/shaderlab-${MOD_VERSION}.jar" 2>&1 | tee ci-logs/jar-verification.log
 
       - name: Assemble report and deliverables
         if: steps.build.outcome == 'success' && steps.jarcheck.outcome == 'success'
         env:
           COMMIT_SHA: ${{ github.sha }}
         run: |
-          JAR="build/libs/shaderlab-0.1.0-alpha.1.jar"
+          JAR="build/libs/shaderlab-${MOD_VERSION}.jar"
           SHA_FILE="${JAR}.sha256"
           {
             echo "# Build and Runtime Report"
             echo
             echo "- Commit: ${COMMIT_SHA}"
             echo "- Project: Shader Lab"
-            echo "- Version: 0.1.0-alpha.1"
+            echo "- Version: ${MOD_VERSION}"
             echo "- Minecraft: 26.2"
             echo "- Java: 25"
-            echo "- NeoForge: 26.2.0.38-beta"
+            echo "- NeoForge: ${NEO_VERSION}"
             echo "- Gradle: 9.2.1"
             echo "- Clean build: PASS"
-            echo "- Shader resource contract: PASS"
+            echo "- Seven-pass shader resource contract: PASS"
             echo "- JAR inspection: PASS"
             echo "- Datagen: NOT APPLICABLE"
             echo "- GameTest: NOT APPLICABLE"
@@ -114,7 +119,7 @@ jobs:
         if: steps.build.outcome == 'success' && steps.jarcheck.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: shader-lab-0.1.0-alpha.1-deliverables
+          name: shader-lab-${{ env.MOD_VERSION }}-deliverables
           path: projects/shader-lab/build/deliverables/
           if-no-files-found: error
           retention-days: 14
@@ -123,7 +128,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shader-lab-0.1.0-alpha.1-logs
+          name: shader-lab-${{ env.MOD_VERSION }}-logs
           path: projects/shader-lab/ci-logs/
           if-no-files-found: warn
           retention-days: 14
@@ -141,15 +146,15 @@ jobs:
           # Shader Lab Build and Runtime Report
 
           - Source commit: ${SOURCE_SHA}
-          - Mod version: 0.1.0-alpha.1
+          - Mod version: ${MOD_VERSION}
           - Minecraft: 26.2
           - Java: 25
           - Gradle: 9.2.1
-          - NeoForge: 26.2.0.38-beta
+          - NeoForge: ${NEO_VERSION}
           - Wrapper generation: ${WRAPPER_OUTCOME}
           - Toolchain verification: ${TOOLCHAIN_OUTCOME}
           - Clean build: ${BUILD_OUTCOME}
-          - Shader resource and JAR verification: ${JAR_OUTCOME}
+          - Seven-pass shader resource and JAR verification: ${JAR_OUTCOME}
           - Datagen: NOT APPLICABLE
           - GameTest: NOT APPLICABLE — GPU post-processing cannot be validated by server GameTest
           - Dedicated server smoke test: NOT APPLICABLE — client-only mod
