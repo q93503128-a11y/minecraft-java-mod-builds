@@ -9,6 +9,7 @@ import zipfile
 from pathlib import Path
 
 SHADERPACK = "shaderpacks/ShaderLab-Reverie-0.6.zip"
+SODIUM_OS_UTILS = "net/caffeinemc/mods/sodium/client/compatibility/environment/OsUtils.class"
 REQUIRED_EXACT = {
     "META-INF/neoforge.mods.toml",
     "META-INF/jarjar/metadata.json",
@@ -71,6 +72,15 @@ def main() -> None:
                 toml = nested.read("META-INF/neoforge.mods.toml").decode("utf-8", errors="ignore")
                 if expected_mod_id not in toml:
                     fail(f"bundled renderer does not declare {expected_mod_id}")
+                if expected_mod_id == "sodium":
+                    if SODIUM_OS_UTILS not in nested_names:
+                        fail("bundled Sodium keeps OsUtils outside the loaded Sodium module")
+                    double_nested = [
+                        name for name in nested_names
+                        if name.startswith("META-INF/jarjar/") and name.endswith(".jar")
+                    ]
+                    if double_nested:
+                        fail(f"bundled Sodium still has an unsupported second Jar-in-Jar layer: {double_nested}")
                 if nested.testzip() is not None:
                     fail(f"bundled {expected_mod_id} JAR is corrupt")
 
@@ -129,12 +139,14 @@ def main() -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
         "\n".join([
-            "Shader Lab Reverie 0.6 single-JAR verification: PASS",
+            "Shader Lab Reverie 0.6.1 single-JAR verification: PASS",
             f"JAR: {jar_path.name}",
             f"Bytes: {jar_path.stat().st_size}",
             f"SHA-256: {digest}",
             "Bundled Iris NeoForge: PASS",
-            "Bundled Sodium NeoForge: PASS",
+            "Bundled Sodium NeoForge single module: PASS",
+            "Sodium OsUtils class availability: PASS",
+            "Unsupported double Jar-in-Jar layer absent: PASS",
             "Upstream shader: Noble Shaders GPLv3",
             "Noble source and license included: PASS",
             "Real water/PBR/sun/lighting/fog/bloom source features: PASS",
