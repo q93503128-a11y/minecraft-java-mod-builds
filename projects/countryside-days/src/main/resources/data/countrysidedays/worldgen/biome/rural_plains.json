@@ -1,0 +1,69 @@
+{
+  "attributes": {
+    "minecraft:visual/sky_color": "#8ab8ff"
+  },
+  "carvers": [],
+  "downfall": 0.55,
+  "effects": {
+    "water_color": "#4c87d9"
+  },
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "countrysidedays:countryside_chunk"
+    ]
+  ],
+  "has_precipitation": true,
+  "spawn_costs": {},
+  "spawners": {
+    "ambient": [],
+    "axolotls": [],
+    "creature": [
+      {
+        "type": "minecraft:sheep",
+        "maxCount": 4,
+        "minCount": 2,
+        "weight": 9
+      },
+      {
+        "type": "minecraft:cow",
+        "maxCount": 3,
+        "minCount": 2,
+        "weight": 8
+      },
+      {
+        "type": "minecraft:chicken",
+        "maxCount": 4,
+        "minCount": 2,
+        "weight": 7
+      },
+      {
+        "type": "minecraft:pig",
+        "maxCount": 3,
+        "minCount": 2,
+        "weight": 6
+      },
+      {
+        "type": "minecraft:horse",
+        "maxCount": 3,
+        "minCount": 1,
+        "weight": 2
+      }
+    ],
+    "misc": [],
+    "monster": [],
+    "underground_water_creature": [],
+    "water_ambient": [],
+    "water_creature": []
+  },
+  "temperature": 0.78
+}
