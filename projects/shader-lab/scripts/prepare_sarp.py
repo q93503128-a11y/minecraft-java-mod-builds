@@ -4,19 +4,20 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import urllib.request
 import zipfile
 from pathlib import Path
 from typing import Any
 
-USER_AGENT = "ShaderLab-private-build/0.4 (github.com/q93503128-a11y/minecraft-java-mod-builds)"
+USER_AGENT = "ShaderLab-private-build/0.5 (github.com/q93503128-a11y/minecraft-java-mod-builds)"
 MIT_TEXT = """MIT License
 
 Copyright (c) 2026 xsoras / Sarp
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the \"Software\"), to deal
+of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
@@ -25,7 +26,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -64,6 +65,172 @@ def is_text_shader(path: Path) -> bool:
 
 def normalized(path: Path, root: Path) -> str:
     return path.relative_to(root).as_posix()
+
+
+def replace_once(text: str, old: str, new: str, label: str) -> str:
+    count = text.count(old)
+    if count != 1:
+        fail(f"Dreamscape patch expected one {label} location, found {count}")
+    return text.replace(old, new, 1)
+
+
+def set_define(text: str, name: str, value: str) -> str:
+    pattern = re.compile(rf"(?m)^(\s*)(?://\s*)?#define\s+{re.escape(name)}(?:\s+\S+)?")
+    replacement = rf"\1#define {name} {value}" if value else rf"\1#define {name}"
+    updated, count = pattern.subn(replacement, text, count=1)
+    if count != 1:
+        fail(f"Dreamscape setting not found: {name}")
+    return updated
+
+
+def disable_define(text: str, name: str) -> str:
+    pattern = re.compile(rf"(?m)^(\s*)#define\s+{re.escape(name)}\b")
+    updated, count = pattern.subn(rf"\1//#define {name}", text, count=1)
+    if count == 0 and f"//#define {name}" not in text:
+        fail(f"Dreamscape setting not found: {name}")
+    return updated
+
+
+def apply_dreamscape(staged: Path) -> list[str]:
+    changes: list[str] = []
+
+    settings_path = staged / "shaders/lib/settings.glsl"
+    settings = settings_path.read_text("utf-8")
+    numeric_settings = {
+        "SSAO_STRENGTH": "1.25",
+        "SHADOW_SOFTNESS": "1.5",
+        "AUTO_NORMAL_STRENGTH": "1.5",
+        "REFRACTION_STRENGTH": "1.25",
+        "CAUSTICS_STRENGTH": "1.5",
+        "WATER_WAVE_STRENGTH": "1.25",
+        "WATER_OPACITY": "0.55",
+        "FOAM_STRENGTH": "0.75",
+        "SSR_STEPS": "32",
+        "VL_STRENGTH": "1.25",
+        "VL_SAMPLES": "24",
+        "FOG_DENSITY": "0.75",
+        "BLOOM_STRENGTH": "0.25",
+        "EXPOSURE": "0.9",
+        "SATURATION": "1.05",
+    }
+    for name, value in numeric_settings.items():
+        settings = set_define(settings, name, value)
+        changes.append(f"setting {name}={value}")
+
+    for name in ("WATER_REFRACTION", "CAUSTICS", "WATER_WAVES", "WATER_FOAM", "FXAA"):
+        settings = set_define(settings, name, "")
+        changes.append(f"enabled {name}")
+
+    settings = disable_define(settings, "VIGNETTE")
+    changes.append("disabled VIGNETTE")
+    settings_path.write_text(settings, encoding="utf-8")
+
+    atmosphere_path = staged / "shaders/lib/atmosphere.glsl"
+    atmosphere = atmosphere_path.read_text("utf-8")
+    original_aurora = """        vec3 aurCol = mix(vec3(0.05, 0.85, 0.45), vec3(0.45, 0.20, 0.85),
+                          clamp(n2 * 1.4 - 0.2, 0.0, 1.0));
+        sky += aurCol * band * 0.12 * nightF * (1.0 - rainStrength);
+"""
+    dream_aurora = """        float ribbon = smoothstep(0.53, 0.82,
+            nfbm(p * vec2(1.15, 4.8) + vec2(-t * 0.55, t * 0.22)));
+        ribbon *= smoothstep(0.06, 0.36, dirW.y) * (1.0 - smoothstep(0.72, 0.98, dirW.y));
+        band = max(band, ribbon * 0.72);
+
+        vec3 emerald = vec3(0.03, 0.92, 0.58);
+        vec3 violet  = vec3(0.48, 0.20, 0.96);
+        vec3 rose    = vec3(0.95, 0.24, 0.72);
+        vec3 aurCol = mix(emerald, violet, clamp(n2 * 1.35 - 0.12, 0.0, 1.0));
+        aurCol = mix(aurCol, rose, smoothstep(0.76, 0.96, n1) * 0.42);
+        float curtainFade = smoothstep(0.02, 0.16, dirW.y)
+                          * (1.0 - smoothstep(0.78, 0.99, dirW.y));
+        sky += aurCol * band * curtainFade * 0.34 * nightF * (1.0 - rainStrength * 0.85);
+"""
+    atmosphere = replace_once(atmosphere, original_aurora, dream_aurora, "aurora")
+    changes.append("strengthened real-sky aurora curtains")
+
+    original_fog = """    float density = 0.0012 * FOG_DENSITY * (1.0 + rainStrength * 3.0);
+    float altitude = cameraPosition.y + playerPos.y;
+    float heightF = exp(-max(altitude - 70.0, 0.0) / 90.0);
+    float fogAmount = 1.0 - exp(-dist * density * heightF);
+
+    // border fog toward render distance
+    float border = smoothstep(far * 0.62, far * 0.95, dist);
+    fogAmount = clamp(fogAmount + border, 0.0, 1.0);
+
+    vec3 fogCol = skyGradient(normalize(playerPos));
+"""
+    dream_fog = """    float density = 0.0010 * FOG_DENSITY * (1.0 + rainStrength * 2.4);
+    float altitude = cameraPosition.y + playerPos.y;
+    float heightF = exp(-max(altitude - 72.0, 0.0) / 105.0);
+    float baseFog = 1.0 - exp(-dist * density * heightF);
+
+    // Dreamscape low mist is calculated in world space. It follows terrain
+    // around sea level and breaks into drifting pockets; it is not a screen overlay.
+    float skyAccess = smoothstep(0.14, 0.58, float(eyeBrightnessSmooth.y) / 240.0);
+    float groundBand = exp(-pow((altitude - 65.0) / 8.5, 2.0));
+    float nearFade = smoothstep(10.0, 42.0, dist);
+    float farFade = 1.0 - smoothstep(far * 0.62, far * 0.90, dist);
+    vec2 mistCoord = (cameraPosition.xz + playerPos.xz) * 0.010
+                   + vec2(frameTimeCounter * 0.0035, -frameTimeCounter * 0.0018);
+    float mistNoise = nfbm(mistCoord);
+    float mistPockets = mix(0.38, 1.0, smoothstep(0.30, 0.78, mistNoise));
+    float lowMist = groundBand * nearFade * farFade * skyAccess * mistPockets
+                  * (0.16 + rainStrength * 0.12);
+    float fogAmount = 1.0 - (1.0 - baseFog) * (1.0 - lowMist);
+
+    // border fog toward render distance
+    float border = smoothstep(far * 0.72, far * 0.97, dist);
+    fogAmount = clamp(fogAmount + border, 0.0, 1.0);
+
+    vec3 fogCol = skyGradient(normalize(playerPos));
+    vec3 lowMistCol = mix(vec3(0.30, 0.39, 0.45), fogCol, 0.70);
+    fogCol = mix(fogCol, lowMistCol, clamp(lowMist * 2.2, 0.0, 0.46));
+"""
+    atmosphere = replace_once(atmosphere, original_fog, dream_fog, "low world-space fog")
+    atmosphere_path.write_text(atmosphere, encoding="utf-8")
+    changes.append("added low world-space drifting mist")
+
+    water_path = staged / "shaders/gbuffers_water.fsh"
+    water = water_path.read_text("utf-8")
+    original_water_color = """        vec3 tex  = srgbToLinear(albedo.rgb);
+        vec3 tint = srgbToLinear(glcolor.rgb);
+        vec3 lightBlue = srgbToLinear(vec3(0.28, 0.54, 0.84));
+        tint = mix(tint, lightBlue, 0.45);
+        float tLuma = luminance(tex);
+        albedo.rgb = mix(tint, tex * 1.30, 0.72);           // texture strongly dominant
+        albedo.rgb += (tLuma - luminance(tint)) * 0.55;     // push the ripple contrast
+        albedo.rgb += vec3(0.07) * smoothstep(0.5, 0.85, tLuma); // white highlights
+        albedo.a = WATER_OPACITY;                           // let the surface film read
+"""
+    dream_water_color = """        vec3 tex  = srgbToLinear(albedo.rgb);
+        vec3 biomeTint = srgbToLinear(glcolor.rgb);
+        vec3 deepTeal = srgbToLinear(vec3(0.025, 0.24, 0.34));
+        vec3 clearCyan = srgbToLinear(vec3(0.10, 0.56, 0.66));
+        float skyLight = clamp(lmcoord.y * 1.10, 0.0, 1.0);
+        vec3 dreamTint = mix(deepTeal, clearCyan, skyLight);
+        dreamTint = mix(dreamTint, biomeTint, 0.24);
+        float tLuma = luminance(tex);
+        albedo.rgb = mix(dreamTint, tex * dreamTint * 2.10, 0.34);
+        albedo.rgb += vec3(0.025, 0.060, 0.075) * smoothstep(0.40, 0.82, tLuma);
+        albedo.rgb += vec3(0.12, 0.18, 0.20) * pow(smoothstep(0.70, 0.96, tLuma), 2.0);
+        albedo.a = WATER_OPACITY;
+"""
+    water = replace_once(water, original_water_color, dream_water_color, "water material color")
+    water_path.write_text(water, encoding="utf-8")
+    changes.append("reworked actual water material to teal-cyan glass water")
+
+    preset = {
+        "name": "Shader Lab Dreamscape 0.5",
+        "architecture": "Iris world shader programs; no screen-space material guessing",
+        "water": ["refraction", "waves", "foam", "caustics", "SSR", "teal-cyan depth tint"],
+        "terrain": ["PBR mode 2", "auto normals 1.5", "SSAO 1.25", "soft shadows 1.5"],
+        "atmosphere": ["real-sky aurora curtains", "world-space sea-level mist", "volumetric light 24 samples"],
+        "camera": ["FXAA", "auto exposure", "low bloom", "no vignette"],
+    }
+    (staged / "SHADERLAB_DREAMSCAPE_PRESET.json").write_text(
+        json.dumps(preset, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    return changes
 
 
 def main() -> None:
@@ -140,40 +307,6 @@ def main() -> None:
         license_source = "canonical notice generated from official Modrinth MIT metadata"
         (staged / "LICENSE-SARP-MIT.txt").write_text(MIT_TEXT, encoding="utf-8")
 
-    evidence = {
-        "project_id": project.get("id"),
-        "project_slug": project.get("slug"),
-        "project_title": project.get("title"),
-        "project_license": project.get("license"),
-        "project_author": "xsoras / Sarp",
-        "project_url": "https://modrinth.com/shader/sarp",
-        "version_id": version.get("id"),
-        "version_number": version.get("version_number"),
-        "game_versions": version.get("game_versions"),
-        "loaders": version.get("loaders"),
-        "original_filename": selected.get("filename"),
-        "original_sha512": actual_sha512,
-        "original_archive_had_license_file": bool(original_license_files),
-        "added_license_notice": not bool(original_license_files),
-    }
-    (staged / "MODRINTH_LICENSE_EVIDENCE.json").write_text(
-        json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    (staged / "SHADERLAB_ATTRIBUTION.md").write_text(
-        "# Shader Lab Dreamscape attribution\n\n"
-        "This private test bundle contains the official Sarp Shaders 1.0.0 release.\n\n"
-        "- Creator: xsoras / Sarp\n"
-        "- Project: https://modrinth.com/shader/sarp\n"
-        f"- Modrinth version ID: {args.version}\n"
-        f"- Original filename: {selected.get('filename')}\n"
-        "- License declared by the official project: MIT\n"
-        f"- License notice source: {license_source}\n"
-        "- Shader Lab does not claim authorship of the Sarp renderer\n",
-        encoding="utf-8",
-    )
-
-    all_files = [path for path in staged.rglob("*") if path.is_file()]
-    all_names = sorted(normalized(path, staged) for path in all_files)
     water_programs = [name for name in original_names if "water" in name.lower()]
     terrain_programs = [name for name in original_names if "terrain" in name.lower()]
     if not water_programs:
@@ -192,6 +325,45 @@ def main() -> None:
         if not found_features[feature]:
             fail(f"Sarp source audit did not find expected feature token: {feature}")
 
+    dreamscape_changes = apply_dreamscape(staged)
+
+    evidence = {
+        "project_id": project.get("id"),
+        "project_slug": project.get("slug"),
+        "project_title": project.get("title"),
+        "project_license": project.get("license"),
+        "project_author": "xsoras / Sarp",
+        "project_url": "https://modrinth.com/shader/sarp",
+        "version_id": version.get("id"),
+        "version_number": version.get("version_number"),
+        "game_versions": version.get("game_versions"),
+        "loaders": version.get("loaders"),
+        "original_filename": selected.get("filename"),
+        "original_sha512": actual_sha512,
+        "original_archive_had_license_file": bool(original_license_files),
+        "added_license_notice": not bool(original_license_files),
+        "dreamscape_derivative_changes": dreamscape_changes,
+    }
+    (staged / "MODRINTH_LICENSE_EVIDENCE.json").write_text(
+        json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    (staged / "SHADERLAB_ATTRIBUTION.md").write_text(
+        "# Shader Lab Dreamscape attribution\n\n"
+        "This private test bundle is a modified derivative of Sarp Shaders 1.0.0.\n\n"
+        "- Original creator: xsoras / Sarp\n"
+        "- Project: https://modrinth.com/shader/sarp\n"
+        f"- Modrinth version ID: {args.version}\n"
+        f"- Original filename: {selected.get('filename')}\n"
+        "- Original project license: MIT\n"
+        f"- License notice source: {license_source}\n"
+        "- Shader Lab changes: water preset, terrain material strength, real-sky aurora, world-space low mist, camera tuning\n"
+        "- Shader Lab does not claim authorship of the original Sarp renderer\n",
+        encoding="utf-8",
+    )
+
+    all_files = [path for path in staged.rglob("*") if path.is_file()]
+    all_names = sorted(normalized(path, staged) for path in all_files)
+
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.output.exists():
         args.output.unlink()
@@ -201,7 +373,7 @@ def main() -> None:
 
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(
-        "Sarp source audit: PASS\n"
+        "Sarp source and Dreamscape patch audit: PASS\n"
         f"Project: {project.get('title')} ({project.get('slug')})\n"
         f"Version: {version.get('version_number')} / {version.get('id')}\n"
         f"Original filename: {selected.get('filename')}\n"
@@ -212,7 +384,9 @@ def main() -> None:
         f"License notice source: {license_source}\n"
         f"Water-related programs: {water_programs}\n"
         f"Terrain-related programs: {terrain_programs}\n"
-        f"Feature tokens: {found_features}\n"
+        f"Original feature tokens: {found_features}\n"
+        "Dreamscape architecture: real Iris water/terrain/sky/fog programs; no material-guessing screen overlay\n"
+        "Dreamscape changes:\n- " + "\n- ".join(dreamscape_changes) + "\n"
         f"Original file count: {len(original_names)}\n"
         f"Final file count: {len(all_names)}\n\n"
         "Original file list:\n" + "\n".join(original_names) + "\n",
