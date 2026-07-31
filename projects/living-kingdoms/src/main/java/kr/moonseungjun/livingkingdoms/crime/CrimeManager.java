@@ -1,7 +1,8 @@
 package kr.moonseungjun.livingkingdoms.crime;
 
-import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
+import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
+import kr.moonseungjun.livingkingdoms.world.RealmJurisdiction;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
 import net.minecraft.core.BlockPos;
@@ -20,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -28,7 +30,7 @@ import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import java.util.List;
 import java.util.Set;
 
-/** First playable crime loop: crimes create a local warrant and guards must physically catch the player. */
+/** Crimes create local warrants; guards must physically pursue, subdue and escort the player. */
 public final class CrimeManager {
     private static final int ARREST_TIME = 100;
     private static final List<String> GUARD_NAME_MARKERS = List.of(
@@ -44,10 +46,8 @@ public final class CrimeManager {
 
         if (attacker instanceof ServerPlayer player && victim instanceof Villager villager
                 && player.level() instanceof ServerLevel level && isLivingRealm(level)) {
-            String jurisdiction = jurisdictionAt(villager.blockPosition());
-            if (jurisdiction != null) {
-                reportCrime(level, player, jurisdiction, 8, "주민 폭행");
-            }
+            String jurisdiction = RealmJurisdiction.at(level, villager.blockPosition());
+            if (jurisdiction != null) reportCrime(level, player, jurisdiction, 8, "주민 폭행");
         }
 
         if (attacker instanceof ServerPlayer player && isGuard(victim)
@@ -65,10 +65,8 @@ public final class CrimeManager {
         if (!(killer instanceof ServerPlayer player)
                 || !(event.getEntity() instanceof Villager villager)
                 || !(player.level() instanceof ServerLevel level)
-                || !isLivingRealm(level)) {
-            return;
-        }
-        String jurisdiction = jurisdictionAt(villager.blockPosition());
+                || !isLivingRealm(level)) return;
+        String jurisdiction = RealmJurisdiction.at(level, villager.blockPosition());
         if (jurisdiction == null) return;
         StarterNpcManager.markDeadIfStarter(level, villager);
         reportCrime(level, player, jurisdiction, 30, "살인");
@@ -76,40 +74,29 @@ public final class CrimeManager {
 
     public static void handleBlockBreak(BlockDropsEvent event) {
         if (!(event.getBreaker() instanceof ServerPlayer player)
-                || player.isCreative()
-                || !isLivingRealm(event.getLevel())) {
-            return;
-        }
-
+                || player.isCreative() || !isLivingRealm(event.getLevel())) return;
         ServerLevel level = event.getLevel();
-        String jurisdiction = jurisdictionAt(event.getPos());
-        if (jurisdiction == null || isOwnResidence(player, event.getPos())
-                || !isPropertyBlock(event.getState().getBlock())) {
-            return;
-        }
-        reportCrime(level, player, jurisdiction, 2, "재산 훼손");
+        String jurisdiction = RealmJurisdiction.at(level, event.getPos());
+        if (jurisdiction == null || isOwnResidence(level, player, event.getPos())
+                || !isPropertyBlock(event.getState().getBlock())) return;
+        int severity = SkillProgressionManager.propertyCrimeSeverity(player, 2);
+        reportCrime(level, player, jurisdiction, severity, "재산 훼손");
     }
 
     public static void tickPlayer(ServerPlayer player) {
-        if (!(player.level() instanceof ServerLevel level) || !isLivingRealm(level)) {
-            return;
-        }
-        if (level.getGameTime() % 20L != 0L) {
-            return;
-        }
+        if (!(player.level() instanceof ServerLevel level) || !isLivingRealm(level)
+                || level.getGameTime() % 20L != 0L) return;
 
         CrimeSavedData data = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE);
         CrimeSavedData.CrimeRecord record = data.record(player.getUUID());
-        if (record.wanted() <= 0) {
-            return;
-        }
+        if (record.wanted() <= 0) return;
 
-        String local = jurisdictionAt(player.blockPosition());
+        String local = RealmJurisdiction.at(level, player.blockPosition());
         if (local == null || !record.wantedHere(local)) {
             endLocalPursuit(level, player);
             if (level.getGameTime() % 200L == 0L) {
                 player.sendSystemMessage(Component.literal(
-                        "§6[수배 유지] §f왕국 경계를 벗어나 현장 추격은 중단됐지만 수배는 남아 있습니다."
+                        "§6[수배 유지] §f왕국 관할을 벗어나 현장 추격은 중단됐지만 수배는 남아 있습니다."
                 ));
             }
             return;
@@ -133,7 +120,6 @@ public final class CrimeManager {
 
         Mob closest = closestGuard(guards, player);
         if (closest == null) return;
-
         if (player.getHealth() <= 6.0F && closest.distanceToSqr(player) <= 12.25) {
             int arrestTicks = record.arrestTicks() + 20;
             data.setArrestTicks(player.getUUID(), arrestTicks);
@@ -143,29 +129,23 @@ public final class CrimeManager {
                             ? "§6[체포 시도] §f경비병이 제압하려 합니다. 달아나거나 다시 저항할 수 있습니다."
                             : "§c[체포됨] §f경비대에게 붙잡혀 구금 시설로 호송됩니다."
             ));
-            if (arrestTicks >= ARREST_TIME) {
-                completeArrest(level, player, local, data);
-            }
+            if (arrestTicks >= ARREST_TIME) completeArrest(level, player, local, data);
         } else if (record.arrestTicks() > 0) {
             data.setArrestTicks(player.getUUID(), 0);
             for (Mob guard : guards) guard.setTarget(player);
             player.sendSystemMessage(Component.literal("§c[체포 저항] §f제압에서 벗어났습니다. 추격이 재개됩니다."));
         } else {
-            for (Mob guard : guards) {
-                if (guard.getTarget() != player) guard.setTarget(player);
-            }
+            for (Mob guard : guards) if (guard.getTarget() != player) guard.setTarget(player);
         }
     }
 
     private static void reportCrime(ServerLevel level, ServerPlayer player, String jurisdiction,
                                     int severity, String description) {
-        CrimeSavedData data = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE);
-        CrimeSavedData.CrimeRecord record = data.addCrime(
-                player.getUUID(), jurisdiction, severity, level.getGameTime()
-        );
+        CrimeSavedData.CrimeRecord record = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE)
+                .addCrime(player.getUUID(), jurisdiction, severity, level.getGameTime());
         player.sendSystemMessage(Component.literal(
                 "§c[범죄: " + description + "] §f수배도 §e" + record.wanted()
-                        + "§f. 경비병이 목격하거나 신고를 받으면 추격합니다."
+                        + "§f. 신고가 전달되면 지역 경비대가 현장으로 출동합니다."
         ));
     }
 
@@ -181,7 +161,6 @@ public final class CrimeManager {
             if (type == null) continue;
             Entity created = type.create(level, EntitySpawnReason.COMMAND);
             if (!(created instanceof Mob guard)) continue;
-
             BlockPos spawn = safeGuardSpawn(level, player, i);
             guard.setPos(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
             guard.setCustomName(Component.literal(guardName(jurisdiction, wantedTier)));
@@ -208,9 +187,7 @@ public final class CrimeManager {
 
     private static boolean isGuard(Entity entity) {
         String name = entity.getName().getString();
-        for (String marker : GUARD_NAME_MARKERS) {
-            if (name.contains(marker)) return true;
-        }
+        for (String marker : GUARD_NAME_MARKERS) if (name.contains(marker)) return true;
         return false;
     }
 
@@ -218,37 +195,29 @@ public final class CrimeManager {
         double angle = (level.getGameTime() * 0.07) + index * 2.399963229728653;
         int x = player.blockPosition().getX() + (int) Math.round(Math.cos(angle) * (13 + index * 2));
         int z = player.blockPosition().getZ() + (int) Math.round(Math.sin(angle) * (13 + index * 2));
-        for (int y = 110; y >= 61; y--) {
-            BlockPos floor = new BlockPos(x, y, z);
-            if (!level.getBlockState(floor).isAir()
-                    && level.getBlockState(floor.above()).isAir()
-                    && level.getBlockState(floor.above(2)).isAir()) {
-                return floor.above();
-            }
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        BlockPos feet = new BlockPos(x, y, z);
+        if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) {
+            feet = player.blockPosition().offset(index + 3, 1, index + 3);
         }
-        return new BlockPos(x, 66, z);
+        return feet;
     }
 
     private static void completeArrest(ServerLevel level, ServerPlayer player, String jurisdiction,
                                        CrimeSavedData data) {
-        BlockPos jail = switch (jurisdiction) {
-            case "silvana_forest" -> new BlockPos(1268, 67, 28);
-            case "kardum_league" -> new BlockPos(-1163, 68, 41);
-            default -> new BlockPos(8, 66, -59);
-        };
+        BlockPos jail = RealmJurisdiction.jail(level, jurisdiction);
         endLocalPursuit(level, player);
         player.teleportTo(level, jail.getX() + 0.5, jail.getY(), jail.getZ() + 0.5,
                 Set.<Relative>of(), player.getYRot(), player.getXRot(), true);
         player.setHealth(Math.max(player.getHealth(), 10.0F));
         data.settleAfterArrest(player.getUUID());
         player.sendSystemMessage(Component.literal(
-                "§6[구금] §f현장 체포 뒤 구금 시설로 호송됐습니다. 일부 수배도가 남을 수 있습니다."
+                "§6[구금] §f현장 체포 뒤 해당 관할의 구금 시설로 호송됐습니다. 일부 수배도가 남을 수 있습니다."
         ));
     }
 
     private static List<Mob> guardsNear(ServerLevel level, ServerPlayer player, double radius) {
-        AABB area = player.getBoundingBox().inflate(radius);
-        return level.getEntitiesOfClass(Mob.class, area, CrimeManager::isGuard);
+        return level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(radius), CrimeManager::isGuard);
     }
 
     private static Mob closestGuard(List<Mob> guards, ServerPlayer player) {
@@ -271,30 +240,16 @@ public final class CrimeManager {
         }
     }
 
-    private static String jurisdictionAt(BlockPos pos) {
-        if (distanceSquared(pos, 0, 0) <= 280 * 280) return "erden_kingdom";
-        if (distanceSquared(pos, 1240, 35) <= 260 * 260) return "silvana_forest";
-        if (distanceSquared(pos, -1170, 38) <= 260 * 260) return "kardum_league";
-        return null;
-    }
-
-    private static int distanceSquared(BlockPos pos, int x, int z) {
-        int dx = pos.getX() - x;
-        int dz = pos.getZ() - z;
-        return dx * dx + dz * dz;
-    }
-
     private static boolean isLivingRealm(ServerLevel level) {
         return level.dimension().equals(StarterRealmManager.REALM_KEY);
     }
 
-    private static boolean isOwnResidence(ServerPlayer player, BlockPos pos) {
+    private static boolean isOwnResidence(ServerLevel level, ServerPlayer player, BlockPos pos) {
         return OriginProfileManager.profile(player.getUUID()).map(profile -> {
-            PlayableOriginCatalog.ResidenceOption home = PlayableOriginCatalog.residences().get(profile.residenceId());
-            if (home == null) return false;
-            int dx = pos.getX() - home.spawnX();
-            int dz = pos.getZ() - home.spawnZ();
-            return dx * dx + dz * dz <= 16 * 16;
+            BlockPos home = RealmJurisdiction.residence(level, profile.homelandId(), profile.residenceId());
+            long dx = pos.getX() - home.getX();
+            long dz = pos.getZ() - home.getZ();
+            return dx * dx + dz * dz <= 16L * 16L;
         }).orElse(false);
     }
 
