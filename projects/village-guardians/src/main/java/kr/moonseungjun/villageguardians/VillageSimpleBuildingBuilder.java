@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -32,8 +33,7 @@ final class VillageSimpleBuildingBuilder {
             }
         }
 
-        int door = x0 + spec.width() / 2;
-        fill(level, door, groundY + 2, z0, door + 1, groundY + 4, z0, Blocks.AIR);
+        openDoorway(level, groundY, x0, z0, x1, z1, spec.entranceFacing());
         for (int x = x0 + 4; x <= x1 - 4; x += 6) {
             put(level, x, groundY + 4, z0, Blocks.GLASS);
             put(level, x, groundY + 4, z1, Blocks.GLASS);
@@ -73,6 +73,36 @@ final class VillageSimpleBuildingBuilder {
         }
     }
 
+    private static void openDoorway(
+            ServerLevel level,
+            int groundY,
+            int x0,
+            int z0,
+            int x1,
+            int z1,
+            Direction facing) {
+        switch (facing) {
+            case NORTH -> {
+                int doorX = (x0 + x1) / 2;
+                fill(level, doorX, groundY + 2, z0, doorX + 1, groundY + 4, z0, Blocks.AIR);
+            }
+            case SOUTH -> {
+                int doorX = (x0 + x1) / 2;
+                fill(level, doorX, groundY + 2, z1, doorX + 1, groundY + 4, z1, Blocks.AIR);
+            }
+            case WEST -> {
+                int doorZ = (z0 + z1) / 2;
+                fill(level, x0, groundY + 2, doorZ, x0, groundY + 4, doorZ + 1, Blocks.AIR);
+            }
+            case EAST -> {
+                int doorZ = (z0 + z1) / 2;
+                fill(level, x1, groundY + 2, doorZ, x1, groundY + 4, doorZ + 1, Blocks.AIR);
+            }
+            default -> {
+            }
+        }
+    }
+
     static void clear(ServerLevel level, BlockPos center, VillageBuildingCatalog.Spec spec) {
         int groundY = center.getY() - 1;
         fill(level,
@@ -108,11 +138,6 @@ final class VillageSimpleBuildingBuilder {
         buildBrokenCorner(level, x1, groundY, z0, 3);
         buildBrokenCorner(level, x0, groundY, z1, 2);
         buildBrokenCorner(level, x1, groundY, z1, 4);
-
-        int doorway = x0 + spec.width() / 2;
-        for (int x = doorway - 2; x <= doorway + 2; x++) {
-            put(level, x, groundY + 1, z0 - 1, Blocks.COBBLESTONE);
-        }
     }
 
     private static void buildBrokenCorner(ServerLevel level, int x, int groundY, int z, int height) {
