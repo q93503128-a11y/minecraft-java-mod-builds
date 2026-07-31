@@ -61,7 +61,6 @@ public final class VillageRaidSystem {
             }
             return;
         }
-
         if (!active) {
             return;
         }
@@ -104,8 +103,7 @@ public final class VillageRaidSystem {
             return "§c[습격] §f시작까지 " + Math.max(1, (countdownTicks + 19) / 20) + "초";
         }
         if (active) {
-            return "§c[습격] §f웨이브 " + wave + "/" + maxWaves
-                    + " | 남은 적 " + ACTIVE_ENEMIES.size();
+            return "§c[습격] §f웨이브 " + wave + "/" + maxWaves + " | 남은 적 " + ACTIVE_ENEMIES.size();
         }
         return "§a[습격] §f현재 안전합니다. 밤으로 진행하면 방어전이 시작됩니다.";
     }
@@ -127,7 +125,12 @@ public final class VillageRaidSystem {
 
     private static void spawnWave(MinecraftServer server) {
         ServerLevel level = server.overworld();
-        BlockPos center = VillageCouncilState.villageCenter().orElse(level.getSharedSpawnPos());
+        BlockPos center = VillageCouncilState.villageCenter().orElseGet(() -> {
+            if (!server.getPlayerList().getPlayers().isEmpty()) {
+                return server.getPlayerList().getPlayers().getFirst().blockPosition();
+            }
+            return new BlockPos(0, 0, 0);
+        });
         int players = Math.max(1, server.getPlayerList().getPlayerCount());
         int day = VillageCouncilState.currentDay();
         int count = 4 + wave * 2 + players * 2 + Math.min(8, day - 1);
@@ -140,12 +143,7 @@ public final class VillageRaidSystem {
             if (mob == null) {
                 continue;
             }
-            mob.moveTo(
-                    spawnPos.getX() + 0.5,
-                    spawnPos.getY(),
-                    spawnPos.getZ() + 0.5,
-                    level.getRandom().nextFloat() * 360.0f,
-                    0.0f);
+            mob.snapTo(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
             mob.finalizeSpawn(
                     level,
                     level.getCurrentDifficultyAt(spawnPos),
@@ -176,7 +174,7 @@ public final class VillageRaidSystem {
     private static BlockPos spawnPosition(BlockPos center, int side, int index) {
         int spread = (index % 9) - 4;
         int lane = (index / 9) * 2;
-        int distance = 54 + lane;
+        int distance = 64 + lane;
         return switch (side) {
             case 0 -> new BlockPos(center.getX() + spread * 2, center.getY(), center.getZ() - distance);
             case 1 -> new BlockPos(center.getX() + distance, center.getY(), center.getZ() + spread * 2);
