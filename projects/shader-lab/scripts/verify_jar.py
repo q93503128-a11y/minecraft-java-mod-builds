@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -35,6 +36,11 @@ def fail(message: str) -> None:
 def require(source: str, token: str, label: str) -> None:
     if token not in source:
         fail(f"{label} is missing {token!r}")
+
+
+def require_regex(source: str, pattern: str, label: str) -> None:
+    if re.search(pattern, source, re.MULTILINE) is None:
+        fail(f"{label} does not match {pattern!r}")
 
 
 def main() -> None:
@@ -130,9 +136,9 @@ def main() -> None:
                 fail("embedded Noble shaderpack is missing GPLv3 license text")
 
             settings = shaderpack.read("shaders/settings.glsl").decode("utf-8", errors="ignore")
+            require_regex(settings, r"const\s+int\s+shadowMapResolution\s*=\s*2048\s*;", "shadow map resolution")
+            require_regex(settings, r"const\s+float\s+shadowDistance\s*=\s*128\s*;", "shadow distance")
             for token in (
-                "const int shadowMapResolution = 2048",
-                "const float shadowDistance = 128",
                 "#define SHADOW_SAMPLES 6",
                 "#define REFLECTIONS 1",
                 "#define REFRACTIONS 1",
