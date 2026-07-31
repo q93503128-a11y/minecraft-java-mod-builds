@@ -4,6 +4,7 @@ import kr.countrysidedays.CountrysideDays;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.gameplay.RuralNpcManager;
 import kr.countrysidedays.registry.ModBlocks;
+import kr.countrysidedays.world.CountrysideRegionManager;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.StarterHomesteadGenerator;
 import net.minecraft.core.BlockPos;
@@ -48,6 +49,49 @@ public final class ModGameTests {
         helper.assertTrue(data.hasHerbPreparation(testPos), "prepared herb state should be queryable");
         helper.assertTrue(data.removeKitchenState(testPos), "counter removal should clear temporary cooking state");
         helper.assertFalse(data.hasHerbPreparation(testPos), "removed counter must not retain herb preparation");
+
+        int terrainChunkX = 123456;
+        int terrainChunkZ = -654321;
+        helper.assertFalse(
+                data.isTerrainChunkPrepared(terrainChunkX, terrainChunkZ),
+                "unused countryside chunk should start unprepared"
+        );
+        helper.assertTrue(
+                data.markTerrainChunkPrepared(terrainChunkX, terrainChunkZ),
+                "fresh countryside chunk should be marked once"
+        );
+        helper.assertTrue(
+                data.isTerrainChunkPrepared(terrainChunkX, terrainChunkZ),
+                "prepared countryside chunk should persist in world data"
+        );
+        helper.assertFalse(
+                data.markTerrainChunkPrepared(terrainChunkX, terrainChunkZ),
+                "prepared countryside chunk must not be registered twice"
+        );
+
+        BlockPos regionCenter = new BlockPos(0, 64, 0);
+        helper.assertTrue(
+                CountrysideRegionManager.isInsideCountryside(
+                        regionCenter,
+                        new BlockPos(CountrysideRegionManager.REGION_RADIUS, 64, 0)
+                ),
+                "the countryside boundary should be included"
+        );
+        helper.assertFalse(
+                CountrysideRegionManager.isInsideCountryside(
+                        regionCenter,
+                        new BlockPos(CountrysideRegionManager.REGION_RADIUS + 1, 64, 0)
+                ),
+                "positions beyond the countryside boundary should be excluded"
+        );
+        helper.assertTrue(
+                CountrysideRegionManager.isRiverCoordinate(regionCenter, 0, 105),
+                "the generated river should pass the expected central bend"
+        );
+        helper.assertFalse(
+                CountrysideRegionManager.isRiverCoordinate(regionCenter, 0, 0),
+                "the restaurant centre must not be inside the river"
+        );
 
         int guestsBefore = data.customersServed();
         int coinsBefore = data.villageCoinsEarned();
