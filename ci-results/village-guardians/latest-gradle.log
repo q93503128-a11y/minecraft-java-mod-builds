@@ -1,27 +1,22 @@
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
-Calculating task graph as no cached configuration is available for tasks: clean build
 
 > Configure project :
 Creating Minecraft artifacts without recompilation.
 
 > Task :clean UP-TO-DATE
-> Task :jarJar NO-SOURCE
-> Task :processTestResources NO-SOURCE
-> Task :prepareLicensedAssets FAILED
-> Task :generateModMetadata
 
 > Task :createMinecraftArtifacts
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.34s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.39s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
 [1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.06s
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.06s
+[1m*** Started working on [4mdownloadServer[0m[0m
+ [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -30,26 +25,27 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.07s
+Total runtime: 1.22s
 
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785502200136.json
 
-1 problem was found storing the configuration cache.
-- Task `:prepareLicensedAssets` of type `org.gradle.api.DefaultTask`: invocation of 'delete' references a Gradle script object from a Groovy closure at execution time, which is unsupported with the configuration cache.
-  See https://docs.gradle.org/9.2.1/userguide/configuration_cache_requirements.html#config_cache:requirements:gradle_model_types
+> Task :compileJava
+Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
 
-See the complete report at file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/configuration-cache/dfqtt8drar6j4a0yt1a3pglyw/etz3kl0qu3pkc5wxx8kjr1rq9/configuration-cache-report.html
+> Task :generateModMetadata
+> Task :prepareLicensedAssets FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785502370449.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
 
 FAILURE: Build failed with an exception.
 
 * Where:
-Build file '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build.gradle' line: 29
+Build file '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build.gradle' line: 76
 
 * What went wrong:
 Execution failed for task ':prepareLicensedAssets'.
-> Invocation of 'delete' references a Gradle script object from a Groovy closure at execution time, which is unsupported with the configuration cache.
+> No Towns and Towers village structure NBT files were found.
 
 * Try:
 > Run with --info or --debug option to get more log output.
@@ -91,15 +87,11 @@ org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':prepare
 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
-Caused by: org.gradle.api.InvalidUserCodeException: Invocation of 'delete' references a Gradle script object from a Groovy closure at execution time, which is unsupported with the configuration cache.
-	at org.gradle.internal.configuration.problems.DefaultProblemFactory$problem$1$build$diagnostics$1.get(DefaultProblemFactory.kt:89)
-	at org.gradle.internal.configuration.problems.DefaultProblemFactory$problem$1$build$diagnostics$1.get(DefaultProblemFactory.kt:89)
-	at org.gradle.internal.problems.DefaultProblemDiagnosticsFactory$DefaultProblemStream.getImplicitThrowable(DefaultProblemDiagnosticsFactory.java:165)
-	at org.gradle.internal.problems.DefaultProblemDiagnosticsFactory$DefaultProblemStream.forCurrentCaller(DefaultProblemDiagnosticsFactory.java:154)
-	at org.gradle.internal.configuration.problems.DefaultProblemFactory$problem$1.build(DefaultProblemFactory.kt:89)
-	at org.gradle.internal.serialize.codecs.core.ClosureCodec$BrokenScript.scriptReferenced(GroovyCodecs.kt:175)
-	at org.gradle.internal.serialize.codecs.core.ClosureCodec$BrokenScript.invokeMethod(GroovyCodecs.kt:159)
-	at build_5n09s4vmgptkrkman32qeq4g$_run_closure2$_closure10.doCall$original(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build.gradle:29)
+Caused by: org.gradle.api.GradleException: No Towns and Towers village structure NBT files were found.
+	at org.gradle.internal.instrumentation.api.groovybytecode.MethodHandleInvocation.callNext(MethodHandleInvocation.java:63)
+	at org.gradle.internal.classpath.intercept.DefaultCallSiteDecorator$1.intercept(DefaultCallSiteDecorator.java:88)
+	at org.gradle.internal.instrumentation.api.groovybytecode.AbstractCallInterceptor.interceptMethodHandle(AbstractCallInterceptor.java:66)
+	at build_5n09s4vmgptkrkman32qeq4g$_run_closure2$_closure10.doCall$original(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build.gradle:76)
 	at build_5n09s4vmgptkrkman32qeq4g$_run_closure2$_closure10.doCall(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build.gradle)
 	at org.gradle.api.internal.AbstractTask$ClosureTaskAction.doExecute(AbstractTask.java:769)
 	at org.gradle.api.internal.AbstractTask$ClosureTaskAction.lambda$execute$0(AbstractTask.java:756)
@@ -194,6 +186,5 @@ Caused by: org.gradle.api.InvalidUserCodeException: Invocation of 'delete' refer
 	... 30 more
 
 
-BUILD FAILED in 11s
-4 actionable tasks: 3 executed, 1 up-to-date
-Configuration cache entry discarded with 1 problem.
+BUILD FAILED in 16s
+5 actionable tasks: 4 executed, 1 up-to-date
