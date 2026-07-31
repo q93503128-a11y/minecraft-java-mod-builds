@@ -9,6 +9,7 @@ import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.registry.ModCreativeTabs;
 import kr.countrysidedays.registry.ModFeatures;
 import kr.countrysidedays.registry.ModItems;
+import kr.countrysidedays.worldgen.CountrysideWorldgenAudit;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -36,6 +37,7 @@ public final class CountrysideDays {
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onBlockDrops);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onItemFished);
         NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);
+        NeoForge.EVENT_BUS.addListener(CountrysideWorldgenAudit::onServerStarted);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
