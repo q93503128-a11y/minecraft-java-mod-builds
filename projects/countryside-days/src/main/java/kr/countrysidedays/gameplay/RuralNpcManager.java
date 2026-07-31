@@ -84,7 +84,7 @@ public final class RuralNpcManager {
 
         ServerLevel level = player.level();
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        long day = Math.max(0L, level.getDayTime() / 24000L);
+        long day = Math.max(0L, level.getGameTime() / 24000L);
         if (!data.recordCustomerService(day, DAILY_REWARD_COINS)) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.customer_already_served"));
             return;
