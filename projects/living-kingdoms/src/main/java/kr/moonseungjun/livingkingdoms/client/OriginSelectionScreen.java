@@ -1,6 +1,7 @@
 package kr.moonseungjun.livingkingdoms.client;
 
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
+import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.network.SubmitOriginPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -37,6 +38,7 @@ public final class OriginSelectionScreen extends Screen {
         super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("livingkingdoms.origin.title"));
         this.schemaVersion = schemaVersion;
         FoundationCatalog.bootstrap();
+        PlayableOriginCatalog.residences();
         normalizeSelection();
     }
 
@@ -136,13 +138,10 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     private List<String> availableResidences() {
-        String homelandId = selectedHomelandId();
-        List<String> result = new ArrayList<>();
-        FoundationCatalog.residences().values().stream()
-                .filter(residence -> residence.homelandId().equals(homelandId))
-                .map(FoundationCatalog.ResidenceDefinition::id)
-                .forEach(result::add);
-        if (result.isEmpty()) result.add("erden_city_room");
+        List<String> result = PlayableOriginCatalog.residencesFor(selectedHomelandId()).stream()
+                .map(PlayableOriginCatalog.ResidenceOption::id)
+                .toList();
+        if (result.isEmpty()) return List.of("erden_city_room");
         return result;
     }
 
@@ -257,7 +256,7 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     private static String displayResidence(String id) {
-        FoundationCatalog.ResidenceDefinition value = FoundationCatalog.residences().get(id);
+        PlayableOriginCatalog.ResidenceOption value = PlayableOriginCatalog.residences().get(id);
         return value == null ? id : value.displayName();
     }
 
