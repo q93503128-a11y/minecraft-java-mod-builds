@@ -11,7 +11,7 @@ import java.util.List;
 
 /** Surveys generated noise terrain before any kingdom is placed. */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 2;
+    public static final int LAYOUT_REVISION = 3;
 
     private RealmSitePlanner() {
     }
@@ -25,6 +25,7 @@ public final class RealmSitePlanner {
         });
         if (!site.built() || site.revision() < LAYOUT_REVISION) {
             TerrainIntegratedCapitalBuilder.build(level, homelandId, site);
+            RegionalResidenceBuilder.build(level, homelandId, site);
             data.markBuilt(homelandId, LAYOUT_REVISION);
             site = new RealmSiteLayoutSavedData.RealmSite(
                     site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION, true
@@ -47,7 +48,9 @@ public final class RealmSitePlanner {
         int[] offset = residenceOffset(residenceId);
         int x = site.centerX() + offset[0];
         int z = site.centerZ() + offset[1];
-        int y = surfaceY(level, x, z) + 1;
+        int y = "silvana_tree_home".equals(residenceId)
+                ? site.baseY() + 17
+                : surfaceY(level, x, z) + 1;
         return new BlockPos(x, y, z);
     }
 
@@ -122,13 +125,15 @@ public final class RealmSitePlanner {
 
     private static int[] residenceOffset(String residenceId) {
         return switch (residenceId) {
-            case "erden_farm_home" -> new int[]{175, 105};
-            case "river_fishing_hut" -> new int[]{-170, 115};
-            case "forest_camp" -> new int[]{135, -165};
-            case "silvana_moonwell_lodge" -> new int[]{86, 85};
-            case "kardum_gate_lodge" -> new int[]{0, -76};
-            case "kardum_worker_quarters" -> new int[]{-72, 42};
-            default -> new int[]{26, 36};
+            case "erden_city_room" -> new int[]{20, 31};
+            case "erden_farm_home" -> new int[]{170, 105};
+            case "river_fishing_hut" -> new int[]{-176, 110};
+            case "forest_camp" -> new int[]{133, -167};
+            case "silvana_tree_home" -> new int[]{-58, -30};
+            case "silvana_moonwell_lodge" -> new int[]{82, 82};
+            case "kardum_gate_lodge" -> new int[]{-10, -77};
+            case "kardum_worker_quarters" -> new int[]{-78, 38};
+            default -> new int[]{20, 31};
         };
     }
 
