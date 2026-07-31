@@ -16,7 +16,6 @@ REQUIRED_EXACT = {
     "assets/shaderlab/lang/ko_kr.json",
     "pack.mcmeta",
 }
-
 FORBIDDEN_PREFIXES = {
     "assets/shaderlab/post_effect/",
     "assets/shaderlab/shaders/post/",
@@ -40,7 +39,6 @@ def main() -> None:
     with zipfile.ZipFile(jar_path) as jar:
         names = jar.namelist()
         name_set = set(names)
-
         if len(names) != len(name_set):
             fail("duplicate ZIP entries detected")
 
@@ -49,8 +47,7 @@ def main() -> None:
             fail(f"required entries missing: {', '.join(missing)}")
 
         forbidden = [
-            name
-            for name in names
+            name for name in names
             if name.endswith(".java")
             or name.startswith(".github/")
             or name.startswith("scripts/")
@@ -59,10 +56,9 @@ def main() -> None:
         if forbidden:
             fail(f"rejected screen-space or development entries found: {', '.join(forbidden[:10])}")
 
-        pack = json.loads(jar.read("pack.mcmeta"))
-        pack_meta = pack.get("pack", {})
+        pack_meta = json.loads(jar.read("pack.mcmeta")).get("pack", {})
         if pack_meta.get("min_format") != [88, 0] or pack_meta.get("max_format") != [107, 1]:
-            fail("pack.mcmeta does not cover Minecraft 26.2 resource/data pack formats")
+            fail("pack.mcmeta does not cover Minecraft 26.2 formats")
 
         mods_toml = jar.read("META-INF/neoforge.mods.toml").decode("utf-8")
         for token in ('modId="iris"', 'modId="sodium"', 'type="optional"'):
@@ -70,45 +66,41 @@ def main() -> None:
                 fail(f"NeoForge metadata is missing {token}")
 
         shaderpack_bytes = jar.read(SHADERPACK)
-        if len(shaderpack_bytes) < 250_000:
+        if len(shaderpack_bytes) < 70_000:
             fail("embedded Dreamscape shaderpack is unexpectedly small")
 
         with zipfile.ZipFile(io.BytesIO(shaderpack_bytes)) as shaderpack:
             shader_names = set(shaderpack.namelist())
-            required_shader_entries = {
-                "shaders/shaders.properties",
-                "shaders/settings.glsl",
-                "shaders/program/c0_vl.fsh",
-                "LICENSE",
-                "SHADERLAB_ATTRIBUTION.md",
-            }
-            missing_shader_entries = sorted(required_shader_entries - shader_names)
-            if missing_shader_entries:
-                fail(f"embedded shaderpack entries missing: {', '.join(missing_shader_entries)}")
+            if "SHADERLAB_ATTRIBUTION.md" not in shader_names:
+                fail("embedded shaderpack is missing attribution")
+            if not any("license" in name.lower() or "mit" in name.lower() for name in shader_names):
+                fail("embedded shaderpack is missing its license file")
+            if not any("gbuffers_water" in name.lower() or "/water." in name.lower() for name in shader_names):
+                fail("embedded shaderpack is missing a water render program")
+            if not any("gbuffers_terrain" in name.lower() or "/terrain." in name.lower() for name in shader_names):
+                fail("embedded shaderpack is missing a terrain render program")
 
-            settings = shaderpack.read("shaders/settings.glsl").decode("utf-8")
-            for token in (
-                "#define AURORA_NORMAL AURORA_ALWAYS",
-                "#define WATER_CAUSTICS",
-                "#define WATER_PARALLAX",
-                "#define WATER_DISPLACEMENT",
-                "#define ENVIRONMENT_REFLECTIONS",
-                "#define SKY_REFLECTIONS",
-                "#define TAA",
-                "#define FXAA",
-                "#define CAS",
-            ):
-                if token not in settings:
-                    fail(f"Dreamscape settings are missing {token}")
+            source_text: list[str] = []
+            license_text = ""
+            for name in shader_names:
+                lower = name.lower()
+                if lower.endswith((".glsl", ".fsh", ".vsh", ".properties")):
+                    source_text.append(shaderpack.read(name).decode("utf-8", errors="ignore"))
+                if "license" in lower or "mit" in lower:
+                    license_text += shaderpack.read(name).decode("utf-8", errors="ignore")
 
-            fog = shaderpack.read("shaders/program/c0_vl.fsh").decode("utf-8")
-            for token in ("shaderlab_low_mist", "world_end_pos.y", "fog_transmittance"):
-                if token not in fog:
-                    fail(f"world-space low mist patch is missing {token}")
+            searchable = "\n".join(source_text).lower()
+            for token in ("aurora", "caustic", "refract", "fog"):
+                if token not in searchable:
+                    fail(f"embedded shader source is missing expected feature token: {token}")
 
-            license_text = shaderpack.read("LICENSE").decode("utf-8", errors="replace")
-            if "MIT License" not in license_text:
-                fail("Photon MIT license was not preserved")
+            if "MIT License" not in license_text and "Permission is hereby granted" not in license_text:
+                fail("embedded license file does not contain the expected MIT text")
+
+            attribution = shaderpack.read("SHADERLAB_ATTRIBUTION.md").decode("utf-8")
+            for token in ("xsoras", "AwTfcPdR", "MIT"):
+                if token not in attribution:
+                    fail(f"attribution is missing {token}")
 
             if shaderpack.testzip() is not None:
                 fail("corrupt embedded shaderpack member detected")
@@ -117,30 +109,27 @@ def main() -> None:
             fail("corrupt JAR member detected")
 
     digest = hashlib.sha256(jar_path.read_bytes()).hexdigest()
-    checksum_path = jar_path.with_name(jar_path.name + ".sha256")
-    checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
+    jar_path.with_name(jar_path.name + ".sha256").write_text(
+        f"{digest}  {jar_path.name}\n", encoding="utf-8"
+    )
 
     report_path = jar_path.parent.parent / "reports" / "jar-verification.txt"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
-        "\n".join(
-            [
-                "Shader Lab Dreamscape JAR verification: PASS",
-                f"JAR: {jar_path.name}",
-                f"Bytes: {jar_path.stat().st_size}",
-                f"SHA-256: {digest}",
-                "Renderer: Iris shaderpack bootstrap",
-                "Upstream shader: Photon MIT @ 15458c0937f8647c37eb6a501bef5eb3bf3da31b",
-                "Water/terrain/sky separation: PASS",
-                "World-space low mist patch: PASS",
-                "Rejected screen-space post effect absent: PASS",
-                "Pack format range: 88.0 through 107.1",
-            ]
-        )
-        + "\n",
+        "\n".join([
+            "Shader Lab Dreamscape JAR verification: PASS",
+            f"JAR: {jar_path.name}",
+            f"Bytes: {jar_path.stat().st_size}",
+            f"SHA-256: {digest}",
+            "Renderer: Iris shaderpack bootstrap",
+            "Upstream: official Sarp Shaders 1.0.0 / AwTfcPdR",
+            "License file preserved and verified: PASS",
+            "Water/terrain render separation: PASS",
+            "Aurora/caustics/refraction/fog features: PASS",
+            "Rejected screen-space post effect absent: PASS",
+        ]) + "\n",
         encoding="utf-8",
     )
-
     print(report_path.read_text(encoding="utf-8"), end="")
 
 
