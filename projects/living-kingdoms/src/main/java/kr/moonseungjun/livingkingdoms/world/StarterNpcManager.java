@@ -2,14 +2,17 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
@@ -21,6 +24,7 @@ public final class StarterNpcManager {
     private static final String NPC_PREFIX = "lk_npc_";
     private static final String MET_PREFIX = "lk_met_";
     private static final String DONE_PREFIX = "lk_intro_done_";
+    private static final Identifier VILLAGER_ID = Identifier.fromNamespaceAndPath("minecraft", "villager");
 
     private StarterNpcManager() {
     }
@@ -45,7 +49,7 @@ public final class StarterNpcManager {
             return;
         }
 
-        String npcId = villager.getTags().stream()
+        String npcId = villager.getCommandTags().stream()
                 .filter(tag -> tag.startsWith(NPC_PREFIX))
                 .findFirst()
                 .orElse(null);
@@ -63,14 +67,14 @@ public final class StarterNpcManager {
         player.sendSystemMessage(Component.literal("§6[" + definition.name() + "] §f" + definition.dialogue()));
 
         String metTag = MET_PREFIX + definition.id();
-        if (player.addTag(metTag)) {
+        if (player.addCommandTag(metTag)) {
             player.sendSystemMessage(Component.literal("§7새로운 이웃을 알게 되었습니다."));
         }
 
         String homelandId = definition.homelandId();
         String doneTag = DONE_PREFIX + homelandId;
-        if (!player.getTags().contains(doneTag) && metAll(player, homelandId)) {
-            player.addTag(doneTag);
+        if (!player.getCommandTags().contains(doneTag) && metAll(player, homelandId)) {
+            player.addCommandTag(doneTag);
             give(player, new ItemStack(Items.EMERALD, 3));
             player.giveExperiencePoints(20);
             player.sendSystemMessage(Component.literal(
@@ -81,7 +85,7 @@ public final class StarterNpcManager {
 
     private static boolean metAll(ServerPlayer player, String homelandId) {
         for (NpcDefinition definition : definitions(homelandId)) {
-            if (!player.getTags().contains(MET_PREFIX + definition.id())) {
+            if (!player.getCommandTags().contains(MET_PREFIX + definition.id())) {
                 return false;
             }
         }
@@ -96,22 +100,29 @@ public final class StarterNpcManager {
         return !level.getEntitiesOfClass(
                 Villager.class,
                 area,
-                villager -> villager.getTags().contains(NPC_PREFIX + definition.id())
+                villager -> villager.getCommandTags().contains(NPC_PREFIX + definition.id())
         ).isEmpty();
     }
 
     private static void spawn(ServerLevel level, NpcDefinition definition) {
-        Villager villager = EntityType.VILLAGER.create(level, EntitySpawnReason.COMMAND);
-        if (villager == null) {
+        EntityType<?> villagerType = BuiltInRegistries.ENTITY_TYPE.getOptional(VILLAGER_ID).orElse(null);
+        if (villagerType == null) {
+            LivingKingdoms.LOGGER.error("Minecraft villager entity type is unavailable");
+            return;
+        }
+
+        Entity created = villagerType.create(level, EntitySpawnReason.COMMAND);
+        if (!(created instanceof Villager villager)) {
             LivingKingdoms.LOGGER.error("Failed to create starter NPC {}", definition.id());
             return;
         }
+
         villager.setPos(definition.x() + 0.5, definition.y(), definition.z() + 0.5);
         villager.setCustomName(Component.literal(definition.name()));
         villager.setCustomNameVisible(true);
         villager.setPersistenceRequired();
         villager.setInvulnerable(true);
-        villager.addTag(NPC_PREFIX + definition.id());
+        villager.addCommandTag(NPC_PREFIX + definition.id());
         if (!level.addFreshEntity(villager)) {
             LivingKingdoms.LOGGER.error("Failed to add starter NPC {} to the realm", definition.id());
         }
