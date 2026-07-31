@@ -5,14 +5,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public final class VillageCouncilState {
     private static final Map<UUID, VillageRole> ROLES = new LinkedHashMap<>();
-    private static final Map<UUID, String> PLAYER_NAMES = new HashMap<>();
 
     private static UUID mayorId;
     private static String mayorName = "없음";
@@ -25,7 +23,6 @@ public final class VillageCouncilState {
 
     public static synchronized void initializeServer(MinecraftServer server) {
         ROLES.clear();
-        PLAYER_NAMES.clear();
         mayorId = null;
         mayorName = "없음";
         villageDay = 1;
@@ -35,7 +32,6 @@ public final class VillageCouncilState {
     }
 
     public static synchronized void registerPlayer(ServerPlayer player) {
-        PLAYER_NAMES.put(player.getUUID(), player.getGameProfile().name());
         if (mayorId == null) {
             mayorId = player.getUUID();
             mayorName = player.getGameProfile().name();
@@ -48,7 +44,6 @@ public final class VillageCouncilState {
     }
 
     public static synchronized String chooseRole(ServerPlayer player, VillageRole role) {
-        PLAYER_NAMES.put(player.getUUID(), player.getGameProfile().name());
         ROLES.put(player.getUUID(), role);
         return player.getGameProfile().name() + "님의 역할이 " + role.displayName() + "(으)로 정해졌습니다.";
     }
@@ -59,7 +54,6 @@ public final class VillageCouncilState {
         }
         mayorId = target.getUUID();
         mayorName = target.getGameProfile().name();
-        PLAYER_NAMES.put(target.getUUID(), mayorName);
         activeProposal = null;
         broadcast(actor.getServer(), "§6촌장직이 " + mayorName + "§f 님에게 넘어갔습니다.");
         return "촌장직 이전 완료";
@@ -98,7 +92,8 @@ public final class VillageCouncilState {
                 : "미선택";
         String voteStatus = activeProposal == null
                 ? "진행 중인 안건 없음"
-                : activeProposal.id() + " / 찬성 " + countVotes(true) + " / 반대 " + countVotes(false)
+                : activeProposal.id() + " / 찬성 " + countVotes(server, true)
+                + " / 반대 " + countVotes(server, false)
                 + " / 통과 기준 " + majority(server);
 
         return "§6[마을 현황] §f촌장: " + mayorName
@@ -117,8 +112,8 @@ public final class VillageCouncilState {
         }
 
         int required = majority(server);
-        int yesVotes = countVotes(true);
-        int noVotes = countVotes(false);
+        int yesVotes = countVotes(server, true);
+        int noVotes = countVotes(server, false);
 
         if (yesVotes >= required) {
             String proposalId = activeProposal.id();
@@ -153,11 +148,14 @@ public final class VillageCouncilState {
         return online / 2 + 1;
     }
 
-    private static int countVotes(boolean value) {
+    private static int countVotes(MinecraftServer server, boolean value) {
         if (activeProposal == null) {
             return 0;
         }
-        return (int) activeProposal.votes().values().stream().filter(vote -> vote == value).count();
+        return (int) activeProposal.votes().entrySet().stream()
+                .filter(entry -> server.getPlayerList().getPlayer(entry.getKey()) != null)
+                .filter(entry -> entry.getValue() == value)
+                .count();
     }
 
     private static void broadcast(MinecraftServer server, String text) {
