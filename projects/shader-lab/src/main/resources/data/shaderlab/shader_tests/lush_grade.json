@@ -1,0 +1,6 @@
+{
+  "id": "shaderlab:lush_grade",
+  "kind": "client_post_effect",
+  "persistent_world_data": false,
+  "expected_passes": 2
+}

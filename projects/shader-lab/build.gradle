@@ -1,0 +1,154 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.142'
+    id 'idea'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+}
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+        }
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+            minecraft_version       : minecraft_version,
+            minecraft_version_range : minecraft_version_range,
+            neo_version             : neo_version,
+            mod_id                  : mod_id,
+            mod_name                : mod_name,
+            mod_license             : mod_license,
+            mod_version             : mod_version,
+            mod_authors             : mod_authors,
+            mod_description         : mod_description
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.register('verifyShaderResources') {
+    group = 'verification'
+    description = 'Validates required Shader Lab 26.2 JSON resources and GLSL source presence.'
+
+    doLast {
+        def effectFile = file('src/main/resources/assets/shaderlab/post_effect/lush_grade.json')
+        def fragmentFile = file('src/main/resources/assets/shaderlab/shaders/post/lush_grade.fsh')
+        def packFile = file('src/main/resources/pack.mcmeta')
+
+        [effectFile, fragmentFile, packFile].each { required ->
+            if (!required.isFile() || required.length() == 0L) {
+                throw new GradleException("Missing or empty required shader resource: ${required}")
+            }
+        }
+
+        def effect = new JsonSlurper().parse(effectFile)
+        if (!(effect.targets instanceof Map) || !(effect.passes instanceof List) || effect.passes.size() != 2) {
+            throw new GradleException('lush_grade.json must declare one intermediate target and exactly two passes')
+        }
+
+        def firstPass = effect.passes[0]
+        if (firstPass.vertex_shader != 'minecraft:core/screenquad'
+                || firstPass.fragment_shader != 'shaderlab:post/lush_grade'
+                || firstPass.output != 'graded') {
+            throw new GradleException('The colour-grade pass does not match the Minecraft 26.2 post-effect contract')
+        }
+
+        def pack = new JsonSlurper().parse(packFile)
+        if (pack?.pack?.pack_format != 88) {
+            throw new GradleException('Minecraft 26.2 client resources must use pack format 88')
+        }
+
+        def shaderText = fragmentFile.getText('UTF-8')
+        ['#version 330', 'uniform sampler2D InSampler', 'out vec4 fragColor'].each { token ->
+            if (!shaderText.contains(token)) {
+                throw new GradleException("Fragment shader is missing required token: ${token}")
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyShaderResources')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+jar {
+    manifest {
+        attributes(
+                'Specification-Title': mod_name,
+                'Specification-Version': mod_version,
+                'Implementation-Title': mod_name,
+                'Implementation-Version': mod_version,
+                'Automatic-Module-Name': mod_group_id
+        )
+    }
+}
+
+tasks.register('writeJarChecksum') {
+    dependsOn tasks.named('jar')
+    doLast {
+        def jarFile = tasks.named('jar').get().archiveFile.get().asFile
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        jarFile.withInputStream { stream ->
+            byte[] buffer = new byte[8192]
+            int read
+            while ((read = stream.read(buffer)) != -1) {
+                digest.update(buffer, 0, read)
+            }
+        }
+        def hash = digest.digest().collect { String.format('%02x', it) }.join()
+        file("${jarFile.absolutePath}.sha256").text = "${hash}  ${jarFile.name}\n"
+    }
+}
+
+tasks.named('build') {
+    finalizedBy tasks.named('writeJarChecksum')
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
