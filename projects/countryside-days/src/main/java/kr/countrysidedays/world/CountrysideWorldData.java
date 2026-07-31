@@ -25,30 +25,22 @@ public final class CountrysideWorldData extends SavedData {
                     Codec.LONG.optionalFieldOf("restaurant_anchor").forGetter(data -> data.restaurantAnchor),
                     Codec.LONG.listOf().optionalFieldOf("herb_preparations", List.of())
                             .forGetter(data -> List.copyOf(data.herbPreparations)),
-                    Codec.INT.optionalFieldOf("meals_prepared", 0).forGetter(CountrysideWorldData::mealsPrepared),
-                    Codec.BOOL.optionalFieldOf("starter_kit_issued", false).forGetter(data -> data.starterKitIssued)
+                    Codec.INT.optionalFieldOf("meals_prepared", 0).forGetter(CountrysideWorldData::mealsPrepared)
             ).apply(instance, CountrysideWorldData::new))
     );
 
     private Optional<Long> restaurantAnchor;
     private final Set<Long> herbPreparations;
     private int mealsPrepared;
-    private boolean starterKitIssued;
 
     public CountrysideWorldData() {
-        this(Optional.empty(), List.of(), 0, false);
+        this(Optional.empty(), List.of(), 0);
     }
 
-    private CountrysideWorldData(
-            Optional<Long> restaurantAnchor,
-            List<Long> herbPreparations,
-            int mealsPrepared,
-            boolean starterKitIssued
-    ) {
+    private CountrysideWorldData(Optional<Long> restaurantAnchor, List<Long> herbPreparations, int mealsPrepared) {
         this.restaurantAnchor = restaurantAnchor;
         this.herbPreparations = new HashSet<>(herbPreparations);
         this.mealsPrepared = Math.max(0, mealsPrepared);
-        this.starterKitIssued = starterKitIssued;
     }
 
     public static CountrysideWorldData get(MinecraftServer server) {
@@ -64,15 +56,6 @@ public final class CountrysideWorldData extends SavedData {
             return false;
         }
         restaurantAnchor = Optional.of(pos.asLong());
-        setDirty();
-        return true;
-    }
-
-    public boolean claimStarterKit() {
-        if (starterKitIssued) {
-            return false;
-        }
-        starterKitIssued = true;
         setDirty();
         return true;
     }
