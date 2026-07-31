@@ -34,7 +34,14 @@ final class ClientSmokeDiagnostics {
         }
 
         if (diagnosticScreen != null && ticks >= PASS_AFTER_TICKS) {
-            LivingKingdoms.LOGGER.info("LK_CLIENT_DIAGNOSTIC_PASS screen=responsive_origin_selection rendered_window=true");
+            if (!diagnosticScreen.allRequiredControlsFit()) {
+                throw new IllegalStateException("Responsive origin controls extend outside the current client viewport");
+            }
+            LivingKingdoms.LOGGER.info(
+                    "LK_CLIENT_DIAGNOSTIC_PASS screen=responsive_origin_selection rendered_window=true viewport={}x{} controls_fit=true",
+                    diagnosticScreen.width,
+                    diagnosticScreen.height
+            );
             System.exit(0);
         }
     }
