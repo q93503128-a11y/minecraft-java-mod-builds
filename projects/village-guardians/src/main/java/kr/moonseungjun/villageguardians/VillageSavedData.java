@@ -19,7 +19,7 @@ public final class VillageSavedData extends SavedData {
             Codec.STRING.optionalFieldOf("mayor_id", "").forGetter(data -> data.mayorId),
             Codec.STRING.optionalFieldOf("mayor_name", "없음").forGetter(data -> data.mayorName),
             Codec.INT.optionalFieldOf("village_day", 1).forGetter(data -> data.villageDay),
-            Codec.STRING.optionalFieldOf("time_phase", VillageTimePhase.MORNING.name()).forGetter(data -> data.timePhase),
+            Codec.STRING.optionalFieldOf("time_phase", VillageTimePhase.DAY.name()).forGetter(data -> data.timePhase),
             Codec.INT.optionalFieldOf("village_center_x", NO_CENTER).forGetter(data -> data.villageCenterX),
             Codec.INT.optionalFieldOf("village_center_y", NO_CENTER).forGetter(data -> data.villageCenterY),
             Codec.INT.optionalFieldOf("village_center_z", NO_CENTER).forGetter(data -> data.villageCenterZ),
@@ -47,7 +47,7 @@ public final class VillageSavedData extends SavedData {
     private Map<String, RpgProgress> rpgProgression;
 
     public VillageSavedData() {
-        this("", "없음", 1, VillageTimePhase.MORNING.name(),
+        this("", "없음", 1, VillageTimePhase.DAY.name(),
                 NO_CENTER, NO_CENTER, NO_CENTER, Map.of(), Map.of());
     }
 
@@ -92,11 +92,7 @@ public final class VillageSavedData extends SavedData {
     }
 
     public VillageTimePhase timePhase() {
-        try {
-            return VillageTimePhase.valueOf(timePhase);
-        } catch (IllegalArgumentException ignored) {
-            return VillageTimePhase.MORNING;
-        }
+        return "NIGHT".equalsIgnoreCase(timePhase) ? VillageTimePhase.NIGHT : VillageTimePhase.DAY;
     }
 
     public Optional<BlockPos> villageCenter() {
@@ -142,7 +138,7 @@ public final class VillageSavedData extends SavedData {
         this.mayorId = mayorId == null ? "" : mayorId.toString();
         this.mayorName = mayorName == null || mayorName.isBlank() ? "없음" : mayorName;
         this.villageDay = Math.max(1, villageDay);
-        this.timePhase = timePhase == null ? VillageTimePhase.MORNING.name() : timePhase.name();
+        this.timePhase = timePhase == null ? VillageTimePhase.DAY.name() : timePhase.name();
 
         if (villageCenter == null) {
             this.villageCenterX = NO_CENTER;
