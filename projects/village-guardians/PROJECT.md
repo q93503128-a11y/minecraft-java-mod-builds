@@ -7,7 +7,7 @@
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
-- Loader version: `26.2.0.35-beta`
+- Loader version: `26.2.0.37-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
 - Final JAR: `villageguardians-0.1.0-alpha.1.jar`
