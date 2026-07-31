@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 import zipfile
 from pathlib import Path
@@ -9,6 +10,8 @@ from pathlib import Path
 REQUIRED_EXACT = {
     "META-INF/neoforge.mods.toml",
     "assets/shaderlab/post_effect/lush_grade.json",
+    "assets/shaderlab/shaders/post/bloom_extract.fsh",
+    "assets/shaderlab/shaders/post/bloom_blur.fsh",
     "assets/shaderlab/shaders/post/lush_grade.fsh",
     "assets/shaderlab/lang/ko_kr.json",
     "data/shaderlab/shader_tests/lush_grade.json",
@@ -64,6 +67,22 @@ def main() -> None:
         if forbidden:
             fail(f"development-only entries found: {', '.join(forbidden[:10])}")
 
+        effect = json.loads(jar.read("assets/shaderlab/post_effect/lush_grade.json"))
+        if len(effect.get("passes", [])) != 7:
+            fail("lush_grade post effect must contain exactly seven passes")
+        if set(effect.get("targets", {})) != {"bloom_a", "bloom_b", "final"}:
+            fail("lush_grade targets must be bloom_a, bloom_b and final")
+
+        pack = json.loads(jar.read("pack.mcmeta"))
+        pack_meta = pack.get("pack", {})
+        if pack_meta.get("min_format") != [88, 0] or pack_meta.get("max_format") != [107, 1]:
+            fail("pack.mcmeta does not cover Minecraft 26.2 resource/data pack formats")
+
+        composite = jar.read("assets/shaderlab/shaders/post/lush_grade.fsh").decode("utf-8")
+        for token in ("BloomSampler", "SceneDepthSampler", "pearlescentBloom", "acesTonemap"):
+            if token not in composite:
+                fail(f"cinematic composite shader is missing {token}")
+
         if jar.testzip() is not None:
             fail("corrupt ZIP member detected")
 
@@ -81,6 +100,8 @@ def main() -> None:
                 f"Bytes: {jar_path.stat().st_size}",
                 f"SHA-256: {digest}",
                 f"Required exact entries: {len(REQUIRED_EXACT)}",
+                "Post-effect passes: 7",
+                "Pack format range: 88.0 through 107.1",
             ]
         )
         + "\n",
