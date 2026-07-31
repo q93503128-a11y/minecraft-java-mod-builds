@@ -38,7 +38,7 @@ public final class RuralGameplayHandler {
             homestead.ifPresent(origin -> RuralNpcManager.ensureForHomestead(serverLevel, origin));
         }
 
-        if (!player.addCommandTag(STARTER_KIT_TAG)) {
+        if (!player.addTag(STARTER_KIT_TAG)) {
             return;
         }
 
