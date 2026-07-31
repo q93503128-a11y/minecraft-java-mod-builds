@@ -15,7 +15,7 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.74s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.50s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
 [1m*** Started working on [4mdownloadServer[0m[0m
@@ -30,15 +30,10 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 2.63s
+Total runtime: 1.79s
 
 
-> Task :compileJava
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGuardians.java:46: error: cannot find symbol
-            VillageCouncilState.enforceFrozenTime(serverPlayer.getServer());
-                                                              ^
-  symbol:   method getServer()
-  location: variable serverPlayer of type ServerPlayer
+> Task :compileJava FAILED
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRpgSystem.java:147: error: cannot find symbol
         player.getServer().getPlayerList().broadcastSystemMessage(
               ^
@@ -49,10 +44,8 @@ Total runtime: 2.63s
                      ^
   symbol:   method getServer()
   location: variable player of type ServerPlayer
-3 errors
-
-> Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785480479114.json
+2 errors
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785480561417.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
 
@@ -61,11 +54,6 @@ FAILURE: Build failed with an exception.
 * What went wrong:
 Execution failed for task ':compileJava'.
 > Compilation failed; see the compiler output below.
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGuardians.java:46: error: cannot find symbol
-              VillageCouncilState.enforceFrozenTime(serverPlayer.getServer());
-                                                                ^
-    symbol:   method getServer()
-    location: variable serverPlayer of type ServerPlayer
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRpgSystem.java:147: error: cannot find symbol
           player.getServer().getPlayerList().broadcastSystemMessage(
                 ^
@@ -76,7 +64,7 @@ Execution failed for task ':compileJava'.
                        ^
     symbol:   method getServer()
     location: variable player of type ServerPlayer
-  3 errors
+  2 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -118,11 +106,6 @@ org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':compile
 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
 Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Compilation failed; see the compiler output below.
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGuardians.java:46: error: cannot find symbol
-            VillageCouncilState.enforceFrozenTime(serverPlayer.getServer());
-                                                              ^
-  symbol:   method getServer()
-  location: variable serverPlayer of type ServerPlayer
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRpgSystem.java:147: error: cannot find symbol
         player.getServer().getPlayerList().broadcastSystemMessage(
               ^
@@ -133,7 +116,7 @@ Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Com
                      ^
   symbol:   method getServer()
   location: variable player of type ServerPlayer
-3 errors
+2 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -262,6 +245,6 @@ Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Com
 	... 30 more
 
 
-BUILD FAILED in 26s
+BUILD FAILED in 17s
 5 actionable tasks: 4 executed, 1 up-to-date
 Configuration cache entry stored.
