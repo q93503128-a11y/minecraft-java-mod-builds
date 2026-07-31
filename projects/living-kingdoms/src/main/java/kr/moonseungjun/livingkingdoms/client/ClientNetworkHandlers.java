@@ -18,8 +18,10 @@ public final class ClientNetworkHandlers {
     }
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
-        activeOriginScreen = new OriginSelectionScreen(payload.schemaVersion());
-        Minecraft.getInstance().gui.setScreen(activeOriginScreen);
+        if (activeOriginScreen == null) {
+            activeOriginScreen = new OriginSelectionScreen(payload.schemaVersion());
+            Minecraft.getInstance().gui.setScreen(activeOriginScreen);
+        }
     }
 
     private static void handleSubmissionResult(OriginSubmissionResultPayload payload, IPayloadContext context) {
