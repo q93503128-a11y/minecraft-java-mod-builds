@@ -4,8 +4,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.structure.templatesystem.BlockIgnoreProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+
+import java.util.List;
 
 final class VillageVanillaTemplateBuilder {
     private VillageVanillaTemplateBuilder() {
@@ -37,7 +41,11 @@ final class VillageVanillaTemplateBuilder {
                 footprintOrigin.getZ() + offsetZ);
         StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
-                .setKnownShape(true);
+                .setKnownShape(true)
+                .addProcessor(new BlockIgnoreProcessor(List.of(
+                        Blocks.STRUCTURE_BLOCK,
+                        Blocks.STRUCTURE_VOID,
+                        Blocks.JIGSAW)));
         return template.placeInWorld(level, placement, placement, settings, level.getRandom(), 2);
     }
 }
