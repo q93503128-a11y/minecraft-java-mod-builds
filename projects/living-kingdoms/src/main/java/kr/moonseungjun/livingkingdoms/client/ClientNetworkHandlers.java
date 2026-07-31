@@ -1,5 +1,6 @@
 package kr.moonseungjun.livingkingdoms.client;
 
+import kr.moonseungjun.livingkingdoms.network.OpenCodexPayload;
 import kr.moonseungjun.livingkingdoms.network.OpenOriginScreenPayload;
 import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
 import net.minecraft.client.Minecraft;
@@ -15,6 +16,7 @@ public final class ClientNetworkHandlers {
     public static void register(RegisterClientPayloadHandlersEvent event) {
         event.register(OpenOriginScreenPayload.TYPE, ClientNetworkHandlers::handleOpenOriginScreen);
         event.register(OriginSubmissionResultPayload.TYPE, ClientNetworkHandlers::handleSubmissionResult);
+        event.register(OpenCodexPayload.TYPE, ClientNetworkHandlers::handleOpenCodex);
     }
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
@@ -31,5 +33,9 @@ public final class ClientNetworkHandlers {
                 activeOriginScreen = null;
             }
         }
+    }
+
+    private static void handleOpenCodex(OpenCodexPayload payload, IPayloadContext context) {
+        Minecraft.getInstance().gui.setScreen(new RealmCodexScreen(payload.page(), payload.snapshot()));
     }
 }
