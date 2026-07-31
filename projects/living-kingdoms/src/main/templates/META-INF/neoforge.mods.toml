@@ -1,0 +1,26 @@
+license="${mod_license}"
+issueTrackerURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
+authors="문승준"
+description='''
+설계된 대륙과 왕국 속에서 주민, 장인, 학자, 상인, 방랑자, 전사, 영웅과 통치자 등 무엇이든 되어 살아가는 대형 판타지 세계 시뮬레이션 RPG.
+'''
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
