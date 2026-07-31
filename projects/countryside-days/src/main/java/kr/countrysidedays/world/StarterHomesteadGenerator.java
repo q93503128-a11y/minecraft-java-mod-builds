@@ -6,111 +6,48 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 
-import java.util.Optional;
-
-/** Builds one persistent restaurant homestead on safe natural terrain. */
+/** Builds the restaurant core and the permanent central countryside village. */
 public final class StarterHomesteadGenerator {
     public static final int HALF_WIDTH = 14;
     public static final int HALF_DEPTH = 12;
-    private static final int SEARCH_RADIUS = 112;
-    private static final int SEARCH_STEP = 8;
-    private static final int SAMPLE_STEP = 4;
     private static final int UPDATE_FLAGS = Block.UPDATE_ALL;
 
     private StarterHomesteadGenerator() {
     }
 
-    public static Optional<BlockPos> ensureGenerated(ServerLevel level, BlockPos searchCenter) {
-        CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        if (data.homesteadOrigin().isPresent()) {
-            return data.homesteadOrigin();
-        }
-
-        Optional<BlockPos> candidate = findSafeOrigin(level, searchCenter);
-        candidate.ifPresent(origin -> {
-            buildHomestead(level, origin);
-            data.claimHomesteadOrigin(origin);
-            data.claimRestaurantAnchor(kitchenCounterPos(origin));
-        });
-        return candidate;
-    }
-
-    public static Optional<BlockPos> findSafeOrigin(ServerLevel level, BlockPos center) {
-        for (int radius = 0; radius <= SEARCH_RADIUS; radius += SEARCH_STEP) {
-            for (int dx = -radius; dx <= radius; dx += SEARCH_STEP) {
-                for (int dz = -radius; dz <= radius; dz += SEARCH_STEP) {
-                    if (radius > 0 && Math.abs(dx) != radius && Math.abs(dz) != radius) {
-                        continue;
-                    }
-                    BlockPos candidate = surfaceAt(level, center.getX() + dx, center.getZ() + dz);
-                    if (isSafeFootprint(level, candidate)) {
-                        return Optional.of(candidate);
-                    }
-                }
-            }
-        }
-        return Optional.empty();
-    }
-
-    public static boolean isSafeFootprint(ServerLevel level, BlockPos origin) {
-        int minY = Integer.MAX_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        for (int dx = -HALF_WIDTH; dx <= HALF_WIDTH; dx += SAMPLE_STEP) {
-            for (int dz = -HALF_DEPTH; dz <= HALF_DEPTH; dz += SAMPLE_STEP) {
-                BlockPos air = surfaceAt(level, origin.getX() + dx, origin.getZ() + dz);
-                BlockPos surface = air.below();
-                BlockState top = level.getBlockState(surface);
-                if (!isNaturalSurface(top) || !top.getFluidState().isEmpty() || !level.getFluidState(air).isEmpty()) {
-                    return false;
-                }
-                if (level.getBlockEntity(surface) != null || level.getBlockEntity(air) != null) {
-                    return false;
-                }
-                for (int depth = 1; depth <= 4; depth++) {
-                    BlockState below = level.getBlockState(surface.below(depth));
-                    if (below.isAir() || !below.getFluidState().isEmpty()) {
-                        return false;
-                    }
-                }
-                minY = Math.min(minY, air.getY());
-                maxY = Math.max(maxY, air.getY());
-                if (maxY - minY > 2) {
-                    return false;
-                }
-            }
-        }
-        return origin.getY() > level.getSeaLevel() + 1;
-    }
-
+    /** Core layout retained as a compact deterministic GameTest scene. */
     public static void buildHomestead(ServerLevel level, BlockPos origin) {
         preparePlot(level, origin);
         buildRestaurant(level, origin);
         buildFarm(level, origin);
         buildWell(level, origin);
-        buildSmallTree(level, origin.offset(-10, 0, 7));
-        buildSmallTree(level, origin.offset(-3, 0, 8));
         buildYard(level, origin);
+    }
+
+    /** Full playable settlement used in real superflat worlds. */
+    public static void buildCompleteVillage(ServerLevel level, BlockPos origin) {
+        buildHomestead(level, origin);
+        buildVillageRoads(level, origin);
+        buildCottage(level, origin.offset(-34, 0, -18), 12, 10, 0, true);
+        buildCottage(level, origin.offset(20, 0, -18), 11, 10, 1, true);
+        buildCottage(level, origin.offset(-34, 0, 27), 13, 10, 2, false);
+        buildCottage(level, origin.offset(17, 0, 28), 12, 10, 0, false);
+        buildBarn(level, origin.offset(35, 0, 7));
+        buildMarket(level, origin);
+        buildOrchard(level, origin);
+        buildPond(level, origin.offset(26, 0, 45));
+        buildVillageLighting(level, origin);
     }
 
     public static BlockPos kitchenCounterPos(BlockPos origin) {
         return origin.offset(-10, 1, -6);
     }
 
-    private static BlockPos surfaceAt(ServerLevel level, int x, int z) {
-        return level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(x, 0, z));
-    }
-
-    private static boolean isNaturalSurface(BlockState state) {
-        return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT)
-                || state.is(Blocks.PODZOL) || state.is(Blocks.MOSS_BLOCK);
-    }
-
     private static void preparePlot(ServerLevel level, BlockPos origin) {
+        clearArea(level, origin, -HALF_WIDTH, -HALF_DEPTH, HALF_WIDTH, HALF_DEPTH, 10);
         for (int x = -HALF_WIDTH; x <= HALF_WIDTH; x++) {
             for (int z = -HALF_DEPTH; z <= HALF_DEPTH; z++) {
-                fill(level, origin, x, 0, z, x, 10, z, Blocks.AIR.defaultBlockState());
                 set(level, origin.offset(x, -1, z), Blocks.GRASS_BLOCK.defaultBlockState());
                 fill(level, origin, x, -4, z, x, -2, z, Blocks.DIRT.defaultBlockState());
             }
@@ -208,6 +145,177 @@ public final class StarterHomesteadGenerator {
         set(level, origin.offset(cx, 2, cz), Blocks.IRON_CHAIN.defaultBlockState());
     }
 
+    private static void buildYard(ServerLevel level, BlockPos origin) {
+        fill(level, origin, -9, -1, 2, -6, -1, 5, Blocks.GRAVEL.defaultBlockState());
+        for (int z = 2; z <= 18; z++) {
+            int x = z < 8 ? -7 : -7 + (z - 7) / 5;
+            set(level, origin.offset(x, -1, z), Blocks.PACKED_MUD.defaultBlockState());
+            set(level, origin.offset(x + 1, -1, z), Math.floorMod(z, 4) == 0
+                    ? Blocks.GRAVEL.defaultBlockState()
+                    : Blocks.PACKED_MUD.defaultBlockState());
+        }
+        fill(level, origin, 2, -1, 3, 12, -1, 12, Blocks.COARSE_DIRT.defaultBlockState());
+        set(level, origin.offset(-1, 0, 5), Blocks.HAY_BLOCK.defaultBlockState());
+        set(level, origin.offset(0, 0, 5), Blocks.HAY_BLOCK.defaultBlockState());
+        set(level, origin.offset(-1, 1, 5), Blocks.PUMPKIN.defaultBlockState());
+        set(level, origin.offset(1, 0, 6), Blocks.COMPOSTER.defaultBlockState());
+    }
+
+    private static void buildVillageRoads(ServerLevel level, BlockPos origin) {
+        for (int x = -46; x <= 52; x++) {
+            for (int z = 17; z <= 21; z++) {
+                set(level, origin.offset(x, -1, z), Math.floorMod(x + z, 7) == 0
+                        ? Blocks.GRAVEL.defaultBlockState()
+                        : Blocks.PACKED_MUD.defaultBlockState());
+            }
+        }
+        for (int z = -27; z <= 56; z++) {
+            for (int x = -1; x <= 2; x++) {
+                if (z >= 4 && z <= 12 && x >= 1) {
+                    continue;
+                }
+                set(level, origin.offset(x, -1, z), Math.floorMod(x * 3 + z, 8) == 0
+                        ? Blocks.GRAVEL.defaultBlockState()
+                        : Blocks.PACKED_MUD.defaultBlockState());
+            }
+        }
+    }
+
+    private static void buildCottage(
+            ServerLevel level,
+            BlockPos base,
+            int width,
+            int depth,
+            int style,
+            boolean frontAtMaxZ
+    ) {
+        clearArea(level, base, -1, -1, width, depth, 10);
+        BlockState wall = switch (style) {
+            case 1 -> Blocks.BIRCH_PLANKS.defaultBlockState();
+            case 2 -> Blocks.OAK_PLANKS.defaultBlockState();
+            default -> Blocks.SPRUCE_PLANKS.defaultBlockState();
+        };
+        BlockState beam = switch (style) {
+            case 1 -> Blocks.STRIPPED_BIRCH_LOG.defaultBlockState();
+            case 2 -> Blocks.STRIPPED_OAK_LOG.defaultBlockState();
+            default -> Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState();
+        };
+        BlockState roof = style == 1 ? Blocks.BRICKS.defaultBlockState() : Blocks.DARK_OAK_PLANKS.defaultBlockState();
+
+        fill(level, base, 0, -1, 0, width - 1, -1, depth - 1, Blocks.COBBLESTONE.defaultBlockState());
+        fill(level, base, 0, 0, 0, width - 1, 0, depth - 1, Blocks.OAK_PLANKS.defaultBlockState());
+        for (int y = 1; y <= 4; y++) {
+            for (int x = 0; x < width; x++) {
+                cottageWall(level, base, x, y, 0, width, depth, wall, beam);
+                cottageWall(level, base, x, y, depth - 1, width, depth, wall, beam);
+            }
+            for (int z = 1; z < depth - 1; z++) {
+                cottageWall(level, base, 0, y, z, width, depth, wall, beam);
+                cottageWall(level, base, width - 1, y, z, width, depth, wall, beam);
+            }
+        }
+
+        int doorX = width / 2;
+        int doorZ = frontAtMaxZ ? depth - 1 : 0;
+        set(level, base.offset(doorX, 1, doorZ), Blocks.AIR.defaultBlockState());
+        set(level, base.offset(doorX, 2, doorZ), Blocks.AIR.defaultBlockState());
+        fill(level, base, -1, 5, -1, width, 5, depth, roof);
+        fill(level, base, 0, 6, 0, width - 1, 6, depth - 1, roof);
+        if (width > 8 && depth > 7) {
+            fill(level, base, 2, 7, 2, width - 3, 7, depth - 3, Blocks.DARK_OAK_SLAB.defaultBlockState());
+        }
+
+        set(level, base.offset(2, 1, 2), Blocks.BARREL.defaultBlockState());
+        set(level, base.offset(width - 3, 1, 2), Blocks.CRAFTING_TABLE.defaultBlockState());
+        set(level, base.offset(2, 1, depth - 3), Blocks.LANTERN.defaultBlockState());
+        set(level, base.offset(width - 3, 1, depth - 3), Blocks.WHITE_BED.defaultBlockState());
+    }
+
+    private static void cottageWall(
+            ServerLevel level,
+            BlockPos base,
+            int x,
+            int y,
+            int z,
+            int width,
+            int depth,
+            BlockState wall,
+            BlockState beam
+    ) {
+        boolean corner = (x == 0 || x == width - 1) && (z == 0 || z == depth - 1);
+        boolean window = y == 2 && (((z == 0 || z == depth - 1) && (x == 2 || x == width - 3))
+                || ((x == 0 || x == width - 1) && (z == 2 || z == depth - 3)));
+        set(level, base.offset(x, y, z), corner ? beam : window ? Blocks.GLASS_PANE.defaultBlockState() : wall);
+    }
+
+    private static void buildBarn(ServerLevel level, BlockPos base) {
+        int width = 16, depth = 13;
+        clearArea(level, base, -1, -1, width, depth, 12);
+        fill(level, base, 0, -1, 0, width - 1, -1, depth - 1, Blocks.COBBLESTONE.defaultBlockState());
+        fill(level, base, 0, 0, 0, width - 1, 0, depth - 1, Blocks.COARSE_DIRT.defaultBlockState());
+        for (int y = 1; y <= 6; y++) {
+            for (int x = 0; x < width; x++) {
+                boolean beam = x == 0 || x == width - 1 || x % 5 == 0;
+                set(level, base.offset(x, y, 0), beam ? Blocks.STRIPPED_DARK_OAK_LOG.defaultBlockState() : Blocks.SPRUCE_PLANKS.defaultBlockState());
+                set(level, base.offset(x, y, depth - 1), beam ? Blocks.STRIPPED_DARK_OAK_LOG.defaultBlockState() : Blocks.SPRUCE_PLANKS.defaultBlockState());
+            }
+            for (int z = 1; z < depth - 1; z++) {
+                set(level, base.offset(0, y, z), z % 4 == 0 ? Blocks.STRIPPED_DARK_OAK_LOG.defaultBlockState() : Blocks.SPRUCE_PLANKS.defaultBlockState());
+                set(level, base.offset(width - 1, y, z), z % 4 == 0 ? Blocks.STRIPPED_DARK_OAK_LOG.defaultBlockState() : Blocks.SPRUCE_PLANKS.defaultBlockState());
+            }
+        }
+        for (int x = 5; x <= 10; x++) {
+            for (int y = 1; y <= 4; y++) {
+                set(level, base.offset(x, y, 0), Blocks.AIR.defaultBlockState());
+            }
+        }
+        fill(level, base, -1, 7, -1, width, 7, depth, Blocks.DARK_OAK_PLANKS.defaultBlockState());
+        fill(level, base, 1, 8, 1, width - 2, 8, depth - 2, Blocks.DARK_OAK_PLANKS.defaultBlockState());
+        fill(level, base, 3, 9, 3, width - 4, 9, depth - 4, Blocks.DARK_OAK_SLAB.defaultBlockState());
+        fill(level, base, 2, 1, 2, 4, 2, 4, Blocks.HAY_BLOCK.defaultBlockState());
+        set(level, base.offset(12, 1, 3), Blocks.BARREL.defaultBlockState());
+        set(level, base.offset(12, 1, 5), Blocks.BARREL.defaultBlockState());
+        set(level, base.offset(2, 1, 9), Blocks.LANTERN.defaultBlockState());
+        set(level, base.offset(13, 1, 9), Blocks.LANTERN.defaultBlockState());
+    }
+
+    private static void buildMarket(ServerLevel level, BlockPos origin) {
+        buildMarketStall(level, origin.offset(-16, 0, 12), Blocks.RED_WOOL.defaultBlockState());
+        buildMarketStall(level, origin.offset(-4, 0, 12), Blocks.WHITE_WOOL.defaultBlockState());
+        buildMarketStall(level, origin.offset(8, 0, 12), Blocks.YELLOW_WOOL.defaultBlockState());
+    }
+
+    private static void buildMarketStall(ServerLevel level, BlockPos base, BlockState canopy) {
+        clearArea(level, base, 0, 0, 7, 5, 6);
+        fill(level, base, 0, -1, 0, 7, -1, 5, Blocks.COARSE_DIRT.defaultBlockState());
+        int[][] posts = {{0, 0}, {7, 0}, {0, 5}, {7, 5}};
+        for (int[] post : posts) {
+            fill(level, base, post[0], 0, post[1], post[0], 3, post[1], Blocks.OAK_FENCE.defaultBlockState());
+        }
+        fill(level, base, 0, 4, 0, 7, 4, 5, canopy);
+        fill(level, base, 1, 1, 1, 6, 1, 1, Blocks.OAK_SLAB.defaultBlockState());
+        set(level, base.offset(1, 0, 4), Blocks.BARREL.defaultBlockState());
+        set(level, base.offset(6, 0, 4), Blocks.BARREL.defaultBlockState());
+    }
+
+    private static void buildOrchard(ServerLevel level, BlockPos origin) {
+        for (int x = -34; x <= -14; x += 7) {
+            for (int z = 42; z <= 56; z += 7) {
+                buildSmallTree(level, origin.offset(x, 0, z));
+            }
+        }
+        for (int x = -38; x <= -10; x++) {
+            set(level, origin.offset(x, 0, 38), Blocks.OAK_FENCE.defaultBlockState());
+            set(level, origin.offset(x, 0, 60), Blocks.OAK_FENCE.defaultBlockState());
+        }
+        for (int z = 39; z < 60; z++) {
+            set(level, origin.offset(-38, 0, z), Blocks.OAK_FENCE.defaultBlockState());
+            set(level, origin.offset(-10, 0, z), Blocks.OAK_FENCE.defaultBlockState());
+        }
+        set(level, origin.offset(-24, 0, 38), Blocks.AIR.defaultBlockState());
+        set(level, origin.offset(-23, 0, 38), Blocks.AIR.defaultBlockState());
+    }
+
     private static void buildSmallTree(ServerLevel level, BlockPos base) {
         fill(level, base, 0, 0, 0, 0, 3, 0, Blocks.OAK_LOG.defaultBlockState());
         for (int x = -2; x <= 2; x++) {
@@ -220,34 +328,54 @@ public final class StarterHomesteadGenerator {
         fill(level, base, -1, 4, -1, 1, 4, 1, Blocks.OAK_LEAVES.defaultBlockState());
     }
 
-    private static void buildYard(ServerLevel level, BlockPos origin) {
-        fill(level, origin, -9, -1, 2, -6, -1, 5, Blocks.GRAVEL.defaultBlockState());
-        for (int z = 2; z <= HALF_DEPTH; z++) {
-            int x = z < 7 ? -7 : -7 + (z - 6) / 3;
-            set(level, origin.offset(x, -1, z), Blocks.DIRT_PATH.defaultBlockState());
-            set(level, origin.offset(x + 1, -1, z), Blocks.DIRT_PATH.defaultBlockState());
+    private static void buildPond(ServerLevel level, BlockPos center) {
+        for (int dx = -6; dx <= 6; dx++) {
+            for (int dz = -5; dz <= 5; dz++) {
+                double distance = (dx * dx) / 36.0 + (dz * dz) / 25.0;
+                if (distance <= 1.0) {
+                    set(level, center.offset(dx, -1, dz), Blocks.WATER.defaultBlockState());
+                    set(level, center.offset(dx, -2, dz), Math.floorMod(dx + dz, 4) == 0
+                            ? Blocks.CLAY.defaultBlockState()
+                            : Blocks.GRAVEL.defaultBlockState());
+                    set(level, center.offset(dx, 0, dz), Blocks.AIR.defaultBlockState());
+                } else if (distance <= 1.35) {
+                    set(level, center.offset(dx, -1, dz), Math.floorMod(dx * 7 + dz, 3) == 0
+                            ? Blocks.GRAVEL.defaultBlockState()
+                            : Blocks.COARSE_DIRT.defaultBlockState());
+                }
+            }
         }
-        fill(level, origin, 3, -1, 3, 11, -1, 11, Blocks.COARSE_DIRT.defaultBlockState());
-        for (int x = 3; x <= 11; x += 2) {
-            set(level, origin.offset(x, 0, 3), Blocks.LANTERN.defaultBlockState());
+        set(level, center.offset(-2, 0, 0), Blocks.LILY_PAD.defaultBlockState());
+        set(level, center.offset(2, 0, 1), Blocks.LILY_PAD.defaultBlockState());
+    }
+
+    private static void buildVillageLighting(ServerLevel level, BlockPos origin) {
+        int[][] lamps = {
+                {-22, 16}, {-10, 22}, {6, 22}, {22, 16}, {39, 19},
+                {-3, -15}, {5, -15}, {-18, 34}, {12, 36}, {31, 36}
+        };
+        for (int[] lamp : lamps) {
+            buildLamp(level, origin.offset(lamp[0], 0, lamp[1]));
         }
-        for (int x = -HALF_WIDTH; x <= HALF_WIDTH; x += 4) {
-            set(level, origin.offset(x, 0, -HALF_DEPTH), Blocks.OAK_FENCE.defaultBlockState());
-            set(level, origin.offset(x, 0, HALF_DEPTH), Blocks.OAK_FENCE.defaultBlockState());
-        }
-        for (int z = -HALF_DEPTH; z <= HALF_DEPTH; z += 4) {
-            set(level, origin.offset(-HALF_WIDTH, 0, z), Blocks.OAK_FENCE.defaultBlockState());
-            set(level, origin.offset(HALF_WIDTH, 0, z), Blocks.OAK_FENCE.defaultBlockState());
-        }
-        set(level, origin.offset(-1, 0, 5), Blocks.HAY_BLOCK.defaultBlockState());
-        set(level, origin.offset(0, 0, 5), Blocks.HAY_BLOCK.defaultBlockState());
-        set(level, origin.offset(-1, 1, 5), Blocks.PUMPKIN.defaultBlockState());
-        set(level, origin.offset(1, 0, 6), Blocks.COMPOSTER.defaultBlockState());
+    }
+
+    private static void buildLamp(ServerLevel level, BlockPos base) {
+        fill(level, base, 0, 0, 0, 0, 2, 0, Blocks.SPRUCE_FENCE.defaultBlockState());
+        set(level, base.above(3), Blocks.LANTERN.defaultBlockState());
+    }
+
+    private static void clearArea(ServerLevel level, BlockPos origin, int x0, int z0, int x1, int z1, int height) {
+        fill(level, origin, x0, 0, z0, x1, height, z1, Blocks.AIR.defaultBlockState());
     }
 
     private static void fill(ServerLevel level, BlockPos origin, int x0, int y0, int z0, int x1, int y1, int z1, BlockState state) {
-        for (int x = x0; x <= x1; x++) for (int y = y0; y <= y1; y++) for (int z = z0; z <= z1; z++)
-            set(level, origin.offset(x, y, z), state);
+        for (int x = x0; x <= x1; x++) {
+            for (int y = y0; y <= y1; y++) {
+                for (int z = z0; z <= z1; z++) {
+                    set(level, origin.offset(x, y, z), state);
+                }
+            }
+        }
     }
 
     private static void set(ServerLevel level, BlockPos pos, BlockState state) {
