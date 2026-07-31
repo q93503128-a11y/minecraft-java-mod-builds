@@ -18,22 +18,23 @@ public final class VillageUiService {
         if (server == null) {
             return;
         }
-        boolean multiplayer = server.getPlayerList().getPlayerCount() > 1;
         String body = "§6제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName() + "\n"
-                + VillageCouncilState.status(server, player) + "\n"
-                + VillageProgressionSystem.status(player) + "\n"
-                + VillageRaidSystem.status() + "\n\n"
+                + "§f공동 보급품: " + VillageProgressionSystem.supplies() + "\n"
+                + "§f" + VillageRaidSystem.status() + "\n\n"
                 + "§7북문 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.WALLS)
-                + " | 회관 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.TOWN_HALL);
-        send(player, "dashboard", "마을 수호단 운영", body,
-                List.of("advance_time", "open_status", "chat_ready", "chat_gate", "chat_repair", "chat_help"),
-                List.of(multiplayer ? "낮·밤 전환 투표" : "낮·밤 전환",
-                        "내 상태·역할",
-                        "준비 완료 신호",
-                        "북문 집결 신호",
-                        "수리 요청 신호",
-                        "지원 요청 신호"));
+                + "\n§7회관 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.TOWN_HALL)
+                + "\n\n§f이곳에서 플레이어 회의, 시설 강화·수리와 마을 운영을 관리합니다."
+                + "\n§7낮·밤 전환은 중앙 광장의 종을 사용합니다.";
+        send(player, "dashboard", "마을 회관", body,
+                List.of(
+                        "building:walls", "building:smithy", "building:skill_hall",
+                        "building:storehouse", "building:barracks", "building:infirmary",
+                        "open_status", "chat_ready", "chat_gate", "chat_repair", "chat_help"),
+                List.of(
+                        "성벽·북문 관리", "대장간 관리", "연구소 관리",
+                        "상점·보급소 관리", "병영 관리", "의무소 관리",
+                        "내 상태·역할", "준비 완료", "북문 집결", "수리 요청", "지원 요청"));
     }
 
     public static void openMayor(ServerPlayer player) {
@@ -54,7 +55,7 @@ public final class VillageUiService {
                 + VillageProgressionSystem.MAX_PERSONAL_RANK + "\n"
                 + "§f능력 습득: " + VillageProgressionSystem.skillRank(player) + " / "
                 + VillageProgressionSystem.MAX_PERSONAL_RANK + "\n\n"
-                + "§7역할은 언제든 바꿀 수 있으며 역할 스킬은 /vg skill 또는 상태창에서 사용합니다.";
+                + "§7역할은 언제든 바꿀 수 있으며 역할 스킬은 상태창에서 사용합니다.";
         send(player, "status", "상태·역할", body,
                 List.of("use_skill", "role:guard_captain", "role:builder", "role:quartermaster",
                         "role:scout", "role:steward", "role:medic"),
@@ -62,7 +63,7 @@ public final class VillageUiService {
     }
 
     public static void openVoteForAll(MinecraftServer server, String proposerName) {
-        String body = "§e" + proposerName + " 님이 다음 시간 단계로 진행하는 투표를 열었습니다.\n"
+        String body = "§e" + proposerName + " 님이 중앙 종을 사용해 다음 시간 단계 투표를 열었습니다.\n"
                 + "§f현재 제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName() + "입니다.";
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -109,13 +110,24 @@ public final class VillageUiService {
                 + durabilitySummary();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             send(player, "victory", "방어 성공 · 정비 시간", body,
-                    List.of("open_dashboard", "open_status"), List.of("마을 운영", "내 상태"));
+                    List.of("open_dashboard", "open_status"), List.of("회관 관리", "내 상태"));
         }
     }
 
     public static void handleAction(ServerPlayer player, String action) {
         MinecraftServer server = player.level().getServer();
-        if (server == null || action == null || action.isBlank()) return;
+        if (server == null || action == null || action.isBlank()) {
+            return;
+        }
+
+        if (action.startsWith("building:")) {
+            VillageProgressionSystem.Building building = VillageProgressionSystem.Building.fromId(
+                    action.substring("building:".length()));
+            if (building != null) {
+                openBuilding(player, building);
+            }
+            return;
+        }
 
         if (action.startsWith("repair:") || action.startsWith("upgrade:")) {
             boolean repair = action.startsWith("repair:");
@@ -166,9 +178,23 @@ public final class VillageUiService {
         }
     }
 
-    private static void fillBuildingActions(VillageProgressionSystem.Building building, List<String> actions, List<String> labels) {
+    private static void fillBuildingActions(
+            VillageProgressionSystem.Building building,
+            List<String> actions,
+            List<String> labels) {
         switch (building) {
-            case TOWN_HALL -> add(actions, labels, "open_dashboard", "마을 운영 화면", "open_status", "내 상태·역할", "advance_time", "시간 진행");
+            case TOWN_HALL -> add(actions, labels,
+                    "building:walls", "성벽·북문 관리",
+                    "building:smithy", "대장간 관리",
+                    "building:skill_hall", "연구소 관리",
+                    "building:storehouse", "보급소 관리",
+                    "building:barracks", "병영 관리",
+                    "building:infirmary", "의무소 관리",
+                    "open_status", "내 상태·역할",
+                    "chat_ready", "준비 완료",
+                    "chat_gate", "북문 집결",
+                    "chat_repair", "수리 요청",
+                    "chat_help", "지원 요청");
             case WALLS -> add(actions, labels, "repair:walls", "손상 수리", "upgrade:walls", "북문·성벽 강화");
             case SMITHY -> add(actions, labels, "forge_upgrade", "개인 장비 강화", "repair:smithy", "손상 수리", "upgrade:smithy", "대장간 증축");
             case SKILL_HALL -> add(actions, labels, "skill_learn", "새 능력 습득", "use_skill", "역할 스킬 사용", "repair:skill_hall", "손상 수리", "upgrade:skill_hall", "연구소 증축");
@@ -178,11 +204,16 @@ public final class VillageUiService {
         }
     }
 
-    private static String description(ServerPlayer player, VillageProgressionSystem.Building building, boolean usable) {
-        if (!usable) return "§c시설이 완전히 파괴되었습니다. 잔해만 남아 있으며 수리 전까지 모든 기능이 잠깁니다.";
+    private static String description(
+            ServerPlayer player,
+            VillageProgressionSystem.Building building,
+            boolean usable) {
+        if (!usable) {
+            return "§c시설이 완전히 파괴되었습니다. 잔해만 남아 있으며 수리 전까지 모든 기능이 잠깁니다.";
+        }
         return switch (building) {
-            case TOWN_HALL -> "§f마을 현황, 빠른 신호, 낮·밤 전환과 개인 상태를 관리합니다.";
-            case WALLS -> "§f적은 북쪽 성문으로 진입하며, 내구도가 0이면 북문이 무너집니다.";
+            case TOWN_HALL -> "§f멀티 플레이어 회의, 시설 강화·수리와 마을 운영을 한곳에서 관리합니다. 낮·밤 전환은 중앙 종을 사용합니다.";
+            case WALLS -> "§f적은 열린 북문으로 진입하며, 닫혀 있을 때만 북문 내구도를 공격합니다.";
             case SMITHY -> "§f아이템과 장비를 강화합니다. 내 강화 " + VillageProgressionSystem.forgeRank(player) + " / " + VillageProgressionSystem.MAX_PERSONAL_RANK;
             case SKILL_HALL -> "§f스킬·마법·특수능력을 배웁니다. 내 능력 " + VillageProgressionSystem.skillRank(player) + " / " + VillageProgressionSystem.MAX_PERSONAL_RANK;
             case INFIRMARY -> "§f즉시 치료와 웨이브 사이 회복을 담당합니다.";
@@ -202,7 +233,10 @@ public final class VillageUiService {
         return text.toString();
     }
 
-    private static void actAndReopen(ServerPlayer player, String result, VillageProgressionSystem.Building building) {
+    private static void actAndReopen(
+            ServerPlayer player,
+            String result,
+            VillageProgressionSystem.Building building) {
         player.sendSystemMessage(Component.literal("§e" + result));
         openBuilding(player, building);
     }
@@ -219,8 +253,13 @@ public final class VillageUiService {
         }
     }
 
-    private static void send(ServerPlayer player, String screenId, String title, String body,
-                             List<String> actions, List<String> labels) {
+    private static void send(
+            ServerPlayer player,
+            String screenId,
+            String title,
+            String body,
+            List<String> actions,
+            List<String> labels) {
         VillageNetwork.open(player, new VillageNetwork.OpenVillageUiPayload(
                 screenId, title, body, String.join(SEP, actions), String.join(SEP, labels)));
     }
