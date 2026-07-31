@@ -1,8 +1,10 @@
 package kr.moonseungjun.villageguardians;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
@@ -27,7 +29,7 @@ public final class VillageGuardians {
     public VillageGuardians(IEventBus modEventBus) {
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians licensed UI assets, oriented buildings, operable gate, and wall access loaded");
+        LOGGER.info("Village Guardians compact RPG UI, large town hall, protected arena, and direct gate routing loaded");
     }
 
     @SubscribeEvent
@@ -49,6 +51,7 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            player.setGameMode(GameType.ADVENTURE);
             VillageCouncilState.registerPlayer(player);
             VillageProgressionSystem.registerPlayer(player);
             var server = player.level().getServer();
@@ -67,6 +70,7 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            player.setGameMode(GameType.ADVENTURE);
             VillageWorldSystem.ensureFortifiedVillage(player);
             VillageStarterKit.grantCaller(player);
             VillageRpgSystem.refreshPlayerPassive(player);
@@ -75,9 +79,13 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (!VillageWorldSystem.handleGateInteraction(event)) {
-            VillageProgressionSystem.handleBuildingInteraction(event);
+        if (VillageWorldSystem.handleCentralBellInteraction(event)) {
+            return;
         }
+        if (VillageWorldSystem.handleGateInteraction(event)) {
+            return;
+        }
+        VillageProgressionSystem.handleBuildingInteraction(event);
     }
 
     @SubscribeEvent
@@ -88,8 +96,10 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (!event.getLevel().isClientSide()
+                && event.getLevel() instanceof ServerLevel level
+                && level.getServer() != null
+                && level == level.getServer().overworld()
                 && event.getEntity() instanceof Mob mob
-                && VillageWorldSystem.isInsideVillageArea(mob.blockPosition())
                 && !VillageWorldSystem.isAllowedGameMob(mob)) {
             event.setCanceled(true);
         }
@@ -102,6 +112,7 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onLivingDeath(LivingDeathEvent event) {
+        VillageRaidSystem.onLivingDeath(event);
         VillageRpgSystem.handleDeath(event);
     }
 
@@ -115,6 +126,11 @@ public final class VillageGuardians {
             maintenanceTicks = 0;
             VillageCouncilState.enforceFrozenTime(event.getServer());
             VillageRpgSystem.refreshPassives(event.getServer());
+            for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+                if (player.gameMode.getGameModeForPlayer() != GameType.ADVENTURE) {
+                    player.setGameMode(GameType.ADVENTURE);
+                }
+            }
         }
     }
 }
