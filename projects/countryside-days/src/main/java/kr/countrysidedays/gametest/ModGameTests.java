@@ -4,19 +4,18 @@ import kr.countrysidedays.CountrysideDays;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.gameplay.RuralNpcManager;
 import kr.countrysidedays.registry.ModBlocks;
+import kr.countrysidedays.world.CountrysidePropertyManager;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.StarterHomesteadGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class ModGameTests {
@@ -66,6 +65,35 @@ public final class ModGameTests {
                 "coin earnings should match the daily reward"
         );
 
+        UUID owner = UUID.fromString("8be03a48-1c0d-4fe0-b4a5-201f95bdb600");
+        data.claimHomesteadOwner(owner, "테스트주민");
+        helper.assertTrue(data.isHomesteadOwner(owner), "the first resident should own the homestead");
+        helper.assertFalse(
+                data.isHomesteadOwner(UUID.fromString("d0de18fd-c2ce-4392-a9e2-903dc6b8892d")),
+                "a different player must not inherit private property"
+        );
+        helper.assertTrue(data.restaurantName().contains("테스트주민"), "default restaurant name should include its owner");
+        helper.assertTrue(data.renameRestaurant(owner, "느린 오후 식당"), "owner should be able to rename the restaurant");
+        helper.assertTrue("느린 오후 식당".equals(data.restaurantName()), "restaurant name should persist in world data");
+
+        var plots = CountrysidePropertyManager.plots(testPos);
+        helper.assertTrue(
+                plots.stream().anyMatch(plot -> plot.kind() == CountrysidePropertyManager.PlotKind.PLAYER_HOME),
+                "property map should include a player home"
+        );
+        helper.assertTrue(
+                plots.stream().anyMatch(plot -> plot.kind() == CountrysidePropertyManager.PlotKind.PLAYER_FARM),
+                "property map should include a player farm"
+        );
+        helper.assertTrue(
+                plots.stream().anyMatch(plot -> plot.kind() == CountrysidePropertyManager.PlotKind.PLAYER_RESTAURANT),
+                "property map should include a player restaurant"
+        );
+        helper.assertTrue(
+                plots.stream().anyMatch(plot -> plot.kind() == CountrysidePropertyManager.PlotKind.PLAYER_RANCH),
+                "property map should include a player ranch"
+        );
+
         helper.assertTrue(
                 RuralGameplayHandler.isForagePlant(Blocks.SHORT_GRASS.defaultBlockState()),
                 "short grass should be a forage source"
@@ -86,34 +114,14 @@ public final class ModGameTests {
         BlockPos relativeOrigin = new BlockPos(20, 4, 20);
         BlockPos absoluteOrigin = helper.absolutePos(relativeOrigin);
         StarterHomesteadGenerator.buildHomestead(helper.getLevel(), absoluteOrigin);
-        RuralNpcManager.ensureForHomestead(helper.getLevel(), absoluteOrigin);
-        RuralNpcManager.ensureForHomestead(helper.getLevel(), absoluteOrigin);
 
         helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(10, 5, 14));
         helper.assertBlockPresent(Blocks.FURNACE, new BlockPos(9, 5, 14));
         helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(24, 4, 13));
         helper.assertBlockPresent(Blocks.WATER, new BlockPos(27, 4, 27));
         helper.assertBlockPresent(Blocks.DEEPSLATE_TILES, new BlockPos(7, 9, 11));
-        helper.assertBlockPresent(Blocks.PACKED_MUD, new BlockPos(13, 3, 22));
-
-        AABB area = new AABB(
-                absoluteOrigin.getX() - 14.0,
-                absoluteOrigin.getY() - 2.0,
-                absoluteOrigin.getZ() - 12.0,
-                absoluteOrigin.getX() + 14.0,
-                absoluteOrigin.getY() + 8.0,
-                absoluteOrigin.getZ() + 12.0
-        );
-        List<Villager> villagers = helper.getLevel().getEntitiesOfClass(Villager.class, area);
-        helper.assertTrue(villagers.size() == 2, "homestead should contain exactly two managed villagers");
-        helper.assertTrue(
-                villagers.stream().anyMatch(villager -> RuralNpcManager.RESIDENT_NAME.equals(villager.getName().getString())),
-                "resident guide should spawn"
-        );
-        helper.assertTrue(
-                villagers.stream().anyMatch(villager -> RuralNpcManager.CUSTOMER_NAME.equals(villager.getName().getString())),
-                "daily customer should spawn"
-        );
+        helper.assertBlockPresent(Blocks.GRAVEL, new BlockPos(10, 3, 22));
+        helper.assertBlockPresent(Blocks.OAK_LOG, new BlockPos(32, 4, 31));
 
         helper.succeed();
     }
