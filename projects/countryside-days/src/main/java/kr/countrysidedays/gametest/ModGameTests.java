@@ -1,6 +1,7 @@
 package kr.countrysidedays.gametest;
 
 import kr.countrysidedays.CountrysideDays;
+import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.world.CountrysideWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -36,8 +37,21 @@ public final class ModGameTests {
         helper.assertBlockPresent(Blocks.STONE, new BlockPos(0, 0, 0));
         helper.assertTrue(data.addHerbPreparation(testPos), "fresh counter should accept herb preparation");
         helper.assertTrue(data.hasHerbPreparation(testPos), "prepared herb state should be queryable");
-        helper.assertTrue(data.consumeHerbPreparation(testPos), "prepared herb should be consumable");
-        helper.assertFalse(data.hasHerbPreparation(testPos), "consumed herb state should be removed");
+        helper.assertTrue(data.removeKitchenState(testPos), "counter removal should clear temporary cooking state");
+        helper.assertFalse(data.hasHerbPreparation(testPos), "removed counter must not retain herb preparation");
+
+        helper.assertTrue(
+                RuralGameplayHandler.isForagePlant(Blocks.SHORT_GRASS.defaultBlockState()),
+                "short grass should be a forage source"
+        );
+        helper.assertTrue(
+                RuralGameplayHandler.isForagePlant(Blocks.FERN.defaultBlockState()),
+                "fern should be a forage source"
+        );
+        helper.assertFalse(
+                RuralGameplayHandler.isForagePlant(Blocks.STONE.defaultBlockState()),
+                "stone must not be a forage source"
+        );
 
         helper.succeed();
     }
