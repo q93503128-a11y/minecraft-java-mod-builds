@@ -96,7 +96,9 @@ public final class KitchenInteractionHandler {
                             anchor.getX(),
                             anchor.getY(),
                             anchor.getZ(),
-                            data.mealsPrepared()
+                            data.mealsPrepared(),
+                            data.customersServed(),
+                            data.villageCoinsEarned()
                     )
             );
             return;
