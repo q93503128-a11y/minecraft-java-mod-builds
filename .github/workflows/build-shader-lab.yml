@@ -36,7 +36,6 @@ jobs:
       - name: Read metadata
         run: |
           echo "MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
-          echo "SARP_VERSION_ID=$(grep '^sarp_version_id=' gradle.properties | cut -d= -f2-)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
@@ -52,83 +51,29 @@ jobs:
           gradle wrapper --gradle-version 9.2.1 --distribution-type bin
           chmod +x gradlew
 
-      - name: Clean build and Sarp source audit
+      - name: Clean single-JAR build
         run: |
-          mkdir -p ci-logs
+          mkdir -p ci-logs build/deliverables
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
 
-      - name: Verify final JAR
+      - name: Verify final single JAR
         run: |
           set -o pipefail
           python3 scripts/verify_jar.py "build/libs/shaderlab-${MOD_VERSION}.jar" \
             2>&1 | tee ci-logs/jar-verification.log
 
-      - name: Download official Iris and Sodium 26.2 JARs
+      - name: Stage only the JAR
         run: |
-          python3 - <<'PY'
-          import json
-          import pathlib
-          import urllib.request
-          import zipfile
-
-          targets = [
-              ("bXt6zsZT", "iris-1.11.2+26.2-neoforge.jar"),
-              ("KHPycol7", "sodium-0.9.1+26.2-neoforge.jar"),
-          ]
-          output = pathlib.Path("build/test-kit/mods")
-          output.mkdir(parents=True, exist_ok=True)
-          headers = {"User-Agent": "ShaderLab-private-build/0.5"}
-
-          for version_id, filename in targets:
-              request = urllib.request.Request(
-                  f"https://api.modrinth.com/v2/version/{version_id}", headers=headers
-              )
-              with urllib.request.urlopen(request, timeout=60) as response:
-                  metadata = json.load(response)
-              files = metadata.get("files") or []
-              if not files:
-                  raise RuntimeError(f"No files for Modrinth version {version_id}")
-              selected = next((item for item in files if item.get("primary")), files[0])
-              request = urllib.request.Request(selected["url"], headers=headers)
-              destination = output / filename
-              with urllib.request.urlopen(request, timeout=120) as response:
-                  destination.write_bytes(response.read())
-              with zipfile.ZipFile(destination) as jar:
-                  if "META-INF/neoforge.mods.toml" not in set(jar.namelist()):
-                      raise RuntimeError(f"Not a NeoForge mod JAR: {destination}")
-              print(destination, destination.stat().st_size)
-          PY
-
-      - name: Assemble private test kit
-        run: |
-          mkdir -p build/test-kit/mods build/deliverables
           JAR="build/libs/shaderlab-${MOD_VERSION}.jar"
-          cp "$JAR" build/test-kit/mods/
-          cp "${JAR}.sha256" build/test-kit/
-          cp build/reports/jar-verification.txt build/test-kit/
-          cp build/reports/sarp-source-audit.txt build/test-kit/
-          cat > build/test-kit/INSTALL.txt <<'TXT'
-          Shader Lab Dreamscape 0.5 private test
-
-          1. Delete every older shaderlab JAR from the instance mods folder.
-          2. Copy all three JAR files from this kit's mods folder into the instance mods folder.
-          3. Start Minecraft. Shader Lab installs and selects ShaderLab-Dreamscape-0.5.zip.
-          4. Restart once if Iris read its configuration before Shader Lab on the first launch.
-          5. Shader Lab 0.3 and 0.4 must not remain installed.
-          TXT
-          (cd build/test-kit && zip -qr "../shader-lab-${MOD_VERSION}-test-kit.zip" .)
+          test -f "$JAR"
           cp "$JAR" build/deliverables/
-          cp "${JAR}.sha256" build/deliverables/
-          cp build/reports/jar-verification.txt build/deliverables/
-          cp build/reports/sarp-source-audit.txt build/deliverables/
-          cp "build/shader-lab-${MOD_VERSION}-test-kit.zip" build/deliverables/
 
-      - name: Upload deliverables
+      - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: shader-lab-${{ env.MOD_VERSION }}-deliverables
-          path: projects/shader-lab/build/deliverables/
+          name: shaderlab-${{ env.MOD_VERSION }}-jar
+          path: projects/shader-lab/build/deliverables/*.jar
           if-no-files-found: error
           retention-days: 14
 
@@ -136,7 +81,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shader-lab-${{ env.MOD_VERSION }}-logs
+          name: shaderlab-${{ env.MOD_VERSION }}-logs
           path: projects/shader-lab/ci-logs/
           if-no-files-found: warn
           retention-days: 14
