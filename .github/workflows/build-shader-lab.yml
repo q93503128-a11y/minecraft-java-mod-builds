@@ -54,7 +54,7 @@ jobs:
 
       - name: Clean build and Sarp source audit
         run: |
-          mkdir -p ci-logs build/test-kit/mods build/deliverables
+          mkdir -p ci-logs
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
 
@@ -78,7 +78,7 @@ jobs:
           ]
           output = pathlib.Path("build/test-kit/mods")
           output.mkdir(parents=True, exist_ok=True)
-          headers = {"User-Agent": "ShaderLab-private-build/0.4"}
+          headers = {"User-Agent": "ShaderLab-private-build/0.5"}
 
           for version_id, filename in targets:
               request = urllib.request.Request(
@@ -102,19 +102,20 @@ jobs:
 
       - name: Assemble private test kit
         run: |
+          mkdir -p build/test-kit/mods build/deliverables
           JAR="build/libs/shaderlab-${MOD_VERSION}.jar"
           cp "$JAR" build/test-kit/mods/
           cp "${JAR}.sha256" build/test-kit/
           cp build/reports/jar-verification.txt build/test-kit/
           cp build/reports/sarp-source-audit.txt build/test-kit/
           cat > build/test-kit/INSTALL.txt <<'TXT'
-          Shader Lab Dreamscape 0.4 private test
+          Shader Lab Dreamscape 0.5 private test
 
           1. Delete every older shaderlab JAR from the instance mods folder.
           2. Copy all three JAR files from this kit's mods folder into the instance mods folder.
-          3. Start Minecraft. Shader Lab installs and selects ShaderLab-Dreamscape-0.4.zip.
+          3. Start Minecraft. Shader Lab installs and selects ShaderLab-Dreamscape-0.5.zip.
           4. Restart once if Iris read its configuration before Shader Lab on the first launch.
-          5. Shader Lab 0.3 must not remain installed.
+          5. Shader Lab 0.3 and 0.4 must not remain installed.
           TXT
           (cd build/test-kit && zip -qr "../shader-lab-${MOD_VERSION}-test-kit.zip" .)
           cp "$JAR" build/deliverables/

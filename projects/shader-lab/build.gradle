@@ -1,7 +1,4 @@
 import groovy.json.JsonSlurper
-import java.net.URI
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.zip.ZipFile
 
 plugins {
@@ -68,187 +65,30 @@ neoForge.ideSyncTask generateModMetadata
 final String sarpProject = project.sarp_project
 final String sarpVersionId = project.sarp_version_id
 final String dreamscapePackName = project.shader_pack_name
-final File sarpArchive = layout.buildDirectory.file("sarp/sarp-${sarpVersionId}.zip").get().asFile
-final File sarpUnpack = layout.buildDirectory.dir('sarp/unpack').get().asFile
-final File sarpStage = layout.buildDirectory.dir('sarp/stage').get().asFile
 final File generatedResources = layout.buildDirectory.dir('generated/shaderlabResources').get().asFile
 final File generatedShaderpack = new File(generatedResources, "shaderpacks/${dreamscapePackName}")
 final File sarpAuditReport = layout.buildDirectory.file('reports/sarp-source-audit.txt').get().asFile
+final File sarpWorkDirectory = layout.buildDirectory.dir('sarp').get().asFile
 
-static Object fetchJson(String url) {
-    URI.create(url).toURL().withInputStream { input ->
-        return new JsonSlurper().parse(input)
-    }
-}
-
-static void downloadTo(String url, File destination) {
-    destination.parentFile.mkdirs()
-    URI.create(url).toURL().withInputStream { input ->
-        Files.copy(input, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
-    }
-}
-
-tasks.register('prepareDreamscapeShaderpack') {
+tasks.register('prepareDreamscapeShaderpack', Exec) {
     group = 'shaderlab'
-    description = 'Downloads and audits the official pinned MIT Sarp Shaders release, then embeds it unchanged.'
+    description = 'Downloads, verifies and stages the official pinned Sarp shader release.'
+
+    inputs.file file('scripts/prepare_sarp.py')
+    inputs.property 'sarpProject', sarpProject
+    inputs.property 'sarpVersionId', sarpVersionId
     outputs.files generatedShaderpack, sarpAuditReport
 
-    doLast {
-        def projectMetadata = fetchJson("https://api.modrinth.com/v2/project/${sarpProject}")
-        def versionMetadata = fetchJson("https://api.modrinth.com/v2/version/${sarpVersionId}")
-
-        if (projectMetadata?.project_type != 'shader') {
-            throw new GradleException('Pinned Sarp project is not a Modrinth shader project')
-        }
-        if (projectMetadata?.license?.id != 'MIT') {
-            throw new GradleException("Pinned Sarp project is not MIT: ${projectMetadata?.license}")
-        }
-        if (versionMetadata?.project_id != projectMetadata?.id) {
-            throw new GradleException('Pinned Sarp version does not belong to the configured project')
-        }
-        if (!(versionMetadata?.game_versions instanceof List) || !versionMetadata.game_versions.contains('26.2')) {
-            throw new GradleException('Pinned Sarp version does not declare Minecraft 26.2 support')
-        }
-        if (!(versionMetadata?.loaders instanceof List) || !versionMetadata.loaders.contains('iris')) {
-            throw new GradleException('Pinned Sarp version does not declare Iris support')
-        }
-
-        def files = versionMetadata.files
-        if (!(files instanceof List) || files.isEmpty()) {
-            throw new GradleException('Pinned Sarp version has no downloadable files')
-        }
-        def selectedFile = files.find { it.primary } ?: files[0]
-        if (!selectedFile?.url || !selectedFile?.filename?.toString()?.toLowerCase()?.endsWith('.zip')) {
-            throw new GradleException("Pinned Sarp primary file is not a ZIP: ${selectedFile}")
-        }
-
-        if (!sarpArchive.isFile() || sarpArchive.length() == 0L) {
-            downloadTo(selectedFile.url.toString(), sarpArchive)
-        }
-
-        String expectedSha512 = selectedFile?.hashes?.sha512?.toString()
-        if (expectedSha512) {
-            def digest = java.security.MessageDigest.getInstance('SHA-512')
-            sarpArchive.withInputStream { stream ->
-                byte[] buffer = new byte[8192]
-                int read
-                while ((read = stream.read(buffer)) != -1) {
-                    digest.update(buffer, 0, read)
-                }
-            }
-            String actualSha512 = digest.digest().collect { String.format('%02x', it) }.join()
-            if (!actualSha512.equalsIgnoreCase(expectedSha512)) {
-                throw new GradleException('Pinned Sarp archive SHA-512 does not match Modrinth metadata')
-            }
-        }
-
-        delete sarpUnpack, sarpStage
-        sarpUnpack.mkdirs()
-        sarpStage.mkdirs()
-        copy {
-            from zipTree(sarpArchive)
-            into sarpUnpack
-        }
-
-        File sourceRoot
-        if (new File(sarpUnpack, 'shaders').isDirectory()) {
-            sourceRoot = sarpUnpack
-        } else {
-            sourceRoot = sarpUnpack.listFiles()?.find { candidate ->
-                candidate.isDirectory() && new File(candidate, 'shaders').isDirectory()
-            }
-        }
-        if (sourceRoot == null) {
-            throw new GradleException('Sarp archive does not contain a shaderpack root with shaders/')
-        }
-
-        copy {
-            from sourceRoot
-            into sarpStage
-        }
-
-        List<File> allFiles = []
-        sarpStage.eachFileRecurse { file ->
-            if (file.isFile()) allFiles.add(file)
-        }
-        List<String> relativeNames = allFiles.collect {
-            sarpStage.toPath().relativize(it.toPath()).toString().replace('\\', '/')
-        }.sort()
-
-        List<File> licenseFiles = allFiles.findAll { file ->
-            String name = file.name.toLowerCase()
-            name == 'license' || name.startsWith('license.') || name.contains('mit')
-        }
-        if (licenseFiles.isEmpty()) {
-            throw new GradleException('Sarp archive is labelled MIT but does not preserve a license file; redistribution stopped')
-        }
-        String licenseText = licenseFiles.collect { it.getText('UTF-8') }.join('\n')
-        if (!licenseText.contains('MIT License') && !licenseText.contains('Permission is hereby granted')) {
-            throw new GradleException('Sarp archive license file does not contain the MIT grant')
-        }
-
-        List<String> waterPrograms = relativeNames.findAll {
-            String lower = it.toLowerCase()
-            lower.contains('gbuffers_water') || lower.contains('/water.') || lower.contains('water_')
-        }
-        List<String> terrainPrograms = relativeNames.findAll {
-            String lower = it.toLowerCase()
-            lower.contains('gbuffers_terrain') || lower.contains('/terrain.')
-        }
-        if (waterPrograms.isEmpty() || terrainPrograms.isEmpty()) {
-            throw new GradleException('Sarp archive does not expose separate water and terrain shader programs')
-        }
-
-        String searchableSource = allFiles.findAll {
-            it.name.endsWith('.glsl') || it.name.endsWith('.fsh') || it.name.endsWith('.vsh') || it.name.endsWith('.properties')
-        }.collect { file ->
-            try {
-                return file.getText('UTF-8')
-            } catch (Exception ignored) {
-                return ''
-            }
-        }.join('\n').toLowerCase()
-
-        ['aurora', 'caustic', 'refract', 'fog'].each { token ->
-            if (!searchableSource.contains(token)) {
-                throw new GradleException("Sarp source audit did not find required feature token: ${token}")
-            }
-        }
-
-        new File(sarpStage, 'SHADERLAB_ATTRIBUTION.md').setText(
-                """# Shader Lab Dreamscape attribution\n\n""" +
-                "This private test bundle contains an unmodified official Sarp Shaders release.\n\n" +
-                "- Creator: xsoras / Sarp\n" +
-                "- Project: https://modrinth.com/shader/sarp\n" +
-                "- Modrinth version ID: ${sarpVersionId}\n" +
-                "- Original filename: ${selectedFile.filename}\n" +
-                "- License: MIT; original license file preserved inside this archive\n" +
-                "- Shader Lab code does not claim authorship of the Sarp renderer\n",
-                'UTF-8'
-        )
-
-        sarpAuditReport.parentFile.mkdirs()
-        sarpAuditReport.setText(
-                """Sarp source audit: PASS\n""" +
-                "Project ID: ${projectMetadata.id}\n" +
-                "Project slug: ${projectMetadata.slug}\n" +
-                "Version ID: ${sarpVersionId}\n" +
-                "Version number: ${versionMetadata.version_number}\n" +
-                "Original filename: ${selectedFile.filename}\n" +
-                "Original bytes: ${sarpArchive.length()}\n" +
-                "License: ${projectMetadata.license.id}\n" +
-                "License files: ${licenseFiles.collect { sarpStage.toPath().relativize(it.toPath()).toString() }}\n" +
-                "Water programs: ${waterPrograms}\n" +
-                "Terrain programs: ${terrainPrograms}\n" +
-                "Total files: ${relativeNames.size()}\n\n" +
-                "File list:\n" + relativeNames.join('\n') + "\n",
-                'UTF-8'
-        )
-
-        generatedShaderpack.parentFile.mkdirs()
-        delete generatedShaderpack
-        ant.zip(destfile: generatedShaderpack, basedir: sarpStage, level: 9)
-    }
+    workingDir projectDir
+    commandLine(
+            'python3',
+            'scripts/prepare_sarp.py',
+            '--project', sarpProject,
+            '--version', sarpVersionId,
+            '--work-dir', sarpWorkDirectory.absolutePath,
+            '--output', generatedShaderpack.absolutePath,
+            '--report', sarpAuditReport.absolutePath
+    )
 }
 
 sourceSets.main.resources.srcDir generatedResources
@@ -259,7 +99,7 @@ tasks.named('processResources') {
 
 tasks.register('verifyShaderpackResources') {
     group = 'verification'
-    description = 'Validates the embedded official Sarp Iris shaderpack and removal of the rejected post effect.'
+    description = 'Validates the embedded Iris shaderpack and confirms the rejected overlay is absent.'
     dependsOn tasks.named('prepareDreamscapeShaderpack')
 
     doLast {
@@ -269,22 +109,36 @@ tasks.register('verifyShaderpackResources') {
 
         new ZipFile(generatedShaderpack).withCloseable { pack ->
             Set<String> entries = pack.entries().collect { it.name } as Set
-            if (!entries.contains('SHADERLAB_ATTRIBUTION.md')) {
-                throw new GradleException('Dreamscape shaderpack is missing Shader Lab attribution')
+
+            [
+                    'SHADERLAB_ATTRIBUTION.md',
+                    'MODRINTH_LICENSE_EVIDENCE.json'
+            ].each { required ->
+                if (!entries.contains(required)) {
+                    throw new GradleException("Dreamscape shaderpack is missing ${required}")
+                }
             }
-            if (!entries.any { it.toLowerCase().contains('gbuffers_water') || it.toLowerCase().contains('/water.') }) {
-                throw new GradleException('Dreamscape shaderpack is missing a water-specific render program')
-            }
-            if (!entries.any { it.toLowerCase().contains('gbuffers_terrain') || it.toLowerCase().contains('/terrain.') }) {
-                throw new GradleException('Dreamscape shaderpack is missing a terrain-specific render program')
-            }
+
             if (!entries.any { it.toLowerCase().contains('license') || it.toLowerCase().contains('mit') }) {
-                throw new GradleException('Dreamscape shaderpack is missing the original MIT license')
+                throw new GradleException('Dreamscape shaderpack is missing an MIT license notice')
+            }
+            if (!entries.any { it.toLowerCase().contains('water') }) {
+                throw new GradleException('Dreamscape shaderpack is missing a water-specific program')
+            }
+            if (!entries.any { it.toLowerCase().contains('terrain') }) {
+                throw new GradleException('Dreamscape shaderpack is missing a terrain-specific program')
+            }
+
+            def evidenceEntry = pack.getEntry('MODRINTH_LICENSE_EVIDENCE.json')
+            def evidence = new JsonSlurper().parse(pack.getInputStream(evidenceEntry))
+            if (evidence?.project_license?.id != 'MIT'
+                    || evidence?.version_id != sarpVersionId
+                    || evidence?.project_slug != sarpProject) {
+                throw new GradleException('Embedded Modrinth license evidence does not match the pinned Sarp release')
             }
         }
 
-        File packFile = file('src/main/resources/pack.mcmeta')
-        def packMeta = new JsonSlurper().parse(packFile)
+        def packMeta = new JsonSlurper().parse(file('src/main/resources/pack.mcmeta'))
         if (packMeta?.pack?.min_format != [88, 0] || packMeta?.pack?.max_format != [107, 1]) {
             throw new GradleException('Minecraft 26.2 mod resources must cover resource format 88.0 and data format 107.1')
         }
@@ -321,6 +175,7 @@ jar {
 
 tasks.register('writeJarChecksum') {
     dependsOn tasks.named('jar')
+
     doLast {
         def jarFile = tasks.named('jar').get().archiveFile.get().asFile
         def digest = java.security.MessageDigest.getInstance('SHA-256')
