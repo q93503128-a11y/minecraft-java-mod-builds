@@ -77,6 +77,7 @@ public final class OriginProfileManager {
             return new OriginSubmissionResultPayload(false, "시작 지역을 준비하지 못했습니다. 잠시 후 다시 선택하십시오.");
         }
 
+        StarterLoadoutManager.grant(player, profile);
         savedData.putProfile(player.getUUID(), profile);
         LivingKingdoms.LOGGER.info(
                 "Player {} completed origin selection: species={}, homeland={}, background={}, residence={}",
