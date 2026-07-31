@@ -7,7 +7,7 @@ import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlers
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public final class ClientNetworkHandlers {
-    private static OriginSelectionScreen activeOriginScreen;
+    private static ResponsiveOriginSelectionScreen activeOriginScreen;
 
     private ClientNetworkHandlers() {
     }
@@ -19,7 +19,7 @@ public final class ClientNetworkHandlers {
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
         if (activeOriginScreen == null) {
-            activeOriginScreen = new OriginSelectionScreen(payload.schemaVersion());
+            activeOriginScreen = new ResponsiveOriginSelectionScreen(payload.schemaVersion());
             Minecraft.getInstance().gui.setScreen(activeOriginScreen);
         }
     }
