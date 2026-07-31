@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -63,22 +64,31 @@ final class VillageFortressBuildings {
             BlockPos center,
             VillageProgressionSystem.Building building,
             int upgradeLevel) {
-        if (upgradeLevel <= 0) {
+        if (upgradeLevel <= 0 || building == VillageProgressionSystem.Building.WALLS) {
             return;
         }
-        BlockPos terminal = center(center, building);
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+        BlockPos origin = center.offset(spec.dx(), 0, spec.dz());
+        BlockPos entrance = VillageBuildingCatalog.entrance(level, origin, spec);
+        Direction sideways = spec.entranceFacing().getClockWise();
         Block decoration = switch (building) {
-            case WALLS, SMITHY -> Blocks.IRON_BLOCK;
+            case SMITHY -> Blocks.IRON_BLOCK;
             case SKILL_HALL -> Blocks.BOOKSHELF;
             case INFIRMARY -> Blocks.QUARTZ_BLOCK;
             case STOREHOUSE -> Blocks.GOLD_BLOCK;
             case BARRACKS -> Blocks.BRICKS;
             case TOWN_HALL -> Blocks.CHISELED_STONE_BRICKS;
+            case WALLS -> Blocks.STONE_BRICKS;
         };
-        for (int i = 0; i < upgradeLevel; i++) {
+
+        BlockPos plinth = entrance.relative(sideways, 6).below();
+        for (int x = -1; x <= 1; x++) {
+            VillageFortressTerrain.set(level, plinth.relative(sideways, x), Blocks.POLISHED_ANDESITE);
+        }
+        for (int i = 0; i < Math.min(5, upgradeLevel); i++) {
             VillageFortressTerrain.set(
                     level,
-                    terminal.offset(-upgradeLevel / 2 + i, 1, 3),
+                    plinth.relative(sideways, i - 2).above(),
                     decoration);
         }
     }
