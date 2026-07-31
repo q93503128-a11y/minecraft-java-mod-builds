@@ -7,6 +7,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -17,18 +19,19 @@ public final class VillageGuardians {
     public static final String MOD_ID = "villageguardians";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private int frozenTimeCheckTicks;
+    private int maintenanceTicks;
 
     public VillageGuardians(IEventBus modEventBus) {
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians governance core loaded");
+        LOGGER.info("Village Guardians governance and RPG core loaded");
     }
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         VillageCouncilState.initializeServer(event.getServer());
-        frozenTimeCheckTicks = 0;
-        LOGGER.info("Village time initialized and natural daylight cycle disabled");
+        VillageRpgSystem.resetTransientState();
+        maintenanceTicks = 0;
+        LOGGER.info("Village time and persistent RPG progression initialized");
     }
 
     @SubscribeEvent
@@ -41,15 +44,34 @@ public final class VillageGuardians {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             VillageCouncilState.registerPlayer(serverPlayer);
             VillageCouncilState.enforceFrozenTime(serverPlayer.getServer());
+            VillageRpgSystem.refreshPlayerPassive(serverPlayer);
         }
     }
 
     @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            VillageRpgSystem.refreshPlayerPassive(serverPlayer);
+        }
+    }
+
+    @SubscribeEvent
+    public void onIncomingDamage(LivingIncomingDamageEvent event) {
+        VillageRpgSystem.handleIncomingDamage(event);
+    }
+
+    @SubscribeEvent
+    public void onLivingDeath(LivingDeathEvent event) {
+        VillageRpgSystem.handleDeath(event);
+    }
+
+    @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
-        frozenTimeCheckTicks++;
-        if (frozenTimeCheckTicks >= 20) {
-            frozenTimeCheckTicks = 0;
+        maintenanceTicks++;
+        if (maintenanceTicks >= 20) {
+            maintenanceTicks = 0;
             VillageCouncilState.enforceFrozenTime(event.getServer());
+            VillageRpgSystem.refreshPassives(event.getServer());
         }
     }
 }
