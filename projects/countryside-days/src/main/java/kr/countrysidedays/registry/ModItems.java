@@ -1,6 +1,7 @@
 package kr.countrysidedays.registry;
 
 import kr.countrysidedays.CountrysideDays;
+import kr.countrysidedays.item.RecipeNotebookItem;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -34,9 +35,9 @@ public final class ModItems {
                     .build())
     );
 
-    public static final DeferredItem<Item> RECIPE_NOTEBOOK = ITEMS.registerSimpleItem(
+    public static final DeferredItem<RecipeNotebookItem> RECIPE_NOTEBOOK = ITEMS.register(
             "recipe_notebook",
-            properties -> properties.stacksTo(1)
+            () -> new RecipeNotebookItem(new Item.Properties().stacksTo(1))
     );
 
     public static final DeferredItem<Item> VILLAGE_COIN = ITEMS.registerSimpleItem(
