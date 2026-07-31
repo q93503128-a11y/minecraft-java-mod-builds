@@ -62,96 +62,117 @@ def select_version(project_slug: str, configured_version: str) -> dict[str, Any]
     return (releases or versions)[0]
 
 
-def replace_define(source: str, name: str, value: str) -> tuple[str, str]:
+def replace_define(source: str, name: str, value: str, *, required: bool) -> tuple[str, str, bool]:
     pattern = re.compile(rf"(?m)^(\s*#define\s+{re.escape(name)}\s+)([^\s/]+)(.*)$")
     matches = list(pattern.finditer(source))
+    if not matches:
+        if required:
+            fail(f"Required Noble setting {name} is absent in the pinned release")
+        return source, f"{name}: not present in Noble 1.9.6 (skipped)", False
     if len(matches) != 1:
         fail(f"Expected exactly one Noble setting named {name}, found {len(matches)}")
     previous = matches[0].group(2)
     source = pattern.sub(lambda match: f"{match.group(1)}{value}{match.group(3)}", source, count=1)
-    return source, f"{name}: {previous} -> {value}"
+    return source, f"{name}: {previous} -> {value}", True
 
 
-def replace_const(source: str, type_name: str, name: str, value: str) -> tuple[str, str]:
+def replace_const(source: str, type_name: str, name: str, value: str, *, required: bool) -> tuple[str, str, bool]:
     pattern = re.compile(
         rf"(?m)^(\s*const\s+{re.escape(type_name)}\s+{re.escape(name)}\s*=\s*)([^;]+?)(\s*;.*)$"
     )
     matches = list(pattern.finditer(source))
+    if not matches:
+        if required:
+            fail(f"Required Noble constant {name} is absent in the pinned release")
+        return source, f"{name}: not present in Noble 1.9.6 (skipped)", False
     if len(matches) != 1:
         fail(f"Expected exactly one Noble constant named {name}, found {len(matches)}")
     previous = matches[0].group(2).strip()
     source = pattern.sub(lambda match: f"{match.group(1)}{value}{match.group(3)}", source, count=1)
-    return source, f"{name}: {previous} -> {value}"
+    return source, f"{name}: {previous} -> {value}", True
 
 
-def apply_reverie_preset(staged: Path) -> list[str]:
+def apply_reverie_preset(staged: Path) -> tuple[list[str], list[str]]:
     settings_path = staged / "shaders" / "settings.glsl"
     if not settings_path.is_file():
         fail("Noble settings.glsl is missing")
 
     source = settings_path.read_text("utf-8")
     changes: list[str] = []
+    applied: list[str] = []
 
     const_changes = [
-        ("int", "shadowMapResolution", "4096"),
-        ("float", "shadowDistance", "256"),
+        ("int", "shadowMapResolution", "4096", True),
+        ("float", "shadowDistance", "256", True),
     ]
-    for type_name, name, value in const_changes:
-        source, change = replace_const(source, type_name, name, value)
+    for type_name, name, value, required in const_changes:
+        source, change, changed = replace_const(source, type_name, name, value, required=required)
         changes.append(change)
+        if changed:
+            applied.append(name)
 
-    define_changes = {
-        # Physically convincing light and materials without the eye-searing overlay.
-        "BLOCKLIGHT_TEMPERATURE": "2800",
-        "EMISSIVE_INTENSITY": "700",
-        "SUNLIGHT_STRENGTH": "1.1",
-        "SKYLIGHT_STRENGTH": "1.0",
-        "SHADOW_SAMPLES": "12",
-        "CONTACT_SHADOWS_STEPS": "16",
-        "SSAO_SAMPLES": "16",
-        "GTAO_SLICES": "3",
-        "REFLECTIONS": "2",
-        "REFLECTIONS_STRIDE": "24",
-        "ROUGH_REFLECTIONS_SAMPLES": "2",
-        "REFRACTIONS": "2",
-        "REFRACTIONS_NEWTON_ITERATIONS": "24",
-        # Realistic celestial scale and denser atmospheric integration.
-        "CELESTIAL_SIZE_MULTIPLIER": "1",
-        "ATMOSPHERE_SCALE": "15",
-        "ATMOSPHERE_SCATTERING_STEPS": "24",
-        "ATMOSPHERE_TRANSMITTANCE_STEPS": "16",
-        # Low, softly broken fog creates the reverie without blurring the entire screen.
-        "AIR_FOG": "2",
-        "AIR_FOG_MIN_SCATTERING_STEPS": "16",
-        "AIR_FOG_MAX_SCATTERING_STEPS": "32",
-        "FOG_SHAPE_SCALE": "65",
-        "FOG_ALTITUDE": "66",
-        "FOG_THICKNESS": "25",
-        "FOG_DENSITY": "0.15",
-        # Water stays physically detailed but its waves are calmer and less game-like.
-        "WATER_OCTAVES": "24",
-        "WATER_NORMALS_STRENGTH_MULTIPLIER": "1.2",
-        "WAVE_SPEED": "0.1",
-        "WAVE_AMPLITUDE": "0.7",
-        "WATER_CAUSTICS_STRENGTH": "1.3",
-        "WATER_PARALLAX_DEPTH": "0.3",
-        "WATER_PARALLAX_LAYERS": "8",
-        "WATER_FOG_STEPS": "8",
-        "UNDERWATER_BLOOM_BOOST": "2.0",
-        # Real geometry impression for blocks while remaining viable on a GTX 1660 SUPER.
-        "POM": "1",
-        "POM_LAYERS": "64",
-        # Dreamlike highlight diffusion is restrained; gameplay-wide DOF stays off.
-        "DOF": "0",
-        "BLOOM_STRENGTH": "0.10",
-        "GLARE": "1",
-        "GLARE_STRENGTH": "0.4",
-        "GLARE_THIN_FILM": "0",
-        "VIGNETTE": "0",
-    }
-    for name, value in define_changes.items():
-        source, change = replace_define(source, name, value)
+    # Core settings are mandatory because they define the requested visual identity.
+    # Secondary quality knobs are optional because Noble renamed a few between 1.9.6 and current source.
+    define_changes: list[tuple[str, str, bool]] = [
+        ("BLOCKLIGHT_TEMPERATURE", "2800", True),
+        ("EMISSIVE_INTENSITY", "700", True),
+        ("SUNLIGHT_STRENGTH", "1.1", True),
+        ("SKYLIGHT_STRENGTH", "1.0", True),
+        ("SHADOW_SAMPLES", "12", True),
+        ("CONTACT_SHADOWS_STEPS", "16", False),
+        ("SSAO_SAMPLES", "16", False),
+        ("GTAO_SLICES", "3", False),
+        ("REFLECTIONS", "2", True),
+        ("REFLECTIONS_STRIDE", "24", False),
+        ("ROUGH_REFLECTIONS_SAMPLES", "2", False),
+        ("REFRACTIONS", "2", True),
+        ("REFRACTIONS_NEWTON_ITERATIONS", "24", False),
+        ("CELESTIAL_SIZE_MULTIPLIER", "1", True),
+        ("ATMOSPHERE_SCALE", "15", False),
+        ("ATMOSPHERE_SCATTERING_STEPS", "24", False),
+        ("ATMOSPHERE_TRANSMITTANCE_STEPS", "16", False),
+        ("AIR_FOG", "2", True),
+        ("AIR_FOG_MIN_SCATTERING_STEPS", "16", False),
+        ("AIR_FOG_MAX_SCATTERING_STEPS", "32", False),
+        ("FOG_SHAPE_SCALE", "65", True),
+        ("FOG_ALTITUDE", "66", True),
+        ("FOG_THICKNESS", "25", True),
+        ("FOG_DENSITY", "0.15", True),
+        ("WATER_OCTAVES", "24", True),
+        ("WATER_NORMALS_STRENGTH_MULTIPLIER", "1.2", True),
+        ("WAVE_SPEED", "0.1", True),
+        ("WAVE_AMPLITUDE", "0.7", True),
+        ("WATER_CAUSTICS_STRENGTH", "1.3", True),
+        ("WATER_PARALLAX_DEPTH", "0.3", True),
+        ("WATER_PARALLAX_LAYERS", "8", False),
+        ("WATER_FOG_STEPS", "8", True),
+        ("UNDERWATER_BLOOM_BOOST", "2.0", False),
+        ("POM", "1", True),
+        ("POM_LAYERS", "64", True),
+        ("DOF", "0", True),
+        ("BLOOM_STRENGTH", "0.10", True),
+        ("GLARE", "1", True),
+        ("GLARE_STRENGTH", "0.4", True),
+        ("GLARE_THIN_FILM", "0", False),
+        ("VIGNETTE", "0", True),
+    ]
+    for name, value, required in define_changes:
+        source, change, changed = replace_define(source, name, value, required=required)
         changes.append(change)
+        if changed:
+            applied.append(name)
+
+    mandatory_applied = {
+        "shadowMapResolution", "shadowDistance", "BLOCKLIGHT_TEMPERATURE",
+        "SUNLIGHT_STRENGTH", "REFLECTIONS", "REFRACTIONS",
+        "CELESTIAL_SIZE_MULTIPLIER", "AIR_FOG", "FOG_ALTITUDE",
+        "FOG_THICKNESS", "FOG_DENSITY", "WATER_OCTAVES",
+        "WAVE_AMPLITUDE", "WATER_CAUSTICS_STRENGTH", "POM",
+        "POM_LAYERS", "BLOOM_STRENGTH", "GLARE",
+    }
+    missing_core = sorted(mandatory_applied - set(applied))
+    if missing_core:
+        fail(f"Reverie core settings were not applied: {missing_core}")
 
     settings_path.write_text(source, encoding="utf-8")
 
@@ -166,7 +187,7 @@ def apply_reverie_preset(staged: Path) -> list[str]:
         + "\n"
     )
     (staged / "SHADERLAB_REVERIE_PRESET.md").write_text(preset_text, encoding="utf-8")
-    return changes
+    return changes, applied
 
 
 def main() -> None:
@@ -244,7 +265,7 @@ def main() -> None:
         if not features[required]:
             fail(f"Noble source audit did not find required feature token: {required}")
 
-    changes = apply_reverie_preset(staged)
+    changes, applied = apply_reverie_preset(staged)
 
     evidence = {
         "project_id": project.get("id"),
@@ -260,6 +281,7 @@ def main() -> None:
         "original_sha512": actual_sha512,
         "shaderlab_preset": "Reverie 0.6",
         "shaderlab_setting_changes": changes,
+        "shaderlab_applied_settings": applied,
     }
     (staged / "MODRINTH_LICENSE_EVIDENCE.json").write_text(
         json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -303,6 +325,7 @@ def main() -> None:
         f"Feature tokens: {features}\n"
         f"Settings candidates: {settings_candidates}\n"
         f"Reverie setting changes: {changes}\n"
+        f"Reverie applied settings: {applied}\n"
         f"Original file count: {len(original_names)}\n"
         f"Final file count: {len(all_files)}\n",
         encoding="utf-8",
