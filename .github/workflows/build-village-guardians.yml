@@ -9,7 +9,8 @@ on:
       - '.github/workflows/build-village-guardians.yml'
 
 permissions:
-  contents: write
+  contents: read
+  statuses: write
 
 env:
   PROJECT_SLUG: village-guardians
@@ -18,7 +19,6 @@ env:
   EXPECTED_JAR: villageguardians-0.9.4-alpha.1.jar
   GRADLE_VERSION: '9.2.1'
   SOURCE_SHA256: 4fc0c1f550daae0f2e618e7119ef1a02c698b34bf0c2bb57ade6ef6481aaeb6f
-  RELEASE_TAG: village-guardians-v0.9.4-alpha.1
 
 jobs:
   build:
@@ -29,6 +29,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Report build pending
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state='pending' \
+            -f context='village-guardians/verified-build' \
+            -f description='Java 25 / NeoForge build in progress' \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
       - name: Set up Java 25
         uses: actions/setup-java@v4
@@ -116,7 +128,6 @@ jobs:
           export JAR
           python3 - <<'PY' | tee "$GITHUB_WORKSPACE/logs/village-guardians/jar-validation.log"
           import os
-          import sys
           import zipfile
 
           jar = os.environ['JAR']
@@ -134,9 +145,8 @@ jobs:
 
           with zipfile.ZipFile(jar) as zf:
               names = zf.namelist()
-              duplicates = sorted({name for name in names if names.count(name) > 1})
-              if duplicates:
-                  raise SystemExit(f'Duplicate JAR entries: {duplicates[:20]}')
+              if len(names) != len(set(names)):
+                  raise SystemExit('Duplicate JAR entries found')
 
               missing = sorted(expected_exact.difference(names))
               if missing:
@@ -209,26 +219,11 @@ jobs:
           EOF
           cp "$GITHUB_WORKSPACE/deliverables/BUILD_REPORT.md" "$GITHUB_WORKSPACE/logs/$PROJECT_SLUG/BUILD_REPORT.md"
 
-      - name: Publish verified release assets
-        if: success()
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "$GITHUB_WORKSPACE"/deliverables/* --clobber
-          else
-            gh release create "$RELEASE_TAG" "$GITHUB_WORKSPACE"/deliverables/* \
-              --title 'Village Guardians v0.9.4-alpha.1 verified build' \
-              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2.0.38-beta. Clean-built and structurally verified by the dedicated Village Guardians workflow. Gameplay, client, server, GameTest, and datagen were not run.'
-          fi
-
       - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: village-guardians-build-logs-${{ github.run_number }}
+          name: village-guardians-0.9.4-alpha.1-logs
           path: logs/village-guardians/
           if-no-files-found: warn
           retention-days: 30
@@ -237,7 +232,28 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: village-guardians-0.9.4-alpha.1
+          name: village-guardians-0.9.4-alpha.1-deliverables
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Report final build status
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ "$JOB_STATUS" = "success" ]; then
+            STATE='success'
+            DESCRIPTION='Verified runtime JAR build passed'
+          else
+            STATE='failure'
+            DESCRIPTION='Build failed; inspect uploaded logs'
+          fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$STATE" \
+            -f context='village-guardians/verified-build' \
+            -f description="$DESCRIPTION" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
