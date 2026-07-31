@@ -1,0 +1,13 @@
+{
+  "mayorOfficeCount": 1,
+  "roles": [
+    "guard_captain",
+    "builder",
+    "quartermaster",
+    "scout",
+    "steward",
+    "medic"
+  ],
+  "decisionMode": "online_player_majority",
+  "naturalTimeProgression": false
+}
