@@ -35,7 +35,7 @@ public final class StarterRealmDiagnostics {
 
             for (String homelandId : PlayableOriginCatalog.HOMELANDS) {
                 invoke(ensureHomeland, realm, homelandId);
-                AuthoredRealmManager.ensureRegion(realm, homelandId);
+                RealmRevisionFourManager.ensureRegion(realm, homelandId);
             }
             for (PlayableOriginCatalog.ResidenceOption residence : PlayableOriginCatalog.residences().values()) {
                 invoke(prepareSpawn, realm, residence);
@@ -51,22 +51,25 @@ public final class StarterRealmDiagnostics {
             StarterRealmUpgradeSavedData upgrades = realm.getDataStorage()
                     .computeIfAbsent(StarterRealmUpgradeSavedData.TYPE);
             for (String homelandId : PlayableOriginCatalog.HOMELANDS) {
-                if (upgrades.revision(homelandId) < AuthoredRealmManager.CURRENT_REVISION) {
-                    throw new IllegalStateException("Missing authored terrain revision for " + homelandId);
+                if (upgrades.revision(homelandId) < RealmRevisionFourManager.CURRENT_REVISION) {
+                    throw new IllegalStateException("Missing authored terrain revision four for " + homelandId);
                 }
             }
 
             verifyTerrainVariation(realm, 0, 0, "erden_kingdom");
             verifyTerrainVariation(realm, 1240, 35, "silvana_forest");
             verifyTerrainVariation(realm, -1170, 38, "kardum_league");
-            verifyErdenLotDrainage(realm);
+            verifyErdenAccess(realm);
+            verifySupportedMarket(realm);
+            verifySolidGable(realm);
+            verifyConnectedPalisade(realm);
 
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
             if (elapsedMs > 180_000L) {
                 throw new IllegalStateException("Authored realm migration exceeded 180 seconds: " + elapsedMs + "ms");
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_REALM_DIAGNOSTIC_PASS regions={} residences={} upgrades=3 terrain_varied=true lots_drained=true migration_ms={}",
+                    "LK_REALM_DIAGNOSTIC_PASS regions={} residences={} upgrades=4 terrain_varied=true lots_drained=true roofs_solid=true palisade_connected=true migration_ms={}",
                     state.generatedRegionCount(), PlayableOriginCatalog.residences().size(), elapsedMs
             );
         } catch (ReflectiveOperationException exception) {
@@ -96,7 +99,7 @@ public final class StarterRealmDiagnostics {
     private static void verifyTerrainVariation(ServerLevel realm, int cx, int cz, String regionId) {
         Set<Integer> heights = new HashSet<>();
         for (int[] offset : new int[][]{
-                {92, 4}, {112, 36}, {-124, 44}, {76, -128}, {-148, -60}, {164, 72}
+                {112, 36}, {-124, 44}, {76, -128}, {-148, -60}, {164, 72}, {-178, 96}
         }) {
             heights.add(surfaceY(realm, cx + offset[0], cz + offset[1]));
         }
@@ -105,13 +108,43 @@ public final class StarterRealmDiagnostics {
         }
     }
 
-    private static void verifyErdenLotDrainage(ServerLevel realm) {
+    private static void verifyErdenAccess(ServerLevel realm) {
         for (BlockPos pos : new BlockPos[]{
-                new BlockPos(6, 66, 4), new BlockPos(18, 66, 10),
-                new BlockPos(103, 66, 65), new BlockPos(-113, 66, 84)
+                new BlockPos(16, 66, 7), new BlockPos(-29, 66, -31),
+                new BlockPos(105, 66, 65), new BlockPos(-104, 66, 92),
+                new BlockPos(84, 66, -112)
         }) {
-            if (!realm.getBlockState(pos).isAir()) {
-                throw new IllegalStateException("Erden building approach remains blocked or buried at " + pos);
+            if (!realm.getBlockState(pos).isAir() || !realm.getBlockState(pos.above()).isAir()) {
+                throw new IllegalStateException("Erden approach remains blocked or buried at " + pos);
+            }
+        }
+    }
+
+    private static void verifySupportedMarket(ServerLevel realm) {
+        BlockPos post = new BlockPos(-12, 70, -9);
+        BlockPos roof = new BlockPos(-13, 71, -10);
+        if (realm.getBlockState(post).isAir() || realm.getBlockState(roof).isAir()) {
+            throw new IllegalStateException("Erden market canopy is detached from its supports");
+        }
+    }
+
+    private static void verifySolidGable(ServerLevel realm) {
+        // First house: adjacent two-block roof bands must touch vertically and horizontally.
+        for (BlockPos pos : new BlockPos[]{
+                new BlockPos(9, 70, 7), new BlockPos(9, 70, 8),
+                new BlockPos(9, 71, 8), new BlockPos(9, 71, 9),
+                new BlockPos(9, 72, 9), new BlockPos(9, 72, 10)
+        }) {
+            if (realm.getBlockState(pos).isAir()) {
+                throw new IllegalStateException("Detached or missing Erden gable roof block at " + pos);
+            }
+        }
+    }
+
+    private static void verifyConnectedPalisade(ServerLevel realm) {
+        for (int x = -60; x <= -50; x++) {
+            if (realm.getBlockState(new BlockPos(x, 67, -78)).isAir()) {
+                throw new IllegalStateException("Gap in Erden palisade at x=" + x);
             }
         }
     }
