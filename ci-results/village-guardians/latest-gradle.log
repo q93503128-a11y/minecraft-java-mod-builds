@@ -15,11 +15,11 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.51s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.39s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadClient[0m[0m
 [1m*** Started working on [4mdownloadServer[0m[0m
+[1m*** Started working on [4mdownloadClient[0m[0m
  [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
  [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
@@ -30,7 +30,7 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.79s
+Total runtime: 1.19s
 
 
 > Task :compileJava
@@ -66,6 +66,27 @@ import net.minecraft.client.gui.GuiGraphics;
                         ^
   symbol:   variable VillageUiService
   location: class VillageNetwork
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:40: error: cannot find symbol
+        armoryLevel = savedData.armoryLevel();
+                               ^
+  symbol:   method armoryLevel()
+  location: variable savedData of type VillageProgressionData
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:283: error: method replaceState in class VillageProgressionData cannot be applied to given types;
+            savedData.replaceState(
+                     ^
+  required: int,int,int,int,int,int,int,Map<UUID,Integer>,Map<UUID,Integer>,Map<UUID,Integer>,Map<UUID,Integer>,Map<String,Integer>,boolean
+  found:    int,int,int,int,int,int,Map<UUID,Integer>
+  reason: actual and formal argument lists differ in length
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:130: error: cannot find symbol
+        return parseUuidMap(forgeRanks, VillageProgressionSystem.MAX_PERSONAL_RANK);
+                                                                ^
+  symbol:   variable MAX_PERSONAL_RANK
+  location: class VillageProgressionSystem
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:134: error: cannot find symbol
+        return parseUuidMap(skillRanks, VillageProgressionSystem.MAX_PERSONAL_RANK);
+                                                                ^
+  symbol:   variable MAX_PERSONAL_RANK
+  location: class VillageProgressionSystem
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageClientUi.java:17: error: cannot find symbol
                 (payload, context) -> Minecraft.getInstance().setScreen(new VillageUiScreen(payload)));
                                                              ^
@@ -88,10 +109,10 @@ import net.minecraft.client.gui.GuiGraphics;
   location: class VillageTimePhase
 Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
-11 errors
+15 errors
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785486054587.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785486138884.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
 
@@ -106,6 +127,12 @@ Execution failed for task ':compileJava'.
                       ^
     required: MouseButtonEvent,boolean
     found:    double,double,int
+    reason: actual and formal argument lists differ in length
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:283: error: method replaceState in class VillageProgressionData cannot be applied to given types;
+              savedData.replaceState(
+                       ^
+    required: int,int,int,int,int,int,int,Map<UUID,Integer>,Map<UUID,Integer>,Map<UUID,Integer>,Map<UUID,Integer>,Map<String,Integer>,boolean
+    found:    int,int,int,int,int,int,Map<UUID,Integer>
     reason: actual and formal argument lists differ in length
   Note: Recompile with -Xlint:deprecation for details.
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:3: error: cannot find symbol
@@ -123,6 +150,16 @@ Execution failed for task ':compileJava'.
                           ^
     symbol:   variable VillageUiService
     location: class VillageNetwork
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:130: error: cannot find symbol
+          return parseUuidMap(forgeRanks, VillageProgressionSystem.MAX_PERSONAL_RANK);
+                                                                  ^
+    symbol:   variable MAX_PERSONAL_RANK
+    location: class VillageProgressionSystem
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:134: error: cannot find symbol
+          return parseUuidMap(skillRanks, VillageProgressionSystem.MAX_PERSONAL_RANK);
+                                                                  ^
+    symbol:   variable MAX_PERSONAL_RANK
+    location: class VillageProgressionSystem
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:25: error: cannot find symbol
       private static VillageTimePhase timePhase = VillageTimePhase.MORNING;
                                                                   ^
@@ -149,12 +186,17 @@ Execution failed for task ':compileJava'.
                                  ^
     symbol:   method setScreen(<null>)
     location: class Minecraft
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:40: error: cannot find symbol
+          armoryLevel = savedData.armoryLevel();
+                                 ^
+    symbol:   method armoryLevel()
+    location: variable savedData of type VillageProgressionData
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageClientUi.java:17: error: cannot find symbol
                   (payload, context) -> Minecraft.getInstance().setScreen(new VillageUiScreen(payload)));
                                                                ^
     symbol:   method setScreen(VillageUiScreen)
     location: class Minecraft
-  11 errors
+  15 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -203,6 +245,12 @@ Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/proj
   required: MouseButtonEvent,boolean
   found:    double,double,int
   reason: actual and formal argument lists differ in length
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:283: error: method replaceState in class VillageProgressionData cannot be applied to given types;
+            savedData.replaceState(
+                     ^
+  required: int,int,int,int,int,int,int,Map<UUID,Integer>,Map<UUID,Integer>,Map<UUID,Integer>,Map<UUID,Integer>,Map<String,Integer>,boolean
+  found:    int,int,int,int,int,int,Map<UUID,Integer>
+  reason: actual and formal argument lists differ in length
 Note: Recompile with -Xlint:deprecation for details.
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java:3: error: cannot find symbol
 import net.minecraft.client.gui.GuiGraphics;
@@ -219,6 +267,16 @@ import net.minecraft.client.gui.GuiGraphics;
                         ^
   symbol:   variable VillageUiService
   location: class VillageNetwork
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:130: error: cannot find symbol
+        return parseUuidMap(forgeRanks, VillageProgressionSystem.MAX_PERSONAL_RANK);
+                                                                ^
+  symbol:   variable MAX_PERSONAL_RANK
+  location: class VillageProgressionSystem
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionData.java:134: error: cannot find symbol
+        return parseUuidMap(skillRanks, VillageProgressionSystem.MAX_PERSONAL_RANK);
+                                                                ^
+  symbol:   variable MAX_PERSONAL_RANK
+  location: class VillageProgressionSystem
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java:25: error: cannot find symbol
     private static VillageTimePhase timePhase = VillageTimePhase.MORNING;
                                                                 ^
@@ -245,12 +303,17 @@ import net.minecraft.client.gui.GuiGraphics;
                                ^
   symbol:   method setScreen(<null>)
   location: class Minecraft
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java:40: error: cannot find symbol
+        armoryLevel = savedData.armoryLevel();
+                               ^
+  symbol:   method armoryLevel()
+  location: variable savedData of type VillageProgressionData
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageClientUi.java:17: error: cannot find symbol
                 (payload, context) -> Minecraft.getInstance().setScreen(new VillageUiScreen(payload)));
                                                              ^
   symbol:   method setScreen(VillageUiScreen)
   location: class Minecraft
-11 errors
+15 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -379,6 +442,6 @@ import net.minecraft.client.gui.GuiGraphics;
 	... 30 more
 
 
-BUILD FAILED in 23s
+BUILD FAILED in 17s
 5 actionable tasks: 4 executed, 1 up-to-date
 Configuration cache entry stored.
