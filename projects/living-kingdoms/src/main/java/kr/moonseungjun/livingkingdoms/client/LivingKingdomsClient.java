@@ -11,5 +11,6 @@ public final class LivingKingdomsClient {
     public LivingKingdomsClient(IEventBus modEventBus) {
         modEventBus.addListener(ClientNetworkHandlers::register);
         NeoForge.EVENT_BUS.addListener(ClientSmokeDiagnostics::onClientTick);
+        NeoForge.EVENT_BUS.addListener(VanillaTutorialSuppressor::onClientTick);
     }
 }
