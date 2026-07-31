@@ -13,34 +13,15 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
-repositories {
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = 'Modrinth'
-                url = 'https://api.modrinth.com/maven'
-            }
-        }
-        filter {
-            includeGroup 'maven.modrinth'
-        }
-    }
-}
-
-configurations {
-    licensedStructureAssets
-}
-
-dependencies {
-    licensedStructureAssets 'maven.modrinth:DjLobEOy:E39wx2BN'
-}
-
 var licensedAssetsOutput = layout.buildDirectory.dir('generated/licensedAssets')
 var defaultDarkModeCommit = 'c804cb546dc260a5ae98b0754d599e1337faf43a'
+var townsAndTowersVersion = 'E39wx2BN'
+var townsAndTowersUrl = 'https://cdn.modrinth.com/data/DjLobEOy/versions/E39wx2BN/t_and_t-datapack-26.x.zip'
 
 var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
     inputs.property 'defaultDarkModeCommit', defaultDarkModeCommit
-    inputs.files configurations.licensedStructureAssets
+    inputs.property 'townsAndTowersVersion', townsAndTowersVersion
+    inputs.property 'townsAndTowersUrl', townsAndTowersUrl
     outputs.dir licensedAssetsOutput
 
     doLast {
@@ -64,7 +45,14 @@ var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
             }
         }
 
-        File archive = configurations.licensedStructureAssets.singleFile
+        File archive = new File(temporaryDir, "towns-and-towers-${townsAndTowersVersion}.zip")
+        if (!archive.isFile() || archive.length() == 0L) {
+            archive.parentFile.mkdirs()
+            new java.net.URI(townsAndTowersUrl).toURL().withInputStream { input ->
+                archive.withOutputStream { output -> output << input }
+            }
+        }
+
         List<Map<String, Object>> candidates = []
         zipTree(archive).visit { details ->
             if (!details.directory) {
@@ -112,7 +100,8 @@ var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
         }
         Set<String> usedPaths = new LinkedHashSet<>()
         List<String> manifest = [
-                'Towns and Towers source artifact: maven.modrinth:DjLobEOy:E39wx2BN',
+                "Towns and Towers source artifact: Modrinth version ${townsAndTowersVersion}",
+                "Source URL: ${townsAndTowersUrl}",
                 "Selected architecture style: ${selectedStyle}",
                 ''
         ]
