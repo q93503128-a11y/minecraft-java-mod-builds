@@ -25,16 +25,16 @@ side="CLIENT"
 
 [[dependencies.${mod_id}]]
 modId="iris"
-type="optional"
+type="required"
 versionRange="${iris_version_range}"
-ordering="AFTER"
+ordering="BEFORE"
 side="CLIENT"
-reason="Dreamscape rendering requires Iris; the bootstrap still starts without it so it can install the shaderpack."
+reason="Shader Lab includes the required Iris NeoForge build inside its single JAR."
 
 [[dependencies.${mod_id}]]
 modId="sodium"
-type="optional"
+type="required"
 versionRange="${sodium_version_range}"
-ordering="AFTER"
+ordering="BEFORE"
 side="CLIENT"
-reason="Iris on NeoForge 26.2 requires Sodium."
+reason="Shader Lab includes the required Sodium NeoForge build inside its single JAR."
