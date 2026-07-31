@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.WallSignBlock;
@@ -76,20 +77,55 @@ final class VillageBuildingCatalog {
         if (building == VillageProgressionSystem.Building.WALLS) {
             return;
         }
-        placeEntrancePath(level, origin, spec);
-        placeTerminal(level, origin, spec, terminalBlock(building));
-        placeEntrancePlaque(level, origin, spec);
+        BlockPos entrance = entrance(level, origin, spec);
+        placeEntrancePath(level, entrance, spec);
+        placeTerminal(level, entrance, spec, terminalBlock(building));
+        placeEntrancePlaque(level, entrance, spec);
     }
 
     static BlockPos entrance(ServerLevel level, BlockPos origin, Spec spec) {
-        BlockPos front = switch (spec.entranceFacing()) {
+        Direction front = spec.entranceFacing();
+        Direction sideways = front.getClockWise();
+        int footprintCenterX2 = origin.getX() * 2 + spec.width() - 1;
+        int footprintCenterZ2 = origin.getZ() * 2 + spec.depth() - 1;
+        BlockPos selectedDoor = null;
+        int selectedProjection = Integer.MIN_VALUE;
+        int selectedLateral = Integer.MAX_VALUE;
+
+        for (int x = origin.getX(); x < origin.getX() + spec.width(); x++) {
+            for (int z = origin.getZ(); z < origin.getZ() + spec.depth(); z++) {
+                for (int y = origin.getY(); y <= origin.getY() + Math.min(7, spec.height()); y++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    if (!level.getBlockState(pos).is(BlockTags.DOORS)) {
+                        continue;
+                    }
+                    int relativeX2 = x * 2 - footprintCenterX2;
+                    int relativeZ2 = z * 2 - footprintCenterZ2;
+                    int projection = relativeX2 * front.getStepX()
+                            + relativeZ2 * front.getStepZ();
+                    int lateral = Math.abs(relativeX2 * sideways.getStepX()
+                            + relativeZ2 * sideways.getStepZ());
+                    if (projection > selectedProjection
+                            || projection == selectedProjection && lateral < selectedLateral) {
+                        selectedDoor = pos;
+                        selectedProjection = projection;
+                        selectedLateral = lateral;
+                    }
+                }
+            }
+        }
+        if (selectedDoor != null) {
+            return selectedDoor.relative(front);
+        }
+
+        BlockPos fallback = switch (front) {
             case NORTH -> origin.offset(spec.width() / 2, 0, 0);
             case SOUTH -> origin.offset(spec.width() / 2, 0, spec.depth() - 1);
             case WEST -> origin.offset(0, 0, spec.depth() / 2);
             case EAST -> origin.offset(spec.width() - 1, 0, spec.depth() / 2);
             default -> origin.offset(spec.width() / 2, 0, spec.depth() / 2);
         };
-        return front.relative(spec.entranceFacing(), 2);
+        return fallback.relative(front);
     }
 
     private static Block terminalBlock(VillageProgressionSystem.Building building) {
@@ -104,34 +140,35 @@ final class VillageBuildingCatalog {
         };
     }
 
-    private static void placeEntrancePath(ServerLevel level, BlockPos origin, Spec spec) {
-        BlockPos door = entrance(level, origin, spec);
+    private static void placeEntrancePath(ServerLevel level, BlockPos entrance, Spec spec) {
         Direction sideways = spec.entranceFacing().getClockWise();
-        for (int forward = -1; forward <= 5; forward++) {
-            BlockPos row = door.relative(spec.entranceFacing(), forward);
+        for (int forward = 0; forward <= 6; forward++) {
+            BlockPos row = entrance.relative(spec.entranceFacing(), forward);
             for (int side = -2; side <= 2; side++) {
                 BlockPos floor = row.relative(sideways, side).below();
                 set(level, floor, Math.abs(side) == 2 ? Blocks.STONE_BRICKS : Blocks.PACKED_MUD);
-                for (int y = 0; y <= 3; y++) {
-                    set(level, floor.above(1 + y), Blocks.AIR);
+                for (int y = 1; y <= 4; y++) {
+                    set(level, floor.above(y), Blocks.AIR);
                 }
             }
         }
     }
 
-    private static void placeTerminal(ServerLevel level, BlockPos origin, Spec spec, Block terminal) {
+    private static void placeTerminal(
+            ServerLevel level,
+            BlockPos entrance,
+            Spec spec,
+            Block terminal) {
         Direction sideways = spec.entranceFacing().getClockWise();
-        BlockPos door = entrance(level, origin, spec);
-        BlockPos terminalPos = door.relative(sideways, 4);
+        BlockPos terminalPos = entrance.relative(sideways, 4);
         set(level, terminalPos.below(), Blocks.CHISELED_STONE_BRICKS);
         set(level, terminalPos, terminal);
         set(level, terminalPos.above(), Blocks.LANTERN);
     }
 
-    private static void placeEntrancePlaque(ServerLevel level, BlockPos origin, Spec spec) {
+    private static void placeEntrancePlaque(ServerLevel level, BlockPos entrance, Spec spec) {
         Direction sideways = spec.entranceFacing().getClockWise();
-        BlockPos door = entrance(level, origin, spec);
-        BlockPos signPos = door.relative(sideways.getOpposite(), 4).above(2);
+        BlockPos signPos = entrance.relative(sideways.getOpposite(), 4).above(2);
         BlockPos backing = signPos.relative(spec.entranceFacing().getOpposite());
         set(level, backing.below(2), Blocks.STONE_BRICKS);
         set(level, backing.below(), Blocks.STRIPPED_DARK_OAK_WOOD);
