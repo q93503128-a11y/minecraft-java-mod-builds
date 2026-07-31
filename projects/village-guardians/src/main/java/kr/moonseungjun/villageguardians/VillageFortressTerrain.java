@@ -22,9 +22,9 @@ final class VillageFortressTerrain {
         buildTower(level, center.offset(WALL_RADIUS, 0, -WALL_RADIUS), groundY);
         buildTower(level, center.offset(-WALL_RADIUS, 0, WALL_RADIUS), groundY);
         buildTower(level, center.offset(WALL_RADIUS, 0, WALL_RADIUS), groundY);
+        clearMainAvenue(level, center, groundY);
         buildCentralBell(level, center, groundY);
         buildLamps(level, center, groundY);
-        clearMainAvenue(level, center, groundY);
     }
 
     static void rebuildNorthGate(ServerLevel level, BlockPos center) {
@@ -101,7 +101,7 @@ final class VillageFortressTerrain {
     }
 
     private static void buildRoads(ServerLevel level, BlockPos center, int groundY) {
-        for (int z = -WALL_RADIUS - 8; z <= 69; z++) {
+        for (int z = -WALL_RADIUS - 8; z <= 37; z++) {
             for (int width = -ROAD_HALF_WIDTH; width <= ROAD_HALF_WIDTH; width++) {
                 Block road = Math.abs(width) == ROAD_HALF_WIDTH
                         ? Blocks.STONE_BRICKS
