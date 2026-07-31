@@ -3,7 +3,7 @@ package kr.moonseungjun.livingkingdoms.client;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.SubmitOriginPayload;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -20,7 +20,6 @@ public final class OriginSelectionScreen extends Screen {
     );
 
     private final int schemaVersion;
-
     private int speciesIndex;
     private int homelandIndex;
     private int backgroundIndex;
@@ -53,30 +52,23 @@ public final class OriginSelectionScreen extends Screen {
         this.speciesButton = this.addRenderableWidget(Button.builder(
                 Component.empty(), button -> cycleSpecies()
         ).bounds(buttonLeft, top + 72, buttonWidth, 28).build());
-
         this.homelandButton = this.addRenderableWidget(Button.builder(
                 Component.empty(), button -> cycleHomeland()
         ).bounds(buttonLeft, top + 122, buttonWidth, 28).build());
-
         this.backgroundButton = this.addRenderableWidget(Button.builder(
                 Component.empty(), button -> cycleBackground()
         ).bounds(buttonLeft, top + 172, buttonWidth, 28).build());
-
         this.residenceButton = this.addRenderableWidget(Button.builder(
                 Component.empty(), button -> cycleResidence()
         ).bounds(buttonLeft, top + 222, buttonWidth, 28).build());
-
         this.confirmButton = this.addRenderableWidget(Button.builder(
                 Component.translatable("livingkingdoms.origin.confirm"), button -> submit()
         ).bounds(buttonLeft, top + 270, buttonWidth, 32).build());
-
         refreshButtonLabels();
     }
 
     private void cycleSpecies() {
-        if (submitting) {
-            return;
-        }
+        if (submitting) return;
         speciesIndex = (speciesIndex + 1) % TEST_SPECIES.size();
         homelandIndex = 0;
         backgroundIndex = 0;
@@ -86,9 +78,7 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     private void cycleHomeland() {
-        if (submitting) {
-            return;
-        }
+        if (submitting) return;
         List<String> homelands = availableHomelands();
         homelandIndex = (homelandIndex + 1) % homelands.size();
         backgroundIndex = 0;
@@ -98,9 +88,7 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     private void cycleBackground() {
-        if (submitting) {
-            return;
-        }
+        if (submitting) return;
         List<String> backgrounds = availableBackgrounds();
         backgroundIndex = (backgroundIndex + 1) % backgrounds.size();
         normalizeSelection();
@@ -108,9 +96,7 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     private void cycleResidence() {
-        if (submitting) {
-            return;
-        }
+        if (submitting) return;
         List<String> residences = availableResidences();
         residenceIndex = (residenceIndex + 1) % residences.size();
         normalizeSelection();
@@ -125,17 +111,12 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     private List<String> availableHomelands() {
-        String speciesId = selectedSpeciesId();
-        FoundationCatalog.SpeciesDefinition species = FoundationCatalog.species().get(speciesId);
+        FoundationCatalog.SpeciesDefinition species = FoundationCatalog.species().get(selectedSpeciesId());
         List<String> result = new ArrayList<>();
         for (String homelandId : TEST_HOMELANDS) {
-            if (species != null && species.allowedHomelandIds().contains(homelandId)) {
-                result.add(homelandId);
-            }
+            if (species != null && species.allowedHomelandIds().contains(homelandId)) result.add(homelandId);
         }
-        if (result.isEmpty()) {
-            result.add("erden_kingdom");
-        }
+        if (result.isEmpty()) result.add("erden_kingdom");
         return result;
     }
 
@@ -144,17 +125,13 @@ public final class OriginSelectionScreen extends Screen {
         List<String> result = new ArrayList<>();
         for (String backgroundId : TEST_BACKGROUNDS) {
             FoundationCatalog.BackgroundDefinition background = FoundationCatalog.backgrounds().get(backgroundId);
-            if (background == null || homeland == null) {
-                continue;
-            }
+            if (background == null || homeland == null) continue;
             if (background.requiredLifestyleTags().isEmpty()
                     || !java.util.Collections.disjoint(background.requiredLifestyleTags(), homeland.lifestyleTags())) {
                 result.add(backgroundId);
             }
         }
-        if (result.isEmpty()) {
-            result.add("common_resident");
-        }
+        if (result.isEmpty()) result.add("common_resident");
         return result;
     }
 
@@ -165,9 +142,7 @@ public final class OriginSelectionScreen extends Screen {
                 .filter(residence -> residence.homelandId().equals(homelandId))
                 .map(FoundationCatalog.ResidenceDefinition::id)
                 .forEach(result::add);
-        if (result.isEmpty()) {
-            result.add("erden_city_room");
-        }
+        if (result.isEmpty()) result.add("erden_city_room");
         return result;
     }
 
@@ -191,9 +166,7 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     private void refreshButtonLabels() {
-        if (speciesButton == null) {
-            return;
-        }
+        if (speciesButton == null) return;
         speciesButton.setMessage(Component.literal("종족  ·  " + displaySpecies(selectedSpeciesId()) + "  ›"));
         homelandButton.setMessage(Component.literal("출신 세력  ·  " + displayHomeland(selectedHomelandId()) + "  ›"));
         backgroundButton.setMessage(Component.literal("사회적 배경  ·  " + displayBackground(selectedBackgroundId()) + "  ›"));
@@ -202,9 +175,7 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     private void submit() {
-        if (submitting || schemaVersion != 1) {
-            return;
-        }
+        if (submitting || schemaVersion != 1) return;
         submitting = true;
         statusMessage = "왕국 기록부에 출신을 등록하고 있습니다...";
         refreshButtonLabels();
@@ -216,11 +187,7 @@ public final class OriginSelectionScreen extends Screen {
     public void handleServerResult(boolean accepted, String message) {
         this.statusMessage = message;
         if (accepted) {
-            Minecraft minecraft = Minecraft.getInstance();
-            minecraft.setScreen(null);
-            if (minecraft.player != null) {
-                minecraft.player.displayClientMessage(Component.literal(message), false);
-            }
+            Minecraft.getInstance().gui.setScreen(null);
         } else {
             submitting = false;
             refreshButtonLabels();
@@ -243,7 +210,7 @@ public final class OriginSelectionScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         int panelWidth = Math.min(460, this.width - 32);
         int panelHeight = 330;
         int left = (this.width - panelWidth) / 2;
@@ -258,21 +225,20 @@ public final class OriginSelectionScreen extends Screen {
         graphics.fill(right - 7, top, right, bottom, 0xFF8C5A2A);
         graphics.fill(left + 18, top + 48, right - 18, top + 50, 0xFFB48A50);
 
-        graphics.drawCenteredString(this.font, Component.translatable("livingkingdoms.origin.title"),
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+
+        graphics.centeredText(this.font, Component.translatable("livingkingdoms.origin.title"),
                 this.width / 2, top + 18, 0xFF3A2418);
-        graphics.drawCenteredString(this.font, Component.literal("한 세계에서 어떤 삶으로 시작하시겠습니까?"),
+        graphics.centeredText(this.font, Component.literal("한 세계에서 어떤 삶으로 시작하시겠습니까?"),
                 this.width / 2, top + 36, 0xFF6B4B35);
-
-        graphics.drawCenteredString(this.font, Component.literal(speciesDescription(selectedSpeciesId())),
+        graphics.centeredText(this.font, Component.literal(speciesDescription(selectedSpeciesId())),
                 this.width / 2, top + 104, 0xFF5A402D);
-        graphics.drawCenteredString(this.font, Component.literal(homelandDescription(selectedHomelandId())),
+        graphics.centeredText(this.font, Component.literal(homelandDescription(selectedHomelandId())),
                 this.width / 2, top + 154, 0xFF5A402D);
-        graphics.drawCenteredString(this.font, Component.literal(backgroundDescription(selectedBackgroundId())),
+        graphics.centeredText(this.font, Component.literal(backgroundDescription(selectedBackgroundId())),
                 this.width / 2, top + 204, 0xFF5A402D);
-        graphics.drawCenteredString(this.font, Component.literal(statusMessage),
+        graphics.centeredText(this.font, Component.literal(statusMessage),
                 this.width / 2, top + 310, submitting ? 0xFF7D5526 : 0xFF4A3528);
-
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     private static String displaySpecies(String id) {
