@@ -1,0 +1,121 @@
+name: Build Countryside Days
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/countryside-days/**'
+      - '.github/workflows/build-countryside-days.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: countryside-days-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: projects/countryside-days
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Generate official Gradle wrapper
+        run: |
+          gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+          chmod +x gradlew
+
+      - name: Verify toolchain
+        run: |
+          java -version
+          ./gradlew --version
+
+      - name: Clean build
+        id: build
+        run: |
+          mkdir -p ci-logs
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
+
+      - name: Run data generation
+        id: datagen
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee ci-logs/datagen.log
+
+      - name: Verify JAR and create deliverables
+        run: |
+          JAR="build/libs/countrysidedays-0.1.0-alpha.2.jar"
+          python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification.log
+          mkdir -p build/deliverables
+          cp "$JAR" build/deliverables/
+          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.2.jar.sha256"
+          cat > build/deliverables/BUILD_AND_RUNTIME_REPORT.md <<REPORT
+          # Countryside Days Build and Runtime Report
+
+          - Commit: ${{ github.sha }}
+          - Mod version: 0.1.0-alpha.2
+          - Minecraft: 26.2
+          - Java: 25
+          - Gradle: 9.2.1
+          - NeoForge: 26.2.0.37-beta
+          - Clean build: PASS
+          - Datagen step: ${{ steps.datagen.outcome }}
+          - GameTest: NOT RUN — tests are not registered yet
+          - Dedicated server smoke test: NOT RUN
+          - Client smoke test: NOT RUN
+          - JAR structure verification: PASS
+
+          The JAR is a development alpha. Build success does not yet prove client or dedicated-server runtime compatibility.
+          REPORT
+
+      - name: Upload executable JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.2-deliverables
+          path: projects/countryside-days/build/deliverables/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload generated Gradle wrapper
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.2-wrapper
+          path: |
+            projects/countryside-days/gradlew
+            projects/countryside-days/gradlew.bat
+            projects/countryside-days/gradle/wrapper/gradle-wrapper.jar
+            projects/countryside-days/gradle/wrapper/gradle-wrapper.properties
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload raw logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.2-logs
+          path: projects/countryside-days/ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
