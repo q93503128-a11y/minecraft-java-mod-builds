@@ -17,6 +17,7 @@ env:
   EXPECTED_JAR: villageguardians-0.2.0-alpha.1.jar
   RELEASE_TAG: village-guardians-v0.2.0-alpha.1
   PUBLISHED_DIR: published/village-guardians
+  CI_RESULT_DIR: ci-results/village-guardians
 
 jobs:
   build:
@@ -48,7 +49,10 @@ jobs:
 
       - name: Clean NeoForge build
         working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle --no-daemon clean build --stacktrace --console=plain
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-gradle.log"
 
       - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
@@ -79,6 +83,7 @@ jobs:
             echo 'Published JAR already matches this build.'
           else
             git commit -m 'Publish verified Village Guardians v0.2.0-alpha.1 JAR'
+            git pull --rebase origin main
             git push
           fi
 
@@ -93,3 +98,31 @@ jobs:
               --title 'Village Guardians v0.2.0-alpha.1' \
               --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2.0.38-beta. Clean Gradle build and JAR structure verification.'
           fi
+
+      - name: Record CI result in repository
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$CI_RESULT_DIR"
+          if test -f "$GITHUB_WORKSPACE/village-guardians-gradle.log"; then
+            cp "$GITHUB_WORKSPACE/village-guardians-gradle.log" "$CI_RESULT_DIR/latest-gradle.log"
+          else
+            printf '%s\n' 'Gradle step did not start or produced no log.' > "$CI_RESULT_DIR/latest-gradle.log"
+          fi
+          cat > "$CI_RESULT_DIR/status.txt" <<EOF
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$CI_RESULT_DIR/status.txt" "$CI_RESULT_DIR/latest-gradle.log"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record Village Guardians CI result for ${GITHUB_SHA::7}"
+          git pull --rebase origin main
+          git push
