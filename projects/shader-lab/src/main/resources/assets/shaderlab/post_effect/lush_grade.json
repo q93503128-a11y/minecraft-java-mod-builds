@@ -11,8 +11,7 @@
       "inputs": [
         {
           "sampler_name": "In",
-          "target": "minecraft:main",
-          "bilinear": true
+          "target": "minecraft:main"
         }
       ],
       "output": "bloom_a"
@@ -32,7 +31,10 @@
           {
             "name": "Direction",
             "type": "vec2",
-            "value": [1.5, 0.0]
+            "value": [
+              1.0,
+              0.0
+            ]
           }
         ]
       },
@@ -53,7 +55,10 @@
           {
             "name": "Direction",
             "type": "vec2",
-            "value": [0.0, 1.5]
+            "value": [
+              0.0,
+              1.0
+            ]
           }
         ]
       },
@@ -74,7 +79,10 @@
           {
             "name": "Direction",
             "type": "vec2",
-            "value": [3.5, 0.0]
+            "value": [
+              2.6,
+              0.0
+            ]
           }
         ]
       },
@@ -95,7 +103,10 @@
           {
             "name": "Direction",
             "type": "vec2",
-            "value": [0.0, 3.5]
+            "value": [
+              0.0,
+              2.6
+            ]
           }
         ]
       },
@@ -107,8 +118,7 @@
       "inputs": [
         {
           "sampler_name": "Scene",
-          "target": "minecraft:main",
-          "bilinear": true
+          "target": "minecraft:main"
         },
         {
           "sampler_name": "Bloom",
@@ -129,8 +139,7 @@
       "inputs": [
         {
           "sampler_name": "In",
-          "target": "final",
-          "bilinear": true
+          "target": "final"
         }
       ],
       "uniforms": {
@@ -138,7 +147,12 @@
           {
             "name": "ColorModulate",
             "type": "vec4",
-            "value": [1.0, 1.0, 1.0, 1.0]
+            "value": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
           }
         ]
       },
