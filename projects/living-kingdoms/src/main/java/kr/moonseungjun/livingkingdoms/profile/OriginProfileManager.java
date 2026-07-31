@@ -6,6 +6,7 @@ import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.network.OpenOriginScreenPayload;
 import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
 import kr.moonseungjun.livingkingdoms.network.SubmitOriginPayload;
+import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -77,6 +78,7 @@ public final class OriginProfileManager {
             return new OriginSubmissionResultPayload(false, "시작 지역을 준비하지 못했습니다. 잠시 후 다시 선택하십시오.");
         }
 
+        StarterNpcManager.ensureForPlayer(player, profile);
         StarterLoadoutManager.grant(player, profile);
         savedData.putProfile(player.getUUID(), profile);
         LivingKingdoms.LOGGER.info(
