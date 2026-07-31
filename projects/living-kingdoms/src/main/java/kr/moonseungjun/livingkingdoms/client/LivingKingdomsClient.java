@@ -16,5 +16,6 @@ public final class LivingKingdomsClient {
         NeoForge.EVENT_BUS.addListener(VanillaTutorialSuppressor::onClientTick);
         NeoForge.EVENT_BUS.addListener(RealmCodexClient::onClientTick);
         NeoForge.EVENT_BUS.addListener(RealmCodexClient::onScreenInit);
+        NeoForge.EVENT_BUS.addListener(RealmCodexClient::onScreenRender);
     }
 }
