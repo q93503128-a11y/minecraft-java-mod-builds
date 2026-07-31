@@ -36,7 +36,7 @@ GUI_ASSETS = {
 }
 
 ROLES = {
-    "town_hall": ["manor", "big_house", "large_house", "town_hall", "hall", "house"],
+    "town_hall": ["manor", "big_house", "large_house", "town_hall", "mansion", "hall", "house"],
     "barracks": ["barracks", "guard", "armorer", "weaponsmith"],
     "smithy": ["weaponsmith", "toolsmith", "blacksmith", "smith", "armorer"],
     "skill_hall": ["library", "librarian", "cartographer", "cleric"],
@@ -48,6 +48,11 @@ STYLE_PREFERENCES = [
     "plains", "taiga", "mediterranean", "savanna",
 ]
 EXCLUDED = ("zombie", "outpost", "ship", "ruin", "pillager")
+NON_BUILDING_HALL_TOKENS = (
+    "meeting_point", "meeting-point", "/streets/", "/street/",
+    "corner_", "/corner/", "town_centers", "town_centres",
+    "well", "fountain", "/roads/", "/paths/", "decor",
+)
 
 
 def download(url: str, destination: Path) -> None:
@@ -142,8 +147,11 @@ def structure_candidates(archive: zipfile.ZipFile) -> list[dict[str, object]]:
         lower = name.replace("\\", "/").lower()
         if not lower.endswith(".nbt") or any(token in lower for token in EXCLUDED):
             continue
-        size = structure_size(archive.read(name))
-        candidate = {"path": name, "lower": lower, "size": size}
+        candidate = {
+            "path": name,
+            "lower": lower,
+            "size": structure_size(archive.read(name)),
+        }
         all_nbt.append(candidate)
         if (
             "structure" in lower
@@ -175,6 +183,22 @@ def choose_style(candidates: list[dict[str, object]]) -> str:
     return best_style if best_score > 0 else ""
 
 
+def is_real_town_hall_candidate(candidate: dict[str, object]) -> bool:
+    lower = str(candidate["lower"])
+    width, height, depth = candidate["size"]  # type: ignore[misc]
+    building_named = any(
+        token in lower
+        for token in ("house", "manor", "mansion", "town_hall", "townhall", "/hall")
+    )
+    return (
+        building_named
+        and width >= 8
+        and depth >= 8
+        and height >= 8
+        and not any(token in lower for token in NON_BUILDING_HALL_TOKENS)
+    )
+
+
 def role_score(role: str, candidate: dict[str, object], selected_style: str) -> int:
     lower = str(candidate["lower"])
     width, height, depth = candidate["size"]  # type: ignore[misc]
@@ -182,31 +206,35 @@ def role_score(role: str, candidate: dict[str, object], selected_style: str) -> 
     if selected_style and selected_style in lower:
         score += 1000
     if "/houses/" in lower:
-        score += 40
+        score += 80
     if "house" in lower:
-        score += 20
+        score += 40
     if "village" in lower or "town" in lower:
-        score += 15
+        score += 20
     for index, keyword in enumerate(ROLES[role]):
         if keyword in lower:
-            score += 170 - index * 10
+            score += 190 - index * 10
 
     footprint = max(0, width) * max(0, depth)
     volume = footprint * max(0, height)
     if role == "town_hall":
-        score += min(900, footprint * 2 + height * 24 + volume // 25)
-        if width >= 15 and depth >= 14:
-            score += 260
-        if height >= 9:
-            score += 220
-        if any(token in lower for token in ("meeting_point", "meeting-point", "well", "fountain")):
-            score -= 3000
+        if not is_real_town_hall_candidate(candidate):
+            return -100_000
+        score += min(1400, footprint * 3 + height * 35 + volume // 18)
+        if width >= 14 and depth >= 12:
+            score += 320
+        if height >= 10:
+            score += 300
+        if any(token in lower for token in ("manor", "mansion", "big_house", "large_house")):
+            score += 500
     else:
-        score += min(140, footprint // 2 + height * 3)
+        score += min(160, footprint // 2 + height * 3)
     return score
 
 
-def select_structures(candidates: list[dict[str, object]]) -> tuple[str, dict[str, dict[str, object]]]:
+def select_structures(
+    candidates: list[dict[str, object]],
+) -> tuple[str, dict[str, dict[str, object]]]:
     selected_style = choose_style(candidates)
     used: set[str] = set()
     selections: dict[str, dict[str, object]] = {}
@@ -222,7 +250,7 @@ def select_structures(candidates: list[dict[str, object]]) -> tuple[str, dict[st
         )
         choice = next((candidate for score, candidate in ranked if score > 0), None)
         if choice is None:
-            raise RuntimeError(f"Not enough distinct licensed structures for role: {role}")
+            raise RuntimeError(f"No valid licensed structure found for role: {role}")
         used.add(str(choice["path"]))
         selections[role] = choice
 
