@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: shader-lab-${{ github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     shell: bash
@@ -31,10 +35,15 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Set up Gradle
+      - name: Set up Gradle 9.2.1
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.6.1'
+          gradle-version: '9.2.1'
+
+      - name: Generate Gradle wrapper
+        run: |
+          gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+          chmod +x gradlew
 
       - name: Prepare log directories
         run: mkdir -p build/logs build/reports build/deliverables
@@ -44,14 +53,14 @@ jobs:
           set -o pipefail
           {
             java -version
-            gradle --version
+            ./gradlew --version
           } 2>&1 | tee build/logs/toolchain.log
 
       - name: Clean build
         id: build
         run: |
           set -o pipefail
-          gradle --no-daemon clean build --stacktrace 2>&1 | tee build/logs/clean-build.log
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build/logs/clean-build.log
 
       - name: Inspect executable JAR
         if: steps.build.outcome == 'success'
@@ -75,7 +84,7 @@ jobs:
             echo "- Minecraft: 26.2"
             echo "- Java: 25"
             echo "- NeoForge: 26.2.0.38-beta"
-            echo "- Gradle: 9.6.1"
+            echo "- Gradle: 9.2.1"
             echo "- clean build: PASS"
             echo "- Shader resource contract: PASS"
             echo "- JAR inspection: PASS"
