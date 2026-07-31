@@ -3,6 +3,7 @@ package kr.countrysidedays;
 import com.mojang.logging.LogUtils;
 import kr.countrysidedays.gameplay.KitchenInteractionHandler;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
+import kr.countrysidedays.gameplay.RuralNpcManager;
 import kr.countrysidedays.gametest.ModGameTests;
 import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.registry.ModCreativeTabs;
@@ -30,9 +31,10 @@ public final class CountrysideDays {
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onBlockDrops);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onItemFished);
+        NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.2");
+        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.3");
     }
 }
