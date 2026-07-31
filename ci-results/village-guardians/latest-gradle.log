@@ -4,46 +4,334 @@ Calculating task graph as no cached configuration is available for tasks: clean 
 
 > Configure project :
 Creating Minecraft artifacts without recompilation.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785501973506.json
 
-> Task :clean UP-TO-DATE
-> Task :jarJar NO-SOURCE
-> Task :processTestResources NO-SOURCE
-> Task :generateModMetadata
-> Task :processResources
+1 problem was found storing the configuration cache.
+- Task `:prepareLicensedAssets` of type `org.gradle.api.DefaultTask`: error writing value of type 'org.gradle.api.internal.artifacts.configurations.DefaultLegacyConfiguration'
 
-> Task :createMinecraftArtifacts
-Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
-[1m*** Started working on [4mdownloadManifest[0m[0m
-  ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.49s
-[1m*** Started working on [4mdownloadJson[0m[0m
- [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
-[1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
-[1m*** Started working on [4mpreProcessJar[0m[0m
- [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
-[1m*** Started working on [4mbinaryPatch[0m[0m
- [1m[92m♻[0m Used cache of [4mbinaryPatch[0m in 0.00s
-[1m*** Started working on [4mcopyUnpatchedClasses[0m[0m
- [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
-[1m*** Started working on [4mapplyDevTransforms[0m[0m
- [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.73s
+See the complete report at file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/configuration-cache/c4803pve20g286crdsp736o4p/8hml0hc56ibcuzpxedrecic8r/configuration-cache-report.html
+
+[Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Configuration cache state could not be cached: input property `$1` of task `:prepareLicensedAssets` of type `org.gradle.api.DefaultTask`: error writing value of type 'org.gradle.api.internal.artifacts.configurations.DefaultLegacyConfiguration'
+> Could not resolve all files for configuration ':licensedStructureAssets'.
+   > Could not find DjLobEOy-E39wx2BN.jar (maven.modrinth:DjLobEOy:E39wx2BN).
+     Searched in the following locations:
+         https://api.modrinth.com/maven/maven/modrinth/DjLobEOy/E39wx2BN/DjLobEOy-E39wx2BN.jar
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.internal.cc.base.exceptions.ConfigurationCacheError: Configuration cache state could not be cached: input property `$1` of task `:prepareLicensedAssets` of type `org.gradle.api.DefaultTask`: error writing value of type 'org.gradle.api.internal.artifacts.configurations.DefaultLegacyConfiguration'
+	at org.gradle.internal.cc.impl.problems.ConfigurationCacheProblems.onError(ConfigurationCacheProblems.kt:175)
+	at org.gradle.internal.serialize.graph.AbstractIsolateContext.onError(Contexts.kt:396)
+	at org.gradle.internal.serialize.graph.BeanPropertyExtensionsKt.writePropertyValue(BeanPropertyExtensions.kt:36)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodecKt.writeRegisteredPropertiesOf$writeProperty(TaskNodeCodec.kt:280)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodecKt.writeRegisteredPropertiesOf$writeInputProperty(TaskNodeCodec.kt:284)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodecKt.writeRegisteredPropertiesOf(TaskNodeCodec.kt:295)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodecKt.access$writeRegisteredPropertiesOf(TaskNodeCodec.kt:1)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodec$writeTask$3$2$1.invokeSuspend(TaskNodeCodec.kt:106)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodec$writeTask$3$2$1.invoke(TaskNodeCodec.kt)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodec$writeTask$3$2$1.invoke(TaskNodeCodec.kt)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodecKt.withTaskOf(TaskNodeCodec.kt:237)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodecKt.access$withTaskOf(TaskNodeCodec.kt:1)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodec.writeTask(TaskNodeCodec.kt:98)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodec.encode(TaskNodeCodec.kt:75)
+	at org.gradle.internal.serialize.codecs.core.TaskNodeCodec.encode(TaskNodeCodec.kt:69)
+	at org.gradle.internal.serialize.graph.codecs.BindingsBackedCodec.encode(BindingsBackedCodec.kt:66)
+	at org.gradle.internal.serialize.graph.DefaultWriteContext.write(Contexts.kt:111)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$writeGroupedNodes$1$1$1.invokeSuspend(WorkNodeCodec.kt:332)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$writeGroupedNodes$1$1$1.invoke(WorkNodeCodec.kt)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$writeGroupedNodes$1$1$1.invoke(WorkNodeCodec.kt)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$safeRunnerFor$2$1$1.invokeSuspend(WorkNodeCodec.kt:400)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$safeRunnerFor$2$1$1.invoke(WorkNodeCodec.kt)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$safeRunnerFor$2$1$1.invoke(WorkNodeCodec.kt)
+	at org.gradle.internal.serialize.graph.RunningKt$runWriteOperation$1.invokeSuspend(Running.kt:43)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlin.coroutines.ContinuationKt.startCoroutine(Continuation.kt:115)
+	at org.gradle.internal.serialize.graph.RunningKt.runToCompletion(Running.kt:58)
+	at org.gradle.internal.serialize.graph.RunningKt.runWriteOperation(Running.kt:42)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$safeRunnerFor$2$1.accept(WorkNodeCodec.kt:399)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$safeRunnerFor$2$1.accept(WorkNodeCodec.kt:398)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.lambda$applyToMutableState$1(DefaultProjectStateRegistry.java:446)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.lambda$fromMutableState$2(DefaultProjectStateRegistry.java:469)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:269)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:42)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:267)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withReplacedLocks$3(DefaultWorkerLeaseService.java:365)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:337)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withReplacedLocks(DefaultWorkerLeaseService.java:364)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.fromMutableState(DefaultProjectStateRegistry.java:469)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.applyToMutableState(DefaultProjectStateRegistry.java:445)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$safeRunnerFor$2.invokeSuspend(WorkNodeCodec.kt:398)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$safeRunnerFor$2.invoke(WorkNodeCodec.kt)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$safeRunnerFor$2.invoke(WorkNodeCodec.kt)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$writeGroupedNodes$1.invokeSuspend(WorkNodeCodec.kt:331)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$writeGroupedNodes$1.invoke(WorkNodeCodec.kt)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$writeGroupedNodes$1.invoke(WorkNodeCodec.kt)
+	at org.gradle.internal.serialize.graph.RunningKt$runWriteOperation$1.invokeSuspend(Running.kt:43)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlin.coroutines.ContinuationKt.startCoroutine(Continuation.kt:115)
+	at org.gradle.internal.serialize.graph.RunningKt.runToCompletion(Running.kt:58)
+	at org.gradle.internal.serialize.graph.RunningKt.runWriteOperation(Running.kt:42)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.writeGroupedNodes(WorkNodeCodec.kt:327)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.writeNodeBatchesInParallel$lambda$1$0$0(WorkNodeCodec.kt:248)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec$runBuildOperations$1$1.execute$lambda$1(WorkNodeCodec.kt:597)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodecKt$asBuildOperation$1.run(WorkNodeCodec.kt:640)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationExecutor.lambda$executeInParallel$0(DefaultBuildOperationExecutor.java:102)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.runOperation(DefaultBuildOperationQueue.java:292)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.doRunBatch(DefaultBuildOperationQueue.java:273)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.lambda$runBatch$1(DefaultBuildOperationQueue.java:246)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:125)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.runBatch(DefaultBuildOperationQueue.java:244)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.runOperations(DefaultBuildOperationQueue.java:212)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.run(DefaultBuildOperationQueue.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue.waitForCompletion(DefaultBuildOperationQueue.java:114)
+	at org.gradle.internal.operations.DefaultBuildOperationExecutor.executeInParallel(DefaultBuildOperationExecutor.java:115)
+	at org.gradle.internal.operations.DefaultBuildOperationExecutor.runAllWithAccessToProjectState(DefaultBuildOperationExecutor.java:74)
+	at org.gradle.internal.operations.DefaultBuildOperationExecutor.runAllWithAccessToProjectState(DefaultBuildOperationExecutor.java:69)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.runBuildOperations$lambda$0(WorkNodeCodec.kt:588)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.handleBuildOperationExceptions(WorkNodeCodec.kt:286)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.runBuildOperations(WorkNodeCodec.kt:587)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.writeNodeBatchesInParallel(WorkNodeCodec.kt:243)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.writeNodes(WorkNodeCodec.kt:209)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.doWrite(WorkNodeCodec.kt:122)
+	at org.gradle.internal.serialize.codecs.core.WorkNodeCodec.writeWork(WorkNodeCodec.kt:94)
+	at org.gradle.internal.cc.impl.ConfigurationCacheState.writeWorkGraphOf(ConfigurationCacheState.kt:510)
+	at org.gradle.internal.cc.impl.ConfigurationCacheState.writeBuildContent$configuration_cache(ConfigurationCacheState.kt:472)
+	at org.gradle.internal.cc.impl.ConfigurationCacheState.writeBuildState(ConfigurationCacheState.kt:337)
+	at org.gradle.internal.cc.impl.ConfigurationCacheState.writeBuildsInTree(ConfigurationCacheState.kt:312)
+	at org.gradle.internal.cc.impl.ConfigurationCacheState.writeRootBuild(ConfigurationCacheState.kt:286)
+	at org.gradle.internal.cc.impl.ConfigurationCacheState.writeRootBuildState(ConfigurationCacheState.kt:184)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO$writeRootBuildStateTo$1.invokeSuspend(DefaultConfigurationCacheIO.kt:215)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO$writeRootBuildStateTo$1.invoke(DefaultConfigurationCacheIO.kt)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO$writeRootBuildStateTo$1.invoke(DefaultConfigurationCacheIO.kt)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO$writeConfigurationCacheStateWithSpecialEncoders$1.invokeSuspend(DefaultConfigurationCacheIO.kt:365)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO$writeConfigurationCacheStateWithSpecialEncoders$1.invoke(DefaultConfigurationCacheIO.kt)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO$writeConfigurationCacheStateWithSpecialEncoders$1.invoke(DefaultConfigurationCacheIO.kt)
+	at org.gradle.internal.serialize.graph.CodecKt$writeWith$1$1.invokeSuspend(Codec.kt:84)
+	at org.gradle.internal.serialize.graph.CodecKt$writeWith$1$1.invoke(Codec.kt)
+	at org.gradle.internal.serialize.graph.CodecKt$writeWith$1$1.invoke(Codec.kt)
+	at org.gradle.internal.serialize.graph.RunningKt$runWriteOperation$1.invokeSuspend(Running.kt:43)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlin.coroutines.ContinuationKt.startCoroutine(Continuation.kt:115)
+	at org.gradle.internal.serialize.graph.RunningKt.runToCompletion(Running.kt:58)
+	at org.gradle.internal.serialize.graph.RunningKt.runWriteOperation(Running.kt:42)
+	at org.gradle.internal.serialize.graph.CodecKt.writeWith(Codec.kt:83)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.withWriteContextFor(DefaultConfigurationCacheIO.kt:517)
+	at org.gradle.internal.cc.impl.ConfigurationCacheBuildTreeIO.withWriteContextFor(ConfigurationCacheBuildTreeIO.kt:131)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.withWriteContextFor(DefaultConfigurationCacheIO.kt:99)
+	at org.gradle.internal.cc.impl.ConfigurationCacheBuildTreeIO.withWriteContextFor$default(ConfigurationCacheBuildTreeIO.kt:124)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.writeConfigurationCacheStateWithSpecialEncoders(DefaultConfigurationCacheIO.kt:364)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.writeConfigurationCacheState$lambda$0$0(DefaultConfigurationCacheIO.kt:268)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.withSharedObjectEncoderFor(DefaultConfigurationCacheIO.kt:327)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.writeConfigurationCacheState$lambda$0(DefaultConfigurationCacheIO.kt:267)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.withStringEncoderFor(DefaultConfigurationCacheIO.kt:315)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.writeConfigurationCacheState(DefaultConfigurationCacheIO.kt:266)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCacheIO.writeRootBuildStateTo(DefaultConfigurationCacheIO.kt:213)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.writeConfigurationCacheState(DefaultConfigurationCache.kt:769)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.saveWorkGraph$lambda$0$0(DefaultConfigurationCache.kt:683)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.runAndStore$lambda$0(DefaultConfigurationCache.kt:698)
+	at org.gradle.internal.cc.impl.ConfigurationCacheRepository$StoreImpl.useForStore$lambda$0(ConfigurationCacheRepository.kt:255)
+	at org.gradle.internal.cc.impl.ConfigurationCacheRepository$withExclusiveAccessToCache$1.get(ConfigurationCacheRepository.kt:321)
+	at org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess.withFileLock(LockOnDemandCrossProcessCacheAccess.java:90)
+	at org.gradle.cache.internal.DefaultCacheCoordinator.withFileLock(DefaultCacheCoordinator.java:226)
+	at org.gradle.cache.internal.DefaultPersistentDirectoryStore.withFileLock(DefaultPersistentDirectoryStore.java:147)
+	at org.gradle.cache.internal.DefaultCacheFactory$ReferenceTrackingCache.withFileLock(DefaultCacheFactory.java:203)
+	at org.gradle.internal.cc.impl.ConfigurationCacheRepository.withExclusiveAccessToCache(ConfigurationCacheRepository.kt:319)
+	at org.gradle.internal.cc.impl.ConfigurationCacheRepository.access$withExclusiveAccessToCache(ConfigurationCacheRepository.kt:54)
+	at org.gradle.internal.cc.impl.ConfigurationCacheRepository$StoreImpl.useForStore(ConfigurationCacheRepository.kt:245)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.runAndStore(DefaultConfigurationCache.kt:695)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.saveWorkGraph$lambda$0(DefaultConfigurationCache.kt:682)
+	at org.gradle.configurationcache.ConfigurationCacheBuildOperationsKt$withWorkGraphStoreOperation$1.run(ConfigurationCacheBuildOperations.kt:63)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+	at org.gradle.configurationcache.ConfigurationCacheBuildOperationsKt.withWorkGraphStoreOperation(ConfigurationCacheBuildOperations.kt:56)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.saveWorkGraph(DefaultConfigurationCache.kt:681)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.loadOrScheduleRequestedTasks$lambda$1$0(DefaultConfigurationCache.kt:272)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.degradeGracefullyOr(DefaultConfigurationCache.kt:315)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.loadOrScheduleRequestedTasks$lambda$1(DefaultConfigurationCache.kt:272)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.runWorkThatContributesToCacheEntry(DefaultConfigurationCache.kt:620)
+	at org.gradle.internal.cc.impl.DefaultConfigurationCache.loadOrScheduleRequestedTasks(DefaultConfigurationCache.kt:269)
+	at org.gradle.internal.cc.impl.ConfigurationCacheAwareBuildTreeWorkController$scheduleAndRunRequestedTasks$executionResult$1.apply(ConfigurationCacheAwareBuildTreeWorkController.kt:55)
+	at org.gradle.internal.cc.impl.ConfigurationCacheAwareBuildTreeWorkController$scheduleAndRunRequestedTasks$executionResult$1.apply(ConfigurationCacheAwareBuildTreeWorkController.kt:54)
+	at org.gradle.composite.internal.DefaultIncludedBuildTaskGraph.withNewWorkGraph(DefaultIncludedBuildTaskGraph.java:114)
+	at org.gradle.internal.cc.impl.ConfigurationCacheAwareBuildTreeWorkController.scheduleAndRunRequestedTasks(ConfigurationCacheAwareBuildTreeWorkController.kt:54)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.lambda$scheduleAndRunTasks$1(DefaultBuildTreeLifecycleController.java:77)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.lambda$runBuild$4(DefaultBuildTreeLifecycleController.java:120)
+	at org.gradle.internal.model.StateTransitionController.lambda$transition$6(StateTransitionController.java:169)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
+	at org.gradle.internal.model.StateTransitionController.lambda$transition$7(StateTransitionController.java:169)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:45)
+	at org.gradle.internal.model.StateTransitionController.transition(StateTransitionController.java:169)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.runBuild(DefaultBuildTreeLifecycleController.java:117)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.scheduleAndRunTasks(DefaultBuildTreeLifecycleController.java:77)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.scheduleAndRunTasks(DefaultBuildTreeLifecycleController.java:72)
+	at org.gradle.tooling.internal.provider.ExecuteBuildActionRunner.run(ExecuteBuildActionRunner.java:31)
+	at org.gradle.launcher.exec.ChainingBuildActionRunner.run(ChainingBuildActionRunner.java:35)
+	at org.gradle.internal.buildtree.ProblemReportingBuildActionRunner.run(ProblemReportingBuildActionRunner.java:54)
+	at org.gradle.launcher.exec.BuildOutcomeReportingBuildActionRunner.run(BuildOutcomeReportingBuildActionRunner.java:83)
+	at org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner.run(FileSystemWatchingBuildActionRunner.java:135)
+	at org.gradle.launcher.exec.BuildCompletionNotifyingBuildActionRunner.run(BuildCompletionNotifyingBuildActionRunner.java:54)
+	at org.gradle.launcher.exec.RootBuildLifecycleBuildActionExecutor.lambda$execute$0(RootBuildLifecycleBuildActionExecutor.java:56)
+	at org.gradle.composite.internal.DefaultRootBuildState.run(DefaultRootBuildState.java:126)
+	at org.gradle.launcher.exec.RootBuildLifecycleBuildActionExecutor.execute(RootBuildLifecycleBuildActionExecutor.java:56)
+	at org.gradle.internal.buildtree.InitDeprecationLoggingActionExecutor.execute(InitDeprecationLoggingActionExecutor.java:62)
+	at org.gradle.internal.buildtree.InitProblems.execute(InitProblems.java:36)
+	at org.gradle.internal.buildtree.DefaultBuildTreeContext.execute(DefaultBuildTreeContext.java:40)
+	at org.gradle.launcher.exec.BuildTreeLifecycleBuildActionExecutor.lambda$execute$0(BuildTreeLifecycleBuildActionExecutor.java:71)
+	at org.gradle.internal.buildtree.BuildTreeState.run(BuildTreeState.java:60)
+	at org.gradle.launcher.exec.BuildTreeLifecycleBuildActionExecutor.execute(BuildTreeLifecycleBuildActionExecutor.java:71)
+	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor$2.call(RunAsBuildOperationBuildActionExecutor.java:65)
+	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor$2.call(RunAsBuildOperationBuildActionExecutor.java:61)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor.execute(RunAsBuildOperationBuildActionExecutor.java:61)
+	at org.gradle.launcher.exec.RunAsWorkerThreadBuildActionExecutor.lambda$execute$0(RunAsWorkerThreadBuildActionExecutor.java:36)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:269)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:42)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:267)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:259)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.launcher.exec.RunAsWorkerThreadBuildActionExecutor.execute(RunAsWorkerThreadBuildActionExecutor.java:36)
+	at org.gradle.tooling.internal.provider.continuous.ContinuousBuildActionExecutor.execute(ContinuousBuildActionExecutor.java:110)
+	at org.gradle.tooling.internal.provider.SubscribableBuildActionExecutor.execute(SubscribableBuildActionExecutor.java:64)
+	at org.gradle.internal.session.DefaultBuildSessionContext.execute(DefaultBuildSessionContext.java:46)
+	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor$ActionImpl.apply(BuildSessionLifecycleBuildActionExecutor.java:92)
+	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor$ActionImpl.apply(BuildSessionLifecycleBuildActionExecutor.java:80)
+	at org.gradle.internal.session.BuildSessionState.run(BuildSessionState.java:73)
+	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor.execute(BuildSessionLifecycleBuildActionExecutor.java:62)
+	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor.execute(BuildSessionLifecycleBuildActionExecutor.java:41)
+	at org.gradle.internal.buildprocess.execution.StartParamsValidatingActionExecutor.execute(StartParamsValidatingActionExecutor.java:57)
+	at org.gradle.internal.buildprocess.execution.StartParamsValidatingActionExecutor.execute(StartParamsValidatingActionExecutor.java:32)
+	at org.gradle.internal.buildprocess.execution.SessionFailureReportingActionExecutor.execute(SessionFailureReportingActionExecutor.java:51)
+	at org.gradle.internal.buildprocess.execution.SessionFailureReportingActionExecutor.execute(SessionFailureReportingActionExecutor.java:39)
+	at org.gradle.internal.buildprocess.execution.SetupLoggingActionExecutor.execute(SetupLoggingActionExecutor.java:47)
+	at org.gradle.internal.buildprocess.execution.SetupLoggingActionExecutor.execute(SetupLoggingActionExecutor.java:31)
+	at org.gradle.launcher.daemon.server.exec.ExecuteBuild.doBuild(ExecuteBuild.java:70)
+	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.WatchForDisconnection.execute(WatchForDisconnection.java:39)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.ResetDeprecationLogger.execute(ResetDeprecationLogger.java:29)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.RequestStopIfSingleUsedDaemon.execute(RequestStopIfSingleUsedDaemon.java:35)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.ForwardClientInput.lambda$execute$0(ForwardClientInput.java:40)
+	at org.gradle.internal.daemon.clientinput.ClientInputForwarder.forwardInput(ClientInputForwarder.java:80)
+	at org.gradle.launcher.daemon.server.exec.ForwardClientInput.execute(ForwardClientInput.java:37)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.LogAndCheckHealth.execute(LogAndCheckHealth.java:53)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.LogToClient.doBuild(LogToClient.java:63)
+	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.EstablishBuildEnvironment.doBuild(EstablishBuildEnvironment.java:84)
+	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.StartBuildOrRespondWithBusy$1.run(StartBuildOrRespondWithBusy.java:52)
+	at org.gradle.launcher.daemon.server.DaemonStateCoordinator.lambda$runCommand$0(DaemonStateCoordinator.java:321)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+Caused by: org.gradle.api.internal.artifacts.ivyservice.TypedResolveException: Could not resolve all files for configuration ':licensedStructureAssets'.
+	at org.gradle.api.internal.artifacts.ResolveExceptionMapper.mapFailure(ResolveExceptionMapper.java:73)
+	at org.gradle.api.internal.artifacts.ResolveExceptionMapper.mapFailures(ResolveExceptionMapper.java:65)
+	at org.gradle.api.internal.artifacts.configurations.DefaultConfiguration$DefaultResolutionHost.consolidateFailures(DefaultConfiguration.java:1740)
+	at org.gradle.api.internal.artifacts.configurations.ResolutionHost.rethrowFailuresAndReportProblems(ResolutionHost.java:75)
+	at org.gradle.api.internal.artifacts.configurations.ResolutionBackedFileCollection.maybeThrowResolutionFailures(ResolutionBackedFileCollection.java:86)
+	at org.gradle.api.internal.artifacts.configurations.ResolutionBackedFileCollection.visitContents(ResolutionBackedFileCollection.java:76)
+	at org.gradle.api.internal.file.AbstractFileCollection.visitStructure(AbstractFileCollection.java:361)
+	at org.gradle.internal.serialize.codecs.core.CollectingVisitor.startVisit(FileCollectionCodec.kt:198)
+	at org.gradle.api.internal.file.AbstractFileCollection.visitStructure(AbstractFileCollection.java:360)
+	at org.gradle.api.internal.artifacts.configurations.DefaultConfiguration.visitContents(DefaultConfiguration.java:490)
+	at org.gradle.api.internal.file.AbstractFileCollection.visitStructure(AbstractFileCollection.java:361)
+	at org.gradle.internal.serialize.codecs.core.FileCollectionCodec.encodeViaCollectingVisitor(FileCollectionCodec.kt:80)
+	at org.gradle.internal.serialize.codecs.core.FileCollectionCodec.encodeContents(FileCollectionCodec.kt:73)
+	at org.gradle.internal.serialize.codecs.core.FileCollectionCodec.encode(FileCollectionCodec.kt:62)
+	at org.gradle.internal.serialize.codecs.core.FileCollectionCodec.encode(FileCollectionCodec.kt:54)
+	at org.gradle.internal.serialize.graph.codecs.BindingsBackedCodec.encode(BindingsBackedCodec.kt:66)
+	at org.gradle.internal.serialize.graph.DefaultWriteContext.write(Contexts.kt:111)
+	at org.gradle.internal.serialize.graph.BeanPropertyExtensionsKt.writePropertyValue(BeanPropertyExtensions.kt:34)
+	... 222 more
+Caused by: org.gradle.internal.resolve.ArtifactNotFoundException: Could not find DjLobEOy-E39wx2BN.jar (maven.modrinth:DjLobEOy:E39wx2BN).
+Searched in the following locations:
+    https://api.modrinth.com/maven/maven/modrinth/DjLobEOy/E39wx2BN/DjLobEOy-E39wx2BN.jar
+	at org.gradle.internal.resolve.result.DefaultBuildableArtifactFileResolveResult.notFound(DefaultBuildableArtifactFileResolveResult.java:28)
+	at org.gradle.api.internal.artifacts.repositories.resolver.ExternalResourceResolver$RemoteRepositoryAccess.resolveArtifact(ExternalResourceResolver.java:480)
+	at org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository$ResolveAndCacheRepositoryAccess.resolveArtifact(CachingModuleComponentRepository.java:460)
+	at org.gradle.api.internal.artifacts.ivyservice.ivyresolve.ErrorHandlingModuleComponentRepository$ErrorHandlingModuleComponentRepositoryAccess.lambda$resolveArtifact$12(ErrorHandlingModuleComponentRepository.java:166)
+	at org.gradle.api.internal.artifacts.ivyservice.ivyresolve.ErrorHandlingModuleComponentRepository$ErrorHandlingModuleComponentRepositoryAccess.tryResolveAndMaybeDisable(ErrorHandlingModuleComponentRepository.java:233)
+	at org.gradle.api.internal.artifacts.ivyservice.ivyresolve.ErrorHandlingModuleComponentRepository$ErrorHandlingModuleComponentRepositoryAccess.performOperationWithRetries(ErrorHandlingModuleComponentRepository.java:190)
+	at org.gradle.api.internal.artifacts.ivyservice.ivyresolve.ErrorHandlingModuleComponentRepository$ErrorHandlingModuleComponentRepositoryAccess.resolveArtifact(ErrorHandlingModuleComponentRepository.java:164)
+	at org.gradle.api.internal.artifacts.ivyservice.ivyresolve.FilteredModuleComponentRepository$FilteringAccess.resolveArtifact(FilteredModuleComponentRepository.java:117)
+	at org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainArtifactResolver.resolveArtifactLater(RepositoryChainArtifactResolver.java:75)
+	at org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainArtifactResolver.lambda$resolveArtifact$0(RepositoryChainArtifactResolver.java:63)
+	at org.gradle.internal.model.CalculatedValueContainerFactory$SupplierBackedCalculator.calculateValue(CalculatedValueContainerFactory.java:69)
+	at org.gradle.internal.model.CalculatedValueContainer$CalculationState.lambda$attachValue$0(CalculatedValueContainer.java:227)
+	at org.gradle.internal.Try.ofFailable(Try.java:46)
+	at org.gradle.internal.model.CalculatedValueContainer$CalculationState.attachValue(CalculatedValueContainer.java:222)
+	at org.gradle.internal.model.CalculatedValueContainer.finalizeIfNotAlready(CalculatedValueContainer.java:195)
+	at org.gradle.internal.model.CalculatedValueContainer.finalizeIfNotAlready(CalculatedValueContainer.java:186)
+	at org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ArtifactBackedResolvedVariant$DownloadArtifactFile.run(ArtifactBackedResolvedVariant.java:208)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationExecutor.lambda$executeInParallel$0(DefaultBuildOperationExecutor.java:102)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.runOperation(DefaultBuildOperationQueue.java:292)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.doRunBatch(DefaultBuildOperationQueue.java:273)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.lambda$runBatch$0(DefaultBuildOperationQueue.java:258)
+	at org.gradle.internal.resources.AbstractResourceLockRegistry.whileDisallowingLockChanges(AbstractResourceLockRegistry.java:50)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.whileDisallowingProjectLockChanges(DefaultWorkerLeaseService.java:233)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.lambda$runBatch$1(DefaultBuildOperationQueue.java:258)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:125)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.runBatch(DefaultBuildOperationQueue.java:244)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.runOperations(DefaultBuildOperationQueue.java:212)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue$WorkerRunnable.run(DefaultBuildOperationQueue.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationQueue.waitForCompletion(DefaultBuildOperationQueue.java:114)
+	at org.gradle.internal.operations.DefaultBuildOperationExecutor.executeInParallel(DefaultBuildOperationExecutor.java:115)
+	at org.gradle.internal.operations.DefaultBuildOperationExecutor.runAll(DefaultBuildOperationExecutor.java:64)
+	at org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ParallelResolveArtifactSet$VisitingSet.visit(ParallelResolveArtifactSet.java:66)
+	at org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedArtifactSetResolver$1.run(ResolvedArtifactSetResolver.java:68)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+	at org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedArtifactSetResolver.visitArtifacts(ResolvedArtifactSetResolver.java:65)
+	at org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedArtifactSetResolver.lambda$visitInUnmanagedWorkerThread$0(ResolvedArtifactSetResolver.java:61)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsUnmanagedWorkerThread(DefaultWorkerLeaseService.java:139)
+	at org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedArtifactSetResolver.visitInUnmanagedWorkerThread(ResolvedArtifactSetResolver.java:61)
+	at org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.DefaultSelectedArtifactSet.visitArtifacts(DefaultSelectedArtifactSet.java:59)
+	at org.gradle.api.internal.artifacts.configurations.ResolutionResultProviderBackedSelectedArtifactSet.visitArtifacts(ResolutionResultProviderBackedSelectedArtifactSet.java:52)
+	at org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.SelectedArtifactSet.visitFiles(SelectedArtifactSet.java:34)
+	at org.gradle.api.internal.artifacts.configurations.ResolutionBackedFileCollection.visitContents(ResolutionBackedFileCollection.java:75)
+	... 234 more
 
 
-> Task :compileJava FROM-CACHE
-> Task :classes
-> Task :compileTestJava NO-SOURCE
-> Task :testClasses UP-TO-DATE
-> Task :test NO-SOURCE
-> Task :check UP-TO-DATE
-> Task :jar
-> Task :assemble
-> Task :build
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785492704527.json
-
-BUILD SUCCESSFUL in 17s
-6 actionable tasks: 4 executed, 1 from cache, 1 up-to-date
-Configuration cache entry stored.
+BUILD FAILED in 17s
+Configuration cache entry discarded due to serialization error.
