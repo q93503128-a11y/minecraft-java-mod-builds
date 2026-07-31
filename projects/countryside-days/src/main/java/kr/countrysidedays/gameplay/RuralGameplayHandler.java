@@ -1,17 +1,22 @@
 package kr.countrysidedays.gameplay;
 
 import kr.countrysidedays.registry.ModItems;
+import kr.countrysidedays.world.StarterHomesteadGenerator;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
+
+import java.util.Optional;
 
 public final class RuralGameplayHandler {
     private static final String STARTER_KIT_TAG = "countrysidedays_starter_kit";
@@ -22,9 +27,16 @@ public final class RuralGameplayHandler {
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+        if (!(event.getEntity() instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel serverLevel)) {
             return;
         }
+
+        Optional<BlockPos> homestead = Optional.empty();
+        if (serverLevel.dimension() == Level.OVERWORLD) {
+            homestead = StarterHomesteadGenerator.ensureGenerated(serverLevel, player.blockPosition());
+        }
+
         if (!player.addTag(STARTER_KIT_TAG)) {
             return;
         }
@@ -33,6 +45,18 @@ public final class RuralGameplayHandler {
         giveOrDrop(player, ModItems.RECIPE_NOTEBOOK.get().getDefaultInstance());
         giveOrDrop(player, Items.FISHING_ROD.getDefaultInstance());
         player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_kit"));
+
+        if (homestead.isPresent()) {
+            BlockPos origin = homestead.get();
+            player.sendSystemMessage(Component.translatable(
+                    "message.countrysidedays.homestead_ready",
+                    origin.getX(),
+                    origin.getY(),
+                    origin.getZ()
+            ));
+        } else if (serverLevel.dimension() == Level.OVERWORLD) {
+            player.sendSystemMessage(Component.translatable("message.countrysidedays.homestead_deferred"));
+        }
     }
 
     public static void onBlockDrops(BlockDropsEvent event) {
