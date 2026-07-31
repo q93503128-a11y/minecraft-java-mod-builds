@@ -4,5 +4,13 @@
   "item.countrysidedays.wild_herb": "Wild Herb",
   "item.countrysidedays.river_fish": "River Fish",
   "item.countrysidedays.country_stew": "Country Stew",
-  "item.countrysidedays.recipe_notebook": "Recipe Notebook"
+  "item.countrysidedays.recipe_notebook": "Recipe Notebook",
+  "message.countrysidedays.restaurant_anchor_set": "This kitchen is now the first restaurant anchor for the village.",
+  "message.countrysidedays.herb_prepared": "You trimmed the wild herb and placed it on the counter.",
+  "message.countrysidedays.herb_already_prepared": "Prepared wild herb is already waiting here.",
+  "message.countrysidedays.need_herb_first": "Prepare wild herb before cooking the river fish.",
+  "message.countrysidedays.stew_completed": "Country stew completed! Total meals prepared: %s.",
+  "message.countrysidedays.notebook_status": "Restaurant anchor: %s, %s, %s / Meals prepared: %s\nCooking order: wild herb → river fish",
+  "message.countrysidedays.counter_waiting_for_fish": "The prepared herb is ready. Add river fish next.",
+  "message.countrysidedays.counter_waiting_for_herb": "Use this counter while holding wild herb to begin preparing a meal."
 }
