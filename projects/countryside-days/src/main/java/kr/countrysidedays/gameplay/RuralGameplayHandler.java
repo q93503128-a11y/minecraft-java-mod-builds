@@ -1,20 +1,26 @@
 package kr.countrysidedays.gameplay;
 
 import kr.countrysidedays.registry.ModItems;
-import kr.countrysidedays.world.StarterHomesteadGenerator;
+import kr.countrysidedays.world.CountrysideRegionManager;
+import kr.countrysidedays.world.CountrysideWorldData;
+import kr.countrysidedays.world.FlatCountrysideBootstrap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.Optional;
 
@@ -32,22 +38,29 @@ public final class RuralGameplayHandler {
             return;
         }
 
-        Optional<BlockPos> homestead = Optional.empty();
-        if (serverLevel.dimension() == Level.OVERWORLD) {
-            homestead = StarterHomesteadGenerator.ensureGenerated(serverLevel, player.blockPosition());
-            homestead.ifPresent(origin -> RuralNpcManager.ensureForHomestead(serverLevel, origin));
+        enforceHealingRules(serverLevel);
+        if (serverLevel.dimension() != Level.OVERWORLD) {
+            return;
         }
-
-        if (!player.addTag(STARTER_KIT_TAG)) {
+        if (!CountrysideRegionManager.isFlatWorld(serverLevel)) {
+            player.sendSystemMessage(Component.translatable("message.countrysidedays.flat_world_required"));
             return;
         }
 
-        giveOrDrop(player, ModItems.COUNTRY_KITCHEN_COUNTER.get().getDefaultInstance());
-        giveOrDrop(player, ModItems.RECIPE_NOTEBOOK.get().getDefaultInstance());
-        giveOrDrop(player, Items.FISHING_ROD.getDefaultInstance());
-        player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_kit"));
+        CountrysideWorldData data = CountrysideWorldData.get(serverLevel.getServer());
+        boolean hadHomestead = data.homesteadOrigin().isPresent();
+        Optional<BlockPos> homestead = FlatCountrysideBootstrap.ensureGenerated(serverLevel, player.blockPosition());
+        homestead.ifPresent(origin -> RuralNpcManager.ensureForHomestead(serverLevel, origin));
 
-        if (homestead.isPresent()) {
+        boolean firstArrival = player.addTag(STARTER_KIT_TAG);
+        if (firstArrival) {
+            giveOrDrop(player, ModItems.COUNTRY_KITCHEN_COUNTER.get().getDefaultInstance());
+            giveOrDrop(player, ModItems.RECIPE_NOTEBOOK.get().getDefaultInstance());
+            giveOrDrop(player, Items.FISHING_ROD.getDefaultInstance());
+            player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_kit"));
+        }
+
+        if (homestead.isPresent() && (firstArrival || !hadHomestead)) {
             BlockPos origin = homestead.get();
             player.sendSystemMessage(Component.translatable(
                     "message.countrysidedays.homestead_ready",
@@ -56,8 +69,38 @@ public final class RuralGameplayHandler {
                     origin.getZ()
             ));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.meet_resident"));
-        } else if (serverLevel.dimension() == Level.OVERWORLD) {
-            player.sendSystemMessage(Component.translatable("message.countrysidedays.homestead_deferred"));
+            player.sendSystemMessage(Component.translatable("message.countrysidedays.keep_inventory_enabled"));
+        }
+    }
+
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel serverLevel)
+                || serverLevel.dimension() != Level.OVERWORLD
+                || !CountrysideRegionManager.isFlatWorld(serverLevel)
+                || player.tickCount % 40 != 0) {
+            return;
+        }
+
+        CountrysideRegionManager.prepareAroundPlayer(serverLevel, player.blockPosition());
+        if (!CountrysideRegionManager.isInsideCountryside(serverLevel, player.blockPosition())) {
+            return;
+        }
+
+        serverLevel.getEntitiesOfClass(
+                Monster.class,
+                player.getBoundingBox().inflate(96.0),
+                monster -> CountrysideRegionManager.isInsideCountryside(serverLevel, monster.blockPosition())
+        ).forEach(Monster::discard);
+    }
+
+    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)
+                || !(event.getEntity() instanceof Monster monster)) {
+            return;
+        }
+        if (CountrysideRegionManager.isInsideCountryside(serverLevel, monster.blockPosition())) {
+            event.setCanceled(true);
         }
     }
 
@@ -95,6 +138,10 @@ public final class RuralGameplayHandler {
                 || state.is(Blocks.FERN)
                 || state.is(Blocks.TALL_GRASS)
                 || state.is(Blocks.LARGE_FERN);
+    }
+
+    private static void enforceHealingRules(ServerLevel level) {
+        level.getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true, level.getServer());
     }
 
     private static void giveOrDrop(Player player, ItemStack stack) {
