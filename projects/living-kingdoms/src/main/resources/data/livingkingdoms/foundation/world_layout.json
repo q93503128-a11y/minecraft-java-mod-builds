@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "worldId": "ardesia_core",
+  "coreBounds": {
+    "minX": -16000,
+    "maxX": 16000,
+    "minZ": -16000,
+    "maxZ": 16000
+  },
+  "regions": [
+    {"id": "erden_kingdom", "center": [0, 0], "type": "kingdom"},
+    {"id": "silvana_forest", "center": [-9000, -1500], "type": "forest_realm"},
+    {"id": "kardum_league", "center": [-2500, -9000], "type": "mountain_league"},
+    {"id": "red_steppe", "center": [9500, -1000], "type": "tribal_confederation"},
+    {"id": "velas_free_city", "center": [1500, 7500], "type": "free_city"},
+    {"id": "sahar_theocracy", "center": [9000, 9000], "type": "desert_theocracy"},
+    {"id": "grey_crown_ruins", "center": [8500, -7500], "type": "ruined_realm"},
+    {"id": "northern_dragonlands", "center": [0, -15000], "type": "frontier"},
+    {"id": "western_archipelago", "center": [-14000, 7000], "type": "archipelago"}
+  ],
+  "firstVerticalSlice": {
+    "id": "loen_province",
+    "homeland": "erden_kingdom",
+    "requiredSites": [
+      "walled_town",
+      "river_fishing_village",
+      "rural_village_west",
+      "rural_village_east",
+      "border_fort",
+      "wanderer_camp",
+      "small_tribal_settlement",
+      "road_inn",
+      "dungeon_old_quarry",
+      "dungeon_flooded_crypt"
+    ]
+  }
+}
