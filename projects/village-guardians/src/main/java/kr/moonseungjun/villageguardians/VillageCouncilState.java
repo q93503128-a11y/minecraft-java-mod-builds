@@ -82,6 +82,14 @@ public final class VillageCouncilState {
         return Optional.ofNullable(villageCenter);
     }
 
+    public static synchronized int currentDay() {
+        return villageDay;
+    }
+
+    public static synchronized VillageTimePhase currentPhase() {
+        return timePhase;
+    }
+
     public static synchronized String setVillageCenter(ServerPlayer actor) {
         if (!isMayor(actor)) {
             return "촌장만 마을 중심을 지정할 수 있습니다.";
@@ -108,7 +116,7 @@ public final class VillageCouncilState {
 
     public static synchronized String villageStatus(ServerPlayer viewer) {
         if (villageCenter == null) {
-            return "§6[마을 영역] §f중심 미지정 | 촌장이 /vg village set_center를 사용해야 합니다.";
+            return "§6[마을 영역] §f중심 미지정 | 첫 촌장 접속 시 전용 마을이 자동 배치됩니다.";
         }
 
         MinecraftServer server = viewer.level().getServer();
@@ -139,6 +147,7 @@ public final class VillageCouncilState {
         mayorName = target.getGameProfile().name();
         activeProposal = null;
         persist();
+        VillageStarterKit.grantMayorCaller(target);
         broadcast(actor.level().getServer(), "§6촌장직이 " + mayorName + "§f 님에게 넘어갔습니다.");
         return "촌장직 이전 완료";
     }
@@ -146,6 +155,9 @@ public final class VillageCouncilState {
     public static synchronized String proposeAdvanceTime(ServerPlayer proposer) {
         if (!isMayor(proposer)) {
             return "촌장만 마을 전체 안건을 발의할 수 있습니다.";
+        }
+        if (VillageRaidSystem.isRaidLocked()) {
+            return "습격이 끝날 때까지 시간을 진행할 수 없습니다.";
         }
         if (activeProposal != null) {
             return "이미 진행 중인 안건이 있습니다.";
@@ -247,6 +259,17 @@ public final class VillageCouncilState {
         freezeAndApplyTime(server);
     }
 
+    public static synchronized void completeRaid(MinecraftServer server) {
+        if (timePhase == VillageTimePhase.NIGHT) {
+            villageDay++;
+        }
+        timePhase = VillageTimePhase.MORNING;
+        activeProposal = null;
+        persist();
+        freezeAndApplyTime(server);
+        broadcast(server, "§b마을 시간이 제 " + villageDay + "일 아침으로 진행되었습니다. 정비를 시작하세요.");
+    }
+
     private static void evaluateProposal(MinecraftServer server) {
         if (activeProposal == null) {
             return;
@@ -278,6 +301,7 @@ public final class VillageCouncilState {
         persist();
         freezeAndApplyTime(server);
         broadcast(server, "§b마을 시간이 제 " + villageDay + "일 " + timePhase.koreanName() + "(으)로 진행되었습니다.");
+        VillageRaidSystem.onPhaseChanged(server, timePhase);
     }
 
     private static void persist() {
