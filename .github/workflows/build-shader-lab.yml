@@ -57,6 +57,12 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
 
+      - name: Flatten bundled Sodium module
+        run: |
+          set -o pipefail
+          python3 scripts/flatten_sodium_in_final_jar.py "build/libs/shaderlab-${MOD_VERSION}.jar" \
+            2>&1 | tee ci-logs/sodium-flatten.log
+
       - name: Verify final single JAR
         run: |
           set -o pipefail
