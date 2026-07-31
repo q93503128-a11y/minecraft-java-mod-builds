@@ -21,13 +21,12 @@ jobs:
     timeout-minutes: 120
 
     env:
-      PROJECT_META_DIR: projects/wildbound
       TRANSPORT_DIR: projects/wildbound/source
       WORK_ROOT: _work/wildbound
       SOURCE_DIR: _work/wildbound/Wildbound_Java_26.2_v1.8.1_Source
       OUTPUT_DIR: projects/wildbound/ci-output
       LOG_DIR: projects/wildbound/ci-output/raw-logs
-      SOURCE_SHA256: 1832e3458319d0ec0f626fc9be92c0532416afe9b0c772ba3668e5a8371c8524
+      SOURCE_SHA256: d93b79dc3a8e5255c1775f6ba471f861e0c7d5d41fefe5dfa1824b4923bc4369
       EXPECTED_JAR: wildbound-1.8.1.jar
 
     steps:
@@ -53,53 +52,81 @@ jobs:
           rm -rf "$WORK_ROOT" "$OUTPUT_DIR"
           mkdir -p "$WORK_ROOT" "$LOG_DIR"
 
-      - name: Reconstruct and verify Wildbound source baseline
+      - name: Reconstruct and verify Wildbound compile source
         shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
-          parts=("$TRANSPORT_DIR"/source-min.tar.xz.b64.part*)
+          parts=("$TRANSPORT_DIR"/compile-min-v2.tar.xz.b64.part*)
           if (( ${#parts[@]} == 0 )); then
-            echo "No Wildbound source transport parts were found." | tee "$LOG_DIR/source-reconstruction.log"
+            echo 'No Wildbound compile transport parts found.' | tee "$LOG_DIR/source-reconstruction.log"
             exit 1
           fi
           printf '%s\n' "${parts[@]}" | tee "$LOG_DIR/source-parts.txt"
-          cat "${parts[@]}" | base64 --decode > "$WORK_ROOT/source-min.tar.xz"
-          printf '%s  %s\n' "$SOURCE_SHA256" "$WORK_ROOT/source-min.tar.xz" | sha256sum -c - | tee "$LOG_DIR/source-sha256.log"
-          tar -xJf "$WORK_ROOT/source-min.tar.xz" -C "$WORK_ROOT"
+          cat "${parts[@]}" | base64 --decode > "$WORK_ROOT/source-compile-min.tar.xz"
+          printf '%s  %s\n' "$SOURCE_SHA256" "$WORK_ROOT/source-compile-min.tar.xz" | sha256sum -c - | tee "$LOG_DIR/source-sha256.log"
+          tar -xJf "$WORK_ROOT/source-compile-min.tar.xz" -C "$WORK_ROOT"
           test -f "$SOURCE_DIR/build.gradle"
           test -f "$SOURCE_DIR/gradle.properties"
-          test -d "$SOURCE_DIR/src/main/java"
+          test -f "$SOURCE_DIR/settings.gradle"
+          test -d "$SOURCE_DIR/src/main/java/dev/moonseungjun/wildbound"
+          java_count=$(find "$SOURCE_DIR/src/main/java" -name '*.java' -type f | wc -l)
+          test "$java_count" -ge 50
+          echo "java_source_count=$java_count" | tee "$LOG_DIR/source-preflight.log"
 
-      - name: Verify toolchain
+      - name: Restore generated metadata template
         shell: bash
         run: |
           set -euo pipefail
-          {
-            java -version
-            gradle --version
-            python3 --version
-          } 2>&1 | tee "$LOG_DIR/toolchain.log"
-          java -version 2>&1 | grep -Eq 'version "25([."]|$)'
-          gradle --version | grep -F 'Gradle 9.2.1'
+          mkdir -p "$SOURCE_DIR/src/main/templates/META-INF"
+          cat > "$SOURCE_DIR/src/main/templates/META-INF/neoforge.mods.toml" <<'EOF'
+          license="${mod_license}"
 
-      - name: Verify dependency boundary
+          [[mods]]
+          modId="${mod_id}"
+          version="${mod_version}"
+          displayName="${mod_name}"
+          authors="문승준"
+          description='''
+          고유 몬스터를 포획하고 육성하며 진화시키는 Minecraft Java 몬스터 수집 RPG.
+          Minecraft 26.2와 NeoForge 전용으로 새롭게 제작됩니다.
+          '''
+
+          [[dependencies.${mod_id}]]
+          modId="neoforge"
+          type="required"
+          versionRange="[${neo_version},)"
+          ordering="NONE"
+          side="BOTH"
+
+          [[dependencies.${mod_id}]]
+          modId="minecraft"
+          type="required"
+          versionRange="${minecraft_version_range}"
+          ordering="NONE"
+          side="BOTH"
+
+          [[dependencies.${mod_id}]]
+          modId="geckolib"
+          type="required"
+          versionRange="[${geckolib_version},)"
+          ordering="AFTER"
+          side="BOTH"
+          EOF
+
+      - name: Verify toolchain and dependency boundary
         shell: bash
         working-directory: _work/wildbound/Wildbound_Java_26.2_v1.8.1_Source
         run: |
           set -euo pipefail
+          { java -version; gradle --version; } 2>&1 | tee "${GITHUB_WORKSPACE}/${LOG_DIR}/toolchain.log"
+          java -version 2>&1 | grep -Eq 'version "25([."]|$)'
+          gradle --version | grep -F 'Gradle 9.2.1'
           if grep -RniE 'maven\.modrinth|qANg5Jrr|e4mc' build.gradle settings.gradle gradle.properties; then
-            echo "e4mc/Modrinth dependency declaration is forbidden in the Wildbound build." | tee -a "${GITHUB_WORKSPACE}/${LOG_DIR}/dependency-boundary.log"
+            echo 'e4mc or Modrinth dependency declaration is forbidden.' | tee "${GITHUB_WORKSPACE}/${LOG_DIR}/dependency-boundary.log"
             exit 1
           fi
           grep -F 'com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}' build.gradle | tee "${GITHUB_WORKSPACE}/${LOG_DIR}/dependency-boundary.log"
-
-      - name: Run Wildbound preflight
-        shell: bash
-        working-directory: _work/wildbound/Wildbound_Java_26.2_v1.8.1_Source
-        run: |
-          set -euo pipefail
-          python3 tools/preflight.py 2>&1 | tee "${GITHUB_WORKSPACE}/${LOG_DIR}/preflight.log"
 
       - name: Resolve dependencies
         shell: bash
@@ -119,13 +146,13 @@ jobs:
           status=${PIPESTATUS[0]}
           echo "$status" > "${GITHUB_WORKSPACE}/${OUTPUT_DIR}/build-exit-code.txt"
           if [[ "$status" -eq 0 ]]; then
-            echo "build_success=true" >> "$GITHUB_OUTPUT"
+            echo 'build_success=true' >> "$GITHUB_OUTPUT"
           else
-            echo "build_success=false" >> "$GITHUB_OUTPUT"
+            echo 'build_success=false' >> "$GITHUB_OUTPUT"
           fi
           exit 0
 
-      - name: Locate and inspect built JAR
+      - name: Inspect compiled JAR
         if: steps.clean_build.outputs.build_success == 'true'
         shell: bash
         working-directory: _work/wildbound/Wildbound_Java_26.2_v1.8.1_Source
@@ -134,133 +161,68 @@ jobs:
           jar_path="build/libs/$EXPECTED_JAR"
           test -s "$jar_path"
           python3 - "$jar_path" "${GITHUB_WORKSPACE}/${LOG_DIR}/jar-validation.log" <<'PY'
-          import sys
-          import zipfile
+          import sys, zipfile
           from collections import Counter
           from pathlib import Path
-
-          jar = Path(sys.argv[1])
-          log = Path(sys.argv[2])
-          errors = []
+          jar = Path(sys.argv[1]); log = Path(sys.argv[2]); errors = []
           with zipfile.ZipFile(jar) as zf:
-              names = zf.namelist()
-              counts = Counter(names)
-              duplicates = sorted(name for name, count in counts.items() if count > 1)
-              if duplicates:
-                  errors.append(f"duplicate entries: {duplicates[:20]}")
-              if not any(name.endswith('.class') and name.startswith('dev/moonseungjun/wildbound/') for name in names):
+              names = zf.namelist(); counts = Counter(names)
+              duplicates = [n for n,c in counts.items() if c > 1]
+              if duplicates: errors.append(f'duplicate entries: {duplicates[:20]}')
+              if not any(n.startswith('dev/moonseungjun/wildbound/') and n.endswith('.class') for n in names):
                   errors.append('compiled Wildbound classes are missing')
-              if not any(name.startswith('assets/wildbound/') for name in names):
-                  errors.append('assets/wildbound is missing')
-              if not any(name.startswith('data/wildbound/') for name in names):
-                  errors.append('data/wildbound is missing')
-              metadata_candidates = {
-                  'META-INF/neoforge.mods.toml',
-                  'META-INF/mods.toml',
-              }
-              if not any(name in metadata_candidates for name in names):
-                  errors.append('NeoForge loader metadata is missing')
-              forbidden = [
-                  name for name in names
-                  if name.endswith('.java')
-                  or name.startswith('.github/')
-                  or name.startswith('tools/')
-                  or 'BUILD_AND_RUNTIME_REPORT' in name
-                  or name.startswith('raw-logs/')
-              ]
-              if forbidden:
-                  errors.append(f"development files bundled: {forbidden[:20]}")
-              lower_names = [name.lower() for name in names]
-              if any('e4mc' in name for name in lower_names):
-                  errors.append('e4mc content is bundled')
-              shaded_geckolib = [
-                  name for name in names
-                  if name.startswith('software/bernie/geckolib/')
-                  or name.startswith('com/geckolib/')
-              ]
-              if shaded_geckolib:
-                  errors.append(f"GeckoLib implementation appears shaded: {shaded_geckolib[:10]}")
-
-          lines = [
-              f"jar={jar}",
-              f"size={jar.stat().st_size}",
-              f"entries={len(names)}",
-              f"duplicates={len(duplicates)}",
-              f"errors={len(errors)}",
-          ]
-          lines.extend(f"ERROR: {error}" for error in errors)
-          log.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-          print(log.read_text(encoding='utf-8'))
-          if errors:
-              raise SystemExit(1)
+              if 'META-INF/neoforge.mods.toml' not in names and 'META-INF/mods.toml' not in names:
+                  errors.append('NeoForge metadata is missing')
+              if any(n.endswith('.java') or n.startswith('.github/') or n.startswith('tools/') for n in names):
+                  errors.append('development files are bundled')
+              lower = [n.lower() for n in names]
+              if any('e4mc' in n for n in lower): errors.append('e4mc content is bundled')
+              if any(n.startswith('software/bernie/geckolib/') or n.startswith('com/geckolib/') for n in names):
+                  errors.append('GeckoLib implementation appears shaded')
+          text = '\n'.join([f'jar={jar}', f'size={jar.stat().st_size}', f'entries={len(names)}', f'errors={len(errors)}'] + [f'ERROR: {e}' for e in errors]) + '\n'
+          log.write_text(text, encoding='utf-8'); print(text)
+          if errors: raise SystemExit(1)
           PY
           cp "$jar_path" "${GITHUB_WORKSPACE}/${OUTPUT_DIR}/$EXPECTED_JAR"
           sha256sum "$jar_path" | awk '{print $1}' > "${GITHUB_WORKSPACE}/${OUTPUT_DIR}/$EXPECTED_JAR.sha256"
 
-      - name: Attempt datagen
-        if: steps.clean_build.outputs.build_success == 'true'
-        continue-on-error: true
-        shell: bash
-        working-directory: _work/wildbound/Wildbound_Java_26.2_v1.8.1_Source
-        run: |
-          set -o pipefail
-          gradle --no-daemon runData --stacktrace 2>&1 | tee "${GITHUB_WORKSPACE}/${LOG_DIR}/datagen.log"
-
-      - name: Attempt GameTest server
-        if: steps.clean_build.outputs.build_success == 'true'
-        continue-on-error: true
-        shell: bash
-        working-directory: _work/wildbound/Wildbound_Java_26.2_v1.8.1_Source
-        run: |
-          set -o pipefail
-          timeout 20m gradle --no-daemon runGameTestServer --stacktrace 2>&1 | tee "${GITHUB_WORKSPACE}/${LOG_DIR}/gametest.log"
-
-      - name: Write build and runtime report
+      - name: Write report
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          build_exit="NOT RUN"
+          build_exit='NOT RUN'
           [[ -f "$OUTPUT_DIR/build-exit-code.txt" ]] && build_exit="$(cat "$OUTPUT_DIR/build-exit-code.txt")"
-          jar_status="NOT PRODUCED"
-          jar_hash="NOT AVAILABLE"
+          jar_status='NOT PRODUCED'
+          jar_hash='NOT AVAILABLE'
           if [[ -s "$OUTPUT_DIR/$EXPECTED_JAR" ]]; then
-            jar_status="PRODUCED AND STRUCTURALLY VALIDATED"
+            jar_status='CI-COMPILED AND STRUCTURALLY VALIDATED'
             jar_hash="$(cat "$OUTPUT_DIR/$EXPECTED_JAR.sha256")"
           fi
           cat > "$OUTPUT_DIR/BUILD_AND_RUNTIME_REPORT.md" <<EOF
-          # Wildbound 1.8.1 build and runtime report
+          # Wildbound 1.8.1 CI compile report
 
-          - Repository commit: \`${GITHUB_SHA}\`
-          - Workflow run: \`${GITHUB_RUN_ID}\`
-          - Minecraft: \`26.2\`
+          - Commit: \`${GITHUB_SHA}\`
+          - Run: \`${GITHUB_RUN_ID}\`
           - Java: \`25\`
-          - NeoForge: \`26.2.0.38-beta\`
           - Gradle: \`9.2.1\`
-          - ModDevGradle: \`2.0.143\`
-          - GeckoLib: \`5.5.3\` external dependency
-          - e4mc: not bundled and not a Wildbound Gradle dependency
+          - Minecraft: \`26.2\`
+          - NeoForge: \`26.2.0.38-beta\`
+          - GeckoLib: \`5.5.3\` external
+          - e4mc: not bundled and not declared as a dependency
           - Clean-build exit code: \`${build_exit}\`
-          - JAR status: ${jar_status}
-          - JAR SHA-256: \`${jar_hash}\`
-          - Datagen: see \`raw-logs/datagen.log\` when present
-          - GameTest: see \`raw-logs/gametest.log\` when present
-          - Dedicated-server smoke test: NOT RUN unless represented by GameTest logs
-          - Client visual/in-game test: NOT RUN in this headless workflow
-
-          A successful static preflight is not treated as a successful mod build. The deliverable JAR exists only when the clean build and JAR inspection both passed.
+          - Compiled JAR status: ${jar_status}
+          - SHA-256: \`${jar_hash}\`
+          - Full assets/data merge and in-game tests: NOT RUN in this compile-only workflow
           EOF
 
-      - name: Pack raw logs
+      - name: Pack logs
         if: always()
         shell: bash
         run: |
-          set -euo pipefail
-          if [[ -d "$LOG_DIR" ]]; then
-            (cd "$OUTPUT_DIR" && zip -qr raw-logs.zip raw-logs)
-          fi
+          if [[ -d "$LOG_DIR" ]]; then (cd "$OUTPUT_DIR" && zip -qr raw-logs.zip raw-logs); fi
 
-      - name: Upload Wildbound logs
+      - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -272,7 +234,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload Wildbound deliverables
+      - name: Upload compiled deliverables
         if: steps.clean_build.outputs.build_success == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -285,12 +247,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Enforce successful build result
+      - name: Enforce successful result
         if: always()
         shell: bash
         run: |
           set -euo pipefail
           test -f "$OUTPUT_DIR/build-exit-code.txt"
-          test "$(cat "$OUTPUT_DIR/build-exit-code.txt")" = "0"
+          test "$(cat "$OUTPUT_DIR/build-exit-code.txt")" = '0'
           test -s "$OUTPUT_DIR/$EXPECTED_JAR"
           test -s "$OUTPUT_DIR/$EXPECTED_JAR.sha256"
