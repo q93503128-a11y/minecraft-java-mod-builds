@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -51,7 +51,7 @@ public final class VillageCouncilState {
             mayorId = player.getUUID();
             mayorName = player.getGameProfile().name();
             changed = true;
-            broadcast(player.getServer(), "§6" + mayorName + "§f 님이 첫 임시 촌장이 되었습니다.");
+            broadcast(player.level().getServer(), "§6" + mayorName + "§f 님이 첫 임시 촌장이 되었습니다.");
         }
         if (!RPG_PROGRESS.containsKey(player.getUUID())) {
             RPG_PROGRESS.put(player.getUUID(), RpgProgress.initial());
@@ -86,19 +86,21 @@ public final class VillageCouncilState {
         if (!isMayor(actor)) {
             return "촌장만 마을 중심을 지정할 수 있습니다.";
         }
-        if (actor.level() != actor.getServer().overworld()) {
+        MinecraftServer server = actor.level().getServer();
+        if (server == null || actor.level() != server.overworld()) {
             return "마을 중심은 오버월드에서만 지정할 수 있습니다.";
         }
 
         villageCenter = actor.blockPosition().immutable();
         persist();
-        broadcast(actor.getServer(), "§6[마을 지정] §f마을 중심이 " + formatPos(villageCenter)
+        broadcast(server, "§6[마을 지정] §f마을 중심이 " + formatPos(villageCenter)
                 + "에 지정되었습니다. 보호·방어 영역 반경은 " + VILLAGE_RADIUS + "블록입니다.");
         return "마을 중심 지정 완료: " + formatPos(villageCenter);
     }
 
     public static synchronized boolean isInsideVillage(ServerPlayer player) {
-        if (villageCenter == null || player.level() != player.getServer().overworld()) {
+        MinecraftServer server = player.level().getServer();
+        if (server == null || villageCenter == null || player.level() != server.overworld()) {
             return false;
         }
         return distanceSquared(player.blockPosition(), villageCenter) <= (long) VILLAGE_RADIUS * VILLAGE_RADIUS;
@@ -109,7 +111,8 @@ public final class VillageCouncilState {
             return "§6[마을 영역] §f중심 미지정 | 촌장이 /vg village set_center를 사용해야 합니다.";
         }
 
-        if (viewer.level() != viewer.getServer().overworld()) {
+        MinecraftServer server = viewer.level().getServer();
+        if (server == null || viewer.level() != server.overworld()) {
             return "§6[마을 영역] §f중심 " + formatPos(villageCenter)
                     + " | 반경 " + VILLAGE_RADIUS + " | 현재 다른 차원에 있습니다.";
         }
@@ -136,7 +139,7 @@ public final class VillageCouncilState {
         mayorName = target.getGameProfile().name();
         activeProposal = null;
         persist();
-        broadcast(actor.getServer(), "§6촌장직이 " + mayorName + "§f 님에게 넘어갔습니다.");
+        broadcast(actor.level().getServer(), "§6촌장직이 " + mayorName + "§f 님에게 넘어갔습니다.");
         return "촌장직 이전 완료";
     }
 
@@ -148,10 +151,14 @@ public final class VillageCouncilState {
             return "이미 진행 중인 안건이 있습니다.";
         }
 
+        MinecraftServer server = proposer.level().getServer();
+        if (server == null) {
+            return "서버 상태를 확인할 수 없습니다.";
+        }
         activeProposal = new Proposal("advance_time", proposer.getUUID(), new LinkedHashMap<>());
         activeProposal.votes().put(proposer.getUUID(), true);
-        broadcast(proposer.getServer(), "§e[마을 투표] §f다음 시간 단계로 진행할지 투표합니다. /vg vote yes 또는 /vg vote no");
-        evaluateProposal(proposer.getServer());
+        broadcast(server, "§e[마을 투표] §f다음 시간 단계로 진행할지 투표합니다. /vg vote yes 또는 /vg vote no");
+        evaluateProposal(server);
         return "시간 진행 안건을 발의했습니다.";
     }
 
@@ -160,10 +167,14 @@ public final class VillageCouncilState {
             return "현재 진행 중인 안건이 없습니다.";
         }
 
+        MinecraftServer server = player.level().getServer();
+        if (server == null) {
+            return "서버 상태를 확인할 수 없습니다.";
+        }
         activeProposal.votes().put(player.getUUID(), yes);
         String result = player.getGameProfile().name() + "님이 " + (yes ? "찬성" : "반대") + "에 투표했습니다.";
-        broadcast(player.getServer(), result);
-        evaluateProposal(player.getServer());
+        broadcast(server, result);
+        evaluateProposal(server);
         return result;
     }
 
@@ -193,7 +204,7 @@ public final class VillageCouncilState {
 
         if (levelsGained > 0) {
             player.heal(player.getMaxHealth());
-            broadcast(player.getServer(), "§d[성장] §f" + player.getGameProfile().name()
+            broadcast(player.level().getServer(), "§d[성장] §f" + player.getGameProfile().name()
                     + " 님이 레벨 " + level + "에 도달했습니다. 전투력이 크게 상승합니다!");
         }
         return new ExperienceResult(amount, previous, updated, levelsGained);
@@ -276,8 +287,12 @@ public final class VillageCouncilState {
     }
 
     private static void freezeAndApplyTime(MinecraftServer server) {
-        server.overworld().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false, server);
-        server.overworld().setDayTime(timePhase.minecraftTime());
+        var overworld = server.overworld();
+        overworld.getGameRules().set(GameRules.ADVANCE_TIME, false, server);
+        var defaultClock = overworld.dimensionType().defaultClock().orElse(null);
+        if (defaultClock != null) {
+            overworld.clockManager().setTotalTicks(defaultClock, timePhase.minecraftTime());
+        }
     }
 
     private static int majority(MinecraftServer server) {
