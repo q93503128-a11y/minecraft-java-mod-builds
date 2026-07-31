@@ -22,7 +22,7 @@ jobs:
   build:
     name: Java 25 / NeoForge 26.2 build
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 100
 
     steps:
       - name: Checkout repository
@@ -45,10 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p logs deliverables
-          {
-            java -version
-            gradle --version
-          } 2>&1 | tee logs/toolchain.log
+          { java -version; gradle --version; } 2>&1 | tee logs/toolchain.log
           find "$PROJECT_DIR/src/main/java" -name '*.java' -type f | sort | tee logs/java-files.txt
           find "$PROJECT_DIR/src/main/resources" -type f | sort | tee logs/resource-files.txt
           test -s logs/java-files.txt
@@ -61,12 +58,14 @@ jobs:
           set -o pipefail
           gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee ../../logs/clean-build.log
 
-      - name: Dedicated server and authored realm smoke test
+      - name: Dedicated server noise realm and capital smoke test
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-ci-world
           mkdir -p run
+          printf 'eula=true\nlevel-name=livingkingdoms-ci-world\n' > run/server.properties
           printf 'eula=true\n' > run/eula.txt
           rm -f ../../logs/server-smoke.log
           gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/server-smoke.log 2>&1 &
@@ -79,16 +78,10 @@ jobs:
 
           ready=0
           diagnostic=0
-          for attempt in $(seq 1 240); do
-            if grep -Eq 'Done \(|For help, type "help"' ../../logs/server-smoke.log; then
-              ready=1
-            fi
-            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log; then
-              diagnostic=1
-            fi
-            if [ "$ready" -eq 1 ] && [ "$diagnostic" -eq 1 ]; then
-              break
-            fi
+          for attempt in $(seq 1 480); do
+            if grep -Eq 'Done \(|For help, type "help"' ../../logs/server-smoke.log; then ready=1; fi
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log; then diagnostic=1; fi
+            if [ "$ready" -eq 1 ] && [ "$diagnostic" -eq 1 ]; then break; fi
             if ! kill -0 "$server_pid" 2>/dev/null; then
               cat ../../logs/server-smoke.log
               echo 'Dedicated server exited before completing startup diagnostics.' >&2
@@ -98,20 +91,17 @@ jobs:
           done
 
           cat ../../logs/server-smoke.log
-          if [ "$ready" -ne 1 ]; then
-            echo 'Dedicated server did not reach ready state within 240 seconds.' >&2
-            exit 1
-          fi
-          if [ "$diagnostic" -ne 1 ]; then
-            echo 'Authored starter realm diagnostics did not complete within 240 seconds.' >&2
-            exit 1
-          fi
+          test "$ready" -eq 1 || { echo 'Dedicated server did not reach ready state within 480 seconds.' >&2; exit 1; }
+          test "$diagnostic" -eq 1 || { echo 'Noise realm diagnostics did not complete within 480 seconds.' >&2; exit 1; }
+          grep -F 'noise_terrain=true' ../../logs/server-smoke.log
+          grep -F 'surveyed_sites=true' ../../logs/server-smoke.log
+          grep -F 'erden_facilities=10' ../../logs/server-smoke.log
           if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms' ../../logs/server-smoke.log; then
-            echo 'Living Kingdoms datapack or dimension loading error detected.' >&2
+            echo 'Living Kingdoms datapack, dimension or world generation error detected.' >&2
             exit 1
           fi
 
-      - name: Graphical client origin screen smoke test
+      - name: Graphical client origin and codex smoke test
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         env:
@@ -122,7 +112,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends xvfb libgl1-mesa-dri >/dev/null
           rm -f ../../logs/client-smoke.log
           set +e
-          timeout 300s xvfb-run -a -s '-screen 0 1280x720x24' \
+          timeout 360s xvfb-run -a -s '-screen 0 1280x720x24' \
             gradle --no-daemon runClient --stacktrace --console=plain \
             > ../../logs/client-smoke.log 2>&1
           client_status=$?
@@ -134,8 +124,9 @@ jobs:
           fi
           grep -F 'LK_CLIENT_DIAGNOSTIC_SCREEN_OPENED' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true' ../../logs/client-smoke.log
+          grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' ../../logs/client-smoke.log
           if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen' ../../logs/client-smoke.log; then
-            echo 'Living Kingdoms client or origin screen error detected.' >&2
+            echo 'Living Kingdoms client or screen rendering error detected.' >&2
             exit 1
           fi
 
@@ -161,6 +152,7 @@ jobs:
           unzip -Z1 "$JAR" | grep -Eq '^data/livingkingdoms/'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension/living_realm.json'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension_type/living_realm.json'
+          unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -F 'minecraft:noise'
           if unzip -Z1 "$JAR" | grep -Eq '(^|/)(tools|\.github)/|\.java$'; then
             echo 'Forbidden development content found in runtime JAR' >&2
             exit 1
@@ -182,22 +174,23 @@ jobs:
           - Java: 25
           - Gradle: 9.2.1
           - Clean build: PASS
-          - Dedicated server startup: PASS
+          - Fresh dedicated server startup: PASS
           - Datapack and custom dimension load: PASS
-          - Three authored starter homelands generated: PASS
-          - Eight residence floor and headroom checks: PASS
+          - Living realm noise generator: PASS
+          - Terrain survey and persisted dynamic homeland sites: PASS
+          - Three terrain-integrated regional capitals: PASS
+          - Eight dynamic residence floor and headroom checks: PASS
+          - Erden citadel, administration, temple, market, inn, guild, smithy, barracks, granary, wall and canal checks: PASS
           - Graphical client startup under Xvfb: PASS
-          - Origin selection screen opened and rendered: PASS
+          - Origin selection screen: PASS
+          - Codex V2 overview, equipment/law, atlas and skills pages: PASS
+          - Server-authoritative affiliation, racial traits and skill progression compiled: PASS
           - Runtime JAR ZIP integrity: PASS
-          - Required metadata: PASS
-          - Compiled classes: PASS
-          - assets/livingkingdoms: PASS
-          - data/livingkingdoms: PASS
           - Duplicate ZIP entries: NONE
-          - Datagen: NOT RUN
-          - Full manual gameplay test: PENDING
+          - Licensed external art bundle: NOT YET INCLUDED
+          - Full manual gameplay and visual inspection: PENDING
 
-          This is the first playable vertical-slice candidate. It contains the origin flow, authored starting realm, safe choice-based spawn, first NPC introduction task, custom origin UI, and automated server/client smoke coverage.
+          This candidate replaces the old flat staging realm with noise terrain, surveys sites before construction, builds distinct regional capitals, and adds a readable codex plus persistent skill progression. Existing flat test worlds are not a valid visual test for the new generator; create a fresh world.
           EOF
 
       - name: Upload build logs
