@@ -51,22 +51,20 @@ public final class OriginSelectionScreen extends Screen {
         int buttonWidth = panelWidth - 76;
         int top = Math.max(22, (this.height - 330) / 2);
 
-        this.speciesButton = this.addRenderableWidget(Button.builder(
-                Component.empty(), button -> cycleSpecies()
-        ).bounds(buttonLeft, top + 72, buttonWidth, 28).build());
-        this.homelandButton = this.addRenderableWidget(Button.builder(
-                Component.empty(), button -> cycleHomeland()
-        ).bounds(buttonLeft, top + 122, buttonWidth, 28).build());
-        this.backgroundButton = this.addRenderableWidget(Button.builder(
-                Component.empty(), button -> cycleBackground()
-        ).bounds(buttonLeft, top + 172, buttonWidth, 28).build());
-        this.residenceButton = this.addRenderableWidget(Button.builder(
-                Component.empty(), button -> cycleResidence()
-        ).bounds(buttonLeft, top + 222, buttonWidth, 28).build());
-        this.confirmButton = this.addRenderableWidget(Button.builder(
-                Component.translatable("livingkingdoms.origin.confirm"), button -> submit()
-        ).bounds(buttonLeft, top + 270, buttonWidth, 32).build());
-        refreshButtonLabels();
+        this.speciesButton = invisibleButton(buttonLeft, top + 72, buttonWidth, 28, this::cycleSpecies);
+        this.homelandButton = invisibleButton(buttonLeft, top + 122, buttonWidth, 28, this::cycleHomeland);
+        this.backgroundButton = invisibleButton(buttonLeft, top + 172, buttonWidth, 28, this::cycleBackground);
+        this.residenceButton = invisibleButton(buttonLeft, top + 222, buttonWidth, 28, this::cycleResidence);
+        this.confirmButton = invisibleButton(buttonLeft, top + 270, buttonWidth, 32, this::submit);
+        refreshButtonState();
+    }
+
+    private Button invisibleButton(int x, int y, int width, int height, Runnable action) {
+        Button button = this.addRenderableWidget(Button.builder(
+                Component.empty(), ignored -> action.run()
+        ).bounds(x, y, width, height).build());
+        button.setAlpha(0.0F);
+        return button;
     }
 
     private void cycleSpecies() {
@@ -76,7 +74,7 @@ public final class OriginSelectionScreen extends Screen {
         backgroundIndex = 0;
         residenceIndex = 0;
         normalizeSelection();
-        refreshButtonLabels();
+        refreshButtonState();
     }
 
     private void cycleHomeland() {
@@ -86,7 +84,7 @@ public final class OriginSelectionScreen extends Screen {
         backgroundIndex = 0;
         residenceIndex = 0;
         normalizeSelection();
-        refreshButtonLabels();
+        refreshButtonState();
     }
 
     private void cycleBackground() {
@@ -94,7 +92,7 @@ public final class OriginSelectionScreen extends Screen {
         List<String> backgrounds = availableBackgrounds();
         backgroundIndex = (backgroundIndex + 1) % backgrounds.size();
         normalizeSelection();
-        refreshButtonLabels();
+        refreshButtonState();
     }
 
     private void cycleResidence() {
@@ -102,7 +100,7 @@ public final class OriginSelectionScreen extends Screen {
         List<String> residences = availableResidences();
         residenceIndex = (residenceIndex + 1) % residences.size();
         normalizeSelection();
-        refreshButtonLabels();
+        refreshButtonState();
     }
 
     private void normalizeSelection() {
@@ -164,20 +162,17 @@ public final class OriginSelectionScreen extends Screen {
         return residences.get(Math.floorMod(residenceIndex, residences.size()));
     }
 
-    private void refreshButtonLabels() {
-        if (speciesButton == null) return;
-        speciesButton.setMessage(Component.literal("종족  ·  " + displaySpecies(selectedSpeciesId()) + "  ›"));
-        homelandButton.setMessage(Component.literal("출신 세력  ·  " + displayHomeland(selectedHomelandId()) + "  ›"));
-        backgroundButton.setMessage(Component.literal("사회적 배경  ·  " + displayBackground(selectedBackgroundId()) + "  ›"));
-        residenceButton.setMessage(Component.literal("시작 거주지  ·  " + displayResidence(selectedResidenceId()) + "  ›"));
-        confirmButton.active = !submitting;
+    private void refreshButtonState() {
+        if (confirmButton != null) {
+            confirmButton.active = !submitting;
+        }
     }
 
     private void submit() {
         if (submitting || schemaVersion != 1) return;
         submitting = true;
         statusMessage = "왕국 기록부에 출신을 등록하고 있습니다...";
-        refreshButtonLabels();
+        refreshButtonState();
         ClientPacketDistributor.sendToServer(new SubmitOriginPayload(
                 selectedSpeciesId(), selectedHomelandId(), selectedBackgroundId(), selectedResidenceId()
         ));
@@ -189,7 +184,7 @@ public final class OriginSelectionScreen extends Screen {
             Minecraft.getInstance().gui.setScreen(null);
         } else {
             submitting = false;
-            refreshButtonLabels();
+            refreshButtonState();
         }
     }
 
@@ -216,15 +211,35 @@ public final class OriginSelectionScreen extends Screen {
         int top = Math.max(22, (this.height - panelHeight) / 2);
         int right = left + panelWidth;
         int bottom = top + panelHeight;
+        int cardLeft = left + 38;
+        int cardWidth = panelWidth - 76;
 
         graphics.fill(0, 0, this.width, this.height, 0xD00A0C12);
-        graphics.fill(left - 4, top - 4, right + 4, bottom + 4, 0xFF33261E);
+        graphics.fill(left - 7, top - 7, right + 7, bottom + 7, 0xFF18100D);
+        graphics.fill(left - 4, top - 4, right + 4, bottom + 4, 0xFF80542D);
         graphics.fill(left, top, right, bottom, 0xFFF0DFC0);
-        graphics.fill(left, top, left + 7, bottom, 0xFF8C5A2A);
-        graphics.fill(right - 7, top, right, bottom, 0xFF8C5A2A);
+        graphics.fill(left, top, left + 7, bottom, 0xFF70431F);
+        graphics.fill(right - 7, top, right, bottom, 0xFF70431F);
         graphics.fill(left + 18, top + 48, right - 18, top + 50, 0xFFB48A50);
+        graphics.fill(left + 18, bottom - 15, right - 18, bottom - 13, 0xFFD1AE6B);
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+
+        drawChoiceCard(graphics, cardLeft, top + 72, cardWidth, 28,
+                "종족  ·  " + displaySpecies(selectedSpeciesId()) + "  ›",
+                isInside(mouseX, mouseY, cardLeft, top + 72, cardWidth, 28), false, true);
+        drawChoiceCard(graphics, cardLeft, top + 122, cardWidth, 28,
+                "출신 세력  ·  " + displayHomeland(selectedHomelandId()) + "  ›",
+                isInside(mouseX, mouseY, cardLeft, top + 122, cardWidth, 28), false, true);
+        drawChoiceCard(graphics, cardLeft, top + 172, cardWidth, 28,
+                "사회적 배경  ·  " + displayBackground(selectedBackgroundId()) + "  ›",
+                isInside(mouseX, mouseY, cardLeft, top + 172, cardWidth, 28), false, true);
+        drawChoiceCard(graphics, cardLeft, top + 222, cardWidth, 28,
+                "시작 거주지  ·  " + displayResidence(selectedResidenceId()) + "  ›",
+                isInside(mouseX, mouseY, cardLeft, top + 222, cardWidth, 28), false, true);
+        drawChoiceCard(graphics, cardLeft, top + 270, cardWidth, 32,
+                submitting ? "왕국 기록부에 등록 중..." : "이 삶으로 시작하기",
+                isInside(mouseX, mouseY, cardLeft, top + 270, cardWidth, 32), true, !submitting);
 
         graphics.centeredText(this.font, Component.translatable("livingkingdoms.origin.title"),
                 this.width / 2, top + 18, 0xFF3A2418);
@@ -238,6 +253,36 @@ public final class OriginSelectionScreen extends Screen {
                 this.width / 2, top + 204, 0xFF5A402D);
         graphics.centeredText(this.font, Component.literal(statusMessage),
                 this.width / 2, top + 310, submitting ? 0xFF7D5526 : 0xFF4A3528);
+    }
+
+    private void drawChoiceCard(
+            GuiGraphicsExtractor graphics,
+            int x,
+            int y,
+            int width,
+            int height,
+            String label,
+            boolean hovered,
+            boolean confirm,
+            boolean enabled
+    ) {
+        int outer = enabled ? (confirm ? 0xFF2C4937 : 0xFF59361F) : 0xFF6C6358;
+        int border = enabled ? (confirm ? 0xFFD5B66D : 0xFFC89B52) : 0xFF958C7E;
+        int inner = enabled
+                ? (confirm ? (hovered ? 0xFF476F50 : 0xFF365941) : (hovered ? 0xFF946038 : 0xFF744726))
+                : 0xFF82786B;
+        int text = enabled ? 0xFFFFE8B0 : 0xFFD2C9B9;
+
+        graphics.fill(x, y, x + width, y + height, outer);
+        graphics.fill(x + 2, y + 2, x + width - 2, y + height - 2, border);
+        graphics.fill(x + 4, y + 4, x + width - 4, y + height - 4, inner);
+        graphics.fill(x + 8, y + height - 6, x + width - 8, y + height - 4,
+                confirm ? 0xFFBFA15A : 0xFFB17E43);
+        graphics.centeredText(this.font, Component.literal(label), x + width / 2, y + (height - 8) / 2, text);
+    }
+
+    private static boolean isInside(int mouseX, int mouseY, int x, int y, int width, int height) {
+        return mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height;
     }
 
     private static String displaySpecies(String id) {
