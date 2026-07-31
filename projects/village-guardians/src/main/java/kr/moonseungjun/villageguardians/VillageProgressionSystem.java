@@ -112,11 +112,11 @@ public final class VillageProgressionSystem {
 
     public static synchronized String status() {
         return "보급품 " + supplies
-                + " | 성벽 Lv." + wallLevel
+                + " | 북문 Lv." + wallLevel
                 + " | 대장간 Lv." + smithyLevel
-                + " | 스킬관 Lv." + skillHallLevel
+                + " | 연구소 Lv." + skillHallLevel
                 + " | 의무소 Lv." + infirmaryLevel
-                + " | 창고 Lv." + storehouseLevel
+                + " | 보급소 Lv." + storehouseLevel
                 + " | 병영 Lv." + barracksLevel;
     }
 
@@ -263,9 +263,36 @@ public final class VillageProgressionSystem {
         }
     }
 
+    public static synchronized String claimDailyBread(ServerPlayer player) {
+        if (!isOperational(Building.STOREHOUSE)) {
+            return "상점·보급소가 파괴되어 오늘의 식량을 받을 수 없습니다.";
+        }
+        int day = VillageCouncilState.currentDay();
+        int lastClaimed = CLAIM_DAYS.getOrDefault(player.getUUID(), 0);
+        if (lastClaimed >= day) {
+            return "오늘의 빵 보급은 이미 받았습니다.";
+        }
+        int count = 3 + storehouseLevel * 2;
+        ItemStack bread = Items.BREAD.getDefaultInstance();
+        bread.setCount(count);
+        giveOrDrop(player, bread);
+        CLAIM_DAYS.put(player.getUUID(), day);
+        persist();
+        return "오늘의 빵 " + count + "개를 받았습니다.";
+    }
+
+    public static synchronized void grantDailyBreadOnLogin(ServerPlayer player) {
+        int day = VillageCouncilState.currentDay();
+        if (CLAIM_DAYS.getOrDefault(player.getUUID(), 0) >= day
+                || !isOperational(Building.STOREHOUSE)) {
+            return;
+        }
+        player.sendSystemMessage(Component.literal("§6[일일 식량] §f" + claimDailyBread(player)));
+    }
+
     public static synchronized String buyArrows(ServerPlayer player) {
         if (!isOperational(Building.STOREHOUSE)) {
-            return "창고가 파괴되어 상점을 이용할 수 없습니다.";
+            return "상점·보급소가 파괴되어 상점을 이용할 수 없습니다.";
         }
         int count = 16 + storehouseLevel * 4;
         int cost = 14;
@@ -280,9 +307,9 @@ public final class VillageProgressionSystem {
 
     public static synchronized String buyFood(ServerPlayer player) {
         if (!isOperational(Building.STOREHOUSE)) {
-            return "창고가 파괴되어 상점을 이용할 수 없습니다.";
+            return "상점·보급소가 파괴되어 상점을 이용할 수 없습니다.";
         }
-        int count = 6 + storehouseLevel * 2;
+        int count = 5 + storehouseLevel * 2;
         int cost = 18;
         if (!spendCoins(player, cost)) {
             return "수호 주화가 부족합니다. 전투 식량 가격: " + cost;
@@ -312,11 +339,11 @@ public final class VillageProgressionSystem {
 
     public static synchronized String learnNextSkill(ServerPlayer player) {
         if (!isOperational(Building.SKILL_HALL)) {
-            return "스킬 습득소가 파괴되어 기술을 배울 수 없습니다.";
+            return "기술·마법 연구소가 파괴되어 능력을 배울 수 없습니다.";
         }
         int current = skillRank(player);
         if (current >= MAX_PERSONAL_RANK) {
-            return "전투 기술이 최고 단계입니다.";
+            return "전투·마법 능력이 최고 단계입니다.";
         }
         int cost = 100 + current * 120;
         if (!spendCoins(player, cost)) {
@@ -324,7 +351,7 @@ public final class VillageProgressionSystem {
         }
         SKILL_RANKS.put(player.getUUID(), current + 1);
         persist();
-        return "전투 기술 단계 " + (current + 1) + " 습득 | 역할 스킬과 공격력 강화";
+        return "전투·마법 능력 단계 " + (current + 1) + " 습득 | 역할 스킬과 공격력 강화";
     }
 
     public static synchronized String train(ServerPlayer player) {
@@ -340,7 +367,7 @@ public final class VillageProgressionSystem {
         int xp = 30 + barracksLevel * 18;
         VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(player, xp);
         TRAINING_READY_AT.put(player.getUUID(), now + 180_000L);
-        return "병영 훈련 완료 | RPG XP " + result.awardedExperience()
+        return "병영 훈련 완료 | XP " + result.awardedExperience()
                 + " | 현재 레벨 " + result.current().level();
     }
 
@@ -355,10 +382,7 @@ public final class VillageProgressionSystem {
 
     public static synchronized String upgrade(ServerPlayer player, Building building) {
         if (building == Building.TOWN_HALL) {
-            return "회관은 직접 업그레이드하지 않습니다.";
-        }
-        if (!VillageCouncilState.isMayor(player)) {
-            return "건물 업그레이드는 촌장만 승인할 수 있습니다.";
+            return "마을 회관은 직접 업그레이드하지 않습니다.";
         }
         if (VillageRaidSystem.isRaidLocked()) {
             return "습격 중에는 업그레이드할 수 없습니다.";
@@ -388,9 +412,6 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized String repair(ServerPlayer player, Building building) {
-        if (!VillageCouncilState.isMayor(player)) {
-            return "건물 수리는 촌장이 공동 보급품으로 승인해야 합니다.";
-        }
         if (VillageRaidSystem.isRaidLocked()) {
             return "습격 중에는 수리할 수 없습니다.";
         }
@@ -421,12 +442,13 @@ public final class VillageProgressionSystem {
         int next = Math.max(0, previous - damage);
         DURABILITY.put(building, next);
         persist();
+        VillageStructureHud.showDamage(server, building, next, maxDurability(building));
 
         if (next == 0) {
             VillageWorldSystem.destroyStructure(server.overworld(), building);
             server.getPlayerList().broadcastSystemMessage(
                     Component.literal("§c[시설 파괴] §f" + building.displayName()
-                            + "이(가) 무너졌습니다. 방어 성공 후 수리 전까지 이용할 수 없습니다."),
+                            + "이(가) 무너졌습니다. 잔해는 남으며 수리 전까지 이용할 수 없습니다."),
                     false);
         }
 
@@ -549,13 +571,13 @@ public final class VillageProgressionSystem {
     }
 
     public enum Building {
-        TOWN_HALL("town_hall", "회관", Blocks.BELL),
-        WALLS("walls", "성문·성벽", Blocks.STONECUTTER),
+        TOWN_HALL("town_hall", "마을 회관", Blocks.BELL),
+        WALLS("walls", "북문·성벽", Blocks.STONECUTTER),
         SMITHY("smithy", "대장간", Blocks.SMITHING_TABLE),
-        SKILL_HALL("skill_hall", "스킬 습득소", Blocks.ENCHANTING_TABLE),
+        SKILL_HALL("skill_hall", "기술·마법 연구소", Blocks.ENCHANTING_TABLE),
         INFIRMARY("infirmary", "의무소", Blocks.BREWING_STAND),
-        STOREHOUSE("storehouse", "창고·상점", Blocks.BARREL),
-        BARRACKS("barracks", "병영", Blocks.TARGET);
+        STOREHOUSE("storehouse", "상점·보급소", Blocks.BARREL),
+        BARRACKS("barracks", "병영·훈련장", Blocks.TARGET);
 
         private final String id;
         private final String displayName;
