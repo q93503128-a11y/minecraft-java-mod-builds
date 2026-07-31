@@ -3,22 +3,22 @@
 - Slug: `countryside-days`
 - Mod ID: `countrysidedays`
 - Namespace: `countrysidedays`
-- Mod version: `0.1.0-alpha.2`
+- Mod version: `0.1.0-alpha.3`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `countrysidedays-0.1.0-alpha.2.jar`
+- Final JAR: `countrysidedays-0.1.0-alpha.3.jar`
 - Existing-world compatibility: 신규 프로젝트이므로 폐기된 옛 Countryside Days 월드와 호환을 약속하지 않는다. 공개 알파부터 등록 ID와 저장 키를 고정한다.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods: e4mc 등 서버 연결 보조 모드
 - Forbidden bundled dependencies: Minecraft 원본 파일, NeoForge 배포 파일, 외부 모드 JAR, 재배포 권한이 없는 셰이더·텍스처·음원
 - Datagen task: `runData`
-- GameTest task: 코어 월드 시스템 구현 후 추가
+- GameTest task: `runGameTestServer`
 - Server smoke-test task: `runServer`
-- Client smoke-test task: `runClient`
+- Client smoke-test task: `runClient` with a virtual display in CI
 
 ## 프로젝트 선언
 
@@ -39,24 +39,28 @@
 9. 다른 프로젝트 폴더를 수정하거나 삭제하지 않는다.
 10. 빌드·서버·클라이언트 검증을 하지 않은 상태를 완성이라고 부르지 않는다.
 
-## 0.1.0-alpha.2 구현 범위
+## 0.1.0-alpha.3 구현 범위
 
-- 공식 NeoForge 26.2 ModDevGradle 프로젝트 골격
-- 모드 진입점과 프로젝트별 레지스트리 분리
-- 시골 주방 작업대 블록
-- 들나물, 민물고기, 시골 전골, 요리 수첩 아이템
-- 전용 크리에이티브 탭과 한국어·영어 번역
-- 현대 아이템 모델 정의와 기본 블록 모델
-- 조리 재료 아이템 태그
-- JAR 내부 검증 스크립트와 GitHub Actions 빌드
+- 공식 NeoForge 26.2 + Java 25 + ModDevGradle 프로젝트 골격
+- 시골 주방 작업대와 들나물 → 민물고기 → 시골 전골 조리 루프
+- 풀·고사리 채집 및 낚시를 통한 실제 재료 획득
+- 안전한 평탄 지형 탐색과 첫 시골 거점 자동 생성
+- 식당, 주방, 밭, 관개 수로, 우물, 과수목, 마당, 진입로
+- 월드 공용 식당·조리·손님·마을 동전 진행 저장
+- 주민 `복순 할머니`와 하루 손님 `나들이 손님 민수`
+- 전골 제공 → 마을 동전과 경험치 보상
+- 플레이어별 최초 준비물 지급과 멀티 공용 식당 진행
+- 인벤토리 상태에 따라 다음 행동을 안내하는 첫 전용 HUD
+- 한국어·영어 번역, 블록·아이템 모델, 조합법
+- 필수 GameTest 3개, 데이터 로드 검사, 전용 서버 및 가상 디스플레이 클라이언트 부팅 검사
+- 실행 JAR과 SHA-256을 생성하는 GitHub Actions
 
-## 첫 플레이어블 알파 목표
+## 아직 개발할 핵심 범위
 
-- 새 월드 시작 시 시골 생활권의 기준 지점과 식당 거점 생성
-- 식당 내부와 주방의 실제 상호작용 기반
-- 재료 수집 → 손질 → 조리 → 주민 제공의 한 사이클
-- 농장, 숲길, 냇가, 마을 중심, 외딴 주택을 잇는 기본 시골 동선
-- 주민 일정과 최소 관계도
-- 낮·노을·밤의 분위기 변화와 시골 환경음
-- 전용 HUD 또는 메뉴의 첫 디자인 패스
-- 멀티플레이에서 함께 재료를 모으고 식당을 운영할 수 있는 기본 동기화
+- 2048×2048 이상으로 확장되는 실제 시골 생활권과 여러 지역
+- 주민 이동 일정, 호감도, 다양한 손님과 부탁
+- 작물·축산·배달·주거 꾸미기·탐험의 장기 루프
+- 마을 동전 상점과 식당 확장
+- 전용 텍스처·입체 모델·환경음
+- 낮·노을·밤·안개·물·바람을 묶는 본격 환경 렌더링
+- 사람의 눈으로 확인한 UI·거점·조명·동선 품질 개선
