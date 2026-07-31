@@ -15,7 +15,7 @@ public final class VillageCommands {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("vg")
+        var root = Commands.literal("vg")
                 .then(Commands.literal("status")
                         .executes(context -> status(context.getSource())))
                 .then(Commands.literal("village")
@@ -51,7 +51,9 @@ public final class VillageCommands {
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(context -> transferMayor(
                                                 context.getSource(),
-                                                EntityArgument.getPlayer(context, "player"))))))));
+                                                EntityArgument.getPlayer(context, "player"))))));
+
+        dispatcher.register(root);
     }
 
     private static int status(CommandSourceStack source) throws CommandSyntaxException {
