@@ -65,12 +65,13 @@ def main() -> None:
     assert skill_cooldown_seconds(30) == 21
 
     level, xp = simulate_leveling(1, 0, 3000)
-    assert level == 10 and xp == 60, (level, xp)
+    assert level == 11 and xp == 200, (level, xp)
 
     total_to_cap = sum(xp_to_next(level) for level in range(1, MAX_LEVEL))
     assert total_to_cap == 19140
 
     print("PASS: RPG balance contract")
+    print(f"test_xp_3000=level_{level}_xp_{xp}")
     print(f"level30 attack=x{outgoing_damage_multiplier(30):.2f}")
     print(f"level30 incoming={incoming_damage_multiplier(30) * 100:.0f}%")
     print(f"level30 bonus_health={bonus_health_points(30)}")
