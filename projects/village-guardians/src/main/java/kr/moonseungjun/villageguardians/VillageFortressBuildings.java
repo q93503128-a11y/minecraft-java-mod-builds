@@ -6,42 +6,66 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 final class VillageFortressBuildings {
-    private VillageFortressBuildings() {}
+    private VillageFortressBuildings() {
+    }
 
     static void buildAll(ServerLevel level, BlockPos center) {
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
-            if (building != VillageProgressionSystem.Building.WALLS) build(level, center, building);
+            if (building != VillageProgressionSystem.Building.WALLS) {
+                build(level, center, building);
+            }
         }
     }
 
     static void build(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
+        if (building == VillageProgressionSystem.Building.WALLS) {
+            return;
+        }
         VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
         BlockPos origin = center.offset(spec.dx(), 0, spec.dz());
-        VillageStructureShell.build(level, origin, center.getY() - 1, spec);
+        int groundY = center.getY() - 1;
+
+        VillageStructureShell.clear(level, center, spec);
+        boolean placedTemplate = VillageVanillaTemplateBuilder.build(level, origin, groundY, spec);
+        if (!placedTemplate) {
+            VillageStructureShell.build(level, origin, groundY, spec);
+        }
         VillageBuildingCatalog.furnish(level, origin, spec, building);
     }
 
     static void rebuild(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
-        remove(level, center, building);
+        if (building == VillageProgressionSystem.Building.WALLS) {
+            return;
+        }
         build(level, center, building);
     }
 
     static void remove(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
-        if (building == VillageProgressionSystem.Building.WALLS) return;
-        VillageStructureShell.clear(level, center, VillageBuildingCatalog.spec(building));
+        if (building == VillageProgressionSystem.Building.WALLS) {
+            return;
+        }
+        VillageStructureShell.ruin(level, center, VillageBuildingCatalog.spec(building));
     }
 
     static BlockPos center(BlockPos villageCenter, VillageProgressionSystem.Building building) {
         if (building == VillageProgressionSystem.Building.WALLS) {
-            return villageCenter.offset(0, 0, -VillageWorldSystem.FORTRESS_RADIUS + 2);
+            return villageCenter.offset(0, 0, -VillageWorldSystem.FORTRESS_RADIUS + 3);
         }
         VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
-        return villageCenter.offset(spec.dx() + spec.width() / 2, 1, spec.dz() + spec.depth() / 2);
+        return villageCenter.offset(
+                spec.dx() + spec.width() / 2,
+                1,
+                spec.dz() + spec.depth() / 2);
     }
 
-    static void applyUpgradeVisual(ServerLevel level, BlockPos center,
-                                   VillageProgressionSystem.Building building, int upgradeLevel) {
-        if (upgradeLevel <= 0) return;
+    static void applyUpgradeVisual(
+            ServerLevel level,
+            BlockPos center,
+            VillageProgressionSystem.Building building,
+            int upgradeLevel) {
+        if (upgradeLevel <= 0) {
+            return;
+        }
         BlockPos terminal = center(center, building);
         Block decoration = switch (building) {
             case WALLS, SMITHY -> Blocks.IRON_BLOCK;
@@ -52,7 +76,10 @@ final class VillageFortressBuildings {
             case TOWN_HALL -> Blocks.CHISELED_STONE_BRICKS;
         };
         for (int i = 0; i < upgradeLevel; i++) {
-            VillageFortressTerrain.set(level, terminal.offset(-upgradeLevel / 2 + i, 1, 3), decoration);
+            VillageFortressTerrain.set(
+                    level,
+                    terminal.offset(-upgradeLevel / 2 + i, 1, 3),
+                    decoration);
         }
     }
 }
