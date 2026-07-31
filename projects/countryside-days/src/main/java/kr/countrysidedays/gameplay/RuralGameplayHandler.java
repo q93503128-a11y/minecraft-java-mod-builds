@@ -4,6 +4,7 @@ import kr.countrysidedays.registry.ModItems;
 import kr.countrysidedays.world.CountrysideRegionManager;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.FlatCountrysideBootstrap;
+import kr.countrysidedays.world.StarterHomesteadGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -50,7 +51,15 @@ public final class RuralGameplayHandler {
         boolean hadHomestead = data.homesteadOrigin().isPresent();
         Optional<BlockPos> homestead = FlatCountrysideBootstrap.ensureGenerated(serverLevel, player.blockPosition());
         boolean becameOwner = data.claimHomesteadOwner(player.getUUID(), player.getScoreboardName());
-        homestead.ifPresent(origin -> RuralNpcManager.ensureForHomestead(serverLevel, origin));
+        homestead.ifPresent(origin -> {
+            RuralNpcManager.ensureForHomestead(serverLevel, origin);
+            StarterHomesteadGenerator.refreshOwnershipSigns(
+                    serverLevel,
+                    origin,
+                    data.ownerName(),
+                    data.restaurantName()
+            );
+        });
 
         boolean firstArrival = player.addTag(STARTER_KIT_TAG);
         if (firstArrival) {
