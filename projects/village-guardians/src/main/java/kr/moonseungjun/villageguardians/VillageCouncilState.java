@@ -1,5 +1,6 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +12,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class VillageCouncilState {
+    public static final int VILLAGE_RADIUS = 64;
+    public static final float VILLAGE_DEFENSE_XP_MULTIPLIER = 1.5f;
+
     private static final Map<UUID, VillageRole> ROLES = new LinkedHashMap<>();
     private static final Map<UUID, RpgProgress> RPG_PROGRESS = new LinkedHashMap<>();
 
@@ -19,6 +23,7 @@ public final class VillageCouncilState {
     private static String mayorName = "없음";
     private static int villageDay = 1;
     private static VillageTimePhase timePhase = VillageTimePhase.MORNING;
+    private static BlockPos villageCenter;
     private static Proposal activeProposal;
 
     private VillageCouncilState() {
@@ -35,6 +40,7 @@ public final class VillageCouncilState {
         mayorName = mayorId == null ? "없음" : savedData.mayorName();
         villageDay = savedData.villageDay();
         timePhase = savedData.timePhase();
+        villageCenter = savedData.villageCenter().orElse(null);
         activeProposal = null;
         freezeAndApplyTime(server);
     }
@@ -70,6 +76,49 @@ public final class VillageCouncilState {
 
     public static synchronized RpgProgress progressOf(UUID playerId) {
         return RPG_PROGRESS.getOrDefault(playerId, RpgProgress.initial());
+    }
+
+    public static synchronized Optional<BlockPos> villageCenter() {
+        return Optional.ofNullable(villageCenter);
+    }
+
+    public static synchronized String setVillageCenter(ServerPlayer actor) {
+        if (!isMayor(actor)) {
+            return "촌장만 마을 중심을 지정할 수 있습니다.";
+        }
+        if (actor.level() != actor.getServer().overworld()) {
+            return "마을 중심은 오버월드에서만 지정할 수 있습니다.";
+        }
+
+        villageCenter = actor.blockPosition().immutable();
+        persist();
+        broadcast(actor.getServer(), "§6[마을 지정] §f마을 중심이 " + formatPos(villageCenter)
+                + "에 지정되었습니다. 보호·방어 영역 반경은 " + VILLAGE_RADIUS + "블록입니다.");
+        return "마을 중심 지정 완료: " + formatPos(villageCenter);
+    }
+
+    public static synchronized boolean isInsideVillage(ServerPlayer player) {
+        if (villageCenter == null || player.level() != player.getServer().overworld()) {
+            return false;
+        }
+        return distanceSquared(player.blockPosition(), villageCenter) <= (long) VILLAGE_RADIUS * VILLAGE_RADIUS;
+    }
+
+    public static synchronized String villageStatus(ServerPlayer viewer) {
+        if (villageCenter == null) {
+            return "§6[마을 영역] §f중심 미지정 | 촌장이 /vg village set_center를 사용해야 합니다.";
+        }
+
+        if (viewer.level() != viewer.getServer().overworld()) {
+            return "§6[마을 영역] §f중심 " + formatPos(villageCenter)
+                    + " | 반경 " + VILLAGE_RADIUS + " | 현재 다른 차원에 있습니다.";
+        }
+
+        double distance = Math.sqrt(distanceSquared(viewer.blockPosition(), villageCenter));
+        return "§6[마을 영역] §f중심 " + formatPos(villageCenter)
+                + " | 반경 " + VILLAGE_RADIUS
+                + " | 중심까지 " + Math.round(distance) + "블록"
+                + " | 현재 " + (distance <= VILLAGE_RADIUS ? "마을 내부" : "마을 외부");
     }
 
     public static synchronized String chooseRole(ServerPlayer player, VillageRole role) {
@@ -171,10 +220,14 @@ public final class VillageCouncilState {
                 : activeProposal.id() + " / 찬성 " + countVotes(server, true)
                 + " / 반대 " + countVotes(server, false)
                 + " / 통과 기준 " + majority(server);
+        String territoryStatus = villageCenter == null
+                ? "중심 미지정"
+                : (isInsideVillage(viewer) ? "마을 내부" : "마을 외부");
 
         return "§6[마을 현황] §f촌장: " + mayorName
                 + " | 내 역할: " + viewerRole
                 + " | 레벨 " + levelOf(viewer.getUUID())
+                + " | " + territoryStatus
                 + " | 제 " + villageDay + "일 " + timePhase.koreanName()
                 + " | " + voteStatus;
     }
@@ -218,7 +271,7 @@ public final class VillageCouncilState {
 
     private static void persist() {
         if (savedData != null) {
-            savedData.replaceState(mayorId, mayorName, villageDay, timePhase, ROLES, RPG_PROGRESS);
+            savedData.replaceState(mayorId, mayorName, villageDay, timePhase, villageCenter, ROLES, RPG_PROGRESS);
         }
     }
 
@@ -240,6 +293,17 @@ public final class VillageCouncilState {
                 .filter(entry -> server.getPlayerList().getPlayer(entry.getKey()) != null)
                 .filter(entry -> entry.getValue() == value)
                 .count();
+    }
+
+    private static long distanceSquared(BlockPos first, BlockPos second) {
+        long dx = (long) first.getX() - second.getX();
+        long dy = (long) first.getY() - second.getY();
+        long dz = (long) first.getZ() - second.getZ();
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    private static String formatPos(BlockPos pos) {
+        return "(" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + ")";
     }
 
     private static void broadcast(MinecraftServer server, String text) {
