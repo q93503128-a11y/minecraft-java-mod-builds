@@ -8,6 +8,19 @@ from pathlib import Path
 
 MOD_ID = "villageguardians"
 CLASS_PREFIX = "kr/moonseungjun/villageguardians/"
+REQUIRED_LICENSED_ASSETS = {
+    "assets/minecraft/textures/gui/container/inventory.png",
+    "assets/minecraft/textures/gui/sprites/widget/button.png",
+    "assets/minecraft/textures/gui/sprites/widget/button_highlighted.png",
+    "data/villageguardians/structure/external/town_hall.nbt",
+    "data/villageguardians/structure/external/barracks.nbt",
+    "data/villageguardians/structure/external/smithy.nbt",
+    "data/villageguardians/structure/external/skill_hall.nbt",
+    "data/villageguardians/structure/external/storehouse.nbt",
+    "data/villageguardians/structure/external/infirmary.nbt",
+    "META-INF/villageguardians/THIRD_PARTY_NOTICES.txt",
+    "META-INF/villageguardians/towns-and-towers-selection.txt",
+}
 
 
 def fail(message: str) -> None:
@@ -41,6 +54,19 @@ def main() -> None:
                 fail(f"Missing data/{MOD_ID}/ resources")
             if any(name.endswith(".java") for name in names):
                 fail("Development Java source files are present in the JAR")
+
+            missing_assets = sorted(REQUIRED_LICENSED_ASSETS - name_set)
+            if missing_assets:
+                fail(f"Missing licensed runtime assets: {missing_assets}")
+            for asset in sorted(REQUIRED_LICENSED_ASSETS):
+                if asset.endswith((".png", ".nbt")) and len(jar.read(asset)) < 32:
+                    fail(f"Licensed runtime asset is unexpectedly empty: {asset}")
+
+            notice = jar.read(
+                "META-INF/villageguardians/THIRD_PARTY_NOTICES.txt"
+            ).decode("utf-8")
+            if "Default Dark Mode" not in notice or "Towns and Towers" not in notice:
+                fail("Third-party notice does not identify both licensed asset sources")
     except zipfile.BadZipFile as exc:
         fail(f"Invalid JAR/ZIP: {exc}")
 
@@ -49,6 +75,7 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
+    print("[PASS] Licensed GUI and six external building structures are present")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
 
