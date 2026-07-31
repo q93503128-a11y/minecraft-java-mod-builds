@@ -1,0 +1,71 @@
+name: Check Living Kingdoms Fast
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/check-living-kingdoms-fast.yml'
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Compile current Living Kingdoms sources
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p ../../logs
+          gradle --no-daemon clean compileJava --stacktrace --console=plain 2>&1 | tee ../../logs/living-kingdoms-fast-compile.log
+      - name: Upload fast compile log
+        id: upload_log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-fast-${{ github.run_number }}
+          path: logs/living-kingdoms-fast-compile.log
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Publish fast compile pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_log.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-fast.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/living-kingdoms-fast.json
+          git commit -m "Record Living Kingdoms fast check $GITHUB_RUN_NUMBER" || exit 0
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 3
+          done
+          exit 1
