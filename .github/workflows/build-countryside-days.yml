@@ -9,7 +9,7 @@ on:
       - '.github/workflows/build-countryside-days.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: countryside-days-${{ github.ref }}
@@ -73,7 +73,7 @@ jobs:
           cat > build/deliverables/BUILD_AND_RUNTIME_REPORT.md <<REPORT
           # Countryside Days Build and Runtime Report
 
-          - Commit: ${{ github.sha }}
+          - Source commit: ${{ github.sha }}
           - Mod version: 0.1.0-alpha.2
           - Minecraft: 26.2
           - Java: 25
@@ -98,19 +98,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload generated Gradle wrapper
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: countryside-days-0.1.0-alpha.2-wrapper
-          path: |
-            projects/countryside-days/gradlew
-            projects/countryside-days/gradlew.bat
-            projects/countryside-days/gradle/wrapper/gradle-wrapper.jar
-            projects/countryside-days/gradle/wrapper/gradle-wrapper.properties
-          if-no-files-found: error
-          retention-days: 14
-
       - name: Upload raw logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -119,3 +106,20 @@ jobs:
           path: projects/countryside-days/ci-logs/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Record verified wrapper and report
+        if: success()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          cp build/deliverables/BUILD_AND_RUNTIME_REPORT.md BUILD_AND_RUNTIME_REPORT.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties BUILD_AND_RUNTIME_REPORT.md
+          if git diff --cached --quiet; then
+            echo "No generated build records changed."
+            exit 0
+          fi
+          git commit -m "Record verified Countryside Days build for ${SOURCE_SHA:0:7}"
+          git pull --rebase origin main
+          git push origin HEAD:main
