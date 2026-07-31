@@ -2,7 +2,7 @@ import groovy.json.JsonSlurper
 
 plugins {
     id 'java-library'
-    id 'net.neoforged.moddev' version '2.0.142'
+    id 'net.neoforged.moddev' version '2.0.143'
     id 'idea'
 }
 
