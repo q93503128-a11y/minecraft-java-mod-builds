@@ -25,8 +25,9 @@ public final class VillageGuardians {
     private int maintenanceTicks;
 
     public VillageGuardians(IEventBus modEventBus) {
+        modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians governance, RPG, fortress, progression, and raid core loaded");
+        LOGGER.info("Village Guardians 0.5 UI, progression, structure durability, and raid core loaded");
     }
 
     @SubscribeEvent
@@ -37,7 +38,6 @@ public final class VillageGuardians {
         VillageWorldSystem.resetTransientState();
         VillageRaidSystem.resetTransientState(event.getServer());
         maintenanceTicks = 0;
-        LOGGER.info("Village persistent progression and playable raid loop initialized");
     }
 
     @SubscribeEvent
@@ -47,24 +47,26 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            VillageCouncilState.registerPlayer(serverPlayer);
-            var server = serverPlayer.level().getServer();
-            if (server != null) {
-                VillageCouncilState.enforceFrozenTime(server);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            VillageCouncilState.registerPlayer(player);
+            VillageProgressionSystem.registerPlayer(player);
+            var server = player.level().getServer();
+            if (server != null) VillageCouncilState.enforceFrozenTime(server);
+            VillageWorldSystem.ensureFortifiedVillage(player);
+            VillageStarterKit.grantOnLogin(player);
+            VillageRpgSystem.refreshPlayerPassive(player);
+            if (VillageProgressionSystem.isGameOver() && server != null) {
+                VillageUiService.openGameOverForAll(server);
             }
-            VillageWorldSystem.ensureFortifiedVillage(serverPlayer);
-            VillageStarterKit.grantOnLogin(serverPlayer);
-            VillageRpgSystem.refreshPlayerPassive(serverPlayer);
         }
     }
 
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            VillageWorldSystem.ensureFortifiedVillage(serverPlayer);
-            VillageStarterKit.grantMayorCaller(serverPlayer);
-            VillageRpgSystem.refreshPlayerPassive(serverPlayer);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            VillageWorldSystem.ensureFortifiedVillage(player);
+            VillageStarterKit.grantMayorCaller(player);
+            VillageRpgSystem.refreshPlayerPassive(player);
         }
     }
 
@@ -100,6 +102,7 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
         VillageRaidSystem.tick(event.getServer());
+        VillageEquipmentRules.restoreDurability(event.getServer());
         maintenanceTicks++;
         if (maintenanceTicks >= 20) {
             maintenanceTicks = 0;
