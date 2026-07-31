@@ -19,45 +19,51 @@ final class VillageBuildingCatalog {
     static Spec spec(VillageProgressionSystem.Building building) {
         return switch (building) {
             case TOWN_HALL -> new Spec(
-                    -18, 40, 37, 27, 12,
+                    -18, 40, 37, 27, 18,
                     Blocks.OAK_PLANKS, Blocks.DEEPSLATE_TILES,
+                    "villageguardians:external/town_hall",
                     "minecraft:village/plains/houses/plains_big_house_1",
                     Rotation.CLOCKWISE_180, Direction.NORTH,
                     "마을 회관", "공동 운영");
             case BARRACKS -> new Spec(
-                    -71, -54, 31, 25, 12,
+                    -71, -54, 31, 25, 18,
                     Blocks.SPRUCE_PLANKS, Blocks.DARK_OAK_PLANKS,
+                    "villageguardians:external/barracks",
                     "minecraft:village/plains/houses/plains_armorer_1",
                     Rotation.COUNTERCLOCKWISE_90, Direction.EAST,
                     "병영·훈련장", "훈련 / 역할 강화");
             case SMITHY -> new Spec(
-                    -71, -18, 31, 25, 12,
+                    -71, -18, 31, 25, 18,
                     Blocks.BRICKS, Blocks.DEEPSLATE_TILES,
+                    "villageguardians:external/smithy",
                     "minecraft:village/plains/houses/plains_weaponsmith_1",
                     Rotation.COUNTERCLOCKWISE_90, Direction.EAST,
                     "대장간", "장비 강화");
             case SKILL_HALL -> new Spec(
-                    41, -18, 31, 25, 12,
+                    41, -18, 31, 25, 18,
                     Blocks.OAK_PLANKS, Blocks.DARK_OAK_PLANKS,
+                    "villageguardians:external/skill_hall",
                     "minecraft:village/plains/houses/plains_library_1",
                     Rotation.CLOCKWISE_90, Direction.WEST,
                     "기술·마법 연구소", "능력 습득");
             case STOREHOUSE -> new Spec(
-                    -71, 18, 31, 25, 12,
+                    -71, 18, 31, 25, 18,
                     Blocks.SPRUCE_PLANKS, Blocks.BRICKS,
+                    "villageguardians:external/storehouse",
                     "minecraft:village/plains/houses/plains_butcher_shop_1",
                     Rotation.COUNTERCLOCKWISE_90, Direction.EAST,
                     "상점·보급소", "구매 / 일일 식량");
             case INFIRMARY -> new Spec(
-                    41, 18, 31, 25, 12,
+                    41, 18, 31, 25, 18,
                     Blocks.QUARTZ_BLOCK, Blocks.STONE_BRICKS,
+                    "villageguardians:external/infirmary",
                     "minecraft:village/plains/houses/plains_temple_3",
                     Rotation.CLOCKWISE_90, Direction.WEST,
                     "의무소", "치료 / 회복");
             case WALLS -> new Spec(
                     0, -76, 1, 1, 1,
                     Blocks.STONE_BRICKS, Blocks.STONE_BRICKS,
-                    "", Rotation.NONE, Direction.SOUTH,
+                    "", "", Rotation.NONE, Direction.SOUTH,
                     "북문", "성벽");
         };
     }
@@ -158,6 +164,7 @@ final class VillageBuildingCatalog {
             Block panel,
             Block roof,
             String templateId,
+            String fallbackTemplateId,
             Rotation rotation,
             Direction entranceFacing,
             String labelLine1,
