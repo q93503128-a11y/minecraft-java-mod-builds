@@ -59,7 +59,7 @@ var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
         guiAssets.each { relativePath, sourceUrl ->
             File destination = new File(outputRoot, relativePath)
             destination.parentFile.mkdirs()
-            new URI(sourceUrl).toURL().withInputStream { input ->
+            new java.net.URI(sourceUrl).toURL().withInputStream { input ->
                 destination.withOutputStream { output -> output << input }
             }
         }
@@ -67,22 +67,21 @@ var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
         File archive = configurations.licensedStructureAssets.singleFile
         List<Map<String, Object>> candidates = []
         zipTree(archive).visit { details ->
-            if (details.directory) {
-                return
-            }
-            String path = details.relativePath.pathString.replace('\\', '/')
-            String lower = path.toLowerCase(Locale.ROOT)
-            boolean structure = (lower.startsWith('data/towns_and_towers/structure/')
-                    || lower.startsWith('data/towns_and_towers/structures/'))
-                    && lower.endsWith('.nbt')
-            boolean usableVillageHouse = structure
-                    && lower.contains('village')
-                    && !lower.contains('zombie')
-                    && !lower.contains('outpost')
-                    && !lower.contains('ship')
-                    && !lower.contains('ruin')
-            if (usableVillageHouse) {
-                candidates.add([path: path, lower: lower, bytes: details.file.bytes])
+            if (!details.directory) {
+                String path = details.relativePath.pathString.replace('\\', '/')
+                String lower = path.toLowerCase(Locale.ROOT)
+                boolean structure = (lower.startsWith('data/towns_and_towers/structure/')
+                        || lower.startsWith('data/towns_and_towers/structures/'))
+                        && lower.endsWith('.nbt')
+                boolean usableVillageHouse = structure
+                        && lower.contains('village')
+                        && !lower.contains('zombie')
+                        && !lower.contains('outpost')
+                        && !lower.contains('ship')
+                        && !lower.contains('ruin')
+                if (usableVillageHouse) {
+                    candidates.add([path: path, lower: lower, bytes: details.file.bytes])
+                }
             }
         }
         if (candidates.isEmpty()) {
@@ -106,7 +105,8 @@ var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
             roles.values().count { keywords ->
                 candidates.any { candidate ->
                     String lower = candidate.lower as String
-                    lower.contains(style) && keywords.any(lower::contains)
+                    lower.contains(style)
+                            && keywords.any { keyword -> lower.contains(keyword) }
                 }
             }
         }
@@ -129,7 +129,7 @@ var prepareLicensedAssets = tasks.register('prepareLicensedAssets') {
                 }
                 if (usedPaths.contains(candidate.path as String)) score -= 500
                 [candidate: candidate, score: score]
-            }.findAll { (it.score as int) > 0 }
+            }.findAll { rankedCandidate -> (rankedCandidate.score as int) > 0 }
              .sort { first, second ->
                  int scoreCompare = (second.score as int) <=> (first.score as int)
                  scoreCompare != 0
