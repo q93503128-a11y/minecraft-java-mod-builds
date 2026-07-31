@@ -2,7 +2,9 @@ package kr.countrysidedays.gametest;
 
 import kr.countrysidedays.CountrysideDays;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
+import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.world.CountrysideWorldData;
+import kr.countrysidedays.world.StarterHomesteadGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -21,6 +23,9 @@ public final class ModGameTests {
 
     public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> WORLD_DATA_ROUND_TRIP =
             TEST_FUNCTIONS.register("world_data_round_trip", () -> ModGameTests::worldDataRoundTrip);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> HOMESTEAD_LAYOUT =
+            TEST_FUNCTIONS.register("homestead_layout", () -> ModGameTests::homesteadLayout);
 
     private ModGameTests() {
     }
@@ -52,6 +57,21 @@ public final class ModGameTests {
                 RuralGameplayHandler.isForagePlant(Blocks.STONE.defaultBlockState()),
                 "stone must not be a forage source"
         );
+
+        helper.succeed();
+    }
+
+    private static void homesteadLayout(GameTestHelper helper) {
+        BlockPos relativeOrigin = new BlockPos(20, 1, 20);
+        BlockPos absoluteOrigin = helper.absolutePos(relativeOrigin);
+        StarterHomesteadGenerator.buildHomestead(helper.getLevel(), absoluteOrigin);
+
+        helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(10, 2, 14));
+        helper.assertBlockPresent(Blocks.FURNACE, new BlockPos(9, 2, 14));
+        helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(24, 1, 13));
+        helper.assertBlockPresent(Blocks.WATER, new BlockPos(27, 1, 27));
+        helper.assertBlockPresent(Blocks.DEEPSLATE_TILES, new BlockPos(7, 6, 11));
+        helper.assertBlockPresent(Blocks.OAK_LOG, new BlockPos(10, 1, 27));
 
         helper.succeed();
     }
