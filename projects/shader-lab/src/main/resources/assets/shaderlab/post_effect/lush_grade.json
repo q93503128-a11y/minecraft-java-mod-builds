@@ -1,11 +1,13 @@
 {
   "targets": {
-    "graded": {}
+    "bloom_a": {},
+    "bloom_b": {},
+    "final": {}
   },
   "passes": [
     {
       "vertex_shader": "minecraft:core/screenquad",
-      "fragment_shader": "shaderlab:post/lush_grade",
+      "fragment_shader": "shaderlab:post/bloom_extract",
       "inputs": [
         {
           "sampler_name": "In",
@@ -13,7 +15,113 @@
           "bilinear": true
         }
       ],
-      "output": "graded"
+      "output": "bloom_a"
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "shaderlab:post/bloom_blur",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "bloom_a",
+          "bilinear": true
+        }
+      ],
+      "uniforms": {
+        "BloomBlurConfig": [
+          {
+            "name": "Direction",
+            "type": "vec2",
+            "value": [1.5, 0.0]
+          }
+        ]
+      },
+      "output": "bloom_b"
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "shaderlab:post/bloom_blur",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "bloom_b",
+          "bilinear": true
+        }
+      ],
+      "uniforms": {
+        "BloomBlurConfig": [
+          {
+            "name": "Direction",
+            "type": "vec2",
+            "value": [0.0, 1.5]
+          }
+        ]
+      },
+      "output": "bloom_a"
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "shaderlab:post/bloom_blur",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "bloom_a",
+          "bilinear": true
+        }
+      ],
+      "uniforms": {
+        "BloomBlurConfig": [
+          {
+            "name": "Direction",
+            "type": "vec2",
+            "value": [3.5, 0.0]
+          }
+        ]
+      },
+      "output": "bloom_b"
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "shaderlab:post/bloom_blur",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "bloom_b",
+          "bilinear": true
+        }
+      ],
+      "uniforms": {
+        "BloomBlurConfig": [
+          {
+            "name": "Direction",
+            "type": "vec2",
+            "value": [0.0, 3.5]
+          }
+        ]
+      },
+      "output": "bloom_a"
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "shaderlab:post/lush_grade",
+      "inputs": [
+        {
+          "sampler_name": "Scene",
+          "target": "minecraft:main",
+          "bilinear": true
+        },
+        {
+          "sampler_name": "Bloom",
+          "target": "bloom_a",
+          "bilinear": true
+        },
+        {
+          "sampler_name": "SceneDepth",
+          "target": "minecraft:main",
+          "use_depth_buffer": true
+        }
+      ],
+      "output": "final"
     },
     {
       "vertex_shader": "minecraft:core/screenquad",
@@ -21,7 +129,7 @@
       "inputs": [
         {
           "sampler_name": "In",
-          "target": "graded",
+          "target": "final",
           "bilinear": true
         }
       ],
