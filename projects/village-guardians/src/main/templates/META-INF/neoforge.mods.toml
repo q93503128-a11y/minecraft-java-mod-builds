@@ -1,0 +1,26 @@
+license="${mod_license}"
+issueTrackerURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
+authors="문승준"
+description='''
+촌장 한 명과 여러 플레이어 역할, 투표식 의사결정, 정지된 자연 시간을 기반으로 마을을 성장시키고 방어하는 생존형 마을 운영 모드.
+'''
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
