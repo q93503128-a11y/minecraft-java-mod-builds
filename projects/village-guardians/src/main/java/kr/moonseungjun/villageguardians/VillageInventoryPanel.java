@@ -14,18 +14,19 @@ import java.util.regex.Pattern;
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageInventoryPanel {
-    private static final int PANEL_WIDTH = 164;
-    private static final int PANEL_HEIGHT = 124;
-    private static final int SHADOW = 0x88000000;
-    private static final int BACKGROUND = 0xF2161A21;
-    private static final int SURFACE = 0xFF20262F;
-    private static final int SURFACE_HOVER = 0xFF2A333E;
-    private static final int BORDER = 0xFF3B4653;
-    private static final int ACCENT = 0xFF43C6AC;
-    private static final int ACCENT_DARK = 0xFF237A70;
-    private static final int GOLD = 0xFFE6B65A;
+    private static final int PANEL_WIDTH = 116;
+    private static final int PANEL_HEIGHT = 136;
+    private static final int SHADOW = 0x77000000;
+    private static final int BACKGROUND = 0xF50D1117;
+    private static final int SURFACE = 0xFF171D25;
+    private static final int SURFACE_HOVER = 0xFF222C37;
+    private static final int BORDER = 0xFF35414E;
+    private static final int ACCENT = 0xFF3ED0B4;
+    private static final int ACCENT_DARK = 0xFF1E776B;
+    private static final int GOLD = 0xFFF1BC57;
     private static final int TEXT = 0xFFF3F6F8;
-    private static final int MUTED = 0xFF9BA7B4;
+    private static final int MUTED = 0xFF94A0AD;
+    private static final int BLUE = 0xFF86A8E8;
     private static final Pattern LEVEL_PATTERN = Pattern.compile(".*?(\\d+).*");
     private static final Pattern PROGRESS_PATTERN = Pattern.compile(".*?(\\d+).*?(\\d+)\\s*/\\s*(\\d+).*?");
 
@@ -59,60 +60,56 @@ public final class VillageInventoryPanel {
         int[] pos = panelPosition(graphics.guiWidth(), graphics.guiHeight());
         int left = pos[0];
         int top = pos[1];
-        int buttonLeft = left + 10;
-        int buttonTop = top + PANEL_HEIGHT - 31;
+        int buttonLeft = left + 8;
+        int buttonTop = top + PANEL_HEIGHT - 27;
         boolean hovered = inside(
                 event.getMouseX(), event.getMouseY(),
-                buttonLeft, buttonTop, PANEL_WIDTH - 20, 22);
+                buttonLeft, buttonTop, PANEL_WIDTH - 16, 19);
 
-        graphics.fill(left + 4, top + 5, left + PANEL_WIDTH + 4, top + PANEL_HEIGHT + 5, SHADOW);
+        graphics.fill(left + 3, top + 4, left + PANEL_WIDTH + 3, top + PANEL_HEIGHT + 4, SHADOW);
         graphics.fill(left - 1, top - 1, left + PANEL_WIDTH + 1, top + PANEL_HEIGHT + 1, BORDER);
         graphics.fill(left, top, left + PANEL_WIDTH, top + PANEL_HEIGHT, BACKGROUND);
-        graphics.fill(left, top, left + 4, top + PANEL_HEIGHT, ACCENT);
-        graphics.fill(left + 4, top, left + PANEL_WIDTH, top + 2, 0xFF647181);
+        graphics.fill(left, top, left + 3, top + PANEL_HEIGHT, ACCENT);
 
         Minecraft minecraft = Minecraft.getInstance();
         ProgressData progress = parseProgress(status.progress());
 
-        graphics.text(minecraft.font, "VILLAGE GUARDIANS", left + 12, top + 10, MUTED, false);
-        graphics.text(minecraft.font, "마을 수호단", left + 12, top + 22, TEXT, false);
-        String levelText = "LV " + progress.level();
-        int badgeWidth = minecraft.font.width(levelText) + 10;
-        graphics.fill(left + PANEL_WIDTH - badgeWidth - 9, top + 9,
-                left + PANEL_WIDTH - 9, top + 25, SURFACE);
+        graphics.text(minecraft.font, "VG", left + 10, top + 8, GOLD, false);
+        graphics.text(minecraft.font, "수호단", left + 28, top + 8, TEXT, false);
+        String levelText = "LV." + progress.level();
+        int badgeWidth = minecraft.font.width(levelText) + 8;
+        int badgeLeft = left + PANEL_WIDTH - badgeWidth - 7;
+        graphics.fill(badgeLeft, top + 5, left + PANEL_WIDTH - 6, top + 20, SURFACE);
         graphics.centeredText(minecraft.font, levelText,
-                left + PANEL_WIDTH - badgeWidth / 2 - 9, top + 13, GOLD);
+                badgeLeft + badgeWidth / 2, top + 9, GOLD);
 
-        int barLeft = left + 12;
-        int barTop = top + 39;
-        int barWidth = PANEL_WIDTH - 24;
-        graphics.fill(barLeft, barTop, barLeft + barWidth, barTop + 6, 0xFF0C0F13);
+        int barLeft = left + 9;
+        int barTop = top + 27;
+        int barWidth = PANEL_WIDTH - 18;
+        graphics.fill(barLeft, barTop, barLeft + barWidth, barTop + 5, 0xFF05080C);
         graphics.fill(barLeft + 1, barTop + 1,
                 barLeft + 1 + Math.round((barWidth - 2) * progress.ratio()),
-                barTop + 5, ACCENT);
+                barTop + 4, ACCENT);
         String xpText = progress.maxLevel()
-                ? "최고 레벨"
-                : progress.current() + " / " + progress.required() + " XP";
-        graphics.text(minecraft.font, xpText, barLeft, barTop + 9,
+                ? "MAX LEVEL"
+                : progress.current() + "/" + progress.required() + " XP";
+        graphics.text(minecraft.font, xpText, barLeft, barTop + 8,
                 progress.maxLevel() ? GOLD : MUTED, false);
 
-        drawInfoRow(graphics, minecraft, left, top + 62, "역할", status.role(), ACCENT);
-        drawInfoRow(graphics, minecraft, left, top + 75, "자산", status.economy(), GOLD);
-        drawInfoRow(graphics, minecraft, left, top + 88, "마을", status.village(), 0xFF8FA7FF);
+        drawInfoRow(graphics, minecraft, left, top + 49, "역할", status.role(), ACCENT);
+        drawInfoRow(graphics, minecraft, left, top + 64, "자산", status.economy(), GOLD);
+        drawInfoRow(graphics, minecraft, left, top + 79, "마을", status.village(), BLUE);
 
         graphics.fill(buttonLeft - 1, buttonTop - 1,
-                buttonLeft + PANEL_WIDTH - 19, buttonTop + 23, ACCENT_DARK);
+                buttonLeft + PANEL_WIDTH - 15, buttonTop + 20, hovered ? ACCENT : ACCENT_DARK);
         graphics.fill(buttonLeft, buttonTop,
-                buttonLeft + PANEL_WIDTH - 20, buttonTop + 22,
+                buttonLeft + PANEL_WIDTH - 16, buttonTop + 19,
                 hovered ? SURFACE_HOVER : SURFACE);
-        graphics.fill(buttonLeft, buttonTop,
-                buttonLeft + 3, buttonTop + 22, hovered ? GOLD : ACCENT);
-        graphics.centeredText(
-                minecraft.font,
-                "상태 및 역할 관리  ›",
-                left + PANEL_WIDTH / 2 + 2,
-                buttonTop + 7,
-                TEXT);
+        graphics.fill(buttonLeft, buttonTop, buttonLeft + 3, buttonTop + 19,
+                hovered ? GOLD : ACCENT);
+        graphics.text(minecraft.font, "상태 / 역할", buttonLeft + 10, buttonTop + 6, TEXT, false);
+        graphics.text(minecraft.font, ">", buttonLeft + PANEL_WIDTH - 27, buttonTop + 6,
+                hovered ? GOLD : MUTED, false);
     }
 
     private static void drawInfoRow(
@@ -123,10 +120,9 @@ public final class VillageInventoryPanel {
             String label,
             String value,
             int markerColor) {
-        graphics.fill(left + 12, y + 2, left + 15, y + 8, markerColor);
-        graphics.text(minecraft.font, label, left + 20, y, MUTED, false);
-        int valueX = left + 50;
-        graphics.text(minecraft.font, compact(value, 21), valueX, y, TEXT, false);
+        graphics.fill(left + 9, y + 2, left + 11, y + 8, markerColor);
+        graphics.text(minecraft.font, label, left + 16, y, MUTED, false);
+        graphics.text(minecraft.font, compact(value, 14), left + 43, y, TEXT, false);
     }
 
     @SubscribeEvent
@@ -142,7 +138,7 @@ public final class VillageInventoryPanel {
         int top = pos[1];
         if (!inside(
                 event.getMouseX(), event.getMouseY(),
-                left + 10, top + PANEL_HEIGHT - 31, PANEL_WIDTH - 20, 22)) {
+                left + 8, top + PANEL_HEIGHT - 27, PANEL_WIDTH - 16, 19)) {
             return;
         }
         ClientPacketDistributor.sendToServer(
@@ -175,19 +171,24 @@ public final class VillageInventoryPanel {
     }
 
     private static String compact(String value, int maxCharacters) {
-        if (value.length() <= maxCharacters) {
-            return value;
+        String normalized = value
+                .replace("내 수호 주화 ", "주화 ")
+                .replace("제 ", "")
+                .replace("일 ", "일·");
+        if (normalized.length() <= maxCharacters) {
+            return normalized;
         }
-        return value.substring(0, Math.max(1, maxCharacters - 1)) + "…";
+        return normalized.substring(0, Math.max(1, maxCharacters - 1)) + "…";
     }
 
     private static int[] panelPosition(int screenWidth, int screenHeight) {
         int inventoryRight = screenWidth / 2 + 90;
-        int left = inventoryRight + 10;
-        int top = Math.max(8, screenHeight / 2 - 83);
-        if (left + PANEL_WIDTH > screenWidth - 8) {
-            left = Math.max(8, screenWidth / 2 - 90 - PANEL_WIDTH - 10);
-        }
+        int inventoryLeft = screenWidth / 2 - 90;
+        int preferredRight = inventoryRight + 7;
+        int left = preferredRight + PANEL_WIDTH <= screenWidth - 5
+                ? preferredRight
+                : Math.max(5, inventoryLeft - PANEL_WIDTH - 7);
+        int top = Math.max(5, screenHeight / 2 - 83);
         return new int[]{left, top};
     }
 
