@@ -30,19 +30,19 @@ public final class CountrysideHud {
     private static void render(GuiGraphicsExtractor graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null) {
+        if (player == null || minecraft.options.hideGui) {
             return;
         }
 
-        int x = 8;
-        int y = 8;
-        int width = 206;
-        int height = 38;
-        graphics.fill(x, y, x + width, y + height, 0xC0282018);
-        graphics.fill(x, y, x + 4, y + height, 0xFFE1B56D);
-        graphics.fill(x + 4, y, x + width, y + 2, 0x806B4B2C);
-        graphics.text(minecraft.font, Component.translatable("hud.countrysidedays.title"), x + 11, y + 7, 0xFFF5E7C9);
-        graphics.text(minecraft.font, currentObjective(player), x + 11, y + 22, 0xFFD7E9C2);
+        Component objective = currentObjective(player);
+        int x = 7;
+        int y = 7;
+        int width = Math.max(82, Math.min(148, minecraft.font.width(objective) + 17));
+        int height = 20;
+        graphics.fill(x, y, x + width, y + height, 0xA826211A);
+        graphics.fill(x, y, x + 3, y + height, 0xFFD7AE67);
+        graphics.fill(x + 3, y, x + width, y + 1, 0x705C452F);
+        graphics.text(minecraft.font, objective, x + 9, y + 6, 0xFFE8E1C7);
     }
 
     private static Component currentObjective(LocalPlayer player) {
