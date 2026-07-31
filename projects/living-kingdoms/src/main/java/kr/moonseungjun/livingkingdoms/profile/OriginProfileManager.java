@@ -72,10 +72,12 @@ public final class OriginProfileManager {
                 player.level().getGameTime()
         );
 
-        AuthoredRealmManager.ensureForPlayer(player, profile);
+        // Base generation owns dimension registration and first safe teleport. The authored revision
+        // then replaces the prototype structures before NPCs and loadout are installed.
         if (!StarterRealmManager.placePlayer(player, profile)) {
             return new OriginSubmissionResultPayload(false, "시작 지역을 준비하지 못했습니다. 잠시 후 다시 선택하십시오.");
         }
+        AuthoredRealmManager.ensureForPlayer(player, profile);
 
         StarterNpcManager.ensureForPlayer(player, profile);
         StarterLoadoutManager.grant(player, profile);
