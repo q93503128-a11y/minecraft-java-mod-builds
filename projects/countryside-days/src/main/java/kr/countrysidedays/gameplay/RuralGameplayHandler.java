@@ -36,9 +36,7 @@ public final class RuralGameplayHandler {
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)
-                || !(player.level() instanceof ServerLevel serverLevel)) {
-            return;
-        }
+                || !(player.level() instanceof ServerLevel serverLevel)) return;
 
         enforceHealingRules(serverLevel);
         if (serverLevel.dimension() != Level.OVERWORLD) return;
@@ -90,24 +88,28 @@ public final class RuralGameplayHandler {
         if (!(event.getEntity() instanceof ServerPlayer player)
                 || !(player.level() instanceof ServerLevel serverLevel)
                 || serverLevel.dimension() != Level.OVERWORLD
-                || !CountrysideRegionManager.isFlatWorld(serverLevel)
-                || player.tickCount % 40 != 0) {
+                || !CountrysideRegionManager.isFlatWorld(serverLevel)) {
             return;
         }
 
-        serverLevel.getEntitiesOfClass(
-                Mob.class,
-                player.getBoundingBox().inflate(128.0),
-                mob -> mob instanceof Enemy
-        ).forEach(Mob::discard);
+        if (player.tickCount % 40 == 0) {
+            serverLevel.getEntitiesOfClass(
+                    Mob.class,
+                    player.getBoundingBox().inflate(128.0),
+                    mob -> mob instanceof Enemy
+            ).forEach(Mob::discard);
+        }
+
+        if (player.tickCount % 100 == 0) {
+            CountrysideWorldData.get(serverLevel.getServer()).homesteadOrigin()
+                    .ifPresent(origin -> RuralNpcManager.tickVillage(serverLevel, origin));
+        }
     }
 
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (!(event.getLevel() instanceof ServerLevel serverLevel)
                 || !(event.getEntity() instanceof Enemy)
-                || !CountrysideRegionManager.isInsideCountryside(serverLevel, event.getEntity().blockPosition())) {
-            return;
-        }
+                || !CountrysideRegionManager.isInsideCountryside(serverLevel, event.getEntity().blockPosition())) return;
         event.setCanceled(true);
     }
 
@@ -115,7 +117,6 @@ public final class RuralGameplayHandler {
         if (event.isCanceled() || !(event.getBreaker() instanceof Player player)) return;
         if (!isForagePlant(event.getState())) return;
         if (event.getLevel().getRandom().nextFloat() >= WILD_HERB_CHANCE) return;
-
         giveOrDrop(player, ModItems.WILD_HERB.get().getDefaultInstance());
         player.sendOverlayMessage(Component.translatable("message.countrysidedays.wild_herb_found"));
     }
@@ -123,11 +124,8 @@ public final class RuralGameplayHandler {
     public static void onItemFished(ItemFishedEvent event) {
         if (event.isCanceled()
                 || !(event.getEntity() instanceof ServerPlayer player)
-                || !(player.level() instanceof ServerLevel serverLevel)) {
-            return;
-        }
+                || !(player.level() instanceof ServerLevel serverLevel)) return;
         if (serverLevel.getRandom().nextFloat() >= RIVER_FISH_CHANCE) return;
-
         giveOrDrop(player, ModItems.RIVER_FISH.get().getDefaultInstance());
         player.sendOverlayMessage(Component.translatable("message.countrysidedays.river_fish_caught"));
     }
