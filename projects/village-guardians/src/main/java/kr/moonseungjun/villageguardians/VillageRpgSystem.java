@@ -60,9 +60,14 @@ public final class VillageRpgSystem {
             return;
         }
 
-        int reward = Math.min(300, 20 + Math.round(defeated.getMaxHealth() * 1.5f));
+        int baseReward = Math.min(300, 20 + Math.round(defeated.getMaxHealth() * 1.5f));
+        boolean villageDefense = VillageCouncilState.isInsideVillage(killer);
+        int reward = villageDefense
+                ? Math.round(baseReward * VillageCouncilState.VILLAGE_DEFENSE_XP_MULTIPLIER)
+                : baseReward;
         VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(killer, reward);
-        killer.sendSystemMessage(Component.literal("§d+" + result.awardedExperience() + " RPG XP"));
+        killer.sendSystemMessage(Component.literal("§d+" + result.awardedExperience() + " RPG XP"
+                + (villageDefense ? " §6(마을 방어 보너스)" : "")));
         if (result.levelsGained() > 0) {
             refreshPlayerPassive(killer);
             killer.heal(killer.getMaxHealth());
