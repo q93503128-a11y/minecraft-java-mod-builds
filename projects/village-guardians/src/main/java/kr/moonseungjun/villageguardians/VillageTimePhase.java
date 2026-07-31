@@ -1,9 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 public enum VillageTimePhase {
-    MORNING("아침", 1000L),
-    DAY("낮", 6000L),
-    EVENING("저녁", 12000L),
+    DAY("낮", 5000L),
     NIGHT("밤", 18000L);
 
     private final String koreanName;
@@ -23,6 +21,6 @@ public enum VillageTimePhase {
     }
 
     public VillageTimePhase next() {
-        return values()[(ordinal() + 1) % values().length];
+        return this == DAY ? NIGHT : DAY;
     }
 }
