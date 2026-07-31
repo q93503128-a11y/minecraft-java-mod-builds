@@ -8,7 +8,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-SHADERPACK = "shaderpacks/ShaderLab-Dreamscape-0.4.zip"
+SHADERPACK = "shaderpacks/ShaderLab-Dreamscape-0.5.zip"
 REQUIRED_EXACT = {
     "META-INF/neoforge.mods.toml",
     "kr/moonseungjun/shaderlab/ShaderLab.class",
@@ -71,14 +71,56 @@ def main() -> None:
 
         with zipfile.ZipFile(io.BytesIO(shaderpack_bytes)) as shaderpack:
             shader_names = set(shaderpack.namelist())
-            if "SHADERLAB_ATTRIBUTION.md" not in shader_names:
-                fail("embedded shaderpack is missing attribution")
+            for required in (
+                "SHADERLAB_ATTRIBUTION.md",
+                "SHADERLAB_DREAMSCAPE_PRESET.json",
+                "MODRINTH_LICENSE_EVIDENCE.json",
+                "shaders/lib/settings.glsl",
+                "shaders/lib/atmosphere.glsl",
+                "shaders/gbuffers_water.fsh",
+                "shaders/gbuffers_terrain.fsh",
+            ):
+                if required not in shader_names:
+                    fail(f"embedded shaderpack is missing {required}")
+
             if not any("license" in name.lower() or "mit" in name.lower() for name in shader_names):
-                fail("embedded shaderpack is missing its license file")
-            if not any("gbuffers_water" in name.lower() or "/water." in name.lower() for name in shader_names):
-                fail("embedded shaderpack is missing a water render program")
-            if not any("gbuffers_terrain" in name.lower() or "/terrain." in name.lower() for name in shader_names):
-                fail("embedded shaderpack is missing a terrain render program")
+                fail("embedded shaderpack is missing its license notice")
+
+            settings = shaderpack.read("shaders/lib/settings.glsl").decode("utf-8")
+            for token in (
+                "#define WATER_REFRACTION",
+                "#define CAUSTICS",
+                "#define WATER_WAVES",
+                "#define WATER_FOAM",
+                "#define FXAA",
+                "#define AUTO_NORMAL_STRENGTH 1.5",
+                "#define SSAO_STRENGTH 1.25",
+                "#define SHADOW_SOFTNESS 1.5",
+                "#define BLOOM_STRENGTH 0.25",
+                "//#define VIGNETTE",
+            ):
+                if token not in settings:
+                    fail(f"Dreamscape settings are missing {token}")
+
+            atmosphere = shaderpack.read("shaders/lib/atmosphere.glsl").decode("utf-8")
+            for token in (
+                "shaderlab_low_mist",
+                "groundBand",
+                "mistPockets",
+                "curtainFade",
+                "vec3 rose",
+            ):
+                if token not in atmosphere:
+                    fail(f"Dreamscape atmosphere patch is missing {token}")
+
+            water = shaderpack.read("shaders/gbuffers_water.fsh").decode("utf-8")
+            for token in ("deepTeal", "clearCyan", "dreamTint"):
+                if token not in water:
+                    fail(f"Dreamscape water material patch is missing {token}")
+
+            preset = json.loads(shaderpack.read("SHADERLAB_DREAMSCAPE_PRESET.json"))
+            if preset.get("name") != "Shader Lab Dreamscape 0.5":
+                fail("Dreamscape preset metadata has the wrong version")
 
             source_text: list[str] = []
             license_text = ""
@@ -95,10 +137,10 @@ def main() -> None:
                     fail(f"embedded shader source is missing expected feature token: {token}")
 
             if "MIT License" not in license_text and "Permission is hereby granted" not in license_text:
-                fail("embedded license file does not contain the expected MIT text")
+                fail("embedded license notice does not contain the expected MIT text")
 
             attribution = shaderpack.read("SHADERLAB_ATTRIBUTION.md").decode("utf-8")
-            for token in ("xsoras", "AwTfcPdR", "MIT"):
+            for token in ("xsoras", "AwTfcPdR", "MIT", "modified derivative"):
                 if token not in attribution:
                     fail(f"attribution is missing {token}")
 
@@ -117,15 +159,17 @@ def main() -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
         "\n".join([
-            "Shader Lab Dreamscape JAR verification: PASS",
+            "Shader Lab Dreamscape 0.5 JAR verification: PASS",
             f"JAR: {jar_path.name}",
             f"Bytes: {jar_path.stat().st_size}",
             f"SHA-256: {digest}",
-            "Renderer: Iris shaderpack bootstrap",
+            "Renderer: Iris world shader programs",
             "Upstream: official Sarp Shaders 1.0.0 / AwTfcPdR",
-            "License file preserved and verified: PASS",
+            "MIT license evidence and notice verified: PASS",
             "Water/terrain render separation: PASS",
-            "Aurora/caustics/refraction/fog features: PASS",
+            "Water refraction/waves/foam/caustics/SSR preset: PASS",
+            "Terrain PBR/auto normals/SSAO/soft shadows preset: PASS",
+            "Real-sky aurora and world-space low mist patches: PASS",
             "Rejected screen-space post effect absent: PASS",
         ]) + "\n",
         encoding="utf-8",
