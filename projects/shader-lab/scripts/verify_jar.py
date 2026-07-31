@@ -104,7 +104,7 @@ def main() -> None:
 
             atmosphere = shaderpack.read("shaders/lib/atmosphere.glsl").decode("utf-8")
             for token in (
-                "shaderlab_low_mist",
+                "float lowMist",
                 "groundBand",
                 "mistPockets",
                 "curtainFade",
