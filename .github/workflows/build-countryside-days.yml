@@ -74,6 +74,15 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee ci-logs/gametest.log
 
+      - name: Reject runtime data reload errors
+        id: dataload
+        run: |
+          if grep -n -E "Couldn't parse data file|Failed to parse recipe|Parsing error loading recipe" ci-logs/gametest.log ci-logs/datagen.log; then
+            echo "Runtime data failed to load cleanly."
+            exit 1
+          fi
+          echo "No recipe or data-file parse errors found."
+
       - name: Verify JAR and create deliverables
         id: jarcheck
         run: |
@@ -110,6 +119,7 @@ jobs:
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           DATAGEN_OUTCOME: ${{ steps.datagen.outcome }}
           GAMETEST_OUTCOME: ${{ steps.gametest.outcome }}
+          DATALOAD_OUTCOME: ${{ steps.dataload.outcome }}
           JAR_OUTCOME: ${{ steps.jarcheck.outcome }}
         run: |
           cat > BUILD_AND_RUNTIME_REPORT.md <<REPORT
@@ -126,6 +136,7 @@ jobs:
           - Clean build: ${BUILD_OUTCOME}
           - Datagen: ${DATAGEN_OUTCOME}
           - Required GameTest server: ${GAMETEST_OUTCOME}
+          - Runtime data reload validation: ${DATALOAD_OUTCOME}
           - JAR structure verification: ${JAR_OUTCOME}
           - Dedicated server smoke test: NOT RUN
           - Client smoke test: NOT RUN
@@ -153,7 +164,7 @@ jobs:
               echo
               echo '## GameTest log tail'
               echo '```text'
-              tail -n 160 ci-logs/gametest.log
+              tail -n 180 ci-logs/gametest.log
               echo '```'
             } >> BUILD_AND_RUNTIME_REPORT.md
           fi
