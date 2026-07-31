@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "PPP",
+    "BCB",
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "tag": "minecraft:planks"
+    },
+    "B": {
+      "item": "minecraft:brick"
+    },
+    "C": {
+      "item": "minecraft:campfire"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "countrysidedays:country_kitchen_counter"
+  }
+}
