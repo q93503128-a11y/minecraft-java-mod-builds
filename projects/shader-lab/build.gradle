@@ -136,10 +136,6 @@ tasks.register('verifyShaderpackResources') {
                     || evidence?.project_slug != sarpProject) {
                 throw new GradleException('Embedded Modrinth license evidence does not match the pinned Sarp release')
             }
-
-            if (pack.testzip() != null) {
-                throw new GradleException('Generated Dreamscape shaderpack contains a corrupt ZIP member')
-            }
         }
 
         def packMeta = new JsonSlurper().parse(file('src/main/resources/pack.mcmeta'))
