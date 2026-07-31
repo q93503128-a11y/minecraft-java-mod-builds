@@ -27,7 +27,7 @@ public final class VillageGuardians {
     public VillageGuardians(IEventBus modEventBus) {
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians public dashboard, expanded fortress, and siege feedback core loaded");
+        LOGGER.info("Village Guardians licensed UI assets, oriented buildings, operable gate, and wall access loaded");
     }
 
     @SubscribeEvent
@@ -75,7 +75,9 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        VillageProgressionSystem.handleBuildingInteraction(event);
+        if (!VillageWorldSystem.handleGateInteraction(event)) {
+            VillageProgressionSystem.handleBuildingInteraction(event);
+        }
     }
 
     @SubscribeEvent
