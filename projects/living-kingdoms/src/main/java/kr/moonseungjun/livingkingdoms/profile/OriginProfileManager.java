@@ -6,9 +6,8 @@ import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.network.OpenOriginScreenPayload;
 import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
 import kr.moonseungjun.livingkingdoms.network.SubmitOriginPayload;
-import kr.moonseungjun.livingkingdoms.world.RealmRevisionFourManager;
+import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
-import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -72,11 +71,9 @@ public final class OriginProfileManager {
                 player.level().getGameTime()
         );
 
-        if (!StarterRealmManager.placePlayer(player, profile)) {
+        if (!LivingRealmWorldManager.placePlayer(player, profile)) {
             return new OriginSubmissionResultPayload(false, "시작 지역을 준비하지 못했습니다. 잠시 후 다시 선택하십시오.");
         }
-        RealmRevisionFourManager.ensureForPlayer(player, profile);
-
         StarterNpcManager.ensureForPlayer(player, profile);
         StarterLoadoutManager.grant(player, profile);
         savedData.putProfile(player.getUUID(), profile);
@@ -85,7 +82,7 @@ public final class OriginProfileManager {
                 player.getGameProfile().name(), profile.speciesId(), profile.homelandId(),
                 profile.backgroundId(), profile.residenceId()
         );
-        return new OriginSubmissionResultPayload(true, "출신이 확정되었습니다. 새로운 삶이 시작됩니다.");
+        return new OriginSubmissionResultPayload(true, "출신과 기본 소속이 확정되었습니다. 새로운 삶이 시작됩니다.");
     }
 
     private static boolean isSafeId(String value) {
