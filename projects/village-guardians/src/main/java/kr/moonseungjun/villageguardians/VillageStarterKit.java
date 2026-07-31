@@ -61,7 +61,7 @@ public final class VillageStarterKit {
             return;
         }
 
-        if (stack.getItem() == Items.GOAT_HORN && player.getTags().contains(MAYOR_CALLER_TAG)) {
+        if (stack.getItem() == Items.GOAT_HORN) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
             useMayorCaller(player);
