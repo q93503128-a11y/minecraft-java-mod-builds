@@ -28,7 +28,7 @@ Minecraft Java 26.2 + NeoForge용 단일 JAR 클라이언트 쉐이더 모드다
 ## 검증
 
 - Java 25 + NeoForge 26.2.0.40-beta clean build
-- Noble 1.9.6 안개 선언 형식 차이를 정규화한 뒤 동일 소스 검증
+- Noble 1.9.6 안개 선언과 지표 형상 수식의 버전 차이를 정규화한 뒤 동일 소스 검증
 - 식물 알파 `discard` 패치
 - 모든 Iris compute work-group 숫자 상수화
 - 현실형 구름·반사 compute 비활성화
