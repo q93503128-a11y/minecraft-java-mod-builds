@@ -3,7 +3,6 @@ package kr.moonseungjun.villageguardians;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 final class VillageFortressBuildings {
@@ -16,6 +15,7 @@ final class VillageFortressBuildings {
                 build(level, center, building);
             }
         }
+        removeEmbeddedBells(level, center);
     }
 
     static void build(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
@@ -32,6 +32,7 @@ final class VillageFortressBuildings {
             VillageStructureShell.build(level, origin, groundY, spec);
         }
         VillageBuildingCatalog.furnish(level, origin, spec, building);
+        clearLegacyUpgradePile(level, origin, spec);
     }
 
     static void rebuild(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
@@ -39,6 +40,8 @@ final class VillageFortressBuildings {
             return;
         }
         build(level, center, building);
+        removeEmbeddedBells(level, center);
+        VillageFortressTerrain.restoreCentralBell(level, center);
     }
 
     static void remove(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
@@ -64,32 +67,54 @@ final class VillageFortressBuildings {
             BlockPos center,
             VillageProgressionSystem.Building building,
             int upgradeLevel) {
-        if (upgradeLevel <= 0 || building == VillageProgressionSystem.Building.WALLS) {
+        if (building == VillageProgressionSystem.Building.WALLS) {
             return;
         }
         VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
         BlockPos origin = center.offset(spec.dx(), 0, spec.dz());
+        clearLegacyUpgradePile(level, origin, spec);
+    }
+
+    static void removeEmbeddedBells(ServerLevel level, BlockPos center) {
+        for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
+            if (building == VillageProgressionSystem.Building.WALLS) {
+                continue;
+            }
+            VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
+            BlockPos origin = center.offset(spec.dx(), 0, spec.dz());
+            for (int x = 0; x < spec.width(); x++) {
+                for (int z = 0; z < spec.depth(); z++) {
+                    for (int y = 0; y <= spec.height(); y++) {
+                        BlockPos pos = origin.offset(x, y, z);
+                        if (level.getBlockState(pos).is(Blocks.BELL)) {
+                            VillageFortressTerrain.set(level, pos, Blocks.AIR);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void clearLegacyUpgradePile(
+            ServerLevel level,
+            BlockPos origin,
+            VillageBuildingCatalog.Spec spec) {
         BlockPos entrance = VillageBuildingCatalog.entrance(level, origin, spec);
         Direction sideways = spec.entranceFacing().getClockWise();
-        Block decoration = switch (building) {
-            case SMITHY -> Blocks.IRON_BLOCK;
-            case SKILL_HALL -> Blocks.BOOKSHELF;
-            case INFIRMARY -> Blocks.QUARTZ_BLOCK;
-            case STOREHOUSE -> Blocks.GOLD_BLOCK;
-            case BARRACKS -> Blocks.BRICKS;
-            case TOWN_HALL -> Blocks.CHISELED_STONE_BRICKS;
-            case WALLS -> Blocks.STONE_BRICKS;
-        };
-
-        BlockPos plinth = entrance.relative(sideways, 6).below();
-        for (int x = -1; x <= 1; x++) {
-            VillageFortressTerrain.set(level, plinth.relative(sideways, x), Blocks.POLISHED_ANDESITE);
-        }
-        for (int i = 0; i < Math.min(5, upgradeLevel); i++) {
-            VillageFortressTerrain.set(
-                    level,
-                    plinth.relative(sideways, i - 2).above(),
-                    decoration);
+        BlockPos oldPlinth = entrance.relative(sideways, 6).below();
+        for (int side = -3; side <= 3; side++) {
+            for (int y = 0; y <= 3; y++) {
+                BlockPos pos = oldPlinth.relative(sideways, side).above(y);
+                if (level.getBlockState(pos).is(Blocks.IRON_BLOCK)
+                        || level.getBlockState(pos).is(Blocks.GOLD_BLOCK)
+                        || level.getBlockState(pos).is(Blocks.QUARTZ_BLOCK)
+                        || level.getBlockState(pos).is(Blocks.BOOKSHELF)
+                        || level.getBlockState(pos).is(Blocks.BRICKS)
+                        || level.getBlockState(pos).is(Blocks.POLISHED_ANDESITE)
+                        || level.getBlockState(pos).is(Blocks.CHISELED_STONE_BRICKS)) {
+                    VillageFortressTerrain.set(level, pos, Blocks.AIR);
+                }
+            }
         }
     }
 }
