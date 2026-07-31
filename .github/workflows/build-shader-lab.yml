@@ -51,18 +51,31 @@ jobs:
           gradle wrapper --gradle-version 9.2.1 --distribution-type bin
           chmod +x gradlew
 
-      - name: Normalize pinned Noble fog matcher
+      - name: Normalize pinned Noble fog matchers
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
           path = Path("scripts/prepare_noble.py")
           source = path.read_text(encoding="utf-8")
-          old = r'''        (r"float\s+densityMult\s*=\s*mix\(0\.0?3,\s*0\.7,\s*biome_may_sandstorm\);", "float densityMult     = mix(0.95, 1.0, biome_may_sandstorm);", "fog density multiplier"),'''
-          new = r'''        (r"^[ \t]*float\s+densityMult\s*=\s*[^;]+;[ \t]*$", "float densityMult     = mix(0.95, 1.0, biome_may_sandstorm);", "fog density multiplier"),'''
-          if old not in source:
-              raise SystemExit("Expected pinned Noble density matcher was not found")
-          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+
+          replacements = [
+              (
+                  r'''        (r"float\s+densityMult\s*=\s*mix\(0\.0?3,\s*0\.7,\s*biome_may_sandstorm\);", "float densityMult     = mix(0.95, 1.0, biome_may_sandstorm);", "fog density multiplier"),''',
+                  r'''        (r"^[ \t]*float\s+densityMult\s*=\s*[^;]+;[ \t]*$", "float densityMult     = mix(0.95, 1.0, biome_may_sandstorm);", "fog density multiplier"),''',
+              ),
+              (
+                  r'''            r"(?P<i>^[ \t]*)shapeNoise\s*\*=\s*smoothstep\(\s*0\.0\s*,\s*1\.0\s*,\s*exp\(\s*-abs\(\s*position\.y\s*-\s*fogAltitude\s*\)\s*\*\s*0\.0?3\s*\)\s*\)\s*;\s*$",''',
+                  r'''            r"(?P<i>^[ \t]*)shapeNoise\s*\*=\s*[^;]*fogAltitude[^;]*;[ \t]*$",''',
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in source:
+                  raise SystemExit(f"Expected pinned Noble matcher was not found: {old[:80]}")
+              source = source.replace(old, new, 1)
+
+          path.write_text(source, encoding="utf-8")
           PY
 
       - name: Clean single-JAR build
