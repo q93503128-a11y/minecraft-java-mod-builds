@@ -117,6 +117,6 @@ public final class SkillProgressionManager {
     }
 
     private static SkillProgressionSavedData data(ServerPlayer player) {
-        return player.getServer().overworld().getDataStorage().computeIfAbsent(SkillProgressionSavedData.TYPE);
+        return player.level().getServer().overworld().getDataStorage().computeIfAbsent(SkillProgressionSavedData.TYPE);
     }
 }
