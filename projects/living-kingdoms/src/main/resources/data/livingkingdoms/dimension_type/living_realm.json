@@ -7,6 +7,7 @@
   "has_raids": true,
   "has_skylight": true,
   "has_ceiling": false,
+  "has_ender_dragon_fight": false,
   "coordinate_scale": 1.0,
   "ambient_light": 0.08,
   "logical_height": 384,
@@ -16,10 +17,7 @@
   "effects": "minecraft:overworld",
   "monster_spawn_block_light_limit": 0,
   "monster_spawn_light_level": {
-    "type": "minecraft:uniform",
-    "value": {
-      "min_inclusive": 0,
-      "max_inclusive": 7
-    }
+    "min_inclusive": 0,
+    "max_inclusive": 7
   }
 }
