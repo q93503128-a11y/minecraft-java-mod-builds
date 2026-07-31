@@ -38,12 +38,15 @@ Minecraft Java 26.2 + NeoForge용 클라이언트 전용 JAR 쉐이더 실험이
 
 ## 로컬 빌드
 
-Gradle 9.6.1과 Java 25가 준비된 환경에서:
+Gradle 9.2.1과 Java 25가 준비된 환경에서:
 
 ```bash
-gradle --no-daemon clean build --stacktrace
+gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+./gradlew --no-daemon clean build --stacktrace
 python3 scripts/verify_jar.py build/libs/shaderlab-0.1.0-alpha.1.jar
 ```
+
+Windows에서는 두 번째 명령부터 `gradlew.bat`를 사용한다.
 
 생성물:
 
