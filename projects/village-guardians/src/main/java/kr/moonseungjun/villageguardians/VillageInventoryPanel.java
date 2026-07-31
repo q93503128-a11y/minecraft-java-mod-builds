@@ -26,11 +26,12 @@ public final class VillageInventoryPanel {
     private static final int GOLD = 0xFFE6B65A;
     private static final int TEXT = 0xFFF3F6F8;
     private static final int MUTED = 0xFF9BA7B4;
+    private static final Pattern LEVEL_PATTERN = Pattern.compile(".*?(\\d+).*");
     private static final Pattern PROGRESS_PATTERN = Pattern.compile(".*?(\\d+).*?(\\d+)\\s*/\\s*(\\d+).*?");
 
     private static VillageNetwork.PlayerStatusPayload status = new VillageNetwork.PlayerStatusPayload(
             "레벨 동기화 중",
-            "역할 확인 중",
+            "확인 중",
             "주화 확인 중",
             "마을 확인 중");
 
@@ -89,8 +90,11 @@ public final class VillageInventoryPanel {
         graphics.fill(barLeft + 1, barTop + 1,
                 barLeft + 1 + Math.round((barWidth - 2) * progress.ratio()),
                 barTop + 5, ACCENT);
-        String xpText = progress.current() + " / " + progress.required() + " XP";
-        graphics.text(minecraft.font, xpText, barLeft, barTop + 9, MUTED, false);
+        String xpText = progress.maxLevel()
+                ? "최고 레벨"
+                : progress.current() + " / " + progress.required() + " XP";
+        graphics.text(minecraft.font, xpText, barLeft, barTop + 9,
+                progress.maxLevel() ? GOLD : MUTED, false);
 
         drawInfoRow(graphics, minecraft, left, top + 62, "역할", status.role(), ACCENT);
         drawInfoRow(graphics, minecraft, left, top + 75, "자산", status.economy(), GOLD);
@@ -147,18 +151,27 @@ public final class VillageInventoryPanel {
     }
 
     private static ProgressData parseProgress(String text) {
-        Matcher matcher = PROGRESS_PATTERN.matcher(text);
-        if (!matcher.matches()) {
-            return new ProgressData(1, 0, 100);
+        Matcher progressMatcher = PROGRESS_PATTERN.matcher(text);
+        if (progressMatcher.matches()) {
+            try {
+                int level = Integer.parseInt(progressMatcher.group(1));
+                int current = Integer.parseInt(progressMatcher.group(2));
+                int required = Math.max(1, Integer.parseInt(progressMatcher.group(3)));
+                return new ProgressData(level, current, required, false);
+            } catch (NumberFormatException ignored) {
+            }
         }
-        try {
-            int level = Integer.parseInt(matcher.group(1));
-            int current = Integer.parseInt(matcher.group(2));
-            int required = Math.max(1, Integer.parseInt(matcher.group(3)));
-            return new ProgressData(level, current, required);
-        } catch (NumberFormatException ignored) {
-            return new ProgressData(1, 0, 100);
+
+        Matcher levelMatcher = LEVEL_PATTERN.matcher(text);
+        if (levelMatcher.matches()) {
+            try {
+                int level = Integer.parseInt(levelMatcher.group(1));
+                boolean maxLevel = text.contains("최고 레벨");
+                return new ProgressData(level, maxLevel ? 1 : 0, 1, maxLevel);
+            } catch (NumberFormatException ignored) {
+            }
         }
+        return new ProgressData(1, 0, 100, false);
     }
 
     private static String compact(String value, int maxCharacters) {
@@ -191,8 +204,11 @@ public final class VillageInventoryPanel {
                 && mouseY < y + height;
     }
 
-    private record ProgressData(int level, int current, int required) {
+    private record ProgressData(int level, int current, int required, boolean maxLevel) {
         float ratio() {
+            if (maxLevel) {
+                return 1.0f;
+            }
             return Math.max(0.0f, Math.min(1.0f, current / (float) required));
         }
     }
