@@ -1,12 +1,10 @@
 package kr.moonseungjun.villageguardians;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -16,6 +14,10 @@ public final class VillageCommands {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         var root = Commands.literal("vg")
+                .then(Commands.literal("menu")
+                        .executes(context -> openMenu(context.getSource())))
+                .then(Commands.literal("stats")
+                        .executes(context -> openStats(context.getSource())))
                 .then(Commands.literal("status")
                         .executes(context -> status(context.getSource())))
                 .then(Commands.literal("progression")
@@ -35,14 +37,6 @@ public final class VillageCommands {
                                         StringArgumentType.getString(context, "role")))))
                 .then(Commands.literal("skill")
                         .executes(context -> useSkill(context.getSource())))
-                .then(Commands.literal("rpg")
-                        .then(Commands.literal("status")
-                                .executes(context -> rpgStatus(context.getSource())))
-                        .then(Commands.literal("test_xp")
-                                .then(Commands.argument("amount", IntegerArgumentType.integer(1, 5000))
-                                        .executes(context -> grantTestExperience(
-                                                context.getSource(),
-                                                IntegerArgumentType.getInteger(context, "amount"))))))
                 .then(Commands.literal("propose")
                         .then(Commands.literal("advance_time")
                                 .executes(context -> proposeAdvanceTime(context.getSource()))))
@@ -50,15 +44,19 @@ public final class VillageCommands {
                         .then(Commands.literal("yes")
                                 .executes(context -> vote(context.getSource(), true)))
                         .then(Commands.literal("no")
-                                .executes(context -> vote(context.getSource(), false))))
-                .then(Commands.literal("mayor")
-                        .then(Commands.literal("transfer")
-                                .then(Commands.argument("player", EntityArgument.player())
-                                        .executes(context -> transferMayor(
-                                                context.getSource(),
-                                                EntityArgument.getPlayer(context, "player"))))));
+                                .executes(context -> vote(context.getSource(), false))));
 
         dispatcher.register(root);
+    }
+
+    private static int openMenu(CommandSourceStack source) throws CommandSyntaxException {
+        VillageUiService.openDashboard(source.getPlayerOrException());
+        return 1;
+    }
+
+    private static int openStats(CommandSourceStack source) throws CommandSyntaxException {
+        VillageUiService.openPlayerStatus(source.getPlayerOrException());
+        return 1;
     }
 
     private static int status(CommandSourceStack source) throws CommandSyntaxException {
@@ -66,7 +64,7 @@ public final class VillageCommands {
         source.sendSuccess(
                 () -> Component.literal(VillageCouncilState.status(source.getServer(), player)),
                 false);
-        source.sendSuccess(() -> Component.literal(VillageProgressionSystem.status()), false);
+        source.sendSuccess(() -> Component.literal(VillageProgressionSystem.status(player)), false);
         source.sendSuccess(() -> Component.literal(VillageRaidSystem.status()), false);
         return 1;
     }
@@ -124,33 +122,11 @@ public final class VillageCommands {
         return 0;
     }
 
-    private static int rpgStatus(CommandSourceStack source) throws CommandSyntaxException {
-        ServerPlayer player = source.getPlayerOrException();
-        source.sendSuccess(() -> Component.literal(VillageCouncilState.rpgStatus(player)), false);
-        return 1;
-    }
-
-    private static int grantTestExperience(CommandSourceStack source, int amount) throws CommandSyntaxException {
-        ServerPlayer player = source.getPlayerOrException();
-        if (!VillageCouncilState.isMayor(player)) {
-            source.sendFailure(Component.literal("알파 테스트 경험치 지급은 촌장만 사용할 수 있습니다."));
-            return 0;
-        }
-
-        VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(player, amount);
-        VillageRpgSystem.refreshPlayerPassive(player);
-        player.heal(player.getMaxHealth());
-        source.sendSuccess(() -> Component.literal("§d테스트 XP " + result.awardedExperience()
-                + " 지급 | 현재 레벨 " + result.current().level()
-                + " | 현재 XP " + result.current().experience()), true);
-        return 1;
-    }
-
     private static int proposeAdvanceTime(CommandSourceStack source) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         String result = VillageCouncilState.proposeAdvanceTime(player);
         source.sendSuccess(() -> Component.literal(result), false);
-        return result.startsWith("시간 진행") ? 1 : 0;
+        return result.contains("진행") || result.contains("투표") ? 1 : 0;
     }
 
     private static int vote(CommandSourceStack source, boolean yes) throws CommandSyntaxException {
@@ -158,12 +134,5 @@ public final class VillageCommands {
         String result = VillageCouncilState.vote(player, yes);
         source.sendSuccess(() -> Component.literal(result), false);
         return result.contains("투표했습니다") ? 1 : 0;
-    }
-
-    private static int transferMayor(CommandSourceStack source, ServerPlayer target) throws CommandSyntaxException {
-        ServerPlayer actor = source.getPlayerOrException();
-        String result = VillageCouncilState.transferMayor(actor, target);
-        source.sendSuccess(() -> Component.literal(result), true);
-        return result.equals("촌장직 이전 완료") ? 1 : 0;
     }
 }
