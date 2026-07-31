@@ -8,6 +8,7 @@ import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
 import kr.moonseungjun.livingkingdoms.network.SubmitOriginPayload;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
+import kr.moonseungjun.livingkingdoms.world.StarterRealmUpgradeManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -74,6 +75,7 @@ public final class OriginProfileManager {
                 player.level().getGameTime()
         );
 
+        StarterRealmUpgradeManager.ensureForPlayer(player, profile);
         if (!StarterRealmManager.placePlayer(player, profile)) {
             return new OriginSubmissionResultPayload(false, "시작 지역을 준비하지 못했습니다. 잠시 후 다시 선택하십시오.");
         }
