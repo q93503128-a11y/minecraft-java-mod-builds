@@ -5,9 +5,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import java.util.Set;
 import java.util.UUID;
@@ -40,11 +43,11 @@ public final class VillageWorldSystem {
             VillageCouncilState.setVillageCenter(player);
         }
         BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition()).immutable();
-        if (!level.getBlockState(center.below(2)).is(Blocks.NETHERITE_BLOCK)) {
+        if (!level.getBlockState(center.below(2)).is(Blocks.RESPAWN_ANCHOR)) {
             generationInProgress = true;
             try {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 재건] §f넓어진 단일 북문 전투 마을과 기능별 건물을 배치합니다."));
+                        "§6[마을 재건] §f건물 방향, 북문, 성벽 진입로와 외부 UI 자산을 새 기준으로 갱신합니다."));
                 buildAll(level, center);
                 for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
                     if (!VillageProgressionSystem.isOperational(building)) {
@@ -52,7 +55,7 @@ public final class VillageWorldSystem {
                     }
                 }
                 player.sendSystemMessage(Component.literal(
-                        "§a[마을 준비 완료] §f중앙 종, 건물 간판, 호출기 UI를 이용하세요."));
+                        "§a[마을 준비 완료] §f건물 입구와 기능 단말은 모두 중앙 광장을 향합니다."));
             } finally {
                 generationInProgress = false;
             }
@@ -76,6 +79,34 @@ public final class VillageWorldSystem {
         } finally {
             generationInProgress = false;
         }
+    }
+
+    public static boolean handleGateInteraction(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getHand() != InteractionHand.MAIN_HAND
+                || !(event.getEntity() instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (center == null || !VillageFortressTerrain.isGateControl(center, event.getPos())) {
+            return false;
+        }
+
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.WALLS)) {
+            player.sendSystemMessage(Component.literal("§c북문이 파괴되어 개폐 장치를 사용할 수 없습니다."));
+            return true;
+        }
+
+        if (VillageFortressTerrain.isNorthGatePassable(level, center)) {
+            VillageFortressTerrain.closeNorthGate(level, center);
+            player.sendSystemMessage(Component.literal("§6[북문] §f성문을 닫았습니다."));
+        } else {
+            VillageFortressTerrain.openNorthGate(level, center);
+            player.sendSystemMessage(Component.literal("§6[북문] §f성문을 열었습니다."));
+        }
+        return true;
     }
 
     public static boolean isAllowedGameMob(Mob mob) {
@@ -162,7 +193,7 @@ public final class VillageWorldSystem {
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
             applyUpgradeVisual(level, building, VillageProgressionSystem.level(building));
         }
-        VillageFortressTerrain.set(level, center.below(2), Blocks.NETHERITE_BLOCK);
+        VillageFortressTerrain.set(level, center.below(2), Blocks.RESPAWN_ANCHOR);
         VillageFortressTerrain.set(level, center.below(), Blocks.CHISELED_STONE_BRICKS);
     }
 
