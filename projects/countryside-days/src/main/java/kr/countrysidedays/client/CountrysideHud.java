@@ -30,7 +30,7 @@ public final class CountrysideHud {
     private static void render(GuiGraphicsExtractor graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || minecraft.options.hideGui) {
+        if (player == null) {
             return;
         }
 
