@@ -16,16 +16,10 @@ public final class ClientNetworkHandlers {
     }
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (!(minecraft.screen instanceof OriginSelectionScreen)) {
-            minecraft.setScreen(new OriginSelectionScreen(payload.schemaVersion()));
-        }
+        Minecraft.getInstance().gui.setScreen(new OriginSelectionScreen(payload.schemaVersion()));
     }
 
     private static void handleSubmissionResult(OriginSubmissionResultPayload payload, IPayloadContext context) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen instanceof OriginSelectionScreen screen) {
-            screen.handleServerResult(payload.accepted(), payload.message());
-        }
+        OriginSelectionScreen.handleServerResult(payload.accepted(), payload.message());
     }
 }
