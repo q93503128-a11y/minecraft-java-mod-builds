@@ -43,7 +43,10 @@ public final class VillageGuardians {
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             VillageCouncilState.registerPlayer(serverPlayer);
-            VillageCouncilState.enforceFrozenTime(serverPlayer.getServer());
+            var server = serverPlayer.level().getServer();
+            if (server != null) {
+                VillageCouncilState.enforceFrozenTime(server);
+            }
             VillageRpgSystem.refreshPlayerPassive(serverPlayer);
         }
     }
