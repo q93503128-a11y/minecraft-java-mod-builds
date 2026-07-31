@@ -1,0 +1,13 @@
+{
+  "villageguardians.title": "마을지키기",
+  "villageguardians.role.guard_captain": "경비대장",
+  "villageguardians.role.builder": "건축가",
+  "villageguardians.role.quartermaster": "보급관",
+  "villageguardians.role.scout": "정찰병",
+  "villageguardians.role.steward": "농업관",
+  "villageguardians.role.medic": "의무관",
+  "villageguardians.time.morning": "아침",
+  "villageguardians.time.day": "낮",
+  "villageguardians.time.evening": "저녁",
+  "villageguardians.time.night": "밤"
+}
