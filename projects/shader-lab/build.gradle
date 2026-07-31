@@ -14,6 +14,20 @@ base {
     archivesName = mod_id
 }
 
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = uri('https://api.modrinth.com/maven')
+            }
+        }
+        filter {
+            includeGroup 'maven.modrinth'
+        }
+    }
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
@@ -62,79 +76,103 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
-final String sarpProject = project.sarp_project
-final String sarpVersionId = project.sarp_version_id
-final String dreamscapePackName = project.shader_pack_name
+final String nobleProject = project.noble_project
+final String nobleVersionId = project.noble_version_id
+final String reveriePackName = project.shader_pack_name
 final File generatedResources = layout.buildDirectory.dir('generated/shaderlabResources').get().asFile
-final File generatedShaderpack = new File(generatedResources, "shaderpacks/${dreamscapePackName}")
-final File sarpAuditReport = layout.buildDirectory.file('reports/sarp-source-audit.txt').get().asFile
-final File sarpWorkDirectory = layout.buildDirectory.dir('sarp').get().asFile
+final File generatedShaderpack = new File(generatedResources, "shaderpacks/${reveriePackName}")
+final File nobleAuditReport = layout.buildDirectory.file('reports/noble-source-audit.txt').get().asFile
+final File nobleWorkDirectory = layout.buildDirectory.dir('noble').get().asFile
 
-tasks.register('prepareDreamscapeShaderpack', Exec) {
+final File rendererAuditDirectory = layout.buildDirectory.dir('renderer-audit').get().asFile
+final File rendererAuditReport = layout.buildDirectory.file('reports/bundled-renderer-mods.json').get().asFile
+
+tasks.register('prepareReverieShaderpack', Exec) {
     group = 'shaderlab'
-    description = 'Downloads, verifies and stages the official pinned Sarp shader release.'
+    description = 'Downloads, verifies and stages the pinned official Noble shader release.'
 
-    inputs.file file('scripts/prepare_sarp.py')
-    inputs.property 'sarpProject', sarpProject
-    inputs.property 'sarpVersionId', sarpVersionId
-    outputs.files generatedShaderpack, sarpAuditReport
+    inputs.file file('scripts/prepare_noble.py')
+    inputs.property 'nobleProject', nobleProject
+    inputs.property 'nobleVersionId', nobleVersionId
+    outputs.files generatedShaderpack, nobleAuditReport
 
     workingDir projectDir
     commandLine(
             'python3',
-            'scripts/prepare_sarp.py',
-            '--project', sarpProject,
-            '--version', sarpVersionId,
-            '--work-dir', sarpWorkDirectory.absolutePath,
+            'scripts/prepare_noble.py',
+            '--project', nobleProject,
+            '--version', nobleVersionId,
+            '--work-dir', nobleWorkDirectory.absolutePath,
             '--output', generatedShaderpack.absolutePath,
-            '--report', sarpAuditReport.absolutePath
+            '--report', nobleAuditReport.absolutePath
+    )
+}
+
+tasks.register('auditBundledRendererMods', Exec) {
+    group = 'verification'
+    description = 'Audits the exact Iris and Sodium files that are also resolved through Modrinth Maven.'
+
+    inputs.file file('scripts/download_renderer_mods.py')
+    inputs.property 'irisVersion', project.iris_modrinth_version_id
+    inputs.property 'sodiumVersion', project.sodium_modrinth_version_id
+    outputs.dir rendererAuditDirectory
+    outputs.file rendererAuditReport
+
+    workingDir projectDir
+    commandLine(
+            'python3',
+            'scripts/download_renderer_mods.py',
+            '--iris-version', project.iris_modrinth_version_id,
+            '--sodium-version', project.sodium_modrinth_version_id,
+            '--output-dir', rendererAuditDirectory.absolutePath,
+            '--report', rendererAuditReport.absolutePath
     )
 }
 
 sourceSets.main.resources.srcDir generatedResources
 
 tasks.named('processResources') {
-    dependsOn tasks.named('prepareDreamscapeShaderpack')
+    dependsOn tasks.named('prepareReverieShaderpack')
+}
+
+dependencies {
+    jarJar("maven.modrinth:iris:${project.iris_modrinth_version_id}")
+    jarJar("maven.modrinth:sodium:${project.sodium_modrinth_version_id}")
 }
 
 tasks.register('verifyShaderpackResources') {
     group = 'verification'
-    description = 'Validates the embedded Iris shaderpack and confirms the rejected overlay is absent.'
-    dependsOn tasks.named('prepareDreamscapeShaderpack')
+    description = 'Validates the embedded Noble shaderpack and confirms the rejected overlay is absent.'
+    dependsOn tasks.named('prepareReverieShaderpack')
 
     doLast {
-        if (!generatedShaderpack.isFile() || generatedShaderpack.length() < 70_000L) {
-            throw new GradleException("Generated shaderpack is missing or unexpectedly small: ${generatedShaderpack}")
+        if (!generatedShaderpack.isFile() || generatedShaderpack.length() < 1_000_000L) {
+            throw new GradleException("Generated Reverie shaderpack is missing or unexpectedly small: ${generatedShaderpack}")
         }
 
         new ZipFile(generatedShaderpack).withCloseable { pack ->
             Set<String> entries = pack.entries().collect { it.name } as Set
-
-            [
-                    'SHADERLAB_ATTRIBUTION.md',
-                    'MODRINTH_LICENSE_EVIDENCE.json'
-            ].each { required ->
+            ['SHADERLAB_ATTRIBUTION.md', 'SHADERLAB_REVERIE_PRESET.md', 'MODRINTH_LICENSE_EVIDENCE.json'].each { required ->
                 if (!entries.contains(required)) {
-                    throw new GradleException("Dreamscape shaderpack is missing ${required}")
+                    throw new GradleException("Reverie shaderpack is missing ${required}")
                 }
             }
-
-            if (!entries.any { it.toLowerCase().contains('license') || it.toLowerCase().contains('mit') }) {
-                throw new GradleException('Dreamscape shaderpack is missing an MIT license notice')
+            if (!entries.any { it.toLowerCase().contains('license') || it.toLowerCase().contains('copying') }) {
+                throw new GradleException('Reverie shaderpack is missing the Noble GPLv3 license')
             }
             if (!entries.any { it.toLowerCase().contains('water') }) {
-                throw new GradleException('Dreamscape shaderpack is missing a water-specific program')
+                throw new GradleException('Reverie shaderpack is missing water programs')
             }
-            if (!entries.any { it.toLowerCase().contains('terrain') }) {
-                throw new GradleException('Dreamscape shaderpack is missing a terrain-specific program')
+            if (!entries.any { it.toLowerCase().contains('terrain') || it.toLowerCase().contains('gbuffers') }) {
+                throw new GradleException('Reverie shaderpack is missing world material programs')
             }
 
-            def evidenceEntry = pack.getEntry('MODRINTH_LICENSE_EVIDENCE.json')
-            def evidence = new JsonSlurper().parse(pack.getInputStream(evidenceEntry))
-            if (evidence?.project_license?.id != 'MIT'
-                    || evidence?.version_id != sarpVersionId
-                    || evidence?.project_slug != sarpProject) {
-                throw new GradleException('Embedded Modrinth license evidence does not match the pinned Sarp release')
+            def evidence = new JsonSlurper().parse(pack.getInputStream(pack.getEntry('MODRINTH_LICENSE_EVIDENCE.json')))
+            if (!(evidence?.project_license?.id in ['GPL-3.0-only', 'GPL-3.0-or-later'])
+                    || evidence?.project_slug != nobleProject
+                    || evidence?.version_id != nobleVersionId
+                    || evidence?.shaderlab_preset != 'Reverie 0.6') {
+                throw new GradleException('Embedded Noble license, version or preset evidence is invalid')
             }
         }
 
@@ -150,8 +188,43 @@ tasks.register('verifyShaderpackResources') {
     }
 }
 
+tasks.register('verifySingleJar') {
+    group = 'verification'
+    description = 'Verifies that the deliverable contains Shader Lab, Noble, Iris and Sodium in one JAR.'
+    dependsOn tasks.named('jar')
+
+    doLast {
+        def output = tasks.named('jar').get().archiveFile.get().asFile
+        if (!output.isFile() || output.length() < 10_000_000L) {
+            throw new GradleException("Single JAR output is missing or too small: ${output}")
+        }
+        new ZipFile(output).withCloseable { jarFile ->
+            Set<String> entries = jarFile.entries().collect { it.name as String } as Set<String>
+            if (!entries.contains('META-INF/jarjar/metadata.json')) {
+                throw new GradleException('Single JAR is missing NeoForge Jar-in-Jar metadata')
+            }
+            if (!entries.any { it.startsWith('META-INF/jarjar/') && it.toLowerCase().contains('iris') && it.endsWith('.jar') }) {
+                throw new GradleException('Single JAR is missing bundled Iris')
+            }
+            if (!entries.any { it.startsWith('META-INF/jarjar/') && it.toLowerCase().contains('sodium') && it.endsWith('.jar') }) {
+                throw new GradleException('Single JAR is missing bundled Sodium')
+            }
+            String expectedShaderpackEntry = "shaderpacks/${reveriePackName}".toString()
+            if (!entries.contains(expectedShaderpackEntry)) {
+                def shaderEntries = entries.findAll { it.toLowerCase().contains('shader') }.sort()
+                throw new GradleException("Single JAR is missing the Reverie shaderpack; expected=${expectedShaderpackEntry}; shader entries=${shaderEntries}")
+            }
+        }
+    }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('verifyShaderpackResources')
+    dependsOn tasks.named('auditBundledRendererMods')
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('verifySingleJar')
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -159,7 +232,14 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 25
 }
 
-jar {
+tasks.named('jar') {
+    dependsOn tasks.named('prepareReverieShaderpack')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from(generatedShaderpack) {
+        into 'shaderpacks'
+    }
+
     manifest {
         attributes(
                 'Specification-Title': mod_name,
@@ -167,8 +247,9 @@ jar {
                 'Implementation-Title': mod_name,
                 'Implementation-Version': mod_version,
                 'Automatic-Module-Name': mod_group_id,
-                'ShaderLab-Sarp-Version': sarpVersionId,
-                'ShaderLab-Shaderpack': dreamscapePackName
+                'ShaderLab-Upstream': 'Noble Shaders',
+                'ShaderLab-Shaderpack': reveriePackName,
+                'ShaderLab-Single-Jar': 'true'
         )
     }
 }

@@ -21,37 +21,38 @@ public final class ShaderLab {
     public static final String MOD_ID = "shaderlab";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String SHADERPACK_FILE = "ShaderLab-Dreamscape-0.5.zip";
+    private static final String SHADERPACK_FILE = "ShaderLab-Reverie-0.6.zip";
     private static final String SHADERPACK_RESOURCE = "/shaderpacks/" + SHADERPACK_FILE;
     private static final String[] OBSOLETE_SHADERPACKS = {
-            "ShaderLab-Dreamscape-0.4.zip"
+            "ShaderLab-Dreamscape-0.4.zip",
+            "ShaderLab-Dreamscape-0.5.zip"
     };
 
     public ShaderLab(IEventBus modEventBus) {
         try {
-            installDreamscapeShaderpack();
+            installReverieShaderpack();
         } catch (IOException exception) {
-            LOGGER.error("Shader Lab could not install the Dreamscape shaderpack", exception);
+            LOGGER.error("Shader Lab could not install the Reverie shaderpack", exception);
         }
 
         boolean irisLoaded = ModList.get().isLoaded("iris");
         boolean sodiumLoaded = ModList.get().isLoaded("sodium");
         LOGGER.info(
-                "Shader Lab Dreamscape bootstrap loaded (Iris={}, Sodium={}, pack={})",
+                "Shader Lab Reverie bootstrap loaded (Iris={}, Sodium={}, pack={})",
                 irisLoaded,
                 sodiumLoaded,
                 SHADERPACK_FILE
         );
 
         if (!irisLoaded || !sodiumLoaded) {
-            LOGGER.warn(
-                    "Dreamscape requires Iris 1.11.2+ and Sodium 0.9.1+ for Minecraft 26.2. " +
-                    "The shaderpack was installed, but shaders will stay disabled until both mods are present."
+            LOGGER.error(
+                    "Bundled Iris or Sodium was not discovered. The single-JAR package is incomplete " +
+                    "and the shader will remain disabled."
             );
         }
     }
 
-    private static void installDreamscapeShaderpack() throws IOException {
+    private static void installReverieShaderpack() throws IOException {
         Path gameDirectory = FMLPaths.GAMEDIR.get();
         Path shaderpacksDirectory = gameDirectory.resolve("shaderpacks");
         Path destination = shaderpacksDirectory.resolve(SHADERPACK_FILE);
@@ -72,7 +73,7 @@ public final class ShaderLab {
         }
 
         configureIris(gameDirectory.resolve("config").resolve("iris.properties"));
-        LOGGER.info("Installed Shader Lab Dreamscape shaderpack at {}", destination);
+        LOGGER.info("Installed Shader Lab Reverie shaderpack at {}", destination);
     }
 
     private static void configureIris(Path irisConfig) throws IOException {
@@ -95,7 +96,7 @@ public final class ShaderLab {
 
         Path temporary = irisConfig.resolveSibling("iris.properties.tmp");
         try (OutputStream output = Files.newOutputStream(temporary)) {
-            properties.store(output, "Shader Lab Dreamscape private test preset");
+            properties.store(output, "Shader Lab Reverie private test preset");
         }
         moveReplacing(temporary, irisConfig);
     }
