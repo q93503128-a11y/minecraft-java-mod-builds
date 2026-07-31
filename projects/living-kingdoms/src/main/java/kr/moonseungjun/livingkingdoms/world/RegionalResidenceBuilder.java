@@ -83,7 +83,7 @@ public final class RegionalResidenceBuilder {
         }
         fill(level, x - 7, y + 5, z - 6, x + 6, y + 5, z + 6, Blocks.DARK_OAK_SLAB);
         set(level, x - 3, y + 1, z + 2, Blocks.CHEST);
-        set(level, x + 3, y + 1, z + 2, Blocks.WHITE_BED);
+        set(level, x + 3, y + 1, z + 2, Blocks.HAY_BLOCK);
     }
 
     private static void supportPlatform(ServerLevel level, int x, int y, int z, int radius) {
@@ -99,7 +99,7 @@ public final class RegionalResidenceBuilder {
             set(level, px, y + 1, pz, Blocks.OAK_FENCE);
         }
         set(level, x + 3, y + 1, z + 2, Blocks.CHEST);
-        set(level, x - 3, y + 1, z + 2, Blocks.GREEN_BED);
+        set(level, x - 3, y + 1, z + 2, Blocks.MOSS_CARPET);
     }
 
     private static void stoneRoom(ServerLevel level, int x, int y, int z) {
