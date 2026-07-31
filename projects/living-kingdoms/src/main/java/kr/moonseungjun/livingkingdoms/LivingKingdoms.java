@@ -5,6 +5,7 @@ import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
+import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -38,6 +39,7 @@ public final class LivingKingdoms {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         OriginProfileManager.initialize(event.getServer());
+        StarterRealmDiagnostics.runIfRequested(event.getServer());
     }
 
     @SubscribeEvent
