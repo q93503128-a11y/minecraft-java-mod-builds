@@ -67,9 +67,10 @@ final class VillageVanillaTemplateBuilder {
 
         int offsetX = Math.max(0, (spec.width() - rotatedWidth) / 2) - localBounds.minX();
         int offsetZ = Math.max(0, (spec.depth() - rotatedDepth) / 2) - localBounds.minZ();
+        int placementY = groundY + 1 - localBounds.minY();
         BlockPos placement = new BlockPos(
                 footprintOrigin.getX() + offsetX,
-                groundY + 1,
+                placementY,
                 footprintOrigin.getZ() + offsetZ);
         return template.placeInWorld(level, placement, placement, settings, level.getRandom(), 2);
     }
