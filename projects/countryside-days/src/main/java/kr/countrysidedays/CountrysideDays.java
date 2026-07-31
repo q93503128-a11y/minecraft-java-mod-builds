@@ -7,6 +7,7 @@ import kr.countrysidedays.gameplay.RuralNpcManager;
 import kr.countrysidedays.gametest.ModGameTests;
 import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.registry.ModCreativeTabs;
+import kr.countrysidedays.registry.ModFeatures;
 import kr.countrysidedays.registry.ModItems;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -22,6 +23,7 @@ public final class CountrysideDays {
     public CountrysideDays(IEventBus modEventBus) {
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
+        ModFeatures.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModGameTests.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
@@ -37,6 +39,6 @@ public final class CountrysideDays {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.4");
+        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.5");
     }
 }
