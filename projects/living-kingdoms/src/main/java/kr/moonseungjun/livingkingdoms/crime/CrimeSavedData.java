@@ -74,6 +74,18 @@ public final class CrimeSavedData extends SavedData {
         return next;
     }
 
+    public CrimeRecord reduceWanted(UUID playerId, int amount) {
+        CrimeRecord old = record(playerId);
+        if (old.wanted() <= 0 || amount <= 0) return old;
+        int wanted = Math.max(0, old.wanted() - amount);
+        CrimeRecord next = new CrimeRecord(wanted, old.lastCrimeTick(),
+                wanted == 0 ? "wilderness" : old.jurisdiction(),
+                wanted == 0 ? 0 : old.resistance(), 0);
+        records.put(playerId.toString(), next);
+        setDirty();
+        return next;
+    }
+
     public void setArrestTicks(UUID playerId, int ticks) {
         CrimeRecord old = record(playerId);
         CrimeRecord next = new CrimeRecord(old.wanted(), old.lastCrimeTick(), old.jurisdiction(),
