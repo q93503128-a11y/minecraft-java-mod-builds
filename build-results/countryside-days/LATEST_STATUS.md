@@ -1,9 +1,9 @@
 # Countryside Days latest GitHub build
 
 - Status: **failure**
-- Workflow run: https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/30603363857
-- Source commit: `154e08bb7d385fb86f45df7fef5831a10b5ab350`
-- Run number: `11`
+- Workflow run: https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/30603437681
+- Source commit: `dd3fd27606516381bc35202a2b86e891df885417`
+- Run number: `12`
 - Java: `25`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
