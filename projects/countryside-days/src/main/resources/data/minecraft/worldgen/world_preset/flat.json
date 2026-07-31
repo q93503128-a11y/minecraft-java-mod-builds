@@ -5,7 +5,7 @@
       "generator": {
         "type": "minecraft:flat",
         "settings": {
-          "biome": "minecraft:plains",
+          "biome": "countrysidedays:rural_plains",
           "features": true,
           "lakes": false,
           "layers": [
