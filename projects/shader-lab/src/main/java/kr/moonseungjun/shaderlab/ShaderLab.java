@@ -24,15 +24,17 @@ public final class ShaderLab {
     public static final String MOD_ID = "shaderlab";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String SHADERPACK_ARCHIVE = "ShaderLab-Reverie-0.7.zip";
-    private static final String SHADERPACK_DIRECTORY = "ShaderLab-Reverie-0.7";
+    private static final String SHADERPACK_ARCHIVE = "ShaderLab-Reverie-0.8.zip";
+    private static final String SHADERPACK_DIRECTORY = "ShaderLab-Reverie-0.8";
     private static final String SHADERPACK_RESOURCE = "/shaderpacks/" + SHADERPACK_ARCHIVE;
     private static final String[] OBSOLETE_SHADERPACKS = {
             "ShaderLab-Dreamscape-0.4.zip",
             "ShaderLab-Dreamscape-0.5.zip",
             "ShaderLab-Reverie-0.6.zip",
             "ShaderLab-Reverie-0.6",
-            "ShaderLab-Reverie-0.7.zip"
+            "ShaderLab-Reverie-0.7.zip",
+            "ShaderLab-Reverie-0.7",
+            "ShaderLab-Reverie-0.8.zip"
     };
 
     public ShaderLab(IEventBus modEventBus) {
@@ -128,7 +130,7 @@ public final class ShaderLab {
 
         Path temporary = irisConfig.resolveSibling("iris.properties.tmp");
         try (OutputStream output = Files.newOutputStream(temporary)) {
-            properties.store(output, "Shader Lab Reverie 0.7 dream PBR preset");
+            properties.store(output, "Shader Lab Reverie 0.8 lightweight dream-sky preset");
         }
         moveReplacing(temporary, irisConfig);
     }
