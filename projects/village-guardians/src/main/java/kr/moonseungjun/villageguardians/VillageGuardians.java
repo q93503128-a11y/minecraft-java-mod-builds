@@ -2,11 +2,13 @@ package kr.moonseungjun.villageguardians;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Mob;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -23,7 +25,7 @@ public final class VillageGuardians {
 
     public VillageGuardians(IEventBus modEventBus) {
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians governance and RPG core loaded");
+        LOGGER.info("Village Guardians governance, RPG, and fortress world core loaded");
     }
 
     @SubscribeEvent
@@ -31,7 +33,7 @@ public final class VillageGuardians {
         VillageCouncilState.initializeServer(event.getServer());
         VillageRpgSystem.resetTransientState();
         maintenanceTicks = 0;
-        LOGGER.info("Village time and persistent RPG progression initialized");
+        LOGGER.info("Village time, persistent RPG progression, and fortress state initialized");
     }
 
     @SubscribeEvent
@@ -47,6 +49,7 @@ public final class VillageGuardians {
             if (server != null) {
                 VillageCouncilState.enforceFrozenTime(server);
             }
+            VillageWorldSystem.ensureFortifiedVillage(serverPlayer);
             VillageRpgSystem.refreshPlayerPassive(serverPlayer);
         }
     }
@@ -54,7 +57,17 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            VillageWorldSystem.ensureFortifiedVillage(serverPlayer);
             VillageRpgSystem.refreshPlayerPassive(serverPlayer);
+        }
+    }
+
+    @SubscribeEvent
+    public void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!event.getLevel().isClientSide()
+                && event.getEntity() instanceof Mob mob
+                && !VillageWorldSystem.isAllowedGameMob(mob)) {
+            event.setCanceled(true);
         }
     }
 
