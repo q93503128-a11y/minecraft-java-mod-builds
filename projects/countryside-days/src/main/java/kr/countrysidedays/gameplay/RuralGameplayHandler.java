@@ -3,6 +3,7 @@ package kr.countrysidedays.gameplay;
 import kr.countrysidedays.registry.ModItems;
 import kr.countrysidedays.world.CountrysideWorldData;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -21,11 +22,12 @@ public final class RuralGameplayHandler {
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+        if (!(event.getEntity() instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel serverLevel)) {
             return;
         }
 
-        CountrysideWorldData data = CountrysideWorldData.get(player.serverLevel().getServer());
+        CountrysideWorldData data = CountrysideWorldData.get(serverLevel.getServer());
         if (!data.claimStarterKit()) {
             return;
         }
@@ -52,10 +54,12 @@ public final class RuralGameplayHandler {
     }
 
     public static void onItemFished(ItemFishedEvent event) {
-        if (event.isCanceled() || !(event.getEntity() instanceof ServerPlayer player)) {
+        if (event.isCanceled()
+                || !(event.getEntity() instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel serverLevel)) {
             return;
         }
-        if (player.serverLevel().getRandom().nextFloat() >= RIVER_FISH_CHANCE) {
+        if (serverLevel.getRandom().nextFloat() >= RIVER_FISH_CHANCE) {
             return;
         }
 
