@@ -16,9 +16,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-/** Asynchronously pregenerates chunks before a capital is surveyed and written. */
+/** Asynchronously pregenerates complete chunks before surveying and constructing one homeland. */
 public final class RealmBuildCoordinator {
-    private static final int PREGEN_RADIUS_CHUNKS = 18;
+    private static final int PREGEN_RADIUS_CHUNKS = 21;
     private static final Map<String, BuildJob> JOBS = new ConcurrentHashMap<>();
 
     private RealmBuildCoordinator() {
@@ -33,6 +33,7 @@ public final class RealmBuildCoordinator {
         RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(realm, profile.homelandId());
         if (site != null && site.built() && site.revision() >= RealmSitePlanner.LAYOUT_REVISION) {
             LivingRealmWorldManager.finishPlacement(player, profile);
+            StarterNpcManager.ensureForPlayer(player, profile);
             return;
         }
 
@@ -123,9 +124,11 @@ public final class RealmBuildCoordinator {
             LivingKingdoms.LOGGER.error("Failed queued homeland construction for {}", homelandId, throwable);
             for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
                 ServerPlayer player = realm.getServer().getPlayerList().getPlayer(playerId);
-                if (player != null) player.sendSystemMessage(Component.literal(
-                        "§c[왕국 준비 실패] §f시작 지역을 만들지 못했습니다. 로그를 확인하십시오."
-                ));
+                if (player != null) {
+                    player.sendSystemMessage(Component.literal(
+                            "§c[왕국 준비 실패] §f시작 지역을 만들지 못했습니다. 로그를 확인하십시오."
+                    ));
+                }
             }
         }
 
