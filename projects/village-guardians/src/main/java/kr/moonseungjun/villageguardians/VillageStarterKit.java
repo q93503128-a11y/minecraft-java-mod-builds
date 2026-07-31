@@ -10,8 +10,8 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 public final class VillageStarterKit {
-    private static final String STARTER_KIT_TAG = "villageguardians_starter_kit_v1";
-    private static final String MAYOR_CALLER_TAG = "villageguardians_mayor_caller_v1";
+    private static final String STARTER_KIT_TAG = "villageguardians_starter_kit_v2";
+    private static final String MAYOR_CALLER_TAG = "villageguardians_mayor_caller_v2";
 
     private VillageStarterKit() {
     }
@@ -24,7 +24,7 @@ public final class VillageStarterKit {
             giveOrDrop(player, Items.BOW.getDefaultInstance());
 
             ItemStack arrows = Items.ARROW.getDefaultInstance();
-            arrows.setCount(24);
+            arrows.setCount(64);
             giveOrDrop(player, arrows);
 
             ItemStack food = Items.COOKED_BEEF.getDefaultInstance();
@@ -32,8 +32,9 @@ public final class VillageStarterKit {
             giveOrDrop(player, food);
 
             player.sendSystemMessage(Component.literal(
-                    "§a[지급 완료] §f작전 설명서와 기본 전투 장비가 인벤토리에 들어왔습니다."));
+                    "§a[지급 완료] §f설명서, 기본 전투 장비, 첫 화살 64개가 지급되었습니다."));
         }
+        VillageProgressionSystem.registerPlayer(player);
         grantMayorCaller(player);
     }
 
@@ -43,7 +44,7 @@ public final class VillageStarterKit {
         }
         giveOrDrop(player, named(Items.GOAT_HORN.getDefaultInstance(), "§6촌장 전용 마을 호출기"));
         player.sendSystemMessage(Component.literal(
-                "§6[촌장 장비] §f마을 호출기를 지급했습니다. 사용: 현황 확인 / 웅크리고 사용: 다음 단계 투표."));
+                "§6[촌장 장비] §f호출기를 사용하면 마을 운영 UI가 열립니다."));
     }
 
     public static void handleItemInteraction(PlayerInteractEvent.RightClickItem event) {
@@ -57,44 +58,15 @@ public final class VillageStarterKit {
         if (stack.getItem() == Items.KNOWLEDGE_BOOK) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
-            showManual(player);
+            VillageUiService.openManual(player);
             return;
         }
 
         if (stack.getItem() == Items.GOAT_HORN) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
-            useMayorCaller(player);
+            VillageUiService.openMayor(player);
         }
-    }
-
-    private static void showManual(ServerPlayer player) {
-        player.sendSystemMessage(Component.literal("§6========== 마을 수호대 작전 설명서 =========="));
-        player.sendSystemMessage(Component.literal("§f1. 아침·낮: 건물 시설을 사용하고 보급품으로 업그레이드합니다."));
-        player.sendSystemMessage(Component.literal("§f2. 회관 종: 현황 확인 / 웅크리고 사용하면 시간 진행 투표."));
-        player.sendSystemMessage(Component.literal("§f3. 창고 통: 하루 한 번 식량·화살 보급."));
-        player.sendSystemMessage(Component.literal("§f4. 병영 과녁: 3분마다 훈련 XP 획득."));
-        player.sendSystemMessage(Component.literal("§f5. 대장간·의무소·성벽 관리소: 효과 확인 / 웅크리고 업그레이드."));
-        player.sendSystemMessage(Component.literal("§f6. 밤이 되면 습격이 시작됩니다. 모든 웨이브를 막으면 보급품과 XP를 얻습니다."));
-        player.sendSystemMessage(Component.literal("§f7. 역할 선택: /vg role <역할> | 역할 스킬: /vg skill"));
-        player.sendSystemMessage(Component.literal("§7역할: guard_captain, builder, quartermaster, scout, steward, medic"));
-        player.sendSystemMessage(Component.literal("§6============================================"));
-    }
-
-    private static void useMayorCaller(ServerPlayer player) {
-        if (!VillageCouncilState.isMayor(player)) {
-            player.sendSystemMessage(Component.literal("§c현재 촌장만 이 호출기를 사용할 수 있습니다."));
-            return;
-        }
-
-        if (player.isShiftKeyDown()) {
-            player.sendSystemMessage(Component.literal(VillageCouncilState.proposeAdvanceTime(player)));
-            return;
-        }
-
-        player.sendSystemMessage(Component.literal(VillageCouncilState.status(player.level().getServer(), player)));
-        player.sendSystemMessage(Component.literal(VillageProgressionSystem.status()));
-        player.sendSystemMessage(Component.literal(VillageRaidSystem.status()));
     }
 
     private static ItemStack named(ItemStack stack, String name) {
