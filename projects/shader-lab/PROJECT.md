@@ -8,8 +8,8 @@
 - Java: 25
 - Loader: NeoForge
 - Loader version: 26.2.0.38-beta
-- Gradle: CI-managed Gradle 9.6.1
-- Build plugin: net.neoforged.moddev 2.0.142
+- Gradle: CI-managed Gradle 9.2.1
+- Build plugin: net.neoforged.moddev 2.0.143
 - Final JAR: shaderlab-0.1.0-alpha.1.jar
 - Existing-world compatibility: No persistent world data is written
 - Required dependencies: Minecraft 26.2, NeoForge 26.2.0.38-beta or newer compatible 26.2 build
@@ -18,7 +18,7 @@
 - Datagen task: NOT APPLICABLE
 - GameTest task: NOT APPLICABLE for GPU post-processing
 - Server smoke-test task: NOT APPLICABLE; physical-client-only mod
-- Client smoke-test task: gradle runClient (interactive GPU/display required)
+- Client smoke-test task: ./gradlew runClient (interactive GPU/display required)
 
 ## Test contract
 
