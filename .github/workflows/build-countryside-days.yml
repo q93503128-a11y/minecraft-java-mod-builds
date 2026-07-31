@@ -69,6 +69,14 @@ jobs:
             gradle --version
           } 2>&1 | tee logs/toolchain.log
 
+      - name: Generate resources with runData
+        working-directory: ${{ env.WORK_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon runData --stacktrace --console=plain 2>&1 | tee ../../logs/run-data.log
+          test -f src/generated/resources/data/countryside_days/countryside_catalog/runtime.json
+
       - name: Clean build
         working-directory: ${{ env.WORK_DIR }}
         shell: bash
