@@ -79,7 +79,7 @@ final class VillageBuildingCatalog {
                 put(level, middle, Blocks.BREWING_STAND);
                 put(level, middle.offset(-5, 0, 2), Blocks.CAULDRON);
                 shelf(level, middle.offset(5, 0, 2));
-                line(level, middle.offset(-6, 0, 5), 4, 4, Blocks.WHITE_WOOL);
+                line(level, middle.offset(-6, 0, 5), 4, 4, Blocks.QUARTZ_BLOCK);
             }
             case STOREHOUSE -> {
                 put(level, middle, Blocks.BARREL);
