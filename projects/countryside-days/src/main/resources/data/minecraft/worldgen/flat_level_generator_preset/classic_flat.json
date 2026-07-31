@@ -1,7 +1,7 @@
 {
   "display": "minecraft:grass_block",
   "settings": {
-    "biome": "minecraft:plains",
+    "biome": "countrysidedays:rural_plains",
     "features": true,
     "lakes": false,
     "layers": [
