@@ -1,6 +1,5 @@
 package kr.moonseungjun.villageguardians;
 
-import io.netty.buffer.ByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -15,18 +14,43 @@ public final class VillageNetwork {
     }
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("2");
+        var registrar = event.registrar("3");
         registrar.playToClient(OpenVillageUiPayload.TYPE, OpenVillageUiPayload.STREAM_CODEC);
+        registrar.playToClient(PlayerStatusPayload.TYPE, PlayerStatusPayload.STREAM_CODEC);
         registrar.playToServer(VillageUiActionPayload.TYPE, VillageUiActionPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof ServerPlayer player) {
                         VillageUiService.handleAction(player, payload.action());
                     }
                 });
+        registrar.playToServer(RequestPlayerStatusPayload.TYPE, RequestPlayerStatusPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        sendPlayerStatus(player);
+                    }
+                });
     }
 
     public static void open(ServerPlayer player, OpenVillageUiPayload payload) {
         PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    public static void sendPlayerStatus(ServerPlayer player) {
+        RpgProgress progress = VillageCouncilState.progressOf(player.getUUID());
+        String xp = progress.level() >= RpgProgress.MAX_LEVEL
+                ? "최고 레벨"
+                : progress.experience() + "/" + progress.experienceToNextLevel() + " XP";
+        String role = VillageCouncilState.roleOf(player.getUUID())
+                .map(VillageRole::displayName)
+                .orElse("미선택");
+        PacketDistributor.sendToPlayer(player, new PlayerStatusPayload(
+                "레벨 " + progress.level() + "  ·  " + xp,
+                "역할 " + role,
+                "주화 " + VillageProgressionSystem.coins(player)
+                        + "  ·  장비 +" + VillageProgressionSystem.forgeRank(player),
+                "능력 +" + VillageProgressionSystem.skillRank(player)
+                        + "  ·  " + VillageCouncilState.currentDay() + "일 "
+                        + VillageCouncilState.currentPhase().koreanName()));
     }
 
     public record OpenVillageUiPayload(
@@ -57,6 +81,39 @@ public final class VillageNetwork {
         public static final StreamCodec<RegistryFriendlyByteBuf, VillageUiActionPayload> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8, VillageUiActionPayload::action,
                 VillageUiActionPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    public record RequestPlayerStatusPayload(String source) implements CustomPacketPayload {
+        public static final Type<RequestPlayerStatusPayload> TYPE = new Type<>(
+                Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "request_player_status"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, RequestPlayerStatusPayload> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, RequestPlayerStatusPayload::source,
+                RequestPlayerStatusPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    public record PlayerStatusPayload(
+            String progress,
+            String role,
+            String economy,
+            String village) implements CustomPacketPayload {
+        public static final Type<PlayerStatusPayload> TYPE = new Type<>(
+                Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "player_status"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, PlayerStatusPayload> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, PlayerStatusPayload::progress,
+                ByteBufCodecs.STRING_UTF8, PlayerStatusPayload::role,
+                ByteBufCodecs.STRING_UTF8, PlayerStatusPayload::economy,
+                ByteBufCodecs.STRING_UTF8, PlayerStatusPayload::village,
+                PlayerStatusPayload::new);
 
         @Override
         public Type<? extends CustomPacketPayload> type() {
