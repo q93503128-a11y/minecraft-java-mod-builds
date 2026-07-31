@@ -195,6 +195,7 @@ jobs:
       - name: Record CI result
         if: always()
         env:
+          RUN_ID: ${{ github.run_id }}
           SOURCE_SHA: ${{ github.sha }}
           WRAPPER_OUTCOME: ${{ steps.wrapper.outcome }}
           TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
@@ -209,6 +210,7 @@ jobs:
           cat > BUILD_AND_RUNTIME_REPORT.md <<REPORT
           # Countryside Days Build and Runtime Report
 
+          - Workflow run: ${RUN_ID}
           - Source commit: ${SOURCE_SHA}
           - Mod version: 0.1.0-alpha.3
           - Minecraft: 26.2
@@ -278,7 +280,6 @@ jobs:
           git add BUILD_AND_RUNTIME_REPORT.md
           if [ "${BUILD_OUTCOME}" = "success" ] && [ "${JAR_OUTCOME}" = "success" ]; then
             git add gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties
-            git add -f build/libs/countrysidedays-0.1.0-alpha.3.jar
           fi
           if git diff --cached --quiet; then
             echo "No CI records changed."
