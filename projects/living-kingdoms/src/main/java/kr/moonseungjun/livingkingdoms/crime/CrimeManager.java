@@ -23,15 +23,17 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.BlockDropsEvent;
 
 import java.util.List;
 import java.util.Set;
 
 /** First playable crime loop: crimes create a local warrant and guards must physically catch the player. */
 public final class CrimeManager {
-    public static final String GUARD_TAG = "livingkingdoms_guard";
     private static final int ARREST_TIME = 100;
+    private static final List<String> GUARD_NAME_MARKERS = List.of(
+            "에르덴 변경경비대", "실바나 수림경비대", "카르둠 산문수호자"
+    );
 
     private CrimeManager() {
     }
@@ -48,7 +50,7 @@ public final class CrimeManager {
             }
         }
 
-        if (attacker instanceof ServerPlayer player && victim.getTags().contains(GUARD_TAG)
+        if (attacker instanceof ServerPlayer player && isGuard(victim)
                 && player.level() instanceof ServerLevel level) {
             CrimeSavedData data = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE);
             CrimeSavedData.CrimeRecord record = data.addResistance(player.getUUID(), level.getGameTime());
@@ -72,16 +74,17 @@ public final class CrimeManager {
         reportCrime(level, player, jurisdiction, 30, "살인");
     }
 
-    public static void handleBlockBreak(BlockEvent.BreakEvent event) {
-        if (!(event.getPlayer() instanceof ServerPlayer player)
+    public static void handleBlockBreak(BlockDropsEvent event) {
+        if (!(event.getBreaker() instanceof ServerPlayer player)
                 || player.isCreative()
-                || !(player.level() instanceof ServerLevel level)
-                || !isLivingRealm(level)) {
+                || !isLivingRealm(event.getLevel())) {
             return;
         }
 
+        ServerLevel level = event.getLevel();
         String jurisdiction = jurisdictionAt(event.getPos());
-        if (jurisdiction == null || isOwnResidence(player, event.getPos()) || !isPropertyBlock(event.getState().getBlock())) {
+        if (jurisdiction == null || isOwnResidence(player, event.getPos())
+                || !isPropertyBlock(event.getState().getBlock())) {
             return;
         }
         reportCrime(level, player, jurisdiction, 2, "재산 훼손");
@@ -149,7 +152,7 @@ public final class CrimeManager {
             player.sendSystemMessage(Component.literal("§c[체포 저항] §f제압에서 벗어났습니다. 추격이 재개됩니다."));
         } else {
             for (Mob guard : guards) {
-                if (guard.getTarget() == null || guard.getTarget() != player) guard.setTarget(player);
+                if (guard.getTarget() != player) guard.setTarget(player);
             }
         }
     }
@@ -181,7 +184,6 @@ public final class CrimeManager {
 
             BlockPos spawn = safeGuardSpawn(level, player, i);
             guard.setPos(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
-            guard.addTag(GUARD_TAG);
             guard.setCustomName(Component.literal(guardName(jurisdiction, wantedTier)));
             guard.setCustomNameVisible(true);
             guard.setPersistenceRequired();
@@ -202,6 +204,14 @@ public final class CrimeManager {
             case "kardum_league" -> rank + "카르둠 산문수호자";
             default -> rank + "에르덴 변경경비대";
         };
+    }
+
+    private static boolean isGuard(Entity entity) {
+        String name = entity.getName().getString();
+        for (String marker : GUARD_NAME_MARKERS) {
+            if (name.contains(marker)) return true;
+        }
+        return false;
     }
 
     private static BlockPos safeGuardSpawn(ServerLevel level, ServerPlayer player, int index) {
@@ -238,7 +248,7 @@ public final class CrimeManager {
 
     private static List<Mob> guardsNear(ServerLevel level, ServerPlayer player, double radius) {
         AABB area = player.getBoundingBox().inflate(radius);
-        return level.getEntitiesOfClass(Mob.class, area, mob -> mob.getTags().contains(GUARD_TAG));
+        return level.getEntitiesOfClass(Mob.class, area, CrimeManager::isGuard);
     }
 
     private static Mob closestGuard(List<Mob> guards, ServerPlayer player) {
@@ -292,8 +302,8 @@ public final class CrimeManager {
         return block == Blocks.OAK_PLANKS || block == Blocks.SPRUCE_PLANKS || block == Blocks.DARK_OAK_PLANKS
                 || block == Blocks.BIRCH_PLANKS || block == Blocks.STONE_BRICKS || block == Blocks.DEEPSLATE_BRICKS
                 || block == Blocks.POLISHED_DEEPSLATE || block == Blocks.POLISHED_ANDESITE
-                || block == Blocks.WHITE_TERRACOTTA || block == Blocks.GLASS || block == Blocks.GLASS_PANE
-                || block == Blocks.IRON_BARS || block == Blocks.BRICKS || block == Blocks.CUT_COPPER
+                || block == Blocks.CALCITE || block == Blocks.GLASS || block == Blocks.GLASS_PANE
+                || block == Blocks.IRON_BARS || block == Blocks.BRICKS || block == Blocks.IRON_BLOCK
                 || block == Blocks.BARREL || block == Blocks.BLAST_FURNACE || block == Blocks.ANVIL
                 || block == Blocks.LANTERN || block == Blocks.SOUL_LANTERN;
     }
