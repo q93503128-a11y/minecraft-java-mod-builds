@@ -1,0 +1,130 @@
+name: Diagnose Countryside 26.2 API
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diagnose-countryside-api.yml'
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/countryside-days
+  WORK_DIR: work/countryside-days
+  EXPECTED_PAYLOAD_SHA256: '656d74fab5ed88c1102c6e1c0c5ec376e9ef5487a191245a9127ebc57760d701'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Reconstruct exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$WORK_DIR" diagnostics
+          cat "$PROJECT_DIR"/source-payload/part*.b64 | base64 --decode > source.tar.xz
+          echo "$EXPECTED_PAYLOAD_SHA256  source.tar.xz" | sha256sum --check --strict
+          tar -xJf source.tar.xz -C "$WORK_DIR"
+          if [ -d "$PROJECT_DIR/overlay" ]; then cp -a "$PROJECT_DIR/overlay/." "$WORK_DIR/"; fi
+      - name: Resolve mapped compile classpath
+        working-directory: ${{ env.WORK_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/cp.init.gradle <<'EOF'
+          gradle.projectsEvaluated {
+              def root = gradle.rootProject
+              def configuration = root.configurations.getByName('compileClasspath')
+              root.tasks.register('printCompileClasspathForDiagnostics') {
+                  doLast {
+                      configuration.resolve().each { println('CPFILE=' + it.absolutePath) }
+                  }
+              }
+          }
+          EOF
+          gradle --no-daemon --no-configuration-cache -I /tmp/cp.init.gradle printCompileClasspathForDiagnostics --console=plain 2>&1 | tee ../../diagnostics/compile-classpath.txt
+          grep '^CPFILE=' ../../diagnostics/compile-classpath.txt | sed 's/^CPFILE=//' > /tmp/cp-files.txt
+          test -s /tmp/cp-files.txt
+          paste -sd: /tmp/cp-files.txt > /tmp/classpath.txt
+      - name: Inspect mapped APIs
+        working-directory: ${{ env.WORK_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          CP="$(cat /tmp/classpath.txt)"
+          : > ../../diagnostics/matching-classes.txt
+          while IFS= read -r archive; do
+            [ -f "$archive" ] || continue
+            case "$archive" in
+              *.jar) jar tf "$archive" 2>/dev/null | grep -E '(^net/minecraft/world/entity/npc/.*(Villager|Trader).*\.class$)|(^net/minecraft/world/entity/decoration/ArmorStand\.class$)|EventBusSubscriber\.class$|RegisterPayloadHandlersEvent\.class$|PayloadRegistrar\.class$' >> ../../diagnostics/matching-classes.txt || true ;;
+            esac
+          done < /tmp/cp-files.txt
+          sort -u -o ../../diagnostics/matching-classes.txt ../../diagnostics/matching-classes.txt
+          {
+            echo '=== MATCHING CLASSES ==='
+            cat ../../diagnostics/matching-classes.txt
+            for cls in \
+              net.minecraft.server.level.ServerPlayer \
+              net.minecraft.server.level.ServerLevel \
+              net.minecraft.world.level.Level \
+              net.minecraft.world.entity.player.Player \
+              net.minecraft.world.entity.Entity \
+              net.minecraft.world.entity.decoration.ArmorStand \
+              net.minecraft.core.BlockPos \
+              net.minecraft.sounds.SoundEvents \
+              net.minecraft.sounds.SoundEvent \
+              net.neoforged.fml.common.EventBusSubscriber \
+              net.neoforged.neoforge.network.registration.PayloadRegistrar \
+              net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent \
+              net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent \
+              net.neoforged.neoforge.data.event.GatherDataEvent; do
+                echo "=== JAVAP $cls ==="
+                javap -public -classpath "$CP" "$cls" 2>&1 || true
+            done
+            while IFS= read -r classfile; do
+              case "$classfile" in *'$'*) continue ;; esac
+              cls="${classfile%.class}"
+              cls="${cls//\//.}"
+              echo "=== JAVAP DISCOVERED $cls ==="
+              javap -public -classpath "$CP" "$cls" 2>&1 || true
+            done < ../../diagnostics/matching-classes.txt
+          } > ../../diagnostics/api-diagnostics.txt 2>&1
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-api-diagnostics-${{ github.run_number }}
+          path: diagnostics/
+          retention-days: 30
+      - name: Record diagnostic run
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git reset --hard origin/main
+          mkdir -p build-results/countryside-days
+          cat > build-results/countryside-days/API_DIAGNOSTIC_STATUS.md <<EOF
+          # Countryside API diagnostic
+          - Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          - Run number: ${GITHUB_RUN_NUMBER}
+          - Commit: ${GITHUB_SHA}
+          - Status: ${JOB_STATUS:-completed}
+          EOF
+          git add build-results/countryside-days/API_DIAGNOSTIC_STATUS.md
+          git commit -m "Record Countryside API diagnostic ${GITHUB_RUN_NUMBER}" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
