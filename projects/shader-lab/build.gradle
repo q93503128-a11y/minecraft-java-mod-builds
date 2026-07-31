@@ -171,7 +171,7 @@ tasks.register('verifyShaderpackResources') {
             if (!(evidence?.project_license?.id in ['GPL-3.0-only', 'GPL-3.0-or-later'])
                     || evidence?.project_slug != nobleProject
                     || evidence?.version_id != nobleVersionId
-                    || evidence?.shaderlab_preset != 'Reverie 0.6') {
+                    || evidence?.shaderlab_preset != 'Reverie 0.8') {
                 throw new GradleException('Embedded Noble license, version or preset evidence is invalid')
             }
         }
