@@ -10,7 +10,10 @@ import net.neoforged.neoforge.common.NeoForge;
 public final class LivingKingdomsClient {
     public LivingKingdomsClient(IEventBus modEventBus) {
         modEventBus.addListener(ClientNetworkHandlers::register);
+        modEventBus.addListener(RealmCodexClient::registerKeys);
         NeoForge.EVENT_BUS.addListener(ClientSmokeDiagnostics::onClientTick);
         NeoForge.EVENT_BUS.addListener(VanillaTutorialSuppressor::onClientTick);
+        NeoForge.EVENT_BUS.addListener(RealmCodexClient::onClientTick);
+        NeoForge.EVENT_BUS.addListener(RealmCodexClient::onScreenInit);
     }
 }
