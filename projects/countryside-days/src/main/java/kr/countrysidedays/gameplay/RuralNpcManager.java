@@ -1,10 +1,10 @@
 package kr.countrysidedays.gameplay;
 
-import kr.countrysidedays.CountrysideDays;
 import kr.countrysidedays.registry.ModItems;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -61,7 +61,6 @@ public final class RuralNpcManager {
         if (find(level, customerName(estate), PlayerEstateLayout.restaurant(origin)).isEmpty()) {
             spawnVillager(level, customerName(estate), PlayerEstateLayout.restaurantDoor(origin));
         }
-
         AABB ranch = estateRanchBounds(origin);
         spawnSpeciesIfMissing(level, ranch, "cow", origin.offset(13, 1, 18), origin.offset(19, 1, 22), estate);
         spawnSpeciesIfMissing(level, ranch, "sheep", origin.offset(15, 1, 20), origin.offset(25, 1, 18), estate);
@@ -96,7 +95,6 @@ public final class RuralNpcManager {
         long time = Math.floorMod(level.getGameTime(), 24000L);
         AABB village = new AABB(villageOrigin).inflate(600.0, 24.0, 600.0);
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-
         for (Villager villager : level.getEntitiesOfClass(Villager.class, village)) {
             NpcDefinition publicNpc = definitionByName(villageOrigin, villager.getName().getString());
             if (publicNpc != null) {
@@ -114,6 +112,7 @@ public final class RuralNpcManager {
             BlockPos villageOrigin,
             long time
     ) {
+        villager.setNoAi(false);
         villager.setPose(Pose.STANDING);
         if (time < 1000L) navigate(villager, villageOrigin.offset(0, 1, 5), 0.42);
         else if (time < 9000L) navigate(villager, definition.work(), 0.48);
@@ -128,14 +127,16 @@ public final class RuralNpcManager {
             long time
     ) {
         if (time < OPEN_TIME || time >= CLOSE_TIME) {
+            villager.setNoAi(false);
             villager.setPose(Pose.STANDING);
             navigate(villager, villageOrigin.offset(0, 1, 8), 0.45);
             return;
         }
 
         BlockPos seat = PlayerEstateLayout.customerSeat(estate.originPos());
-        BlockPos approach = seat.relative(net.minecraft.core.Direction.SOUTH);
+        BlockPos approach = seat.relative(Direction.SOUTH);
         if (villager.blockPosition().distSqr(approach) > 4.0) {
+            villager.setNoAi(false);
             villager.setPose(Pose.STANDING);
             navigate(villager, approach, 0.50);
             return;
@@ -145,6 +146,7 @@ public final class RuralNpcManager {
         villager.setPos(seat.getX() + 0.5, seat.getY() + 0.55, seat.getZ() + 0.5);
         villager.setYRot(180.0F);
         villager.setPose(Pose.SITTING);
+        villager.setNoAi(true);
     }
 
     public static void handleInteraction(PlayerInteractEvent.EntityInteract event) {
@@ -161,13 +163,11 @@ public final class RuralNpcManager {
             handleCustomer(player, customerEstate.get());
             return;
         }
-
         if (isShopNpc(name)) {
             configureShop(player.level(), villager, name);
             return;
         }
         if (!RESIDENT_NAME.equals(name)) return;
-
         event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
         handleResident(player);
@@ -244,7 +244,6 @@ public final class RuralNpcManager {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.customer_owner_only"));
             return;
         }
-
         ServerLevel level = player.level();
         long time = Math.floorMod(level.getGameTime(), 24000L);
         if (time < OPEN_TIME || time >= CLOSE_TIME) {
@@ -272,7 +271,8 @@ public final class RuralNpcManager {
                 .orElse(0);
         player.sendSystemMessage(Component.translatable(
                 "message.countrysidedays.customer_served",
-                DAILY_REWARD_COINS, served
+                DAILY_REWARD_COINS,
+                served
         ));
     }
 
@@ -327,8 +327,12 @@ public final class RuralNpcManager {
 
     private static AABB estateRanchBounds(BlockPos origin) {
         return new AABB(
-                origin.getX() + 6.0, origin.getY(), origin.getZ() + 2.0,
-                origin.getX() + 29.0, origin.getY() + 10.0, origin.getZ() + 28.0
+                origin.getX() + 6.0,
+                origin.getY(),
+                origin.getZ() + 2.0,
+                origin.getX() + 29.0,
+                origin.getY() + 10.0,
+                origin.getZ() + 28.0
         );
     }
 
