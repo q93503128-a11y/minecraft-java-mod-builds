@@ -24,6 +24,12 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageDoorSystem.class",
     "kr/moonseungjun/villageguardians/VillageDefenseSystem.class",
     "kr/moonseungjun/villageguardians/VillageDefenseTowerBuilder.class",
+    "kr/moonseungjun/villageguardians/VillageTowerProgressData.class",
+    "kr/moonseungjun/villageguardians/VillageTowerSpecializationSystem.class",
+    "kr/moonseungjun/villageguardians/VillageWaveTrait.class",
+    "kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.class",
+    "kr/moonseungjun/villageguardians/VillageWarfrontSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSkillVisualSystem.class",
     "kr/moonseungjun/villageguardians/VillageGatePrioritySystem.class",
     "kr/moonseungjun/villageguardians/VillageRespawnSystem.class",
     "kr/moonseungjun/villageguardians/VillageRaidLootSystem.class",
@@ -104,6 +110,8 @@ def main() -> None:
             ).decode("utf-8")
             if "Default Dark Mode" not in notice:
                 fail("Third-party notice does not identify the licensed GUI source")
+            if "Tiny Creatures" not in notice or "CC0 1.0 Universal" not in notice:
+                fail("CC0 fantasy enemy visual references are not documented")
             if "No third-party structure NBT files are bundled" not in notice:
                 fail("Third-party notice does not record the custom-building migration")
     except zipfile.BadZipFile as exc:
@@ -114,10 +122,11 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
-    print("[PASS] Responsive non-overlapping facility UI and transparent C-key quick chat are present")
-    print("[PASS] Daytime speed, all-time spawn suppression and controlled raid drops are present")
-    print("[PASS] Timed overlapping waves, delayed revival and closed-gate priority are present")
-    print("[PASS] Installed-only defense towers and distant facility signature glyphs are present")
+    print("[PASS] Ten regular enemy roles, four bosses and eight wave traits are present")
+    print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
+    print("[PASS] Twelve persistent tower branches alter attacks and world silhouettes")
+    print("[PASS] Twenty active skills have role-specific readable combat effects")
+    print("[PASS] CC0 visual references are documented without untracked binaries")
     print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
