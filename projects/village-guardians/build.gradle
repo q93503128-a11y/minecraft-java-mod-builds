@@ -17,7 +17,6 @@ var licensedAssetsOutput = layout.buildDirectory.dir('generated/licensedAssets')
 
 var prepareLicensedAssets = tasks.register('prepareLicensedAssets', Exec) {
     inputs.file 'tools/prepare_licensed_assets.py'
-    inputs.property 'townsAndTowersVersion', 'E39wx2BN'
     inputs.property 'defaultDarkModeCommit', 'c804cb546dc260a5ae98b0754d599e1337faf43a'
     outputs.dir licensedAssetsOutput
     commandLine 'python3',
