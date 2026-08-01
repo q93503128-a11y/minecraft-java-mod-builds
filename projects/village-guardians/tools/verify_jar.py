@@ -18,6 +18,7 @@ REQUIRED_ASSETS = {
 REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSimpleBuildingBuilder.class",
     "kr/moonseungjun/villageguardians/VillageBuildingEnhancements.class",
+    "kr/moonseungjun/villageguardians/VillageBuildingSignatures.class",
     "kr/moonseungjun/villageguardians/VillageFortressBuildings.class",
     "kr/moonseungjun/villageguardians/VillageTownHallAccessFix.class",
     "kr/moonseungjun/villageguardians/VillageDoorSystem.class",
@@ -25,6 +26,7 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageDefenseTowerBuilder.class",
     "kr/moonseungjun/villageguardians/VillageGatePrioritySystem.class",
     "kr/moonseungjun/villageguardians/VillageRespawnSystem.class",
+    "kr/moonseungjun/villageguardians/VillageRaidLootSystem.class",
     "kr/moonseungjun/villageguardians/VillageFundingSystem.class",
     "kr/moonseungjun/villageguardians/VillageLocationRules.class",
     "kr/moonseungjun/villageguardians/VillageCombatTechniqueSystem.class",
@@ -38,6 +40,7 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageTownHallScreen.class",
     "kr/moonseungjun/villageguardians/VillageInventoryPanel.class",
     "kr/moonseungjun/villageguardians/VillageUiScreen.class",
+    "kr/moonseungjun/villageguardians/VillageQuickChatScreen.class",
     "kr/moonseungjun/villageguardians/VillageActionDescriptions.class",
     "kr/moonseungjun/villageguardians/VillageStarterKit.class",
     "kr/moonseungjun/villageguardians/VillageClientKeys.class",
@@ -111,9 +114,10 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
-    print("[PASS] Independent-scroll UI, pan/zoom trees, five roles and dual skill loadouts are present")
-    print("[PASS] Research-hall skills, town-hall tower command and coin-funded supplies are present")
-    print("[PASS] Closed-gate priority, delayed revival and persistent mercenaries are present")
+    print("[PASS] Responsive non-overlapping facility UI and transparent C-key quick chat are present")
+    print("[PASS] Daytime speed, all-time spawn suppression and controlled raid drops are present")
+    print("[PASS] Timed overlapping waves, delayed revival and closed-gate priority are present")
+    print("[PASS] Installed-only defense towers and distant facility signature glyphs are present")
     print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
