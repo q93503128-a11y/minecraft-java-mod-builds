@@ -57,6 +57,10 @@ public final class RanchLifeManager {
         updateName(animal, estate.ownerName(), MAX_HUNGER, true, true);
     }
 
+    public static boolean belongsTo(Animal animal, String ownerUuid) {
+        return ownerUuid(animal).map(ownerUuid::equals).orElse(false);
+    }
+
     public static void onServerTick(ServerTickEvent.Post event) {
         ServerLevel level = event.getServer().overworld();
         if (level.getGameTime() % 100L != 0L) return;
@@ -103,6 +107,12 @@ public final class RanchLifeManager {
                 || !(event.getTarget() instanceof Animal animal)
                 || !(event.getEntity() instanceof ServerPlayer player)) return;
 
+        if (animal.entityTags().contains(RuralNpcManager.PUBLIC_LIVESTOCK_TAG)) {
+            event.setCanceled(true);
+            player.sendOverlayMessage(Component.translatable("message.countrysidedays.public_livestock_protected"));
+            return;
+        }
+
         Optional<String> owner = ownerUuid(animal);
         if (owner.isEmpty()) return;
 
@@ -123,15 +133,23 @@ public final class RanchLifeManager {
                 hay ? "충분" : "없음",
                 water ? "충분" : "없음"
         ));
-        // Owner interaction remains uncancelled so milking, shearing and leads still work.
+        // Owner interaction remains uncancelled so milking, shearing, leads and humane slaughter still work.
     }
 
     public static void onAnimalDamage(LivingIncomingDamageEvent event) {
         if (!(event.getEntity() instanceof Animal animal)) return;
+        Entity attacker = event.getSource().getEntity();
+
+        if (animal.entityTags().contains(RuralNpcManager.PUBLIC_LIVESTOCK_TAG)) {
+            if (attacker instanceof Player player) {
+                event.setCanceled(true);
+                player.sendOverlayMessage(Component.translatable("message.countrysidedays.public_livestock_protected"));
+            }
+            return;
+        }
+
         Optional<String> owner = ownerUuid(animal);
         if (owner.isEmpty()) return;
-
-        Entity attacker = event.getSource().getEntity();
         if (attacker instanceof Player player && !owner.get().equals(player.getUUID().toString())) {
             event.setCanceled(true);
             player.sendOverlayMessage(Component.translatable("message.countrysidedays.livestock_not_owner"));
@@ -144,11 +162,21 @@ public final class RanchLifeManager {
             CountrysideWorldData.PlayerEstate estate
     ) {
         BlockPos origin = estate.originPos();
-        List<Animal> animals = level.getEntitiesOfClass(
+        AABB ranch = ranchBounds(origin);
+        List<Animal> ownedAnimals = level.getEntitiesOfClass(
                 Animal.class,
-                ranchBounds(origin),
-                animal -> ownerUuid(animal).map(estate.ownerUuid()::equals).orElse(false)
+                new AABB(origin).inflate(72.0, 20.0, 72.0),
+                animal -> belongsTo(animal, estate.ownerUuid())
         );
+        if (ownedAnimals.isEmpty()) return;
+
+        int returnIndex = 0;
+        for (Animal animal : ownedAnimals) {
+            if (!ranch.contains(animal.position())) {
+                returnAnimalToPasture(animal, origin, returnIndex++);
+            }
+        }
+        List<Animal> animals = ownedAnimals.stream().filter(Entity::isAlive).toList();
         if (animals.isEmpty()) return;
 
         int currentDay = gameDay(level);
@@ -167,6 +195,16 @@ public final class RanchLifeManager {
         }
         breedFedAnimals(level, estate, animals, currentDay);
         recordDailyProduction(data, estate, animals, currentDay);
+    }
+
+    private static void returnAnimalToPasture(Animal animal, BlockPos origin, int index) {
+        int[][] points = {
+                {13, 18}, {19, 22}, {15, 20}, {25, 18}, {18, 24}, {21, 24}, {24, 22}, {12, 24}
+        };
+        int[] point = points[Math.floorMod(index, points.length)];
+        animal.getNavigation().stop();
+        animal.setPos(origin.getX() + point[0] + 0.5, origin.getY() + 1.0,
+                origin.getZ() + point[1] + 0.5);
     }
 
     private static void recordDailyProduction(
@@ -220,7 +258,7 @@ public final class RanchLifeManager {
         BlockPos feeder = PlayerEstateLayout.hayFeeder(estate.originPos());
         boolean groupAte = hungry.stream().allMatch(animal -> getIntTag(animal, ATE_DAY_PREFIX, -1) == currentDay);
         if (!groupAte) {
-            hungry.forEach(animal -> moveTo(animal, feeder, 0.55));
+            hungry.forEach(animal -> moveTo(animal, feeder.north(), 0.55));
             boolean reachedFood = hungry.stream().anyMatch(animal -> near(animal, feeder, 3.2));
             if (reachedFood && hasHay(level, estate.originPos())) {
                 consumeOneHay(level, estate.originPos());
@@ -233,7 +271,7 @@ public final class RanchLifeManager {
         BlockPos trough = PlayerEstateLayout.waterTrough(estate.originPos());
         boolean groupDrank = hungry.stream().allMatch(animal -> getIntTag(animal, DRANK_DAY_PREFIX, -1) == currentDay);
         if (!groupDrank) {
-            hungry.forEach(animal -> moveTo(animal, trough, 0.55));
+            hungry.forEach(animal -> moveTo(animal, trough.north(), 0.55));
             boolean reachedWater = hungry.stream().anyMatch(animal -> near(animal, trough, 3.0));
             if (reachedWater && hasWater(level, estate.originPos())) {
                 consumeWater(level, estate.originPos());
