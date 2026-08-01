@@ -1,9 +1,19 @@
 {
-  "key.arcanecircle.grimoire": "성좌 마도서 열기",
-  "key.arcanecircle.cast": "주력 주문 시전",
-  "key.arcanecircle.fusion_cast": "주력·직조 융합 시전",
-  "key.arcanecircle.previous_focus": "이전 주력 주문",
-  "key.arcanecircle.next_focus": "다음 주력 주문",
-  "key.arcanecircle.previous_weave": "이전 직조 주문",
-  "key.arcanecircle.next_weave": "다음 직조 주문"
+  "key.arcanecircle.grimoire": "구중 마도서 열기",
+  "key.arcanecircle.fusion_modifier": "융합 주문 준비",
+  "key.arcanecircle.slot_1": "마법 슬롯 1 시전",
+  "key.arcanecircle.slot_2": "마법 슬롯 2 시전",
+  "key.arcanecircle.slot_3": "마법 슬롯 3 시전",
+  "key.arcanecircle.slot_4": "마법 슬롯 4 시전",
+  "key.arcanecircle.slot_5": "마법 슬롯 5 시전",
+
+  "item.arcanecircle.novice_staff": "견습 마도봉",
+  "item.arcanecircle.ember_staff": "홍염 지팡이",
+  "item.arcanecircle.glacial_staff": "빙하 지팡이",
+  "item.arcanecircle.zephyr_staff": "청풍 지팡이",
+  "item.arcanecircle.aegis_staff": "수호 지팡이",
+  "item.arcanecircle.verdant_staff": "생명의 지팡이",
+  "item.arcanecircle.rift_staff": "균열 지팡이",
+  "item.arcanecircle.sage_staff": "현자의 지팡이",
+  "item.arcanecircle.archmage_staff": "대마도사의 지팡이"
 }
