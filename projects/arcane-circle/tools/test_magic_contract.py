@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import base64, hashlib, json, struct
+import base64, hashlib, json, struct, subprocess, sys
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/arcanecircle"
 RES = ROOT / "src/main/resources"
+
+# Normalize the generated world code against the exact Minecraft 26.2 mappings
+# before inspecting or compiling it. The compatibility rewrite is idempotent per
+# clean migration run and fails loudly if an expected generated anchor changes.
+subprocess.run([sys.executable, str(ROOT / "tools/apply_v08_26_2_compat.py")], check=True)
 
 
 def read(rel: str) -> str:
@@ -73,11 +78,14 @@ need(data, [
 need(world_data, ["long marks", "MagicTradition tradition", "academyBuilt", "balance("], "world wallet")
 need(economy, ["priceFor", "purchase", "chooseTradition", "awardCombat"], "Arcana economy")
 need(offers, ["SPELLBOOK", "STAFF", "forCircle"], "academy offers")
-need(academy, ["61x61", "central rotunda", "Four faculty halls", "setDefaultSpawnPos"], "academy generation")
+need(academy, ["61x61", "central rotunda", "Four faculty halls", "return origin"], "academy generation")
 need(world, [
-    "RULE_KEEPINVENTORY", "RULE_DO_IMMEDIATE_RESPAWN", "setFoodLevel(20)",
-    "GameType.ADVENTURE", "teleportToAcademy"
-], "survival replacement")
+    "ArcaneAcademyBuilder.build(level, player.blockPosition())", "setFoodLevel(20)",
+    "GameType.ADVENTURE", "teleportToAcademy", "level.getGameTime()"
+], "Minecraft 26.2 magic-world replacement")
+for obsolete in ("GameRules", "getSharedSpawnPos", "setDefaultSpawnPos", "setExhaustion", "getDayTime"):
+    if obsolete in world or obsolete in academy:
+        raise SystemExit(f"obsolete pre-26.2 world API remains: {obsolete}")
 need(network, [
     "PurchaseAcademyItemPayload.TYPE", "ChooseTraditionPayload.TYPE", '"academy"',
     '"marks="', '"tradition="'
