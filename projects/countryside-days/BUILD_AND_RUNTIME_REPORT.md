@@ -1,16 +1,16 @@
 # Countryside Days Build and Runtime Report
 
-- Workflow run: 30722535488
-- Source commit: ea763e91d4418604a193ce48ce768d9ec4ba6476
+- Workflow run: 30722574983
+- Source commit: 9ceafec0a0bb5f37c530873e9ecae005d9aca6e8
 - Mod version: 0.1.0-alpha.13
 - Minecraft: 26.2
 - Java: 25
 - Gradle: 9.2.1
 - NeoForge: 26.2.0.38-beta
 - Wrapper generation: success
-- Toolchain verification: success
-- UTF-8 localization validation: success
-- Countryside gameplay contract validation: failure
+- Toolchain verification: cancelled
+- UTF-8 localization validation: skipped
+- Countryside gameplay contract validation: skipped
 - Clean build: skipped
 - Datagen: skipped
 - Required GameTest server: skipped
