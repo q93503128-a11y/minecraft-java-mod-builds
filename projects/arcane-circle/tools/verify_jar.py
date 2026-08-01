@@ -2,21 +2,36 @@
 from __future__ import annotations
 import hashlib, sys, zipfile
 from pathlib import Path
-jar_path = Path(sys.argv[1])
-if not jar_path.is_file(): raise SystemExit(f"missing JAR: {jar_path}")
-with zipfile.ZipFile(jar_path) as jar:
-    names = jar.namelist()
-    required = {
-        "META-INF/neoforge.mods.toml", "assets/arcanecircle/blockstates/magic_circle.json",
-        "assets/arcanecircle/textures/block/magic_circle.png", "data/arcanecircle/recipe/magic_circle.json",
-        "kr/moonseungjun/arcanecircle/ArcaneCircle.class", "kr/moonseungjun/arcanecircle/magic/SpellRecipe.class",
-    }
+
+jar = Path(sys.argv[1])
+required = {
+    "META-INF/neoforge.mods.toml",
+    "kr/moonseungjun/arcanecircle/ArcaneCircle.class",
+    "kr/moonseungjun/arcanecircle/ArcaneCircleClient.class",
+    "kr/moonseungjun/arcanecircle/client/GrimoireScreen.class",
+    "kr/moonseungjun/arcanecircle/magic/MagicPlayerData.class",
+    "kr/moonseungjun/arcanecircle/magic/SpellCastingService.class",
+    "kr/moonseungjun/arcanecircle/network/ArcaneNetwork.class",
+    "assets/arcanecircle/lang/ko_kr.json",
+    "data/arcanecircle/spell_catalog/index.json",
+}
+forbidden_prefixes = (
+    "kr/moonseungjun/arcanecircle/block/",
+    "kr/moonseungjun/arcanecircle/gameplay/MagicCircleInteractionHandler",
+    "kr/moonseungjun/arcanecircle/registry/",
+    "assets/arcanecircle/blockstates/",
+    "assets/arcanecircle/textures/block/magic_circle",
+)
+with zipfile.ZipFile(jar) as archive:
+    names = archive.namelist()
     missing = sorted(required - set(names))
-    if missing: raise SystemExit("missing JAR entries: " + ", ".join(missing))
-    if len(names) != len(set(names)): raise SystemExit("duplicate ZIP entries detected")
-    if any(name.endswith(".java") for name in names): raise SystemExit("source files leaked into runtime JAR")
-    if any(name.startswith(("tools/", ".github/")) for name in names): raise SystemExit("development files leaked into runtime JAR")
-digest = hashlib.sha256(jar_path.read_bytes()).hexdigest()
-jar_path.with_name(jar_path.name + ".sha256").write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
-print(f"Arcane Circle JAR verification: PASS ({len(names)} entries)")
+    if missing: raise SystemExit(f"missing required entries: {missing}")
+    forbidden = [name for name in names if name.startswith(forbidden_prefixes)]
+    if forbidden: raise SystemExit(f"obsolete entries remain: {forbidden}")
+    if len(names) != len(set(names)): raise SystemExit("duplicate ZIP entries")
+    if any(name.endswith('.java') or name.startswith('tools/') for name in names):
+        raise SystemExit("development files leaked into JAR")
+digest = hashlib.sha256(jar.read_bytes()).hexdigest()
+jar.with_name(jar.name + '.sha256').write_text(f"{digest}  {jar.name}\n", encoding='utf-8')
+print(f"Arcane Circle Ninefold JAR verification: PASS ({len(names)} entries)")
 print(f"SHA-256: {digest}")

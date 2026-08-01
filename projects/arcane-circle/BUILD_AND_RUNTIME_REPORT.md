@@ -1,7 +1,7 @@
 # Build and Runtime Report
 
-- Project: Arcane Circle Lab
-- Version: 0.1.0-alpha.1
+- Project: Arcane Circle: Ninefold Arcana
+- Version: 0.2.0-alpha.1
 - Minecraft: 26.2
 - Java: 25
 - NeoForge target: 26.2.0.38-beta
@@ -14,5 +14,3 @@
 - GameTest: NOT AVAILABLE
 - Dedicated server smoke test: NOT RUN
 - Interactive client visual test: NOT RUN
-
-The GitHub Actions result and playable JAR must be checked before this test is called complete.

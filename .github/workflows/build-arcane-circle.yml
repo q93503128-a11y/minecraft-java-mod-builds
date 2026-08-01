@@ -13,8 +13,8 @@ permissions:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.1.0-alpha.1
-  EXPECTED_JAR: arcanecircle-0.1.0-alpha.1.jar
+  MOD_VERSION: 0.2.0-alpha.1
+  EXPECTED_JAR: arcanecircle-0.2.0-alpha.1.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
@@ -40,7 +40,7 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Run static magic contract
+      - name: Run Ninefold magic contract
         working-directory: ${{ env.PROJECT_DIR }}
         run: python3 tools/test_magic_contract.py
 
@@ -64,23 +64,24 @@ jobs:
       - name: Upload verified JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.1.0-alpha.1
+          name: arcanecircle-0.2.0-alpha.1
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
 
-      - name: Commit verified JAR to published directory
+      - name: Replace published Arcane Circle JAR
         run: |
           mkdir -p "$PUBLISHED_DIR"
+          rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
           cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
           cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$PUBLISHED_DIR/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          git add -A "$PUBLISHED_DIR"
           if git diff --cached --quiet; then
             echo 'Published JAR already matches this build.'
           else
-            git commit -m 'Publish verified Arcane Circle v0.1.0-alpha.1 JAR'
+            git commit -m 'Publish verified Arcane Circle v0.2.0-alpha.1 JAR'
             git pull --rebase origin main
             git push
           fi
@@ -95,14 +96,14 @@ jobs:
           else
             printf '%s\n' 'Gradle step did not start or produced no log.' > "$CI_RESULT_DIR/latest-gradle.log"
           fi
-          cat > "$CI_RESULT_DIR/status.txt" <<EOF
+          cat > "$CI_RESULT_DIR/status.txt" <<STATUS
           status=${{ job.status }}
           source_sha=$GITHUB_SHA
           run_id=$GITHUB_RUN_ID
           run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           java=25
           gradle=9.2.1
-          EOF
+          STATUS
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$CI_RESULT_DIR/status.txt" "$CI_RESULT_DIR/latest-gradle.log"

@@ -8,7 +8,7 @@ displayName="${mod_name}"
 displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
 authors="문승준"
 description='''
-바닥 마법진에 세 가지 촉매를 순서대로 넣어 불꽃·서리·비전 주문을 완성하고 발동하는 Java 26.2용 조합 마법 실험 모드.
+구중 마법학 세계관을 기반으로 마력핵, 1~9써클 등급, 주문 전승, 기초 주문 융합, 마도서 UI와 단축키 시전을 구현하는 Minecraft Java 마법 시스템 테스트. 현재 1~3써클 주문과 성장만 구현한다.
 '''
 
 [[dependencies.${mod_id}]]

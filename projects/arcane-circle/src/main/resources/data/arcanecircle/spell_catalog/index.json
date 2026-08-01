@@ -1,0 +1,7 @@
+{
+  "worldview": "ninefold_arcana",
+  "implemented_circles": [1, 2, 3],
+  "future_max_circle": 9,
+  "starter_direct_spells": ["arcane_dart", "ember", "frost_needle", "gale_step", "lesser_ward", "mend", "blink", "greater_ward"],
+  "fusion_results": ["flame_lance", "ice_shackles", "wind_blade", "fireball", "frost_nova", "chain_bolt", "rift_step"]
+}
