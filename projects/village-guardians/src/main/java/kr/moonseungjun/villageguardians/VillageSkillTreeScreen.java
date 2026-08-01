@@ -14,7 +14,7 @@ public final class VillageSkillTreeScreen extends Screen {
     private static final String SEP = "\u001F";
     private static final int BACKGROUND = 0xFF070B10;
     private static final int GRID = 0xFF101923;
-    private static final int PANEL = 0xEE0C131B;
+    private static final int PANEL = 0xF20C131B;
     private static final int SURFACE = 0xFF14202A;
     private static final int BORDER = 0xFF405568;
     private static final int TEXT = 0xFFF4F7FA;
@@ -25,33 +25,28 @@ public final class VillageSkillTreeScreen extends Screen {
     private static final int BLUE = 0xFF78A7ED;
     private static final int GREEN = 0xFF55D49B;
     private static final int PURPLE = 0xFFB38AE8;
-    private static final int NODE_SIZE = 44;
 
     private static double savedPanX;
     private static double savedPanY;
+    private static double savedZoom = 1.0;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final String[] actions;
     private final String[] labels;
     private final List<NodeVisual> nodes = new ArrayList<>();
-
     private int selectedIndex = -1;
     private boolean dragging;
 
     public VillageSkillTreeScreen(VillageNetwork.OpenVillageUiPayload payload) {
         super(Component.literal(payload.title()));
         this.payload = payload;
-        this.actions = payload.actions().isBlank()
-                ? new String[0] : payload.actions().split(SEP, -1);
-        this.labels = payload.labels().isBlank()
-                ? new String[0] : payload.labels().split(SEP, -1);
+        actions = payload.actions().isBlank() ? new String[0] : payload.actions().split(SEP, -1);
+        labels = payload.labels().isBlank() ? new String[0] : payload.labels().split(SEP, -1);
         buildNodes();
     }
 
     @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
+    public boolean isPauseScreen() { return false; }
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -63,6 +58,7 @@ public final class VillageSkillTreeScreen extends Screen {
         Viewport viewport = viewport();
         renderGrid(graphics, viewport);
         renderConnections(graphics, viewport);
+        renderCore(graphics, viewport);
         renderNodes(graphics, mouseX, mouseY, viewport);
         renderHeader(graphics, mouseX, mouseY);
         renderDetail(graphics, mouseX, mouseY);
@@ -71,129 +67,102 @@ public final class VillageSkillTreeScreen extends Screen {
 
     private void renderGrid(GuiGraphicsExtractor graphics, Viewport viewport) {
         graphics.fill(viewport.left(), viewport.top(), viewport.right(), viewport.bottom(), BACKGROUND);
-        int spacing = 28;
+        int spacing = Math.max(18, (int) Math.round(30 * savedZoom));
         int startX = viewport.left() + Math.floorMod((int) Math.round(savedPanX), spacing);
         int startY = viewport.top() + Math.floorMod((int) Math.round(savedPanY), spacing);
-        for (int x = startX; x < viewport.right(); x += spacing) {
-            graphics.fill(x, viewport.top(), x + 1, viewport.bottom(), GRID);
-        }
-        for (int y = startY; y < viewport.bottom(); y += spacing) {
-            graphics.fill(viewport.left(), y, viewport.right(), y + 1, GRID);
-        }
-        drawCore(graphics, viewport, screenX(viewport, 0), screenY(viewport, 0));
+        for (int x = startX; x < viewport.right(); x += spacing) graphics.fill(x, viewport.top(), x + 1, viewport.bottom(), GRID);
+        for (int y = startY; y < viewport.bottom(); y += spacing) graphics.fill(viewport.left(), y, viewport.right(), y + 1, GRID);
     }
 
     private void renderConnections(GuiGraphicsExtractor graphics, Viewport viewport) {
+        graphics.enableScissor(viewport.left(), viewport.top(), viewport.right(), viewport.bottom());
         for (NodeVisual node : nodes) {
-            int x1 = screenX(viewport, node.worldX());
-            int y1 = screenY(viewport, node.worldY());
-            int x0;
-            int y0;
-            if (node.prerequisiteId() == null) {
-                x0 = screenX(viewport, 0);
-                y0 = screenY(viewport, 0);
-            } else {
-                NodeVisual prerequisite = findNode(node.prerequisiteId());
-                if (prerequisite == null) {
-                    continue;
-                }
-                x0 = screenX(viewport, prerequisite.worldX());
-                y0 = screenY(viewport, prerequisite.worldY());
-            }
-            int color = prerequisiteUnlocked(node) ? branchColor(node.branch()) : 0xFF334250;
-            drawLine(graphics, viewport, x0, y0, x1, y1, color);
+            NodeVisual previous = previous(node);
+            double x0 = previous == null ? 0 : previous.worldX();
+            double y0 = previous == null ? 0 : previous.worldY();
+            int color = previous == null || "습득".equals(previous.status()) ? branchColor(node.branch()) : 0xFF334250;
+            drawLine(graphics,
+                    screenX(viewport, x0), screenY(viewport, y0),
+                    screenX(viewport, node.worldX()), screenY(viewport, node.worldY()), color);
         }
+        graphics.disableScissor();
     }
 
-    private void renderNodes(
-            GuiGraphicsExtractor graphics,
-            int mouseX,
-            int mouseY,
-            Viewport viewport) {
+    private void renderCore(GuiGraphicsExtractor graphics, Viewport viewport) {
+        int size = scaledNodeSize() - 8;
+        int cx = screenX(viewport, 0);
+        int cy = screenY(viewport, 0);
+        int x = cx - size / 2;
+        int y = cy - size / 2;
+        graphics.enableScissor(viewport.left(), viewport.top(), viewport.right(), viewport.bottom());
+        graphics.fill(x - 3, y - 3, x + size + 3, y + size + 3, GOLD);
+        graphics.fill(x, y, x + size, y + size, 0xFF202A31);
+        graphics.fill(cx - 3, y + 6, cx + 3, y + size - 6, GOLD);
+        graphics.fill(x + 6, cy - 3, x + size - 6, cy + 3, GOLD);
+        graphics.disableScissor();
+    }
+
+    private void renderNodes(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Viewport viewport) {
+        int nodeSize = scaledNodeSize();
         graphics.enableScissor(viewport.left(), viewport.top(), viewport.right(), viewport.bottom());
         for (int index = 0; index < nodes.size(); index++) {
             NodeVisual node = nodes.get(index);
-            int centerX = screenX(viewport, node.worldX());
-            int centerY = screenY(viewport, node.worldY());
-            int x = centerX - NODE_SIZE / 2;
-            int y = centerY - NODE_SIZE / 2;
-            if (x + NODE_SIZE < viewport.left() || x > viewport.right()
-                    || y + NODE_SIZE < viewport.top() || y > viewport.bottom()) {
-                continue;
-            }
-
-            String status = node.status();
-            int branchColor = branchColor(node.branch());
-            int borderColor = switch (status) {
-                case "습득" -> branchColor;
+            int cx = screenX(viewport, node.worldX());
+            int cy = screenY(viewport, node.worldY());
+            int x = cx - nodeSize / 2;
+            int y = cy - nodeSize / 2;
+            if (x + nodeSize < viewport.left() || x > viewport.right() || y + nodeSize < viewport.top() || y > viewport.bottom()) continue;
+            int color = branchColor(node.branch());
+            int border = switch (node.status()) {
+                case "습득" -> color;
                 case "습득 가능" -> GOLD;
                 case "데이터 잠금" -> RED;
                 default -> 0xFF354552;
             };
-            boolean hovered = inside(mouseX, mouseY, x, y, NODE_SIZE, NODE_SIZE);
+            boolean hovered = inside(mouseX, mouseY, x, y, nodeSize, nodeSize);
             boolean selected = selectedIndex == index;
-
-            graphics.fill(x - 3, y - 3, x + NODE_SIZE + 3, y + NODE_SIZE + 3,
-                    selected ? GOLD : hovered ? borderColor : 0xFF18242E);
-            graphics.fill(x - 1, y - 1, x + NODE_SIZE + 1, y + NODE_SIZE + 1, borderColor);
-            graphics.fill(x, y, x + NODE_SIZE, y + NODE_SIZE,
-                    hovered || selected ? 0xFF1C2A35 : SURFACE);
-            drawNodeIcon(graphics, node.branch(), node.tier(),
-                    x + 7, y + 7, NODE_SIZE - 14,
-                    "습득".equals(status) ? branchColor : borderColor);
-
-            if ("습득".equals(status)) {
-                graphics.fill(x + NODE_SIZE - 11, y + NODE_SIZE - 11,
-                        x + NODE_SIZE - 4, y + NODE_SIZE - 4, ACCENT);
-            } else if ("잠김".equals(status) || "포인트 필요".equals(status)) {
-                graphics.fill(x + NODE_SIZE - 12, y + NODE_SIZE - 10,
-                        x + NODE_SIZE - 4, y + NODE_SIZE - 5, 0xFF65717A);
-                graphics.fill(x + NODE_SIZE - 10, y + NODE_SIZE - 14,
-                        x + NODE_SIZE - 6, y + NODE_SIZE - 9, 0xFF65717A);
+            graphics.fill(x - 3, y - 3, x + nodeSize + 3, y + nodeSize + 3, selected ? GOLD : hovered ? border : 0xFF18242E);
+            graphics.fill(x - 1, y - 1, x + nodeSize + 1, y + nodeSize + 1, border);
+            graphics.fill(x, y, x + nodeSize, y + nodeSize, hovered || selected ? 0xFF1C2A35 : SURFACE);
+            drawNodeIcon(graphics, node.branch(), node.tier(), x + 6, y + 6, nodeSize - 12,
+                    "습득".equals(node.status()) ? color : border);
+            if (savedZoom >= 0.82) {
+                String title = compact(node.title(), savedZoom >= 1.18 ? 16 : 10);
+                graphics.centeredText(font, title, cx, y + nodeSize + 6, hovered || selected ? TEXT : MUTED);
             }
-
-            graphics.centeredText(font, Integer.toString(node.tier()), centerX,
-                    y + NODE_SIZE + 6, hovered || selected ? TEXT : MUTED);
         }
         graphics.disableScissor();
     }
 
     private void renderHeader(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        graphics.fill(0, 0, width, 47, PANEL);
+        graphics.fill(0, 0, width, 48, PANEL);
         graphics.fill(0, 46, width, 48, BORDER);
-        graphics.text(font, "전술 발전", 16, 12, TEXT, false);
-        graphics.text(font, compact(payload.body(), Math.max(30, Math.min(70, width / 9))),
-                16, 28, MUTED, false);
+        graphics.text(font, "전술 발전", 15, 11, TEXT, false);
+        graphics.text(font, compact(payload.body(), Math.max(24, Math.min(58, width / 10))), 15, 28, MUTED, false);
+        int closeX = width - 35;
+        int centerX = closeX - 53;
+        int plusX = centerX - 34;
+        int percentX = plusX - 48;
+        int minusX = percentX - 34;
+        drawHeaderButton(graphics, mouseX, mouseY, minusX, 10, 28, "−");
+        graphics.centeredText(font, Math.round(savedZoom * 100) + "%", percentX + 22, 18, MUTED);
+        drawHeaderButton(graphics, mouseX, mouseY, plusX, 10, 28, "+");
+        drawHeaderButton(graphics, mouseX, mouseY, centerX, 10, 46, "중앙");
+        drawHeaderButton(graphics, mouseX, mouseY, closeX, 10, 26, "×");
+    }
 
-        if (width >= 690) {
-            int legendX = width / 2 - 140;
-            drawLegend(graphics, legendX, 12, RED, "공격");
-            drawLegend(graphics, legendX + 70, 12, BLUE, "방어");
-            drawLegend(graphics, legendX + 140, 12, PURPLE, "사격");
-            drawLegend(graphics, legendX + 210, 12, GREEN, "지원");
-        }
-
-        int recenterX = width - 92;
-        int closeX = width - 42;
-        boolean recenterHovered = inside(mouseX, mouseY, recenterX, 10, 42, 25);
-        boolean closeHovered = inside(mouseX, mouseY, closeX, 10, 26, 25);
-        graphics.fill(recenterX, 10, recenterX + 42, 35,
-                recenterHovered ? SURFACE : 0xFF101923);
-        graphics.centeredText(font, "중앙", recenterX + 21, 18,
-                recenterHovered ? GOLD : MUTED);
-        graphics.fill(closeX, 10, closeX + 26, 35,
-                closeHovered ? 0xFF6E3038 : 0xFF101923);
-        graphics.centeredText(font, "×", closeX + 13, 18,
-                closeHovered ? 0xFFFFFFFF : MUTED);
+    private void drawHeaderButton(GuiGraphicsExtractor graphics, int mouseX, int mouseY, int x, int y, int w, String label) {
+        boolean hovered = inside(mouseX, mouseY, x, y, w, 25);
+        graphics.fill(x, y, x + w, y + 25, hovered ? 0xFF253642 : 0xFF101923);
+        graphics.centeredText(font, label, x + w / 2, y + 8, hovered ? GOLD : MUTED);
     }
 
     private void renderDetail(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        int top = height - 82;
+        int top = Math.max(112, height - 88);
         graphics.fill(0, top, width, height, PANEL);
         graphics.fill(0, top, width, top + 2, BORDER);
-
         String title = "노드를 선택하세요";
-        String description = "빈 공간을 드래그해 트리를 이동할 수 있습니다.";
+        String description = "빈 공간 드래그: 이동 · 마우스 휠 또는 +/−: 확대·축소";
         String status = "";
         int color = MUTED;
         if (selectedIndex >= 0 && selectedIndex < nodes.size()) {
@@ -203,87 +172,60 @@ public final class VillageSkillTreeScreen extends Screen {
             status = node.status();
             color = branchColor(node.branch());
         }
-
-        graphics.text(font, title, 16, top + 12, color, false);
-        if (!status.isBlank()) {
-            graphics.text(font, status, 16, top + 29,
-                    statusColor(status), false);
-        }
-
+        graphics.text(font, compact(title, Math.max(18, width / 10)), 16, top + 12, color, false);
+        if (!status.isBlank()) graphics.text(font, status, 16, top + 29, statusColor(status), false);
         int buttonWidth = Math.min(126, Math.max(92, width / 5));
         int buttonX = width - buttonWidth - 16;
-        int buttonY = top + 28;
-        int descriptionRight = buttonX - 14;
-        List<FormattedCharSequence> lines = font.split(
-                Component.literal(description), Math.max(80, descriptionRight - 16));
-        int y = top + 47;
+        int buttonY = top + 29;
+        int descriptionRight = buttonX - 12;
+        List<FormattedCharSequence> lines = font.split(Component.literal(description), Math.max(80, descriptionRight - 16));
+        int y = top + 48;
         for (FormattedCharSequence line : lines) {
-            if (y > height - 9) {
-                break;
-            }
+            if (y > height - 10) break;
             graphics.text(font, line, 16, y, MUTED, false);
             y += 11;
         }
-
-        boolean purchasable = selectedIndex >= 0
-                && "습득 가능".equals(nodes.get(selectedIndex).status());
-        boolean hovered = purchasable
-                && inside(mouseX, mouseY, buttonX, buttonY, buttonWidth, 25);
-        graphics.fill(buttonX - 1, buttonY - 1,
-                buttonX + buttonWidth + 1, buttonY + 26,
+        boolean purchasable = selectedIndex >= 0 && "습득 가능".equals(nodes.get(selectedIndex).status());
+        boolean hovered = purchasable && inside(mouseX, mouseY, buttonX, buttonY, buttonWidth, 25);
+        graphics.fill(buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + 26,
                 hovered ? GOLD : purchasable ? color : 0xFF35424D);
-        graphics.fill(buttonX, buttonY,
-                buttonX + buttonWidth, buttonY + 25,
+        graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 25,
                 hovered ? 0xFF3C3420 : purchasable ? SURFACE : 0xFF171E25);
-        String buttonText = purchasable ? "습득 · 1P" :
-                selectedIndex < 0 ? "노드 선택 필요" : nodes.get(selectedIndex).status();
-        graphics.centeredText(font, buttonText,
-                buttonX + buttonWidth / 2, buttonY + 8,
-                purchasable ? TEXT : MUTED);
+        String label = purchasable ? "습득 · 1P" : selectedIndex < 0 ? "노드 선택 필요" : nodes.get(selectedIndex).status();
+        graphics.centeredText(font, label, buttonX + buttonWidth / 2, buttonY + 8, purchasable ? TEXT : MUTED);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-        if (click.button() != 0) {
-            return super.mouseClicked(click, doubled);
-        }
-        if (inside(click.x(), click.y(), width - 42, 10, 26, 25)) {
-            onClose();
-            return true;
-        }
-        if (inside(click.x(), click.y(), width - 92, 10, 42, 25)) {
-            savedPanX = 0;
-            savedPanY = 0;
-            return true;
-        }
+        if (click.button() != 0) return super.mouseClicked(click, doubled);
+        int closeX = width - 35;
+        int centerX = closeX - 53;
+        int plusX = centerX - 34;
+        int percentX = plusX - 48;
+        int minusX = percentX - 34;
+        if (inside(click.x(), click.y(), closeX, 10, 26, 25)) { onClose(); return true; }
+        if (inside(click.x(), click.y(), centerX, 10, 46, 25)) { savedPanX = 0; savedPanY = 0; savedZoom = 1.0; return true; }
+        if (inside(click.x(), click.y(), minusX, 10, 28, 25)) { setZoom(savedZoom - 0.15, width / 2.0, height / 2.0); return true; }
+        if (inside(click.x(), click.y(), plusX, 10, 28, 25)) { setZoom(savedZoom + 0.15, width / 2.0, height / 2.0); return true; }
 
+        int top = Math.max(112, height - 88);
         int buttonWidth = Math.min(126, Math.max(92, width / 5));
-        if (selectedIndex >= 0 && selectedIndex < nodes.size()) {
-            int buttonX = width - buttonWidth - 16;
-            int buttonY = height - 54;
-            if ("습득 가능".equals(nodes.get(selectedIndex).status())
-                    && inside(click.x(), click.y(), buttonX, buttonY, buttonWidth, 25)) {
-                ClientPacketDistributor.sendToServer(
-                        new VillageNetwork.VillageUiActionPayload(nodes.get(selectedIndex).action()));
-                return true;
-            }
+        int buttonX = width - buttonWidth - 16;
+        if (selectedIndex >= 0 && "습득 가능".equals(nodes.get(selectedIndex).status())
+                && inside(click.x(), click.y(), buttonX, top + 29, buttonWidth, 25)) {
+            ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(nodes.get(selectedIndex).action()));
+            return true;
         }
 
         Viewport viewport = viewport();
-        if (!inside(click.x(), click.y(),
-                viewport.left(), viewport.top(), viewport.width(), viewport.height())) {
-            return super.mouseClicked(click, doubled);
-        }
+        if (!inside(click.x(), click.y(), viewport.left(), viewport.top(), viewport.width(), viewport.height())) return super.mouseClicked(click, doubled);
+        int nodeSize = scaledNodeSize();
         for (int index = 0; index < nodes.size(); index++) {
             NodeVisual node = nodes.get(index);
-            int x = screenX(viewport, node.worldX()) - NODE_SIZE / 2;
-            int y = screenY(viewport, node.worldY()) - NODE_SIZE / 2;
-            if (inside(click.x(), click.y(), x, y, NODE_SIZE, NODE_SIZE)) {
-                selectedIndex = index;
-                return true;
-            }
+            int x = screenX(viewport, node.worldX()) - nodeSize / 2;
+            int y = screenY(viewport, node.worldY()) - nodeSize / 2;
+            if (inside(click.x(), click.y(), x, y, nodeSize, nodeSize)) { selectedIndex = index; return true; }
         }
-
         dragging = true;
         return true;
     }
@@ -291,8 +233,8 @@ public final class VillageSkillTreeScreen extends Screen {
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (dragging && event.button() == 0) {
-            savedPanX = clamp(savedPanX + dragX, -760, 760);
-            savedPanY = clamp(savedPanY + dragY, -760, 760);
+            savedPanX = clamp(savedPanX + dragX, -1200, 1200);
+            savedPanY = clamp(savedPanY + dragY, -1200, 1200);
             return true;
         }
         return super.mouseDragged(event, dragX, dragY);
@@ -304,275 +246,130 @@ public final class VillageSkillTreeScreen extends Screen {
         return super.mouseReleased(event);
     }
 
-    private void drawCore(
-            GuiGraphicsExtractor graphics,
-            Viewport viewport,
-            int centerX,
-            int centerY) {
-        int size = 34;
-        int x = centerX - size / 2;
-        int y = centerY - size / 2;
-        if (x + size < viewport.left() || x > viewport.right()
-                || y + size < viewport.top() || y > viewport.bottom()) {
-            return;
-        }
-        graphics.enableScissor(viewport.left(), viewport.top(), viewport.right(), viewport.bottom());
-        graphics.fill(x - 3, y - 3, x + size + 3, y + size + 3, GOLD);
-        graphics.fill(x, y, x + size, y + size, 0xFF202A31);
-        graphics.fill(centerX - 3, y + 7, centerX + 3, y + size - 7, GOLD);
-        graphics.fill(x + 7, centerY - 3, x + size - 7, centerY + 3, GOLD);
-        graphics.disableScissor();
-    }
-
-    private void drawNodeIcon(
-            GuiGraphicsExtractor graphics,
-            Branch branch,
-            int tier,
-            int x,
-            int y,
-            int size,
-            int color) {
-        int centerX = x + size / 2;
-        int centerY = y + size / 2;
-        switch (branch) {
-            case POWER -> {
-                graphics.fill(centerX - 2, y + 2, centerX + 2, y + size - 4, color);
-                graphics.fill(centerX - 6, y + 3, centerX + 6, y + 7, color);
-                graphics.fill(centerX - 6, y + size - 7, centerX + 6, y + size - 3, color);
-            }
-            case GUARD -> {
-                graphics.fill(centerX - 8, y + 4, centerX + 8, y + 9, color);
-                graphics.fill(centerX - 10, y + 9, centerX + 10, centerY + 3, color);
-                graphics.fill(centerX - 6, centerY + 3, centerX + 6, y + size - 5, color);
-                graphics.fill(centerX - 2, y + size - 6, centerX + 2, y + size - 2, color);
-            }
-            case RANGED -> {
-                for (int i = 0; i < size - 8; i++) {
-                    graphics.fill(x + 4 + i / 2, y + 3 + i,
-                            x + 6 + i / 2, y + 5 + i, color);
-                }
-                graphics.fill(x + 4, centerY - 1, x + size - 4, centerY + 1, color);
-                graphics.fill(x + size - 8, centerY - 5, x + size - 4, centerY + 5, color);
-            }
-            case SUPPORT -> {
-                graphics.fill(centerX - 3, y + 3, centerX + 3, y + size - 3, color);
-                graphics.fill(x + 3, centerY - 3, x + size - 3, centerY + 3, color);
-            }
-        }
-        if (tier >= 2) {
-            graphics.fill(x + 2, y + size - 4, x + 6, y + size, color);
-        }
-        if (tier >= 3) {
-            graphics.fill(x + size - 6, y + size - 4, x + size - 2, y + size, color);
-        }
-    }
-
-    private void drawLine(
-            GuiGraphicsExtractor graphics,
-            Viewport viewport,
-            int x0,
-            int y0,
-            int x1,
-            int y1,
-            int color) {
-        int dx = x1 - x0;
-        int dy = y1 - y0;
-        int steps = Math.max(Math.abs(dx), Math.abs(dy));
-        if (steps <= 0) {
-            return;
-        }
-        graphics.enableScissor(viewport.left(), viewport.top(), viewport.right(), viewport.bottom());
-        for (int step = 0; step <= steps; step += 2) {
-            int x = x0 + dx * step / steps;
-            int y = y0 + dy * step / steps;
-            graphics.fill(x - 1, y - 1, x + 2, y + 2, color);
-        }
-        graphics.disableScissor();
-    }
-
-    private void drawLegend(
-            GuiGraphicsExtractor graphics,
-            int x,
-            int y,
-            int color,
-            String label) {
-        graphics.fill(x, y + 2, x + 8, y + 10, color);
-        graphics.text(font, label, x + 13, y + 1, MUTED, false);
-    }
-
-    private boolean prerequisiteUnlocked(NodeVisual node) {
-        if (node.prerequisiteId() == null) {
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+        Viewport viewport = viewport();
+        if (inside(mouseX, mouseY, viewport.left(), viewport.top(), viewport.width(), viewport.height())) {
+            setZoom(savedZoom + vertical * 0.10, mouseX, mouseY);
             return true;
         }
-        NodeVisual prerequisite = findNode(node.prerequisiteId());
-        return prerequisite != null && "습득".equals(prerequisite.status());
+        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
     }
 
-    private NodeVisual findNode(String id) {
-        for (NodeVisual node : nodes) {
-            if (node.id().equals(id)) {
-                return node;
-            }
-        }
-        return null;
-    }
-
-    private int statusColor(String status) {
-        return switch (status) {
-            case "습득" -> ACCENT;
-            case "습득 가능" -> GOLD;
-            case "데이터 잠금" -> RED;
-            default -> MUTED;
-        };
-    }
-
-    private int branchColor(Branch branch) {
-        return switch (branch) {
-            case POWER -> RED;
-            case GUARD -> BLUE;
-            case RANGED -> PURPLE;
-            case SUPPORT -> GREEN;
-        };
-    }
-
-    private int screenX(Viewport viewport, int worldX) {
-        return viewport.left() + viewport.width() / 2
-                + (int) Math.round(savedPanX) + worldX;
-    }
-
-    private int screenY(Viewport viewport, int worldY) {
-        return viewport.top() + viewport.height() / 2
-                + (int) Math.round(savedPanY) + worldY;
+    private void setZoom(double requested, double mouseX, double mouseY) {
+        Viewport viewport = viewport();
+        double old = savedZoom;
+        double next = clamp(requested, 0.55, 1.75);
+        double centerX = (viewport.left() + viewport.right()) / 2.0;
+        double centerY = (viewport.top() + viewport.bottom()) / 2.0;
+        double worldX = (mouseX - centerX - savedPanX) / old;
+        double worldY = (mouseY - centerY - savedPanY) / old;
+        savedZoom = next;
+        savedPanX = clamp(mouseX - centerX - worldX * next, -1200, 1200);
+        savedPanY = clamp(mouseY - centerY - worldY * next, -1200, 1200);
     }
 
     private void buildNodes() {
         int count = Math.min(actions.length, labels.length);
         for (int index = 0; index < count; index++) {
-            String action = actions[index];
-            if (!action.startsWith("skill_node:")) {
-                continue;
-            }
-            String id = action.substring("skill_node:".length());
             String[] parts = labels[index].split("\\|", 3);
-            String title = parts.length > 0 ? parts[0] : id;
-            String description = parts.length > 1 ? parts[1] : "";
+            String title = parts.length > 0 ? parts[0] : labels[index];
+            String description = parts.length > 1 ? parts[1] : "상세 효과 없음";
             String status = parts.length > 2 ? parts[2] : "잠김";
-            Branch branch = branchOf(id);
-            int tier = tierOf(id);
-            Position position = positionOf(branch, tier);
-            String prerequisite = tier <= 1 ? null : prefixOf(branch) + "_" + (tier - 1);
-            nodes.add(new NodeVisual(
-                    action, id, title, description, status,
-                    branch, tier, prerequisite, position.x(), position.y()));
+            String id = actions[index].startsWith("skill_node:") ? actions[index].substring(11) : actions[index];
+            Branch branch = branch(id);
+            int tier = tier(id);
+            double distance = 105.0 + tier * 13.0;
+            double worldX = switch (branch) {
+                case POWER -> tier * distance;
+                case GUARD -> -tier * distance;
+                default -> 0;
+            };
+            double worldY = switch (branch) {
+                case RANGED -> -tier * distance;
+                case SUPPORT -> tier * distance;
+                default -> 0;
+            };
+            nodes.add(new NodeVisual(actions[index], id, title, description, status, branch, tier, worldX, worldY));
         }
     }
 
-    private Branch branchOf(String id) {
-        if (id.startsWith("guard_")) {
-            return Branch.GUARD;
-        }
-        if (id.startsWith("ranged_")) {
-            return Branch.RANGED;
-        }
-        if (id.startsWith("support_")) {
-            return Branch.SUPPORT;
-        }
+    private NodeVisual previous(NodeVisual node) {
+        if (node.tier() <= 1) return null;
+        for (NodeVisual candidate : nodes) if (candidate.branch() == node.branch() && candidate.tier() == node.tier() - 1) return candidate;
+        return null;
+    }
+
+    private Branch branch(String id) {
+        if (id.startsWith("guard_")) return Branch.GUARD;
+        if (id.startsWith("support_")) return Branch.SUPPORT;
+        if (id.startsWith("ranged_")) return Branch.RANGED;
         return Branch.POWER;
     }
 
-    private int tierOf(String id) {
-        int separator = id.lastIndexOf('_');
-        if (separator < 0 || separator + 1 >= id.length()) {
-            return 1;
+    private int tier(String id) {
+        int split = id.lastIndexOf('_');
+        if (split >= 0) try { return Math.max(1, Integer.parseInt(id.substring(split + 1))); } catch (NumberFormatException ignored) {}
+        return 1;
+    }
+
+    private int screenX(Viewport viewport, double worldX) {
+        return (int) Math.round((viewport.left() + viewport.right()) / 2.0 + savedPanX + worldX * savedZoom);
+    }
+
+    private int screenY(Viewport viewport, double worldY) {
+        return (int) Math.round((viewport.top() + viewport.bottom()) / 2.0 + savedPanY + worldY * savedZoom);
+    }
+
+    private int scaledNodeSize() { return (int) Math.round(clamp(44 * savedZoom, 28, 62)); }
+
+    private void drawLine(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, int color) {
+        int dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        int dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        int error = dx + dy;
+        while (true) {
+            graphics.fill(x0 - 1, y0 - 1, x0 + 2, y0 + 2, color);
+            if (x0 == x1 && y0 == y1) break;
+            int twice = 2 * error;
+            if (twice >= dy) { error += dy; x0 += sx; }
+            if (twice <= dx) { error += dx; y0 += sy; }
         }
-        try {
-            return Math.max(1, Integer.parseInt(id.substring(separator + 1)));
-        } catch (NumberFormatException ignored) {
-            return 1;
+    }
+
+    private void drawNodeIcon(GuiGraphicsExtractor graphics, Branch branch, int tier, int x, int y, int size, int color) {
+        int cx = x + size / 2;
+        int cy = y + size / 2;
+        switch (branch) {
+            case POWER -> { graphics.fill(cx - 2, y + 2, cx + 2, y + size - 3, color); graphics.fill(cx - 7, y + 3, cx + 7, y + 7, color); }
+            case GUARD -> { graphics.fill(cx - 8, y + 4, cx + 8, cy + 2, color); graphics.fill(cx - 5, cy, cx + 5, y + size - 4, color); }
+            case RANGED -> { graphics.fill(x + 4, cy - 1, x + size - 4, cy + 1, color); graphics.fill(x + size - 8, cy - 5, x + size - 4, cy + 5, color); }
+            case SUPPORT -> { graphics.fill(cx - 3, y + 3, cx + 3, y + size - 3, color); graphics.fill(x + 3, cy - 3, x + size - 3, cy + 3, color); }
         }
+        if (tier >= 4) graphics.fill(x + 3, y + 3, x + 7, y + 7, GOLD);
     }
 
-    private Position positionOf(Branch branch, int tier) {
-        int safeTier = Math.max(1, Math.min(3, tier));
-        return switch (branch) {
-            case POWER -> new Position(130 * safeTier, -42 * (safeTier - 1));
-            case GUARD -> new Position(-130 * safeTier, 42 * (safeTier - 1));
-            case RANGED -> new Position(42 * (safeTier - 1), -130 * safeTier);
-            case SUPPORT -> new Position(-42 * (safeTier - 1), 130 * safeTier);
-        };
+    private int branchColor(Branch branch) {
+        return switch (branch) { case POWER -> RED; case GUARD -> BLUE; case RANGED -> PURPLE; case SUPPORT -> GREEN; };
     }
 
-    private String prefixOf(Branch branch) {
-        return switch (branch) {
-            case POWER -> "power";
-            case GUARD -> "guard";
-            case RANGED -> "ranged";
-            case SUPPORT -> "support";
-        };
+    private int statusColor(String status) {
+        return switch (status) { case "습득" -> ACCENT; case "습득 가능" -> GOLD; case "데이터 잠금" -> RED; default -> MUTED; };
     }
 
-    private String compact(String value, int maxCharacters) {
+    private Viewport viewport() { return new Viewport(0, 48, width, Math.max(49, height - 88)); }
+
+    private String compact(String value, int max) {
         String normalized = value.replace('\n', ' ');
-        if (normalized.length() <= maxCharacters) {
-            return normalized;
-        }
-        return normalized.substring(0, Math.max(1, maxCharacters - 1)) + "…";
+        return normalized.length() <= max ? normalized : normalized.substring(0, Math.max(1, max - 1)) + "…";
     }
 
-    private Viewport viewport() {
-        int bottom = Math.max(96, height - 82);
-        return new Viewport(8, 48, Math.max(9, width - 8), bottom);
-    }
-
-    private static double clamp(double value, double minimum, double maximum) {
-        return Math.max(minimum, Math.min(maximum, value));
-    }
+    private static double clamp(double value, double min, double max) { return Math.max(min, Math.min(max, value)); }
+    private static boolean inside(double mx, double my, int x, int y, int w, int h) { return mx >= x && mx < x + w && my >= y && my < y + h; }
 
     @Override
-    public void onClose() {
-        if (minecraft != null) {
-            minecraft.gui.setScreen(null);
-        }
-    }
+    public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
 
-    private static boolean inside(
-            double mouseX,
-            double mouseY,
-            int x,
-            int y,
-            int width,
-            int height) {
-        return mouseX >= x && mouseX < x + width
-                && mouseY >= y && mouseY < y + height;
-    }
-
-    private enum Branch {
-        POWER, GUARD, RANGED, SUPPORT
-    }
-
-    private record Viewport(int left, int top, int right, int bottom) {
-        int width() {
-            return right - left;
-        }
-
-        int height() {
-            return bottom - top;
-        }
-    }
-
-    private record Position(int x, int y) {
-    }
-
-    private record NodeVisual(
-            String action,
-            String id,
-            String title,
-            String description,
-            String status,
-            Branch branch,
-            int tier,
-            String prerequisiteId,
-            int worldX,
-            int worldY) {
-    }
+    private enum Branch { POWER, GUARD, RANGED, SUPPORT }
+    private record Viewport(int left, int top, int right, int bottom) { int width() { return right - left; } int height() { return bottom - top; } }
+    private record NodeVisual(String action, String id, String title, String description, String status, Branch branch, int tier, double worldX, double worldY) {}
 }
