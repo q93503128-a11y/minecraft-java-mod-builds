@@ -1,4 +1,4 @@
-# Final alpha.10 verification rerun after the documentation-only commit.
+# Countryside Days alpha.11 shared-restaurant and living-village validation.
 name: Build Countryside Days
 
 on:
@@ -90,6 +90,10 @@ jobs:
               'hud.countrysidedays.goal_open_first_shift',
               'item.countrysidedays.recipe_notebook',
               'item.countrysidedays.life_guide',
+              'message.countrysidedays.restaurant_staff_only',
+              'message.countrysidedays.restaurant_role_owner',
+              'message.countrysidedays.restaurant_role_staff',
+              'message.countrysidedays.public_livestock_protected',
               'message.countrysidedays.market_holiday',
           )
           for key in required:
@@ -97,7 +101,39 @@ jobs:
                   raise SystemExit(f'missing Korean localization for {key}')
           if ko['hud.countrysidedays.shift_closed'].startswith('CLOSED'):
               raise SystemExit('Korean HUD text still falls back to English')
+          for key in ('message.countrysidedays.personal_estate_ready', 'message.countrysidedays.property_deed'):
+              if '%s' in ko[key]:
+                  raise SystemExit(f'raw coordinate placeholder leaked into Korean guidance: {key}')
           print(f'Validated {len(ko)} matching UTF-8 localization keys.')
+          PY
+
+      - name: Validate shared life contracts
+        id: contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          gameplay = Path('src/main/java/kr/countrysidedays/gameplay/RuralGameplayHandler.java').read_text('utf-8')
+          notebook = Path('src/main/java/kr/countrysidedays/item/RecipeNotebookItem.java').read_text('utf-8')
+          required_sources = (
+              'src/main/java/kr/countrysidedays/gameplay/SharedRestaurantAccess.java',
+              'src/main/java/kr/countrysidedays/world/SharedRestaurantBuilder.java',
+              'src/main/java/kr/countrysidedays/world/PublicVillageExpansionBuilder.java',
+          )
+          for source in required_sources:
+              if not Path(source).is_file():
+                  raise SystemExit(f'missing shared-life source: {source}')
+          for exact in (
+              'new ItemStack(Items.WHEAT_SEEDS, 32)',
+              'new ItemStack(Items.CARROT, 8)',
+              'new ItemStack(Items.POTATO, 8)',
+          ):
+              if exact not in gameplay:
+                  raise SystemExit(f'starter support contract missing: {exact}')
+          for forbidden in ('손님 주문', '손님 보상', '조리 기록'):
+              if forbidden in notebook:
+                  raise SystemExit(f'recipe notebook contains non-recipe content: {forbidden}')
+          print('Shared restaurant, starter support, and recipe-only notebook contracts passed.')
           PY
 
       - name: Clean build
@@ -109,7 +145,6 @@ jobs:
 
       - name: Run data generation
         id: datagen
-        continue-on-error: true
         run: |
           set -o pipefail
           ./gradlew --no-daemon runData --stacktrace 2>&1 | tee ci-logs/datagen.log
@@ -177,7 +212,7 @@ jobs:
             echo "Countryside generation did not produce the deterministic spawn marker."
             exit 1
           fi
-          echo "Superflat server generated and audited the dry settlement reserve successfully."
+          echo "Superflat server generated and audited the protected countryside successfully."
 
       - name: Run client boot smoke test
         id: client
@@ -210,8 +245,8 @@ jobs:
             echo "Minecraft client never reached rendered resource readiness."
             exit 1
           fi
-          if ! grep -q "Countryside Days 0.1.0-alpha.10 core content registered" ci-logs/client.log; then
-            echo "Countryside Days alpha.10 did not register in the client process."
+          if ! grep -q "Countryside Days 0.1.0-alpha.11 core content registered" ci-logs/client.log; then
+            echo "Countryside Days alpha.11 did not register in the client process."
             exit 1
           fi
           if ! grep -q "Countryside Days compact navigation HUD registered" ci-logs/client.log; then
@@ -226,22 +261,22 @@ jobs:
             echo "Countryside Days has a missing item model or texture."
             exit 1
           fi
-          echo "Client reached rendered resource readiness with the compact progression HUD registered."
+          echo "Client reached rendered resource readiness with the compact navigation HUD registered."
 
       - name: Verify JAR and create deliverables
         id: jarcheck
         run: |
-          JAR="build/libs/countrysidedays-0.1.0-alpha.10.jar"
+          JAR="build/libs/countrysidedays-0.1.0-alpha.11.jar"
           python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification.log
           mkdir -p build/deliverables
           cp "$JAR" build/deliverables/
-          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.10.jar.sha256"
+          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.11.jar.sha256"
 
       - name: Upload executable JAR
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.10-deliverables
+          name: countryside-days-0.1.0-alpha.11-deliverables
           path: projects/countryside-days/build/deliverables/
           if-no-files-found: error
           retention-days: 14
@@ -250,7 +285,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.10-logs
+          name: countryside-days-0.1.0-alpha.11-logs
           path: projects/countryside-days/ci-logs/
           if-no-files-found: warn
           retention-days: 14
@@ -263,6 +298,7 @@ jobs:
           WRAPPER_OUTCOME: ${{ steps.wrapper.outcome }}
           TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
           LOCALIZATION_OUTCOME: ${{ steps.localization.outcome }}
+          CONTRACTS_OUTCOME: ${{ steps.contracts.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           DATAGEN_OUTCOME: ${{ steps.datagen.outcome }}
           GAMETEST_OUTCOME: ${{ steps.gametest.outcome }}
@@ -276,7 +312,7 @@ jobs:
 
           - Workflow run: ${RUN_ID}
           - Source commit: ${SOURCE_SHA}
-          - Mod version: 0.1.0-alpha.10
+          - Mod version: 0.1.0-alpha.11
           - Minecraft: 26.2
           - Java: 25
           - Gradle: 9.2.1
@@ -284,6 +320,7 @@ jobs:
           - Wrapper generation: ${WRAPPER_OUTCOME}
           - Toolchain verification: ${TOOLCHAIN_OUTCOME}
           - UTF-8 localization validation: ${LOCALIZATION_OUTCOME}
+          - Shared-life contract validation: ${CONTRACTS_OUTCOME}
           - Clean build: ${BUILD_OUTCOME}
           - Datagen: ${DATAGEN_OUTCOME}
           - Required GameTest server: ${GAMETEST_OUTCOME}
@@ -292,7 +329,7 @@ jobs:
           - Client smoke test: ${CLIENT_OUTCOME}
           - JAR structure verification: ${JAR_OUTCOME}
 
-          This report is generated by GitHub Actions. GameTests verify empty starter farmland, farm and ranch worker storage, seven-day holidays, deterministic daily market prices, restaurant and ranch persistence, protected directed buildings, and multiplayer estate isolation. Source and built-JAR validation both require matching UTF-8 Korean and English localization keys. Server and virtual-display client smoke tests remain mandatory. A human visual play test is still required before release.
+          This report is generated by GitHub Actions. GameTests verify one shared restaurant with owner and staff access, closed and open gate states, directed customer seats, empty starter farmland, independent private ranch production, seven-day holidays, deterministic safe market prices, protected buildings, and multiplayer estate isolation. Source and built-JAR validation require matching UTF-8 Korean and English localization keys, recipe-only notebook content, and the shared restaurant and expanded village classes. Server and virtual-display client smoke tests remain mandatory. A human visual play test is still recommended before a stable release.
           REPORT
 
           for LOG in clean-build datagen gametest server client; do
