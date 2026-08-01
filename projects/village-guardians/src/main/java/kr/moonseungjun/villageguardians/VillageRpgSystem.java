@@ -30,6 +30,10 @@ public final class VillageRpgSystem {
         if (bonus > 0) {
             player.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, 80, Math.max(0, bonus / 4 - 1)));
         }
+        if (VillageCouncilState.currentPhase() == VillageTimePhase.DAY
+                && !VillageRespawnSystem.isDowned(player)) {
+            player.addEffect(new MobEffectInstance(MobEffects.SPEED, 50, 1, false, false, true));
+        }
         if (VillageCouncilState.roleOf(player.getUUID()).orElse(null) == VillageRole.WARDEN
                 && player.getOffhandItem().is(Items.SHIELD)) {
             player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 0));
