@@ -20,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -36,6 +37,7 @@ public final class EstateWorkerManager {
     private static final String PAID_DAY_PREFIX = "cd_worker_paid_day_";
     private static final String CHECK_DAY_PREFIX = "cd_worker_check_day_";
     private static final String MISSED_PREFIX = "cd_worker_missed_";
+    private static final double WORKER_SEARCH_RADIUS = 80.0;
 
     public static final int HIRING_FEE = 12;
     public static final int DAILY_WAGE = 2;
@@ -66,48 +68,71 @@ public final class EstateWorkerManager {
         return true;
     }
 
+    /**
+     * Maintains only the small loaded area around each estate. The former 2,800-block-wide
+     * global scan was both unnecessary and expensive on long-lived multiplayer worlds.
+     */
     public static void maintain(
             ServerLevel level,
             BlockPos villageOrigin,
             CountrysideWorldData data
     ) {
         long day = gameDay(level);
-        AABB search = new AABB(villageOrigin).inflate(1400.0, 64.0, 1400.0);
-        for (Villager villager : level.getEntitiesOfClass(Villager.class, search)) {
-            boolean looksLikeOldWorker = hasPrefix(villager, OWNER_PREFIX) || hasPrefix(villager, ROLE_PREFIX);
-            if (looksLikeOldWorker && !villager.entityTags().contains(CONTRACT_TAG)) {
-                villager.discard();
-                continue;
+        Set<UUID> visited = new HashSet<>();
+        for (CountrysideWorldData.PlayerEstate estate : data.estates()) {
+            AABB search = workerBounds(estate.originPos());
+            for (Villager villager : level.getEntitiesOfClass(Villager.class, search)) {
+                if (!visited.add(villager.getUUID())) continue;
+                maintainWorker(level, data, estate, villager, day);
             }
-            if (!villager.entityTags().contains(CONTRACT_TAG)) continue;
-
-            UUID owner = ownerUuid(villager).orElse(null);
-            String role = role(villager).orElse(null);
-            CountrysideWorldData.PlayerEstate estate = owner == null ? null : data.estate(owner).orElse(null);
-            if (estate == null || role == null) {
-                villager.discard();
-                continue;
-            }
-
-            long checkedDay = getLongTag(villager, CHECK_DAY_PREFIX, -1L);
-            if (checkedDay >= day) {
-                refreshName(villager, estate, role, getIntTag(villager, MISSED_PREFIX, 0));
-                continue;
-            }
-            setLongTag(villager, CHECK_DAY_PREFIX, day);
-
-            if (consumeDailyWage(level, estate, role)) {
-                setLongTag(villager, PAID_DAY_PREFIX, day);
-                setIntTag(villager, MISSED_PREFIX, 0);
-                refreshName(villager, estate, role, 0);
-                continue;
-            }
-
-            int missed = getIntTag(villager, MISSED_PREFIX, 0) + 1;
-            setIntTag(villager, MISSED_PREFIX, missed);
-            refreshName(villager, estate, role, missed);
-            if (missed >= MAX_MISSED_WAGES) villager.discard();
         }
+    }
+
+    private static void maintainWorker(
+            ServerLevel level,
+            CountrysideWorldData data,
+            CountrysideWorldData.PlayerEstate nearbyEstate,
+            Villager villager,
+            long day
+    ) {
+        boolean looksLikeOldWorker = hasPrefix(villager, OWNER_PREFIX) || hasPrefix(villager, ROLE_PREFIX);
+        if (looksLikeOldWorker && !villager.entityTags().contains(CONTRACT_TAG)) {
+            villager.discard();
+            return;
+        }
+        if (!villager.entityTags().contains(CONTRACT_TAG)) return;
+
+        UUID owner = ownerUuid(villager).orElse(null);
+        String role = role(villager).orElse(null);
+        if (owner == null || role == null) {
+            villager.discard();
+            return;
+        }
+        CountrysideWorldData.PlayerEstate estate = data.estate(owner).orElse(null);
+        if (estate == null) {
+            villager.discard();
+            return;
+        }
+        if (!estate.ownerUuid().equals(nearbyEstate.ownerUuid())) return;
+
+        long checkedDay = getLongTag(villager, CHECK_DAY_PREFIX, -1L);
+        if (checkedDay >= day) {
+            refreshName(villager, estate, role, getIntTag(villager, MISSED_PREFIX, 0));
+            return;
+        }
+        setLongTag(villager, CHECK_DAY_PREFIX, day);
+
+        if (consumeDailyWage(level, estate, role)) {
+            setLongTag(villager, PAID_DAY_PREFIX, day);
+            setIntTag(villager, MISSED_PREFIX, 0);
+            refreshName(villager, estate, role, 0);
+            return;
+        }
+
+        int missed = getIntTag(villager, MISSED_PREFIX, 0) + 1;
+        setIntTag(villager, MISSED_PREFIX, missed);
+        refreshName(villager, estate, role, missed);
+        if (missed >= MAX_MISSED_WAGES) villager.discard();
     }
 
     public static boolean isActive(Villager villager, long day) {
@@ -125,11 +150,15 @@ public final class EstateWorkerManager {
         String roleTag = ROLE_PREFIX + role;
         return level.getEntitiesOfClass(
                 Villager.class,
-                new AABB(estate.originPos()).inflate(220.0, 32.0, 220.0),
+                workerBounds(estate.originPos()),
                 villager -> villager.entityTags().contains(CONTRACT_TAG)
                         && villager.entityTags().contains(ownerTag)
                         && villager.entityTags().contains(roleTag)
         ).stream().findFirst();
+    }
+
+    private static AABB workerBounds(BlockPos origin) {
+        return new AABB(origin).inflate(WORKER_SEARCH_RADIUS, 24.0, WORKER_SEARCH_RADIUS);
     }
 
     private static void hire(ServerPlayer player, String role) {
