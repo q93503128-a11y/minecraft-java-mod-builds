@@ -26,7 +26,7 @@ jobs:
   build:
     name: Java 25 / NeoForge 26.2 build
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 35
 
     steps:
       - name: Checkout repository
@@ -86,7 +86,7 @@ jobs:
 
           ready=0
           diagnostic=0
-          for attempt in $(seq 1 900); do
+          for attempt in $(seq 1 480); do
             if grep -Eq 'Done \(|For help, type "help"' ../../logs/server-smoke.log; then ready=1; fi
             if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log; then diagnostic=1; fi
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/server-smoke.log; then
@@ -104,8 +104,8 @@ jobs:
           done
 
           cat ../../logs/server-smoke.log
-          test "$ready" -eq 1 || { echo 'Dedicated server did not reach ready state within 900 seconds.' >&2; exit 1; }
-          test "$diagnostic" -eq 1 || { echo 'Queued noise realm diagnostics did not complete within 900 seconds.' >&2; exit 1; }
+          test "$ready" -eq 1 || { echo 'Dedicated server did not reach ready state within 480 seconds.' >&2; exit 1; }
+          test "$diagnostic" -eq 1 || { echo 'Queued noise realm diagnostics did not complete within 480 seconds.' >&2; exit 1; }
           grep -F 'noise_terrain=true' ../../logs/server-smoke.log
           grep -F 'surveyed_sites=true' ../../logs/server-smoke.log
           grep -F 'connected_land=true' ../../logs/server-smoke.log
