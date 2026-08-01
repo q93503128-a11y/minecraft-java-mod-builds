@@ -32,8 +32,11 @@ public final class LivingRealmWorldManager {
         if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) return false;
 
         // Finish the authored city before the loading screen closes. The underground marker makes
-        // this a one-time repair and also upgrades existing alpha.4 worlds on their next login.
+        // this a one-time upgrade and also repairs existing alpha.4 worlds on their next login.
         ErdenCapitalIntegrityFinalizer.ensure(realm, profile.homelandId(), site);
+        if ("erden_kingdom".equals(profile.homelandId())) {
+            RealmFacilityFinisher.ensureCriticalFacilities(realm, site);
+        }
         ConstructionDebrisCleaner.schedule(realm, profile.homelandId(), site);
 
         BlockPos feet = SafeResidenceLocator.residence(
