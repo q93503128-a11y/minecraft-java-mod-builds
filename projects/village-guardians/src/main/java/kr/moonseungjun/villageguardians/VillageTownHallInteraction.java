@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -14,12 +15,19 @@ public final class VillageTownHallInteraction {
     public static boolean handle(PlayerInteractEvent.RightClickBlock event) {
         if (event.getHand() != InteractionHand.MAIN_HAND
                 || !(event.getEntity() instanceof ServerPlayer player)
-                || player.level().isClientSide()
-                || !player.level().getBlockState(event.getPos()).is(Blocks.LECTERN)) {
+                || !(player.level() instanceof ServerLevel level)
+                || !level.getBlockState(event.getPos()).is(Blocks.LECTERN)) {
             return false;
         }
-        BlockPos hallCenter = VillageWorldSystem.buildingCenter(VillageProgressionSystem.Building.TOWN_HALL);
-        if (event.getPos().distSqr(hallCenter) > 36.0 * 36.0) {
+        BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
+        if (villageCenter == null) {
+            return false;
+        }
+        BlockPos expected = VillageFortressBuildings.terminalPosition(
+                level,
+                villageCenter,
+                VillageProgressionSystem.Building.TOWN_HALL);
+        if (!expected.equals(event.getPos())) {
             return false;
         }
         event.setCanceled(true);
