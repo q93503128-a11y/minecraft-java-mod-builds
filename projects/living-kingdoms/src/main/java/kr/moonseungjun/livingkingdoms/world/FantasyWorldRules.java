@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 import java.util.Map;
 import java.util.Set;
@@ -107,11 +107,12 @@ public final class FantasyWorldRules {
     }
 
     /** City fabric is protected by law; gathering outside surveyed civic limits remains possible. */
-    public static void handleBlockBreak(BlockEvent.BreakEvent event) {
+    public static void handleBlockBreak(BreakBlockEvent event) {
         if (!(event.getPlayer() instanceof ServerPlayer player) || !insideRealm(player)) return;
         if (player.isCreative() || player.isSpectator()) return;
         if (!(player.level() instanceof ServerLevel realm) || !insideCivicZone(realm, event.getPos())) return;
         event.setCanceled(true);
+        event.setNotifyClient(true);
         notifyRule(player, "도시 건축물과 공공 기반시설은 시민 재산입니다. 채집은 성외 허가 구역에서 하십시오.");
     }
 
