@@ -33,6 +33,8 @@ def main() -> None:
 
         required_exact = {
             "META-INF/neoforge.mods.toml",
+            "assets/countrysidedays/lang/ko_kr.json",
+            "assets/countrysidedays/lang/en_us.json",
             "assets/countrysidedays/items/village_coin.json",
             "assets/countrysidedays/models/item/village_coin.json",
             "assets/countrysidedays/items/herb_tea.json",
@@ -42,8 +44,12 @@ def main() -> None:
             "data/countrysidedays/recipe/herb_tea.json",
             "data/countrysidedays/recipe/farm_breakfast.json",
             "kr/countrysidedays/item/RecipeNotebookItem.class",
+            "kr/countrysidedays/gameplay/KitchenInteractionHandler.class",
             "kr/countrysidedays/gameplay/RanchLifeManager.class",
             "kr/countrysidedays/gameplay/RuralNpcManager.class",
+            "kr/countrysidedays/world/CountrysideWorldData.class",
+            "kr/countrysidedays/world/CountrysideWorldData$PlayerEstate.class",
+            "kr/countrysidedays/world/CountrysideWorldData$RanchProducts.class",
             "kr/countrysidedays/world/CountrysidePropertyManager.class",
             "kr/countrysidedays/world/CountrysideRegionManager.class",
             "kr/countrysidedays/world/FlatCountrysideBootstrap.class",
