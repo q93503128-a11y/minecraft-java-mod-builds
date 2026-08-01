@@ -26,8 +26,9 @@ def main() -> None:
     client_ui = read("VillageClientUi.java")
     ui_service = read("VillageUiService.java")
     ui_screen = read("VillageUiScreen.java")
+    town_hall_screen = read("VillageTownHallScreen.java")
     skill_screen = read("VillageSkillTreeScreen.java")
-    confirm_screen = read("VillageConfirmScreen.java")
+    inventory_panel = read("VillageInventoryPanel.java")
     action_descriptions = read("VillageActionDescriptions.java")
     client_keys = read("VillageClientKeys.java")
     builder = read("VillageSimpleBuildingBuilder.java")
@@ -63,6 +64,8 @@ def main() -> None:
     assert "unlocked_masks" in skill_data
     assert "sanitizeMask" in skill_data
     assert "VillageSkillTreeSystem.initializeServer" in guardians
+    assert "RANGED_1" in skill and "RANGED_3" in skill
+    assert "projectileDamageMultiplier" in skill
 
     assert "MAIN_INVENTORY_SLOTS = 36" in trading
     assert "Math.min(MAIN_INVENTORY_SLOTS" in trading
@@ -95,38 +98,55 @@ def main() -> None:
     assert "VillageFortressBuildings.buildingAtTerminal" in progression
     assert "Building.fromTerminal(block)" not in progression
     assert "VillageFortressBuildings.terminalPosition" in town_hall
-    assert "distSqr(hallCenter)" not in town_hall
+    assert "isNearTownHall" in town_hall
+    assert "ROLE_MANAGEMENT_DISTANCE_SQUARED" in town_hall
 
     assert "new VillageSkillTreeScreen(payload)" in client_ui
-    assert "Button.builder" in skill_screen
-    assert "VillageConfirmScreen" in skill_screen
-    assert '"습득 가능".equals(status)' in skill_screen
-    assert "ClientPacketDistributor" not in skill_screen
-    assert "selectNode" in skill_screen
-    assert "nodeX(int tier)" in skill_screen
-    assert "connectionColor" in skill_screen
+    assert "new VillageTownHallScreen(payload)" in client_ui
+    assert 'case "town_hall"' in client_ui
 
-    assert "Button.builder" in ui_screen
-    assert "button -> selectAction" in ui_screen
-    assert "executeSelected" in ui_screen
+    assert "Button.builder" not in skill_screen
+    assert "VillageConfirmScreen" not in skill_screen
+    assert "savedPanX" in skill_screen and "savedPanY" in skill_screen
+    assert "mouseDragged(MouseButtonEvent event, double dragX, double dragY)" in skill_screen
+    assert "drawNodeIcon" in skill_screen
+    assert "renderConnections" in skill_screen
+    assert "Branch.RANGED" not in skill_screen  # Client uses its own four-way enum.
+    assert "RANGED" in skill_screen
+    assert '"습득 가능".equals(nodes.get(selectedIndex).status())' in skill_screen
+
+    assert "Button.builder" not in ui_screen
+    assert "VillageConfirmScreen" not in ui_screen
+    assert "actionRegions" in ui_screen
+    assert "renderFooter" in ui_screen
+    assert "isImmediate" in ui_screen
     assert "VillageActionDescriptions.describe" in ui_screen
-    assert "VillageConfirmScreen" in ui_screen
     assert "requiresConfirmation" in action_descriptions
-    assert "확인하고 실행" in confirm_screen
-    assert "button.png" not in ui_screen  # Vanilla buttons consume the licensed override automatically.
+    assert "상세 화면 열기" not in action_descriptions
 
-    assert '"manage:town_hall"' in ui_service
-    assert '"manage:walls"' in ui_service
+    assert "Button.builder" not in town_hall_screen
+    assert "drawRoleCard" in town_hall_screen
+    assert "drawRoleIcon" in town_hall_screen
+    assert "renderFacilities" in town_hall_screen
+    assert "시설 관리" in town_hall_screen
+    assert "역할 배치" in town_hall_screen
+
+    assert 'VillageUiActionPayload("open_skill_tree")' in inventory_panel
+    assert 'VillageUiActionPayload("return_village")' in inventory_panel
+    assert 'VillageUiActionPayload("open_status")' not in inventory_panel
+    assert '"전술 발전"' in inventory_panel
+    assert '"마을 귀환"' in inventory_panel
+
+    assert 'send(player, "town_hall"' in ui_service
+    assert '"role"' in ui_service and '"facility"' in ui_service
     assert "openFacilityManagement" in ui_service
-    assert '"role_info:ranger"' in ui_service
-    assert '"role_info:engineer"' in ui_service
-    assert '"role_info:builder"' not in ui_service
-    assert '"role_info:quartermaster"' not in ui_service
-    assert '"use_skill", "open_skill_tree"' not in ui_service
-    assert "역할 스킬: 기본 R키" in ui_service
+    assert "select_role:" in ui_service
+    assert "VillageTownHallInteraction.isNearTownHall(player)" in ui_service
+    assert 'List.of("open_skill_tree", "return_village")' in ui_service
+    assert '"role_info:ranger"' not in ui_service
+    assert '"role_info:engineer"' not in ui_service
     assert 'case "use_skill" -> player.sendSystemMessage' in ui_service
     assert "fillLocalBuildingActions" in ui_service
-    assert "회관에서는 시설의 수리·강화만 관리합니다" in ui_service
 
     assert "RANGER(" in roles and "ENGINEER(" in roles
     assert "BUILDER(" not in roles and "QUARTERMASTER(" not in roles and "STEWARD(" not in roles
@@ -135,6 +155,7 @@ def main() -> None:
     assert 'case "scout", "ranger"' in roles
     assert "isOnWallTop" in rpg
     assert "RANGED_FOCUS_UNTIL" in rpg
+    assert "VillageSkillTreeSystem.projectileDamageMultiplier(attacker)" in rpg
     assert "hasActiveEngineer" in defense
 
     assert "RegisterKeyMappingsEvent" in client_keys
@@ -174,11 +195,11 @@ def main() -> None:
 
     print("[PASS] Raid death processing has one event entry point and cleans entity state")
     print("[PASS] Raids scale into diverse elite and boss waves with boundary attacks")
-    print("[PASS] Skill nodes use SavedData and review-confirm graph UI")
-    print("[PASS] Town hall management is separated from local facility functions")
-    print("[PASS] Four distinct roles, wall archer, engineer defences, and R-key skill are wired")
-    print("[PASS] Caller identity, double doors, daytime hostile cleanup, inventory safety are guarded")
-    print("[PASS] Roofs, lighting, compact footprints, sealed gate, towers and mercenaries remain wired")
+    print("[PASS] Skill nodes use SavedData with a draggable four-way icon tree")
+    print("[PASS] Inventory exposes only tactical growth and village return")
+    print("[PASS] Town hall owns role selection and facility management cards")
+    print("[PASS] Four roles, wall archer, engineer defences, ranged branch, and R-key skill are wired")
+    print("[PASS] Caller identity, double doors, daytime hostile cleanup, and inventory safety are guarded")
     print("[PASS] Player experience requirements use the slower quadratic curve")
 
 
