@@ -32,19 +32,19 @@ public final class PlayerEstateLayout {
     }
 
     public static BlockPos home(BlockPos origin) {
-        return origin.offset(-21, 0, -15);
+        return origin.offset(-21, 1, -13);
     }
 
     public static BlockPos homeDoor(BlockPos origin) {
-        return origin.offset(-21, 1, -4);
+        return origin.offset(-21, 1, -8);
     }
 
     public static BlockPos restaurant(BlockPos origin) {
-        return origin.offset(8, 0, -17);
+        return origin.offset(17, 1, -14);
     }
 
     public static BlockPos restaurantDoor(BlockPos origin) {
-        return origin.offset(16, 1, -4);
+        return origin.offset(17, 1, -8);
     }
 
     public static BlockPos kitchenCounter(BlockPos origin) {
@@ -52,19 +52,19 @@ public final class PlayerEstateLayout {
     }
 
     public static BlockPos farm(BlockPos origin) {
-        return origin.offset(-27, 0, 3);
+        return origin.offset(-17, 1, 11);
     }
 
     public static BlockPos farmGate(BlockPos origin) {
-        return origin.offset(-8, 0, 11);
+        return origin.offset(-7, 1, 10);
     }
 
     public static BlockPos ranch(BlockPos origin) {
-        return origin.offset(6, 0, 3);
+        return origin.offset(17, 1, 16);
     }
 
     public static BlockPos ranchGate(BlockPos origin) {
-        return origin.offset(6, 0, 14);
+        return origin.offset(6, 1, 14);
     }
 
     public static boolean contains(BlockPos origin, BlockPos pos) {
