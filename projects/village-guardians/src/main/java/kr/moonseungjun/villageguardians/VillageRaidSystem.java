@@ -100,7 +100,18 @@ public final class VillageRaidSystem {
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
-        ACTIVE_ENEMIES.remove(event.getEntity().getUUID());
+        UUID uuid = event.getEntity().getUUID();
+        if (!ACTIVE_ENEMIES.remove(uuid)) {
+            return;
+        }
+        MinecraftServer server = event.getEntity().level().getServer();
+        if (server != null) {
+            releaseEnemy(server, uuid, event.getEntity());
+        }
+    }
+
+    public static boolean isActiveEnemy(UUID uuid) {
+        return ACTIVE_ENEMIES.contains(uuid);
     }
 
     public static boolean isRaidLocked() {
@@ -160,10 +171,14 @@ public final class VillageRaidSystem {
             BlockPos spawn = origin.offset(spread * 2, 0, -row * 3);
             mob.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawn), EntitySpawnReason.EVENT, null);
+            mob.setCustomName(Component.literal("웨이브 " + wave + " · ").append(mob.getType().getDescription()));
+            mob.setCustomNameVisible(true);
             VillageWorldSystem.markAllowedGameMob(mob);
             server.getScoreboard().addPlayerToTeam(mob.getScoreboardName(), raidTeam);
             if (level.addFreshEntity(mob)) {
                 ACTIVE_ENEMIES.add(mob.getUUID());
+            } else {
+                releaseEnemy(server, mob.getUUID(), mob);
             }
         }
         structureAttackTicks = 0;
@@ -296,8 +311,10 @@ public final class VillageRaidSystem {
     private static void purgeMissingEnemies(MinecraftServer server) {
         Iterator<UUID> iterator = ACTIVE_ENEMIES.iterator();
         while (iterator.hasNext()) {
-            Entity entity = server.overworld().getEntity(iterator.next());
+            UUID uuid = iterator.next();
+            Entity entity = server.overworld().getEntity(uuid);
             if (entity == null || !entity.isAlive()) {
+                releaseEnemy(server, uuid, entity);
                 iterator.remove();
             }
         }
@@ -322,11 +339,23 @@ public final class VillageRaidSystem {
     }
 
     private static void discardEnemies(MinecraftServer server) {
-        for (UUID id : ACTIVE_ENEMIES) {
+        for (UUID id : new HashSet<>(ACTIVE_ENEMIES)) {
             Entity entity = server.overworld().getEntity(id);
+            releaseEnemy(server, id, entity);
             if (entity != null) {
-                entity.setGlowingTag(false);
                 entity.discard();
+            }
+        }
+    }
+
+    private static void releaseEnemy(MinecraftServer server, UUID uuid, Entity entity) {
+        VillageWorldSystem.unmarkAllowedGameMob(uuid);
+        VillageHealthDisplaySystem.forgetEnemy(uuid);
+        if (entity != null) {
+            entity.setGlowingTag(false);
+            PlayerTeam team = server.getScoreboard().getPlayerTeam(RAID_TEAM_NAME);
+            if (team != null) {
+                server.getScoreboard().removePlayerFromTeam(entity.getScoreboardName(), team);
             }
         }
     }
