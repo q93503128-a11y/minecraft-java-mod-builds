@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -34,7 +35,7 @@ public final class VillageHudSystem {
                     + " §8│ §f" + role
                     + " §8│ §e주화 " + VillageProgressionSystem.coins(player)
                     + " §8│ §6보급품 " + VillageProgressionSystem.supplies();
-            player.displayClientMessage(Component.literal(text), true);
+            player.connection.send(new ClientboundSetActionBarTextPacket(Component.literal(text)));
         }
     }
 }
