@@ -15,9 +15,11 @@ public final class VillageClientUi {
     public static void registerClientPayloads(RegisterClientPayloadHandlersEvent event) {
         event.register(VillageNetwork.OpenVillageUiPayload.TYPE,
                 (payload, context) -> Minecraft.getInstance().gui.setScreen(
-                        payload.screenId().equals("skill_tree")
-                                ? new VillageSkillTreeScreen(payload)
-                                : new VillageUiScreen(payload)));
+                        switch (payload.screenId()) {
+                            case "skill_tree" -> new VillageSkillTreeScreen(payload);
+                            case "town_hall" -> new VillageTownHallScreen(payload);
+                            default -> new VillageUiScreen(payload);
+                        }));
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
                 (payload, context) -> VillageInventoryPanel.updateStatus(payload));
     }
