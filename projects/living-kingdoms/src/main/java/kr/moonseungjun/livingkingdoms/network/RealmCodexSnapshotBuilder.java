@@ -52,10 +52,9 @@ public final class RealmCodexSnapshotBuilder {
         values.put("residence", profile == null ? "미정" : residenceName(profile.residenceId()));
         values.put("trait_title", SkillProgressionManager.traitTitle(player));
         values.put("trait_description", SkillProgressionManager.traitDescription(player));
-
         values.put("health", oneDecimal(player.getHealth()) + " / " + oneDecimal(player.getMaxHealth()));
         values.put("armor", Integer.toString(player.getArmorValue()));
-        values.put("food", Integer.toString(player.getFoodData().getFoodLevel()) + " / 20");
+        values.put("food", player.getFoodData().getFoodLevel() + " / 20");
         values.put("level", Integer.toString(player.experienceLevel));
         values.put("experience", Integer.toString(player.totalExperience));
         values.put("position", player.blockPosition().getX() + ", " + player.blockPosition().getY()
@@ -77,13 +76,13 @@ public final class RealmCodexSnapshotBuilder {
         values.put("wanted", Integer.toString(crime.wanted()));
         values.put("resistance", Integer.toString(crime.resistance()));
         values.put("jurisdiction", jurisdictionName(crime.jurisdiction()));
-        values.put("arrest", Integer.toString(Math.min(100, crime.arrestTicks())) + "%");
+        values.put("arrest", Math.min(100, crime.arrestTicks()) + "%");
 
         var skills = SkillProgressionManager.state(player);
         values.put("skill_points", Integer.toString(skills.points()));
         values.put("skill_milestone", Integer.toString(skills.levelMilestone()));
         values.put("unlocked_skills", String.join(",", skills.unlocked()));
-        values.put("growth_rule", "행동 숙련은 계속 성장하며, 기술 트리는 부가 효과를 해금합니다.");
+        values.put("growth_rule", "행동 숙련은 계속 성장하며 기술 트리는 부가 효과만 해금합니다.");
         for (String track : MASTERY_TRACKS) {
             values.put("mastery_" + track + "_name", MasteryProgressionSavedData.displayName(track));
             values.put("mastery_" + track + "_level",
@@ -107,24 +106,15 @@ public final class RealmCodexSnapshotBuilder {
         values.putIfAbsent("home_z", "0");
         values.put("player_x", Integer.toString(player.blockPosition().getX()));
         values.put("player_z", Integer.toString(player.blockPosition().getZ()));
-
         return new OpenCodexPayload(page, encode(values));
     }
 
-    private static void putSite(Map<String, String> values, ServerLevel realm, String homelandId, String prefix) {
+    private static void putSite(Map<String, String> values, ServerLevel realm,
+                                String homelandId, String prefix) {
         RealmSiteLayoutSavedData.RealmSite site = realm == null ? null : RealmSitePlanner.site(realm, homelandId);
-        if (site == null) {
-            int[] fallback = switch (homelandId) {
-                case "silvana_forest" -> new int[]{1500, 250};
-                case "kardum_league" -> new int[]{-1500, 250};
-                default -> new int[]{0, 0};
-            };
-            values.put(prefix + "_x", Integer.toString(fallback[0]));
-            values.put(prefix + "_z", Integer.toString(fallback[1]));
-        } else {
-            values.put(prefix + "_x", Integer.toString(site.centerX()));
-            values.put(prefix + "_z", Integer.toString(site.centerZ()));
-        }
+        int[] fallback = RealmSitePlanner.nominalCenter(homelandId);
+        values.put(prefix + "_x", Integer.toString(site == null ? fallback[0] : site.centerX()));
+        values.put(prefix + "_z", Integer.toString(site == null ? fallback[1] : site.centerZ()));
     }
 
     private static String encode(Map<String, String> values) {
@@ -147,11 +137,7 @@ public final class RealmCodexSnapshotBuilder {
     }
 
     private static String speciesName(String id) {
-        return switch (id) {
-            case "elf" -> "엘프";
-            case "dwarf" -> "드워프";
-            default -> "인간";
-        };
+        return switch (id) { case "elf" -> "엘프"; case "dwarf" -> "드워프"; default -> "인간"; };
     }
 
     private static String homelandName(String id) {
@@ -203,12 +189,9 @@ public final class RealmCodexSnapshotBuilder {
 
     private static String regionName(ServerLevel realm, int x, int z) {
         if (realm == null) return "미개척 대륙";
-        RealmSiteLayoutSavedData.RealmSite erden = RealmSitePlanner.site(realm, "erden_kingdom");
-        RealmSiteLayoutSavedData.RealmSite silvana = RealmSitePlanner.site(realm, "silvana_forest");
-        RealmSiteLayoutSavedData.RealmSite kardum = RealmSitePlanner.site(realm, "kardum_league");
-        if (near(x, z, erden, 360)) return "에르덴 로엔 변경백령";
-        if (near(x, z, silvana, 320)) return "실바나 수림권";
-        if (near(x, z, kardum, 320)) return "카르둠 산악권";
+        if (near(x, z, RealmSitePlanner.site(realm, "erden_kingdom"), 420)) return "에르덴 로엔 변경백령";
+        if (near(x, z, RealmSitePlanner.site(realm, "silvana_forest"), 360)) return "실바나 수림권";
+        if (near(x, z, RealmSitePlanner.site(realm, "kardum_league"), 360)) return "카르둠 산악권";
         return "미개척 대륙";
     }
 
