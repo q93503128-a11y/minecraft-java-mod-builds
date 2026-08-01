@@ -1,6 +1,7 @@
 package kr.countrysidedays.world;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 
 /** Fixed non-overlapping geometry shared by generation, protection, HUD, AI and tests. */
 public final class PlayerEstateLayout {
@@ -61,20 +62,37 @@ public final class PlayerEstateLayout {
         return origin.offset(11, 2, -21);
     }
 
+    public static BlockPos restaurantRevisionMarker(BlockPos origin) {
+        return origin.offset(7, -1, -20);
+    }
+
     public static BlockPos customerSeat(BlockPos origin) {
         return customerSeat(origin, 0);
     }
 
+    /** Three real chair blocks, each facing its own table while leaving the centre aisle clear. */
     public static BlockPos customerSeat(BlockPos origin, int slot) {
         return switch (Math.floorMod(slot, CountrysideWorldData.DAILY_CUSTOMER_CAP)) {
-            case 0 -> origin.offset(12, 1, -15);
-            case 1 -> origin.offset(17, 1, -15);
-            default -> origin.offset(22, 1, -15);
+            case 0 -> origin.offset(10, 1, -16);
+            case 1 -> origin.offset(24, 1, -16);
+            default -> origin.offset(10, 1, -12);
         };
     }
 
+    public static Direction customerSeatFacing(int slot) {
+        return switch (Math.floorMod(slot, CountrysideWorldData.DAILY_CUSTOMER_CAP)) {
+            case 0, 2 -> Direction.EAST;
+            default -> Direction.WEST;
+        };
+    }
+
+    public static float customerSeatYaw(int slot) {
+        return customerSeatFacing(slot) == Direction.EAST ? -90.0F : 90.0F;
+    }
+
     public static BlockPos customerApproach(BlockPos origin, int slot) {
-        return customerSeat(origin, slot).north();
+        BlockPos seat = customerSeat(origin, slot);
+        return customerSeatFacing(slot) == Direction.EAST ? seat.west() : seat.east();
     }
 
     public static BlockPos customerWaiting(BlockPos origin, int slot) {
@@ -140,6 +158,14 @@ public final class PlayerEstateLayout {
                 && pos.getY() <= origin.getY() + 9
                 && pos.getZ() >= origin.getZ() + RESTAURANT_MIN_Z
                 && pos.getZ() <= origin.getZ() + RESTAURANT_MAX_Z;
+    }
+
+    public static boolean isRestaurantOwnerAccessZone(BlockPos origin, BlockPos pos) {
+        if (isRestaurantArea(origin, pos)) return true;
+        return pos.getX() >= origin.getX() + 14
+                && pos.getX() <= origin.getX() + 20
+                && pos.getZ() >= origin.getZ() - 27
+                && pos.getZ() <= origin.getZ() - 19;
     }
 
     public static boolean contains(BlockPos origin, BlockPos pos) {
