@@ -19,12 +19,7 @@ def unpack(candidate: str) -> str:
 
 
 def recover_single_character(candidate: str, failure: Exception) -> tuple[str, str]:
-    """Recover one damaged character only when the complete zlib stream validates.
-
-    GitHub content payloads are split only to stay below connector limits. A successful
-    repair must decode as Base85, pass the zlib checksum, and decode as UTF-8. This means
-    a merely plausible Base85 group is never accepted.
-    """
+    """Recover one damaged character only when the complete zlib stream validates."""
     match = re.search(r"byte (\d+)", str(failure))
     center = int(match.group(1)) if match else max(0, len(candidate) // 2)
     left = max(0, center - 8)
@@ -65,6 +60,12 @@ try:
     repair = "none"
 except (ValueError, zlib.error, UnicodeDecodeError) as failure:
     source, repair = recover_single_character(encoded, failure)
+
+# The v0.7 release bumped the live network protocol after the v0.8 migration
+# payload was prepared. Adapt only the old-file anchor; the v0.8 target string
+# remains untouched. This keeps the migration idempotent without downgrading the
+# checked-in runtime source between builds.
+source = source.replace("ninefold-arcana-6", "ninefold-arcana-7")
 
 print("Arcane v0.8 migration payload decoded:",
       ", ".join(f"part{i}={len(part)}" for i, part in enumerate(parts)),
