@@ -1,6 +1,6 @@
 status=success
-source_sha=20981ce08749c3a420f90996320126113eb5c724
-run_id=30692325695
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/30692325695
+source_sha=ed2f2fd101282d1cf3cb9d4b7e960af81c76e9d0
+run_id=30693878150
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/30693878150
 java=25
 gradle=9.2.1
