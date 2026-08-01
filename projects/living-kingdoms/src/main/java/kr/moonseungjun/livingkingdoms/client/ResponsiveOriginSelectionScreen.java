@@ -121,7 +121,7 @@ public final class ResponsiveOriginSelectionScreen extends Screen {
         boolean hovered = inside(mouseX, mouseY, layout.cardX(), y, layout.cardW(), layout.cardH());
         ExternalRpgUi.button(graphics, font, layout.cardX(), y, layout.cardW(), layout.cardH(),
                 "", false, hovered, !submitting);
-        graphics.fakeItem(new net.minecraft.world.item.ItemStack(icon), layout.cardX() + 12,
+        ExternalRpgUi.itemIcon(graphics, icon, layout.cardX() + 12,
                 y + Math.max(5, (layout.cardH() - 16) / 2));
         graphics.text(font, Component.literal(category), layout.cardX() + 39, y + 8,
                 0xFF806143, false);
