@@ -1,11 +1,27 @@
 {
-  "version": "0.5.0-alpha.1",
+  "version": "0.6.0-alpha.1",
   "worldview": "ninefold_arcana",
-  "implemented_circles": [1, 2, 3],
+  "implemented_circles": [1, 2, 3, 4, 5],
   "future_max_circle": 9,
   "spell_slots": 5,
+  "casting_mode": "hold_number_show_sigil_release_to_cast",
+  "hotbar_policy": "consume_vanilla_1_to_5_before_processing_and_server_cancel_while_charging",
+  "sigil_anchors": ["front", "feet", "body", "ground_self", "ground_target", "target"],
   "cooldown_storage": "persistent_world_saved_data",
   "friendly_fire_policy": "exclude_allies_and_owned_tames",
+  "new_profile_spell_policy": "empty_until_beginner_grimoire_is_read",
+  "beginner_grimoire_spells": [
+    "arcane_dart", "ember", "frost_needle", "gale_step", "lesser_ward"
+  ],
+  "spellbooks": 20,
+  "spellbook_circles": [2, 3, 4, 5],
+  "librarian_trade_curve_emerald_equivalent": {
+    "1": 12,
+    "2": 27,
+    "3": 72,
+    "4": 216,
+    "5": 576
+  },
   "fusion_mode": "hold_x_queue_then_release",
   "fusion_preview": "progressive_multiset_candidates",
   "fusion_queue_timeout_ticks": 200,
@@ -14,12 +30,8 @@
     "2_circle_pair_casts": 4,
     "3_circle_pair_casts": 7,
     "3_circle_triple_casts": 10,
-    "reward": "register_result_for_numeric_slot_cast"
+    "reward": "register_result_for_numeric_slot_charge_cast"
   },
-  "starter_direct_spells": [
-    "arcane_dart", "ember", "frost_needle", "gale_step", "lesser_ward",
-    "mend", "blink", "greater_ward"
-  ],
   "pair_fusion_results": [
     "flame_lance", "ice_shackles", "wind_blade", "fireball",
     "frost_nova", "chain_bolt", "rift_step"
@@ -31,6 +43,7 @@
     "novice_staff", "ember_staff", "glacial_staff", "zephyr_staff",
     "aegis_staff", "verdant_staff", "rift_staff", "sage_staff", "archmage_staff"
   ],
+  "staff_power_curve": "strongly_exponential_late_game",
   "staff_survival_recipes": 8,
   "staff_custom_textures": 9,
   "grimoire_tabs": ["atlas", "recipes", "staffs", "core"]
