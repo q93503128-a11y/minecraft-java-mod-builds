@@ -29,7 +29,7 @@ public final class VillageGuardians {
     public VillageGuardians(IEventBus modEventBus) {
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians compact RPG UI, large town hall, protected arena, and direct gate routing loaded");
+        LOGGER.info("Village Guardians original fortress, RPG HUD, skill tree, travel, and trading loaded");
     }
 
     @SubscribeEvent
@@ -39,6 +39,8 @@ public final class VillageGuardians {
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageStructureHud.reset();
+        VillageHudSystem.reset();
+        VillageHealthDisplaySystem.reset();
         VillageRaidSystem.resetTransientState(event.getServer());
         maintenanceTicks = 0;
     }
@@ -85,6 +87,9 @@ public final class VillageGuardians {
         if (VillageWorldSystem.handleGateInteraction(event)) {
             return;
         }
+        if (VillageTownHallInteraction.handle(event)) {
+            return;
+        }
         VillageProgressionSystem.handleBuildingInteraction(event);
     }
 
@@ -120,6 +125,8 @@ public final class VillageGuardians {
     public void onServerTick(ServerTickEvent.Post event) {
         VillageRaidSystem.tick(event.getServer());
         VillageStructureHud.tick(event.getServer());
+        VillageHudSystem.tick(event.getServer());
+        VillageHealthDisplaySystem.tick(event.getServer());
         VillageEquipmentRules.restoreDurability(event.getServer());
         maintenanceTicks++;
         if (maintenanceTicks >= 20) {
