@@ -76,9 +76,9 @@ public final class VillageInventoryPanel {
         int buttonY = layout.bottom() - 28;
         int buttonWidth = (layout.width() - 20 - gap) / 2;
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 10, buttonY, buttonWidth, "전술", "open_skill_tree", ACCENT);
+                layout.left() + 10, buttonY, buttonWidth, "상태", ACCENT);
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 10 + buttonWidth + gap, buttonY, buttonWidth, "귀환", "return_village", GOLD);
+                layout.left() + 10 + buttonWidth + gap, buttonY, buttonWidth, "귀환", GOLD);
     }
 
     private static void drawRow(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,
@@ -91,7 +91,7 @@ public final class VillageInventoryPanel {
 
     private static void drawButton(GuiGraphicsExtractor graphics, Minecraft minecraft,
                                    int mouseX, int mouseY, int x, int y, int width,
-                                   String label, String action, int accent) {
+                                   String label, int accent) {
         boolean hovered = inside(mouseX, mouseY, x, y, width, 19);
         graphics.fill(x - 1, y - 1, x + width + 1, y + 20, hovered ? accent : BORDER);
         graphics.fill(x, y, x + width, y + 19, hovered ? SURFACE_HOVER : SURFACE);
@@ -108,7 +108,7 @@ public final class VillageInventoryPanel {
         int buttonWidth = (layout.width() - 20 - gap) / 2;
         String action = null;
         if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 10, buttonY, buttonWidth, 19)) {
-            action = "open_skill_tree";
+            action = "open_status";
         } else if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 10 + buttonWidth + gap,
                 buttonY, buttonWidth, 19)) {
             action = "return_village";
@@ -148,7 +148,7 @@ public final class VillageInventoryPanel {
     }
 
     private static String economyValue(String text) {
-        Matcher matcher = Pattern.compile(".*?(\\d+).*?").matcher(text);
+        Matcher matcher = Pattern.compile(".*?(\\d+).*").matcher(text);
         return matcher.matches() ? matcher.group(1) : compact(text, 8);
     }
 
