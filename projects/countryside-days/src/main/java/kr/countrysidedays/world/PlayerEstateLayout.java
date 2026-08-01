@@ -53,7 +53,15 @@ public final class PlayerEstateLayout {
     }
 
     public static BlockPos customerSeat(BlockPos origin) {
-        return origin.offset(14, 1, -12);
+        return customerSeat(origin, 0);
+    }
+
+    public static BlockPos customerSeat(BlockPos origin, int slot) {
+        return switch (Math.floorMod(slot, CountrysideWorldData.DAILY_CUSTOMER_CAP)) {
+            case 0 -> origin.offset(14, 1, -12);
+            case 1 -> origin.offset(13, 1, -13);
+            default -> origin.offset(21, 1, -12);
+        };
     }
 
     public static BlockPos kitchenCounter(BlockPos origin) {
@@ -82,6 +90,10 @@ public final class PlayerEstateLayout {
 
     public static BlockPos ranchGate(BlockPos origin) {
         return origin.offset(7, 0, 2);
+    }
+
+    public static BlockPos ranchCollectionBarrel(BlockPos origin) {
+        return origin.offset(24, 0, 17);
     }
 
     public static BlockPos hayFeeder(BlockPos origin) {
