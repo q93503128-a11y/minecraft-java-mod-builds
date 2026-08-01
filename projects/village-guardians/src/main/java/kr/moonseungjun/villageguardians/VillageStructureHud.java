@@ -14,18 +14,23 @@ public final class VillageStructureHud {
             "villageguardians:structure_health".getBytes(StandardCharsets.UTF_8));
     private static final ServerBossEvent HEALTH_BAR = new ServerBossEvent(
             BAR_ID,
-            Component.literal("시설 내구도"),
-            BossEvent.BossBarColor.RED,
+            Component.literal("방어 시설 내구도"),
+            BossEvent.BossBarColor.GREEN,
             BossEvent.BossBarOverlay.PROGRESS);
-    private static final int DISPLAY_TICKS = 90;
+    private static final int DAMAGE_FOCUS_TICKS = 100;
+    private static final int CYCLE_INTERVAL_TICKS = 50;
 
-    private static int visibleTicks;
+    private static int focusTicks;
+    private static int cycleTicks;
+    private static int cycleIndex;
 
     private VillageStructureHud() {
     }
 
     public static void reset() {
-        visibleTicks = 0;
+        focusTicks = 0;
+        cycleTicks = 0;
+        cycleIndex = 0;
         HEALTH_BAR.removeAllPlayers();
         HEALTH_BAR.setVisible(false);
     }
@@ -35,35 +40,79 @@ public final class VillageStructureHud {
             VillageProgressionSystem.Building building,
             int current,
             int maximum) {
+        updateBar(building, current, maximum);
+        showToAll(server);
+        focusTicks = DAMAGE_FOCUS_TICKS;
+    }
+
+    public static void tick(MinecraftServer server) {
+        if (focusTicks > 0) {
+            focusTicks--;
+            showToAll(server);
+            return;
+        }
+
+        if (!VillageRaidSystem.isActive()) {
+            hide();
+            return;
+        }
+
+        cycleTicks++;
+        if (cycleTicks >= CYCLE_INTERVAL_TICKS || !HEALTH_BAR.isVisible()) {
+            cycleTicks = 0;
+            VillageProgressionSystem.Building building = nextBuilding();
+            updateBar(
+                    building,
+                    VillageProgressionSystem.durability(building),
+                    VillageProgressionSystem.maxDurability(building));
+        }
+        showToAll(server);
+    }
+
+    private static VillageProgressionSystem.Building nextBuilding() {
+        VillageProgressionSystem.Building[] buildings = VillageProgressionSystem.Building.values();
+        VillageProgressionSystem.Building mostDamaged = buildings[0];
+        float lowestRatio = 2.0f;
+        for (VillageProgressionSystem.Building building : buildings) {
+            int maximum = Math.max(1, VillageProgressionSystem.maxDurability(building));
+            float ratio = VillageProgressionSystem.durability(building) / (float) maximum;
+            if (ratio < lowestRatio) {
+                lowestRatio = ratio;
+                mostDamaged = building;
+            }
+        }
+        if (lowestRatio < 0.999f) {
+            return mostDamaged;
+        }
+        VillageProgressionSystem.Building selected = buildings[Math.floorMod(cycleIndex, buildings.length)];
+        cycleIndex++;
+        return selected;
+    }
+
+    private static void updateBar(
+            VillageProgressionSystem.Building building,
+            int current,
+            int maximum) {
         float progress = maximum <= 0 ? 0.0f : Math.max(0.0f, Math.min(1.0f, current / (float) maximum));
-        HEALTH_BAR.setName(Component.literal(building.displayName() + "  " + current + " / " + maximum));
+        HEALTH_BAR.setName(Component.literal(
+                "방어 시설 · " + building.displayName() + "  " + current + " / " + maximum));
         HEALTH_BAR.setProgress(progress);
         HEALTH_BAR.setColor(progress <= 0.25f
                 ? BossEvent.BossBarColor.RED
                 : progress <= 0.55f
                 ? BossEvent.BossBarColor.YELLOW
                 : BossEvent.BossBarColor.GREEN);
+    }
+
+    private static void showToAll(MinecraftServer server) {
         HEALTH_BAR.setVisible(true);
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             HEALTH_BAR.addPlayer(player);
         }
-        visibleTicks = DISPLAY_TICKS;
     }
 
-    public static void tick(MinecraftServer server) {
-        if (visibleTicks <= 0) {
-            if (HEALTH_BAR.isVisible()) {
-                HEALTH_BAR.setVisible(false);
-                HEALTH_BAR.removeAllPlayers();
-            }
-            return;
-        }
-
-        visibleTicks--;
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            HEALTH_BAR.addPlayer(player);
-        }
-        if (visibleTicks == 0) {
+    private static void hide() {
+        if (HEALTH_BAR.isVisible()) {
             HEALTH_BAR.setVisible(false);
             HEALTH_BAR.removeAllPlayers();
         }
