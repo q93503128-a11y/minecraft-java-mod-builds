@@ -51,7 +51,8 @@ public final class VillageWorldSystem {
         if (VillageCouncilState.villageCenter().isEmpty()) VillageCouncilState.setVillageCenter(player);
         BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition()).immutable();
         boolean firstBuild = !level.getBlockState(center.below(2)).is(Blocks.LODESTONE);
-        boolean visualRevisionMissing = !level.getBlockState(center.below(4)).is(Blocks.RESPAWN_ANCHOR);
+        boolean visualRevisionMissing = !level.getBlockState(center.below(4)).is(Blocks.RESPAWN_ANCHOR)
+                || !level.getBlockState(center.below(5)).is(Blocks.AMETHYST_BLOCK);
         if (!firstBuild && !visualRevisionMissing) return;
 
         generationInProgress = true;
@@ -60,7 +61,8 @@ public final class VillageWorldSystem {
                 player.sendSystemMessage(Component.literal("§6[마을 건설] §f요새와 시설을 생성합니다."));
                 VillageProgressionSystem.restoreFacilitiesForMigration();
             } else {
-                player.sendSystemMessage(Component.literal("§6[마을 정비] §f회관 계단·전용 방어탑·엔티티 차단 설계를 갱신합니다."));
+                player.sendSystemMessage(Component.literal(
+                        "§6[마을 정비] §f미설치 방어탑을 정리하고 시설 시그니처 문양을 적용합니다."));
             }
             buildAll(level, center);
             if (!firstBuild) {
@@ -71,8 +73,8 @@ public final class VillageWorldSystem {
                 removeLooseDebris(level, center);
             }
             purgeUnauthorizedVillageMobs(server);
-            purgeDaytimeHostiles(server);
-            player.sendSystemMessage(Component.literal("§a[마을 준비 완료] §f회관 2층 통로와 네 종류의 고정 방어탑이 적용됐습니다."));
+            player.sendSystemMessage(Component.literal(
+                    "§a[마을 준비 완료] §f건물 문양과 설치 단계별 방어탑이 적용됐습니다."));
         } finally {
             generationInProgress = false;
         }
@@ -142,9 +144,11 @@ public final class VillageWorldSystem {
         if (!player.isAlive() || player.isSpectator()) return "현재 상태에서는 귀환할 수 없습니다.";
         long now = player.level().getGameTime();
         long combatReadyAt = LAST_COMBAT_AT.getOrDefault(player.getUUID(), Long.MIN_VALUE / 2L) + COMBAT_RETURN_LOCK_TICKS;
-        if (combatReadyAt > now) return "전투 중에는 귀환할 수 없습니다. " + Math.max(1L, (combatReadyAt - now + 19L) / 20L) + "초 뒤 다시 시도하세요.";
+        if (combatReadyAt > now) return "전투 중에는 귀환할 수 없습니다. "
+                + Math.max(1L, (combatReadyAt - now + 19L) / 20L) + "초 뒤 다시 시도하세요.";
         long readyAt = RETURN_READY_AT.getOrDefault(player.getUUID(), 0L);
-        if (readyAt > now) return "귀환 재사용 대기시간이 " + Math.max(1L, (readyAt - now + 19L) / 20L) + "초 남았습니다.";
+        if (readyAt > now) return "귀환 재사용 대기시간이 "
+                + Math.max(1L, (readyAt - now + 19L) / 20L) + "초 남았습니다.";
         ServerLevel destination = server.overworld();
         BlockPos target = findSafeReturnPosition(destination, center);
         if (target == null) return "마을 광장에서 안전한 귀환 위치를 찾지 못했습니다.";
@@ -186,15 +190,26 @@ public final class VillageWorldSystem {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
         ServerLevel level = server.overworld();
-        AABB area = new AABB(center).inflate(FORTRESS_RADIUS + 2, 64, FORTRESS_RADIUS + 2);
+        AABB area = new AABB(center).inflate(BATTLEFIELD_RADIUS, 96, BATTLEFIELD_RADIUS);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
             if (!isAllowedGameMob(mob) && !mob.isPersistenceRequired()) mob.discard();
         }
     }
 
-    public static BlockPos northGateTarget() { return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)).offset(0, 0, -FORTRESS_RADIUS - 3); }
-    public static BlockPos northInnerApproach() { return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)).offset(0, 0, -FORTRESS_RADIUS + 14); }
-    public static BlockPos northSpawnOrigin() { return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)).offset(0, 0, -ENEMY_SPAWN_DISTANCE); }
+    public static BlockPos northGateTarget() {
+        return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0))
+                .offset(0, 0, -FORTRESS_RADIUS - 3);
+    }
+
+    public static BlockPos northInnerApproach() {
+        return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0))
+                .offset(0, 0, -FORTRESS_RADIUS + 14);
+    }
+
+    public static BlockPos northSpawnOrigin() {
+        return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0))
+                .offset(0, 0, -ENEMY_SPAWN_DISTANCE);
+    }
 
     public static boolean isNorthGatePassable(ServerLevel level) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
@@ -202,12 +217,14 @@ public final class VillageWorldSystem {
     }
 
     public static BlockPos buildingCenter(VillageProgressionSystem.Building building) {
-        return VillageFortressBuildings.center(VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)), building);
+        return VillageFortressBuildings.center(
+                VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)), building);
     }
 
     public static void destroyStructure(ServerLevel level, VillageProgressionSystem.Building building) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
+        VillageBuildingSignatures.remove(level, center, building);
         if (building == VillageProgressionSystem.Building.WALLS) VillageFortressTerrain.destroyNorthGate(level, center);
         else VillageFortressBuildings.remove(level, center, building);
     }
@@ -215,13 +232,22 @@ public final class VillageWorldSystem {
     public static void rebuildStructure(ServerLevel level, VillageProgressionSystem.Building building) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
-        if (building == VillageProgressionSystem.Building.WALLS) VillageFortressTerrain.rebuildNorthGate(level, center);
-        else VillageFortressBuildings.rebuild(level, center, building);
+        if (building == VillageProgressionSystem.Building.WALLS) {
+            VillageFortressTerrain.rebuildNorthGate(level, center);
+            VillageDefenseTowerBuilder.build(level, center);
+        } else {
+            VillageFortressBuildings.rebuild(level, center, building);
+        }
+        VillageBuildingSignatures.build(level, center, building);
     }
 
     public static void applyUpgradeVisual(ServerLevel level, VillageProgressionSystem.Building building, int levelValue) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center != null) VillageFortressBuildings.applyUpgradeVisual(level, center, building, levelValue);
+        if (center == null) return;
+        VillageFortressBuildings.applyUpgradeVisual(level, center, building, levelValue);
+        if (VillageProgressionSystem.isOperational(building)) {
+            VillageBuildingSignatures.build(level, center, building);
+        }
     }
 
     private static void buildAll(ServerLevel level, BlockPos center) {
@@ -229,7 +255,9 @@ public final class VillageWorldSystem {
         VillageBuildingEnhancements.reinforceWallRailings(level, center);
         VillageFortressBuildings.buildAll(level, center);
         VillageDefenseTowerBuilder.build(level, center);
+        VillageBuildingSignatures.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
+        VillageFortressTerrain.set(level, center.below(5), Blocks.AMETHYST_BLOCK);
         VillageFortressTerrain.set(level, center.below(4), Blocks.RESPAWN_ANCHOR);
         VillageFortressTerrain.set(level, center.below(3), Blocks.CRYING_OBSIDIAN);
         VillageFortressTerrain.set(level, center.below(2), Blocks.LODESTONE);
@@ -248,7 +276,7 @@ public final class VillageWorldSystem {
     }
 
     private static void removeLooseDebris(ServerLevel level, BlockPos center) {
-        AABB area = new AABB(center).inflate(FORTRESS_RADIUS + 24, 64, FORTRESS_RADIUS + 24);
+        AABB area = new AABB(center).inflate(MIGRATION_CLEAN_RADIUS, 64, MIGRATION_CLEAN_RADIUS);
         level.getEntitiesOfClass(ItemEntity.class, area).forEach(ItemEntity::discard);
         level.getEntitiesOfClass(ExperienceOrb.class, area).forEach(ExperienceOrb::discard);
     }
