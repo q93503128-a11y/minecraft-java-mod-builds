@@ -43,7 +43,7 @@ public final class ArcaneClient {
         while (GRIMOIRE_KEY.consumeClick()) {
             ClientPacketDistributor.sendToServer(new RequestGrimoirePayload("atlas"));
         }
-        if (minecraft.screen != null) return;
+        if (minecraft.getScreen() != null) return;
 
         boolean fusionDown = FUSION_MODIFIER_KEY.isDown();
         for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
