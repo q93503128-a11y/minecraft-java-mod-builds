@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/build-arcane-circle-v08-recovery.yml'
       - 'projects/arcane-circle/tools/apply_v08_magic_world.py'
+      - 'projects/arcane-circle/tools/apply_v08_26_2_compat.py'
       - 'projects/arcane-circle/tools/v08_payload/**'
       - 'projects/arcane-circle/tools/v08_retry_20260802.txt'
 
@@ -48,6 +49,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
@@ -60,19 +62,6 @@ jobs:
           set -o pipefail
           python3 tools/apply_v08_magic_world.py 2>&1 | tee "$GITHUB_WORKSPACE/migration.log"
           git diff --check
-
-      - name: Print generated lifecycle and sigil contracts
-        working-directory: ${{ env.PROJECT_DIR }}
-        shell: bash
-        run: |
-          echo '=== ArcaneCircle.java ==='
-          sed -n '1,220p' src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java
-          echo '=== ArcaneEconomyService public API ==='
-          grep -nE 'public (static )?|static .*\(' src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEconomyService.java || true
-          echo '=== MagicWorldService public API ==='
-          grep -nE 'public (static )?|static .*\(' src/main/java/kr/moonseungjun/arcanecircle/world/MagicWorldService.java || true
-          echo '=== SpellSigilService.java ==='
-          sed -n '1,360p' src/main/java/kr/moonseungjun/arcanecircle/magic/SpellSigilService.java
 
       - name: Audit generated magic world
         working-directory: ${{ env.PROJECT_DIR }}
@@ -102,42 +91,92 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish generated source and verified runtime
+      - name: Publish clean generated source and verified runtime
         shell: bash
         run: |
-          mkdir -p "$PUBLISHED_DIR"
-          rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
-          cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
-          cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
-          git commit -m 'Publish Arcane Circle v0.8 Ninefold Magic World' || true
-          git pull --rebase origin main
-          git push
+
+          touch "$PROJECT_DIR/.gitignore"
+          grep -qxF '.gradle/' "$PROJECT_DIR/.gitignore" || printf '%s\n' '.gradle/' >> "$PROJECT_DIR/.gitignore"
+          grep -qxF 'build/' "$PROJECT_DIR/.gitignore" || printf '%s\n' 'build/' >> "$PROJECT_DIR/.gitignore"
+
+          rm -rf /tmp/arcane-v08-source
+          mkdir -p /tmp/arcane-v08-source
+          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-v08-source/
+
+          published=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$PROJECT_DIR"
+            mkdir -p "$PROJECT_DIR"
+            rsync -a /tmp/arcane-v08-source/ "$PROJECT_DIR/"
+            rm -rf "$PROJECT_DIR/build" "$PROJECT_DIR/.gradle"
+
+            mkdir -p "$PUBLISHED_DIR"
+            rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
+            cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+            cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+
+            git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
+            if git diff --cached --quiet; then
+              published=1
+              break
+            fi
+            git commit -m 'Publish Arcane Circle v0.8 Ninefold Magic World'
+            if git push origin HEAD:main; then
+              published=1
+              break
+            fi
+            echo "Concurrent main update during publish attempt $attempt; retrying on latest main."
+            sleep $((attempt * 2))
+          done
+          test "$published" -eq 1
 
       - name: Record recovery diagnostics
         if: always()
         shell: bash
         run: |
-          mkdir -p "$RESULT_DIR"
+          set -euo pipefail
+          rm -rf /tmp/arcane-v08-result
+          mkdir -p /tmp/arcane-v08-result
           if test -f "$GITHUB_WORKSPACE/gradle.log"; then
-            cp "$GITHUB_WORKSPACE/gradle.log" "$RESULT_DIR/latest.log"
+            cp "$GITHUB_WORKSPACE/gradle.log" /tmp/arcane-v08-result/latest.log
           elif test -f "$GITHUB_WORKSPACE/migration.log"; then
-            cp "$GITHUB_WORKSPACE/migration.log" "$RESULT_DIR/latest.log"
+            cp "$GITHUB_WORKSPACE/migration.log" /tmp/arcane-v08-result/latest.log
           else
-            echo 'No diagnostic log was produced.' > "$RESULT_DIR/latest.log"
+            echo 'Build pipeline did not produce a diagnostic log.' > /tmp/arcane-v08-result/latest.log
           fi
-          cat > "$RESULT_DIR/status.txt" <<STATUS
+          cat > /tmp/arcane-v08-result/status.txt <<STATUS
           status=${{ job.status }}
           source_sha=$GITHUB_SHA
           run_id=$GITHUB_RUN_ID
           run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
           STATUS
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$RESULT_DIR"
-          git commit -m "Record Arcane v0.8 recovery result for ${GITHUB_SHA::7}" || exit 0
-          git reset --hard HEAD
-          git pull --rebase origin main
-          git push
+          recorded=0
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$RESULT_DIR"
+            mkdir -p "$RESULT_DIR"
+            cp -a /tmp/arcane-v08-result/. "$RESULT_DIR/"
+            git add -A "$RESULT_DIR"
+            if git diff --cached --quiet; then
+              recorded=1
+              break
+            fi
+            git commit -m "Record Arcane v0.8 recovery result for ${GITHUB_SHA::7}"
+            if git push origin HEAD:main; then
+              recorded=1
+              break
+            fi
+            sleep $((attempt * 2))
+          done
+          test "$recorded" -eq 1
