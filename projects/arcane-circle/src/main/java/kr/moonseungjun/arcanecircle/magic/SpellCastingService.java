@@ -94,7 +94,6 @@ public final class SpellCastingService {
         castPrepared(player, data, cast);
     }
 
-    /** Compatibility entry point used only by old integrations; new controls always use begin/release. */
     public static void castSlot(ServerPlayer player, int slot) {
         beginSlotCharge(player, slot);
         releaseSlotCharge(player, slot);
@@ -945,8 +944,8 @@ public final class SpellCastingService {
                 .stream()
                 .filter(mob -> projection(start, look, mob.getEyePosition()) >= 0.0)
                 .filter(mob -> projection(start, look, mob.getEyePosition()) <= range + 1.0)
-                .min(Comparator.comparingDouble(mob -> rayDistanceSquared(start, look, mob.getEyePosition()))
-                        .thenComparingDouble(player::distanceToSqr));
+                .min(Comparator.<Mob>comparingDouble(mob -> rayDistanceSquared(start, look, mob.getEyePosition()))
+                        .thenComparingDouble(mob -> player.distanceToSqr(mob)));
     }
 
     private static List<Mob> lineTargets(ServerPlayer player, double range, double width) {
