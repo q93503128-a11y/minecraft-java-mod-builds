@@ -1,10 +1,13 @@
 package kr.countrysidedays.gametest;
 
 import kr.countrysidedays.CountrysideDays;
+import kr.countrysidedays.gameplay.CountrysideFishingManager;
+import kr.countrysidedays.gameplay.EstateWorkerManager;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.gameplay.SharedRestaurantAccess;
 import kr.countrysidedays.gameplay.VillageLifeManager;
 import kr.countrysidedays.registry.ModBlocks;
+import kr.countrysidedays.registry.ModItems;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
 import kr.countrysidedays.world.SharedRestaurantBuilder;
@@ -149,6 +152,26 @@ public final class ModGameTests {
         helper.assertTrue(data.claimRanchProducts(second).total() == 0,
                 "claiming the same private ranch stock twice must return nothing");
 
+        VillageLifeManager.ensureVillageLife(helper.getLevel(), village, data);
+        helper.assertTrue(
+                EstateWorkerManager.findWorker(
+                        helper.getLevel(), firstAllocation.estate(), EstateWorkerManager.FARM_ROLE
+                ).isEmpty(),
+                "new estates must not receive a free farm worker"
+        );
+        helper.assertTrue(
+                EstateWorkerManager.findWorker(
+                        helper.getLevel(), firstAllocation.estate(), EstateWorkerManager.RANCH_ROLE
+                ).isEmpty(),
+                "new estates must not receive a free ranch worker"
+        );
+        helper.assertTrue(EstateWorkerManager.HIRING_FEE == 12,
+                "worker hiring should require a meaningful upfront payment");
+        helper.assertTrue(EstateWorkerManager.DAILY_WAGE == 2,
+                "workers should require a daily wage");
+        helper.assertTrue(EstateWorkerManager.MAX_MISSED_WAGES == 3,
+                "workers should leave after three missed wages");
+
         helper.assertFalse(VillageLifeManager.isHoliday(5L), "sixth day should still be a workday");
         helper.assertTrue(VillageLifeManager.isHoliday(6L), "seventh day should be a village holiday");
         helper.assertTrue(VillageLifeManager.isHoliday(13L), "holiday cycle should repeat every seven days");
@@ -161,6 +184,22 @@ public final class ModGameTests {
             helper.assertTrue(VillageLifeManager.isProduceArbitrageSafe(marketDay, 6),
                     "buying and immediately reselling produce must never create infinite coins");
         }
+
+        helper.assertTrue(
+                CountrysideFishingManager.isPublicFishingPond(village, village.offset(-42, 0, 36)),
+                "the public fishing pond should be recognized"
+        );
+        helper.assertFalse(
+                CountrysideFishingManager.isPublicFishingPond(village, firstAllocation.estate().originPos()),
+                "a private estate must never count as the public fishing pond"
+        );
+
+        helper.assertTrue(ModItems.GRILLED_RIVER_FISH.get() != null,
+                "grilled river fish should be registered");
+        helper.assertTrue(ModItems.POTATO_PANCAKE.get() != null,
+                "potato pancake should be registered");
+        helper.assertTrue(ModItems.HONEY_CARROT_SALAD.get() != null,
+                "honey carrot salad should be registered");
 
         helper.assertTrue(
                 RuralGameplayHandler.isForagePlant(Blocks.SHORT_GRASS.defaultBlockState()),
@@ -209,6 +248,7 @@ public final class ModGameTests {
         );
         helper.assertBlockPresent(Blocks.OAK_SIGN, new BlockPos(38, 6, 5));
 
+        helper.assertBlockPresent(Blocks.POLISHED_DEEPSLATE, new BlockPos(42, 5, 12));
         helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(45, 7, 22));
         helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(52, 6, 9));
         helper.assertBlockProperty(
@@ -239,14 +279,14 @@ public final class ModGameTests {
                 Direction.NORTH
         );
 
-        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(47, 7, 17));
-        helper.assertBlockProperty(new BlockPos(47, 7, 17), StairBlock.FACING, Direction.SOUTH);
-        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(47, 7, 19));
-        helper.assertBlockProperty(new BlockPos(47, 7, 19), StairBlock.FACING, Direction.NORTH);
-        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(52, 7, 17));
-        helper.assertBlockProperty(new BlockPos(52, 7, 17), StairBlock.FACING, Direction.SOUTH);
-        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(57, 7, 17));
-        helper.assertBlockProperty(new BlockPos(57, 7, 17), StairBlock.FACING, Direction.SOUTH);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(45, 7, 16));
+        helper.assertBlockProperty(new BlockPos(45, 7, 16), StairBlock.FACING, Direction.EAST);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(59, 7, 16));
+        helper.assertBlockProperty(new BlockPos(59, 7, 16), StairBlock.FACING, Direction.WEST);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(45, 7, 20));
+        helper.assertBlockProperty(new BlockPos(45, 7, 20), StairBlock.FACING, Direction.EAST);
+        helper.assertBlockPresent(Blocks.AIR, new BlockPos(52, 7, 16));
+        helper.assertBlockPresent(Blocks.AIR, new BlockPos(52, 7, 20));
 
         SharedRestaurantBuilder.setOpen(helper.getLevel(), absoluteOrigin, true);
         helper.assertBlockProperty(
