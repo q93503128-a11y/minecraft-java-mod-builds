@@ -65,6 +65,8 @@ public final class RealmFacilityFinisher {
         set(realm, lantern.below(2), Blocks.SPRUCE_FENCE);
         set(realm, lantern.below(), Blocks.SPRUCE_FENCE);
         set(realm, lantern, Blocks.LANTERN);
+
+        ErdenFunctionalFacilityFinalizer.ensure(realm, erden);
     }
 
     private static void restoreBridge(ServerLevel realm, int cx, int y, int cz) {
