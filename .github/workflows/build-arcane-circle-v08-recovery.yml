@@ -61,7 +61,7 @@ jobs:
           python3 tools/apply_v08_magic_world.py 2>&1 | tee "$GITHUB_WORKSPACE/migration.log"
           git diff --check
 
-      - name: Print generated lifecycle contracts
+      - name: Print generated lifecycle and sigil contracts
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -71,6 +71,8 @@ jobs:
           grep -nE 'public (static )?|static .*\(' src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEconomyService.java || true
           echo '=== MagicWorldService public API ==='
           grep -nE 'public (static )?|static .*\(' src/main/java/kr/moonseungjun/arcanecircle/world/MagicWorldService.java || true
+          echo '=== SpellSigilService.java ==='
+          sed -n '1,360p' src/main/java/kr/moonseungjun/arcanecircle/magic/SpellSigilService.java
 
       - name: Audit generated magic world
         working-directory: ${{ env.PROJECT_DIR }}
