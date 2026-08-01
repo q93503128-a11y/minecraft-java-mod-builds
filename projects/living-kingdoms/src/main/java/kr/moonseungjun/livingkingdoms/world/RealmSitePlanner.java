@@ -47,17 +47,40 @@ public final class RealmSitePlanner {
         return site != null && site.built() && site.revision() >= LAYOUT_REVISION;
     }
 
+    /**
+     * Returns a real residence position after construction and a harmless projected position while it is pending.
+     * Reading codex/map data must never trigger construction or synchronously load the entire capital.
+     */
     public static BlockPos residencePosition(ServerLevel level, String homelandId, String residenceId) {
         RealmSiteLayoutSavedData.RealmSite site = site(level, homelandId);
-        if (site == null || !site.built() || site.revision() < LAYOUT_REVISION) {
-            throw new IllegalStateException("Homeland is not ready: " + homelandId);
-        }
         int[] offset = residenceOffset(residenceId);
-        int x = site.centerX() + offset[0];
-        int z = site.centerZ() + offset[1];
-        int y = "silvana_tree_home".equals(residenceId)
-                ? site.baseY() + 17
-                : surfaceY(level, x, z) + 1;
+        int centerX;
+        int centerZ;
+        int baseY;
+        boolean built;
+        if (site == null) {
+            int[] nominal = nominalCenter(homelandId);
+            centerX = nominal[0];
+            centerZ = nominal[1];
+            baseY = 65;
+            built = false;
+        } else {
+            centerX = site.centerX();
+            centerZ = site.centerZ();
+            baseY = site.baseY();
+            built = site.built() && site.revision() >= LAYOUT_REVISION;
+        }
+
+        int x = centerX + offset[0];
+        int z = centerZ + offset[1];
+        int y;
+        if ("silvana_tree_home".equals(residenceId)) {
+            y = baseY + 17;
+        } else if (built) {
+            y = surfaceY(level, x, z) + 1;
+        } else {
+            y = Math.max(65, baseY + 1);
+        }
         return new BlockPos(x, y, z);
     }
 
