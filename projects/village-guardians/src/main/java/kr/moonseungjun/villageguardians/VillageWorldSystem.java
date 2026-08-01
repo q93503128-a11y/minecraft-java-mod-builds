@@ -7,13 +7,17 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,8 +25,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class VillageWorldSystem {
     public static final int FORTRESS_RADIUS = 76;
     public static final int ENEMY_SPAWN_DISTANCE = 112;
-    private static final int CLEAN_RADIUS = 512;
+    private static final int MIGRATION_CLEAN_RADIUS = FORTRESS_RADIUS + 24;
+    private static final long RETURN_COOLDOWN_TICKS = 20L * 60L;
+    private static final long COMBAT_RETURN_LOCK_TICKS = 20L * 10L;
     private static final Set<UUID> ALLOWED_GAME_MOBS = ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, Long> RETURN_READY_AT = new HashMap<>();
+    private static final Map<UUID, Long> LAST_COMBAT_AT = new HashMap<>();
     private static boolean generationInProgress;
 
     private VillageWorldSystem() {
@@ -31,6 +39,8 @@ public final class VillageWorldSystem {
     public static synchronized void resetTransientState() {
         generationInProgress = false;
         ALLOWED_GAME_MOBS.clear();
+        RETURN_READY_AT.clear();
+        LAST_COMBAT_AT.clear();
     }
 
     public static synchronized void ensureFortifiedVillage(ServerPlayer player) {
@@ -50,16 +60,16 @@ public final class VillageWorldSystem {
             try {
                 player.sendSystemMessage(Component.literal(
                         "§6[마을 재건] §f자체 건축 회관과 시설, 평탄한 성벽 통로를 생성합니다."));
-                VillageProgressionSystem.resetForRestart(server, false);
+                VillageProgressionSystem.restoreFacilitiesForMigration();
                 buildAll(level, center);
                 removeLooseDebris(level, center);
+                removeUnauthorizedMobs(level, center);
                 player.sendSystemMessage(Component.literal(
                         "§a[마을 준비 완료] §f이전 파괴 잔해 없이 모든 시설이 정상 상태로 시작합니다."));
             } finally {
                 generationInProgress = false;
             }
         }
-        removeUnauthorizedMobs(level, center);
     }
 
     public static synchronized void forceRebuild(MinecraftServer server) {
@@ -75,7 +85,6 @@ public final class VillageWorldSystem {
                     destroyStructure(server.overworld(), building);
                 }
             }
-            removeLooseDebris(server.overworld(), center);
         } finally {
             generationInProgress = false;
         }
@@ -127,23 +136,56 @@ public final class VillageWorldSystem {
         return true;
     }
 
-    public static String returnToVillage(ServerPlayer player) {
+    public static synchronized void recordCombat(LivingIncomingDamageEvent event) {
+        long gameTime = event.getEntity().level().getGameTime();
+        if (event.getEntity() instanceof ServerPlayer defender) {
+            LAST_COMBAT_AT.put(defender.getUUID(), gameTime);
+        }
+        Entity source = event.getSource().getEntity();
+        if (source instanceof ServerPlayer attacker) {
+            LAST_COMBAT_AT.put(attacker.getUUID(), gameTime);
+        }
+    }
+
+    public static synchronized String returnToVillage(ServerPlayer player) {
         MinecraftServer server = player.level().getServer();
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (server == null || center == null) {
             return "마을 중심이 아직 설정되지 않았습니다.";
         }
+        if (!player.isAlive() || player.isSpectator()) {
+            return "현재 상태에서는 귀환할 수 없습니다.";
+        }
+
+        long now = player.level().getGameTime();
+        long lastCombat = LAST_COMBAT_AT.getOrDefault(player.getUUID(), Long.MIN_VALUE / 2L);
+        long combatReadyAt = lastCombat + COMBAT_RETURN_LOCK_TICKS;
+        if (combatReadyAt > now) {
+            long seconds = Math.max(1L, (combatReadyAt - now + 19L) / 20L);
+            return "전투 중에는 귀환할 수 없습니다. " + seconds + "초 뒤 다시 시도하세요.";
+        }
+        long readyAt = RETURN_READY_AT.getOrDefault(player.getUUID(), 0L);
+        if (readyAt > now) {
+            long seconds = Math.max(1L, (readyAt - now + 19L) / 20L);
+            return "귀환 재사용 대기시간이 " + seconds + "초 남았습니다.";
+        }
+
         ServerLevel destination = server.overworld();
+        BlockPos target = findSafeReturnPosition(destination, center);
+        if (target == null) {
+            return "마을 광장에서 안전한 귀환 위치를 찾지 못했습니다.";
+        }
         player.teleportTo(
                 destination,
-                center.getX() + 0.5,
-                center.getY() + 1.0,
-                center.getZ() + 8.5,
+                target.getX() + 0.5,
+                target.getY(),
+                target.getZ() + 0.5,
                 Set.of(),
                 player.getYRot(),
                 player.getXRot(),
                 true);
-        return "마을 중앙 광장으로 귀환했습니다.";
+        RETURN_READY_AT.put(player.getUUID(), now + RETURN_COOLDOWN_TICKS);
+        return "마을 중앙 광장으로 귀환했습니다. 재사용 대기시간은 60초입니다.";
     }
 
     public static boolean isAllowedGameMob(Mob mob) {
@@ -152,6 +194,10 @@ public final class VillageWorldSystem {
 
     public static void markAllowedGameMob(Mob mob) {
         ALLOWED_GAME_MOBS.add(mob.getUUID());
+    }
+
+    public static void unmarkAllowedGameMob(UUID uuid) {
+        ALLOWED_GAME_MOBS.remove(uuid);
     }
 
     public static boolean isInsideVillageArea(BlockPos pos) {
@@ -226,14 +272,29 @@ public final class VillageWorldSystem {
 
     private static void buildAll(ServerLevel level, BlockPos center) {
         VillageFortressTerrain.buildBase(level, center);
+        VillageBuildingEnhancements.reinforceWallRailings(level, center);
         VillageFortressBuildings.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
         VillageFortressTerrain.set(level, center.below(2), Blocks.LODESTONE);
         VillageFortressTerrain.set(level, center.below(), Blocks.CHISELED_STONE_BRICKS);
     }
 
+    private static BlockPos findSafeReturnPosition(ServerLevel level, BlockPos center) {
+        for (int z = 12; z <= 20; z++) {
+            for (int x = -3; x <= 3; x++) {
+                BlockPos candidate = center.offset(x, 0, z);
+                if (level.getBlockState(candidate).isAir()
+                        && level.getBlockState(candidate.above()).isAir()
+                        && !level.getBlockState(candidate.below()).isAir()) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
     private static void removeUnauthorizedMobs(ServerLevel level, BlockPos center) {
-        AABB area = new AABB(center).inflate(CLEAN_RADIUS, 128, CLEAN_RADIUS);
+        AABB area = new AABB(center).inflate(MIGRATION_CLEAN_RADIUS, 64, MIGRATION_CLEAN_RADIUS);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
             if (!isAllowedGameMob(mob)) {
                 mob.discard();
