@@ -8,7 +8,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 final class CodexSmokeDiagnostics {
     private static final boolean ENABLED = "1".equals(System.getenv("LIVING_KINGDOMS_CI_CLIENT_TEST"));
     private static int ticks;
-    private static RealmCodexScreenV3 active;
+    private static RealmCodexScreenV4 active;
 
     private CodexSmokeDiagnostics() {
     }
@@ -28,21 +28,21 @@ final class CodexSmokeDiagnostics {
         if (ticks == 176) {
             verify("skills");
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true draggable_atlas=true",
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true mastery_first=true",
                     active.width, active.height
             );
         }
     }
 
     private static void open(Minecraft minecraft, String page) {
-        active = new RealmCodexScreenV3(page, sampleSnapshot());
+        active = new RealmCodexScreenV4(page, sampleSnapshot());
         minecraft.gui.setScreen(active);
         LivingKingdoms.LOGGER.info("LK_CLIENT_CODEX_SCREEN_OPENED page={}", page);
     }
 
     private static void verify(String page) {
         if (active == null || !active.allRequiredControlsFit()) {
-            throw new IllegalStateException("Codex page extends outside the current client viewport: " + page);
+            throw new IllegalStateException("Codex page extends outside or overlaps the current client viewport: " + page);
         }
     }
 
@@ -78,6 +78,14 @@ final class CodexSmokeDiagnostics {
                 + "skill_points\t4\n"
                 + "skill_milestone\t2\n"
                 + "unlocked_skills\tcombat_endurance,explore_trailblazer\n"
+                + "growth_rule\t행동 숙련은 계속 성장하며, 기술 트리는 부가 효과를 해금합니다.\n"
+                + mastery("combat", "전투 숙련", 27, 13_770, 0.42F)
+                + mastery("defense", "방어 숙련", 19, 7_200, 0.31F)
+                + mastery("mining", "채광 숙련", 34, 21_500, 0.64F)
+                + mastery("logging", "벌목 숙련", 12, 3_400, 0.21F)
+                + mastery("farming", "농사 숙련", 23, 10_200, 0.55F)
+                + mastery("gathering", "채집 숙련", 17, 5_500, 0.73F)
+                + mastery("exploration", "탐험 숙련", 41, 31_100, 0.48F)
                 + "home_x\t84\n"
                 + "home_z\t-112\n"
                 + "player_x\t12\n"
@@ -88,5 +96,12 @@ final class CodexSmokeDiagnostics {
                 + "silvana_z\t-1500\n"
                 + "kardum_x\t-2500\n"
                 + "kardum_z\t-9000\n";
+    }
+
+    private static String mastery(String id, String name, int level, long xp, float progress) {
+        return "mastery_" + id + "_name\t" + name + "\n"
+                + "mastery_" + id + "_level\t" + level + "\n"
+                + "mastery_" + id + "_xp\t" + xp + "\n"
+                + "mastery_" + id + "_progress\t" + progress + "\n";
     }
 }
