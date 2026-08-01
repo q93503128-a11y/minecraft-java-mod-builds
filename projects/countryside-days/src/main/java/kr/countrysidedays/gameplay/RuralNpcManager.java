@@ -134,8 +134,8 @@ public final class RuralNpcManager {
     }
 
     public static void tickVillage(ServerLevel level, BlockPos villageOrigin) {
-        long time = Math.floorMod(level.getDayTime(), 24000L);
-        long day = Math.max(0L, level.getDayTime() / 24000L);
+        long time = Math.floorMod(level.getOverworldClockTime(), 24000L);
+        long day = Math.max(0L, level.getOverworldClockTime() / 24000L);
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
         CountrysideWorldData.PlayerEstate restaurantEstate = SharedRestaurantAccess
                 .restaurantEstate(data)
@@ -184,7 +184,7 @@ public final class RuralNpcManager {
     }
 
     public static boolean isRestaurantBusinessTime(ServerLevel level) {
-        long time = Math.floorMod(level.getDayTime(), 24000L);
+        long time = Math.floorMod(level.getOverworldClockTime(), 24000L);
         return time >= OPEN_TIME && time < CLOSE_TIME;
     }
 
@@ -411,7 +411,7 @@ public final class RuralNpcManager {
             return;
         }
 
-        long day = Math.max(0L, level.getDayTime() / 24000L);
+        long day = Math.max(0L, level.getOverworldClockTime() / 24000L);
         if (estate.customerServedToday(day, customer.slot())) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.customer_already_served"));
             return;
