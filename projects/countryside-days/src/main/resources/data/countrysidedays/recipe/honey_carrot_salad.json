@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:carrot",
+    "minecraft:carrot",
+    "minecraft:honey_bottle",
+    "minecraft:bowl"
+  ],
+  "result": {
+    "id": "countrysidedays:honey_carrot_salad",
+    "count": 1
+  }
+}
