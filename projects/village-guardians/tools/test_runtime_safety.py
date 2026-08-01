@@ -68,7 +68,8 @@ def main() -> None:
     assert "FORCED_NEXT_WAVE_TICKS = 20 * 60" in raid
     assert "MAX_ACTIVE_ENEMIES = 100" in raid
     assert "잔존 적" in raid
-    assert "ACTIVE_ENEMIES.clear();" not in raid.split("private static void spawnWave", 1)[1].split("private static Mob createRaidMob", 1)[0]
+    spawn_body = raid.split("private static void spawnWave", 1)[1].split("private static void applyScaling", 1)[0]
+    assert "ACTIVE_ENEMIES.clear();" not in spawn_body
     assert "VillageFortressBuildings.attackPoint" in raid
     assert "VillageFortressBuildings.isTouchingStructure" in raid
     assert "event.getDrops().clear()" in raid_loot
