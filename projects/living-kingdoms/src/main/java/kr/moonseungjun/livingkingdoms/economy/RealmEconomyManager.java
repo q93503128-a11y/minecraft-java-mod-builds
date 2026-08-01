@@ -79,7 +79,7 @@ public final class RealmEconomyManager {
     }
 
     private static long currentDay(ServerPlayer player) {
-        return Math.floorDiv(player.level().getLevelData().getDayTime(), 24_000L);
+        return Math.floorDiv(player.level().getGameTime(), 24_000L);
     }
 
     private static String professionName(String id) {
