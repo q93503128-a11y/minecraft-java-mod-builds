@@ -1,14 +1,30 @@
-Living Kingdoms external UI artwork
+Living Kingdoms — Kenney UI asset notice
 
-Asset: Kenney UI Pack - Adventure / RPG UI sprite sheet
-Original creator: Kenney (Kenney.nl)
-License: Creative Commons CC0 1.0 Universal
-Official asset page: https://kenney.nl/assets/ui-pack-adventure
+The interface files listed below originate from Kenney UI packs and are distributed under CC0 1.0 Universal.
 
-Vendored source snapshot:
-https://github.com/iwenzhou/kenney
-Commit: b7729283e47d38f203d85560cfda5b2c1fd6fc7e
-Path: Art (5190 files)/UI pack (220 assets)/Adventure pack (80 assets)/Spritesheet/uipack_rpg_sheet.png
-Expected Git blob SHA-1: 740afe1d74615ccf06ac44fdd5df5a6d1d017f63
+Source pack families:
+- Fantasy UI Borders
+- UI Pack
 
-The build downloads the file from that immutable commit and verifies the Git blob hash before packaging it. Living Kingdoms crops and scales portions of the sheet for its codex panels, tabs, close button, and skill nodes. Attribution is not required by CC0, but this notice is retained for provenance and auditability.
+Pinned redistribution source:
+- Repository: KooshaPari/Dino
+- Commit: 6c6d1bf81050a21e659356373f3f39029c8d7a0c
+
+Bundled files and verified Git blob SHA-1 values:
+- textures/gui/kenney/fantasy_panel.png
+  82c2a379b877249029a817e3a0ef36b55cf9a798
+- textures/gui/kenney/panel_background.png
+  258d992070f873046c5623fbc694e45a526c4b8a
+- textures/gui/kenney/button_normal.png
+  a9390478c61d3ced14d16a5e2e396c806966989a
+- textures/gui/kenney/button_pressed.png
+  d9492b4e48b28823c81b3bc08a1b31156f68c79c
+
+The build downloads each file from the immutable commit above and verifies its Git blob hash before packaging it.
+
+License:
+Creative Commons CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Kenney asset site:
+https://kenney.nl/assets
