@@ -15,7 +15,7 @@ final class VillageFortressTerrain {
     private static final int ROAD_HALF_WIDTH = 4;
     private static final int WALL_THICKNESS = 5;
     private static final int WALL_TOP_Y = 9;
-    private static final int GATE_HALF_WIDTH = 8;
+    private static final int GATE_HALF_WIDTH = 9;
     private static final int GATE_HEIGHT = 8;
 
     private VillageFortressTerrain() {
@@ -249,6 +249,9 @@ final class VillageFortressTerrain {
                 set(level, new BlockPos(center.getX() + x, groundY + y, gateZ + 1), Blocks.STONE_BRICKS);
             }
         }
+        for (int x : new int[]{-8, 8}) {
+            set(level, new BlockPos(center.getX() + x, groundY + 10, gateZ + 3), Blocks.GLOWSTONE);
+        }
         closeNorthGate(level, center);
         clearPassageFloor(level, center, groundY);
     }
@@ -329,6 +332,7 @@ final class VillageFortressTerrain {
                 set(level, new BlockPos(corner.getX() + dx, groundY + 13, corner.getZ() + dz), Blocks.STONE_BRICKS);
             }
         }
+        set(level, corner.offset(0, 14, 0), Blocks.GLOWSTONE);
     }
 
     private static void buildCentralBell(ServerLevel level, BlockPos center, int groundY) {
@@ -345,7 +349,8 @@ final class VillageFortressTerrain {
         int[][] offsets = {
                 {-16, -22}, {16, -22}, {-16, 22}, {16, 22},
                 {-8, -48}, {8, -48}, {-8, 30}, {8, 30},
-                {-36, -7}, {36, -7}, {-36, 9}, {36, 9}
+                {-36, -7}, {36, -7}, {-36, 9}, {36, 9},
+                {-52, -34}, {52, -34}, {-52, 34}, {52, 34}
         };
         for (int[] offset : offsets) {
             if (Math.abs(offset[0]) <= ROAD_HALF_WIDTH + 1) {
@@ -360,7 +365,7 @@ final class VillageFortressTerrain {
     }
 
     private static void clearMainAvenue(ServerLevel level, BlockPos center, int groundY) {
-        for (int z = -WALL_RADIUS + 4; z <= 33; z++) {
+        for (int z = -WALL_RADIUS + 4; z <= 35; z++) {
             for (int x = -ROAD_HALF_WIDTH; x <= ROAD_HALF_WIDTH; x++) {
                 for (int y = 1; y <= 12; y++) {
                     set(level, center.offset(x, y, z), Blocks.AIR);
