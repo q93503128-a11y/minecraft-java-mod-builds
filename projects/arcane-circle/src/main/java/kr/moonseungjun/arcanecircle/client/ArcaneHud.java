@@ -26,7 +26,7 @@ public final class ArcaneHud {
 
     private static void renderWorldHud(GuiGraphicsExtractor g, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.screen != null) return;
+        if (minecraft.player == null || minecraft.getScreen() != null) return;
         int width = minecraft.getWindow().getGuiScaledWidth();
         int height = minecraft.getWindow().getGuiScaledHeight();
         Font font = minecraft.font;
@@ -75,9 +75,9 @@ public final class ArcaneHud {
         }
         int remaining = ArcaneClientState.cooldownRemainingTicks(slot);
         if (remaining > 0) {
+            g.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0x55101018);
             String seconds = String.format("%.1f", remaining / 20.0);
             g.centeredText(font, Component.literal(seconds), x + size / 2, y + size / 2 - 5, 0xFFFFFFFF);
-            g.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0x55101018);
         }
     }
 
