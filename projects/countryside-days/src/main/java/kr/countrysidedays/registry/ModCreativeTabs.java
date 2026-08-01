@@ -29,6 +29,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.HERB_TEA.get());
                         output.accept(ModItems.FARM_BREAKFAST.get());
                         output.accept(ModItems.RECIPE_NOTEBOOK.get());
+                        output.accept(ModItems.LIFE_GUIDE.get());
                         output.accept(ModItems.VILLAGE_COIN.get());
                     })
                     .build()
