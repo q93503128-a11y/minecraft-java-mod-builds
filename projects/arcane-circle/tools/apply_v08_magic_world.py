@@ -61,8 +61,6 @@ try:
 except (ValueError, zlib.error, UnicodeDecodeError) as failure:
     source, repair = recover_single_character(encoded, failure)
 
-# Adapt migration anchors from the v0.6 preparation snapshot to the actual v0.7
-# release without changing any v0.8 replacement text.
 source = source.replace("ninefold-arcana-6", "ninefold-arcana-7")
 source = source.replace(
     '        g.text(font, Component.literal("지팡이 " + ArcaneClientState.text("staff", "맨손")), x, y + 24, 0xFFFFD98A);',
@@ -78,7 +76,6 @@ exec(compile(source, __file__ + "::<expanded>", "exec"), {"__name__": "__main__"
 project_root = Path(__file__).resolve().parents[1]
 java_root = project_root / "src/main/java/kr/moonseungjun/arcanecircle"
 
-# Opening a player profile also opens/validates their persistent Arcana wallet.
 main_java = java_root / "ArcaneCircle.java"
 main_source = main_java.read_text(encoding="utf-8")
 if "import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;" not in main_source:
@@ -95,8 +92,6 @@ if "ArcaneEconomyService.balance(player);" not in main_source:
     )
 main_java.write_text(main_source, encoding="utf-8")
 
-# Name the already-functional effective-range visual multiplier explicitly. The
-# ratio controls the radius of every family-specific and spell-signature glyph.
 sigil_java = java_root / "magic/SpellSigilService.java"
 sigil_source = sigil_java.read_text(encoding="utf-8")
 sigil_source = sigil_source.replace(
@@ -106,9 +101,6 @@ sigil_source = sigil_source.replace(
 sigil_source = sigil_source.replace("Math.sqrt(ratio) * familyScale", "Math.sqrt(rangeRatio) * familyScale")
 sigil_java.write_text(sigil_source, encoding="utf-8")
 
-# Use one authoritative name for combat-currency awards across the economy
-# service and every cast-completion caller. This preserves the real wallet
-# mutation rather than adding an audit-only alias.
 renamed_calls = 0
 for java_file in java_root.rglob("*.java"):
     text = java_file.read_text(encoding="utf-8")
@@ -119,8 +111,6 @@ for java_file in java_root.rglob("*.java"):
 if renamed_calls < 2:
     raise RuntimeError(f"expected economy declaration and cast caller, renamed only {renamed_calls} occurrence(s)")
 
-# Send the authoritative persistent wallet balance through the same snapshot as
-# mana, circle and cooldowns so the HUD and academy shop cannot disagree.
 network_java = java_root / "network/ArcaneNetwork.java"
 network_source = network_java.read_text(encoding="utf-8")
 if "import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;" not in network_source:
@@ -139,12 +129,72 @@ network_source = network_source.replace('";marks="', '";" + "marks="')
 network_source = network_source.replace('";tradition="', '";" + "tradition="')
 network_java.write_text(network_source, encoding="utf-8")
 
-# The magic-world economy owns all progression. The resource generator must only
-# create item presentation files; vanilla crafting recipes and villager trades
-# would create a second, conflicting survival economy.
-build_file = project_root / "build.gradle"
-build_source = build_file.read_text(encoding="utf-8")
-clean_spellbook_generator = r'''var generatedSpellbookResources = layout.buildDirectory.dir('generated/resources/spellbooks')
+# A magic-world build has one economy: persistent Arcana handled by the academy.
+# The build generates only metadata and item presentation assets.
+build_source = r'''plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.143'
+    id 'idea'
+}
+
+version = mod_version
+group = mod_group_id
+
+base { archivesName = mod_id }
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+neoForge {
+    version = project.neo_version
+    runs {
+        client { client() }
+        server { server(); programArgument '--nogui' }
+        data {
+            clientData()
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/resources/').absolutePath,
+                    '--existing', file('src/main/resources/').absolutePath
+        }
+        configureEach { logLevel = org.slf4j.event.Level.INFO }
+    }
+    mods { "${mod_id}" { sourceSet sourceSets.main } }
+}
+
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+            minecraft_version: minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version: neo_version,
+            mod_id: mod_id,
+            mod_name: mod_name,
+            mod_license: mod_license,
+            mod_version: mod_version
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+
+var generatedStaffResources = layout.buildDirectory.dir('generated/resources/staffTextures')
+var generateStaffTextures = tasks.register('generateStaffTextures') {
+    var catalog = file('src/main/staff-textures.json')
+    inputs.file catalog
+    outputs.dir generatedStaffResources
+    doLast {
+        var root = generatedStaffResources.get().asFile
+        delete root
+        var target = new File(root, 'assets/arcanecircle/textures/item')
+        target.mkdirs()
+        var textures = new groovy.json.JsonSlurper().parse(catalog) as Map
+        textures.each { id, encoded ->
+            new File(target, "${id}.png").bytes = java.util.Base64.getDecoder().decode(encoded as String)
+        }
+    }
+}
+
+var generatedSpellbookResources = layout.buildDirectory.dir('generated/resources/spellbooks')
 var generateSpellbookResources = tasks.register('generateSpellbookResources') {
     var catalog = file('src/main/spellbooks.json')
     inputs.file catalog
@@ -170,16 +220,37 @@ var generateSpellbookResources = tasks.register('generateSpellbookResources') {
     }
 }
 
-sourceSets.main.resources.srcDir generateModMetadata'''
-pattern = re.compile(
-    r"var generatedSpellbookResources = .*?\nsourceSets\.main\.resources\.srcDir generateModMetadata",
-    re.DOTALL,
-)
-build_source, replacements = pattern.subn(clean_spellbook_generator, build_source, count=1)
-if replacements != 1:
-    raise RuntimeError(f"expected exactly one spellbook resource generator block, replaced {replacements}")
-if "villager_trade" in build_source or "crafting_shaped" in build_source:
-    raise RuntimeError("survival economy resource generation still remains after v0.8 migration")
+sourceSets.main.resources.srcDir generateModMetadata
+sourceSets.main.resources.srcDir generatedStaffResources
+sourceSets.main.resources.srcDir generatedSpellbookResources
+tasks.named('processResources').configure {
+    dependsOn generateStaffTextures
+    dependsOn generateSpellbookResources
+}
+neoForge.ideSyncTask generateModMetadata
+neoForge.ideSyncTask generateStaffTextures
+neoForge.ideSyncTask generateSpellbookResources
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+jar {
+    manifest {
+        attributes(
+                'Specification-Title': mod_name,
+                'Specification-Version': mod_version,
+                'Implementation-Title': mod_name,
+                'Implementation-Version': mod_version,
+                'Automatic-Module-Name': mod_group_id
+        )
+    }
+}
+
+idea { module { downloadSources = true; downloadJavadoc = true } }
+'''
+build_file = project_root / "build.gradle"
 build_file.write_text(build_source, encoding="utf-8")
 
-print("Arcane v0.8 lifecycle, sigils, Arcana economy, and academy-only resources normalized")
+print("Arcane v0.8 lifecycle, sigils, Arcana economy, and academy-only build normalized")
