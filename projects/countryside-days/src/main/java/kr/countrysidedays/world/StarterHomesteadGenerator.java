@@ -90,7 +90,6 @@ public final class StarterHomesteadGenerator {
         String restaurantTitle = restaurantName == null || restaurantName.isBlank()
                 ? owner + "의 시골식당" : restaurantName;
 
-        // Remove obsolete path-side signs from older alphas.
         set(level, origin.offset(-24, 0, -7), Blocks.AIR.defaultBlockState());
         set(level, origin.offset(-6, 0, 10), Blocks.AIR.defaultBlockState());
         set(level, origin.offset(5, 0, 14), Blocks.AIR.defaultBlockState());
@@ -99,7 +98,7 @@ public final class StarterHomesteadGenerator {
 
         standingSign(level, PlayerEstateLayout.ownerSign(origin), 8,
                 owner + "의 생활 구획", "집·식당·농장·목장", "사유지", "");
-        wallSign(level, PlayerEstateLayout.restaurantSign(origin), Direction.NORTH,
+        wallSign(level, PlayerEstateLayout.restaurantSign(origin), Direction.SOUTH,
                 restaurantTitle, "주인 " + owner, "", "");
     }
 
@@ -306,7 +305,6 @@ public final class StarterHomesteadGenerator {
 
     private static void furnishHome(ServerLevel level, BlockPos b, int width, int depth,
                                     String residentName, Direction front) {
-        Direction inward = front.getOpposite();
         set(level, b.offset(2, 1, 2), facing(Blocks.CHEST.defaultBlockState(), ChestBlock.FACING, Direction.SOUTH));
         set(level, b.offset(3, 1, 2), Blocks.CRAFTING_TABLE.defaultBlockState());
         set(level, b.offset(4, 1, 2), facing(Blocks.FURNACE.defaultBlockState(), FurnaceBlock.FACING, Direction.SOUTH));
