@@ -139,4 +139,47 @@ network_source = network_source.replace('";marks="', '";" + "marks="')
 network_source = network_source.replace('";tradition="', '";" + "tradition="')
 network_java.write_text(network_source, encoding="utf-8")
 
-print("Arcane v0.8 lifecycle, sigil scaling, combat awards, and wallet sync normalized")
+# The magic-world economy owns all progression. The resource generator must only
+# create item presentation files; vanilla crafting recipes and villager trades
+# would create a second, conflicting survival economy.
+build_file = project_root / "build.gradle"
+build_source = build_file.read_text(encoding="utf-8")
+clean_spellbook_generator = r'''var generatedSpellbookResources = layout.buildDirectory.dir('generated/resources/spellbooks')
+var generateSpellbookResources = tasks.register('generateSpellbookResources') {
+    var catalog = file('src/main/spellbooks.json')
+    inputs.file catalog
+    outputs.dir generatedSpellbookResources
+    doLast {
+        var root = generatedSpellbookResources.get().asFile
+        delete root
+        var entries = new groovy.json.JsonSlurper().parse(catalog) as List
+        def writeJson = { File target, Object value ->
+            target.parentFile.mkdirs()
+            target.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(value)) + '\n', 'UTF-8')
+        }
+
+        writeJson(new File(root, 'assets/arcanecircle/items/beginner_grimoire.json'), [
+                model: [type: 'minecraft:model', model: 'minecraft:item/written_book']
+        ])
+        entries.each { entry ->
+            String itemId = "spellbook_${entry.id}"
+            writeJson(new File(root, "assets/arcanecircle/items/${itemId}.json"), [
+                    model: [type: 'minecraft:model', model: 'minecraft:item/enchanted_book']
+            ])
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir generateModMetadata'''
+pattern = re.compile(
+    r"var generatedSpellbookResources = .*?\nsourceSets\.main\.resources\.srcDir generateModMetadata",
+    re.DOTALL,
+)
+build_source, replacements = pattern.subn(clean_spellbook_generator, build_source, count=1)
+if replacements != 1:
+    raise RuntimeError(f"expected exactly one spellbook resource generator block, replaced {replacements}")
+if "villager_trade" in build_source or "crafting_shaped" in build_source:
+    raise RuntimeError("survival economy resource generation still remains after v0.8 migration")
+build_file.write_text(build_source, encoding="utf-8")
+
+print("Arcane v0.8 lifecycle, sigils, Arcana economy, and academy-only resources normalized")
