@@ -144,21 +144,60 @@ public final class VillageUiService {
     public static void openTowerControl(ServerPlayer player) {
         if (!requireTownHall(player, "방어탑 지휘는 마을 회관 지휘대 근처에서만 가능합니다.")) return;
         int wall = VillageProgressionSystem.wallLevel();
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (VillageTowerSpecializationSystem.TowerKind kind : VillageTowerSpecializationSystem.TowerKind.values()) {
+            actions.add("tower_open:" + kind.id());
+            labels.add(kind.displayName() + " · " + VillageTowerSpecializationSystem.summary(kind)
+                    + "|세 가지 전문 분기와 단계별 효과 확인");
+        }
+        add(actions, labels,
+                "manage:walls", "성벽 수리·강화|성벽 단계와 포탑 설치 수 증가",
+                "tower_status", "방어망 점검|용병 정원과 포탑 교란 상태 확인",
+                "open_funding", "공동 보급품 조달|개인 주화로 수리·강화 재화 마련",
+                "open_dashboard", "회관으로 돌아가기|직업 배치와 다른 시설 관리");
         String body = "§f성벽 단계 Lv." + wall + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL + "\n"
                 + "§f내구도 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.WALLS) + "\n"
-                + "§6공동 보급품 " + VillageProgressionSystem.supplies() + "\n\n"
-                + towerLine("노포탑", wall >= 1, "장거리 단일 고화력") + "\n"
-                + towerLine("화염탑", wall >= 2, "범위 피해와 지속 화염") + "\n"
-                + towerLine("빙결탑", wall >= 3, "범위 둔화와 진군 지연") + "\n"
-                + towerLine("비전탑", wall >= 4, "다중 공격, Lv.5 약화") + "\n\n"
-                + "§7성벽을 강화하면 포탑이 순서대로 해금되며, 철벽수호자가 마을에 있으면 화력과 공격 속도가 증가합니다.";
-        send(player, "tower_control", "방어탑 지휘소", body,
-                List.of("manage:walls", "tower_status", "open_funding", "open_dashboard"),
-                List.of(
-                        "성벽 수리·강화|포탑 해금 단계와 북문 내구도 상승",
-                        "방어망 점검|활성 포탑과 용병 정원 확인",
-                        "공동 보급품 조달|개인 주화로 수리·강화 재화 마련",
-                        "회관으로 돌아가기|직업 배치와 다른 시설 관리"));
+                + "§e내 수호 주화 " + VillageProgressionSystem.coins(player)
+                + " §6· 공동 보급품 " + VillageProgressionSystem.supplies() + "\n\n"
+                + "§b설치한 포탑마다 세 갈래 전문화를 하나 선택하고 III단계까지 강화할 수 있습니다.\n"
+                + "§7분기를 교체하면 해당 포탑의 분기 단계가 I로 초기화됩니다.";
+        send(player, "tower_control", "방어탑 지휘소", body, actions, labels);
+    }
+
+    public static void openTowerDetail(
+            ServerPlayer player,
+            VillageTowerSpecializationSystem.TowerKind kind) {
+        if (!requireTownHall(player, "방어탑 개조는 마을 회관 지휘대 근처에서만 가능합니다.")) return;
+        if (kind == null) { openTowerControl(player); return; }
+        boolean installed = VillageTowerSpecializationSystem.installed(kind);
+        VillageTowerSpecializationSystem.Branch selected = VillageTowerSpecializationSystem.branch(kind);
+        int rank = VillageTowerSpecializationSystem.rank(kind);
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        if (installed) {
+            for (VillageTowerSpecializationSystem.Branch branch : VillageTowerSpecializationSystem.branchesFor(kind)) {
+                boolean current = branch == selected;
+                int cost = VillageTowerSpecializationSystem.branchInstallCost(kind, selected != null && !current);
+                actions.add("tower_branch:" + kind.id() + ":" + branch.id());
+                labels.add(branch.displayName() + (current ? " · 현재 " + rank + "단계" : " · 주화 " + cost)
+                        + "|" + branch.description());
+            }
+            if (selected != null && rank < VillageTowerSpecializationSystem.MAX_BRANCH_RANK) {
+                int cost = VillageTowerSpecializationSystem.branchUpgradeCost(kind, rank);
+                add(actions, labels, "tower_upgrade:" + kind.id(),
+                        selected.displayName() + " " + (rank + 1) + "단계 강화 · 주화 " + cost
+                                + "|현재 분기의 위력·범위 또는 특수 효과 강화");
+            }
+        }
+        add(actions, labels, "open_tower_control", "방어탑 목록으로 돌아가기|다른 포탑과 성벽 관리");
+        String body = "§f설치 조건: 성벽 Lv." + kind.requiredWallLevel() + "\n"
+                + "§f현재 상태: " + VillageTowerSpecializationSystem.summary(kind) + "\n"
+                + "§e내 수호 주화 " + VillageProgressionSystem.coins(player) + "\n\n"
+                + (installed
+                ? "§b분기 하나를 선택하면 전투 방식과 실제 포탑 외형이 함께 바뀝니다."
+                : "§8아직 설치되지 않았습니다. 먼저 성벽을 강화하세요.");
+        send(player, "tower_detail", kind.displayName() + " 전문화", body, actions, labels);
     }
 
     public static void openFunding(ServerPlayer player) {
@@ -236,7 +275,7 @@ public final class VillageUiService {
         add(actions, labels,
                 "open_funding", "보급품 조달|개인 수호 주화로 공동 재화 구매",
                 building == VillageProgressionSystem.Building.WALLS ? "open_tower_control" : "open_dashboard",
-                building == VillageProgressionSystem.Building.WALLS ? "방어탑 지휘로 돌아가기|포탑 해금과 방어망 확인" : "회관으로 돌아가기|다른 시설 선택");
+                building == VillageProgressionSystem.Building.WALLS ? "방어탑 지휘로 돌아가기|포탑 전문화와 방어망 확인" : "회관으로 돌아가기|다른 시설 선택");
         send(player, "management", building.displayName() + " 관리", body, actions, labels);
     }
 
@@ -358,6 +397,32 @@ public final class VillageUiService {
             openFunding(player);
             return;
         }
+        if (action.startsWith("tower_open:")) {
+            openTowerDetail(player, VillageTowerSpecializationSystem.TowerKind.fromId(action.substring(11)));
+            return;
+        }
+        if (action.startsWith("tower_branch:")) {
+            if (!requireTownHall(player, "방어탑 전문화는 마을 회관에서만 가능합니다.")) return;
+            String[] parts = action.split(":", 3);
+            if (parts.length == 3) {
+                VillageTowerSpecializationSystem.TowerKind kind = VillageTowerSpecializationSystem.TowerKind.fromId(parts[1]);
+                VillageTowerSpecializationSystem.Branch branch = VillageTowerSpecializationSystem.Branch.from(kind, parts[2]);
+                String result = VillageTowerSpecializationSystem.purchaseBranch(player, kind, branch);
+                player.sendSystemMessage(Component.literal("§b" + result));
+                rebuildTowerVisual(server);
+                openTowerDetail(player, kind);
+            }
+            return;
+        }
+        if (action.startsWith("tower_upgrade:")) {
+            if (!requireTownHall(player, "방어탑 강화는 마을 회관에서만 가능합니다.")) return;
+            VillageTowerSpecializationSystem.TowerKind kind = VillageTowerSpecializationSystem.TowerKind.fromId(action.substring(14));
+            String result = VillageTowerSpecializationSystem.upgradeBranch(player, kind);
+            player.sendSystemMessage(Component.literal("§b" + result));
+            rebuildTowerVisual(server);
+            openTowerDetail(player, kind);
+            return;
+        }
         if (action.startsWith("use_skill:")) {
             int slot;
             try { slot = Integer.parseInt(action.substring(10)); } catch (NumberFormatException ignored) { slot = 0; }
@@ -453,7 +518,7 @@ public final class VillageUiService {
         if (!usable) return "§c시설이 파괴되어 기능을 사용할 수 없습니다. 회관에서 먼저 수리하세요.";
         return switch (building) {
             case TOWN_HALL -> "§f시설 관리와 직업 배치, 공동 보급 조달을 담당합니다.";
-            case WALLS -> "§f현재 북문과 성벽 상태를 확인합니다. 포탑 해금·수리·강화는 마을 회관에서 지휘합니다.";
+            case WALLS -> "§f현재 북문과 성벽 상태를 확인합니다. 포탑 전문화·수리·강화는 마을 회관에서 지휘합니다.";
             case SMITHY -> "§f개인 장비 공격 보너스를 강화합니다. 현재 +" + VillageProgressionSystem.forgeRank(player);
             case SKILL_HALL -> "§f모든 공용 전술, 직업 성장, 기술 습득과 두 슬롯 장착을 담당합니다.";
             case INFIRMARY -> "§f현재 체력을 즉시 회복합니다.";
@@ -466,7 +531,7 @@ public final class VillageUiService {
         int safe = Math.max(0, Math.min(VillageProgressionSystem.MAX_BUILDING_LEVEL, level));
         return switch (building) {
             case TOWN_HALL -> "직업 배치·시설 지휘·개인 주화 기반 공동 보급 조달";
-            case WALLS -> "최대 내구도 " + (1200 + safe * 350) + " · 방어탑 해금 단계 " + safe
+            case WALLS -> "최대 내구도 " + (1200 + safe * 350) + " · 방어탑 설치 단계 " + safe
                     + (server == null ? "" : " · " + VillageDefenseSystem.status(server.overworld()));
             case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 장비 강화 피해 보정 " + (safe * 4) + "%";
             case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 공용 전술·직업 성장·기술 장착 연구 기반";
@@ -477,10 +542,6 @@ public final class VillageUiService {
         };
     }
 
-    private static String towerLine(String name, boolean active, String effect) {
-        return (active ? "§a활성 §f" : "§8잠김 §7") + name + " · " + effect;
-    }
-
     private static String durabilitySummary() {
         StringBuilder text = new StringBuilder();
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
@@ -488,6 +549,12 @@ public final class VillageUiService {
                     .append(VillageProgressionSystem.isOperational(building) ? "" : " §c[파괴]").append('\n');
         }
         return text.toString();
+    }
+
+    private static void rebuildTowerVisual(MinecraftServer server) {
+        if (server == null) return;
+        VillageCouncilState.villageCenter().ifPresent(center ->
+                VillageDefenseTowerBuilder.build(server.overworld(), center));
     }
 
     private static void actAndReopen(ServerPlayer player, String result, VillageProgressionSystem.Building building) {
