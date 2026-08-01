@@ -118,7 +118,15 @@ public final class ExternalRpgUi {
      * Skip only that early frame instead of crashing the whole client; the icon appears on the next valid frame.
      */
     public static boolean itemIcon(GuiGraphicsExtractor graphics, Item icon, int x, int y) {
-        return itemStackIcon(graphics, new ItemStack(icon), x, y);
+        try {
+            return itemStackIcon(graphics, new ItemStack(icon), x, y);
+        } catch (NullPointerException exception) {
+            if (isUnbound(exception)) return false;
+            throw exception;
+        } catch (IllegalStateException exception) {
+            if (isUnbound(exception)) return false;
+            throw exception;
+        }
     }
 
     public static boolean itemStackIcon(GuiGraphicsExtractor graphics, ItemStack stack, int x, int y) {
@@ -127,10 +135,10 @@ public final class ExternalRpgUi {
             graphics.fakeItem(stack, x, y);
             return true;
         } catch (NullPointerException exception) {
-            if ("Components not bound yet".equals(exception.getMessage())) return false;
+            if (isUnbound(exception)) return false;
             throw exception;
         } catch (IllegalStateException exception) {
-            if (exception.getMessage() != null && exception.getMessage().contains("not bound")) return false;
+            if (isUnbound(exception)) return false;
             throw exception;
         }
     }
@@ -250,6 +258,10 @@ public final class ExternalRpgUi {
         graphics.blit(RenderPipelines.GUI_TEXTURED, texture,
                 x, y, u, v, width, height,
                 sourceWidth, sourceHeight, textureWidth, textureHeight);
+    }
+
+    private static boolean isUnbound(RuntimeException exception) {
+        return exception.getMessage() != null && exception.getMessage().contains("not bound");
     }
 
     private static Identifier texture(String file) {
