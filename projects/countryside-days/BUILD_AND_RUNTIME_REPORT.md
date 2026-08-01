@@ -1,7 +1,7 @@
 # Countryside Days Build and Runtime Report
 
-- Workflow run: 30698101539
-- Source commit: 7003c482fdada595dda6d06c4a7a938dbd61c0d4
+- Workflow run: 30698147118
+- Source commit: 55bef59efbd42fd6d51bb6bc9066f337aa05e3d7
 - Mod version: 0.1.0-alpha.10
 - Minecraft: 26.2
 - Java: 25
@@ -35,26 +35,4 @@ Creating Minecraft artifacts without recompilation.
 > Task :generateGameTestStructure
 > Task :generateModMetadata
 > Task :processResources
-
-> Task :createMinecraftArtifacts
-Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
-[1m*** Started working on [4mdownloadManifest[0m[0m
-  ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.42s
-[1m*** Started working on [4mdownloadJson[0m[0m
- [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
-[1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
-[1m*** Started working on [4mpreProcessJar[0m[0m
- [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
-[1m*** Started working on [4mbinaryPatch[0m[0m
- [1m[92m♻[0m Used cache of [4mbinaryPatch[0m in 0.00s
-[1m*** Started working on [4mcopyUnpatchedClasses[0m[0m
- [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
-[1m*** Started working on [4mapplyDevTransforms[0m[0m
- [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.18s
-
 ```
