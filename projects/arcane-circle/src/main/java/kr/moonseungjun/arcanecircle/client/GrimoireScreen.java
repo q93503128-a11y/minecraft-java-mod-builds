@@ -171,7 +171,7 @@ public final class GrimoireScreen extends Screen {
         g.disableScissor();
 
         if (hovered != null) drawSpellTooltip(g, l, hovered);
-        else footer(g, l, "슬롯 선택 → 주문 선택 · 1~5 즉시 시전 · 휠로 목록 이동");
+        else footer(g, l, "슬롯 선택 → 주문 선택 · 1~5 누름: 전개 · 놓기: 시전 · 휠 이동");
     }
 
     private void drawManaStrip(GuiGraphicsExtractor g, Layout l) {
@@ -252,7 +252,7 @@ public final class GrimoireScreen extends Screen {
     private void drawSpellTooltip(GuiGraphicsExtractor g, Layout l, SpellDefinition spell) {
         Rect c = l.content();
         String state = ArcaneClientState.known().contains(spell.id()) ? "" : " · 미각인";
-        String line = spell.description() + "  [위력 " + trim(spell.power()) + " · 사거리 " + trim(spell.range())
+        String line = spell.acquisition().displayName() + " · " + spell.sigilAnchor().displayName() + " · " + spell.description() + "  [위력 " + trim(spell.power()) + " · 사거리 " + trim(spell.range())
                 + " · 쿨 " + String.format("%.1f", spell.cooldownTicks() / 20.0) + "초" + state + "]";
         g.centeredText(font, Component.literal(shorten(line, Math.max(34, c.w() / 6))), l.cx(),
                 c.bottom() - 12, 0xFFD5C7E6);
@@ -373,7 +373,7 @@ public final class GrimoireScreen extends Screen {
                 ArcaneClientState.text("staff", "맨손"),
                 shorten(ArcaneClientState.text("staff_summary", "효과 없음"), 25),
                 shorten(currentStaffStats(), 25),
-                "1~3C 구현 · 4~9C 잠김");
+                "1~5C 구현 · 6~9C 연구 중");
 
         if (!compact) {
             drawCorePanel(g, c.x() + 10, c.y() + 30, 170, "마력핵 상태", coreLines);
