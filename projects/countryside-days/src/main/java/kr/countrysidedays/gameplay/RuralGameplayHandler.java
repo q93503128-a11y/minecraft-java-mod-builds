@@ -70,6 +70,7 @@ public final class RuralGameplayHandler {
             StarterHomesteadGenerator.refreshEstateSigns(
                     serverLevel, estateOrigin, estate.ownerName(), estate.restaurantName()
             );
+            RuralNpcManager.ensureEstateAnimals(serverLevel, estate);
         }
 
         boolean firstArrival = player.addTag(STARTER_KIT_TAG);
@@ -116,7 +117,7 @@ public final class RuralGameplayHandler {
             ).forEach(Mob::discard);
         }
 
-        if (player.tickCount % 100 == 0) {
+        if (player.tickCount % 40 == 0) {
             CountrysideWorldData data = CountrysideWorldData.get(serverLevel.getServer());
             data.homesteadOrigin().ifPresent(origin -> RuralNpcManager.tickVillage(serverLevel, origin));
             data.estate(player.getUUID()).ifPresent(estate -> syncEstateHud(player, estate));
@@ -126,9 +127,17 @@ public final class RuralGameplayHandler {
     private static void syncEstateHud(ServerPlayer player, CountrysideWorldData.PlayerEstate estate) {
         BlockPos home = PlayerEstateLayout.home(estate.originPos());
         BlockPos restaurant = PlayerEstateLayout.restaurant(estate.originPos());
+        long day = Math.max(0L, player.level().getGameTime() / 24000L);
+        int pendingRanchProducts = estate.pendingEggs() + estate.pendingMilk() + estate.pendingWool();
         PacketDistributor.sendToPlayer(player, new EstateHudPayload(
                 home.getX(), home.getY(), home.getZ(),
-                restaurant.getX(), restaurant.getY(), restaurant.getZ()
+                restaurant.getX(), restaurant.getY(), restaurant.getZ(),
+                estate.restaurantOpen(),
+                estate.customersServedToday(day),
+                CountrysideWorldData.DAILY_CUSTOMER_CAP,
+                estate.customersServed(),
+                estate.progressionStage(),
+                pendingRanchProducts
         ));
     }
 
