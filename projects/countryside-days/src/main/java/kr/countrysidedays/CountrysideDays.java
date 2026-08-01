@@ -45,6 +45,7 @@ public final class CountrysideDays {
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onItemFished);
         NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);
         NeoForge.EVENT_BUS.addListener(RanchLifeManager::onServerTick);
+        NeoForge.EVENT_BUS.addListener(RanchLifeManager::onUseBlock);
         NeoForge.EVENT_BUS.addListener(RanchLifeManager::onAnimalInteract);
         NeoForge.EVENT_BUS.addListener(RanchLifeManager::onAnimalDamage);
         NeoForge.EVENT_BUS.addListener(CountrysideWorldgenAudit::onServerStarted);
