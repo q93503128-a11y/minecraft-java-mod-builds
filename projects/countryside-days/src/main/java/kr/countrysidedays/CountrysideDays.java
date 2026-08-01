@@ -5,6 +5,7 @@ import kr.countrysidedays.gameplay.KitchenInteractionHandler;
 import kr.countrysidedays.gameplay.RanchLifeManager;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.gameplay.RuralNpcManager;
+import kr.countrysidedays.gameplay.VillageLifeManager;
 import kr.countrysidedays.gametest.ModGameTests;
 import kr.countrysidedays.network.EstateHudPayload;
 import kr.countrysidedays.registry.ModBlocks;
@@ -45,6 +46,8 @@ public final class CountrysideDays {
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onBlockDrops);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onItemFished);
         NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);
+        NeoForge.EVENT_BUS.addListener(VillageLifeManager::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(VillageLifeManager::onServerTick);
         NeoForge.EVENT_BUS.addListener(RanchLifeManager::onServerTick);
         NeoForge.EVENT_BUS.addListener(RanchLifeManager::onUseBlock);
         NeoForge.EVENT_BUS.addListener(RanchLifeManager::onAnimalInteract);
