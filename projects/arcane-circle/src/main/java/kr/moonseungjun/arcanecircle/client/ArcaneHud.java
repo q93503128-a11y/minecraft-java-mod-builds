@@ -26,7 +26,7 @@ public final class ArcaneHud {
 
     private static void renderWorldHud(GuiGraphicsExtractor g, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.getScreen() != null) return;
+        if (minecraft.player == null || minecraft.gui.screen() != null) return;
         int width = minecraft.getWindow().getGuiScaledWidth();
         int height = minecraft.getWindow().getGuiScaledHeight();
         Font font = minecraft.font;
