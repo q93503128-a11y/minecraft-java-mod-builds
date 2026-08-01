@@ -4,6 +4,7 @@ import kr.countrysidedays.registry.ModItems;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -180,7 +181,7 @@ public final class VillageLifeManager {
     }
 
     private static void tickPublicResidents(ServerLevel level, BlockPos villageOrigin) {
-        long time = Math.floorMod(level.getGameTime(), 24000L);
+        long time = Math.floorMod(level.getDayTime(), 24000L);
         long day = gameDay(level);
         for (ResidentRole role : PUBLIC_ROLES) {
             findTagged(level, PUBLIC_ROLE_PREFIX + role.id(), villageOrigin, 110.0)
@@ -200,7 +201,7 @@ public final class VillageLifeManager {
             ServerLevel level,
             CountrysideWorldData data
     ) {
-        long time = Math.floorMod(level.getGameTime(), 24000L);
+        long time = Math.floorMod(level.getDayTime(), 24000L);
         long day = gameDay(level);
         boolean workTime = !isHoliday(day)
                 && time >= MORNING_START
@@ -310,20 +311,22 @@ public final class VillageLifeManager {
             if (!crop.hasProperty(BlockStateProperties.AGE_7)
                     || crop.getValue(BlockStateProperties.AGE_7) < 7) continue;
 
+            ItemStack[] harvest;
             if (crop.is(Blocks.WHEAT)) {
-                storeOrDrop(level, storage, PlayerEstateLayout.farmStorageBarrel(origin),
-                        new ItemStack(Items.WHEAT, 1 + level.getRandom().nextInt(3)));
-                storeOrDrop(level, storage, PlayerEstateLayout.farmStorageBarrel(origin),
-                        new ItemStack(Items.WHEAT_SEEDS, 1 + level.getRandom().nextInt(2)));
+                harvest = new ItemStack[]{
+                        new ItemStack(Items.WHEAT, 1 + level.getRandom().nextInt(3)),
+                        new ItemStack(Items.WHEAT_SEEDS, 1 + level.getRandom().nextInt(2))
+                };
             } else if (crop.is(Blocks.CARROTS)) {
-                storeOrDrop(level, storage, PlayerEstateLayout.farmStorageBarrel(origin),
-                        new ItemStack(Items.CARROT, 2 + level.getRandom().nextInt(3)));
+                harvest = new ItemStack[]{new ItemStack(Items.CARROT, 2 + level.getRandom().nextInt(3))};
             } else if (crop.is(Blocks.POTATOES)) {
-                storeOrDrop(level, storage, PlayerEstateLayout.farmStorageBarrel(origin),
-                        new ItemStack(Items.POTATO, 2 + level.getRandom().nextInt(3)));
+                harvest = new ItemStack[]{new ItemStack(Items.POTATO, 2 + level.getRandom().nextInt(3))};
             } else {
                 continue;
             }
+
+            if (!canStoreAll(storage, harvest)) continue;
+            storeAll(storage, harvest);
             level.setBlock(cropPos, crop.setValue(BlockStateProperties.AGE_7, 0), Block.UPDATE_ALL);
             return;
         }
@@ -368,7 +371,7 @@ public final class VillageLifeManager {
         BlockPos trough = PlayerEstateLayout.waterTrough(origin);
         if (!level.getBlockState(trough).is(Blocks.WATER) && consumeOne(supply, Items.WATER_BUCKET)) {
             level.setBlock(trough, Blocks.WATER.defaultBlockState(), Block.UPDATE_ALL);
-            storeOrDrop(level, supply, supplyPos, new ItemStack(Items.BUCKET));
+            storeAll(supply, new ItemStack(Items.BUCKET));
         }
     }
 
@@ -387,24 +390,60 @@ public final class VillageLifeManager {
         return false;
     }
 
-    private static void storeOrDrop(ServerLevel level, Container container, BlockPos pos, ItemStack incoming) {
-        for (int slot = 0; slot < container.getContainerSize() && !incoming.isEmpty(); slot++) {
-            ItemStack existing = container.getItem(slot);
-            if (existing.isEmpty()) {
-                int moved = Math.min(incoming.getCount(), incoming.getMaxStackSize());
-                ItemStack placed = incoming.copy();
-                placed.setCount(moved);
-                container.setItem(slot, placed);
-                incoming.shrink(moved);
-                continue;
+    private static boolean canStoreAll(Container container, ItemStack... incomingStacks) {
+        ItemStack[] simulated = new ItemStack[container.getContainerSize()];
+        for (int slot = 0; slot < simulated.length; slot++) {
+            simulated[slot] = container.getItem(slot).copy();
+        }
+        for (ItemStack incoming : incomingStacks) {
+            if (!storeInSlots(simulated, incoming.copy())) return false;
+        }
+        return true;
+    }
+
+    private static void storeAll(Container container, ItemStack... incomingStacks) {
+        for (ItemStack incoming : incomingStacks) {
+            ItemStack remainder = incoming.copy();
+            for (int slot = 0; slot < container.getContainerSize() && !remainder.isEmpty(); slot++) {
+                ItemStack existing = container.getItem(slot);
+                if (existing.isEmpty()) {
+                    int moved = Math.min(remainder.getCount(), remainder.getMaxStackSize());
+                    ItemStack placed = remainder.copy();
+                    placed.setCount(moved);
+                    container.setItem(slot, placed);
+                    remainder.shrink(moved);
+                    continue;
+                }
+                if (!existing.is(remainder.getItem()) || existing.getCount() >= existing.getMaxStackSize()) continue;
+                int moved = Math.min(remainder.getCount(), existing.getMaxStackSize() - existing.getCount());
+                existing.grow(moved);
+                remainder.shrink(moved);
             }
-            if (!existing.is(incoming.getItem()) || existing.getCount() >= existing.getMaxStackSize()) continue;
+            if (!remainder.isEmpty()) {
+                throw new IllegalStateException("Farm storage capacity changed during atomic harvest");
+            }
+        }
+        container.setChanged();
+    }
+
+    private static boolean storeInSlots(ItemStack[] slots, ItemStack incoming) {
+        for (ItemStack existing : slots) {
+            if (incoming.isEmpty()) return true;
+            if (existing.isEmpty() || !existing.is(incoming.getItem())
+                    || existing.getCount() >= existing.getMaxStackSize()) continue;
             int moved = Math.min(incoming.getCount(), existing.getMaxStackSize() - existing.getCount());
             existing.grow(moved);
             incoming.shrink(moved);
         }
-        container.setChanged();
-        if (!incoming.isEmpty()) Block.popResource(level, pos.above(), incoming);
+        for (int slot = 0; slot < slots.length && !incoming.isEmpty(); slot++) {
+            if (!slots[slot].isEmpty()) continue;
+            int moved = Math.min(incoming.getCount(), incoming.getMaxStackSize());
+            ItemStack placed = incoming.copy();
+            placed.setCount(moved);
+            slots[slot] = placed;
+            incoming.shrink(moved);
+        }
+        return incoming.isEmpty();
     }
 
     private static void ensurePublicResident(ServerLevel level, BlockPos origin, ResidentRole role) {
@@ -487,13 +526,14 @@ public final class VillageLifeManager {
     }
 
     private static boolean isWalkable(ServerLevel level, BlockPos pos) {
+        BlockPos floorPos = pos.below();
         return level.getBlockState(pos).isAir()
                 && level.getBlockState(pos.above()).isAir()
-                && !level.getBlockState(pos.below()).isAir();
+                && level.getBlockState(floorPos).isFaceSturdy(level, floorPos, Direction.UP);
     }
 
     private static long gameDay(ServerLevel level) {
-        return Math.max(0L, level.getGameTime() / 24000L);
+        return Math.max(0L, level.getDayTime() / 24000L);
     }
 
     private static boolean isMarketKeeper(String name) {
