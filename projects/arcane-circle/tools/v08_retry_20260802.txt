@@ -1,1 +1,2 @@
 Arcane Circle v0.8 Ninefold Magic World migration/build retry after checksum-safe payload recovery.
+Dedicated recovery workflow trigger: 2026-08-02T08:02+09:00.
