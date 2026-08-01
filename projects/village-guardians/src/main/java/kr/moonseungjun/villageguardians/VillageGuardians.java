@@ -29,7 +29,7 @@ public final class VillageGuardians {
     public VillageGuardians(IEventBus modEventBus) {
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians fortress defence, role loadouts, towers and mercenaries loaded");
+        LOGGER.info("Village Guardians fortress defence, role loadouts, towers and delayed respawn loaded");
     }
 
     @SubscribeEvent
@@ -41,6 +41,7 @@ public final class VillageGuardians {
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
+        VillageRespawnSystem.reset();
         VillageStructureHud.reset();
         VillageHudSystem.reset();
         VillageHealthDisplaySystem.reset();
@@ -54,7 +55,9 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            player.setGameMode(GameType.ADVENTURE);
+            if (!VillageRespawnSystem.isDowned(player)) {
+                player.setGameMode(GameType.ADVENTURE);
+            }
             VillageCouncilState.registerPlayer(player);
             VillageProgressionSystem.registerPlayer(player);
             var server = player.level().getServer();
@@ -62,6 +65,7 @@ public final class VillageGuardians {
             VillageWorldSystem.ensureFortifiedVillage(player);
             VillageStarterKit.grantOnLogin(player);
             VillageRpgSystem.refreshPlayerPassive(player);
+            VillageRespawnSystem.onLogin(player);
             if (VillageProgressionSystem.isGameOver() && server != null) VillageUiService.openGameOverForAll(server);
         }
     }
@@ -69,7 +73,9 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            player.setGameMode(GameType.ADVENTURE);
+            if (!VillageRespawnSystem.isDowned(player)) {
+                player.setGameMode(GameType.ADVENTURE);
+            }
             VillageWorldSystem.ensureFortifiedVillage(player);
             VillageStarterKit.grantCaller(player);
             VillageRpgSystem.refreshPlayerPassive(player);
@@ -109,6 +115,7 @@ public final class VillageGuardians {
     public void onIncomingDamage(LivingIncomingDamageEvent event) {
         VillageWorldSystem.recordCombat(event);
         VillageRpgSystem.handleIncomingDamage(event);
+        VillageRespawnSystem.handleIncomingDamage(event);
     }
 
     @SubscribeEvent
@@ -121,6 +128,7 @@ public final class VillageGuardians {
     public void onServerTick(ServerTickEvent.Post event) {
         VillageRaidSystem.tick(event.getServer());
         VillageDefenseSystem.tick(event.getServer());
+        VillageRespawnSystem.tick(event.getServer());
         VillageStructureHud.tick(event.getServer());
         VillageHudSystem.tick(event.getServer());
         VillageHealthDisplaySystem.tick(event.getServer());
@@ -132,7 +140,11 @@ public final class VillageGuardians {
             VillageWorldSystem.purgeDaytimeHostiles(event.getServer());
             VillageWorldSystem.purgeUnauthorizedVillageMobs(event.getServer());
             VillageRpgSystem.refreshPassives(event.getServer());
-            for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) player.setGameMode(GameType.ADVENTURE);
+            for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+                if (!VillageRespawnSystem.isDowned(player)) {
+                    player.setGameMode(GameType.ADVENTURE);
+                }
+            }
         }
     }
 }
