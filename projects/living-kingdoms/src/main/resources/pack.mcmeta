@@ -1,10 +1,10 @@
 {
   "pack": {
     "description": "Living Kingdoms authored fantasy rules",
-    "pack_format": 1,
-    "min_format": [1, 0],
+    "pack_format": 15,
+    "min_format": [15, 0],
     "max_format": [999, 0],
-    "supported_formats": [1, 999]
+    "supported_formats": [15, 999]
   },
   "filter": {
     "block": [
