@@ -73,6 +73,11 @@ public final class RuralGameplayHandler {
             );
             RuralNpcManager.ensureEstateAnimals(serverLevel, estate);
         }
+
+        BlockPos ranchSupply = PlayerEstateLayout.ranchSupplyBarrel(estateOrigin);
+        if (!serverLevel.getBlockState(ranchSupply).is(Blocks.BARREL)) {
+            serverLevel.setBlock(ranchSupply, Blocks.BARREL.defaultBlockState(), 3);
+        }
         VillageLifeManager.ensureVillageLife(serverLevel, villageOrigin, data);
 
         boolean firstArrival = player.addTag(STARTER_KIT_TAG);
