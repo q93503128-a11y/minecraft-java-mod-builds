@@ -21,15 +21,15 @@ final class VillageDefenseTowerBuilder {
         column(level, base, 0, 0, 1, 3, Blocks.STRIPPED_DARK_OAK_WOOD);
         lineX(level, base, -3, 3, 4, 0, Blocks.DARK_OAK_FENCE);
         lineZ(level, base, -2, 2, 4, 0, Blocks.IRON_BARS);
-        set(level, base.offset(0, 5, -2), Blocks.LIGHTNING_ROD);
+        set(level, base.offset(0, 5, -2), Blocks.END_ROD);
     }
 
     private static void buildFlame(ServerLevel level, BlockPos base) {
         platform(level, base, Blocks.BRICKS);
-        column(level, base, 0, 0, 1, 4, Blocks.CUT_COPPER);
+        column(level, base, 0, 0, 1, 4, Blocks.POLISHED_BLACKSTONE);
         set(level, base.offset(0, 5, 0), Blocks.CAMPFIRE);
-        set(level, base.offset(1, 4, 0), Blocks.COPPER_GRATE);
-        set(level, base.offset(-1, 4, 0), Blocks.COPPER_GRATE);
+        set(level, base.offset(1, 4, 0), Blocks.IRON_BARS);
+        set(level, base.offset(-1, 4, 0), Blocks.IRON_BARS);
     }
 
     private static void buildFrost(ServerLevel level, BlockPos base) {
@@ -52,9 +52,7 @@ final class VillageDefenseTowerBuilder {
 
     private static void platform(ServerLevel level, BlockPos base, Block material) {
         for (int x = -3; x <= 3; x++) {
-            for (int z = -3; z <= 3; z++) {
-                set(level, base.offset(x, 0, z), material);
-            }
+            for (int z = -3; z <= 3; z++) set(level, base.offset(x, 0, z), material);
         }
         for (int x = -3; x <= 3; x++) {
             set(level, base.offset(x, 1, -3), Blocks.STONE_BRICK_WALL);
