@@ -44,8 +44,28 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
     into 'build/generated/sources/modMetadata'
 }
 
+var generatedStaffResources = layout.buildDirectory.dir('generated/resources/staffTextures')
+var generateStaffTextures = tasks.register('generateStaffTextures') {
+    var catalog = file('src/main/staff-textures.json')
+    inputs.file catalog
+    outputs.dir generatedStaffResources
+    doLast {
+        var root = generatedStaffResources.get().asFile
+        delete root
+        var target = new File(root, 'assets/arcanecircle/textures/item')
+        target.mkdirs()
+        var textures = new groovy.json.JsonSlurper().parse(catalog) as Map
+        textures.each { id, encoded ->
+            new File(target, "${id}.png").bytes = java.util.Base64.getDecoder().decode(encoded as String)
+        }
+    }
+}
+
 sourceSets.main.resources.srcDir generateModMetadata
+sourceSets.main.resources.srcDir generatedStaffResources
+tasks.named('processResources').configure { dependsOn generateStaffTextures }
 neoForge.ideSyncTask generateModMetadata
+neoForge.ideSyncTask generateStaffTextures
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
