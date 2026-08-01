@@ -100,7 +100,7 @@ public final class ResponsiveOriginSelectionScreen extends Screen {
                 "출신 세력", choice.homelandName(), mouseX, mouseY);
         choiceButton(graphics, layout, layout.backgroundY(), backgroundIcon(),
                 "사회적 배경", choice.backgroundName(), mouseX, mouseY);
-        choiceButton(graphics, layout, layout.residenceY(), Items.RED_BED,
+        choiceButton(graphics, layout, layout.residenceY(), Items.CHEST,
                 "시작 거주지", choice.residenceName(layout.compact()), mouseX, mouseY);
 
         ExternalRpgUi.button(graphics, font, layout.cardX(), layout.confirmY(),
