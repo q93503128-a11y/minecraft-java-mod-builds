@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 @Mod(CountrysideDays.MOD_ID)
 public final class CountrysideDays {
     public static final String MOD_ID = "countrysidedays";
+    public static final String VERSION = "0.1.0-alpha.9";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public CountrysideDays(IEventBus modEventBus) {
@@ -56,6 +57,6 @@ public final class CountrysideDays {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.8");
+        LOGGER.info("Countryside Days {} core content registered", VERSION);
     }
 }
