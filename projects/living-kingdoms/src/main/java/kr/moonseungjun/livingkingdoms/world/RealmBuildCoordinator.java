@@ -126,6 +126,11 @@ public final class RealmBuildCoordinator {
     }
 
     private static void preparePlan(ServerLevel realm, String homelandId, BuildJob job, int generationErrors) {
+        synchronized (job) {
+            if (job.finished || job.preparingPlan || job.plan != null) return;
+            job.preparingPlan = true;
+        }
+
         try {
             if (generationErrors > 0) {
                 throw new IllegalStateException("Chunk preparation reported " + generationErrors + " errors");
@@ -134,7 +139,10 @@ public final class RealmBuildCoordinator {
             RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.ensureSite(realm, homelandId);
             IncrementalWorldEditPlan plan = PlannedRealmBuilder.create(realm, homelandId, site);
             synchronized (job) {
+                if (job.finished) return;
                 job.plan = plan;
+                job.preparingPlan = false;
+                if (job.task != null) job.task.stop();
             }
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
             LivingKingdoms.LOGGER.info(
@@ -142,6 +150,9 @@ public final class RealmBuildCoordinator {
                     homelandId, plan.operationCount(), plan.estimatedWrites(), elapsedMs
             );
         } catch (Throwable throwable) {
+            synchronized (job) {
+                job.preparingPlan = false;
+            }
             failBuild(homelandId, job, throwable);
         }
     }
@@ -169,6 +180,9 @@ public final class RealmBuildCoordinator {
                     }
                 });
             }
+            synchronized (job) {
+                job.finished = true;
+            }
             notifyCompletions(job, null);
             JOBS.remove(homelandId, job);
         } catch (Throwable throwable) {
@@ -177,7 +191,11 @@ public final class RealmBuildCoordinator {
     }
 
     private static void failBuild(String homelandId, BuildJob job, Throwable failure) {
-        if (!JOBS.remove(homelandId, job)) return;
+        synchronized (job) {
+            if (job.finished) return;
+            job.finished = true;
+        }
+        JOBS.remove(homelandId, job);
         LivingKingdoms.LOGGER.error("Failed incremental homeland construction for {}", homelandId, failure);
         if (job.task != null) job.task.stop();
         for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
@@ -214,6 +232,8 @@ public final class RealmBuildCoordinator {
         private final Set<UUID> waitingPlayers = new LinkedHashSet<>();
         private final Set<Consumer<Throwable>> completions = new LinkedHashSet<>();
         private boolean started;
+        private boolean preparingPlan;
+        private boolean finished;
         private GenerationTask task;
         private IncrementalWorldEditPlan plan;
         private int lastReportedPercent = -10;
