@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.client;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,7 +8,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneClientState {
+    private record Cooldown(int remainingTicks, int totalTicks) {}
+
     private static Map<String, String> values = Map.of();
+    private static Map<String, Cooldown> cooldowns = Map.of();
+    private static long updatedAtNanos;
 
     private ArcaneClientState() {}
 
@@ -18,6 +23,8 @@ public final class ArcaneClientState {
             if (index > 0) parsed.put(part.substring(0, index), part.substring(index + 1));
         }
         values = Map.copyOf(parsed);
+        cooldowns = parseCooldowns(parsed.getOrDefault("cooldowns", ""));
+        updatedAtNanos = System.nanoTime();
     }
 
     public static int integer(String key, int fallback) {
@@ -25,22 +32,41 @@ public final class ArcaneClientState {
         catch (NumberFormatException ignored) { return fallback; }
     }
 
+    public static double decimal(String key, double fallback) {
+        try { return Double.parseDouble(values.getOrDefault(key, Double.toString(fallback))); }
+        catch (NumberFormatException ignored) { return fallback; }
+    }
+
     public static String text(String key, String fallback) {
         return values.getOrDefault(key, fallback);
     }
 
-    public static String focus() { return text("focus", "arcane_dart"); }
-    public static String weave() { return text("weave", "ember"); }
-    public static String fusion() { return text("fusion", ""); }
+    public static List<String> slots() {
+        List<String> parsed = split(text("slots", "arcane_dart|ember|frost_needle|gale_step|lesser_ward"));
+        List<String> result = new ArrayList<>(List.of("arcane_dart", "ember", "frost_needle", "gale_step", "lesser_ward"));
+        for (int i = 0; i < Math.min(5, parsed.size()); i++) result.set(i, parsed.get(i));
+        return List.copyOf(result);
+    }
+
+    public static String slot(int index) {
+        List<String> slots = slots();
+        return index >= 0 && index < slots.size() ? slots.get(index) : "";
+    }
+
+    public static List<String> queue() {
+        return split(text("queue", ""));
+    }
+
+    public static String queueResult() {
+        return text("queue_result", "");
+    }
 
     public static Set<String> known() {
-        String raw = values.getOrDefault("known", "");
-        if (raw.isBlank()) return Set.of();
-        return List.of(raw.split("\\|")).stream().collect(Collectors.toUnmodifiableSet());
+        return split(text("known", "")).stream().collect(Collectors.toUnmodifiableSet());
     }
 
     public static int mastery(String spellId) {
-        String raw = values.getOrDefault("mastery", "");
+        String raw = text("mastery", "");
         if (raw.isBlank()) return 0;
         for (String entry : raw.split("\\|")) {
             int split = entry.lastIndexOf(':');
@@ -50,5 +76,44 @@ public final class ArcaneClientState {
             }
         }
         return 0;
+    }
+
+    public static int cooldownRemainingTicks(int slot) {
+        Cooldown cooldown = cooldowns.get(slot(slot));
+        if (cooldown == null) return 0;
+        long elapsed = Math.max(0L, (System.nanoTime() - updatedAtNanos) / 50_000_000L);
+        return Math.max(0, cooldown.remainingTicks() - (int) Math.min(Integer.MAX_VALUE, elapsed));
+    }
+
+    public static double cooldownFraction(int slot) {
+        Cooldown cooldown = cooldowns.get(slot(slot));
+        if (cooldown == null || cooldown.totalTicks() <= 0) return 0.0;
+        return Math.min(1.0, cooldownRemainingTicks(slot) / (double) cooldown.totalTicks());
+    }
+
+    public static double regenPerSecond() {
+        return integer("regen_milli", 2000) / 1000.0;
+    }
+
+    public static double staffMultiplier(String key) {
+        return integer(key, 1000) / 1000.0;
+    }
+
+    private static List<String> split(String raw) {
+        if (raw == null || raw.isBlank()) return List.of();
+        return List.of(raw.split("\\|"));
+    }
+
+    private static Map<String, Cooldown> parseCooldowns(String raw) {
+        if (raw == null || raw.isBlank()) return Map.of();
+        Map<String, Cooldown> result = new HashMap<>();
+        for (String entry : raw.split("\\|")) {
+            String[] parts = entry.split(":");
+            if (parts.length != 3) continue;
+            try {
+                result.put(parts[0], new Cooldown(Integer.parseInt(parts[1]), Integer.parseInt(parts[2])));
+            } catch (NumberFormatException ignored) {}
+        }
+        return Map.copyOf(result);
     }
 }
