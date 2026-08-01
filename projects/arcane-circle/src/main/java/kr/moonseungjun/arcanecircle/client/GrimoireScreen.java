@@ -1,9 +1,11 @@
 package kr.moonseungjun.arcanecircle.client;
 
+import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem.StaffProfile;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import kr.moonseungjun.arcanecircle.network.EquipSpellPayload;
 import kr.moonseungjun.arcanecircle.network.RequestGrimoirePayload;
+import kr.moonseungjun.arcanecircle.registry.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -12,37 +14,53 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public final class GrimoireScreen extends Screen {
     private static final List<Tab> TABS = List.of(
-            new Tab("atlas", "주문"), new Tab("recipes", "융합식"), new Tab("core", "마력핵"));
+            new Tab("atlas", "주문"),
+            new Tab("recipes", "융합식"),
+            new Tab("staffs", "지팡이"),
+            new Tab("core", "마력핵"));
+    private static final Map<String, Integer> SAVED_SCROLL = new HashMap<>();
     private static int savedOffsetX;
     private static int savedOffsetY;
+    private static int savedActiveSlot;
 
     private final String page;
-    private int activeSlot;
     private int contentScroll;
     private boolean dragging;
     private double dragAnchorX;
     private double dragAnchorY;
     private int dragOriginX;
     private int dragOriginY;
+    private String notice = "";
+    private long noticeUntil;
 
     public GrimoireScreen(String page) {
         super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.literal("구중 마도서"));
         this.page = normalize(page);
+        this.contentScroll = SAVED_SCROLL.getOrDefault(this.page, 0);
     }
 
     @Override
     protected void init() {
         super.init();
         clampSavedOffset();
+        contentScroll = Math.min(contentScroll, maxScroll(layout()));
     }
 
     @Override public boolean isPauseScreen() { return false; }
     @Override public boolean shouldCloseOnEsc() { return true; }
+
+    @Override
+    public void onClose() {
+        SAVED_SCROLL.put(page, contentScroll);
+        super.onClose();
+    }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
@@ -68,7 +86,8 @@ public final class GrimoireScreen extends Screen {
         if ("atlas".equals(page)) {
             for (int i = 0; i < 5; i++) {
                 if (inside(event.x(), event.y(), l.slot(i))) {
-                    activeSlot = i;
+                    savedActiveSlot = i;
+                    notice("슬롯 " + (i + 1) + " 선택");
                     return true;
                 }
             }
@@ -104,9 +123,9 @@ public final class GrimoireScreen extends Screen {
         if (scrollY == 0.0) return false;
         Layout l = layout();
         if (!inside(mouseX, mouseY, l.content())) return false;
-        int max = "atlas".equals(page) ? l.maxAtlasScroll(SpellCatalog.spells().size())
-                : "recipes".equals(page) ? l.maxRecipeScroll(SpellCatalog.fusions().size()) : 0;
-        contentScroll = clamp(contentScroll + (scrollY < 0 ? 28 : -28), 0, max);
+        int max = maxScroll(l);
+        contentScroll = clamp(contentScroll + (scrollY < 0 ? 30 : -30), 0, max);
+        SAVED_SCROLL.put(page, contentScroll);
         return true;
     }
 
@@ -114,25 +133,27 @@ public final class GrimoireScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         Layout l = layout();
         long time = System.currentTimeMillis();
-        g.fill(0, 0, width, height, 0xC7040610);
+        g.fill(0, 0, width, height, 0xC8050711);
         stars(g, time);
         frame(g, l);
         header(g, l, mouseX, mouseY);
         switch (page) {
             case "recipes" -> recipes(g, l, mouseX, mouseY);
+            case "staffs" -> staffs(g, l, mouseX, mouseY);
             case "core" -> core(g, l, time);
             default -> atlas(g, l, mouseX, mouseY, time);
         }
+        drawNotice(g, l);
         super.extractRenderState(g, mouseX, mouseY, partialTick);
     }
 
     private void atlas(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY, long time) {
         Rect c = l.content();
         drawManaStrip(g, l);
-        for (int i = 0; i < 5; i++) drawLoadoutSlot(g, l.slot(i), i, activeSlot == i, time + i * 140L);
+        for (int i = 0; i < 5; i++) drawLoadoutSlot(g, l.slot(i), i, savedActiveSlot == i, time + i * 140L);
 
         int gridTop = l.gridTop();
-        g.enableScissor(c.x(), gridTop, c.right(), c.bottom());
+        g.enableScissor(c.x(), gridTop, c.right(), c.bottom() - 17);
         List<SpellDefinition> spells = new ArrayList<>(SpellCatalog.spells().values());
         Set<String> known = ArcaneClientState.known();
         int circle = ArcaneClientState.integer("circle", 1);
@@ -150,39 +171,50 @@ public final class GrimoireScreen extends Screen {
         g.disableScissor();
 
         if (hovered != null) drawSpellTooltip(g, l, hovered);
-        else g.centeredText(font, Component.literal("1~5 슬롯을 고른 뒤 주문 문양을 누르세요 · 마우스 휠로 목록 이동"),
-                l.cx(), c.bottom() - 12, 0xFF8E9AB4);
+        else footer(g, l, "슬롯 선택 → 주문 선택 · 1~5 즉시 시전 · 휠로 목록 이동");
     }
 
     private void drawManaStrip(GuiGraphicsExtractor g, Layout l) {
         Rect c = l.content();
         int mana = ArcaneClientState.integer("mana", 0);
         int max = Math.max(1, ArcaneClientState.integer("max", 100));
-        int barX = c.x() + 10;
-        int barY = c.y() + 5;
-        int barW = Math.max(72, Math.min(160, c.w() / 4));
-        g.fill(barX, barY + 12, barX + barW, barY + 18, 0xFF192037);
-        g.fill(barX + 1, barY + 13, barX + 1 + (int) ((barW - 2) * Math.min(1.0, mana / (double) max)),
-                barY + 17, 0xFF5684E6);
+        int barW = Math.max(88, Math.min(176, c.w() / 3));
+        int barX = c.x() + 8;
+        int barY = c.y() + 4;
+        g.fill(barX, barY + 12, barX + barW, barY + 19, 0xFF151D31);
+        g.fill(barX + 1, barY + 13,
+                barX + 1 + (int) ((barW - 2) * Math.min(1.0, mana / (double) max)),
+                barY + 18, 0xFF5E8DEB);
         g.text(font, Component.literal(ArcaneClientState.integer("circle", 1) + "C  MANA " + mana + "/" + max),
-                barX, barY, 0xFFC9D8F2);
-        g.text(font, Component.literal("장착: " + ArcaneClientState.text("staff", "맨손")),
-                c.right() - Math.min(170, c.w() / 3), barY, 0xFFFFD58A);
+                barX, barY, 0xFFD3E0F5);
+        String staff = "장착  " + ArcaneClientState.text("staff", "맨손");
+        if (c.w() >= 430) {
+            g.text(font, Component.literal(shorten(staff, 22)), c.right() - Math.min(168, c.w() / 3), barY, 0xFFFFD58A);
+        } else {
+            g.centeredText(font, Component.literal(shorten(staff, 24)), l.cx(), barY + 22, 0xFFFFD58A);
+        }
     }
 
     private void drawLoadoutSlot(GuiGraphicsExtractor g, Rect r, int slot, boolean active, long time) {
         SpellDefinition spell = SpellCatalog.spell(ArcaneClientState.slot(slot)).orElse(null);
         int color = spell == null ? 0xFF555A6A : ArcaneRenderUtil.schoolColor(spell.school());
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), active ? 0xFF6C4B8F : 0xFF080C18);
-        g.fill(r.x() + 2, r.y() + 2, r.right() - 2, r.bottom() - 2, 0xFF121A2C);
+        int dark = spell == null ? 0xFF151824 : ArcaneRenderUtil.schoolDark(spell.school());
+        int remaining = ArcaneClientState.cooldownRemainingTicks(slot);
+        g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, active ? 0xFFFFD36B : 0xFF060914);
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), remaining > 0 ? dark : 0xFF101829);
+        if (remaining > 0) g.fill(r.x() + 2, r.y() + 2, r.right() - 2, r.bottom() - 2, 0x66101018);
         ArcaneRenderUtil.cooldownArc(g, r.x(), r.y(), r.w() - 1, ArcaneClientState.cooldownFraction(slot),
-                0xFFE46B72, active ? 0xFFFFD36B : color);
+                remaining > 0 ? 0xFFE66E78 : color, active ? 0xFFFFD36B : 0xFF353B4B);
         g.text(font, Component.literal(Integer.toString(slot + 1)), r.x() + 4, r.y() + 3, 0xFFFFFFFF);
         if (spell != null) {
             ArcaneRenderUtil.spellRune(g, r.x() + r.w() / 2, r.y() + r.h() / 2 - 3, spell,
-                    Math.max(7, r.w() / 6), 0xFFF8F3FF);
-            g.centeredText(font, Component.literal(shorten(spell.name(), 7)), r.x() + r.w() / 2,
+                    Math.max(6, r.w() / 6), remaining > 0 ? 0xFF827C89 : 0xFFF8F3FF);
+            if (r.w() >= 34) g.centeredText(font, Component.literal(shorten(spell.name(), 6)), r.x() + r.w() / 2,
                     r.bottom() - 11, active ? 0xFFFFE0A2 : 0xFFD8D0E6);
+        }
+        if (remaining > 0) {
+            g.centeredText(font, Component.literal(String.format("%.1f", remaining / 20.0)),
+                    r.x() + r.w() / 2, r.y() + r.h() / 2 - 5, 0xFFFFFFFF);
         }
         if (active) {
             int ox = r.x() + r.w() / 2 + (int) Math.round(Math.cos(time / 420.0) * (r.w() / 2 + 4));
@@ -195,18 +227,20 @@ public final class GrimoireScreen extends Screen {
                                boolean equipped, boolean hover, long time) {
         if (r.bottom() < 0 || r.y() > height) return;
         int school = ArcaneRenderUtil.schoolColor(spell.school());
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF293451 : 0xFF111827);
-        g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), usable ? school : 0xFF3B3D46);
+        int bg = hover ? 0xFF293753 : usable ? 0xFF111A2B : 0xFF11151E;
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), bg);
+        g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), usable ? school : 0xFF3B3D46);
         int iconX = r.x() + 22;
         int iconY = r.y() + r.h() / 2;
         ArcaneRenderUtil.fillCircle(g, iconX, iconY, 15, 0xFF070A13);
         ArcaneRenderUtil.ring(g, iconX, iconY, 15, usable ? school : 0xFF474852);
         if (usable) ArcaneRenderUtil.spellRune(g, iconX, iconY, spell, 8, 0xFFF7F0FF);
         else ArcaneRenderUtil.diamond(g, iconX, iconY, 6, 0xFF5B5963);
-        g.text(font, Component.literal(spell.circle() + "C " + spell.name()), r.x() + 44, r.y() + 8,
-                usable ? 0xFFF0E8FA : 0xFF77727D);
+        int textX = r.x() + 44;
+        g.text(font, Component.literal(spell.circle() + "C " + shorten(spell.name(), Math.max(5, r.w() / 10))),
+                textX, r.y() + 8, usable ? 0xFFF0E8FA : 0xFF77727D);
         g.text(font, Component.literal(spell.school().displayName() + " · MP " + spell.manaCost()),
-                r.x() + 44, r.y() + 21, usable ? 0xFF9CB1CE : 0xFF5E5B64);
+                textX, r.y() + 21, usable ? 0xFF9CB1CE : 0xFF5E5B64);
         if (equipped) {
             ArcaneRenderUtil.ring(g, iconX, iconY, 19, 0xFFFFD36B);
             int ox = iconX + (int) Math.round(Math.cos(time / 390.0) * 20.0);
@@ -217,8 +251,9 @@ public final class GrimoireScreen extends Screen {
 
     private void drawSpellTooltip(GuiGraphicsExtractor g, Layout l, SpellDefinition spell) {
         Rect c = l.content();
+        String state = ArcaneClientState.known().contains(spell.id()) ? "" : " · 미각인";
         String line = spell.description() + "  [위력 " + trim(spell.power()) + " · 사거리 " + trim(spell.range())
-                + " · 쿨 " + String.format("%.1f", spell.cooldownTicks() / 20.0) + "초]";
+                + " · 쿨 " + String.format("%.1f", spell.cooldownTicks() / 20.0) + "초" + state + "]";
         g.centeredText(font, Component.literal(shorten(line, Math.max(34, c.w() / 6))), l.cx(),
                 c.bottom() - 12, 0xFFD5C7E6);
     }
@@ -226,16 +261,15 @@ public final class GrimoireScreen extends Screen {
     private void recipes(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
         Rect c = l.content();
         drawManaStrip(g, l);
-        int top = c.y() + 29;
-        g.enableScissor(c.x(), top, c.right(), c.bottom());
+        int top = l.listTop();
+        g.enableScissor(c.x(), top, c.right(), c.bottom() - 17);
         List<SpellCatalog.FusionFormula> formulas = SpellCatalog.fusions();
         for (int i = 0; i < formulas.size(); i++) {
             Rect row = l.recipeRow(i, contentScroll);
             drawRecipeRow(g, row, formulas.get(i), inside(mouseX, mouseY, row));
         }
         g.disableScissor();
-        g.centeredText(font, Component.literal("X를 누른 채 재료 주문 2~3개를 숫자키로 고르고 X를 놓으면 시전"),
-                l.cx(), c.bottom() - 12, 0xFF9BA7BF);
+        footer(g, l, "X 누르기 → 재료 주문 2~3개 → X 놓기 · 순서는 무관");
     }
 
     private void drawRecipeRow(GuiGraphicsExtractor g, Rect r, SpellCatalog.FusionFormula formula, boolean hover) {
@@ -244,43 +278,75 @@ public final class GrimoireScreen extends Screen {
         boolean registered = ArcaneClientState.known().contains(result.id());
         int mastery = ArcaneClientState.mastery(result.id());
         int required = SpellCatalog.masteryRequired(result.id());
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF26324B : 0xFF111827);
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF26344F : 0xFF111827);
         g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), registered ? 0xFFFFD36B : color);
-        int x = r.x() + 14;
-        for (int i = 0; i < formula.ingredients().size(); i++) {
-            SpellDefinition source = SpellCatalog.spell(formula.ingredients().get(i)).orElseThrow();
-            ArcaneRenderUtil.fillCircle(g, x + 15, r.y() + 22, 13, 0xFF070A13);
-            ArcaneRenderUtil.ring(g, x + 15, r.y() + 22, 13, ArcaneRenderUtil.schoolColor(source.school()));
-            ArcaneRenderUtil.spellRune(g, x + 15, r.y() + 22, source, 7, 0xFFF5EDFF);
-            x += 34;
-            if (i < formula.ingredients().size() - 1) {
-                g.text(font, Component.literal("+"), x - 5, r.y() + 17, 0xFFBBA7D0);
-                x += 10;
-            }
-        }
-        g.text(font, Component.literal("→"), x + 2, r.y() + 17, 0xFFEBD9FF);
-        x += 22;
-        ArcaneRenderUtil.fillCircle(g, x + 15, r.y() + 22, 15, 0xFF070A13);
-        ArcaneRenderUtil.ring(g, x + 15, r.y() + 22, 15, registered ? 0xFFFFD36B : color);
-        ArcaneRenderUtil.spellRune(g, x + 15, r.y() + 22, result, 8, 0xFFFFFFFF);
-        int textX = x + 37;
-        g.text(font, Component.literal(result.circle() + "C " + result.name()), textX, r.y() + 7,
+
+        int iconX = r.x() + 24;
+        int iconY = r.y() + r.h() / 2;
+        ArcaneRenderUtil.fillCircle(g, iconX, iconY, 16, 0xFF070A13);
+        ArcaneRenderUtil.ring(g, iconX, iconY, 16, registered ? 0xFFFFD36B : color);
+        ArcaneRenderUtil.spellRune(g, iconX, iconY, result, 9, 0xFFFFFFFF);
+
+        String chain = formula.ingredients().stream()
+                .map(id -> SpellCatalog.spell(id).map(SpellDefinition::name).orElse(id))
+                .reduce((a, b) -> a + " + " + b).orElse("");
+        int textX = r.x() + 48;
+        g.text(font, Component.literal(result.circle() + "C " + result.name()), textX, r.y() + 6,
                 registered ? 0xFFFFE2A5 : 0xFFEADDF8);
-        g.text(font, Component.literal(registered ? "직접 시전 등록 완료" : "실전 숙련 " + mastery + "/" + required),
-                textX, r.y() + 21, registered ? 0xFFD8B565 : 0xFF9D8BB1);
-        int barW = Math.max(34, r.right() - textX - 12);
-        g.fill(textX, r.y() + 34, textX + barW, r.y() + 38, 0xFF272C3B);
-        g.fill(textX, r.y() + 34, textX + (int) (barW * Math.min(1.0, mastery / (double) required)),
-                r.y() + 38, registered ? 0xFFFFD36B : color);
+        g.text(font, Component.literal(shorten(chain + " → " + result.name(), Math.max(18, r.w() / 6))),
+                textX, r.y() + 19, 0xFF9FB2CD);
+        String progress = registered ? "직접 시전 등록 완료" : "실전 숙련 " + mastery + "/" + required;
+        g.text(font, Component.literal(progress), textX, r.y() + 32,
+                registered ? 0xFFD8B565 : 0xFFAA93BD);
+        int barX = Math.max(textX + 100, r.right() - 98);
+        int barW = Math.max(36, r.right() - barX - 9);
+        g.fill(barX, r.y() + 34, barX + barW, r.y() + 39, 0xFF272C3B);
+        g.fill(barX, r.y() + 34, barX + (int) (barW * Math.min(1.0, mastery / (double) required)),
+                r.y() + 39, registered ? 0xFFFFD36B : color);
+    }
+
+    private void staffs(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
+        Rect c = l.content();
+        drawManaStrip(g, l);
+        int top = l.listTop();
+        g.enableScissor(c.x(), top, c.right(), c.bottom() - 17);
+        List<StaffProfile> profiles = ModItems.profiles();
+        for (int i = 0; i < profiles.size(); i++) {
+            Rect card = l.staffCard(i, contentScroll);
+            drawStaffCard(g, card, profiles.get(i), inside(mouseX, mouseY, card));
+        }
+        g.disableScissor();
+        footer(g, l, "지팡이는 주 손 우선, 없으면 보조 손의 효과가 적용됩니다");
+    }
+
+    private void drawStaffCard(GuiGraphicsExtractor g, Rect r, StaffProfile profile, boolean hover) {
+        boolean equipped = profile.id().equals(ArcaneClientState.text("staff_id", "none"));
+        int accent = staffColor(profile);
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF29344B : 0xFF111827);
+        g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), equipped ? 0xFFFFD36B : accent);
+        int iconX = r.x() + 24;
+        int iconY = r.y() + r.h() / 2;
+        ArcaneRenderUtil.fillCircle(g, iconX, iconY, 17, 0xFF070A13);
+        ArcaneRenderUtil.ring(g, iconX, iconY, 17, equipped ? 0xFFFFD36B : accent);
+        ArcaneRenderUtil.diamond(g, iconX, iconY - 4, 6, 0xFFF8EFFF);
+        ArcaneRenderUtil.line(g, iconX, iconY + 2, iconX, iconY + 15, 0xFFF8EFFF);
+        int tx = r.x() + 49;
+        g.text(font, Component.literal(profile.displayName() + (equipped ? "  [장착]" : "")), tx, r.y() + 6,
+                equipped ? 0xFFFFE1A0 : 0xFFEBDDF7);
+        g.text(font, Component.literal(shorten(profile.summary(), Math.max(20, r.w() / 6))), tx, r.y() + 19, 0xFF9FB0C8);
+        g.text(font, Component.literal(shorten(staffStats(profile), Math.max(20, r.w() / 6))), tx, r.y() + 32, 0xFFBFA6D6);
+        g.text(font, Component.literal(shorten("제작: " + profile.recipeHint(), Math.max(20, r.w() / 6))), tx, r.y() + 45, 0xFF8C93A7);
     }
 
     private void core(GuiGraphicsExtractor g, Layout l, long time) {
         Rect c = l.content();
         int circle = ArcaneClientState.integer("circle", 1);
-        boolean compact = c.w() < 560;
-        int centerX = compact ? l.cx() : l.cx() - 12;
-        int centerY = c.y() + c.h() / 2 + 8;
-        int maxRadius = Math.max(42, Math.min(compact ? c.w() / 4 : c.w() / 5, c.h() / 2 - 22));
+        boolean compact = c.w() < 540 || c.h() < 310;
+        int centerX = compact ? l.cx() : l.cx();
+        int centerY = compact ? c.y() + Math.min(88, c.h() / 3) : c.y() + c.h() / 2 + 5;
+        int maxRadius = compact ? Math.max(36, Math.min(68, c.h() / 4))
+                : Math.max(48, Math.min(c.w() / 6, c.h() / 2 - 26));
+
         for (int r = 9; r >= 1; r--) {
             int radius = Math.max(8, maxRadius * r / 9);
             ArcaneRenderUtil.ring(g, centerX, centerY, radius,
@@ -297,34 +363,38 @@ public final class GrimoireScreen extends Screen {
         ArcaneRenderUtil.diamond(g, centerX, centerY, 11, 0xFFB67CF0);
         g.centeredText(font, Component.literal(circle + "C"), centerX, centerY - 4, 0xFFFFFFFF);
 
-        int left = c.x() + 12;
-        int right = c.right() - 176;
-        int top = c.y() + 38;
-        if (compact) {
-            top = c.y() + 8;
-            left = c.x() + 8;
-            right = c.right() - 150;
-        }
-        drawCorePanel(g, left, top, 148, "마력핵 상태", List.of(
+        List<String> coreLines = List.of(
                 "최대 마력  " + ArcaneClientState.integer("max", 100),
                 "현재 마력  " + ArcaneClientState.integer("mana", 0),
                 "초당 회복  " + String.format("%.1f", ArcaneClientState.regenPerSecond()),
-                "통찰  " + ArcaneClientState.integer("insight", 0)));
-        drawCorePanel(g, right, top, 164, "지팡이 조율", List.of(
+                "통찰  " + ArcaneClientState.integer("insight", 0)
+                        + (ArcaneClientState.integer("next", 0) > 0 ? "/" + ArcaneClientState.integer("next", 0) : " (최대)"));
+        List<String> staffLines = List.of(
                 ArcaneClientState.text("staff", "맨손"),
-                shorten(ArcaneClientState.text("staff_summary", "효과 없음"), 22),
-                "1C 시동환 · 2C 교직환",
-                "3C 영역환 · 4~9C 미구현"));
-        g.centeredText(font, Component.literal("저써클 주문은 써클 차이마다 소모·쿨 감소, 위력·범위 증가"),
-                l.cx(), c.bottom() - 13, 0xFF8F9BB3);
+                shorten(ArcaneClientState.text("staff_summary", "효과 없음"), 25),
+                shorten(currentStaffStats(), 25),
+                "1~3C 구현 · 4~9C 잠김");
+
+        if (!compact) {
+            drawCorePanel(g, c.x() + 10, c.y() + 30, 170, "마력핵 상태", coreLines);
+            drawCorePanel(g, c.right() - 180, c.y() + 30, 170, "지팡이 조율", staffLines);
+        } else {
+            int gap = 6;
+            int panelW = Math.max(120, (c.w() - 18 - gap) / 2);
+            int y = Math.min(c.bottom() - 90, centerY + maxRadius + 10);
+            drawCorePanel(g, c.x() + 6, y, panelW, "마력핵 상태", coreLines);
+            drawCorePanel(g, c.x() + 6 + panelW + gap, y, panelW, "지팡이 조율", staffLines);
+        }
+        footer(g, l, "저써클 숙련: 소모·쿨 감소 / 위력·범위 증가");
     }
 
     private void drawCorePanel(GuiGraphicsExtractor g, int x, int y, int w, String title, List<String> lines) {
-        g.fill(x, y, x + w, y + 72, 0xB90A0E1B);
-        g.fill(x, y, x + w, y + 1, 0xFF7F60AB);
+        g.fill(x, y, x + w, y + 76, 0xD20A0E1B);
+        g.fill(x, y, x + w, y + 2, 0xFF7F60AB);
         g.text(font, Component.literal(title), x + 7, y + 7, 0xFFE1CBF8);
         for (int i = 0; i < lines.size(); i++) {
-            g.text(font, Component.literal(lines.get(i)), x + 7, y + 22 + i * 12, 0xFFAEB9CF);
+            g.text(font, Component.literal(shorten(lines.get(i), Math.max(12, w / 6))),
+                    x + 7, y + 23 + i * 12, 0xFFAEB9CF);
         }
     }
 
@@ -338,21 +408,41 @@ public final class GrimoireScreen extends Screen {
     }
 
     private void header(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
-        g.centeredText(font, Component.literal("NINEFOLD ARCANA"), l.cx(), l.top() + 12, 0xFFF1DEFF);
+        g.centeredText(font, Component.literal("NINEFOLD ARCANA"), l.cx(), l.top() + 11, 0xFFF1DEFF);
         g.centeredText(font, Component.literal(dragging ? "화면 이동 중" : "상단을 드래그해 이동"),
-                l.cx(), l.top() + 24, dragging ? 0xFFFFD36B : 0xFF71667F);
+                l.cx(), l.top() + 23, dragging ? 0xFFFFD36B : 0xFF71667F);
         for (int i = 0; i < TABS.size(); i++) {
             Rect tab = l.tab(i);
             boolean active = TABS.get(i).id().equals(page);
             boolean hover = inside(mouseX, mouseY, tab);
             g.centeredText(font, Component.literal(TABS.get(i).label()), tab.x() + tab.w() / 2, tab.y() + 5,
                     active ? 0xFFE7C9FF : hover ? 0xFFC7A9E8 : 0xFF746982);
-            if (active) ArcaneRenderUtil.line(g, tab.x() + 8, tab.bottom() - 2, tab.right() - 8, tab.bottom() - 2, 0xFFB16EEE);
+            if (active) ArcaneRenderUtil.line(g, tab.x() + 7, tab.bottom() - 2, tab.right() - 7, tab.bottom() - 2, 0xFFB16EEE);
         }
         Rect close = l.close();
         ArcaneRenderUtil.diamond(g, close.x() + 9, close.y() + 9, 7,
                 inside(mouseX, mouseY, close) ? 0xFFD86382 : 0xFF67384F);
         g.centeredText(font, Component.literal("×"), close.x() + 9, close.y() + 3, 0xFFFFFFFF);
+    }
+
+    private void footer(GuiGraphicsExtractor g, Layout l, String text) {
+        g.centeredText(font, Component.literal(shorten(text, Math.max(30, l.panelW() / 6))),
+                l.cx(), l.content().bottom() - 12, 0xFF929EB6);
+    }
+
+    private void drawNotice(GuiGraphicsExtractor g, Layout l) {
+        if (notice.isBlank() || System.currentTimeMillis() > noticeUntil) return;
+        int w = Math.min(l.panelW() - 28, Math.max(92, font.width(notice) + 20));
+        int x = l.cx() - w / 2;
+        int y = l.top() + 58;
+        g.fill(x, y, x + w, y + 18, 0xEE120E20);
+        g.fill(x, y, x + w, y + 1, 0xFFFFD36B);
+        g.centeredText(font, Component.literal(notice), l.cx(), y + 5, 0xFFFFE9B8);
+    }
+
+    private void notice(String text) {
+        notice = text;
+        noticeUntil = System.currentTimeMillis() + 1800L;
     }
 
     private void stars(GuiGraphicsExtractor g, long time) {
@@ -367,17 +457,37 @@ public final class GrimoireScreen extends Screen {
 
     private void select(SpellDefinition spell) {
         int circle = ArcaneClientState.integer("circle", 1);
-        if (!ArcaneClientState.known().contains(spell.id()) || spell.circle() > circle) return;
-        ClientPacketDistributor.sendToServer(new EquipSpellPayload(spell.id(), activeSlot));
+        if (!ArcaneClientState.known().contains(spell.id())) {
+            notice("아직 각인되지 않은 주문입니다");
+            return;
+        }
+        if (spell.circle() > circle) {
+            notice(spell.circle() + "써클 마력핵이 필요합니다");
+            return;
+        }
+        ClientPacketDistributor.sendToServer(new EquipSpellPayload(spell.id(), savedActiveSlot));
+        notice((savedActiveSlot + 1) + "번 슬롯에 " + spell.name() + " 장착");
     }
 
     private void request(String next) {
+        SAVED_SCROLL.put(page, contentScroll);
         ClientPacketDistributor.sendToServer(new RequestGrimoirePayload(next));
     }
 
+    private int maxScroll(Layout l) {
+        return switch (page) {
+            case "recipes" -> l.maxRecipeScroll(SpellCatalog.fusions().size());
+            case "staffs" -> l.maxStaffScroll(ModItems.profiles().size());
+            case "atlas" -> l.maxAtlasScroll(SpellCatalog.spells().size());
+            default -> 0;
+        };
+    }
+
     private void clampSavedOffset() {
-        int panelW = Math.max(0, Math.min(760, width - 10));
-        int panelH = Math.max(0, Math.min(430, height - 10));
+        int panelW = Math.max(240, Math.min(820, width - 10));
+        int panelH = Math.max(190, Math.min(470, height - 10));
+        panelW = Math.min(panelW, Math.max(1, width - 8));
+        panelH = Math.min(panelH, Math.max(1, height - 8));
         int baseLeft = (width - panelW) / 2;
         int baseTop = (height - panelH) / 2;
         savedOffsetX = clamp(savedOffsetX, 4 - baseLeft, width - 4 - panelW - baseLeft);
@@ -385,11 +495,38 @@ public final class GrimoireScreen extends Screen {
     }
 
     private Layout layout() {
-        int panelW = Math.max(0, Math.min(760, width - 10));
-        int panelH = Math.max(0, Math.min(430, height - 10));
+        int panelW = Math.max(240, Math.min(820, width - 10));
+        int panelH = Math.max(190, Math.min(470, height - 10));
+        panelW = Math.min(panelW, Math.max(1, width - 8));
+        panelH = Math.min(panelH, Math.max(1, height - 8));
         int left = clamp((width - panelW) / 2 + savedOffsetX, 4, Math.max(4, width - panelW - 4));
         int top = clamp((height - panelH) / 2 + savedOffsetY, 4, Math.max(4, height - panelH - 4));
         return new Layout(left, top, panelW, panelH);
+    }
+
+    private static int staffColor(StaffProfile profile) {
+        return profile.favoredSchool() == null ? 0xFFFFC85C : ArcaneRenderUtil.schoolColor(profile.favoredSchool());
+    }
+
+    private static String staffStats(StaffProfile profile) {
+        int cost = (int) Math.round((profile.manaCostMultiplier() - 1.0) * 100.0);
+        int power = (int) Math.round((profile.powerMultiplier() - 1.0) * 100.0);
+        int range = (int) Math.round((profile.rangeMultiplier() - 1.0) * 100.0);
+        int cool = (int) Math.round((profile.cooldownMultiplier() - 1.0) * 100.0);
+        return "MP" + signed(profile.maxManaBonus()) + " · 소모" + signed(cost) + "% · 위력"
+                + signed(power) + "% · 범위" + signed(range) + "% · 쿨" + signed(cool) + "%";
+    }
+
+    private static String currentStaffStats() {
+        int mana = ArcaneClientState.integer("staff_mana", 0);
+        int cost = (int) Math.round((ArcaneClientState.staffMultiplier("staff_cost") - 1.0) * 100.0);
+        int power = (int) Math.round((ArcaneClientState.staffMultiplier("staff_power") - 1.0) * 100.0);
+        int range = (int) Math.round((ArcaneClientState.staffMultiplier("staff_range") - 1.0) * 100.0);
+        return "MP" + signed(mana) + " · 소모" + signed(cost) + "% · 위력" + signed(power) + "% · 범위" + signed(range) + "%";
+    }
+
+    private static String signed(int value) {
+        return value >= 0 ? "+" + value : Integer.toString(value);
     }
 
     private static boolean inside(double x, double y, Rect r) {
@@ -402,10 +539,11 @@ public final class GrimoireScreen extends Screen {
     }
 
     private static String normalize(String page) {
-        return "recipes".equals(page) || "core".equals(page) ? page : "atlas";
+        return "recipes".equals(page) || "staffs".equals(page) || "core".equals(page) ? page : "atlas";
     }
 
     private static String shorten(String value, int max) {
+        if (value == null) return "";
         return value.length() <= max ? value : value.substring(0, Math.max(1, max - 1)) + "…";
     }
 
@@ -426,26 +564,33 @@ public final class GrimoireScreen extends Screen {
         Rect dragBar() { return new Rect(left + 4, top + 4, Math.max(0, panelW - 36), 29); }
         Rect close() { return new Rect(right() - 27, top + 10, 18, 18); }
         Rect tab(int i) {
-            int tabW = Math.max(58, Math.min(104, (panelW - 24) / 3));
-            int total = tabW * 3;
-            return new Rect(cx() - total / 2 + i * tabW, top + 34, tabW, 24);
+            int tabW = Math.max(48, Math.min(96, (panelW - 20) / TABS.size()));
+            int total = tabW * TABS.size();
+            return new Rect(cx() - total / 2 + i * tabW, top + 33, tabW, 25);
         }
         Rect content() { return new Rect(left + 10, top + 62, Math.max(0, panelW - 20), Math.max(0, panelH - 75)); }
-        int gridTop() { return content().y() + 78; }
+        int manaExtra() { return content().w() < 430 ? 16 : 0; }
+        int slotTop() { return content().y() + 25 + manaExtra(); }
+        int gridTop() { return slotTop() + slotSize() + 9; }
+        int listTop() { return content().y() + 30 + manaExtra(); }
+        int slotSize() {
+            Rect c = content();
+            int gap = c.w() < 500 ? 3 : 6;
+            return Math.max(24, Math.min(c.w() < 500 ? 44 : 54, (c.w() - 12 - gap * 4) / 5));
+        }
         Rect slot(int i) {
             Rect c = content();
             int gap = c.w() < 500 ? 3 : 6;
-            int maxSize = c.w() < 500 ? 45 : 54;
-            int size = Math.max(28, Math.min(maxSize, (c.w() - 16 - gap * 4) / 5));
+            int size = slotSize();
             int total = size * 5 + gap * 4;
-            return new Rect(cx() - total / 2 + i * (size + gap), c.y() + 24, size, size);
+            return new Rect(cx() - total / 2 + i * (size + gap), slotTop(), size, size);
         }
-        int columns() { return content().w() >= 650 ? 4 : content().w() >= 440 ? 3 : 2; }
+        int columns() { return content().w() >= 680 ? 4 : content().w() >= 450 ? 3 : content().w() >= 260 ? 2 : 1; }
         Rect spellHit(int index, int scroll) {
             Rect c = content();
             int cols = columns();
             int gap = 6;
-            int cardW = Math.max(92, (c.w() - gap * (cols - 1)) / cols);
+            int cardW = Math.max(90, (c.w() - gap * (cols - 1)) / cols);
             int cardH = 44;
             int row = index / cols;
             int col = index % cols;
@@ -458,10 +603,26 @@ public final class GrimoireScreen extends Screen {
         }
         Rect recipeRow(int index, int scroll) {
             Rect c = content();
-            return new Rect(c.x() + 4, c.y() + 30 + index * 50 - scroll, Math.max(0, c.w() - 8), 44);
+            return new Rect(c.x() + 3, listTop() + index * 50 - scroll, Math.max(0, c.w() - 6), 44);
         }
         int maxRecipeScroll(int count) {
-            return Math.max(0, count * 50 - Math.max(40, content().h() - 54));
+            return Math.max(0, count * 50 - Math.max(40, content().bottom() - listTop() - 18));
+        }
+        int staffColumns() { return content().w() >= 560 ? 2 : 1; }
+        Rect staffCard(int index, int scroll) {
+            Rect c = content();
+            int cols = staffColumns();
+            int gap = 6;
+            int cardW = Math.max(150, (c.w() - gap * (cols - 1)) / cols);
+            int cardH = 58;
+            int row = index / cols;
+            int col = index % cols;
+            return new Rect(c.x() + col * (cardW + gap), listTop() + row * (cardH + 6) - scroll, cardW, cardH);
+        }
+        int maxStaffScroll(int count) {
+            int rows = (count + staffColumns() - 1) / staffColumns();
+            int totalH = rows * 64;
+            return Math.max(0, totalH - Math.max(40, content().bottom() - listTop() - 18));
         }
     }
 }
