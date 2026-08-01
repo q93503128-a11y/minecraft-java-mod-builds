@@ -46,9 +46,6 @@ public final class CountrysidePropertyManager {
             BlockPos origin = sharedRestaurant.get().originPos();
             if (isAutomaticRestaurantAccess(origin, event.getPos())) {
                 event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
-                player.sendOverlayMessage(Component.translatable(
-                        "message.countrysidedays.restaurant_access_automatic"
-                ));
                 return;
             }
             if (event.getPos().equals(PlayerEstateLayout.restaurantSign(origin))
