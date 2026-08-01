@@ -41,10 +41,12 @@ public final class VillageRpgSystem {
             float value = outgoingDamageMultiplier(VillageCouncilState.levelOf(attacker.getUUID()));
             value *= VillageProgressionSystem.smithyDamageMultiplier(attacker);
             value *= VillageProgressionSystem.learnedSkillDamageMultiplier(attacker);
+            value *= VillageSkillTreeSystem.outgoingDamageMultiplier(attacker);
             event.setAmount(event.getAmount() * value);
         }
         if (event.getEntity() instanceof ServerPlayer defender) {
             float value = incomingDamageMultiplier(VillageCouncilState.levelOf(defender.getUUID()));
+            value *= VillageSkillTreeSystem.incomingDamageMultiplier(defender);
             if (VillageCouncilState.isInsideVillage(defender)) {
                 value *= VillageProgressionSystem.wallDamageMultiplier();
             }
@@ -53,7 +55,6 @@ public final class VillageRpgSystem {
     }
 
     public static void handleDeath(LivingDeathEvent event) {
-        VillageRaidSystem.onLivingDeath(event);
         if (!(event.getEntity() instanceof Monster defeated)
                 || !(event.getSource().getEntity() instanceof ServerPlayer killer)) {
             return;
@@ -63,10 +64,9 @@ public final class VillageRpgSystem {
                 ? Math.round(base * VillageCouncilState.VILLAGE_DEFENSE_XP_MULTIPLIER)
                 : base;
         VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(killer, reward);
-        VillageProgressionSystem.addCoins(
-                killer,
-                Math.max(2, Math.round(defeated.getMaxHealth() / 6.0f)),
-                "적 처치");
+        int baseCoins = Math.max(2, Math.round(defeated.getMaxHealth() / 6.0f));
+        int coins = Math.max(1, Math.round(baseCoins * VillageSkillTreeSystem.coinRewardMultiplier(killer)));
+        VillageProgressionSystem.addCoins(killer, coins, "적 처치");
         killer.sendSystemMessage(Component.literal("§d+" + result.awardedExperience() + " XP"));
         if (result.levelsGained() > 0) {
             refreshPlayerPassive(killer);
@@ -81,7 +81,7 @@ public final class VillageRpgSystem {
         }
         int learned = VillageProgressionSystem.skillRank(player);
         if (learned <= 0) {
-            return "기술·마법 연구소에서 첫 능력을 배워야 합니다.";
+            return "기술 연구소에서 첫 능력을 배워야 합니다.";
         }
         long now = System.currentTimeMillis();
         long ready = NEXT_SKILL_USE.getOrDefault(player.getUUID(), 0L);
@@ -98,8 +98,10 @@ public final class VillageRpgSystem {
             apply(role, ally, duration, tier, level, learned);
         }
         int cooldown = Math.max(
-                12,
-                36 - level / 2 - VillageProgressionSystem.skillCooldownReductionSeconds(player));
+                10,
+                36 - level / 2
+                        - VillageProgressionSystem.skillCooldownReductionSeconds(player)
+                        - VillageSkillTreeSystem.cooldownReductionSeconds(player));
         NEXT_SKILL_USE.put(player.getUUID(), now + cooldown * 1000L);
         MinecraftServer server = player.level().getServer();
         if (server != null) {
