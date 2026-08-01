@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,6 +12,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -29,7 +29,7 @@ public final class VillageGuardians {
     public VillageGuardians(IEventBus modEventBus) {
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians fortress defence, role loadouts, towers and delayed respawn loaded");
+        LOGGER.info("Village Guardians responsive UI, direct communication, timed raids and controlled spawns loaded");
     }
 
     @SubscribeEvent
@@ -104,12 +104,9 @@ public final class VillageGuardians {
                 || !(event.getEntity() instanceof Mob mob)) return;
         if (VillageDefenseSystem.recognizeDefenseMob(mob)) return;
         if (VillageWorldSystem.isAllowedGameMob(mob)) return;
-        if (VillageWorldSystem.isInsideVillageArea(mob.blockPosition()) && !mob.isPersistenceRequired()) {
+        if (!mob.isPersistenceRequired() && VillageWorldSystem.isInsideBattlefield(mob.blockPosition())) {
             event.setCanceled(true);
-            return;
         }
-        if (mob.getType().getCategory() == MobCategory.MONSTER
-                && VillageWorldSystem.isInsideBattlefield(mob.blockPosition())) event.setCanceled(true);
     }
 
     @SubscribeEvent
@@ -117,6 +114,11 @@ public final class VillageGuardians {
         VillageWorldSystem.recordCombat(event);
         VillageRpgSystem.handleIncomingDamage(event);
         VillageRespawnSystem.handleIncomingDamage(event);
+    }
+
+    @SubscribeEvent
+    public void onLivingDrops(LivingDropsEvent event) {
+        VillageRaidLootSystem.handleDrops(event);
     }
 
     @SubscribeEvent
@@ -139,7 +141,6 @@ public final class VillageGuardians {
         if (maintenanceTicks >= 20) {
             maintenanceTicks = 0;
             VillageCouncilState.enforceFrozenTime(event.getServer());
-            VillageWorldSystem.purgeDaytimeHostiles(event.getServer());
             VillageWorldSystem.purgeUnauthorizedVillageMobs(event.getServer());
             VillageRpgSystem.refreshPassives(event.getServer());
             for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
