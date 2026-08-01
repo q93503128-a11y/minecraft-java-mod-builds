@@ -94,7 +94,12 @@ public final class VillageRpgSystem {
     public static String useRoleSkill(ServerPlayer player) { return useRoleSkill(player, 0); }
 
     public static String useRoleSkill(ServerPlayer player, int slot) {
-        return VillageRoleSkillSystem.useEquippedSkill(player, slot);
+        var equipped = VillageRoleSkillSystem.equippedSkill(player, slot);
+        String result = VillageRoleSkillSystem.useEquippedSkill(player, slot);
+        if (equipped.isPresent() && result.contains("사용 완료")) {
+            VillageSkillVisualSystem.render(player, equipped.get());
+        }
+        return result;
     }
 
     public static String roleLoadout(ServerPlayer player) {
