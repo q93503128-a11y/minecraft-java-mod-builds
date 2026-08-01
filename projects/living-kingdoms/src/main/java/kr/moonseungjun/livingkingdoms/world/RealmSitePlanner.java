@@ -17,12 +17,12 @@ import java.util.Set;
 
 /** Surveys generator columns without loading chunks, then persists one connected-land capital anchor. */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 6;
+    public static final int LAYOUT_REVISION = 7;
     private static final int[][] OUTER_SAMPLES = {
-            {224, 0}, {-224, 0}, {0, 224}, {0, -224},
-            {224, 224}, {-224, 224}, {224, -224}, {-224, -224},
-            {112, 224}, {-112, 224}, {112, -224}, {-112, -224},
-            {224, 112}, {-224, 112}, {224, -112}, {-224, -112}
+            {320, 0}, {-320, 0}, {0, 320}, {0, -320},
+            {320, 320}, {-320, 320}, {320, -320}, {-320, -320},
+            {160, 320}, {-160, 320}, {160, -320}, {-160, -320},
+            {320, 160}, {-320, 160}, {320, -160}, {-320, -160}
     };
 
     private RealmSitePlanner() {
@@ -32,10 +32,15 @@ public final class RealmSitePlanner {
     public static RealmSiteLayoutSavedData.RealmSite surveyGeneratedTerrain(ServerLevel level, String homelandId) {
         int[] nominal = nominalCenter(homelandId);
         List<int[]> centers = new ArrayList<>();
-        for (int dx = -128; dx <= 128; dx += 64) {
-            for (int dz = -128; dz <= 128; dz += 64) centers.add(new int[]{nominal[0] + dx, nominal[1] + dz});
+
+        // Dense local search first. Capitals stay in their authored geopolitical region instead of
+        // drifting toward the first merely survivable patch near world spawn.
+        for (int dx = -384; dx <= 384; dx += 128) {
+            for (int dz = -384; dz <= 384; dz += 128) {
+                centers.add(new int[]{nominal[0] + dx, nominal[1] + dz});
+            }
         }
-        for (int radius : new int[]{320, 640, 960, 1280}) {
+        for (int radius : new int[]{640, 1_024, 1_536, 2_048, 3_072}) {
             for (int[] direction : new int[][]{
                     {1, 0}, {-1, 0}, {0, 1}, {0, -1},
                     {1, 1}, {-1, 1}, {1, -1}, {-1, -1}
@@ -50,18 +55,19 @@ public final class RealmSitePlanner {
         Candidate selected = candidates.stream()
                 .filter(candidate -> acceptable(homelandId, candidate))
                 .min(Comparator.comparingDouble(Candidate::score))
-                .orElseGet(() -> candidates.stream()
-                        .min(Comparator.comparingDouble(Candidate::score))
-                        .orElseThrow(() -> new IllegalStateException("No terrain candidate for " + homelandId)));
+                .orElseThrow(() -> new IllegalStateException(
+                        "No capital site passed the terrain-integrity gate for " + homelandId
+                                + "; refusing to create a cliff box or submerged city"
+                ));
 
         LivingKingdoms.LOGGER.info(
-                "Generator survey {} selected {},{} range={} water={}/25 average={} outer_land={}/16 outer_heights={} score={}",
+                "Generator survey {} selected {},{} range={} water={}/49 median={} deviation={} outer_land={}/16 outer_range={} score={}",
                 homelandId, selected.x(), selected.z(), selected.maxY() - selected.minY(),
-                selected.waterSamples(), selected.averageY(), 16 - selected.outerWaterSamples(),
-                selected.outerHeightKinds(), selected.score()
+                selected.waterSamples(), selected.medianY(), selected.meanDeviation(),
+                16 - selected.outerWaterSamples(), selected.outerRange(), selected.score()
         );
         return new RealmSiteLayoutSavedData.RealmSite(
-                selected.x(), selected.z(), selected.averageY(), LAYOUT_REVISION, false
+                selected.x(), selected.z(), selected.medianY(), LAYOUT_REVISION, false
         );
     }
 
@@ -143,51 +149,58 @@ public final class RealmSitePlanner {
     private static Candidate sample(ServerLevel level, String homelandId, int x, int z) {
         ChunkGenerator generator = level.getChunkSource().getGenerator();
         RandomState randomState = level.getChunkSource().randomState();
+        List<Integer> innerHeights = new ArrayList<>(49);
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
-        int sum = 0;
         int water = 0;
-        int samples = 0;
-        for (int ox = -48; ox <= 48; ox += 24) {
-            for (int oz = -48; oz <= 48; oz += 24) {
+        for (int ox = -72; ox <= 72; ox += 24) {
+            for (int oz = -72; oz <= 72; oz += 24) {
                 TerrainPoint point = generatedPoint(generator, randomState, level, x + ox, z + oz);
+                innerHeights.add(point.y());
                 min = Math.min(min, point.y());
                 max = Math.max(max, point.y());
-                sum += point.y();
-                samples++;
                 if (point.water()) water++;
             }
         }
+        innerHeights.sort(Integer::compareTo);
+        int median = innerHeights.get(innerHeights.size() / 2);
+        double meanDeviation = innerHeights.stream()
+                .mapToDouble(height -> Math.abs(height - median))
+                .average().orElse(Double.MAX_VALUE);
+        int heavyCutFillSamples = (int) innerHeights.stream()
+                .filter(height -> Math.abs(height - median) > 5)
+                .count();
 
         Set<Integer> outerHeights = new HashSet<>();
         int outerWater = 0;
+        int outerMin = Integer.MAX_VALUE;
+        int outerMax = Integer.MIN_VALUE;
         for (int[] offset : OUTER_SAMPLES) {
             TerrainPoint point = generatedPoint(generator, randomState, level, x + offset[0], z + offset[1]);
             outerHeights.add(point.y());
+            outerMin = Math.min(outerMin, point.y());
+            outerMax = Math.max(outerMax, point.y());
             if (point.water()) outerWater++;
         }
 
-        int average = Math.round(sum / (float) Math.max(1, samples));
         int range = max - min;
-        double submergedPenalty = water > 4 ? 50_000.0 + water * 1_000.0 : water * 180.0;
-        double lowPenalty = average < 68 ? 50_000.0 + (68 - average) * 1_500.0 : 0.0;
-        double outerWaterPenalty = outerWater > 6
-                ? 100_000.0 + outerWater * 2_000.0
-                : outerWater * 700.0;
-        double outerFlatPenalty = outerHeights.size() < 2 ? 50_000.0 : outerHeights.size() < 3 ? 2_000.0 : 0.0;
+        int outerRange = outerMax - outerMin;
+        double waterPenalty = water * 1_100.0 + outerWater * 2_000.0;
+        double cutFillPenalty = heavyCutFillSamples * 500.0 + meanDeviation * 180.0;
+        double edgePenalty = Math.max(0, outerRange - 24) * 550.0;
         double score;
         if ("kardum_league".equals(homelandId)) {
-            score = Math.abs(range - 18) * 3.0 + Math.max(0, 78 - average) * 8.0
-                    + submergedPenalty + lowPenalty + outerWaterPenalty + outerFlatPenalty;
+            score = Math.abs(range - 16) * 42.0 + Math.max(0, 78 - median) * 80.0
+                    + waterPenalty + cutFillPenalty + edgePenalty;
         } else if ("silvana_forest".equals(homelandId)) {
-            score = Math.max(0, range - 20) * 5.0 + Math.abs(range - 10) * 1.5
-                    + submergedPenalty + lowPenalty + outerWaterPenalty + outerFlatPenalty;
+            score = Math.abs(range - 8) * 55.0 + Math.max(0, range - 16) * 600.0
+                    + waterPenalty + cutFillPenalty + edgePenalty;
         } else {
-            score = Math.max(0, range - 24) * 10.0 + Math.abs(range - 10) * 2.0
-                    + Math.max(0, average - 108) * 1.5
-                    + submergedPenalty + lowPenalty + outerWaterPenalty + outerFlatPenalty;
+            score = range * 120.0 + Math.max(0, median - 104) * 80.0
+                    + waterPenalty + cutFillPenalty + edgePenalty;
         }
-        return new Candidate(x, z, min, max, average, water, outerWater, outerHeights.size(), score);
+        return new Candidate(x, z, min, max, median, water, outerWater, outerHeights.size(),
+                meanDeviation, heavyCutFillSamples, outerRange, score);
     }
 
     private static TerrainPoint generatedPoint(
@@ -204,18 +217,38 @@ public final class RealmSitePlanner {
     }
 
     private static boolean acceptable(String homelandId, Candidate candidate) {
-        int minimumAverage = "kardum_league".equals(homelandId) ? 72 : 68;
-        int maximumWater = "silvana_forest".equals(homelandId) ? 4 : 3;
-        return candidate.averageY() >= minimumAverage
-                && candidate.waterSamples() <= maximumWater
-                && candidate.outerWaterSamples() <= 6
-                && candidate.outerHeightKinds() >= 2;
+        if (candidate.medianY() < ("kardum_league".equals(homelandId) ? 72 : 68)) return false;
+        if (candidate.outerWaterSamples() > 4 || candidate.outerHeightKinds() < 3) return false;
+        if (candidate.outerRange() > ("kardum_league".equals(homelandId) ? 42 : 30)) return false;
+
+        return switch (homelandId) {
+            case "kardum_league" -> candidate.waterSamples() <= 2
+                    && candidate.maxY() - candidate.minY() >= 6
+                    && candidate.maxY() - candidate.minY() <= 28
+                    && candidate.meanDeviation() <= 6.5
+                    && candidate.heavyCutFillSamples() <= 22;
+            case "silvana_forest" -> candidate.waterSamples() <= 5
+                    && candidate.maxY() - candidate.minY() <= 17
+                    && candidate.meanDeviation() <= 4.5
+                    && candidate.heavyCutFillSamples() <= 14;
+            default -> candidate.waterSamples() <= 2
+                    && candidate.maxY() - candidate.minY() <= 12
+                    && candidate.meanDeviation() <= 3.0
+                    && candidate.heavyCutFillSamples() <= 8;
+        };
     }
 
+    /** Fixed geopolitical anchors shared by every player and every multiplayer session. */
     public static int[] nominalCenter(String homelandId) {
         return switch (homelandId) {
-            case "silvana_forest" -> new int[]{1500, 250};
-            case "kardum_league" -> new int[]{-1500, 250};
+            case "silvana_forest" -> new int[]{-9_000, -1_500};
+            case "kardum_league" -> new int[]{-2_500, -9_000};
+            case "red_steppe" -> new int[]{9_500, -1_000};
+            case "velas_free_city" -> new int[]{1_500, 7_500};
+            case "sahar_theocracy" -> new int[]{9_000, 9_000};
+            case "grey_crown_ruins" -> new int[]{8_500, -7_500};
+            case "northern_dragonlands" -> new int[]{0, -15_000};
+            case "western_archipelago" -> new int[]{-14_000, 7_000};
             default -> new int[]{0, 0};
         };
     }
@@ -234,17 +267,22 @@ public final class RealmSitePlanner {
         };
     }
 
-    private record TerrainPoint(int y, boolean water) {}
+    private record TerrainPoint(int y, boolean water) {
+    }
 
     private record Candidate(
             int x,
             int z,
             int minY,
             int maxY,
-            int averageY,
+            int medianY,
             int waterSamples,
             int outerWaterSamples,
             int outerHeightKinds,
+            double meanDeviation,
+            int heavyCutFillSamples,
+            int outerRange,
             double score
-    ) {}
+    ) {
+    }
 }
