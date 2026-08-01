@@ -32,11 +32,39 @@ public final class RealmSitePlanner {
     /** Pure generator survey. Safe to execute on a world-generation background executor. */
     public static RealmSiteLayoutSavedData.RealmSite surveyGeneratedTerrain(ServerLevel level, String homelandId) {
         int[] nominal = nominalCenter(homelandId);
-        List<int[]> centers = new ArrayList<>();
+        List<int[]> centers = surveyCenters(nominal);
 
-        // First gather a broad geopolitical district. A cheap 3x3 probe ranks every candidate,
-        // then only the best candidates receive a footprint-sized integrity survey. This preserves
-        // terrain quality without making first-world generation take several minutes per capital.
+        List<CoarseCandidate> shortlist = centers.stream()
+                .map(center -> coarseSample(level, homelandId, nominal, center[0], center[1]))
+                .sorted(Comparator.comparingDouble(CoarseCandidate::score))
+                .limit(DETAILED_CANDIDATE_LIMIT)
+                .toList();
+        List<Candidate> candidates = shortlist.stream()
+                .map(center -> sample(level, homelandId, nominal, center.x(), center.z()))
+                .toList();
+        Selection selection = selectCandidate(homelandId, candidates);
+        Candidate selected = selection.candidate();
+
+        if (selection.fallback()) {
+            LivingKingdoms.LOGGER.warn(
+                    "No ideal capital site existed for {} on this seed; using the driest lowest-impact candidate {},{} range={} water={}/49 outer_water={}/16 median={} deviation={}",
+                    homelandId, selected.x(), selected.z(), selected.range(), selected.waterSamples(),
+                    selected.outerWaterSamples(), selected.medianY(), selected.meanDeviation()
+            );
+        }
+        LivingKingdoms.LOGGER.info(
+                "Generator survey {} selected {},{} range={} water={}/49 median={} deviation={} outer_land={}/16 outer_range={} coarse={} detailed={} fallback={} score={}",
+                homelandId, selected.x(), selected.z(), selected.range(), selected.waterSamples(),
+                selected.medianY(), selected.meanDeviation(), 16 - selected.outerWaterSamples(),
+                selected.outerRange(), centers.size(), candidates.size(), selection.fallback(), selected.score()
+        );
+        return new RealmSiteLayoutSavedData.RealmSite(
+                selected.x(), selected.z(), selected.medianY(), LAYOUT_REVISION, false
+        );
+    }
+
+    private static List<int[]> surveyCenters(int[] nominal) {
+        List<int[]> centers = new ArrayList<>();
         for (int dx = -1_024; dx <= 1_024; dx += 128) {
             for (int dz = -1_024; dz <= 1_024; dz += 128) {
                 centers.add(new int[]{nominal[0] + dx, nominal[1] + dz});
@@ -47,47 +75,47 @@ public final class RealmSitePlanner {
                     {1, 0}, {-1, 0}, {0, 1}, {0, -1},
                     {1, 1}, {-1, 1}, {1, -1}, {-1, -1}
             }) {
-                centers.add(new int[]{nominal[0] + direction[0] * radius, nominal[1] + direction[1] * radius});
+                centers.add(new int[]{nominal[0] + direction[0] * radius,
+                        nominal[1] + direction[1] * radius});
             }
         }
+        return centers;
+    }
 
-        List<CoarseCandidate> shortlist = centers.stream()
-                .map(center -> coarseSample(level, homelandId, nominal, center[0], center[1]))
-                .sorted(Comparator.comparingDouble(CoarseCandidate::score))
-                .limit(DETAILED_CANDIDATE_LIMIT)
-                .toList();
-        List<Candidate> candidates = shortlist.stream()
-                .map(center -> sample(level, homelandId, nominal, center.x(), center.z()))
-                .toList();
-        Candidate selected = candidates.stream()
-                .filter(candidate -> acceptable(homelandId, candidate))
-                .min(Comparator.comparingDouble(Candidate::score))
-                .orElseGet(() -> candidates.stream()
-                        .filter(candidate -> emergencyAcceptable(homelandId, candidate))
-                        .min(Comparator.comparingDouble(Candidate::score))
-                        .orElseThrow(() -> new IllegalStateException(
-                                "No capital site passed the terrain-integrity gate for " + homelandId
-                                        + "; refusing to create a cliff box or submerged city"
-                        )));
+    private static Selection selectCandidate(String homelandId, List<Candidate> candidates) {
+        Comparator<Candidate> normal = Comparator.comparingDouble(Candidate::score);
+        Candidate ideal = candidates.stream().filter(candidate -> acceptable(homelandId, candidate))
+                .min(normal).orElse(null);
+        if (ideal != null) return new Selection(ideal, false);
 
-        LivingKingdoms.LOGGER.info(
-                "Generator survey {} selected {},{} range={} water={}/49 median={} deviation={} outer_land={}/16 outer_range={} coarse={} detailed={} score={}",
-                homelandId, selected.x(), selected.z(), selected.maxY() - selected.minY(),
-                selected.waterSamples(), selected.medianY(), selected.meanDeviation(),
-                16 - selected.outerWaterSamples(), selected.outerRange(), centers.size(), candidates.size(),
-                selected.score()
-        );
-        return new RealmSiteLayoutSavedData.RealmSite(
-                selected.x(), selected.z(), selected.medianY(), LAYOUT_REVISION, false
-        );
+        Candidate emergency = candidates.stream().filter(candidate -> emergencyAcceptable(homelandId, candidate))
+                .min(normal).orElse(null);
+        if (emergency != null) return new Selection(emergency, true);
+
+        // A difficult random seed must not abort world creation. The city core is deliberately
+        // graded to one authored level and its boundary is blended later, so the safest remaining
+        // choice is the dry candidate with the least cut/fill and edge impact.
+        Candidate fallback = candidates.stream()
+                .min(Comparator.comparingDouble(candidate -> fallbackScore(homelandId, candidate)))
+                .orElseThrow(() -> new IllegalStateException("Capital survey returned no candidates"));
+        return new Selection(fallback, true);
+    }
+
+    private static double fallbackScore(String homelandId, Candidate candidate) {
+        int preferredY = "kardum_league".equals(homelandId) ? 72 : 66;
+        double lowTerrain = Math.max(0, preferredY - candidate.medianY()) * 120_000.0;
+        double water = candidate.waterSamples() * 100_000.0
+                + candidate.outerWaterSamples() * 160_000.0;
+        double shape = candidate.range() * 3_500.0
+                + candidate.outerRange() * 2_000.0
+                + candidate.meanDeviation() * 8_000.0
+                + candidate.heavyCutFillSamples() * 4_000.0;
+        return water + lowTerrain + shape + candidate.score();
     }
 
     /** Stores a background-survey result on the server thread. */
     public static synchronized RealmSiteLayoutSavedData.RealmSite storeSurvey(
-            ServerLevel level,
-            String homelandId,
-            RealmSiteLayoutSavedData.RealmSite surveyed
-    ) {
+            ServerLevel level, String homelandId, RealmSiteLayoutSavedData.RealmSite surveyed) {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
         RealmSiteLayoutSavedData.RealmSite current = data.site(homelandId).orElse(null);
         if (current != null && current.revision() >= LAYOUT_REVISION) return current;
@@ -95,8 +123,8 @@ public final class RealmSitePlanner {
         return surveyed;
     }
 
-    /** Synchronous fallback that still does not load chunks. */
-    public static synchronized RealmSiteLayoutSavedData.RealmSite ensureSite(ServerLevel level, String homelandId) {
+    public static synchronized RealmSiteLayoutSavedData.RealmSite ensureSite(ServerLevel level,
+                                                                              String homelandId) {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
         RealmSiteLayoutSavedData.RealmSite current = data.site(homelandId).orElse(null);
         if (current != null && current.revision() >= LAYOUT_REVISION) return current;
@@ -123,47 +151,28 @@ public final class RealmSitePlanner {
         return site != null && site.built() && site.revision() >= LAYOUT_REVISION;
     }
 
-    /** Map reads never start construction or force a remote chunk load. */
+    /** Map reads do not start construction or load remote chunks. */
     public static BlockPos residencePosition(ServerLevel level, String homelandId, String residenceId) {
         RealmSiteLayoutSavedData.RealmSite site = site(level, homelandId);
-        int[] offset = residenceOffset(residenceId);
-        int centerX;
-        int centerZ;
-        int baseY;
-        boolean built;
-        if (site == null) {
-            int[] nominal = nominalCenter(homelandId);
-            centerX = nominal[0];
-            centerZ = nominal[1];
-            baseY = 68;
-            built = false;
-        } else {
-            centerX = site.centerX();
-            centerZ = site.centerZ();
-            baseY = site.baseY();
-            built = site.built() && site.revision() >= LAYOUT_REVISION;
+        if (site != null && site.built() && site.revision() >= LAYOUT_REVISION) {
+            return SafeResidenceLocator.residence(level, homelandId, residenceId);
         }
-        int x = centerX + offset[0];
-        int z = centerZ + offset[1];
+        int[] center = site == null ? nominalCenter(homelandId)
+                : new int[]{site.centerX(), site.centerZ()};
+        int baseY = site == null ? 68 : site.baseY();
+        int[] offset = residenceOffset(residenceId);
         int y = "silvana_tree_home".equals(residenceId)
-                ? Math.max(70, Math.min(122, baseY)) + 17
-                : built ? surfaceY(level, x, z) + 1 : Math.max(68, baseY + 1);
-        return new BlockPos(x, y, z);
+                ? Math.max(70, Math.min(122, baseY)) + 17 : Math.max(68, baseY + 1);
+        return new BlockPos(center[0] + offset[0], y, center[1] + offset[1]);
     }
 
-    /** Actual generated-world surface, used only after selected-site pregeneration. */
     public static int surfaceY(ServerLevel level, int x, int z) {
         level.getChunk(x >> 4, z >> 4);
         return level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
     }
 
-    private static CoarseCandidate coarseSample(
-            ServerLevel level,
-            String homelandId,
-            int[] nominal,
-            int x,
-            int z
-    ) {
+    private static CoarseCandidate coarseSample(ServerLevel level, String homelandId,
+                                                int[] nominal, int x, int z) {
         ChunkGenerator generator = level.getChunkSource().getGenerator();
         RandomState randomState = level.getChunkSource().randomState();
         List<Integer> heights = new ArrayList<>(9);
@@ -181,14 +190,13 @@ public final class RealmSitePlanner {
         }
         heights.sort(Integer::compareTo);
         int median = heights.get(heights.size() / 2);
-        double deviation = heights.stream().mapToDouble(value -> Math.abs(value - median)).average().orElse(99.0);
+        double deviation = heights.stream().mapToDouble(value -> Math.abs(value - median))
+                .average().orElse(99.0);
         double distance = Math.hypot(x - nominal[0], z - nominal[1]) / 24.0;
         double rangePenalty = "kardum_league".equals(homelandId)
-                ? Math.abs((max - min) - 16) * 28.0
-                : (max - min) * 95.0;
+                ? Math.abs((max - min) - 16) * 28.0 : (max - min) * 95.0;
         double heightPenalty = "kardum_league".equals(homelandId)
-                ? Math.max(0, 72 - median) * 120.0
-                : Math.max(0, 66 - median) * 180.0;
+                ? Math.max(0, 72 - median) * 120.0 : Math.max(0, 66 - median) * 180.0;
         return new CoarseCandidate(x, z,
                 rangePenalty + deviation * 170.0 + water * 2_600.0 + heightPenalty + distance);
     }
@@ -196,27 +204,24 @@ public final class RealmSitePlanner {
     private static Candidate sample(ServerLevel level, String homelandId, int[] nominal, int x, int z) {
         ChunkGenerator generator = level.getChunkSource().getGenerator();
         RandomState randomState = level.getChunkSource().randomState();
-        List<Integer> innerHeights = new ArrayList<>(49);
+        List<Integer> heights = new ArrayList<>(49);
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
         int water = 0;
         for (int ox = -120; ox <= 120; ox += 40) {
             for (int oz = -120; oz <= 120; oz += 40) {
                 TerrainPoint point = generatedPoint(generator, randomState, level, x + ox, z + oz);
-                innerHeights.add(point.y());
+                heights.add(point.y());
                 min = Math.min(min, point.y());
                 max = Math.max(max, point.y());
                 if (point.water()) water++;
             }
         }
-        innerHeights.sort(Integer::compareTo);
-        int median = innerHeights.get(innerHeights.size() / 2);
-        double meanDeviation = innerHeights.stream()
-                .mapToDouble(height -> Math.abs(height - median))
+        heights.sort(Integer::compareTo);
+        int median = heights.get(heights.size() / 2);
+        double deviation = heights.stream().mapToDouble(height -> Math.abs(height - median))
                 .average().orElse(Double.MAX_VALUE);
-        int heavyCutFillSamples = (int) innerHeights.stream()
-                .filter(height -> Math.abs(height - median) > 6)
-                .count();
+        int heavy = (int) heights.stream().filter(height -> Math.abs(height - median) > 6).count();
 
         Set<Integer> outerHeights = new HashSet<>();
         int outerWater = 0;
@@ -233,7 +238,7 @@ public final class RealmSitePlanner {
         int range = max - min;
         int outerRange = outerMax - outerMin;
         double waterPenalty = water * 1_100.0 + outerWater * 2_000.0;
-        double cutFillPenalty = heavyCutFillSamples * 500.0 + meanDeviation * 260.0;
+        double cutFillPenalty = heavy * 500.0 + deviation * 260.0;
         double edgePenalty = Math.max(0, outerRange - 28) * 650.0;
         double distancePenalty = Math.hypot(x - nominal[0], z - nominal[1]) / 16.0;
         double score;
@@ -248,16 +253,11 @@ public final class RealmSitePlanner {
                     + waterPenalty + cutFillPenalty + edgePenalty + distancePenalty;
         }
         return new Candidate(x, z, min, max, median, water, outerWater, outerHeights.size(),
-                meanDeviation, heavyCutFillSamples, outerRange, score);
+                deviation, heavy, outerRange, score);
     }
 
-    private static TerrainPoint generatedPoint(
-            ChunkGenerator generator,
-            RandomState randomState,
-            ServerLevel level,
-            int x,
-            int z
-    ) {
+    private static TerrainPoint generatedPoint(ChunkGenerator generator, RandomState randomState,
+                                                ServerLevel level, int x, int z) {
         int y = generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE, level, randomState) - 1;
         NoiseColumn column = generator.getBaseColumn(x, z, level, randomState);
         BlockState state = column.getBlock(y);
@@ -268,42 +268,28 @@ public final class RealmSitePlanner {
         if (candidate.medianY() < ("kardum_league".equals(homelandId) ? 72 : 68)) return false;
         if (candidate.outerWaterSamples() > 5 || candidate.outerHeightKinds() < 3) return false;
         if (candidate.outerRange() > ("kardum_league".equals(homelandId) ? 48 : 38)) return false;
-
-        int range = candidate.maxY() - candidate.minY();
         return switch (homelandId) {
-            case "kardum_league" -> candidate.waterSamples() <= 3
-                    && range >= 5 && range <= 34
-                    && candidate.meanDeviation() <= 8.0
+            case "kardum_league" -> candidate.waterSamples() <= 3 && candidate.range() >= 5
+                    && candidate.range() <= 34 && candidate.meanDeviation() <= 8.0
                     && candidate.heavyCutFillSamples() <= 22;
-            case "silvana_forest" -> candidate.waterSamples() <= 6
-                    && range <= 24
-                    && candidate.meanDeviation() <= 6.5
-                    && candidate.heavyCutFillSamples() <= 18;
-            default -> candidate.waterSamples() <= 3
-                    && range <= 19
-                    && candidate.meanDeviation() <= 5.0
-                    && candidate.heavyCutFillSamples() <= 13;
+            case "silvana_forest" -> candidate.waterSamples() <= 6 && candidate.range() <= 24
+                    && candidate.meanDeviation() <= 6.5 && candidate.heavyCutFillSamples() <= 18;
+            default -> candidate.waterSamples() <= 3 && candidate.range() <= 19
+                    && candidate.meanDeviation() <= 5.0 && candidate.heavyCutFillSamples() <= 13;
         };
     }
 
-    /**
-     * Emergency ceiling for unusually rough seeds. It remains far below the old range-42 site and
-     * only prevents a world from failing when no ideal candidate exists inside the authored region.
-     */
     private static boolean emergencyAcceptable(String homelandId, Candidate candidate) {
-        int range = candidate.maxY() - candidate.minY();
-        if (candidate.medianY() < 66 || candidate.waterSamples() > 7 || candidate.outerWaterSamples() > 6) {
-            return false;
-        }
-        if (candidate.outerHeightKinds() < 2 || candidate.outerRange() > 52) return false;
+        if (candidate.medianY() < 64 || candidate.waterSamples() > 10
+                || candidate.outerWaterSamples() > 8 || candidate.outerHeightKinds() < 2
+                || candidate.outerRange() > 60) return false;
         return switch (homelandId) {
-            case "kardum_league" -> range <= 38 && candidate.meanDeviation() <= 10.0;
-            case "silvana_forest" -> range <= 28 && candidate.meanDeviation() <= 8.0;
-            default -> range <= 24 && candidate.meanDeviation() <= 7.0;
+            case "kardum_league" -> candidate.range() <= 42 && candidate.meanDeviation() <= 12.0;
+            case "silvana_forest" -> candidate.range() <= 32 && candidate.meanDeviation() <= 9.0;
+            default -> candidate.range() <= 28 && candidate.meanDeviation() <= 8.0;
         };
     }
 
-    /** Fixed geopolitical anchors shared by every player and every multiplayer session. */
     public static int[] nominalCenter(String homelandId) {
         return switch (homelandId) {
             case "silvana_forest" -> new int[]{-9_000, -1_500};
@@ -338,19 +324,15 @@ public final class RealmSitePlanner {
     private record CoarseCandidate(int x, int z, double score) {
     }
 
-    private record Candidate(
-            int x,
-            int z,
-            int minY,
-            int maxY,
-            int medianY,
-            int waterSamples,
-            int outerWaterSamples,
-            int outerHeightKinds,
-            double meanDeviation,
-            int heavyCutFillSamples,
-            int outerRange,
-            double score
-    ) {
+    private record Selection(Candidate candidate, boolean fallback) {
+    }
+
+    private record Candidate(int x, int z, int minY, int maxY, int medianY,
+                             int waterSamples, int outerWaterSamples, int outerHeightKinds,
+                             double meanDeviation, int heavyCutFillSamples, int outerRange,
+                             double score) {
+        int range() {
+            return maxY - minY;
+        }
     }
 }
