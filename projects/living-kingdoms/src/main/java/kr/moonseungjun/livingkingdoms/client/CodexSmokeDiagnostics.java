@@ -4,11 +4,11 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
-/** CI-only graphical verification for all codex v2 pages after client resource binding. */
+/** CI-only graphical verification for all responsive codex pages after client resource binding. */
 final class CodexSmokeDiagnostics {
     private static final boolean ENABLED = "1".equals(System.getenv("LIVING_KINGDOMS_CI_CLIENT_TEST"));
     private static int ticks;
-    private static RealmCodexScreenV2 active;
+    private static RealmCodexScreenV3 active;
 
     private CodexSmokeDiagnostics() {
     }
@@ -28,14 +28,14 @@ final class CodexSmokeDiagnostics {
         if (ticks == 176) {
             verify("skills");
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true",
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true draggable_atlas=true",
                     active.width, active.height
             );
         }
     }
 
     private static void open(Minecraft minecraft, String page) {
-        active = new RealmCodexScreenV2(page, sampleSnapshot());
+        active = new RealmCodexScreenV3(page, sampleSnapshot());
         minecraft.gui.setScreen(active);
         LivingKingdoms.LOGGER.info("LK_CLIENT_CODEX_SCREEN_OPENED page={}", page);
     }
@@ -81,6 +81,12 @@ final class CodexSmokeDiagnostics {
                 + "home_x\t84\n"
                 + "home_z\t-112\n"
                 + "player_x\t12\n"
-                + "player_z\t8\n";
+                + "player_z\t8\n"
+                + "erden_x\t0\n"
+                + "erden_z\t0\n"
+                + "silvana_x\t-9000\n"
+                + "silvana_z\t-1500\n"
+                + "kardum_x\t-2500\n"
+                + "kardum_z\t-9000\n";
     }
 }
