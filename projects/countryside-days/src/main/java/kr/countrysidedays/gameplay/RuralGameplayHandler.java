@@ -33,6 +33,7 @@ import java.util.Optional;
 
 public final class RuralGameplayHandler {
     private static final String STARTER_KIT_TAG = "countrysidedays_starter_kit_alpha10";
+    private static final String STARTER_HOE_TAG = "countrysidedays_starter_hoe_alpha12";
     private static final String PRIVATE_LIVESTOCK_OWNER_PREFIX = "cd_owner_";
     private static final float WILD_HERB_CHANCE = 0.32F;
     private static final float RIVER_FISH_CHANCE = 0.45F;
@@ -110,6 +111,10 @@ public final class RuralGameplayHandler {
             giveOrDrop(player, new ItemStack(Items.POTATO, 8));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_kit"));
         }
+        if (player.addTag(STARTER_HOE_TAG)) {
+            giveOrDrop(player, Items.STONE_HOE.getDefaultInstance());
+            player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_hoe"));
+        }
 
         if (firstArrival || allocation.created()) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.personal_estate_ready"));
@@ -178,10 +183,7 @@ public final class RuralGameplayHandler {
 
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (!(event.getLevel() instanceof ServerLevel serverLevel)
-                || !CountrysideRegionManager.isInsideCountryside(
-                        serverLevel,
-                        event.getEntity().blockPosition()
-                )) return;
+                || !CountrysideRegionManager.isInsideCountryside(serverLevel, event.getEntity().blockPosition())) return;
 
         if (event.getEntity() instanceof Enemy) {
             event.setCanceled(true);
@@ -206,6 +208,15 @@ public final class RuralGameplayHandler {
         if (event.isCanceled()
                 || !(event.getEntity() instanceof ServerPlayer player)
                 || !(player.level() instanceof ServerLevel serverLevel)) return;
+
+        BlockPos hookPos = event.getHookEntity().blockPosition();
+        if (!CountrysideFishingManager.isAllowed(serverLevel, hookPos)) {
+            event.getDrops().clear();
+            event.setCanceled(true);
+            player.sendOverlayMessage(Component.translatable("message.countrysidedays.fishing_public_only"));
+            return;
+        }
+
         if (serverLevel.getRandom().nextFloat() >= RIVER_FISH_CHANCE) return;
         giveOrDrop(player, ModItems.RIVER_FISH.get().getDefaultInstance());
         player.sendOverlayMessage(Component.translatable("message.countrysidedays.river_fish_caught"));
@@ -220,8 +231,7 @@ public final class RuralGameplayHandler {
 
     private static boolean isManagedLivestock(Animal animal) {
         return animal.entityTags().contains(RuralNpcManager.PUBLIC_LIVESTOCK_TAG)
-                || animal.entityTags().stream()
-                .anyMatch(tag -> tag.startsWith(PRIVATE_LIVESTOCK_OWNER_PREFIX));
+                || animal.entityTags().stream().anyMatch(tag -> tag.startsWith(PRIVATE_LIVESTOCK_OWNER_PREFIX));
     }
 
     private static boolean isRuralLivestock(Animal animal) {
