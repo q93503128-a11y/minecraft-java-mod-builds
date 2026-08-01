@@ -28,21 +28,22 @@ public final class VillageSkillTreeSystem {
         return spent;
     }
 
+    public static boolean hasValidAllocation(ServerPlayer player) {
+        return spentPoints(player) <= earnedPoints(player);
+    }
+
     public static int availablePoints(ServerPlayer player) {
         return Math.max(0, earnedPoints(player) - spentPoints(player));
     }
 
     public static boolean has(ServerPlayer player, Node node) {
-        String tag = TAG_PREFIX + node.id();
-        boolean newlyAdded = player.addTag(tag);
-        if (newlyAdded) {
-            player.removeTag(tag);
-            return false;
-        }
-        return true;
+        return player.getTags().contains(TAG_PREFIX + node.id());
     }
 
     public static String purchase(ServerPlayer player, String nodeId) {
+        if (!hasValidAllocation(player)) {
+            return "스킬 사용량이 획득 포인트보다 많아 안전 잠금되었습니다. 관리자에게 데이터 복구를 요청하세요.";
+        }
         Node node = Node.parse(nodeId).orElse(null);
         if (node == null) {
             return "알 수 없는 스킬 노드입니다.";
@@ -63,6 +64,9 @@ public final class VillageSkillTreeSystem {
     public static String nodeStatus(ServerPlayer player, Node node) {
         if (has(player, node)) {
             return "습득";
+        }
+        if (!hasValidAllocation(player)) {
+            return "데이터 잠금";
         }
         if (node.prerequisite() != null && !has(player, node.prerequisite())) {
             return "잠김";
