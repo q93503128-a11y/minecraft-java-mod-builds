@@ -14,27 +14,27 @@ import java.util.regex.Pattern;
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageInventoryPanel {
-    private static final int PANEL_WIDTH = 116;
-    private static final int PANEL_HEIGHT = 136;
-    private static final int SHADOW = 0x77000000;
-    private static final int BACKGROUND = 0xF50D1117;
-    private static final int SURFACE = 0xFF171D25;
-    private static final int SURFACE_HOVER = 0xFF222C37;
-    private static final int BORDER = 0xFF35414E;
-    private static final int ACCENT = 0xFF3ED0B4;
-    private static final int ACCENT_DARK = 0xFF1E776B;
-    private static final int GOLD = 0xFFF1BC57;
-    private static final int TEXT = 0xFFF3F6F8;
-    private static final int MUTED = 0xFF94A0AD;
-    private static final int BLUE = 0xFF86A8E8;
+    private static final int PANEL_WIDTH = 126;
+    private static final int PANEL_HEIGHT = 137;
+    private static final int BACKGROUND = 0xF70B1118;
+    private static final int SURFACE = 0xFF15202A;
+    private static final int SURFACE_HOVER = 0xFF20303D;
+    private static final int BORDER = 0xFF405466;
+    private static final int ACCENT = 0xFF43D6BC;
+    private static final int GOLD = 0xFFF1C35D;
+    private static final int BLUE = 0xFF7EA9EA;
+    private static final int TEXT = 0xFFF3F7FA;
+    private static final int MUTED = 0xFFA3B0BC;
     private static final Pattern LEVEL_PATTERN = Pattern.compile(".*?(\\d+).*");
-    private static final Pattern PROGRESS_PATTERN = Pattern.compile(".*?(\\d+).*?(\\d+)\\s*/\\s*(\\d+).*?");
+    private static final Pattern PROGRESS_PATTERN =
+            Pattern.compile(".*?(\\d+).*?(\\d+)\\s*/\\s*(\\d+).*?");
 
-    private static VillageNetwork.PlayerStatusPayload status = new VillageNetwork.PlayerStatusPayload(
-            "레벨 동기화 중",
-            "확인 중",
-            "주화 확인 중",
-            "마을 확인 중");
+    private static VillageNetwork.PlayerStatusPayload status =
+            new VillageNetwork.PlayerStatusPayload(
+                    "레벨 동기화 중",
+                    "역할 확인 중",
+                    "주화 확인 중",
+                    "마을 확인 중");
 
     private VillageInventoryPanel() {
     }
@@ -56,73 +56,85 @@ public final class VillageInventoryPanel {
         if (!(event.getScreen() instanceof InventoryScreen)) {
             return;
         }
+
         GuiGraphicsExtractor graphics = event.getGuiGraphics();
-        int[] pos = panelPosition(graphics.guiWidth(), graphics.guiHeight());
-        int left = pos[0];
-        int top = pos[1];
-        int buttonLeft = left + 8;
-        int buttonTop = top + PANEL_HEIGHT - 27;
-        boolean hovered = inside(
-                event.getMouseX(), event.getMouseY(),
-                buttonLeft, buttonTop, PANEL_WIDTH - 16, 19);
-
-        graphics.fill(left + 3, top + 4, left + PANEL_WIDTH + 3, top + PANEL_HEIGHT + 4, SHADOW);
-        graphics.fill(left - 1, top - 1, left + PANEL_WIDTH + 1, top + PANEL_HEIGHT + 1, BORDER);
-        graphics.fill(left, top, left + PANEL_WIDTH, top + PANEL_HEIGHT, BACKGROUND);
-        graphics.fill(left, top, left + 3, top + PANEL_HEIGHT, ACCENT);
-
+        int[] position = panelPosition(graphics.guiWidth(), graphics.guiHeight());
+        int left = position[0];
+        int top = position[1];
         Minecraft minecraft = Minecraft.getInstance();
         ProgressData progress = parseProgress(status.progress());
 
-        graphics.text(minecraft.font, "VG", left + 10, top + 8, GOLD, false);
-        graphics.text(minecraft.font, "수호단", left + 28, top + 8, TEXT, false);
-        String levelText = "LV." + progress.level();
-        int badgeWidth = minecraft.font.width(levelText) + 8;
-        int badgeLeft = left + PANEL_WIDTH - badgeWidth - 7;
-        graphics.fill(badgeLeft, top + 5, left + PANEL_WIDTH - 6, top + 20, SURFACE);
-        graphics.centeredText(minecraft.font, levelText,
-                badgeLeft + badgeWidth / 2, top + 9, GOLD);
+        graphics.fill(left - 1, top - 1,
+                left + PANEL_WIDTH + 1, top + PANEL_HEIGHT + 1, BORDER);
+        graphics.fill(left, top,
+                left + PANEL_WIDTH, top + PANEL_HEIGHT, BACKGROUND);
+        graphics.fill(left, top, left + 4, top + PANEL_HEIGHT, ACCENT);
 
-        int barLeft = left + 9;
+        graphics.text(minecraft.font, "수호자", left + 11, top + 9, TEXT, false);
+        String level = "LV." + progress.level();
+        graphics.text(minecraft.font, level,
+                left + PANEL_WIDTH - 9 - minecraft.font.width(level),
+                top + 9, GOLD, false);
+
+        int barLeft = left + 11;
         int barTop = top + 27;
-        int barWidth = PANEL_WIDTH - 18;
+        int barWidth = PANEL_WIDTH - 22;
         graphics.fill(barLeft, barTop, barLeft + barWidth, barTop + 5, 0xFF05080C);
-        graphics.fill(barLeft + 1, barTop + 1,
-                barLeft + 1 + Math.round((barWidth - 2) * progress.ratio()),
-                barTop + 4, ACCENT);
-        String xpText = progress.maxLevel()
-                ? "MAX LEVEL"
-                : progress.current() + "/" + progress.required() + " XP";
-        graphics.text(minecraft.font, xpText, barLeft, barTop + 8,
-                progress.maxLevel() ? GOLD : MUTED, false);
+        graphics.fill(barLeft, barTop,
+                barLeft + Math.round(barWidth * progress.ratio()),
+                barTop + 5, ACCENT);
+        String xp = progress.maxLevel()
+                ? "최고 레벨"
+                : progress.current() + " / " + progress.required() + " XP";
+        graphics.text(minecraft.font, xp, barLeft, barTop + 9, MUTED, false);
 
-        drawInfoRow(graphics, minecraft, left, top + 49, "역할", status.role(), ACCENT);
-        drawInfoRow(graphics, minecraft, left, top + 64, "자산", status.economy(), GOLD);
-        drawInfoRow(graphics, minecraft, left, top + 79, "마을", status.village(), BLUE);
+        graphics.text(minecraft.font, "역할", barLeft, top + 54, MUTED, false);
+        graphics.text(minecraft.font, compact(status.role(), 13),
+                left + 40, top + 54, TEXT, false);
+        graphics.text(minecraft.font, compact(status.economy(), 19),
+                barLeft, top + 68, GOLD, false);
 
-        graphics.fill(buttonLeft - 1, buttonTop - 1,
-                buttonLeft + PANEL_WIDTH - 15, buttonTop + 20, hovered ? ACCENT : ACCENT_DARK);
-        graphics.fill(buttonLeft, buttonTop,
-                buttonLeft + PANEL_WIDTH - 16, buttonTop + 19,
-                hovered ? SURFACE_HOVER : SURFACE);
-        graphics.fill(buttonLeft, buttonTop, buttonLeft + 3, buttonTop + 19,
-                hovered ? GOLD : ACCENT);
-        graphics.text(minecraft.font, "상태 / 역할", buttonLeft + 10, buttonTop + 6, TEXT, false);
-        graphics.text(minecraft.font, ">", buttonLeft + PANEL_WIDTH - 27, buttonTop + 6,
-                hovered ? GOLD : MUTED, false);
+        drawAction(graphics, minecraft, event.getMouseX(), event.getMouseY(),
+                left + 8, top + 84, PANEL_WIDTH - 16, 20,
+                "전술 발전", ACCENT, true);
+        drawAction(graphics, minecraft, event.getMouseX(), event.getMouseY(),
+                left + 8, top + 108, PANEL_WIDTH - 16, 20,
+                "마을 귀환", BLUE, false);
     }
 
-    private static void drawInfoRow(
+    private static void drawAction(
             GuiGraphicsExtractor graphics,
             Minecraft minecraft,
-            int left,
+            double mouseX,
+            double mouseY,
+            int x,
             int y,
+            int width,
+            int height,
             String label,
-            String value,
-            int markerColor) {
-        graphics.fill(left + 9, y + 2, left + 11, y + 8, markerColor);
-        graphics.text(minecraft.font, label, left + 16, y, MUTED, false);
-        graphics.text(minecraft.font, compact(value, 14), left + 43, y, TEXT, false);
+            int color,
+            boolean tree) {
+        boolean hovered = inside(mouseX, mouseY, x, y, width, height);
+        graphics.fill(x - 1, y - 1, x + width + 1, y + height + 1,
+                hovered ? color : BORDER);
+        graphics.fill(x, y, x + width, y + height,
+                hovered ? SURFACE_HOVER : SURFACE);
+
+        int iconX = x + 7;
+        int iconY = y + 5;
+        if (tree) {
+            graphics.fill(iconX + 4, iconY, iconX + 6, iconY + 10, color);
+            graphics.fill(iconX, iconY + 3, iconX + 10, iconY + 5, color);
+            graphics.fill(iconX, iconY, iconX + 3, iconY + 3, color);
+            graphics.fill(iconX + 7, iconY + 7, iconX + 10, iconY + 10, color);
+        } else {
+            graphics.fill(iconX + 4, iconY, iconX + 6, iconY + 10, color);
+            graphics.fill(iconX, iconY + 1, iconX + 6, iconY + 3, color);
+            graphics.fill(iconX, iconY + 1, iconX + 2, iconY + 7, color);
+        }
+        graphics.text(minecraft.font, label, x + 24, y + 6, TEXT, false);
+        graphics.text(minecraft.font, "›", x + width - 14, y + 6,
+                hovered ? GOLD : MUTED, false);
     }
 
     @SubscribeEvent
@@ -131,19 +143,25 @@ public final class VillageInventoryPanel {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        int[] pos = panelPosition(
+        int[] position = panelPosition(
                 minecraft.getWindow().getGuiScaledWidth(),
                 minecraft.getWindow().getGuiScaledHeight());
-        int left = pos[0];
-        int top = pos[1];
-        if (!inside(
-                event.getMouseX(), event.getMouseY(),
-                left + 8, top + PANEL_HEIGHT - 27, PANEL_WIDTH - 16, 19)) {
+        int left = position[0];
+        int top = position[1];
+
+        if (inside(event.getMouseX(), event.getMouseY(),
+                left + 8, top + 84, PANEL_WIDTH - 16, 20)) {
+            ClientPacketDistributor.sendToServer(
+                    new VillageNetwork.VillageUiActionPayload("open_skill_tree"));
+            event.setCanceled(true);
             return;
         }
-        ClientPacketDistributor.sendToServer(
-                new VillageNetwork.VillageUiActionPayload("open_status"));
-        event.setCanceled(true);
+        if (inside(event.getMouseX(), event.getMouseY(),
+                left + 8, top + 108, PANEL_WIDTH - 16, 20)) {
+            ClientPacketDistributor.sendToServer(
+                    new VillageNetwork.VillageUiActionPayload("return_village"));
+            event.setCanceled(true);
+        }
     }
 
     private static ProgressData parseProgress(String text) {
@@ -173,8 +191,7 @@ public final class VillageInventoryPanel {
     private static String compact(String value, int maxCharacters) {
         String normalized = value
                 .replace("내 수호 주화 ", "주화 ")
-                .replace("제 ", "")
-                .replace("일 ", "일·");
+                .replace(" · 장비 ", " · 장비");
         if (normalized.length() <= maxCharacters) {
             return normalized;
         }
@@ -184,11 +201,11 @@ public final class VillageInventoryPanel {
     private static int[] panelPosition(int screenWidth, int screenHeight) {
         int inventoryRight = screenWidth / 2 + 90;
         int inventoryLeft = screenWidth / 2 - 90;
-        int preferredRight = inventoryRight + 7;
-        int left = preferredRight + PANEL_WIDTH <= screenWidth - 5
-                ? preferredRight
-                : Math.max(5, inventoryLeft - PANEL_WIDTH - 7);
-        int top = Math.max(5, screenHeight / 2 - 83);
+        int rightCandidate = inventoryRight + 8;
+        int left = rightCandidate + PANEL_WIDTH <= screenWidth - 7
+                ? rightCandidate
+                : Math.max(7, inventoryLeft - PANEL_WIDTH - 8);
+        int top = Math.max(7, screenHeight / 2 - 82);
         return new int[]{left, top};
     }
 
@@ -199,10 +216,8 @@ public final class VillageInventoryPanel {
             int y,
             int width,
             int height) {
-        return mouseX >= x
-                && mouseX < x + width
-                && mouseY >= y
-                && mouseY < y + height;
+        return mouseX >= x && mouseX < x + width
+                && mouseY >= y && mouseY < y + height;
     }
 
     private record ProgressData(int level, int current, int required, boolean maxLevel) {
