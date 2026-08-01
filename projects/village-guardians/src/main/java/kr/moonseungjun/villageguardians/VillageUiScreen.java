@@ -17,6 +17,7 @@ public final class VillageUiScreen extends Screen {
     private static final int SHADOW = 0x99000000;
     private static final int PANEL = 0xFF101820;
     private static final int PANEL_SOFT = 0xFF1B2631;
+    private static final int PANEL_RAISED = 0xFF253442;
     private static final int BORDER = 0xFF52677A;
     private static final int ACCENT = 0xFF42D8BC;
     private static final int GOLD = 0xFFFFC85A;
@@ -29,12 +30,17 @@ public final class VillageUiScreen extends Screen {
 
     private int actionPage;
     private int actionPageCount = 1;
+    private int selectedIndex = -1;
     private int scrollOffset;
     private int maxScroll;
     private int bodyLeft;
     private int bodyTop;
     private int bodyRight;
     private int bodyBottom;
+    private int detailLeft;
+    private int detailTop;
+    private int detailRight;
+    private int detailBottom;
 
     public VillageUiScreen(VillageNetwork.OpenVillageUiPayload payload) {
         super(Component.literal(payload.title()));
@@ -65,15 +71,12 @@ public final class VillageUiScreen extends Screen {
         ContentLayout content = contentLayout(layout);
         renderFrame(graphics, mouseX, mouseY, layout);
 
-        graphics.fill(
-                content.infoLeft(), content.infoTop(),
+        graphics.fill(content.infoLeft(), content.infoTop(),
                 content.infoRight(), content.infoBottom(), PANEL_SOFT);
-        graphics.fill(
-                content.actionLeft(), content.actionTop(),
+        graphics.fill(content.actionLeft(), content.actionTop(),
                 content.actionRight(), content.actionBottom(), PANEL_SOFT);
         if (content.split()) {
-            graphics.fill(
-                    content.divider(), content.infoTop(),
+            graphics.fill(content.divider(), content.infoTop(),
                     content.divider() + 1, content.infoBottom(), BORDER);
         }
 
@@ -85,18 +88,12 @@ public final class VillageUiScreen extends Screen {
         graphics.text(font, actionHeader(),
                 content.actionLeft() + 10, content.actionTop() + 8, ACCENT, false);
         renderBody(graphics);
+        renderSelectedDetail(graphics);
 
         if (actions.length == 0) {
-            graphics.text(font, "사용 가능한 명령이 없습니다.",
+            graphics.text(font, "사용 가능한 동작이 없습니다.",
                     content.actionLeft() + 10, content.actionTop() + 34, MUTED, false);
         }
-        if (actionPageCount > 1) {
-            String page = (actionPage + 1) + " / " + actionPageCount;
-            graphics.centeredText(font, page,
-                    (content.actionLeft() + content.actionRight()) / 2,
-                    content.actionBottom() - 20, MUTED);
-        }
-
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -105,22 +102,24 @@ public final class VillageUiScreen extends Screen {
         Layout layout = layout();
         ContentLayout content = contentLayout(layout);
         int count = Math.min(actions.length, labels.length);
-        int columns = content.split() && content.actionRight() - content.actionLeft() >= 260 ? 2 : 1;
-        int rows = content.split() ? 3 : 3;
+        int areaWidth = content.actionRight() - content.actionLeft();
+        int columns = content.split() && areaWidth >= 255 ? 2 : 1;
+        int rows = content.split() ? 2 : 3;
         int pageSize = Math.max(1, columns * rows);
         actionPageCount = Math.max(1, (count + pageSize - 1) / pageSize);
         actionPage = Math.max(0, Math.min(actionPage, actionPageCount - 1));
 
         int start = actionPage * pageSize;
         int end = Math.min(count, start + pageSize);
-        int gap = 7;
+        int gap = 6;
         int horizontalPadding = 10;
-        int availableWidth = Math.max(80,
-                content.actionRight() - content.actionLeft() - horizontalPadding * 2);
+        int availableWidth = Math.max(80, areaWidth - horizontalPadding * 2);
         int buttonWidth = Math.max(72, (availableWidth - gap * (columns - 1)) / columns);
         int buttonHeight = 22;
         int buttonAreaTop = content.actionTop() + 27;
-        int buttonAreaBottom = content.actionBottom() - (actionPageCount > 1 ? 34 : 9);
+        int footerHeight = 31;
+        int detailHeight = 53;
+        int buttonAreaBottom = content.actionBottom() - footerHeight - detailHeight - 5;
         int usedRows = Math.max(1, (end - start + columns - 1) / columns);
         int totalHeight = usedRows * buttonHeight + Math.max(0, usedRows - 1) * gap;
         int startY = buttonAreaTop + Math.max(0, (buttonAreaBottom - buttonAreaTop - totalHeight) / 2);
@@ -131,23 +130,39 @@ public final class VillageUiScreen extends Screen {
             int row = local / columns;
             int x = content.actionLeft() + horizontalPadding + column * (buttonWidth + gap);
             int y = startY + row * (buttonHeight + gap);
-            String action = actions[index];
             String label = compact(labels[index], columns == 2 ? 16 : 29);
-            addRenderableWidget(Button.builder(
-                            Component.literal(label),
-                            button -> sendAction(action))
+            Button actionButton = Button.builder(
+                            Component.literal((selectedIndex == index ? "▶ " : "") + label),
+                            button -> selectAction(index))
                     .bounds(x, y, buttonWidth, buttonHeight)
-                    .build());
+                    .build();
+            addRenderableWidget(actionButton);
         }
 
+        detailLeft = content.actionLeft() + 10;
+        detailRight = content.actionRight() - 10;
+        detailBottom = content.actionBottom() - footerHeight - 4;
+        detailTop = detailBottom - detailHeight;
+
+        int footerY = content.actionBottom() - 27;
+        int executeWidth = Math.min(142, Math.max(92, areaWidth / 2));
+        int executeX = content.actionRight() - 10 - executeWidth;
+        Button execute = Button.builder(
+                        Component.literal(selectedIndex >= 0
+                                ? VillageActionDescriptions.executeLabel(actions[selectedIndex])
+                                : "동작을 먼저 선택하세요"),
+                        button -> executeSelected())
+                .bounds(executeX, footerY, executeWidth, 21)
+                .build();
+        execute.active = selectedIndex >= 0;
+        addRenderableWidget(execute);
+
         if (actionPageCount > 1) {
-            int navigationY = content.actionBottom() - 28;
-            int navigationWidth = 62;
-            int center = (content.actionLeft() + content.actionRight()) / 2;
+            int navigationWidth = Math.max(42, Math.min(58, (executeX - content.actionLeft() - 27) / 2));
             Button previous = Button.builder(
                             Component.literal("이전"),
                             button -> changePage(-1))
-                    .bounds(center - navigationWidth - 30, navigationY, navigationWidth, 20)
+                    .bounds(content.actionLeft() + 10, footerY, navigationWidth, 21)
                     .build();
             previous.active = actionPage > 0;
             addRenderableWidget(previous);
@@ -155,11 +170,19 @@ public final class VillageUiScreen extends Screen {
             Button next = Button.builder(
                             Component.literal("다음"),
                             button -> changePage(1))
-                    .bounds(center + 30, navigationY, navigationWidth, 20)
+                    .bounds(content.actionLeft() + 16 + navigationWidth, footerY, navigationWidth, 21)
                     .build();
             next.active = actionPage + 1 < actionPageCount;
             addRenderableWidget(next);
         }
+    }
+
+    private void selectAction(int index) {
+        if (index < 0 || index >= Math.min(actions.length, labels.length)) {
+            return;
+        }
+        selectedIndex = index;
+        rebuildActionButtons();
     }
 
     private void changePage(int delta) {
@@ -168,10 +191,23 @@ public final class VillageUiScreen extends Screen {
             return;
         }
         actionPage = next;
+        selectedIndex = -1;
         rebuildActionButtons();
     }
 
-    private void sendAction(String action) {
+    private void executeSelected() {
+        if (selectedIndex < 0 || selectedIndex >= Math.min(actions.length, labels.length)) {
+            return;
+        }
+        String action = actions[selectedIndex];
+        String label = labels[selectedIndex];
+        String detail = VillageActionDescriptions.describe(action, label);
+        if (VillageActionDescriptions.requiresConfirmation(action)) {
+            if (minecraft != null) {
+                minecraft.gui.setScreen(new VillageConfirmScreen(this, action, label, detail));
+            }
+            return;
+        }
         ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
         onClose();
     }
@@ -235,6 +271,27 @@ public final class VillageUiScreen extends Screen {
         }
     }
 
+    private void renderSelectedDetail(GuiGraphicsExtractor graphics) {
+        if (detailRight <= detailLeft || detailBottom <= detailTop) {
+            return;
+        }
+        graphics.fill(detailLeft - 1, detailTop - 1, detailRight + 1, detailBottom + 1, BORDER);
+        graphics.fill(detailLeft, detailTop, detailRight, detailBottom, PANEL_RAISED);
+        String detail = selectedIndex < 0
+                ? "동작을 선택하면 효과·비용·주의사항이 여기에 표시됩니다."
+                : VillageActionDescriptions.describe(actions[selectedIndex], labels[selectedIndex]);
+        List<FormattedCharSequence> lines = font.split(
+                Component.literal(detail), Math.max(80, detailRight - detailLeft - 16));
+        int y = detailTop + 8;
+        for (FormattedCharSequence line : lines) {
+            if (y > detailBottom - 11) {
+                break;
+            }
+            graphics.text(font, line, detailLeft + 8, y, selectedIndex < 0 ? MUTED : TEXT, false);
+            y += 11;
+        }
+    }
+
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         Layout layout = layout();
@@ -270,14 +327,15 @@ public final class VillageUiScreen extends Screen {
 
     private String actionHeader() {
         return actionPageCount > 1
-                ? "명령 · " + (actionPage + 1) + "쪽"
-                : "명령";
+                ? "동작 선택 · " + (actionPage + 1) + "/" + actionPageCount
+                : "동작 선택";
     }
 
     private String subtitle() {
         return switch (payload.screenId()) {
             case "status", "role_preview" -> "수호자 성장과 역할";
-            case "building" -> "시설 관리";
+            case "building" -> "시설 현장 기능";
+            case "management" -> "시설 수리와 강화";
             case "quick_chat" -> "팀 빠른 신호";
             case "vote" -> "멀티플레이 투표";
             case "game_over" -> "방어 실패";
@@ -306,8 +364,8 @@ public final class VillageUiScreen extends Screen {
     }
 
     private Layout layout() {
-        int panelWidth = Math.min(570, Math.max(286, width - 16));
-        int panelHeight = Math.min(350, Math.max(184, height - 12));
+        int panelWidth = Math.min(610, Math.max(300, width - 16));
+        int panelHeight = Math.min(390, Math.max(226, height - 12));
         return new Layout(
                 (width - panelWidth) / 2,
                 (height - panelHeight) / 2,
@@ -320,15 +378,15 @@ public final class VillageUiScreen extends Screen {
         int contentBottom = layout.top() + layout.height() - 14;
         int left = layout.left() + 15;
         int right = layout.left() + layout.width() - 14;
-        boolean split = layout.width() >= 390;
+        boolean split = layout.width() >= 430;
         if (split) {
-            int divider = layout.left() + Math.max(175, layout.width() * 42 / 100);
+            int divider = layout.left() + Math.max(185, layout.width() * 40 / 100);
             return new ContentLayout(
                     left, divider - 8, contentTop, contentBottom,
                     divider + 2, right, contentTop, contentBottom,
                     divider - 3, true);
         }
-        int infoBottom = Math.min(contentBottom - 100, contentTop + 88);
+        int infoBottom = Math.min(contentBottom - 164, contentTop + 96);
         int actionTop = infoBottom + 6;
         return new ContentLayout(
                 left, right, contentTop, infoBottom,
