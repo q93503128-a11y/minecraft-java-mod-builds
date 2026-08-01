@@ -84,12 +84,20 @@ public final class PlayerEstateLayout {
         return origin.offset(-7, 0, 10);
     }
 
+    public static BlockPos farmStorageBarrel(BlockPos origin) {
+        return origin.offset(-9, 0, 18);
+    }
+
     public static BlockPos ranch(BlockPos origin) {
         return origin.offset(17, 1, 16);
     }
 
     public static BlockPos ranchGate(BlockPos origin) {
         return origin.offset(7, 0, 2);
+    }
+
+    public static BlockPos ranchSupplyBarrel(BlockPos origin) {
+        return origin.offset(12, 0, 17);
     }
 
     public static BlockPos ranchCollectionBarrel(BlockPos origin) {
