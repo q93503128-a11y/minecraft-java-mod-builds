@@ -93,6 +93,10 @@ public final class VillageSkillTreeSystem {
         return 1.0f + branchRanks(player, Branch.POWER) * 0.08f;
     }
 
+    public static float projectileDamageMultiplier(ServerPlayer player) {
+        return 1.0f + branchRanks(player, Branch.RANGED) * 0.10f;
+    }
+
     public static float incomingDamageMultiplier(ServerPlayer player) {
         return Math.max(0.75f, 1.0f - branchRanks(player, Branch.GUARD) * 0.07f);
     }
@@ -130,7 +134,10 @@ public final class VillageSkillTreeSystem {
     }
 
     public enum Branch {
-        POWER("공격"), GUARD("방어"), SUPPORT("지원");
+        POWER("공격"),
+        GUARD("방어"),
+        SUPPORT("지원"),
+        RANGED("사격");
 
         private final String displayName;
 
@@ -150,9 +157,12 @@ public final class VillageSkillTreeSystem {
         GUARD_1("guard_1", "강철 방어 I", "받는 피해 7% 감소", Branch.GUARD, 1, null),
         GUARD_2("guard_2", "강철 방어 II", "받는 피해 추가 7% 감소", Branch.GUARD, 2, GUARD_1),
         GUARD_3("guard_3", "강철 방어 III", "받는 피해 추가 7% 감소", Branch.GUARD, 3, GUARD_2),
-        SUPPORT_1("support_1", "전리품 감정 I", "처치 주화 +12%, 스킬 쿨타임 -2초", Branch.SUPPORT, 1, null),
+        SUPPORT_1("support_1", "전리품 감정 I", "처치 주화 +12%, 역할 스킬 쿨타임 -2초", Branch.SUPPORT, 1, null),
         SUPPORT_2("support_2", "전리품 감정 II", "처치 주화 추가 +12%, 쿨타임 추가 -2초", Branch.SUPPORT, 2, SUPPORT_1),
-        SUPPORT_3("support_3", "전리품 감정 III", "처치 주화 추가 +12%, 쿨타임 추가 -2초", Branch.SUPPORT, 3, SUPPORT_2);
+        SUPPORT_3("support_3", "전리품 감정 III", "처치 주화 추가 +12%, 쿨타임 추가 -2초", Branch.SUPPORT, 3, SUPPORT_2),
+        RANGED_1("ranged_1", "장거리 조준 I", "화살과 투사체 피해 +10%", Branch.RANGED, 1, null),
+        RANGED_2("ranged_2", "장거리 조준 II", "화살과 투사체 피해 추가 +10%", Branch.RANGED, 2, RANGED_1),
+        RANGED_3("ranged_3", "장거리 조준 III", "화살과 투사체 피해 추가 +10%", Branch.RANGED, 3, RANGED_2);
 
         private final String id;
         private final String title;
@@ -161,7 +171,13 @@ public final class VillageSkillTreeSystem {
         private final int tier;
         private final Node prerequisite;
 
-        Node(String id, String title, String description, Branch branch, int tier, Node prerequisite) {
+        Node(
+                String id,
+                String title,
+                String description,
+                Branch branch,
+                int tier,
+                Node prerequisite) {
             this.id = id;
             this.title = title;
             this.description = description;
@@ -170,16 +186,38 @@ public final class VillageSkillTreeSystem {
             this.prerequisite = prerequisite;
         }
 
-        public String id() { return id; }
-        public String title() { return title; }
-        public String description() { return description; }
-        public Branch branch() { return branch; }
-        public int tier() { return tier; }
-        public Node prerequisite() { return prerequisite; }
+        public String id() {
+            return id;
+        }
+
+        public String title() {
+            return title;
+        }
+
+        public String description() {
+            return description;
+        }
+
+        public Branch branch() {
+            return branch;
+        }
+
+        public int tier() {
+            return tier;
+        }
+
+        public Node prerequisite() {
+            return prerequisite;
+        }
 
         public static Optional<Node> parse(String value) {
+            if (value == null) {
+                return Optional.empty();
+            }
             String normalized = value.toLowerCase(Locale.ROOT);
-            return Arrays.stream(values()).filter(node -> node.id.equals(normalized)).findFirst();
+            return Arrays.stream(values())
+                    .filter(node -> node.id.equals(normalized))
+                    .findFirst();
         }
     }
 }
