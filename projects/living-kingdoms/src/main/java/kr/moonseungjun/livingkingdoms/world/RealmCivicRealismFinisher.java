@@ -123,7 +123,7 @@ public final class RealmCivicRealismFinisher {
         // directly touching open furnaces throughout the quarter.
         fill(level, cx - 27, y, cz + 31, cx + 9, y, cz + 57, Blocks.POLISHED_DEEPSLATE);
         for (int x = cx - 24; x <= cx + 6; x += 6) {
-            set(level, x, y + 1, cz + 54, Blocks.WATER_CAULDRON);
+            set(level, x, y + 1, cz + 54, Blocks.CAULDRON);
         }
     }
 
