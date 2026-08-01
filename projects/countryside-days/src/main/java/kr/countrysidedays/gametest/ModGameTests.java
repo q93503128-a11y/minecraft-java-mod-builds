@@ -2,6 +2,7 @@ package kr.countrysidedays.gametest;
 
 import kr.countrysidedays.CountrysideDays;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
+import kr.countrysidedays.gameplay.VillageLifeManager;
 import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
@@ -140,6 +141,18 @@ public final class ModGameTests {
                 "first ranch collection should unlock the fifteen-guest stage"
         );
 
+        helper.assertFalse(VillageLifeManager.isHoliday(5L), "sixth day should still be a workday");
+        helper.assertTrue(VillageLifeManager.isHoliday(6L), "seventh day should be a village holiday");
+        helper.assertTrue(VillageLifeManager.isHoliday(13L), "holiday cycle should repeat every seven days");
+        int stablePrice = VillageLifeManager.dailyCoinPrice(4, 22L, 9);
+        helper.assertTrue(stablePrice == VillageLifeManager.dailyCoinPrice(4, 22L, 9),
+                "daily market price must be deterministic for one day and item");
+        helper.assertTrue(stablePrice >= 1 && stablePrice <= 6,
+                "daily market price must stay inside the safe fluctuation range");
+        int inputCount = VillageLifeManager.dailyInputCount(12, 22L, 4);
+        helper.assertTrue(inputCount >= 9 && inputCount <= 15,
+                "daily purchase quantity must stay near the base amount");
+
         helper.assertTrue(
                 RuralGameplayHandler.isForagePlant(Blocks.SHORT_GRASS.defaultBlockState()),
                 "short grass should be a forage source"
@@ -162,6 +175,7 @@ public final class ModGameTests {
         StarterHomesteadGenerator.buildPlayerEstate(
                 helper.getLevel(), absoluteOrigin, "테스트 주민", "테스트 식당"
         );
+        VillageLifeManager.prepareNewEstate(helper.getLevel(), absoluteOrigin);
 
         helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(45, 7, 18));
         helper.assertBlockPresent(Blocks.CHEST, new BlockPos(10, 7, 15));
@@ -171,8 +185,10 @@ public final class ModGameTests {
         helper.assertBlockPresent(Blocks.GLASS, new BlockPos(10, 8, 13));
 
         helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(9, 6, 36));
+        helper.assertBlockPresent(Blocks.AIR, new BlockPos(9, 7, 36));
         helper.assertBlockPresent(Blocks.WATER, new BlockPos(17, 6, 42));
         helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(28, 6, 41));
+        helper.assertBlockPresent(Blocks.BARREL, new BlockPos(26, 6, 50));
 
         helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(35, 6, 6));
         helper.assertBlockProperty(
@@ -198,6 +214,7 @@ public final class ModGameTests {
         helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(42, 6, 34));
         helper.assertBlockPresent(Blocks.WATER, new BlockPos(44, 6, 55));
         helper.assertBlockPresent(Blocks.HAY_BLOCK, new BlockPos(58, 6, 54));
+        helper.assertBlockPresent(Blocks.BARREL, new BlockPos(47, 6, 49));
         helper.assertBlockPresent(Blocks.BARREL, new BlockPos(59, 6, 49));
         helper.assertBlockPresent(Blocks.BRICKS, new BlockPos(45, 12, 37));
         helper.assertBlockPresent(Blocks.PACKED_MUD, new BlockPos(35, 5, 5));
