@@ -69,7 +69,7 @@ public enum SpellRecipe {
         drawMagicCircle(level, pos, particle);
         level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5,
                 SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.BLOCKS, 1.0F,
-                0.85F + level.random.nextFloat() * 0.25F);
+                0.85F + level.getRandom().nextFloat() * 0.25F);
         return affectMobs(level, pos, caster);
     }
 
