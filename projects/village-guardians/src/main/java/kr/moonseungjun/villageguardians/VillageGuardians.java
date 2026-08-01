@@ -41,6 +41,7 @@ public final class VillageGuardians {
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
+        VillageGatePrioritySystem.reset();
         VillageRespawnSystem.reset();
         VillageStructureHud.reset();
         VillageHudSystem.reset();
@@ -127,6 +128,7 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
         VillageRaidSystem.tick(event.getServer());
+        VillageGatePrioritySystem.tick(event.getServer());
         VillageDefenseSystem.tick(event.getServer());
         VillageRespawnSystem.tick(event.getServer());
         VillageStructureHud.tick(event.getServer());
