@@ -366,7 +366,7 @@ public final class EstateWorkerManager {
     }
 
     private static long gameDay(ServerLevel level) {
-        return Math.max(0L, level.getDayTime() / 24000L);
+        return Math.max(0L, level.getOverworldClockTime() / 24000L);
     }
 
     private static int getIntTag(Villager villager, String prefix, int fallback) {
