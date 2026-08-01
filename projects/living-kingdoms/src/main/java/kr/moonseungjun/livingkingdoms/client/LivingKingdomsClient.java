@@ -19,5 +19,7 @@ public final class LivingKingdomsClient {
         NeoForge.EVENT_BUS.addListener(RealmCodexClient::onScreenRender);
         NeoForge.EVENT_BUS.addListener(FantasyAtmosphereClient::onFogColor);
         NeoForge.EVENT_BUS.addListener(FantasyAtmosphereClient::onRenderFog);
+        NeoForge.EVENT_BUS.addListener(RealmCodexInteractionClient::onMouseDragged);
+        NeoForge.EVENT_BUS.addListener(RealmCodexInteractionClient::onMouseScrolled);
     }
 }
