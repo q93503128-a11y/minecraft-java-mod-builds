@@ -65,29 +65,36 @@ public final class VillageUiScreen extends Screen {
         ContentLayout content = contentLayout(layout);
         renderFrame(graphics, mouseX, mouseY, layout);
 
-        graphics.fill(content.infoLeft(), content.top(), content.infoRight(), content.bottom(), PANEL_SOFT);
-        graphics.fill(content.actionLeft(), content.top(), content.actionRight(), content.bottom(), PANEL_SOFT);
+        graphics.fill(
+                content.infoLeft(), content.infoTop(),
+                content.infoRight(), content.infoBottom(), PANEL_SOFT);
+        graphics.fill(
+                content.actionLeft(), content.actionTop(),
+                content.actionRight(), content.actionBottom(), PANEL_SOFT);
         if (content.split()) {
-            graphics.fill(content.divider(), content.top(), content.divider() + 1, content.bottom(), BORDER);
+            graphics.fill(
+                    content.divider(), content.infoTop(),
+                    content.divider() + 1, content.infoBottom(), BORDER);
         }
 
         bodyLeft = content.infoLeft() + 10;
-        bodyTop = content.top() + 25;
+        bodyTop = content.infoTop() + 25;
         bodyRight = content.infoRight() - 10;
-        bodyBottom = content.bottom() - 10;
-        graphics.text(font, "현황", bodyLeft, content.top() + 8, GOLD, false);
-        graphics.text(font, actionHeader(), content.actionLeft() + 10, content.top() + 8, ACCENT, false);
+        bodyBottom = content.infoBottom() - 10;
+        graphics.text(font, "현황", bodyLeft, content.infoTop() + 8, GOLD, false);
+        graphics.text(font, actionHeader(),
+                content.actionLeft() + 10, content.actionTop() + 8, ACCENT, false);
         renderBody(graphics);
 
         if (actions.length == 0) {
             graphics.text(font, "사용 가능한 명령이 없습니다.",
-                    content.actionLeft() + 10, content.top() + 34, MUTED, false);
+                    content.actionLeft() + 10, content.actionTop() + 34, MUTED, false);
         }
         if (actionPageCount > 1) {
             String page = (actionPage + 1) + " / " + actionPageCount;
             graphics.centeredText(font, page,
                     (content.actionLeft() + content.actionRight()) / 2,
-                    content.bottom() - 20, MUTED);
+                    content.actionBottom() - 20, MUTED);
         }
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
@@ -99,7 +106,7 @@ public final class VillageUiScreen extends Screen {
         ContentLayout content = contentLayout(layout);
         int count = Math.min(actions.length, labels.length);
         int columns = content.split() && content.actionRight() - content.actionLeft() >= 260 ? 2 : 1;
-        int rows = content.split() ? 3 : 4;
+        int rows = content.split() ? 3 : 3;
         int pageSize = Math.max(1, columns * rows);
         actionPageCount = Math.max(1, (count + pageSize - 1) / pageSize);
         actionPage = Math.max(0, Math.min(actionPage, actionPageCount - 1));
@@ -112,8 +119,8 @@ public final class VillageUiScreen extends Screen {
                 content.actionRight() - content.actionLeft() - horizontalPadding * 2);
         int buttonWidth = Math.max(72, (availableWidth - gap * (columns - 1)) / columns);
         int buttonHeight = 22;
-        int buttonAreaTop = content.top() + 27;
-        int buttonAreaBottom = content.bottom() - (actionPageCount > 1 ? 34 : 9);
+        int buttonAreaTop = content.actionTop() + 27;
+        int buttonAreaBottom = content.actionBottom() - (actionPageCount > 1 ? 34 : 9);
         int usedRows = Math.max(1, (end - start + columns - 1) / columns);
         int totalHeight = usedRows * buttonHeight + Math.max(0, usedRows - 1) * gap;
         int startY = buttonAreaTop + Math.max(0, (buttonAreaBottom - buttonAreaTop - totalHeight) / 2);
@@ -134,7 +141,7 @@ public final class VillageUiScreen extends Screen {
         }
 
         if (actionPageCount > 1) {
-            int navigationY = content.bottom() - 28;
+            int navigationY = content.actionBottom() - 28;
             int navigationWidth = 62;
             int center = (content.actionLeft() + content.actionRight()) / 2;
             Button previous = Button.builder(
@@ -309,39 +316,24 @@ public final class VillageUiScreen extends Screen {
     }
 
     private ContentLayout contentLayout(Layout layout) {
-        int top = layout.top() + 51;
-        int bottom = layout.top() + layout.height() - 14;
+        int contentTop = layout.top() + 51;
+        int contentBottom = layout.top() + layout.height() - 14;
         int left = layout.left() + 15;
         int right = layout.left() + layout.width() - 14;
         boolean split = layout.width() >= 390;
         if (split) {
             int divider = layout.left() + Math.max(175, layout.width() * 42 / 100);
             return new ContentLayout(
-                    left, divider - 8,
-                    divider + 2, right,
-                    top, bottom, divider - 3, true);
+                    left, divider - 8, contentTop, contentBottom,
+                    divider + 2, right, contentTop, contentBottom,
+                    divider - 3, true);
         }
-        int infoBottom = Math.min(bottom - 106, top + 92);
+        int infoBottom = Math.min(contentBottom - 100, contentTop + 88);
+        int actionTop = infoBottom + 6;
         return new ContentLayout(
-                left, right,
-                left, right,
-                top, bottom,
-                infoBottom, false) {
-                    @Override
-                    public int infoRight() {
-                        return right;
-                    }
-
-                    @Override
-                    public int actionLeft() {
-                        return left;
-                    }
-
-                    @Override
-                    public int actionRight() {
-                        return right;
-                    }
-                };
+                left, right, contentTop, infoBottom,
+                left, right, actionTop, contentBottom,
+                0, false);
     }
 
     private static boolean isInside(double mouseX, double mouseY, int x, int y, int width, int height) {
@@ -354,10 +346,12 @@ public final class VillageUiScreen extends Screen {
     private record ContentLayout(
             int infoLeft,
             int infoRight,
+            int infoTop,
+            int infoBottom,
             int actionLeft,
             int actionRight,
-            int top,
-            int bottom,
+            int actionTop,
+            int actionBottom,
             int divider,
             boolean split) {
     }
