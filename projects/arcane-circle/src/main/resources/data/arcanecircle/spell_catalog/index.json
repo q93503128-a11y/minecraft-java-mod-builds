@@ -2,18 +2,28 @@
   "worldview": "ninefold_arcana",
   "implemented_circles": [1, 2, 3],
   "future_max_circle": 9,
-  "fusion_mode": "live_pair_cast",
+  "spell_slots": 5,
+  "fusion_mode": "hold_x_queue_then_release",
+  "fusion_ingredient_limits": [2, 3],
   "fusion_mastery": {
-    "2_circle_casts": 4,
-    "3_circle_casts": 7,
-    "reward": "register_result_for_direct_cast"
+    "2_circle_pair_casts": 4,
+    "3_circle_pair_casts": 7,
+    "3_circle_triple_casts": 10,
+    "reward": "register_result_for_numeric_slot_cast"
   },
   "starter_direct_spells": [
     "arcane_dart", "ember", "frost_needle", "gale_step", "lesser_ward",
     "mend", "blink", "greater_ward"
   ],
-  "fusion_results": [
+  "pair_fusion_results": [
     "flame_lance", "ice_shackles", "wind_blade", "fireball",
     "frost_nova", "chain_bolt", "rift_step"
+  ],
+  "triple_fusion_results": [
+    "triune_barrage", "tempest_aegis", "phoenix_field"
+  ],
+  "staffs": [
+    "novice_staff", "ember_staff", "glacial_staff", "zephyr_staff",
+    "aegis_staff", "verdant_staff", "rift_staff", "sage_staff", "archmage_staff"
   ]
 }
