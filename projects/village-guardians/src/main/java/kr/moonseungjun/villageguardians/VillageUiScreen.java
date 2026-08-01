@@ -23,8 +23,8 @@ public final class VillageUiScreen extends Screen {
     private static final int ACCENT = 0xFF45D8C0;
     private static final int GOLD = 0xFFF4C861;
     private static final int RED = 0xFFE8757E;
-    private static final int CARD_HEIGHT = 56;
-    private static final int CARD_GAP = 8;
+    private static final int CARD_HEIGHT = 48;
+    private static final int CARD_GAP = 6;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final String[] actions;
@@ -84,7 +84,7 @@ public final class VillageUiScreen extends Screen {
         int textLeft = areas.bodyLeft() + 16;
         int textRight = areas.bodyRight() - 16;
         List<FormattedCharSequence> lines = bodyLines(Math.max(100, textRight - textLeft));
-        int contentHeight = Math.max(1, lines.size() * 13 + 4);
+        int contentHeight = Math.max(1, lines.size() * 14 + 4);
         int textTop = areas.bodyTop() + 13;
         int textBottom = areas.bodyBottom() - 10;
         int visible = Math.max(1, textBottom - textTop);
@@ -97,7 +97,7 @@ public final class VillageUiScreen extends Screen {
             if (y >= textTop - 10 && y <= textBottom) {
                 graphics.text(font, line, textLeft, y, TEXT, false);
             }
-            y += 13;
+            y += 14;
         }
         graphics.disableScissor();
         drawScrollbar(graphics, areas.bodyRight() - 7, areas.bodyTop() + 8,
@@ -131,13 +131,11 @@ public final class VillageUiScreen extends Screen {
             graphics.fill(x, y, x + 5, y + CARD_HEIGHT, selected ? GOLD : accent());
             String[] parts = labelParts(labels[index]);
             graphics.text(font, compact(parts[0], Math.max(13, cardWidth / 7)),
-                    x + 15, y + 10, TEXT, false);
+                    x + 15, y + 8, TEXT, false);
             List<FormattedCharSequence> detailLines = font.split(Component.literal(parts[1]),
                     Math.max(86, cardWidth - 30));
-            int lineY = y + 30;
-            for (int line = 0; line < Math.min(2, detailLines.size()); line++) {
-                graphics.text(font, detailLines.get(line), x + 15, lineY, MUTED, false);
-                lineY += 11;
+            if (!detailLines.isEmpty()) {
+                graphics.text(font, detailLines.getFirst(), x + 15, y + 27, MUTED, false);
             }
         }
         graphics.disableScissor();
@@ -149,33 +147,33 @@ public final class VillageUiScreen extends Screen {
         drawPanel(graphics, areas.footerLeft(), areas.footerTop(), areas.footerRight(), areas.footerBottom(), SURFACE);
         String title = selectedIndex < 0 ? "기능을 선택하세요" : labelParts(labels[selectedIndex])[0];
         String detail = selectedIndex < 0
-                ? "기능 목록에서 항목을 선택하면 효과와 비용이 여기에 표시됩니다."
+                ? "기능을 선택하면 핵심 효과와 비용이 표시됩니다."
                 : VillageActionDescriptions.describe(actions[selectedIndex], labels[selectedIndex]);
         graphics.text(font, compact(title, Math.max(18, areas.footerWidth() / 7)),
-                areas.footerLeft() + 16, areas.footerTop() + 13, TEXT, false);
+                areas.footerLeft() + 13, areas.footerTop() + 11, TEXT, false);
 
-        boolean tallPane = areas.footerHeight() >= 165;
+        boolean tallPane = areas.footerHeight() >= 150;
         int buttonWidth;
         int buttonX;
-        int buttonY = areas.footerBottom() - 43;
+        int buttonY = areas.footerBottom() - 38;
         int detailRight;
         int textBottom;
         if (tallPane) {
-            buttonWidth = Math.max(100, areas.footerWidth() - 32);
-            buttonX = areas.footerLeft() + 16;
-            detailRight = areas.footerRight() - 16;
-            textBottom = buttonY - 11;
+            buttonWidth = Math.max(100, areas.footerWidth() - 26);
+            buttonX = areas.footerLeft() + 13;
+            detailRight = areas.footerRight() - 13;
+            textBottom = buttonY - 8;
         } else {
-            buttonWidth = Math.min(180, Math.max(112, areas.footerWidth() / 4));
-            buttonX = areas.footerRight() - buttonWidth - 16;
-            detailRight = buttonX - 13;
-            textBottom = areas.footerBottom() - 10;
+            buttonWidth = Math.min(160, Math.max(104, areas.footerWidth() / 4));
+            buttonX = areas.footerRight() - buttonWidth - 13;
+            detailRight = buttonX - 10;
+            textBottom = areas.footerBottom() - 8;
         }
 
-        int textTop = areas.footerTop() + 36;
-        int detailWidth = Math.max(90, detailRight - areas.footerLeft() - 16);
+        int textTop = areas.footerTop() + 30;
+        int detailWidth = Math.max(90, detailRight - areas.footerLeft() - 13);
         List<FormattedCharSequence> lines = font.split(Component.literal(detail), detailWidth);
-        int contentHeight = Math.max(1, lines.size() * 13);
+        int contentHeight = Math.max(1, lines.size() * 12);
         int visible = Math.max(1, textBottom - textTop);
         int maxScroll = Math.max(0, contentHeight - visible);
         footerScroll = clamp(footerScroll, 0, maxScroll);
@@ -183,23 +181,23 @@ public final class VillageUiScreen extends Screen {
         int y = textTop - footerScroll;
         for (FormattedCharSequence line : lines) {
             if (y >= textTop - 10 && y <= textBottom) {
-                graphics.text(font, line, areas.footerLeft() + 16, y, MUTED, false);
+                graphics.text(font, line, areas.footerLeft() + 13, y, MUTED, false);
             }
-            y += 13;
+            y += 12;
         }
         graphics.disableScissor();
         drawScrollbar(graphics, detailRight - 5, textTop, textBottom,
                 footerScroll, maxScroll, visible, contentHeight);
 
         boolean active = selectedIndex >= 0;
-        boolean hovered = active && inside(mouseX, mouseY, buttonX, buttonY, buttonWidth, 30);
-        graphics.fill(buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + 31,
+        boolean hovered = active && inside(mouseX, mouseY, buttonX, buttonY, buttonWidth, 27);
+        graphics.fill(buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + 28,
                 hovered ? GOLD : active ? accent() : BORDER);
-        graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 30,
+        graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 27,
                 hovered ? 0xFF3D341E : active ? SURFACE_HOVER : 0xFF172028);
         String execute = active ? VillageActionDescriptions.executeLabel(actions[selectedIndex]) : "선택 필요";
         graphics.centeredText(font, compact(execute, Math.max(11, buttonWidth / 7)),
-                buttonX + buttonWidth / 2, buttonY + 10, active ? TEXT : MUTED);
+                buttonX + buttonWidth / 2, buttonY + 9, active ? TEXT : MUTED);
     }
 
     @Override
@@ -256,12 +254,12 @@ public final class VillageUiScreen extends Screen {
     }
 
     private ButtonArea buttonArea(Areas areas) {
-        boolean tallPane = areas.footerHeight() >= 165;
+        boolean tallPane = areas.footerHeight() >= 150;
         int width = tallPane
-                ? Math.max(100, areas.footerWidth() - 32)
-                : Math.min(180, Math.max(112, areas.footerWidth() / 4));
-        int x = tallPane ? areas.footerLeft() + 16 : areas.footerRight() - width - 16;
-        return new ButtonArea(x, areas.footerBottom() - 43, width, 30);
+                ? Math.max(100, areas.footerWidth() - 26)
+                : Math.min(160, Math.max(104, areas.footerWidth() / 4));
+        int x = tallPane ? areas.footerLeft() + 13 : areas.footerRight() - width - 13;
+        return new ButtonArea(x, areas.footerBottom() - 38, width, 27);
     }
 
     private void executeSelected() {
@@ -309,18 +307,17 @@ public final class VillageUiScreen extends Screen {
     private int accent() {
         return switch (payload.screenId()) {
             case "game_over" -> RED;
-            case "equipment_shop", "funding", "tower_control" -> GOLD;
+            case "equipment_shop", "funding", "tower_control", "tower_detail" -> GOLD;
             default -> ACCENT;
         };
     }
 
     private String subtitle() {
         return switch (payload.screenId()) {
-            case "building" -> "시설 현장 기능";
-            case "management" -> "시설 수리와 강화";
             case "equipment_shop" -> "레벨·방어 일수별 성장 장비";
             case "caller" -> "휴대용 상태·통신·귀환 메뉴";
             case "tower_control" -> "회관 방어탑·성벽 지휘";
+            case "tower_detail" -> "방어탑 전문 분기";
             case "funding" -> "개인 주화로 공동 보급품 조달";
             case "vote" -> "시간 진행 투표";
             case "game_over" -> "방어 실패";
@@ -347,23 +344,23 @@ public final class VillageUiScreen extends Screen {
         boolean sideBySide = contentWidth >= 600 && contentHeight < 500;
 
         if (sideBySide) {
-            int rightPaneWidth = clamp(contentWidth * 38 / 100, 245, 390);
+            int rightPaneWidth = clamp(contentWidth * 27 / 100, 190, 290);
             int split = right - rightPaneWidth;
-            int bodyHeight = clamp(contentHeight * 36 / 100, 92, 150);
+            int bodyHeight = clamp(contentHeight * 50 / 100, 130, 245);
             return new Areas(
                     left, top, split - 7, top + bodyHeight,
                     left, top + bodyHeight + 9, split - 7, bottom,
                     split + 7, top, right, bottom);
         }
 
-        int footerHeight = clamp(contentHeight * 25 / 100, 94, 132);
-        int bodyHeight = clamp(contentHeight * 24 / 100, 72, 136);
+        int footerHeight = clamp(contentHeight * 16 / 100, 72, 98);
+        int bodyHeight = clamp(contentHeight * 46 / 100, 150, 280);
         int actionTop = top + bodyHeight + 9;
         int footerTop = bottom - footerHeight;
-        int minimumActionHeight = CARD_HEIGHT + 20;
+        int minimumActionHeight = CARD_HEIGHT + 18;
         if (footerTop - actionTop - 9 < minimumActionHeight) {
             int shortage = minimumActionHeight - (footerTop - actionTop - 9);
-            bodyHeight = Math.max(58, bodyHeight - shortage);
+            bodyHeight = Math.max(110, bodyHeight - shortage);
             actionTop = top + bodyHeight + 9;
         }
         return new Areas(
