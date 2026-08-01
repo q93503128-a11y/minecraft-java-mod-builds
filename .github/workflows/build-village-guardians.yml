@@ -12,9 +12,9 @@ permissions:
 
 env:
   PROJECT_DIR: projects/village-guardians
-  MOD_VERSION: 0.14.0-alpha.1
-  EXPECTED_JAR: villageguardians-0.14.0-alpha.1.jar
-  RELEASE_TAG: village-guardians-v0.14.0-alpha.1
+  MOD_VERSION: 0.15.0-alpha.1
+  EXPECTED_JAR: villageguardians-0.15.0-alpha.1.jar
+  RELEASE_TAG: village-guardians-v0.15.0-alpha.1
   PUBLISHED_DIR: published/village-guardians
   CI_RESULT_DIR: ci-results/village-guardians
 
@@ -68,7 +68,7 @@ jobs:
       - name: Upload verified JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: villageguardians-0.14.0-alpha.1
+          name: villageguardians-0.15.0-alpha.1
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
@@ -84,7 +84,7 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Published JAR already matches this build.'
           else
-            git commit -m 'Publish verified Village Guardians v0.14.0-alpha.1 JAR'
+            git commit -m 'Publish verified Village Guardians v0.15.0-alpha.1 JAR'
             git pull --rebase origin main
             git push
           fi
@@ -97,8 +97,8 @@ jobs:
             gh release upload "$RELEASE_TAG" deliverables/* --clobber
           else
             gh release create "$RELEASE_TAG" deliverables/* \
-              --title 'Village Guardians v0.14.0-alpha.1' \
-              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2 beta. Rebuilt town-hall, research and facility interfaces with independent clipped scrolling; stabilized the status HUD; restored a clock-based caller with status, signals and return; moved all role and tactical growth to the research hall; moved tower command to the town hall; added guardian-coin supply funding and coin-hired persistent mercenaries; forced closed-gate raiders to attack the wall before players; and added a 20-second spectator revival flow that returns players to the village while enemies continue attacking structures.'
+              --title 'Village Guardians v0.15.0-alpha.1' \
+              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2 beta. Adds responsive side-by-side facility interfaces that cannot cover their own lists, automatic selection for single actions, a transparent C-key quick communication overlay, daytime Speed II, all-time natural mob suppression throughout the battlefield, controlled raid rewards with vanilla drops removed, waves that advance after a clear or force-advance after sixty seconds, defense towers that physically appear only after installation stages, and large rooftop signature glyphs for every facility and the north gate.'
           fi
 
       - name: Record CI result in repository
