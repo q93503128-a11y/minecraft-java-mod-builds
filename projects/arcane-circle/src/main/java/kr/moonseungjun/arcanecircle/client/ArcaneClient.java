@@ -23,7 +23,9 @@ public final class ArcaneClient {
             new KeyMapping("key.arcanecircle.slot_4", InputConstants.KEY_4, KeyMapping.Category.MISC),
             new KeyMapping("key.arcanecircle.slot_5", InputConstants.KEY_5, KeyMapping.Category.MISC)
     };
+
     private static boolean fusionWasDown;
+    private static int stableHotbarSlot = -1;
 
     private ArcaneClient() {}
 
@@ -33,28 +35,62 @@ public final class ArcaneClient {
         for (KeyMapping key : SLOT_KEYS) event.register(key);
     }
 
-    public static void onClientTick(ClientTickEvent.Pre event) {
+    public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
             fusionWasDown = false;
+            stableHotbarSlot = -1;
+            ArcaneClientState.reset();
+            drainClicks();
+            return;
+        }
+
+        int currentHotbar = minecraft.player.getInventory().getSelectedSlot();
+        if (stableHotbarSlot < 0 || stableHotbarSlot >= 9) stableHotbarSlot = currentHotbar;
+
+        if (minecraft.gui.screen() != null) {
+            while (GRIMOIRE_KEY.consumeClick()) {}
+            drainSlotClicks();
+            if (fusionWasDown || FUSION_MODIFIER_KEY.isDown()) {
+                ClientPacketDistributor.sendToServer(new CommitFusionPayload(1));
+            }
+            fusionWasDown = false;
+            stableHotbarSlot = currentHotbar;
             return;
         }
 
         while (GRIMOIRE_KEY.consumeClick()) {
             ClientPacketDistributor.sendToServer(new RequestGrimoirePayload("atlas"));
         }
-        if (minecraft.gui.screen() != null) return;
 
         boolean fusionDown = FUSION_MODIFIER_KEY.isDown();
+        boolean usedSpellKey = false;
         for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
             while (SLOT_KEYS[slot].consumeClick()) {
+                usedSpellKey = true;
                 if (fusionDown) ClientPacketDistributor.sendToServer(new QueueFusionPayload(slot));
                 else ClientPacketDistributor.sendToServer(new CastSpellPayload(slot));
             }
         }
+
+        if (usedSpellKey) {
+            minecraft.player.getInventory().setSelectedSlot(stableHotbarSlot);
+        } else {
+            stableHotbarSlot = currentHotbar;
+        }
+
         if (fusionWasDown && !fusionDown) {
             ClientPacketDistributor.sendToServer(new CommitFusionPayload(0));
         }
         fusionWasDown = fusionDown;
+    }
+
+    private static void drainClicks() {
+        while (GRIMOIRE_KEY.consumeClick()) {}
+        drainSlotClicks();
+    }
+
+    private static void drainSlotClicks() {
+        for (KeyMapping key : SLOT_KEYS) while (key.consumeClick()) {}
     }
 }
