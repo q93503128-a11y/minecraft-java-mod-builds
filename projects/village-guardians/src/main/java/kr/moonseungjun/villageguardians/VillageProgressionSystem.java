@@ -1,5 +1,6 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -94,13 +95,15 @@ public final class VillageProgressionSystem {
     public static void handleBuildingInteraction(PlayerInteractEvent.RightClickBlock event) {
         if (event.getHand() != InteractionHand.MAIN_HAND
                 || !(event.getEntity() instanceof ServerPlayer player)
-                || player.level().isClientSide()
+                || !(player.level() instanceof ServerLevel level)
                 || !VillageCouncilState.isInsideVillage(player)) {
             return;
         }
-
-        Block block = player.level().getBlockState(event.getPos()).getBlock();
-        Building building = Building.fromTerminal(block);
+        BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
+        if (villageCenter == null) {
+            return;
+        }
+        Building building = VillageFortressBuildings.buildingAtTerminal(level, villageCenter, event.getPos());
         if (building == null) {
             return;
         }
@@ -470,6 +473,16 @@ public final class VillageProgressionSystem {
                 player.heal(heal);
             }
         }
+    }
+
+    public static synchronized void restoreFacilitiesForMigration() {
+        gameOver = false;
+        supplies = Math.max(100, supplies);
+        DURABILITY.clear();
+        for (Building building : Building.values()) {
+            DURABILITY.put(building, maxDurability(building));
+        }
+        persist();
     }
 
     public static synchronized void resetForRestart(MinecraftServer server, boolean fromStart) {
