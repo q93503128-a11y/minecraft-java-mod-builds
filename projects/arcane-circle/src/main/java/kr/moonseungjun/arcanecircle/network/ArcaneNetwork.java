@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-5";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-6";
     private static final Set<String> PAGES = Set.of("atlas", "recipes", "staffs", "core", "sync");
 
     private ArcaneNetwork() {}
@@ -26,7 +26,8 @@ public final class ArcaneNetwork {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
         registrar.playToClient(GrimoireSnapshotPayload.TYPE, GrimoireSnapshotPayload.STREAM_CODEC);
         registrar.playToServer(RequestGrimoirePayload.TYPE, RequestGrimoirePayload.STREAM_CODEC, ArcaneNetwork::handleRequest);
-        registrar.playToServer(CastSpellPayload.TYPE, CastSpellPayload.STREAM_CODEC, ArcaneNetwork::handleCast);
+        registrar.playToServer(BeginCastPayload.TYPE, BeginCastPayload.STREAM_CODEC, ArcaneNetwork::handleBeginCast);
+        registrar.playToServer(ReleaseCastPayload.TYPE, ReleaseCastPayload.STREAM_CODEC, ArcaneNetwork::handleReleaseCast);
         registrar.playToServer(QueueFusionPayload.TYPE, QueueFusionPayload.STREAM_CODEC, ArcaneNetwork::handleQueueFusion);
         registrar.playToServer(CommitFusionPayload.TYPE, CommitFusionPayload.STREAM_CODEC, ArcaneNetwork::handleCommitFusion);
         registrar.playToServer(EquipSpellPayload.TYPE, EquipSpellPayload.STREAM_CODEC, ArcaneNetwork::handleEquip);
@@ -44,10 +45,17 @@ public final class ArcaneNetwork {
         context.reply(snapshot(player, page));
     }
 
-    private static void handleCast(CastSpellPayload payload, IPayloadContext context) {
+    private static void handleBeginCast(BeginCastPayload payload, IPayloadContext context) {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
-        SpellCastingService.castSlot(player, payload.slot());
+        SpellCastingService.beginSlotCharge(player, payload.slot());
+        context.reply(snapshot(player, "sync"));
+    }
+
+    private static void handleReleaseCast(ReleaseCastPayload payload, IPayloadContext context) {
+        ServerPlayer player = requirePlayer(context);
+        if (player == null) return;
+        SpellCastingService.releaseSlotCharge(player, payload.slot());
         context.reply(snapshot(player, "sync"));
     }
 
@@ -62,7 +70,10 @@ public final class ArcaneNetwork {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
         if (payload.action() == 0) SpellCastingService.commitFusion(player);
-        else SpellCastingService.clearFusion(player, true);
+        else {
+            SpellCastingService.clearFusion(player, true);
+            SpellCastingService.cancelCharge(player, true);
+        }
         context.reply(snapshot(player, "sync"));
     }
 
@@ -109,6 +120,9 @@ public final class ArcaneNetwork {
                 + ";insight=" + state.insight()
                 + ";next=" + state.nextCircleInsight()
                 + ";slots=" + slots
+                + ";charging=" + SpellCastingService.chargingSpell(player)
+                + ";charging_slot=" + SpellCastingService.chargingSlot(player)
+                + ";charge_ticks=" + SpellCastingService.chargingTicks(player)
                 + ";queue=" + queued
                 + ";queue_result=" + result
                 + ";queue_candidates=" + candidates
