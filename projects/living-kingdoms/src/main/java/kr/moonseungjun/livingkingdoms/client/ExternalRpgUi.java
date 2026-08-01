@@ -60,7 +60,7 @@ public final class ExternalRpgUi {
         button(graphics, font, x, y, width, height, "", selected, hovered, true);
         int iconX = x + 10;
         int iconY = y + Math.max(4, (height - 16) / 2);
-        graphics.fakeItem(new ItemStack(icon), iconX, iconY);
+        itemIcon(graphics, icon, iconX, iconY);
         graphics.text(font, Component.literal(label), x + 32,
                 y + Math.max(5, (height - 8) / 2), 0xFFF8EBC9);
     }
@@ -71,8 +71,25 @@ public final class ExternalRpgUi {
         float scale = Math.max(1.0F, (size - 10) / 16.0F);
         graphics.pose().translate(x + 5, y + 5);
         graphics.pose().scale(scale, scale);
-        graphics.fakeItem(new ItemStack(icon), 0, 0);
+        itemIcon(graphics, icon, 0, 0);
         graphics.pose().popMatrix();
+    }
+
+    /**
+     * Item components can still be unbound while the vanilla resource loading overlay is extracting state.
+     * Skip only that early frame instead of crashing the whole client; the icon appears on the next valid frame.
+     */
+    public static boolean itemIcon(GuiGraphicsExtractor graphics, Item icon, int x, int y) {
+        try {
+            graphics.fakeItem(new ItemStack(icon), x, y);
+            return true;
+        } catch (NullPointerException exception) {
+            if ("Components not bound yet".equals(exception.getMessage())) return false;
+            throw exception;
+        } catch (IllegalStateException exception) {
+            if (exception.getMessage() != null && exception.getMessage().contains("not bound")) return false;
+            throw exception;
+        }
     }
 
     public static void title(GuiGraphicsExtractor graphics, Font font,
