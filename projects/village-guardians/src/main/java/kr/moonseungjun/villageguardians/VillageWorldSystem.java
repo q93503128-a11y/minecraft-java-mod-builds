@@ -55,20 +55,38 @@ public final class VillageWorldSystem {
             VillageCouncilState.setVillageCenter(player);
         }
         BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition()).immutable();
-        if (!level.getBlockState(center.below(2)).is(Blocks.LODESTONE)) {
-            generationInProgress = true;
-            try {
+        boolean firstBuild = !level.getBlockState(center.below(2)).is(Blocks.LODESTONE);
+        boolean visualRevisionMissing = !level.getBlockState(center.below(3)).is(Blocks.CRYING_OBSIDIAN);
+        if (!firstBuild && !visualRevisionMissing) {
+            return;
+        }
+
+        generationInProgress = true;
+        try {
+            if (firstBuild) {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 재건] §f자체 건축 회관과 시설, 평탄한 성벽 통로를 생성합니다."));
+                        "§6[마을 건설] §f요새와 시설을 생성합니다."));
                 VillageProgressionSystem.restoreFacilitiesForMigration();
-                buildAll(level, center);
+            } else {
+                player.sendSystemMessage(Component.literal(
+                        "§6[마을 정비] §f지붕·조명·문·성문과 시설 크기를 새 설계로 한 번만 갱신합니다."));
+            }
+
+            buildAll(level, center);
+            if (!firstBuild) {
+                for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
+                    if (!VillageProgressionSystem.isOperational(building)) {
+                        destroyStructure(level, building);
+                    }
+                }
+            } else {
                 removeLooseDebris(level, center);
                 removeUnauthorizedMobs(level, center);
-                player.sendSystemMessage(Component.literal(
-                        "§a[마을 준비 완료] §f이전 파괴 잔해 없이 모든 시설이 정상 상태로 시작합니다."));
-            } finally {
-                generationInProgress = false;
             }
+            player.sendSystemMessage(Component.literal(
+                    "§a[마을 준비 완료] §f닫힌 지붕, 밝은 내부와 밀폐된 북문이 적용됐습니다."));
+        } finally {
+            generationInProgress = false;
         }
     }
 
@@ -275,6 +293,7 @@ public final class VillageWorldSystem {
         VillageBuildingEnhancements.reinforceWallRailings(level, center);
         VillageFortressBuildings.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
+        VillageFortressTerrain.set(level, center.below(3), Blocks.CRYING_OBSIDIAN);
         VillageFortressTerrain.set(level, center.below(2), Blocks.LODESTONE);
         VillageFortressTerrain.set(level, center.below(), Blocks.CHISELED_STONE_BRICKS);
     }
