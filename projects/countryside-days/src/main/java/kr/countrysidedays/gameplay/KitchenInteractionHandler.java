@@ -43,6 +43,22 @@ public final class KitchenInteractionHandler {
     private static void handleServerInteraction(ServerLevel level, BlockPos pos, Player player, ItemStack heldItem) {
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
 
+        if (heldItem.isEmpty()) {
+            CountrysideWorldData.PlayerEstate estate = data.estateAt(pos).orElse(null);
+            if (estate == null || !estate.isOwner(player.getUUID())) {
+                player.sendOverlayMessage(Component.translatable("message.countrysidedays.restaurant_owner_only"));
+                return;
+            }
+            boolean open = data.toggleRestaurant(player.getUUID()).orElse(false);
+            player.sendSystemMessage(Component.translatable(
+                    open
+                            ? "message.countrysidedays.restaurant_opened"
+                            : "message.countrysidedays.restaurant_closed_by_owner",
+                    CountrysideWorldData.DAILY_CUSTOMER_CAP
+            ));
+            return;
+        }
+
         if (heldItem.is(ModItems.WILD_HERB.get())) {
             if (data.addHerbPreparation(pos)) {
                 consumeOneUnlessCreative(player, heldItem);
@@ -69,14 +85,7 @@ public final class KitchenInteractionHandler {
                     "message.countrysidedays.stew_completed",
                     prepared
             ));
-            return;
         }
-
-        player.sendOverlayMessage(Component.translatable(
-                data.hasHerbPreparation(pos)
-                        ? "message.countrysidedays.counter_waiting_for_fish"
-                        : "message.countrysidedays.counter_waiting_for_herb"
-        ));
     }
 
     private static void consumeOneUnlessCreative(Player player, ItemStack stack) {
