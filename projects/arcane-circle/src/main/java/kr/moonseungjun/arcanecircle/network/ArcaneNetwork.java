@@ -50,14 +50,14 @@ public final class ArcaneNetwork {
     private static void handleSelect(SelectSlotPayload payload, IPayloadContext context) {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
-        MagicPlayerData.get(player.getServer()).select(player, payload.slot());
+        MagicPlayerData.get(((net.minecraft.server.level.ServerLevel) player.level()).getServer()).select(player, payload.slot());
         context.reply(snapshot(player, "sync"));
     }
 
     private static void handleEquip(EquipSpellPayload payload, IPayloadContext context) {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
-        boolean equipped = MagicPlayerData.get(player.getServer()).equip(player, payload.slot(), payload.spellId());
+        boolean equipped = MagicPlayerData.get(((net.minecraft.server.level.ServerLevel) player.level()).getServer()).equip(player, payload.slot(), payload.spellId());
         if (!equipped) player.sendSystemMessage(Component.literal("§c[마도서] §f해당 주문을 슬롯에 장착할 수 없습니다."));
         context.reply(snapshot(player, "spells"));
     }
@@ -65,7 +65,7 @@ public final class ArcaneNetwork {
     private static void handleFuse(FuseSpellPayload payload, IPayloadContext context) {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
-        MagicPlayerData.FusionResult result = MagicPlayerData.get(player.getServer()).fuse(player, payload.resultId());
+        MagicPlayerData.FusionResult result = MagicPlayerData.get(((net.minecraft.server.level.ServerLevel) player.level()).getServer()).fuse(player, payload.resultId());
         player.sendSystemMessage(Component.literal((result.accepted() ? "§d[융합 연구] §f" : "§c[융합 실패] §f")
                 + result.message()));
         context.reply(snapshot(player, "fusion"));
@@ -78,7 +78,7 @@ public final class ArcaneNetwork {
     }
 
     public static GrimoireSnapshotPayload snapshot(ServerPlayer player, String page) {
-        MagicPlayerData.MageState state = MagicPlayerData.get(player.getServer()).state(player);
+        MagicPlayerData.MageState state = MagicPlayerData.get(((net.minecraft.server.level.ServerLevel) player.level()).getServer()).state(player);
         String known = state.known().stream().sorted().collect(Collectors.joining("|"));
         String slots = String.join("|", state.slots());
         String data = "circle=" + state.circle()

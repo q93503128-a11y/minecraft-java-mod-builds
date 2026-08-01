@@ -29,7 +29,7 @@ public final class ArcaneCircle {
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        MagicPlayerData data = MagicPlayerData.get(player.getServer());
+        MagicPlayerData data = MagicPlayerData.get(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
         boolean firstAwakening = data.ensureProfile(player);
         ArcaneNetwork.sync(player);
         if (firstAwakening) {
@@ -43,7 +43,7 @@ public final class ArcaneCircle {
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.tickCount % 10 == 0) {
-            MagicPlayerData.get(player.getServer()).regenerate(player);
+            MagicPlayerData.get(((net.minecraft.server.level.ServerLevel) player.level()).getServer()).regenerate(player);
         }
     }
 }
