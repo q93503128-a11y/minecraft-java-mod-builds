@@ -13,7 +13,11 @@ public final class FlatCountrysideBootstrap {
 
     public static Optional<BlockPos> ensureGenerated(ServerLevel level, BlockPos requestedCenter) {
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        if (data.homesteadOrigin().isPresent()) return data.homesteadOrigin();
+        if (data.homesteadOrigin().isPresent()) {
+            BlockPos origin = data.homesteadOrigin().orElseThrow();
+            PublicVillageExpansionBuilder.ensureExpanded(level, origin);
+            return Optional.of(origin);
+        }
         if (!CountrysideRegionManager.isFlatWorld(level)) return Optional.empty();
 
         BlockPos origin = level.getHeightmapPos(
@@ -21,6 +25,7 @@ public final class FlatCountrysideBootstrap {
                 new BlockPos(0, 0, 0)
         );
         StarterHomesteadGenerator.buildPublicVillage(level, origin);
+        PublicVillageExpansionBuilder.ensureExpanded(level, origin);
         data.claimHomesteadOrigin(origin);
         return Optional.of(origin);
     }
