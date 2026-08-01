@@ -29,22 +29,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Record runner allocation
-        shell: bash
-        run: |
-          mkdir -p "$RESULT_DIR"
-          cat > "$RESULT_DIR/started.txt" <<STARTED
-          source_sha=$GITHUB_SHA
-          run_id=$GITHUB_RUN_ID
-          started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          STARTED
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$RESULT_DIR/started.txt"
-          git commit -m "Start Arcane v0.8 recovery ${GITHUB_RUN_ID}"
-          git pull --rebase origin main
-          git push
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
