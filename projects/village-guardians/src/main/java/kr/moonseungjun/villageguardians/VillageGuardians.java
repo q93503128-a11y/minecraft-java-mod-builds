@@ -36,6 +36,7 @@ public final class VillageGuardians {
     public void onServerStarting(ServerStartingEvent event) {
         VillageCouncilState.initializeServer(event.getServer());
         VillageProgressionSystem.initializeServer(event.getServer());
+        VillageSkillTreeSystem.initializeServer(event.getServer());
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageStructureHud.reset();
