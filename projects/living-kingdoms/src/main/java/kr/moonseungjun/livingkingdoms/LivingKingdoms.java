@@ -11,8 +11,12 @@ import kr.moonseungjun.livingkingdoms.world.ConstructionDebrisCleaner;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
 import kr.moonseungjun.livingkingdoms.world.RealmFacilityFinisher;
+import kr.moonseungjun.livingkingdoms.world.RealmSitePlanner;
+import kr.moonseungjun.livingkingdoms.world.SelectionStagingManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
+import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -64,7 +68,11 @@ public final class LivingKingdoms {
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        OriginProfileManager.requestSelection(player);
+        if (OriginProfileManager.requiresSelection(player.getUUID())) {
+            SelectionStagingManager.ensure(player);
+            OriginProfileManager.requestSelection(player);
+            return;
+        }
         OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
             LivingRealmWorldManager.requestPlacement(player, profile);
             SkillProgressionManager.state(player);
@@ -73,6 +81,11 @@ public final class LivingKingdoms {
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (OriginProfileManager.requiresSelection(player.getUUID())) {
+            SelectionStagingManager.ensure(player);
+            OriginProfileManager.requestSelection(player);
+            return;
+        }
         OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
             LivingRealmWorldManager.requestPlacement(player, profile);
             SkillProgressionManager.state(player);
@@ -81,10 +94,20 @@ public final class LivingKingdoms {
 
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        long gameTime = player.level().getGameTime();
         if (OriginProfileManager.requiresSelection(player.getUUID())) {
-            if (player.level().getGameTime() % 40L == 0L) OriginProfileManager.requestSelection(player);
+            if (gameTime % 20L == 0L) SelectionStagingManager.ensure(player);
+            if (gameTime % 40L == 0L) OriginProfileManager.requestSelection(player);
             return;
         }
+
+        OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
+            ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
+            if (realm != null && !RealmSitePlanner.isBuilt(realm, profile.homelandId()) && gameTime % 20L == 0L) {
+                SelectionStagingManager.ensure(player);
+            }
+        });
+
         SkillProgressionManager.tick(player);
         SkillCrimeHooks.tick(player);
         CrimeManager.tickPlayer(player);
