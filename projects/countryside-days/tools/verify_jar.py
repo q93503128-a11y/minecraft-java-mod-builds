@@ -27,32 +27,6 @@ def load_json_utf8(archive: zipfile.ZipFile, path: str) -> dict[str, object]:
     return parsed
 
 
-def export_source_snapshot() -> Path:
-    project_root = Path.cwd()
-    destination = project_root / "build" / "deliverables" / "countryside-days-alpha.12-source-snapshot.zip"
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    included_roots = (
-        project_root / "src",
-        project_root / "tools",
-    )
-    included_files = (
-        project_root / "build.gradle",
-        project_root / "gradle.properties",
-        project_root / "settings.gradle",
-    )
-    with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for root in included_roots:
-            if not root.exists():
-                continue
-            for path in sorted(root.rglob("*")):
-                if path.is_file():
-                    archive.write(path, path.relative_to(project_root).as_posix())
-        for path in included_files:
-            if path.is_file():
-                archive.write(path, path.relative_to(project_root).as_posix())
-    return destination
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Verify a built Countryside Days NeoForge JAR")
     parser.add_argument("jar", type=Path)
@@ -185,9 +159,7 @@ def main() -> None:
         if forbidden:
             fail(f"development-only files leaked into JAR: {forbidden[:10]}")
 
-    snapshot = export_source_snapshot()
     print(f"Verified {jar_path} ({jar_path.stat().st_size} bytes)")
-    print(f"Exported temporary source snapshot to {snapshot}")
 
 
 if __name__ == "__main__":
