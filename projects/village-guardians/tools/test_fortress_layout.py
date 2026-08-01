@@ -6,6 +6,8 @@ ROAD_HALF_WIDTH = 4
 GATE_HALF_WIDTH = 8
 GATE_HEIGHT = 8
 WALL_THICKNESS = 5
+PATH_MAX_LENGTH = 64
+RETURN_POSITION = (0, 12)
 
 BUILDINGS = {
     "town_hall": (-25, 34, 51, 31, "north"),
@@ -15,6 +17,17 @@ BUILDINGS = {
     "storehouse": (-70, 18, 27, 21, "east"),
     "infirmary": (44, 18, 27, 21, "west"),
 }
+
+
+def bounds(spec: tuple[int, int, int, int, str]) -> tuple[int, int, int, int]:
+    dx, dz, width, depth, _ = spec
+    return dx, dz, dx + width - 1, dz + depth - 1
+
+
+def overlaps(first: tuple[int, int, int, int], second: tuple[int, int, int, int]) -> bool:
+    ax0, az0, ax1, az1 = first
+    bx0, bz0, bx1, bz1 = second
+    return not (ax1 < bx0 or ax0 > bx1 or az1 < bz0 or az0 > bz1)
 
 
 def intersects_main_avenue(dx: int, dz: int, width: int, depth: int) -> bool:
@@ -28,6 +41,34 @@ def intersects_main_avenue(dx: int, dz: int, width: int, depth: int) -> bool:
         or z1 < avenue_z0
         or z0 > avenue_z1
     )
+
+
+def entrance(spec: tuple[int, int, int, int, str]) -> tuple[int, int]:
+    dx, dz, width, depth, facing = spec
+    if facing == "north":
+        return dx + width // 2, dz - 1
+    if facing == "south":
+        return dx + width // 2, dz + depth
+    if facing == "west":
+        return dx - 1, dz + depth // 2
+    if facing == "east":
+        return dx + width, dz + depth // 2
+    raise AssertionError(facing)
+
+
+def path_steps_to_road(spec: tuple[int, int, int, int, str]) -> int:
+    x, z = entrance(spec)
+    facing = spec[4]
+    step_x = {"east": 1, "west": -1}.get(facing, 0)
+    step_z = {"south": 1, "north": -1}.get(facing, 0)
+    for step in range(PATH_MAX_LENGTH + 1):
+        if facing in {"east", "west"} and abs(x) <= ROAD_HALF_WIDTH:
+            return step
+        if facing in {"north", "south"} and x * x + z * z <= 18 * 18:
+            return step
+        x += step_x
+        z += step_z
+    raise AssertionError((spec, "path did not reach a road"))
 
 
 def main() -> None:
@@ -45,6 +86,15 @@ def main() -> None:
             assert facing == "west", (name, facing)
         elif center_z > 8:
             assert facing == "north", (name, facing)
+        assert path_steps_to_road(BUILDINGS[name]) <= PATH_MAX_LENGTH, name
+
+    names = list(BUILDINGS)
+    for index, first_name in enumerate(names):
+        for second_name in names[index + 1:]:
+            assert not overlaps(bounds(BUILDINGS[first_name]), bounds(BUILDINGS[second_name])), (
+                first_name,
+                second_name,
+            )
 
     hall_area = BUILDINGS["town_hall"][2] * BUILDINGS["town_hall"][3]
     normal_areas = [
@@ -71,12 +121,30 @@ def main() -> None:
     assert stair_z[-1] == -FORTRESS_RADIUS + 6
     assert stair_z[-1] in landing_z
 
-    print("[PASS] Custom buildings stay inside the fortress and clear the main avenue")
-    print("[PASS] Every facility entrance faces the central plaza")
+    return_x, return_z = RETURN_POSITION
+    assert return_x * return_x + return_z * return_z <= 18 * 18
+    assert not any(
+        x0 <= return_x <= x1 and z0 <= return_z <= z1
+        for x0, z0, x1, z1 in map(bounds, BUILDINGS.values())
+    )
+    assert RETURN_POSITION != (0, 0)
+
+    north_inner_railing_openings = {
+        offset for offset in range(-FORTRESS_RADIUS, FORTRESS_RADIUS + 1)
+        if abs(offset) <= 15 or abs(abs(offset) - 25) <= 3
+    }
+    assert 0 in north_inner_railing_openings
+    assert all(offset in north_inner_railing_openings for offset in range(22, 29))
+    assert all(offset in north_inner_railing_openings for offset in range(-28, -21))
+    assert 40 not in north_inner_railing_openings
+
+    print("[PASS] Custom buildings stay inside the fortress without overlap")
+    print("[PASS] Every facility entrance faces and reaches the central road or plaza")
     print("[PASS] Town hall footprint is at least twice a normal facility")
     print("[PASS] Closed gate has no missing columns")
-    print("[PASS] Wall top has a flat three-block center walkway")
+    print("[PASS] Wall top has a flat three-block center walkway and planned rail openings")
     print("[PASS] Wall stairs connect directly to the landing")
+    print("[PASS] Return destination is inside the plaza and clear of the bell and buildings")
 
 
 if __name__ == "__main__":
