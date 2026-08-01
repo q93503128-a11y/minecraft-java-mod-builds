@@ -7,6 +7,7 @@ import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
+import kr.moonseungjun.livingkingdoms.world.ConstructionDebrisCleaner;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
 import kr.moonseungjun.livingkingdoms.world.RealmFacilityFinisher;
@@ -16,6 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -43,6 +45,7 @@ public final class LivingKingdoms {
         NeoForge.EVENT_BUS.addListener(this::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(this::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(this::onEntityJoinLevel);
         LOGGER.info("Living Kingdoms loaded: {} species, {} homelands, {} backgrounds, {} residences",
                 FoundationCatalog.species().size(), FoundationCatalog.homelands().size(),
                 FoundationCatalog.backgrounds().size(), FoundationCatalog.residences().size());
@@ -56,6 +59,7 @@ public final class LivingKingdoms {
     private void onServerTick(ServerTickEvent.Post event) {
         RealmBuildCoordinator.onServerTick(event);
         RealmFacilityFinisher.onServerTick(event);
+        ConstructionDebrisCleaner.onServerTick(event);
     }
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -107,5 +111,9 @@ public final class LivingKingdoms {
 
     private void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         StarterNpcManager.handleInteraction(event);
+    }
+
+    private void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        ConstructionDebrisCleaner.onEntityJoin(event);
     }
 }
