@@ -1,5 +1,6 @@
 package kr.countrysidedays.world;
 
+import kr.countrysidedays.gameplay.SharedRestaurantAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -40,11 +41,18 @@ public final class CountrysidePropertyManager {
         Player player = event.getPlayer();
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
         Optional<CountrysideWorldData.PlayerEstate> estate = data.estateAt(event.getPos());
+        Optional<CountrysideWorldData.PlayerEstate> sharedRestaurant = SharedRestaurantAccess.restaurantEstate(data);
 
-        if (estate.isPresent()
-                && event.getPos().equals(PlayerEstateLayout.restaurantSign(estate.get().originPos()))
+        if (sharedRestaurant.isPresent()
+                && event.getPos().equals(PlayerEstateLayout.restaurantSign(sharedRestaurant.get().originPos()))
                 && event.getItemStack().is(Items.NAME_TAG)) {
-            renameRestaurant(event, level, player, data, estate.get());
+            renameRestaurant(event, level, player, data, sharedRestaurant.get());
+            return;
+        }
+
+        if (sharedRestaurant.isPresent()
+                && PlayerEstateLayout.isRestaurantArea(sharedRestaurant.get().originPos(), event.getPos())
+                && SharedRestaurantAccess.isStaff(data, player.getUUID())) {
             return;
         }
 
@@ -70,7 +78,7 @@ public final class CountrysidePropertyManager {
             CountrysideWorldData.PlayerEstate estate
     ) {
         event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
-        if (!estate.isOwner(player.getUUID())) {
+        if (!SharedRestaurantAccess.isOwner(data, player.getUUID())) {
             player.sendOverlayMessage(Component.translatable("message.countrysidedays.restaurant_name_owner_only"));
             return;
         }
@@ -88,7 +96,7 @@ public final class CountrysidePropertyManager {
         }
 
         CountrysideWorldData.PlayerEstate updated = data.estate(player.getUUID()).orElse(estate);
-        StarterHomesteadGenerator.refreshEstateSigns(
+        SharedRestaurantBuilder.refreshSign(
                 level, updated.originPos(), updated.ownerName(), updated.restaurantName()
         );
         if (!player.getAbilities().instabuild) nameTag.shrink(1);
