@@ -22,6 +22,7 @@ public final class VillageRpgSystem {
 
     public static void resetTransientState() {
         NEXT_SKILL_USE.clear();
+        VillageCombatTechniqueSystem.reset();
     }
 
     public static void refreshPassives(MinecraftServer server) {
@@ -52,6 +53,7 @@ public final class VillageRpgSystem {
             }
             event.setAmount(event.getAmount() * value);
         }
+        VillageCombatTechniqueSystem.handleIncomingDamage(event);
     }
 
     public static void handleDeath(LivingDeathEvent event) {
@@ -59,18 +61,18 @@ public final class VillageRpgSystem {
                 || !(event.getSource().getEntity() instanceof ServerPlayer killer)) {
             return;
         }
-        int base = Math.min(300, 20 + Math.round(defeated.getMaxHealth() * 1.5f));
+        int base = Math.min(90, 7 + Math.round(defeated.getMaxHealth() * 0.48f));
         int reward = VillageCouncilState.isInsideVillage(killer)
-                ? Math.round(base * VillageCouncilState.VILLAGE_DEFENSE_XP_MULTIPLIER)
+                ? Math.round(base * 1.18f)
                 : base;
         VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(killer, reward);
-        int baseCoins = Math.max(2, Math.round(defeated.getMaxHealth() / 6.0f));
+        int baseCoins = Math.max(1, Math.round(defeated.getMaxHealth() / 12.0f));
         int coins = Math.max(1, Math.round(baseCoins * VillageSkillTreeSystem.coinRewardMultiplier(killer)));
         VillageProgressionSystem.addCoins(killer, coins, "적 처치");
         killer.sendSystemMessage(Component.literal("§d+" + result.awardedExperience() + " XP"));
         if (result.levelsGained() > 0) {
             refreshPlayerPassive(killer);
-            killer.heal(killer.getMaxHealth());
+            killer.heal(Math.min(killer.getMaxHealth(), 8.0f + result.levelsGained() * 4.0f));
         }
     }
 
@@ -91,15 +93,16 @@ public final class VillageRpgSystem {
 
         int level = VillageCouncilState.levelOf(player.getUUID());
         int tier = Math.min(3, (level - 1) / 10 + (learned - 1) / 2);
-        int duration = 200 + level * 10 + VillageProgressionSystem.skillDurationBonusTicks(player);
+        int duration = 180 + level * 8 + VillageProgressionSystem.skillDurationBonusTicks(player);
         List<ServerPlayer> allies = allies(player, 12 + learned * 1.5);
         String name = role.displayName() + " 전술";
         for (ServerPlayer ally : allies) {
             apply(role, ally, duration, tier, level, learned);
         }
+        VillageCombatTechniqueSystem.castRoleTechnique(player, role, learned);
         int cooldown = Math.max(
-                10,
-                36 - level / 2
+                12,
+                40 - level / 3
                         - VillageProgressionSystem.skillCooldownReductionSeconds(player)
                         - VillageSkillTreeSystem.cooldownReductionSeconds(player));
         NEXT_SKILL_USE.put(player.getUUID(), now + cooldown * 1000L);
@@ -129,7 +132,7 @@ public final class VillageRpgSystem {
                 ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration + 100, Math.min(4, tier + 1)));
             }
             case QUARTERMASTER -> {
-                ally.heal(4 + level * 0.6f + learned * 2);
+                ally.heal(4 + level * 0.45f + learned * 2);
                 ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, Math.min(3, tier + 1)));
             }
             case SCOUT -> {
@@ -141,7 +144,7 @@ public final class VillageRpgSystem {
                 ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, Math.min(3, tier)));
             }
             case MEDIC -> {
-                ally.heal(8 + level + learned * 2);
+                ally.heal(7 + level * 0.75f + learned * 2);
                 ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration + 100, Math.min(4, tier + 1)));
                 ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, Math.min(4, tier + 1)));
             }
@@ -150,17 +153,17 @@ public final class VillageRpgSystem {
 
     public static float outgoingDamageMultiplier(int level) {
         int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
-        return 1 + (value - 1) * 0.12f + ((value - 1) / 5) * 0.35f;
+        return 1.0f + (value - 1) * 0.035f + ((value - 1) / 5) * 0.08f;
     }
 
     public static float incomingDamageMultiplier(int level) {
         int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
-        return Math.max(0.28f, 1 - (value - 1) * 0.018f - ((value - 1) / 5) * 0.06f);
+        return Math.max(0.58f, 1.0f - (value - 1) * 0.009f - ((value - 1) / 5) * 0.025f);
     }
 
     public static int bonusHealthPoints(int level) {
         int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
-        return ((value - 1) / 3) * 4;
+        return ((value - 1) / 5) * 4;
     }
 
     private static List<ServerPlayer> allies(ServerPlayer player, double radius) {
