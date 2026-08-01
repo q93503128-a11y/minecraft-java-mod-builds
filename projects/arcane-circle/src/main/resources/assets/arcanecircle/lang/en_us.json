@@ -1,6 +1,9 @@
 {
-  "key.arcanecircle.grimoire": "Open Grimoire",
-  "key.arcanecircle.cast": "Cast Selected Spell",
-  "key.arcanecircle.previous_spell": "Previous Spell Slot",
-  "key.arcanecircle.next_spell": "Next Spell Slot"
+  "key.arcanecircle.grimoire": "Open Astral Grimoire",
+  "key.arcanecircle.cast": "Cast Focus Spell",
+  "key.arcanecircle.fusion_cast": "Cast Focus-Weave Fusion",
+  "key.arcanecircle.previous_focus": "Previous Focus Spell",
+  "key.arcanecircle.next_focus": "Next Focus Spell",
+  "key.arcanecircle.previous_weave": "Previous Weave Spell",
+  "key.arcanecircle.next_weave": "Next Weave Spell"
 }
