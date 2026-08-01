@@ -258,6 +258,7 @@ public final class VillageWorldSystem {
         VillageDefenseTowerBuilder.build(level, center);
         VillageBuildingSignatures.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
+        // 26.2 exposes Blocks.COPPER_BLOCK as a weathering collection, so the migration marker uses a stable block.
         VillageFortressTerrain.set(level, center.below(6), Blocks.LAPIS_BLOCK);
         VillageFortressTerrain.set(level, center.below(5), Blocks.AMETHYST_BLOCK);
         VillageFortressTerrain.set(level, center.below(4), Blocks.RESPAWN_ANCHOR);
