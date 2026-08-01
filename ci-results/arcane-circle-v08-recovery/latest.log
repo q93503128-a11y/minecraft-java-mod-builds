@@ -1,2 +1,1 @@
-Arcane v0.8 migration payload decoded: part0=6000, part1=6000, part2=6000, part3=6000, part4=9939, part5=3939 repair=insert@34067:'0'
-patch anchor missing in /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/SpellCastingService.java: '        CombatGrowthService.Impact impact = CombatGrowthService.measure(combatSnapshot, spell.circle());\n\n        data.s'
+Build pipeline did not produce a diagnostic log.
