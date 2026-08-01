@@ -100,11 +100,11 @@ public final class SharedRestaurantBuilder {
             }
         }
 
-        set(level, origin.offset(11, 5, -18), Blocks.CHAIN.defaultBlockState());
+        set(level, origin.offset(11, 5, -18), Blocks.IRON_BARS.defaultBlockState());
         set(level, origin.offset(11, 4, -18), Blocks.LANTERN.defaultBlockState());
-        set(level, origin.offset(23, 5, -18), Blocks.CHAIN.defaultBlockState());
+        set(level, origin.offset(23, 5, -18), Blocks.IRON_BARS.defaultBlockState());
         set(level, origin.offset(23, 4, -18), Blocks.LANTERN.defaultBlockState());
-        set(level, origin.offset(17, 5, -12), Blocks.CHAIN.defaultBlockState());
+        set(level, origin.offset(17, 5, -12), Blocks.IRON_BARS.defaultBlockState());
         set(level, origin.offset(17, 4, -12), Blocks.LANTERN.defaultBlockState());
     }
 
