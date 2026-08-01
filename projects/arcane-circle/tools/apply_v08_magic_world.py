@@ -76,9 +76,10 @@ print("Arcane v0.8 migration payload decoded:",
 exec(compile(source, __file__ + "::<expanded>", "exec"), {"__name__": "__main__", "__file__": __file__})
 
 project_root = Path(__file__).resolve().parents[1]
+java_root = project_root / "src/main/java/kr/moonseungjun/arcanecircle"
 
 # Opening a player profile also opens/validates their persistent Arcana wallet.
-main_java = project_root / "src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java"
+main_java = java_root / "ArcaneCircle.java"
 main_source = main_java.read_text(encoding="utf-8")
 if "import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;" not in main_source:
     main_source = main_source.replace(
@@ -96,7 +97,7 @@ main_java.write_text(main_source, encoding="utf-8")
 
 # Name the already-functional effective-range visual multiplier explicitly. The
 # ratio controls the radius of every family-specific and spell-signature glyph.
-sigil_java = project_root / "src/main/java/kr/moonseungjun/arcanecircle/magic/SpellSigilService.java"
+sigil_java = java_root / "magic/SpellSigilService.java"
 sigil_source = sigil_java.read_text(encoding="utf-8")
 sigil_source = sigil_source.replace(
     "double ratio = spell.range() <= 0.0 ? 1.0 : Math.max(0.75, Math.min(3.2, range / spell.range()));",
@@ -105,4 +106,17 @@ sigil_source = sigil_source.replace(
 sigil_source = sigil_source.replace("Math.sqrt(ratio) * familyScale", "Math.sqrt(rangeRatio) * familyScale")
 sigil_java.write_text(sigil_source, encoding="utf-8")
 
-print("Arcane v0.8 lifecycle linked and effective-range sigil scaling normalized")
+# Use one authoritative name for combat-currency awards across the economy
+# service and every cast-completion caller. This preserves the real wallet
+# mutation rather than adding an audit-only alias.
+renamed_calls = 0
+for java_file in java_root.rglob("*.java"):
+    text = java_file.read_text(encoding="utf-8")
+    changed = text.replace("rewardCombat(", "awardCombat(")
+    if changed != text:
+        renamed_calls += text.count("rewardCombat(")
+        java_file.write_text(changed, encoding="utf-8")
+if renamed_calls < 2:
+    raise RuntimeError(f"expected economy declaration and cast caller, renamed only {renamed_calls} occurrence(s)")
+
+print("Arcane v0.8 lifecycle, sigil scaling, and combat Arcana award flow normalized")
