@@ -9,33 +9,32 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Surveys generated noise terrain before any kingdom is placed. */
+/** Surveys generated noise terrain and stores anchors without writing an entire kingdom in one tick. */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 3;
+    public static final int LAYOUT_REVISION = 4;
 
     private RealmSitePlanner() {
     }
 
-    public static synchronized RealmSiteLayoutSavedData.RealmSite ensureBuilt(ServerLevel level, String homelandId) {
+    /** Returns the persisted site or surveys a new one. This method never constructs buildings. */
+    public static synchronized RealmSiteLayoutSavedData.RealmSite ensureSite(ServerLevel level, String homelandId) {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
-        RealmSiteLayoutSavedData.RealmSite site = data.site(homelandId).orElseGet(() -> {
-            RealmSiteLayoutSavedData.RealmSite surveyed = survey(level, homelandId);
-            data.put(homelandId, surveyed);
-            return surveyed;
-        });
-        if (!site.built() || site.revision() < LAYOUT_REVISION) {
-            TerrainIntegratedCapitalBuilder.build(level, homelandId, site);
-            RegionalResidenceBuilder.build(level, homelandId, site);
-            data.markBuilt(homelandId, LAYOUT_REVISION);
-            site = new RealmSiteLayoutSavedData.RealmSite(
-                    site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION, true
-            );
-            LivingKingdoms.LOGGER.info(
-                    "Built optimized terrain-integrated homeland {} at {},{}, baseY={}, revision={}",
-                    homelandId, site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION
-            );
-        }
-        return site;
+        RealmSiteLayoutSavedData.RealmSite current = data.site(homelandId).orElse(null);
+        if (current != null) return current;
+
+        RealmSiteLayoutSavedData.RealmSite surveyed = survey(level, homelandId);
+        data.put(homelandId, surveyed);
+        return surveyed;
+    }
+
+    public static synchronized void markBuilt(ServerLevel level, String homelandId) {
+        RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
+        data.markBuilt(homelandId, LAYOUT_REVISION);
+        RealmSiteLayoutSavedData.RealmSite site = data.site(homelandId).orElseThrow();
+        LivingKingdoms.LOGGER.info(
+                "Completed terrain-integrated homeland {} at {},{}, baseY={}, revision={}",
+                homelandId, site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION
+        );
     }
 
     public static RealmSiteLayoutSavedData.RealmSite site(ServerLevel level, String homelandId) {
@@ -43,8 +42,16 @@ public final class RealmSitePlanner {
                 .site(homelandId).orElse(null);
     }
 
+    public static boolean isBuilt(ServerLevel level, String homelandId) {
+        RealmSiteLayoutSavedData.RealmSite site = site(level, homelandId);
+        return site != null && site.built() && site.revision() >= LAYOUT_REVISION;
+    }
+
     public static BlockPos residencePosition(ServerLevel level, String homelandId, String residenceId) {
-        RealmSiteLayoutSavedData.RealmSite site = ensureBuilt(level, homelandId);
+        RealmSiteLayoutSavedData.RealmSite site = site(level, homelandId);
+        if (site == null || !site.built() || site.revision() < LAYOUT_REVISION) {
+            throw new IllegalStateException("Homeland is not ready: " + homelandId);
+        }
         int[] offset = residenceOffset(residenceId);
         int x = site.centerX() + offset[0];
         int z = site.centerZ() + offset[1];
