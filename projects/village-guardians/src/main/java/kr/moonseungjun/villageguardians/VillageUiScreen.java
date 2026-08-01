@@ -131,9 +131,10 @@ public final class VillageUiScreen extends Screen {
             int x = content.actionLeft() + horizontalPadding + column * (buttonWidth + gap);
             int y = startY + row * (buttonHeight + gap);
             String label = compact(labels[index], columns == 2 ? 16 : 29);
+            final int actionIndex = index;
             Button actionButton = Button.builder(
                             Component.literal((selectedIndex == index ? "▶ " : "") + label),
-                            button -> selectAction(index))
+                            button -> selectAction(actionIndex))
                     .bounds(x, y, buttonWidth, buttonHeight)
                     .build();
             addRenderableWidget(actionButton);
