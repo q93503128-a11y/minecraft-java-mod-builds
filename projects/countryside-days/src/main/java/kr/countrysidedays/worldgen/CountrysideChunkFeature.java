@@ -11,13 +11,10 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
-/**
- * Builds the rural landscape while a superflat chunk is being generated.
- * Chunks are complete before reaching the client, so no approach-triggered
- * repainting or stale black lighting is possible.
- */
+/** Builds a quiet meadow. Water and trees are kept far outside all village and estate slots. */
 public final class CountrysideChunkFeature extends Feature<NoneFeatureConfiguration> {
     private static final int VEGETATION_CLEAR_HEIGHT = 10;
+    private static final int SETTLEMENT_RESERVE = 560;
 
     public CountrysideChunkFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -25,9 +22,7 @@ public final class CountrysideChunkFeature extends Feature<NoneFeatureConfigurat
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        if (!(context.chunkGenerator() instanceof FlatLevelSource)) {
-            return false;
-        }
+        if (!(context.chunkGenerator() instanceof FlatLevelSource)) return false;
 
         WorldGenLevel level = context.level();
         int minX = context.origin().getX() & ~15;
@@ -59,43 +54,21 @@ public final class CountrysideChunkFeature extends Feature<NoneFeatureConfigurat
     private static void clearVanillaVegetation(WorldGenLevel level, int x, int groundY, int z) {
         for (int y = groundY + 1; y <= groundY + VEGETATION_CLEAR_HEIGHT; y++) {
             BlockPos pos = new BlockPos(x, y, z);
-            if (!level.getBlockState(pos).isAir()) {
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
-            }
+            if (!level.getBlockState(pos).isAir()) level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
         }
         level.setBlock(new BlockPos(x, groundY, z), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
     }
 
     private static void decorateColumn(WorldGenLevel level, int x, int groundY, int z) {
-        boolean river = isRiver(x, z);
-        boolean road = isMainRoad(x, z) || isCrossRoad(x, z);
-
-        if (river && road) {
-            buildBridgeColumn(level, x, groundY, z);
-            return;
-        }
-        if (river) {
+        if (!isSettlementReserve(x, z) && isRiver(x, z)) {
             buildRiverColumn(level, x, groundY, z);
             return;
         }
-        if (isRiverBank(x, z)) {
+        if (!isSettlementReserve(x, z) && isRiverBank(x, z)) {
             BlockState bank = Math.floorMod(x * 17 + z * 31, 5) == 0
                     ? Blocks.GRAVEL.defaultBlockState()
                     : Blocks.COARSE_DIRT.defaultBlockState();
             level.setBlock(new BlockPos(x, groundY, z), bank, 2);
-            return;
-        }
-        if (road) {
-            BlockState path = Math.floorMod(x * 13 + z * 7, 7) == 0
-                    ? Blocks.GRAVEL.defaultBlockState()
-                    : Blocks.PACKED_MUD.defaultBlockState();
-            level.setBlock(new BlockPos(x, groundY, z), path, 2);
-            return;
-        }
-
-        int field = fieldType(x, z);
-        if (field != 0) {
-            buildFieldColumn(level, x, groundY, z, field);
             return;
         }
 
@@ -107,9 +80,11 @@ public final class CountrysideChunkFeature extends Feature<NoneFeatureConfigurat
             case 3, 4, 5 -> Blocks.SHORT_GRASS.defaultBlockState();
             default -> null;
         };
-        if (plant != null) {
-            level.setBlock(new BlockPos(x, groundY + 1, z), plant, 2);
-        }
+        if (plant != null) level.setBlock(new BlockPos(x, groundY + 1, z), plant, 2);
+    }
+
+    private static boolean isSettlementReserve(int x, int z) {
+        return Math.abs(x) <= SETTLEMENT_RESERVE && Math.abs(z) <= SETTLEMENT_RESERVE;
     }
 
     private static boolean isRiver(int x, int z) {
@@ -123,16 +98,6 @@ public final class CountrysideChunkFeature extends Feature<NoneFeatureConfigurat
         double width = 13.0 + 2.0 * Math.sin(x / 41.0);
         double distance = Math.abs(z - center);
         return distance > width && distance <= width + 5.0;
-    }
-
-    private static boolean isMainRoad(int x, int z) {
-        double center = 18.0 + 10.0 * Math.sin((x + 24.0) / 72.0);
-        return Math.abs(z - center) <= 2.4;
-    }
-
-    private static boolean isCrossRoad(int x, int z) {
-        double center = -46.0 + 11.0 * Math.sin((z - 15.0) / 93.0);
-        return Math.abs(x - center) <= 2.4;
     }
 
     private static void buildRiverColumn(WorldGenLevel level, int x, int groundY, int z) {
@@ -150,74 +115,10 @@ public final class CountrysideChunkFeature extends Feature<NoneFeatureConfigurat
         level.setBlock(new BlockPos(x, groundY - depth, z), bottom, 2);
     }
 
-    private static void buildBridgeColumn(WorldGenLevel level, int x, int groundY, int z) {
-        buildRiverColumn(level, x, groundY, z);
-        level.setBlock(new BlockPos(x, groundY + 1, z), Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
-        if ((isCrossRoad(x, z) && Math.floorMod(x, 5) == 0)
-                || (isMainRoad(x, z) && Math.floorMod(z, 5) == 0)) {
-            level.setBlock(new BlockPos(x, groundY + 2, z), Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
-        }
-    }
-
-    private static int fieldType(int x, int z) {
-        if (Math.abs(x) < 72 && Math.abs(z) < 68) {
-            return 0;
-        }
-        int localX = Math.floorMod(x + 96, 192);
-        int localZ = Math.floorMod(z + 96, 192);
-        if (localX >= 18 && localX <= 78 && localZ >= 20 && localZ <= 74) {
-            return 1;
-        }
-        if (localX >= 108 && localX <= 172 && localZ >= 24 && localZ <= 84) {
-            return 2;
-        }
-        if (localX >= 24 && localX <= 88 && localZ >= 112 && localZ <= 174) {
-            return 3;
-        }
-        return 0;
-    }
-
-    private static void buildFieldColumn(WorldGenLevel level, int x, int groundY, int z, int field) {
-        int localX = Math.floorMod(x + 96, 192);
-        int localZ = Math.floorMod(z + 96, 192);
-        boolean border = localX == 18 || localX == 78 || localX == 108 || localX == 172
-                || localZ == 20 || localZ == 74 || localZ == 24 || localZ == 84
-                || localX == 24 || localX == 88 || localZ == 112 || localZ == 174;
-        if (border && Math.floorMod(x + z, 3) != 0) {
-            level.setBlock(new BlockPos(x, groundY, z), Blocks.COARSE_DIRT.defaultBlockState(), 2);
-            level.setBlock(new BlockPos(x, groundY + 1, z), Blocks.OAK_LEAVES.defaultBlockState(), 2);
-            return;
-        }
-        if (Math.floorMod(x, 12) == 0) {
-            level.setBlock(new BlockPos(x, groundY, z), Blocks.WATER.defaultBlockState(), 2);
-            return;
-        }
-        if (Math.floorMod(x, 24) == 1 || Math.floorMod(z, 24) == 1) {
-            level.setBlock(new BlockPos(x, groundY, z), Blocks.PACKED_MUD.defaultBlockState(), 2);
-            return;
-        }
-
-        level.setBlock(new BlockPos(x, groundY, z), Blocks.FARMLAND.defaultBlockState(), 2);
-        BlockState crop = switch (field) {
-            case 1 -> Blocks.WHEAT.defaultBlockState();
-            case 2 -> Blocks.CARROTS.defaultBlockState();
-            default -> Blocks.POTATOES.defaultBlockState();
-        };
-        level.setBlock(new BlockPos(x, groundY + 1, z), crop, 2);
-    }
-
     private static void placeChunkTrees(WorldGenLevel level, int minX, int groundY, int minZ) {
         for (int x = minX + 3; x < minX + 14; x++) {
             for (int z = minZ + 3; z < minZ + 14; z++) {
-                if (Math.abs(x) < 80 && Math.abs(z) < 76) {
-                    continue;
-                }
-                if (isRiver(x, z) || isRiverBank(x, z) || isMainRoad(x, z) || isCrossRoad(x, z)) {
-                    continue;
-                }
-                if (fieldType(x, z) != 0) {
-                    continue;
-                }
+                if (isSettlementReserve(x, z) || isRiver(x, z) || isRiverBank(x, z)) continue;
                 if (Math.floorMod(x, 37) == 11
                         && Math.floorMod(z, 37) == 11
                         && Math.floorMod(x * 31 + z * 17, 7) <= 1) {
@@ -228,9 +129,7 @@ public final class CountrysideChunkFeature extends Feature<NoneFeatureConfigurat
     }
 
     private static void buildTree(WorldGenLevel level, BlockPos base) {
-        for (int y = 0; y <= 4; y++) {
-            level.setBlock(base.above(y), Blocks.OAK_LOG.defaultBlockState(), 2);
-        }
+        for (int y = 0; y <= 4; y++) level.setBlock(base.above(y), Blocks.OAK_LOG.defaultBlockState(), 2);
         for (int y = 3; y <= 5; y++) {
             int radius = y == 5 ? 1 : 2;
             for (int dx = -radius; dx <= radius; dx++) {
