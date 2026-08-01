@@ -13,33 +13,66 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
-def kenneyUiSource = 'https://raw.githubusercontent.com/iwenzhou/kenney/b7729283e47d38f203d85560cfda5b2c1fd6fc7e/Art%20%285190%20files%29/UI%20pack%20%28220%20assets%29/Adventure%20pack%20%2880%20assets%29/Spritesheet/uipack_rpg_sheet.png'
-def kenneyUiGitBlobSha = '740afe1d74615ccf06ac44fdd5df5a6d1d017f63'
+def kenneyAssetCommit = '6c6d1bf81050a21e659356373f3f39029c8d7a0c'
+def kenneyAssetRoot = "https://raw.githubusercontent.com/KooshaPari/Dino/${kenneyAssetCommit}/src/Runtime/UI/Assets/kenney"
+def kenneyUiAssets = [
+        [
+                output: 'fantasy_panel.png',
+                source: "${kenneyAssetRoot}/fantasy-ui-borders/PNG/panel_ornate.png",
+                blob  : '82c2a379b877249029a817e3a0ef36b55cf9a798'
+        ],
+        [
+                output: 'panel_background.png',
+                source: "${kenneyAssetRoot}/ui-pack/PNG/panel_background.png",
+                blob  : '258d992070f873046c5623fbc694e45a526c4b8a'
+        ],
+        [
+                output: 'button_normal.png',
+                source: "${kenneyAssetRoot}/ui-pack/PNG/button_rectangleFlat.png",
+                blob  : 'a9390478c61d3ced14d16a5e2e396c806966989a'
+        ],
+        [
+                output: 'button_pressed.png',
+                source: "${kenneyAssetRoot}/ui-pack/PNG/button_rectangleDepressed.png",
+                blob  : 'd9492b4e48b28823c81b3bc08a1b31156f68c79c'
+        ]
+]
 def externalResourcesDir = layout.buildDirectory.dir('generated/externalResources')
 
 def prepareKenneyUiAssets = tasks.register('prepareKenneyUiAssets') {
-    def outputFile = externalResourcesDir.map {
-        it.file('assets/livingkingdoms/textures/gui/kenney/uipack_rpg_sheet.png')
+    inputs.property('sourceCommit', kenneyAssetCommit)
+    kenneyUiAssets.eachWithIndex { asset, index ->
+        inputs.property("asset${index}Source", asset.source)
+        inputs.property("asset${index}GitBlobSha1", asset.blob)
     }
-    inputs.property('sourceUrl', kenneyUiSource)
-    inputs.property('gitBlobSha1', kenneyUiGitBlobSha)
-    outputs.file(outputFile)
+    outputs.files(kenneyUiAssets.collect { asset ->
+        externalResourcesDir.map {
+            it.file("assets/livingkingdoms/textures/gui/kenney/${asset.output}")
+        }
+    })
 
     doLast {
-        File target = outputFile.get().asFile
-        target.parentFile.mkdirs()
-        byte[] bytes = new URI(kenneyUiSource).toURL().openStream().withCloseable { stream ->
-            stream.readAllBytes()
+        kenneyUiAssets.each { asset ->
+            File target = externalResourcesDir.get()
+                    .file("assets/livingkingdoms/textures/gui/kenney/${asset.output}").asFile
+            target.parentFile.mkdirs()
+            byte[] bytes = new URI(asset.source).toURL().openStream().withCloseable { stream ->
+                stream.readAllBytes()
+            }
+            def digest = java.security.MessageDigest.getInstance('SHA-1')
+            digest.update(("blob ${bytes.length}\u0000").getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            digest.update(bytes)
+            String actual = java.util.HexFormat.of().formatHex(digest.digest())
+            if (actual != asset.blob) {
+                throw new GradleException(
+                        "Kenney UI asset integrity mismatch for ${asset.output}: expected ${asset.blob}, got ${actual}"
+                )
+            }
+            target.bytes = bytes
+            logger.lifecycle(
+                    "Verified Kenney CC0 UI asset ${asset.output}: git-blob-sha1=${actual}, bytes=${bytes.length}"
+            )
         }
-        def digest = java.security.MessageDigest.getInstance('SHA-1')
-        digest.update(("blob ${bytes.length}\u0000").getBytes(java.nio.charset.StandardCharsets.UTF_8))
-        digest.update(bytes)
-        String actual = java.util.HexFormat.of().formatHex(digest.digest())
-        if (actual != kenneyUiGitBlobSha) {
-            throw new GradleException("Kenney UI asset integrity mismatch: expected ${kenneyUiGitBlobSha}, got ${actual}")
-        }
-        target.bytes = bytes
-        logger.lifecycle("Verified Kenney CC0 RPG UI sheet: git-blob-sha1=${actual}, bytes=${bytes.length}")
     }
 }
 
