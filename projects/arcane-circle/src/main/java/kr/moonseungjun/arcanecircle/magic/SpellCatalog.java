@@ -61,6 +61,16 @@ public final class SpellCatalog {
                 "풍인의 궤도 제어를 마력탄에 결합해 여러 대상에 연쇄한다.", "wind_blade", "arcane_dart");
         addFusion("rift_step", "균열 도약", 3, 65, 280, 16.0, 1.0, SPACE,
                 "단거리 전이와 질풍보를 겹쳐 더 먼 공간을 안정적으로 건넌다.", "blink", "gale_step");
+
+        addFusion("triune_barrage", "삼상 마력포", 3, 82, 260, 15.0, 11.0, ARCANE,
+                "비전·화염·서리의 세 핵을 한 궤도에 겹쳐 폭발시키는 삼중 융합술.",
+                "arcane_dart", "ember", "frost_needle");
+        addFusion("tempest_aegis", "폭풍 성벽", 3, 78, 300, 7.0, 9.0, WARD,
+                "질풍의 압력과 방벽 회로를 겹쳐 적을 밀어내는 이동식 성벽을 만든다.",
+                "gale_step", "lesser_ward", "arcane_dart");
+        addFusion("phoenix_field", "불사조 성역", 3, 90, 420, 7.0, 10.0, FIRE,
+                "불씨·치유·중형 방벽을 삼중 결속해 아군을 살리고 적을 태우는 영역을 연다.",
+                "ember", "mend", "greater_ward");
     }
 
     private static void add(String id, String name, int circle, int mana, int cooldown, double range,
@@ -72,11 +82,12 @@ public final class SpellCatalog {
 
     private static void addFusion(String id, String name, int circle, int mana, int cooldown, double range,
                                   double power, SpellDefinition.School school, String description,
-                                  String first, String second) {
+                                  String... ingredients) {
+        List<String> sources = List.of(ingredients);
         SpellDefinition spell = new SpellDefinition(id, name, circle, mana, cooldown, range, power,
-                school, FUSION, description, List.of(first, second));
+                school, FUSION, description, sources);
         SPELLS.put(id, spell);
-        FUSIONS.add(new FusionFormula(id, first, second));
+        FUSIONS.add(new FusionFormula(id, sources));
     }
 
     public static Map<String, SpellDefinition> spells() {
@@ -94,9 +105,14 @@ public final class SpellCatalog {
         return Optional.ofNullable(SPELLS.get(id));
     }
 
-    public static Optional<FusionFormula> fusionFor(String first, String second) {
+    public static Optional<FusionFormula> fusionFor(List<String> ingredients) {
         bootstrap();
-        return FUSIONS.stream().filter(formula -> formula.matches(first, second)).findFirst();
+        List<String> normalized = normalized(ingredients);
+        return FUSIONS.stream().filter(formula -> formula.normalizedIngredients().equals(normalized)).findFirst();
+    }
+
+    public static Optional<FusionFormula> fusionFor(String... ingredients) {
+        return fusionFor(List.of(ingredients));
     }
 
     public static boolean isFusionResult(String spellId) {
@@ -104,8 +120,11 @@ public final class SpellCatalog {
     }
 
     public static int masteryRequired(String resultId) {
-        int circle = spell(resultId).map(SpellDefinition::circle).orElse(2);
-        return circle <= 2 ? 4 : 7;
+        SpellDefinition spell = spell(resultId).orElse(null);
+        if (spell == null) return 4;
+        int ingredients = Math.max(2, spell.fusionSources().size());
+        if (spell.circle() <= 2) return ingredients == 2 ? 4 : 6;
+        return ingredients == 2 ? 7 : 10;
     }
 
     public static List<String> starterKnownSpells() {
@@ -120,9 +139,21 @@ public final class SpellCatalog {
         return List.of("arcane_dart", "ember", "frost_needle", "gale_step", "lesser_ward");
     }
 
-    public record FusionFormula(String result, String first, String second) {
-        public boolean matches(String a, String b) {
-            return (first.equals(a) && second.equals(b)) || (first.equals(b) && second.equals(a));
+    private static List<String> normalized(List<String> ingredients) {
+        return ingredients.stream().filter(value -> value != null && !value.isBlank()).sorted().toList();
+    }
+
+    public record FusionFormula(String result, List<String> ingredients) {
+        public FusionFormula {
+            ingredients = List.copyOf(ingredients);
+        }
+
+        public List<String> normalizedIngredients() {
+            return normalized(ingredients);
+        }
+
+        public boolean matches(List<String> offered) {
+            return normalizedIngredients().equals(normalized(offered));
         }
     }
 }
