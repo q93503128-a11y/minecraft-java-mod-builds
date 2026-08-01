@@ -26,6 +26,7 @@ final class VillageFortressBuildings {
         VillageStructureShell.clear(level, center, spec);
         VillageStructureShell.build(level, origin, groundY, spec);
         VillageBuildingCatalog.furnish(level, origin, spec, building);
+        VillageBuildingEnhancements.apply(level, center, building);
     }
 
     static void rebuild(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
@@ -49,6 +50,20 @@ final class VillageFortressBuildings {
                 spec.dx() + spec.width() / 2,
                 1,
                 spec.dz() + spec.depth() / 2);
+    }
+
+    static BlockPos terminalPosition(
+            ServerLevel level,
+            BlockPos villageCenter,
+            VillageProgressionSystem.Building building) {
+        return VillageBuildingEnhancements.terminalPosition(level, villageCenter, building);
+    }
+
+    static VillageProgressionSystem.Building buildingAtTerminal(
+            ServerLevel level,
+            BlockPos villageCenter,
+            BlockPos clicked) {
+        return VillageBuildingEnhancements.buildingAtTerminal(level, villageCenter, clicked);
     }
 
     static void applyUpgradeVisual(
