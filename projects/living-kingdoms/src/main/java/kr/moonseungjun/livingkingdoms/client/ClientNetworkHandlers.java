@@ -1,5 +1,6 @@
 package kr.moonseungjun.livingkingdoms.client;
 
+import kr.moonseungjun.livingkingdoms.network.FantasyHudStatePayload;
 import kr.moonseungjun.livingkingdoms.network.OpenCodexPayload;
 import kr.moonseungjun.livingkingdoms.network.OpenOriginScreenPayload;
 import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
@@ -12,6 +13,9 @@ public final class ClientNetworkHandlers {
     private static ResponsiveOriginSelectionScreen activeOriginScreen;
     private static RealmLoadingScreen activeLoadingScreen;
     private static RealmBuildProgressPayload latestBuildProgress;
+    private static FantasyHudStatePayload latestHudState = new FantasyHudStatePayload(
+            0L, 0, 0, "미등록", 100, 100, 100, 100
+    );
 
     private ClientNetworkHandlers() {
     }
@@ -20,7 +24,12 @@ public final class ClientNetworkHandlers {
         event.register(OpenOriginScreenPayload.TYPE, ClientNetworkHandlers::handleOpenOriginScreen);
         event.register(OriginSubmissionResultPayload.TYPE, ClientNetworkHandlers::handleSubmissionResult);
         event.register(RealmBuildProgressPayload.TYPE, ClientNetworkHandlers::handleBuildProgress);
+        event.register(FantasyHudStatePayload.TYPE, ClientNetworkHandlers::handleHudState);
         event.register(OpenCodexPayload.TYPE, ClientNetworkHandlers::handleOpenCodex);
+    }
+
+    public static FantasyHudStatePayload hudState() {
+        return latestHudState;
     }
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
@@ -58,6 +67,10 @@ public final class ClientNetworkHandlers {
             activeLoadingScreen.update(payload);
             minecraft.gui.setScreen(activeLoadingScreen);
         });
+    }
+
+    private static void handleHudState(FantasyHudStatePayload payload, IPayloadContext context) {
+        Minecraft.getInstance().execute(() -> latestHudState = payload);
     }
 
     private static void handleOpenCodex(OpenCodexPayload payload, IPayloadContext context) {
