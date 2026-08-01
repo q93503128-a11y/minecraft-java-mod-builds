@@ -1,9 +1,9 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -36,12 +36,13 @@ public final class VillageStarterKit {
     }
 
     public static void grantCaller(ServerPlayer player) {
-        if (!player.addTag(CALLER_TAG)) {
+        boolean firstGrant = player.addTag(CALLER_TAG);
+        if (!firstGrant && hasCaller(player)) {
             return;
         }
-        giveOrDrop(player, named(Items.GOAT_HORN.getDefaultInstance(), "§6" + CALLER_NAME));
+        giveOrDrop(player, namedCaller());
         player.sendSystemMessage(Component.literal(
-                "§6[마을 장비] §f호출기는 접속 중인 플레이어에게 빠른 신호를 보내는 용도입니다."));
+                "§6[마을 장비] §f호출기를 들고 우클릭하면 빠른 신호 창이 열립니다."));
     }
 
     public static void grantMayorCaller(ServerPlayer player) {
@@ -49,26 +50,43 @@ public final class VillageStarterKit {
     }
 
     public static void handleItemInteraction(PlayerInteractEvent.RightClickItem event) {
-        if (event.getHand() != InteractionHand.MAIN_HAND
-                || !(event.getEntity() instanceof ServerPlayer player)
+        if (!(event.getEntity() instanceof ServerPlayer player)
                 || player.level().isClientSide()) {
             return;
         }
 
         ItemStack stack = player.getItemInHand(event.getHand());
-        Component customName = stack.get(DataComponents.CUSTOM_NAME);
-        if (stack.getItem() == Items.GOAT_HORN
-                && customName != null
-                && CALLER_NAME.equals(customName.getString())) {
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS);
-            VillageUiService.openQuickChat(player);
+        if (!isCaller(stack)) {
+            return;
         }
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        VillageUiService.openQuickChat(player);
     }
 
-    private static ItemStack named(ItemStack stack, String name) {
-        stack.set(DataComponents.CUSTOM_NAME, Component.literal(name));
+    private static ItemStack namedCaller() {
+        ItemStack stack = Items.GOAT_HORN.getDefaultInstance();
+        stack.set(DataComponents.CUSTOM_NAME,
+                Component.literal(CALLER_NAME).withStyle(ChatFormatting.GOLD));
         return stack;
+    }
+
+    private static boolean hasCaller(ServerPlayer player) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            if (isCaller(player.getInventory().getItem(slot))) {
+                return true;
+            }
+        }
+        return isCaller(player.getOffhandItem());
+    }
+
+    private static boolean isCaller(ItemStack stack) {
+        if (stack.getItem() != Items.GOAT_HORN) {
+            return false;
+        }
+        Component customName = stack.get(DataComponents.CUSTOM_NAME);
+        return customName != null
+                && CALLER_NAME.equals(ChatFormatting.stripFormatting(customName.getString()));
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
