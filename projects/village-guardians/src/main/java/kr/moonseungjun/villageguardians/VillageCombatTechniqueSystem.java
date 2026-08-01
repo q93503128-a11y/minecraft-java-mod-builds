@@ -37,7 +37,7 @@ public final class VillageCombatTechniqueSystem {
         int playerLevel = VillageCouncilState.levelOf(attacker.getUUID());
         int research = VillageProgressionSystem.skillRank(attacker);
         if (event.getSource().getDirectEntity() instanceof AbstractArrow) {
-            handleArrowTechnique(level, attacker, primary, event.getAmount(), playerLevel, research);
+            handleArrowTechnique(level, primary, event.getAmount(), playerLevel, research);
             return;
         }
         if (attacker.getMainHandItem().is(ItemTags.SWORDS)) {
@@ -56,9 +56,9 @@ public final class VillageCombatTechniqueSystem {
         float damage = 3.0f + playerLevel * 0.28f + learned * 1.5f;
         int limit = switch (role) {
             case GUARD_CAPTAIN -> 8;
-            case SCOUT -> 6;
-            case BUILDER -> 4;
-            case QUARTERMASTER, STEWARD, MEDIC -> 3;
+            case RANGER -> 7;
+            case ENGINEER -> 5;
+            case MEDIC -> 3;
         };
         List<Mob> targets = VillageRaidSystem.activeEnemiesNear(level, player.position(), radius, limit, null);
         secondaryDamage(level, targets, damage);
@@ -92,7 +92,6 @@ public final class VillageCombatTechniqueSystem {
 
     private static void handleArrowTechnique(
             ServerLevel level,
-            ServerPlayer attacker,
             Mob primary,
             float primaryDamage,
             int playerLevel,
