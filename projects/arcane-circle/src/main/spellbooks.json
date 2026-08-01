@@ -1,0 +1,25 @@
+[
+  {"id":"mend","circle":2,"catalyst":"minecraft:glistering_melon_slice","ring":"minecraft:amethyst_block","seal":"minecraft:lapis_block","core":"minecraft:diamond","level":2,"price_item":"minecraft:emerald","price_count":27},
+  {"id":"blink","circle":2,"catalyst":"minecraft:ender_pearl","ring":"minecraft:amethyst_block","seal":"minecraft:lapis_block","core":"minecraft:diamond","level":2,"price_item":"minecraft:emerald","price_count":27},
+  {"id":"stone_skin","circle":2,"catalyst":"minecraft:obsidian","ring":"minecraft:amethyst_block","seal":"minecraft:lapis_block","core":"minecraft:diamond","level":2,"price_item":"minecraft:emerald","price_count":27},
+  {"id":"lightning_arc","circle":2,"catalyst":"minecraft:lightning_rod","ring":"minecraft:amethyst_block","seal":"minecraft:lapis_block","core":"minecraft:diamond","level":2,"price_item":"minecraft:emerald","price_count":27},
+  {"id":"mana_lance","circle":2,"catalyst":"minecraft:prismarine_shard","ring":"minecraft:amethyst_block","seal":"minecraft:lapis_block","core":"minecraft:diamond","level":2,"price_item":"minecraft:emerald","price_count":27},
+
+  {"id":"greater_ward","circle":3,"catalyst":"minecraft:shield","ring":"minecraft:diamond","seal":"minecraft:amethyst_block","core":"minecraft:echo_shard","level":3,"price_item":"minecraft:emerald_block","price_count":8},
+  {"id":"flame_wave","circle":3,"catalyst":"minecraft:blaze_rod","ring":"minecraft:diamond","seal":"minecraft:amethyst_block","core":"minecraft:echo_shard","level":3,"price_item":"minecraft:emerald_block","price_count":8},
+  {"id":"ice_lance","circle":3,"catalyst":"minecraft:blue_ice","ring":"minecraft:diamond","seal":"minecraft:amethyst_block","core":"minecraft:echo_shard","level":3,"price_item":"minecraft:emerald_block","price_count":8},
+  {"id":"arcane_sight","circle":3,"catalyst":"minecraft:ender_eye","ring":"minecraft:diamond","seal":"minecraft:amethyst_block","core":"minecraft:echo_shard","level":3,"price_item":"minecraft:emerald_block","price_count":8},
+  {"id":"levitation","circle":3,"catalyst":"minecraft:phantom_membrane","ring":"minecraft:diamond","seal":"minecraft:amethyst_block","core":"minecraft:echo_shard","level":3,"price_item":"minecraft:emerald_block","price_count":8},
+
+  {"id":"meteor_shard","circle":4,"catalyst":"minecraft:magma_block","ring":"minecraft:diamond_block","seal":"minecraft:echo_shard","core":"minecraft:netherite_ingot","level":4,"price_item":"minecraft:emerald_block","price_count":24,"second_item":"minecraft:diamond","second_count":2},
+  {"id":"blizzard_field","circle":4,"catalyst":"minecraft:packed_ice","ring":"minecraft:diamond_block","seal":"minecraft:echo_shard","core":"minecraft:netherite_ingot","level":4,"price_item":"minecraft:emerald_block","price_count":24,"second_item":"minecraft:diamond","second_count":2},
+  {"id":"thunder_prison","circle":4,"catalyst":"minecraft:copper_block","ring":"minecraft:diamond_block","seal":"minecraft:echo_shard","core":"minecraft:netherite_ingot","level":4,"price_item":"minecraft:emerald_block","price_count":24,"second_item":"minecraft:diamond","second_count":2},
+  {"id":"mass_mend","circle":4,"catalyst":"minecraft:golden_apple","ring":"minecraft:diamond_block","seal":"minecraft:echo_shard","core":"minecraft:netherite_ingot","level":4,"price_item":"minecraft:emerald_block","price_count":24,"second_item":"minecraft:diamond","second_count":2},
+  {"id":"spatial_gate","circle":4,"catalyst":"minecraft:crying_obsidian","ring":"minecraft:diamond_block","seal":"minecraft:echo_shard","core":"minecraft:netherite_ingot","level":4,"price_item":"minecraft:emerald_block","price_count":24,"second_item":"minecraft:diamond","second_count":2},
+
+  {"id":"inferno_domain","circle":5,"catalyst":"minecraft:netherite_block","ring":"minecraft:netherite_ingot","seal":"minecraft:echo_shard","core":"minecraft:nether_star","level":5,"price_item":"minecraft:emerald_block","price_count":64,"second_item":"minecraft:nether_star","second_count":1},
+  {"id":"absolute_zero","circle":5,"catalyst":"minecraft:blue_ice","ring":"minecraft:netherite_ingot","seal":"minecraft:echo_shard","core":"minecraft:nether_star","level":5,"price_item":"minecraft:emerald_block","price_count":64,"second_item":"minecraft:nether_star","second_count":1},
+  {"id":"tempest_domain","circle":5,"catalyst":"minecraft:breeze_rod","ring":"minecraft:netherite_ingot","seal":"minecraft:echo_shard","core":"minecraft:nether_star","level":5,"price_item":"minecraft:emerald_block","price_count":64,"second_item":"minecraft:nether_star","second_count":1},
+  {"id":"aegis_citadel","circle":5,"catalyst":"minecraft:beacon","ring":"minecraft:netherite_ingot","seal":"minecraft:echo_shard","core":"minecraft:nether_star","level":5,"price_item":"minecraft:emerald_block","price_count":64,"second_item":"minecraft:nether_star","second_count":1},
+  {"id":"arcane_annihilation","circle":5,"catalyst":"minecraft:dragon_breath","ring":"minecraft:netherite_ingot","seal":"minecraft:echo_shard","core":"minecraft:nether_star","level":5,"price_item":"minecraft:emerald_block","price_count":64,"second_item":"minecraft:nether_star","second_count":1}
+]
