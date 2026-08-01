@@ -7,7 +7,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -43,24 +45,22 @@ public final class VillageWorldSystem {
             VillageCouncilState.setVillageCenter(player);
         }
         BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition()).immutable();
-        if (!level.getBlockState(center.below(2)).is(Blocks.CRYING_OBSIDIAN)) {
+        if (!level.getBlockState(center.below(2)).is(Blocks.LODESTONE)) {
             generationInProgress = true;
             try {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 재건] §f대형 회관, 단일 종, 성벽 계단과 시설 배치를 새 기준으로 갱신합니다."));
+                        "§6[마을 재건] §f자체 건축 회관과 시설, 평탄한 성벽 통로를 생성합니다."));
+                VillageProgressionSystem.resetForRestart(server, false);
                 buildAll(level, center);
-                for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
-                    if (!VillageProgressionSystem.isOperational(building)) {
-                        destroyStructure(level, building);
-                    }
-                }
+                removeLooseDebris(level, center);
                 player.sendSystemMessage(Component.literal(
-                        "§a[마을 준비 완료] §f중앙 종은 낮·밤 전환, 회관 관리대는 마을 관리 전용입니다."));
+                        "§a[마을 준비 완료] §f이전 파괴 잔해 없이 모든 시설이 정상 상태로 시작합니다."));
             } finally {
                 generationInProgress = false;
             }
         }
         removeUnauthorizedMobs(level, center);
+        removeLooseDebris(level, center);
     }
 
     public static synchronized void forceRebuild(MinecraftServer server) {
@@ -76,6 +76,7 @@ public final class VillageWorldSystem {
                     destroyStructure(server.overworld(), building);
                 }
             }
+            removeLooseDebris(server.overworld(), center);
         } finally {
             generationInProgress = false;
         }
@@ -125,6 +126,25 @@ public final class VillageWorldSystem {
             player.sendSystemMessage(Component.literal("§6[북문] §f성문을 열었습니다."));
         }
         return true;
+    }
+
+    public static String returnToVillage(ServerPlayer player) {
+        MinecraftServer server = player.level().getServer();
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (server == null || center == null) {
+            return "마을 중심이 아직 설정되지 않았습니다.";
+        }
+        ServerLevel destination = server.overworld();
+        player.teleportTo(
+                destination,
+                center.getX() + 0.5,
+                center.getY() + 1.0,
+                center.getZ() + 8.5,
+                Set.of(),
+                player.getYRot(),
+                player.getXRot(),
+                true);
+        return "마을 중앙 광장으로 귀환했습니다.";
     }
 
     public static boolean isAllowedGameMob(Mob mob) {
@@ -208,12 +228,8 @@ public final class VillageWorldSystem {
     private static void buildAll(ServerLevel level, BlockPos center) {
         VillageFortressTerrain.buildBase(level, center);
         VillageFortressBuildings.buildAll(level, center);
-        for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
-            applyUpgradeVisual(level, building, VillageProgressionSystem.level(building));
-        }
-        VillageFortressBuildings.removeEmbeddedBells(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
-        VillageFortressTerrain.set(level, center.below(2), Blocks.CRYING_OBSIDIAN);
+        VillageFortressTerrain.set(level, center.below(2), Blocks.LODESTONE);
         VillageFortressTerrain.set(level, center.below(), Blocks.CHISELED_STONE_BRICKS);
     }
 
@@ -224,5 +240,11 @@ public final class VillageWorldSystem {
                 mob.discard();
             }
         }
+    }
+
+    private static void removeLooseDebris(ServerLevel level, BlockPos center) {
+        AABB area = new AABB(center).inflate(FORTRESS_RADIUS + 24, 64, FORTRESS_RADIUS + 24);
+        level.getEntitiesOfClass(ItemEntity.class, area).forEach(ItemEntity::discard);
+        level.getEntitiesOfClass(ExperienceOrb.class, area).forEach(ExperienceOrb::discard);
     }
 }
