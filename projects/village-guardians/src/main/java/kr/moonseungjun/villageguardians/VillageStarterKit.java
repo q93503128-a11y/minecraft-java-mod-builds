@@ -11,7 +11,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 public final class VillageStarterKit {
     private static final String STARTER_KIT_TAG = "villageguardians_starter_kit_v3";
-    private static final String CALLER_TAG = "villageguardians_public_caller_v4";
+    private static final String CALLER_TAG = "villageguardians_public_caller_v5";
     private static final String CALLER_NAME = "마을 수호단 호출기";
 
     private VillageStarterKit() {}
@@ -34,33 +34,20 @@ public final class VillageStarterKit {
 
     public static void grantCaller(ServerPlayer player) {
         boolean migrated = migrateLegacyCaller(player);
-        boolean firstGrant = player.addTag(CALLER_TAG);
-        if (hasModernCaller(player)) {
-            if (migrated) {
-                player.sendSystemMessage(Component.literal(
-                        "§6[호출기 갱신] §f낡은 뿔 호출기를 원래 형태의 휴대용 호출기로 교체했습니다."));
-            }
-            return;
-        }
-        giveOrDrop(player, namedCaller());
-        if (firstGrant || migrated) {
+        boolean firstNotice = player.addTag(CALLER_TAG);
+        if (!hasModernCaller(player)) giveOrDrop(player, namedCaller());
+        if (firstNotice || migrated) {
             player.sendSystemMessage(Component.literal(
-                    "§6[마을 장비] §f호출기를 우클릭하면 상태·빠른 신호·귀환 메뉴가 열립니다."));
+                    "§6[수호단 통신] §fC키로 투명 빠른 통신창을 엽니다. 호출기 시계 우클릭은 상태·귀환 메뉴입니다."));
         }
     }
 
-    public static void grantMayorCaller(ServerPlayer player) {
-        grantCaller(player);
-    }
+    public static void grantMayorCaller(ServerPlayer player) { grantCaller(player); }
 
     public static void handleItemInteraction(PlayerInteractEvent.RightClickItem event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || player.level().isClientSide()) {
-            return;
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.level().isClientSide()) return;
         ItemStack stack = player.getItemInHand(event.getHand());
-        if (!isCaller(stack)) {
-            return;
-        }
+        if (!isCaller(stack)) return;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
         VillageUiService.openCallerMenu(player);
@@ -90,9 +77,7 @@ public final class VillageStarterKit {
             player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, replacement);
             changed = true;
         }
-        if (changed) {
-            player.getInventory().setChanged();
-        }
+        if (changed) player.getInventory().setChanged();
         return changed;
     }
 
@@ -103,17 +88,9 @@ public final class VillageStarterKit {
         return isModernCaller(player.getOffhandItem());
     }
 
-    private static boolean isCaller(ItemStack stack) {
-        return isModernCaller(stack) || isLegacyCaller(stack);
-    }
-
-    private static boolean isModernCaller(ItemStack stack) {
-        return stack.getItem() == Items.CLOCK && hasCallerName(stack);
-    }
-
-    private static boolean isLegacyCaller(ItemStack stack) {
-        return stack.getItem() == Items.GOAT_HORN && hasCallerName(stack);
-    }
+    private static boolean isCaller(ItemStack stack) { return isModernCaller(stack) || isLegacyCaller(stack); }
+    private static boolean isModernCaller(ItemStack stack) { return stack.getItem() == Items.CLOCK && hasCallerName(stack); }
+    private static boolean isLegacyCaller(ItemStack stack) { return stack.getItem() == Items.GOAT_HORN && hasCallerName(stack); }
 
     private static boolean hasCallerName(ItemStack stack) {
         Component customName = stack.get(DataComponents.CUSTOM_NAME);
