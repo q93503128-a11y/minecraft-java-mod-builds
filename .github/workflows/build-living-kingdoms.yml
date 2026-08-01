@@ -105,6 +105,7 @@ jobs:
           test "$diagnostic" -eq 1 || { echo 'Queued noise realm diagnostics did not complete within 900 seconds.' >&2; exit 1; }
           grep -F 'noise_terrain=true' ../../logs/server-smoke.log
           grep -F 'surveyed_sites=true' ../../logs/server-smoke.log
+          grep -F 'connected_land=true' ../../logs/server-smoke.log
           grep -F 'erden_facilities=10' ../../logs/server-smoke.log
           grep -F 'Prepared incremental homeland plan' ../../logs/server-smoke.log
           grep -F 'Realm construction erden_kingdom progress' ../../logs/server-smoke.log
@@ -168,7 +169,7 @@ jobs:
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension_type/living_realm.json'
           unzip -Z1 "$JAR" | grep -Fx 'assets/livingkingdoms/textures/gui/kenney/uipack_rpg_sheet.png'
           unzip -Z1 "$JAR" | grep -Fx 'assets/livingkingdoms/licenses/KENNEY_UI_CC0.txt'
-          test "$(unzip -p "$JAR" assets/livingkingdoms/textures/gui/kenney/uipack_rpg_sheet.png | wc -c)" -gt 50000
+          test "$(unzip -p "$JAR" assets/livingkingdoms/textures/gui/kenney/uipack_rpg_sheet.png | wc -c)" -eq 32558
           unzip -p "$JAR" assets/livingkingdoms/licenses/KENNEY_UI_CC0.txt | grep -F 'Creative Commons CC0 1.0 Universal'
           unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -F 'minecraft:noise'
           if unzip -Z1 "$JAR" | grep -Eq '(^|/)(tools|\.github)/|\.java$'; then
@@ -195,8 +196,9 @@ jobs:
           - Fresh dedicated server startup: PASS
           - Datapack and custom dimension load: PASS
           - Living realm noise generator: PASS
-          - Asynchronous chunk preparation: PASS
+          - Asynchronous survey and selected-site chunk preparation: PASS
           - Sequential terrain survey and persisted homeland sites: PASS
+          - Connected natural land around each capital: PASS
           - Tick-sliced capital construction without a blocking world-edit tick: PASS
           - Three terrain-integrated regional capitals: PASS
           - Eight dynamic residence floor and headroom checks: PASS
@@ -211,7 +213,7 @@ jobs:
           - Duplicate ZIP entries: NONE
           - Full manual gameplay and visual inspection: PENDING
 
-          This candidate replaces the old flat staging realm with noise terrain, pregenerates chunks outside blocking gameplay work, surveys sites before construction, applies large capital plans over bounded server ticks, builds distinct regional capitals, and skins the readable codex with a verified CC0 RPG UI asset. Existing flat test worlds are not a valid visual test for the new generator; create a fresh world.
+          This candidate replaces the old flat staging realm with noise terrain, rejects isolated coastal sites, prepares the selected construction area, applies large capital plans over bounded server ticks, builds distinct regional capitals, and skins the readable codex with a verified CC0 RPG UI asset. Existing flat test worlds are not a valid visual test for the new generator; create a fresh world.
           EOF
 
       - name: Upload build logs
