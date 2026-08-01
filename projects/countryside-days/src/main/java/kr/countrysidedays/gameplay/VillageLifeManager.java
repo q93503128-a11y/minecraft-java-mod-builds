@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -396,7 +397,7 @@ public final class VillageLifeManager {
         if (villager == null) return;
         villager.addTag(WORKER_OWNER_PREFIX + estate.ownerUuid());
         villager.addTag(WORKER_ROLE_PREFIX + role);
-        VillagerProfession profession = FARM_ROLE.equals(role)
+        var profession = FARM_ROLE.equals(role)
                 ? VillagerProfession.FARMER
                 : VillagerProfession.SHEPHERD;
         villager.setVillagerData(villager.getVillagerData()
@@ -577,7 +578,7 @@ public final class VillageLifeManager {
             int workZ,
             int socialX,
             int socialZ,
-            VillagerProfession profession,
+            ResourceKey<VillagerProfession> profession,
             boolean stationaryAtWork
     ) {
     }
