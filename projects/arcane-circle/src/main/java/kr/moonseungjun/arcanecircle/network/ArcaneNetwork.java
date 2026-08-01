@@ -17,8 +17,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-4";
-    private static final Set<String> PAGES = Set.of("atlas", "recipes", "core", "sync");
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-5";
+    private static final Set<String> PAGES = Set.of("atlas", "recipes", "staffs", "core", "sync");
 
     private ArcaneNetwork() {}
 
@@ -62,7 +62,7 @@ public final class ArcaneNetwork {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
         if (payload.action() == 0) SpellCastingService.commitFusion(player);
-        else SpellCastingService.clearFusion(player);
+        else SpellCastingService.clearFusion(player, true);
         context.reply(snapshot(player, "sync"));
     }
 
@@ -99,6 +99,9 @@ public final class ArcaneNetwork {
         List<String> queue = SpellCastingService.pendingFusion(player);
         String queued = String.join("|", queue);
         String result = SpellCatalog.fusionFor(queue).map(SpellCatalog.FusionFormula::result).orElse("");
+        String candidates = SpellCatalog.candidatesFor(queue).stream()
+                .map(SpellCatalog.FusionFormula::result)
+                .collect(Collectors.joining("|"));
         String snapshot = "circle=" + state.circle()
                 + ";mana=" + (int) state.mana()
                 + ";max=" + stats.maxMana()
@@ -108,7 +111,9 @@ public final class ArcaneNetwork {
                 + ";slots=" + slots
                 + ";queue=" + queued
                 + ";queue_result=" + result
-                + ";cooldowns=" + SpellCastingService.cooldownSnapshot(player)
+                + ";queue_candidates=" + candidates
+                + ";queue_extend=" + (SpellCatalog.canExtend(queue) ? 1 : 0)
+                + ";cooldowns=" + magicData.cooldownSnapshot(player)
                 + ";staff_id=" + staff.id()
                 + ";staff=" + staff.displayName()
                 + ";staff_summary=" + staff.summary()
