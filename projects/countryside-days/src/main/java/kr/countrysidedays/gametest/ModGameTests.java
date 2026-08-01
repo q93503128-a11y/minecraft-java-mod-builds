@@ -2,7 +2,6 @@ package kr.countrysidedays.gametest;
 
 import kr.countrysidedays.CountrysideDays;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
-import kr.countrysidedays.gameplay.RuralNpcManager;
 import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
@@ -73,6 +72,13 @@ public final class ModGameTests {
                 PlayerEstateLayout.contains(firstAllocation.estate().originPos(), secondAllocation.estate().originPos()),
                 "a second estate origin must be outside the first protected boundary"
         );
+        helper.assertTrue(
+                PlayerEstateLayout.contains(
+                        firstAllocation.estate().originPos(),
+                        PlayerEstateLayout.ownerSign(firstAllocation.estate().originPos())
+                ),
+                "owner sign outside the fence must remain inside private protection"
+        );
 
         helper.assertTrue(data.renameRestaurant(first, "느린 오후 식당"), "owner should rename only their restaurant");
         helper.assertTrue(
@@ -84,18 +90,54 @@ public final class ModGameTests {
                 "another player's restaurant name must remain independent"
         );
 
+        helper.assertTrue(data.toggleRestaurant(first).orElse(false), "owner should open their restaurant");
+        helper.assertFalse(
+                data.estate(second).orElseThrow().restaurantOpen(),
+                "opening one restaurant must not open another player's restaurant"
+        );
+
         long day = 12L;
+        helper.assertTrue(data.recordCustomerService(first, day, 0, 5), "slot zero should pay once");
+        helper.assertTrue(data.recordCustomerService(first, day, 1, 3), "slot one should be independent");
+        helper.assertTrue(data.recordCustomerService(first, day, 2, 6), "slot two should be independent");
+        helper.assertFalse(data.recordCustomerService(first, day, 1, 3), "same slot must not pay twice");
         helper.assertTrue(
-                data.recordCustomerService(first, day, RuralNpcManager.DAILY_REWARD_COINS),
-                "first owner should serve their daily customer"
+                data.estate(first).orElseThrow().customersServedToday(day) == 3,
+                "three distinct customers should be recorded for the day"
+        );
+        helper.assertTrue(
+                data.recordCustomerService(second, day, 0, 4),
+                "second owner should have an independent customer mask"
+        );
+
+        long nextDay = 13L;
+        helper.assertTrue(data.recordCustomerService(first, nextDay, 0, 5), "new day should reset the customer mask");
+        helper.assertTrue(data.recordCustomerService(first, nextDay, 1, 3), "fifth total guest should record");
+        helper.assertTrue(
+                data.estate(first).orElseThrow().progressionStage() == 2,
+                "five guests should advance to the ranch collection stage"
+        );
+
+        helper.assertTrue(
+                data.recordRanchProduction(first, nextDay, 2, 1, 1),
+                "healthy ranch goods should persist once per day"
         );
         helper.assertFalse(
-                data.recordCustomerService(first, day, RuralNpcManager.DAILY_REWARD_COINS),
-                "the same owner's customer must not pay twice in one day"
+                data.recordRanchProduction(first, nextDay, 9, 9, 9),
+                "same production day must not duplicate goods"
+        );
+        CountrysideWorldData.RanchProducts claimed = data.claimRanchProducts(first);
+        helper.assertTrue(
+                claimed.eggs() == 2 && claimed.milk() == 1 && claimed.wool() == 1,
+                "claimed ranch goods should match the saved inventory"
         );
         helper.assertTrue(
-                data.recordCustomerService(second, day, RuralNpcManager.DAILY_REWARD_COINS),
-                "second owner should have an independent daily customer"
+                data.claimRanchProducts(first).total() == 0,
+                "claiming the same ranch stock twice must return nothing"
+        );
+        helper.assertTrue(
+                data.estate(first).orElseThrow().progressionStage() == 3,
+                "first ranch collection should unlock the fifteen-guest stage"
         );
 
         helper.assertTrue(
@@ -148,10 +190,15 @@ public final class ModGameTests {
 
         helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(49, 7, 20));
         helper.assertBlockProperty(new BlockPos(49, 7, 20), StairBlock.FACING, Direction.NORTH);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(48, 7, 19));
+        helper.assertBlockProperty(new BlockPos(48, 7, 19), StairBlock.FACING, Direction.EAST);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(56, 7, 20));
+        helper.assertBlockProperty(new BlockPos(56, 7, 20), StairBlock.FACING, Direction.NORTH);
 
         helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(42, 6, 34));
         helper.assertBlockPresent(Blocks.WATER, new BlockPos(44, 6, 55));
         helper.assertBlockPresent(Blocks.HAY_BLOCK, new BlockPos(58, 6, 54));
+        helper.assertBlockPresent(Blocks.BARREL, new BlockPos(59, 6, 49));
         helper.assertBlockPresent(Blocks.BRICKS, new BlockPos(45, 12, 37));
         helper.assertBlockPresent(Blocks.PACKED_MUD, new BlockPos(35, 5, 5));
 
