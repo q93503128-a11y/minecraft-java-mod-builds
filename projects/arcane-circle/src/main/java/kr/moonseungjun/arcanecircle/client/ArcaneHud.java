@@ -31,19 +31,28 @@ public final class ArcaneHud {
         int height = minecraft.getWindow().getGuiScaledHeight();
         Font font = minecraft.font;
 
-        int gap = width < 360 ? 2 : 4;
-        int slotSize = Math.max(24, Math.min(38, (width - 16 - gap * 4) / 5));
+        int gap = width < 360 ? 2 : 3;
+        int slotSize = Math.max(20, Math.min(27, (width - 18 - gap * 4) / 5));
         int total = slotSize * 5 + gap * 4;
         int startX = Math.max(4, (width - total) / 2);
-        int y = Math.max(8, height - slotSize - 29);
+        // Keep the spell strip safely above hearts, hunger and the vanilla hotbar.
+        int y = Math.max(8, height - slotSize - 59);
 
-        if (width >= 500) drawManaSide(g, font, startX, y, slotSize);
-        else drawManaTop(g, font, width, y - 13);
+        // Preserve the old left-side mana/status scale and position on wide displays.
+        if (width >= 500) {
+            int legacySlot = 38;
+            int legacyGap = 4;
+            int legacyStart = Math.max(4, (width - legacySlot * 5 - legacyGap * 4) / 2);
+            int legacyY = Math.max(8, height - legacySlot - 29);
+            drawManaSide(g, font, legacyStart, legacyY, legacySlot);
+        } else {
+            drawManaTop(g, font, width, y - 13);
+        }
 
         for (int slot = 0; slot < 5; slot++) {
             drawSlot(g, font, startX + slot * (slotSize + gap), y, slotSize, slot);
         }
-        drawFusionQueue(g, font, width, y - (width >= 500 ? 25 : 39));
+        drawFusionQueue(g, font, width, y - (width >= 500 ? 24 : 38));
     }
 
     private static void drawManaSide(GuiGraphicsExtractor g, Font font, int startX, int y, int slotSize) {
@@ -79,29 +88,36 @@ public final class ArcaneHud {
         int dark = spell == null ? 0xFF171A22 : ArcaneRenderUtil.schoolDark(spell.school());
         double cooldown = ArcaneClientState.cooldownFraction(slot);
         int remaining = ArcaneClientState.cooldownRemainingTicks(slot);
+        boolean charging = ArcaneClientState.isChargingSlot(slot);
+        int frame = charging ? 0xFFFFD36B : 0xE0040610;
 
-        g.fill(x - 1, y - 1, x + size + 1, y + size + 1, 0xE0040610);
-        g.fill(x, y, x + size, y + size, 0xEC0A0E1A);
+        g.fill(x - 1, y - 1, x + size + 1, y + size + 1, frame);
+        g.fill(x, y, x + size, y + size, charging ? 0xEF19243A : 0xEC0A0E1A);
         g.fill(x + 2, y + 2, x + size - 2, y + size - 2, remaining > 0 ? dark : 0xE312192A);
         if (remaining > 0) g.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0x66101018);
 
         ArcaneRenderUtil.cooldownArc(g, x, y, size - 1, cooldown,
-                remaining > 0 ? 0xFFF17777 : color, 0xFF34394A);
-        g.text(font, Component.literal(Integer.toString(slot + 1)), x + 3, y + 2, 0xFFF8F2FF);
+                remaining > 0 ? 0xFFF17777 : charging ? 0xFFFFD36B : color, 0xFF34394A);
+        g.text(font, Component.literal(Integer.toString(slot + 1)), x + 2, y + 1, 0xFFF8F2FF);
 
         if (spell != null) {
-            ArcaneRenderUtil.spellRune(g, x + size / 2, y + size / 2 - 2, spell,
-                    Math.max(5, size / 5), remaining > 0 ? 0xFF827B89 : 0xFFF8F2FF);
-            if (size >= 30) {
-                String name = compactName(spell.name(), size < 35 ? 3 : 5);
-                g.centeredText(font, Component.literal(name), x + size / 2, y + size - 10,
-                        remaining > 0 ? 0xFF8B8492 : 0xFFDCD4E9);
+            ArcaneRenderUtil.spellRune(g, x + size / 2, y + size / 2 - (size >= 25 ? 2 : 0), spell,
+                    Math.max(4, size / 5), remaining > 0 ? 0xFF827B89 : 0xFFF8F2FF);
+            if (size >= 25) {
+                String name = compactName(spell.name(), 3);
+                g.centeredText(font, Component.literal(name), x + size / 2, y + size - 9,
+                        remaining > 0 ? 0xFF8B8492 : charging ? 0xFFFFE0A2 : 0xFFDCD4E9);
             }
+        } else {
+            g.centeredText(font, Component.literal("-"), x + size / 2, y + size / 2 - 4, 0xFF666B78);
         }
         if (remaining > 0) {
             String seconds = remaining >= 200 ? Integer.toString((int) Math.ceil(remaining / 20.0))
                     : String.format("%.1f", remaining / 20.0);
             g.centeredText(font, Component.literal(seconds), x + size / 2, y + size / 2 - 5, 0xFFFFFFFF);
+        } else if (charging) {
+            String charge = ArcaneClientState.chargingTicks() >= 20 ? "READY" : "...";
+            g.centeredText(font, Component.literal(charge), x + size / 2, y - 10, 0xFFFFD36B);
         }
     }
 
@@ -110,9 +126,9 @@ public final class ArcaneHud {
         if (queue.isEmpty()) return;
         String result = ArcaneClientState.queueResult();
         List<String> candidates = ArcaneClientState.queueCandidates();
-        int boxWidth = Math.min(width - 12, width < 400 ? 240 : 310);
+        int boxWidth = Math.min(width - 12, width < 400 ? 220 : 285);
         int x = (width - boxWidth) / 2;
-        g.fill(x, y, x + boxWidth, y + 20, 0xED080B16);
+        g.fill(x, y, x + boxWidth, y + 18, 0xED080B16);
         g.fill(x, y, x + boxWidth, y + 2, result.isBlank() ? 0xFF7E67AD : 0xFFFFC861);
         String chain = queue.stream().map(id -> SpellCatalog.spell(id).map(SpellDefinition::name).orElse(id))
                 .reduce((a, b) -> a + " + " + b).orElse("");
@@ -120,17 +136,17 @@ public final class ArcaneHud {
         int color;
         if (!result.isBlank()) {
             suffix = " → " + SpellCatalog.spell(result).map(SpellDefinition::name).orElse(result)
-                    + (ArcaneClientState.queueCanExtend() ? " (+1 가능)" : "");
+                    + (ArcaneClientState.queueCanExtend() ? " (+1)" : "");
             color = 0xFFFFD889;
         } else if (!candidates.isEmpty()) {
-            suffix = " · 후보 " + candidates.size() + "개";
+            suffix = " · 후보 " + candidates.size();
             color = 0xFFD4B8F1;
         } else {
             suffix = " · 조합 불가";
             color = 0xFFE1828D;
         }
-        g.centeredText(font, Component.literal(compactName("X  " + chain + suffix, Math.max(24, boxWidth / 5))),
-                width / 2, y + 6, color);
+        g.centeredText(font, Component.literal(compactName("X  " + chain + suffix, Math.max(22, boxWidth / 5))),
+                width / 2, y + 5, color);
     }
 
     public static void onScreenRender(ScreenEvent.Render.Post event) {
@@ -172,7 +188,7 @@ public final class ArcaneHud {
         g.text(font, Component.literal("지팡이  " + compactName(ArcaneClientState.text("staff", "맨손"), 12)),
                 x + 8, lineY + 55, 0xFFFFD58D);
         g.text(font, Component.literal(compactName(modifierSummary(), 23)), x + 8, lineY + 68, 0xFF9EA9C1);
-        g.text(font, Component.literal("C 마도서 · 1~5 주문 · X 융합"), x + 8, y + h - 14, 0xFF81778F);
+        g.text(font, Component.literal("C 마도서 · 1~5 홀드/해제 · X 융합"), x + 8, y + h - 14, 0xFF81778F);
     }
 
     private static void drawInventoryCompact(GuiGraphicsExtractor g, Font font, int x, int y, int w, int h) {
@@ -209,6 +225,7 @@ public final class ArcaneHud {
     }
 
     private static String compactName(String value, int max) {
+        if (value == null) return "";
         return value.length() <= max ? value : value.substring(0, Math.max(1, max - 1)) + "…";
     }
 }
