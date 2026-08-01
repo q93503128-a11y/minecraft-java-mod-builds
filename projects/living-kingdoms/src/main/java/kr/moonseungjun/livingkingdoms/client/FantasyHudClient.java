@@ -13,7 +13,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.Set;
 
-/** A responsive HUD for the authored realm. Vanilla survival meters are deliberately removed. */
+/** Compact realm HUD with a clear information hierarchy and no large opaque panels. */
 public final class FantasyHudClient {
     private static final Set<Identifier> HIDDEN_LAYERS = Set.of(
             VanillaGuiLayers.HOTBAR,
@@ -27,6 +27,10 @@ public final class FantasyHudClient {
             VanillaGuiLayers.CONTEXTUAL_INFO_BAR,
             VanillaGuiLayers.SELECTED_ITEM_NAME
     );
+    private static final int PANEL = 0xB8141820;
+    private static final int PANEL_EDGE = 0xCC786443;
+    private static final int TEXT = 0xFFF0E6CF;
+    private static final int MUTED = 0xFFC6B99C;
 
     private FantasyHudClient() {
     }
@@ -46,8 +50,8 @@ public final class FantasyHudClient {
 
         Font font = minecraft.font;
         FantasyHudStatePayload civic = ClientNetworkHandlers.hudState();
-        int slot = width < 420 ? 20 : 22;
-        int gap = 1;
+        int slot = width < 420 ? 19 : 21;
+        int gap = 2;
         int hotbarWidth = slot * 9 + gap * 8;
         int hotbarX = (width - hotbarWidth) / 2;
         int hotbarY = height - slot - 5;
@@ -55,99 +59,114 @@ public final class FantasyHudClient {
 
         for (int index = 0; index < 9; index++) {
             int x = hotbarX + index * (slot + gap);
-            ExternalRpgUi.hudButton(graphics, font, x, hotbarY, slot, slot, "", index == selected);
+            slot(graphics, x, hotbarY, slot, index == selected);
             ItemStack stack = minecraft.player.getInventory().getItem(index);
             if (!stack.isEmpty()) {
-                int iconX = x + Math.max(2, (slot - 16) / 2);
-                int iconY = hotbarY + Math.max(2, (slot - 16) / 2);
+                int iconX = x + Math.max(1, (slot - 16) / 2);
+                int iconY = hotbarY + Math.max(1, (slot - 16) / 2);
                 ExternalRpgUi.itemStackIcon(graphics, stack, iconX, iconY);
                 if (stack.getCount() > 1) {
                     String count = Integer.toString(stack.getCount());
-                    graphics.text(font, Component.literal(count), x + slot - font.width(count) - 2,
-                            hotbarY + slot - 9, 0xFFFFFFFF, true);
+                    graphics.text(font, Component.literal(count), x + slot - font.width(count) - 1,
+                            hotbarY + slot - 8, 0xFFFFFFFF, true);
                 }
             }
         }
 
-        int leftWidth = Math.min(220, Math.max(150, (width - hotbarWidth) / 2 - 10));
-        int leftX = 6;
-        int meterY = Math.max(6, hotbarY - 72);
-        float healthRatio = minecraft.player.getMaxHealth() <= 0.0F ? 0.0F
-                : minecraft.player.getHealth() / minecraft.player.getMaxHealth();
-        String health = decimal(minecraft.player.getHealth()) + " / " + decimal(minecraft.player.getMaxHealth());
-        ExternalRpgUi.hudMeter(graphics, font, leftX, meterY, leftWidth,
-                "생명", health, healthRatio, 0xFFB94F43);
-
-        int armor = minecraft.player.getArmorValue();
-        ExternalRpgUi.hudMeter(graphics, font, leftX, meterY + 24, leftWidth,
-                "방호", Integer.toString(armor), Math.min(1.0F, armor / 20.0F), 0xFF66839A);
-        ExternalRpgUi.hudPanel(graphics, leftX, meterY + 48, leftWidth, 22);
-        graphics.text(font, Component.literal("은화 " + civic.silver()), leftX + 7, meterY + 54,
-                0xFFF0D690, true);
-        String legal = civic.wanted() > 0 ? "수배 " + civic.wanted() : "법적 상태 정상";
-        graphics.text(font, Component.literal(legal), leftX + leftWidth - font.width(legal) - 7,
-                meterY + 54, civic.wanted() > 0 ? 0xFFFF8A76 : 0xFFC8D8B8, false);
-
-        ItemStack selectedStack = minecraft.player.getInventory().getSelectedItem();
-        if (!selectedStack.isEmpty()) {
-            String name = selectedStack.getHoverName().getString();
-            int labelWidth = Math.min(hotbarWidth, Math.max(80, font.width(name) + 18));
-            int labelX = (width - labelWidth) / 2;
-            ExternalRpgUi.hudPanel(graphics, labelX, hotbarY - 21, labelWidth, 18);
-            graphics.centeredText(font, Component.literal(shortText(name, 34)), width / 2,
-                    hotbarY - 16, 0xFFF6E8C7);
-        }
-
-        drawChronicle(graphics, minecraft, civic, width, hotbarX + hotbarWidth + 7, hotbarY);
+        drawVitals(graphics, minecraft, civic, hotbarY);
+        drawWorldLine(graphics, minecraft, civic, width);
         drawCompass(graphics, minecraft, width);
+        drawSelectedItem(graphics, minecraft, width, hotbarY, hotbarWidth);
     }
 
-    private static void drawChronicle(GuiGraphicsExtractor graphics, Minecraft minecraft,
-                                      FantasyHudStatePayload civic, int screenWidth,
-                                      int requestedX, int hotbarY) {
-        if (screenWidth < 430) return;
+    private static void drawVitals(GuiGraphicsExtractor graphics, Minecraft minecraft,
+                                   FantasyHudStatePayload civic, int hotbarY) {
         Font font = minecraft.font;
-        int panelWidth = Math.min(210, Math.max(150, screenWidth - requestedX - 6));
-        int panelHeight = 61;
-        int x = Math.max(requestedX, screenWidth - panelWidth - 6);
-        int y = Math.max(6, hotbarY - panelHeight - 2);
-        ExternalRpgUi.hudPanel(graphics, x, y, panelWidth, panelHeight);
+        int width = 154;
+        int x = 7;
+        int y = Math.max(7, hotbarY - 52);
+        panel(graphics, x, y, width, 45);
 
-        long dayTime = minecraft.level.getGameTime();
-        long day = Math.floorDiv(dayTime, 24_000L);
-        long seasonDay = Math.floorMod(day, 112L);
-        String season = switch ((int) (seasonDay / 28L)) {
-            case 0 -> "새봄";
-            case 1 -> "높은여름";
-            case 2 -> "수확철";
-            default -> "긴겨울";
-        };
-        int hour = (int) Math.floorMod(dayTime / 1_000L + 6L, 24L);
-        int minute = (int) Math.floorMod(dayTime, 1_000L) * 60 / 1_000;
-        String clock = String.format(java.util.Locale.ROOT, "%02d:%02d", hour, minute);
+        float healthRatio = minecraft.player.getMaxHealth() <= 0.0F ? 0.0F
+                : minecraft.player.getHealth() / minecraft.player.getMaxHealth();
+        bar(graphics, x + 7, y + 7, width - 14, 8, healthRatio, 0xFFD25A50);
+        graphics.text(font, Component.literal("생명 " + decimal(minecraft.player.getHealth())
+                        + "/" + decimal(minecraft.player.getMaxHealth())),
+                x + 8, y + 5, TEXT, true);
 
-        graphics.text(font, Component.literal("왕국력 " + (day + 1) + "일 · " + season),
-                x + 8, y + 7, 0xFFF3E0B8, true);
-        graphics.text(font, Component.literal(clock + " · " + weatherName(minecraft)),
-                x + 8, y + 20, 0xFFD8C59D, false);
-        graphics.text(font, Component.literal(shortText(civic.profession(), 28) + " · 명망 " + civic.renown()),
-                x + 8, y + 33, 0xFFD8C59D, false);
-        graphics.text(font, Component.literal("시세 곡" + civic.grainIndex() + " 금" + civic.metalIndex()
-                        + " 약" + civic.herbIndex() + " 노" + civic.laborIndex()),
-                x + 8, y + 46, 0xFFC7B38E, false);
+        int armor = minecraft.player.getArmorValue();
+        bar(graphics, x + 7, y + 20, width - 14, 5, Math.min(1.0F, armor / 20.0F), 0xFF718CA5);
+        String legal = civic.wanted() > 0 ? "수배 " + civic.wanted() : "법 상태 정상";
+        graphics.text(font, Component.literal("은화 " + civic.silver()), x + 8, y + 30, 0xFFE6C873, false);
+        graphics.text(font, Component.literal(legal), x + width - font.width(legal) - 8, y + 30,
+                civic.wanted() > 0 ? 0xFFFF8172 : 0xFFAFC8A6, false);
+    }
+
+    private static void drawWorldLine(GuiGraphicsExtractor graphics, Minecraft minecraft,
+                                      FantasyHudStatePayload civic, int screenWidth) {
+        if (screenWidth < 440) return;
+        long time = minecraft.level.getGameTime();
+        long day = Math.floorDiv(time, 24_000L) + 1L;
+        int hour = (int) Math.floorMod(time / 1_000L + 6L, 24L);
+        int minute = (int) Math.floorMod(time, 1_000L) * 60 / 1_000;
+        String text = "왕국력 " + day + "일  "
+                + String.format(java.util.Locale.ROOT, "%02d:%02d", hour, minute)
+                + "  ·  " + shortText(civic.profession(), 18)
+                + "  ·  명망 " + civic.renown();
+        int textWidth = minecraft.font.width(text);
+        int x = Math.max(170, (screenWidth - textWidth) / 2);
+        int y = 7;
+        graphics.fill(x - 7, y - 3, x + textWidth + 7, y + 12, 0x9810141B);
+        graphics.fill(x - 7, y + 11, x + textWidth + 7, y + 12, 0xAA8C7448);
+        graphics.text(minecraft.font, Component.literal(text), x, y, MUTED, false);
     }
 
     private static void drawCompass(GuiGraphicsExtractor graphics, Minecraft minecraft, int screenWidth) {
-        if (screenWidth < 300) return;
-        int size = screenWidth < 500 ? 56 : 68;
+        if (screenWidth < 280) return;
+        int size = screenWidth < 500 ? 48 : 54;
         int x = screenWidth - size - 7;
         int y = 7;
         ExternalRpgUi.minimapFrame(graphics, x, y, size);
         int arrowSize = Math.max(10, size / 4);
-        ExternalRpgUi.minimapArrow(graphics, x + (size - arrowSize) / 2, y + (size - arrowSize) / 2, arrowSize);
-        String direction = directionName(minecraft.player.getYRot());
-        graphics.centeredText(minecraft.font, Component.literal(direction), x + size / 2,
-                y + size - 13, 0xFFF3E2B8);
+        ExternalRpgUi.minimapArrow(graphics, x + (size - arrowSize) / 2,
+                y + (size - arrowSize) / 2 - 2, arrowSize);
+        graphics.centeredText(minecraft.font, Component.literal(directionName(minecraft.player.getYRot())),
+                x + size / 2, y + size - 12, TEXT);
+    }
+
+    private static void drawSelectedItem(GuiGraphicsExtractor graphics, Minecraft minecraft,
+                                         int screenWidth, int hotbarY, int hotbarWidth) {
+        ItemStack selected = minecraft.player.getInventory().getSelectedItem();
+        if (selected.isEmpty()) return;
+        String name = shortText(selected.getHoverName().getString(), 30);
+        int width = Math.min(hotbarWidth, minecraft.font.width(name) + 14);
+        int x = (screenWidth - width) / 2;
+        graphics.fill(x, hotbarY - 15, x + width, hotbarY - 3, 0xA810141B);
+        graphics.centeredText(minecraft.font, Component.literal(name), screenWidth / 2,
+                hotbarY - 13, TEXT);
+    }
+
+    private static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        graphics.fill(x + 2, y + 3, x + width + 2, y + height + 3, 0x55000000);
+        graphics.fill(x, y, x + width, y + height, PANEL);
+        graphics.fill(x, y, x + width, y + 1, PANEL_EDGE);
+        graphics.fill(x, y + height - 1, x + width, y + height, 0x88574731);
+    }
+
+    private static void slot(GuiGraphicsExtractor graphics, int x, int y, int size, boolean selected) {
+        graphics.fill(x, y, x + size, y + size, selected ? 0xD22B313A : 0xB8171C23);
+        int edge = selected ? 0xFFE3C474 : 0xAA7C694C;
+        graphics.fill(x, y, x + size, y + 1, edge);
+        graphics.fill(x, y + size - 1, x + size, y + size, edge);
+        graphics.fill(x, y, x + 1, y + size, edge);
+        graphics.fill(x + size - 1, y, x + size, y + size, edge);
+    }
+
+    private static void bar(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+                            float ratio, int color) {
+        graphics.fill(x, y, x + width, y + height, 0xB3090C10);
+        int filled = Math.max(0, Math.min(width, Math.round(width * clamp(ratio))));
+        if (filled > 0) graphics.fill(x, y, x + filled, y + height, color);
     }
 
     private static String directionName(float yaw) {
@@ -164,19 +183,18 @@ public final class FantasyHudClient {
         };
     }
 
-    private static String weatherName(Minecraft minecraft) {
-        if (minecraft.level.isThundering()) return "폭풍";
-        if (minecraft.level.isRaining()) return "비";
-        return "맑음";
-    }
-
     private static String decimal(float value) {
-        return String.format(java.util.Locale.ROOT, "%.1f", value);
+        return String.format(java.util.Locale.ROOT, "%.0f", value);
     }
 
     private static String shortText(String text, int max) {
-        if (text == null || text.length() <= max) return text == null ? "" : text;
+        if (text == null || text.isBlank()) return "미등록";
+        if (text.length() <= max) return text;
         return text.substring(0, Math.max(1, max - 1)) + "…";
+    }
+
+    private static float clamp(float value) {
+        return Math.max(0.0F, Math.min(1.0F, value));
     }
 
     private static boolean insideRealm(Minecraft minecraft) {
