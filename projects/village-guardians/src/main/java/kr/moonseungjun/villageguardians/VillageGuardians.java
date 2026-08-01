@@ -24,13 +24,12 @@ import org.slf4j.Logger;
 public final class VillageGuardians {
     public static final String MOD_ID = "villageguardians";
     public static final Logger LOGGER = LogUtils.getLogger();
-
     private int maintenanceTicks;
 
     public VillageGuardians(IEventBus modEventBus) {
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians fortress defence, RPG progression, mercenaries, and combat techniques loaded");
+        LOGGER.info("Village Guardians fortress defence, role loadouts, towers and mercenaries loaded");
     }
 
     @SubscribeEvent
@@ -38,6 +37,7 @@ public final class VillageGuardians {
         VillageCouncilState.initializeServer(event.getServer());
         VillageProgressionSystem.initializeServer(event.getServer());
         VillageSkillTreeSystem.initializeServer(event.getServer());
+        VillageRoleSkillSystem.initializeServer(event.getServer());
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
@@ -49,9 +49,7 @@ public final class VillageGuardians {
     }
 
     @SubscribeEvent
-    public void onRegisterCommands(RegisterCommandsEvent event) {
-        VillageCommands.register(event.getDispatcher());
-    }
+    public void onRegisterCommands(RegisterCommandsEvent event) { VillageCommands.register(event.getDispatcher()); }
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -60,15 +58,11 @@ public final class VillageGuardians {
             VillageCouncilState.registerPlayer(player);
             VillageProgressionSystem.registerPlayer(player);
             var server = player.level().getServer();
-            if (server != null) {
-                VillageCouncilState.enforceFrozenTime(server);
-            }
+            if (server != null) VillageCouncilState.enforceFrozenTime(server);
             VillageWorldSystem.ensureFortifiedVillage(player);
             VillageStarterKit.grantOnLogin(player);
             VillageRpgSystem.refreshPlayerPassive(player);
-            if (VillageProgressionSystem.isGameOver() && server != null) {
-                VillageUiService.openGameOverForAll(server);
-            }
+            if (VillageProgressionSystem.isGameOver() && server != null) VillageUiService.openGameOverForAll(server);
         }
     }
 
@@ -84,25 +78,15 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (VillageWorldSystem.handleCentralBellInteraction(event)) {
-            return;
-        }
-        if (VillageWorldSystem.handleGateInteraction(event)) {
-            return;
-        }
-        if (VillageDoorSystem.handle(event)) {
-            return;
-        }
-        if (VillageTownHallInteraction.handle(event)) {
-            return;
-        }
+        if (VillageWorldSystem.handleCentralBellInteraction(event)) return;
+        if (VillageWorldSystem.handleGateInteraction(event)) return;
+        if (VillageDoorSystem.handle(event)) return;
+        if (VillageTownHallInteraction.handle(event)) return;
         VillageProgressionSystem.handleBuildingInteraction(event);
     }
 
     @SubscribeEvent
-    public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        VillageStarterKit.handleItemInteraction(event);
-    }
+    public void onRightClickItem(PlayerInteractEvent.RightClickItem event) { VillageStarterKit.handleItemInteraction(event); }
 
     @SubscribeEvent
     public void onEntityJoinLevel(EntityJoinLevelEvent event) {
@@ -110,17 +94,15 @@ public final class VillageGuardians {
                 || !(event.getLevel() instanceof ServerLevel level)
                 || level.getServer() == null
                 || level != level.getServer().overworld()
-                || !(event.getEntity() instanceof Mob mob)) {
-            return;
-        }
-        if (VillageDefenseSystem.recognizeDefenseMob(mob)) {
+                || !(event.getEntity() instanceof Mob mob)) return;
+        if (VillageDefenseSystem.recognizeDefenseMob(mob)) return;
+        if (VillageWorldSystem.isAllowedGameMob(mob)) return;
+        if (VillageWorldSystem.isInsideVillageArea(mob.blockPosition()) && !mob.isPersistenceRequired()) {
+            event.setCanceled(true);
             return;
         }
         if (mob.getType().getCategory() == MobCategory.MONSTER
-                && VillageWorldSystem.isInsideBattlefield(mob.blockPosition())
-                && !VillageWorldSystem.isAllowedGameMob(mob)) {
-            event.setCanceled(true);
-        }
+                && VillageWorldSystem.isInsideBattlefield(mob.blockPosition())) event.setCanceled(true);
     }
 
     @SubscribeEvent
@@ -148,10 +130,9 @@ public final class VillageGuardians {
             maintenanceTicks = 0;
             VillageCouncilState.enforceFrozenTime(event.getServer());
             VillageWorldSystem.purgeDaytimeHostiles(event.getServer());
+            VillageWorldSystem.purgeUnauthorizedVillageMobs(event.getServer());
             VillageRpgSystem.refreshPassives(event.getServer());
-            for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
-                player.setGameMode(GameType.ADVENTURE);
-            }
+            for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) player.setGameMode(GameType.ADVENTURE);
         }
     }
 }
