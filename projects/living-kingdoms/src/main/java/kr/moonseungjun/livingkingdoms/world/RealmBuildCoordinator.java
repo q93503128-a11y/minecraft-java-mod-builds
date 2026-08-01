@@ -134,7 +134,6 @@ public final class RealmBuildCoordinator {
             RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.ensureSite(realm, homelandId);
             IncrementalWorldEditPlan plan = PlannedRealmBuilder.create(realm, homelandId, site);
             synchronized (job) {
-                job.site = site;
                 job.plan = plan;
             }
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
@@ -155,12 +154,6 @@ public final class RealmBuildCoordinator {
                 "Realm construction {} progress {}% ({}/{})",
                 homelandId, percent, plan.appliedWrites(), plan.estimatedWrites()
         );
-        for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
-            ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
-            if (player != null && percent > 0 && percent < 100) {
-                player.displayClientMessage(Component.literal("§7[왕국 준비] 건설 진행 " + percent + "%"), true);
-            }
-        }
     }
 
     private static void completeBuild(String homelandId, BuildJob job) {
@@ -222,7 +215,6 @@ public final class RealmBuildCoordinator {
         private final Set<Consumer<Throwable>> completions = new LinkedHashSet<>();
         private boolean started;
         private GenerationTask task;
-        private RealmSiteLayoutSavedData.RealmSite site;
         private IncrementalWorldEditPlan plan;
         private int lastReportedPercent = -10;
 
