@@ -63,24 +63,12 @@ public final class VillageUiScreen extends Screen {
         int panelWidth = layout.width();
         int panelHeight = layout.height();
 
-        graphics.fill(left + 5, top + 6, left + panelWidth + 5, top + panelHeight + 6, SHADOW);
-        graphics.fill(left - 1, top - 1, left + panelWidth + 1, top + panelHeight + 1, BORDER);
-        graphics.fill(left, top, left + panelWidth, top + panelHeight, PANEL);
-        graphics.fill(left, top, left + 3, top + panelHeight, ACCENT);
-
-        graphics.fill(left + 12, top + 10, left + 38, top + 36, PANEL_RAISED);
-        graphics.fill(left + 12, top + 10, left + 15, top + 36, GOLD);
-        graphics.centeredText(font, "VG", left + 25, top + 19, TEXT);
-        graphics.text(font, payload.title(), left + 48, top + 13, TEXT, false);
-        graphics.text(font, subtitle(), left + 48, top + 26, MUTED, false);
-
-        int closeLeft = left + panelWidth - 31;
-        int closeTop = top + 10;
-        boolean closeHovered = isInside(mouseX, mouseY, closeLeft, closeTop, 20, 20);
-        graphics.fill(closeLeft, closeTop, closeLeft + 20, closeTop + 20,
-                closeHovered ? 0xFF76343B : PANEL_RAISED);
-        graphics.centeredText(font, "×", closeLeft + 10, closeTop + 6,
-                closeHovered ? 0xFFFFFFFF : MUTED);
+        renderFrame(graphics, mouseX, mouseY, layout);
+        if (payload.screenId().equals("skill_tree")) {
+            renderSkillTree(graphics, mouseX, mouseY, left, top, panelWidth, panelHeight);
+            super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+            return;
+        }
 
         int contentTop = top + 46;
         int contentBottom = top + panelHeight - 12;
@@ -119,14 +107,130 @@ public final class VillageUiScreen extends Screen {
             graphics.text(font, "명령", actionLeft + 8, infoBottom + 12, ACCENT, false);
         }
 
-        renderBody(graphics, panelWidth);
+        renderBody(graphics);
         renderActions(graphics, mouseX, mouseY, actionLeft, actionRight,
                 split ? contentTop + 24 : bodyBottom + 32,
                 contentBottom - 7);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
-    private void renderBody(GuiGraphicsExtractor graphics, int panelWidth) {
+    private void renderFrame(
+            GuiGraphicsExtractor graphics,
+            int mouseX,
+            int mouseY,
+            Layout layout) {
+        int left = layout.left();
+        int top = layout.top();
+        int panelWidth = layout.width();
+        int panelHeight = layout.height();
+        graphics.fill(left + 5, top + 6, left + panelWidth + 5, top + panelHeight + 6, SHADOW);
+        graphics.fill(left - 1, top - 1, left + panelWidth + 1, top + panelHeight + 1, BORDER);
+        graphics.fill(left, top, left + panelWidth, top + panelHeight, PANEL);
+        graphics.fill(left, top, left + 3, top + panelHeight, ACCENT);
+
+        graphics.fill(left + 12, top + 10, left + 38, top + 36, PANEL_RAISED);
+        graphics.fill(left + 12, top + 10, left + 15, top + 36, GOLD);
+        graphics.centeredText(font, "VG", left + 25, top + 19, TEXT);
+        graphics.text(font, payload.title(), left + 48, top + 13, TEXT, false);
+        graphics.text(font, subtitle(), left + 48, top + 26, MUTED, false);
+
+        int closeLeft = left + panelWidth - 31;
+        int closeTop = top + 10;
+        boolean closeHovered = isInside(mouseX, mouseY, closeLeft, closeTop, 20, 20);
+        graphics.fill(closeLeft, closeTop, closeLeft + 20, closeTop + 20,
+                closeHovered ? 0xFF76343B : PANEL_RAISED);
+        graphics.centeredText(font, "×", closeLeft + 10, closeTop + 6,
+                closeHovered ? 0xFFFFFFFF : MUTED);
+    }
+
+    private void renderSkillTree(
+            GuiGraphicsExtractor graphics,
+            int mouseX,
+            int mouseY,
+            int left,
+            int top,
+            int panelWidth,
+            int panelHeight) {
+        clickRegions.clear();
+        maxScroll = 0;
+        int contentLeft = left + 20;
+        int contentRight = left + panelWidth - 20;
+        int contentTop = top + 50;
+        int contentBottom = top + panelHeight - 14;
+        graphics.fill(contentLeft, contentTop, contentRight, contentBottom, PANEL_SOFT);
+        graphics.text(font, compact(payload.body(), 70), contentLeft + 10, contentTop + 8, MUTED, false);
+
+        int branchLabelWidth = 52;
+        int nodeAreaLeft = contentLeft + branchLabelWidth + 10;
+        int nodeAreaWidth = contentRight - nodeAreaLeft - 10;
+        int gap = 12;
+        int nodeWidth = Math.max(62, (nodeAreaWidth - gap * 2) / 3);
+        int nodeHeight = 40;
+        int firstRow = contentTop + 34;
+        int rowGap = Math.max(48, Math.min(60, (contentBottom - firstRow - 48) / 3));
+        String[] branchNames = {"공격", "방어", "지원"};
+        int[] branchColors = {DANGER, 0xFF86A8E8, ACCENT};
+        String hoveredDescription = "노드에 마우스를 올리면 효과를 확인할 수 있습니다.";
+
+        int count = Math.min(actions.length, labels.length);
+        for (int branch = 0; branch < 3; branch++) {
+            int y = firstRow + branch * rowGap;
+            graphics.text(font, branchNames[branch], contentLeft + 12, y + 15, branchColors[branch], false);
+            for (int tier = 0; tier < 2; tier++) {
+                int lineX0 = nodeAreaLeft + tier * (nodeWidth + gap) + nodeWidth;
+                int lineX1 = nodeAreaLeft + (tier + 1) * (nodeWidth + gap);
+                graphics.fill(lineX0, y + nodeHeight / 2 - 1, lineX1, y + nodeHeight / 2 + 1, BORDER);
+            }
+        }
+
+        for (int index = 0; index < count && index < 9; index++) {
+            int branch = index / 3;
+            int tier = index % 3;
+            int x = nodeAreaLeft + tier * (nodeWidth + gap);
+            int y = firstRow + branch * rowGap;
+            String[] parts = labels[index].split("\\|", 3);
+            String title = parts.length > 0 ? parts[0] : labels[index];
+            String description = parts.length > 1 ? parts[1] : "";
+            String status = parts.length > 2 ? parts[2] : "";
+            int color = switch (status) {
+                case "습득" -> ACCENT;
+                case "습득 가능" -> GOLD;
+                case "잠김" -> 0xFF59636E;
+                default -> 0xFF86A8E8;
+            };
+            boolean hovered = isInside(mouseX, mouseY, x, y, nodeWidth, nodeHeight);
+            graphics.fill(x + 2, y + 2, x + nodeWidth + 2, y + nodeHeight + 2, 0x66000000);
+            graphics.fill(x - 1, y - 1, x + nodeWidth + 1, y + nodeHeight + 1,
+                    hovered ? color : BORDER);
+            graphics.fill(x, y, x + nodeWidth, y + nodeHeight,
+                    hovered ? PANEL_HOVER : PANEL_RAISED);
+            graphics.fill(x, y, x + 4, y + nodeHeight, color);
+            graphics.text(font, compact(title, Math.max(8, nodeWidth / 7)), x + 9, y + 8, TEXT, false);
+            graphics.text(font, status, x + 9, y + 23, color, false);
+            if (hovered) {
+                hoveredDescription = title + " · " + description + " · " + status;
+            }
+            if (!status.equals("습득") && !status.equals("잠김")) {
+                clickRegions.add(new ClickRegion(x, y, nodeWidth, nodeHeight, actions[index]));
+            }
+        }
+
+        int infoTop = contentBottom - 34;
+        graphics.fill(contentLeft + 8, infoTop, contentRight - 8, contentBottom - 7, PANEL_RAISED);
+        List<FormattedCharSequence> tooltip = font.split(
+                Component.literal(hoveredDescription),
+                Math.max(80, contentRight - contentLeft - 32));
+        int tooltipY = infoTop + 7;
+        for (FormattedCharSequence line : tooltip) {
+            if (tooltipY > contentBottom - 16) {
+                break;
+            }
+            graphics.text(font, line, contentLeft + 16, tooltipY, TEXT, false);
+            tooltipY += 10;
+        }
+    }
+
+    private void renderBody(GuiGraphicsExtractor graphics) {
         List<FormattedCharSequence> lines = bodyLines(Math.max(90, bodyRight - bodyLeft));
         int lineHeight = 11;
         int contentHeight = lines.size() * lineHeight;
@@ -247,8 +351,10 @@ public final class VillageUiScreen extends Screen {
 
     private String subtitle() {
         return switch (payload.screenId()) {
-            case "status" -> "CHARACTER & ROLE";
+            case "status", "role_preview" -> "CHARACTER & ROLE";
+            case "skill_tree" -> "ADVANCEMENT SKILLS";
             case "building" -> "FACILITY CONTROL";
+            case "quick_chat" -> "TEAM COMMUNICATION";
             case "vote" -> "MULTIPLAYER VOTE";
             case "game_over" -> "DEFENCE FAILED";
             default -> "VILLAGE COMMAND";
@@ -272,10 +378,11 @@ public final class VillageUiScreen extends Screen {
         if (normalized.contains("restart") || normalized.contains("destroy") || normalized.contains("reject")) {
             return DANGER;
         }
-        if (normalized.contains("advance") || normalized.contains("ready") || normalized.contains("skill")) {
+        if (normalized.contains("skill") || normalized.contains("ready") || normalized.contains("return")) {
             return ACCENT;
         }
-        if (normalized.contains("repair") || normalized.contains("upgrade") || normalized.contains("buy")) {
+        if (normalized.contains("repair") || normalized.contains("upgrade")
+                || normalized.contains("buy") || normalized.contains("sell")) {
             return GOLD;
         }
         return 0xFF86A8E8;
