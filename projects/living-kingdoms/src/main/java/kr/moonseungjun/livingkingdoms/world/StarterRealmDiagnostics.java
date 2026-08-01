@@ -5,6 +5,7 @@ import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 import java.util.HashSet;
@@ -137,25 +138,40 @@ public final class StarterRealmDiagnostics {
         int cx = site.centerX();
         int cz = site.centerZ();
         int y = Math.max(68, Math.min(112, site.baseY()));
-        requireSolid(realm, new BlockPos(cx - 34, y + 1, cz - 91), "citadel");
-        requireSolid(realm, new BlockPos(cx + 18, y + 1, cz - 82), "administration hall");
-        requireSolid(realm, new BlockPos(cx - 74, y + 1, cz - 78), "temple");
-        requireSolid(realm, new BlockPos(cx, y, cz), "market square");
-        requireSolid(realm, new BlockPos(cx + 47, y + 1, cz + 14), "inn");
-        requireSolid(realm, new BlockPos(cx - 77, y + 1, cz + 17), "guild hall");
-        requireSolid(realm, new BlockPos(cx + 78, y + 1, cz - 35), "smithy");
-        requireSolid(realm, new BlockPos(cx - 106, y + 1, cz - 39), "barracks");
-        requireSolid(realm, new BlockPos(cx + 82, y + 1, cz + 72), "granary");
-        requireSolid(realm, new BlockPos(cx - 120, y + 3, cz + 80), "city wall");
-        if (realm.getBlockState(new BlockPos(cx - 164, y - 2, cz)).getBlock() != Blocks.WATER) {
-            throw new IllegalStateException("Erden canal was not integrated with the capital");
-        }
-        verifyRoofSupport(realm, new BlockPos(cx - 56, y + 6, cz - 40));
+
+        requireBlock(realm, new BlockPos(cx - 18, y + 3, cz - 70), Blocks.LANTERN, "citadel hall");
+        requireBlock(realm, new BlockPos(cx + 32, y + 3, cz - 67), Blocks.LANTERN, "administration hall");
+        requireBlock(realm, new BlockPos(cx - 63, y + 2, cz - 66), Blocks.BELL, "temple");
+        requireBlock(realm, new BlockPos(cx, y + 7, cz), Blocks.LANTERN, "market square");
+        requireBlock(realm, new BlockPos(cx + 57, y + 2, cz + 21), Blocks.CAMPFIRE, "inn");
+        requireBlock(realm, new BlockPos(cx - 72, y + 2, cz + 22), Blocks.CARTOGRAPHY_TABLE, "guild hall");
+        requireBlock(realm, new BlockPos(cx + 98, y + 1, cz - 30), Blocks.BLAST_FURNACE, "smithy");
+        requireBlock(realm, new BlockPos(cx - 86, y + 2, cz - 36), Blocks.IRON_BARS, "barracks");
+        requireBlock(realm, new BlockPos(cx + 85, y + 2, cz + 79), Blocks.BARREL, "granary");
+        requireBlock(realm, new BlockPos(cx - 120, y + 3, cz + 80), Blocks.STONE_BRICKS, "city wall");
+
+        int canalX = cx - 164 + (int) Math.round(Math.sin(cz * 0.045) * 6.0);
+        requireBlock(realm, new BlockPos(canalX, y - 2, cz), Blocks.WATER, "canal");
+        verifyRoofSupport(realm, new BlockPos(cx - 58, y + 6, cz - 40));
+        verifyInteriorHeadroom(realm, new BlockPos(cx - 25, y + 1, cz - 80), "citadel interior");
     }
 
-    private static void requireSolid(ServerLevel realm, BlockPos pos, String facility) {
-        if (realm.getBlockState(pos).isAir()) {
-            throw new IllegalStateException("Missing Erden facility " + facility + " at " + pos);
+    private static void requireBlock(ServerLevel realm, BlockPos pos, Block expected, String facility) {
+        Block actual = realm.getBlockState(pos).getBlock();
+        if (actual != expected) {
+            throw new IllegalStateException(
+                    "Missing Erden facility " + facility + " at " + pos
+                            + ": expected=" + expected + " actual=" + actual
+            );
+        }
+    }
+
+    private static void verifyInteriorHeadroom(ServerLevel realm, BlockPos feet, String facility) {
+        if (!realm.getBlockState(feet).isAir() || !realm.getBlockState(feet.above()).isAir()) {
+            throw new IllegalStateException("Blocked " + facility + " at " + feet);
+        }
+        if (realm.getBlockState(feet.below()).isAir()) {
+            throw new IllegalStateException("Missing floor below " + facility + " at " + feet.below());
         }
     }
 
