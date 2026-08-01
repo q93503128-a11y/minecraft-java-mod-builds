@@ -1,6 +1,7 @@
 {
   "pack": {
     "description": "Living Kingdoms authored fantasy rules",
+    "pack_format": 1,
     "min_format": [1, 0],
     "max_format": [999, 0],
     "supported_formats": [1, 999]
