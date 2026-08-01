@@ -11,10 +11,9 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.player.UseItemOnBlockEvent;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
-import java.util.List;
 import java.util.Optional;
 
-/** Defines private plots and enforces the village's no-theft healing rule. */
+/** Enforces private estates, protected resident homes and unbreakable public facilities. */
 public final class CountrysidePropertyManager {
     private CountrysidePropertyManager() {
     }
@@ -23,7 +22,7 @@ public final class CountrysidePropertyManager {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         Player player = event.getPlayer();
         Optional<Plot> plot = plotAt(level, event.getPos());
-        if (plot.isEmpty() || canModify(level, player, plot.get())) return;
+        if (plot.isEmpty() || canModify(player, plot.get())) return;
 
         event.setCanceled(true);
         event.setNotifyClient(true);
@@ -36,23 +35,25 @@ public final class CountrysidePropertyManager {
     public static void onUseBlock(UseItemOnBlockEvent event) {
         if (event.getUsePhase() != UseItemOnBlockEvent.UsePhase.BLOCK
                 || !(event.getLevel() instanceof ServerLevel level)
-                || event.getPlayer() == null) {
-            return;
-        }
+                || event.getPlayer() == null) return;
 
         Player player = event.getPlayer();
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        Optional<BlockPos> origin = data.homesteadOrigin();
-        if (origin.isPresent()
-                && event.getPos().equals(origin.get().offset(-7, 1, 3))
+        Optional<CountrysideWorldData.PlayerEstate> estate = data.estateAt(event.getPos());
+
+        if (estate.isPresent()
+                && event.getPos().equals(estate.get().originPos().offset(11, 0, -7))
                 && event.getItemStack().is(Items.NAME_TAG)) {
-            renameRestaurant(event, level, player, data, origin.get());
+            renameRestaurant(event, level, player, data, estate.get());
             return;
         }
 
-        if (level.getBlockEntity(event.getPos()) == null) return;
         Optional<Plot> plot = plotAt(level, event.getPos());
-        if (plot.isEmpty() || canModify(level, player, plot.get())) return;
+        if (plot.isEmpty() || canModify(player, plot.get())) return;
+
+        boolean privateEstate = plot.get().ownerUuid().isPresent();
+        boolean protectedContainer = level.getBlockEntity(event.getPos()) != null;
+        if (!privateEstate && !protectedContainer) return;
 
         event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
         player.sendOverlayMessage(Component.translatable(
@@ -66,10 +67,10 @@ public final class CountrysidePropertyManager {
             ServerLevel level,
             Player player,
             CountrysideWorldData data,
-            BlockPos origin
+            CountrysideWorldData.PlayerEstate estate
     ) {
         event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
-        if (!data.isHomesteadOwner(player.getUUID())) {
+        if (!estate.isOwner(player.getUUID())) {
             player.sendOverlayMessage(Component.translatable("message.countrysidedays.restaurant_name_owner_only"));
             return;
         }
@@ -86,79 +87,48 @@ public final class CountrysidePropertyManager {
             return;
         }
 
-        StarterHomesteadGenerator.refreshOwnershipSigns(
-                level,
-                origin,
-                data.ownerName(),
-                data.restaurantName()
+        CountrysideWorldData.PlayerEstate updated = data.estate(player.getUUID()).orElse(estate);
+        StarterHomesteadGenerator.refreshEstateSigns(
+                level, updated.originPos(), updated.ownerName(), updated.restaurantName()
         );
         if (!player.getAbilities().instabuild) nameTag.shrink(1);
         player.sendSystemMessage(Component.translatable(
                 "message.countrysidedays.restaurant_renamed",
-                data.restaurantName()
+                updated.restaurantName()
         ));
     }
 
     public static Optional<Plot> plotAt(ServerLevel level, BlockPos pos) {
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        return data.homesteadOrigin().flatMap(origin -> plots(origin).stream()
-                .filter(plot -> plot.contains(pos))
-                .findFirst());
+        Optional<CountrysideWorldData.PlayerEstate> estate = data.estateAt(pos);
+        if (estate.isPresent()) {
+            CountrysideWorldData.PlayerEstate value = estate.get();
+            return Optional.of(new Plot(
+                    value.ownerName() + "의 생활 구획",
+                    Optional.of(value.ownerUuid()),
+                    value.originPos().offset(PlayerEstateLayout.MIN_X, -6, PlayerEstateLayout.MIN_Z),
+                    value.originPos().offset(PlayerEstateLayout.MAX_X, 18, PlayerEstateLayout.MAX_Z)
+            ));
+        }
+
+        return data.homesteadOrigin().flatMap(origin -> publicPlot(origin, pos));
     }
 
-    public static List<Plot> plots(BlockPos origin) {
-        return List.of(
-                plot(origin, PlotKind.PLAYER_HOME, "내 집", -47, -35, -20, 8),
-                plot(origin, PlotKind.PLAYER_RESTAURANT, "내 식당", -17, -14, 2, 8),
-                plot(origin, PlotKind.PLAYER_FARM, "내 농장", 2, -13, 18, 7),
-                plot(origin, PlotKind.PLAYER_RANCH, "내 목장", -8, 39, 26, 69),
-                plot(origin, PlotKind.NPC_HOME, "복순 할머니네", 17, -35, 40, -9),
-                plot(origin, PlotKind.NPC_HOME, "농부 한결이네", -48, 24, -21, 50),
-                plot(origin, PlotKind.NPC_HOME, "목장지기 소미네", 15, 25, 40, 52),
-                plot(origin, PlotKind.PUBLIC_PROTECTED, "마을회관", -15, 24, 15, 50),
-                plot(origin, PlotKind.PUBLIC_PROTECTED, "마을 장터", -23, 7, 22, 27),
-                plot(origin, PlotKind.PUBLIC_PROTECTED, "공동 과수원", -48, 38, -7, 70)
-        );
+    private static Optional<Plot> publicPlot(BlockPos origin, BlockPos pos) {
+        BlockPos min = origin.offset(-StarterHomesteadGenerator.PUBLIC_HALF_WIDTH, -6,
+                -StarterHomesteadGenerator.PUBLIC_HALF_DEPTH);
+        BlockPos max = origin.offset(StarterHomesteadGenerator.PUBLIC_HALF_WIDTH, 18,
+                StarterHomesteadGenerator.PUBLIC_HALF_DEPTH);
+        Plot publicVillage = new Plot("공공 마을 시설", Optional.empty(), min, max);
+        return publicVillage.contains(pos) ? Optional.of(publicVillage) : Optional.empty();
     }
 
-    private static Plot plot(
-            BlockPos origin,
-            PlotKind kind,
-            String displayName,
-            int minX,
-            int minZ,
-            int maxX,
-            int maxZ
-    ) {
-        return new Plot(kind, displayName, origin.offset(minX, -6, minZ), origin.offset(maxX, 18, maxZ));
-    }
-
-    private static boolean canModify(ServerLevel level, Player player, Plot plot) {
+    private static boolean canModify(Player player, Plot plot) {
         if (player.canUseGameMasterBlocks()) return true;
-        if (!plot.kind().isPlayerOwned()) return false;
-        return CountrysideWorldData.get(level.getServer()).isHomesteadOwner(player.getUUID());
+        return plot.ownerUuid().map(owner -> owner.equals(player.getUUID().toString())).orElse(false);
     }
 
-    public enum PlotKind {
-        PLAYER_HOME(true),
-        PLAYER_RESTAURANT(true),
-        PLAYER_FARM(true),
-        PLAYER_RANCH(true),
-        NPC_HOME(false),
-        PUBLIC_PROTECTED(false);
-
-        private final boolean playerOwned;
-
-        PlotKind(boolean playerOwned) {
-            this.playerOwned = playerOwned;
-        }
-
-        public boolean isPlayerOwned() {
-            return playerOwned;
-        }
-    }
-
-    public record Plot(PlotKind kind, String displayName, BlockPos min, BlockPos max) {
+    public record Plot(String displayName, Optional<String> ownerUuid, BlockPos min, BlockPos max) {
         public boolean contains(BlockPos pos) {
             return pos.getX() >= min.getX() && pos.getX() <= max.getX()
                     && pos.getY() >= min.getY() && pos.getY() <= max.getY()
