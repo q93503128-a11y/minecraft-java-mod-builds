@@ -24,6 +24,9 @@ public record RpgProgress(int level, int experience) {
     }
 
     public int experienceToNextLevel() {
-        return level >= MAX_LEVEL ? 0 : 60 + level * 40;
+        if (level >= MAX_LEVEL) {
+            return 0;
+        }
+        return 120 + level * 72 + level * level * 7;
     }
 }
