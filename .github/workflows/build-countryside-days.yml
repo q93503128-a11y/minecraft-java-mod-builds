@@ -58,6 +58,47 @@ jobs:
           java -version
           ./gradlew --version
 
+      - name: Validate UTF-8 localization sources
+        id: localization
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          root = Path('src/main/resources/assets/countrysidedays/lang')
+          parsed = {}
+          for name in ('ko_kr.json', 'en_us.json'):
+              path = root / name
+              raw = path.read_bytes()
+              text = raw.decode('utf-8', errors='strict')
+              data = json.loads(text)
+              if not isinstance(data, dict):
+                  raise SystemExit(f'{name}: localization root is not an object')
+              parsed[name] = data
+
+          ko = parsed['ko_kr.json']
+          en = parsed['en_us.json']
+          if set(ko) != set(en):
+              raise SystemExit(
+                  f'localization key mismatch: missing ko={sorted(set(en)-set(ko))}, '
+                  f'missing en={sorted(set(ko)-set(en))}'
+              )
+          required = (
+              'hud.countrysidedays.shift_open',
+              'hud.countrysidedays.shift_closed',
+              'hud.countrysidedays.goal_open_first_shift',
+              'item.countrysidedays.recipe_notebook',
+              'item.countrysidedays.life_guide',
+              'message.countrysidedays.market_holiday',
+          )
+          for key in required:
+              if not isinstance(ko.get(key), str) or not ko[key].strip():
+                  raise SystemExit(f'missing Korean localization for {key}')
+          if ko['hud.countrysidedays.shift_closed'].startswith('CLOSED'):
+              raise SystemExit('Korean HUD text still falls back to English')
+          print(f'Validated {len(ko)} matching UTF-8 localization keys.')
+          PY
+
       - name: Clean build
         id: build
         run: |
@@ -168,8 +209,8 @@ jobs:
             echo "Minecraft client never reached rendered resource readiness."
             exit 1
           fi
-          if ! grep -q "Countryside Days 0.1.0-alpha.9 core content registered" ci-logs/client.log; then
-            echo "Countryside Days alpha.9 did not register in the client process."
+          if ! grep -q "Countryside Days 0.1.0-alpha.10 core content registered" ci-logs/client.log; then
+            echo "Countryside Days alpha.10 did not register in the client process."
             exit 1
           fi
           if ! grep -q "Countryside Days compact navigation HUD registered" ci-logs/client.log; then
@@ -189,17 +230,17 @@ jobs:
       - name: Verify JAR and create deliverables
         id: jarcheck
         run: |
-          JAR="build/libs/countrysidedays-0.1.0-alpha.9.jar"
+          JAR="build/libs/countrysidedays-0.1.0-alpha.10.jar"
           python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification.log
           mkdir -p build/deliverables
           cp "$JAR" build/deliverables/
-          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.9.jar.sha256"
+          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.10.jar.sha256"
 
       - name: Upload executable JAR
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.9-deliverables
+          name: countryside-days-0.1.0-alpha.10-deliverables
           path: projects/countryside-days/build/deliverables/
           if-no-files-found: error
           retention-days: 14
@@ -208,7 +249,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.9-logs
+          name: countryside-days-0.1.0-alpha.10-logs
           path: projects/countryside-days/ci-logs/
           if-no-files-found: warn
           retention-days: 14
@@ -220,6 +261,7 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
           WRAPPER_OUTCOME: ${{ steps.wrapper.outcome }}
           TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
+          LOCALIZATION_OUTCOME: ${{ steps.localization.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           DATAGEN_OUTCOME: ${{ steps.datagen.outcome }}
           GAMETEST_OUTCOME: ${{ steps.gametest.outcome }}
@@ -233,13 +275,14 @@ jobs:
 
           - Workflow run: ${RUN_ID}
           - Source commit: ${SOURCE_SHA}
-          - Mod version: 0.1.0-alpha.9
+          - Mod version: 0.1.0-alpha.10
           - Minecraft: 26.2
           - Java: 25
           - Gradle: 9.2.1
           - NeoForge: 26.2.0.38-beta
           - Wrapper generation: ${WRAPPER_OUTCOME}
           - Toolchain verification: ${TOOLCHAIN_OUTCOME}
+          - UTF-8 localization validation: ${LOCALIZATION_OUTCOME}
           - Clean build: ${BUILD_OUTCOME}
           - Datagen: ${DATAGEN_OUTCOME}
           - Required GameTest server: ${GAMETEST_OUTCOME}
@@ -248,7 +291,7 @@ jobs:
           - Client smoke test: ${CLIENT_OUTCOME}
           - JAR structure verification: ${JAR_OUTCOME}
 
-          This report is generated by GitHub Actions. GameTests verify per-player restaurant opening, three independent daily customer slots, duplicate-payment prevention, persistent ranch production and one-time collection, protected signs, directed furniture, beds, gates, livestock resources, and multiplayer estate isolation. Server and virtual-display client smoke tests remain mandatory. A human visual play test is still required before release.
+          This report is generated by GitHub Actions. GameTests verify empty starter farmland, farm and ranch worker storage, seven-day holidays, deterministic daily market prices, restaurant and ranch persistence, protected directed buildings, and multiplayer estate isolation. Source and built-JAR validation both require matching UTF-8 Korean and English localization keys. Server and virtual-display client smoke tests remain mandatory. A human visual play test is still required before release.
           REPORT
 
           for LOG in clean-build datagen gametest server client; do
