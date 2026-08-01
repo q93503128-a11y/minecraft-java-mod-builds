@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -71,7 +72,10 @@ public final class VillageEquipmentShop {
 
     private static boolean hasEquipped(ServerPlayer player, Offer offer) {
         if (offer.matches(player.getMainHandItem()) || offer.matches(player.getOffhandItem())) return true;
-        for (ItemStack armor : player.getArmorSlots()) if (offer.matches(armor)) return true;
+        for (EquipmentSlot slot : new EquipmentSlot[]{
+                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            if (offer.matches(player.getItemBySlot(slot))) return true;
+        }
         return false;
     }
 
