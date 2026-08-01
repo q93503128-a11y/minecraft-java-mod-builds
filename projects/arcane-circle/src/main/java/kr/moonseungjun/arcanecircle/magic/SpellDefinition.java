@@ -12,6 +12,7 @@ public record SpellDefinition(
         double power,
         School school,
         Acquisition acquisition,
+        SigilAnchor sigilAnchor,
         String description,
         List<String> fusionSources
 ) {
@@ -24,10 +25,24 @@ public record SpellDefinition(
     }
 
     public enum Acquisition {
-        PRIMER("기초 마도서"), DIRECT("전승 주문"), FUSION("융합 연구");
+        PRIMER("초심자 마도서"), BOOK("주문서"), FUSION("융합 연구");
 
         private final String displayName;
         Acquisition(String displayName) { this.displayName = displayName; }
+        public String displayName() { return displayName; }
+    }
+
+    /** Where the charge-stage magic circle is stabilized before release. */
+    public enum SigilAnchor {
+        FRONT("전방 전개"),
+        FEET("발밑 전개"),
+        BODY("신체 전개"),
+        GROUND_SELF("시전자 지면"),
+        GROUND_TARGET("조준 지면"),
+        TARGET("대상 결속");
+
+        private final String displayName;
+        SigilAnchor(String displayName) { this.displayName = displayName; }
         public String displayName() { return displayName; }
     }
 }
