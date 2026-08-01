@@ -39,6 +39,9 @@ def main() -> None:
             "kr/countrysidedays/world/CountrysidePropertyManager.class",
             "kr/countrysidedays/world/CountrysideRegionManager.class",
             "kr/countrysidedays/world/FlatCountrysideBootstrap.class",
+            "kr/countrysidedays/world/PlayerEstateLayout.class",
+            "kr/countrysidedays/network/EstateHudPayload.class",
+            "kr/countrysidedays/client/ClientEstateState.class",
             "data/countrysidedays/worldgen/biome/rural_plains.json",
             "data/minecraft/worldgen/world_preset/flat.json",
             "data/minecraft/worldgen/flat_level_generator_preset/classic_flat.json",
@@ -47,10 +50,10 @@ def main() -> None:
             if required not in unique_names:
                 fail(f"required entry missing: {required}")
 
-        removed_in_alpha6 = {
+        obsolete_entries = {
             "data/countrysidedays/neoforge/biome_modifier/countryside_generation.json",
         }
-        leaked = sorted(removed_in_alpha6.intersection(unique_names))
+        leaked = sorted(obsolete_entries.intersection(unique_names))
         if leaked:
             fail(f"obsolete ordinary-plains worldgen injection leaked into JAR: {leaked}")
 
