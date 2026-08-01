@@ -29,7 +29,7 @@ public final class VillageGuardians {
     public VillageGuardians(IEventBus modEventBus) {
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians original fortress, RPG HUD, skill tree, travel, and trading loaded");
+        LOGGER.info("Village Guardians fortress defence, RPG progression, mercenaries, and combat techniques loaded");
     }
 
     @SubscribeEvent
@@ -39,6 +39,7 @@ public final class VillageGuardians {
         VillageSkillTreeSystem.initializeServer(event.getServer());
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
+        VillageDefenseSystem.reset();
         VillageStructureHud.reset();
         VillageHudSystem.reset();
         VillageHealthDisplaySystem.reset();
@@ -88,6 +89,9 @@ public final class VillageGuardians {
         if (VillageWorldSystem.handleGateInteraction(event)) {
             return;
         }
+        if (VillageDoorSystem.handle(event)) {
+            return;
+        }
         if (VillageTownHallInteraction.handle(event)) {
             return;
         }
@@ -101,12 +105,17 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onEntityJoinLevel(EntityJoinLevelEvent event) {
-        if (!event.getLevel().isClientSide()
-                && event.getLevel() instanceof ServerLevel level
-                && level.getServer() != null
-                && level == level.getServer().overworld()
-                && event.getEntity() instanceof Mob mob
-                && VillageWorldSystem.isInsideVillageArea(mob.blockPosition())
+        if (event.getLevel().isClientSide()
+                || !(event.getLevel() instanceof ServerLevel level)
+                || level.getServer() == null
+                || level != level.getServer().overworld()
+                || !(event.getEntity() instanceof Mob mob)) {
+            return;
+        }
+        if (VillageDefenseSystem.recognizeDefenseMob(mob)) {
+            return;
+        }
+        if (VillageWorldSystem.isInsideVillageArea(mob.blockPosition())
                 && !VillageWorldSystem.isAllowedGameMob(mob)) {
             event.setCanceled(true);
         }
@@ -127,6 +136,7 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
         VillageRaidSystem.tick(event.getServer());
+        VillageDefenseSystem.tick(event.getServer());
         VillageStructureHud.tick(event.getServer());
         VillageHudSystem.tick(event.getServer());
         VillageHealthDisplaySystem.tick(event.getServer());
