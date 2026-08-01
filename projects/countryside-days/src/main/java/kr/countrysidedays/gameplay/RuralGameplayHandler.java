@@ -76,14 +76,14 @@ public final class RuralGameplayHandler {
         CountrysideWorldData.PlayerEstate sharedRestaurant = SharedRestaurantAccess
                 .restaurantEstate(data)
                 .orElse(estate);
-        SharedRestaurantBuilder.normalizeEstate(
-                serverLevel,
-                sharedRestaurant,
-                true,
-                sharedRestaurant.restaurantOpen()
-        );
-        if (!sharedRestaurant.ownerUuid().equals(estate.ownerUuid())) {
-            SharedRestaurantBuilder.normalizeEstate(serverLevel, estate, false, false);
+        for (CountrysideWorldData.PlayerEstate existingEstate : data.estates()) {
+            boolean isSharedRestaurant = existingEstate.ownerUuid().equals(sharedRestaurant.ownerUuid());
+            SharedRestaurantBuilder.normalizeEstate(
+                    serverLevel,
+                    existingEstate,
+                    isSharedRestaurant,
+                    isSharedRestaurant && sharedRestaurant.restaurantOpen()
+            );
         }
 
         RuralNpcManager.ensureEstateAnimals(serverLevel, estate);
