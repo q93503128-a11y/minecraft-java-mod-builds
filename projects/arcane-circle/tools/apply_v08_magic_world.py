@@ -61,11 +61,14 @@ try:
 except (ValueError, zlib.error, UnicodeDecodeError) as failure:
     source, repair = recover_single_character(encoded, failure)
 
-# The v0.7 release bumped the live network protocol after the v0.8 migration
-# payload was prepared. Adapt only the old-file anchor; the v0.8 target string
-# remains untouched. This keeps the migration idempotent without downgrading the
-# checked-in runtime source between builds.
+# Adapt migration anchors from the v0.6 preparation snapshot to the actual v0.7
+# release without changing any v0.8 replacement text.
 source = source.replace("ninefold-arcana-6", "ninefold-arcana-7")
+source = source.replace(
+    '        g.text(font, Component.literal("지팡이 " + ArcaneClientState.text("staff", "맨손")), x, y + 24, 0xFFFFD98A);',
+    '        g.text(font, Component.literal(compactName(ArcaneClientState.text("staff", "맨손"), 12)),\n'
+    '                x, y + 1, 0xFFFFD489);'
+)
 
 print("Arcane v0.8 migration payload decoded:",
       ", ".join(f"part{i}={len(part)}" for i, part in enumerate(parts)),
