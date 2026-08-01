@@ -30,7 +30,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.Optional;
 
 public final class RuralGameplayHandler {
-    private static final String STARTER_KIT_TAG = "countrysidedays_starter_kit";
+    private static final String STARTER_KIT_TAG = "countrysidedays_starter_kit_alpha10";
     private static final float WILD_HERB_CHANCE = 0.32F;
     private static final float RIVER_FISH_CHANCE = 0.45F;
 
