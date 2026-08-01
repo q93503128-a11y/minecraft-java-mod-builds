@@ -193,8 +193,10 @@ jobs:
               ('resident and customer schedule', npc),
               ('ranch production', ranch),
           ):
-              if 'getDayTime()' not in source:
-                  raise SystemExit(f'{source_name} does not use visible world time')
+              if 'getOverworldClockTime()' not in source:
+                  raise SystemExit(f'{source_name} does not use the Minecraft 26.2 visible-world clock')
+              if 'getDayTime()' in source:
+                  raise SystemExit(f'{source_name} still uses the removed pre-26.2 clock API')
               if 'getGameTime() / 24000L' in source or 'getGameTime() / 24000' in source:
                   raise SystemExit(f'{source_name} still derives calendar days from server uptime')
               if 'Math.floorMod(level.getGameTime(), 24000L)' in source:
