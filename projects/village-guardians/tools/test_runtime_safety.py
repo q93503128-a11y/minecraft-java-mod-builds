@@ -16,6 +16,7 @@ def main() -> None:
     raid = read("VillageRaidSystem.java")
     world = read("VillageWorldSystem.java")
     skill = read("VillageSkillTreeSystem.java")
+    skill_data = read("VillageSkillTreeData.java")
     trading = read("VillageTradingSystem.java")
     starter = read("VillageStarterKit.java")
     health = read("VillageHealthDisplaySystem.java")
@@ -29,10 +30,15 @@ def main() -> None:
     assert "VillageWorldSystem.unmarkAllowedGameMob(uuid)" in raid
     assert "VillageHealthDisplaySystem.forgetEnemy(uuid)" in raid
 
-    assert "return player.getTags().contains(TAG_PREFIX + node.id())" in skill
-    assert "boolean newlyAdded = player.addTag(tag)" not in skill
+    assert "UNLOCKED_MASKS" in skill
+    assert "VillageSkillTreeData.TYPE" in skill
+    assert "player.addTag" not in skill
+    assert "player.removeTag" not in skill
     assert "hasValidAllocation" in skill
     assert 'return "데이터 잠금"' in skill
+    assert "unlocked_masks" in skill_data
+    assert "sanitizeMask" in skill_data
+    assert "VillageSkillTreeSystem.initializeServer" in guardians
 
     assert "MAIN_INVENTORY_SLOTS = 36" in trading
     assert "Math.min(MAIN_INVENTORY_SLOTS" in trading
@@ -64,7 +70,7 @@ def main() -> None:
     assert "maxScroll" in skill_screen
 
     print("[PASS] Raid death processing has one event entry point and cleans entity state")
-    print("[PASS] Skill checks are side-effect free and corrupted allocations are locked")
+    print("[PASS] Skill nodes use SavedData without add/remove tag probing")
     print("[PASS] Loot selling cannot clear armor or offhand slots")
     print("[PASS] Caller and facility interactions require exact identities and positions")
     print("[PASS] Migration, return travel, health labels, and compact skill UI are guarded")
