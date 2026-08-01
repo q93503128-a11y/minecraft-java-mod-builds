@@ -49,7 +49,8 @@ public final class MagicPlayerData extends SavedData {
             String focus,
             String weave,
             List<MasteryEntry> fusionMastery,
-            List<CooldownEntry> cooldowns
+            List<CooldownEntry> cooldowns,
+            boolean starterStaffGranted
     ) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
@@ -62,7 +63,8 @@ public final class MagicPlayerData extends SavedData {
                 Codec.STRING.optionalFieldOf("focus", "").forGetter(PlayerEntry::focus),
                 Codec.STRING.optionalFieldOf("weave", "").forGetter(PlayerEntry::weave),
                 MasteryEntry.CODEC.listOf().optionalFieldOf("fusion_mastery", List.of()).forGetter(PlayerEntry::fusionMastery),
-                CooldownEntry.CODEC.listOf().optionalFieldOf("cooldowns", List.of()).forGetter(PlayerEntry::cooldowns)
+                CooldownEntry.CODEC.listOf().optionalFieldOf("cooldowns", List.of()).forGetter(PlayerEntry::cooldowns),
+                Codec.BOOL.optionalFieldOf("starter_staff_granted", false).forGetter(PlayerEntry::starterStaffGranted)
         ).apply(instance, PlayerEntry::new));
     }
 
@@ -98,6 +100,14 @@ public final class MagicPlayerData extends SavedData {
     public MageState state(ServerPlayer player) {
         ensureProfile(player);
         return players.get(player.getUUID().toString());
+    }
+
+    public boolean claimStarterStaff(ServerPlayer player) {
+        MageState state = state(player);
+        if (state.starterStaffGranted) return false;
+        state.starterStaffGranted = true;
+        setDirty();
+        return true;
     }
 
     public EffectiveStats effectiveStats(ServerPlayer player) {
@@ -307,6 +317,7 @@ public final class MagicPlayerData extends SavedData {
         private final List<String> slots;
         private final Map<String, Integer> mastery;
         private final Map<String, CooldownEntry> cooldowns;
+        private boolean starterStaffGranted;
 
         private MageState(PlayerEntry entry) {
             this.circle = Math.max(1, Math.min(3, entry.circle()));
@@ -337,13 +348,14 @@ public final class MagicPlayerData extends SavedData {
                     .filter(value -> SpellCatalog.spell(value.spellId()).isPresent())
                     .sorted(Comparator.comparing(CooldownEntry::spellId))
                     .forEach(value -> cooldowns.put(value.spellId(), value));
+            this.starterStaffGranted = entry.starterStaffGranted();
             this.mana = Math.max(0.0, Math.min(1024.0, entry.mana()));
         }
 
         private static MageState fresh() {
             return new MageState(new PlayerEntry("", 1, 100.0, 0,
                     SpellCatalog.starterKnownSpells(), SpellCatalog.starterSlots(), 0,
-                    "arcane_dart", "ember", List.of(), List.of()));
+                    "arcane_dart", "ember", List.of(), List.of(), false));
         }
 
         private static List<String> normalizedSlots(List<String> source, String oldFocus, String oldWeave) {
@@ -367,7 +379,7 @@ public final class MagicPlayerData extends SavedData {
                     .sorted(Comparator.comparing(CooldownEntry::spellId))
                     .toList();
             return new PlayerEntry(uuid, circle, mana, insight, List.copyOf(known), List.copyOf(slots),
-                    0, "", "", masteryEntries, cooldownEntries);
+                    0, "", "", masteryEntries, cooldownEntries, starterStaffGranted);
         }
 
         public int circle() { return circle; }
