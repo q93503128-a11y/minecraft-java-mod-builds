@@ -1,16 +1,28 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 public final class VillageSkillTreeSystem {
-    private static final String TAG_PREFIX = "villageguardians_skill_";
+    private static final Map<UUID, Integer> UNLOCKED_MASKS = new LinkedHashMap<>();
+    private static VillageSkillTreeData savedData;
 
     private VillageSkillTreeSystem() {
+    }
+
+    public static synchronized void initializeServer(MinecraftServer server) {
+        savedData = server.overworld().getDataStorage().computeIfAbsent(VillageSkillTreeData.TYPE);
+        UNLOCKED_MASKS.clear();
+        UNLOCKED_MASKS.putAll(savedData.masks());
+        persist();
     }
 
     public static int earnedPoints(ServerPlayer player) {
@@ -36,11 +48,12 @@ public final class VillageSkillTreeSystem {
         return Math.max(0, earnedPoints(player) - spentPoints(player));
     }
 
-    public static boolean has(ServerPlayer player, Node node) {
-        return player.getTags().contains(TAG_PREFIX + node.id());
+    public static synchronized boolean has(ServerPlayer player, Node node) {
+        int mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0);
+        return (mask & bit(node)) != 0;
     }
 
-    public static String purchase(ServerPlayer player, String nodeId) {
+    public static synchronized String purchase(ServerPlayer player, String nodeId) {
         if (!hasValidAllocation(player)) {
             return "스킬 사용량이 획득 포인트보다 많아 안전 잠금되었습니다. 관리자에게 데이터 복구를 요청하세요.";
         }
@@ -57,7 +70,9 @@ public final class VillageSkillTreeSystem {
         if (availablePoints(player) <= 0) {
             return "사용 가능한 스킬 포인트가 없습니다. 3레벨마다 1포인트를 얻습니다.";
         }
-        player.addTag(TAG_PREFIX + node.id());
+        int mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0);
+        UNLOCKED_MASKS.put(player.getUUID(), mask | bit(node));
+        persist();
         return node.title() + " 습득 완료 | 남은 포인트 " + availablePoints(player);
     }
 
@@ -102,6 +117,16 @@ public final class VillageSkillTreeSystem {
 
     public static List<Node> nodes() {
         return List.of(Node.values());
+    }
+
+    private static int bit(Node node) {
+        return 1 << node.ordinal();
+    }
+
+    private static void persist() {
+        if (savedData != null) {
+            savedData.replace(UNLOCKED_MASKS);
+        }
     }
 
     public enum Branch {
