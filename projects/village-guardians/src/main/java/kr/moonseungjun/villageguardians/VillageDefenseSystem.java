@@ -45,7 +45,7 @@ public final class VillageDefenseSystem {
         if (!(player.level() instanceof ServerLevel level)) {
             return "현재 월드에서는 용병을 고용할 수 없습니다.";
         }
-        int cap = mercenaryCapacity();
+        int cap = mercenaryCapacity(level.getServer());
         int current = countMercenaries(level);
         if (current >= cap) {
             return "용병 정원이 가득 찼습니다. 현재 " + current + " / " + cap;
@@ -66,6 +66,10 @@ public final class VillageDefenseSystem {
         golem.setCustomNameVisible(true);
         golem.setPlayerCreated(true);
         golem.setPersistenceRequired();
+        if (VillageCouncilState.roleOf(player.getUUID()).orElse(null) == VillageRole.ENGINEER) {
+            golem.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, -1, 0));
+            golem.addEffect(new MobEffectInstance(MobEffects.STRENGTH, -1, 0));
+        }
         VillageWorldSystem.markAllowedGameMob(golem);
         if (!level.addFreshEntity(golem)) {
             VillageWorldSystem.unmarkAllowedGameMob(golem.getUUID());
@@ -79,10 +83,11 @@ public final class VillageDefenseSystem {
 
     public static String status(ServerLevel level) {
         int wallLevel = VillageProgressionSystem.wallLevel();
+        boolean engineer = hasActiveEngineer(level.getServer());
         String tower = wallLevel <= 0
                 ? "방어탑 비활성"
-                : "방어탑 Lv." + wallLevel + " · 자동 사격";
-        return tower + " | 용병 " + countMercenaries(level) + " / " + mercenaryCapacity();
+                : "방어탑 Lv." + wallLevel + " · 자동 사격" + (engineer ? " · 공병 지휘" : "");
+        return tower + " | 용병 " + countMercenaries(level) + " / " + mercenaryCapacity(level.getServer());
     }
 
     public static void tick(MinecraftServer server) {
@@ -93,7 +98,8 @@ public final class VillageDefenseSystem {
             return;
         }
         int wallLevel = VillageProgressionSystem.wallLevel();
-        int interval = Math.max(18, 48 - wallLevel * 6);
+        boolean engineer = hasActiveEngineer(server);
+        int interval = Math.max(14, 48 - wallLevel * 6 - (engineer ? 7 : 0));
         towerTicks++;
         if (towerTicks < interval) {
             return;
@@ -117,9 +123,9 @@ public final class VillageDefenseSystem {
             if (target == null) {
                 continue;
             }
-            float damage = 3.0f + wallLevel * 1.6f;
+            float damage = (3.0f + wallLevel * 1.6f) * (engineer ? 1.32f : 1.0f);
             target.hurtServer(level, level.damageSources().magic(), damage);
-            if (wallLevel >= 3) {
+            if (wallLevel >= 3 || engineer) {
                 target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 50 + wallLevel * 10));
             }
             if (wallLevel >= 4) {
@@ -132,8 +138,22 @@ public final class VillageDefenseSystem {
         }
     }
 
-    private static int mercenaryCapacity() {
-        return 1 + Math.max(0, VillageProgressionSystem.barracksLevel()) / 2;
+    private static boolean hasActiveEngineer(MinecraftServer server) {
+        if (server == null) {
+            return false;
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (VillageCouncilState.isInsideVillage(player)
+                    && VillageCouncilState.roleOf(player.getUUID()).orElse(null) == VillageRole.ENGINEER) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int mercenaryCapacity(MinecraftServer server) {
+        return 1 + Math.max(0, VillageProgressionSystem.barracksLevel()) / 2
+                + (hasActiveEngineer(server) ? 1 : 0);
     }
 
     private static int countMercenaries(ServerLevel level) {
