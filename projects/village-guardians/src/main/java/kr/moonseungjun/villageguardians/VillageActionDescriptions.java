@@ -6,7 +6,10 @@ final class VillageActionDescriptions {
     static String describe(String action, String label) {
         if (action == null) return "항목을 선택하면 효과와 비용이 표시됩니다.";
         if (action.startsWith("manage:")) {
-            return label + "\n회관에서 공동 보급품을 사용해 내구도와 시설 등급을 관리합니다.";
+            return label + "\n현재 시설 단말기 또는 회관에서 공동 보급품을 사용해 내구도와 시설 등급을 관리합니다.";
+        }
+        if (action.startsWith("open_building:")) {
+            return label + "\n현재 시설의 훈련·치료·구매 등 고유 기능 화면으로 돌아갑니다.";
         }
         if (action.startsWith("building:")) {
             return label + "\n해당 시설의 현장 기능을 이용합니다.";
@@ -38,15 +41,21 @@ final class VillageActionDescriptions {
         if (action.startsWith("funding:")) {
             return label + "\n개인 수호 주화를 공동 보급품으로 전환해 시설 수리와 강화에 사용합니다.";
         }
+        if (action.startsWith("tower_branch:")) {
+            return label + "\n방어탑의 전투 방식과 외형을 선택한 전문 분기로 교체합니다.";
+        }
+        if (action.startsWith("tower_upgrade:")) {
+            return label + "\n현재 방어탑 전문 분기의 위력·범위·특수 효과를 한 단계 강화합니다.";
+        }
         return switch (action) {
-            case "open_status" -> "레벨·직업·재화·현재 장착 기술을 확인합니다.";
+            case "open_status" -> "레벨·직업·재화·현재 장착 기술만 확인하는 상태 화면을 엽니다.";
             case "open_caller_menu", "open_manual" -> "호출기의 상태·통신·귀환 메뉴로 돌아갑니다.";
             case "open_skill_tree" -> "기술 연구소의 공용 전술 발전 화면을 엽니다.";
             case "open_role_progress_current" -> "현재 직업의 세 갈래 성장과 두 기술 슬롯을 관리합니다.";
             case "open_quick_chat" -> "접속 중인 수호단에게 보낼 빠른 신호를 엽니다.";
             case "open_dashboard", "open_mayor" -> "마을 회관의 직업 배치와 시설 관리 화면을 엽니다.";
-            case "open_tower_control" -> "마을 회관에서 성벽 수리·강화와 네 종류의 방어탑 해금 상태를 관리합니다.";
-            case "open_funding" -> "개인 수호 주화로 공동 보급품을 조달합니다.";
+            case "open_tower_control" -> "마을 회관에서 성벽과 네 종류 방어탑을 관리합니다.";
+            case "open_funding" -> "마을 회관에서 개인 수호 주화로 공동 보급품을 조달합니다.";
             case "return_village" -> "전투 중이 아닐 때 마을 중앙 광장으로 귀환합니다.";
             case "claim_bread" -> "오늘의 무료 식량을 받습니다.";
             case "buy_arrows" -> label + "\n수호 주화로 화살 묶음을 구매합니다.";
@@ -58,7 +67,7 @@ final class VillageActionDescriptions {
             case "train" -> label + "\n병영 훈련으로 경험치를 획득합니다.";
             case "hire_mercenary" -> label + "\n수호 주화로 영구 용병을 고용합니다. 사망 전까지 저장과 재접속 후에도 유지됩니다.";
             case "tower_status" -> "활성화된 방어탑 종류와 현재 용병 수·정원을 확인합니다.";
-            case "wall_status_local" -> "현재 성벽 내구도를 확인합니다. 포탑 지휘와 수리·강화는 회관에서 진행합니다.";
+            case "wall_status_local" -> "현재 성벽 내구도를 확인합니다. 같은 단말기의 시설 수리·강화 기능으로 관리할 수 있습니다.";
             case "use_infirmary" -> "의무소 단계에 따라 즉시 체력을 회복합니다.";
             case "chat_ready" -> "모든 접속 플레이어에게 준비 완료 신호를 보냅니다.";
             case "chat_gate" -> "모든 접속 플레이어에게 북문 집결 신호를 보냅니다.";
@@ -78,6 +87,8 @@ final class VillageActionDescriptions {
         if (action == null) return false;
         return action.startsWith("repair:")
                 || action.startsWith("upgrade:")
+                || action.startsWith("tower_branch:")
+                || action.startsWith("tower_upgrade:")
                 || action.startsWith("select_role:")
                 || action.startsWith("skill_node:")
                 || action.startsWith("role_node:")
@@ -103,9 +114,11 @@ final class VillageActionDescriptions {
         if (action.startsWith("role_skill_equip:")) return "기술 장착";
         if (action.startsWith("repair:")) return "시설 수리";
         if (action.startsWith("upgrade:")) return "시설 강화";
+        if (action.startsWith("tower_branch:")) return "분기 적용";
+        if (action.startsWith("tower_upgrade:")) return "분기 강화";
         if (action.startsWith("funding:")) return "보급 조달";
         if (action.startsWith("gear:")) return "장비 구매";
-        if (action.startsWith("manage:")) return "관리";
+        if (action.startsWith("manage:")) return "수리·강화";
         if (action.startsWith("building:")) return "이용";
         if (action.startsWith("open_")) return "열기";
         if (action.startsWith("buy_")) return "구매";
