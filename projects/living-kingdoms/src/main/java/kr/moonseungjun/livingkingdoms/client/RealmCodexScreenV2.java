@@ -258,10 +258,10 @@ public final class RealmCodexScreenV2 extends Screen {
 
         int footerY = content.bottom() - 56;
         ExternalRpgUi.divider(graphics, content.x() + 14, footerY, content.w() - 28);
-        graphics.fakeItem(new net.minecraft.world.item.ItemStack(Items.RED_BANNER), content.x() + 18, footerY + 9);
+        graphics.fakeItem(new net.minecraft.world.item.ItemStack(Items.COMPASS), content.x() + 18, footerY + 9);
         graphics.text(font, Component.literal("현재  " + shortText(value("region") + " · " + value("position"), 45)),
                 content.x() + 41, footerY + 11, 0xFF3F3026, false);
-        graphics.fakeItem(new net.minecraft.world.item.ItemStack(Items.BLUE_BED), content.x() + 18, footerY + 29);
+        graphics.fakeItem(new net.minecraft.world.item.ItemStack(Items.CHEST), content.x() + 18, footerY + 29);
         graphics.text(font, Component.literal("거주지  " + value("home_x") + ", " + value("home_z")),
                 content.x() + 41, footerY + 31, 0xFF3F3026, false);
     }
