@@ -83,7 +83,6 @@ public final class FantasyWorldRules {
         // instead of a bar that forces the player to eat a stack of bread every few minutes.
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(20.0F);
-        player.getFoodData().setExhaustion(0.0F);
 
         // The personal 2x2 grid is server-authoritatively disabled. Materials remain in the input
         // slots, so an accidental attempt does not consume them.
@@ -145,9 +144,8 @@ public final class FantasyWorldRules {
         );
         player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 20 * 45, 1, false, false, true));
         player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 20 * 20, 0, false, false, true));
-        player.displayClientMessage(
-                Component.literal("전투불능 상태에서 구조되었습니다. 소지품은 보존되며 회복에는 시간이 필요합니다."),
-                false
+        player.sendSystemMessage(
+                Component.literal("전투불능 상태에서 구조되었습니다. 소지품은 보존되며 회복에는 시간이 필요합니다.")
         );
         return true;
     }
@@ -162,6 +160,6 @@ public final class FantasyWorldRules {
         long previous = LAST_RULE_MESSAGE.getOrDefault(player.getUUID(), Long.MIN_VALUE / 2L);
         if (now - previous < MESSAGE_COOLDOWN) return;
         LAST_RULE_MESSAGE.put(player.getUUID(), now);
-        player.displayClientMessage(Component.literal(message), true);
+        player.sendSystemMessage(Component.literal(message));
     }
 }
