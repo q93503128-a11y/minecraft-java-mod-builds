@@ -113,7 +113,7 @@ public final class FantasyHudClient {
         int y = Math.max(6, hotbarY - panelHeight - 2);
         ExternalRpgUi.hudPanel(graphics, x, y, panelWidth, panelHeight);
 
-        long dayTime = minecraft.level.getLevelData().getDayTime();
+        long dayTime = minecraft.level.getGameTime();
         long day = Math.floorDiv(dayTime, 24_000L);
         long seasonDay = Math.floorMod(day, 112L);
         String season = switch ((int) (seasonDay / 28L)) {
