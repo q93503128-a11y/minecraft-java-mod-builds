@@ -5,6 +5,7 @@ import kr.countrysidedays.gameplay.KitchenInteractionHandler;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.gameplay.RuralNpcManager;
 import kr.countrysidedays.gametest.ModGameTests;
+import kr.countrysidedays.network.EstateHudPayload;
 import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.registry.ModCreativeTabs;
 import kr.countrysidedays.registry.ModFeatures;
@@ -15,6 +16,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.slf4j.Logger;
 
 @Mod(CountrysideDays.MOD_ID)
@@ -28,6 +30,7 @@ public final class CountrysideDays {
         ModFeatures.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModGameTests.register(modEventBus);
+        modEventBus.addListener(this::registerPayloads);
         modEventBus.addListener(this::commonSetup);
 
         NeoForge.EVENT_BUS.addListener(CountrysidePropertyManager::onUseBlock);
@@ -43,7 +46,11 @@ public final class CountrysideDays {
         NeoForge.EVENT_BUS.addListener(CountrysideWorldgenAudit::onServerStarted);
     }
 
+    private void registerPayloads(RegisterPayloadHandlersEvent event) {
+        event.registrar("1").playToClient(EstateHudPayload.TYPE, EstateHudPayload.STREAM_CODEC);
+    }
+
     private void commonSetup(FMLCommonSetupEvent event) {
-        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.6");
+        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.7");
     }
 }
