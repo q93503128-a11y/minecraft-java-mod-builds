@@ -240,15 +240,15 @@ public final class VillageLifeManager {
 
             if (crop.is(Blocks.WHEAT)) {
                 storeOrDrop(level, storage, PlayerEstateLayout.farmStorageBarrel(origin),
-                        new ItemStack(Items.WHEAT, 1 + level.random.nextInt(3)));
+                        new ItemStack(Items.WHEAT, 1 + level.getRandom().nextInt(3)));
                 storeOrDrop(level, storage, PlayerEstateLayout.farmStorageBarrel(origin),
-                        new ItemStack(Items.WHEAT_SEEDS, 1 + level.random.nextInt(2)));
+                        new ItemStack(Items.WHEAT_SEEDS, 1 + level.getRandom().nextInt(2)));
             } else if (crop.is(Blocks.CARROTS)) {
                 storeOrDrop(level, storage, PlayerEstateLayout.farmStorageBarrel(origin),
-                        new ItemStack(Items.CARROT, 2 + level.random.nextInt(3)));
+                        new ItemStack(Items.CARROT, 2 + level.getRandom().nextInt(3)));
             } else if (crop.is(Blocks.POTATOES)) {
                 storeOrDrop(level, storage, PlayerEstateLayout.farmStorageBarrel(origin),
-                        new ItemStack(Items.POTATO, 2 + level.random.nextInt(3)));
+                        new ItemStack(Items.POTATO, 2 + level.getRandom().nextInt(3)));
             } else {
                 continue;
             }
@@ -320,7 +320,9 @@ public final class VillageLifeManager {
             ItemStack existing = container.getItem(slot);
             if (existing.isEmpty()) {
                 int moved = Math.min(incoming.getCount(), incoming.getMaxStackSize());
-                container.setItem(slot, incoming.copyWithCount(moved));
+                ItemStack placed = incoming.copy();
+                placed.setCount(moved);
+                container.setItem(slot, placed);
                 incoming.shrink(moved);
                 continue;
             }
