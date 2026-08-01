@@ -7,11 +7,17 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** Surveys generated noise terrain and stores anchors without writing an entire kingdom in one tick. */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 4;
+    public static final int LAYOUT_REVISION = 5;
+    private static final int[][] OUTER_SAMPLES = {
+            {192, 0}, {-192, 0}, {0, 192}, {0, -192},
+            {160, 160}, {-160, 160}, {160, -160}, {-160, -160}
+    };
 
     private RealmSitePlanner() {
     }
@@ -20,7 +26,7 @@ public final class RealmSitePlanner {
     public static synchronized RealmSiteLayoutSavedData.RealmSite ensureSite(ServerLevel level, String homelandId) {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
         RealmSiteLayoutSavedData.RealmSite current = data.site(homelandId).orElse(null);
-        if (current != null) return current;
+        if (current != null && current.revision() >= LAYOUT_REVISION) return current;
 
         RealmSiteLayoutSavedData.RealmSite surveyed = survey(level, homelandId);
         data.put(homelandId, surveyed);
@@ -62,7 +68,7 @@ public final class RealmSitePlanner {
             int[] nominal = nominalCenter(homelandId);
             centerX = nominal[0];
             centerZ = nominal[1];
-            baseY = 65;
+            baseY = 68;
             built = false;
         } else {
             centerX = site.centerX();
@@ -79,7 +85,7 @@ public final class RealmSitePlanner {
         } else if (built) {
             y = surfaceY(level, x, z) + 1;
         } else {
-            y = Math.max(65, baseY + 1);
+            y = Math.max(68, baseY + 1);
         }
         return new BlockPos(x, y, z);
     }
@@ -91,22 +97,62 @@ public final class RealmSitePlanner {
 
     private static RealmSiteLayoutSavedData.RealmSite survey(ServerLevel level, String homelandId) {
         int[] nominal = nominalCenter(homelandId);
-        List<Candidate> candidates = new ArrayList<>();
+        List<Candidate> local = new ArrayList<>();
         for (int dx = -128; dx <= 128; dx += 64) {
             for (int dz = -128; dz <= 128; dz += 64) {
-                candidates.add(sample(level, homelandId, nominal[0] + dx, nominal[1] + dz));
+                local.add(sample(level, homelandId, nominal[0] + dx, nominal[1] + dz));
             }
         }
-        Candidate selected = candidates.stream().min(Comparator.comparingDouble(Candidate::score))
-                .orElseThrow(() -> new IllegalStateException("No terrain candidate for " + homelandId));
+
+        Candidate selected = local.stream()
+                .filter(candidate -> acceptable(homelandId, candidate))
+                .min(Comparator.comparingDouble(Candidate::score))
+                .orElse(null);
+
+        if (selected == null) {
+            LivingKingdoms.LOGGER.warn(
+                    "No safe connected-land candidate near nominal center for {}; expanding terrain survey",
+                    homelandId
+            );
+            List<Candidate> expanded = new ArrayList<>(local);
+            for (int radius : new int[]{320, 640}) {
+                for (int[] direction : new int[][]{
+                        {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+                        {1, 1}, {-1, 1}, {1, -1}, {-1, -1}
+                }) {
+                    expanded.add(sample(
+                            level,
+                            homelandId,
+                            nominal[0] + direction[0] * radius,
+                            nominal[1] + direction[1] * radius
+                    ));
+                }
+            }
+            selected = expanded.stream()
+                    .filter(candidate -> acceptable(homelandId, candidate))
+                    .min(Comparator.comparingDouble(Candidate::score))
+                    .orElseGet(() -> expanded.stream().min(Comparator.comparingDouble(Candidate::score))
+                            .orElseThrow(() -> new IllegalStateException("No terrain candidate for " + homelandId)));
+        }
+
         LivingKingdoms.LOGGER.info(
-                "Terrain survey {} selected {},{} range={} water={}/25 average={} score={}",
+                "Terrain survey {} selected {},{} range={} water={}/25 average={} outer_water={}/8 outer_heights={} score={}",
                 homelandId, selected.x(), selected.z(), selected.maxY() - selected.minY(),
-                selected.waterSamples(), selected.averageY(), selected.score()
+                selected.waterSamples(), selected.averageY(), selected.outerWaterSamples(),
+                selected.outerHeightKinds(), selected.score()
         );
         return new RealmSiteLayoutSavedData.RealmSite(
                 selected.x(), selected.z(), selected.averageY(), LAYOUT_REVISION, false
         );
+    }
+
+    private static boolean acceptable(String homelandId, Candidate candidate) {
+        int minimumAverage = "kardum_league".equals(homelandId) ? 72 : 68;
+        int maximumWater = "silvana_forest".equals(homelandId) ? 4 : 3;
+        return candidate.averageY() >= minimumAverage
+                && candidate.waterSamples() <= maximumWater
+                && candidate.outerWaterSamples() <= 2
+                && candidate.outerHeightKinds() >= 2;
     }
 
     private static Candidate sample(ServerLevel level, String homelandId, int x, int z) {
@@ -127,25 +173,43 @@ public final class RealmSitePlanner {
                 if (!level.getFluidState(new BlockPos(sx, y, sz)).isEmpty()) water++;
             }
         }
+
+        Set<Integer> outerHeights = new HashSet<>();
+        int outerWater = 0;
+        for (int[] offset : OUTER_SAMPLES) {
+            int sx = x + offset[0];
+            int sz = z + offset[1];
+            int y = surfaceY(level, sx, sz);
+            outerHeights.add(y);
+            if (!level.getFluidState(new BlockPos(sx, y, sz)).isEmpty()) outerWater++;
+        }
+
         int average = Math.round(sum / (float) Math.max(1, samples));
         int range = max - min;
-        double submergedPenalty = water > 8 ? 20_000.0 + water * 500.0 : water * 40.0;
-        double lowPenalty = average < 64 ? 20_000.0 + (64 - average) * 500.0 : 0.0;
+        double submergedPenalty = water > 4 ? 25_000.0 + water * 800.0 : water * 140.0;
+        double lowPenalty = average < 68 ? 25_000.0 + (68 - average) * 1_000.0 : 0.0;
+        double outerWaterPenalty = outerWater > 2
+                ? 30_000.0 + outerWater * 1_500.0
+                : outerWater * 500.0;
+        double outerFlatPenalty = outerHeights.size() < 2 ? 20_000.0 : outerHeights.size() < 3 ? 1_500.0 : 0.0;
         double score;
         if ("kardum_league".equals(homelandId)) {
-            score = Math.abs(range - 18) * 3.0 + Math.max(0, 78 - average) * 4.0
-                    + submergedPenalty + lowPenalty;
+            score = Math.abs(range - 18) * 3.0 + Math.max(0, 78 - average) * 8.0
+                    + submergedPenalty + lowPenalty + outerWaterPenalty + outerFlatPenalty;
         } else if ("silvana_forest".equals(homelandId)) {
-            score = Math.max(0, range - 16) * 6.0 + Math.abs(range - 8) * 1.5
-                    + submergedPenalty + lowPenalty;
+            score = Math.max(0, range - 18) * 5.0 + Math.abs(range - 9) * 1.5
+                    + submergedPenalty + lowPenalty + outerWaterPenalty + outerFlatPenalty;
         } else {
-            score = range * 8.0 + Math.abs(water - 1) * 12.0
-                    + Math.max(0, average - 105) * 1.5 + submergedPenalty + lowPenalty;
+            score = Math.max(0, range - 24) * 10.0 + Math.abs(range - 10) * 2.0
+                    + Math.max(0, average - 108) * 1.5
+                    + submergedPenalty + lowPenalty + outerWaterPenalty + outerFlatPenalty;
         }
-        return new Candidate(x, z, min, max, average, water, score);
+        return new Candidate(
+                x, z, min, max, average, water, outerWater, outerHeights.size(), score
+        );
     }
 
-    private static int[] nominalCenter(String homelandId) {
+    public static int[] nominalCenter(String homelandId) {
         return switch (homelandId) {
             case "silvana_forest" -> new int[]{1500, 250};
             case "kardum_league" -> new int[]{-1500, 250};
@@ -167,7 +231,16 @@ public final class RealmSitePlanner {
         };
     }
 
-    private record Candidate(int x, int z, int minY, int maxY, int averageY,
-                             int waterSamples, double score) {
+    private record Candidate(
+            int x,
+            int z,
+            int minY,
+            int maxY,
+            int averageY,
+            int waterSamples,
+            int outerWaterSamples,
+            int outerHeightKinds,
+            double score
+    ) {
     }
 }
