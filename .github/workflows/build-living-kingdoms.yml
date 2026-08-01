@@ -14,7 +14,7 @@ permissions:
 env:
   PROJECT_DIR: projects/living-kingdoms
   GRADLE_VERSION: '9.2.1'
-  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.1.jar
+  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.2.jar
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
   LIVING_KINGDOMS_CI_CLIENT_TEST: '1'
 
@@ -182,7 +182,7 @@ jobs:
           # Living Kingdoms Build and Runtime Report
 
           - Commit: $GITHUB_SHA
-          - Mod version: 0.1.0-alpha.1
+          - Mod version: 0.1.0-alpha.2
           - Minecraft: 26.2
           - NeoForge: 26.2.0.38-beta
           - Java: 25
@@ -225,7 +225,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: living-kingdoms-0.1.0-alpha.1
+          name: living-kingdoms-0.1.0-alpha.2
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
