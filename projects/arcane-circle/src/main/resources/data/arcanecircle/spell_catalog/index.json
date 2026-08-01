@@ -1,9 +1,14 @@
 {
+  "version": "0.5.0-alpha.1",
   "worldview": "ninefold_arcana",
   "implemented_circles": [1, 2, 3],
   "future_max_circle": 9,
   "spell_slots": 5,
+  "cooldown_storage": "persistent_world_saved_data",
+  "friendly_fire_policy": "exclude_allies_and_owned_tames",
   "fusion_mode": "hold_x_queue_then_release",
+  "fusion_preview": "progressive_multiset_candidates",
+  "fusion_queue_timeout_ticks": 200,
   "fusion_ingredient_limits": [2, 3],
   "fusion_mastery": {
     "2_circle_pair_casts": 4,
@@ -25,5 +30,8 @@
   "staffs": [
     "novice_staff", "ember_staff", "glacial_staff", "zephyr_staff",
     "aegis_staff", "verdant_staff", "rift_staff", "sage_staff", "archmage_staff"
-  ]
+  ],
+  "staff_survival_recipes": 8,
+  "staff_custom_textures": 9,
+  "grimoire_tabs": ["atlas", "recipes", "staffs", "core"]
 }
