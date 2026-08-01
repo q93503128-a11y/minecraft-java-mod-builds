@@ -32,6 +32,13 @@ public final class RealmLoadingScreen extends Screen {
         if (failed) complete = false;
     }
 
+    boolean allRequiredControlsFit() {
+        Layout layout = layout();
+        return layout.left() >= 0 && layout.top() >= 0
+                && layout.left() + layout.width() <= width
+                && layout.top() + layout.height() <= height;
+    }
+
     @Override
     public void tick() {
         if (complete && ++completeTicks >= 12) Minecraft.getInstance().gui.setScreen(null);
@@ -55,10 +62,11 @@ public final class RealmLoadingScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         ExternalRpgUi.dimWorld(graphics, width, height);
-        int panelWidth = Math.min(520, Math.max(290, width - 32));
-        int panelHeight = Math.min(230, Math.max(178, height - 28));
-        int left = (width - panelWidth) / 2;
-        int top = (height - panelHeight) / 2;
+        Layout layout = layout();
+        int left = layout.left();
+        int top = layout.top();
+        int panelWidth = layout.width();
+        int panelHeight = layout.height();
         ExternalRpgUi.window(graphics, left, top, panelWidth, panelHeight);
 
         Item emblem = switch (homelandId) {
@@ -91,6 +99,13 @@ public final class RealmLoadingScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
+    private Layout layout() {
+        int panelWidth = Math.min(520, Math.max(290, width - 32));
+        int panelHeight = Math.min(230, Math.max(178, height - 28));
+        return new Layout((width - panelWidth) / 2, (height - panelHeight) / 2,
+                panelWidth, panelHeight);
+    }
+
     private String phaseLabel() {
         return switch (phase) {
             case "survey" -> "입지 조사 · 물과 절벽을 피해 수도 후보를 검토 중";
@@ -110,5 +125,8 @@ public final class RealmLoadingScreen extends Screen {
             case "erden_kingdom" -> "에르덴 왕국 · 로엔 변경백령";
             default -> "살아있는 왕국";
         };
+    }
+
+    private record Layout(int left, int top, int width, int height) {
     }
 }
