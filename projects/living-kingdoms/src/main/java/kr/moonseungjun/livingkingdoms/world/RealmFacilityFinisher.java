@@ -29,7 +29,10 @@ public final class RealmFacilityFinisher {
         if (realm == null) return;
         RealmSiteLayoutSavedData.RealmSite erden = RealmSitePlanner.site(realm, "erden_kingdom");
         if (erden == null || !erden.built()) return;
+
+        ErdenCapitalIntegrityFinalizer.ensure(realm, "erden_kingdom", erden);
         ensureCriticalFacilities(realm, erden);
+        ConstructionDebrisCleaner.schedule(realm, "erden_kingdom", erden);
         synchronized (FINISHED_SERVERS) {
             FINISHED_SERVERS.add(server);
         }
@@ -58,7 +61,6 @@ public final class RealmFacilityFinisher {
         restoreDock(realm, cx, y, cz);
         restoreResidencePier(realm, cx, y, cz);
 
-        // The administration lantern previously lacked support and could pop during neighbour updates.
         BlockPos lantern = new BlockPos(cx + 32, y + 3, cz - 67);
         set(realm, lantern.below(2), Blocks.SPRUCE_FENCE);
         set(realm, lantern.below(), Blocks.SPRUCE_FENCE);
