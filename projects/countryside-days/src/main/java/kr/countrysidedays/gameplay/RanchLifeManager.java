@@ -7,7 +7,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.Animal;
@@ -33,16 +32,19 @@ public final class RanchLifeManager {
     private static final String BRED_DAY_PREFIX = "cd_bredday_";
     private static final int MAX_HUNGER = 100;
     private static final int DAILY_HUNGER_LOSS = 18;
-    private static final int FEED_RECOVERY = 55;
+    private static final int FEED_THRESHOLD = 55;
     private static final int MAX_ANIMALS_PER_SPECIES = 8;
 
     private RanchLifeManager() {
     }
 
     public static void initializeAnimal(Animal animal, CountrysideWorldData.PlayerEstate estate) {
+        int currentDay = animal.level() instanceof ServerLevel level
+                ? gameDay(level)
+                : 0;
         animal.addTag(OWNER_PREFIX + estate.ownerUuid());
         setIntTag(animal, HUNGER_PREFIX, MAX_HUNGER);
-        setIntTag(animal, LAST_DAY_PREFIX, 0);
+        setIntTag(animal, LAST_DAY_PREFIX, currentDay);
         setIntTag(animal, ATE_DAY_PREFIX, -1);
         setIntTag(animal, DRANK_DAY_PREFIX, -1);
         setIntTag(animal, BRED_DAY_PREFIX, -1);
@@ -68,9 +70,8 @@ public final class RanchLifeManager {
         Optional<String> owner = ownerUuid(animal);
         if (owner.isEmpty()) return;
 
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
         if (!owner.get().equals(player.getUUID().toString())) {
+            event.setCanceled(true);
             player.sendOverlayMessage(Component.translatable("message.countrysidedays.livestock_not_owner"));
             return;
         }
@@ -86,6 +87,7 @@ public final class RanchLifeManager {
                 hay ? "충분" : "없음",
                 water ? "충분" : "없음"
         ));
+        // Owner interaction remains uncancelled so milking, shearing and leads still work.
     }
 
     public static void onAnimalDamage(LivingIncomingDamageEvent event) {
@@ -109,59 +111,80 @@ public final class RanchLifeManager {
         );
         if (animals.isEmpty()) return;
 
-        int currentDay = (int) Math.max(0L, level.getDayTime() / 24000L);
+        int currentDay = gameDay(level);
         for (Animal animal : animals) {
-            tickAnimal(level, estate, animal, currentDay);
+            applyDailyHunger(animal, currentDay);
+        }
+        handleSharedMeal(level, estate, animals, currentDay);
+        for (Animal animal : animals) {
+            int hunger = getIntTag(animal, HUNGER_PREFIX, MAX_HUNGER);
+            if (hunger <= 0) {
+                animal.setCustomName(Component.literal(
+                        estate.ownerName() + "의 " + speciesName(animal) + " [굶주림]"
+                ));
+                animal.kill(level);
+                continue;
+            }
+            updateName(
+                    animal,
+                    estate.ownerName(),
+                    hunger,
+                    hasHay(level, origin),
+                    hasWater(level, origin)
+            );
         }
         breedFedAnimals(level, estate, animals, currentDay);
     }
 
-    private static void tickAnimal(
-            ServerLevel level,
-            CountrysideWorldData.PlayerEstate estate,
-            Animal animal,
-            int currentDay
-    ) {
+    private static void applyDailyHunger(Animal animal, int currentDay) {
         int hunger = getIntTag(animal, HUNGER_PREFIX, MAX_HUNGER);
         int lastDay = getIntTag(animal, LAST_DAY_PREFIX, currentDay);
-        if (currentDay > lastDay) {
-            int elapsed = Math.min(10, currentDay - lastDay);
-            hunger = Math.max(0, hunger - elapsed * DAILY_HUNGER_LOSS);
-            setIntTag(animal, HUNGER_PREFIX, hunger);
-            setIntTag(animal, LAST_DAY_PREFIX, currentDay);
-        }
+        if (currentDay <= lastDay) return;
+        int elapsed = Math.min(10, currentDay - lastDay);
+        setIntTag(animal, HUNGER_PREFIX, Math.max(0, hunger - elapsed * DAILY_HUNGER_LOSS));
+        setIntTag(animal, LAST_DAY_PREFIX, currentDay);
+    }
 
-        boolean hayAvailable = hasHay(level, estate.originPos());
-        boolean waterAvailable = hasWater(level, estate.originPos());
-        if (hunger <= 82) {
-            int ateDay = getIntTag(animal, ATE_DAY_PREFIX, -1);
-            int drankDay = getIntTag(animal, DRANK_DAY_PREFIX, -1);
-            if (ateDay < currentDay) {
-                moveTo(animal, PlayerEstateLayout.hayFeeder(estate.originPos()), 0.55);
-                if (hayAvailable && near(animal, PlayerEstateLayout.hayFeeder(estate.originPos()), 3.2)) {
-                    consumeOneHay(level, estate.originPos());
-                    setIntTag(animal, ATE_DAY_PREFIX, currentDay);
-                    ateDay = currentDay;
-                }
-            } else if (drankDay < currentDay) {
-                moveTo(animal, PlayerEstateLayout.waterTrough(estate.originPos()), 0.55);
-                if (waterAvailable && near(animal, PlayerEstateLayout.waterTrough(estate.originPos()), 3.0)) {
-                    setIntTag(animal, DRANK_DAY_PREFIX, currentDay);
-                    drankDay = currentDay;
-                }
-            }
-            if (ateDay == currentDay && drankDay == currentDay) {
-                hunger = Math.min(MAX_HUNGER, hunger + FEED_RECOVERY);
-                setIntTag(animal, HUNGER_PREFIX, hunger);
+    private static void handleSharedMeal(
+            ServerLevel level,
+            CountrysideWorldData.PlayerEstate estate,
+            List<Animal> animals,
+            int currentDay
+    ) {
+        List<Animal> hungry = animals.stream()
+                .filter(Animal::isAlive)
+                .filter(animal -> getIntTag(animal, HUNGER_PREFIX, MAX_HUNGER) <= FEED_THRESHOLD)
+                .toList();
+        if (hungry.isEmpty()) return;
+
+        BlockPos feeder = PlayerEstateLayout.hayFeeder(estate.originPos());
+        boolean groupAte = hungry.stream().allMatch(animal -> getIntTag(animal, ATE_DAY_PREFIX, -1) == currentDay);
+        if (!groupAte) {
+            hungry.forEach(animal -> moveTo(animal, feeder, 0.55));
+            boolean reachedFood = hungry.stream().anyMatch(animal -> near(animal, feeder, 3.2));
+            if (reachedFood && hasHay(level, estate.originPos())) {
+                consumeOneHay(level, estate.originPos());
+                hungry.forEach(animal -> setIntTag(animal, ATE_DAY_PREFIX, currentDay));
+                groupAte = true;
             }
         }
 
-        if (hunger <= 0) {
-            animal.setCustomName(Component.literal(estate.ownerName() + "의 " + speciesName(animal) + " [굶주림]"));
-            animal.setHealth(0.0F);
-            return;
+        if (!groupAte) return;
+        BlockPos trough = PlayerEstateLayout.waterTrough(estate.originPos());
+        boolean groupDrank = hungry.stream().allMatch(animal -> getIntTag(animal, DRANK_DAY_PREFIX, -1) == currentDay);
+        if (!groupDrank) {
+            hungry.forEach(animal -> moveTo(animal, trough, 0.55));
+            boolean reachedWater = hungry.stream().anyMatch(animal -> near(animal, trough, 3.0));
+            if (reachedWater && hasWater(level, estate.originPos())) {
+                consumeWater(level, estate.originPos());
+                hungry.forEach(animal -> setIntTag(animal, DRANK_DAY_PREFIX, currentDay));
+                groupDrank = true;
+            }
         }
-        updateName(animal, estate.ownerName(), hunger, hayAvailable, waterAvailable);
+
+        if (groupDrank) {
+            hungry.forEach(animal -> setIntTag(animal, HUNGER_PREFIX, MAX_HUNGER));
+        }
     }
 
     private static void breedFedAnimals(
@@ -173,7 +196,8 @@ public final class RanchLifeManager {
         if (currentDay <= 0 || currentDay % 3 != 0) return;
         List<Animal> adults = new ArrayList<>();
         for (Animal animal : animals) {
-            if (!animal.isBaby()
+            if (animal.isAlive()
+                    && !animal.isBaby()
                     && getIntTag(animal, HUNGER_PREFIX, 0) >= 80
                     && getIntTag(animal, BRED_DAY_PREFIX, -1) < currentDay) {
                 adults.add(animal);
@@ -182,7 +206,10 @@ public final class RanchLifeManager {
 
         for (int i = 0; i < adults.size(); i++) {
             Animal first = adults.get(i);
-            long sameSpecies = animals.stream().filter(animal -> animal.getType() == first.getType()).count();
+            long sameSpecies = animals.stream()
+                    .filter(Entity::isAlive)
+                    .filter(animal -> animal.getType() == first.getType())
+                    .count();
             if (sameSpecies >= MAX_ANIMALS_PER_SPECIES) continue;
             Animal second = adults.stream()
                     .skip(i + 1L)
@@ -206,6 +233,10 @@ public final class RanchLifeManager {
             level.addFreshEntity(baby);
             break;
         }
+    }
+
+    private static int gameDay(ServerLevel level) {
+        return (int) Math.max(0L, level.getGameTime() / 24000L);
     }
 
     private static void moveTo(Animal animal, BlockPos target, double speed) {
@@ -237,6 +268,10 @@ public final class RanchLifeManager {
         return level.getBlockState(PlayerEstateLayout.waterTrough(origin)).is(Blocks.WATER);
     }
 
+    private static void consumeWater(ServerLevel level, BlockPos origin) {
+        level.setBlock(PlayerEstateLayout.waterTrough(origin), Blocks.AIR.defaultBlockState(), 3);
+    }
+
     private static AABB ranchBounds(BlockPos origin) {
         return new AABB(
                 origin.getX() + 6.0,
@@ -249,14 +284,14 @@ public final class RanchLifeManager {
     }
 
     private static Optional<String> ownerUuid(Entity entity) {
-        return entity.getTags().stream()
+        return entity.entityTags().stream()
                 .filter(tag -> tag.startsWith(OWNER_PREFIX))
                 .map(tag -> tag.substring(OWNER_PREFIX.length()))
                 .findFirst();
     }
 
     private static int getIntTag(Entity entity, String prefix, int fallback) {
-        for (String tag : entity.getTags()) {
+        for (String tag : entity.entityTags()) {
             if (!tag.startsWith(prefix)) continue;
             try {
                 return Integer.parseInt(tag.substring(prefix.length()));
@@ -268,20 +303,26 @@ public final class RanchLifeManager {
     }
 
     private static void setIntTag(Entity entity, String prefix, int value) {
-        Set<String> tags = Set.copyOf(entity.getTags());
+        Set<String> tags = Set.copyOf(entity.entityTags());
         for (String tag : tags) {
             if (tag.startsWith(prefix)) entity.removeTag(tag);
         }
         entity.addTag(prefix + value);
     }
 
-    private static void updateName(Animal animal, String ownerName, int hunger,
-                                   boolean hayAvailable, boolean waterAvailable) {
+    private static void updateName(
+            Animal animal,
+            String ownerName,
+            int hunger,
+            boolean hayAvailable,
+            boolean waterAvailable
+    ) {
         String suffix;
-        if (!hayAvailable) suffix = " [먹이 없음]";
-        else if (!waterAvailable) suffix = " [물 없음]";
-        else if (hunger <= 25) suffix = " [굶주림]";
-        else if (hunger <= 55) suffix = " [배고픔]";
+        if (hunger <= 15) suffix = " [굶주림]";
+        else if (hunger <= 35) suffix = " [매우 배고픔]";
+        else if (hunger <= FEED_THRESHOLD && !hayAvailable) suffix = " [먹이 없음]";
+        else if (hunger <= FEED_THRESHOLD && !waterAvailable) suffix = " [물 없음]";
+        else if (hunger <= FEED_THRESHOLD) suffix = " [배고픔]";
         else suffix = "";
         animal.setCustomName(Component.literal(ownerName + "의 " + speciesName(animal) + suffix));
         animal.setCustomNameVisible(!suffix.isEmpty());
