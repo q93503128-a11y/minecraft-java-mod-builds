@@ -8,12 +8,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Relative;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 import java.util.Set;
 
 /** Entry point for queued noise-realm preparation and final player placement. */
 public final class LivingRealmWorldManager {
+    private static final int SAFE_PLACEMENT_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
+
     private LivingRealmWorldManager() {
     }
 
@@ -31,6 +34,10 @@ public final class LivingRealmWorldManager {
         if (residence == null) return false;
         RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(realm, profile.homelandId());
         if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) return false;
+
+        // The first placement occurs immediately after capital completion. This removes the exact
+        // pathological plant debris seen in visual tests while leaving ordinary player drops alone.
+        ConstructionDebrisCleaner.cleanIfPathological(realm, profile.homelandId(), site);
 
         BlockPos feet = RealmSitePlanner.residencePosition(realm, profile.homelandId(), profile.residenceId());
         makeSafe(realm, feet);
@@ -51,10 +58,12 @@ public final class LivingRealmWorldManager {
 
     private static void makeSafe(ServerLevel level, BlockPos feet) {
         BlockPos floor = feet.below();
-        if (level.getBlockState(floor).isAir()) level.setBlock(floor, Blocks.STONE_BRICKS.defaultBlockState(), 2);
-        level.setBlock(feet, Blocks.AIR.defaultBlockState(), 2);
-        level.setBlock(feet.above(), Blocks.AIR.defaultBlockState(), 2);
-        level.setBlock(feet.above(2), Blocks.AIR.defaultBlockState(), 2);
+        if (level.getBlockState(floor).isAir()) {
+            level.setBlock(floor, Blocks.STONE_BRICKS.defaultBlockState(), SAFE_PLACEMENT_FLAGS);
+        }
+        level.setBlock(feet, Blocks.AIR.defaultBlockState(), SAFE_PLACEMENT_FLAGS);
+        level.setBlock(feet.above(), Blocks.AIR.defaultBlockState(), SAFE_PLACEMENT_FLAGS);
+        level.setBlock(feet.above(2), Blocks.AIR.defaultBlockState(), SAFE_PLACEMENT_FLAGS);
     }
 
     private static String affiliation(String homelandId) {
