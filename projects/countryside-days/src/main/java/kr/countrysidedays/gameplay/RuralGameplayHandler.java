@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -32,6 +33,7 @@ import java.util.Optional;
 
 public final class RuralGameplayHandler {
     private static final String STARTER_KIT_TAG = "countrysidedays_starter_kit_alpha10";
+    private static final String PRIVATE_LIVESTOCK_OWNER_PREFIX = "cd_owner_";
     private static final float WILD_HERB_CHANCE = 0.32F;
     private static final float RIVER_FISH_CHANCE = 0.45F;
 
@@ -137,6 +139,11 @@ public final class RuralGameplayHandler {
                     player.getBoundingBox().inflate(128.0),
                     mob -> mob instanceof Enemy
             ).forEach(Mob::discard);
+            serverLevel.getEntitiesOfClass(
+                    Animal.class,
+                    player.getBoundingBox().inflate(128.0),
+                    animal -> isRuralLivestock(animal) && !isManagedLivestock(animal)
+            ).forEach(Animal::discard);
         }
 
         if (player.tickCount % 40 == 0) {
@@ -171,9 +178,20 @@ public final class RuralGameplayHandler {
 
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (!(event.getLevel() instanceof ServerLevel serverLevel)
-                || !(event.getEntity() instanceof Enemy)
-                || !CountrysideRegionManager.isInsideCountryside(serverLevel, event.getEntity().blockPosition())) return;
-        event.setCanceled(true);
+                || !CountrysideRegionManager.isInsideCountryside(
+                        serverLevel,
+                        event.getEntity().blockPosition()
+                )) return;
+
+        if (event.getEntity() instanceof Enemy) {
+            event.setCanceled(true);
+            return;
+        }
+        if (event.getEntity() instanceof Animal animal
+                && isRuralLivestock(animal)
+                && !isManagedLivestock(animal)) {
+            event.setCanceled(true);
+        }
     }
 
     public static void onBlockDrops(BlockDropsEvent event) {
@@ -198,6 +216,25 @@ public final class RuralGameplayHandler {
                 || state.is(Blocks.FERN)
                 || state.is(Blocks.TALL_GRASS)
                 || state.is(Blocks.LARGE_FERN);
+    }
+
+    private static boolean isManagedLivestock(Animal animal) {
+        return animal.entityTags().contains(RuralNpcManager.PUBLIC_LIVESTOCK_TAG)
+                || animal.entityTags().stream()
+                .anyMatch(tag -> tag.startsWith(PRIVATE_LIVESTOCK_OWNER_PREFIX));
+    }
+
+    private static boolean isRuralLivestock(Animal animal) {
+        String id = animal.getType().toString();
+        return id.contains("cow")
+                || id.contains("sheep")
+                || id.contains("chicken")
+                || id.contains("pig")
+                || id.contains("goat")
+                || id.contains("horse")
+                || id.contains("donkey")
+                || id.contains("mule")
+                || id.contains("llama");
     }
 
     private static void enforceHealingRules(ServerLevel level) {
