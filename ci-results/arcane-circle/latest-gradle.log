@@ -10,13 +10,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.51s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.59s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
 [1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+[1m*** Started working on [4mdownloadServer[0m[0m
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.05s
+ [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.05s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -25,21 +25,21 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.99s
+Total runtime: 2.14s
 
 
 > Task :compileJava
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java:59: error: cannot find symbol
-        if (player.getTags().contains(STARTER_STAFF_TAG)) return;
+        if (player.hasTag(STARTER_STAFF_TAG)) return;
                   ^
-  symbol:   method getTags()
+  symbol:   method hasTag(String)
   location: variable player of type ServerPlayer
 Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 1 error
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785577724273.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785577797817.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/reports/problems/problems-report.html
 
@@ -51,9 +51,9 @@ Execution failed for task ':compileJava'.
   Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.java uses or overrides a deprecated API.
   Note: Recompile with -Xlint:deprecation for details.
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java:59: error: cannot find symbol
-          if (player.getTags().contains(STARTER_STAFF_TAG)) return;
+          if (player.hasTag(STARTER_STAFF_TAG)) return;
                     ^
-    symbol:   method getTags()
+    symbol:   method hasTag(String)
     location: variable player of type ServerPlayer
   1 error
 
@@ -100,9 +100,9 @@ Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Com
 Note: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java:59: error: cannot find symbol
-        if (player.getTags().contains(STARTER_STAFF_TAG)) return;
+        if (player.hasTag(STARTER_STAFF_TAG)) return;
                   ^
-  symbol:   method getTags()
+  symbol:   method hasTag(String)
   location: variable player of type ServerPlayer
 1 error
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
@@ -233,5 +233,5 @@ Note: Recompile with -Xlint:deprecation for details.
 	... 30 more
 
 
-BUILD FAILED in 15s
+BUILD FAILED in 23s
 3 actionable tasks: 2 executed, 1 up-to-date
