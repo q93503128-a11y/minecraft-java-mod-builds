@@ -45,6 +45,9 @@ public final class CountrysidePropertyManager {
         if (sharedRestaurant.isPresent()) {
             BlockPos origin = sharedRestaurant.get().originPos();
             if (isAutomaticRestaurantAccess(origin, event.getPos())) {
+                if (SharedRestaurantAccess.isOwner(data, player.getUUID())) {
+                    SharedRestaurantBuilder.setOpen(level, origin, true);
+                }
                 event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
                 return;
             }
