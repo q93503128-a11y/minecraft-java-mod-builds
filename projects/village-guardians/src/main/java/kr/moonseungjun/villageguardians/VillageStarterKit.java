@@ -12,6 +12,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 public final class VillageStarterKit {
     private static final String STARTER_KIT_TAG = "villageguardians_starter_kit_v3";
     private static final String CALLER_TAG = "villageguardians_public_caller_v3";
+    private static final String CALLER_NAME = "마을 수호단 호출기";
 
     private VillageStarterKit() {
     }
@@ -38,7 +39,7 @@ public final class VillageStarterKit {
         if (!player.addTag(CALLER_TAG)) {
             return;
         }
-        giveOrDrop(player, named(Items.GOAT_HORN.getDefaultInstance(), "§6마을 수호단 호출기"));
+        giveOrDrop(player, named(Items.GOAT_HORN.getDefaultInstance(), "§6" + CALLER_NAME));
         player.sendSystemMessage(Component.literal(
                 "§6[마을 장비] §f호출기는 접속 중인 플레이어에게 빠른 신호를 보내는 용도입니다."));
     }
@@ -55,7 +56,10 @@ public final class VillageStarterKit {
         }
 
         ItemStack stack = player.getItemInHand(event.getHand());
-        if (stack.getItem() == Items.GOAT_HORN) {
+        Component customName = stack.get(DataComponents.CUSTOM_NAME);
+        if (stack.getItem() == Items.GOAT_HORN
+                && customName != null
+                && CALLER_NAME.equals(customName.getString())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
             VillageUiService.openQuickChat(player);
