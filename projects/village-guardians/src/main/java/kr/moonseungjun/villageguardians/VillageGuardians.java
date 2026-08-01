@@ -29,7 +29,7 @@ public final class VillageGuardians {
     public VillageGuardians(IEventBus modEventBus) {
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians responsive UI, direct communication, timed raids and controlled spawns loaded");
+        LOGGER.info("Village Guardians enemy roles, wave traits, tower branches and readable skills loaded");
     }
 
     @SubscribeEvent
@@ -38,6 +38,7 @@ public final class VillageGuardians {
         VillageProgressionSystem.initializeServer(event.getServer());
         VillageSkillTreeSystem.initializeServer(event.getServer());
         VillageRoleSkillSystem.initializeServer(event.getServer());
+        VillageTowerSpecializationSystem.initializeServer(event.getServer());
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
