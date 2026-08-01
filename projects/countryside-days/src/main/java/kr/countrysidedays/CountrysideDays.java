@@ -2,6 +2,7 @@ package kr.countrysidedays;
 
 import com.mojang.logging.LogUtils;
 import kr.countrysidedays.gameplay.KitchenInteractionHandler;
+import kr.countrysidedays.gameplay.RanchLifeManager;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.gameplay.RuralNpcManager;
 import kr.countrysidedays.gametest.ModGameTests;
@@ -43,6 +44,9 @@ public final class CountrysideDays {
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onBlockDrops);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onItemFished);
         NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);
+        NeoForge.EVENT_BUS.addListener(RanchLifeManager::onServerTick);
+        NeoForge.EVENT_BUS.addListener(RanchLifeManager::onAnimalInteract);
+        NeoForge.EVENT_BUS.addListener(RanchLifeManager::onAnimalDamage);
         NeoForge.EVENT_BUS.addListener(CountrysideWorldgenAudit::onServerStarted);
     }
 
@@ -51,6 +55,6 @@ public final class CountrysideDays {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.7");
+        LOGGER.info("Countryside Days {} core content registered", "0.1.0-alpha.8");
     }
 }
