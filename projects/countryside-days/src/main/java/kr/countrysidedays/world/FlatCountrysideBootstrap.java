@@ -6,27 +6,22 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.Optional;
 
-/** Creates the shared village at the centre of a generated superflat countryside. */
+/** Creates the protected public village once; private estates are allocated per player. */
 public final class FlatCountrysideBootstrap {
     private FlatCountrysideBootstrap() {
     }
 
     public static Optional<BlockPos> ensureGenerated(ServerLevel level, BlockPos requestedCenter) {
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        if (data.homesteadOrigin().isPresent()) {
-            return data.homesteadOrigin();
-        }
-        if (!CountrysideRegionManager.isFlatWorld(level)) {
-            return Optional.empty();
-        }
+        if (data.homesteadOrigin().isPresent()) return data.homesteadOrigin();
+        if (!CountrysideRegionManager.isFlatWorld(level)) return Optional.empty();
 
         BlockPos origin = level.getHeightmapPos(
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 new BlockPos(0, 0, 0)
         );
-        StarterHomesteadGenerator.buildCompleteVillage(level, origin);
+        StarterHomesteadGenerator.buildPublicVillage(level, origin);
         data.claimHomesteadOrigin(origin);
-        data.claimRestaurantAnchor(StarterHomesteadGenerator.kitchenCounterPos(origin));
         return Optional.of(origin);
     }
 }
