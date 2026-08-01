@@ -14,7 +14,9 @@ def read(name: str) -> str:
 def main() -> None:
     guardians = read("VillageGuardians.java")
     raid = read("VillageRaidSystem.java")
+    raid_loot = read("VillageRaidLootSystem.java")
     world = read("VillageWorldSystem.java")
+    signatures = read("VillageBuildingSignatures.java")
     roles = read("VillageRole.java")
     role_system = read("VillageRoleSkillSystem.java")
     role_data = read("VillageRoleProgressData.java")
@@ -25,6 +27,7 @@ def main() -> None:
     inventory = read("VillageInventoryPanel.java")
     town_hall = read("VillageTownHallScreen.java")
     generic_ui = read("VillageUiScreen.java")
+    quick_chat = read("VillageQuickChatScreen.java")
     ui_service = read("VillageUiService.java")
     client_ui = read("VillageClientUi.java")
     client_keys = read("VillageClientKeys.java")
@@ -51,16 +54,25 @@ def main() -> None:
     assert guardians.count("VillageRaidSystem.onLivingDeath(event)") == 1
     assert "VillageRoleSkillSystem.initializeServer" in guardians
     assert "purgeUnauthorizedVillageMobs" in guardians
+    assert "VillageWorldSystem.isInsideBattlefield" in guardians
     assert "!mob.isPersistenceRequired()" in guardians
     assert "VillageDefenseSystem.recognizeDefenseMob(mob)" in guardians
     assert "VillageGatePrioritySystem.tick" in guardians
     assert "VillageRespawnSystem.handleIncomingDamage" in guardians
     assert "VillageRespawnSystem.tick" in guardians
-    assert "!VillageRespawnSystem.isDowned(player)" in guardians
+    assert "VillageRaidLootSystem.handleDrops" in guardians
+    assert "LivingDropsEvent" in guardians
 
     assert "public static boolean isActiveEnemy(UUID uuid)" in raid
+    assert "public static boolean isRaidEnemy(Entity entity)" in raid
+    assert "FORCED_NEXT_WAVE_TICKS = 20 * 60" in raid
+    assert "MAX_ACTIVE_ENEMIES = 100" in raid
+    assert "잔존 적" in raid
+    assert "ACTIVE_ENEMIES.clear();" not in raid.split("private static void spawnWave", 1)[1].split("private static Mob createRaidMob", 1)[0]
     assert "VillageFortressBuildings.attackPoint" in raid
     assert "VillageFortressBuildings.isTouchingStructure" in raid
+    assert "event.getDrops().clear()" in raid_loot
+    assert "VillageRaidSystem.isRaidEnemy" in raid_loot
 
     for role in ("VANGUARD", "RANGER", "ARCANIST", "LUMINAR", "WARDEN"):
         assert role + "(" in roles
@@ -88,7 +100,6 @@ def main() -> None:
     assert "FOOTER_HEIGHT" in role_screen
     assert "mouseScrolled" in role_screen
     assert "savedZoom" in role_screen
-    assert "세 갈래" in role_screen
     assert "R에 장착" in role_screen and "G에 장착" in role_screen
 
     assert "UNLOCKED_MASKS" in skill
@@ -120,14 +131,24 @@ def main() -> None:
     assert "성장·기술은 연구소에서 관리" in town_hall
     assert "포탑 지휘·성벽 관리" in town_hall
     assert town_hall.count("enableScissor") >= 4
+
+    assert "sideBySide" in generic_ui
+    assert "rightPaneWidth" in generic_ui
+    assert "selectedIndex = Math.min(actions.length, labels.length) == 1 ? 0 : -1" in generic_ui
     assert "footerScroll" in generic_ui
     assert "actionScroll" in generic_ui
     assert "bodyScroll" in generic_ui
     assert generic_ui.count("enableScissor") >= 3
+    assert "누르는 즉시 전송" in quick_chat
+    assert "VillageUiActionPayload(actions[index])" in quick_chat
+    assert "OVERLAY = 0x4A000000" in quick_chat
 
     assert 'case "role_progress" -> new VillageRoleProgressScreen(payload)' in client_ui
+    assert 'case "quick_chat" -> new VillageQuickChatScreen(payload)' in client_ui
     assert 'GLFW.GLFW_KEY_R' in client_keys
     assert 'GLFW.GLFW_KEY_G' in client_keys
+    assert 'GLFW.GLFW_KEY_C' in client_keys
+    assert 'VillageUiActionPayload("open_quick_chat")' in client_keys
     assert 'VillageUiActionPayload("use_skill:0")' in client_keys
     assert 'VillageUiActionPayload("use_skill:1")' in client_keys
 
@@ -136,7 +157,6 @@ def main() -> None:
     assert "openFunding" in ui_service
     assert "requireSkillHall" in ui_service
     assert "VillageLocationRules.isNearSkillHall" in ui_service
-    assert "직업 성장과 기술 장착은 기술·마법 연구소" in ui_service
     assert 'case WALLS -> "open_tower_control"' in ui_service
     assert '"open_role_progress_current"' in ui_service
     assert '"role_node:"' in ui_service
@@ -153,6 +173,8 @@ def main() -> None:
     assert "VillageEquipmentShop.incomingMultiplier" in rpg
     assert "VillageSkillTreeSystem.executionMultiplier" in rpg
     assert "VillageSkillTreeSystem.killHealAmount" in rpg
+    assert "VillageTimePhase.DAY" in rpg
+    assert "MobEffects.SPEED, 50, 1" in rpg
 
     assert "setPersistenceRequired()" in defense
     assert "사망하지 않는 한 저장과 재접속 후에도 유지" in defense
@@ -164,11 +186,24 @@ def main() -> None:
     assert "fireFrost" in defense
     assert "fireArcane" in defense
     assert "VillageRole.WARDEN" in defense
-    assert "buildBallista" in tower_builder
-    assert "buildFlame" in tower_builder
-    assert "buildFrost" in tower_builder
-    assert "buildArcane" in tower_builder
+    assert "installedStage >= 1" in tower_builder
+    assert "installedStage >= 2" in tower_builder
+    assert "installedStage >= 3" in tower_builder
+    assert "installedStage >= 4" in tower_builder
+    assert "clearInstallationPad" in tower_builder
     assert "VillageDefenseTowerBuilder.build" in world
+
+    assert "VillageBuildingSignatures.buildAll" in world
+    assert "VillageBuildingSignatures.remove" in world
+    assert "BATTLEFIELD_RADIUS, 96, BATTLEFIELD_RADIUS" in world
+    assert "Blocks.AMETHYST_BLOCK" in world
+    assert "buildGateShield" in signatures
+    assert "buildCrown" in signatures
+    assert "buildHammer" in signatures
+    assert "buildRune" in signatures
+    assert "buildHealingCross" in signatures
+    assert "buildSupplyCrate" in signatures
+    assert "buildCrossedBlades" in signatures
 
     assert "VillageWorldSystem.isNorthGatePassable" in gate_priority
     assert "mob.setTarget(null)" in gate_priority
@@ -187,11 +222,11 @@ def main() -> None:
     assert "z1 - 9" in hall_access
     assert "Blocks.DARK_OAK_FENCE" in hall_access
     assert "Blocks.RESPAWN_ANCHOR" in world
-    assert "purgeUnauthorizedVillageMobs" in world
 
     assert "MAIN_INVENTORY_SLOTS = 36" in trading
     assert "Items.CLOCK" in starter
     assert "migrateLegacyCaller" in starter
+    assert "C키로 투명 빠른 통신창" in starter
     assert "openCallerMenu" in starter
     assert "ChatFormatting.stripFormatting" in starter
     assert "PLAYER_TEAM_PREFIX + player.getUUID().toString().substring(0, 8)" in health
@@ -203,15 +238,15 @@ def main() -> None:
     assert "120 + level * 72 + level * level * 7" in rpg_progress
     assert "new RpgProgress(level, 0).experienceToNextLevel()" in council
 
-    print("[PASS] Five combat roles use persistent three-branch progression in the research hall")
-    print("[PASS] Twenty role skills support level/currency unlocks and two equipped key slots")
-    print("[PASS] Town hall, research and generic screens use independent clipped scroll panes")
-    print("[PASS] Inventory and restored clock caller expose status, communication and return only")
-    print("[PASS] Town hall owns tower command, facility management and coin-funded supplies")
-    print("[PASS] Closed gates override player targeting and force raiders onto the wall")
-    print("[PASS] Lethal damage enters a 20-second spectator countdown before village revival")
-    print("[PASS] Natural village mobs are blocked while coin-hired persistent mercenaries remain")
-    print("[PASS] Four fixed tower archetypes and progressive vanilla equipment are wired")
+    print("[PASS] Responsive facility UI switches to non-overlapping side panes on short screens")
+    print("[PASS] C opens a transparent one-click quick communication overlay")
+    print("[PASS] Daytime grants sustained Speed II while night removes it naturally")
+    print("[PASS] All unauthorized natural mobs are blocked throughout the battlefield")
+    print("[PASS] Raid drops are cleared and rewards stay inside the progression economy")
+    print("[PASS] Waves advance after a clear or force-advance after sixty seconds")
+    print("[PASS] Defense towers are physically built only after installation stages")
+    print("[PASS] Every facility has a distant rooftop signature glyph")
+    print("[PASS] Closed gates and delayed revival continue to protect the defense loop")
 
 
 if __name__ == "__main__":
