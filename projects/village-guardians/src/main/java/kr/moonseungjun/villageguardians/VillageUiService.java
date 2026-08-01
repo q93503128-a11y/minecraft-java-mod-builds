@@ -21,10 +21,11 @@ public final class VillageUiService {
         String body = "§6제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName() + "\n"
                 + "§f공동 보급품: " + VillageProgressionSystem.supplies() + "\n"
-                + "§f" + VillageRaidSystem.status() + "\n\n"
+                + "§f" + VillageRaidSystem.status() + "\n"
+                + "§b" + VillageDefenseSystem.status(server.overworld()) + "\n\n"
                 + "§7북문 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.WALLS)
                 + "\n§7회관 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.TOWN_HALL)
-                + "\n\n§f회관은 플레이어 회의와 시설·성벽 강화 및 수리를 담당합니다."
+                + "\n\n§f회관에서 시설, 성벽, 방어 전력을 관리합니다."
                 + "\n§7낮·밤 전환은 중앙 광장의 종에서만 진행합니다.";
         send(player, "dashboard", "마을 회관", body,
                 List.of(
@@ -32,8 +33,8 @@ public final class VillageUiService {
                         "building:storehouse", "building:barracks", "building:infirmary",
                         "open_status", "open_quick_chat"),
                 List.of(
-                        "성벽·북문 관리", "대장간 관리", "기술 연구소 관리",
-                        "상점·보급소 관리", "병영 관리", "의무소 관리",
+                        "성벽·방어탑 관리", "대장간 관리", "기술 연구소 관리",
+                        "상점·보급소 관리", "병영·용병 관리", "의무소 관리",
                         "내 상태·역할", "회의·빠른 신호"));
     }
 
@@ -66,7 +67,8 @@ public final class VillageUiService {
                 + VillageProgressionSystem.MAX_PERSONAL_RANK + "\n"
                 + "§b스킬 포인트: " + VillageSkillTreeSystem.availablePoints(player)
                 + " / " + VillageSkillTreeSystem.earnedPoints(player) + "\n\n"
-                + "§7직업 이름을 누르면 효과를 먼저 확인한 뒤 선택할 수 있습니다.";
+                + "§d전투 기술\n§f" + VillageCombatTechniqueSystem.unlockSummary(player) + "\n\n"
+                + "§7역할 이름을 누르면 효과를 먼저 확인한 뒤 선택하거나 변경할 수 있습니다.";
         send(player, "status", "상태·역할", body,
                 List.of(
                         "use_skill", "open_skill_tree", "return_village",
@@ -244,6 +246,11 @@ public final class VillageUiService {
             }
             case "use_infirmary" -> actAndReopen(player, VillageProgressionSystem.useInfirmary(player), VillageProgressionSystem.Building.INFIRMARY);
             case "train" -> actAndReopen(player, VillageProgressionSystem.train(player), VillageProgressionSystem.Building.BARRACKS);
+            case "hire_mercenary" -> actAndReopen(player, VillageDefenseSystem.hireMercenary(player), VillageProgressionSystem.Building.BARRACKS);
+            case "defense_status" -> {
+                player.sendSystemMessage(Component.literal("§b" + VillageDefenseSystem.status(server.overworld())));
+                openBuilding(player, VillageProgressionSystem.Building.WALLS);
+            }
             case "restart_previous" -> VillageProgressionSystem.resetForRestart(server, false);
             case "restart_start" -> VillageProgressionSystem.resetForRestart(server, true);
             default -> player.sendSystemMessage(Component.literal("§c알 수 없는 마을 UI 동작입니다."));
@@ -257,8 +264,9 @@ public final class VillageUiService {
         switch (building) {
             case TOWN_HALL -> add(actions, labels, "open_dashboard", "마을 관리");
             case WALLS -> add(actions, labels,
+                    "defense_status", "방어탑·용병 현황",
                     "repair:walls", "손상 수리",
-                    "upgrade:walls", "성벽·북문 강화",
+                    "upgrade:walls", "성벽·방어탑 강화",
                     "open_dashboard", "회관으로 돌아가기");
             case SMITHY -> add(actions, labels,
                     "forge_upgrade", "개인 장비 강화",
@@ -283,8 +291,9 @@ public final class VillageUiService {
                     "upgrade:storehouse", "상점·보급소 증축");
             case BARRACKS -> add(actions, labels,
                     "train", "전투 훈련",
+                    "hire_mercenary", "철 24개로 용병 고용",
                     "repair:barracks", "손상 수리",
-                    "upgrade:barracks", "병영 증축");
+                    "upgrade:barracks", "병영·용병 정원 강화");
         }
     }
 
@@ -297,12 +306,12 @@ public final class VillageUiService {
         }
         return switch (building) {
             case TOWN_HALL -> "§f멀티 플레이어 회의와 모든 시설·성벽 관리를 담당합니다.";
-            case WALLS -> "§f열린 북문은 적이 그대로 통과하며, 닫혀 있을 때만 성문 내구도를 공격합니다.";
+            case WALLS -> "§f성벽 레벨 1부터 네 모서리 방어탑이 자동 사격합니다. 레벨이 오르면 연사·화염·둔화가 강화됩니다.";
             case SMITHY -> "§f장비를 강화합니다. 내 강화 " + VillageProgressionSystem.forgeRank(player) + " / " + VillageProgressionSystem.MAX_PERSONAL_RANK;
-            case SKILL_HALL -> "§f발전 과제형 스킬 트리와 역할 능력을 연구합니다.";
+            case SKILL_HALL -> "§f스킬 트리, 역할 능력과 후반 전투 기술을 연구합니다.";
             case INFIRMARY -> "§f즉시 치료와 웨이브 사이 회복을 담당합니다.";
             case STOREHOUSE -> "§f식량·화살 구매와 몬스터 전리품 판매를 담당합니다.";
-            case BARRACKS -> "§f훈련으로 XP를 얻고 역할 스킬 효율을 강화합니다.";
+            case BARRACKS -> "§f훈련으로 XP를 얻고 철 주괴로 마을 용병을 고용합니다. 병영 레벨이 용병 정원을 늘립니다.";
         };
     }
 
