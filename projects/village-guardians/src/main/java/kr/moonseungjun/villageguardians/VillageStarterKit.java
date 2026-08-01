@@ -40,7 +40,7 @@ public final class VillageStarterKit {
         }
         giveOrDrop(player, named(Items.GOAT_HORN.getDefaultInstance(), "§6마을 수호단 호출기"));
         player.sendSystemMessage(Component.literal(
-                "§6[마을 장비] §f호출기는 모든 플레이어가 현황·빠른 신호·투표에 사용할 수 있습니다."));
+                "§6[마을 장비] §f호출기는 접속 중인 플레이어에게 빠른 신호를 보내는 용도입니다."));
     }
 
     public static void grantMayorCaller(ServerPlayer player) {
@@ -58,7 +58,7 @@ public final class VillageStarterKit {
         if (stack.getItem() == Items.GOAT_HORN) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
-            VillageUiService.openDashboard(player);
+            VillageUiService.openQuickChat(player);
         }
     }
 
