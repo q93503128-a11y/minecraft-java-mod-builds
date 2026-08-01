@@ -16,8 +16,15 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.trading.ItemCost;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -41,31 +48,34 @@ public final class RuralNpcManager {
 
     public static void ensurePublicVillage(ServerLevel level, BlockPos origin) {
         for (NpcDefinition definition : publicDefinitions(origin)) {
-            if (!exists(level, definition.name(), definition.home())) {
-                spawnVillager(level, definition.name(), definition.home());
-            }
+            Villager villager = find(level, definition.name(), definition.home()).orElse(null);
+            if (villager == null) villager = spawnVillager(level, definition.name(), definition.home());
+            if (villager != null) configureShop(villager, definition.name());
         }
     }
 
     public static void ensureEstateAnimals(ServerLevel level, CountrysideWorldData.PlayerEstate estate) {
         BlockPos origin = estate.originPos();
         String customerName = customerName(estate);
-        if (!exists(level, customerName, PlayerEstateLayout.restaurant(origin))) {
+        if (find(level, customerName, PlayerEstateLayout.restaurant(origin)).isEmpty()) {
             spawnVillager(level, customerName, PlayerEstateLayout.restaurantDoor(origin));
         }
 
         AABB ranch = estateRanchBounds(origin);
-        if (level.getEntitiesOfClass(Mob.class, ranch, mob -> mob.getType().toString().contains("cow")).isEmpty()) {
-            spawnAnimal(level, "cow", origin.offset(12, 1, 20));
-            spawnAnimal(level, "cow", origin.offset(20, 1, 23));
+        if (level.getEntitiesOfClass(Animal.class, ranch, animal -> animal.getType().toString().contains("cow")).isEmpty()) {
+            spawnAnimal(level, "cow", origin.offset(13, 1, 18), estate);
+            spawnAnimal(level, "cow", origin.offset(19, 1, 22), estate);
         }
-        if (level.getEntitiesOfClass(Mob.class, ranch, mob -> mob.getType().toString().contains("sheep")).isEmpty()) {
-            spawnAnimal(level, "sheep", origin.offset(15, 1, 18));
-            spawnAnimal(level, "sheep", origin.offset(24, 1, 17));
+        if (level.getEntitiesOfClass(Animal.class, ranch, animal -> animal.getType().toString().contains("sheep")).isEmpty()) {
+            spawnAnimal(level, "sheep", origin.offset(15, 1, 20), estate);
+            spawnAnimal(level, "sheep", origin.offset(25, 1, 18), estate);
+        }
+        if (level.getEntitiesOfClass(Animal.class, ranch, animal -> animal.getType().toString().contains("chicken")).isEmpty()) {
+            spawnAnimal(level, "chicken", origin.offset(18, 1, 24), estate);
+            spawnAnimal(level, "chicken", origin.offset(21, 1, 24), estate);
         }
     }
 
-    /** Legacy alias retained for old callers. */
     public static void ensureForHomestead(ServerLevel level, BlockPos origin) {
         ensurePublicVillage(level, origin);
         CountrysideWorldData.get(level.getServer()).estates()
@@ -73,24 +83,60 @@ public final class RuralNpcManager {
     }
 
     public static void tickVillage(ServerLevel level, BlockPos villageOrigin) {
-        long time = Math.floorMod(level.getGameTime(), 24000L);
-        boolean open = time >= OPEN_TIME && time < CLOSE_TIME;
+        long time = Math.floorMod(level.getDayTime(), 24000L);
         AABB village = new AABB(villageOrigin).inflate(600.0, 24.0, 600.0);
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
 
         for (Villager villager : level.getEntitiesOfClass(Villager.class, village)) {
             NpcDefinition publicDefinition = definitionByName(villageOrigin, villager.getName().getString());
             if (publicDefinition != null) {
-                navigate(villager, open ? publicDefinition.work() : publicDefinition.home(), open ? 0.48 : 0.42);
+                villager.setPose(Pose.STANDING);
+                BlockPos target;
+                double speed;
+                if (time < 1000L) {
+                    target = villageOrigin.offset(0, 1, 5);
+                    speed = 0.42;
+                } else if (time < 9000L) {
+                    target = publicDefinition.work();
+                    speed = 0.48;
+                } else if (time < 12000L) {
+                    target = publicDefinition.social();
+                    speed = 0.44;
+                } else {
+                    target = publicDefinition.home();
+                    speed = 0.40;
+                }
+                navigate(villager, target, speed);
                 continue;
             }
 
             Optional<CountrysideWorldData.PlayerEstate> estate = estateByCustomerName(data, villager.getName().getString());
             if (estate.isEmpty()) continue;
-            BlockPos target = open
-                    ? PlayerEstateLayout.restaurant(estate.get().originPos())
-                    : villageOrigin.offset(0, 1, 8);
-            navigate(villager, target, open ? 0.50 : 0.45);
+            tickCustomer(level, villageOrigin, villager, estate.get(), time);
+        }
+    }
+
+    private static void tickCustomer(
+            ServerLevel level,
+            BlockPos villageOrigin,
+            Villager villager,
+            CountrysideWorldData.PlayerEstate estate,
+            long time
+    ) {
+        if (time >= OPEN_TIME && time < CLOSE_TIME) {
+            BlockPos seat = PlayerEstateLayout.customerSeat(estate.originPos());
+            if (villager.blockPosition().distSqr(seat) <= 3.0) {
+                villager.getNavigation().stop();
+                villager.setPos(seat.getX() + 0.5, seat.getY() + 0.05, seat.getZ() + 0.5);
+                villager.setYRot(180.0F);
+                villager.setPose(Pose.SITTING);
+            } else {
+                villager.setPose(Pose.STANDING);
+                navigate(villager, seat, 0.50);
+            }
+        } else {
+            villager.setPose(Pose.STANDING);
+            navigate(villager, villageOrigin.offset(0, 1, 8), 0.45);
         }
     }
 
@@ -102,32 +148,64 @@ public final class RuralNpcManager {
         String name = villager.getName().getString();
         CountrysideWorldData data = CountrysideWorldData.get(player.level().getServer());
         Optional<CountrysideWorldData.PlayerEstate> customerEstate = estateByCustomerName(data, name);
-        boolean publicNpc = isPublicNpc(name);
-        if (!publicNpc && customerEstate.isEmpty()) return;
-
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        event.setCanceled(true);
-
         if (customerEstate.isPresent()) {
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            event.setCanceled(true);
             handleCustomer(player, customerEstate.get());
             return;
         }
 
-        switch (name) {
-            case RESIDENT_NAME -> handleResident(player);
-            case FARMER_NAME -> player.sendSystemMessage(Component.translatable("message.countrysidedays.farmer_guidance"));
-            case RANCHER_NAME -> player.sendSystemMessage(Component.translatable("message.countrysidedays.rancher_guidance"));
-            case HALL_KEEPER_NAME -> player.sendSystemMessage(Component.translatable("message.countrysidedays.hall_guidance"));
-            default -> {
-            }
+        if (isShopNpc(name)) {
+            // Leave the event uncancelled so Minecraft opens the real merchant screen.
+            configureShop(villager, name);
+            return;
         }
+
+        if (!RESIDENT_NAME.equals(name)) return;
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        event.setCanceled(true);
+        handleResident(player);
     }
 
-    private static boolean isPublicNpc(String name) {
-        return RESIDENT_NAME.equals(name)
-                || FARMER_NAME.equals(name)
-                || RANCHER_NAME.equals(name)
-                || HALL_KEEPER_NAME.equals(name);
+    private static boolean isShopNpc(String name) {
+        return FARMER_NAME.equals(name) || RANCHER_NAME.equals(name) || HALL_KEEPER_NAME.equals(name);
+    }
+
+    private static void configureShop(Villager villager, String name) {
+        if (!isShopNpc(name)) return;
+        MerchantOffers offers = new MerchantOffers();
+        if (FARMER_NAME.equals(name)) {
+            offers.add(offer(1, Items.WHEAT_SEEDS, 8));
+            offers.add(offer(2, Items.CARROT, 4));
+            offers.add(offer(2, Items.POTATO, 4));
+            offers.add(offer(3, Items.HAY_BLOCK, 1));
+            offers.add(offer(4, Items.WATER_BUCKET, 1));
+        } else if (RANCHER_NAME.equals(name)) {
+            offers.add(offer(2, Items.WHEAT, 8));
+            offers.add(offer(3, Items.OAK_FENCE_GATE, 2));
+            offers.add(offer(4, Items.LEAD, 1));
+            offers.add(offer(6, Items.NAME_TAG, 1));
+            offers.add(offer(4, Items.SHEARS, 1));
+        } else {
+            offers.add(offer(2, Items.FLOWER_POT, 2));
+            offers.add(offer(3, Items.LANTERN, 2));
+            offers.add(offer(4, Items.ITEM_FRAME, 2));
+            offers.add(offer(5, Items.PAINTING, 1));
+            offers.add(offer(5, Items.BOOKSHELF, 2));
+            offers.add(offer(3, Items.YELLOW_CARPET, 8));
+            offers.add(offer(4, Items.OAK_STAIRS, 12));
+        }
+        villager.setOffers(offers);
+    }
+
+    private static MerchantOffer offer(int coins, ItemLike result, int count) {
+        return new MerchantOffer(
+                new ItemCost(ModItems.VILLAGE_COIN.get(), coins),
+                new ItemStack(result, count),
+                999,
+                1,
+                0.0F
+        );
     }
 
     private static void handleResident(ServerPlayer player) {
@@ -150,7 +228,7 @@ public final class RuralNpcManager {
         }
 
         ServerLevel level = player.level();
-        long time = Math.floorMod(level.getGameTime(), 24000L);
+        long time = Math.floorMod(level.getDayTime(), 24000L);
         if (time < OPEN_TIME || time >= CLOSE_TIME) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.restaurant_closed"));
             return;
@@ -163,7 +241,7 @@ public final class RuralNpcManager {
         }
 
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        long day = Math.max(0L, level.getGameTime() / 24000L);
+        long day = Math.max(0L, level.getDayTime() / 24000L);
         if (!data.recordCustomerService(player.getUUID(), day, DAILY_REWARD_COINS)) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.customer_already_served"));
             return;
@@ -182,7 +260,7 @@ public final class RuralNpcManager {
     }
 
     private static void navigate(Villager villager, BlockPos target, double speed) {
-        if (villager.blockPosition().distSqr(target) <= 5.0) return;
+        if (villager.blockPosition().distSqr(target) <= 4.0) return;
         villager.getNavigation().moveTo(
                 target.getX() + 0.5,
                 target.getY(),
@@ -191,28 +269,26 @@ public final class RuralNpcManager {
         );
     }
 
-    private static boolean exists(ServerLevel level, String name, BlockPos centre) {
+    private static Optional<Villager> find(ServerLevel level, String name, BlockPos centre) {
         AABB area = new AABB(centre).inflate(96.0, 18.0, 96.0);
-        return !level.getEntitiesOfClass(
+        return level.getEntitiesOfClass(
                 Villager.class,
                 area,
                 villager -> name.equals(villager.getName().getString())
-        ).isEmpty();
+        ).stream().findFirst();
     }
 
-    private static void spawnVillager(ServerLevel level, String name, BlockPos pos) {
+    private static Villager spawnVillager(ServerLevel level, String name, BlockPos pos) {
         EntityType<?> villagerType = BuiltInRegistries.ENTITY_TYPE.getOptional(VILLAGER_ID).orElse(null);
         if (villagerType == null) {
             CountrysideDays.LOGGER.error("Minecraft villager entity type is unavailable");
-            return;
+            return null;
         }
-
         Entity created = villagerType.create(level, EntitySpawnReason.COMMAND);
         if (!(created instanceof Villager villager)) {
             CountrysideDays.LOGGER.error("Failed to create countryside NPC {}", name);
-            return;
+            return null;
         }
-
         villager.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
         villager.setCustomName(Component.literal(name));
         villager.setCustomNameVisible(true);
@@ -220,18 +296,25 @@ public final class RuralNpcManager {
         villager.setInvulnerable(true);
         if (!level.addFreshEntity(villager)) {
             CountrysideDays.LOGGER.error("Failed to add countryside NPC {}", name);
+            return null;
         }
+        return villager;
     }
 
-    private static void spawnAnimal(ServerLevel level, String id, BlockPos pos) {
+    private static void spawnAnimal(
+            ServerLevel level,
+            String id,
+            BlockPos pos,
+            CountrysideWorldData.PlayerEstate estate
+    ) {
         Identifier identifier = Identifier.fromNamespaceAndPath("minecraft", id);
         EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getOptional(identifier).orElse(null);
         if (type == null) return;
         Entity entity = type.create(level, EntitySpawnReason.COMMAND);
-        if (!(entity instanceof Mob mob)) return;
-        mob.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
-        mob.setPersistenceRequired();
-        level.addFreshEntity(mob);
+        if (!(entity instanceof Animal animal)) return;
+        animal.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        RanchLifeManager.initializeAnimal(animal, estate);
+        level.addFreshEntity(animal);
     }
 
     private static AABB estateRanchBounds(BlockPos origin) {
@@ -240,7 +323,7 @@ public final class RuralNpcManager {
                 origin.getY(),
                 origin.getZ() + 2.0,
                 origin.getX() + 29.0,
-                origin.getY() + 9.0,
+                origin.getY() + 10.0,
                 origin.getZ() + 28.0
         );
     }
@@ -265,10 +348,10 @@ public final class RuralNpcManager {
 
     private static List<NpcDefinition> publicDefinitions(BlockPos origin) {
         return List.of(
-                new NpcDefinition(RESIDENT_NAME, origin.offset(-37, 1, -17), origin.offset(-10, 1, 8)),
-                new NpcDefinition(FARMER_NAME, origin.offset(37, 1, -17), origin.offset(18, 1, 8)),
-                new NpcDefinition(RANCHER_NAME, origin.offset(-37, 1, 21), origin.offset(-18, 1, 8)),
-                new NpcDefinition(HALL_KEEPER_NAME, origin.offset(37, 1, 21), origin.offset(0, 1, -31))
+                new NpcDefinition(RESIDENT_NAME, origin.offset(-37, 1, -17), origin.offset(-10, 1, 8), origin.offset(0, 1, 5)),
+                new NpcDefinition(FARMER_NAME, origin.offset(37, 1, -17), origin.offset(-20, 1, 8), origin.offset(-10, 1, 4)),
+                new NpcDefinition(RANCHER_NAME, origin.offset(-37, 1, 21), origin.offset(-18, 1, 8), origin.offset(10, 1, 4)),
+                new NpcDefinition(HALL_KEEPER_NAME, origin.offset(37, 1, 21), origin.offset(0, 1, -31), origin.offset(0, 1, 5))
         );
     }
 
@@ -276,6 +359,6 @@ public final class RuralNpcManager {
         if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
 
-    private record NpcDefinition(String name, BlockPos home, BlockPos work) {
+    private record NpcDefinition(String name, BlockPos home, BlockPos work, BlockPos social) {
     }
 }
