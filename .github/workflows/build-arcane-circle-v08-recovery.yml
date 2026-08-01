@@ -61,6 +61,17 @@ jobs:
           python3 tools/apply_v08_magic_world.py 2>&1 | tee "$GITHUB_WORKSPACE/migration.log"
           git diff --check
 
+      - name: Print generated lifecycle contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          echo '=== ArcaneCircle.java ==='
+          sed -n '1,220p' src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java
+          echo '=== ArcaneEconomyService public API ==='
+          grep -nE 'public (static )?|static .*\(' src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEconomyService.java || true
+          echo '=== MagicWorldService public API ==='
+          grep -nE 'public (static )?|static .*\(' src/main/java/kr/moonseungjun/arcanecircle/world/MagicWorldService.java || true
+
       - name: Audit generated magic world
         working-directory: ${{ env.PROJECT_DIR }}
         run: python3 tools/test_magic_contract.py
@@ -125,5 +136,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$RESULT_DIR"
           git commit -m "Record Arcane v0.8 recovery result for ${GITHUB_SHA::7}" || exit 0
+          git reset --hard HEAD
           git pull --rebase origin main
           git push
