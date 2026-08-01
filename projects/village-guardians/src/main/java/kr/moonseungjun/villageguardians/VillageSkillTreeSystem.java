@@ -33,7 +33,13 @@ public final class VillageSkillTreeSystem {
     }
 
     public static boolean has(ServerPlayer player, Node node) {
-        return player.getCommandTags().contains(TAG_PREFIX + node.id());
+        String tag = TAG_PREFIX + node.id();
+        boolean newlyAdded = player.addTag(tag);
+        if (newlyAdded) {
+            player.removeTag(tag);
+            return false;
+        }
+        return true;
     }
 
     public static String purchase(ServerPlayer player, String nodeId) {
@@ -95,9 +101,7 @@ public final class VillageSkillTreeSystem {
     }
 
     public enum Branch {
-        POWER("공격"),
-        GUARD("방어"),
-        SUPPORT("지원");
+        POWER("공격"), GUARD("방어"), SUPPORT("지원");
 
         private final String displayName;
 
@@ -114,11 +118,9 @@ public final class VillageSkillTreeSystem {
         POWER_1("power_1", "정밀 타격 I", "모든 공격 피해 +8%", Branch.POWER, 1, null),
         POWER_2("power_2", "정밀 타격 II", "모든 공격 피해 추가 +8%", Branch.POWER, 2, POWER_1),
         POWER_3("power_3", "정밀 타격 III", "모든 공격 피해 추가 +8%", Branch.POWER, 3, POWER_2),
-
         GUARD_1("guard_1", "강철 방어 I", "받는 피해 7% 감소", Branch.GUARD, 1, null),
         GUARD_2("guard_2", "강철 방어 II", "받는 피해 추가 7% 감소", Branch.GUARD, 2, GUARD_1),
         GUARD_3("guard_3", "강철 방어 III", "받는 피해 추가 7% 감소", Branch.GUARD, 3, GUARD_2),
-
         SUPPORT_1("support_1", "전리품 감정 I", "처치 주화 +12%, 스킬 쿨타임 -2초", Branch.SUPPORT, 1, null),
         SUPPORT_2("support_2", "전리품 감정 II", "처치 주화 추가 +12%, 쿨타임 추가 -2초", Branch.SUPPORT, 2, SUPPORT_1),
         SUPPORT_3("support_3", "전리품 감정 III", "처치 주화 추가 +12%, 쿨타임 추가 -2초", Branch.SUPPORT, 3, SUPPORT_2);
@@ -139,29 +141,12 @@ public final class VillageSkillTreeSystem {
             this.prerequisite = prerequisite;
         }
 
-        public String id() {
-            return id;
-        }
-
-        public String title() {
-            return title;
-        }
-
-        public String description() {
-            return description;
-        }
-
-        public Branch branch() {
-            return branch;
-        }
-
-        public int tier() {
-            return tier;
-        }
-
-        public Node prerequisite() {
-            return prerequisite;
-        }
+        public String id() { return id; }
+        public String title() { return title; }
+        public String description() { return description; }
+        public Branch branch() { return branch; }
+        public int tier() { return tier; }
+        public Node prerequisite() { return prerequisite; }
 
         public static Optional<Node> parse(String value) {
             String normalized = value.toLowerCase(Locale.ROOT);
