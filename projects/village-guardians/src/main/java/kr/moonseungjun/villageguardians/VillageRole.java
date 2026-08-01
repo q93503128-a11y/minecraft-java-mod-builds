@@ -8,45 +8,31 @@ public enum VillageRole {
     GUARD_CAPTAIN(
             "guard_captain",
             "수비대장",
-            "전열에서 적을 붙잡고 아군의 공격과 방어를 동시에 끌어올리는 지휘 역할입니다.",
-            "높은 레벨일수록 힘·저항 전술이 강해집니다.",
-            "주변 아군에게 힘과 저항을 부여합니다.",
-            "성문 수비와 보스 집중 전투"),
-    BUILDER(
-            "builder",
-            "건축가",
-            "시설이 무너지기 전까지 버티는 데 특화된 방어 지원 역할입니다.",
-            "마을 안에서 받는 피해 감소 효과와 궁합이 좋습니다.",
+            "성문과 전열에서 적을 붙잡는 근접 지휘 역할입니다.",
+            "검 피해가 증가하고 받는 피해가 감소합니다.",
+            "주변 아군에게 힘과 저항을 부여하고 가까운 적을 휩씁니다.",
+            "성문 수비, 보스 고정, 근접 전투"),
+    RANGER(
+            "ranger",
+            "성벽 궁수",
+            "성벽 위에서 활로 적의 진입을 끊는 원거리 전문 역할입니다.",
+            "투사체 피해가 증가하며 성벽 위에서는 추가 피해를 줍니다.",
+            "주변 아군에게 기동력과 야간 시야를 주고 원거리 집중 상태를 부여합니다.",
+            "성벽 사격, 정예 적 제거, 도탄·불화살 운용"),
+    ENGINEER(
+            "engineer",
+            "공병대장",
+            "방어탑·용병과 시설 방어를 강화하는 공성 대응 역할입니다.",
+            "마을 안에서 받는 피해가 줄고 방어탑의 공격 효율을 높입니다.",
             "주변 아군에게 강한 저항과 흡수 체력을 부여합니다.",
-            "성벽이 밀리는 장기 방어전"),
-    QUARTERMASTER(
-            "quartermaster",
-            "보급관",
-            "교전 중 아군의 체력을 즉시 보충하고 전선을 유지하는 보급 역할입니다.",
-            "상점·보급소 운영과 지원 스킬 트리에 잘 맞습니다.",
-            "주변 아군을 즉시 치유하고 재생을 부여합니다.",
-            "여러 명이 흩어져 싸우는 멀티플레이"),
-    SCOUT(
-            "scout",
-            "정찰병",
-            "빠른 이동으로 성벽과 건물 사이를 오가며 침투한 적을 처리합니다.",
-            "이동·시야 중심의 전투 운영에 유리합니다.",
-            "주변 아군에게 속도와 야간 시야를 부여합니다.",
-            "성문 돌파 후 내부 기동전"),
-    STEWARD(
-            "steward",
-            "관리관",
-            "전투와 마을 운영을 균형 있게 보조하는 지속 지원 역할입니다.",
-            "훈련·수리·보급을 자주 이용하는 성장형 플레이에 적합합니다.",
-            "주변 아군에게 신속한 작업과 재생 효과를 부여합니다.",
-            "낮 정비와 밤 전투를 모두 담당할 때"),
+            "시설 방어, 장기전, 방어탑·용병 중심 운영"),
     MEDIC(
             "medic",
             "의무관",
-            "큰 피해를 입은 파티를 한 번에 회복시키는 전문 치료 역할입니다.",
-            "의무소 강화와 방어 스킬 트리의 효율이 높습니다.",
-            "주변 아군을 크게 치유하고 재생·흡수 체력을 부여합니다.",
-            "고난도 웨이브와 보스전");
+            "큰 피해를 입은 파티를 회복시키는 전문 지원 역할입니다.",
+            "받는 피해가 조금 감소하고 의무소 치료 효율이 높아집니다.",
+            "주변 아군을 즉시 치유하고 재생·흡수 체력을 부여합니다.",
+            "고난도 웨이브, 보스전, 멀티플레이 회복");
 
     private final String id;
     private final String koreanName;
@@ -99,10 +85,18 @@ public enum VillageRole {
     }
 
     public static Optional<VillageRole> parse(String value) {
+        if (value == null) {
+            return Optional.empty();
+        }
         String normalized = value.toLowerCase(Locale.ROOT);
-        return Arrays.stream(values())
-                .filter(role -> role.id.equals(normalized))
-                .findFirst();
+        return switch (normalized) {
+            case "builder", "steward", "engineer" -> Optional.of(ENGINEER);
+            case "quartermaster", "medic" -> Optional.of(MEDIC);
+            case "scout", "ranger" -> Optional.of(RANGER);
+            default -> Arrays.stream(values())
+                    .filter(role -> role.id.equals(normalized))
+                    .findFirst();
+        };
     }
 
     public static String ids() {
