@@ -15,16 +15,18 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.npc.villager.VillagerProfession;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -50,7 +52,7 @@ public final class RuralNpcManager {
         for (NpcDefinition definition : publicDefinitions(origin)) {
             Villager villager = find(level, definition.name(), definition.home()).orElse(null);
             if (villager == null) villager = spawnVillager(level, definition.name(), definition.home());
-            if (villager != null) configureShop(villager, definition.name());
+            if (villager != null) configureShop(level, villager, definition.name());
         }
     }
 
@@ -112,12 +114,11 @@ public final class RuralNpcManager {
 
             Optional<CountrysideWorldData.PlayerEstate> estate = estateByCustomerName(data, villager.getName().getString());
             if (estate.isEmpty()) continue;
-            tickCustomer(level, villageOrigin, villager, estate.get(), time);
+            tickCustomer(villageOrigin, villager, estate.get(), time);
         }
     }
 
     private static void tickCustomer(
-            ServerLevel level,
             BlockPos villageOrigin,
             Villager villager,
             CountrysideWorldData.PlayerEstate estate,
@@ -156,8 +157,7 @@ public final class RuralNpcManager {
         }
 
         if (isShopNpc(name)) {
-            // Leave the event uncancelled so Minecraft opens the real merchant screen.
-            configureShop(villager, name);
+            configureShop(player.level(), villager, name);
             return;
         }
 
@@ -171,29 +171,43 @@ public final class RuralNpcManager {
         return FARMER_NAME.equals(name) || RANCHER_NAME.equals(name) || HALL_KEEPER_NAME.equals(name);
     }
 
-    private static void configureShop(Villager villager, String name) {
+    private static void configureShop(ServerLevel level, Villager villager, String name) {
         if (!isShopNpc(name)) return;
+
+        var profession = FARMER_NAME.equals(name)
+                ? VillagerProfession.FARMER
+                : RANCHER_NAME.equals(name)
+                ? VillagerProfession.SHEPHERD
+                : VillagerProfession.LIBRARIAN;
+        villager.setVillagerData(
+                villager.getVillagerData()
+                        .withProfession(level.registryAccess(), profession)
+                        .withLevel(5)
+        );
+
         MerchantOffers offers = new MerchantOffers();
         if (FARMER_NAME.equals(name)) {
             offers.add(offer(1, Items.WHEAT_SEEDS, 8));
             offers.add(offer(2, Items.CARROT, 4));
             offers.add(offer(2, Items.POTATO, 4));
-            offers.add(offer(3, Items.HAY_BLOCK, 1));
+            offers.add(offer(3, Blocks.HAY_BLOCK, 1));
             offers.add(offer(4, Items.WATER_BUCKET, 1));
+            offers.add(offer(3, Items.HONEY_BOTTLE, 1));
+            offers.add(offer(1, Items.BOWL, 4));
         } else if (RANCHER_NAME.equals(name)) {
             offers.add(offer(2, Items.WHEAT, 8));
-            offers.add(offer(3, Items.OAK_FENCE_GATE, 2));
+            offers.add(offer(3, Blocks.OAK_FENCE_GATE, 2));
             offers.add(offer(4, Items.LEAD, 1));
             offers.add(offer(6, Items.NAME_TAG, 1));
             offers.add(offer(4, Items.SHEARS, 1));
         } else {
-            offers.add(offer(2, Items.FLOWER_POT, 2));
-            offers.add(offer(3, Items.LANTERN, 2));
+            offers.add(offer(2, Blocks.FLOWER_POT, 2));
+            offers.add(offer(3, Blocks.LANTERN, 2));
             offers.add(offer(4, Items.ITEM_FRAME, 2));
             offers.add(offer(5, Items.PAINTING, 1));
-            offers.add(offer(5, Items.BOOKSHELF, 2));
-            offers.add(offer(3, Items.YELLOW_CARPET, 8));
-            offers.add(offer(4, Items.OAK_STAIRS, 12));
+            offers.add(offer(5, Blocks.BOOKSHELF, 2));
+            offers.add(offer(3, Blocks.CARPET.pick(DyeColor.YELLOW), 8));
+            offers.add(offer(4, Blocks.OAK_STAIRS, 12));
         }
         villager.setOffers(offers);
     }
