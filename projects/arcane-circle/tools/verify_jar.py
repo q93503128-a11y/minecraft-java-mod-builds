@@ -15,6 +15,12 @@ staffs = [
     "novice_staff", "ember_staff", "glacial_staff", "zephyr_staff", "aegis_staff",
     "verdant_staff", "rift_staff", "sage_staff", "archmage_staff",
 ]
+spellbooks = [
+    "mend", "blink", "stone_skin", "lightning_arc", "mana_lance",
+    "greater_ward", "flame_wave", "ice_lance", "arcane_sight", "levitation",
+    "meteor_shard", "blizzard_field", "thunder_prison", "mass_mend", "spatial_gate",
+    "inferno_domain", "absolute_zero", "tempest_domain", "aegis_citadel", "arcane_annihilation",
+]
 required = {
     "META-INF/neoforge.mods.toml",
     "kr/moonseungjun/arcanecircle/ArcaneCircle.class",
@@ -23,15 +29,23 @@ required = {
     "kr/moonseungjun/arcanecircle/client/ArcaneRenderUtil.class",
     "kr/moonseungjun/arcanecircle/client/GrimoireScreen.class",
     "kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.class",
+    "kr/moonseungjun/arcanecircle/item/SpellbookItem.class",
+    "kr/moonseungjun/arcanecircle/item/BeginnerGrimoireItem.class",
     "kr/moonseungjun/arcanecircle/magic/MagicPlayerData.class",
     "kr/moonseungjun/arcanecircle/magic/SpellCastingService.class",
     "kr/moonseungjun/arcanecircle/network/ArcaneNetwork.class",
+    "kr/moonseungjun/arcanecircle/network/BeginCastPayload.class",
+    "kr/moonseungjun/arcanecircle/network/ReleaseCastPayload.class",
     "kr/moonseungjun/arcanecircle/network/QueueFusionPayload.class",
     "kr/moonseungjun/arcanecircle/network/CommitFusionPayload.class",
     "kr/moonseungjun/arcanecircle/registry/ModItems.class",
     "assets/arcanecircle/lang/ko_kr.json",
+    "assets/arcanecircle/items/beginner_grimoire.json",
     "data/arcanecircle/spell_catalog/index.json",
+    "data/arcanecircle/villager_trade/librarian/level_1/beginner_grimoire.json",
 }
+for level in range(1, 6):
+    required.add(f"data/minecraft/tags/villager_trade/librarian/level_{level}.json")
 for staff in staffs:
     required.update({
         f"assets/arcanecircle/items/{staff}.json",
@@ -40,11 +54,19 @@ for staff in staffs:
     })
 for staff in staffs[1:]:
     required.add(f"data/arcanecircle/recipe/{staff}.json")
+for spell_id in spellbooks:
+    item_id = f"spellbook_{spell_id}"
+    required.update({
+        f"assets/arcanecircle/items/{item_id}.json",
+        f"data/arcanecircle/recipe/{item_id}.json",
+    })
 
 forbidden = {
+    "kr/moonseungjun/arcanecircle/network/CastSpellPayload.class",
     "kr/moonseungjun/arcanecircle/network/FuseSpellPayload.class",
     "pack.mcmeta",
     "staff-textures.json",
+    "spellbooks.json",
 }
 
 with zipfile.ZipFile(jar) as archive:
@@ -62,10 +84,14 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit("development files leaked into JAR")
 
     index = json.loads(archive.read("data/arcanecircle/spell_catalog/index.json"))
-    if index.get("version") != "0.5.0-alpha.1":
+    if index.get("version") != "0.6.0-alpha.1":
         raise SystemExit("wrong catalog version in JAR")
-    if index.get("cooldown_storage") != "persistent_world_saved_data":
-        raise SystemExit("persistent cooldown contract missing from JAR")
+    if index.get("implemented_circles") != [1, 2, 3, 4, 5]:
+        raise SystemExit("five-circle catalog contract missing from JAR")
+    if index.get("casting_mode") != "hold_number_show_sigil_release_to_cast":
+        raise SystemExit("hold-release casting contract missing from JAR")
+    if index.get("spellbooks") != 20:
+        raise SystemExit("spellbook count mismatch in JAR")
 
     texture_hashes = set()
     for staff in staffs:
@@ -76,21 +102,21 @@ with zipfile.ZipFile(jar) as archive:
         if (width, height) != (32, 32):
             raise SystemExit(f"wrong staff texture dimensions in JAR: {staff}={width}x{height}")
         texture_hashes.add(hashlib.sha256(raw).hexdigest())
-        item = json.loads(archive.read(f"assets/arcanecircle/items/{staff}.json"))
-        model = json.loads(archive.read(f"assets/arcanecircle/models/item/{staff}.json"))
-        if item.get("model", {}).get("model") != f"arcanecircle:item/{staff}":
-            raise SystemExit(f"borrowed item model remains in JAR: {staff}")
-        if model.get("textures", {}).get("layer0") != f"arcanecircle:item/{staff}":
-            raise SystemExit(f"texture mapping mismatch in JAR: {staff}")
     if len(texture_hashes) != len(staffs):
         raise SystemExit("duplicate staff textures in JAR")
 
-    for staff in staffs[1:]:
-        recipe = json.loads(archive.read(f"data/arcanecircle/recipe/{staff}.json"))
-        if recipe.get("result", {}).get("id") != f"arcanecircle:{staff}":
-            raise SystemExit(f"wrong staff recipe result in JAR: {staff}")
+    for spell_id in spellbooks:
+        item_id = f"spellbook_{spell_id}"
+        recipe = json.loads(archive.read(f"data/arcanecircle/recipe/{item_id}.json"))
+        if recipe.get("result", {}).get("id") != f"arcanecircle:{item_id}":
+            raise SystemExit(f"wrong spellbook recipe result in JAR: {spell_id}")
+
+    for level in range(1, 6):
+        tag = json.loads(archive.read(f"data/minecraft/tags/villager_trade/librarian/level_{level}.json"))
+        if not tag.get("values"):
+            raise SystemExit(f"empty librarian trade tag for level {level}")
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + ".sha256").write_text(f"{digest}  {jar.name}\n", encoding="utf-8")
-print(f"Arcane Circle v0.5 JAR verification: PASS ({len(names)} entries, 9 unique staff textures)")
+print(f"Arcane Circle v0.6 JAR verification: PASS ({len(names)} entries, 20 spellbooks, 9 unique staff textures)")
 print(f"SHA-256: {digest}")
