@@ -1,3 +1,6 @@
 Arcane v0.8 migration payload decoded: part0=6000, part1=6000, part2=6000, part3=6000, part4=9939, part5=3939 repair=insert@34067:'0'
 Arcane Circle v0.8 world patch applied: 90 direct spells, 85 spellbooks
-Arcane v0.8 lifecycle, sigil scaling, combat awards, and wallet sync normalized
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v08_magic_world.py", line 182, in <module>
+    raise RuntimeError("survival economy resource generation still remains after v0.8 migration")
+RuntimeError: survival economy resource generation still remains after v0.8 migration
