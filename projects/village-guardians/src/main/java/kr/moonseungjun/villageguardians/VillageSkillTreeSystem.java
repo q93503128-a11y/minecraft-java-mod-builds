@@ -55,11 +55,11 @@ public final class VillageSkillTreeSystem {
 
     public static synchronized String purchase(ServerPlayer player, String nodeId) {
         if (!hasValidAllocation(player)) {
-            return "스킬 사용량이 획득 포인트보다 많아 안전 잠금되었습니다. 관리자에게 데이터 복구를 요청하세요.";
+            return "사용한 포인트가 획득 포인트보다 많아 안전 잠금되었습니다.";
         }
         Node node = Node.parse(nodeId).orElse(null);
         if (node == null) {
-            return "알 수 없는 스킬 노드입니다.";
+            return "알 수 없는 전술 노드입니다.";
         }
         if (has(player, node)) {
             return node.title() + "은(는) 이미 습득했습니다.";
@@ -68,7 +68,7 @@ public final class VillageSkillTreeSystem {
             return "먼저 " + node.prerequisite().title() + "을(를) 습득해야 합니다.";
         }
         if (availablePoints(player) <= 0) {
-            return "사용 가능한 스킬 포인트가 없습니다. 3레벨마다 1포인트를 얻습니다.";
+            return "사용 가능한 전술 포인트가 없습니다. 3레벨마다 1포인트를 얻습니다.";
         }
         int mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0);
         UNLOCKED_MASKS.put(player.getUUID(), mask | bit(node));
@@ -90,23 +90,76 @@ public final class VillageSkillTreeSystem {
     }
 
     public static float outgoingDamageMultiplier(ServerPlayer player) {
-        return 1.0f + branchRanks(player, Branch.POWER) * 0.08f;
+        float bonus = 0.0f;
+        if (has(player, Node.POWER_1)) bonus += 0.06f;
+        if (has(player, Node.POWER_2)) bonus += 0.06f;
+        if (has(player, Node.POWER_4)) bonus += 0.08f;
+        return 1.0f + bonus;
+    }
+
+    public static float executionMultiplier(ServerPlayer player, float health, float maximum) {
+        return has(player, Node.POWER_3) && maximum > 0.0f && health / maximum <= 0.30f
+                ? 1.18f : 1.0f;
     }
 
     public static float projectileDamageMultiplier(ServerPlayer player) {
-        return 1.0f + branchRanks(player, Branch.RANGED) * 0.10f;
+        float bonus = 0.0f;
+        if (has(player, Node.RANGED_1)) bonus += 0.08f;
+        if (has(player, Node.RANGED_4)) bonus += 0.10f;
+        return 1.0f + bonus;
+    }
+
+    public static int projectileFireBonusTicks(ServerPlayer player) {
+        return has(player, Node.RANGED_2) ? 70 : 0;
+    }
+
+    public static int extraRicochetTargets(ServerPlayer player) {
+        int extra = 0;
+        if (has(player, Node.RANGED_3)) extra++;
+        if (has(player, Node.RANGED_5)) extra += 2;
+        return extra;
     }
 
     public static float incomingDamageMultiplier(ServerPlayer player) {
-        return Math.max(0.75f, 1.0f - branchRanks(player, Branch.GUARD) * 0.07f);
+        float reduction = 0.0f;
+        if (has(player, Node.GUARD_1)) reduction += 0.05f;
+        if (has(player, Node.GUARD_2)) reduction += 0.05f;
+        if (has(player, Node.GUARD_4)) reduction += 0.06f;
+        return Math.max(0.72f, 1.0f - reduction);
+    }
+
+    public static float lowHealthIncomingMultiplier(ServerPlayer player) {
+        return has(player, Node.GUARD_3) && player.getHealth() <= player.getMaxHealth() * 0.35f
+                ? 0.82f : 1.0f;
+    }
+
+    public static boolean emergencyBarrierUnlocked(ServerPlayer player) {
+        return has(player, Node.GUARD_5);
     }
 
     public static float coinRewardMultiplier(ServerPlayer player) {
-        return 1.0f + branchRanks(player, Branch.SUPPORT) * 0.12f;
+        float bonus = 0.0f;
+        if (has(player, Node.SUPPORT_1)) bonus += 0.08f;
+        if (has(player, Node.SUPPORT_4)) bonus += 0.10f;
+        return 1.0f + bonus;
     }
 
     public static int cooldownReductionSeconds(ServerPlayer player) {
-        return branchRanks(player, Branch.SUPPORT) * 2;
+        int reduction = 0;
+        if (has(player, Node.SUPPORT_2)) reduction += 2;
+        if (has(player, Node.SUPPORT_4)) reduction += 2;
+        return reduction;
+    }
+
+    public static boolean sharedSupplyChanceUnlocked(ServerPlayer player) {
+        return has(player, Node.SUPPORT_3);
+    }
+
+    public static float killHealAmount(ServerPlayer player) {
+        float amount = 0.0f;
+        if (has(player, Node.POWER_5)) amount += 2.0f;
+        if (has(player, Node.SUPPORT_5)) amount += 1.0f;
+        return amount;
     }
 
     public static int branchRanks(ServerPlayer player, Branch branch) {
@@ -151,18 +204,29 @@ public final class VillageSkillTreeSystem {
     }
 
     public enum Node {
-        POWER_1("power_1", "정밀 타격 I", "모든 공격 피해 +8%", Branch.POWER, 1, null),
-        POWER_2("power_2", "정밀 타격 II", "모든 공격 피해 추가 +8%", Branch.POWER, 2, POWER_1),
-        POWER_3("power_3", "정밀 타격 III", "모든 공격 피해 추가 +8%", Branch.POWER, 3, POWER_2),
-        GUARD_1("guard_1", "강철 방어 I", "받는 피해 7% 감소", Branch.GUARD, 1, null),
-        GUARD_2("guard_2", "강철 방어 II", "받는 피해 추가 7% 감소", Branch.GUARD, 2, GUARD_1),
-        GUARD_3("guard_3", "강철 방어 III", "받는 피해 추가 7% 감소", Branch.GUARD, 3, GUARD_2),
-        SUPPORT_1("support_1", "전리품 감정 I", "처치 주화 +12%, 역할 스킬 쿨타임 -2초", Branch.SUPPORT, 1, null),
-        SUPPORT_2("support_2", "전리품 감정 II", "처치 주화 추가 +12%, 쿨타임 추가 -2초", Branch.SUPPORT, 2, SUPPORT_1),
-        SUPPORT_3("support_3", "전리품 감정 III", "처치 주화 추가 +12%, 쿨타임 추가 -2초", Branch.SUPPORT, 3, SUPPORT_2),
-        RANGED_1("ranged_1", "장거리 조준 I", "화살과 투사체 피해 +10%", Branch.RANGED, 1, null),
-        RANGED_2("ranged_2", "장거리 조준 II", "화살과 투사체 피해 추가 +10%", Branch.RANGED, 2, RANGED_1),
-        RANGED_3("ranged_3", "장거리 조준 III", "화살과 투사체 피해 추가 +10%", Branch.RANGED, 3, RANGED_2);
+        POWER_1("power_1", "예리한 공세", "모든 공격 피해 +6%", Branch.POWER, 1, null),
+        POWER_2("power_2", "전투 가속", "모든 공격 피해 추가 +6%", Branch.POWER, 2, POWER_1),
+        POWER_3("power_3", "처형 본능", "체력이 30% 이하인 적에게 피해 +18%", Branch.POWER, 3, POWER_2),
+        POWER_4("power_4", "파쇄 집중", "모든 공격 피해 추가 +8%", Branch.POWER, 4, POWER_3),
+        POWER_5("power_5", "피의 환류", "적 처치 시 체력 1칸 회복", Branch.POWER, 5, POWER_4),
+
+        GUARD_1("guard_1", "강철 방어", "받는 피해 5% 감소", Branch.GUARD, 1, null),
+        GUARD_2("guard_2", "충격 분산", "받는 피해 추가 5% 감소", Branch.GUARD, 2, GUARD_1),
+        GUARD_3("guard_3", "최후의 방벽", "체력 35% 이하에서 받는 피해 추가 18% 감소", Branch.GUARD, 3, GUARD_2),
+        GUARD_4("guard_4", "중갑 적응", "받는 피해 추가 6% 감소", Branch.GUARD, 4, GUARD_3),
+        GUARD_5("guard_5", "응급 장막", "위기 상황에서 역할 기술의 보호 효과가 강화됨", Branch.GUARD, 5, GUARD_4),
+
+        SUPPORT_1("support_1", "전리품 감정", "처치 주화 +8%", Branch.SUPPORT, 1, null),
+        SUPPORT_2("support_2", "빠른 재정비", "장착 기술 재사용 대기시간 -2초", Branch.SUPPORT, 2, SUPPORT_1),
+        SUPPORT_3("support_3", "공동 회수", "적 처치 시 낮은 확률로 공동 보급품 획득", Branch.SUPPORT, 3, SUPPORT_2),
+        SUPPORT_4("support_4", "숙련된 지휘", "처치 주화 +10%, 기술 재사용 -2초", Branch.SUPPORT, 4, SUPPORT_3),
+        SUPPORT_5("support_5", "전선 회복", "적 처치 시 체력 0.5칸 회복", Branch.SUPPORT, 5, SUPPORT_4),
+
+        RANGED_1("ranged_1", "장거리 조준", "화살과 투사체 피해 +8%", Branch.RANGED, 1, null),
+        RANGED_2("ranged_2", "발화 촉", "화살 적중 시 대상을 불태움", Branch.RANGED, 2, RANGED_1),
+        RANGED_3("ranged_3", "도탄 각도", "도탄 사격 대상 +1", Branch.RANGED, 3, RANGED_2),
+        RANGED_4("ranged_4", "관통 장력", "화살과 투사체 피해 추가 +10%", Branch.RANGED, 4, RANGED_3),
+        RANGED_5("ranged_5", "분열 사격", "연쇄 사격 대상 +2", Branch.RANGED, 5, RANGED_4);
 
         private final String id;
         private final String title;
@@ -186,34 +250,15 @@ public final class VillageSkillTreeSystem {
             this.prerequisite = prerequisite;
         }
 
-        public String id() {
-            return id;
-        }
-
-        public String title() {
-            return title;
-        }
-
-        public String description() {
-            return description;
-        }
-
-        public Branch branch() {
-            return branch;
-        }
-
-        public int tier() {
-            return tier;
-        }
-
-        public Node prerequisite() {
-            return prerequisite;
-        }
+        public String id() { return id; }
+        public String title() { return title; }
+        public String description() { return description; }
+        public Branch branch() { return branch; }
+        public int tier() { return tier; }
+        public Node prerequisite() { return prerequisite; }
 
         public static Optional<Node> parse(String value) {
-            if (value == null) {
-                return Optional.empty();
-            }
+            if (value == null) return Optional.empty();
             String normalized = value.toLowerCase(Locale.ROOT);
             return Arrays.stream(values())
                     .filter(node -> node.id.equals(normalized))
