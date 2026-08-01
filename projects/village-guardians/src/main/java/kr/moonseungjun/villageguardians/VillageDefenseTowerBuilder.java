@@ -9,11 +9,42 @@ final class VillageDefenseTowerBuilder {
     private VillageDefenseTowerBuilder() {}
 
     static void build(ServerLevel level, BlockPos center) {
+        build(level, center, VillageProgressionSystem.wallLevel());
+    }
+
+    static void build(ServerLevel level, BlockPos center, int installedStage) {
         int radius = VillageWorldSystem.FORTRESS_RADIUS - 4;
-        buildBallista(level, center.offset(radius, 13, -radius));
-        buildFlame(level, center.offset(-radius, 13, -radius));
-        buildFrost(level, center.offset(radius, 13, radius));
-        buildArcane(level, center.offset(-radius, 13, radius));
+        BlockPos ballista = center.offset(radius, 13, -radius);
+        BlockPos flame = center.offset(-radius, 13, -radius);
+        BlockPos frost = center.offset(radius, 13, radius);
+        BlockPos arcane = center.offset(-radius, 13, radius);
+
+        clearInstallationPad(level, ballista);
+        clearInstallationPad(level, flame);
+        clearInstallationPad(level, frost);
+        clearInstallationPad(level, arcane);
+
+        if (installedStage >= 1) buildBallista(level, ballista);
+        if (installedStage >= 2) buildFlame(level, flame);
+        if (installedStage >= 3) buildFrost(level, frost);
+        if (installedStage >= 4) buildArcane(level, arcane);
+    }
+
+    private static void clearInstallationPad(ServerLevel level, BlockPos base) {
+        for (int x = -3; x <= 3; x++) {
+            for (int z = -3; z <= 3; z++) {
+                set(level, base.offset(x, 0, z), Blocks.STONE_BRICKS);
+                for (int y = 1; y <= 7; y++) set(level, base.offset(x, y, z), Blocks.AIR);
+            }
+        }
+        for (int x = -3; x <= 3; x++) {
+            set(level, base.offset(x, 1, -3), Blocks.STONE_BRICK_WALL);
+            set(level, base.offset(x, 1, 3), Blocks.STONE_BRICK_WALL);
+        }
+        for (int z = -2; z <= 2; z++) {
+            set(level, base.offset(-3, 1, z), Blocks.STONE_BRICK_WALL);
+            set(level, base.offset(3, 1, z), Blocks.STONE_BRICK_WALL);
+        }
     }
 
     private static void buildBallista(ServerLevel level, BlockPos base) {
