@@ -1,4 +1,4 @@
-# Countryside Days alpha.12 paid-workers, public-fishing and restaurant-layout validation.
+# Countryside Days alpha.13 life-clock, routing, multiplayer-worker and private-storage validation.
 name: Build Countryside Days
 
 on:
@@ -65,6 +65,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import json
+          import re
 
           root = Path('src/main/resources/assets/countrysidedays/lang')
           parsed = {}
@@ -105,12 +106,17 @@ jobs:
           for key in required:
               if not isinstance(ko.get(key), str) or not ko[key].strip():
                   raise SystemExit(f'missing Korean localization for {key}')
+          for key, value in ko.items():
+              if key.startswith('hud.countrysidedays.'):
+                  visible = re.sub(r'§.', '', value)
+                  if not re.search(r'[가-힣]', visible):
+                      raise SystemExit(f'Korean HUD lacks Korean text: {key}={value!r}')
           if ko['hud.countrysidedays.shift_closed'].startswith('CLOSED'):
               raise SystemExit('Korean HUD text still falls back to English')
           for key in ('message.countrysidedays.personal_estate_ready', 'message.countrysidedays.property_deed'):
               if '%s' in ko[key]:
                   raise SystemExit(f'raw coordinate placeholder leaked into Korean guidance: {key}')
-          print(f'Validated {len(ko)} matching UTF-8 localization keys.')
+          print(f'Validated {len(ko)} matching UTF-8 localization keys and Korean HUD strings.')
           PY
 
       - name: Validate countryside gameplay contracts
@@ -124,9 +130,11 @@ jobs:
           workers = Path('src/main/java/kr/countrysidedays/gameplay/EstateWorkerManager.java').read_text('utf-8')
           fishing = Path('src/main/java/kr/countrysidedays/gameplay/CountrysideFishingManager.java').read_text('utf-8')
           npc = Path('src/main/java/kr/countrysidedays/gameplay/RuralNpcManager.java').read_text('utf-8')
+          ranch = Path('src/main/java/kr/countrysidedays/gameplay/RanchLifeManager.java').read_text('utf-8')
           layout = Path('src/main/java/kr/countrysidedays/world/PlayerEstateLayout.java').read_text('utf-8')
           restaurant = Path('src/main/java/kr/countrysidedays/world/SharedRestaurantBuilder.java').read_text('utf-8')
           notebook = Path('src/main/java/kr/countrysidedays/item/RecipeNotebookItem.java').read_text('utf-8')
+          guide = Path('src/main/java/kr/countrysidedays/item/LifeGuideItem.java').read_text('utf-8')
           items = Path('src/main/java/kr/countrysidedays/registry/ModItems.java').read_text('utf-8')
 
           required_sources = (
@@ -138,7 +146,7 @@ jobs:
           )
           for source in required_sources:
               if not Path(source).is_file():
-                  raise SystemExit(f'missing alpha.12 source: {source}')
+                  raise SystemExit(f'missing alpha.13 source: {source}')
 
           for exact in (
               'new ItemStack(Items.WHEAT_SEEDS, 32)',
@@ -146,26 +154,51 @@ jobs:
               'new ItemStack(Items.POTATO, 8)',
               'Items.STONE_HOE.getDefaultInstance()',
               'CountrysideFishingManager.isAllowed',
+              'ModItems.RECIPE_NOTEBOOK.get().getDefaultInstance()',
+              'ModItems.LIFE_GUIDE.get().getDefaultInstance()',
           ):
               if exact not in gameplay:
-                  raise SystemExit(f'starter or fishing contract missing: {exact}')
+                  raise SystemExit(f'starter, book, or fishing contract missing: {exact}')
 
           if 'ensureEstateWorker(' in village:
               raise SystemExit('legacy free automatic worker spawning returned')
           for exact in (
               'EstateWorkerManager.maintain',
               'EstateWorkerManager.isActive',
+              'canStoreAll',
+              'storeAll',
+              'isFaceSturdy',
           ):
               if exact not in village:
-                  raise SystemExit(f'paid worker integration missing: {exact}')
+                  raise SystemExit(f'worker, storage, or safe-routing contract missing: {exact}')
+          if 'Block.popResource' in village or 'storeOrDrop' in village:
+              raise SystemExit('private farm or ranch production can still spill into the public world')
+
           for exact in (
               'HIRING_FEE = 12',
               'DAILY_WAGE = 2',
               'MAX_MISSED_WAGES = 3',
               'consumeDailyWage',
+              'maintainWorker(level, data, villager, day)',
           ):
               if exact not in workers:
                   raise SystemExit(f'worker contract missing: {exact}')
+          if 'nearbyEstate' in workers:
+              raise SystemExit('overlapping estate search boxes can still suppress the real worker owner')
+
+          for source_name, source in (
+              ('HUD', gameplay),
+              ('village schedule', village),
+              ('worker wages', workers),
+              ('resident and customer schedule', npc),
+              ('ranch production', ranch),
+          ):
+              if 'getDayTime()' not in source:
+                  raise SystemExit(f'{source_name} does not use visible world time')
+              if 'getGameTime() / 24000L' in source or 'getGameTime() / 24000' in source:
+                  raise SystemExit(f'{source_name} still derives calendar days from server uptime')
+              if 'Math.floorMod(level.getGameTime(), 24000L)' in source:
+                  raise SystemExit(f'{source_name} still derives daily schedule from server uptime')
 
           for exact in (
               'dx >= -50 && dx <= -34',
@@ -180,9 +213,11 @@ jobs:
               'customerSeatYaw',
               'Pose.SITTING',
               'Math.floorMod(Long.hashCode(seed), 6)',
+              'removeLegacyCustomers(level, estate.originPos())',
+              'isFaceSturdy',
           ):
               if exact not in npc:
-                  raise SystemExit(f'restaurant guest or owner-access contract missing: {exact}')
+                  raise SystemExit(f'restaurant guest, cleanup, or safe-routing contract missing: {exact}')
           for exact in (
               'restaurantRevisionMarker',
               'customerSeatFacing',
@@ -201,14 +236,17 @@ jobs:
           for forbidden in ('손님 주문', '손님 보상', '조리 기록', '일꾼 고용', '월급'):
               if forbidden in notebook:
                   raise SystemExit(f'recipe notebook contains non-recipe management content: {forbidden}')
-          for required_recipe in ('민물고기 구이', '감자전', '꿀당근 샐러드'):
+          for required_recipe in ('시골 전골', '들나물 차', '농가 아침식사', '민물고기 구이', '감자전', '꿀당근 샐러드'):
               if required_recipe not in notebook:
-                  raise SystemExit(f'new recipe missing from notebook: {required_recipe}')
+                  raise SystemExit(f'recipe missing from notebook: {required_recipe}')
+          for required_topic in ('시작 지원', '공동 식당', '일꾼 고용', '개인 농장', '개인 목장', '변동 장터'):
+              if required_topic not in guide:
+                  raise SystemExit(f'life guide topic missing: {required_topic}')
           for field in ('GRILLED_RIVER_FISH', 'POTATO_PANCAKE', 'HONEY_CARROT_SALAD'):
               if field not in items:
                   raise SystemExit(f'new menu item not registered: {field}')
 
-          print('Paid workers, public fishing, owner access, six dishes, and clean seating contracts passed.')
+          print('Alpha.13 world-time, paid-worker, private-storage, safe-routing, book separation, fishing, restaurant, and economy contracts passed.')
           PY
 
       - name: Clean build
@@ -320,8 +358,8 @@ jobs:
             echo "Minecraft client never reached rendered resource readiness."
             exit 1
           fi
-          if ! grep -q "Countryside Days 0.1.0-alpha.12 core content registered" ci-logs/client.log; then
-            echo "Countryside Days alpha.12 did not register in the client process."
+          if ! grep -q "Countryside Days 0.1.0-alpha.13 core content registered" ci-logs/client.log; then
+            echo "Countryside Days alpha.13 did not register in the client process."
             exit 1
           fi
           if ! grep -q "Countryside Days compact navigation HUD registered" ci-logs/client.log; then
@@ -341,17 +379,17 @@ jobs:
       - name: Verify JAR and create deliverables
         id: jarcheck
         run: |
-          JAR="build/libs/countrysidedays-0.1.0-alpha.12.jar"
+          JAR="build/libs/countrysidedays-0.1.0-alpha.13.jar"
           python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification.log
           mkdir -p build/deliverables
           cp "$JAR" build/deliverables/
-          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.12.jar.sha256"
+          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.13.jar.sha256"
 
       - name: Upload executable JAR
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.12-deliverables
+          name: countryside-days-0.1.0-alpha.13-deliverables
           path: projects/countryside-days/build/deliverables/
           if-no-files-found: error
           retention-days: 14
@@ -360,7 +398,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.12-logs
+          name: countryside-days-0.1.0-alpha.13-logs
           path: projects/countryside-days/ci-logs/
           if-no-files-found: warn
           retention-days: 14
@@ -387,7 +425,7 @@ jobs:
 
           - Workflow run: ${RUN_ID}
           - Source commit: ${SOURCE_SHA}
-          - Mod version: 0.1.0-alpha.12
+          - Mod version: 0.1.0-alpha.13
           - Minecraft: 26.2
           - Java: 25
           - Gradle: 9.2.1
@@ -404,7 +442,7 @@ jobs:
           - Client smoke test: ${CLIENT_OUTCOME}
           - JAR structure verification: ${JAR_OUTCOME}
 
-          This report is generated by GitHub Actions. GameTests verify the rebuilt shared restaurant, correctly directed guest chairs, a clear centre aisle, owner access before opening, no free starter workers, paid worker constants, public-only fishing boundaries, six menu dishes, independent private ranch production, deterministic safe market prices, protected buildings, and multiplayer estate isolation. Source and built-JAR validation require matching UTF-8 Korean and English localization keys and every new worker, fishing, recipe, item, model, and class asset. Server and virtual-display client smoke tests remain mandatory. A human visual play test is still recommended before a stable release.
+          This report is generated by GitHub Actions. Alpha.13 validates UTF-8 Korean HUD coverage, separate recipe and life books, visible-world-time schedules, paid workers across overlapping multiplayer estate searches, atomic private farm storage, safe resident and guest routing, remote legacy-customer cleanup, shared restaurant seating and owner access, public-only fishing, private ranch production, deterministic safe market prices, protected buildings, and multiplayer estate isolation. Clean build, Datagen, required GameTests, runtime data reload, superflat server generation audit, virtual-display client boot, and final JAR inspection remain mandatory.
           REPORT
 
           for LOG in clean-build datagen gametest server client; do
