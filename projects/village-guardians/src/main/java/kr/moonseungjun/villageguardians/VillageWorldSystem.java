@@ -52,7 +52,8 @@ public final class VillageWorldSystem {
         BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition()).immutable();
         boolean firstBuild = !level.getBlockState(center.below(2)).is(Blocks.LODESTONE);
         boolean visualRevisionMissing = !level.getBlockState(center.below(4)).is(Blocks.RESPAWN_ANCHOR)
-                || !level.getBlockState(center.below(5)).is(Blocks.AMETHYST_BLOCK);
+                || !level.getBlockState(center.below(5)).is(Blocks.AMETHYST_BLOCK)
+                || !level.getBlockState(center.below(6)).is(Blocks.COPPER_BLOCK);
         if (!firstBuild && !visualRevisionMissing) return;
 
         generationInProgress = true;
@@ -62,7 +63,7 @@ public final class VillageWorldSystem {
                 VillageProgressionSystem.restoreFacilitiesForMigration();
             } else {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 정비] §f미설치 방어탑을 정리하고 시설 시그니처 문양을 적용합니다."));
+                        "§6[마을 정비] §f지붕 표식을 제거하고 출입구 정면 문양으로 교체합니다."));
             }
             buildAll(level, center);
             if (!firstBuild) {
@@ -74,7 +75,7 @@ public final class VillageWorldSystem {
             }
             purgeUnauthorizedVillageMobs(server);
             player.sendSystemMessage(Component.literal(
-                    "§a[마을 준비 완료] §f건물 문양과 설치 단계별 방어탑이 적용됐습니다."));
+                    "§a[마을 준비 완료] §f건물 지붕이 복구되고 정면 문양과 방어탑이 적용됐습니다."));
         } finally {
             generationInProgress = false;
         }
@@ -257,6 +258,7 @@ public final class VillageWorldSystem {
         VillageDefenseTowerBuilder.build(level, center);
         VillageBuildingSignatures.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
+        VillageFortressTerrain.set(level, center.below(6), Blocks.COPPER_BLOCK);
         VillageFortressTerrain.set(level, center.below(5), Blocks.AMETHYST_BLOCK);
         VillageFortressTerrain.set(level, center.below(4), Blocks.RESPAWN_ANCHOR);
         VillageFortressTerrain.set(level, center.below(3), Blocks.CRYING_OBSIDIAN);
