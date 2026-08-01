@@ -22,7 +22,7 @@ for token in [
     if token not in data:
         raise SystemExit(f"missing live fusion/mastery contract: {token}")
 
-for token in ["cast(ServerPlayer player, boolean fusion)", "cast.fusion()", "prelude(", "sigil(", "dualSpiral("]:
+for token in ["cast(ServerPlayer player, boolean fusion)", "completeCast(player, cast)", "prelude(", "sigil(", "dualSpiral("]:
     if token not in casting:
         raise SystemExit(f"missing casting/visual contract: {token}")
 
