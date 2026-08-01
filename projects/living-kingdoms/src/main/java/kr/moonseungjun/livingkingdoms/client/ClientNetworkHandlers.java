@@ -50,6 +50,6 @@ public final class ClientNetworkHandlers {
     }
 
     private static void handleOpenCodex(OpenCodexPayload payload, IPayloadContext context) {
-        Minecraft.getInstance().gui.setScreen(new RealmCodexScreenV2(payload.page(), payload.snapshot()));
+        Minecraft.getInstance().gui.setScreen(new RealmCodexScreenV3(payload.page(), payload.snapshot()));
     }
 }
