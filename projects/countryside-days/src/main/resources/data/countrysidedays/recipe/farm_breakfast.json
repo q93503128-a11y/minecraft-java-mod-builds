@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "food",
+  "ingredients": [
+    "minecraft:egg",
+    "minecraft:potato",
+    "minecraft:carrot",
+    "minecraft:bowl"
+  ],
+  "result": {
+    "id": "countrysidedays:farm_breakfast",
+    "count": 1
+  }
+}
