@@ -64,6 +64,7 @@ public final class RuralGameplayHandler {
             StarterHomesteadGenerator.buildPlayerEstate(
                     serverLevel, estateOrigin, estate.ownerName(), estate.restaurantName()
             );
+            VillageLifeManager.prepareNewEstate(serverLevel, estateOrigin);
             StarterHomesteadGenerator.connectEstateToVillage(serverLevel, villageOrigin, estateOrigin);
             RuralNpcManager.ensureEstateAnimals(serverLevel, estate);
         } else {
@@ -72,11 +73,16 @@ public final class RuralGameplayHandler {
             );
             RuralNpcManager.ensureEstateAnimals(serverLevel, estate);
         }
+        VillageLifeManager.ensureVillageLife(serverLevel, villageOrigin, data);
 
         boolean firstArrival = player.addTag(STARTER_KIT_TAG);
         if (firstArrival) {
             giveOrDrop(player, ModItems.RECIPE_NOTEBOOK.get().getDefaultInstance());
+            giveOrDrop(player, ModItems.LIFE_GUIDE.get().getDefaultInstance());
             giveOrDrop(player, Items.FISHING_ROD.getDefaultInstance());
+            giveOrDrop(player, new ItemStack(Items.WHEAT_SEEDS, 24));
+            giveOrDrop(player, new ItemStack(Items.CARROT, 16));
+            giveOrDrop(player, new ItemStack(Items.POTATO, 16));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_kit"));
         }
 
@@ -96,6 +102,7 @@ public final class RuralGameplayHandler {
                     restaurant.getX(), restaurant.getZ(),
                     ranch.getX(), ranch.getZ()
             ));
+            player.sendSystemMessage(Component.translatable("message.countrysidedays.empty_farm_ready"));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.meet_resident"));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.keep_inventory_enabled"));
         }
