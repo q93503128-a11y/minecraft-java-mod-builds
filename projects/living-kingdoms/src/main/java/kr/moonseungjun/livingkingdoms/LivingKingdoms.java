@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.livingkingdoms.crime.CrimeManager;
+import kr.moonseungjun.livingkingdoms.economy.RealmEconomyManager;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
@@ -78,6 +79,8 @@ public final class LivingKingdoms {
         OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
             LivingRealmWorldManager.requestPlacement(player, profile);
             SkillProgressionManager.state(player);
+            RealmEconomyManager.account(player);
+            RealmEconomyManager.sync(player);
         });
     }
 
@@ -91,6 +94,8 @@ public final class LivingKingdoms {
         OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
             LivingRealmWorldManager.requestPlacement(player, profile);
             SkillProgressionManager.state(player);
+            RealmEconomyManager.account(player);
+            RealmEconomyManager.sync(player);
         });
     }
 
@@ -114,6 +119,7 @@ public final class LivingKingdoms {
         SkillProgressionManager.tick(player);
         SkillCrimeHooks.tick(player);
         CrimeManager.tickPlayer(player);
+        RealmEconomyManager.tick(player);
     }
 
     private void onIncomingDamage(LivingIncomingDamageEvent event) {
