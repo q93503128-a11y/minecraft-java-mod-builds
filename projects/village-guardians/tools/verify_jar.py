@@ -46,6 +46,8 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageTownHallScreen.class",
     "kr/moonseungjun/villageguardians/VillageInventoryPanel.class",
     "kr/moonseungjun/villageguardians/VillageUiScreen.class",
+    "kr/moonseungjun/villageguardians/VillageFacilityScreen.class",
+    "kr/moonseungjun/villageguardians/VillageStatusScreen.class",
     "kr/moonseungjun/villageguardians/VillageQuickChatScreen.class",
     "kr/moonseungjun/villageguardians/VillageActionDescriptions.class",
     "kr/moonseungjun/villageguardians/VillageStarterKit.class",
@@ -122,6 +124,10 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
+    print("[PASS] Dedicated facility UI prioritizes descriptions and keeps controls compact")
+    print("[PASS] Read-only status UI contains no generic action selector")
+    print("[PASS] Facility repair and upgrade are available at local terminals and town hall")
+    print("[PASS] Roof signatures migrate to front-facing facade marks")
     print("[PASS] Ten regular enemy roles, four bosses and eight wave traits are present")
     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
     print("[PASS] Twelve persistent tower branches alter attacks and world silhouettes")
