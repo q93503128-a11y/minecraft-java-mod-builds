@@ -40,20 +40,26 @@ public final class CountrysidePropertyManager {
 
         Player player = event.getPlayer();
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        Optional<CountrysideWorldData.PlayerEstate> estate = data.estateAt(event.getPos());
         Optional<CountrysideWorldData.PlayerEstate> sharedRestaurant = SharedRestaurantAccess.restaurantEstate(data);
 
-        if (sharedRestaurant.isPresent()
-                && event.getPos().equals(PlayerEstateLayout.restaurantSign(sharedRestaurant.get().originPos()))
-                && event.getItemStack().is(Items.NAME_TAG)) {
-            renameRestaurant(event, level, player, data, sharedRestaurant.get());
-            return;
-        }
-
-        if (sharedRestaurant.isPresent()
-                && PlayerEstateLayout.isRestaurantArea(sharedRestaurant.get().originPos(), event.getPos())
-                && SharedRestaurantAccess.isStaff(data, player.getUUID())) {
-            return;
+        if (sharedRestaurant.isPresent()) {
+            BlockPos origin = sharedRestaurant.get().originPos();
+            if (isAutomaticRestaurantAccess(origin, event.getPos())) {
+                event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
+                player.sendOverlayMessage(Component.translatable(
+                        "message.countrysidedays.restaurant_access_automatic"
+                ));
+                return;
+            }
+            if (event.getPos().equals(PlayerEstateLayout.restaurantSign(origin))
+                    && event.getItemStack().is(Items.NAME_TAG)) {
+                renameRestaurant(event, level, player, data, sharedRestaurant.get());
+                return;
+            }
+            if (PlayerEstateLayout.isRestaurantArea(origin, event.getPos())
+                    && SharedRestaurantAccess.isStaff(data, player.getUUID())) {
+                return;
+            }
         }
 
         Optional<Plot> plot = plotAt(level, event.getPos());
@@ -68,6 +74,12 @@ public final class CountrysidePropertyManager {
                 "message.countrysidedays.property_container_denied",
                 plot.get().displayName()
         ));
+    }
+
+    private static boolean isAutomaticRestaurantAccess(BlockPos origin, BlockPos pos) {
+        BlockPos gate = PlayerEstateLayout.restaurantGate(origin);
+        BlockPos door = PlayerEstateLayout.restaurantDoor(origin);
+        return pos.equals(gate) || pos.equals(door) || pos.equals(door.above());
     }
 
     private static void renameRestaurant(
