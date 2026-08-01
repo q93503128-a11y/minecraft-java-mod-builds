@@ -69,8 +69,8 @@ public final class EstateWorkerManager {
     }
 
     /**
-     * Maintains only the small loaded area around each estate. The former 2,800-block-wide
-     * global scan was both unnecessary and expensive on long-lived multiplayer worlds.
+     * Maintains only the small loaded area around each estate. Overlapping search boxes are
+     * deduplicated by worker UUID, while the worker's own owner tag remains the source of truth.
      */
     public static void maintain(
             ServerLevel level,
@@ -83,7 +83,7 @@ public final class EstateWorkerManager {
             AABB search = workerBounds(estate.originPos());
             for (Villager villager : level.getEntitiesOfClass(Villager.class, search)) {
                 if (!visited.add(villager.getUUID())) continue;
-                maintainWorker(level, data, estate, villager, day);
+                maintainWorker(level, data, villager, day);
             }
         }
     }
@@ -91,7 +91,6 @@ public final class EstateWorkerManager {
     private static void maintainWorker(
             ServerLevel level,
             CountrysideWorldData data,
-            CountrysideWorldData.PlayerEstate nearbyEstate,
             Villager villager,
             long day
     ) {
@@ -113,7 +112,6 @@ public final class EstateWorkerManager {
             villager.discard();
             return;
         }
-        if (!estate.ownerUuid().equals(nearbyEstate.ownerUuid())) return;
 
         long checkedDay = getLongTag(villager, CHECK_DAY_PREFIX, -1L);
         if (checkedDay >= day) {
@@ -368,7 +366,7 @@ public final class EstateWorkerManager {
     }
 
     private static long gameDay(ServerLevel level) {
-        return Math.max(0L, level.getGameTime() / 24000L);
+        return Math.max(0L, level.getDayTime() / 24000L);
     }
 
     private static int getIntTag(Villager villager, String prefix, int fallback) {
