@@ -119,4 +119,22 @@ for java_file in java_root.rglob("*.java"):
 if renamed_calls < 2:
     raise RuntimeError(f"expected economy declaration and cast caller, renamed only {renamed_calls} occurrence(s)")
 
-print("Arcane v0.8 lifecycle, sigil scaling, and combat Arcana award flow normalized")
+# Send the authoritative persistent wallet balance through the same snapshot as
+# mana, circle and cooldowns so the HUD and academy shop cannot disagree.
+network_java = java_root / "network/ArcaneNetwork.java"
+network_source = network_java.read_text(encoding="utf-8")
+if "import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;" not in network_source:
+    network_source = network_source.replace(
+        "import kr.moonseungjun.arcanecircle.magic.SpellCatalog;",
+        "import kr.moonseungjun.arcanecircle.magic.SpellCatalog;\n"
+        "import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;"
+    )
+if '";marks="' not in network_source:
+    anchor = '                + ";mana=" + (int) state.mana()'
+    replacement = anchor + '\n                + ";marks=" + ArcaneEconomyService.balance(player)'
+    if anchor not in network_source:
+        raise RuntimeError("could not locate Arcane network mana snapshot anchor")
+    network_source = network_source.replace(anchor, replacement, 1)
+network_java.write_text(network_source, encoding="utf-8")
+
+print("Arcane v0.8 lifecycle, sigil scaling, combat awards, and wallet sync normalized")
