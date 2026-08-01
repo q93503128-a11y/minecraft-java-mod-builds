@@ -22,7 +22,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
@@ -30,9 +29,10 @@ import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import java.util.List;
 import java.util.Set;
 
-/** Crimes create local warrants; guards must physically pursue, subdue and escort the player. */
+/** Crimes create local warrants; guards physically pursue, subdue and arrest instead of killing. */
 public final class CrimeManager {
-    private static final int ARREST_TIME = 100;
+    private static final int ARREST_TIME = 80;
+    private static final float SUBDUED_HEALTH = 6.0F;
     private static final List<String> GUARD_NAME_MARKERS = List.of(
             "에르덴 변경경비대", "실바나 수림경비대", "카르둠 산문수호자"
     );
@@ -43,6 +43,33 @@ public final class CrimeManager {
     public static void handleDamage(LivingIncomingDamageEvent event) {
         Entity attacker = event.getSource().getEntity();
         Entity victim = event.getEntity();
+
+        // This must run in the incoming-damage phase, before vanilla death, inventory drops and
+        // respawn cloning. A guard's would-be lethal hit becomes an immediate arrest.
+        if (victim instanceof ServerPlayer player && isGuard(attacker)
+                && player.level() instanceof ServerLevel level && isLivingRealm(level)) {
+            CrimeSavedData data = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE);
+            CrimeSavedData.CrimeRecord record = data.record(player.getUUID());
+            String local = RealmJurisdiction.at(level, player.blockPosition());
+            if (local != null && record.wantedHere(local)) {
+                float projectedHealth = player.getHealth() - Math.max(0.0F, event.getAmount());
+                if (projectedHealth <= 0.5F) {
+                    event.setAmount(0.0F);
+                    player.setHealth(Math.max(1.0F, player.getHealth()));
+                    completeArrest(level, player, local, data);
+                    return;
+                }
+                if (projectedHealth <= SUBDUED_HEALTH) {
+                    if (record.arrestTicks() == 0) {
+                        player.sendSystemMessage(Component.literal(
+                                "§6[제압됨] §f경비대가 공격을 멈추고 체포 절차를 시작합니다."
+                        ));
+                    }
+                    data.setArrestTicks(player.getUUID(), Math.max(20, record.arrestTicks()));
+                    for (Mob guard : guardsNear(level, player, 72.0)) guard.setTarget(null);
+                }
+            }
+        }
 
         if (attacker instanceof ServerPlayer player && victim instanceof Villager villager
                 && player.level() instanceof ServerLevel level && isLivingRealm(level)) {
@@ -62,6 +89,22 @@ public final class CrimeManager {
 
     public static void handleDeath(LivingDeathEvent event) {
         Entity killer = event.getSource().getEntity();
+
+        // Secondary safety net. The incoming-damage interception above should normally prevent this
+        // path, but cancellation here guarantees that guard combat never reaches vanilla respawn.
+        if (event.getEntity() instanceof ServerPlayer player && isGuard(killer)
+                && player.level() instanceof ServerLevel level && isLivingRealm(level)) {
+            CrimeSavedData data = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE);
+            CrimeSavedData.CrimeRecord record = data.record(player.getUUID());
+            String local = RealmJurisdiction.at(level, player.blockPosition());
+            if (local != null && record.wantedHere(local)) {
+                event.setCanceled(true);
+                player.setHealth(1.0F);
+                completeArrest(level, player, local, data);
+                return;
+            }
+        }
+
         if (!(killer instanceof ServerPlayer player)
                 || !(event.getEntity() instanceof Villager villager)
                 || !(player.level() instanceof ServerLevel level)
@@ -111,7 +154,7 @@ public final class CrimeManager {
         }
 
         if (!guards.isEmpty() && level.getGameTime() - record.lastCrimeTick() > 400L
-                && level.getGameTime() % 400L == 0L) {
+                && level.getGameTime() % 400L == 0L && record.arrestTicks() == 0) {
             record = data.addResistance(player.getUUID(), level.getGameTime());
             player.sendSystemMessage(Component.literal(
                     "§c[추격 강화] §f계속 저항해 증원 경비대가 호출됩니다. 단계 §e" + record.resistance()
@@ -120,15 +163,15 @@ public final class CrimeManager {
 
         Mob closest = closestGuard(guards, player);
         if (closest == null) return;
-        if (player.getHealth() <= 6.0F && closest.distanceToSqr(player) <= 12.25) {
+        if (player.getHealth() <= SUBDUED_HEALTH && closest.distanceToSqr(player) <= 16.0) {
             int arrestTicks = record.arrestTicks() + 20;
             data.setArrestTicks(player.getUUID(), arrestTicks);
             for (Mob guard : guards) guard.setTarget(null);
-            player.sendSystemMessage(Component.literal(
-                    arrestTicks < ARREST_TIME
-                            ? "§6[체포 시도] §f경비병이 제압하려 합니다. 달아나거나 다시 저항할 수 있습니다."
-                            : "§c[체포됨] §f경비대에게 붙잡혀 구금 시설로 호송됩니다."
-            ));
+            if (record.arrestTicks() == 0) {
+                player.sendSystemMessage(Component.literal(
+                        "§6[체포 시도] §f제압됐습니다. 잠시 후 관할 구금 시설로 호송됩니다."
+                ));
+            }
             if (arrestTicks >= ARREST_TIME) completeArrest(level, player, local, data);
         } else if (record.arrestTicks() > 0) {
             data.setArrestTicks(player.getUUID(), 0);
@@ -186,6 +229,7 @@ public final class CrimeManager {
     }
 
     private static boolean isGuard(Entity entity) {
+        if (entity == null) return false;
         String name = entity.getName().getString();
         for (String marker : GUARD_NAME_MARKERS) if (name.contains(marker)) return true;
         return false;
@@ -207,12 +251,14 @@ public final class CrimeManager {
                                        CrimeSavedData data) {
         BlockPos jail = RealmJurisdiction.jail(level, jurisdiction);
         endLocalPursuit(level, player);
+        player.setHealth(Math.max(10.0F, Math.min(player.getMaxHealth(), player.getHealth())));
+        player.getFoodData().setFoodLevel(Math.max(14, player.getFoodData().getFoodLevel()));
+        player.setDeltaMovement(0.0, 0.0, 0.0);
         player.teleportTo(level, jail.getX() + 0.5, jail.getY(), jail.getZ() + 0.5,
                 Set.<Relative>of(), player.getYRot(), player.getXRot(), true);
-        player.setHealth(Math.max(player.getHealth(), 10.0F));
         data.settleAfterArrest(player.getUUID());
         player.sendSystemMessage(Component.literal(
-                "§6[구금] §f현장 체포 뒤 해당 관할의 구금 시설로 호송됐습니다. 일부 수배도가 남을 수 있습니다."
+                "§6[구금] §f사망하지 않고 제압됐습니다. 소지품을 유지한 채 관할 구금 시설로 호송됐습니다."
         ));
     }
 
