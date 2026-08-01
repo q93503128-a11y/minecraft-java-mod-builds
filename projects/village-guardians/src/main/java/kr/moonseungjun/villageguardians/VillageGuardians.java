@@ -105,6 +105,7 @@ public final class VillageGuardians {
                 && level.getServer() != null
                 && level == level.getServer().overworld()
                 && event.getEntity() instanceof Mob mob
+                && VillageWorldSystem.isInsideVillageArea(mob.blockPosition())
                 && !VillageWorldSystem.isAllowedGameMob(mob)) {
             event.setCanceled(true);
         }
@@ -112,6 +113,7 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onIncomingDamage(LivingIncomingDamageEvent event) {
+        VillageWorldSystem.recordCombat(event);
         VillageRpgSystem.handleIncomingDamage(event);
     }
 
