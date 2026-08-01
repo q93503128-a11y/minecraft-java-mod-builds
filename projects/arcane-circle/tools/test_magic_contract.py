@@ -15,6 +15,7 @@ screen = (JAVA / "client/GrimoireScreen.java").read_text(encoding="utf-8")
 hud = (JAVA / "client/ArcaneHud.java").read_text(encoding="utf-8")
 render = (JAVA / "client/ArcaneRenderUtil.java").read_text(encoding="utf-8")
 items = (JAVA / "registry/ModItems.java").read_text(encoding="utf-8")
+staff_item = (JAVA / "item/ArcaneStaffItem.java").read_text(encoding="utf-8")
 
 for token in [
     "prepareSlot(ServerPlayer player, int slot)",
@@ -58,7 +59,7 @@ for token in ["cooldownArc", "spellRune"]:
 if items.count("register(\"") < 9:
     raise SystemExit("fewer than nine staves are registered")
 for token in ["manaCostMultiplier", "powerMultiplier", "rangeMultiplier", "cooldownMultiplier", "regenMultiplier"]:
-    if token not in items:
+    if token not in staff_item:
         raise SystemExit(f"missing staff modifier family: {token}")
 
 for token in ["QueueFusionPayload.TYPE", "CommitFusionPayload.TYPE", "slots=", "cooldowns=", "staff_power="]:
