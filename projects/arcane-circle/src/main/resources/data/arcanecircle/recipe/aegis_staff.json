@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "arcanecircle:novice_staff",
+    "minecraft:shield",
+    "minecraft:gold_ingot"
+  ],
+  "result": {
+    "count": 1,
+    "id": "arcanecircle:aegis_staff"
+  }
+}
