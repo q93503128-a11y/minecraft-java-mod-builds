@@ -30,7 +30,7 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -141,7 +141,7 @@ public final class LivingKingdoms {
         CrimeManager.handleDeath(event);
     }
 
-    private void onBlockBreakAttempt(BlockEvent.BreakEvent event) {
+    private void onBlockBreakAttempt(BreakBlockEvent event) {
         FantasyWorldRules.handleBlockBreak(event);
     }
 
