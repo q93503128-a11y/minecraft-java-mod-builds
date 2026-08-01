@@ -3,7 +3,7 @@ package kr.moonseungjun.livingkingdoms.world;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
-/** Shared dynamic boundaries and civic landmarks derived from surveyed sites. */
+/** Shared dynamic boundaries and civic landmarks derived from completed surveyed sites. */
 public final class RealmJurisdiction {
     private RealmJurisdiction() {
     }
@@ -17,14 +17,17 @@ public final class RealmJurisdiction {
 
     public static boolean inside(ServerLevel level, BlockPos pos, String homelandId, int radius) {
         RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, homelandId);
-        if (site == null) return false;
+        if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) return false;
         long dx = pos.getX() - site.centerX();
         long dz = pos.getZ() - site.centerZ();
         return dx * dx + dz * dz <= (long) radius * radius;
     }
 
     public static BlockPos jail(ServerLevel level, String jurisdiction) {
-        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.ensureBuilt(level, jurisdiction);
+        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, jurisdiction);
+        if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) {
+            throw new IllegalStateException("Jurisdiction is not ready: " + jurisdiction);
+        }
         int[] offset = switch (jurisdiction) {
             case "silvana_forest" -> new int[]{-84, 0, 74};
             case "kardum_league" -> new int[]{60, 11, -72};
