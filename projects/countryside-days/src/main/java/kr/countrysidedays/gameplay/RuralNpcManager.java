@@ -5,6 +5,7 @@ import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
 import kr.countrysidedays.world.SharedRestaurantBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -72,7 +73,7 @@ public final class RuralNpcManager {
         SharedRestaurantAccess.restaurantEstate(data).ifPresent(shared -> {
             if (shared.ownerUuid().equals(estate.ownerUuid())) ensureSharedCustomers(level, shared);
         });
-        removeLegacyCustomers(level);
+        removeLegacyCustomers(level, estate.originPos());
 
         BlockPos origin = estate.originPos();
         AABB ranch = estateRanchBounds(origin);
@@ -94,11 +95,11 @@ public final class RuralNpcManager {
         }
     }
 
-    private static void removeLegacyCustomers(ServerLevel level) {
+    private static void removeLegacyCustomers(ServerLevel level, BlockPos centre) {
         Set<String> active = new HashSet<>(List.of(CUSTOMER_NAMES));
         for (Villager villager : level.getEntitiesOfClass(
                 Villager.class,
-                new AABB(BlockPos.ZERO).inflate(1200.0, 64.0, 1200.0),
+                new AABB(centre).inflate(600.0, 64.0, 600.0),
                 villager -> true
         )) {
             String name = villager.getName().getString();
@@ -133,8 +134,8 @@ public final class RuralNpcManager {
     }
 
     public static void tickVillage(ServerLevel level, BlockPos villageOrigin) {
-        long time = Math.floorMod(level.getGameTime(), 24000L);
-        long day = Math.max(0L, level.getGameTime() / 24000L);
+        long time = Math.floorMod(level.getDayTime(), 24000L);
+        long day = Math.max(0L, level.getDayTime() / 24000L);
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
         CountrysideWorldData.PlayerEstate restaurantEstate = SharedRestaurantAccess
                 .restaurantEstate(data)
@@ -183,7 +184,7 @@ public final class RuralNpcManager {
     }
 
     public static boolean isRestaurantBusinessTime(ServerLevel level) {
-        long time = Math.floorMod(level.getGameTime(), 24000L);
+        long time = Math.floorMod(level.getDayTime(), 24000L);
         return time >= OPEN_TIME && time < CLOSE_TIME;
     }
 
@@ -246,6 +247,7 @@ public final class RuralNpcManager {
             BlockPos outside = served
                     ? customerDayActivity(villageOrigin, slot, day)
                     : PlayerEstateLayout.customerWaiting(estate.originPos(), slot);
+            outside = nearestWalkable(level, outside);
             if (PlayerEstateLayout.isRestaurantArea(estate.originPos(), villager.blockPosition())) {
                 moveImmediately(villager, outside);
             }
@@ -409,7 +411,7 @@ public final class RuralNpcManager {
             return;
         }
 
-        long day = Math.max(0L, level.getGameTime() / 24000L);
+        long day = Math.max(0L, level.getDayTime() / 24000L);
         if (estate.customerServedToday(day, customer.slot())) {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.customer_already_served"));
             return;
@@ -523,9 +525,10 @@ public final class RuralNpcManager {
     }
 
     private static boolean isWalkable(ServerLevel level, BlockPos pos) {
+        BlockPos floorPos = pos.below();
         return level.getBlockState(pos).isAir()
                 && level.getBlockState(pos.above()).isAir()
-                && !level.getBlockState(pos.below()).isAir();
+                && level.getBlockState(floorPos).isFaceSturdy(level, floorPos, Direction.UP);
     }
 
     private static void moveImmediately(Villager villager, BlockPos pos) {
