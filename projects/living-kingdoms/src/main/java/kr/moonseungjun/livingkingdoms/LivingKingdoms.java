@@ -12,6 +12,7 @@ import kr.moonseungjun.livingkingdoms.world.ConstructionDebrisCleaner;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
+import kr.moonseungjun.livingkingdoms.world.RealmCivicRealismFinisher;
 import kr.moonseungjun.livingkingdoms.world.RealmFacilityFinisher;
 import kr.moonseungjun.livingkingdoms.world.RealmSitePlanner;
 import kr.moonseungjun.livingkingdoms.world.SelectionStagingManager;
@@ -66,6 +67,7 @@ public final class LivingKingdoms {
     private void onServerTick(ServerTickEvent.Post event) {
         RealmBuildCoordinator.onServerTick(event);
         RealmFacilityFinisher.onServerTick(event);
+        RealmCivicRealismFinisher.onServerTick(event);
         ConstructionDebrisCleaner.onServerTick(event);
     }
 
