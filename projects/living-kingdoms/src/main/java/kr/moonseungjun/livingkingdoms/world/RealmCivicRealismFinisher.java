@@ -12,9 +12,10 @@ import java.util.List;
 /**
  * Adds the unglamorous infrastructure that makes a fantasy settlement believable: water access,
  * controlled gates, drainage, public lighting, storage, ventilation and maintained work yards.
+ * Every placement is audited against PlannedRealmBuilder's occupied lots.
  */
 public final class RealmCivicRealismFinisher {
-    public static final int REVISION = 1;
+    public static final int REVISION = 2;
     private static final int FLAGS = Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS;
 
     private RealmCivicRealismFinisher() {
@@ -42,22 +43,23 @@ public final class RealmCivicRealismFinisher {
         int cz = site.centerZ();
         int y = clamp(site.baseY(), 68, 112);
 
-        publicWell(level, cx + 14, y, cz + 3, Blocks.STONE_BRICKS, Blocks.SMOOTH_STONE);
+        // East of the market lot and west of the inn frontage: visible, central and not destructive.
+        publicWell(level, cx + 32, y, cz + 8, Blocks.STONE_BRICKS, Blocks.SMOOTH_STONE);
         customsHouse(level, cx - 13, y, cz - 97);
         customsHouse(level, cx + 12, y, cz + 94);
 
         for (int z = cz - 82; z <= cz + 82; z += 18) {
-            streetLamp(level, cx - 7, y, z, Blocks.SPRUCE_FENCE);
-            streetLamp(level, cx + 7, y, z, Blocks.SPRUCE_FENCE);
+            streetLamp(level, cx - 7, z, Blocks.SPRUCE_FENCE);
+            streetLamp(level, cx + 7, z, Blocks.SPRUCE_FENCE);
         }
         for (int x = cx - 100; x <= cx + 100; x += 20) {
-            streetLamp(level, x, y, cz - 7, Blocks.SPRUCE_FENCE);
-            streetLamp(level, x, y, cz + 7, Blocks.SPRUCE_FENCE);
+            streetLamp(level, x, cz - 7, Blocks.SPRUCE_FENCE);
+            streetLamp(level, x, cz + 7, Blocks.SPRUCE_FENCE);
         }
 
-        // Shallow, covered runoff channels follow the two principal streets instead of cutting
-        // randomly through houses. Iron bars serve as visible grates at regular maintenance points.
+        // Covered runoff channels follow the central road, but stop before the market square.
         for (int z = cz - 88; z <= cz + 88; z++) {
+            if (Math.abs(z - cz) <= 27) continue;
             set(level, cx - 6, y, z, Blocks.SMOOTH_STONE);
             set(level, cx + 6, y, z, Blocks.SMOOTH_STONE);
             if (Math.floorMod(z - cz, 12) == 0) {
@@ -66,13 +68,19 @@ public final class RealmCivicRealismFinisher {
             }
         }
 
-        // Deep burgage-style rear plots: narrow frontage, long gardens and service alleys.
-        for (int x = cx - 58; x <= cx + 62; x += 24) {
-            hedgeLine(level, x, y + 1, cz + 41, cz + 65);
-            set(level, x + 3, y + 1, cz + 56, Blocks.COMPOSTER);
-            set(level, x + 5, y + 1, cz + 56, Blocks.BARREL);
+        // Rear service spaces behind the southern house row, before the east-west service road.
+        int[] houseOrigins = {-56, -32, -8, 20, 49};
+        for (int houseX : houseOrigins) {
+            int serviceX = cx + houseX + 4;
+            set(level, serviceX, y + 1, cz + 45, Blocks.COMPOSTER);
+            set(level, serviceX + 2, y + 1, cz + 45, Blocks.BARREL);
+            for (int z = cz + 43; z <= cz + 51; z++) {
+                set(level, cx + houseX - 3, y + 1, z, Blocks.OAK_LEAVES);
+            }
         }
-        granaryYard(level, cx + 78, y, cz + 66);
+
+        // South of the existing granary, clear of houses and the inner wall.
+        granaryServiceYard(level, cx + 82, y, cz + 91);
     }
 
     private static void finishSilvana(ServerLevel level, RealmSiteLayoutSavedData.RealmSite site) {
@@ -80,27 +88,16 @@ public final class RealmCivicRealismFinisher {
         int cz = site.centerZ();
         int y = clamp(site.baseY(), 70, 122);
 
-        publicWell(level, cx + 67, y, cz + 60, Blocks.MOSSY_COBBLESTONE, Blocks.MOSS_BLOCK);
-        for (int[] point : new int[][]{{22, 18}, {-24, 22}, {38, -18}, {-42, -9}, {61, 50}, {-62, 48}}) {
-            livingLantern(level, cx + point[0], y, cz + point[1]);
+        publicWell(level, cx + 28, y, cz - 55, Blocks.MOSSY_COBBLESTONE, Blocks.MOSS_BLOCK);
+        for (int[] point : new int[][]{{22, 18}, {-24, 22}, {38, -18}, {-42, -9}, {61, 42}, {-62, 42}}) {
+            livingLantern(level, cx + point[0], cz + point[1]);
         }
 
-        // Rain catchment and herb processing sit near the moon garden, away from sleeping lodges.
-        for (int x = cx + 73; x <= cx + 83; x++) {
-            for (int z = cz + 55; z <= cz + 65; z++) {
-                boolean edge = x == cx + 73 || x == cx + 83 || z == cz + 55 || z == cz + 65;
-                set(level, x, y, z, edge ? Blocks.MOSSY_STONE_BRICKS : Blocks.WATER);
-            }
-        }
+        // A small rain pond between the central tree and southern lodge/council lots.
+        rainCatchment(level, cx - 16, y, cz + 70);
+        herbDryingYard(level, cx + 24, y, cz + 69);
         for (int i = 0; i < 5; i++) {
-            int x = cx + 91 + i * 3;
-            set(level, x, y + 1, cz + 74, Blocks.SPRUCE_FENCE);
-            set(level, x, y + 2, cz + 74, Blocks.SPRUCE_FENCE);
-            set(level, x, y + 3, cz + 74, Blocks.DARK_OAK_SLAB);
-            set(level, x, y + 1, cz + 76, Blocks.BARREL);
-        }
-        for (int i = 0; i < 6; i++) {
-            set(level, cx - 74 + i * 4, y + 1, cz + 68, Blocks.COMPOSTER);
+            set(level, cx + 4 + i * 4, y + 1, cz + 61, Blocks.COMPOSTER);
         }
     }
 
@@ -110,20 +107,28 @@ public final class RealmCivicRealismFinisher {
         int y = clamp(site.baseY(), 74, 138);
 
         mountainCistern(level, cx + 28, y + 2, cz + 67);
-        for (int[] point : new int[][]{{-80, -55}, {80, -55}, {-84, 72}, {84, 72}}) {
-            ventilationStack(level, cx + point[0], y, cz + point[1]);
+        for (int[] point : new int[][]{{-96, -82}, {96, -82}, {-96, 88}, {96, 88}}) {
+            ventilationStack(level, cx + point[0], cz + point[1]);
         }
         for (int z = cz - 70; z <= cz + 78; z += 18) {
-            basaltLamp(level, cx - 7, y + 1, z);
-            basaltLamp(level, cx + 7, y + 1, z);
+            basaltLamp(level, cx - 7, cz + (z - cz));
+            basaltLamp(level, cx + 7, cz + (z - cz));
         }
-        oreWeighYard(level, cx + 86, y + 1, cz + 65);
 
-        // Firebreaks around the forge: nonflammable paving and accessible water, rather than wood
-        // directly touching open furnaces throughout the quarter.
-        fill(level, cx - 27, y, cz + 31, cx + 9, y, cz + 57, Blocks.POLISHED_DEEPSLATE);
-        for (int x = cx - 24; x <= cx + 6; x += 6) {
-            set(level, x, y + 1, cz + 54, Blocks.CAULDRON);
+        // Complete the existing ore yard rather than placing a second yard on top of it.
+        oreYardLedger(level, cx + 94, y + 1, cz + 72);
+
+        // Raised forge begins at y+3; a base-level nonflammable apron and outside water points are safe.
+        for (int x = cx - 24; x <= cx + 10; x++) {
+            set(level, x, y, cz + 34, Blocks.POLISHED_DEEPSLATE);
+            set(level, x, y, cz + 59, Blocks.POLISHED_DEEPSLATE);
+        }
+        for (int z = cz + 34; z <= cz + 59; z++) {
+            set(level, cx - 24, y, z, Blocks.POLISHED_DEEPSLATE);
+            set(level, cx + 10, y, z, Blocks.POLISHED_DEEPSLATE);
+        }
+        for (int z : new int[]{cz + 40, cz + 48, cz + 56}) {
+            set(level, cx + 13, y + 1, z, Blocks.CAULDRON);
         }
     }
 
@@ -154,24 +159,36 @@ public final class RealmCivicRealismFinisher {
         set(level, x - 2, y + 1, z, Blocks.LECTERN);
     }
 
-    private static void granaryYard(ServerLevel level, int x, int y, int z) {
-        fill(level, x - 8, y, z - 6, x + 8, y, z + 6, Blocks.PACKED_MUD);
-        for (int px = x - 6; px <= x + 6; px += 4) {
-            set(level, px, y + 1, z - 3, Blocks.BARREL);
-            set(level, px, y + 1, z + 3, Blocks.HAY_BLOCK);
+    private static void granaryServiceYard(ServerLevel level, int x, int y, int z) {
+        fill(level, x - 7, y, z - 4, x + 7, y, z + 4, Blocks.PACKED_MUD);
+        for (int px = x - 5; px <= x + 5; px += 5) {
+            set(level, px, y + 1, z - 2, Blocks.BARREL);
+            set(level, px, y + 1, z + 2, Blocks.HAY_BLOCK);
         }
-        streetLamp(level, x - 8, y, z - 6, Blocks.SPRUCE_FENCE);
-        streetLamp(level, x + 8, y, z + 6, Blocks.SPRUCE_FENCE);
+        streetLamp(level, x - 7, z - 4, Blocks.SPRUCE_FENCE);
+        streetLamp(level, x + 7, z + 4, Blocks.SPRUCE_FENCE);
     }
 
-    private static void hedgeLine(ServerLevel level, int x, int y, int z1, int z2) {
-        for (int z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
-            if (Math.floorMod(z, 9) == 0) continue;
-            set(level, x, y, z, Blocks.OAK_LEAVES);
+    private static void rainCatchment(ServerLevel level, int cx, int y, int cz) {
+        for (int x = cx - 4; x <= cx + 4; x++) {
+            for (int z = cz - 4; z <= cz + 4; z++) {
+                boolean edge = Math.abs(x - cx) == 4 || Math.abs(z - cz) == 4;
+                set(level, x, y, z, edge ? Blocks.MOSSY_STONE_BRICKS : Blocks.WATER);
+            }
         }
     }
 
-    private static void livingLantern(ServerLevel level, int x, int y, int z) {
+    private static void herbDryingYard(ServerLevel level, int x, int y, int z) {
+        for (int i = 0; i < 4; i++) {
+            int px = x + i * 4;
+            set(level, px, y + 1, z, Blocks.SPRUCE_FENCE);
+            set(level, px, y + 2, z, Blocks.SPRUCE_FENCE);
+            set(level, px, y + 3, z, Blocks.DARK_OAK_SLAB);
+            set(level, px, y + 1, z + 2, Blocks.BARREL);
+        }
+    }
+
+    private static void livingLantern(ServerLevel level, int x, int z) {
         int ground = RealmSitePlanner.surfaceY(level, x, z) + 1;
         for (int py = ground; py <= ground + 3; py++) set(level, x, py, z, Blocks.DARK_OAK_FENCE);
         set(level, x, ground + 4, z, Blocks.SOUL_LANTERN);
@@ -188,7 +205,7 @@ public final class RealmCivicRealismFinisher {
         set(level, cx, y + 1, cz, Blocks.IRON_CHAIN);
     }
 
-    private static void ventilationStack(ServerLevel level, int x, int y, int z) {
+    private static void ventilationStack(ServerLevel level, int x, int z) {
         int ground = RealmSitePlanner.surfaceY(level, x, z) + 1;
         fill(level, x - 2, ground, z - 2, x + 2, ground, z + 2, Blocks.POLISHED_DEEPSLATE);
         for (int py = ground + 1; py <= ground + 8; py++) {
@@ -199,23 +216,20 @@ public final class RealmCivicRealismFinisher {
         fill(level, x - 2, ground + 9, z - 2, x + 2, ground + 9, z + 2, Blocks.DEEPSLATE_TILE_SLAB);
     }
 
-    private static void basaltLamp(ServerLevel level, int x, int y, int z) {
+    private static void basaltLamp(ServerLevel level, int x, int z) {
         int ground = RealmSitePlanner.surfaceY(level, x, z) + 1;
         for (int py = ground; py <= ground + 3; py++) set(level, x, py, z, Blocks.POLISHED_BASALT);
         set(level, x, ground + 4, z, Blocks.LANTERN);
     }
 
-    private static void oreWeighYard(ServerLevel level, int x, int y, int z) {
-        fill(level, x - 8, y, z - 6, x + 8, y, z + 6, Blocks.POLISHED_ANDESITE);
-        for (int px = x - 6; px <= x + 6; px += 4) {
-            set(level, px, y + 1, z - 3, Blocks.BARREL);
-            set(level, px, y + 1, z + 3, Blocks.RAW_IRON_BLOCK);
-        }
+    private static void oreYardLedger(ServerLevel level, int x, int y, int z) {
         set(level, x, y + 1, z, Blocks.HEAVY_WEIGHTED_PRESSURE_PLATE);
-        set(level, x, y + 1, z + 2, Blocks.LECTERN);
+        set(level, x - 2, y + 1, z + 2, Blocks.LECTERN);
+        set(level, x + 2, y + 1, z + 2, Blocks.BARREL);
+        set(level, x + 4, y + 1, z + 2, Blocks.RAW_IRON_BLOCK);
     }
 
-    private static void streetLamp(ServerLevel level, int x, int y, int z, Block post) {
+    private static void streetLamp(ServerLevel level, int x, int z, Block post) {
         int ground = RealmSitePlanner.surfaceY(level, x, z) + 1;
         for (int py = ground; py <= ground + 3; py++) set(level, x, py, z, post);
         set(level, x, ground + 4, z, Blocks.LANTERN);
