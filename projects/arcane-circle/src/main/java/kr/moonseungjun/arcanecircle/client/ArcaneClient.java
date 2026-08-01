@@ -1,9 +1,10 @@
 package kr.moonseungjun.arcanecircle.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import kr.moonseungjun.arcanecircle.network.CastSpellPayload;
+import kr.moonseungjun.arcanecircle.network.BeginCastPayload;
 import kr.moonseungjun.arcanecircle.network.CommitFusionPayload;
 import kr.moonseungjun.arcanecircle.network.QueueFusionPayload;
+import kr.moonseungjun.arcanecircle.network.ReleaseCastPayload;
 import kr.moonseungjun.arcanecircle.network.RequestGrimoirePayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -24,8 +25,8 @@ public final class ArcaneClient {
             new KeyMapping("key.arcanecircle.slot_5", InputConstants.KEY_5, KeyMapping.Category.MISC)
     };
 
+    private static final boolean[] SLOT_WAS_DOWN = new boolean[5];
     private static boolean fusionWasDown;
-    private static int stableHotbarSlot = -1;
 
     private ArcaneClient() {}
 
@@ -35,27 +36,40 @@ public final class ArcaneClient {
         for (KeyMapping key : SLOT_KEYS) event.register(key);
     }
 
-    public static void onClientTick(ClientTickEvent.Post event) {
+    /**
+     * Runs before vanilla processes hotbar key clicks. The same physical 1-5 press is consumed from
+     * the vanilla mapping, so spell input never changes the selected item slot.
+     */
+    public static void onClientTickPre(ClientTickEvent.Pre event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.gui.screen() != null) return;
+        for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
+            if (!SLOT_KEYS[slot].isDown()) continue;
+            while (minecraft.options.keyHotbarSlots[slot].consumeClick()) {}
+        }
+    }
+
+    public static void onClientTickPost(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
-            fusionWasDown = false;
-            stableHotbarSlot = -1;
+            resetInput();
             ArcaneClientState.reset();
             drainClicks();
             return;
         }
 
-        int currentHotbar = minecraft.player.getInventory().getSelectedSlot();
-        if (stableHotbarSlot < 0 || stableHotbarSlot >= 9) stableHotbarSlot = currentHotbar;
-
         if (minecraft.gui.screen() != null) {
             while (GRIMOIRE_KEY.consumeClick()) {}
             drainSlotClicks();
-            if (fusionWasDown || FUSION_MODIFIER_KEY.isDown()) {
+            boolean hadActiveInput = fusionWasDown;
+            for (int slot = 0; slot < SLOT_WAS_DOWN.length; slot++) {
+                hadActiveInput |= SLOT_WAS_DOWN[slot];
+                SLOT_WAS_DOWN[slot] = false;
+            }
+            if (hadActiveInput || FUSION_MODIFIER_KEY.isDown()) {
                 ClientPacketDistributor.sendToServer(new CommitFusionPayload(1));
             }
             fusionWasDown = false;
-            stableHotbarSlot = currentHotbar;
             return;
         }
 
@@ -64,25 +78,34 @@ public final class ArcaneClient {
         }
 
         boolean fusionDown = FUSION_MODIFIER_KEY.isDown();
-        boolean usedSpellKey = false;
-        for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
-            while (SLOT_KEYS[slot].consumeClick()) {
-                usedSpellKey = true;
-                if (fusionDown) ClientPacketDistributor.sendToServer(new QueueFusionPayload(slot));
-                else ClientPacketDistributor.sendToServer(new CastSpellPayload(slot));
-            }
+        if (!fusionWasDown && fusionDown) {
+            // Entering fusion mode cancels a normal spell that was being held.
+            ClientPacketDistributor.sendToServer(new CommitFusionPayload(1));
+            for (int slot = 0; slot < SLOT_WAS_DOWN.length; slot++) SLOT_WAS_DOWN[slot] = false;
         }
 
-        if (usedSpellKey) {
-            minecraft.player.getInventory().setSelectedSlot(stableHotbarSlot);
-        } else {
-            stableHotbarSlot = currentHotbar;
+        for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
+            boolean down = SLOT_KEYS[slot].isDown();
+            if (down && !SLOT_WAS_DOWN[slot]) {
+                if (fusionDown) ClientPacketDistributor.sendToServer(new QueueFusionPayload(slot));
+                else ClientPacketDistributor.sendToServer(new BeginCastPayload(slot));
+            } else if (!down && SLOT_WAS_DOWN[slot] && !fusionWasDown) {
+                ClientPacketDistributor.sendToServer(new ReleaseCastPayload(slot));
+            }
+            SLOT_WAS_DOWN[slot] = down;
+            while (SLOT_KEYS[slot].consumeClick()) {}
         }
 
         if (fusionWasDown && !fusionDown) {
             ClientPacketDistributor.sendToServer(new CommitFusionPayload(0));
+            for (int slot = 0; slot < SLOT_WAS_DOWN.length; slot++) SLOT_WAS_DOWN[slot] = false;
         }
         fusionWasDown = fusionDown;
+    }
+
+    private static void resetInput() {
+        fusionWasDown = false;
+        for (int slot = 0; slot < SLOT_WAS_DOWN.length; slot++) SLOT_WAS_DOWN[slot] = false;
     }
 
     private static void drainClicks() {
