@@ -9,25 +9,16 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 public final class VillageRpgSystem {
-    private static final Map<UUID, Long> NEXT_SKILL_USE = new HashMap<>();
-    private static final Map<UUID, Long> RANGED_FOCUS_UNTIL = new HashMap<>();
-
-    private VillageRpgSystem() {
-    }
+    private VillageRpgSystem() {}
 
     public static void resetTransientState() {
-        NEXT_SKILL_USE.clear();
-        RANGED_FOCUS_UNTIL.clear();
         VillageCombatTechniqueSystem.reset();
+        VillageRoleSkillSystem.resetTransientState();
     }
 
     public static void refreshPassives(MinecraftServer server) {
@@ -37,33 +28,37 @@ public final class VillageRpgSystem {
     public static void refreshPlayerPassive(ServerPlayer player) {
         int bonus = bonusHealthPoints(VillageCouncilState.levelOf(player.getUUID()));
         if (bonus > 0) {
-            player.addEffect(new MobEffectInstance(
-                    MobEffects.HEALTH_BOOST, 80, Math.max(0, bonus / 4 - 1)));
+            player.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, 80, Math.max(0, bonus / 4 - 1)));
+        }
+        if (VillageCouncilState.roleOf(player.getUUID()).orElse(null) == VillageRole.WARDEN
+                && player.getOffhandItem().is(Items.SHIELD)) {
+            player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 0));
         }
     }
 
     public static void handleIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer attacker
                 && !(event.getEntity() instanceof ServerPlayer)) {
-            float value = outgoingDamageMultiplier(
-                    VillageCouncilState.levelOf(attacker.getUUID()));
-            value *= roleOutgoingMultiplier(attacker, event);
-            if (event.getSource().getDirectEntity() instanceof AbstractArrow) {
-                value *= VillageSkillTreeSystem.projectileDamageMultiplier(attacker);
-            }
+            boolean projectile = event.getSource().getDirectEntity() instanceof AbstractArrow;
+            float value = outgoingDamageMultiplier(VillageCouncilState.levelOf(attacker.getUUID()));
+            value *= roleOutgoingMultiplier(attacker, projectile);
             value *= VillageProgressionSystem.smithyDamageMultiplier(attacker);
             value *= VillageProgressionSystem.learnedSkillDamageMultiplier(attacker);
             value *= VillageSkillTreeSystem.outgoingDamageMultiplier(attacker);
+            value *= projectile ? VillageSkillTreeSystem.projectileDamageMultiplier(attacker) : 1.0f;
+            value *= VillageEquipmentShop.outgoingMultiplier(attacker, projectile);
+            if (event.getEntity() instanceof Monster monster) {
+                value *= VillageSkillTreeSystem.executionMultiplier(attacker, monster.getHealth(), monster.getMaxHealth());
+            }
             event.setAmount(event.getAmount() * value);
         }
         if (event.getEntity() instanceof ServerPlayer defender) {
-            float value = incomingDamageMultiplier(
-                    VillageCouncilState.levelOf(defender.getUUID()));
+            float value = incomingDamageMultiplier(VillageCouncilState.levelOf(defender.getUUID()));
             value *= roleIncomingMultiplier(defender);
             value *= VillageSkillTreeSystem.incomingDamageMultiplier(defender);
-            if (VillageCouncilState.isInsideVillage(defender)) {
-                value *= VillageProgressionSystem.wallDamageMultiplier();
-            }
+            value *= VillageSkillTreeSystem.lowHealthIncomingMultiplier(defender);
+            value *= VillageEquipmentShop.incomingMultiplier(defender);
+            if (VillageCouncilState.isInsideVillage(defender)) value *= VillageProgressionSystem.wallDamageMultiplier();
             event.setAmount(event.getAmount() * value);
         }
         VillageCombatTechniqueSystem.handleIncomingDamage(event);
@@ -71,155 +66,64 @@ public final class VillageRpgSystem {
 
     public static void handleDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof Monster defeated)
-                || !(event.getSource().getEntity() instanceof ServerPlayer killer)) {
-            return;
-        }
+                || !(event.getSource().getEntity() instanceof ServerPlayer killer)) return;
         int base = Math.min(90, 7 + Math.round(defeated.getMaxHealth() * 0.48f));
-        int reward = VillageCouncilState.isInsideVillage(killer)
-                ? Math.round(base * 1.18f)
-                : base;
-        VillageCouncilState.ExperienceResult result =
-                VillageCouncilState.grantExperience(killer, reward);
-        int baseCoins = Math.max(1,
-                Math.round(defeated.getMaxHealth() / 12.0f));
-        int coins = Math.max(1, Math.round(baseCoins
-                * VillageSkillTreeSystem.coinRewardMultiplier(killer)));
+        int reward = VillageCouncilState.isInsideVillage(killer) ? Math.round(base * 1.18f) : base;
+        VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(killer, reward);
+        int baseCoins = Math.max(1, Math.round(defeated.getMaxHealth() / 12.0f));
+        int coins = Math.max(1, Math.round(baseCoins * VillageSkillTreeSystem.coinRewardMultiplier(killer)));
         VillageProgressionSystem.addCoins(killer, coins, "적 처치");
-        killer.sendSystemMessage(Component.literal(
-                "§d+" + result.awardedExperience() + " XP"));
+        float heal = VillageSkillTreeSystem.killHealAmount(killer);
+        if (heal > 0.0f) killer.heal(heal);
+        MinecraftServer server = killer.level().getServer();
+        if (server != null && VillageSkillTreeSystem.sharedSupplyChanceUnlocked(killer)
+                && killer.getRandom().nextFloat() < 0.12f) {
+            VillageProgressionSystem.addSupplies(server, 1, "공동 회수");
+        }
+        killer.sendSystemMessage(Component.literal("§d+" + result.awardedExperience() + " XP"));
         if (result.levelsGained() > 0) {
             refreshPlayerPassive(killer);
-            killer.heal(Math.min(killer.getMaxHealth(),
-                    4.0f + result.levelsGained() * 2.0f));
+            killer.heal(Math.min(6.0f, 2.0f + result.levelsGained()));
         }
     }
 
-    public static String useRoleSkill(ServerPlayer player) {
+    public static String useRoleSkill(ServerPlayer player) { return useRoleSkill(player, 0); }
+
+    public static String useRoleSkill(ServerPlayer player, int slot) {
+        return VillageRoleSkillSystem.useEquippedSkill(player, slot);
+    }
+
+    public static String roleLoadout(ServerPlayer player) {
+        return VillageRoleSkillSystem.loadoutSummary(player);
+    }
+
+    private static float roleOutgoingMultiplier(ServerPlayer player, boolean projectile) {
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        if (role == null) {
-            return "먼저 역할을 선택해야 합니다.";
-        }
-        int learned = VillageProgressionSystem.skillRank(player);
-        if (learned <= 0) {
-            return "기술 연구소에서 첫 능력을 배워야 합니다.";
-        }
-        long now = System.currentTimeMillis();
-        long ready = NEXT_SKILL_USE.getOrDefault(player.getUUID(), 0L);
-        if (ready > now) {
-            return "스킬 재사용까지 "
-                    + Math.max(1, (ready - now + 999) / 1000)
-                    + "초 남았습니다.";
-        }
-
-        int level = VillageCouncilState.levelOf(player.getUUID());
-        int tier = Math.min(3,
-                (level - 1) / 10 + (learned - 1) / 2);
-        int duration = 180 + level * 8
-                + VillageProgressionSystem.skillDurationBonusTicks(player);
-        List<ServerPlayer> allies = allies(player, 12 + learned * 1.5);
-        String name = role.displayName() + " 전술";
-        for (ServerPlayer ally : allies) {
-            apply(role, ally, duration, tier, level, learned);
-        }
-        VillageCombatTechniqueSystem.castRoleTechnique(player, role, learned);
-        int cooldown = Math.max(
-                12,
-                40 - level / 3
-                        - VillageProgressionSystem.skillCooldownReductionSeconds(player)
-                        - VillageSkillTreeSystem.cooldownReductionSeconds(player));
-        NEXT_SKILL_USE.put(player.getUUID(), now + cooldown * 1000L);
-        MinecraftServer server = player.level().getServer();
-        if (server != null) {
-            server.getPlayerList().broadcastSystemMessage(
-                    Component.literal("§b[역할 스킬] §f"
-                            + player.getGameProfile().name() + " - " + name),
-                    false);
-        }
-        return name + " 사용 완료. 재사용 " + cooldown + "초";
-    }
-
-    private static void apply(
-            VillageRole role,
-            ServerPlayer ally,
-            int duration,
-            int tier,
-            int level,
-            int learned) {
-        switch (role) {
-            case GUARD_CAPTAIN -> {
-                ally.addEffect(new MobEffectInstance(
-                        MobEffects.STRENGTH, duration, tier));
-                ally.addEffect(new MobEffectInstance(
-                        MobEffects.RESISTANCE, duration, Math.min(2, tier)));
-            }
-            case RANGER -> {
-                ally.addEffect(new MobEffectInstance(
-                        MobEffects.SPEED, duration + 120, Math.min(3, tier + 1)));
-                ally.addEffect(new MobEffectInstance(
-                        MobEffects.NIGHT_VISION, duration + 400, 0));
-                RANGED_FOCUS_UNTIL.put(
-                        ally.getUUID(), System.currentTimeMillis() + duration * 50L);
-            }
-            case ENGINEER -> {
-                ally.addEffect(new MobEffectInstance(
-                        MobEffects.RESISTANCE, duration + 100, Math.min(3, tier + 1)));
-                ally.addEffect(new MobEffectInstance(
-                        MobEffects.ABSORPTION, duration + 100, Math.min(4, tier + 1)));
-            }
-            case MEDIC -> {
-                ally.heal(7 + level * 0.75f + learned * 2);
-                ally.addEffect(new MobEffectInstance(
-                        MobEffects.REGENERATION, duration + 100,
-                        Math.min(4, tier + 1)));
-                ally.addEffect(new MobEffectInstance(
-                        MobEffects.ABSORPTION, duration,
-                        Math.min(4, tier + 1)));
-            }
-        }
-    }
-
-    private static float roleOutgoingMultiplier(
-            ServerPlayer player,
-            LivingIncomingDamageEvent event) {
-        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        if (role == null) {
-            return 1.0f;
-        }
-        boolean projectile = event.getSource().getDirectEntity() instanceof AbstractArrow;
+        if (role == null) return 1.0f;
         return switch (role) {
-            case GUARD_CAPTAIN -> !projectile
-                    && player.getMainHandItem().is(ItemTags.SWORDS)
-                    ? 1.18f : 1.04f;
-            case RANGER -> projectile
-                    ? (isOnWallTop(player) ? 1.60f : 1.28f)
-                    * (RANGED_FOCUS_UNTIL.getOrDefault(
-                            player.getUUID(), 0L) > System.currentTimeMillis()
-                            ? 1.22f : 1.0f)
-                    : 0.94f;
-            case ENGINEER -> 1.0f;
-            case MEDIC -> 0.96f;
+            case VANGUARD -> !projectile && player.getMainHandItem().is(ItemTags.SWORDS) ? 1.20f : 1.02f;
+            case RANGER -> projectile ? (isOnWallTop(player) ? 1.55f : 1.25f) : 0.92f;
+            case ARCANIST -> projectile ? 1.04f : 0.98f;
+            case LUMINAR -> 0.94f;
+            case WARDEN -> 0.96f;
         };
     }
 
     private static float roleIncomingMultiplier(ServerPlayer player) {
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        if (role == null) {
-            return 1.0f;
-        }
+        if (role == null) return 1.0f;
         return switch (role) {
-            case GUARD_CAPTAIN -> 0.86f;
+            case VANGUARD -> 0.94f;
             case RANGER -> 1.02f;
-            case ENGINEER -> VillageCouncilState.isInsideVillage(player)
-                    ? 0.90f : 0.97f;
-            case MEDIC -> 0.95f;
+            case ARCANIST -> 1.00f;
+            case LUMINAR -> 0.97f;
+            case WARDEN -> player.getOffhandItem().is(Items.SHIELD) ? 0.76f : 0.84f;
         };
     }
 
     private static boolean isOnWallTop(ServerPlayer player) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null || !VillageCouncilState.isInsideVillage(player)) {
-            return false;
-        }
+        if (center == null || !VillageCouncilState.isInsideVillage(player)) return false;
         BlockPos pos = player.blockPosition();
         int dx = Math.abs(pos.getX() - center.getX());
         int dz = Math.abs(pos.getZ() - center.getZ());
@@ -231,32 +135,16 @@ public final class VillageRpgSystem {
 
     public static float outgoingDamageMultiplier(int level) {
         int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
-        return 1.0f + (value - 1) * 0.035f
-                + ((value - 1) / 5) * 0.08f;
+        return 1.0f + (value - 1) * 0.035f + ((value - 1) / 5) * 0.08f;
     }
 
     public static float incomingDamageMultiplier(int level) {
         int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
-        return Math.max(0.58f, 1.0f - (value - 1) * 0.009f
-                - ((value - 1) / 5) * 0.025f);
+        return Math.max(0.58f, 1.0f - (value - 1) * 0.009f - ((value - 1) / 5) * 0.025f);
     }
 
     public static int bonusHealthPoints(int level) {
         int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
         return ((value - 1) / 5) * 4;
-    }
-
-    private static List<ServerPlayer> allies(
-            ServerPlayer player,
-            double radius) {
-        MinecraftServer server = player.level().getServer();
-        if (server == null) {
-            return List.of(player);
-        }
-        double squared = radius * radius;
-        return server.getPlayerList().getPlayers().stream()
-                .filter(other -> other.level() == player.level()
-                        && other.distanceToSqr(player) <= squared)
-                .toList();
     }
 }
