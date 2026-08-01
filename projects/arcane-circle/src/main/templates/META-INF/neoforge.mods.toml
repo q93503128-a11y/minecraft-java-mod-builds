@@ -8,7 +8,7 @@ displayName="${mod_name}"
 displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
 authors="문승준"
 description='''
-구중 마법학 세계관을 기반으로 마력핵, 1~9써클 등급, 주문 전승, 기초 주문 융합, 마도서 UI와 단축키 시전을 구현하는 Minecraft Java 마법 시스템 테스트. 현재 1~3써클 주문과 성장만 구현한다.
+구중 마법학 세계관을 기반으로 두 주문을 전투 직전에 선택해 즉석 융합하고, 실전 숙련으로 합성 주문을 단독 시전 회로에 영구 각인하는 Minecraft Java 마법 시스템. 현재 1~3써클 주문과 성좌 마도서 UI를 구현한다.
 '''
 
 [[dependencies.${mod_id}]]
