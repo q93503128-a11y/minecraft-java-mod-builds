@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "arcanecircle:sage_staff",
+    "minecraft:nether_star",
+    "minecraft:echo_shard"
+  ],
+  "result": {
+    "count": 1,
+    "id": "arcanecircle:archmage_staff"
+  }
+}
