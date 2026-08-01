@@ -26,14 +26,12 @@ public final class ClientNetworkHandlers {
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.execute(() -> {
-            if (!(minecraft.screen instanceof ResponsiveOriginSelectionScreen)) {
+            if (activeOriginScreen == null) {
                 activeOriginScreen = new ResponsiveOriginSelectionScreen(payload.schemaVersion());
                 activeLoadingScreen = null;
                 latestBuildProgress = null;
-                minecraft.gui.setScreen(activeOriginScreen);
-            } else {
-                activeOriginScreen = (ResponsiveOriginSelectionScreen) minecraft.screen;
             }
+            minecraft.gui.setScreen(activeOriginScreen);
         });
     }
 
@@ -56,16 +54,10 @@ public final class ClientNetworkHandlers {
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.execute(() -> {
             latestBuildProgress = payload;
-            if (activeLoadingScreen == null || payload.percent() < activeLoadingScreenPercent()) {
-                activeLoadingScreen = new RealmLoadingScreen(payload.message());
-            }
+            if (activeLoadingScreen == null) activeLoadingScreen = new RealmLoadingScreen(payload.message());
             activeLoadingScreen.update(payload);
             minecraft.gui.setScreen(activeLoadingScreen);
         });
-    }
-
-    private static int activeLoadingScreenPercent() {
-        return latestBuildProgress == null ? 0 : latestBuildProgress.percent();
     }
 
     private static void handleOpenCodex(OpenCodexPayload payload, IPayloadContext context) {
