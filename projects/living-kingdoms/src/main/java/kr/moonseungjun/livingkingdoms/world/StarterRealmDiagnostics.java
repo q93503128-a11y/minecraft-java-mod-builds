@@ -16,6 +16,12 @@ public final class StarterRealmDiagnostics {
     private static final List<String> HOMELANDS = List.of(
             "erden_kingdom", "silvana_forest", "kardum_league"
     );
+    private static final int[][] OUTER_TERRAIN_SAMPLES = {
+            {224, 0}, {-224, 0}, {0, 224}, {0, -224},
+            {224, 224}, {-224, 224}, {224, -224}, {-224, -224},
+            {112, 224}, {-112, 224}, {112, -224}, {-112, -224},
+            {224, 112}, {-224, 112}, {224, -112}, {-224, -112}
+    };
 
     private StarterRealmDiagnostics() {
     }
@@ -74,7 +80,7 @@ public final class StarterRealmDiagnostics {
                 );
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8 noise_terrain=true surveyed_sites=true erden_facilities=10 layout_revision={} generation_ms={}",
+                    "LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8 noise_terrain=true surveyed_sites=true connected_land=true erden_facilities=10 layout_revision={} generation_ms={}",
                     RealmSitePlanner.LAYOUT_REVISION, elapsedMs
             );
         } catch (Throwable throwable) {
@@ -100,12 +106,31 @@ public final class StarterRealmDiagnostics {
                                                             RealmSiteLayoutSavedData.RealmSite site,
                                                             String homelandId) {
         Set<Integer> heights = new HashSet<>();
-        for (int[] offset : new int[][]{{205, 0}, {-205, 0}, {0, 205}, {0, -205}, {190, 170}, {-185, -175}}) {
-            heights.add(RealmSitePlanner.surfaceY(realm, site.centerX() + offset[0], site.centerZ() + offset[1]));
+        int landSamples = 0;
+        int waterSamples = 0;
+        for (int[] offset : OUTER_TERRAIN_SAMPLES) {
+            int x = site.centerX() + offset[0];
+            int z = site.centerZ() + offset[1];
+            int y = RealmSitePlanner.surfaceY(realm, x, z);
+            heights.add(y);
+            if (realm.getFluidState(new BlockPos(x, y, z)).isEmpty()) landSamples++;
+            else waterSamples++;
         }
-        if (heights.size() < 3) {
-            throw new IllegalStateException("Noise terrain is effectively flat outside " + homelandId + ": " + heights);
+        if (landSamples < 10) {
+            throw new IllegalStateException(
+                    "Capital is isolated by water outside " + homelandId
+                            + ": land=" + landSamples + " water=" + waterSamples
+            );
         }
+        if (heights.size() < 2) {
+            throw new IllegalStateException(
+                    "Natural terrain has no height variation outside " + homelandId + ": " + heights
+            );
+        }
+        LivingKingdoms.LOGGER.info(
+                "Verified connected natural terrain {} land={}/{} height_kinds={}",
+                homelandId, landSamples, OUTER_TERRAIN_SAMPLES.length, heights.size()
+        );
     }
 
     private static void verifyErdenFacilities(ServerLevel realm, RealmSiteLayoutSavedData.RealmSite site) {
