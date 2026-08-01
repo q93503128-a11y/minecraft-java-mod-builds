@@ -10,6 +10,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class VillageWorldSystem {
     public static final int FORTRESS_RADIUS = 76;
     public static final int ENEMY_SPAWN_DISTANCE = 112;
+    public static final int BATTLEFIELD_RADIUS = ENEMY_SPAWN_DISTANCE + 80;
     private static final int MIGRATION_CLEAN_RADIUS = FORTRESS_RADIUS + 24;
     private static final long RETURN_COOLDOWN_TICKS = 20L * 60L;
     private static final long COMBAT_RETURN_LOCK_TICKS = 20L * 10L;
@@ -83,6 +85,7 @@ public final class VillageWorldSystem {
                 removeLooseDebris(level, center);
                 removeUnauthorizedMobs(level, center);
             }
+            purgeDaytimeHostiles(server);
             player.sendSystemMessage(Component.literal(
                     "§a[마을 준비 완료] §f닫힌 지붕, 밝은 내부와 밀폐된 북문이 적용됐습니다."));
         } finally {
@@ -220,12 +223,31 @@ public final class VillageWorldSystem {
 
     public static boolean isInsideVillageArea(BlockPos pos) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null) {
-            return false;
+        return center != null && horizontalDistanceSquared(pos, center)
+                <= (long) VillageCouncilState.VILLAGE_RADIUS * VillageCouncilState.VILLAGE_RADIUS;
+    }
+
+    public static boolean isInsideBattlefield(BlockPos pos) {
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        return center != null && horizontalDistanceSquared(pos, center)
+                <= (long) BATTLEFIELD_RADIUS * BATTLEFIELD_RADIUS;
+    }
+
+    public static void purgeDaytimeHostiles(MinecraftServer server) {
+        if (server == null || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
+            return;
         }
-        long dx = (long) pos.getX() - center.getX();
-        long dz = (long) pos.getZ() - center.getZ();
-        return dx * dx + dz * dz <= (long) VillageCouncilState.VILLAGE_RADIUS * VillageCouncilState.VILLAGE_RADIUS;
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (center == null) {
+            return;
+        }
+        ServerLevel level = server.overworld();
+        AABB area = new AABB(center).inflate(BATTLEFIELD_RADIUS, 96, BATTLEFIELD_RADIUS);
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
+            if (mob.getType().getCategory() == MobCategory.MONSTER && !isAllowedGameMob(mob)) {
+                mob.discard();
+            }
+        }
     }
 
     public static BlockPos northGateTarget() {
@@ -315,7 +337,7 @@ public final class VillageWorldSystem {
     private static void removeUnauthorizedMobs(ServerLevel level, BlockPos center) {
         AABB area = new AABB(center).inflate(MIGRATION_CLEAN_RADIUS, 64, MIGRATION_CLEAN_RADIUS);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
-            if (!isAllowedGameMob(mob)) {
+            if (mob.getType().getCategory() == MobCategory.MONSTER && !isAllowedGameMob(mob)) {
                 mob.discard();
             }
         }
@@ -325,5 +347,11 @@ public final class VillageWorldSystem {
         AABB area = new AABB(center).inflate(FORTRESS_RADIUS + 24, 64, FORTRESS_RADIUS + 24);
         level.getEntitiesOfClass(ItemEntity.class, area).forEach(ItemEntity::discard);
         level.getEntitiesOfClass(ExperienceOrb.class, area).forEach(ExperienceOrb::discard);
+    }
+
+    private static long horizontalDistanceSquared(BlockPos first, BlockPos second) {
+        long dx = (long) first.getX() - second.getX();
+        long dz = (long) first.getZ() - second.getZ();
+        return dx * dx + dz * dz;
     }
 }
