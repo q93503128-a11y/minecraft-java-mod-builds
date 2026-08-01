@@ -12,8 +12,8 @@ import java.util.Set;
 /** Keeps first-time players out of the void while origin selection and capital construction begin. */
 public final class SelectionStagingManager {
     private static final int CENTER_X = 0;
-    private static final int CENTER_Z = 0;
-    private static final int FLOOR_Y = 96;
+    private static final int CENTER_Z = 24_000;
+    private static final int FLOOR_Y = 220;
     private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
     private static final BlockPos MARKER = new BlockPos(CENTER_X, FLOOR_Y - 5, CENTER_Z);
 
