@@ -3,6 +3,7 @@ package kr.countrysidedays.gameplay;
 import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.registry.ModItems;
 import kr.countrysidedays.world.CountrysideWorldData;
+import kr.countrysidedays.world.PlayerEstateLayout;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -42,14 +43,22 @@ public final class KitchenInteractionHandler {
 
     private static void handleServerInteraction(ServerLevel level, BlockPos pos, Player player, ItemStack heldItem) {
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
+        CountrysideWorldData.PlayerEstate restaurantEstate = SharedRestaurantAccess
+                .restaurantEstate(data)
+                .orElse(null);
+        boolean sharedCounter = restaurantEstate != null
+                && pos.equals(PlayerEstateLayout.kitchenCounter(restaurantEstate.originPos()));
+        if (!sharedCounter || !SharedRestaurantAccess.isStaff(data, player.getUUID())) {
+            player.sendOverlayMessage(Component.translatable("message.countrysidedays.restaurant_staff_only"));
+            return;
+        }
 
         if (heldItem.isEmpty()) {
-            CountrysideWorldData.PlayerEstate estate = data.estateAt(pos).orElse(null);
-            if (estate == null || !estate.isOwner(player.getUUID())) {
-                player.sendOverlayMessage(Component.translatable("message.countrysidedays.restaurant_owner_only"));
+            if (!RuralNpcManager.isRestaurantBusinessTime(level)) {
+                player.sendOverlayMessage(Component.translatable("message.countrysidedays.restaurant_closed"));
                 return;
             }
-            boolean open = data.toggleRestaurant(player.getUUID()).orElse(false);
+            boolean open = SharedRestaurantAccess.toggleOpen(data, player.getUUID()).orElse(false);
             player.sendSystemMessage(Component.translatable(
                     open
                             ? "message.countrysidedays.restaurant_opened"
@@ -77,8 +86,8 @@ public final class KitchenInteractionHandler {
             consumeOneUnlessCreative(player, heldItem);
             ItemStack result = ModItems.COUNTRY_STEW.get().getDefaultInstance();
             if (!player.addItem(result)) player.drop(result, false);
-            data.recordPreparedMeal(player.getUUID());
-            int prepared = data.estate(player.getUUID())
+            SharedRestaurantAccess.recordPreparedMeal(data);
+            int prepared = SharedRestaurantAccess.restaurantEstate(data)
                     .map(CountrysideWorldData.PlayerEstate::mealsPrepared)
                     .orElse(data.mealsPrepared());
             player.sendOverlayMessage(Component.translatable(
