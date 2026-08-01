@@ -8,6 +8,7 @@ public final class PlayerEstateLayout {
     public static final int MAX_X = 30;
     public static final int MIN_Z = -26;
     public static final int MAX_Z = 30;
+    public static final int PROTECTED_MIN_Z = MIN_Z - 2;
 
     private static final int SLOT_DISTANCE = 112;
 
@@ -94,6 +95,7 @@ public final class PlayerEstateLayout {
     public static boolean contains(BlockPos origin, BlockPos pos) {
         return pos.getX() >= origin.getX() + MIN_X && pos.getX() <= origin.getX() + MAX_X
                 && pos.getY() >= origin.getY() - 6 && pos.getY() <= origin.getY() + 18
-                && pos.getZ() >= origin.getZ() + MIN_Z && pos.getZ() <= origin.getZ() + MAX_Z;
+                && pos.getZ() >= origin.getZ() + PROTECTED_MIN_Z
+                && pos.getZ() <= origin.getZ() + MAX_Z;
     }
 }
