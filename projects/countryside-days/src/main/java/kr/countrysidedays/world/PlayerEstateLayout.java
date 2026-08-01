@@ -52,7 +52,7 @@ public final class PlayerEstateLayout {
     }
 
     public static BlockPos customerSeat(BlockPos origin) {
-        return origin.offset(14, 1, -13);
+        return origin.offset(14, 1, -12);
     }
 
     public static BlockPos kitchenCounter(BlockPos origin) {
