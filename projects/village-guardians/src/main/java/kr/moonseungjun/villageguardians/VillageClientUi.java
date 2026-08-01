@@ -8,8 +8,7 @@ import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlers
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageClientUi {
-    private VillageClientUi() {
-    }
+    private VillageClientUi() {}
 
     @SubscribeEvent
     public static void registerClientPayloads(RegisterClientPayloadHandlersEvent event) {
@@ -18,6 +17,7 @@ public final class VillageClientUi {
                         switch (payload.screenId()) {
                             case "skill_tree" -> new VillageSkillTreeScreen(payload);
                             case "town_hall" -> new VillageTownHallScreen(payload);
+                            case "role_progress" -> new VillageRoleProgressScreen(payload);
                             default -> new VillageUiScreen(payload);
                         }));
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
