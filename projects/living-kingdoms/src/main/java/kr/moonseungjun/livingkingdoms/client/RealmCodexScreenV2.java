@@ -130,7 +130,7 @@ public final class RealmCodexScreenV2 extends Screen {
             if (layout.compact()) {
                 ExternalRpgUi.button(graphics, font, rect.x(), rect.y(), rect.w(), rect.h(),
                         tab.label(), page.equals(tab.id()), inside(mouseX, mouseY, rect), true);
-                graphics.fakeItem(new net.minecraft.world.item.ItemStack(tab.icon()), rect.x() + 7, rect.y() + 5);
+                ExternalRpgUi.itemIcon(graphics, tab.icon(), rect.x() + 7, rect.y() + 5);
             } else {
                 ExternalRpgUi.iconButton(graphics, font, tab.icon(), rect.x(), rect.y(), rect.w(), rect.h(),
                         tab.label(), page.equals(tab.id()), inside(mouseX, mouseY, rect));
@@ -213,7 +213,7 @@ public final class RealmCodexScreenV2 extends Screen {
             Rect slotRect = new Rect(equipment.x() + 13 + column * (slotWidth + slotGap),
                     equipment.y() + 45 + row * (slotHeight + 5), slotWidth, slotHeight);
             ExternalRpgUi.card(graphics, slotRect.x(), slotRect.y(), slotRect.w(), slotRect.h());
-            graphics.fakeItem(new net.minecraft.world.item.ItemStack(slots[i].icon()),
+            ExternalRpgUi.itemIcon(graphics, slots[i].icon(),
                     slotRect.x() + 7, slotRect.y() + Math.max(5, (slotRect.h() - 16) / 2));
             graphics.text(font, Component.literal(slots[i].label()), slotRect.x() + 29, slotRect.y() + 7,
                     0xFF806143, false);
@@ -258,10 +258,10 @@ public final class RealmCodexScreenV2 extends Screen {
 
         int footerY = content.bottom() - 56;
         ExternalRpgUi.divider(graphics, content.x() + 14, footerY, content.w() - 28);
-        graphics.fakeItem(new net.minecraft.world.item.ItemStack(Items.COMPASS), content.x() + 18, footerY + 9);
+        ExternalRpgUi.itemIcon(graphics, Items.COMPASS, content.x() + 18, footerY + 9);
         graphics.text(font, Component.literal("현재  " + shortText(value("region") + " · " + value("position"), 45)),
                 content.x() + 41, footerY + 11, 0xFF3F3026, false);
-        graphics.fakeItem(new net.minecraft.world.item.ItemStack(Items.CHEST), content.x() + 18, footerY + 29);
+        ExternalRpgUi.itemIcon(graphics, Items.CHEST, content.x() + 18, footerY + 29);
         graphics.text(font, Component.literal("거주지  " + value("home_x") + ", " + value("home_z")),
                 content.x() + 41, footerY + 31, 0xFF3F3026, false);
     }
@@ -307,8 +307,7 @@ public final class RealmCodexScreenV2 extends Screen {
             boolean affordable = parseInt("skill_points") >= cost;
             ExternalRpgUi.button(graphics, font, rect.x(), rect.y(), rect.w(), rect.h(), "",
                     owned, inside(mouseX, mouseY, rect), owned || prerequisite && affordable);
-            graphics.fakeItem(new net.minecraft.world.item.ItemStack(branchIcon(skillBranch)),
-                    rect.x() + 9, rect.y() + 9);
+            ExternalRpgUi.itemIcon(graphics, branchIcon(skillBranch), rect.x() + 9, rect.y() + 9);
             graphics.text(font, Component.literal(shortText(node.title(), Math.max(10, (rect.w() - 78) / 6))),
                     rect.x() + 34, rect.y() + 9, owned ? 0xFFF4E6BC : 0xFF3D3025, false);
             ExternalRpgUi.badge(graphics, font, rect.right() - 56, rect.y() + 6,
