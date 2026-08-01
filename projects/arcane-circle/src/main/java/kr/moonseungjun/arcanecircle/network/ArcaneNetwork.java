@@ -1,9 +1,9 @@
 package kr.moonseungjun.arcanecircle.network;
 
+import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem.StaffProfile;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
-import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,12 +12,13 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-3";
-    private static final Set<String> PAGES = Set.of("atlas", "mastery", "core", "sync");
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-4";
+    private static final Set<String> PAGES = Set.of("atlas", "recipes", "core", "sync");
 
     private ArcaneNetwork() {}
 
@@ -26,8 +27,9 @@ public final class ArcaneNetwork {
         registrar.playToClient(GrimoireSnapshotPayload.TYPE, GrimoireSnapshotPayload.STREAM_CODEC);
         registrar.playToServer(RequestGrimoirePayload.TYPE, RequestGrimoirePayload.STREAM_CODEC, ArcaneNetwork::handleRequest);
         registrar.playToServer(CastSpellPayload.TYPE, CastSpellPayload.STREAM_CODEC, ArcaneNetwork::handleCast);
+        registrar.playToServer(QueueFusionPayload.TYPE, QueueFusionPayload.STREAM_CODEC, ArcaneNetwork::handleQueueFusion);
+        registrar.playToServer(CommitFusionPayload.TYPE, CommitFusionPayload.STREAM_CODEC, ArcaneNetwork::handleCommitFusion);
         registrar.playToServer(EquipSpellPayload.TYPE, EquipSpellPayload.STREAM_CODEC, ArcaneNetwork::handleEquip);
-        registrar.playToServer(SelectSlotPayload.TYPE, SelectSlotPayload.STREAM_CODEC, ArcaneNetwork::handleCycle);
     }
 
     public static void sync(ServerPlayer player) {
@@ -37,14 +39,30 @@ public final class ArcaneNetwork {
     private static void handleRequest(RequestGrimoirePayload payload, IPayloadContext context) {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
-        String page = PAGES.contains(payload.page()) && !"sync".equals(payload.page()) ? payload.page() : "atlas";
+        String requested = "mastery".equals(payload.page()) ? "recipes" : payload.page();
+        String page = PAGES.contains(requested) && !"sync".equals(requested) ? requested : "atlas";
         context.reply(snapshot(player, page));
     }
 
     private static void handleCast(CastSpellPayload payload, IPayloadContext context) {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
-        SpellCastingService.cast(player, payload.slot() == 1);
+        SpellCastingService.castSlot(player, payload.slot());
+        context.reply(snapshot(player, "sync"));
+    }
+
+    private static void handleQueueFusion(QueueFusionPayload payload, IPayloadContext context) {
+        ServerPlayer player = requirePlayer(context);
+        if (player == null) return;
+        SpellCastingService.queueFusionSlot(player, payload.slot());
+        context.reply(snapshot(player, "sync"));
+    }
+
+    private static void handleCommitFusion(CommitFusionPayload payload, IPayloadContext context) {
+        ServerPlayer player = requirePlayer(context);
+        if (player == null) return;
+        if (payload.action() == 0) SpellCastingService.commitFusion(player);
+        else SpellCastingService.clearFusion(player);
         context.reply(snapshot(player, "sync"));
     }
 
@@ -53,21 +71,7 @@ public final class ArcaneNetwork {
         if (player == null) return;
         boolean selected = data(player).selectSpell(player, payload.slot(), payload.spellId());
         if (!selected) {
-            player.sendSystemMessage(Component.literal("§c[마도서] §f현재 써클에서 사용할 수 없는 주문입니다."));
-        }
-        context.reply(snapshot(player, "sync"));
-    }
-
-    private static void handleCycle(SelectSlotPayload payload, IPayloadContext context) {
-        ServerPlayer player = requirePlayer(context);
-        if (player == null) return;
-        int command = Math.floorMod(payload.slot(), 4);
-        int socket = command >= 2 ? 1 : 0;
-        int delta = command == 0 || command == 2 ? -1 : 1;
-        String id = data(player).cycleSpell(player, socket, delta);
-        SpellDefinition spell = SpellCatalog.spell(id).orElse(null);
-        if (spell != null) {
-            player.sendOverlayMessage(Component.literal((socket == 0 ? "§d[주력] §f" : "§b[직조] §f") + spell.name()));
+            player.sendSystemMessage(Component.literal("§c[마도서] §f현재 써클에서 사용할 수 없거나 아직 각인되지 않은 주문입니다."));
         }
         context.reply(snapshot(player, "sync"));
     }
@@ -83,24 +87,44 @@ public final class ArcaneNetwork {
     }
 
     public static GrimoireSnapshotPayload snapshot(ServerPlayer player, String page) {
-        MagicPlayerData.MageState state = data(player).state(player);
+        MagicPlayerData magicData = data(player);
+        MagicPlayerData.MageState state = magicData.state(player);
+        MagicPlayerData.EffectiveStats stats = magicData.effectiveStats(player);
+        StaffProfile staff = stats.staff();
         String known = state.known().stream().sorted().collect(Collectors.joining("|"));
         String mastery = SpellCatalog.fusions().stream()
                 .map(formula -> formula.result() + ":" + state.mastery(formula.result()))
                 .collect(Collectors.joining("|"));
-        String fusion = SpellCatalog.fusionFor(state.focus(), state.weave())
-                .map(SpellCatalog.FusionFormula::result).orElse("");
+        String slots = String.join("|", state.slots());
+        List<String> queue = SpellCastingService.pendingFusion(player);
+        String queued = String.join("|", queue);
+        String result = SpellCatalog.fusionFor(queue).map(SpellCatalog.FusionFormula::result).orElse("");
         String snapshot = "circle=" + state.circle()
                 + ";mana=" + (int) state.mana()
-                + ";max=" + state.maxMana()
+                + ";max=" + stats.maxMana()
+                + ";regen_milli=" + (int) Math.round(stats.regenPerHalfSecond() * 2000.0)
                 + ";insight=" + state.insight()
                 + ";next=" + state.nextCircleInsight()
-                + ";focus=" + state.focus()
-                + ";weave=" + state.weave()
-                + ";fusion=" + fusion
+                + ";slots=" + slots
+                + ";queue=" + queued
+                + ";queue_result=" + result
+                + ";cooldowns=" + SpellCastingService.cooldownSnapshot(player)
+                + ";staff_id=" + staff.id()
+                + ";staff=" + staff.displayName()
+                + ";staff_summary=" + staff.summary()
+                + ";staff_mana=" + staff.maxManaBonus()
+                + ";staff_cost=" + permille(staff.manaCostMultiplier())
+                + ";staff_power=" + permille(staff.powerMultiplier())
+                + ";staff_range=" + permille(staff.rangeMultiplier())
+                + ";staff_cooldown=" + permille(staff.cooldownMultiplier())
+                + ";staff_regen=" + permille(staff.regenMultiplier())
                 + ";known=" + known
                 + ";mastery=" + mastery
                 + ";spell_count=" + SpellCatalog.spells().size();
         return new GrimoireSnapshotPayload(page, snapshot);
+    }
+
+    private static int permille(double value) {
+        return (int) Math.round(value * 1000.0);
     }
 }
