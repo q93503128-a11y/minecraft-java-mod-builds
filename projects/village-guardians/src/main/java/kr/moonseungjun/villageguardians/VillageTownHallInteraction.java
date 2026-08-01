@@ -9,6 +9,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 public final class VillageTownHallInteraction {
+    private static final long ROLE_MANAGEMENT_DISTANCE_SQUARED = 16L * 16L;
+
     private VillageTownHallInteraction() {
     }
 
@@ -19,20 +21,39 @@ public final class VillageTownHallInteraction {
                 || !level.getBlockState(event.getPos()).is(Blocks.LECTERN)) {
             return false;
         }
-        BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
-        if (villageCenter == null) {
-            return false;
-        }
-        BlockPos expected = VillageFortressBuildings.terminalPosition(
-                level,
-                villageCenter,
-                VillageProgressionSystem.Building.TOWN_HALL);
-        if (!expected.equals(event.getPos())) {
+        BlockPos expected = terminalPosition(level);
+        if (expected == null || !expected.equals(event.getPos())) {
             return false;
         }
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
         VillageUiService.openDashboard(player);
         return true;
+    }
+
+    public static boolean isNearTownHall(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        BlockPos expected = terminalPosition(level);
+        if (expected == null) {
+            return false;
+        }
+        BlockPos current = player.blockPosition();
+        long dx = (long) current.getX() - expected.getX();
+        long dy = (long) current.getY() - expected.getY();
+        long dz = (long) current.getZ() - expected.getZ();
+        return dx * dx + dy * dy + dz * dz <= ROLE_MANAGEMENT_DISTANCE_SQUARED;
+    }
+
+    private static BlockPos terminalPosition(ServerLevel level) {
+        BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
+        if (villageCenter == null) {
+            return null;
+        }
+        return VillageFortressBuildings.terminalPosition(
+                level,
+                villageCenter,
+                VillageProgressionSystem.Building.TOWN_HALL);
     }
 }
