@@ -66,7 +66,7 @@ jobs:
           set -euo pipefail
           rm -rf run/world run/living_realm run/livingkingdoms-ci-world
           mkdir -p run
-          printf 'level-name=livingkingdoms-ci-world\n' > run/server.properties
+          printf 'level-name=livingkingdoms-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
           printf 'eula=true\n' > run/eula.txt
           rm -f ../../logs/server-smoke.log
           gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/server-smoke.log 2>&1 &
