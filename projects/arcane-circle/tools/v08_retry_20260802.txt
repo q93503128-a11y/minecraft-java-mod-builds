@@ -1,3 +1,4 @@
 Arcane Circle v0.8 Ninefold Magic World migration/build retry after checksum-safe payload recovery.
 Dedicated recovery workflow trigger: 2026-08-02T08:02+09:00.
 Minecraft 26.2 compatibility compile retry: 2026-08-02T08:42+09:00.
+Legacy survival recipe cleanup retry: 2026-08-02T08:48+09:00.
