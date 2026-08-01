@@ -1,0 +1,15 @@
+{
+    "replace": false,
+    "values": [
+        "arcanecircle:librarian/level_2/spellbook_scorching_ray",
+        "arcanecircle:librarian/level_2/spellbook_misty_step",
+        "arcanecircle:librarian/level_2/spellbook_web",
+        "arcanecircle:librarian/level_2/spellbook_mirror_image",
+        "arcanecircle:librarian/level_2/spellbook_invisibility",
+        "arcanecircle:librarian/level_2/spellbook_gust_of_wind",
+        "arcanecircle:librarian/level_2/spellbook_hold_person",
+        "arcanecircle:librarian/level_2/spellbook_shatter",
+        "arcanecircle:librarian/level_2/spellbook_blur",
+        "arcanecircle:librarian/level_2/spellbook_levitate"
+    ]
+}

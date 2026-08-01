@@ -1,0 +1,20 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "ABA",
+        "CDC",
+        "AEA"
+    ],
+    "key": {
+        "A": "minecraft:netherite_ingot",
+        "B": "minecraft:echo_shard",
+        "C": "minecraft:ominous_bottle",
+        "D": "minecraft:enchanted_book",
+        "E": "minecraft:nether_star"
+    },
+    "result": {
+        "id": "arcanecircle:spellbook_dominate_person",
+        "count": 1
+    }
+}

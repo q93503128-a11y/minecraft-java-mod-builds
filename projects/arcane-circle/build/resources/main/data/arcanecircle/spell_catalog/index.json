@@ -1,0 +1,48 @@
+{
+  "version": "0.7.0-alpha.1",
+  "worldview": "ninefold_arcana",
+  "implemented_circles": [1, 2, 3, 4, 5],
+  "world_max_circle": 9,
+  "direct_spells": 50,
+  "fusion_spells": 10,
+  "total_spells": 60,
+  "spell_source_policy": "recognizable_DnD_SRD_and_Pathfinder_spell_archetypes_with_original_Minecraft_balance",
+  "spell_slots": 5,
+  "casting_mode": "hold_number_show_fixed_sigil_release_to_cast",
+  "sigil_visual_policy": "static_double_ring_glyph_no_streaming_charge_particles",
+  "range_visual_policy": "effective_range_scales_sigil_projectile_wall_and_area_visual_size",
+  "hotbar_policy": "consume_vanilla_1_to_5_clicks_in_client_pre_tick_before_hotbar_processing",
+  "sigil_anchors": ["front", "feet", "body", "ground_self", "ground_target", "target"],
+  "cooldown_storage": "persistent_world_saved_data",
+  "friendly_fire_policy": "exclude_allies_and_owned_tames",
+  "new_profile_spell_policy": "empty_until_beginner_grimoire_is_read",
+  "beginner_grimoire_spells": [
+    "magic_missile", "fire_bolt", "ray_of_frost", "shield", "feather_fall"
+  ],
+  "spellbooks": 45,
+  "spellbook_circles": [1, 2, 3, 4, 5],
+  "combat_growth": {
+    "empty_cast": "minimal_mastery_only",
+    "hit": "bonus_mastery_and_insight",
+    "kill": "large_bonus_mastery_and_insight",
+    "strong_enemy": "max_health_tier_multiplier",
+    "mastery_stat_effects": ["mana_cost", "cooldown", "range", "power"]
+  },
+  "fusion_mode": "hold_x_queue_then_release",
+  "fusion_preview": "progressive_multiset_candidates",
+  "fusion_queue_timeout_ticks": 200,
+  "fusion_ingredient_limits": [2, 3],
+  "fusion_results": [
+    "burning_hands", "ice_knife", "chromatic_orb", "wind_wall", "counterspell",
+    "fire_shield", "wall_of_ice", "chain_lightning", "arcane_hand", "teleportation_circle"
+  ],
+  "staffs": [
+    "novice_staff", "ember_staff", "glacial_staff", "zephyr_staff",
+    "aegis_staff", "verdant_staff", "rift_staff", "sage_staff", "archmage_staff"
+  ],
+  "staff_power_curve": "strongly_exponential_late_game",
+  "staff_survival_recipes": 8,
+  "staff_custom_textures": 9,
+  "grimoire_tabs": ["atlas", "recipes", "staffs", "core"],
+  "atlas_circle_filters": ["all", 1, 2, 3, 4, 5]
+}

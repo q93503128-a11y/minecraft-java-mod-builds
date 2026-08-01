@@ -1,0 +1,17 @@
+{
+    "wants": {
+        "id": "minecraft:emerald_block",
+        "count": 40
+    },
+    "gives": {
+        "id": "arcanecircle:spellbook_stoneskin",
+        "count": 1
+    },
+    "max_uses": 1,
+    "xp": 96,
+    "reputation_discount": 0.05,
+    "additional_wants": {
+        "id": "minecraft:diamond",
+        "count": 4
+    }
+}

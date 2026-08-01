@@ -1,0 +1,17 @@
+{
+    "wants": {
+        "id": "minecraft:emerald_block",
+        "count": 64
+    },
+    "gives": {
+        "id": "arcanecircle:spellbook_dominate_person",
+        "count": 1
+    },
+    "max_uses": 1,
+    "xp": 150,
+    "reputation_discount": 0.05,
+    "additional_wants": {
+        "id": "minecraft:nether_star",
+        "count": 1
+    }
+}

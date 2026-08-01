@@ -29,6 +29,7 @@ public final class GrimoireScreen extends Screen {
     private static int savedOffsetX;
     private static int savedOffsetY;
     private static int savedActiveSlot;
+    private static int savedCircleFilter;
 
     private final String page;
     private int contentScroll;
@@ -84,6 +85,15 @@ public final class GrimoireScreen extends Screen {
             }
         }
         if ("atlas".equals(page)) {
+            for (int circle = 0; circle <= SpellCatalog.IMPLEMENTED_MAX_CIRCLE; circle++) {
+                if (inside(event.x(), event.y(), l.circleFilter(circle))) {
+                    savedCircleFilter = circle;
+                    contentScroll = 0;
+                    SAVED_SCROLL.put(page, 0);
+                    notice(circle == 0 ? "전체 주문 표시" : circle + "써클 주문만 표시");
+                    return true;
+                }
+            }
             for (int i = 0; i < 5; i++) {
                 if (inside(event.x(), event.y(), l.slot(i))) {
                     savedActiveSlot = i;
@@ -91,7 +101,7 @@ public final class GrimoireScreen extends Screen {
                     return true;
                 }
             }
-            List<SpellDefinition> spells = new ArrayList<>(SpellCatalog.spells().values());
+            List<SpellDefinition> spells = visibleSpells();
             for (int i = 0; i < spells.size(); i++) {
                 if (inside(event.x(), event.y(), l.spellHit(i, contentScroll))) {
                     select(spells.get(i));
@@ -151,10 +161,11 @@ public final class GrimoireScreen extends Screen {
         Rect c = l.content();
         drawManaStrip(g, l);
         for (int i = 0; i < 5; i++) drawLoadoutSlot(g, l.slot(i), i, savedActiveSlot == i, time + i * 140L);
+        drawCircleFilters(g, l, mouseX, mouseY);
 
         int gridTop = l.gridTop();
         g.enableScissor(c.x(), gridTop, c.right(), c.bottom() - 17);
-        List<SpellDefinition> spells = new ArrayList<>(SpellCatalog.spells().values());
+        List<SpellDefinition> spells = visibleSpells();
         Set<String> known = ArcaneClientState.known();
         int circle = ArcaneClientState.integer("circle", 1);
         SpellDefinition hovered = null;
@@ -172,6 +183,27 @@ public final class GrimoireScreen extends Screen {
 
         if (hovered != null) drawSpellTooltip(g, l, hovered);
         else footer(g, l, "슬롯 선택 → 주문 선택 · 1~5 누름: 전개 · 놓기: 시전 · 휠 이동");
+    }
+
+    private List<SpellDefinition> visibleSpells() {
+        return SpellCatalog.spells().values().stream()
+                .filter(spell -> savedCircleFilter == 0 || spell.circle() == savedCircleFilter)
+                .toList();
+    }
+
+    private void drawCircleFilters(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
+        for (int circle = 0; circle <= SpellCatalog.IMPLEMENTED_MAX_CIRCLE; circle++) {
+            Rect tab = l.circleFilter(circle);
+            boolean active = savedCircleFilter == circle;
+            boolean hover = inside(mouseX, mouseY, tab);
+            int background = active ? 0xFF5B367C : hover ? 0xFF293754 : 0xFF111827;
+            int border = active ? 0xFFE4B8FF : circle <= ArcaneClientState.integer("circle", 1)
+                    ? 0xFF6E8FC7 : 0xFF4A4652;
+            g.fill(tab.x(), tab.y(), tab.right(), tab.bottom(), background);
+            g.fill(tab.x(), tab.bottom() - 2, tab.right(), tab.bottom(), border);
+            g.centeredText(font, Component.literal(circle == 0 ? "전체" : circle + "C"),
+                    tab.x() + tab.w() / 2, tab.y() + 5, active ? 0xFFFFFFFF : 0xFFD0C8DC);
+        }
     }
 
     private void drawManaStrip(GuiGraphicsExtractor g, Layout l) {
@@ -239,8 +271,13 @@ public final class GrimoireScreen extends Screen {
         int textX = r.x() + 44;
         g.text(font, Component.literal(spell.circle() + "C " + shorten(spell.name(), Math.max(5, r.w() / 10))),
                 textX, r.y() + 8, usable ? 0xFFF0E8FA : 0xFF77727D);
-        g.text(font, Component.literal(spell.school().displayName() + " · MP " + spell.manaCost()),
-                textX, r.y() + 21, usable ? 0xFF9CB1CE : 0xFF5E5B64);
+        int points = ArcaneClientState.mastery(spell.id());
+        int tier = SpellCatalog.masteryTier(points);
+        String status = !ArcaneClientState.known().contains(spell.id()) ? "미습득"
+                : spell.circle() > ArcaneClientState.integer("circle", 1) ? "써클 부족"
+                : equipped ? "장착 · 숙련 " + tier : "사용 가능 · 숙련 " + tier;
+        g.text(font, Component.literal(spell.school().displayName() + " · MP " + spell.manaCost() + " · " + status),
+                textX, r.y() + 21, usable ? (equipped ? 0xFFFFD36B : 0xFFB8D4F4) : 0xFF77727D);
         if (equipped) {
             ArcaneRenderUtil.ring(g, iconX, iconY, 19, 0xFFFFD36B);
             int ox = iconX + (int) Math.round(Math.cos(time / 390.0) * 20.0);
@@ -478,7 +515,7 @@ public final class GrimoireScreen extends Screen {
         return switch (page) {
             case "recipes" -> l.maxRecipeScroll(SpellCatalog.fusions().size());
             case "staffs" -> l.maxStaffScroll(ModItems.profiles().size());
-            case "atlas" -> l.maxAtlasScroll(SpellCatalog.spells().size());
+            case "atlas" -> l.maxAtlasScroll(visibleSpells().size());
             default -> 0;
         };
     }
@@ -571,7 +608,16 @@ public final class GrimoireScreen extends Screen {
         Rect content() { return new Rect(left + 10, top + 62, Math.max(0, panelW - 20), Math.max(0, panelH - 75)); }
         int manaExtra() { return content().w() < 430 ? 16 : 0; }
         int slotTop() { return content().y() + 25 + manaExtra(); }
-        int gridTop() { return slotTop() + slotSize() + 9; }
+        int filterTop() { return slotTop() + slotSize() + 7; }
+        int gridTop() { return filterTop() + 25; }
+        Rect circleFilter(int circle) {
+            Rect c = content();
+            int count = SpellCatalog.IMPLEMENTED_MAX_CIRCLE + 1;
+            int gap = c.w() < 420 ? 2 : 5;
+            int width = Math.max(34, Math.min(62, (c.w() - gap * (count - 1)) / count));
+            int total = width * count + gap * (count - 1);
+            return new Rect(cx() - total / 2 + circle * (width + gap), filterTop(), width, 20);
+        }
         int listTop() { return content().y() + 30 + manaExtra(); }
         int slotSize() {
             Rect c = content();

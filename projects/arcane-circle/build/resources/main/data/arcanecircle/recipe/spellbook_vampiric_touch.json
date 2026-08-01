@@ -1,0 +1,20 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "ABA",
+        "CDC",
+        "AEA"
+    ],
+    "key": {
+        "A": "minecraft:diamond",
+        "B": "minecraft:amethyst_block",
+        "C": "minecraft:ghast_tear",
+        "D": "minecraft:enchanted_book",
+        "E": "minecraft:echo_shard"
+    },
+    "result": {
+        "id": "arcanecircle:spellbook_vampiric_touch",
+        "count": 1
+    }
+}

@@ -234,15 +234,22 @@ public final class MagicPlayerData extends SavedData {
 
         StaffProfile staff = ModItems.equipped(player);
         int masteryGap = Math.max(0, state.circle - spell.circle());
+        int proficiency = SpellCatalog.masteryTier(state.mastery(spellId));
         double circleMana = Math.max(0.48, 1.0 - masteryGap * 0.09);
         double circleCooldown = Math.max(0.38, 1.0 - masteryGap * 0.14);
         double circleRange = 1.0 + masteryGap * 0.08;
         double circlePower = 1.0 + masteryGap * 0.10;
+        double masteryMana = Math.max(0.80, 1.0 - proficiency * 0.02);
+        double masteryCooldown = Math.max(0.70, 1.0 - proficiency * 0.03);
+        double masteryRange = 1.0 + proficiency * 0.02;
+        double masteryPower = 1.0 + proficiency * 0.04;
 
-        int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * circleMana * staff.manaCostMultiplier()));
-        int cooldown = Math.max(8, (int) Math.round(spell.cooldownTicks() * circleCooldown * staff.cooldownMultiplier()));
-        double range = spell.range() * circleRange * staff.rangeMultiplier();
-        double power = spell.power() * circlePower * staff.powerFor(spell.school());
+        int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * circleMana * masteryMana
+                * staff.manaCostMultiplier()));
+        int cooldown = Math.max(8, (int) Math.round(spell.cooldownTicks() * circleCooldown * masteryCooldown
+                * staff.cooldownMultiplier()));
+        double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier();
+        double power = spell.power() * circlePower * masteryPower * staff.powerFor(spell.school());
 
         if (state.mana + 0.0001 < manaCost) {
             return CastPreparation.failure("마력이 부족합니다. 필요 " + manaCost + " / 현재 " + (int) state.mana);
@@ -251,13 +258,21 @@ public final class MagicPlayerData extends SavedData {
                 List.copyOf(ingredients), staff);
     }
 
-    public CastProgress completeCast(ServerPlayer player, CastPreparation cast) {
+    public CastProgress completeCast(ServerPlayer player, CastPreparation cast,
+                                     CombatGrowthService.Impact impact) {
         MageState state = state(player);
+        CombatGrowthService.Impact result = impact == null ? CombatGrowthService.Impact.NONE : impact;
         state.mana = Math.max(0.0, state.mana - cast.manaCost());
-        state.insight += Math.max(1, cast.spell().circle() * 2);
+
+        int beforeMastery = state.mastery.getOrDefault(cast.spell().id(), 0);
+        int masteryGain = Math.max(1, result.masteryGain());
+        int afterMastery = Math.min(100000, beforeMastery + masteryGain);
+        state.mastery.put(cast.spell().id(), afterMastery);
+        state.insight += Math.max(1, cast.spell().circle() * 2) + Math.max(0, result.insightGain());
 
         int previousCircle = state.circle;
-        while (state.circle < 5 && state.insight >= SpellCatalog.circleInsightThreshold(state.circle + 1)) {
+        while (state.circle < SpellCatalog.IMPLEMENTED_MAX_CIRCLE
+                && state.insight >= SpellCatalog.circleInsightThreshold(state.circle + 1)) {
             state.circle++;
         }
         if (state.circle > previousCircle) state.mana = effectiveStats(player).maxMana();
@@ -266,12 +281,9 @@ public final class MagicPlayerData extends SavedData {
         if (cast.fusion() && !cast.masteryId().isBlank()) {
             String resultId = cast.masteryId();
             int required = SpellCatalog.masteryRequired(resultId);
-            int before = state.mastery.getOrDefault(resultId, 0);
-            int after = Math.min(required, before + 1);
-            state.mastery.put(resultId, after);
-            boolean registered = after >= required && state.known.add(resultId);
+            boolean registered = afterMastery >= required && state.known.add(resultId);
             if (registered) equipIntoFirstEmptySlot(state, resultId);
-            mastery = new MasteryProgress(true, registered, resultId, after, required);
+            mastery = new MasteryProgress(true, registered, resultId, afterMastery, required);
         }
 
         setDirty();

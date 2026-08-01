@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-6";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-7";
     private static final Set<String> PAGES = Set.of("atlas", "recipes", "staffs", "core", "sync");
 
     private ArcaneNetwork() {}
@@ -103,8 +103,8 @@ public final class ArcaneNetwork {
         MagicPlayerData.EffectiveStats stats = magicData.effectiveStats(player);
         StaffProfile staff = stats.staff();
         String known = state.known().stream().sorted().collect(Collectors.joining("|"));
-        String mastery = SpellCatalog.fusions().stream()
-                .map(formula -> formula.result() + ":" + state.mastery(formula.result()))
+        String mastery = SpellCatalog.spells().values().stream()
+                .map(spell -> spell.id() + ":" + state.mastery(spell.id()))
                 .collect(Collectors.joining("|"));
         String slots = String.join("|", state.slots());
         List<String> queue = SpellCastingService.pendingFusion(player);

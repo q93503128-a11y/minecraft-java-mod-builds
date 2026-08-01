@@ -1,0 +1,20 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "ABA",
+        "CDC",
+        "AEA"
+    ],
+    "key": {
+        "A": "minecraft:amethyst_block",
+        "B": "minecraft:lapis_block",
+        "C": "minecraft:blaze_powder",
+        "D": "minecraft:enchanted_book",
+        "E": "minecraft:diamond"
+    },
+    "result": {
+        "id": "arcanecircle:spellbook_scorching_ray",
+        "count": 1
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "ABA",
+        "CDC",
+        "AEA"
+    ],
+    "key": {
+        "A": "minecraft:diamond_block",
+        "B": "minecraft:echo_shard",
+        "C": "minecraft:rabbit_foot",
+        "D": "minecraft:enchanted_book",
+        "E": "minecraft:netherite_ingot"
+    },
+    "result": {
+        "id": "arcanecircle:spellbook_freedom_of_movement",
+        "count": 1
+    }
+}

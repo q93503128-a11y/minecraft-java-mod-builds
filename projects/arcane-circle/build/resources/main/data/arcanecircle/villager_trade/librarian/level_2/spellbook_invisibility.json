@@ -1,0 +1,13 @@
+{
+    "wants": {
+        "id": "minecraft:emerald",
+        "count": 45
+    },
+    "gives": {
+        "id": "arcanecircle:spellbook_invisibility",
+        "count": 1
+    },
+    "max_uses": 2,
+    "xp": 24,
+    "reputation_discount": 0.05
+}

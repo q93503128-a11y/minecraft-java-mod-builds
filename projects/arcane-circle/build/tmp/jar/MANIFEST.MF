@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Specification-Title: Arcane Circle: Ninefold Arcana
+Specification-Version: 0.7.0-alpha.1
+Implementation-Title: Arcane Circle: Ninefold Arcana
+Implementation-Version: 0.7.0-alpha.1
+Automatic-Module-Name: kr.moonseungjun.arcanecircle
+

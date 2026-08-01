@@ -1,0 +1,13 @@
+{
+    "wants": {
+        "id": "minecraft:emerald",
+        "count": 18
+    },
+    "gives": {
+        "id": "arcanecircle:spellbook_grease",
+        "count": 1
+    },
+    "max_uses": 2,
+    "xp": 6,
+    "reputation_discount": 0.05
+}

@@ -111,7 +111,7 @@ public final class SpellCastingService {
             }
             return;
         }
-        if ((player.tickCount & 1) != 0) return;
+        if (Math.floorMod(player.tickCount, 4) != 0) return;
         SpellDefinition spell = SpellCatalog.spell(charge.spellId).orElse(null);
         if (spell == null || !data(player).state(player).known().contains(spell.id())) {
             CHARGES.remove(player.getUUID());
@@ -264,14 +264,16 @@ public final class SpellCastingService {
             return;
         }
 
+        CombatGrowthService.Snapshot combatSnapshot = CombatGrowthService.capture(player, cast.range());
         releasePrelude(player, cast);
         if (!execute(player, spell.id(), cast.range(), cast.power())) {
             fail(player, "시전 조건이 사라져 주문이 중단되었습니다.");
             return;
         }
+        CombatGrowthService.Impact impact = CombatGrowthService.measure(combatSnapshot, spell.circle());
 
         data.startCooldown(player, spell.id(), cast.cooldownTicks());
-        MagicPlayerData.CastProgress progress = data.completeCast(player, cast);
+        MagicPlayerData.CastProgress progress = data.completeCast(player, cast, impact);
         MagicPlayerData.MageState state = data.state(player);
         MagicPlayerData.EffectiveStats stats = data.effectiveStats(player);
 
@@ -283,6 +285,14 @@ public final class SpellCastingService {
             player.sendOverlayMessage(Component.literal("§b" + spell.name() + " §f시전 · 마력 "
                     + (int) state.mana() + "/" + stats.maxMana() + " · 쿨 "
                     + String.format("%.1f", cast.cooldownTicks() / 20.0) + "초"));
+        }
+
+        if (impact.meaningful()) {
+            String threat = impact.strongKills() > 0 ? " §6강적 처치 " + impact.strongKills()
+                    : impact.strongHits() > 0 ? " §e강적 적중 " + impact.strongHits() : "";
+            player.sendSystemMessage(Component.literal("§5[주문 숙련] §f적중 " + impact.hits()
+                    + " · 처치 " + impact.kills() + threat + " §7· 숙련 +" + impact.masteryGain()
+                    + " · 통찰 +" + impact.insightGain()));
         }
 
         ServerLevel level = (ServerLevel) player.level();
@@ -335,12 +345,13 @@ public final class SpellCastingService {
 
     private static void renderCharge(ServerPlayer player, SpellDefinition spell, long elapsed, double range) {
         ServerLevel level = (ServerLevel) player.level();
-        double pulse = 0.08 * Math.sin(elapsed * 0.38);
-        double radius = 0.58 + spell.circle() * 0.17 + Math.min(0.30, elapsed / 90.0) + pulse;
-        renderAnchoredSigil(level, player, spell, range, radius, 1);
-        if (elapsed > 0 && elapsed % 20L == 0L) {
+        double baseRange = Math.max(1.0, spell.range());
+        double rangeRatio = Math.max(0.75, Math.min(2.6, range / baseRange));
+        double radius = (0.76 + spell.circle() * 0.18) * Math.sqrt(rangeRatio);
+        renderAnchoredSigil(level, player, spell, range, radius, 2);
+        if (elapsed == 0L) {
             level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
-                    SoundSource.PLAYERS, 0.24F, 1.55F - spell.circle() * 0.08F);
+                    SoundSource.PLAYERS, 0.42F, 1.58F - spell.circle() * 0.07F);
         }
     }
 
@@ -375,43 +386,66 @@ public final class SpellCastingService {
         Vec3 upReference = Math.abs(normal.y) > 0.92 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
         Vec3 right = normal.cross(upReference).normalize();
         Vec3 up = right.cross(normal).normalize();
-        ParticleOptions particle = schoolParticle(spell);
-        int points = Math.max(20, (18 + spell.circle() * 4) * density);
-        for (int i = 0; i < points; i++) {
-            double angle = Math.PI * 2.0 * i / points;
+        int outer = Math.max(36, 34 + spell.circle() * 6 + density * 4);
+        planeRing(level, center, right, up, radius, ParticleTypes.END_ROD, outer);
+        planeRing(level, center, right, up, radius * 0.72, schoolParticle(spell), Math.max(28, outer - 10));
+        planeRing(level, center, right, up, radius * 0.34, ParticleTypes.END_ROD, 24);
+        int sides = 4 + Math.min(5, spell.circle());
+        planePolygon(level, center, right, up, radius * 0.82, sides, ParticleTypes.END_ROD, 8 + density * 2);
+        planeLine(level, center.add(right.scale(-radius * 0.55)), center.add(right.scale(radius * 0.55)),
+                schoolParticle(spell), 12 + density * 2);
+        planeLine(level, center.add(up.scale(-radius * 0.55)), center.add(up.scale(radius * 0.55)),
+                schoolParticle(spell), 12 + density * 2);
+        level.sendParticles(schoolParticle(spell), center.x, center.y, center.z,
+                3 + spell.circle(), 0.025, 0.025, 0.025, 0.0);
+    }
+
+    private static void planeRing(ServerLevel level, Vec3 center, Vec3 right, Vec3 up, double radius,
+                                  ParticleOptions particle, int points) {
+        for (int index = 0; index < points; index++) {
+            double angle = Math.PI * 2.0 * index / points;
             Vec3 point = center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
             level.sendParticles(particle, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-            if ((i & 1) == 0) {
-                Vec3 inner = center.add(right.scale(Math.cos(-angle * 2.0) * radius * 0.58))
-                        .add(up.scale(Math.sin(-angle * 2.0) * radius * 0.58));
-                level.sendParticles(ParticleTypes.END_ROD, inner.x, inner.y, inner.z, 1, 0, 0, 0, 0);
-            }
         }
-        int spokes = 4 + spell.circle();
-        for (int spoke = 0; spoke < spokes; spoke++) {
-            double angle = Math.PI * 2.0 * spoke / spokes + (spell.id().hashCode() & 15) * 0.03;
-            Vec3 edge = center.add(right.scale(Math.cos(angle) * radius * 0.88))
-                    .add(up.scale(Math.sin(angle) * radius * 0.88));
-            particleLine(level, center, edge, ParticleTypes.ENCHANT, 5 + density * 2);
+    }
+
+    private static void planePolygon(ServerLevel level, Vec3 center, Vec3 right, Vec3 up, double radius,
+                                     int sides, ParticleOptions particle, int pointsPerEdge) {
+        List<Vec3> vertices = new ArrayList<>();
+        for (int index = 0; index < sides; index++) {
+            double angle = -Math.PI / 2.0 + Math.PI * 2.0 * index / sides;
+            vertices.add(center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius)));
         }
+        for (int index = 0; index < vertices.size(); index++) {
+            planeLine(level, vertices.get(index), vertices.get((index + 1) % vertices.size()), particle, pointsPerEdge);
+        }
+    }
+
+    private static void planeLine(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {
+        particleLine(level, start, end, particle, Math.max(2, points));
     }
 
     private static void horizontalSigil(ServerLevel level, Vec3 center, SpellDefinition spell,
                                         double radius, int density) {
-        ParticleOptions particle = schoolParticle(spell);
-        int points = Math.max(18, (16 + spell.circle() * 4) * density);
-        ring(level, center, radius, particle, points);
-        ring(level, center, radius * 0.58, ParticleTypes.END_ROD, Math.max(12, points / 2));
-        int sides = 4 + Math.min(4, spell.circle());
+        int outer = Math.max(36, 34 + spell.circle() * 6 + density * 4);
+        ring(level, center, radius, ParticleTypes.END_ROD, outer);
+        ring(level, center.add(0.0, 0.025, 0.0), radius * 0.72, schoolParticle(spell), Math.max(28, outer - 10));
+        ring(level, center.add(0.0, 0.05, 0.0), radius * 0.34, ParticleTypes.END_ROD, 24);
+        int sides = 4 + Math.min(5, spell.circle());
         List<Vec3> vertices = new ArrayList<>();
-        for (int i = 0; i < sides; i++) {
-            double angle = -Math.PI / 2.0 + Math.PI * 2.0 * i / sides;
-            vertices.add(center.add(Math.cos(angle) * radius * 0.80, 0.02, Math.sin(angle) * radius * 0.80));
+        for (int index = 0; index < sides; index++) {
+            double angle = -Math.PI / 2.0 + Math.PI * 2.0 * index / sides;
+            vertices.add(center.add(Math.cos(angle) * radius * 0.82, 0.07,
+                    Math.sin(angle) * radius * 0.82));
         }
-        for (int i = 0; i < vertices.size(); i++) {
-            particleLine(level, vertices.get(i), vertices.get((i + 1) % vertices.size()),
-                    ParticleTypes.ENCHANT, 5 + density * 2);
+        for (int index = 0; index < vertices.size(); index++) {
+            particleLine(level, vertices.get(index), vertices.get((index + 1) % vertices.size()),
+                    ParticleTypes.END_ROD, 8 + density * 2);
         }
+        particleLine(level, center.add(-radius * 0.55, 0.08, 0.0), center.add(radius * 0.55, 0.08, 0.0),
+                schoolParticle(spell), 12 + density * 2);
+        particleLine(level, center.add(0.0, 0.08, -radius * 0.55), center.add(0.0, 0.08, radius * 0.55),
+                schoolParticle(spell), 12 + density * 2);
     }
 
     private static ParticleOptions schoolParticle(SpellDefinition spell) {
@@ -463,7 +497,7 @@ public final class SpellCastingService {
             case "tempest_domain" -> tempestDomain(player, range, power);
             case "aegis_citadel" -> aegisCitadel(player, range, power);
             case "arcane_annihilation" -> arcaneAnnihilation(player, range, power);
-            default -> false;
+            default -> ExpandedSpellEffects.execute(player, id, range, power);
         };
     }
 

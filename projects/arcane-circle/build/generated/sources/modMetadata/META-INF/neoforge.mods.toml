@@ -1,0 +1,26 @@
+license="All Rights Reserved"
+issueTrackerURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds/issues"
+
+[[mods]]
+modId="arcanecircle"
+version="0.7.0-alpha.1"
+displayName="Arcane Circle: Ninefold Arcana"
+displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
+authors="문승준"
+description='''
+구중 마법학 세계관을 기반으로 1~5 숫자키 주문 슬롯, X 홀드식 2~3중 즉석 융합, 실전 숙련 각인, 드래그·스크롤 가능한 마도서, 쿨타임 HUD와 다양한 능력의 마도 지팡이를 구현한 Minecraft Java 마법 시스템. 현재 1~3써클을 지원한다.
+'''
+
+[[dependencies.arcanecircle]]
+modId="neoforge"
+type="required"
+versionRange="[26.2.0.38-beta,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.arcanecircle]]
+modId="minecraft"
+type="required"
+versionRange="[26.2]"
+ordering="NONE"
+side="BOTH"
