@@ -50,7 +50,8 @@ public final class MagicPlayerData extends SavedData {
             String weave,
             List<MasteryEntry> fusionMastery,
             List<CooldownEntry> cooldowns,
-            boolean starterStaffGranted
+            boolean starterStaffGranted,
+            boolean starterPrimerGranted
     ) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
@@ -64,7 +65,8 @@ public final class MagicPlayerData extends SavedData {
                 Codec.STRING.optionalFieldOf("weave", "").forGetter(PlayerEntry::weave),
                 MasteryEntry.CODEC.listOf().optionalFieldOf("fusion_mastery", List.of()).forGetter(PlayerEntry::fusionMastery),
                 CooldownEntry.CODEC.listOf().optionalFieldOf("cooldowns", List.of()).forGetter(PlayerEntry::cooldowns),
-                Codec.BOOL.optionalFieldOf("starter_staff_granted", false).forGetter(PlayerEntry::starterStaffGranted)
+                Codec.BOOL.optionalFieldOf("starter_staff_granted", false).forGetter(PlayerEntry::starterStaffGranted),
+                Codec.BOOL.optionalFieldOf("starter_primer_granted", false).forGetter(PlayerEntry::starterPrimerGranted)
         ).apply(instance, PlayerEntry::new));
     }
 
@@ -110,6 +112,56 @@ public final class MagicPlayerData extends SavedData {
         return true;
     }
 
+    public boolean claimStarterPrimer(ServerPlayer player) {
+        MageState state = state(player);
+        if (state.starterPrimerGranted) return false;
+        state.starterPrimerGranted = true;
+        setDirty();
+        return true;
+    }
+
+    public LearnResult learnPrimer(ServerPlayer player) {
+        MageState state = state(player);
+        int learned = 0;
+        for (SpellDefinition spell : SpellCatalog.primerSpells()) {
+            if (state.known.add(spell.id())) {
+                learned++;
+                equipIntoFirstEmptySlot(state, spell.id());
+            }
+        }
+        if (learned == 0) return new LearnResult(false, 0, "이미 모든 1써클 기초 주문을 익혔습니다.");
+        state.mana = effectiveStats(player).maxMana();
+        setDirty();
+        return new LearnResult(true, learned, learned + "개의 기초 주문을 습득했습니다.");
+    }
+
+    public LearnResult learnSpell(ServerPlayer player, String spellId) {
+        MageState state = state(player);
+        SpellDefinition spell = SpellCatalog.spell(spellId).orElse(null);
+        if (spell == null || spell.acquisition() != SpellDefinition.Acquisition.BOOK) {
+            return new LearnResult(false, 0, "이 주문서는 안정된 전승 주문을 담고 있지 않습니다.");
+        }
+        if (spell.circle() > state.circle) {
+            return new LearnResult(false, 0, spell.circle() + "써클 주문은 현재 " + state.circle
+                    + "써클 마력핵으로 해독할 수 없습니다.");
+        }
+        if (!state.known.add(spellId)) {
+            return new LearnResult(false, 0, "이미 " + spell.name() + " 주문을 익혔습니다.");
+        }
+        equipIntoFirstEmptySlot(state, spellId);
+        setDirty();
+        return new LearnResult(true, 1, spell.name() + "을 습득했습니다.");
+    }
+
+    private static void equipIntoFirstEmptySlot(MageState state, String spellId) {
+        for (int index = 0; index < state.slots.size(); index++) {
+            if (state.slots.get(index).isBlank()) {
+                state.slots.set(index, spellId);
+                return;
+            }
+        }
+    }
+
     public EffectiveStats effectiveStats(ServerPlayer player) {
         MageState state = state(player);
         StaffProfile staff = ModItems.equipped(player);
@@ -144,6 +196,7 @@ public final class MagicPlayerData extends SavedData {
         MageState state = state(player);
         if (slot < 0 || slot >= state.slots.size()) return CastPreparation.failure("존재하지 않는 주문 슬롯입니다.");
         String spellId = state.slots.get(slot);
+        if (spellId.isBlank()) return CastPreparation.failure("비어 있는 주문 슬롯입니다. 마도서에서 주문을 장착하세요.");
         return prepare(player, state, spellId, false, "", List.of(spellId));
     }
 
@@ -173,7 +226,7 @@ public final class MagicPlayerData extends SavedData {
                                     String masteryId, List<String> ingredients) {
         SpellDefinition spell = SpellCatalog.spell(spellId).orElse(null);
         if (spell == null || (!fusion && !state.known.contains(spellId))) {
-            return CastPreparation.failure("선택한 주문을 사용할 수 없습니다.");
+            return CastPreparation.failure("선택한 주문을 아직 습득하지 않았습니다.");
         }
         if (spell.circle() > state.circle) {
             return CastPreparation.failure(spell.circle() + "써클 주문은 현재 마력핵으로 안정화할 수 없습니다.");
@@ -181,10 +234,10 @@ public final class MagicPlayerData extends SavedData {
 
         StaffProfile staff = ModItems.equipped(player);
         int masteryGap = Math.max(0, state.circle - spell.circle());
-        double circleMana = Math.max(0.55, 1.0 - masteryGap * 0.10);
-        double circleCooldown = Math.max(0.45, 1.0 - masteryGap * 0.18);
-        double circleRange = 1.0 + masteryGap * 0.10;
-        double circlePower = 1.0 + masteryGap * 0.12;
+        double circleMana = Math.max(0.48, 1.0 - masteryGap * 0.09);
+        double circleCooldown = Math.max(0.38, 1.0 - masteryGap * 0.14);
+        double circleRange = 1.0 + masteryGap * 0.08;
+        double circlePower = 1.0 + masteryGap * 0.10;
 
         int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * circleMana * staff.manaCostMultiplier()));
         int cooldown = Math.max(8, (int) Math.round(spell.cooldownTicks() * circleCooldown * staff.cooldownMultiplier()));
@@ -201,11 +254,12 @@ public final class MagicPlayerData extends SavedData {
     public CastProgress completeCast(ServerPlayer player, CastPreparation cast) {
         MageState state = state(player);
         state.mana = Math.max(0.0, state.mana - cast.manaCost());
-        state.insight += Math.max(1, cast.spell().circle());
+        state.insight += Math.max(1, cast.spell().circle() * 2);
 
         int previousCircle = state.circle;
-        if (state.circle < 2 && state.insight >= 8) state.circle = 2;
-        if (state.circle < 3 && state.insight >= 24) state.circle = 3;
+        while (state.circle < 5 && state.insight >= SpellCatalog.circleInsightThreshold(state.circle + 1)) {
+            state.circle++;
+        }
         if (state.circle > previousCircle) state.mana = effectiveStats(player).maxMana();
 
         MasteryProgress mastery = MasteryProgress.none();
@@ -216,6 +270,7 @@ public final class MagicPlayerData extends SavedData {
             int after = Math.min(required, before + 1);
             state.mastery.put(resultId, after);
             boolean registered = after >= required && state.known.add(resultId);
+            if (registered) equipIntoFirstEmptySlot(state, resultId);
             mastery = new MasteryProgress(true, registered, resultId, after, required);
         }
 
@@ -268,6 +323,7 @@ public final class MagicPlayerData extends SavedData {
     }
 
     public record EffectiveStats(int maxMana, double regenPerHalfSecond, StaffProfile staff) {}
+    public record LearnResult(boolean learned, int count, String message) {}
 
     public record CooldownStatus(int remainingTicks, int totalTicks) {
         public static final CooldownStatus NONE = new CooldownStatus(0, 1);
@@ -318,16 +374,19 @@ public final class MagicPlayerData extends SavedData {
         private final Map<String, Integer> mastery;
         private final Map<String, CooldownEntry> cooldowns;
         private boolean starterStaffGranted;
+        private boolean starterPrimerGranted;
 
         private MageState(PlayerEntry entry) {
-            this.circle = Math.max(1, Math.min(3, entry.circle()));
+            this.circle = Math.max(1, Math.min(5, entry.circle()));
             this.insight = Math.max(0, entry.insight());
-            this.known = new LinkedHashSet<>(entry.known());
-            this.known.addAll(SpellCatalog.starterKnownSpells());
+            this.known = new LinkedHashSet<>();
+            for (String spellId : entry.known()) {
+                if (SpellCatalog.spell(spellId).isPresent()) this.known.add(spellId);
+            }
             this.slots = normalizedSlots(entry.slots(), entry.focus(), entry.weave());
-            List<String> fallback = SpellCatalog.starterSlots();
             for (int index = 0; index < this.slots.size(); index++) {
-                if (!known.contains(this.slots.get(index))) this.slots.set(index, fallback.get(index));
+                String spellId = this.slots.get(index);
+                if (!spellId.isBlank() && !known.contains(spellId)) this.slots.set(index, "");
             }
             this.mastery = new LinkedHashMap<>();
             entry.fusionMastery().stream()
@@ -349,19 +408,22 @@ public final class MagicPlayerData extends SavedData {
                     .sorted(Comparator.comparing(CooldownEntry::spellId))
                     .forEach(value -> cooldowns.put(value.spellId(), value));
             this.starterStaffGranted = entry.starterStaffGranted();
-            this.mana = Math.max(0.0, Math.min(1024.0, entry.mana()));
+            this.starterPrimerGranted = entry.starterPrimerGranted();
+            this.mana = Math.max(0.0, Math.min(4096.0, entry.mana()));
         }
 
         private static MageState fresh() {
             return new MageState(new PlayerEntry("", 1, 100.0, 0,
-                    SpellCatalog.starterKnownSpells(), SpellCatalog.starterSlots(), 0,
-                    "arcane_dart", "ember", List.of(), List.of(), false));
+                    List.of(), SpellCatalog.starterSlots(), 0, "", "",
+                    List.of(), List.of(), false, false));
         }
 
         private static List<String> normalizedSlots(List<String> source, String oldFocus, String oldWeave) {
             List<String> result = new ArrayList<>(SpellCatalog.starterSlots());
             for (int index = 0; index < Math.min(5, source.size()); index++) {
-                if (SpellCatalog.spell(source.get(index)).isPresent()) result.set(index, source.get(index));
+                String value = source.get(index);
+                if (value == null || value.isBlank()) result.set(index, "");
+                else if (SpellCatalog.spell(value).isPresent()) result.set(index, value);
             }
             if (source.isEmpty()) {
                 if (SpellCatalog.spell(oldFocus).isPresent()) result.set(0, oldFocus);
@@ -379,7 +441,7 @@ public final class MagicPlayerData extends SavedData {
                     .sorted(Comparator.comparing(CooldownEntry::spellId))
                     .toList();
             return new PlayerEntry(uuid, circle, mana, insight, List.copyOf(known), List.copyOf(slots),
-                    0, "", "", masteryEntries, cooldownEntries, starterStaffGranted);
+                    0, "", "", masteryEntries, cooldownEntries, starterStaffGranted, starterPrimerGranted);
         }
 
         public int circle() { return circle; }
@@ -394,8 +456,14 @@ public final class MagicPlayerData extends SavedData {
                     ? Math.max(value, SpellCatalog.masteryRequired(spellId)) : value;
         }
         public Map<String, Integer> mastery() { return Map.copyOf(mastery); }
-        public int baseMaxMana() { return switch (circle) { case 2 -> 170; case 3 -> 260; default -> 100; }; }
-        public double baseRegenPerHalfSecond() { return switch (circle) { case 2 -> 2.0; case 3 -> 3.0; default -> 1.0; }; }
-        public int nextCircleInsight() { return circle >= 3 ? 0 : circle == 2 ? 24 : 8; }
+        public int baseMaxMana() {
+            return switch (circle) { case 2 -> 180; case 3 -> 300; case 4 -> 480; case 5 -> 750; default -> 100; };
+        }
+        public double baseRegenPerHalfSecond() {
+            return switch (circle) { case 2 -> 2.0; case 3 -> 3.2; case 4 -> 4.8; case 5 -> 7.0; default -> 1.0; };
+        }
+        public int nextCircleInsight() {
+            return circle >= 5 ? 0 : SpellCatalog.circleInsightThreshold(circle + 1);
+        }
     }
 }
