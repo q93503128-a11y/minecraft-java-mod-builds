@@ -18,6 +18,7 @@ public final class VillageClientUi {
                             case "skill_tree" -> new VillageSkillTreeScreen(payload);
                             case "town_hall" -> new VillageTownHallScreen(payload);
                             case "role_progress" -> new VillageRoleProgressScreen(payload);
+                            case "quick_chat" -> new VillageQuickChatScreen(payload);
                             default -> new VillageUiScreen(payload);
                         }));
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
