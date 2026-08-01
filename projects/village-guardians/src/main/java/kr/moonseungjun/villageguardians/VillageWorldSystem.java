@@ -35,8 +35,7 @@ public final class VillageWorldSystem {
     private static final Map<UUID, Long> LAST_COMBAT_AT = new HashMap<>();
     private static boolean generationInProgress;
 
-    private VillageWorldSystem() {
-    }
+    private VillageWorldSystem() {}
 
     public static synchronized void resetTransientState() {
         generationInProgress = false;
@@ -46,48 +45,34 @@ public final class VillageWorldSystem {
     }
 
     public static synchronized void ensureFortifiedVillage(ServerPlayer player) {
-        if (generationInProgress || !(player.level() instanceof ServerLevel level)) {
-            return;
-        }
+        if (generationInProgress || !(player.level() instanceof ServerLevel level)) return;
         MinecraftServer server = level.getServer();
-        if (server == null || level != server.overworld()) {
-            return;
-        }
-        if (VillageCouncilState.villageCenter().isEmpty()) {
-            VillageCouncilState.setVillageCenter(player);
-        }
+        if (server == null || level != server.overworld()) return;
+        if (VillageCouncilState.villageCenter().isEmpty()) VillageCouncilState.setVillageCenter(player);
         BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition()).immutable();
         boolean firstBuild = !level.getBlockState(center.below(2)).is(Blocks.LODESTONE);
-        boolean visualRevisionMissing = !level.getBlockState(center.below(3)).is(Blocks.CRYING_OBSIDIAN);
-        if (!firstBuild && !visualRevisionMissing) {
-            return;
-        }
+        boolean visualRevisionMissing = !level.getBlockState(center.below(4)).is(Blocks.RESPAWN_ANCHOR);
+        if (!firstBuild && !visualRevisionMissing) return;
 
         generationInProgress = true;
         try {
             if (firstBuild) {
-                player.sendSystemMessage(Component.literal(
-                        "§6[마을 건설] §f요새와 시설을 생성합니다."));
+                player.sendSystemMessage(Component.literal("§6[마을 건설] §f요새와 시설을 생성합니다."));
                 VillageProgressionSystem.restoreFacilitiesForMigration();
             } else {
-                player.sendSystemMessage(Component.literal(
-                        "§6[마을 정비] §f지붕·조명·문·성문과 시설 크기를 새 설계로 한 번만 갱신합니다."));
+                player.sendSystemMessage(Component.literal("§6[마을 정비] §f회관 계단·전용 방어탑·엔티티 차단 설계를 갱신합니다."));
             }
-
             buildAll(level, center);
             if (!firstBuild) {
                 for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
-                    if (!VillageProgressionSystem.isOperational(building)) {
-                        destroyStructure(level, building);
-                    }
+                    if (!VillageProgressionSystem.isOperational(building)) destroyStructure(level, building);
                 }
             } else {
                 removeLooseDebris(level, center);
-                removeUnauthorizedMobs(level, center);
             }
+            purgeUnauthorizedVillageMobs(server);
             purgeDaytimeHostiles(server);
-            player.sendSystemMessage(Component.literal(
-                    "§a[마을 준비 완료] §f닫힌 지붕, 밝은 내부와 밀폐된 북문이 적용됐습니다."));
+            player.sendSystemMessage(Component.literal("§a[마을 준비 완료] §f회관 2층 통로와 네 종류의 고정 방어탑이 적용됐습니다."));
         } finally {
             generationInProgress = false;
         }
@@ -95,17 +80,14 @@ public final class VillageWorldSystem {
 
     public static synchronized void forceRebuild(MinecraftServer server) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null || generationInProgress) {
-            return;
-        }
+        if (center == null || generationInProgress) return;
         generationInProgress = true;
         try {
             buildAll(server.overworld(), center);
             for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
-                if (!VillageProgressionSystem.isOperational(building)) {
-                    destroyStructure(server.overworld(), building);
-                }
+                if (!VillageProgressionSystem.isOperational(building)) destroyStructure(server.overworld(), building);
             }
+            purgeUnauthorizedVillageMobs(server);
         } finally {
             generationInProgress = false;
         }
@@ -114,15 +96,10 @@ public final class VillageWorldSystem {
     public static boolean handleCentralBellInteraction(PlayerInteractEvent.RightClickBlock event) {
         if (event.getHand() != InteractionHand.MAIN_HAND
                 || !(event.getEntity() instanceof ServerPlayer player)
-                || !(player.level() instanceof ServerLevel level)) {
-            return false;
-        }
+                || !(player.level() instanceof ServerLevel level)) return false;
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null
-                || !VillageFortressTerrain.isCentralBell(center, event.getPos())
-                || !level.getBlockState(event.getPos()).is(Blocks.BELL)) {
-            return false;
-        }
+        if (center == null || !VillageFortressTerrain.isCentralBell(center, event.getPos())
+                || !level.getBlockState(event.getPos()).is(Blocks.BELL)) return false;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
         player.sendSystemMessage(Component.literal(VillageCouncilState.proposeAdvanceTime(player)));
@@ -132,21 +109,15 @@ public final class VillageWorldSystem {
     public static boolean handleGateInteraction(PlayerInteractEvent.RightClickBlock event) {
         if (event.getHand() != InteractionHand.MAIN_HAND
                 || !(event.getEntity() instanceof ServerPlayer player)
-                || !(player.level() instanceof ServerLevel level)) {
-            return false;
-        }
+                || !(player.level() instanceof ServerLevel level)) return false;
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null || !VillageFortressTerrain.isGateControl(center, event.getPos())) {
-            return false;
-        }
-
+        if (center == null || !VillageFortressTerrain.isGateControl(center, event.getPos())) return false;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.WALLS)) {
             player.sendSystemMessage(Component.literal("§c북문이 파괴되어 개폐 장치를 사용할 수 없습니다."));
             return true;
         }
-
         if (VillageFortressTerrain.isNorthGatePassable(level, center)) {
             VillageFortressTerrain.closeNorthGate(level, center);
             player.sendSystemMessage(Component.literal("§6[북문] §f성문을 닫았습니다."));
@@ -159,67 +130,33 @@ public final class VillageWorldSystem {
 
     public static synchronized void recordCombat(LivingIncomingDamageEvent event) {
         long gameTime = event.getEntity().level().getGameTime();
-        if (event.getEntity() instanceof ServerPlayer defender) {
-            LAST_COMBAT_AT.put(defender.getUUID(), gameTime);
-        }
+        if (event.getEntity() instanceof ServerPlayer defender) LAST_COMBAT_AT.put(defender.getUUID(), gameTime);
         Entity source = event.getSource().getEntity();
-        if (source instanceof ServerPlayer attacker) {
-            LAST_COMBAT_AT.put(attacker.getUUID(), gameTime);
-        }
+        if (source instanceof ServerPlayer attacker) LAST_COMBAT_AT.put(attacker.getUUID(), gameTime);
     }
 
     public static synchronized String returnToVillage(ServerPlayer player) {
         MinecraftServer server = player.level().getServer();
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (server == null || center == null) {
-            return "마을 중심이 아직 설정되지 않았습니다.";
-        }
-        if (!player.isAlive() || player.isSpectator()) {
-            return "현재 상태에서는 귀환할 수 없습니다.";
-        }
-
+        if (server == null || center == null) return "마을 중심이 아직 설정되지 않았습니다.";
+        if (!player.isAlive() || player.isSpectator()) return "현재 상태에서는 귀환할 수 없습니다.";
         long now = player.level().getGameTime();
-        long lastCombat = LAST_COMBAT_AT.getOrDefault(player.getUUID(), Long.MIN_VALUE / 2L);
-        long combatReadyAt = lastCombat + COMBAT_RETURN_LOCK_TICKS;
-        if (combatReadyAt > now) {
-            long seconds = Math.max(1L, (combatReadyAt - now + 19L) / 20L);
-            return "전투 중에는 귀환할 수 없습니다. " + seconds + "초 뒤 다시 시도하세요.";
-        }
+        long combatReadyAt = LAST_COMBAT_AT.getOrDefault(player.getUUID(), Long.MIN_VALUE / 2L) + COMBAT_RETURN_LOCK_TICKS;
+        if (combatReadyAt > now) return "전투 중에는 귀환할 수 없습니다. " + Math.max(1L, (combatReadyAt - now + 19L) / 20L) + "초 뒤 다시 시도하세요.";
         long readyAt = RETURN_READY_AT.getOrDefault(player.getUUID(), 0L);
-        if (readyAt > now) {
-            long seconds = Math.max(1L, (readyAt - now + 19L) / 20L);
-            return "귀환 재사용 대기시간이 " + seconds + "초 남았습니다.";
-        }
-
+        if (readyAt > now) return "귀환 재사용 대기시간이 " + Math.max(1L, (readyAt - now + 19L) / 20L) + "초 남았습니다.";
         ServerLevel destination = server.overworld();
         BlockPos target = findSafeReturnPosition(destination, center);
-        if (target == null) {
-            return "마을 광장에서 안전한 귀환 위치를 찾지 못했습니다.";
-        }
-        player.teleportTo(
-                destination,
-                target.getX() + 0.5,
-                target.getY(),
-                target.getZ() + 0.5,
-                Set.of(),
-                player.getYRot(),
-                player.getXRot(),
-                true);
+        if (target == null) return "마을 광장에서 안전한 귀환 위치를 찾지 못했습니다.";
+        player.teleportTo(destination, target.getX() + 0.5, target.getY(), target.getZ() + 0.5,
+                Set.of(), player.getYRot(), player.getXRot(), true);
         RETURN_READY_AT.put(player.getUUID(), now + RETURN_COOLDOWN_TICKS);
         return "마을 중앙 광장으로 귀환했습니다. 재사용 대기시간은 60초입니다.";
     }
 
-    public static boolean isAllowedGameMob(Mob mob) {
-        return ALLOWED_GAME_MOBS.contains(mob.getUUID());
-    }
-
-    public static void markAllowedGameMob(Mob mob) {
-        ALLOWED_GAME_MOBS.add(mob.getUUID());
-    }
-
-    public static void unmarkAllowedGameMob(UUID uuid) {
-        ALLOWED_GAME_MOBS.remove(uuid);
-    }
+    public static boolean isAllowedGameMob(Mob mob) { return ALLOWED_GAME_MOBS.contains(mob.getUUID()); }
+    public static void markAllowedGameMob(Mob mob) { ALLOWED_GAME_MOBS.add(mob.getUUID()); }
+    public static void unmarkAllowedGameMob(UUID uuid) { ALLOWED_GAME_MOBS.remove(uuid); }
 
     public static boolean isInsideVillageArea(BlockPos pos) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
@@ -234,36 +171,30 @@ public final class VillageWorldSystem {
     }
 
     public static void purgeDaytimeHostiles(MinecraftServer server) {
-        if (server == null || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
-            return;
-        }
+        if (server == null || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) return;
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null) {
-            return;
-        }
+        if (center == null) return;
         ServerLevel level = server.overworld();
         AABB area = new AABB(center).inflate(BATTLEFIELD_RADIUS, 96, BATTLEFIELD_RADIUS);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
-            if (mob.getType().getCategory() == MobCategory.MONSTER && !isAllowedGameMob(mob)) {
-                mob.discard();
-            }
+            if (mob.getType().getCategory() == MobCategory.MONSTER && !isAllowedGameMob(mob)) mob.discard();
         }
     }
 
-    public static BlockPos northGateTarget() {
-        return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0))
-                .offset(0, 0, -FORTRESS_RADIUS - 3);
+    public static void purgeUnauthorizedVillageMobs(MinecraftServer server) {
+        if (server == null) return;
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (center == null) return;
+        ServerLevel level = server.overworld();
+        AABB area = new AABB(center).inflate(FORTRESS_RADIUS + 2, 64, FORTRESS_RADIUS + 2);
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
+            if (!isAllowedGameMob(mob) && !mob.isPersistenceRequired()) mob.discard();
+        }
     }
 
-    public static BlockPos northInnerApproach() {
-        return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0))
-                .offset(0, 0, -FORTRESS_RADIUS + 14);
-    }
-
-    public static BlockPos northSpawnOrigin() {
-        return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0))
-                .offset(0, 0, -ENEMY_SPAWN_DISTANCE);
-    }
+    public static BlockPos northGateTarget() { return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)).offset(0, 0, -FORTRESS_RADIUS - 3); }
+    public static BlockPos northInnerApproach() { return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)).offset(0, 0, -FORTRESS_RADIUS + 14); }
+    public static BlockPos northSpawnOrigin() { return VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)).offset(0, 0, -ENEMY_SPAWN_DISTANCE); }
 
     public static boolean isNorthGatePassable(ServerLevel level) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
@@ -271,50 +202,35 @@ public final class VillageWorldSystem {
     }
 
     public static BlockPos buildingCenter(VillageProgressionSystem.Building building) {
-        return VillageFortressBuildings.center(
-                VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)),
-                building);
+        return VillageFortressBuildings.center(VillageCouncilState.villageCenter().orElse(new BlockPos(0, 0, 0)), building);
     }
 
     public static void destroyStructure(ServerLevel level, VillageProgressionSystem.Building building) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null) {
-            return;
-        }
-        if (building == VillageProgressionSystem.Building.WALLS) {
-            VillageFortressTerrain.destroyNorthGate(level, center);
-        } else {
-            VillageFortressBuildings.remove(level, center, building);
-        }
+        if (center == null) return;
+        if (building == VillageProgressionSystem.Building.WALLS) VillageFortressTerrain.destroyNorthGate(level, center);
+        else VillageFortressBuildings.remove(level, center, building);
     }
 
     public static void rebuildStructure(ServerLevel level, VillageProgressionSystem.Building building) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null) {
-            return;
-        }
-        if (building == VillageProgressionSystem.Building.WALLS) {
-            VillageFortressTerrain.rebuildNorthGate(level, center);
-        } else {
-            VillageFortressBuildings.rebuild(level, center, building);
-        }
+        if (center == null) return;
+        if (building == VillageProgressionSystem.Building.WALLS) VillageFortressTerrain.rebuildNorthGate(level, center);
+        else VillageFortressBuildings.rebuild(level, center, building);
     }
 
-    public static void applyUpgradeVisual(
-            ServerLevel level,
-            VillageProgressionSystem.Building building,
-            int levelValue) {
+    public static void applyUpgradeVisual(ServerLevel level, VillageProgressionSystem.Building building, int levelValue) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center != null) {
-            VillageFortressBuildings.applyUpgradeVisual(level, center, building, levelValue);
-        }
+        if (center != null) VillageFortressBuildings.applyUpgradeVisual(level, center, building, levelValue);
     }
 
     private static void buildAll(ServerLevel level, BlockPos center) {
         VillageFortressTerrain.buildBase(level, center);
         VillageBuildingEnhancements.reinforceWallRailings(level, center);
         VillageFortressBuildings.buildAll(level, center);
+        VillageDefenseTowerBuilder.build(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
+        VillageFortressTerrain.set(level, center.below(4), Blocks.RESPAWN_ANCHOR);
         VillageFortressTerrain.set(level, center.below(3), Blocks.CRYING_OBSIDIAN);
         VillageFortressTerrain.set(level, center.below(2), Blocks.LODESTONE);
         VillageFortressTerrain.set(level, center.below(), Blocks.CHISELED_STONE_BRICKS);
@@ -324,23 +240,11 @@ public final class VillageWorldSystem {
         for (int z = 12; z <= 20; z++) {
             for (int x = -3; x <= 3; x++) {
                 BlockPos candidate = center.offset(x, 0, z);
-                if (level.getBlockState(candidate).isAir()
-                        && level.getBlockState(candidate.above()).isAir()
-                        && !level.getBlockState(candidate.below()).isAir()) {
-                    return candidate;
-                }
+                if (level.getBlockState(candidate).isAir() && level.getBlockState(candidate.above()).isAir()
+                        && !level.getBlockState(candidate.below()).isAir()) return candidate;
             }
         }
         return null;
-    }
-
-    private static void removeUnauthorizedMobs(ServerLevel level, BlockPos center) {
-        AABB area = new AABB(center).inflate(MIGRATION_CLEAN_RADIUS, 64, MIGRATION_CLEAN_RADIUS);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
-            if (mob.getType().getCategory() == MobCategory.MONSTER && !isAllowedGameMob(mob)) {
-                mob.discard();
-            }
-        }
     }
 
     private static void removeLooseDebris(ServerLevel level, BlockPos center) {
