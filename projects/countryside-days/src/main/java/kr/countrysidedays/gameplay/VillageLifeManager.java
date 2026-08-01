@@ -15,7 +15,9 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.npc.villager.VillagerProfession;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -51,18 +53,38 @@ public final class VillageLifeManager {
     private static final long NIGHT_START = 13500L;
 
     private static final List<ResidentRole> PUBLIC_ROLES = List.of(
-            new ResidentRole("제빵사 미나", "baker", -39, -16, -14, 8, -5, 5),
-            new ResidentRole("목수 우진", "carpenter", 39, -16, 6, -29, 4, -4),
-            new ResidentRole("우편배달부 하람", "courier", -39, 20, 28, 0, 0, 5),
-            new ResidentRole("어부 세진", "fisher", 39, 20, 49, 0, 8, 5),
-            new ResidentRole("정원사 나래", "gardener", -35, -16, -10, 13, -3, 8),
-            new ResidentRole("재봉사 유리", "tailor", 35, -16, 18, 8, 5, 8),
-            new ResidentRole("선생님 지호", "teacher", -35, 20, 0, -34, -6, 5),
-            new ResidentRole("요리사 다온", "cook", 35, 20, 12, 8, 2, 5),
-            new ResidentRole("의원 수현", "healer", -42, -13, 4, -34, -2, 5),
-            new ResidentRole("꽃집 주인 봄이", "florist", 42, -13, -8, 8, 7, 5),
-            new ResidentRole("대장장이 건우", "smith", -42, 18, 9, -29, -7, 3),
-            new ResidentRole("도서관지기 은채", "librarian", 42, 18, -4, -34, 7, 3)
+            new ResidentRole("제빵사 미나", "baker", -39, -16, -22, -20, -8, 5,
+                    VillagerProfession.FARMER, true),
+            new ResidentRole("목수 우진", "carpenter", 39, -16, 21, -20, -6, 5,
+                    VillagerProfession.TOOLSMITH, true),
+            new ResidentRole("우편배달부 하람", "courier", -45, -37, 0, -25, -4, 5,
+                    VillagerProfession.CARTOGRAPHER, false),
+            new ResidentRole("어부 세진", "fisher", -43, -37, -42, 36, -2, 5,
+                    VillagerProfession.FISHERMAN, false),
+            new ResidentRole("정원사 나래", "gardener", -39, 20, 18, 24, 0, 5,
+                    VillagerProfession.FARMER, false),
+            new ResidentRole("재봉사 유리", "tailor", -45, 9, -32, 8, 2, 5,
+                    VillagerProfession.SHEPHERD, true),
+            new ResidentRole("선생님 지호", "teacher", 43, -37, -22, -37, 4, 5,
+                    VillagerProfession.LIBRARIAN, true),
+            new ResidentRole("요리사 다온", "cook", 39, 20, -17, 10, 6, 5,
+                    VillagerProfession.BUTCHER, true),
+            new ResidentRole("의원 수현", "healer", 43, 9, 21, -37, -8, 7,
+                    VillagerProfession.CLERIC, true),
+            new ResidentRole("꽃집 주인 봄이", "florist", -43, 9, 25, 24, -5, 7,
+                    VillagerProfession.FARMER, true),
+            new ResidentRole("대장장이 건우", "smith", 45, 9, 28, 8, -2, 7,
+                    VillagerProfession.WEAPONSMITH, true),
+            new ResidentRole("도서관지기 은채", "librarian", 45, -37, -19, -37, 2, 7,
+                    VillagerProfession.LIBRARIAN, true),
+            new ResidentRole("과수원지기 연우", "orchard", -23, 36, 15, 24, 5, 7,
+                    VillagerProfession.FARMER, false),
+            new ResidentRole("양봉가 초롱", "beekeeper", -21, 36, 25, 24, 8, 7,
+                    VillagerProfession.FARMER, false),
+            new ResidentRole("낙농 일꾼 태린", "dairy", 20, 36, 36, 36, -5, 9,
+                    VillagerProfession.SHEPHERD, false),
+            new ResidentRole("양계 농부 민호", "poultry", 22, 36, 46, 40, 5, 9,
+                    VillagerProfession.FARMER, false)
     );
 
     private VillageLifeManager() {
@@ -155,20 +177,28 @@ public final class VillageLifeManager {
         return Math.max(1, Math.round(base * percent / 100.0F));
     }
 
+    public static boolean isProduceArbitrageSafe(long day, int salt) {
+        int salePrice = dailyCoinPrice(3, day, salt);
+        int buybackCount = dailyInputCount(20, day, salt + 1);
+        int buybackReward = dailyCoinPrice(1, day, salt + 2);
+        int cheapestRepurchaseCost = ((buybackCount + 3) / 4) * salePrice;
+        return cheapestRepurchaseCost > buybackReward;
+    }
+
     private static void tickPublicResidents(ServerLevel level, BlockPos villageOrigin) {
         long time = Math.floorMod(level.getGameTime(), 24000L);
         long day = gameDay(level);
         for (ResidentRole role : PUBLIC_ROLES) {
-            findTagged(level, PUBLIC_ROLE_PREFIX + role.id(), villageOrigin, 96.0)
-                    .ifPresent(villager -> navigate(villager, publicTarget(villageOrigin, role, day, time), 0.46));
-        }
-
-        if (isHoliday(day) || isLunch(time)) {
-            BlockPos rest = villageOrigin.offset(0, 1, 5);
-            moveNamed(level, villageOrigin, RuralNpcManager.RESIDENT_NAME, rest);
-            moveNamed(level, villageOrigin, RuralNpcManager.FARMER_NAME, rest.offset(-3, 0, 1));
-            moveNamed(level, villageOrigin, RuralNpcManager.RANCHER_NAME, rest.offset(3, 0, 1));
-            moveNamed(level, villageOrigin, RuralNpcManager.HALL_KEEPER_NAME, rest.offset(0, 0, 3));
+            findTagged(level, PUBLIC_ROLE_PREFIX + role.id(), villageOrigin, 110.0)
+                    .ifPresent(villager -> {
+                        BlockPos target = publicTarget(villageOrigin, role, day, time);
+                        boolean stationary = !isHoliday(day)
+                                && time >= MORNING_START
+                                && time < SOCIAL_START
+                                && !isLunch(time)
+                                && role.stationaryAtWork();
+                        navigate(level, villager, target, stationary ? 0.43 : 0.48, stationary);
+                    });
         }
     }
 
@@ -186,29 +216,35 @@ public final class VillageLifeManager {
             Optional<Villager> farmer = findEstateWorker(level, estate, FARM_ROLE);
             Optional<Villager> rancher = findEstateWorker(level, estate, RANCH_ROLE);
 
-            BlockPos offDuty = isHoliday(day)
-                    ? villageOrigin.offset(-4, 1, 5)
-                    : time >= NIGHT_START || time < MORNING_START
-                    ? villageOrigin.offset(-37, 1, -17)
-                    : villageOrigin.offset(0, 1, 5);
+            BlockPos farmTarget = PlayerEstateLayout.farm(origin).offset(2, 0, 0);
+            long ranchPhase = Math.floorMod(level.getGameTime() / 200L, 3L);
+            BlockPos ranchTarget = ranchPhase == 0L
+                    ? PlayerEstateLayout.ranchSupplyBarrel(origin).above()
+                    : ranchPhase == 1L
+                    ? PlayerEstateLayout.hayFeeder(origin).north()
+                    : PlayerEstateLayout.waterTrough(origin).north();
 
             if (workTime) {
-                farmer.ifPresent(v -> navigate(v, PlayerEstateLayout.farm(origin), 0.54));
-                BlockPos ranchTarget = Math.floorMod(level.getGameTime() / 200L, 3L) == 0L
-                        ? PlayerEstateLayout.ranchSupplyBarrel(origin).above()
-                        : Math.floorMod(level.getGameTime() / 200L, 3L) == 1L
-                        ? PlayerEstateLayout.hayFeeder(origin)
-                        : PlayerEstateLayout.waterTrough(origin);
-                rancher.ifPresent(v -> navigate(v, ranchTarget, 0.54));
-
+                farmer.ifPresent(v -> navigate(level, v, farmTarget, 0.54, false));
+                rancher.ifPresent(v -> navigate(level, v, ranchTarget, 0.54, false));
                 if (level.getGameTime() % 200L == 0L) {
                     workFarm(level, estate);
                     workRanch(level, estate);
                 }
-            } else {
-                farmer.ifPresent(v -> navigate(v, offDuty, 0.45));
-                rancher.ifPresent(v -> navigate(v, offDuty.offset(2, 0, 0), 0.45));
+                continue;
             }
+
+            BlockPos farmOffDuty;
+            BlockPos ranchOffDuty;
+            if (isHoliday(day) || isLunch(time)) {
+                farmOffDuty = villageOrigin.offset(-4, 1, 5);
+                ranchOffDuty = villageOrigin.offset(4, 1, 5);
+            } else {
+                farmOffDuty = PlayerEstateLayout.homeDoor(origin).south();
+                ranchOffDuty = PlayerEstateLayout.homeDoor(origin).south(2);
+            }
+            farmer.ifPresent(v -> navigate(level, v, farmOffDuty, 0.45, false));
+            rancher.ifPresent(v -> navigate(level, v, ranchOffDuty, 0.45, false));
         }
     }
 
@@ -337,9 +373,15 @@ public final class VillageLifeManager {
 
     private static void ensurePublicResident(ServerLevel level, BlockPos origin, ResidentRole role) {
         String tag = PUBLIC_ROLE_PREFIX + role.id();
-        if (findTagged(level, tag, origin, 96.0).isPresent()) return;
-        Villager villager = spawnVillager(level, role.name(), origin.offset(role.homeX(), 1, role.homeZ()));
-        if (villager != null) villager.addTag(tag);
+        Villager villager = findTagged(level, tag, origin, 110.0).orElse(null);
+        if (villager == null) {
+            villager = spawnVillager(level, role.name(), origin.offset(role.homeX(), 1, role.homeZ()));
+            if (villager != null) villager.addTag(tag);
+        }
+        if (villager == null) return;
+        villager.setVillagerData(villager.getVillagerData()
+                .withProfession(level.registryAccess(), role.profession())
+                .withLevel(3));
     }
 
     private static void ensureEstateWorker(
@@ -354,6 +396,12 @@ public final class VillageLifeManager {
         if (villager == null) return;
         villager.addTag(WORKER_OWNER_PREFIX + estate.ownerUuid());
         villager.addTag(WORKER_ROLE_PREFIX + role);
+        VillagerProfession profession = FARM_ROLE.equals(role)
+                ? VillagerProfession.FARMER
+                : VillagerProfession.SHEPHERD;
+        villager.setVillagerData(villager.getVillagerData()
+                .withProfession(level.registryAccess(), profession)
+                .withLevel(2));
     }
 
     private static Optional<Villager> findEstateWorker(
@@ -388,7 +436,8 @@ public final class VillageLifeManager {
         if (type == null) return null;
         Entity created = type.create(level, EntitySpawnReason.COMMAND);
         if (!(created instanceof Villager villager)) return null;
-        villager.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        BlockPos safe = nearestWalkable(level, pos);
+        villager.setPos(safe.getX() + 0.5, safe.getY(), safe.getZ() + 0.5);
         villager.setCustomName(Component.literal(name));
         villager.setCustomNameVisible(true);
         villager.setPersistenceRequired();
@@ -396,18 +445,49 @@ public final class VillageLifeManager {
         return level.addFreshEntity(villager) ? villager : null;
     }
 
-    private static void navigate(Villager villager, BlockPos target, double speed) {
+    private static void navigate(
+            ServerLevel level,
+            Villager villager,
+            BlockPos requestedTarget,
+            double speed,
+            boolean stationaryAtTarget
+    ) {
+        BlockPos target = nearestWalkable(level, requestedTarget);
+        if (!isWalkable(level, villager.blockPosition()) && villager.getPose() != Pose.SITTING) {
+            villager.getNavigation().stop();
+            villager.setPos(target.getX() + 0.5, target.getY(), target.getZ() + 0.5);
+        }
+        if (villager.blockPosition().distSqr(target) <= 2.25) {
+            villager.getNavigation().stop();
+            villager.setPose(Pose.STANDING);
+            villager.setNoAi(stationaryAtTarget);
+            return;
+        }
         villager.setNoAi(false);
-        if (villager.blockPosition().distSqr(target) <= 4.0) return;
+        villager.setPose(Pose.STANDING);
         villager.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, speed);
     }
 
-    private static void moveNamed(ServerLevel level, BlockPos origin, String name, BlockPos target) {
-        level.getEntitiesOfClass(
-                Villager.class,
-                new AABB(origin).inflate(96.0, 24.0, 96.0),
-                villager -> name.equals(villager.getName().getString())
-        ).stream().findFirst().ifPresent(villager -> navigate(villager, target, 0.45));
+    private static BlockPos nearestWalkable(ServerLevel level, BlockPos target) {
+        if (isWalkable(level, target)) return target;
+        for (int radius = 1; radius <= 5; radius++) {
+            for (int dy = -1; dy <= 2; dy++) {
+                for (int dx = -radius; dx <= radius; dx++) {
+                    for (int dz = -radius; dz <= radius; dz++) {
+                        if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                        BlockPos candidate = target.offset(dx, dy, dz);
+                        if (isWalkable(level, candidate)) return candidate;
+                    }
+                }
+            }
+        }
+        return target;
+    }
+
+    private static boolean isWalkable(ServerLevel level, BlockPos pos) {
+        return level.getBlockState(pos).isAir()
+                && level.getBlockState(pos.above()).isAir()
+                && !level.getBlockState(pos.below()).isAir();
     }
 
     private static long gameDay(ServerLevel level) {
@@ -423,7 +503,7 @@ public final class VillageLifeManager {
     private static void refreshMarkets(ServerLevel level, BlockPos origin, long day) {
         for (Villager villager : level.getEntitiesOfClass(
                 Villager.class,
-                new AABB(origin).inflate(96.0, 24.0, 96.0),
+                new AABB(origin).inflate(110.0, 24.0, 110.0),
                 villager -> isMarketKeeper(villager.getName().getString())
         )) {
             configureDailyMarket(level, villager, villager.getName().getString(), day);
@@ -438,17 +518,17 @@ public final class VillageLifeManager {
         }
 
         if (RuralNpcManager.FARMER_NAME.equals(name)) {
-            offers.add(buyOffer(Items.CARROT, dailyInputCount(12, day, 1), dailyCoinPrice(2, day, 2)));
-            offers.add(buyOffer(Items.POTATO, dailyInputCount(12, day, 3), dailyCoinPrice(2, day, 4)));
+            offers.add(buyOffer(Items.CARROT, dailyInputCount(20, day, 1), dailyCoinPrice(1, day, 2)));
+            offers.add(buyOffer(Items.POTATO, dailyInputCount(20, day, 3), dailyCoinPrice(1, day, 4)));
             offers.add(offer(dailyCoinPrice(1, day, 5), Items.WHEAT_SEEDS, 8));
-            offers.add(offer(dailyCoinPrice(2, day, 6), Items.CARROT, 4));
-            offers.add(offer(dailyCoinPrice(2, day, 7), Items.POTATO, 4));
+            offers.add(offer(dailyCoinPrice(3, day, 6), Items.CARROT, 4));
+            offers.add(offer(dailyCoinPrice(3, day, 7), Items.POTATO, 4));
             offers.add(offer(dailyCoinPrice(3, day, 8), Blocks.HAY_BLOCK, 1));
             offers.add(offer(dailyCoinPrice(4, day, 9), Items.WATER_BUCKET, 1));
             offers.add(offer(dailyCoinPrice(3, day, 10), Items.HONEY_BOTTLE, 1));
             offers.add(offer(dailyCoinPrice(1, day, 11), Items.BOWL, 4));
         } else if (RuralNpcManager.RANCHER_NAME.equals(name)) {
-            offers.add(buyOffer(Items.EGG, dailyInputCount(4, day, 12), dailyCoinPrice(2, day, 13)));
+            offers.add(buyOffer(Items.EGG, dailyInputCount(6, day, 12), dailyCoinPrice(2, day, 13)));
             offers.add(buyOffer(Items.MILK_BUCKET, dailyInputCount(1, day, 14), dailyCoinPrice(3, day, 15)));
             offers.add(buyOffer(Blocks.WOOL.pick(DyeColor.WHITE), dailyInputCount(2, day, 16), dailyCoinPrice(2, day, 17)));
             offers.add(offer(dailyCoinPrice(2, day, 18), Items.WHEAT, 8));
@@ -496,7 +576,9 @@ public final class VillageLifeManager {
             int workX,
             int workZ,
             int socialX,
-            int socialZ
+            int socialZ,
+            VillagerProfession profession,
+            boolean stationaryAtWork
     ) {
     }
 }
