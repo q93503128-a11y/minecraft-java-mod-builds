@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "food",
+  "ingredients": [
+    "countrysidedays:wild_herb",
+    "minecraft:honey_bottle"
+  ],
+  "result": {
+    "id": "countrysidedays:herb_tea",
+    "count": 1
+  }
+}
