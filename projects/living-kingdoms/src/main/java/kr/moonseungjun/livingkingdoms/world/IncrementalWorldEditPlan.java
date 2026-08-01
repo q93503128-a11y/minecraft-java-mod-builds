@@ -10,6 +10,12 @@ import java.util.List;
 /** Ordered, compact block-edit plan that can be applied over many server ticks. */
 public final class IncrementalWorldEditPlan {
     private static final ThreadLocal<IncrementalWorldEditPlan> ACTIVE = new ThreadLocal<>();
+    /**
+     * World construction is not a player block break. Client updates are required, but natural
+     * plants and support-sensitive blocks must never turn into thousands of item entities while
+     * terrain is being replaced underneath them.
+     */
+    private static final int CONSTRUCTION_UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
 
     private final List<Operation> operations = new ArrayList<>();
     private int operationIndex;
@@ -183,6 +189,6 @@ public final class IncrementalWorldEditPlan {
         if (y < level.getMinY() || y >= level.getMaxY()) return;
         BlockPos pos = new BlockPos(x, y, z);
         if (level.getBlockState(pos).getBlock() == block) return;
-        level.setBlock(pos, block.defaultBlockState(), 2);
+        level.setBlock(pos, block.defaultBlockState(), CONSTRUCTION_UPDATE_FLAGS);
     }
 }
