@@ -1,3 +1,3 @@
 Arcane v0.8 migration payload decoded: part0=6000, part1=6000, part2=6000, part3=6000, part4=9939, part5=3939 repair=insert@34067:'0'
 Arcane Circle v0.8 world patch applied: 90 direct spells, 85 spellbooks
-Arcane v0.8 lifecycle linked: persistent Arcana wallet initialized on login
+Arcane v0.8 lifecycle linked and effective-range sigil scaling normalized
