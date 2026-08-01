@@ -4,6 +4,7 @@ import kr.moonseungjun.livingkingdoms.crime.CrimeSavedData;
 import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
+import kr.moonseungjun.livingkingdoms.skill.MasteryProgressionSavedData;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.RealmSiteLayoutSavedData;
 import kr.moonseungjun.livingkingdoms.world.RealmSitePlanner;
@@ -19,6 +20,16 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class RealmCodexSnapshotBuilder {
+    private static final String[] MASTERY_TRACKS = {
+            MasteryProgressionSavedData.COMBAT,
+            MasteryProgressionSavedData.DEFENSE,
+            MasteryProgressionSavedData.MINING,
+            MasteryProgressionSavedData.LOGGING,
+            MasteryProgressionSavedData.FARMING,
+            MasteryProgressionSavedData.GATHERING,
+            MasteryProgressionSavedData.EXPLORATION
+    };
+
     private RealmCodexSnapshotBuilder() {
     }
 
@@ -72,6 +83,16 @@ public final class RealmCodexSnapshotBuilder {
         values.put("skill_points", Integer.toString(skills.points()));
         values.put("skill_milestone", Integer.toString(skills.levelMilestone()));
         values.put("unlocked_skills", String.join(",", skills.unlocked()));
+        values.put("growth_rule", "행동 숙련은 계속 성장하며, 기술 트리는 부가 효과를 해금합니다.");
+        for (String track : MASTERY_TRACKS) {
+            values.put("mastery_" + track + "_name", MasteryProgressionSavedData.displayName(track));
+            values.put("mastery_" + track + "_level",
+                    Integer.toString(SkillProgressionManager.masteryLevel(player, track)));
+            values.put("mastery_" + track + "_xp",
+                    Long.toString(SkillProgressionManager.masteryXp(player, track)));
+            values.put("mastery_" + track + "_progress",
+                    String.format(Locale.ROOT, "%.4f", SkillProgressionManager.masteryProgress(player, track)));
+        }
 
         putSite(values, realm, "erden_kingdom", "erden");
         putSite(values, realm, "silvana_forest", "silvana");
