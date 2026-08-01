@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "category": "food",
+  "ingredient": "countrysidedays:river_fish",
+  "result": {
+    "id": "countrysidedays:grilled_river_fish"
+  },
+  "experience": 0.35,
+  "cookingtime": 160
+}
