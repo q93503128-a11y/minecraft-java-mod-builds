@@ -3,18 +3,19 @@
 - Slug: `living-kingdoms`
 - Mod ID: `livingkingdoms`
 - Namespace: `livingkingdoms`
-- Mod version: `0.1.0-alpha.1`
+- Mod version: `0.1.0-alpha.2`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `livingkingdoms-0.1.0-alpha.1.jar`
-- Existing-world compatibility: 신규 Java 프로젝트다. 첫 플레이어블 알파 이후 `livingkingdoms` 저장 키와 월드 구획 ID를 고정한다.
+- Final JAR: `livingkingdoms-0.1.0-alpha.2.jar`
+- Existing-world compatibility: 신규 Java 프로젝트다. 첫 플레이어블 알파 이후 `livingkingdoms` 저장 키와 월드 구획 ID를 고정한다. 평지 기반 alpha.1 시험 월드는 alpha.2 노이즈 대륙의 시각 검증에 사용할 수 없다.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods: e4mc 등 서버 연결 보조 모드, 사용자가 별도로 설치하는 클라이언트 시각 모드
 - Forbidden bundled dependencies: Minecraft 원본 파일, NeoForge 배포 파일, 외부 모드 JAR, 공개 저장소에 재배포할 권리가 없는 모델·텍스처·음원·셰이더
+- Bundled external artwork: Kenney UI Pack Adventure RPG sheet, CC0 1.0, immutable commit and Git blob hash verified during build
 - Datagen task: `runData`
 - GameTest task: 코어 저장 시스템 구현 후 추가
 - Server smoke-test task: `runServer`
@@ -36,19 +37,23 @@
 6. 부, 토지, 사업체, 학문, 발명, 정치적 영향력과 명성을 실제 플레이 목표로 지원한다.
 7. NPC는 상점 표지판이 아니라 거주지, 직업, 관계, 일정, 욕구, 기억과 소속을 가진 인물로 만든다.
 8. UI는 기본 회색 화면을 그대로 사용하지 않고 세계지도, 가문 문장, 양피지, 금속, 목재, 보석과 마법 문양을 이용한 전용 디자인으로 만든다.
-9. 특정 작품의 파일을 공개 저장소에 무단 복제하지 않는다. 개인용 외부 에셋은 저장소 밖 로컬 오버레이로만 연결한다.
+9. 특정 작품의 파일을 공개 저장소에 무단 복제하지 않는다. 공개 자산은 라이선스와 무결성을 검증하고, 개인용 외부 에셋은 저장소 밖 로컬 오버레이로만 연결한다.
 10. 실제 빌드·서버·클라이언트 검증을 하지 않은 상태를 완성이라고 부르지 않는다.
+11. 대형 수도 생성은 한 서버 틱에서 처리하지 않고 청크 준비와 제한된 틱별 블록 작업으로 분할한다.
 
-## 첫 장기 수직 구간
+## alpha.2 수직 구간
 
-- 세계 ID와 고정 대륙 구획 데이터
-- 종족·출신 세력·사회 배경·시작 거주지 선택 모델
-- 클래스 없는 숙련 및 삶의 경로 모델
-- 플레이어 정체성의 월드 영구 저장
-- 인간 왕국 수도권 하나와 외곽 생활권 하나
-- 주민, 낚시꾼, 방랑자, 부족 생활민, 전투가와 학자의 서로 다른 시작 루프
-- 초기 경제·평판·소유권·성장 데이터
-- 첫 전용 캐릭터 생성 UI의 기능 명세
+- 오버월드 다중 노이즈 기반 판타지 대륙 차원
+- 실제 지형 조사 후 수도 중심과 기준 고도 저장
+- 에르덴·실바나·카르둠의 서로 다른 지역 수도
+- 수도·거주지·NPC·관할·감옥·지도 좌표의 단일 동적 배치 데이터 사용
+- 종족·출신 세력·사회 배경·시작 거주지 선택
+- 출신 세력을 기본 소속과 시민권으로 영구 저장
+- 인간·엘프·드워프 종족 특성과 실제 패시브
+- 전투·탐험·생활·사회·마법의 5계열 기술 성장
+- 4페이지 왕국 수첩과 동적 세계 지도
+- CC0 RPG UI 시트 기반 전용 탭·프레임·기술 노드
+- 비동기 청크 준비와 틱 분할 수도 건설
 
 ## 개발 원칙
 
