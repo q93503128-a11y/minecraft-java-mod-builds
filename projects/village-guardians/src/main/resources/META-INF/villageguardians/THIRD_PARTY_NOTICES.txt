@@ -1,6 +1,6 @@
-THIRD-PARTY ASSET NOTICES
+THIRD-PARTY ASSET AND VISUAL REFERENCE NOTICES
 
-Village Guardians contains selected third-party GUI assets. The Java source code, village architecture, gameplay systems, and original Village Guardians assets remain under the license declared by the mod. The asset listed below retains its own license.
+Village Guardians contains selected third-party GUI assets and uses clearly identified public-domain visual references for readable fantasy enemy roles. The Java source code, village architecture, gameplay systems, and original Village Guardians assets remain under the license declared by the mod. Each item below retains its own license.
 
 1. Default Dark Mode
 Creator: nebulr / nebuIr
@@ -13,5 +13,27 @@ Included files:
 - assets/minecraft/textures/gui/sprites/widget/button.png
 - assets/minecraft/textures/gui/sprites/widget/button_highlighted.png
 Changes: bundled without visual modification inside the mod resource pack.
+
+2. Tiny Creatures
+Creator: Clint Bellanger, in collaboration with Kenney
+Source: https://opengameart.org/content/tiny-creatures
+Alternate source: https://clintbellanger.itch.io/tiny-creatures
+License: CC0 1.0 Universal / Public Domain
+License URI: https://creativecommons.org/publicdomain/zero/1.0/
+Use in Village Guardians:
+- public-domain silhouette and role references for goblin, orc, bugbear, kobold, dark wizard, lich, dark knight and related fantasy enemy families
+- readable thick-outline and high-contrast role language adapted to Minecraft's existing 3D entity models, equipment and particle effects
+Bundling note: no original Tiny Creatures sprite binaries are bundled in the JAR. Village Guardians implements original Java-driven 3D interpretations using vanilla Minecraft geometry and assets.
+Optional attribution requested by the author: Tiny Creatures by Clint Bellanger.
+
+3. Kenney Tiny Dungeon / Monster Builder visual language
+Creator: Kenney
+Source: https://kenney.nl/assets/tiny-dungeon
+Source: https://kenney.nl/assets/monster-builder-pack
+License: CC0 1.0 Universal / Public Domain
+License URI: https://creativecommons.org/publicdomain/zero/1.0/
+Use in Village Guardians:
+- public-domain reference for simple, immediately readable fantasy factions and equipment silhouettes
+Bundling note: no original Kenney sprite or model binaries from these sets are bundled in the JAR.
 
 All village buildings and fortress structures in v0.9 and later are generated from original Village Guardians code. No third-party structure NBT files are bundled.
