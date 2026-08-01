@@ -3,7 +3,8 @@
   "ingredients": [
     "arcanecircle:sage_staff",
     "minecraft:nether_star",
-    "minecraft:echo_shard"
+    "minecraft:echo_shard",
+    "minecraft:netherite_block"
   ],
   "result": {
     "count": 1,
