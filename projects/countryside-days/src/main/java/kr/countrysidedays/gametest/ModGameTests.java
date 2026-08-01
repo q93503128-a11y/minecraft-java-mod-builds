@@ -140,6 +140,11 @@ public final class ModGameTests {
         );
         helper.assertBlockPresent(Blocks.OAK_SIGN, new BlockPos(38, 6, 5));
         helper.assertBlockPresent(Blocks.OAK_WALL_SIGN, new BlockPos(46, 8, 24));
+        helper.assertBlockProperty(
+                new BlockPos(46, 8, 24),
+                BlockStateProperties.HORIZONTAL_FACING,
+                Direction.SOUTH
+        );
 
         helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(49, 7, 20));
         helper.assertBlockProperty(new BlockPos(49, 7, 20), StairBlock.FACING, Direction.NORTH);
