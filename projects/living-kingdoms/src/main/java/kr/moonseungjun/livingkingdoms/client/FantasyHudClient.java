@@ -1,5 +1,6 @@
 package kr.moonseungjun.livingkingdoms.client;
 
+import kr.moonseungjun.livingkingdoms.network.FantasyHudStatePayload;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -33,7 +34,6 @@ public final class FantasyHudClient {
     public static void onRenderLayer(RenderGuiLayerEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!insideRealm(minecraft) || minecraft.options.hideGui || minecraft.player.isSpectator()) return;
-
         Identifier layer = event.getName();
         if (VanillaGuiLayers.HOTBAR.equals(layer)) renderHud(event.getGuiGraphics(), minecraft);
         if (HIDDEN_LAYERS.contains(layer)) event.setCanceled(true);
@@ -45,6 +45,7 @@ public final class FantasyHudClient {
         if (width < 170 || height < 90) return;
 
         Font font = minecraft.font;
+        FantasyHudStatePayload civic = ClientNetworkHandlers.hudState();
         int slot = width < 420 ? 20 : 22;
         int gap = 1;
         int hotbarWidth = slot * 9 + gap * 8;
@@ -68,9 +69,9 @@ public final class FantasyHudClient {
             }
         }
 
-        int leftWidth = Math.min(210, Math.max(150, (width - hotbarWidth) / 2 - 10));
+        int leftWidth = Math.min(220, Math.max(150, (width - hotbarWidth) / 2 - 10));
         int leftX = 6;
-        int meterY = Math.max(6, hotbarY - 48);
+        int meterY = Math.max(6, hotbarY - 72);
         float healthRatio = minecraft.player.getMaxHealth() <= 0.0F ? 0.0F
                 : minecraft.player.getHealth() / minecraft.player.getMaxHealth();
         String health = decimal(minecraft.player.getHealth()) + " / " + decimal(minecraft.player.getMaxHealth());
@@ -80,6 +81,12 @@ public final class FantasyHudClient {
         int armor = minecraft.player.getArmorValue();
         ExternalRpgUi.hudMeter(graphics, font, leftX, meterY + 24, leftWidth,
                 "방호", Integer.toString(armor), Math.min(1.0F, armor / 20.0F), 0xFF66839A);
+        ExternalRpgUi.hudPanel(graphics, leftX, meterY + 48, leftWidth, 22);
+        graphics.text(font, Component.literal("은화 " + civic.silver()), leftX + 7, meterY + 54,
+                0xFFF0D690, true);
+        String legal = civic.wanted() > 0 ? "수배 " + civic.wanted() : "법적 상태 정상";
+        graphics.text(font, Component.literal(legal), leftX + leftWidth - font.width(legal) - 7,
+                meterY + 54, civic.wanted() > 0 ? 0xFFFF8A76 : 0xFFC8D8B8, false);
 
         ItemStack selectedStack = minecraft.player.getInventory().getSelectedItem();
         if (!selectedStack.isEmpty()) {
@@ -91,16 +98,17 @@ public final class FantasyHudClient {
                     hotbarY - 16, 0xFFF6E8C7);
         }
 
-        drawChronicle(graphics, minecraft, width, height, hotbarX + hotbarWidth + 7, hotbarY);
+        drawChronicle(graphics, minecraft, civic, width, hotbarX + hotbarWidth + 7, hotbarY);
         drawCompass(graphics, minecraft, width);
     }
 
     private static void drawChronicle(GuiGraphicsExtractor graphics, Minecraft minecraft,
-                                      int screenWidth, int screenHeight, int requestedX, int hotbarY) {
+                                      FantasyHudStatePayload civic, int screenWidth,
+                                      int requestedX, int hotbarY) {
         if (screenWidth < 430) return;
         Font font = minecraft.font;
-        int panelWidth = Math.min(190, Math.max(142, screenWidth - requestedX - 6));
-        int panelHeight = 48;
+        int panelWidth = Math.min(210, Math.max(150, screenWidth - requestedX - 6));
+        int panelHeight = 61;
         int x = Math.max(requestedX, screenWidth - panelWidth - 6);
         int y = Math.max(6, hotbarY - panelHeight - 2);
         ExternalRpgUi.hudPanel(graphics, x, y, panelWidth, panelHeight);
@@ -119,12 +127,14 @@ public final class FantasyHudClient {
         String clock = String.format(java.util.Locale.ROOT, "%02d:%02d", hour, minute);
 
         graphics.text(font, Component.literal("왕국력 " + (day + 1) + "일 · " + season),
-                x + 8, y + 8, 0xFFF3E0B8, true);
+                x + 8, y + 7, 0xFFF3E0B8, true);
         graphics.text(font, Component.literal(clock + " · " + weatherName(minecraft)),
-                x + 8, y + 21, 0xFFD8C59D, false);
-        graphics.text(font, Component.literal("좌표 " + minecraft.player.blockPosition().getX()
-                        + ", " + minecraft.player.blockPosition().getZ()),
-                x + 8, y + 34, 0xFFC7B38E, false);
+                x + 8, y + 20, 0xFFD8C59D, false);
+        graphics.text(font, Component.literal(shortText(civic.profession(), 28) + " · 명망 " + civic.renown()),
+                x + 8, y + 33, 0xFFD8C59D, false);
+        graphics.text(font, Component.literal("시세 곡" + civic.grainIndex() + " 금" + civic.metalIndex()
+                        + " 약" + civic.herbIndex() + " 노" + civic.laborIndex()),
+                x + 8, y + 46, 0xFFC7B38E, false);
     }
 
     private static void drawCompass(GuiGraphicsExtractor graphics, Minecraft minecraft, int screenWidth) {
