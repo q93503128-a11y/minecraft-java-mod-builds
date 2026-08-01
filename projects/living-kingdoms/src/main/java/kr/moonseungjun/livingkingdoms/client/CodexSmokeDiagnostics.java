@@ -4,7 +4,7 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
-/** CI-only graphical verification for all codex v2 pages. */
+/** CI-only graphical verification for all codex v2 pages after client resource binding. */
 final class CodexSmokeDiagnostics {
     private static final boolean ENABLED = "1".equals(System.getenv("LIVING_KINGDOMS_CI_CLIENT_TEST"));
     private static int ticks;
@@ -18,14 +18,14 @@ final class CodexSmokeDiagnostics {
         ticks++;
         Minecraft minecraft = Minecraft.getInstance();
 
-        if (ticks == 36) open(minecraft, "map");
-        if (ticks == 54) verify("map");
-        if (ticks == 56) open(minecraft, "overview");
-        if (ticks == 72) verify("overview");
-        if (ticks == 74) open(minecraft, "equipment");
-        if (ticks == 86) verify("equipment");
-        if (ticks == 88) open(minecraft, "skills");
-        if (ticks == 96) {
+        if (ticks == 82) open(minecraft, "map");
+        if (ticks == 102) verify("map");
+        if (ticks == 106) open(minecraft, "overview");
+        if (ticks == 126) verify("overview");
+        if (ticks == 130) open(minecraft, "equipment");
+        if (ticks == 150) verify("equipment");
+        if (ticks == 154) open(minecraft, "skills");
+        if (ticks == 176) {
             verify("skills");
             LivingKingdoms.LOGGER.info(
                     "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true",
