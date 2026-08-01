@@ -53,6 +53,30 @@ public final class ModItems {
                     .build())
     );
 
+    public static final DeferredItem<Item> GRILLED_RIVER_FISH = ITEMS.registerSimpleItem(
+            "grilled_river_fish",
+            properties -> properties.food(new FoodProperties.Builder()
+                    .nutrition(6)
+                    .saturationModifier(0.7F)
+                    .build())
+    );
+
+    public static final DeferredItem<Item> POTATO_PANCAKE = ITEMS.registerSimpleItem(
+            "potato_pancake",
+            properties -> properties.food(new FoodProperties.Builder()
+                    .nutrition(7)
+                    .saturationModifier(0.8F)
+                    .build())
+    );
+
+    public static final DeferredItem<Item> HONEY_CARROT_SALAD = ITEMS.registerSimpleItem(
+            "honey_carrot_salad",
+            properties -> properties.food(new FoodProperties.Builder()
+                    .nutrition(6)
+                    .saturationModifier(0.6F)
+                    .build())
+    );
+
     public static final DeferredItem<RecipeNotebookItem> RECIPE_NOTEBOOK = ITEMS.registerItem(
             "recipe_notebook",
             RecipeNotebookItem::new,
