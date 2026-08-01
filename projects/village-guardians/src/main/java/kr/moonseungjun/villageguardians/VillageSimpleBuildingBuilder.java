@@ -31,28 +31,32 @@ final class VillageSimpleBuildingBuilder {
         int x1 = x0 + spec.width() - 1;
         int z1 = z0 + spec.depth() - 1;
         int centerX = (x0 + x1) / 2;
+        int roofBase = groundY + spec.height() + 1;
 
         clearVolume(level, x0 - 4, groundY + 1, z0 - 5,
-                x1 + 4, groundY + 26, z1 + 4);
+                x1 + 4, groundY + spec.height() + spec.depth() / 2 + 8, z1 + 4);
         fill(level, x0 - 1, groundY, z0 - 1, x1 + 1, groundY, z1 + 1, Blocks.STONE_BRICKS);
         fill(level, x0, groundY + 1, z0, x1, groundY + 1, z1, Blocks.POLISHED_ANDESITE);
 
-        buildFramedShell(level, x0, z0, x1, z1, groundY, 13, spec.panel(), true);
+        buildFramedShell(level, x0, z0, x1, z1, groundY, spec.height(), spec.panel(), true);
         fill(level, x0 + 1, groundY + 7, z0 + 1, x1 - 1, groundY + 7, z1 - 1, Blocks.SPRUCE_PLANKS);
-        clearVolume(level, centerX - 8, groundY + 7, z0 + 6,
-                centerX + 8, groundY + 7, z1 - 5);
+        int openingHalfWidth = 6;
+        clearVolume(level, centerX - openingHalfWidth, groundY + 7, z0 + 6,
+                centerX + openingHalfWidth, groundY + 7, z1 - 5);
 
         openDoubleDoor(level, centerX, groundY, z0, Direction.NORTH);
         buildGrandPorch(level, centerX, groundY, z0);
-        buildTallWindows(level, x0, z0, x1, z1, groundY);
-        buildSteppedRoof(level, x0, z0, x1, z1, groundY + 14, spec.roof(), 2);
+        buildTallWindows(level, x0, z0, x1, z1, groundY, spec.height());
+        buildSolidCeiling(level, x0, z0, x1, z1, roofBase, Blocks.DARK_OAK_PLANKS, Blocks.SEA_LANTERN, 9);
+        buildSteppedRoof(level, x0, z0, x1, z1, roofBase + 1,
+                spec.roof(), spec.panel(), 2);
 
-        for (int x = centerX - 11; x <= centerX + 11; x++) {
-            put(level, x, groundY + 2, z0 + 19, Blocks.DARK_OAK_PLANKS);
+        for (int x = centerX - 9; x <= centerX + 9; x++) {
+            put(level, x, groundY + 2, z1 - 7, Blocks.DARK_OAK_PLANKS);
         }
-        for (int x : new int[]{centerX - 12, centerX + 12}) {
-            for (int y = groundY + 2; y <= groundY + 12; y++) {
-                put(level, x, y, z0 + 19, Blocks.STRIPPED_DARK_OAK_WOOD);
+        for (int x : new int[]{centerX - 10, centerX + 10}) {
+            for (int y = groundY + 2; y <= groundY + spec.height() - 1; y++) {
+                put(level, x, y, z1 - 7, Blocks.STRIPPED_DARK_OAK_WOOD);
             }
         }
 
@@ -60,11 +64,13 @@ final class VillageSimpleBuildingBuilder {
             int stairX = side < 0 ? x0 + 5 : x1 - 5;
             for (int step = 0; step < 6; step++) {
                 fill(level,
-                        stairX - 1, groundY + 2 + step, z1 - 5 - step,
-                        stairX + 1, groundY + 2 + step, z1 - 5 - step,
+                        stairX - 1, groundY + 2 + step, z1 - 4 - step,
+                        stairX + 1, groundY + 2 + step, z1 - 4 - step,
                         Blocks.STONE_BRICKS);
             }
         }
+
+        addFloorLights(level, x0 + 4, x1 - 4, z0 + 4, z1 - 4, groundY + 7, 8, Blocks.SEA_LANTERN);
     }
 
     private static void buildFacility(
@@ -76,15 +82,18 @@ final class VillageSimpleBuildingBuilder {
         int z0 = origin.getZ();
         int x1 = x0 + spec.width() - 1;
         int z1 = z0 + spec.depth() - 1;
+        int roofBase = groundY + spec.height() + 1;
 
         clearVolume(level, x0 - 3, groundY + 1, z0 - 3,
-                x1 + 3, groundY + 18, z1 + 3);
+                x1 + 3, roofBase + spec.depth() / 2 + 6, z1 + 3);
         fill(level, x0 - 1, groundY, z0 - 1, x1 + 1, groundY, z1 + 1, Blocks.STONE_BRICKS);
         fill(level, x0, groundY + 1, z0, x1, groundY + 1, z1, Blocks.SPRUCE_PLANKS);
-        buildFramedShell(level, x0, z0, x1, z1, groundY, 8, spec.panel(), false);
+        buildFramedShell(level, x0, z0, x1, z1, groundY, spec.height(), spec.panel(), false);
         openDoubleDoor(level, x0, groundY, z0, x1, z1, spec.entranceFacing());
         buildFacilityWindows(level, x0, z0, x1, z1, groundY, spec.entranceFacing());
-        buildSteppedRoof(level, x0, z0, x1, z1, groundY + 9, spec.roof(), 1);
+        buildSolidCeiling(level, x0, z0, x1, z1, roofBase, Blocks.SPRUCE_PLANKS, Blocks.GLOWSTONE, 7);
+        buildSteppedRoof(level, x0, z0, x1, z1, roofBase + 1,
+                spec.roof(), spec.panel(), 1);
 
         Direction front = spec.entranceFacing();
         Direction side = front.getClockWise();
@@ -95,7 +104,7 @@ final class VillageSimpleBuildingBuilder {
             case EAST -> new BlockPos(x1, groundY + 1, (z0 + z1) / 2);
             default -> new BlockPos((x0 + x1) / 2, groundY + 1, (z0 + z1) / 2);
         };
-        for (int offset : new int[]{-4, 4}) {
+        for (int offset : new int[]{-3, 3}) {
             BlockPos post = door.relative(front, 2).relative(side, offset);
             for (int y = 0; y < 4; y++) {
                 put(level, post.getX(), post.getY() + y, post.getZ(), Blocks.STRIPPED_DARK_OAK_WOOD);
@@ -135,7 +144,7 @@ final class VillageSimpleBuildingBuilder {
     }
 
     private static Block framedWall(Block panel, int index, int y, boolean secondFloor) {
-        if (index % 6 == 0 || y == 2 || (secondFloor && y == 7)) {
+        if (index % 5 == 0 || y == 2 || (secondFloor && y == 7)) {
             return Blocks.STRIPPED_DARK_OAK_WOOD;
         }
         if (y <= 3) {
@@ -145,16 +154,18 @@ final class VillageSimpleBuildingBuilder {
     }
 
     private static void buildGrandPorch(ServerLevel level, int centerX, int groundY, int frontZ) {
-        for (int z = frontZ - 4; z <= frontZ - 1; z++) {
-            fill(level, centerX - 8, groundY + 1, z, centerX + 8, groundY + 1, z, Blocks.STONE_BRICKS);
+        for (int z = frontZ - 3; z <= frontZ - 1; z++) {
+            fill(level, centerX - 7, groundY + 1, z, centerX + 7, groundY + 1, z, Blocks.STONE_BRICKS);
         }
-        for (int x : new int[]{centerX - 7, centerX - 3, centerX + 3, centerX + 7}) {
-            for (int y = groundY + 2; y <= groundY + 8; y++) {
-                put(level, x, y, frontZ - 3, Blocks.STRIPPED_DARK_OAK_WOOD);
+        for (int x : new int[]{centerX - 6, centerX - 2, centerX + 2, centerX + 6}) {
+            for (int y = groundY + 2; y <= groundY + 7; y++) {
+                put(level, x, y, frontZ - 2, Blocks.STRIPPED_DARK_OAK_WOOD);
             }
         }
-        fill(level, centerX - 9, groundY + 9, frontZ - 4,
-                centerX + 9, groundY + 9, frontZ, Blocks.DEEPSLATE_TILES);
+        fill(level, centerX - 8, groundY + 8, frontZ - 3,
+                centerX + 8, groundY + 8, frontZ, Blocks.DEEPSLATE_TILES);
+        put(level, centerX - 4, groundY + 7, frontZ - 2, Blocks.GLOWSTONE);
+        put(level, centerX + 4, groundY + 7, frontZ - 2, Blocks.GLOWSTONE);
     }
 
     private static void buildTallWindows(
@@ -163,15 +174,18 @@ final class VillageSimpleBuildingBuilder {
             int z0,
             int x1,
             int z1,
-            int groundY) {
-        for (int x = x0 + 5; x <= x1 - 5; x += 6) {
-            for (int y : new int[]{4, 5, 9, 10}) {
+            int groundY,
+            int wallHeight) {
+        int upperLow = Math.max(8, wallHeight - 3);
+        int upperHigh = Math.max(9, wallHeight - 2);
+        for (int x = x0 + 5; x <= x1 - 5; x += 5) {
+            for (int y : new int[]{4, 5, upperLow, upperHigh}) {
                 put(level, x, groundY + y, z0, Blocks.GLASS);
                 put(level, x, groundY + y, z1, Blocks.GLASS);
             }
         }
-        for (int z = z0 + 5; z <= z1 - 5; z += 6) {
-            for (int y : new int[]{4, 5, 9, 10}) {
+        for (int z = z0 + 5; z <= z1 - 5; z += 5) {
+            for (int y : new int[]{4, 5, upperLow, upperHigh}) {
                 put(level, x0, groundY + y, z, Blocks.GLASS);
                 put(level, x1, groundY + y, z, Blocks.GLASS);
             }
@@ -186,20 +200,54 @@ final class VillageSimpleBuildingBuilder {
             int z1,
             int groundY,
             Direction entranceFacing) {
-        for (int x = x0 + 4; x <= x1 - 4; x += 6) {
+        for (int x = x0 + 4; x <= x1 - 4; x += 5) {
             if (entranceFacing != Direction.NORTH || Math.abs(x - (x0 + x1) / 2) > 3) {
                 put(level, x, groundY + 5, z0, Blocks.GLASS);
+                put(level, x, groundY + 6, z0, Blocks.GLASS);
             }
             if (entranceFacing != Direction.SOUTH || Math.abs(x - (x0 + x1) / 2) > 3) {
                 put(level, x, groundY + 5, z1, Blocks.GLASS);
+                put(level, x, groundY + 6, z1, Blocks.GLASS);
             }
         }
-        for (int z = z0 + 4; z <= z1 - 4; z += 6) {
+        for (int z = z0 + 4; z <= z1 - 4; z += 5) {
             if (entranceFacing != Direction.WEST || Math.abs(z - (z0 + z1) / 2) > 3) {
                 put(level, x0, groundY + 5, z, Blocks.GLASS);
+                put(level, x0, groundY + 6, z, Blocks.GLASS);
             }
             if (entranceFacing != Direction.EAST || Math.abs(z - (z0 + z1) / 2) > 3) {
                 put(level, x1, groundY + 5, z, Blocks.GLASS);
+                put(level, x1, groundY + 6, z, Blocks.GLASS);
+            }
+        }
+    }
+
+    private static void buildSolidCeiling(
+            ServerLevel level,
+            int x0,
+            int z0,
+            int x1,
+            int z1,
+            int ceilingY,
+            Block ceiling,
+            Block light,
+            int spacing) {
+        fill(level, x0 + 1, ceilingY, z0 + 1, x1 - 1, ceilingY, z1 - 1, ceiling);
+        addFloorLights(level, x0 + 3, x1 - 3, z0 + 3, z1 - 3, ceilingY, spacing, light);
+    }
+
+    private static void addFloorLights(
+            ServerLevel level,
+            int x0,
+            int x1,
+            int z0,
+            int z1,
+            int y,
+            int spacing,
+            Block light) {
+        for (int x = x0; x <= x1; x += spacing) {
+            for (int z = z0; z <= z1; z += spacing) {
+                put(level, x, y, z, light);
             }
         }
     }
@@ -212,22 +260,22 @@ final class VillageSimpleBuildingBuilder {
             int z1,
             int roofBase,
             Block roof,
+            Block gable,
             int overhang) {
         int north = z0 - overhang;
         int south = z1 + overhang;
-        int step = 0;
-        while (north + step <= south - step) {
-            int y = roofBase + step;
-            fill(level, x0 - overhang, y, north + step,
-                    x1 + overhang, y, north + step, roof);
-            fill(level, x0 - overhang, y, south - step,
-                    x1 + overhang, y, south - step, roof);
-            step++;
+        for (int z = north; z <= south; z++) {
+            int rise = Math.min(z - north, south - z);
+            int y = roofBase + rise;
+            fill(level, x0 - overhang, y, z, x1 + overhang, y, z, roof);
+            for (int fillY = roofBase; fillY < y; fillY++) {
+                Block material = (fillY - roofBase) % 3 == 0
+                        ? Blocks.STRIPPED_DARK_OAK_WOOD
+                        : gable;
+                put(level, x0, fillY, z, material);
+                put(level, x1, fillY, z, material);
+            }
         }
-        int ridgeZ0 = north + step - 1;
-        int ridgeZ1 = south - step + 1;
-        fill(level, x0 - overhang, roofBase + step, ridgeZ0,
-                x1 + overhang, roofBase + step, ridgeZ1, roof);
     }
 
     private static void openDoubleDoor(
@@ -236,9 +284,9 @@ final class VillageSimpleBuildingBuilder {
             int groundY,
             int z,
             Direction facing) {
+        clearVolume(level, centerX - 1, groundY + 2, z, centerX, groundY + 4, z);
         placeDoor(level, new BlockPos(centerX - 1, groundY + 2, z), facing, DoorHingeSide.LEFT);
         placeDoor(level, new BlockPos(centerX, groundY + 2, z), facing, DoorHingeSide.RIGHT);
-        clearVolume(level, centerX - 1, groundY + 4, z, centerX, groundY + 5, z);
     }
 
     private static void openDoubleDoor(
@@ -254,11 +302,13 @@ final class VillageSimpleBuildingBuilder {
             case SOUTH -> openDoubleDoor(level, (x0 + x1) / 2, groundY, z1, Direction.SOUTH);
             case WEST -> {
                 int centerZ = (z0 + z1) / 2;
+                clearVolume(level, x0, groundY + 2, centerZ - 1, x0, groundY + 4, centerZ);
                 placeDoor(level, new BlockPos(x0, groundY + 2, centerZ - 1), Direction.WEST, DoorHingeSide.LEFT);
                 placeDoor(level, new BlockPos(x0, groundY + 2, centerZ), Direction.WEST, DoorHingeSide.RIGHT);
             }
             case EAST -> {
                 int centerZ = (z0 + z1) / 2;
+                clearVolume(level, x1, groundY + 2, centerZ - 1, x1, groundY + 4, centerZ);
                 placeDoor(level, new BlockPos(x1, groundY + 2, centerZ - 1), Direction.EAST, DoorHingeSide.RIGHT);
                 placeDoor(level, new BlockPos(x1, groundY + 2, centerZ), Direction.EAST, DoorHingeSide.LEFT);
             }
@@ -277,13 +327,17 @@ final class VillageSimpleBuildingBuilder {
                 Blocks.DARK_OAK_DOOR.defaultBlockState()
                         .setValue(DoorBlock.FACING, facing)
                         .setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER)
-                        .setValue(DoorBlock.HINGE, hinge));
+                        .setValue(DoorBlock.HINGE, hinge)
+                        .setValue(DoorBlock.OPEN, false)
+                        .setValue(DoorBlock.POWERED, false));
         level.setBlockAndUpdate(
                 lower.above(),
                 Blocks.DARK_OAK_DOOR.defaultBlockState()
                         .setValue(DoorBlock.FACING, facing)
                         .setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER)
-                        .setValue(DoorBlock.HINGE, hinge));
+                        .setValue(DoorBlock.HINGE, hinge)
+                        .setValue(DoorBlock.OPEN, false)
+                        .setValue(DoorBlock.POWERED, false));
     }
 
     static void clear(ServerLevel level, BlockPos center, VillageBuildingCatalog.Spec spec) {
@@ -291,7 +345,7 @@ final class VillageSimpleBuildingBuilder {
         clearVolume(level,
                 center.getX() + spec.dx() - 4, groundY + 1, center.getZ() + spec.dz() - 5,
                 center.getX() + spec.dx() + spec.width() + 4,
-                groundY + 28,
+                groundY + 32,
                 center.getZ() + spec.dz() + spec.depth() + 4);
     }
 
