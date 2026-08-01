@@ -27,6 +27,16 @@ public final class ArcaneClientState {
         updatedAtNanos = System.nanoTime();
     }
 
+    public static void reset() {
+        values = Map.of();
+        cooldowns = Map.of();
+        updatedAtNanos = 0L;
+    }
+
+    public static boolean ready() {
+        return !values.isEmpty();
+    }
+
     public static int integer(String key, int fallback) {
         try { return Integer.parseInt(values.getOrDefault(key, Integer.toString(fallback))); }
         catch (NumberFormatException ignored) { return fallback; }
@@ -59,6 +69,14 @@ public final class ArcaneClientState {
 
     public static String queueResult() {
         return text("queue_result", "");
+    }
+
+    public static List<String> queueCandidates() {
+        return split(text("queue_candidates", ""));
+    }
+
+    public static boolean queueCanExtend() {
+        return integer("queue_extend", 0) != 0;
     }
 
     public static Set<String> known() {
@@ -111,7 +129,9 @@ public final class ArcaneClientState {
             String[] parts = entry.split(":");
             if (parts.length != 3) continue;
             try {
-                result.put(parts[0], new Cooldown(Integer.parseInt(parts[1]), Integer.parseInt(parts[2])));
+                int remaining = Math.max(0, Integer.parseInt(parts[1]));
+                int total = Math.max(1, Integer.parseInt(parts[2]));
+                if (remaining > 0) result.put(parts[0], new Cooldown(remaining, total));
             } catch (NumberFormatException ignored) {}
         }
         return Map.copyOf(result);
