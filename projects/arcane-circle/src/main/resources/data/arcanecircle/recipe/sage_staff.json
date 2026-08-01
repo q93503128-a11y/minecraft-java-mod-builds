@@ -1,9 +1,10 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    "arcanecircle:novice_staff",
+    "arcanecircle:rift_staff",
     "minecraft:enchanted_book",
-    "minecraft:gold_block"
+    "minecraft:gold_block",
+    "minecraft:diamond_block"
   ],
   "result": {
     "count": 1,
