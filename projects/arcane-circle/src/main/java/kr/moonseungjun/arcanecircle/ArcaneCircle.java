@@ -23,7 +23,6 @@ public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
     public static final String VERSION = "0.5.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
-    private static final String STARTER_STAFF_TAG = "arcanecircle_starter_staff_v05";
 
     public ArcaneCircle(IEventBus modEventBus) {
         SpellCatalog.bootstrap();
@@ -43,7 +42,7 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         boolean firstAwakening = data.ensureProfile(player);
-        grantStarterStaffOnce(player);
+        grantStarterStaffOnce(player, data);
         if (firstAwakening) {
             player.sendSystemMessage(Component.literal(
                     "§5[구중 마법학] §f마력핵이 각성했습니다. §dC§f로 마도서를 여세요."));
@@ -55,9 +54,8 @@ public final class ArcaneCircle {
         ArcaneNetwork.sync(player);
     }
 
-    private void grantStarterStaffOnce(ServerPlayer player) {
-        if (player.hasTag(STARTER_STAFF_TAG)) return;
-        player.addTag(STARTER_STAFF_TAG);
+    private void grantStarterStaffOnce(ServerPlayer player, MagicPlayerData data) {
+        if (!data.claimStarterStaff(player)) return;
         ItemStack staff = new ItemStack(ModItems.NOVICE_STAFF.get());
         if (!player.getInventory().contains(staff)) {
             boolean stored = player.getInventory().add(staff);
