@@ -26,6 +26,9 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSkillTreeData.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeScreen.class",
     "kr/moonseungjun/villageguardians/VillageUiScreen.class",
+    "kr/moonseungjun/villageguardians/VillageConfirmScreen.class",
+    "kr/moonseungjun/villageguardians/VillageActionDescriptions.class",
+    "kr/moonseungjun/villageguardians/VillageClientKeys.class",
     "kr/moonseungjun/villageguardians/VillageStructureHud.class",
     "kr/moonseungjun/villageguardians/VillageHudSystem.class",
     "kr/moonseungjun/villageguardians/VillageHealthDisplaySystem.class",
@@ -96,7 +99,7 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
-    print("[PASS] Compact sealed buildings, licensed UI, defense, and combat systems are present")
+    print("[PASS] Review-confirm UI, key skills, roles, defence and combat systems are present")
     print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
