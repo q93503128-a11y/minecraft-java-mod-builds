@@ -6,17 +6,16 @@ ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/arcanecircle"
 
 
-def rewrite(path: Path, replacements: list[tuple[str, str]]) -> None:
+def rewrite_idempotent(path: Path, replacements: list[tuple[str, str]]) -> None:
     text = path.read_text(encoding="utf-8")
     for old, new in replacements:
-        if old not in text:
-            raise RuntimeError(f"26.2 compatibility anchor missing in {path.name}: {old}")
-        text = text.replace(old, new)
+        if old in text:
+            text = text.replace(old, new)
     path.write_text(text, encoding="utf-8")
 
 
 world = JAVA / "world/MagicWorldService.java"
-rewrite(world, [
+rewrite_idempotent(world, [
     ("import net.minecraft.world.level.GameRules;\n", ""),
     ("ArcaneAcademyBuilder.build(level, level.getSharedSpawnPos())",
      "ArcaneAcademyBuilder.build(level, player.blockPosition())"),
@@ -27,7 +26,7 @@ rewrite(world, [
 ])
 
 academy = JAVA / "world/ArcaneAcademyBuilder.java"
-rewrite(academy, [
+rewrite_idempotent(academy, [
     ("Blocks.MAGENTA_STAINED_GLASS", "Blocks.GLASS"),
     ("Blocks.YELLOW_STAINED_GLASS", "Blocks.GLOWSTONE"),
     ("Blocks.GREEN_STAINED_GLASS", "Blocks.GLASS"),
@@ -53,6 +52,8 @@ for legacy_dir in legacy_resource_dirs:
     if legacy_dir.exists():
         shutil.rmtree(legacy_dir)
 
+world_source = world.read_text(encoding="utf-8")
+academy_source = academy.read_text(encoding="utf-8")
 for forbidden in (
     "net.minecraft.world.level.GameRules",
     "getSharedSpawnPos()",
@@ -61,9 +62,15 @@ for forbidden in (
     "getDayTime()",
     "STAINED_GLASS",
 ):
-    for path in (world, academy):
-        if forbidden in path.read_text(encoding="utf-8"):
-            raise RuntimeError(f"obsolete 26.2 symbol remains in {path.name}: {forbidden}")
+    if forbidden in world_source or forbidden in academy_source:
+        raise RuntimeError(f"obsolete 26.2 symbol remains: {forbidden}")
+
+for required in (
+    "ArcaneAcademyBuilder.build(level, player.blockPosition())",
+    "level.getGameTime()",
+):
+    if required not in world_source:
+        raise RuntimeError(f"Minecraft 26.2 world behavior missing: {required}")
 
 for legacy_dir in legacy_resource_dirs:
     if legacy_dir.exists():
