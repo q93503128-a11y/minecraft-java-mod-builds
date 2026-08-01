@@ -17,7 +17,7 @@ public final class KitchenInteractionHandler {
     }
 
     public static void onUseItemOnBlock(UseItemOnBlockEvent event) {
-        if (event.getUsePhase() != UseItemOnBlockEvent.UsePhase.BLOCK) return;
+        if (event.isCanceled() || event.getUsePhase() != UseItemOnBlockEvent.UsePhase.BLOCK) return;
         if (!event.getLevel().getBlockState(event.getPos()).is(ModBlocks.COUNTRY_KITCHEN_COUNTER.get())) return;
 
         ItemStack heldItem = event.getItemStack();
@@ -35,16 +35,13 @@ public final class KitchenInteractionHandler {
     }
 
     public static void onBlockBreak(BreakBlockEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
+        if (event.isCanceled() || !(event.getLevel() instanceof ServerLevel serverLevel)) return;
         if (!event.getState().is(ModBlocks.COUNTRY_KITCHEN_COUNTER.get())) return;
         CountrysideWorldData.get(serverLevel.getServer()).removeKitchenState(event.getPos());
     }
 
     private static void handleServerInteraction(ServerLevel level, BlockPos pos, Player player, ItemStack heldItem) {
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
-        if (data.claimRestaurantAnchor(pos)) {
-            player.sendSystemMessage(Component.translatable("message.countrysidedays.restaurant_anchor_set"));
-        }
 
         if (heldItem.is(ModItems.WILD_HERB.get())) {
             if (data.addHerbPreparation(pos)) {
@@ -64,10 +61,13 @@ public final class KitchenInteractionHandler {
             consumeOneUnlessCreative(player, heldItem);
             ItemStack result = ModItems.COUNTRY_STEW.get().getDefaultInstance();
             if (!player.addItem(result)) player.drop(result, false);
-            data.recordPreparedMeal();
+            data.recordPreparedMeal(player.getUUID());
+            int prepared = data.estate(player.getUUID())
+                    .map(CountrysideWorldData.PlayerEstate::mealsPrepared)
+                    .orElse(data.mealsPrepared());
             player.sendOverlayMessage(Component.translatable(
                     "message.countrysidedays.stew_completed",
-                    data.mealsPrepared()
+                    prepared
             ));
             return;
         }
