@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class VillageTradingSystem {
+    private static final int MAIN_INVENTORY_SLOTS = 36;
     private static final Map<Item, Integer> PRICES = new LinkedHashMap<>();
 
     static {
@@ -28,7 +29,8 @@ public final class VillageTradingSystem {
     public static String sellMonsterDrops(ServerPlayer player) {
         int soldItems = 0;
         int value = 0;
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+        int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());
+        for (int slot = 0; slot < limit; slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
             Integer unitPrice = PRICES.get(stack.getItem());
             if (unitPrice == null || stack.isEmpty()) {
