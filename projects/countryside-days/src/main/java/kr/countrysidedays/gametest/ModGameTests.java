@@ -8,9 +8,14 @@ import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
 import kr.countrysidedays.world.StarterHomesteadGenerator;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -118,12 +123,32 @@ public final class ModGameTests {
 
         helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(45, 7, 18));
         helper.assertBlockPresent(Blocks.CHEST, new BlockPos(10, 7, 15));
+        helper.assertBlockPresent(Blocks.BED.pick(DyeColor.YELLOW), new BlockPos(10, 7, 21));
+        helper.assertBlockPresent(Blocks.BED.pick(DyeColor.YELLOW), new BlockPos(10, 7, 22));
+        helper.assertBlockProperty(new BlockPos(10, 7, 21), BedBlock.FACING, Direction.SOUTH);
+        helper.assertBlockPresent(Blocks.GLASS, new BlockPos(10, 8, 13));
+
         helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(9, 6, 36));
         helper.assertBlockPresent(Blocks.WATER, new BlockPos(17, 6, 42));
-        helper.assertBlockPresent(Blocks.CAULDRON, new BlockPos(44, 6, 54));
+        helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(28, 6, 41));
+
+        helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(35, 6, 6));
+        helper.assertBlockProperty(
+                new BlockPos(35, 6, 6),
+                BlockStateProperties.HORIZONTAL_FACING,
+                Direction.NORTH
+        );
+        helper.assertBlockPresent(Blocks.OAK_SIGN, new BlockPos(38, 6, 5));
+        helper.assertBlockPresent(Blocks.OAK_WALL_SIGN, new BlockPos(46, 8, 24));
+
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(49, 7, 20));
+        helper.assertBlockProperty(new BlockPos(49, 7, 20), StairBlock.FACING, Direction.NORTH);
+
+        helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(42, 6, 34));
+        helper.assertBlockPresent(Blocks.WATER, new BlockPos(44, 6, 55));
+        helper.assertBlockPresent(Blocks.HAY_BLOCK, new BlockPos(58, 6, 54));
         helper.assertBlockPresent(Blocks.BRICKS, new BlockPos(45, 12, 37));
-        helper.assertBlockPresent(Blocks.PACKED_MUD, new BlockPos(35, 5, 7));
-        helper.assertBlockPresent(Blocks.OAK_SIGN, new BlockPos(38, 6, 8));
+        helper.assertBlockPresent(Blocks.PACKED_MUD, new BlockPos(35, 5, 5));
 
         helper.succeed();
     }
