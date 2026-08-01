@@ -111,8 +111,7 @@ def main() -> None:
     assert "mouseDragged(MouseButtonEvent event, double dragX, double dragY)" in skill_screen
     assert "drawNodeIcon" in skill_screen
     assert "renderConnections" in skill_screen
-    assert "Branch.RANGED" not in skill_screen  # Client uses its own four-way enum.
-    assert "RANGED" in skill_screen
+    assert "return Branch.RANGED;" in skill_screen
     assert '"습득 가능".equals(nodes.get(selectedIndex).status())' in skill_screen
 
     assert "Button.builder" not in ui_screen
