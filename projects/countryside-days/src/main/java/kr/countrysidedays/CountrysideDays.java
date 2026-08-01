@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 @Mod(CountrysideDays.MOD_ID)
 public final class CountrysideDays {
     public static final String MOD_ID = "countrysidedays";
-    public static final String VERSION = "0.1.0-alpha.11";
+    public static final String VERSION = "0.1.0-alpha.12";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public CountrysideDays(IEventBus modEventBus) {
