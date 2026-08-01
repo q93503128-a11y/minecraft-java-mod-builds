@@ -1,7 +1,9 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -12,6 +14,7 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class VillageRespawnSystem {
@@ -81,7 +84,7 @@ public final class VillageRespawnSystem {
                 continue;
             }
 
-            VillageWorldSystem.respawnAtVillage(player);
+            teleportToVillage(player, server);
             player.setGameMode(GameType.ADVENTURE);
             player.setHealth(player.getMaxHealth());
             player.setAbsorptionAmount(0.0f);
@@ -96,6 +99,28 @@ public final class VillageRespawnSystem {
                     "§a[부활] §f마을 광장에서 복귀했습니다. 5초 동안 강한 피해 저항을 얻습니다."));
             iterator.remove();
         }
+    }
+
+    private static void teleportToVillage(ServerPlayer player, MinecraftServer server) {
+        ServerLevel destination = server.overworld();
+        BlockPos center = VillageCouncilState.villageCenter().orElse(destination.getSharedSpawnPos());
+        BlockPos target = null;
+        for (int z = 12; z <= 22 && target == null; z++) {
+            for (int x = -5; x <= 5; x++) {
+                BlockPos candidate = center.offset(x, 0, z);
+                if (destination.getBlockState(candidate).isAir()
+                        && destination.getBlockState(candidate.above()).isAir()
+                        && !destination.getBlockState(candidate.below()).isAir()) {
+                    target = candidate;
+                    break;
+                }
+            }
+        }
+        if (target == null) {
+            target = center.above();
+        }
+        player.teleportTo(destination, target.getX() + 0.5, target.getY(), target.getZ() + 0.5,
+                Set.of(), 180.0f, 0.0f, true);
     }
 
     public static int remainingSeconds(ServerPlayer player) {
