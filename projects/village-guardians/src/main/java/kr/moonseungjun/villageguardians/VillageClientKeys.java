@@ -27,6 +27,11 @@ public final class VillageClientKeys {
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_G,
             CATEGORY);
+    private static final KeyMapping QUICK_COMMUNICATION = new KeyMapping(
+            "key.villageguardians.quick_communication",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_C,
+            CATEGORY);
     private static boolean tickListenerRegistered;
 
     private VillageClientKeys() {}
@@ -35,6 +40,7 @@ public final class VillageClientKeys {
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(ROLE_SKILL_ONE);
         event.register(ROLE_SKILL_TWO);
+        event.register(QUICK_COMMUNICATION);
         if (!tickListenerRegistered) {
             tickListenerRegistered = true;
             NeoForge.EVENT_BUS.addListener(VillageClientKeys::onClientTick);
@@ -50,6 +56,10 @@ public final class VillageClientKeys {
         while (ROLE_SKILL_TWO.consumeClick()) {
             if (minecraft.player != null) ClientPacketDistributor.sendToServer(
                     new VillageNetwork.VillageUiActionPayload("use_skill:1"));
+        }
+        while (QUICK_COMMUNICATION.consumeClick()) {
+            if (minecraft.player != null) ClientPacketDistributor.sendToServer(
+                    new VillageNetwork.VillageUiActionPayload("open_quick_chat"));
         }
     }
 }
