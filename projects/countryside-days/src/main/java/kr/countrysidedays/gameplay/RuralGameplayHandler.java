@@ -165,7 +165,7 @@ public final class RuralGameplayHandler {
                 .orElse(ownEstate);
         BlockPos home = PlayerEstateLayout.home(ownEstate.originPos());
         BlockPos restaurant = PlayerEstateLayout.restaurant(restaurantEstate.originPos());
-        long day = Math.max(0L, player.level().getGameTime() / 24000L);
+        long day = Math.max(0L, player.level().getDayTime() / 24000L);
         int pendingRanchProducts = ownEstate.pendingEggs()
                 + ownEstate.pendingMilk()
                 + ownEstate.pendingWool();
