@@ -9,6 +9,7 @@ import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
+import kr.moonseungjun.livingkingdoms.world.RealmFacilityFinisher;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
 import net.minecraft.server.level.ServerPlayer;
@@ -54,6 +55,7 @@ public final class LivingKingdoms {
 
     private void onServerTick(ServerTickEvent.Post event) {
         RealmBuildCoordinator.onServerTick(event);
+        RealmFacilityFinisher.onServerTick(event);
     }
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
