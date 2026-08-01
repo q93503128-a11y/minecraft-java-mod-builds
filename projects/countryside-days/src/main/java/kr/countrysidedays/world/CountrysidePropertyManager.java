@@ -42,7 +42,7 @@ public final class CountrysidePropertyManager {
         Optional<CountrysideWorldData.PlayerEstate> estate = data.estateAt(event.getPos());
 
         if (estate.isPresent()
-                && event.getPos().equals(estate.get().originPos().offset(11, 0, -7))
+                && event.getPos().equals(PlayerEstateLayout.restaurantSign(estate.get().originPos()))
                 && event.getItemStack().is(Items.NAME_TAG)) {
             renameRestaurant(event, level, player, data, estate.get());
             return;
