@@ -19,9 +19,14 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSimpleBuildingBuilder.class",
     "kr/moonseungjun/villageguardians/VillageBuildingEnhancements.class",
     "kr/moonseungjun/villageguardians/VillageFortressBuildings.class",
+    "kr/moonseungjun/villageguardians/VillageDoorSystem.class",
+    "kr/moonseungjun/villageguardians/VillageDefenseSystem.class",
+    "kr/moonseungjun/villageguardians/VillageCombatTechniqueSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeData.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeScreen.class",
+    "kr/moonseungjun/villageguardians/VillageUiScreen.class",
+    "kr/moonseungjun/villageguardians/VillageStructureHud.class",
     "kr/moonseungjun/villageguardians/VillageHudSystem.class",
     "kr/moonseungjun/villageguardians/VillageHealthDisplaySystem.class",
 }
@@ -64,7 +69,7 @@ def main() -> None:
                 fail(f"Missing licensed runtime assets: {missing_assets}")
             missing_classes = sorted(REQUIRED_CLASSES - name_set)
             if missing_classes:
-                fail(f"Missing required v0.9 runtime classes: {missing_classes}")
+                fail(f"Missing required runtime classes: {missing_classes}")
             for asset in sorted(REQUIRED_ASSETS):
                 if asset.endswith(".png") and len(jar.read(asset)) < 32:
                     fail(f"Licensed runtime asset is unexpectedly empty: {asset}")
@@ -91,7 +96,7 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
-    print("[PASS] Original custom buildings and v0.9 gameplay systems are present")
+    print("[PASS] Compact sealed buildings, licensed UI, defense, and combat systems are present")
     print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
