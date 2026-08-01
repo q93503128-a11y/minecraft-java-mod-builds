@@ -1,6 +1,6 @@
 status=failure
-source_sha=b6fa6ce0000bd92faba6f8ca28bc180695b40c47
-run_id=30697644285
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/30697644285
+source_sha=6216db4185b9c4480d0f5afc599184ddb263e75e
+run_id=30697682975
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/30697682975
 java=25
 gradle=9.2.1
