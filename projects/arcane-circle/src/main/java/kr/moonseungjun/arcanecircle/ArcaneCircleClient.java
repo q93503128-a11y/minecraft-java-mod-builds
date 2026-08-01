@@ -14,7 +14,8 @@ public final class ArcaneCircleClient {
         modEventBus.addListener(ClientNetworkHandlers::register);
         modEventBus.addListener(ArcaneClient::registerKeys);
         modEventBus.addListener(ArcaneHud::registerLayers);
-        NeoForge.EVENT_BUS.addListener(ArcaneClient::onClientTick);
+        NeoForge.EVENT_BUS.addListener(ArcaneClient::onClientTickPre);
+        NeoForge.EVENT_BUS.addListener(ArcaneClient::onClientTickPost);
         NeoForge.EVENT_BUS.addListener(ArcaneHud::onScreenRender);
     }
 }
