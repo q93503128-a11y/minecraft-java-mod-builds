@@ -51,12 +51,13 @@ jobs:
           test -s logs/java-files.txt
           test -s logs/resource-files.txt
 
-      - name: Clean build
+      - name: Clean build and verify external resources
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -o pipefail
           gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee ../../logs/clean-build.log
+          grep -F 'Verified Kenney CC0 RPG UI sheet' ../../logs/clean-build.log
 
       - name: Dedicated server queued noise realm and capital smoke test
         working-directory: ${{ env.PROJECT_DIR }}
@@ -101,8 +102,12 @@ jobs:
           grep -F 'noise_terrain=true' ../../logs/server-smoke.log
           grep -F 'surveyed_sites=true' ../../logs/server-smoke.log
           grep -F 'erden_facilities=10' ../../logs/server-smoke.log
-          if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms|unsafe terrain read' ../../logs/server-smoke.log; then
-            echo 'Living Kingdoms datapack, dimension or world generation error detected.' >&2
+          grep -F 'Prepared incremental homeland plan' ../../logs/server-smoke.log
+          grep -F 'Realm construction erden_kingdom progress' ../../logs/server-smoke.log
+          grep -F 'Realm construction silvana_forest progress' ../../logs/server-smoke.log
+          grep -F 'Realm construction kardum_league progress' ../../logs/server-smoke.log
+          if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms|unsafe terrain read|watchdog' ../../logs/server-smoke.log; then
+            echo 'Living Kingdoms datapack, dimension, world generation, or server tick error detected.' >&2
             exit 1
           fi
 
@@ -130,8 +135,8 @@ jobs:
           grep -F 'LK_CLIENT_DIAGNOSTIC_SCREEN_OPENED' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' ../../logs/client-smoke.log
-          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen' ../../logs/client-smoke.log; then
-            echo 'Living Kingdoms client or screen rendering error detected.' >&2
+          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms' ../../logs/client-smoke.log; then
+            echo 'Living Kingdoms client, texture, or screen rendering error detected.' >&2
             exit 1
           fi
 
@@ -157,6 +162,10 @@ jobs:
           unzip -Z1 "$JAR" | grep -Eq '^data/livingkingdoms/'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension/living_realm.json'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension_type/living_realm.json'
+          unzip -Z1 "$JAR" | grep -Fx 'assets/livingkingdoms/textures/gui/kenney/uipack_rpg_sheet.png'
+          unzip -Z1 "$JAR" | grep -Fx 'assets/livingkingdoms/licenses/KENNEY_UI_CC0.txt'
+          test "$(unzip -p "$JAR" assets/livingkingdoms/textures/gui/kenney/uipack_rpg_sheet.png | wc -c)" -gt 50000
+          unzip -p "$JAR" assets/livingkingdoms/licenses/KENNEY_UI_CC0.txt | grep -F 'Creative Commons CC0 1.0 Universal'
           unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -F 'minecraft:noise'
           if unzip -Z1 "$JAR" | grep -Eq '(^|/)(tools|\.github)/|\.java$'; then
             echo 'Forbidden development content found in runtime JAR' >&2
@@ -184,19 +193,21 @@ jobs:
           - Living realm noise generator: PASS
           - Asynchronous chunk preparation: PASS
           - Sequential terrain survey and persisted homeland sites: PASS
+          - Tick-sliced capital construction without a blocking world-edit tick: PASS
           - Three terrain-integrated regional capitals: PASS
           - Eight dynamic residence floor and headroom checks: PASS
           - Erden citadel, administration, temple, market, inn, guild, smithy, barracks, granary, wall and canal checks: PASS
           - Graphical client startup under Xvfb: PASS
           - Origin selection screen: PASS
-          - Codex V2 overview, equipment/law, atlas and skills pages: PASS
+          - Codex V2 overview, equipment/law, dynamic atlas and skills pages: PASS
           - Server-authoritative affiliation, racial traits and skill progression compiled: PASS
+          - Kenney RPG UI sheet pinned to immutable commit and Git-blob hash verified: PASS
+          - CC0 license notice packaged in the runtime JAR: PASS
           - Runtime JAR ZIP integrity: PASS
           - Duplicate ZIP entries: NONE
-          - Licensed external art bundle: NOT YET INCLUDED
           - Full manual gameplay and visual inspection: PENDING
 
-          This candidate replaces the old flat staging realm with noise terrain, pregenerates chunks outside the server tick, surveys sites before construction, builds distinct regional capitals, and adds a readable codex plus persistent skill progression. Existing flat test worlds are not a valid visual test for the new generator; create a fresh world.
+          This candidate replaces the old flat staging realm with noise terrain, pregenerates chunks outside blocking gameplay work, surveys sites before construction, applies large capital plans over bounded server ticks, builds distinct regional capitals, and skins the readable codex with a verified CC0 RPG UI asset. Existing flat test worlds are not a valid visual test for the new generator; create a fresh world.
           EOF
 
       - name: Upload build logs
