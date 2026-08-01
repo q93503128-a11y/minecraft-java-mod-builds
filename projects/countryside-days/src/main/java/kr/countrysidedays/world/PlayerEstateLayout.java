@@ -58,7 +58,7 @@ public final class PlayerEstateLayout {
     }
 
     public static BlockPos restaurantSign(BlockPos origin) {
-        return origin.offset(11, 2, -20);
+        return origin.offset(11, 2, -21);
     }
 
     public static BlockPos customerSeat(BlockPos origin) {
