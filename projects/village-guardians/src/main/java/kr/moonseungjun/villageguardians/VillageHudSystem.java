@@ -10,12 +10,11 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class VillageHudSystem {
-    private static final int REFRESH_TICKS = 60;
+    private static final int REFRESH_TICKS = 10;
     private static final Map<UUID, String> LAST_TEXT = new HashMap<>();
     private static int ticks;
 
-    private VillageHudSystem() {
-    }
+    private VillageHudSystem() {}
 
     public static void reset() {
         ticks = 0;
@@ -37,6 +36,9 @@ public final class VillageHudSystem {
     }
 
     private static String buildText(ServerPlayer player) {
+        if (VillageRespawnSystem.isDowned(player)) {
+            return VillageRespawnSystem.hudText(player);
+        }
         RpgProgress progress = VillageCouncilState.progressOf(player.getUUID());
         String xp = progress.level() >= RpgProgress.MAX_LEVEL
                 ? "MAX"
