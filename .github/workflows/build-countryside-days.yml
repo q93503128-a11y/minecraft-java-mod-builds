@@ -302,7 +302,8 @@ jobs:
           SERVER_PID=$!
           READY=0
           for SECOND in $(seq 1 180); do
-            if grep -q "Done (" ci-logs/server.log; then
+            if grep -q "Done (" ci-logs/server.log \
+              && grep -q "Countryside worldgen audit passed" ci-logs/server.log; then
               READY=1
               break
             fi
@@ -317,7 +318,7 @@ jobs:
           tail -n 280 ci-logs/server.log
 
           if [ "$READY" -ne 1 ]; then
-            echo "Superflat server never reached the ready state."
+            echo "Superflat server never reached both ready and countryside-audited state."
             exit 1
           fi
           if grep -n -E "Failed to start the minecraft server|Exception in server tick loop|ModLoadingException|Feature placement|Countryside worldgen audit failed|No key layers in MapLike" ci-logs/server.log; then
