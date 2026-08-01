@@ -17,9 +17,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-/** Pregenerates chunks, plans a capital, then applies its block edits over many safe server ticks. */
+/** Surveys, pregenerates the selected site, then applies its capital plan over safe server ticks. */
 public final class RealmBuildCoordinator {
-    private static final int PREGEN_RADIUS_CHUNKS = 21;
+    private static final int SURVEY_PREGEN_RADIUS_CHUNKS = 21;
+    private static final int CONSTRUCTION_PREGEN_RADIUS_CHUNKS = 15;
     private static final int NORMAL_TICK_BUDGET = 3_000;
     private static final int BUSY_TICK_BUDGET = 750;
     private static final Map<String, BuildJob> JOBS = new ConcurrentHashMap<>();
@@ -44,7 +45,7 @@ public final class RealmBuildCoordinator {
             job.waitingPlayers.add(player.getUUID());
             if (!job.started) {
                 job.started = true;
-                startPregeneration(realm, profile.homelandId(), job);
+                startSurveyPregeneration(realm, profile.homelandId(), job);
             }
         }
         player.sendSystemMessage(Component.literal(
@@ -63,7 +64,7 @@ public final class RealmBuildCoordinator {
             job.completions.add(completion);
             if (!job.started) {
                 job.started = true;
-                startPregeneration(realm, homelandId, job);
+                startSurveyPregeneration(realm, homelandId, job);
             }
         }
     }
@@ -93,16 +94,78 @@ public final class RealmBuildCoordinator {
         }
     }
 
-    private static void startPregeneration(ServerLevel realm, String homelandId, BuildJob job) {
-        int[] nominal = nominalCenter(homelandId);
-        int centerChunkX = nominal[0] >> 4;
-        int centerChunkZ = nominal[1] >> 4;
-        LivingKingdoms.LOGGER.info(
-                "Starting asynchronous chunk preparation for {} at chunk {},{} radius={}",
-                homelandId, centerChunkX, centerChunkZ, PREGEN_RADIUS_CHUNKS
+    private static void startSurveyPregeneration(ServerLevel realm, String homelandId, BuildJob job) {
+        int[] nominal = RealmSitePlanner.nominalCenter(homelandId);
+        startGenerationTask(
+                realm,
+                homelandId,
+                job,
+                "survey",
+                nominal[0] >> 4,
+                nominal[1] >> 4,
+                SURVEY_PREGEN_RADIUS_CHUNKS,
+                errors -> selectSiteAndPrepareConstructionArea(realm, homelandId, job, errors)
         );
-        GenerationTask task = new GenerationTask(realm, centerChunkX, centerChunkZ, PREGEN_RADIUS_CHUNKS);
-        job.task = task;
+    }
+
+    private static void selectSiteAndPrepareConstructionArea(
+            ServerLevel realm,
+            String homelandId,
+            BuildJob job,
+            int generationErrors
+    ) {
+        synchronized (job) {
+            if (job.finished || job.selectingSite || job.site != null) return;
+            job.selectingSite = true;
+        }
+        try {
+            if (generationErrors > 0) {
+                throw new IllegalStateException("Survey chunk preparation reported " + generationErrors + " errors");
+            }
+            RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.ensureSite(realm, homelandId);
+            synchronized (job) {
+                if (job.finished) return;
+                job.site = site;
+                job.selectingSite = false;
+            }
+            startGenerationTask(
+                    realm,
+                    homelandId,
+                    job,
+                    "construction",
+                    site.centerX() >> 4,
+                    site.centerZ() >> 4,
+                    CONSTRUCTION_PREGEN_RADIUS_CHUNKS,
+                    errors -> preparePlan(realm, homelandId, job, errors)
+            );
+        } catch (Throwable throwable) {
+            synchronized (job) {
+                job.selectingSite = false;
+            }
+            failBuild(homelandId, job, throwable);
+        }
+    }
+
+    private static void startGenerationTask(
+            ServerLevel realm,
+            String homelandId,
+            BuildJob job,
+            String phase,
+            int centerChunkX,
+            int centerChunkZ,
+            int radius,
+            java.util.function.IntConsumer completion
+    ) {
+        LivingKingdoms.LOGGER.info(
+                "Starting asynchronous {} chunk preparation for {} at chunk {},{} radius={}",
+                phase, homelandId, centerChunkX, centerChunkZ, radius
+        );
+        GenerationTask task = new GenerationTask(realm, centerChunkX, centerChunkZ, radius);
+        synchronized (job) {
+            if (job.finished) return;
+            if (job.task != null) job.task.stop();
+            job.task = task;
+        }
         task.run(new GenerationTask.Listener() {
             private int lastReported;
 
@@ -112,7 +175,8 @@ public final class RealmBuildCoordinator {
                 if (done - lastReported >= 200 || done == total) {
                     lastReported = done;
                     LivingKingdoms.LOGGER.info(
-                            "Realm chunk preparation {} progress {}/{} errors={}", homelandId, done, total, error
+                            "Realm {} chunk preparation {} progress {}/{} errors={}",
+                            phase, homelandId, done, total, error
                     );
                 }
             }
@@ -120,7 +184,7 @@ public final class RealmBuildCoordinator {
             @Override
             public void complete(int error) {
                 MinecraftServer server = realm.getServer();
-                server.submit(() -> preparePlan(realm, homelandId, job, error));
+                server.submit(() -> completion.accept(error));
             }
         });
     }
@@ -133,10 +197,14 @@ public final class RealmBuildCoordinator {
 
         try {
             if (generationErrors > 0) {
-                throw new IllegalStateException("Chunk preparation reported " + generationErrors + " errors");
+                throw new IllegalStateException("Construction chunk preparation reported " + generationErrors + " errors");
             }
             long started = System.nanoTime();
-            RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.ensureSite(realm, homelandId);
+            RealmSiteLayoutSavedData.RealmSite site;
+            synchronized (job) {
+                site = job.site;
+            }
+            if (site == null) throw new IllegalStateException("Selected homeland site is unavailable");
             IncrementalWorldEditPlan plan = PlannedRealmBuilder.create(realm, homelandId, site);
             synchronized (job) {
                 if (job.finished) return;
@@ -219,22 +287,16 @@ public final class RealmBuildCoordinator {
         }
     }
 
-    private static int[] nominalCenter(String homelandId) {
-        return switch (homelandId) {
-            case "silvana_forest" -> new int[]{1500, 250};
-            case "kardum_league" -> new int[]{-1500, 250};
-            default -> new int[]{0, 0};
-        };
-    }
-
     private static final class BuildJob {
         private final ServerLevel realm;
         private final Set<UUID> waitingPlayers = new LinkedHashSet<>();
         private final Set<Consumer<Throwable>> completions = new LinkedHashSet<>();
         private boolean started;
+        private boolean selectingSite;
         private boolean preparingPlan;
         private boolean finished;
         private GenerationTask task;
+        private RealmSiteLayoutSavedData.RealmSite site;
         private IncrementalWorldEditPlan plan;
         private int lastReportedPercent = -10;
 
