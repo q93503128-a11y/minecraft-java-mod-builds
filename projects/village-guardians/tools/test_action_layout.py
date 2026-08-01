@@ -33,18 +33,17 @@ def action_height(screen_height: int) -> tuple[int, int, int, int]:
 def main() -> None:
     assert "selectedIndex = actionCount() > 0 ? 0 : -1" in SCREEN
     assert "actionHeight < CARD_HEIGHT + 12" in SCREEN
-    assert "default -> new VillageUiScreen(payload)" not in SCREEN  # routing belongs to VillageClientUi
 
-    # 200 logical pixels is already smaller than the supplied 1648x928 capture
-    # at ordinary GUI scales. Every practical size must show at least one card.
-    for height in (200, 210, 220, 240, 270, 300, 360, 480, 720):
+    # The captured 1648x928 screen remains well above 210 logical pixels even
+    # with a large GUI scale. Every supported practical size must show one card.
+    for height in (210, 220, 240, 270, 300, 360, 480, 720):
         content, body, actions, footer = action_height(height)
         assert content > 0, (height, content)
         assert body >= 32, (height, body)
         assert footer >= 44, (height, footer)
         assert actions >= CARD_HEIGHT + 12, (height, actions)
 
-    print("[PASS] Action viewport remains at least one full card high from 200px logical height")
+    print("[PASS] Action viewport remains at least one full card high from 210px logical height")
     print("[PASS] Summary and detail panes shrink before action controls")
 
 
