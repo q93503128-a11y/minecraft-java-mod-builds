@@ -115,6 +115,22 @@ public final class SpellCatalog {
         return fusionFor(List.of(ingredients));
     }
 
+    /** Returns every formula that can still be completed from the offered partial multiset. */
+    public static List<FusionFormula> candidatesFor(List<String> ingredients) {
+        bootstrap();
+        List<String> offered = normalized(ingredients);
+        if (offered.isEmpty() || offered.size() > 3) return List.of();
+        return FUSIONS.stream()
+                .filter(formula -> offered.size() <= formula.ingredients().size())
+                .filter(formula -> isSortedMultisetSubset(offered, formula.normalizedIngredients()))
+                .toList();
+    }
+
+    public static boolean canExtend(List<String> ingredients) {
+        int size = normalized(ingredients).size();
+        return candidatesFor(ingredients).stream().anyMatch(formula -> formula.ingredients().size() > size);
+    }
+
     public static boolean isFusionResult(String spellId) {
         return spell(spellId).map(spell -> spell.acquisition() == FUSION).orElse(false);
     }
@@ -140,7 +156,25 @@ public final class SpellCatalog {
     }
 
     private static List<String> normalized(List<String> ingredients) {
+        if (ingredients == null) return List.of();
         return ingredients.stream().filter(value -> value != null && !value.isBlank()).sorted().toList();
+    }
+
+    private static boolean isSortedMultisetSubset(List<String> offered, List<String> formula) {
+        int offeredIndex = 0;
+        int formulaIndex = 0;
+        while (offeredIndex < offered.size() && formulaIndex < formula.size()) {
+            int compare = offered.get(offeredIndex).compareTo(formula.get(formulaIndex));
+            if (compare == 0) {
+                offeredIndex++;
+                formulaIndex++;
+            } else if (compare > 0) {
+                formulaIndex++;
+            } else {
+                return false;
+            }
+        }
+        return offeredIndex == offered.size();
     }
 
     public record FusionFormula(String result, List<String> ingredients) {
