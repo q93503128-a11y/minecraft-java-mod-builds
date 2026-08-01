@@ -3,19 +3,19 @@
 
 FORTRESS_RADIUS = 76
 ROAD_HALF_WIDTH = 4
-GATE_HALF_WIDTH = 8
+GATE_HALF_WIDTH = 9
 GATE_HEIGHT = 8
 WALL_THICKNESS = 5
 PATH_MAX_LENGTH = 64
 RETURN_POSITION = (0, 12)
 
 BUILDINGS = {
-    "town_hall": (-25, 34, 51, 31, "north"),
-    "barracks": (-70, -52, 27, 21, "east"),
-    "smithy": (-70, -18, 27, 21, "east"),
-    "skill_hall": (44, -18, 27, 21, "west"),
-    "storehouse": (-70, 18, 27, 21, "east"),
-    "infirmary": (44, 18, 27, 21, "west"),
+    "town_hall": (-21, 36, 43, 27, "north"),
+    "barracks": (-66, -50, 23, 17, "east"),
+    "smithy": (-66, -17, 23, 17, "east"),
+    "skill_hall": (44, -17, 23, 17, "west"),
+    "storehouse": (-66, 17, 23, 17, "east"),
+    "infirmary": (44, 17, 23, 17, "west"),
 }
 
 
@@ -34,7 +34,7 @@ def intersects_main_avenue(dx: int, dz: int, width: int, depth: int) -> bool:
     x0, x1 = dx, dx + width - 1
     z0, z1 = dz, dz + depth - 1
     avenue_x0, avenue_x1 = -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH
-    avenue_z0, avenue_z1 = -FORTRESS_RADIUS + 4, 33
+    avenue_z0, avenue_z1 = -FORTRESS_RADIUS + 4, 35
     return not (
         x1 < avenue_x0
         or x0 > avenue_x1
@@ -103,6 +103,8 @@ def main() -> None:
         if name != "town_hall"
     ]
     assert hall_area >= max(normal_areas) * 2, (hall_area, max(normal_areas))
+    assert hall_area < 51 * 31
+    assert max(normal_areas) < 27 * 21
 
     closed_gate = {
         (x, y)
@@ -110,6 +112,8 @@ def main() -> None:
         for y in range(1, GATE_HEIGHT + 1)
     }
     assert len(closed_gate) == (GATE_HALF_WIDTH * 2 + 1) * GATE_HEIGHT
+    assert -9 in {x for x, _ in closed_gate}
+    assert 9 in {x for x, _ in closed_gate}
 
     wall_top_cross_section = list(range(WALL_THICKNESS))
     assert wall_top_cross_section == [0, 1, 2, 3, 4]
@@ -138,10 +142,10 @@ def main() -> None:
     assert all(offset in north_inner_railing_openings for offset in range(-28, -21))
     assert 40 not in north_inner_railing_openings
 
-    print("[PASS] Custom buildings stay inside the fortress without overlap")
+    print("[PASS] Compact buildings stay inside the fortress without overlap")
     print("[PASS] Every facility entrance faces and reaches the central road or plaza")
-    print("[PASS] Town hall footprint is at least twice a normal facility")
-    print("[PASS] Closed gate has no missing columns")
+    print("[PASS] Town hall remains at least twice a normal facility after resizing")
+    print("[PASS] Closed gate spans the complete tower opening without side slits")
     print("[PASS] Wall top has a flat three-block center walkway and planned rail openings")
     print("[PASS] Wall stairs connect directly to the landing")
     print("[PASS] Return destination is inside the plaza and clear of the bell and buildings")
