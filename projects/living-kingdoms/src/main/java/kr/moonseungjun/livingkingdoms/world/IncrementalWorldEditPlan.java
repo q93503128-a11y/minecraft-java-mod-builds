@@ -5,19 +5,20 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Ordered, compact block-edit plan that can be applied over many server ticks. */
 public final class IncrementalWorldEditPlan {
     private static final ThreadLocal<IncrementalWorldEditPlan> ACTIVE = new ThreadLocal<>();
-    /**
-     * World construction is not a player block break. Client updates are required, but natural
-     * plants and support-sensitive blocks must never turn into thousands of item entities while
-     * terrain is being replaced underneath them.
-     */
     private static final int CONSTRUCTION_UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
 
     private final List<Operation> operations = new ArrayList<>();
+    /** Original generator surface, sampled once per column while the plan is assembled. */
+    private final Map<Long, Integer> originalSurfaceHeights = new HashMap<>();
+    /** Surface that earlier operations in this same plan have already promised to create. */
+    private final Map<Long, Integer> plannedSurfaceHeights = new HashMap<>();
     private int operationIndex;
     private long estimatedWrites;
     private long appliedWrites;
@@ -32,6 +33,24 @@ public final class IncrementalWorldEditPlan {
         IncrementalWorldEditPlan plan = ACTIVE.get();
         if (plan == null) throw new IllegalStateException("No active incremental world-edit plan");
         return plan;
+    }
+
+    public int originalSurfaceY(ServerLevel level, int x, int z) {
+        long key = columnKey(x, z);
+        return originalSurfaceHeights.computeIfAbsent(key, ignored -> RealmSitePlanner.surfaceY(level, x, z));
+    }
+
+    public int plannedSurfaceY(ServerLevel level, int x, int z) {
+        long key = columnKey(x, z);
+        return plannedSurfaceHeights.computeIfAbsent(key, ignored -> originalSurfaceY(level, x, z));
+    }
+
+    public void setPlannedSurfaceY(int x, int z, int y) {
+        plannedSurfaceHeights.put(columnKey(x, z), y);
+    }
+
+    public int sampledColumnCount() {
+        return originalSurfaceHeights.size();
     }
 
     public void addSet(int x, int y, int z, Block block) {
@@ -82,6 +101,10 @@ public final class IncrementalWorldEditPlan {
 
     public float progress() {
         return estimatedWrites == 0L ? 1.0F : Math.min(1.0F, appliedWrites / (float) estimatedWrites);
+    }
+
+    private static long columnKey(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xffffffffL);
     }
 
     public static final class Scope implements AutoCloseable {
