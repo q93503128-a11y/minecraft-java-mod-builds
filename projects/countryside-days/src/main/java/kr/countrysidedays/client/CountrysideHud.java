@@ -9,7 +9,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -38,11 +37,11 @@ public final class CountrysideHud {
         LocalPlayer player = minecraft.player;
         if (player == null) return;
 
-        drawPanel(graphics, 7, 7, currentObjective(player), 0xD96B4329, 0xFFF0B56A);
+        drawPanel(graphics, 7, 7, currentObjective(), 0xD96B4329, 0xFFF0B56A);
         drawPanel(graphics, 7, 31, shiftStatus(), 0xD93E4D31, 0xFF9BC978);
 
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
-        Component currency = Component.literal("◆ " + countItem(player, ModItems.VILLAGE_COIN.get()));
+        Component currency = Component.literal("◆ " + countVillageCoins(player));
         int currencyWidth = Math.max(58, minecraft.font.width(currency) + 18);
         drawFixedPanel(
                 graphics,
@@ -135,7 +134,7 @@ public final class CountrysideHud {
         return (int) Math.round(Math.sqrt(dx * dx + dz * dz));
     }
 
-    private static Component currentObjective(LocalPlayer player) {
+    private static Component currentObjective() {
         return switch (ClientEstateState.progressionStage()) {
             case 0 -> Component.translatable(
                     ClientEstateState.restaurantOpen()
@@ -158,20 +157,16 @@ public final class CountrysideHud {
             default -> Component.translatable(
                     ClientEstateState.restaurantOpen()
                             ? "hud.countrysidedays.goal_run_shift"
-                            : "hud.countrysidedays.goal自由"
+                            : "hud.countrysidedays.goal_free_life"
             );
         };
     }
 
-    private static boolean hasItem(LocalPlayer player, Item item) {
-        return countItem(player, item) > 0;
-    }
-
-    private static int countItem(LocalPlayer player, Item item) {
+    private static int countVillageCoins(LocalPlayer player) {
         int count = 0;
         for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (stack.is(item)) count += stack.getCount();
+            if (stack.is(ModItems.VILLAGE_COIN.get())) count += stack.getCount();
         }
         return count;
     }
