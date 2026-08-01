@@ -181,7 +181,7 @@ public final class VillageLifeManager {
     }
 
     private static void tickPublicResidents(ServerLevel level, BlockPos villageOrigin) {
-        long time = Math.floorMod(level.getDayTime(), 24000L);
+        long time = Math.floorMod(level.getOverworldClockTime(), 24000L);
         long day = gameDay(level);
         for (ResidentRole role : PUBLIC_ROLES) {
             findTagged(level, PUBLIC_ROLE_PREFIX + role.id(), villageOrigin, 110.0)
@@ -201,7 +201,7 @@ public final class VillageLifeManager {
             ServerLevel level,
             CountrysideWorldData data
     ) {
-        long time = Math.floorMod(level.getDayTime(), 24000L);
+        long time = Math.floorMod(level.getOverworldClockTime(), 24000L);
         long day = gameDay(level);
         boolean workTime = !isHoliday(day)
                 && time >= MORNING_START
@@ -533,7 +533,7 @@ public final class VillageLifeManager {
     }
 
     private static long gameDay(ServerLevel level) {
-        return Math.max(0L, level.getDayTime() / 24000L);
+        return Math.max(0L, level.getOverworldClockTime() / 24000L);
     }
 
     private static boolean isMarketKeeper(String name) {
