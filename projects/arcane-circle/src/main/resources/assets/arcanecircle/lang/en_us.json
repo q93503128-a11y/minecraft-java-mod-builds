@@ -1,9 +1,19 @@
 {
-  "key.arcanecircle.grimoire": "Open Astral Grimoire",
-  "key.arcanecircle.cast": "Cast Focus Spell",
-  "key.arcanecircle.fusion_cast": "Cast Focus-Weave Fusion",
-  "key.arcanecircle.previous_focus": "Previous Focus Spell",
-  "key.arcanecircle.next_focus": "Next Focus Spell",
-  "key.arcanecircle.previous_weave": "Previous Weave Spell",
-  "key.arcanecircle.next_weave": "Next Weave Spell"
+  "key.arcanecircle.grimoire": "Open Ninefold Grimoire",
+  "key.arcanecircle.fusion_modifier": "Prepare Spell Fusion",
+  "key.arcanecircle.slot_1": "Cast Spell Slot 1",
+  "key.arcanecircle.slot_2": "Cast Spell Slot 2",
+  "key.arcanecircle.slot_3": "Cast Spell Slot 3",
+  "key.arcanecircle.slot_4": "Cast Spell Slot 4",
+  "key.arcanecircle.slot_5": "Cast Spell Slot 5",
+
+  "item.arcanecircle.novice_staff": "Novice Arcane Rod",
+  "item.arcanecircle.ember_staff": "Ember Staff",
+  "item.arcanecircle.glacial_staff": "Glacial Staff",
+  "item.arcanecircle.zephyr_staff": "Zephyr Staff",
+  "item.arcanecircle.aegis_staff": "Aegis Staff",
+  "item.arcanecircle.verdant_staff": "Verdant Staff",
+  "item.arcanecircle.rift_staff": "Rift Staff",
+  "item.arcanecircle.sage_staff": "Sage Staff",
+  "item.arcanecircle.archmage_staff": "Archmage Staff"
 }
