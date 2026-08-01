@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/arcanecircle"
@@ -38,6 +39,20 @@ rewrite(academy, [
     ("        level.setDefaultSpawnPos(origin.offset(0, 1, -10), 0.0F);\n", ""),
 ])
 
+# v0.8 has one academy economy. Remove every checked-in remnant from the old
+# survival crafting and librarian-trade progression before resources are packed.
+legacy_resource_dirs = (
+    ROOT / "src/main/resources/data/arcanecircle/recipe",
+    ROOT / "src/main/resources/data/arcanecircle/villager_trade",
+    ROOT / "src/main/resources/data/minecraft/tags/villager_trade",
+    ROOT / "src/generated/resources/data/arcanecircle/recipe",
+    ROOT / "src/generated/resources/data/arcanecircle/villager_trade",
+    ROOT / "src/generated/resources/data/minecraft/tags/villager_trade",
+)
+for legacy_dir in legacy_resource_dirs:
+    if legacy_dir.exists():
+        shutil.rmtree(legacy_dir)
+
 for forbidden in (
     "net.minecraft.world.level.GameRules",
     "getSharedSpawnPos()",
@@ -50,4 +65,8 @@ for forbidden in (
         if forbidden in path.read_text(encoding="utf-8"):
             raise RuntimeError(f"obsolete 26.2 symbol remains in {path.name}: {forbidden}")
 
-print("Arcane v0.8 Minecraft 26.2 compatibility rewrite: PASS")
+for legacy_dir in legacy_resource_dirs:
+    if legacy_dir.exists():
+        raise RuntimeError(f"legacy survival economy resources remain: {legacy_dir}")
+
+print("Arcane v0.8 Minecraft 26.2 compatibility and legacy-resource cleanup: PASS")
