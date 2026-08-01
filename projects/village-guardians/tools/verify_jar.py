@@ -20,6 +20,7 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageBuildingEnhancements.class",
     "kr/moonseungjun/villageguardians/VillageFortressBuildings.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSkillTreeData.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeScreen.class",
     "kr/moonseungjun/villageguardians/VillageHudSystem.class",
     "kr/moonseungjun/villageguardians/VillageHealthDisplaySystem.class",
