@@ -7,6 +7,7 @@ import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem.StaffProfile;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
@@ -19,6 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class MagicPlayerData extends SavedData {
     private record MasteryEntry(String spellId, int casts) {
@@ -26,6 +28,14 @@ public final class MagicPlayerData extends SavedData {
                 Codec.STRING.fieldOf("spell").forGetter(MasteryEntry::spellId),
                 Codec.INT.optionalFieldOf("casts", 0).forGetter(MasteryEntry::casts)
         ).apply(instance, MasteryEntry::new));
+    }
+
+    private record CooldownEntry(String spellId, long readyAt, int totalTicks) {
+        private static final Codec<CooldownEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.STRING.fieldOf("spell").forGetter(CooldownEntry::spellId),
+                Codec.LONG.optionalFieldOf("ready_at", 0L).forGetter(CooldownEntry::readyAt),
+                Codec.INT.optionalFieldOf("total", 0).forGetter(CooldownEntry::totalTicks)
+        ).apply(instance, CooldownEntry::new));
     }
 
     private record PlayerEntry(
@@ -38,7 +48,8 @@ public final class MagicPlayerData extends SavedData {
             int selected,
             String focus,
             String weave,
-            List<MasteryEntry> fusionMastery
+            List<MasteryEntry> fusionMastery,
+            List<CooldownEntry> cooldowns
     ) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
@@ -50,7 +61,8 @@ public final class MagicPlayerData extends SavedData {
                 Codec.INT.optionalFieldOf("selected", 0).forGetter(PlayerEntry::selected),
                 Codec.STRING.optionalFieldOf("focus", "").forGetter(PlayerEntry::focus),
                 Codec.STRING.optionalFieldOf("weave", "").forGetter(PlayerEntry::weave),
-                MasteryEntry.CODEC.listOf().optionalFieldOf("fusion_mastery", List.of()).forGetter(PlayerEntry::fusionMastery)
+                MasteryEntry.CODEC.listOf().optionalFieldOf("fusion_mastery", List.of()).forGetter(PlayerEntry::fusionMastery),
+                CooldownEntry.CODEC.listOf().optionalFieldOf("cooldowns", List.of()).forGetter(PlayerEntry::cooldowns)
         ).apply(instance, PlayerEntry::new));
     }
 
@@ -92,6 +104,10 @@ public final class MagicPlayerData extends SavedData {
         MageState state = state(player);
         StaffProfile staff = ModItems.equipped(player);
         int maxMana = Math.max(1, state.baseMaxMana() + staff.maxManaBonus());
+        if (state.mana > maxMana) {
+            state.mana = maxMana;
+            setDirty();
+        }
         double regen = state.baseRegenPerHalfSecond() * staff.regenMultiplier();
         return new EffectiveStats(maxMana, regen, staff);
     }
@@ -197,6 +213,43 @@ public final class MagicPlayerData extends SavedData {
         return new CastProgress(new CircleAdvance(previousCircle, state.circle), mastery);
     }
 
+    public CooldownStatus cooldownStatus(ServerPlayer player, String spellId) {
+        MageState state = state(player);
+        CooldownEntry cooldown = state.cooldowns.get(spellId);
+        if (cooldown == null) return CooldownStatus.NONE;
+        long remaining = cooldown.readyAt() - serverClock(player);
+        if (remaining <= 0L) {
+            state.cooldowns.remove(spellId);
+            setDirty();
+            return CooldownStatus.NONE;
+        }
+        return new CooldownStatus((int) Math.min(Integer.MAX_VALUE, remaining), Math.max(1, cooldown.totalTicks()));
+    }
+
+    public void startCooldown(ServerPlayer player, String spellId, int totalTicks) {
+        MageState state = state(player);
+        int total = Math.max(1, totalTicks);
+        state.cooldowns.put(spellId, new CooldownEntry(spellId, serverClock(player) + total, total));
+        setDirty();
+    }
+
+    public String cooldownSnapshot(ServerPlayer player) {
+        MageState state = state(player);
+        long now = serverClock(player);
+        boolean removed = state.cooldowns.entrySet().removeIf(entry -> entry.getValue().readyAt() <= now
+                || SpellCatalog.spell(entry.getKey()).isEmpty());
+        if (removed) setDirty();
+        return state.cooldowns.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> entry.getKey() + ":" + Math.max(0L, entry.getValue().readyAt() - now)
+                        + ":" + Math.max(1, entry.getValue().totalTicks()))
+                .collect(Collectors.joining("|"));
+    }
+
+    private static long serverClock(ServerPlayer player) {
+        return ((ServerLevel) player.level()).getServer().overworld().getGameTime();
+    }
+
     private List<PlayerEntry> entries() {
         return players.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -205,6 +258,11 @@ public final class MagicPlayerData extends SavedData {
     }
 
     public record EffectiveStats(int maxMana, double regenPerHalfSecond, StaffProfile staff) {}
+
+    public record CooldownStatus(int remainingTicks, int totalTicks) {
+        public static final CooldownStatus NONE = new CooldownStatus(0, 1);
+        public boolean active() { return remainingTicks > 0; }
+    }
 
     public record CircleAdvance(int previous, int current) {
         public boolean advanced() { return current > previous; }
@@ -248,6 +306,7 @@ public final class MagicPlayerData extends SavedData {
         private final Set<String> known;
         private final List<String> slots;
         private final Map<String, Integer> mastery;
+        private final Map<String, CooldownEntry> cooldowns;
 
         private MageState(PlayerEntry entry) {
             this.circle = Math.max(1, Math.min(3, entry.circle()));
@@ -255,6 +314,10 @@ public final class MagicPlayerData extends SavedData {
             this.known = new LinkedHashSet<>(entry.known());
             this.known.addAll(SpellCatalog.starterKnownSpells());
             this.slots = normalizedSlots(entry.slots(), entry.focus(), entry.weave());
+            List<String> fallback = SpellCatalog.starterSlots();
+            for (int index = 0; index < this.slots.size(); index++) {
+                if (!known.contains(this.slots.get(index))) this.slots.set(index, fallback.get(index));
+            }
             this.mastery = new LinkedHashMap<>();
             entry.fusionMastery().stream()
                     .sorted(Comparator.comparing(MasteryEntry::spellId))
@@ -268,13 +331,19 @@ public final class MagicPlayerData extends SavedData {
                 if (known.contains(formula.result())) mastery.put(formula.result(), required);
                 if (mastery.getOrDefault(formula.result(), 0) >= required) known.add(formula.result());
             }
-            this.mana = Math.max(0.0, Math.min(baseMaxMana(), entry.mana()));
+            this.cooldowns = new LinkedHashMap<>();
+            entry.cooldowns().stream()
+                    .filter(value -> value.readyAt() > 0L && value.totalTicks() > 0)
+                    .filter(value -> SpellCatalog.spell(value.spellId()).isPresent())
+                    .sorted(Comparator.comparing(CooldownEntry::spellId))
+                    .forEach(value -> cooldowns.put(value.spellId(), value));
+            this.mana = Math.max(0.0, Math.min(1024.0, entry.mana()));
         }
 
         private static MageState fresh() {
             return new MageState(new PlayerEntry("", 1, 100.0, 0,
                     SpellCatalog.starterKnownSpells(), SpellCatalog.starterSlots(), 0,
-                    "arcane_dart", "ember", List.of()));
+                    "arcane_dart", "ember", List.of(), List.of()));
         }
 
         private static List<String> normalizedSlots(List<String> source, String oldFocus, String oldWeave) {
@@ -294,8 +363,11 @@ public final class MagicPlayerData extends SavedData {
                     .sorted(Map.Entry.comparingByKey())
                     .map(value -> new MasteryEntry(value.getKey(), value.getValue()))
                     .toList();
+            List<CooldownEntry> cooldownEntries = cooldowns.values().stream()
+                    .sorted(Comparator.comparing(CooldownEntry::spellId))
+                    .toList();
             return new PlayerEntry(uuid, circle, mana, insight, List.copyOf(known), List.copyOf(slots),
-                    0, "", "", masteryEntries);
+                    0, "", "", masteryEntries, cooldownEntries);
         }
 
         public int circle() { return circle; }
@@ -312,6 +384,6 @@ public final class MagicPlayerData extends SavedData {
         public Map<String, Integer> mastery() { return Map.copyOf(mastery); }
         public int baseMaxMana() { return switch (circle) { case 2 -> 170; case 3 -> 260; default -> 100; }; }
         public double baseRegenPerHalfSecond() { return switch (circle) { case 2 -> 2.0; case 3 -> 3.0; default -> 1.0; }; }
-        public int nextCircleInsight() { return circle >= 3 ? 24 : circle == 2 ? 24 : 8; }
+        public int nextCircleInsight() { return circle >= 3 ? 0 : circle == 2 ? 24 : 8; }
     }
 }
