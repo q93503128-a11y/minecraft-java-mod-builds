@@ -88,12 +88,12 @@ require(screen, [
 ], "responsive grimoire contract")
 require(render, [
     "case FIRE", "case FROST", "case WIND", "case WARD", "case LIFE", "case SPACE",
-    "squarePerimeterPoint", "cooldownArc", "schoolMotif"
+    "squarePerimeterPoint", "cooldownArc", "triangle(", "polygon("
 ], "distinct visual language contract")
 
 if items.count("register(\"") < 9:
     raise SystemExit("fewer than nine staves are registered")
-require(items, ["profiles()", "recipeHint", "ARCHMAGE_PROFILE", "equipped(Player player)"], "staff progression contract")
+require(items, ["profiles()", "ARCHMAGE_PROFILE", "equipped(Player player)"], "staff progression contract")
 require(staff_item, [
     "manaCostMultiplier", "powerMultiplier", "rangeMultiplier",
     "cooldownMultiplier", "regenMultiplier", "recipeHint()"
