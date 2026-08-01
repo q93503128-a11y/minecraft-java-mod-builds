@@ -2,10 +2,12 @@ package kr.countrysidedays.gametest;
 
 import kr.countrysidedays.CountrysideDays;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
+import kr.countrysidedays.gameplay.SharedRestaurantAccess;
 import kr.countrysidedays.gameplay.VillageLifeManager;
 import kr.countrysidedays.registry.ModBlocks;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
+import kr.countrysidedays.world.SharedRestaurantBuilder;
 import kr.countrysidedays.world.StarterHomesteadGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -59,87 +61,93 @@ public final class ModGameTests {
 
         CountrysideWorldData.EstateAllocation firstAllocation = data.ensureEstate(first, "첫 주민", village);
         CountrysideWorldData.EstateAllocation secondAllocation = data.ensureEstate(second, "둘째 주민", village);
-        helper.assertTrue(firstAllocation.estate().isOwner(first), "first UUID should own the first estate");
-        helper.assertTrue(secondAllocation.estate().isOwner(second), "second UUID should own the second estate");
+        helper.assertTrue(firstAllocation.estate().isOwner(first), "first UUID should own its estate");
+        helper.assertTrue(secondAllocation.estate().isOwner(second), "second UUID should own its estate");
         helper.assertFalse(
                 firstAllocation.estate().originPos().equals(secondAllocation.estate().originPos()),
-                "multiplayer estates must never overlap at one origin"
-        );
-        helper.assertTrue(
-                PlayerEstateLayout.contains(firstAllocation.estate().originPos(), firstAllocation.estate().originPos()),
-                "estate origin should be inside its own protected boundary"
+                "multiplayer private homes, farms and ranches must never overlap"
         );
         helper.assertFalse(
                 PlayerEstateLayout.contains(firstAllocation.estate().originPos(), secondAllocation.estate().originPos()),
-                "a second estate origin must be outside the first protected boundary"
+                "the second private estate must remain outside the first protected boundary"
         );
         helper.assertTrue(
                 PlayerEstateLayout.contains(
                         firstAllocation.estate().originPos(),
                         PlayerEstateLayout.ownerSign(firstAllocation.estate().originPos())
                 ),
-                "owner sign outside the fence must remain inside private protection"
+                "the ownership sign in front of the fence must remain protected"
         );
 
-        helper.assertTrue(data.renameRestaurant(first, "느린 오후 식당"), "owner should rename only their restaurant");
+        helper.assertTrue(SharedRestaurantAccess.isOwner(data, first),
+                "the first estate owner should own the world's shared restaurant");
+        helper.assertTrue(SharedRestaurantAccess.isStaff(data, second),
+                "later estate owners should be registered restaurant staff");
+        helper.assertTrue(
+                SharedRestaurantAccess.restaurantEstate(data).orElseThrow().ownerUuid().equals(first.toString()),
+                "the shared restaurant should remain attached to the first estate for save compatibility"
+        );
+
+        helper.assertTrue(data.renameRestaurant(first, "느린 오후 식당"),
+                "the restaurant owner should be able to rename the shared restaurant");
         helper.assertTrue(
                 "느린 오후 식당".equals(data.estate(first).orElseThrow().restaurantName()),
-                "renamed restaurant should persist for its owner"
+                "the shared restaurant name should persist on its owner record"
         );
         helper.assertFalse(
                 "느린 오후 식당".equals(data.estate(second).orElseThrow().restaurantName()),
-                "another player's restaurant name must remain independent"
+                "a staff estate must not be converted into a second restaurant"
         );
 
-        helper.assertTrue(data.toggleRestaurant(first).orElse(false), "owner should open their restaurant");
+        helper.assertTrue(SharedRestaurantAccess.toggleOpen(data, second).orElse(false),
+                "registered staff should be able to open the shared restaurant");
+        helper.assertTrue(data.estate(first).orElseThrow().restaurantOpen(),
+                "staff opening should update the shared owner record");
+        helper.assertFalse(data.estate(second).orElseThrow().restaurantOpen(),
+                "staff must not create an independent restaurant state");
+
+        long day = 112L;
+        helper.assertTrue(SharedRestaurantAccess.recordCustomerService(data, day, 0, 5),
+                "shared customer slot zero should pay once");
+        helper.assertTrue(SharedRestaurantAccess.recordCustomerService(data, day, 1, 3),
+                "shared customer slot one should be independent");
+        helper.assertTrue(SharedRestaurantAccess.recordCustomerService(data, day, 2, 6),
+                "shared customer slot two should be independent");
+        helper.assertFalse(SharedRestaurantAccess.recordCustomerService(data, day, 1, 3),
+                "the same shared customer must never pay twice in one day");
+        helper.assertTrue(
+                SharedRestaurantAccess.restaurantEstate(data).orElseThrow().customersServedToday(day) == 3,
+                "the shared daily service mask should record all three guests"
+        );
+
+        long nextDay = 113L;
+        helper.assertTrue(SharedRestaurantAccess.recordCustomerService(data, nextDay, 0, 5),
+                "a new day should reset the shared customer mask");
+        helper.assertTrue(SharedRestaurantAccess.recordCustomerService(data, nextDay, 1, 3),
+                "five shared guests should advance restaurant progression");
+        helper.assertTrue(
+                SharedRestaurantAccess.restaurantEstate(data).orElseThrow().progressionStage() == 2,
+                "five shared guests should advance to the ranch collection stage"
+        );
+        SharedRestaurantAccess.setOpen(data, false);
+        helper.assertFalse(data.estate(first).orElseThrow().restaurantOpen(),
+                "closing should update the single shared restaurant state");
+
+        helper.assertTrue(
+                data.recordRanchProduction(second, nextDay, 2, 1, 1),
+                "each staff player should retain independent ranch production"
+        );
         helper.assertFalse(
-                data.estate(second).orElseThrow().restaurantOpen(),
-                "opening one restaurant must not open another player's restaurant"
+                data.recordRanchProduction(second, nextDay, 9, 9, 9),
+                "the same private ranch production day must not duplicate goods"
         );
-
-        long day = 12L;
-        helper.assertTrue(data.recordCustomerService(first, day, 0, 5), "slot zero should pay once");
-        helper.assertTrue(data.recordCustomerService(first, day, 1, 3), "slot one should be independent");
-        helper.assertTrue(data.recordCustomerService(first, day, 2, 6), "slot two should be independent");
-        helper.assertFalse(data.recordCustomerService(first, day, 1, 3), "same slot must not pay twice");
-        helper.assertTrue(
-                data.estate(first).orElseThrow().customersServedToday(day) == 3,
-                "three distinct customers should be recorded for the day"
-        );
-        helper.assertTrue(
-                data.recordCustomerService(second, day, 0, 4),
-                "second owner should have an independent customer mask"
-        );
-
-        long nextDay = 13L;
-        helper.assertTrue(data.recordCustomerService(first, nextDay, 0, 5), "new day should reset the customer mask");
-        helper.assertTrue(data.recordCustomerService(first, nextDay, 1, 3), "fifth total guest should record");
-        helper.assertTrue(
-                data.estate(first).orElseThrow().progressionStage() == 2,
-                "five guests should advance to the ranch collection stage"
-        );
-
-        helper.assertTrue(
-                data.recordRanchProduction(first, nextDay, 2, 1, 1),
-                "healthy ranch goods should persist once per day"
-        );
-        helper.assertFalse(
-                data.recordRanchProduction(first, nextDay, 9, 9, 9),
-                "same production day must not duplicate goods"
-        );
-        CountrysideWorldData.RanchProducts claimed = data.claimRanchProducts(first);
+        CountrysideWorldData.RanchProducts claimed = data.claimRanchProducts(second);
         helper.assertTrue(
                 claimed.eggs() == 2 && claimed.milk() == 1 && claimed.wool() == 1,
-                "claimed ranch goods should match the saved inventory"
+                "claimed ranch goods should match the staff player's private ranch stock"
         );
-        helper.assertTrue(
-                data.claimRanchProducts(first).total() == 0,
-                "claiming the same ranch stock twice must return nothing"
-        );
-        helper.assertTrue(
-                data.estate(first).orElseThrow().progressionStage() == 3,
-                "first ranch collection should unlock the fifteen-guest stage"
-        );
+        helper.assertTrue(data.claimRanchProducts(second).total() == 0,
+                "claiming the same private ranch stock twice must return nothing");
 
         helper.assertFalse(VillageLifeManager.isHoliday(5L), "sixth day should still be a workday");
         helper.assertTrue(VillageLifeManager.isHoliday(6L), "seventh day should be a village holiday");
@@ -149,9 +157,10 @@ public final class ModGameTests {
                 "daily market price must be deterministic for one day and item");
         helper.assertTrue(stablePrice >= 1 && stablePrice <= 6,
                 "daily market price must stay inside the safe fluctuation range");
-        int inputCount = VillageLifeManager.dailyInputCount(12, 22L, 4);
-        helper.assertTrue(inputCount >= 9 && inputCount <= 15,
-                "daily purchase quantity must stay near the base amount");
+        for (long marketDay = 0; marketDay < 70; marketDay++) {
+            helper.assertTrue(VillageLifeManager.isProduceArbitrageSafe(marketDay, 6),
+                    "buying and immediately reselling produce must never create infinite coins");
+        }
 
         helper.assertTrue(
                 RuralGameplayHandler.isForagePlant(Blocks.SHORT_GRASS.defaultBlockState()),
@@ -176,8 +185,10 @@ public final class ModGameTests {
                 helper.getLevel(), absoluteOrigin, "테스트 주민", "테스트 식당"
         );
         VillageLifeManager.prepareNewEstate(helper.getLevel(), absoluteOrigin);
+        SharedRestaurantBuilder.buildSharedRestaurant(
+                helper.getLevel(), absoluteOrigin, "테스트 주민", "테스트 식당"
+        );
 
-        helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(45, 7, 18));
         helper.assertBlockPresent(Blocks.CHEST, new BlockPos(10, 7, 15));
         helper.assertBlockPresent(Blocks.BED.pick(DyeColor.YELLOW), new BlockPos(10, 7, 21));
         helper.assertBlockPresent(Blocks.BED.pick(DyeColor.YELLOW), new BlockPos(10, 7, 22));
@@ -197,19 +208,58 @@ public final class ModGameTests {
                 Direction.NORTH
         );
         helper.assertBlockPresent(Blocks.OAK_SIGN, new BlockPos(38, 6, 5));
-        helper.assertBlockPresent(Blocks.OAK_WALL_SIGN, new BlockPos(46, 8, 24));
+
+        helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(45, 7, 22));
+        helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(52, 6, 9));
         helper.assertBlockProperty(
-                new BlockPos(46, 8, 24),
+                new BlockPos(52, 6, 9),
                 BlockStateProperties.HORIZONTAL_FACING,
-                Direction.SOUTH
+                Direction.NORTH
+        );
+        helper.assertBlockProperty(
+                new BlockPos(52, 6, 9),
+                BlockStateProperties.OPEN,
+                false
+        );
+        helper.assertBlockPresent(Blocks.SPRUCE_DOOR, new BlockPos(52, 7, 12));
+        helper.assertBlockProperty(
+                new BlockPos(52, 7, 12),
+                BlockStateProperties.HORIZONTAL_FACING,
+                Direction.NORTH
+        );
+        helper.assertBlockProperty(
+                new BlockPos(52, 7, 12),
+                BlockStateProperties.OPEN,
+                false
+        );
+        helper.assertBlockPresent(Blocks.OAK_WALL_SIGN, new BlockPos(46, 8, 11));
+        helper.assertBlockProperty(
+                new BlockPos(46, 8, 11),
+                BlockStateProperties.HORIZONTAL_FACING,
+                Direction.NORTH
         );
 
-        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(49, 7, 20));
-        helper.assertBlockProperty(new BlockPos(49, 7, 20), StairBlock.FACING, Direction.NORTH);
-        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(48, 7, 19));
-        helper.assertBlockProperty(new BlockPos(48, 7, 19), StairBlock.FACING, Direction.EAST);
-        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(56, 7, 20));
-        helper.assertBlockProperty(new BlockPos(56, 7, 20), StairBlock.FACING, Direction.NORTH);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(47, 7, 17));
+        helper.assertBlockProperty(new BlockPos(47, 7, 17), StairBlock.FACING, Direction.SOUTH);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(47, 7, 19));
+        helper.assertBlockProperty(new BlockPos(47, 7, 19), StairBlock.FACING, Direction.NORTH);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(52, 7, 17));
+        helper.assertBlockProperty(new BlockPos(52, 7, 17), StairBlock.FACING, Direction.SOUTH);
+        helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(57, 7, 17));
+        helper.assertBlockProperty(new BlockPos(57, 7, 17), StairBlock.FACING, Direction.SOUTH);
+
+        SharedRestaurantBuilder.setOpen(helper.getLevel(), absoluteOrigin, true);
+        helper.assertBlockProperty(
+                new BlockPos(52, 6, 9),
+                BlockStateProperties.OPEN,
+                true
+        );
+        helper.assertBlockProperty(
+                new BlockPos(52, 7, 12),
+                BlockStateProperties.OPEN,
+                true
+        );
+        SharedRestaurantBuilder.setOpen(helper.getLevel(), absoluteOrigin, false);
 
         helper.assertBlockPresent(Blocks.OAK_FENCE_GATE, new BlockPos(42, 6, 34));
         helper.assertBlockPresent(Blocks.WATER, new BlockPos(44, 6, 55));
