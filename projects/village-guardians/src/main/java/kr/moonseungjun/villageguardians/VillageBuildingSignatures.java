@@ -86,28 +86,28 @@ final class VillageBuildingSignatures {
 
     private static void buildHammer(ServerLevel level, BlockPos base) {
         for (int y = 5; y <= 8; y++) set(level, base.offset(0, y, 0), Blocks.IRON_BLOCK);
-        lineX(level, base, -3, 3, 8, 0, Blocks.COPPER_BLOCK);
-        lineZ(level, base, -3, 3, 8, 0, Blocks.COPPER_BLOCK);
-        set(level, base.offset(-3, 7, 0), Blocks.ORANGE_CONCRETE);
-        set(level, base.offset(3, 7, 0), Blocks.ORANGE_CONCRETE);
+        lineX(level, base, -3, 3, 8, 0, Blocks.BRICKS);
+        lineZ(level, base, -3, 3, 8, 0, Blocks.BRICKS);
+        set(level, base.offset(-3, 7, 0), Blocks.MAGMA_BLOCK);
+        set(level, base.offset(3, 7, 0), Blocks.MAGMA_BLOCK);
     }
 
     private static void buildRune(ServerLevel level, BlockPos base) {
         set(level, base.offset(0, 8, 0), Blocks.AMETHYST_BLOCK);
         for (int distance = 1; distance <= 3; distance++) {
-            set(level, base.offset(distance, 8 - distance, 0), Blocks.PURPLE_CONCRETE);
-            set(level, base.offset(-distance, 8 - distance, 0), Blocks.PURPLE_CONCRETE);
-            set(level, base.offset(0, 8 - distance, distance), Blocks.PURPLE_CONCRETE);
-            set(level, base.offset(0, 8 - distance, -distance), Blocks.PURPLE_CONCRETE);
+            set(level, base.offset(distance, 8 - distance, 0), Blocks.PURPUR_BLOCK);
+            set(level, base.offset(-distance, 8 - distance, 0), Blocks.PURPUR_BLOCK);
+            set(level, base.offset(0, 8 - distance, distance), Blocks.PURPUR_BLOCK);
+            set(level, base.offset(0, 8 - distance, -distance), Blocks.PURPUR_BLOCK);
         }
         set(level, base.offset(0, 7, 0), Blocks.SEA_LANTERN);
         set(level, base.offset(0, 9, 0), Blocks.END_ROD);
     }
 
     private static void buildHealingCross(ServerLevel level, BlockPos base) {
-        for (int y = 5; y <= 9; y++) set(level, base.offset(0, y, 0), Blocks.WHITE_CONCRETE);
-        lineX(level, base, -3, 3, 7, 0, Blocks.RED_CONCRETE);
-        lineZ(level, base, -3, 3, 7, 0, Blocks.RED_CONCRETE);
+        for (int y = 5; y <= 9; y++) set(level, base.offset(0, y, 0), Blocks.QUARTZ_BLOCK);
+        lineX(level, base, -3, 3, 7, 0, Blocks.REDSTONE_BLOCK);
+        lineZ(level, base, -3, 3, 7, 0, Blocks.REDSTONE_BLOCK);
         set(level, base.offset(0, 7, 0), Blocks.SEA_LANTERN);
     }
 
@@ -115,7 +115,9 @@ final class VillageBuildingSignatures {
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
                 set(level, base.offset(x, 6, z), Blocks.HAY_BLOCK);
-                if (Math.abs(x) == 2 || Math.abs(z) == 2) set(level, base.offset(x, 7, z), Blocks.YELLOW_CONCRETE);
+                if (Math.abs(x) == 2 || Math.abs(z) == 2) {
+                    set(level, base.offset(x, 7, z), Blocks.GOLD_BLOCK);
+                }
             }
         }
         set(level, base.offset(0, 7, 0), Blocks.SEA_LANTERN);
@@ -125,9 +127,9 @@ final class VillageBuildingSignatures {
     private static void buildCrossedBlades(ServerLevel level, BlockPos base) {
         for (int i = -3; i <= 3; i++) {
             set(level, base.offset(i, 7 + i / 2, 0), Blocks.IRON_BLOCK);
-            set(level, base.offset(i, 7 - i / 2, 0), Blocks.RED_CONCRETE);
+            set(level, base.offset(i, 7 - i / 2, 0), Blocks.NETHER_BRICKS);
             set(level, base.offset(0, 7 + i / 2, i), Blocks.IRON_BLOCK);
-            set(level, base.offset(0, 7 - i / 2, i), Blocks.RED_CONCRETE);
+            set(level, base.offset(0, 7 - i / 2, i), Blocks.NETHER_BRICKS);
         }
         set(level, base.offset(0, 7, 0), Blocks.SEA_LANTERN);
     }
@@ -137,7 +139,7 @@ final class VillageBuildingSignatures {
             int lower = Math.abs(x) <= 1 ? 1 : Math.abs(x) <= 3 ? 2 : 3;
             for (int y = lower; y <= 8; y++) {
                 Block material = Math.abs(x) == 4 || y == 8 || y == lower
-                        ? Blocks.IRON_BLOCK : Blocks.RED_CONCRETE;
+                        ? Blocks.IRON_BLOCK : Blocks.NETHER_WART_BLOCK;
                 set(level, base.offset(x, y, 0), material);
             }
         }
@@ -149,12 +151,12 @@ final class VillageBuildingSignatures {
     private static Block signatureBlock(VillageProgressionSystem.Building building) {
         return switch (building) {
             case TOWN_HALL -> Blocks.GOLD_BLOCK;
-            case SMITHY -> Blocks.COPPER_BLOCK;
+            case SMITHY -> Blocks.BRICKS;
             case SKILL_HALL -> Blocks.AMETHYST_BLOCK;
-            case INFIRMARY -> Blocks.RED_CONCRETE;
-            case STOREHOUSE -> Blocks.YELLOW_CONCRETE;
+            case INFIRMARY -> Blocks.QUARTZ_BLOCK;
+            case STOREHOUSE -> Blocks.HAY_BLOCK;
             case BARRACKS -> Blocks.IRON_BLOCK;
-            case WALLS -> Blocks.RED_CONCRETE;
+            case WALLS -> Blocks.NETHER_WART_BLOCK;
         };
     }
 
