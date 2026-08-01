@@ -18,7 +18,7 @@ permissions:
 env:
   PROJECT_DIR: projects/living-kingdoms
   GRADLE_VERSION: '9.2.1'
-  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.2.jar
+  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.3.jar
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
   LIVING_KINGDOMS_CI_CLIENT_TEST: '1'
 
@@ -61,7 +61,10 @@ jobs:
         run: |
           set -o pipefail
           gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee ../../logs/clean-build.log
-          grep -F 'Verified Kenney CC0 RPG UI sheet' ../../logs/clean-build.log
+          grep -F 'Verified Kenney CC0 UI asset fantasy_panel.png' ../../logs/clean-build.log
+          grep -F 'Verified Kenney CC0 UI asset panel_background.png' ../../logs/clean-build.log
+          grep -F 'Verified Kenney CC0 UI asset button_normal.png' ../../logs/clean-build.log
+          grep -F 'Verified Kenney CC0 UI asset button_pressed.png' ../../logs/clean-build.log
 
       - name: Dedicated server queued noise realm and capital smoke test
         working-directory: ${{ env.PROJECT_DIR }}
@@ -116,7 +119,7 @@ jobs:
             exit 1
           fi
 
-      - name: Graphical client origin and codex smoke test
+      - name: Graphical client origin, loading and codex smoke test
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         env:
@@ -139,6 +142,7 @@ jobs:
           fi
           grep -F 'LK_CLIENT_DIAGNOSTIC_SCREEN_OPENED' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true' ../../logs/client-smoke.log
+          grep -F 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' ../../logs/client-smoke.log
           if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms' ../../logs/client-smoke.log; then
             echo 'Living Kingdoms client, texture, or screen rendering error detected.' >&2
@@ -167,9 +171,12 @@ jobs:
           unzip -Z1 "$JAR" | grep -Eq '^data/livingkingdoms/'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension/living_realm.json'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension_type/living_realm.json'
-          unzip -Z1 "$JAR" | grep -Fx 'assets/livingkingdoms/textures/gui/kenney/uipack_rpg_sheet.png'
+          for asset in fantasy_panel panel_background button_normal button_pressed; do
+            path="assets/livingkingdoms/textures/gui/kenney/${asset}.png"
+            unzip -Z1 "$JAR" | grep -Fx "$path"
+            test "$(unzip -p "$JAR" "$path" | wc -c)" -gt 100
+          done
           unzip -Z1 "$JAR" | grep -Fx 'assets/livingkingdoms/licenses/KENNEY_UI_CC0.txt'
-          test "$(unzip -p "$JAR" assets/livingkingdoms/textures/gui/kenney/uipack_rpg_sheet.png | wc -c)" -eq 32558
           unzip -p "$JAR" assets/livingkingdoms/licenses/KENNEY_UI_CC0.txt | grep -F 'Creative Commons CC0 1.0 Universal'
           unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -F 'minecraft:noise'
           if unzip -Z1 "$JAR" | grep -Eq '(^|/)(tools|\.github)/|\.java$'; then
@@ -187,7 +194,7 @@ jobs:
           # Living Kingdoms Build and Runtime Report
 
           - Commit: $GITHUB_SHA
-          - Mod version: 0.1.0-alpha.2
+          - Mod version: 0.1.0-alpha.3
           - Minecraft: 26.2
           - NeoForge: 26.2.0.38-beta
           - Java: 25
@@ -204,16 +211,17 @@ jobs:
           - Eight dynamic residence floor and headroom checks: PASS
           - Erden citadel, administration, temple, market, inn, guild, smithy, barracks, granary, wall and canal checks: PASS
           - Graphical client startup under Xvfb: PASS
-          - Origin selection screen: PASS
-          - Codex V2 overview, equipment/law, dynamic atlas and skills pages: PASS
+          - External-component origin selection screen: PASS
+          - Non-pausing server-authoritative realm loading screen: PASS
+          - External-component codex overview, equipment/law, coordinate atlas and skills pages: PASS
           - Server-authoritative affiliation, racial traits and skill progression compiled: PASS
-          - Kenney RPG UI sheet pinned to immutable commit and Git-blob hash verified: PASS
+          - Four Kenney UI components pinned to immutable commit and Git-blob hashes verified: PASS
           - CC0 license notice packaged in the runtime JAR: PASS
           - Runtime JAR ZIP integrity: PASS
           - Duplicate ZIP entries: NONE
           - Full manual gameplay and visual inspection: PENDING
 
-          This candidate replaces the old flat staging realm with noise terrain, rejects isolated coastal sites, prepares the selected construction area, applies large capital plans over bounded server ticks, builds distinct regional capitals, and skins the readable codex with a verified CC0 RPG UI asset. Existing flat test worlds are not a valid visual test for the new generator; create a fresh world.
+          This candidate replaces the self-drawn codex and origin panels with verified CC0 fantasy UI components, keeps a non-pausing loading screen visible until the server finishes the chosen homeland, and preserves the asynchronous noise-terrain capital pipeline. Existing alpha.1 flat test worlds are not a valid visual test; create a fresh world.
           EOF
 
       - name: Upload build logs
@@ -231,7 +239,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: living-kingdoms-0.1.0-alpha.2
+          name: living-kingdoms-0.1.0-alpha.3
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
