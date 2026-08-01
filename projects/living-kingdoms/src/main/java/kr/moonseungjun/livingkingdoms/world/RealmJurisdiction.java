@@ -24,22 +24,10 @@ public final class RealmJurisdiction {
     }
 
     public static BlockPos jail(ServerLevel level, String jurisdiction) {
-        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, jurisdiction);
-        if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) {
-            throw new IllegalStateException("Jurisdiction is not ready: " + jurisdiction);
-        }
-        int[] offset = switch (jurisdiction) {
-            case "silvana_forest" -> new int[]{-84, 0, 74};
-            case "kardum_league" -> new int[]{60, 11, -72};
-            default -> new int[]{-96, 2, -35};
-        };
-        int x = site.centerX() + offset[0];
-        int z = site.centerZ() + offset[2];
-        int y = Math.max(RealmSitePlanner.surfaceY(level, x, z) + 1, site.baseY() + offset[1]);
-        return new BlockPos(x, y, z);
+        return SafeResidenceLocator.jail(level, jurisdiction);
     }
 
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
-        return RealmSitePlanner.residencePosition(level, homelandId, residenceId);
+        return SafeResidenceLocator.residence(level, homelandId, residenceId);
     }
 }
