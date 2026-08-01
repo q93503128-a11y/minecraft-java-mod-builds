@@ -21,7 +21,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import java.util.List;
 
-/** Named citizens anchored to the terrain-surveyed homeland layout. */
+/** Named citizens anchored to a completed terrain-surveyed homeland layout. */
 public final class StarterNpcManager {
     private static final String DONE_PREFIX = "done:";
     private static final Identifier VILLAGER_ID = Identifier.fromNamespaceAndPath("minecraft", "villager");
@@ -31,8 +31,7 @@ public final class StarterNpcManager {
 
     public static void ensureForPlayer(ServerPlayer player, OriginProfile profile) {
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
-        if (realm == null) return;
-        RealmSitePlanner.ensureBuilt(realm, profile.homelandId());
+        if (realm == null || !RealmSitePlanner.isBuilt(realm, profile.homelandId())) return;
 
         StarterNpcLifeSavedData life = realm.getDataStorage().computeIfAbsent(StarterNpcLifeSavedData.TYPE);
         for (NpcDefinition definition : definitions(realm, profile.homelandId())) {
@@ -166,7 +165,8 @@ public final class StarterNpcManager {
     }
 
     private static List<NpcDefinition> definitions(ServerLevel level, String homelandId) {
-        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.ensureBuilt(level, homelandId);
+        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, homelandId);
+        if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) return List.of();
         int cx = site.centerX();
         int cz = site.centerZ();
         int y = site.baseY();
