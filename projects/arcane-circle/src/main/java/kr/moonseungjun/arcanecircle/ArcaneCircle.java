@@ -14,6 +14,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerSwitchHotbarSlotEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
@@ -21,7 +22,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.5.0-alpha.1";
+    public static final String VERSION = "0.6.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -33,9 +34,11 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(this::onHotbarSwitch);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
-        LOGGER.info("Arcane Circle {} loaded with {} spells, {} fusion formulae and {} staves",
-                VERSION, SpellCatalog.spells().size(), SpellCatalog.fusions().size(), ModItems.all().size());
+        LOGGER.info("Arcane Circle {} loaded with {} spells, {} fusion formulae, {} spellbooks and {} staves",
+                VERSION, SpellCatalog.spells().size(), SpellCatalog.fusions().size(),
+                ModItems.spellbooks().size(), ModItems.all().size());
     }
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -43,26 +46,41 @@ public final class ArcaneCircle {
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         boolean firstAwakening = data.ensureProfile(player);
         grantStarterStaffOnce(player, data);
+        grantStarterPrimerOnce(player, data);
         if (firstAwakening) {
             player.sendSystemMessage(Component.literal(
-                    "§5[구중 마법학] §f마력핵이 각성했습니다. §dC§f로 마도서를 여세요."));
+                    "§5[구중 마법학] §f마력핵만 각성했습니다. 아직 익힌 주문은 없습니다."));
             player.sendSystemMessage(Component.literal(
-                    "§71~5: 주문 시전 · X를 누른 채 2~3개 숫자 주문 선택 후 X를 놓으면 융합 시전"));
+                    "§d초심자 마도서§f를 읽어 1써클 기초 주문을 각인하고, 이후 주문서를 수집하세요."));
             player.sendSystemMessage(Component.literal(
-                    "§7성공한 융합은 숙련도가 오르며, 완성되면 일반 슬롯에 장착할 수 있습니다."));
+                    "§71~5를 누르고 유지: 마법진 전개 · 숫자키 놓기: 발사 · X+숫자: 융합"));
         }
         ArcaneNetwork.sync(player);
     }
 
     private void grantStarterStaffOnce(ServerPlayer player, MagicPlayerData data) {
         if (!data.claimStarterStaff(player)) return;
-        ItemStack staff = new ItemStack(ModItems.NOVICE_STAFF.get());
-        if (!player.getInventory().contains(staff)) {
-            boolean stored = player.getInventory().add(staff);
-            if (!stored) player.drop(staff, false);
-            player.sendSystemMessage(Component.literal(
-                    "§5[마도구 지급] §f견습 마도봉을 지급했습니다. 주 손이나 보조 손에 들면 효과가 적용됩니다."));
-        }
+        giveOrDrop(player, new ItemStack(ModItems.NOVICE_STAFF.get()));
+        player.sendSystemMessage(Component.literal(
+                "§5[마도구 지원] §f견습 마도봉을 지급했습니다. 주 손이나 보조 손에 들면 효과가 적용됩니다."));
+    }
+
+    private void grantStarterPrimerOnce(ServerPlayer player, MagicPlayerData data) {
+        if (!data.claimStarterPrimer(player)) return;
+        giveOrDrop(player, new ItemStack(ModItems.BEGINNER_GRIMOIRE.get()));
+        player.sendSystemMessage(Component.literal(
+                "§5[마법 교육 지원] §f초심자 마도서를 지급했습니다. 우클릭해 소모하면 1써클 주문 5종을 익힙니다."));
+    }
+
+    private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
+        boolean stored = player.getInventory().add(stack);
+        if (!stored) player.drop(stack, false);
+    }
+
+    private void onHotbarSwitch(PlayerSwitchHotbarSlotEvent.Pre event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.getNewSlotIndex() < 0 || event.getNewSlotIndex() >= 5) return;
+        if (SpellCastingService.shouldBlockHotbarSwitch(player)) event.setCanceled(true);
     }
 
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -83,9 +101,10 @@ public final class ArcaneCircle {
 
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        SpellCastingService.tickCharge(player);
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         if (player.tickCount % 10 == 0) data.regenerate(player);
-        if (player.tickCount % 10 == 0) ArcaneNetwork.sync(player);
+        if (player.tickCount % 5 == 0) ArcaneNetwork.sync(player);
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
