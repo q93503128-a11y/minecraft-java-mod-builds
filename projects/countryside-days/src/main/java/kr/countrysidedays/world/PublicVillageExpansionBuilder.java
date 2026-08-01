@@ -3,11 +3,14 @@ package kr.countrysidedays.world;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
@@ -23,6 +26,8 @@ public final class PublicVillageExpansionBuilder {
                 && level.getBlockState(origin.offset(-22, 1, -20)).is(Blocks.BARREL)) {
             return;
         }
+
+        connectPaths(level, origin);
 
         cottage(level, origin.offset(-50, 0, -42), true);
         cottage(level, origin.offset(38, 0, -42), true);
@@ -42,15 +47,15 @@ public final class PublicVillageExpansionBuilder {
         orchard(level, origin);
         publicRanch(level, origin);
         fishingPond(level, origin);
-        connectPaths(level, origin);
     }
 
     private static void cottage(ServerLevel level, BlockPos base, boolean frontSouth) {
-        clear(level, base, -1, -1, 12, 10, 8);
+        clearLocal(level, base, -1, -1, 11, 9, 7);
         int width = 11;
         int depth = 9;
         Direction front = frontSouth ? Direction.SOUTH : Direction.NORTH;
         int doorZ = frontSouth ? depth - 1 : 0;
+
         for (int x = 0; x < width; x++) {
             for (int z = 0; z < depth; z++) {
                 set(level, base.offset(x, -1, z), Blocks.COBBLESTONE.defaultBlockState());
@@ -72,17 +77,16 @@ public final class PublicVillageExpansionBuilder {
                 set(level, base.offset(x, 5, z), Blocks.SPRUCE_PLANKS.defaultBlockState());
             }
         }
+
         set(level, base.offset(width / 2, 1, doorZ), Blocks.AIR.defaultBlockState());
         set(level, base.offset(width / 2, 2, doorZ), Blocks.AIR.defaultBlockState());
         placeDoor(level, base.offset(width / 2, 1, doorZ), front);
+
         set(level, base.offset(2, 1, 2), Blocks.CHEST.defaultBlockState());
         set(level, base.offset(3, 1, 2), Blocks.CRAFTING_TABLE.defaultBlockState());
-        set(level, base.offset(8, 1, 6), Blocks.YELLOW_BED.defaultBlockState()
-                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
-        set(level, base.offset(5, 1, 5), Blocks.OAK_FENCE.defaultBlockState());
-        set(level, base.offset(5, 2, 5), Blocks.OAK_PRESSURE_PLATE.defaultBlockState());
-        set(level, base.offset(4, 1, 5), stair(Direction.EAST));
-        set(level, base.offset(6, 1, 5), stair(Direction.WEST));
+        placeBed(level, base.offset(2, 1, 5), Direction.SOUTH, DyeColor.YELLOW);
+        placeBed(level, base.offset(7, 1, 5), Direction.SOUTH, DyeColor.WHITE);
+        tableAndSeats(level, base.offset(5, 1, 3));
     }
 
     private static void houseWall(
@@ -96,8 +100,8 @@ public final class PublicVillageExpansionBuilder {
     ) {
         boolean corner = (x == 0 || x == width - 1) && (z == 0 || z == depth - 1);
         boolean window = (y == 2 || y == 3)
-                && ((z == 0 || z == depth - 1) && (x == 2 || x == width - 3)
-                || (x == 0 || x == width - 1) && (z == 2 || z == depth - 3));
+                && (((z == 0 || z == depth - 1) && (x == 2 || x == width - 3))
+                || ((x == 0 || x == width - 1) && (z == 2 || z == depth - 3)));
         set(level, base.offset(x, y, z), corner
                 ? Blocks.STRIPPED_OAK_LOG.defaultBlockState()
                 : window
@@ -111,7 +115,7 @@ public final class PublicVillageExpansionBuilder {
             BlockState roof,
             Workshop type
     ) {
-        clear(level, base, -1, -1, 12, 10, 8);
+        clearLocal(level, base, -1, -1, 11, 9, 7);
         int width = 11;
         int depth = 9;
         for (int x = 0; x < width; x++) {
@@ -122,12 +126,11 @@ public final class PublicVillageExpansionBuilder {
         }
         for (int y = 1; y <= 4; y++) {
             for (int x = 0; x < width; x++) {
-                set(level, base.offset(x, y, 0), x == 0 || x == width - 1
+                BlockState frontWall = x == 0 || x == width - 1
                         ? Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
-                        : Blocks.BIRCH_PLANKS.defaultBlockState());
-                set(level, base.offset(x, y, depth - 1), x == 0 || x == width - 1
-                        ? Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
-                        : Blocks.BIRCH_PLANKS.defaultBlockState());
+                        : Blocks.BIRCH_PLANKS.defaultBlockState();
+                set(level, base.offset(x, y, 0), frontWall);
+                set(level, base.offset(x, y, depth - 1), frontWall);
             }
             for (int z = 1; z < depth - 1; z++) {
                 set(level, base.offset(0, y, z), Blocks.BIRCH_PLANKS.defaultBlockState());
@@ -146,7 +149,7 @@ public final class PublicVillageExpansionBuilder {
     }
 
     private static void openWorkStall(ServerLevel level, BlockPos base, Workshop type) {
-        clear(level, base, -1, -1, 10, 9, 6);
+        clearLocal(level, base, -1, -1, 9, 8, 6);
         for (int x = 0; x <= 8; x++) {
             for (int z = 0; z <= 7; z++) {
                 set(level, base.offset(x, -1, z), Blocks.PACKED_MUD.defaultBlockState());
@@ -184,12 +187,12 @@ public final class PublicVillageExpansionBuilder {
                 set(level, base.offset(2, 1, 2), Blocks.LECTERN.defaultBlockState());
                 set(level, base.offset(7, 1, 2), Blocks.BOOKSHELF.defaultBlockState());
                 set(level, base.offset(8, 1, 2), Blocks.BOOKSHELF.defaultBlockState());
+                tableAndSeats(level, base.offset(5, 1, 5));
             }
             case CLINIC -> {
                 set(level, base.offset(2, 1, 2), Blocks.BREWING_STAND.defaultBlockState());
                 set(level, base.offset(4, 1, 2), Blocks.BARREL.defaultBlockState());
-                set(level, base.offset(7, 1, 5), Blocks.WHITE_BED.defaultBlockState()
-                        .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
+                placeBed(level, base.offset(7, 1, 4), Direction.SOUTH, DyeColor.WHITE);
             }
             case TAILOR -> {
                 set(level, base.offset(2, 0, 4), Blocks.LOOM.defaultBlockState());
@@ -205,8 +208,11 @@ public final class PublicVillageExpansionBuilder {
     }
 
     private static void publicFarm(ServerLevel level, BlockPos origin) {
-        int minX = -28, maxX = -12, minZ = 18, maxZ = 29;
-        clear(level, origin, minX - 1, minZ - 1, maxX + 1, maxZ + 1, 4);
+        int minX = -28;
+        int maxX = -12;
+        int minZ = 18;
+        int maxZ = 29;
+        clearRelative(level, origin, minX - 1, minZ - 1, maxX + 1, maxZ + 1, 4);
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
                 boolean gate = z == minZ && (x == -21 || x == -20);
@@ -233,7 +239,7 @@ public final class PublicVillageExpansionBuilder {
     }
 
     private static void orchard(ServerLevel level, BlockPos origin) {
-        clear(level, origin, 11, 17, 29, 30, 6);
+        clearRelative(level, origin, 11, 17, 29, 30, 6);
         for (int x = 12; x <= 28; x++) {
             for (int z = 18; z <= 29; z++) {
                 set(level, origin.offset(x, -1, z), Blocks.GRASS_BLOCK.defaultBlockState());
@@ -252,17 +258,26 @@ public final class PublicVillageExpansionBuilder {
                 }
             }
         }
-        for (int x = 12; x <= 28; x += 2) {
+        for (int x = 12; x <= 28; x++) {
             set(level, origin.offset(x, 0, 18), Blocks.OAK_FENCE.defaultBlockState());
             set(level, origin.offset(x, 0, 29), Blocks.OAK_FENCE.defaultBlockState());
         }
+        for (int z = 19; z < 29; z++) {
+            set(level, origin.offset(12, 0, z), Blocks.OAK_FENCE.defaultBlockState());
+            set(level, origin.offset(28, 0, z), Blocks.OAK_FENCE.defaultBlockState());
+        }
+        set(level, origin.offset(20, 0, 18), Blocks.OAK_FENCE_GATE.defaultBlockState()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
     }
 
     private static void publicRanch(ServerLevel level, BlockPos origin) {
-        int minX = 30, maxX = 50, minZ = 30, maxZ = 44;
-        clear(level, origin, minX - 1, minZ - 1, maxX + 1, maxZ + 1, 7);
+        int minX = 30;
+        int maxX = 50;
+        int minZ = 30;
+        int maxZ = 44;
+        clearRelative(level, origin, minX - 1, minZ - 1, maxX + 1, maxZ + 1, 7);
         for (int x = minX; x <= maxX; x++) {
-            boolean gate = zEquals(minZ) && (x == 40 || x == 41);
+            boolean gate = x == 40 || x == 41;
             set(level, origin.offset(x, 0, minZ), gate
                     ? Blocks.OAK_FENCE_GATE.defaultBlockState()
                     .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH)
@@ -273,26 +288,41 @@ public final class PublicVillageExpansionBuilder {
             set(level, origin.offset(minX, 0, z), Blocks.OAK_FENCE.defaultBlockState());
             set(level, origin.offset(maxX, 0, z), Blocks.OAK_FENCE.defaultBlockState());
         }
+
         for (int x = 32; x <= 38; x++) {
             for (int z = 32; z <= 37; z++) {
                 set(level, origin.offset(x, -1, z), Blocks.COARSE_DIRT.defaultBlockState());
             }
         }
-        for (int x = 32; x <= 38; x++) {
-            set(level, origin.offset(x, 4, 32), Blocks.SPRUCE_PLANKS.defaultBlockState());
-            set(level, origin.offset(x, 4, 37), Blocks.SPRUCE_PLANKS.defaultBlockState());
+        for (int y = 0; y <= 3; y++) {
+            for (int x = 32; x <= 38; x++) {
+                if (x == 35 || x == 36) continue;
+                set(level, origin.offset(x, y, 32), Blocks.SPRUCE_PLANKS.defaultBlockState());
+            }
+            set(level, origin.offset(32, y, 33), Blocks.SPRUCE_PLANKS.defaultBlockState());
+            set(level, origin.offset(38, y, 33), Blocks.SPRUCE_PLANKS.defaultBlockState());
         }
-        set(level, origin.offset(34, 0, 39), Blocks.WATER.defaultBlockState());
-        set(level, origin.offset(46, 0, 39), Blocks.HAY_BLOCK.defaultBlockState());
-    }
+        for (int x = 31; x <= 39; x++) {
+            for (int z = 31; z <= 38; z++) {
+                set(level, origin.offset(x, 4, z), Blocks.SPRUCE_PLANKS.defaultBlockState());
+            }
+        }
 
-    private static boolean zEquals(int ignored) {
-        return true;
+        BlockPos trough = origin.offset(34, 0, 39);
+        set(level, trough, Blocks.WATER.defaultBlockState());
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            set(level, trough.relative(direction), Blocks.STONE_BRICK_SLAB.defaultBlockState());
+        }
+        set(level, origin.offset(46, 0, 39), Blocks.HAY_BLOCK.defaultBlockState());
+        set(level, origin.offset(46, 1, 39), Blocks.HAY_BLOCK.defaultBlockState());
     }
 
     private static void fishingPond(ServerLevel level, BlockPos origin) {
-        int minX = -50, maxX = -34, minZ = 30, maxZ = 44;
-        clear(level, origin, minX - 1, minZ - 1, maxX + 1, maxZ + 1, 4);
+        int minX = -50;
+        int maxX = -34;
+        int minZ = 30;
+        int maxZ = 44;
+        clearRelative(level, origin, minX - 1, minZ - 1, maxX + 1, maxZ + 1, 4);
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
                 boolean edge = x == minX || x == maxX || z == minZ || z == maxZ;
@@ -310,16 +340,14 @@ public final class PublicVillageExpansionBuilder {
     }
 
     private static void connectPaths(ServerLevel level, BlockPos origin) {
-        path(level, origin, -44, -31, -2, -31);
-        path(level, origin, 2, -31, 44, -31);
-        path(level, origin, -44, 2, -44, 8);
-        path(level, origin, 44, 2, 44, 8);
-        path(level, origin, -22, 2, -22, 18);
-        path(level, origin, 21, 2, 21, 18);
-        path(level, origin, -22, 29, -22, 31);
-        path(level, origin, 21, 29, 21, 31);
-        path(level, origin, -42, 26, -42, 30);
-        path(level, origin, 40, 26, 40, 30);
+        path(level, origin, -50, -31, 50, -31);
+        path(level, origin, -30, -31, -30, 16);
+        path(level, origin, 28, -31, 28, 16);
+        path(level, origin, -50, 16, 50, 16);
+        path(level, origin, -42, 16, -42, 30);
+        path(level, origin, 40, 16, 40, 30);
+        path(level, origin, -30, 16, -30, 42);
+        path(level, origin, 28, 16, 28, 42);
     }
 
     private static void path(ServerLevel level, BlockPos origin, int x0, int z0, int x1, int z1) {
@@ -342,9 +370,25 @@ public final class PublicVillageExpansionBuilder {
         }
     }
 
+    private static void tableAndSeats(ServerLevel level, BlockPos table) {
+        set(level, table, Blocks.OAK_FENCE.defaultBlockState());
+        set(level, table.above(), Blocks.OAK_PRESSURE_PLATE.defaultBlockState());
+        set(level, table.west(), stair(Direction.EAST));
+        set(level, table.east(), stair(Direction.WEST));
+    }
+
+    private static void placeBed(ServerLevel level, BlockPos foot, Direction facing, DyeColor color) {
+        Block bed = Blocks.BED.pick(color);
+        set(level, foot, bed.defaultBlockState()
+                .setValue(BedBlock.FACING, facing)
+                .setValue(BedBlock.PART, BedPart.FOOT));
+        set(level, foot.relative(facing), bed.defaultBlockState()
+                .setValue(BedBlock.FACING, facing)
+                .setValue(BedBlock.PART, BedPart.HEAD));
+    }
+
     private static void placeDoor(ServerLevel level, BlockPos lower, Direction facing) {
-        BlockState base = Blocks.OAK_DOOR.defaultBlockState()
-                .setValue(DoorBlock.FACING, facing);
+        BlockState base = Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.FACING, facing);
         set(level, lower, base.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER));
         set(level, lower.above(), base.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER));
     }
@@ -353,7 +397,26 @@ public final class PublicVillageExpansionBuilder {
         return Blocks.OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, facing);
     }
 
-    private static void clear(
+    private static void clearLocal(
+            ServerLevel level,
+            BlockPos base,
+            int minX,
+            int minZ,
+            int maxX,
+            int maxZ,
+            int height
+    ) {
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                for (int y = 0; y <= height; y++) {
+                    set(level, base.offset(x, y, z), Blocks.AIR.defaultBlockState());
+                }
+                set(level, base.offset(x, -1, z), Blocks.GRASS_BLOCK.defaultBlockState());
+            }
+        }
+    }
+
+    private static void clearRelative(
             ServerLevel level,
             BlockPos origin,
             int minX,
