@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -115,7 +116,8 @@ public final class VillageGuardians {
         if (VillageDefenseSystem.recognizeDefenseMob(mob)) {
             return;
         }
-        if (VillageWorldSystem.isInsideVillageArea(mob.blockPosition())
+        if (mob.getType().getCategory() == MobCategory.MONSTER
+                && VillageWorldSystem.isInsideBattlefield(mob.blockPosition())
                 && !VillageWorldSystem.isAllowedGameMob(mob)) {
             event.setCanceled(true);
         }
@@ -145,6 +147,7 @@ public final class VillageGuardians {
         if (maintenanceTicks >= 20) {
             maintenanceTicks = 0;
             VillageCouncilState.enforceFrozenTime(event.getServer());
+            VillageWorldSystem.purgeDaytimeHostiles(event.getServer());
             VillageRpgSystem.refreshPassives(event.getServer());
             for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
                 player.setGameMode(GameType.ADVENTURE);
