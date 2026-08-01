@@ -68,6 +68,7 @@ public final class ResponsiveOriginSelectionScreen extends Screen {
                 && layout.cardX() + layout.cardW() <= width
                 && layout.residenceY() + layout.cardH() < layout.confirmY()
                 && layout.confirmY() + layout.confirmH() <= height
+                && layout.hintY() < layout.statusY()
                 && layout.statusY() < height;
     }
 
@@ -122,13 +123,14 @@ public final class ResponsiveOriginSelectionScreen extends Screen {
         ExternalRpgUi.button(graphics, font, layout.cardX(), y, layout.cardW(), layout.cardH(),
                 "", false, hovered, !submitting);
         ExternalRpgUi.itemIcon(graphics, icon, layout.cardX() + 12,
-                y + Math.max(5, (layout.cardH() - 16) / 2));
-        graphics.text(font, Component.literal(category), layout.cardX() + 39, y + 8,
+                y + Math.max(4, (layout.cardH() - 16) / 2));
+        int textY = y + Math.max(6, (layout.cardH() - 9) / 2);
+        graphics.text(font, Component.literal(category), layout.cardX() + 39, textY,
                 0xFF806143, false);
-        graphics.text(font, Component.literal(value), layout.cardX() + 126, y + 8,
+        graphics.text(font, Component.literal(value), layout.cardX() + 126, textY,
                 0xFF352A21, false);
         graphics.text(font, Component.literal("›"), layout.cardX() + layout.cardW() - 22,
-                y + 8, 0xFF6B5038, false);
+                textY, 0xFF6B5038, false);
     }
 
     private Layout layout() {
@@ -140,15 +142,32 @@ public final class ResponsiveOriginSelectionScreen extends Screen {
         int side = compact ? 24 : 38;
         int cardX = left + side;
         int cardWidth = panelWidth - side * 2;
-        int cardHeight = compact ? 27 : 34;
-        int gap = compact ? 5 : 8;
-        int speciesY = top + (compact ? 65 : 76);
+
+        if (compact) {
+            int cardHeight = 24;
+            int gap = 3;
+            int speciesY = top + 56;
+            int homelandY = speciesY + cardHeight + gap;
+            int backgroundY = homelandY + cardHeight + gap;
+            int residenceY = backgroundY + cardHeight + gap;
+            int confirmHeight = 28;
+            int confirmY = residenceY + cardHeight + 5;
+            int hintY = confirmY + confirmHeight + 3;
+            int statusY = top + panelHeight - 17;
+            return new Layout(true, panelWidth, panelHeight, left, top, cardX, cardWidth,
+                    cardHeight, confirmHeight, speciesY, homelandY, backgroundY, residenceY,
+                    confirmY, hintY, statusY);
+        }
+
+        int cardHeight = 34;
+        int gap = 8;
+        int speciesY = top + 76;
         int homelandY = speciesY + cardHeight + gap;
         int backgroundY = homelandY + cardHeight + gap;
         int residenceY = backgroundY + cardHeight + gap;
-        int confirmHeight = compact ? 30 : 36;
-        int confirmY = top + panelHeight - (compact ? 67 : 76);
-        return new Layout(compact, panelWidth, panelHeight, left, top, cardX, cardWidth,
+        int confirmHeight = 36;
+        int confirmY = top + panelHeight - 76;
+        return new Layout(false, panelWidth, panelHeight, left, top, cardX, cardWidth,
                 cardHeight, confirmHeight, speciesY, homelandY, backgroundY, residenceY,
                 confirmY, residenceY + cardHeight + 7, top + panelHeight - 22);
     }
