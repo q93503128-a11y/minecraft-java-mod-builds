@@ -28,6 +28,9 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COUNTRY_STEW.get());
                         output.accept(ModItems.HERB_TEA.get());
                         output.accept(ModItems.FARM_BREAKFAST.get());
+                        output.accept(ModItems.GRILLED_RIVER_FISH.get());
+                        output.accept(ModItems.POTATO_PANCAKE.get());
+                        output.accept(ModItems.HONEY_CARROT_SALAD.get());
                         output.accept(ModItems.RECIPE_NOTEBOOK.get());
                         output.accept(ModItems.LIFE_GUIDE.get());
                         output.accept(ModItems.VILLAGE_COIN.get());
