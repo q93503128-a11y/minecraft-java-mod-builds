@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import zipfile
 from pathlib import Path
@@ -10,6 +11,20 @@ from pathlib import Path
 def fail(message: str) -> None:
     print(f"ERROR: {message}", file=sys.stderr)
     raise SystemExit(1)
+
+
+def load_json_utf8(archive: zipfile.ZipFile, path: str) -> dict[str, object]:
+    try:
+        raw = archive.read(path)
+        text = raw.decode("utf-8", errors="strict")
+        parsed = json.loads(text)
+    except UnicodeDecodeError as error:
+        fail(f"invalid UTF-8 in {path}: {error}")
+    except json.JSONDecodeError as error:
+        fail(f"invalid JSON in {path}: {error}")
+    if not isinstance(parsed, dict):
+        fail(f"localization root must be an object: {path}")
+    return parsed
 
 
 def main() -> None:
@@ -41,12 +56,18 @@ def main() -> None:
             "assets/countrysidedays/models/item/herb_tea.json",
             "assets/countrysidedays/items/farm_breakfast.json",
             "assets/countrysidedays/models/item/farm_breakfast.json",
+            "assets/countrysidedays/items/recipe_notebook.json",
+            "assets/countrysidedays/models/item/recipe_notebook.json",
+            "assets/countrysidedays/items/life_guide.json",
+            "assets/countrysidedays/models/item/life_guide.json",
             "data/countrysidedays/recipe/herb_tea.json",
             "data/countrysidedays/recipe/farm_breakfast.json",
             "kr/countrysidedays/item/RecipeNotebookItem.class",
+            "kr/countrysidedays/item/LifeGuideItem.class",
             "kr/countrysidedays/gameplay/KitchenInteractionHandler.class",
             "kr/countrysidedays/gameplay/RanchLifeManager.class",
             "kr/countrysidedays/gameplay/RuralNpcManager.class",
+            "kr/countrysidedays/gameplay/VillageLifeManager.class",
             "kr/countrysidedays/world/CountrysideWorldData.class",
             "kr/countrysidedays/world/CountrysideWorldData$PlayerEstate.class",
             "kr/countrysidedays/world/CountrysideWorldData$RanchProducts.class",
@@ -64,6 +85,24 @@ def main() -> None:
         for required in required_exact:
             if required not in unique_names:
                 fail(f"required entry missing: {required}")
+
+        korean = load_json_utf8(archive, "assets/countrysidedays/lang/ko_kr.json")
+        english = load_json_utf8(archive, "assets/countrysidedays/lang/en_us.json")
+        if set(korean) != set(english):
+            missing_ko = sorted(set(english) - set(korean))
+            missing_en = sorted(set(korean) - set(english))
+            fail(f"localization key mismatch; missing Korean={missing_ko}, missing English={missing_en}")
+        for key in (
+            "hud.countrysidedays.shift_open",
+            "hud.countrysidedays.shift_closed",
+            "hud.countrysidedays.goal_open_first_shift",
+            "item.countrysidedays.life_guide",
+        ):
+            value = korean.get(key)
+            if not isinstance(value, str) or not value.strip():
+                fail(f"missing Korean localization text for {key}")
+        if str(korean["hud.countrysidedays.shift_closed"]).startswith("CLOSED"):
+            fail("Korean HUD unexpectedly fell back to English text")
 
         obsolete_entries = {
             "data/countrysidedays/neoforge/biome_modifier/countryside_generation.json",
