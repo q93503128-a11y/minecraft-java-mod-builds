@@ -10,6 +10,11 @@ public final class PlayerEstateLayout {
     public static final int MAX_Z = 30;
     public static final int PROTECTED_MIN_Z = MIN_Z - 2;
 
+    public static final int RESTAURANT_MIN_X = 6;
+    public static final int RESTAURANT_MAX_X = 28;
+    public static final int RESTAURANT_MIN_Z = -24;
+    public static final int RESTAURANT_MAX_Z = -6;
+
     private static final int SLOT_DISTANCE = 112;
 
     private PlayerEstateLayout() {
@@ -45,11 +50,15 @@ public final class PlayerEstateLayout {
     }
 
     public static BlockPos restaurantDoor(BlockPos origin) {
-        return origin.offset(17, 1, -8);
+        return origin.offset(17, 1, -20);
+    }
+
+    public static BlockPos restaurantGate(BlockPos origin) {
+        return origin.offset(17, 0, -23);
     }
 
     public static BlockPos restaurantSign(BlockPos origin) {
-        return origin.offset(11, 2, -8);
+        return origin.offset(11, 2, -20);
     }
 
     public static BlockPos customerSeat(BlockPos origin) {
@@ -58,14 +67,26 @@ public final class PlayerEstateLayout {
 
     public static BlockPos customerSeat(BlockPos origin, int slot) {
         return switch (Math.floorMod(slot, CountrysideWorldData.DAILY_CUSTOMER_CAP)) {
-            case 0 -> origin.offset(14, 1, -12);
-            case 1 -> origin.offset(13, 1, -13);
-            default -> origin.offset(21, 1, -12);
+            case 0 -> origin.offset(12, 1, -15);
+            case 1 -> origin.offset(17, 1, -15);
+            default -> origin.offset(22, 1, -15);
+        };
+    }
+
+    public static BlockPos customerApproach(BlockPos origin, int slot) {
+        return customerSeat(origin, slot).north();
+    }
+
+    public static BlockPos customerWaiting(BlockPos origin, int slot) {
+        return switch (Math.floorMod(slot, CountrysideWorldData.DAILY_CUSTOMER_CAP)) {
+            case 0 -> origin.offset(14, 1, -25);
+            case 1 -> origin.offset(17, 1, -25);
+            default -> origin.offset(20, 1, -25);
         };
     }
 
     public static BlockPos kitchenCounter(BlockPos origin) {
-        return origin.offset(10, 1, -14);
+        return origin.offset(10, 1, -10);
     }
 
     public static BlockPos ownerGate(BlockPos origin) {
@@ -110,6 +131,15 @@ public final class PlayerEstateLayout {
 
     public static BlockPos waterTrough(BlockPos origin) {
         return origin.offset(9, 0, 23);
+    }
+
+    public static boolean isRestaurantArea(BlockPos origin, BlockPos pos) {
+        return pos.getX() >= origin.getX() + RESTAURANT_MIN_X
+                && pos.getX() <= origin.getX() + RESTAURANT_MAX_X
+                && pos.getY() >= origin.getY() - 1
+                && pos.getY() <= origin.getY() + 9
+                && pos.getZ() >= origin.getZ() + RESTAURANT_MIN_Z
+                && pos.getZ() <= origin.getZ() + RESTAURANT_MAX_Z;
     }
 
     public static boolean contains(BlockPos origin, BlockPos pos) {
