@@ -123,10 +123,17 @@ public final class VillageRaidSystem {
         if (server != null) releaseEnemy(server, uuid, event.getEntity());
     }
 
-    public static boolean isActiveEnemy(UUID uuid) { return ACTIVE_ENEMIES.contains(uuid); }
+    public static boolean isActiveEnemy(UUID uuid) {
+        return ACTIVE_ENEMIES.contains(uuid);
+    }
 
     public static boolean isRaidEnemy(Entity entity) {
-        return entity != null && entity.getTags().contains(RAID_ENEMY_TAG);
+        if (entity == null) return false;
+        if (ACTIVE_ENEMIES.contains(entity.getUUID())) return true;
+        Component name = entity.getCustomName();
+        if (name == null) return false;
+        String text = name.getString();
+        return text.contains("웨이브 ") || text.contains(BOSS_NAME);
     }
 
     public static boolean isActive() { return active; }
