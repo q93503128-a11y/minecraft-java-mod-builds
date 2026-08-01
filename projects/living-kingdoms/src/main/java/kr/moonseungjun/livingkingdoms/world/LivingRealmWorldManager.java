@@ -31,12 +31,7 @@ public final class LivingRealmWorldManager {
         RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(realm, profile.homelandId());
         if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) return false;
 
-        ErdenCapitalIntegrityFinalizer.ensure(realm, profile.homelandId(), site);
-        if ("erden_kingdom".equals(profile.homelandId())) {
-            RealmFacilityFinisher.ensureCriticalFacilities(realm, site);
-        }
         ConstructionDebrisCleaner.schedule(realm, profile.homelandId(), site);
-
         BlockPos feet = SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
         if (!SafeResidenceLocator.isWalkable(realm, feet)) {
             LivingKingdoms.LOGGER.error("Rejected unsafe final residence spawn {} for {}", feet, player.getUUID());
