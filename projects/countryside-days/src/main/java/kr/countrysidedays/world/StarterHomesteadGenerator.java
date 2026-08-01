@@ -2,14 +2,25 @@ package kr.countrysidedays.world;
 
 import kr.countrysidedays.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FurnaceBlock;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.StandingSignBlock;
+import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
 /** Deterministic public village and isolated player estate builder. */
 public final class StarterHomesteadGenerator {
@@ -39,11 +50,10 @@ public final class StarterHomesteadGenerator {
         home(level, origin.offset(30, 0, 16), 14, 11, Palette.BIRCH, false, "회관지기 도윤");
         market(level, origin);
         publicLamps(level, origin);
-        publicSigns(level, origin);
     }
 
     public static void buildPlayerEstate(ServerLevel level, BlockPos origin, String ownerName, String restaurantName) {
-        prepareArea(level, origin, PlayerEstateLayout.MIN_X, PlayerEstateLayout.MIN_Z,
+        prepareArea(level, origin, PlayerEstateLayout.MIN_X - 1, PlayerEstateLayout.MIN_Z - 2,
                 PlayerEstateLayout.MAX_X, PlayerEstateLayout.MAX_Z, 12);
         estateBoundary(level, origin);
         estatePaths(level, origin);
@@ -79,11 +89,18 @@ public final class StarterHomesteadGenerator {
         String owner = ownerName == null || ownerName.isBlank() ? "새 주민" : ownerName;
         String restaurantTitle = restaurantName == null || restaurantName.isBlank()
                 ? owner + "의 시골식당" : restaurantName;
-        sign(level, origin.offset(-24, 0, -7), "내 집", owner, "사유지", "");
-        sign(level, origin.offset(11, 0, -7), restaurantTitle, owner, "영업 1000~11500", "");
-        sign(level, origin.offset(-6, 0, 10), "내 농장", owner, "주인만 수확", "");
-        sign(level, origin.offset(5, 0, 14), "내 목장", owner, "주인만 사용", "");
-        sign(level, origin.offset(3, 0, PlayerEstateLayout.MIN_Z + 2), "생활 구획", owner, "집·식당·농장·목장", "");
+
+        // Remove obsolete path-side signs from older alphas.
+        set(level, origin.offset(-24, 0, -7), Blocks.AIR.defaultBlockState());
+        set(level, origin.offset(-6, 0, 10), Blocks.AIR.defaultBlockState());
+        set(level, origin.offset(5, 0, 14), Blocks.AIR.defaultBlockState());
+        set(level, origin.offset(3, 0, PlayerEstateLayout.MIN_Z + 2), Blocks.AIR.defaultBlockState());
+        set(level, origin.offset(11, 0, -7), Blocks.AIR.defaultBlockState());
+
+        standingSign(level, PlayerEstateLayout.ownerSign(origin), 8,
+                owner + "의 생활 구획", "집·식당·농장·목장", "사유지", "");
+        wallSign(level, PlayerEstateLayout.restaurantSign(origin), Direction.NORTH,
+                restaurantTitle, "주인 " + owner, "", "");
     }
 
     public static void refreshOwnershipSigns(ServerLevel level, BlockPos origin, String ownerName, String restaurantName) {
@@ -102,22 +119,16 @@ public final class StarterHomesteadGenerator {
         pathBetween(level, o, 18, 8, 18, 2);
     }
 
-    private static void publicSigns(ServerLevel level, BlockPos o) {
-        sign(level, o.offset(3, 0, -25), "마을회관", "안내·행사", "공공시설", "파손 금지");
-        sign(level, o.offset(-34, 0, -10), "복순 할머니네", "마을 어른", "개인 주택", "");
-        sign(level, o.offset(34, 0, -10), "한결이네", "농부", "개인 주택", "");
-        sign(level, o.offset(-34, 0, 14), "소미네", "목장지기", "개인 주택", "");
-        sign(level, o.offset(34, 0, 14), "도윤이네", "회관지기", "개인 주택", "");
-        sign(level, o.offset(4, 0, 5), "느티나무 장터", "공공시설", "아침 장터", "");
-        sign(level, o.offset(4, 0, 42), "개인 생활 구획", "길을 따라 이동", "각자 사유지", "");
-    }
-
     private static void estateBoundary(ServerLevel level, BlockPos o) {
+        BlockState gate = Blocks.OAK_FENCE_GATE.defaultBlockState()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
         for (int x = PlayerEstateLayout.MIN_X; x <= PlayerEstateLayout.MAX_X; x++) {
-            if (x < -1 || x > 1) {
+            if (x == -1 || x == 0) {
+                set(level, o.offset(x, 0, PlayerEstateLayout.MIN_Z), gate);
+            } else {
                 set(level, o.offset(x, 0, PlayerEstateLayout.MIN_Z), Blocks.OAK_FENCE.defaultBlockState());
-                set(level, o.offset(x, 0, PlayerEstateLayout.MAX_Z), Blocks.OAK_FENCE.defaultBlockState());
             }
+            set(level, o.offset(x, 0, PlayerEstateLayout.MAX_Z), Blocks.OAK_FENCE.defaultBlockState());
         }
         for (int z = PlayerEstateLayout.MIN_Z + 1; z < PlayerEstateLayout.MAX_Z; z++) {
             set(level, o.offset(PlayerEstateLayout.MIN_X, 0, z), Blocks.OAK_FENCE.defaultBlockState());
@@ -126,7 +137,7 @@ public final class StarterHomesteadGenerator {
     }
 
     private static void estatePaths(ServerLevel level, BlockPos o) {
-        pathRect(level, o, -2, PlayerEstateLayout.MIN_Z, 2, PlayerEstateLayout.MAX_Z);
+        pathRect(level, o, -2, PlayerEstateLayout.MIN_Z - 2, 2, PlayerEstateLayout.MAX_Z);
         pathRect(level, o, -23, -10, 18, -6);
         pathRect(level, o, -8, 8, 8, 12);
         pathRect(level, o, -2, 12, 8, 16);
@@ -134,12 +145,14 @@ public final class StarterHomesteadGenerator {
 
     private static void restaurant(ServerLevel level, BlockPos o) {
         BlockPos b = o.offset(7, 0, -20);
-        shell(level, b, 21, 13, 5, Palette.OAK, true);
+        shell(level, b, 21, 13, 5, Palette.OAK, Direction.SOUTH);
+        placeDoor(level, b.offset(10, 1, 12), Direction.SOUTH, Blocks.SPRUCE_DOOR.defaultBlockState());
+
         set(level, PlayerEstateLayout.kitchenCounter(o), ModBlocks.COUNTRY_KITCHEN_COUNTER.get().defaultBlockState());
-        set(level, b.offset(2, 1, 2), Blocks.FURNACE.defaultBlockState());
+        set(level, b.offset(2, 1, 2), facing(Blocks.FURNACE.defaultBlockState(), FurnaceBlock.FACING, Direction.SOUTH));
         set(level, b.offset(3, 1, 2), Blocks.BARREL.defaultBlockState());
         set(level, b.offset(4, 1, 2), Blocks.CRAFTING_TABLE.defaultBlockState());
-        set(level, b.offset(6, 1, 2), Blocks.CHEST.defaultBlockState());
+        set(level, b.offset(6, 1, 2), facing(Blocks.CHEST.defaultBlockState(), ChestBlock.FACING, Direction.SOUTH));
         tableAndSeats(level, b.offset(7, 1, 7));
         tableAndSeats(level, b.offset(14, 1, 7));
         set(level, b.offset(3, 1, 9), Blocks.BOOKSHELF.defaultBlockState());
@@ -151,12 +164,14 @@ public final class StarterHomesteadGenerator {
 
     private static void playerFarm(ServerLevel level, BlockPos o) {
         int minX = -27, maxX = -7, minZ = 2, maxZ = 20;
+        BlockState gate = Blocks.OAK_FENCE_GATE.defaultBlockState()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST);
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                boolean gate = x == maxX && z >= 9 && z <= 11;
+                boolean entrance = x == maxX && (z == 9 || z == 10);
                 boolean edge = x == minX || x == maxX || z == minZ || z == maxZ;
                 if (edge) {
-                    if (!gate) set(level, o.offset(x, 0, z), Blocks.OAK_FENCE.defaultBlockState());
+                    set(level, o.offset(x, 0, z), entrance ? gate : Blocks.OAK_FENCE.defaultBlockState());
                     continue;
                 }
                 if (x == -18 && z >= 5 && z <= 17) {
@@ -178,19 +193,44 @@ public final class StarterHomesteadGenerator {
 
     private static void playerRanch(ServerLevel level, BlockPos o) {
         int minX = 6, maxX = 28, minZ = 2, maxZ = 27;
+        BlockState gate = Blocks.OAK_FENCE_GATE.defaultBlockState()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
         for (int x = minX; x <= maxX; x++) {
-            boolean gate = x >= 6 && x <= 8;
-            if (!gate) set(level, o.offset(x, 0, minZ), Blocks.OAK_FENCE.defaultBlockState());
+            boolean entrance = x == 7 || x == 8;
+            set(level, o.offset(x, 0, minZ), entrance ? gate : Blocks.OAK_FENCE.defaultBlockState());
             set(level, o.offset(x, 0, maxZ), Blocks.OAK_FENCE.defaultBlockState());
         }
         for (int z = minZ + 1; z < maxZ; z++) {
             set(level, o.offset(minX, 0, z), Blocks.OAK_FENCE.defaultBlockState());
             set(level, o.offset(maxX, 0, z), Blocks.OAK_FENCE.defaultBlockState());
         }
+
         barn(level, o.offset(10, 0, 5));
-        set(level, o.offset(9, 0, 22), Blocks.CAULDRON.defaultBlockState());
-        fill(level, o, 22, 0, 21, 25, 1, 24, Blocks.HAY_BLOCK.defaultBlockState());
-        set(level, o.offset(24, 0, 7), Blocks.BARREL.defaultBlockState());
+        waterTrough(level, o);
+        hayFeeder(level, o);
+        set(level, o.offset(24, 0, 17), Blocks.BARREL.defaultBlockState());
+    }
+
+    private static void waterTrough(ServerLevel level, BlockPos o) {
+        BlockPos water = PlayerEstateLayout.waterTrough(o);
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dz == 0) {
+                    set(level, water, Blocks.WATER.defaultBlockState());
+                } else {
+                    set(level, water.offset(dx, 0, dz), Blocks.STONE_BRICK_SLAB.defaultBlockState());
+                }
+            }
+        }
+    }
+
+    private static void hayFeeder(ServerLevel level, BlockPos o) {
+        BlockPos feeder = PlayerEstateLayout.hayFeeder(o);
+        fill(level, feeder, -1, 0, -1, 1, 0, 1, Blocks.OAK_SLAB.defaultBlockState());
+        set(level, feeder, Blocks.HAY_BLOCK.defaultBlockState());
+        set(level, feeder.above(), Blocks.HAY_BLOCK.defaultBlockState());
+        fill(level, feeder, -2, 0, -2, -2, 2, 2, Blocks.OAK_FENCE.defaultBlockState());
+        fill(level, feeder, 2, 0, -2, 2, 2, 2, Blocks.OAK_FENCE.defaultBlockState());
     }
 
     private static void barn(ServerLevel level, BlockPos b) {
@@ -210,7 +250,11 @@ public final class StarterHomesteadGenerator {
                 set(level, b.offset(width - 1, y, z), Blocks.OAK_PLANKS.defaultBlockState());
             }
         }
+        BlockState barnGate = Blocks.OAK_FENCE_GATE.defaultBlockState()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
         fill(level, b, 6, 1, 0, 9, 4, 0, Blocks.AIR.defaultBlockState());
+        set(level, b.offset(7, 1, 0), barnGate);
+        set(level, b.offset(8, 1, 0), barnGate);
         fill(level, b, -1, 6, -1, width, 6, depth, Blocks.BRICKS.defaultBlockState());
         fill(level, b, 1, 7, 1, width - 2, 7, depth - 2, Blocks.BRICK_SLAB.defaultBlockState());
         set(level, b.offset(2, 1, 2), Blocks.LANTERN.defaultBlockState());
@@ -219,12 +263,15 @@ public final class StarterHomesteadGenerator {
 
     private static void home(ServerLevel level, BlockPos base, int width, int depth,
                              Palette palette, boolean frontAtMaxZ, String residentName) {
-        shell(level, base, width, depth, 4, palette, frontAtMaxZ);
-        furnishHome(level, base, width, depth, residentName);
+        Direction front = frontAtMaxZ ? Direction.SOUTH : Direction.NORTH;
+        shell(level, base, width, depth, 4, palette, front);
+        int doorZ = frontAtMaxZ ? depth - 1 : 0;
+        placeDoor(level, base.offset(width / 2, 1, doorZ), front, Blocks.OAK_DOOR.defaultBlockState());
+        furnishHome(level, base, width, depth, residentName, front);
     }
 
     private static void shell(ServerLevel level, BlockPos b, int width, int depth,
-                              int wallHeight, Palette palette, boolean frontAtMaxZ) {
+                              int wallHeight, Palette palette, Direction front) {
         fill(level, b, 0, -1, 0, width - 1, -1, depth - 1, Blocks.COBBLESTONE.defaultBlockState());
         fill(level, b, 0, 0, 0, width - 1, 0, depth - 1, Blocks.BIRCH_PLANKS.defaultBlockState());
         for (int y = 1; y <= wallHeight; y++) {
@@ -238,8 +285,8 @@ public final class StarterHomesteadGenerator {
             }
         }
         int doorX = width / 2;
-        int doorZ = frontAtMaxZ ? depth - 1 : 0;
-        fill(level, b, doorX - 1, 1, doorZ, doorX + 1, 3, doorZ, Blocks.AIR.defaultBlockState());
+        int doorZ = front == Direction.SOUTH ? depth - 1 : 0;
+        fill(level, b, doorX, 1, doorZ, doorX, 2, doorZ, Blocks.AIR.defaultBlockState());
         fill(level, b, -1, wallHeight + 1, -1, width, wallHeight + 1, depth, palette.roof);
         fill(level, b, 1, wallHeight + 2, 1, width - 2, wallHeight + 2, depth - 2, palette.roofSlab);
     }
@@ -247,50 +294,74 @@ public final class StarterHomesteadGenerator {
     private static void houseWall(ServerLevel level, BlockPos b, int x, int y, int z,
                                   int width, int depth, Palette palette) {
         boolean corner = (x == 0 || x == width - 1) && (z == 0 || z == depth - 1);
-        boolean window = (y == 2 || y == 3)
-                && (((z == 0 || z == depth - 1) && (x == 2 || x == width - 3))
-                || ((x == 0 || x == width - 1) && (z == 2 || z == depth - 3)));
+        boolean horizontalWindow = (z == 0 || z == depth - 1)
+                && (y == 2 || y == 3)
+                && (x == 2 || x == 3 || x == width - 4 || x == width - 3);
+        boolean sideWindow = (x == 0 || x == width - 1)
+                && (y == 2 || y == 3)
+                && (z == 2 || z == 3 || z == depth - 4 || z == depth - 3);
         set(level, b.offset(x, y, z), corner ? palette.beam
-                : window ? Blocks.GLASS_PANE.defaultBlockState() : palette.wall);
+                : horizontalWindow || sideWindow ? Blocks.GLASS.defaultBlockState() : palette.wall);
     }
 
-    private static void furnishHome(ServerLevel level, BlockPos b, int width, int depth, String residentName) {
-        set(level, b.offset(2, 1, 2), Blocks.CHEST.defaultBlockState());
+    private static void furnishHome(ServerLevel level, BlockPos b, int width, int depth,
+                                    String residentName, Direction front) {
+        Direction inward = front.getOpposite();
+        set(level, b.offset(2, 1, 2), facing(Blocks.CHEST.defaultBlockState(), ChestBlock.FACING, Direction.SOUTH));
         set(level, b.offset(3, 1, 2), Blocks.CRAFTING_TABLE.defaultBlockState());
-        set(level, b.offset(4, 1, 2), Blocks.FURNACE.defaultBlockState());
+        set(level, b.offset(4, 1, 2), facing(Blocks.FURNACE.defaultBlockState(), FurnaceBlock.FACING, Direction.SOUTH));
         set(level, b.offset(width - 3, 1, 2), Blocks.BOOKSHELF.defaultBlockState());
         set(level, b.offset(width - 3, 2, 2), Blocks.FLOWER_POT.defaultBlockState());
-        fill(level, b, 2, 1, depth - 4, 4, 1, depth - 3,
-                Blocks.WOOL.pick(DyeColor.WHITE).defaultBlockState());
-        fill(level, b, 2, 2, depth - 4, 4, 2, depth - 3,
-                Blocks.CARPET.pick(DyeColor.YELLOW).defaultBlockState());
+
+        BlockPos bedFoot = b.offset(2, 1, depth - 4);
+        placeBed(level, bedFoot, Direction.SOUTH, DyeColor.YELLOW);
         tableAndSeats(level, b.offset(width - 4, 1, depth - 4));
+
         set(level, b.offset(2, 1, depth / 2), Blocks.LANTERN.defaultBlockState());
         set(level, b.offset(width - 3, 1, depth / 2), Blocks.LANTERN.defaultBlockState());
-        if (residentName != null && !residentName.isBlank()) {
-            sign(level, b.offset(width / 2 + 2, 0, depth - 1), residentName + "의 집", "생활 공간", "", "");
-        }
+        set(level, b.offset(width / 2, 1, front == Direction.SOUTH ? 2 : depth - 3), Blocks.OAK_PRESSURE_PLATE.defaultBlockState());
     }
 
     private static void communityHall(ServerLevel level, BlockPos b) {
-        shell(level, b, 20, 14, 5, Palette.HALL, true);
+        shell(level, b, 20, 14, 5, Palette.HALL, Direction.SOUTH);
+        placeDoor(level, b.offset(10, 1, 13), Direction.SOUTH, Blocks.SPRUCE_DOOR.defaultBlockState());
         tableAndSeats(level, b.offset(5, 1, 7));
         tableAndSeats(level, b.offset(14, 1, 7));
         set(level, b.offset(2, 1, 2), Blocks.BELL.defaultBlockState());
         set(level, b.offset(4, 1, 2), Blocks.BOOKSHELF.defaultBlockState());
         set(level, b.offset(5, 1, 2), Blocks.BOOKSHELF.defaultBlockState());
-        set(level, b.offset(14, 1, 2), Blocks.CHEST.defaultBlockState());
+        set(level, b.offset(14, 1, 2), facing(Blocks.CHEST.defaultBlockState(), ChestBlock.FACING, Direction.SOUTH));
         set(level, b.offset(17, 1, 2), Blocks.LANTERN.defaultBlockState());
         set(level, b.offset(2, 1, 11), Blocks.LANTERN.defaultBlockState());
         set(level, b.offset(17, 1, 11), Blocks.LANTERN.defaultBlockState());
+        wallSign(level, b.offset(5, 2, 13), Direction.SOUTH, "마을회관", "안내·행사", "", "");
     }
 
     private static void market(ServerLevel level, BlockPos o) {
-        stall(level, o.offset(-25, 0, 7), Blocks.BRICKS.defaultBlockState());
-        stall(level, o.offset(10, 0, 7), Blocks.BIRCH_PLANKS.defaultBlockState());
+        produceStall(level, o.offset(-25, 0, 7));
+        interiorStall(level, o.offset(10, 0, 7));
     }
 
-    private static void stall(ServerLevel level, BlockPos b, BlockState roof) {
+    private static void produceStall(ServerLevel level, BlockPos b) {
+        stallFrame(level, b, Blocks.BRICKS.defaultBlockState());
+        set(level, b.offset(1, 0, 5), Blocks.BARREL.defaultBlockState());
+        set(level, b.offset(3, 0, 5), Blocks.HAY_BLOCK.defaultBlockState());
+        set(level, b.offset(5, 0, 5), Blocks.PUMPKIN.defaultBlockState());
+        set(level, b.offset(7, 0, 5), Blocks.MELON.defaultBlockState());
+        standingSign(level, b.offset(5, 0, -1), 8, "농산물 장터", "씨앗·먹이·물", "마을 동전 사용", "");
+    }
+
+    private static void interiorStall(ServerLevel level, BlockPos b) {
+        stallFrame(level, b, Blocks.BIRCH_PLANKS.defaultBlockState());
+        set(level, b.offset(1, 0, 5), Blocks.BOOKSHELF.defaultBlockState());
+        set(level, b.offset(3, 0, 5), Blocks.LANTERN.defaultBlockState());
+        set(level, b.offset(5, 0, 5), Blocks.FLOWER_POT.defaultBlockState());
+        set(level, b.offset(7, 0, 5), Blocks.LOOM.defaultBlockState());
+        set(level, b.offset(8, 0, 5), Blocks.BARREL.defaultBlockState());
+        standingSign(level, b.offset(5, 0, -1), 8, "살림 장터", "가구·조명·장식", "마을 동전 사용", "");
+    }
+
+    private static void stallFrame(ServerLevel level, BlockPos b, BlockState roof) {
         int width = 10, depth = 7;
         fill(level, b, 0, -1, 0, width, -1, depth, Blocks.COARSE_DIRT.defaultBlockState());
         int[][] posts = {{0, 0}, {width, 0}, {0, depth}, {width, depth}};
@@ -299,16 +370,47 @@ public final class StarterHomesteadGenerator {
         }
         fill(level, b, 0, 4, 0, width, 4, depth, roof);
         fill(level, b, 1, 1, 1, width - 1, 1, 1, Blocks.OAK_SLAB.defaultBlockState());
-        set(level, b.offset(1, 0, depth - 1), Blocks.BARREL.defaultBlockState());
-        set(level, b.offset(width - 1, 0, depth - 1), Blocks.BARREL.defaultBlockState());
         set(level, b.offset(width / 2, 1, depth - 1), Blocks.LANTERN.defaultBlockState());
     }
 
     private static void tableAndSeats(ServerLevel level, BlockPos table) {
         set(level, table, Blocks.OAK_FENCE.defaultBlockState());
         set(level, table.above(), Blocks.OAK_PRESSURE_PLATE.defaultBlockState());
-        set(level, table.north(), Blocks.OAK_STAIRS.defaultBlockState());
-        set(level, table.south(), Blocks.OAK_STAIRS.defaultBlockState());
+        set(level, table.north(), stair(Direction.SOUTH));
+        set(level, table.south(), stair(Direction.NORTH));
+        set(level, table.west(), stair(Direction.EAST));
+        set(level, table.east(), stair(Direction.WEST));
+    }
+
+    private static BlockState stair(Direction facing) {
+        return Blocks.OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, facing);
+    }
+
+    private static void placeBed(ServerLevel level, BlockPos foot, Direction facing, DyeColor color) {
+        Block bed = Blocks.BED.pick(color);
+        set(level, foot, bed.defaultBlockState()
+                .setValue(BedBlock.FACING, facing)
+                .setValue(BedBlock.PART, BedPart.FOOT));
+        set(level, foot.relative(facing), bed.defaultBlockState()
+                .setValue(BedBlock.FACING, facing)
+                .setValue(BedBlock.PART, BedPart.HEAD));
+    }
+
+    private static void placeDoor(ServerLevel level, BlockPos lower, Direction facing, BlockState base) {
+        set(level, lower, base
+                .setValue(DoorBlock.FACING, facing)
+                .setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER));
+        set(level, lower.above(), base
+                .setValue(DoorBlock.FACING, facing)
+                .setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+    }
+
+    private static <T extends Comparable<T>> BlockState facing(
+            BlockState state,
+            net.minecraft.world.level.block.state.properties.Property<T> property,
+            T value
+    ) {
+        return state.setValue(property, value);
     }
 
     private static void publicLamps(ServerLevel level, BlockPos o) {
@@ -407,9 +509,20 @@ public final class StarterHomesteadGenerator {
                 ? Blocks.GRAVEL.defaultBlockState() : Blocks.PACKED_MUD.defaultBlockState();
     }
 
-    private static void sign(ServerLevel level, BlockPos pos, String line1, String line2,
-                             String line3, String line4) {
-        set(level, pos, Blocks.OAK_SIGN.defaultBlockState());
+    private static void standingSign(ServerLevel level, BlockPos pos, int rotation,
+                                     String line1, String line2, String line3, String line4) {
+        set(level, pos, Blocks.OAK_SIGN.defaultBlockState().setValue(StandingSignBlock.ROTATION, rotation));
+        writeSign(level, pos, line1, line2, line3, line4);
+    }
+
+    private static void wallSign(ServerLevel level, BlockPos pos, Direction facing,
+                                 String line1, String line2, String line3, String line4) {
+        set(level, pos, Blocks.OAK_WALL_SIGN.defaultBlockState().setValue(WallSignBlock.FACING, facing));
+        writeSign(level, pos, line1, line2, line3, line4);
+    }
+
+    private static void writeSign(ServerLevel level, BlockPos pos,
+                                  String line1, String line2, String line3, String line4) {
         if (!(level.getBlockEntity(pos) instanceof SignBlockEntity sign)) return;
         SignText text = sign.getFrontText()
                 .setMessage(0, Component.literal(line1))
