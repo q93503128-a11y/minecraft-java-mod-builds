@@ -8,8 +8,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 /** CI-only graphical smoke test. It is completely dormant in normal launches. */
 final class ClientSmokeDiagnostics {
     private static final boolean ENABLED = "1".equals(System.getenv("LIVING_KINGDOMS_CI_CLIENT_TEST"));
-    private static final int OPEN_AFTER_TICKS = 20;
-    private static final int PASS_AFTER_TICKS = 100;
+    private static final int OPEN_AFTER_TICKS = 55;
+    private static final int PASS_AFTER_TICKS = 216;
 
     private static int ticks;
     private static ResponsiveOriginSelectionScreen diagnosticScreen;
@@ -31,7 +31,17 @@ final class ClientSmokeDiagnostics {
             return;
         }
 
-        if (ticks == 97) {
+        if (ticks == 78) {
+            if (!diagnosticScreen.allRequiredControlsFit()) {
+                throw new IllegalStateException("Responsive origin controls extend outside the current client viewport");
+            }
+            LivingKingdoms.LOGGER.info(
+                    "LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true responsive=true viewport={}x{} controls_fit=true",
+                    diagnosticScreen.width, diagnosticScreen.height
+            );
+        }
+
+        if (ticks == 188) {
             loadingScreen = new RealmLoadingScreen("도로와 건물을 구역별로 배치하고 있습니다.");
             loadingScreen.update(new RealmBuildProgressPayload(
                     "erden_kingdom", "building", 64,
@@ -39,7 +49,7 @@ final class ClientSmokeDiagnostics {
             ));
             minecraft.gui.setScreen(loadingScreen);
         }
-        if (ticks == 99) {
+        if (ticks == 210) {
             if (loadingScreen == null || !loadingScreen.allRequiredControlsFit()) {
                 throw new IllegalStateException("Realm loading screen extends outside the current client viewport");
             }
@@ -49,16 +59,6 @@ final class ClientSmokeDiagnostics {
             );
         }
 
-        if (diagnosticScreen != null && ticks >= PASS_AFTER_TICKS) {
-            if (!diagnosticScreen.allRequiredControlsFit()) {
-                throw new IllegalStateException("Responsive origin controls extend outside the current client viewport");
-            }
-            LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true responsive=true viewport={}x{} controls_fit=true",
-                    diagnosticScreen.width,
-                    diagnosticScreen.height
-            );
-            System.exit(0);
-        }
+        if (ticks >= PASS_AFTER_TICKS) System.exit(0);
     }
 }
