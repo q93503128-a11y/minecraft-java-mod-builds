@@ -16,10 +16,15 @@ staffs = [
     "verdant_staff", "rift_staff", "sage_staff", "archmage_staff",
 ]
 spellbooks = [
-    "mend", "blink", "stone_skin", "lightning_arc", "mana_lance",
-    "greater_ward", "flame_wave", "ice_lance", "arcane_sight", "levitation",
-    "meteor_shard", "blizzard_field", "thunder_prison", "mass_mend", "spatial_gate",
-    "inferno_domain", "absolute_zero", "tempest_domain", "aegis_citadel", "arcane_annihilation",
+    "light", "grease", "sleep", "thunderwave", "mage_armor",
+    "scorching_ray", "misty_step", "web", "mirror_image", "invisibility",
+    "gust_of_wind", "hold_person", "shatter", "blur", "levitate",
+    "fireball", "lightning_bolt", "fly", "haste", "dispel_magic",
+    "vampiric_touch", "slow", "protection_from_energy", "sleet_storm", "blink",
+    "wall_of_fire", "ice_storm", "greater_invisibility", "resilient_sphere", "dimension_door",
+    "stoneskin", "confusion", "blight", "freedom_of_movement", "phantasmal_killer",
+    "cone_of_cold", "wall_of_force", "cloudkill", "telekinesis", "flame_strike",
+    "hold_monster", "mass_cure_wounds", "passwall", "dominate_person", "insect_plague",
 ]
 required = {
     "META-INF/neoforge.mods.toml",
@@ -33,6 +38,8 @@ required = {
     "kr/moonseungjun/arcanecircle/item/BeginnerGrimoireItem.class",
     "kr/moonseungjun/arcanecircle/magic/MagicPlayerData.class",
     "kr/moonseungjun/arcanecircle/magic/SpellCastingService.class",
+    "kr/moonseungjun/arcanecircle/magic/ExpandedSpellEffects.class",
+    "kr/moonseungjun/arcanecircle/magic/CombatGrowthService.class",
     "kr/moonseungjun/arcanecircle/network/ArcaneNetwork.class",
     "kr/moonseungjun/arcanecircle/network/BeginCastPayload.class",
     "kr/moonseungjun/arcanecircle/network/ReleaseCastPayload.class",
@@ -84,14 +91,16 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit("development files leaked into JAR")
 
     index = json.loads(archive.read("data/arcanecircle/spell_catalog/index.json"))
-    if index.get("version") != "0.6.0-alpha.1":
+    if index.get("version") != "0.7.0-alpha.1":
         raise SystemExit("wrong catalog version in JAR")
-    if index.get("implemented_circles") != [1, 2, 3, 4, 5]:
-        raise SystemExit("five-circle catalog contract missing from JAR")
-    if index.get("casting_mode") != "hold_number_show_sigil_release_to_cast":
-        raise SystemExit("hold-release casting contract missing from JAR")
-    if index.get("spellbooks") != 20:
-        raise SystemExit("spellbook count mismatch in JAR")
+    if index.get("implemented_circles") != [1, 2, 3, 4, 5] or index.get("world_max_circle") != 9:
+        raise SystemExit("five implemented / nine maximum circle contract missing")
+    if index.get("casting_mode") != "hold_number_show_fixed_sigil_release_to_cast":
+        raise SystemExit("fixed hold-release sigil contract missing")
+    if index.get("total_spells") != 60 or index.get("spellbooks") != 45:
+        raise SystemExit("classic spell count mismatch in JAR")
+    if index.get("range_visual_policy") != "effective_range_scales_sigil_projectile_wall_and_area_visual_size":
+        raise SystemExit("range visual scaling contract missing")
 
     texture_hashes = set()
     for staff in staffs:
@@ -118,5 +127,5 @@ with zipfile.ZipFile(jar) as archive:
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + ".sha256").write_text(f"{digest}  {jar.name}\n", encoding="utf-8")
-print(f"Arcane Circle v0.6 JAR verification: PASS ({len(names)} entries, 20 spellbooks, 9 unique staff textures)")
+print(f"Arcane Circle v0.7 JAR verification: PASS ({len(names)} entries, 60 spells, 45 spellbooks)")
 print(f"SHA-256: {digest}")
