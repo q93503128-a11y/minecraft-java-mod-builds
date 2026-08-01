@@ -167,7 +167,7 @@ public final class VillageCouncilState {
         if (level < RpgProgress.MAX_LEVEL) {
             experience += amount;
             while (level < RpgProgress.MAX_LEVEL) {
-                int required = 60 + level * 40;
+                int required = new RpgProgress(level, 0).experienceToNextLevel();
                 if (experience < required) break;
                 experience -= required;
                 level++;
@@ -178,7 +178,6 @@ public final class VillageCouncilState {
         RPG_PROGRESS.put(player.getUUID(), updated);
         persist();
         if (levelsGained > 0) {
-            player.heal(player.getMaxHealth());
             broadcast(player.level().getServer(), "§d[성장] §f" + player.getGameProfile().name()
                     + " 님이 레벨 " + level + "에 도달했습니다.");
         }
@@ -213,6 +212,7 @@ public final class VillageCouncilState {
         activeProposal = null;
         persist();
         freezeAndApplyTime(server);
+        VillageWorldSystem.purgeDaytimeHostiles(server);
         broadcast(server, "§b제 " + villageDay + "일 낮입니다. 손상된 시설을 정비하세요.");
         grantDailyFoodToOnlinePlayers(server);
     }
@@ -227,6 +227,7 @@ public final class VillageCouncilState {
         }
         persist();
         freezeAndApplyTime(server);
+        VillageWorldSystem.purgeDaytimeHostiles(server);
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             VillageRpgSystem.refreshPlayerPassive(player);
             player.heal(player.getMaxHealth());
@@ -260,7 +261,10 @@ public final class VillageCouncilState {
         persist();
         freezeAndApplyTime(server);
         broadcast(server, "§b마을 시간이 제 " + villageDay + "일 " + timePhase.koreanName() + "으로 진행되었습니다.");
-        if (timePhase == VillageTimePhase.DAY) grantDailyFoodToOnlinePlayers(server);
+        if (timePhase == VillageTimePhase.DAY) {
+            VillageWorldSystem.purgeDaytimeHostiles(server);
+            grantDailyFoodToOnlinePlayers(server);
+        }
         VillageRaidSystem.onPhaseChanged(server, timePhase);
     }
 
