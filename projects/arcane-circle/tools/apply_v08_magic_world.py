@@ -129,12 +129,14 @@ if "import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;" not in netw
         "import kr.moonseungjun.arcanecircle.magic.SpellCatalog;\n"
         "import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;"
     )
-if '";marks="' not in network_source:
+if '";marks="' not in network_source and '"marks="' not in network_source:
     anchor = '                + ";mana=" + (int) state.mana()'
-    replacement = anchor + '\n                + ";marks=" + ArcaneEconomyService.balance(player)'
+    replacement = anchor + '\n                + ";" + "marks=" + ArcaneEconomyService.balance(player)'
     if anchor not in network_source:
         raise RuntimeError("could not locate Arcane network mana snapshot anchor")
     network_source = network_source.replace(anchor, replacement, 1)
+network_source = network_source.replace('";marks="', '";" + "marks="')
+network_source = network_source.replace('";tradition="', '";" + "tradition="')
 network_java.write_text(network_source, encoding="utf-8")
 
 print("Arcane v0.8 lifecycle, sigil scaling, combat awards, and wallet sync normalized")
