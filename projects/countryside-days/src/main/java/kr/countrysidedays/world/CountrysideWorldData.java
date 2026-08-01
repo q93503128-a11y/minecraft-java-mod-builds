@@ -137,23 +137,9 @@ public final class CountrysideWorldData extends SavedData {
         BlockPos origin = PlayerEstateLayout.originForIndex(villageOrigin, playerEstates.size());
         String safeOwnerName = ownerName == null || ownerName.isBlank() ? "새 주민" : ownerName;
         PlayerEstate estate = new PlayerEstate(
-                owner.toString(),
-                safeOwnerName,
-                origin.asLong(),
-                safeOwnerName + "의 시골식당",
-                0,
-                0,
-                0,
-                -1L,
-                false,
-                -1L,
-                0,
-                0,
-                0,
-                0,
-                0,
-                -1L,
-                0
+                owner.toString(), safeOwnerName, origin.asLong(), safeOwnerName + "의 시골식당",
+                0, 0, 0, -1L, false, -1L, 0,
+                0, 0, 0, -1L, 0
         );
         playerEstates.add(estate);
         setDirty();
@@ -379,7 +365,6 @@ public final class CountrysideWorldData extends SavedData {
             boolean restaurantOpen,
             long serviceDay,
             int servedCustomerMask,
-            int reputation,
             int pendingEggs,
             int pendingMilk,
             int pendingWool,
@@ -400,7 +385,6 @@ public final class CountrysideWorldData extends SavedData {
                 Codec.BOOL.optionalFieldOf("restaurant_open", false).forGetter(PlayerEstate::restaurantOpen),
                 Codec.LONG.optionalFieldOf("service_day", -1L).forGetter(PlayerEstate::serviceDay),
                 Codec.INT.optionalFieldOf("served_customer_mask", 0).forGetter(PlayerEstate::servedCustomerMask),
-                Codec.INT.optionalFieldOf("reputation", 0).forGetter(PlayerEstate::reputation),
                 Codec.INT.optionalFieldOf("pending_eggs", 0).forGetter(PlayerEstate::pendingEggs),
                 Codec.INT.optionalFieldOf("pending_milk", 0).forGetter(PlayerEstate::pendingMilk),
                 Codec.INT.optionalFieldOf("pending_wool", 0).forGetter(PlayerEstate::pendingWool),
@@ -415,7 +399,6 @@ public final class CountrysideWorldData extends SavedData {
             customersServed = Math.max(0, customersServed);
             coinsEarned = Math.max(0, coinsEarned);
             servedCustomerMask = Math.max(0, servedCustomerMask);
-            reputation = Math.max(0, reputation);
             pendingEggs = Math.max(0, pendingEggs);
             pendingMilk = Math.max(0, pendingMilk);
             pendingWool = Math.max(0, pendingWool);
@@ -428,6 +411,10 @@ public final class CountrysideWorldData extends SavedData {
 
         public boolean isOwner(UUID uuid) {
             return ownerUuid.equals(uuid.toString());
+        }
+
+        public int reputation() {
+            return customersServed;
         }
 
         public int customersServedToday(long day) {
@@ -450,21 +437,21 @@ public final class CountrysideWorldData extends SavedData {
         public PlayerEstate withRestaurantName(String name) {
             return new PlayerEstate(ownerUuid, ownerName, origin, name, mealsPrepared, customersServed,
                     coinsEarned, lastCustomerServiceDay, restaurantOpen, serviceDay, servedCustomerMask,
-                    reputation, pendingEggs, pendingMilk, pendingWool, lastRanchProductionDay,
+                    pendingEggs, pendingMilk, pendingWool, lastRanchProductionDay,
                     ranchProductsCollected);
         }
 
         public PlayerEstate withRestaurantOpen(boolean open) {
             return new PlayerEstate(ownerUuid, ownerName, origin, restaurantName, mealsPrepared,
                     customersServed, coinsEarned, lastCustomerServiceDay, open, serviceDay,
-                    servedCustomerMask, reputation, pendingEggs, pendingMilk, pendingWool,
+                    servedCustomerMask, pendingEggs, pendingMilk, pendingWool,
                     lastRanchProductionDay, ranchProductsCollected);
         }
 
         public PlayerEstate withPreparedMeal() {
             return new PlayerEstate(ownerUuid, ownerName, origin, restaurantName, mealsPrepared + 1,
                     customersServed, coinsEarned, lastCustomerServiceDay, restaurantOpen, serviceDay,
-                    servedCustomerMask, reputation, pendingEggs, pendingMilk, pendingWool,
+                    servedCustomerMask, pendingEggs, pendingMilk, pendingWool,
                     lastRanchProductionDay, ranchProductsCollected);
         }
 
@@ -472,14 +459,14 @@ public final class CountrysideWorldData extends SavedData {
             int mask = serviceDay == day ? servedCustomerMask : 0;
             return new PlayerEstate(ownerUuid, ownerName, origin, restaurantName, mealsPrepared,
                     customersServed + 1, coinsEarned + Math.max(0, rewardCoins), day,
-                    restaurantOpen, day, mask | customerBit, reputation + 1, pendingEggs,
+                    restaurantOpen, day, mask | customerBit, pendingEggs,
                     pendingMilk, pendingWool, lastRanchProductionDay, ranchProductsCollected);
         }
 
         public PlayerEstate withRanchProduction(long day, int eggs, int milk, int wool) {
             return new PlayerEstate(ownerUuid, ownerName, origin, restaurantName, mealsPrepared,
                     customersServed, coinsEarned, lastCustomerServiceDay, restaurantOpen, serviceDay,
-                    servedCustomerMask, reputation, pendingEggs + Math.max(0, eggs),
+                    servedCustomerMask, pendingEggs + Math.max(0, eggs),
                     pendingMilk + Math.max(0, milk), pendingWool + Math.max(0, wool), day,
                     ranchProductsCollected);
         }
@@ -488,7 +475,7 @@ public final class CountrysideWorldData extends SavedData {
             int claimed = pendingEggs + pendingMilk + pendingWool;
             return new PlayerEstate(ownerUuid, ownerName, origin, restaurantName, mealsPrepared,
                     customersServed, coinsEarned, lastCustomerServiceDay, restaurantOpen, serviceDay,
-                    servedCustomerMask, reputation, 0, 0, 0, lastRanchProductionDay,
+                    servedCustomerMask, 0, 0, 0, lastRanchProductionDay,
                     ranchProductsCollected + claimed);
         }
     }
