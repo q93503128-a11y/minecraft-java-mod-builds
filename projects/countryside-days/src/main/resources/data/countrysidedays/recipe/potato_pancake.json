@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:potato",
+    "minecraft:potato",
+    "minecraft:egg",
+    "minecraft:wheat"
+  ],
+  "result": {
+    "id": "countrysidedays:potato_pancake",
+    "count": 1
+  }
+}
