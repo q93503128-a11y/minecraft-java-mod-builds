@@ -17,19 +17,24 @@ import org.lwjgl.glfw.GLFW;
 public final class VillageClientKeys {
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "controls"));
-    private static final KeyMapping ROLE_SKILL = new KeyMapping(
-            "key.villageguardians.role_skill",
+    private static final KeyMapping ROLE_SKILL_ONE = new KeyMapping(
+            "key.villageguardians.role_skill_one",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_R,
             CATEGORY);
+    private static final KeyMapping ROLE_SKILL_TWO = new KeyMapping(
+            "key.villageguardians.role_skill_two",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_G,
+            CATEGORY);
     private static boolean tickListenerRegistered;
 
-    private VillageClientKeys() {
-    }
+    private VillageClientKeys() {}
 
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-        event.register(ROLE_SKILL);
+        event.register(ROLE_SKILL_ONE);
+        event.register(ROLE_SKILL_TWO);
         if (!tickListenerRegistered) {
             tickListenerRegistered = true;
             NeoForge.EVENT_BUS.addListener(VillageClientKeys::onClientTick);
@@ -38,12 +43,13 @@ public final class VillageClientKeys {
 
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        while (ROLE_SKILL.consumeClick()) {
-            if (minecraft.player == null) {
-                continue;
-            }
-            ClientPacketDistributor.sendToServer(
-                    new VillageNetwork.VillageUiActionPayload("use_skill"));
+        while (ROLE_SKILL_ONE.consumeClick()) {
+            if (minecraft.player != null) ClientPacketDistributor.sendToServer(
+                    new VillageNetwork.VillageUiActionPayload("use_skill:0"));
+        }
+        while (ROLE_SKILL_TWO.consumeClick()) {
+            if (minecraft.player != null) ClientPacketDistributor.sendToServer(
+                    new VillageNetwork.VillageUiActionPayload("use_skill:1"));
         }
     }
 }
