@@ -1,4 +1,4 @@
-# Countryside Days alpha.11 shared-restaurant and living-village validation.
+# Countryside Days alpha.12 paid-workers, public-fishing and restaurant-layout validation.
 name: Build Countryside Days
 
 on:
@@ -90,7 +90,13 @@ jobs:
               'hud.countrysidedays.goal_open_first_shift',
               'item.countrysidedays.recipe_notebook',
               'item.countrysidedays.life_guide',
-              'message.countrysidedays.restaurant_staff_only',
+              'item.countrysidedays.grilled_river_fish',
+              'item.countrysidedays.potato_pancake',
+              'item.countrysidedays.honey_carrot_salad',
+              'message.countrysidedays.starter_hoe',
+              'message.countrysidedays.fishing_public_only',
+              'message.countrysidedays.worker_hired',
+              'message.countrysidedays.worker_status',
               'message.countrysidedays.restaurant_role_owner',
               'message.countrysidedays.restaurant_role_staff',
               'message.countrysidedays.public_livestock_protected',
@@ -107,33 +113,102 @@ jobs:
           print(f'Validated {len(ko)} matching UTF-8 localization keys.')
           PY
 
-      - name: Validate shared life contracts
+      - name: Validate countryside gameplay contracts
         id: contracts
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
           gameplay = Path('src/main/java/kr/countrysidedays/gameplay/RuralGameplayHandler.java').read_text('utf-8')
+          village = Path('src/main/java/kr/countrysidedays/gameplay/VillageLifeManager.java').read_text('utf-8')
+          workers = Path('src/main/java/kr/countrysidedays/gameplay/EstateWorkerManager.java').read_text('utf-8')
+          fishing = Path('src/main/java/kr/countrysidedays/gameplay/CountrysideFishingManager.java').read_text('utf-8')
+          npc = Path('src/main/java/kr/countrysidedays/gameplay/RuralNpcManager.java').read_text('utf-8')
+          layout = Path('src/main/java/kr/countrysidedays/world/PlayerEstateLayout.java').read_text('utf-8')
+          restaurant = Path('src/main/java/kr/countrysidedays/world/SharedRestaurantBuilder.java').read_text('utf-8')
           notebook = Path('src/main/java/kr/countrysidedays/item/RecipeNotebookItem.java').read_text('utf-8')
+          items = Path('src/main/java/kr/countrysidedays/registry/ModItems.java').read_text('utf-8')
+
           required_sources = (
               'src/main/java/kr/countrysidedays/gameplay/SharedRestaurantAccess.java',
+              'src/main/java/kr/countrysidedays/gameplay/EstateWorkerManager.java',
+              'src/main/java/kr/countrysidedays/gameplay/CountrysideFishingManager.java',
               'src/main/java/kr/countrysidedays/world/SharedRestaurantBuilder.java',
               'src/main/java/kr/countrysidedays/world/PublicVillageExpansionBuilder.java',
           )
           for source in required_sources:
               if not Path(source).is_file():
-                  raise SystemExit(f'missing shared-life source: {source}')
+                  raise SystemExit(f'missing alpha.12 source: {source}')
+
           for exact in (
               'new ItemStack(Items.WHEAT_SEEDS, 32)',
               'new ItemStack(Items.CARROT, 8)',
               'new ItemStack(Items.POTATO, 8)',
+              'Items.STONE_HOE.getDefaultInstance()',
+              'CountrysideFishingManager.isAllowed',
           ):
               if exact not in gameplay:
-                  raise SystemExit(f'starter support contract missing: {exact}')
-          for forbidden in ('손님 주문', '손님 보상', '조리 기록'):
+                  raise SystemExit(f'starter or fishing contract missing: {exact}')
+
+          if 'ensureEstateWorker(' in village:
+              raise SystemExit('legacy free automatic worker spawning returned')
+          for exact in (
+              'EstateWorkerManager.maintain',
+              'EstateWorkerManager.isActive',
+          ):
+              if exact not in village:
+                  raise SystemExit(f'paid worker integration missing: {exact}')
+          for exact in (
+              'HIRING_FEE = 12',
+              'DAILY_WAGE = 2',
+              'MAX_MISSED_WAGES = 3',
+              'consumeDailyWage',
+          ):
+              if exact not in workers:
+                  raise SystemExit(f'worker contract missing: {exact}')
+
+          for exact in (
+              'dx >= -50 && dx <= -34',
+              'dz >= 30 && dz <= 44',
+              'PlayerEstateLayout.contains',
+          ):
+              if exact not in fishing:
+                  raise SystemExit(f'public fishing boundary contract missing: {exact}')
+
+          for exact in (
+              'restaurantOwnerNeedsAccess',
+              'customerSeatYaw',
+              'Pose.SITTING',
+              'Math.floorMod(Long.hashCode(seed), 6)',
+          ):
+              if exact not in npc:
+                  raise SystemExit(f'restaurant guest or owner-access contract missing: {exact}')
+          for exact in (
+              'restaurantRevisionMarker',
+              'customerSeatFacing',
+              'isRestaurantOwnerAccessZone',
+          ):
+              if exact not in layout:
+                  raise SystemExit(f'restaurant layout contract missing: {exact}')
+          for exact in (
+              'REVISION_MARKER',
+              'buildDiningRoom',
+              'centre aisle',
+          ):
+              if exact not in restaurant:
+                  raise SystemExit(f'clean restaurant rebuild contract missing: {exact}')
+
+          for forbidden in ('손님 주문', '손님 보상', '조리 기록', '일꾼 고용', '월급'):
               if forbidden in notebook:
-                  raise SystemExit(f'recipe notebook contains non-recipe content: {forbidden}')
-          print('Shared restaurant, starter support, and recipe-only notebook contracts passed.')
+                  raise SystemExit(f'recipe notebook contains non-recipe management content: {forbidden}')
+          for required_recipe in ('민물고기 구이', '감자전', '꿀당근 샐러드'):
+              if required_recipe not in notebook:
+                  raise SystemExit(f'new recipe missing from notebook: {required_recipe}')
+          for field in ('GRILLED_RIVER_FISH', 'POTATO_PANCAKE', 'HONEY_CARROT_SALAD'):
+              if field not in items:
+                  raise SystemExit(f'new menu item not registered: {field}')
+
+          print('Paid workers, public fishing, owner access, six dishes, and clean seating contracts passed.')
           PY
 
       - name: Clean build
@@ -245,8 +320,8 @@ jobs:
             echo "Minecraft client never reached rendered resource readiness."
             exit 1
           fi
-          if ! grep -q "Countryside Days 0.1.0-alpha.11 core content registered" ci-logs/client.log; then
-            echo "Countryside Days alpha.11 did not register in the client process."
+          if ! grep -q "Countryside Days 0.1.0-alpha.12 core content registered" ci-logs/client.log; then
+            echo "Countryside Days alpha.12 did not register in the client process."
             exit 1
           fi
           if ! grep -q "Countryside Days compact navigation HUD registered" ci-logs/client.log; then
@@ -266,17 +341,17 @@ jobs:
       - name: Verify JAR and create deliverables
         id: jarcheck
         run: |
-          JAR="build/libs/countrysidedays-0.1.0-alpha.11.jar"
+          JAR="build/libs/countrysidedays-0.1.0-alpha.12.jar"
           python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification.log
           mkdir -p build/deliverables
           cp "$JAR" build/deliverables/
-          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.11.jar.sha256"
+          sha256sum "$JAR" | sed 's#build/libs/##' > "build/deliverables/countrysidedays-0.1.0-alpha.12.jar.sha256"
 
       - name: Upload executable JAR
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.11-deliverables
+          name: countryside-days-0.1.0-alpha.12-deliverables
           path: projects/countryside-days/build/deliverables/
           if-no-files-found: error
           retention-days: 14
@@ -285,7 +360,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.11-logs
+          name: countryside-days-0.1.0-alpha.12-logs
           path: projects/countryside-days/ci-logs/
           if-no-files-found: warn
           retention-days: 14
@@ -312,7 +387,7 @@ jobs:
 
           - Workflow run: ${RUN_ID}
           - Source commit: ${SOURCE_SHA}
-          - Mod version: 0.1.0-alpha.11
+          - Mod version: 0.1.0-alpha.12
           - Minecraft: 26.2
           - Java: 25
           - Gradle: 9.2.1
@@ -320,7 +395,7 @@ jobs:
           - Wrapper generation: ${WRAPPER_OUTCOME}
           - Toolchain verification: ${TOOLCHAIN_OUTCOME}
           - UTF-8 localization validation: ${LOCALIZATION_OUTCOME}
-          - Shared-life contract validation: ${CONTRACTS_OUTCOME}
+          - Countryside gameplay contract validation: ${CONTRACTS_OUTCOME}
           - Clean build: ${BUILD_OUTCOME}
           - Datagen: ${DATAGEN_OUTCOME}
           - Required GameTest server: ${GAMETEST_OUTCOME}
@@ -329,7 +404,7 @@ jobs:
           - Client smoke test: ${CLIENT_OUTCOME}
           - JAR structure verification: ${JAR_OUTCOME}
 
-          This report is generated by GitHub Actions. GameTests verify one shared restaurant with owner and staff access, closed and open gate states, directed customer seats, empty starter farmland, independent private ranch production, seven-day holidays, deterministic safe market prices, protected buildings, and multiplayer estate isolation. Source and built-JAR validation require matching UTF-8 Korean and English localization keys, recipe-only notebook content, and the shared restaurant and expanded village classes. Server and virtual-display client smoke tests remain mandatory. A human visual play test is still recommended before a stable release.
+          This report is generated by GitHub Actions. GameTests verify the rebuilt shared restaurant, correctly directed guest chairs, a clear centre aisle, owner access before opening, no free starter workers, paid worker constants, public-only fishing boundaries, six menu dishes, independent private ranch production, deterministic safe market prices, protected buildings, and multiplayer estate isolation. Source and built-JAR validation require matching UTF-8 Korean and English localization keys and every new worker, fishing, recipe, item, model, and class asset. Server and virtual-display client smoke tests remain mandatory. A human visual play test is still recommended before a stable release.
           REPORT
 
           for LOG in clean-build datagen gametest server client; do
