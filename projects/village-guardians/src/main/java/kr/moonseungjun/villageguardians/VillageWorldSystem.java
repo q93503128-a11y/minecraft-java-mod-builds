@@ -53,7 +53,7 @@ public final class VillageWorldSystem {
         boolean firstBuild = !level.getBlockState(center.below(2)).is(Blocks.LODESTONE);
         boolean visualRevisionMissing = !level.getBlockState(center.below(4)).is(Blocks.RESPAWN_ANCHOR)
                 || !level.getBlockState(center.below(5)).is(Blocks.AMETHYST_BLOCK)
-                || !level.getBlockState(center.below(6)).is(Blocks.COPPER_BLOCK);
+                || !level.getBlockState(center.below(6)).is(Blocks.LAPIS_BLOCK);
         if (!firstBuild && !visualRevisionMissing) return;
 
         generationInProgress = true;
@@ -258,7 +258,7 @@ public final class VillageWorldSystem {
         VillageDefenseTowerBuilder.build(level, center);
         VillageBuildingSignatures.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
-        VillageFortressTerrain.set(level, center.below(6), Blocks.COPPER_BLOCK);
+        VillageFortressTerrain.set(level, center.below(6), Blocks.LAPIS_BLOCK);
         VillageFortressTerrain.set(level, center.below(5), Blocks.AMETHYST_BLOCK);
         VillageFortressTerrain.set(level, center.below(4), Blocks.RESPAWN_ANCHOR);
         VillageFortressTerrain.set(level, center.below(3), Blocks.CRYING_OBSIDIAN);
