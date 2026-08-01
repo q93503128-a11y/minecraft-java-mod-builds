@@ -12,6 +12,12 @@ import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlers
 public final class ClientEstateState {
     private static BlockPos home;
     private static BlockPos restaurant;
+    private static boolean restaurantOpen;
+    private static int customersToday;
+    private static int customerCap;
+    private static int totalCustomers;
+    private static int progressionStage;
+    private static int pendingRanchProducts;
 
     private ClientEstateState() {
     }
@@ -23,6 +29,12 @@ public final class ClientEstateState {
             restaurant = new BlockPos(
                     payload.restaurantX(), payload.restaurantY(), payload.restaurantZ()
             );
+            restaurantOpen = payload.restaurantOpen();
+            customersToday = payload.customersToday();
+            customerCap = payload.customerCap();
+            totalCustomers = payload.totalCustomers();
+            progressionStage = payload.progressionStage();
+            pendingRanchProducts = payload.pendingRanchProducts();
         });
     }
 
@@ -32,5 +44,29 @@ public final class ClientEstateState {
 
     public static BlockPos restaurant() {
         return restaurant;
+    }
+
+    public static boolean restaurantOpen() {
+        return restaurantOpen;
+    }
+
+    public static int customersToday() {
+        return customersToday;
+    }
+
+    public static int customerCap() {
+        return customerCap;
+    }
+
+    public static int totalCustomers() {
+        return totalCustomers;
+    }
+
+    public static int progressionStage() {
+        return progressionStage;
+    }
+
+    public static int pendingRanchProducts() {
+        return pendingRanchProducts;
     }
 }
