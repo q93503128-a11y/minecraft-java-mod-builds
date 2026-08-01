@@ -12,15 +12,12 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.golem.IronGolem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 
 import java.util.List;
 
 public final class VillageDefenseSystem {
     private static final String MERCENARY_NAME = "마을 용병";
-    private static final int HIRE_IRON_COST = 24;
     private static int towerTicks;
 
     private VillageDefenseSystem() {}
@@ -35,6 +32,10 @@ public final class VillageDefenseSystem {
         return true;
     }
 
+    public static int mercenaryHireCost() {
+        return 140 + VillageProgressionSystem.barracksLevel() * 35;
+    }
+
     public static String hireMercenary(ServerPlayer player) {
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.BARRACKS)) {
             return "병영이 파괴되어 용병을 고용할 수 없습니다.";
@@ -43,13 +44,17 @@ public final class VillageDefenseSystem {
         int cap = mercenaryCapacity(level.getServer());
         int current = countMercenaries(level);
         if (current >= cap) return "용병 정원이 가득 찼습니다. 현재 " + current + " / " + cap;
-        if (countMainInventory(player, Items.IRON_INGOT.getDefaultInstance()) < HIRE_IRON_COST) {
-            return "용병 계약에 철 주괴 " + HIRE_IRON_COST + "개가 필요합니다.";
+        int cost = mercenaryHireCost();
+        if (!VillageProgressionSystem.spendCoins(player, cost)) {
+            return "용병 계약에 수호 주화 " + cost + "이 필요합니다. 현재 "
+                    + VillageProgressionSystem.coins(player);
         }
 
         IronGolem golem = EntityTypes.IRON_GOLEM.create(level, EntitySpawnReason.EVENT);
-        if (golem == null) return "용병을 소환하지 못했습니다.";
-        consumeMainInventory(player, Items.IRON_INGOT.getDefaultInstance(), HIRE_IRON_COST);
+        if (golem == null) {
+            VillageProgressionSystem.addCoins(player, cost, "용병 계약 취소 환불");
+            return "용병을 소환하지 못해 주화를 돌려드렸습니다.";
+        }
         BlockPos barracks = VillageWorldSystem.buildingCenter(VillageProgressionSystem.Building.BARRACKS);
         BlockPos spawn = findSpawn(level, barracks);
         golem.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
@@ -64,12 +69,10 @@ public final class VillageDefenseSystem {
         VillageWorldSystem.markAllowedGameMob(golem);
         if (!level.addFreshEntity(golem)) {
             VillageWorldSystem.unmarkAllowedGameMob(golem.getUUID());
-            ItemStack refund = Items.IRON_INGOT.getDefaultInstance();
-            refund.setCount(HIRE_IRON_COST);
-            player.addItem(refund);
-            return "용병 배치에 실패해 철 주괴를 돌려드렸습니다.";
+            VillageProgressionSystem.addCoins(player, cost, "용병 배치 실패 환불");
+            return "용병 배치에 실패해 주화를 돌려드렸습니다.";
         }
-        return "용병 고용 완료 | 현재 " + (current + 1) + " / " + cap
+        return "용병 고용 완료 | 주화 " + cost + " 사용 | 현재 " + (current + 1) + " / " + cap
                 + " · 사망하지 않는 한 저장과 재접속 후에도 유지됩니다.";
     }
 
@@ -194,28 +197,5 @@ public final class VillageDefenseSystem {
             }
         }
         return origin.offset(0, 0, 5);
-    }
-
-    private static int countMainInventory(ServerPlayer player, ItemStack sample) {
-        int count = 0;
-        int slots = Math.min(36, player.getInventory().getContainerSize());
-        for (int slot = 0; slot < slots; slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (!stack.isEmpty() && stack.getItem() == sample.getItem()) count += stack.getCount();
-        }
-        return count;
-    }
-
-    private static void consumeMainInventory(ServerPlayer player, ItemStack sample, int amount) {
-        int remaining = amount;
-        int slots = Math.min(36, player.getInventory().getContainerSize());
-        for (int slot = 0; slot < slots && remaining > 0; slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (stack.isEmpty() || stack.getItem() != sample.getItem()) continue;
-            int removed = Math.min(remaining, stack.getCount());
-            stack.shrink(removed);
-            remaining -= removed;
-        }
-        player.getInventory().setChanged();
     }
 }
