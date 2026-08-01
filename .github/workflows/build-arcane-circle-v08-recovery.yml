@@ -1,0 +1,112 @@
+name: Recover Arcane Circle v0.8
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-arcane-circle-v08-recovery.yml'
+      - 'projects/arcane-circle/tools/apply_v08_magic_world.py'
+      - 'projects/arcane-circle/tools/v08_payload/**'
+      - 'projects/arcane-circle/tools/v08_retry_20260802.txt'
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/arcane-circle
+  EXPECTED_JAR: arcanecircle-0.8.0-alpha.1.jar
+  PUBLISHED_DIR: published/arcane-circle
+  RESULT_DIR: ci-results/arcane-circle-v08-recovery
+
+jobs:
+  recover-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-read-only: false
+
+      - name: Recover and apply world migration
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/apply_v08_magic_world.py 2>&1 | tee "$GITHUB_WORKSPACE/migration.log"
+          git diff --check
+
+      - name: Audit generated magic world
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: python3 tools/test_magic_contract.py
+
+      - name: Build Java 25 NeoForge runtime
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/gradle.log"
+
+      - name: Verify and stage artifact
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          mkdir -p ../../deliverables
+          cp "build/libs/$EXPECTED_JAR" ../../deliverables/
+          cp "build/libs/$EXPECTED_JAR.sha256" ../../deliverables/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arcanecircle-0.8.0-alpha.1-recovery
+          path: deliverables/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish generated source and verified runtime
+        shell: bash
+        run: |
+          mkdir -p "$PUBLISHED_DIR"
+          rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
+          cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+          cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
+          git commit -m 'Publish Arcane Circle v0.8 Ninefold Magic World' || true
+          git pull --rebase origin main
+          git push
+
+      - name: Record recovery diagnostics
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RESULT_DIR"
+          if test -f "$GITHUB_WORKSPACE/gradle.log"; then
+            cp "$GITHUB_WORKSPACE/gradle.log" "$RESULT_DIR/latest.log"
+          elif test -f "$GITHUB_WORKSPACE/migration.log"; then
+            cp "$GITHUB_WORKSPACE/migration.log" "$RESULT_DIR/latest.log"
+          else
+            echo 'No diagnostic log was produced.' > "$RESULT_DIR/latest.log"
+          fi
+          cat > "$RESULT_DIR/status.txt" <<STATUS
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          STATUS
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULT_DIR"
+          git commit -m "Record Arcane v0.8 recovery result for ${GITHUB_SHA::7}" || exit 0
+          git pull --rebase origin main
+          git push
