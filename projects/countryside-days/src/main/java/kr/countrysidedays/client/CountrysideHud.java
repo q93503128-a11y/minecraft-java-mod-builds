@@ -39,6 +39,7 @@ public final class CountrysideHud {
         if (player == null) return;
 
         drawPanel(graphics, 7, 7, currentObjective(player), 0xD96B4329, 0xFFF0B56A);
+        drawPanel(graphics, 7, 31, shiftStatus(), 0xD93E4D31, 0xFF9BC978);
 
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         Component currency = Component.literal("◆ " + countItem(player, ModItems.VILLAGE_COIN.get()));
@@ -56,7 +57,7 @@ public final class CountrysideHud {
         BlockPos home = ClientEstateState.home();
         BlockPos restaurant = ClientEstateState.restaurant();
         Component navigation = home == null || restaurant == null
-                ? Component.literal("생활 구획 동기화 중")
+                ? Component.translatable("hud.countrysidedays.syncing")
                 : Component.literal(
                         "집 " + relativeArrow(player, home) + " " + distance(player.blockPosition(), home) + "m"
                                 + "   식당 " + relativeArrow(player, restaurant) + " "
@@ -71,6 +72,18 @@ public final class CountrysideHud {
                 navigation,
                 0xD9383026,
                 0xFFD8B979
+        );
+    }
+
+    private static Component shiftStatus() {
+        return Component.translatable(
+                ClientEstateState.restaurantOpen()
+                        ? "hud.countrysidedays.shift_open"
+                        : "hud.countrysidedays.shift_closed",
+                ClientEstateState.customersToday(),
+                ClientEstateState.customerCap(),
+                ClientEstateState.totalCustomers(),
+                ClientEstateState.pendingRanchProducts()
         );
     }
 
@@ -123,14 +136,31 @@ public final class CountrysideHud {
     }
 
     private static Component currentObjective(LocalPlayer player) {
-        if (hasItem(player, ModItems.COUNTRY_STEW.get())) {
-            return Component.translatable("hud.countrysidedays.serve");
-        }
-        boolean hasHerb = hasItem(player, ModItems.WILD_HERB.get());
-        boolean hasFish = hasItem(player, ModItems.RIVER_FISH.get());
-        if (hasHerb && hasFish) return Component.translatable("hud.countrysidedays.cook");
-        if (hasHerb) return Component.translatable("hud.countrysidedays.fish");
-        return Component.translatable("hud.countrysidedays.forage");
+        return switch (ClientEstateState.progressionStage()) {
+            case 0 -> Component.translatable(
+                    ClientEstateState.restaurantOpen()
+                            ? "hud.countrysidedays.goal_first_guest"
+                            : "hud.countrysidedays.goal_open_first_shift"
+            );
+            case 1 -> Component.translatable(
+                    "hud.countrysidedays.goal_five_guests",
+                    ClientEstateState.totalCustomers(), 5
+            );
+            case 2 -> Component.translatable(
+                    ClientEstateState.pendingRanchProducts() > 0
+                            ? "hud.countrysidedays.goal_collect_ranch"
+                            : "hud.countrysidedays.goal_feed_ranch"
+            );
+            case 3 -> Component.translatable(
+                    "hud.countrysidedays.goal_fifteen_guests",
+                    ClientEstateState.totalCustomers(), 15
+            );
+            default -> Component.translatable(
+                    ClientEstateState.restaurantOpen()
+                            ? "hud.countrysidedays.goal_run_shift"
+                            : "hud.countrysidedays.goal自由"
+            );
+        };
     }
 
     private static boolean hasItem(LocalPlayer player, Item item) {
