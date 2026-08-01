@@ -7,8 +7,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.Acquisition.*;
-import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.School.*;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.Acquisition.DIRECT;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.Acquisition.FUSION;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.Acquisition.PRIMER;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.School.ARCANE;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.School.FIRE;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.School.FROST;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.School.LIFE;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.School.SPACE;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.School.WARD;
+import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.School.WIND;
 
 public final class SpellCatalog {
     private static final Map<String, SpellDefinition> SPELLS = new LinkedHashMap<>();
@@ -86,6 +94,20 @@ public final class SpellCatalog {
         return Optional.ofNullable(SPELLS.get(id));
     }
 
+    public static Optional<FusionFormula> fusionFor(String first, String second) {
+        bootstrap();
+        return FUSIONS.stream().filter(formula -> formula.matches(first, second)).findFirst();
+    }
+
+    public static boolean isFusionResult(String spellId) {
+        return spell(spellId).map(spell -> spell.acquisition() == FUSION).orElse(false);
+    }
+
+    public static int masteryRequired(String resultId) {
+        int circle = spell(resultId).map(SpellDefinition::circle).orElse(2);
+        return circle <= 2 ? 4 : 7;
+    }
+
     public static List<String> starterKnownSpells() {
         bootstrap();
         return SPELLS.values().stream()
@@ -98,5 +120,9 @@ public final class SpellCatalog {
         return List.of("arcane_dart", "ember", "frost_needle", "gale_step", "lesser_ward");
     }
 
-    public record FusionFormula(String result, String first, String second) {}
+    public record FusionFormula(String result, String first, String second) {
+        public boolean matches(String a, String b) {
+            return (first.equals(a) && second.equals(b)) || (first.equals(b) && second.equals(a));
+        }
+    }
 }
