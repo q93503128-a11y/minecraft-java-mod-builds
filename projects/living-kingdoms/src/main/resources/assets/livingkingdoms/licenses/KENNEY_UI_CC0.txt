@@ -1,0 +1,14 @@
+Living Kingdoms external UI artwork
+
+Asset: Kenney UI Pack - Adventure / RPG UI sprite sheet
+Original creator: Kenney (Kenney.nl)
+License: Creative Commons CC0 1.0 Universal
+Official asset page: https://kenney.nl/assets/ui-pack-adventure
+
+Vendored source snapshot:
+https://github.com/iwenzhou/kenney
+Commit: b7729283e47d38f203d85560cfda5b2c1fd6fc7e
+Path: Art (5190 files)/UI pack (220 assets)/Adventure pack (80 assets)/Spritesheet/uipack_rpg_sheet.png
+Expected Git blob SHA-1: 740afe1d74615ccf06ac44fdd5df5a6d1d017f63
+
+The build downloads the file from that immutable commit and verifies the Git blob hash before packaging it. Living Kingdoms crops and scales portions of the sheet for its codex panels, tabs, close button, and skill nodes. Attribution is not required by CC0, but this notice is retained for provenance and auditability.
