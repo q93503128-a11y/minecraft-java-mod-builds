@@ -52,8 +52,8 @@ public final class ArcaneClientState {
     }
 
     public static List<String> slots() {
-        List<String> parsed = split(text("slots", "arcane_dart|ember|frost_needle|gale_step|lesser_ward"));
-        List<String> result = new ArrayList<>(List.of("arcane_dart", "ember", "frost_needle", "gale_step", "lesser_ward"));
+        List<String> parsed = splitPreserve(text("slots", "||||"));
+        List<String> result = new ArrayList<>(List.of("", "", "", "", ""));
         for (int i = 0; i < Math.min(5, parsed.size()); i++) result.set(i, parsed.get(i));
         return List.copyOf(result);
     }
@@ -61,6 +61,25 @@ public final class ArcaneClientState {
     public static String slot(int index) {
         List<String> slots = slots();
         return index >= 0 && index < slots.size() ? slots.get(index) : "";
+    }
+
+    public static String chargingSpell() {
+        return text("charging", "");
+    }
+
+    public static int chargingSlot() {
+        return integer("charging_slot", -1);
+    }
+
+    public static int chargingTicks() {
+        int snapshotTicks = integer("charge_ticks", 0);
+        if (chargingSpell().isBlank()) return 0;
+        long elapsed = Math.max(0L, (System.nanoTime() - updatedAtNanos) / 50_000_000L);
+        return snapshotTicks + (int) Math.min(Integer.MAX_VALUE, elapsed);
+    }
+
+    public static boolean isChargingSlot(int slot) {
+        return chargingSlot() == slot && !chargingSpell().isBlank();
     }
 
     public static List<String> queue() {
@@ -120,6 +139,11 @@ public final class ArcaneClientState {
     private static List<String> split(String raw) {
         if (raw == null || raw.isBlank()) return List.of();
         return List.of(raw.split("\\|"));
+    }
+
+    private static List<String> splitPreserve(String raw) {
+        if (raw == null) return List.of();
+        return List.of(raw.split("\\|", -1));
     }
 
     private static Map<String, Cooldown> parseCooldowns(String raw) {
