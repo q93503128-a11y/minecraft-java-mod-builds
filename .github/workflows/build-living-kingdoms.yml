@@ -8,6 +8,10 @@ on:
       - 'projects/living-kingdoms/**'
       - '.github/workflows/build-living-kingdoms.yml'
 
+concurrency:
+  group: living-kingdoms-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
