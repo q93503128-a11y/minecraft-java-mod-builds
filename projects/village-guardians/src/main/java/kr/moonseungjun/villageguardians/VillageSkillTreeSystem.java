@@ -33,7 +33,7 @@ public final class VillageSkillTreeSystem {
     }
 
     public static boolean has(ServerPlayer player, Node node) {
-        return player.getTags().contains(TAG_PREFIX + node.id());
+        return player.getCommandTags().contains(TAG_PREFIX + node.id());
     }
 
     public static String purchase(ServerPlayer player, String nodeId) {
