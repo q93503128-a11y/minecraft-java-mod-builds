@@ -138,7 +138,7 @@ public final class RealmCivicRealismFinisher {
             set(level, cx + corner[0], y + 3, cz + corner[1], Blocks.OAK_FENCE);
         }
         fill(level, cx - 3, y + 4, cz - 3, cx + 3, y + 4, cz + 3, Blocks.DARK_OAK_SLAB);
-        set(level, cx, y + 3, cz, Blocks.CHAIN);
+        set(level, cx, y + 3, cz, Blocks.IRON_CHAIN);
         set(level, cx, y + 2, cz, Blocks.CAULDRON);
     }
 
@@ -185,7 +185,7 @@ public final class RealmCivicRealismFinisher {
         for (int x = cx - 5; x <= cx + 5; x++) for (int z = cz - 5; z <= cz + 5; z++) {
             if (Math.abs(x - cx) == 5 || Math.abs(z - cz) == 5) set(level, x, y, z, Blocks.DEEPSLATE_BRICKS);
         }
-        set(level, cx, y + 1, cz, Blocks.CHAIN);
+        set(level, cx, y + 1, cz, Blocks.IRON_CHAIN);
     }
 
     private static void ventilationStack(ServerLevel level, int x, int y, int z) {
