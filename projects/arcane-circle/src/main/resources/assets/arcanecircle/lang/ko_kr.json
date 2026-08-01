@@ -1,0 +1,12 @@
+{
+  "block.arcanecircle.magic_circle": "조합 마법진",
+  "item.arcanecircle.magic_circle": "조합 마법진",
+  "message.arcanecircle.starter_kit": "§d[마법진 테스트] §f조합 마법진 3개와 세 주문의 촉매를 지급했습니다.",
+  "message.arcanecircle.instructions": "촉매 3개를 순서대로 우클릭하고 빈손으로 우클릭해 발동합니다. 웅크리고 빈손 우클릭하면 초기화됩니다.",
+  "message.arcanecircle.inserted": "§d마법진 §f%d번째 슬롯: %s",
+  "message.arcanecircle.status": "§d마법진 §f%d/3 · %s",
+  "message.arcanecircle.full": "§c세 슬롯이 모두 찼습니다. 빈손 발동 또는 웅크리기+빈손 초기화.",
+  "message.arcanecircle.unstable": "§c불안정한 조합: %s",
+  "message.arcanecircle.cleared": "§7마법진을 초기화하고 촉매를 돌려받았습니다.",
+  "message.arcanecircle.cast": "§d%s §f발동 · 영향받은 몹 %d마리"
+}

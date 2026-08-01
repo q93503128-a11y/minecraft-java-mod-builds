@@ -1,0 +1,12 @@
+{
+  "block.arcanecircle.magic_circle": "Combination Magic Circle",
+  "item.arcanecircle.magic_circle": "Combination Magic Circle",
+  "message.arcanecircle.starter_kit": "§d[Circle Test] §fReceived three circles and catalysts for all test spells.",
+  "message.arcanecircle.instructions": "Insert three catalysts in order, then use an empty hand to cast. Sneak-use with an empty hand to reset.",
+  "message.arcanecircle.inserted": "§dCircle §fslot %d: %s",
+  "message.arcanecircle.status": "§dCircle §f%d/3 · %s",
+  "message.arcanecircle.full": "§cAll slots are full. Cast with an empty hand or sneak-use to reset.",
+  "message.arcanecircle.unstable": "§cUnstable combination: %s",
+  "message.arcanecircle.cleared": "§7Circle cleared and catalysts refunded.",
+  "message.arcanecircle.cast": "§d%s §fcast · %d mobs affected"
+}

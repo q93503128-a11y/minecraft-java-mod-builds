@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {"circle": "arcanecircle:block/magic_circle", "particle": "arcanecircle:block/magic_circle"},
+  "elements": [{
+    "from": [0, 0, 0], "to": [16, 2, 16],
+    "faces": {
+      "down": {"texture": "#circle", "cullface": "down"}, "up": {"texture": "#circle"},
+      "north": {"texture": "#circle"}, "south": {"texture": "#circle"},
+      "west": {"texture": "#circle"}, "east": {"texture": "#circle"}
+    }
+  }]
+}

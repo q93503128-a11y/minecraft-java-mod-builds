@@ -1,0 +1,26 @@
+license="${mod_license}"
+issueTrackerURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
+authors="문승준"
+description='''
+바닥 마법진에 세 가지 촉매를 순서대로 넣어 불꽃·서리·비전 주문을 완성하고 발동하는 Java 26.2용 조합 마법 실험 모드.
+'''
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"

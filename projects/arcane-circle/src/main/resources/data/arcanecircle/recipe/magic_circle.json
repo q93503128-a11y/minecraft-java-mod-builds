@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [" A ", "RCR", " A "],
+  "key": {"A": "minecraft:amethyst_shard", "R": "minecraft:redstone", "C": "minecraft:crying_obsidian"},
+  "result": {"id": "arcanecircle:magic_circle", "count": 1}
+}
