@@ -5,13 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-/**
- * Resolves authored interior spawn points.
- *
- * <p>World-surface height cannot be used for a residence after construction because the highest
- * motion-blocking block is usually its roof. These positions deliberately target the walkable
- * interior floor of each authored residence and jail.</p>
- */
+/** Resolves and verifies authored interior spawn cells after every construction pass. */
 public final class SafeResidenceLocator {
     private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
 
@@ -23,19 +17,18 @@ public final class SafeResidenceLocator {
         int cx = site.centerX();
         int cz = site.centerZ();
         int y = site.baseY();
-
-        BlockPos feet = switch (residenceId) {
-            case "erden_city_room" -> new BlockPos(cx + 26, y + 1, cz + 34);
-            case "erden_farm_home" -> new BlockPos(cx + 175, y + 1, cz + 105);
-            case "river_fishing_hut" -> new BlockPos(cx - 171, y + 1, cz + 115);
-            case "forest_camp" -> new BlockPos(cx + 133, y + 1, cz - 159);
-            case "silvana_tree_home" -> new BlockPos(cx - 58, y + 17, cz - 30);
-            case "silvana_moonwell_lodge" -> new BlockPos(cx + 87, y + 1, cz + 87);
+        BlockPos preferred = switch (residenceId) {
+            case "erden_city_room" -> new BlockPos(cx + 26, y + 1, cz + 36);
+            case "erden_farm_home" -> new BlockPos(cx + 132, y + 1, cz + 98);
+            case "river_fishing_hut" -> new BlockPos(cx - 146, y + 1, cz + 91);
+            case "forest_camp" -> new BlockPos(cx + 116, y + 1, cz - 132);
+            case "silvana_tree_home" -> new BlockPos(cx - 45, y + 17, cz - 28);
+            case "silvana_moonwell_lodge" -> new BlockPos(cx + 73, y + 2, cz + 87);
             case "kardum_gate_lodge" -> new BlockPos(cx - 4, y + 2, cz - 72);
             case "kardum_worker_quarters" -> new BlockPos(cx - 72, y + 2, cz + 43);
-            default -> new BlockPos(cx + 26, y + 1, cz + 34);
+            default -> new BlockPos(cx + 26, y + 1, cz + 36);
         };
-        return secure(level, feet, floorFor(residenceId));
+        return findOrCreateWalkable(level, preferred, floorFor(residenceId), 6, 8);
     }
 
     public static BlockPos jail(ServerLevel level, String jurisdiction) {
@@ -43,12 +36,29 @@ public final class SafeResidenceLocator {
         int cx = site.centerX();
         int cz = site.centerZ();
         int y = site.baseY();
-        BlockPos feet = switch (jurisdiction) {
-            case "silvana_forest" -> new BlockPos(cx - 84, y + 1, cz + 74);
-            case "kardum_league" -> new BlockPos(cx + 64, y + 12, cz - 66);
-            default -> new BlockPos(cx - 83, y + 1, cz - 30);
+        BlockPos preferred = switch (jurisdiction) {
+            case "silvana_forest" -> new BlockPos(cx - 67, y + 1, cz + 58);
+            case "kardum_league" -> new BlockPos(cx + 69, y + 11, cz - 64);
+            default -> new BlockPos(cx - 93, y + 1, cz - 31);
         };
-        return secure(level, feet, Blocks.STONE_BRICKS);
+        return findOrCreateWalkable(level, preferred, Blocks.STONE_BRICKS, 5, 6);
+    }
+
+    public static float yaw(String homelandId, String residenceId) {
+        if ("silvana_forest".equals(homelandId)) return 180.0F;
+        if ("kardum_league".equals(homelandId)) return 0.0F;
+        return switch (residenceId) {
+            case "river_fishing_hut" -> 0.0F;
+            case "forest_camp" -> 180.0F;
+            default -> 180.0F;
+        };
+    }
+
+    public static boolean isWalkable(ServerLevel level, BlockPos feet) {
+        return level.getBlockState(feet.below()).isSolid()
+                && level.getBlockState(feet).isAir()
+                && level.getBlockState(feet.above()).isAir()
+                && level.getBlockState(feet.above(2)).isAir();
     }
 
     private static RealmSiteLayoutSavedData.RealmSite requiredSite(ServerLevel level, String homelandId) {
@@ -62,22 +72,45 @@ public final class SafeResidenceLocator {
     private static Block floorFor(String residenceId) {
         return switch (residenceId) {
             case "forest_camp" -> Blocks.COARSE_DIRT;
-            case "silvana_tree_home" -> Blocks.STRIPPED_BIRCH_WOOD;
+            case "silvana_tree_home", "silvana_moonwell_lodge" -> Blocks.STRIPPED_BIRCH_WOOD;
             case "kardum_gate_lodge", "kardum_worker_quarters" -> Blocks.POLISHED_DEEPSLATE;
             default -> Blocks.SPRUCE_PLANKS;
         };
     }
 
+    private static BlockPos findOrCreateWalkable(ServerLevel level, BlockPos preferred, Block floor,
+                                                  int horizontalRadius, int verticalRadius) {
+        for (int dy = 0; dy <= verticalRadius; dy++) {
+            for (int sign : new int[]{1, -1}) {
+                if (dy == 0 && sign < 0) continue;
+                int y = preferred.getY() + dy * sign;
+                for (int radius = 0; radius <= horizontalRadius; radius++) {
+                    for (int dx = -radius; dx <= radius; dx++) {
+                        BlockPos north = new BlockPos(preferred.getX() + dx, y, preferred.getZ() - radius);
+                        if (isWalkable(level, north)) return north;
+                        BlockPos south = new BlockPos(preferred.getX() + dx, y, preferred.getZ() + radius);
+                        if (isWalkable(level, south)) return south;
+                    }
+                    for (int dz = -radius + 1; dz < radius; dz++) {
+                        BlockPos west = new BlockPos(preferred.getX() - radius, y, preferred.getZ() + dz);
+                        if (isWalkable(level, west)) return west;
+                        BlockPos east = new BlockPos(preferred.getX() + radius, y, preferred.getZ() + dz);
+                        if (isWalkable(level, east)) return east;
+                    }
+                }
+            }
+        }
+        return secure(level, preferred, floor);
+    }
+
     private static BlockPos secure(ServerLevel level, BlockPos feet, Block floor) {
         BlockPos floorPos = feet.below();
-        if (!level.getBlockState(floorPos).isSolid()) {
-            level.setBlock(floorPos, floor.defaultBlockState(), UPDATE_FLAGS);
-        }
+        level.setBlock(floorPos, floor.defaultBlockState(), UPDATE_FLAGS);
         for (int dy = 0; dy <= 2; dy++) {
-            BlockPos clear = feet.above(dy);
-            if (!level.getBlockState(clear).isAir()) {
-                level.setBlock(clear, Blocks.AIR.defaultBlockState(), UPDATE_FLAGS);
-            }
+            level.setBlock(feet.above(dy), Blocks.AIR.defaultBlockState(), UPDATE_FLAGS);
+        }
+        if (!isWalkable(level, feet)) {
+            throw new IllegalStateException("Unable to create safe residence spawn at " + feet);
         }
         return feet;
     }
