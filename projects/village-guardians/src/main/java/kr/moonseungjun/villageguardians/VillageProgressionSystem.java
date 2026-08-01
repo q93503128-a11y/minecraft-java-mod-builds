@@ -522,12 +522,13 @@ public final class VillageProgressionSystem {
         return 120 + Math.max(0, currentLevel) * 140;
     }
 
-    private static boolean spendCoins(ServerPlayer player, int amount) {
+    public static synchronized boolean spendCoins(ServerPlayer player, int amount) {
         int current = coins(player);
-        if (current < amount) {
+        int cost = Math.max(0, amount);
+        if (current < cost) {
             return false;
         }
-        COINS.put(player.getUUID(), current - amount);
+        COINS.put(player.getUUID(), current - cost);
         persist();
         return true;
     }
