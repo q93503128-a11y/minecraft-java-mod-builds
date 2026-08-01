@@ -15,6 +15,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -88,9 +89,9 @@ public final class RanchLifeManager {
             return;
         }
 
-        giveOrDrop(player, new ItemStack(Items.EGG, products.eggs()));
-        giveOrDrop(player, new ItemStack(Items.MILK_BUCKET, products.milk()));
-        giveOrDrop(player, new ItemStack(Blocks.WOOL.pick(DyeColor.WHITE), products.wool()));
+        giveOrDropCount(player, Items.EGG, products.eggs());
+        giveOrDropCount(player, Items.MILK_BUCKET, products.milk());
+        giveOrDropCount(player, Blocks.WOOL.pick(DyeColor.WHITE), products.wool());
         player.sendSystemMessage(Component.translatable(
                 "message.countrysidedays.ranch_collection_claimed",
                 products.eggs(), products.milk(), products.wool()
@@ -382,6 +383,18 @@ public final class RanchLifeManager {
         if (id.contains("sheep")) return "양";
         if (id.contains("chicken")) return "닭";
         return "가축";
+    }
+
+    private static void giveOrDropCount(ServerPlayer player, ItemLike item, int count) {
+        if (count <= 0) return;
+        ItemStack sample = new ItemStack(item);
+        int maxStackSize = Math.max(1, sample.getMaxStackSize());
+        int remaining = count;
+        while (remaining > 0) {
+            int amount = Math.min(maxStackSize, remaining);
+            giveOrDrop(player, new ItemStack(item, amount));
+            remaining -= amount;
+        }
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
