@@ -1,6 +1,9 @@
 {
-  "key.arcanecircle.grimoire": "마도서 열기",
-  "key.arcanecircle.cast": "선택 주문 시전",
-  "key.arcanecircle.previous_spell": "이전 주문 슬롯",
-  "key.arcanecircle.next_spell": "다음 주문 슬롯"
+  "key.arcanecircle.grimoire": "성좌 마도서 열기",
+  "key.arcanecircle.cast": "주력 주문 시전",
+  "key.arcanecircle.fusion_cast": "주력·직조 융합 시전",
+  "key.arcanecircle.previous_focus": "이전 주력 주문",
+  "key.arcanecircle.next_focus": "다음 주력 주문",
+  "key.arcanecircle.previous_weave": "이전 직조 주문",
+  "key.arcanecircle.next_weave": "다음 직조 주문"
 }
