@@ -8,6 +8,7 @@ import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ConstructionDebrisCleaner;
+import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
 import kr.moonseungjun.livingkingdoms.world.RealmFacilityFinisher;
@@ -49,6 +50,7 @@ public final class LivingKingdoms {
         NeoForge.EVENT_BUS.addListener(this::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(this::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(this::onWorkstationInteraction);
         NeoForge.EVENT_BUS.addListener(this::onEntityJoinLevel);
         LOGGER.info("Living Kingdoms loaded: {} species, {} homelands, {} backgrounds, {} residences",
                 FoundationCatalog.species().size(), FoundationCatalog.homelands().size(),
@@ -108,6 +110,7 @@ public final class LivingKingdoms {
             }
         });
 
+        FantasyWorldRules.tick(player);
         SkillProgressionManager.tick(player);
         SkillCrimeHooks.tick(player);
         CrimeManager.tickPlayer(player);
@@ -124,6 +127,7 @@ public final class LivingKingdoms {
     }
 
     private void onLivingDeath(LivingDeathEvent event) {
+        if (FantasyWorldRules.handleDefeat(event)) return;
         CrimeManager.handleDeath(event);
     }
 
@@ -134,6 +138,10 @@ public final class LivingKingdoms {
 
     private void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         StarterNpcManager.handleInteraction(event);
+    }
+
+    private void onWorkstationInteraction(PlayerInteractEvent.RightClickBlock event) {
+        FantasyWorldRules.handleWorkstation(event);
     }
 
     private void onEntityJoinLevel(EntityJoinLevelEvent event) {
