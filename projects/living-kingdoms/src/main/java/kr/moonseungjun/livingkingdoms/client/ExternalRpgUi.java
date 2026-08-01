@@ -11,13 +11,17 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Layout-only renderer for verified Kenney CC0 interface components.
- * Decorative shapes come from external artwork; this class only performs nine-slice composition and state binding.
+ * Decorative shapes come from external artwork; this class only performs composition and state binding.
  */
 public final class ExternalRpgUi {
     private static final Identifier FANTASY_PANEL = texture("fantasy_panel.png");
     private static final Identifier PANEL_BACKGROUND = texture("panel_background.png");
     private static final Identifier BUTTON_NORMAL = texture("button_normal.png");
     private static final Identifier BUTTON_PRESSED = texture("button_pressed.png");
+    private static final Identifier HUD_PANEL_BROWN = texture("hud_panel_brown.png");
+    private static final Identifier HUD_BUTTON_BROWN = texture("hud_button_brown.png");
+    private static final Identifier MINIMAP_RING_BROWN = texture("minimap_ring_brown_detail.png");
+    private static final Identifier MINIMAP_ARROW = texture("minimap_arrow.png");
 
     private ExternalRpgUi() {
     }
@@ -38,6 +42,12 @@ public final class ExternalRpgUi {
         nineSlice(graphics, PANEL_BACKGROUND, 64, 64, 10, x, y, width, height);
     }
 
+    public static void hudPanel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        if (width <= 0 || height <= 0) return;
+        graphics.fill(x + 3, y + 4, x + width + 3, y + height + 4, 0x70000000);
+        nineSlice(graphics, HUD_PANEL_BROWN, 64, 64, 9, x, y, width, height);
+    }
+
     public static void button(GuiGraphicsExtractor graphics, Font font,
                               int x, int y, int width, int height,
                               String label, boolean selected, boolean hovered, boolean enabled) {
@@ -52,6 +62,20 @@ public final class ExternalRpgUi {
         int color = enabled ? 0xFFF8EBC9 : 0xFFAAA79F;
         graphics.centeredText(font, Component.literal(label), x + width / 2,
                 y + Math.max(5, (height - 8) / 2), color);
+    }
+
+    public static void hudButton(GuiGraphicsExtractor graphics, Font font,
+                                 int x, int y, int width, int height,
+                                 String label, boolean selected) {
+        nineSlice(graphics, HUD_BUTTON_BROWN, 48, 24, 6, x, y, width, height);
+        if (selected) {
+            graphics.fill(x + 3, y + 3, x + width - 3, y + height - 3, 0x6656A06A);
+            graphics.fill(x + 3, y + height - 4, x + width - 3, y + height - 2, 0xFFE7C77C);
+        }
+        if (label != null && !label.isBlank()) {
+            graphics.centeredText(font, Component.literal(label), x + width / 2,
+                    y + Math.max(4, (height - 8) / 2), 0xFFF5E7C4);
+        }
     }
 
     public static void iconButton(GuiGraphicsExtractor graphics, Font font, Item icon,
@@ -75,13 +99,32 @@ public final class ExternalRpgUi {
         graphics.pose().popMatrix();
     }
 
+    public static void minimapFrame(GuiGraphicsExtractor graphics, int x, int y, int size) {
+        if (size <= 0) return;
+        graphics.blit(RenderPipelines.GUI_TEXTURED, MINIMAP_RING_BROWN,
+                x, y, 0, 0, size, size,
+                128, 128, 128, 128);
+    }
+
+    public static void minimapArrow(GuiGraphicsExtractor graphics, int x, int y, int size) {
+        if (size <= 0) return;
+        graphics.blit(RenderPipelines.GUI_TEXTURED, MINIMAP_ARROW,
+                x, y, 0, 0, size, size,
+                16, 16, 16, 16);
+    }
+
     /**
      * Item components can still be unbound while the vanilla resource loading overlay is extracting state.
      * Skip only that early frame instead of crashing the whole client; the icon appears on the next valid frame.
      */
     public static boolean itemIcon(GuiGraphicsExtractor graphics, Item icon, int x, int y) {
+        return itemStackIcon(graphics, new ItemStack(icon), x, y);
+    }
+
+    public static boolean itemStackIcon(GuiGraphicsExtractor graphics, ItemStack stack, int x, int y) {
+        if (stack == null || stack.isEmpty()) return false;
         try {
-            graphics.fakeItem(new ItemStack(icon), x, y);
+            graphics.fakeItem(stack, x, y);
             return true;
         } catch (NullPointerException exception) {
             if ("Components not bound yet".equals(exception.getMessage())) return false;
@@ -101,8 +144,9 @@ public final class ExternalRpgUi {
     }
 
     public static void divider(GuiGraphicsExtractor graphics, int x, int y, int width) {
+        if (width <= 0) return;
         graphics.fill(x, y, x + width, y + 1, 0xFF6A5338);
-        graphics.fill(x + 12, y + 1, x + width - 12, y + 2, 0xFFB99858);
+        if (width > 24) graphics.fill(x + 12, y + 1, x + width - 12, y + 2, 0xFFB99858);
     }
 
     public static void progress(GuiGraphicsExtractor graphics, Font font,
@@ -115,6 +159,23 @@ public final class ExternalRpgUi {
         int inside = Math.max(0, width - 10);
         int filled = Math.round(inside * clamp(ratio));
         if (filled > 0) graphics.fill(x + 5, y + 16, x + 5 + filled, y + 22, fillColor);
+    }
+
+    public static void hudMeter(GuiGraphicsExtractor graphics, Font font,
+                                int x, int y, int width, String label, String value,
+                                float ratio, int fillColor) {
+        hudPanel(graphics, x, y, width, 22);
+        graphics.text(font, Component.literal(label), x + 7, y + 6, 0xFFF4E4BD, true);
+        int valueWidth = font.width(value);
+        graphics.text(font, Component.literal(value), x + width - valueWidth - 7, y + 6, 0xFFF4E4BD, false);
+        int barX = x + 45;
+        int barRight = x + width - valueWidth - 12;
+        int barWidth = Math.max(0, barRight - barX);
+        if (barWidth > 0) {
+            graphics.fill(barX, y + 7, barX + barWidth, y + 15, 0xB01D1713);
+            int filled = Math.round(barWidth * clamp(ratio));
+            if (filled > 0) graphics.fill(barX + 1, y + 8, barX + filled, y + 14, fillColor);
+        }
     }
 
     public static void badge(GuiGraphicsExtractor graphics, Font font,
