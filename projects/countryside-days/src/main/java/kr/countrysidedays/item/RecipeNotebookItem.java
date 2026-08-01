@@ -1,6 +1,7 @@
 package kr.countrysidedays.item;
 
 import kr.countrysidedays.world.CountrysideWorldData;
+import kr.countrysidedays.world.PlayerEstateLayout;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** A dynamic parchment notebook for recipes, property directions and village life. */
+/** A dynamic parchment notebook for the reader's private estate and village life. */
 public final class RecipeNotebookItem extends WrittenBookItem {
     public RecipeNotebookItem(Item.Properties properties) {
         super(properties);
@@ -38,24 +39,32 @@ public final class RecipeNotebookItem extends WrittenBookItem {
 
     private static WrittenBookContent createContent(ServerPlayer player) {
         CountrysideWorldData data = CountrysideWorldData.get(player.level().getServer());
-        BlockPos origin = data.homesteadOrigin().orElse(BlockPos.ZERO);
-        List<Filterable<Component>> pages = new ArrayList<>();
+        CountrysideWorldData.PlayerEstate estate = data.estate(player.getUUID()).orElse(null);
+        BlockPos origin = estate == null ? BlockPos.ZERO : estate.originPos();
+        String ownerName = estate == null ? player.getScoreboardName() : estate.ownerName();
+        String restaurantName = estate == null ? "나의 시골식당" : estate.restaurantName();
+        int meals = estate == null ? 0 : estate.mealsPrepared();
+        int guests = estate == null ? 0 : estate.customersServed();
+        int coins = estate == null ? 0 : estate.coinsEarned();
 
+        List<Filterable<Component>> pages = new ArrayList<>();
         pages.add(page(
                 "§6§l시골생활 수첩§r\n\n"
-                        + "§2" + data.restaurantName() + "§r\n"
-                        + "주인  " + fallback(data.ownerName(), player.getScoreboardName()) + "\n\n"
-                        + "오늘도 서두르지 말고\n"
-                        + "천천히 마을을 돌보자."
+                        + "§2" + restaurantName + "§r\n"
+                        + "주인  " + ownerName + "\n\n"
+                        + "이 수첩은 다른 사람의\n"
+                        + "구획이 아니라 내 생활 터전만\n"
+                        + "표시한다."
         ));
 
         pages.add(page(
                 "§6§l나의 생활 터전§r\n\n"
-                        + location("집", origin.offset(-34, 0, -16))
-                        + location("농장", origin.offset(10, 0, -4))
-                        + location("식당", origin.offset(-7, 0, -5))
-                        + location("목장", origin.offset(9, 0, 52))
-                        + "\n표지판과 연결된 길을\n따라가면 찾을 수 있다."
+                        + location("집", PlayerEstateLayout.home(origin))
+                        + location("농장", PlayerEstateLayout.farm(origin))
+                        + location("식당", PlayerEstateLayout.restaurant(origin))
+                        + location("목장", PlayerEstateLayout.ranch(origin))
+                        + "\nHUD에도 집과 식당까지의\n"
+                        + "방향과 거리가 표시된다."
         ));
 
         pages.add(page(
@@ -65,44 +74,42 @@ public final class RecipeNotebookItem extends WrittenBookItem {
                         + "그다음 §9민물고기§r를\n"
                         + "올리면 시골 전골 완성!\n\n"
                         + "들나물: 풀·고사리 채집\n"
-                        + "민물고기: 강·연못 낚시"
+                        + "민물고기: 강에서 낚시"
         ));
 
         pages.add(page(
                 "§6§l식당 영업§r\n\n"
                         + "영업시간  아침~해질녘\n"
-                        + "손님에게 전골을 들고\n"
-                        + "말을 걸어 서빙한다.\n\n"
-                        + "준비한 요리  " + data.mealsPrepared() + "\n"
-                        + "맞이한 손님  " + data.customersServed() + "\n"
-                        + "모은 마을 동전  " + data.villageCoinsEarned()
+                        + "내 식당 손님에게 전골을\n"
+                        + "들고 말을 걸어 서빙한다.\n\n"
+                        + "준비한 요리  " + meals + "\n"
+                        + "맞이한 손님  " + guests + "\n"
+                        + "번 마을 동전  " + coins
         ));
 
         pages.add(page(
                 "§6§l우리 마을 사람들§r\n\n"
                         + "복순 할머니  마을 어른\n"
-                        + "농부 한결  농장 돌보기\n"
+                        + "농부 한결  장터와 농사\n"
                         + "목장지기 소미  동물 돌보기\n"
-                        + "회관지기 도윤  마을 안내\n"
-                        + "민수  식당 단골손님\n\n"
-                        + "낮에는 일터와 식당에,\n"
-                        + "밤에는 각자의 집으로 간다."
+                        + "회관지기 도윤  마을 안내\n\n"
+                        + "각자 가구가 놓인 집에서\n"
+                        + "살고 낮에는 일터로 간다."
         ));
 
         pages.add(page(
                 "§6§l마을 약속§r\n\n"
-                        + "• 남의 집과 창고를\n  허락 없이 열지 않기\n"
-                        + "• 주민 농작물을\n  함부로 가져가지 않기\n"
-                        + "• 공동시설은 깨끗하게\n"
+                        + "• 남의 생활 구획은\n  주인만 사용할 수 있다\n"
+                        + "• 공공시설과 주민 집은\n  부술 수 없다\n"
+                        + "• 주인 없는 농장과 목장은\n  만들지 않는다\n"
                         + "• 죽어도 소지품은 유지\n\n"
-                        + "식당 이름 바꾸기:\n"
-                        + "이름표를 모루에서 고친 뒤\n"
-                        + "식당 간판에 사용한다."
+                        + "식당 이름: 이름표를\n"
+                        + "식당 입간판에 사용한다."
         ));
 
         return new WrittenBookContent(
                 new Filterable<>("시골생활 수첩", Optional.empty()),
-                fallback(data.ownerName(), player.getScoreboardName()),
+                ownerName,
                 0,
                 pages,
                 false
@@ -115,9 +122,5 @@ public final class RecipeNotebookItem extends WrittenBookItem {
 
     private static String location(String label, BlockPos pos) {
         return label + "  " + pos.getX() + ", " + pos.getZ() + "\n";
-    }
-
-    private static String fallback(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
     }
 }
