@@ -14,7 +14,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerSwitchHotbarSlotEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
@@ -34,7 +33,6 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
-        NeoForge.EVENT_BUS.addListener(this::onHotbarSwitch);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("Arcane Circle {} loaded with {} spells, {} fusion formulae, {} spellbooks and {} staves",
                 VERSION, SpellCatalog.spells().size(), SpellCatalog.fusions().size(),
@@ -75,12 +73,6 @@ public final class ArcaneCircle {
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
         boolean stored = player.getInventory().add(stack);
         if (!stored) player.drop(stack, false);
-    }
-
-    private void onHotbarSwitch(PlayerSwitchHotbarSlotEvent.Pre event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (event.getNewSlotIndex() < 0 || event.getNewSlotIndex() >= 5) return;
-        if (SpellCastingService.shouldBlockHotbarSwitch(player)) event.setCanceled(true);
     }
 
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
