@@ -4,8 +4,8 @@ import kr.countrysidedays.CountrysideDays;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
 import kr.countrysidedays.gameplay.RuralNpcManager;
 import kr.countrysidedays.registry.ModBlocks;
-import kr.countrysidedays.world.CountrysidePropertyManager;
 import kr.countrysidedays.world.CountrysideWorldData;
+import kr.countrysidedays.world.PlayerEstateLayout;
 import kr.countrysidedays.world.StarterHomesteadGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -48,50 +48,49 @@ public final class ModGameTests {
         helper.assertTrue(data.removeKitchenState(testPos), "counter removal should clear temporary cooking state");
         helper.assertFalse(data.hasHerbPreparation(testPos), "removed counter must not retain herb preparation");
 
-        int guestsBefore = data.customersServed();
-        int coinsBefore = data.villageCoinsEarned();
-        long nextDay = data.lastCustomerServiceDay() + 1L;
+        UUID first = UUID.fromString("8be03a48-1c0d-4fe0-b4a5-201f95bdb600");
+        UUID second = UUID.fromString("d0de18fd-c2ce-4392-a9e2-903dc6b8892d");
+        BlockPos village = helper.absolutePos(new BlockPos(10, 6, 10));
+
+        CountrysideWorldData.EstateAllocation firstAllocation = data.ensureEstate(first, "첫 주민", village);
+        CountrysideWorldData.EstateAllocation secondAllocation = data.ensureEstate(second, "둘째 주민", village);
+        helper.assertTrue(firstAllocation.estate().isOwner(first), "first UUID should own the first estate");
+        helper.assertTrue(secondAllocation.estate().isOwner(second), "second UUID should own the second estate");
+        helper.assertFalse(
+                firstAllocation.estate().originPos().equals(secondAllocation.estate().originPos()),
+                "multiplayer estates must never overlap at one origin"
+        );
         helper.assertTrue(
-                data.recordCustomerService(nextDay, RuralNpcManager.DAILY_REWARD_COINS),
-                "a new countryside day should accept one customer service"
+                PlayerEstateLayout.contains(firstAllocation.estate().originPos(), firstAllocation.estate().originPos()),
+                "estate origin should be inside its own protected boundary"
         );
         helper.assertFalse(
-                data.recordCustomerService(nextDay, RuralNpcManager.DAILY_REWARD_COINS),
-                "the same daily customer must not pay twice"
-        );
-        helper.assertTrue(data.customersServed() == guestsBefore + 1, "guest count should increase once");
-        helper.assertTrue(
-                data.villageCoinsEarned() == coinsBefore + RuralNpcManager.DAILY_REWARD_COINS,
-                "coin earnings should match the daily reward"
+                PlayerEstateLayout.contains(firstAllocation.estate().originPos(), secondAllocation.estate().originPos()),
+                "a second estate origin must be outside the first protected boundary"
         );
 
-        UUID owner = UUID.fromString("8be03a48-1c0d-4fe0-b4a5-201f95bdb600");
-        data.claimHomesteadOwner(owner, "테스트주민");
-        helper.assertTrue(data.isHomesteadOwner(owner), "the first resident should own the homestead");
+        helper.assertTrue(data.renameRestaurant(first, "느린 오후 식당"), "owner should rename only their restaurant");
+        helper.assertTrue(
+                "느린 오후 식당".equals(data.estate(first).orElseThrow().restaurantName()),
+                "renamed restaurant should persist for its owner"
+        );
         helper.assertFalse(
-                data.isHomesteadOwner(UUID.fromString("d0de18fd-c2ce-4392-a9e2-903dc6b8892d")),
-                "a different player must not inherit private property"
+                "느린 오후 식당".equals(data.estate(second).orElseThrow().restaurantName()),
+                "another player's restaurant name must remain independent"
         );
-        helper.assertTrue(data.restaurantName().contains("테스트주민"), "default restaurant name should include its owner");
-        helper.assertTrue(data.renameRestaurant(owner, "느린 오후 식당"), "owner should be able to rename the restaurant");
-        helper.assertTrue("느린 오후 식당".equals(data.restaurantName()), "restaurant name should persist in world data");
 
-        var plots = CountrysidePropertyManager.plots(testPos);
+        long day = 12L;
         helper.assertTrue(
-                plots.stream().anyMatch(plot -> plot.kind() == CountrysidePropertyManager.PlotKind.PLAYER_HOME),
-                "property map should include a player home"
+                data.recordCustomerService(first, day, RuralNpcManager.DAILY_REWARD_COINS),
+                "first owner should serve their daily customer"
+        );
+        helper.assertFalse(
+                data.recordCustomerService(first, day, RuralNpcManager.DAILY_REWARD_COINS),
+                "the same owner's customer must not pay twice in one day"
         );
         helper.assertTrue(
-                plots.stream().anyMatch(plot -> plot.kind() == CountrysidePropertyManager.PlotKind.PLAYER_FARM),
-                "property map should include a player farm"
-        );
-        helper.assertTrue(
-                plots.stream().anyMatch(plot -> plot.kind() == CountrysidePropertyManager.PlotKind.PLAYER_RESTAURANT),
-                "property map should include a player restaurant"
-        );
-        helper.assertTrue(
-                plots.stream().anyMatch(plot -> plot.kind() == CountrysidePropertyManager.PlotKind.PLAYER_RANCH),
-                "property map should include a player ranch"
+                data.recordCustomerService(second, day, RuralNpcManager.DAILY_REWARD_COINS),
+                "second owner should have an independent daily customer"
         );
 
         helper.assertTrue(
@@ -111,17 +110,20 @@ public final class ModGameTests {
     }
 
     private static void homesteadLayout(GameTestHelper helper) {
-        BlockPos relativeOrigin = new BlockPos(20, 4, 20);
+        BlockPos relativeOrigin = new BlockPos(35, 6, 32);
         BlockPos absoluteOrigin = helper.absolutePos(relativeOrigin);
-        StarterHomesteadGenerator.buildHomestead(helper.getLevel(), absoluteOrigin);
+        StarterHomesteadGenerator.buildPlayerEstate(
+                helper.getLevel(), absoluteOrigin, "테스트 주민", "테스트 식당"
+        );
 
-        helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(10, 5, 14));
-        helper.assertBlockPresent(Blocks.FURNACE, new BlockPos(9, 5, 14));
-        helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(24, 4, 13));
-        helper.assertBlockPresent(Blocks.WATER, new BlockPos(27, 4, 27));
-        helper.assertBlockPresent(Blocks.DEEPSLATE_TILES, new BlockPos(7, 9, 11));
-        helper.assertBlockPresent(Blocks.GRAVEL, new BlockPos(10, 3, 22));
-        helper.assertBlockPresent(Blocks.OAK_LOG, new BlockPos(32, 4, 31));
+        helper.assertBlockPresent(ModBlocks.COUNTRY_KITCHEN_COUNTER.get(), new BlockPos(45, 7, 18));
+        helper.assertBlockPresent(Blocks.CHEST, new BlockPos(10, 7, 15));
+        helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(9, 6, 36));
+        helper.assertBlockPresent(Blocks.WATER, new BlockPos(17, 6, 42));
+        helper.assertBlockPresent(Blocks.CAULDRON, new BlockPos(44, 6, 54));
+        helper.assertBlockPresent(Blocks.BRICKS, new BlockPos(45, 12, 37));
+        helper.assertBlockPresent(Blocks.PACKED_MUD, new BlockPos(35, 5, 7));
+        helper.assertBlockPresent(Blocks.OAK_SIGN, new BlockPos(38, 6, 8));
 
         helper.succeed();
     }
