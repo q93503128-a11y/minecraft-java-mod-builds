@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.6.0-alpha.1";
+    public static final String VERSION = "0.7.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -34,7 +34,7 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
-        LOGGER.info("Arcane Circle {} loaded with {} spells, {} fusion formulae, {} spellbooks and {} staves",
+        LOGGER.info("Arcane Circle {} loaded with {} classic spells, {} fusion formulae, {} spellbooks and {} staves",
                 VERSION, SpellCatalog.spells().size(), SpellCatalog.fusions().size(),
                 ModItems.spellbooks().size(), ModItems.all().size());
     }
@@ -51,7 +51,9 @@ public final class ArcaneCircle {
             player.sendSystemMessage(Component.literal(
                     "§d초심자 마도서§f를 읽어 1써클 기초 주문을 각인하고, 이후 주문서를 수집하세요."));
             player.sendSystemMessage(Component.literal(
-                    "§71~5를 누르고 유지: 마법진 전개 · 숫자키 놓기: 발사 · X+숫자: 융합"));
+                    "§71~5를 누르고 유지: 선명한 마법진 전개 · 숫자키 놓기: 발사 · X+숫자: 융합"));
+            player.sendSystemMessage(Component.literal(
+                    "§7주문 숙련은 빈 시전보다 적중·처치·강적 상대 성과에서 훨씬 빠르게 오릅니다."));
         }
         ArcaneNetwork.sync(player);
     }
