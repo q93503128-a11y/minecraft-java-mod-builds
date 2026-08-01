@@ -5,7 +5,7 @@
   "future_max_circle": 9,
   "spell_slots": 5,
   "casting_mode": "hold_number_show_sigil_release_to_cast",
-  "hotbar_policy": "consume_vanilla_1_to_5_before_processing_and_server_cancel_while_charging",
+  "hotbar_policy": "consume_vanilla_1_to_5_clicks_in_client_pre_tick_before_hotbar_processing",
   "sigil_anchors": ["front", "feet", "body", "ground_self", "ground_target", "target"],
   "cooldown_storage": "persistent_world_saved_data",
   "friendly_fire_policy": "exclude_allies_and_owned_tames",
