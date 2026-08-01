@@ -7,6 +7,10 @@ on:
       - 'projects/living-kingdoms/**'
       - '.github/workflows/check-living-kingdoms-fast.yml'
 
+concurrency:
+  group: living-kingdoms-fast-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
