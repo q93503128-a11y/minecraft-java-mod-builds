@@ -2,7 +2,7 @@ package kr.countrysidedays.world;
 
 import net.minecraft.core.BlockPos;
 
-/** Fixed non-overlapping geometry shared by generation, protection, HUD and tests. */
+/** Fixed non-overlapping geometry shared by generation, protection, HUD, AI and tests. */
 public final class PlayerEstateLayout {
     public static final int MIN_X = -30;
     public static final int MAX_X = 30;
@@ -47,8 +47,24 @@ public final class PlayerEstateLayout {
         return origin.offset(17, 1, -8);
     }
 
+    public static BlockPos restaurantSign(BlockPos origin) {
+        return origin.offset(11, 2, -8);
+    }
+
+    public static BlockPos customerSeat(BlockPos origin) {
+        return origin.offset(14, 1, -13);
+    }
+
     public static BlockPos kitchenCounter(BlockPos origin) {
         return origin.offset(10, 1, -14);
+    }
+
+    public static BlockPos ownerGate(BlockPos origin) {
+        return origin.offset(0, 0, MIN_Z);
+    }
+
+    public static BlockPos ownerSign(BlockPos origin) {
+        return origin.offset(3, 0, MIN_Z - 1);
     }
 
     public static BlockPos farm(BlockPos origin) {
@@ -56,7 +72,7 @@ public final class PlayerEstateLayout {
     }
 
     public static BlockPos farmGate(BlockPos origin) {
-        return origin.offset(-7, 1, 10);
+        return origin.offset(-7, 0, 10);
     }
 
     public static BlockPos ranch(BlockPos origin) {
@@ -64,7 +80,15 @@ public final class PlayerEstateLayout {
     }
 
     public static BlockPos ranchGate(BlockPos origin) {
-        return origin.offset(6, 1, 14);
+        return origin.offset(7, 0, 2);
+    }
+
+    public static BlockPos hayFeeder(BlockPos origin) {
+        return origin.offset(23, 0, 22);
+    }
+
+    public static BlockPos waterTrough(BlockPos origin) {
+        return origin.offset(9, 0, 23);
     }
 
     public static boolean contains(BlockPos origin, BlockPos pos) {
