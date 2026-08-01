@@ -60,7 +60,6 @@ public final class VillageWorldSystem {
             }
         }
         removeUnauthorizedMobs(level, center);
-        removeLooseDebris(level, center);
     }
 
     public static synchronized void forceRebuild(MinecraftServer server) {
