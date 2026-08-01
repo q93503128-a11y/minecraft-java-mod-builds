@@ -35,6 +35,23 @@ public final class ModItems {
                     .build())
     );
 
+    public static final DeferredItem<Item> HERB_TEA = ITEMS.registerSimpleItem(
+            "herb_tea",
+            properties -> properties.food(new FoodProperties.Builder()
+                    .nutrition(3)
+                    .saturationModifier(0.5F)
+                    .alwaysEdible()
+                    .build())
+    );
+
+    public static final DeferredItem<Item> FARM_BREAKFAST = ITEMS.registerSimpleItem(
+            "farm_breakfast",
+            properties -> properties.food(new FoodProperties.Builder()
+                    .nutrition(9)
+                    .saturationModifier(0.9F)
+                    .build())
+    );
+
     public static final DeferredItem<RecipeNotebookItem> RECIPE_NOTEBOOK = ITEMS.registerItem(
             "recipe_notebook",
             RecipeNotebookItem::new,
