@@ -222,14 +222,14 @@ final class VillageBuildingEnhancements {
             VillageBuildingCatalog.Spec spec) {
         int x0 = origin.getX();
         int centerZ = origin.getZ() + spec.depth() / 2;
-        set(level, new BlockPos(x0 - 1, groundY + 6, centerZ), Blocks.RED_WOOL);
-        set(level, new BlockPos(x0 - 1, groundY + 5, centerZ), Blocks.RED_WOOL);
-        set(level, new BlockPos(x0 - 1, groundY + 7, centerZ), Blocks.RED_WOOL);
-        set(level, new BlockPos(x0 - 1, groundY + 6, centerZ - 1), Blocks.RED_WOOL);
-        set(level, new BlockPos(x0 - 1, groundY + 6, centerZ + 1), Blocks.RED_WOOL);
+        set(level, new BlockPos(x0 - 1, groundY + 6, centerZ), Blocks.REDSTONE_BLOCK);
+        set(level, new BlockPos(x0 - 1, groundY + 5, centerZ), Blocks.REDSTONE_BLOCK);
+        set(level, new BlockPos(x0 - 1, groundY + 7, centerZ), Blocks.REDSTONE_BLOCK);
+        set(level, new BlockPos(x0 - 1, groundY + 6, centerZ - 1), Blocks.REDSTONE_BLOCK);
+        set(level, new BlockPos(x0 - 1, groundY + 6, centerZ + 1), Blocks.REDSTONE_BLOCK);
         for (int z : new int[]{origin.getZ() + 5, origin.getZ() + 14}) {
-            set(level, new BlockPos(origin.getX() + 14, groundY + 2, z), Blocks.WHITE_WOOL);
-            set(level, new BlockPos(origin.getX() + 15, groundY + 2, z), Blocks.WHITE_WOOL);
+            set(level, new BlockPos(origin.getX() + 14, groundY + 2, z), Blocks.QUARTZ_BLOCK);
+            set(level, new BlockPos(origin.getX() + 15, groundY + 2, z), Blocks.QUARTZ_BLOCK);
         }
     }
 
