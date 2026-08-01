@@ -4,7 +4,7 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
-/** CI-only graphical verification for all responsive codex pages after client resource binding. */
+/** CI-only graphical and interaction verification for every codex page. */
 final class CodexSmokeDiagnostics {
     private static final boolean ENABLED = "1".equals(System.getenv("LIVING_KINGDOMS_CI_CLIENT_TEST"));
     private static int ticks;
@@ -19,6 +19,7 @@ final class CodexSmokeDiagnostics {
         Minecraft minecraft = Minecraft.getInstance();
 
         if (ticks == 82) open(minecraft, "map");
+        if (ticks == 101) verifyAtlasInteraction();
         if (ticks == 102) verify("map");
         if (ticks == 106) open(minecraft, "overview");
         if (ticks == 126) verify("overview");
@@ -28,7 +29,7 @@ final class CodexSmokeDiagnostics {
         if (ticks == 176) {
             verify("skills");
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true mastery_first=true",
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true",
                     active.width, active.height
             );
         }
@@ -40,9 +41,21 @@ final class CodexSmokeDiagnostics {
         LivingKingdoms.LOGGER.info("LK_CLIENT_CODEX_SCREEN_OPENED page={}", page);
     }
 
+    private static void verifyAtlasInteraction() {
+        if (active == null) throw new IllegalStateException("Atlas screen is not active");
+        double x = active.width / 2.0D;
+        double y = active.height * 0.65D;
+        if (!active.handleMapScroll(x, y, 1.0D)) {
+            throw new IllegalStateException("Atlas rejected zoom input");
+        }
+        if (!active.handleMapDrag(x, y, 0, 8.0D, -5.0D)) {
+            throw new IllegalStateException("Atlas rejected drag input");
+        }
+    }
+
     private static void verify(String page) {
         if (active == null || !active.allRequiredControlsFit()) {
-            throw new IllegalStateException("Codex page extends outside or overlaps the current client viewport: " + page);
+            throw new IllegalStateException("Codex page extends outside or overlaps the current viewport: " + page);
         }
     }
 
@@ -78,7 +91,7 @@ final class CodexSmokeDiagnostics {
                 + "skill_points\t4\n"
                 + "skill_milestone\t2\n"
                 + "unlocked_skills\tcombat_endurance,explore_trailblazer\n"
-                + "growth_rule\t행동 숙련은 계속 성장하며, 기술 트리는 부가 효과를 해금합니다.\n"
+                + "growth_rule\t행동 숙련은 계속 성장하며 기술 트리는 부가 효과만 해금합니다.\n"
                 + mastery("combat", "전투 숙련", 27, 13_770, 0.42F)
                 + mastery("defense", "방어 숙련", 19, 7_200, 0.31F)
                 + mastery("mining", "채광 숙련", 34, 21_500, 0.64F)
@@ -92,10 +105,10 @@ final class CodexSmokeDiagnostics {
                 + "player_z\t8\n"
                 + "erden_x\t0\n"
                 + "erden_z\t0\n"
-                + "silvana_x\t-9000\n"
-                + "silvana_z\t-1500\n"
-                + "kardum_x\t-2500\n"
-                + "kardum_z\t-9000\n";
+                + "silvana_x\t-2400\n"
+                + "silvana_z\t-1200\n"
+                + "kardum_x\t2200\n"
+                + "kardum_z\t-1500\n";
     }
 
     private static String mastery(String id, String name, int level, long xp, float progress) {
