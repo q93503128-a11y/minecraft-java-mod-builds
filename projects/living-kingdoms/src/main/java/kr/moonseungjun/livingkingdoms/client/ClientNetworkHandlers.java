@@ -24,32 +24,52 @@ public final class ClientNetworkHandlers {
     }
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
-        if (activeOriginScreen == null) {
-            activeOriginScreen = new ResponsiveOriginSelectionScreen(payload.schemaVersion());
-            Minecraft.getInstance().gui.setScreen(activeOriginScreen);
-        }
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            if (!(minecraft.screen instanceof ResponsiveOriginSelectionScreen)) {
+                activeOriginScreen = new ResponsiveOriginSelectionScreen(payload.schemaVersion());
+                activeLoadingScreen = null;
+                latestBuildProgress = null;
+                minecraft.gui.setScreen(activeOriginScreen);
+            } else {
+                activeOriginScreen = (ResponsiveOriginSelectionScreen) minecraft.screen;
+            }
+        });
     }
 
     private static void handleSubmissionResult(OriginSubmissionResultPayload payload, IPayloadContext context) {
-        if (!payload.accepted()) {
-            if (activeOriginScreen != null) activeOriginScreen.handleServerResult(false, payload.message());
-            return;
-        }
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            if (!payload.accepted()) {
+                if (activeOriginScreen != null) activeOriginScreen.handleServerResult(false, payload.message());
+                return;
+            }
 
-        activeOriginScreen = null;
-        activeLoadingScreen = new RealmLoadingScreen(payload.message());
-        if (latestBuildProgress != null) activeLoadingScreen.update(latestBuildProgress);
-        Minecraft.getInstance().gui.setScreen(activeLoadingScreen);
+            activeOriginScreen = null;
+            activeLoadingScreen = new RealmLoadingScreen(payload.message());
+            if (latestBuildProgress != null) activeLoadingScreen.update(latestBuildProgress);
+            minecraft.gui.setScreen(activeLoadingScreen);
+        });
     }
 
     private static void handleBuildProgress(RealmBuildProgressPayload payload, IPayloadContext context) {
-        latestBuildProgress = payload;
-        if (activeLoadingScreen == null) activeLoadingScreen = new RealmLoadingScreen(payload.message());
-        activeLoadingScreen.update(payload);
-        Minecraft.getInstance().gui.setScreen(activeLoadingScreen);
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            latestBuildProgress = payload;
+            if (activeLoadingScreen == null || payload.percent() < activeLoadingScreenPercent()) {
+                activeLoadingScreen = new RealmLoadingScreen(payload.message());
+            }
+            activeLoadingScreen.update(payload);
+            minecraft.gui.setScreen(activeLoadingScreen);
+        });
+    }
+
+    private static int activeLoadingScreenPercent() {
+        return latestBuildProgress == null ? 0 : latestBuildProgress.percent();
     }
 
     private static void handleOpenCodex(OpenCodexPayload payload, IPayloadContext context) {
-        Minecraft.getInstance().gui.setScreen(new RealmCodexScreenV3(payload.page(), payload.snapshot()));
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> minecraft.gui.setScreen(new RealmCodexScreenV4(payload.page(), payload.snapshot())));
     }
 }
