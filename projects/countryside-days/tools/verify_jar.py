@@ -67,6 +67,7 @@ def main() -> None:
             "kr/countrysidedays/gameplay/KitchenInteractionHandler.class",
             "kr/countrysidedays/gameplay/RanchLifeManager.class",
             "kr/countrysidedays/gameplay/RuralNpcManager.class",
+            "kr/countrysidedays/gameplay/SharedRestaurantAccess.class",
             "kr/countrysidedays/gameplay/VillageLifeManager.class",
             "kr/countrysidedays/world/CountrysideWorldData.class",
             "kr/countrysidedays/world/CountrysideWorldData$PlayerEstate.class",
@@ -75,6 +76,8 @@ def main() -> None:
             "kr/countrysidedays/world/CountrysideRegionManager.class",
             "kr/countrysidedays/world/FlatCountrysideBootstrap.class",
             "kr/countrysidedays/world/PlayerEstateLayout.class",
+            "kr/countrysidedays/world/PublicVillageExpansionBuilder.class",
+            "kr/countrysidedays/world/SharedRestaurantBuilder.class",
             "kr/countrysidedays/network/EstateHudPayload.class",
             "kr/countrysidedays/client/ClientEstateState.class",
             "kr/countrysidedays/client/CountrysideHud.class",
@@ -96,7 +99,12 @@ def main() -> None:
             "hud.countrysidedays.shift_open",
             "hud.countrysidedays.shift_closed",
             "hud.countrysidedays.goal_open_first_shift",
+            "item.countrysidedays.recipe_notebook",
             "item.countrysidedays.life_guide",
+            "message.countrysidedays.restaurant_staff_only",
+            "message.countrysidedays.restaurant_role_owner",
+            "message.countrysidedays.restaurant_role_staff",
+            "message.countrysidedays.public_livestock_protected",
         ):
             value = korean.get(key)
             if not isinstance(value, str) or not value.strip():
