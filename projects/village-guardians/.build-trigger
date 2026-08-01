@@ -1,4 +1,4 @@
 village-guardians-0.14.0-alpha.1
-source-ready=2026-08-01T21:30:00+09:00
+source-ready=2026-08-01T21:36:00+09:00
 audit=independent-scroll-ui-stable-hud-caller-research-towers-currency-gate-respawn
-retry=0
+retry=1-respawn-fallback-mapping
