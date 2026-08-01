@@ -2,6 +2,7 @@ package kr.moonseungjun.arcanecircle;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
+import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.network.ArcaneNetwork;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
@@ -13,21 +14,27 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.4.0-alpha.1";
+    public static final String VERSION = "0.5.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
+    private static final String STARTER_STAFF_TAG = "arcanecircle_starter_staff_v05";
 
     public ArcaneCircle(IEventBus modEventBus) {
         SpellCatalog.bootstrap();
         ModItems.register(modEventBus);
         modEventBus.addListener(ArcaneNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("Arcane Circle {} loaded with {} spells, {} fusion formulae and {} staves",
                 VERSION, SpellCatalog.spells().size(), SpellCatalog.fusions().size(), ModItems.all().size());
     }
@@ -36,8 +43,8 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         boolean firstAwakening = data.ensureProfile(player);
+        grantStarterStaffOnce(player);
         if (firstAwakening) {
-            player.getInventory().add(new ItemStack(ModItems.NOVICE_STAFF.get()));
             player.sendSystemMessage(Component.literal(
                     "§5[구중 마법학] §f마력핵이 각성했습니다. §dC§f로 마도서를 여세요."));
             player.sendSystemMessage(Component.literal(
@@ -48,10 +55,42 @@ public final class ArcaneCircle {
         ArcaneNetwork.sync(player);
     }
 
+    private void grantStarterStaffOnce(ServerPlayer player) {
+        if (player.getTags().contains(STARTER_STAFF_TAG)) return;
+        player.addTag(STARTER_STAFF_TAG);
+        ItemStack staff = new ItemStack(ModItems.NOVICE_STAFF.get());
+        if (!player.getInventory().contains(staff)) {
+            boolean stored = player.getInventory().add(staff);
+            if (!stored) player.drop(staff, false);
+            player.sendSystemMessage(Component.literal(
+                    "§5[마도구 지급] §f견습 마도봉을 지급했습니다. 주 손이나 보조 손에 들면 효과가 적용됩니다."));
+        }
+    }
+
+    private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        SpellCastingService.clearSession(event.getEntity().getUUID());
+    }
+
+    private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        SpellCastingService.clearSession(player.getUUID());
+        ArcaneNetwork.sync(player);
+    }
+
+    private void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        SpellCastingService.clearSession(player.getUUID());
+        ArcaneNetwork.sync(player);
+    }
+
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         if (player.tickCount % 10 == 0) data.regenerate(player);
-        if (player.tickCount % 20 == 0) ArcaneNetwork.sync(player);
+        if (player.tickCount % 10 == 0) ArcaneNetwork.sync(player);
+    }
+
+    private void onServerStopped(ServerStoppedEvent event) {
+        SpellCastingService.clearAllSessions();
     }
 }
