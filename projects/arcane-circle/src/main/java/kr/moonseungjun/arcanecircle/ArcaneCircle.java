@@ -56,7 +56,7 @@ public final class ArcaneCircle {
     }
 
     private void grantStarterStaffOnce(ServerPlayer player) {
-        if (player.getTags().contains(STARTER_STAFF_TAG)) return;
+        if (player.hasTag(STARTER_STAFF_TAG)) return;
         player.addTag(STARTER_STAFF_TAG);
         ItemStack staff = new ItemStack(ModItems.NOVICE_STAFF.get());
         if (!player.getInventory().contains(staff)) {
