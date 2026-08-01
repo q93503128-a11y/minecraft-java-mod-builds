@@ -13,6 +13,7 @@ public final class VillageUiService {
     private VillageUiService() {}
 
     public static void openDashboard(ServerPlayer player) {
+        if (!requireTownHall(player, "마을 회관 기능은 회관 지휘대 근처에서만 사용할 수 있습니다.")) return;
         MinecraftServer server = player.level().getServer();
         if (server == null) return;
         List<String> actions = new ArrayList<>();
@@ -28,8 +29,13 @@ public final class VillageUiService {
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
             int level = VillageProgressionSystem.level(building);
             String levelText = building == VillageProgressionSystem.Building.TOWN_HALL
-                    ? "핵심 시설" : "Lv." + level + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL;
-            actions.add("manage:" + building.id());
+                    ? "행정·보급" : "Lv." + level + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL;
+            String action = switch (building) {
+                case TOWN_HALL -> "open_funding";
+                case WALLS -> "open_tower_control";
+                default -> "manage:" + building.id();
+            };
+            actions.add(action);
             labels.add(String.join("|",
                     "facility", building.id(), building.displayName(), levelText,
                     Integer.toString(VillageProgressionSystem.durability(building)),
@@ -43,30 +49,52 @@ public final class VillageUiService {
         send(player, "town_hall", "마을 회관", body, actions, labels);
     }
 
+    public static void openCallerMenu(ServerPlayer player) {
+        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        String body = "§f제 " + VillageCouncilState.currentDay() + "일 "
+                + VillageCouncilState.currentPhase().koreanName() + "\n"
+                + "§f직업: " + (role == null ? "미배치" : role.displayName()) + "\n"
+                + "§e수호 주화: " + VillageProgressionSystem.coins(player)
+                + " §6· 공동 보급품: " + VillageProgressionSystem.supplies() + "\n"
+                + "§f" + VillageRaidSystem.status() + "\n\n"
+                + "§7시설 관리와 직업 배치는 회관, 모든 전술·직업 기술은 기술 연구소에서 진행합니다.";
+        send(player, "caller", "마을 수호단 호출기", body,
+                List.of("open_status", "open_quick_chat", "return_village"),
+                List.of(
+                        "수호자 상태|레벨·직업·재화와 장착 기술 확인",
+                        "빠른 신호|접속 중인 수호단에게 즉시 신호 전송",
+                        "마을 귀환|전투 중이 아닐 때 중앙 광장으로 귀환"));
+    }
+
     public static void openQuickChat(ServerPlayer player) {
         send(player, "quick_chat", "수호단 통신",
                 "필요한 신호를 선택해 접속 중인 수호단에게 전송합니다.",
                 List.of("chat_ready", "chat_gate", "chat_repair", "chat_help"),
-                List.of("준비 완료", "북문 집결", "시설 수리 요청", "현재 위치 지원 요청"));
+                List.of(
+                        "준비 완료|다음 시간 진행 가능",
+                        "북문 집결|성문 방어 지원 요청",
+                        "시설 수리 요청|손상 시설 확인 요청",
+                        "현재 위치 지원|내 위치로 전투 지원 요청"));
     }
 
     public static void openMayor(ServerPlayer player) { openDashboard(player); }
-    public static void openManual(ServerPlayer player) { openQuickChat(player); }
+    public static void openManual(ServerPlayer player) { openCallerMenu(player); }
 
     public static void openPlayerStatus(ServerPlayer player) {
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         String body = "§f" + VillageCouncilState.rpgStatus(player) + "\n"
-                + "§f역할: " + (role == null ? "미선택" : role.displayName()) + "\n"
+                + "§f직업: " + (role == null ? "미배치" : role.displayName()) + "\n"
                 + "§e수호 주화: " + VillageProgressionSystem.coins(player) + "\n"
-                + "§b전술 포인트: " + VillageSkillTreeSystem.availablePoints(player)
-                + " / " + VillageSkillTreeSystem.earnedPoints(player) + "\n\n"
-                + "§7직업 선택과 직업 성장은 마을 회관에서 진행합니다.";
-        send(player, "inventory_actions", "수호자 메뉴", body,
-                List.of("open_skill_tree", "return_village"),
-                List.of("전술 발전", "마을 광장으로 귀환"));
+                + "§6공동 보급품: " + VillageProgressionSystem.supplies() + "\n"
+                + "§b장착 기술: " + (role == null ? "없음" : VillageRoleSkillSystem.loadoutSummary(player)) + "\n\n"
+                + "§7전술 발전과 기술 장착은 기술·마법 연구소에서만 가능합니다.";
+        send(player, "inventory_actions", "수호자 상태", body,
+                List.of("open_quick_chat", "return_village"),
+                List.of("빠른 신호|수호단 통신 열기", "마을 광장으로 귀환|전투 중에는 사용 불가"));
     }
 
     public static void openSkillTree(ServerPlayer player) {
+        if (!requireSkillHall(player, "전술 발전은 기술·마법 연구소의 연구대 근처에서만 가능합니다.")) return;
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         for (VillageSkillTreeSystem.Node node : VillageSkillTreeSystem.nodes()) {
@@ -86,10 +114,7 @@ public final class VillageUiService {
             player.sendSystemMessage(Component.literal("§c현재 배치된 직업의 성장 화면만 열 수 있습니다."));
             return;
         }
-        if (!VillageTownHallInteraction.isNearTownHall(player)) {
-            player.sendSystemMessage(Component.literal("§c직업 성장과 기술 장착은 마을 회관 지휘대 근처에서만 가능합니다."));
-            return;
-        }
+        if (!requireSkillHall(player, "직업 성장과 기술 장착은 기술·마법 연구소의 연구대 근처에서만 가능합니다.")) return;
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         for (VillageRoleSkillSystem.RoleNode node : VillageRoleSkillSystem.RoleNode.values()) {
@@ -116,6 +141,42 @@ public final class VillageUiService {
 
     public static void openRolePreview(ServerPlayer player, VillageRole role) { openDashboard(player); }
 
+    public static void openTowerControl(ServerPlayer player) {
+        if (!requireTownHall(player, "방어탑 지휘는 마을 회관 지휘대 근처에서만 가능합니다.")) return;
+        int wall = VillageProgressionSystem.wallLevel();
+        String body = "§f성벽 단계 Lv." + wall + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL + "\n"
+                + "§f내구도 " + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.WALLS) + "\n"
+                + "§6공동 보급품 " + VillageProgressionSystem.supplies() + "\n\n"
+                + towerLine("노포탑", wall >= 1, "장거리 단일 고화력") + "\n"
+                + towerLine("화염탑", wall >= 2, "범위 피해와 지속 화염") + "\n"
+                + towerLine("빙결탑", wall >= 3, "범위 둔화와 진군 지연") + "\n"
+                + towerLine("비전탑", wall >= 4, "다중 공격, Lv.5 약화") + "\n\n"
+                + "§7성벽을 강화하면 포탑이 순서대로 해금되며, 철벽수호자가 마을에 있으면 화력과 공격 속도가 증가합니다.";
+        send(player, "tower_control", "방어탑 지휘소", body,
+                List.of("manage:walls", "tower_status", "open_funding", "open_dashboard"),
+                List.of(
+                        "성벽 수리·강화|포탑 해금 단계와 북문 내구도 상승",
+                        "방어망 점검|활성 포탑과 용병 정원 확인",
+                        "공동 보급품 조달|개인 주화로 수리·강화 재화 마련",
+                        "회관으로 돌아가기|직업 배치와 다른 시설 관리"));
+    }
+
+    public static void openFunding(ServerPlayer player) {
+        if (!requireTownHall(player, "공동 보급 조달은 마을 회관 지휘대 근처에서만 가능합니다.")) return;
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (VillageFundingSystem.Bundle bundle : VillageFundingSystem.bundles()) {
+            actions.add("funding:" + bundle.id());
+            labels.add(bundle.displayName() + " · 주화 " + bundle.coinCost()
+                    + "|공동 보급품 +" + bundle.supplies());
+        }
+        add(actions, labels, "open_dashboard", "회관으로 돌아가기|시설 수리·강화 화면으로 복귀");
+        send(player, "funding", "공동 보급 조달",
+                "개인 수호 주화를 공동 보급품으로 전환합니다.\n"
+                        + "현재 내 주화 " + VillageProgressionSystem.coins(player)
+                        + " · 공동 보급품 " + VillageProgressionSystem.supplies(), actions, labels);
+    }
+
     public static void openEquipmentShop(ServerPlayer player) {
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
@@ -137,11 +198,16 @@ public final class VillageUiService {
                 + VillageCouncilState.currentDay() + "일 " + VillageCouncilState.currentPhase().koreanName() + "입니다.";
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             send(player, "vote", "시간 진행 투표", body,
-                    List.of("vote_yes", "vote_no"), List.of("찬성", "반대"));
+                    List.of("vote_yes", "vote_no"), List.of("찬성|다음 시간 단계 진행", "반대|현재 시간 유지"));
         }
     }
 
     public static void openFacilityManagement(ServerPlayer player, VillageProgressionSystem.Building building) {
+        if (!requireTownHall(player, "시설 수리와 강화는 마을 회관 지휘대 근처에서만 가능합니다.")) return;
+        if (building == VillageProgressionSystem.Building.TOWN_HALL) {
+            openFunding(player);
+            return;
+        }
         MinecraftServer server = player.level().getServer();
         if (server == null) return;
         int current = VillageProgressionSystem.durability(building);
@@ -151,24 +217,26 @@ public final class VillageUiService {
         int repairCost = Math.max(20, (missing + 7) / 8);
         int upgradeCost = VillageProgressionSystem.upgradeCost(level);
         boolean operational = VillageProgressionSystem.isOperational(building);
-        String levelText = building == VillageProgressionSystem.Building.TOWN_HALL
-                ? "핵심 시설" : "Lv." + level + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL;
+        String levelText = "Lv." + level + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL;
         String body = "§f등급 " + levelText + "\n§f내구도 " + current + " / " + maximum
-                + "\n§f공동 보급품 " + VillageProgressionSystem.supplies() + "\n\n§b현재 효과\n§f"
+                + "\n§6공동 보급품 " + VillageProgressionSystem.supplies()
+                + " §e· 내 주화 " + VillageProgressionSystem.coins(player) + "\n\n§b현재 효과\n§f"
                 + managementEffect(building, level, server) + "\n\n"
-                + (missing > 0 ? "§e완전 수리 비용: 보급품 " + repairCost + "\n" : "§a현재 완전한 상태입니다.\n")
-                + (building == VillageProgressionSystem.Building.TOWN_HALL ? "§7회관은 수리만 가능합니다."
-                : level >= VillageProgressionSystem.MAX_BUILDING_LEVEL ? "§a최고 강화 단계입니다."
-                : "§e다음 강화 비용: 보급품 " + upgradeCost + "\n§f다음 효과: "
-                + managementEffect(building, level + 1, server));
+                + (missing > 0 ? "§e완전 수리: 공동 보급품 " + repairCost + "\n" : "§a현재 완전한 상태입니다.\n")
+                + (level >= VillageProgressionSystem.MAX_BUILDING_LEVEL ? "§a최고 강화 단계입니다."
+                : "§e다음 강화: 공동 보급품 " + upgradeCost + "\n§f다음 효과: "
+                + managementEffect(building, level + 1, server))
+                + "\n\n§7보급품이 부족하면 개인 주화로 회관에서 조달할 수 있습니다.";
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
-        if (missing > 0) add(actions, labels, "repair:" + building.id(), "완전 수리 · 보급품 " + repairCost);
-        if (building != VillageProgressionSystem.Building.TOWN_HALL && operational
-                && level < VillageProgressionSystem.MAX_BUILDING_LEVEL) {
-            add(actions, labels, "upgrade:" + building.id(), "Lv." + (level + 1) + " 강화 · 보급품 " + upgradeCost);
+        if (missing > 0) add(actions, labels, "repair:" + building.id(), "완전 수리 · 보급품 " + repairCost + "|시설 내구도를 최대치로 복구");
+        if (operational && level < VillageProgressionSystem.MAX_BUILDING_LEVEL) {
+            add(actions, labels, "upgrade:" + building.id(), "Lv." + (level + 1) + " 강화 · 보급품 " + upgradeCost + "|시설 고유 효과와 최대 내구도 상승");
         }
-        add(actions, labels, "open_dashboard", "회관으로 돌아가기");
+        add(actions, labels,
+                "open_funding", "보급품 조달|개인 수호 주화로 공동 재화 구매",
+                building == VillageProgressionSystem.Building.WALLS ? "open_tower_control" : "open_dashboard",
+                building == VillageProgressionSystem.Building.WALLS ? "방어탑 지휘로 돌아가기|포탑 해금과 방어망 확인" : "회관으로 돌아가기|다른 시설 선택");
         send(player, "management", building.displayName() + " 관리", body, actions, labels);
     }
 
@@ -181,7 +249,7 @@ public final class VillageUiService {
                 + VillageProgressionSystem.coins(player) + "\n\n" + localDescription(player, building, usable);
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
-        if (!usable) add(actions, labels, "open_dashboard", "회관에서 수리");
+        if (!usable) add(actions, labels, "open_caller_menu", "호출기 메뉴|회관으로 이동해 시설을 수리하세요");
         else fillLocalBuildingActions(player, building, actions, labels);
         send(player, "building", building.displayName(), body, actions, labels);
     }
@@ -191,7 +259,8 @@ public final class VillageUiService {
                 + "§f처음부터 시작하면 마을 발전과 개인 성장을 초기화합니다.";
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             send(player, "game_over", "마을 방어 실패", body,
-                    List.of("restart_previous", "restart_start"), List.of("이전 날부터 다시", "처음부터 다시"));
+                    List.of("restart_previous", "restart_start"),
+                    List.of("이전 날부터 다시|현재 성장과 장비 유지", "처음부터 다시|마을 발전과 성장 초기화"));
         }
     }
 
@@ -200,7 +269,7 @@ public final class VillageUiService {
                 + durabilitySummary();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             send(player, "victory", "방어 성공", body,
-                    List.of("open_dashboard", "open_skill_tree"), List.of("회관 열기", "전술 발전"));
+                    List.of("open_caller_menu"), List.of("호출기 메뉴|상태 확인과 마을 귀환"));
         }
     }
 
@@ -214,6 +283,7 @@ public final class VillageUiService {
             return;
         }
         if (action.startsWith("repair:") || action.startsWith("upgrade:")) {
+            if (!requireTownHall(player, "시설 수리와 강화는 마을 회관에서만 가능합니다.")) return;
             boolean repair = action.startsWith("repair:");
             VillageProgressionSystem.Building building = VillageProgressionSystem.Building.fromId(action.substring(repair ? 7 : 8));
             if (building != null) {
@@ -225,14 +295,17 @@ public final class VillageUiService {
             return;
         }
         if (action.startsWith("select_role:")) {
-            if (!VillageTownHallInteraction.isNearTownHall(player)) {
-                player.sendSystemMessage(Component.literal("§c역할 변경은 마을 회관 지휘대 근처에서만 가능합니다."));
-                return;
-            }
+            if (!requireTownHall(player, "직업 배치는 마을 회관 지휘대 근처에서만 가능합니다.")) return;
             VillageRole.parse(action.substring(12)).ifPresentOrElse(role -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageCouncilState.chooseRole(player, role)));
                 openDashboard(player);
-            }, () -> player.sendSystemMessage(Component.literal("§c알 수 없는 역할입니다.")));
+            }, () -> player.sendSystemMessage(Component.literal("§c알 수 없는 직업입니다.")));
+            return;
+        }
+        if (action.equals("open_role_progress_current")) {
+            VillageCouncilState.roleOf(player.getUUID()).ifPresentOrElse(
+                    role -> openRoleProgress(player, role),
+                    () -> player.sendSystemMessage(Component.literal("§c회관에서 직업을 먼저 배치하세요.")));
             return;
         }
         if (action.startsWith("open_role_progress:")) {
@@ -240,6 +313,7 @@ public final class VillageUiService {
             return;
         }
         if (action.startsWith("role_node:")) {
+            if (!requireSkillHall(player, "직업 성장은 기술 연구소에서만 가능합니다.")) return;
             String[] parts = action.split(":", 3);
             if (parts.length == 3) VillageRole.parse(parts[1]).ifPresent(role -> {
                 String result = VillageRoleSkillSystem.purchaseNode(player, role, parts[2]);
@@ -249,6 +323,7 @@ public final class VillageUiService {
             return;
         }
         if (action.startsWith("role_skill_unlock:")) {
+            if (!requireSkillHall(player, "직업 기술 습득은 기술 연구소에서만 가능합니다.")) return;
             String id = action.substring(18);
             String result = VillageRoleSkillSystem.unlockSkill(player, id);
             player.sendSystemMessage(Component.literal("§b" + result));
@@ -256,6 +331,7 @@ public final class VillageUiService {
             return;
         }
         if (action.startsWith("role_skill_equip:")) {
+            if (!requireSkillHall(player, "기술 장착은 기술 연구소에서만 가능합니다.")) return;
             String[] parts = action.split(":", 3);
             if (parts.length == 3) {
                 int slot;
@@ -266,6 +342,7 @@ public final class VillageUiService {
             return;
         }
         if (action.startsWith("skill_node:")) {
+            if (!requireSkillHall(player, "전술 발전은 기술 연구소에서만 가능합니다.")) return;
             player.sendSystemMessage(Component.literal("§b" + VillageSkillTreeSystem.purchase(player, action.substring(11))));
             openSkillTree(player);
             return;
@@ -273,6 +350,12 @@ public final class VillageUiService {
         if (action.startsWith("gear:")) {
             player.sendSystemMessage(Component.literal("§e" + VillageEquipmentShop.purchase(player, action.substring(5))));
             openEquipmentShop(player);
+            return;
+        }
+        if (action.startsWith("funding:")) {
+            if (!requireTownHall(player, "보급 조달은 마을 회관에서만 가능합니다.")) return;
+            player.sendSystemMessage(Component.literal("§6" + VillageFundingSystem.purchase(player, action.substring(8))));
+            openFunding(player);
             return;
         }
         if (action.startsWith("use_skill:")) {
@@ -284,9 +367,12 @@ public final class VillageUiService {
 
         switch (action) {
             case "open_dashboard", "open_mayor" -> openDashboard(player);
-            case "open_manual", "open_quick_chat" -> openQuickChat(player);
+            case "open_manual", "open_caller_menu" -> openCallerMenu(player);
+            case "open_quick_chat" -> openQuickChat(player);
             case "open_status" -> openPlayerStatus(player);
             case "open_skill_tree" -> openSkillTree(player);
+            case "open_tower_control" -> openTowerControl(player);
+            case "open_funding" -> openFunding(player);
             case "open_equipment_shop" -> openEquipmentShop(player);
             case "return_village" -> player.sendSystemMessage(Component.literal("§a" + VillageWorldSystem.returnToVillage(player)));
             case "advance_time" -> player.sendSystemMessage(Component.literal(VillageCouncilState.proposeAdvanceTime(player)));
@@ -306,8 +392,14 @@ public final class VillageUiService {
             case "use_infirmary" -> actAndReopen(player, VillageProgressionSystem.useInfirmary(player), VillageProgressionSystem.Building.INFIRMARY);
             case "train" -> actAndReopen(player, VillageProgressionSystem.train(player), VillageProgressionSystem.Building.BARRACKS);
             case "hire_mercenary" -> actAndReopen(player, VillageDefenseSystem.hireMercenary(player), VillageProgressionSystem.Building.BARRACKS);
-            case "defense_status" -> {
+            case "tower_status" -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageDefenseSystem.status(server.overworld())));
+                openTowerControl(player);
+            }
+            case "wall_status_local" -> {
+                player.sendSystemMessage(Component.literal("§b성벽 "
+                        + VillageProgressionSystem.durabilityText(VillageProgressionSystem.Building.WALLS)
+                        + " · 포탑 지휘는 마을 회관에서 가능합니다."));
                 openBuilding(player, VillageProgressionSystem.Building.WALLS);
             }
             case "restart_previous" -> VillageProgressionSystem.resetForRestart(server, false);
@@ -320,63 +412,73 @@ public final class VillageUiService {
                                                   List<String> actions, List<String> labels) {
         switch (building) {
             case TOWN_HALL -> {}
-            case WALLS -> add(actions, labels, "defense_status", "방어탑·용병 현황");
+            case WALLS -> add(actions, labels,
+                    "wall_status_local", "성벽 상태 확인|포탑 지휘와 강화는 회관에서 진행");
             case SMITHY -> {
                 int rank = VillageProgressionSystem.forgeRank(player);
                 int cost = 80 + rank * 100;
                 add(actions, labels, "forge_upgrade", rank >= VillageProgressionSystem.MAX_PERSONAL_RANK
-                        ? "장비 강화 최고 단계" : "장비 강화 +" + (rank + 1) + " · 주화 " + cost);
+                        ? "장비 강화 최고 단계|추가 강화 불가"
+                        : "장비 강화 +" + (rank + 1) + " · 주화 " + cost + "|개인 공격 보너스 상승");
             }
             case SKILL_HALL -> {
                 int rank = VillageProgressionSystem.skillRank(player);
                 int cost = 100 + rank * 120;
-                add(actions, labels, "open_skill_tree", "공용 전술 발전",
+                add(actions, labels,
+                        "open_role_progress_current", "직업 성장·기술 장착|세 갈래 성장과 두 기술 슬롯 관리",
+                        "open_skill_tree", "공용 전술 발전|공격·방어·지원·사격 전술 연구",
                         "skill_learn", rank >= VillageProgressionSystem.MAX_PERSONAL_RANK
-                                ? "연구 능력 최고 단계" : "연구 능력 +" + (rank + 1) + " · 주화 " + cost);
+                                ? "연구 능력 최고 단계|추가 연구 불가"
+                                : "연구 능력 +" + (rank + 1) + " · 주화 " + cost + "|기술 피해와 재사용 효율 강화");
             }
-            case INFIRMARY -> add(actions, labels, "use_infirmary", "즉시 치료받기");
+            case INFIRMARY -> add(actions, labels, "use_infirmary", "즉시 치료받기|시설 단계에 따라 체력 회복");
             case STOREHOUSE -> {
                 int arrows = 16 + VillageProgressionSystem.storehouseLevel() * 4;
                 int food = 5 + VillageProgressionSystem.storehouseLevel() * 2;
                 add(actions, labels,
-                        "claim_bread", "오늘의 무료 빵 받기",
-                        "buy_arrows", "화살 " + arrows + "개 · 주화 14",
-                        "buy_food", "전투 식량 " + food + "개 · 주화 18",
-                        "sell_loot", "몬스터 전리품 일괄 판매",
-                        "open_equipment_shop", "성장 장비 상점");
+                        "claim_bread", "오늘의 무료 빵 받기|하루 한 번 식량 보급",
+                        "buy_arrows", "화살 " + arrows + "개 · 주화 14|원거리 전투 보급",
+                        "buy_food", "전투 식량 " + food + "개 · 주화 18|허기 회복용 익힌 소고기",
+                        "sell_loot", "몬스터 전리품 일괄 판매|판매 가능한 전리품을 주화로 교환",
+                        "open_equipment_shop", "성장 장비 상점|레벨과 방어 일수별 장비 구매");
             }
             case BARRACKS -> add(actions, labels,
-                    "train", "전투 훈련 · XP " + (30 + VillageProgressionSystem.barracksLevel() * 18),
-                    "hire_mercenary", "용병 고용 · 철 24개");
+                    "train", "전투 훈련 · XP " + (30 + VillageProgressionSystem.barracksLevel() * 18) + "|3분 재사용 대기시간",
+                    "hire_mercenary", "용병 고용 · 주화 " + VillageDefenseSystem.mercenaryHireCost()
+                            + "|사망 전까지 저장·재접속 후에도 유지");
         }
     }
 
     private static String localDescription(ServerPlayer player, VillageProgressionSystem.Building building, boolean usable) {
         if (!usable) return "§c시설이 파괴되어 기능을 사용할 수 없습니다. 회관에서 먼저 수리하세요.";
         return switch (building) {
-            case TOWN_HALL -> "§f시설 관리와 직업 배치를 담당합니다.";
-            case WALLS -> "§f성벽 레벨에 따라 노포·화염·빙결·비전 방어탑이 차례로 활성화됩니다.";
+            case TOWN_HALL -> "§f시설 관리와 직업 배치, 공동 보급 조달을 담당합니다.";
+            case WALLS -> "§f현재 북문과 성벽 상태를 확인합니다. 포탑 해금·수리·강화는 마을 회관에서 지휘합니다.";
             case SMITHY -> "§f개인 장비 공격 보너스를 강화합니다. 현재 +" + VillageProgressionSystem.forgeRank(player);
-            case SKILL_HALL -> "§f공용 전술 발전과 전투 연구를 담당합니다.";
+            case SKILL_HALL -> "§f모든 공용 전술, 직업 성장, 기술 습득과 두 슬롯 장착을 담당합니다.";
             case INFIRMARY -> "§f현재 체력을 즉시 회복합니다.";
             case STOREHOUSE -> "§f식량·화살·성장 장비 구매와 전리품 판매를 담당합니다.";
-            case BARRACKS -> "§f전투 훈련과 저장·재접속 후에도 유지되는 용병 고용을 담당합니다.";
+            case BARRACKS -> "§f전투 훈련과 수호 주화로 고용하는 영구 용병을 담당합니다.";
         };
     }
 
     private static String managementEffect(VillageProgressionSystem.Building building, int level, MinecraftServer server) {
         int safe = Math.max(0, Math.min(VillageProgressionSystem.MAX_BUILDING_LEVEL, level));
         return switch (building) {
-            case TOWN_HALL -> "시설 수리·강화와 직업 배치의 중심";
+            case TOWN_HALL -> "직업 배치·시설 지휘·개인 주화 기반 공동 보급 조달";
             case WALLS -> "최대 내구도 " + (1200 + safe * 350) + " · 방어탑 해금 단계 " + safe
                     + (server == null ? "" : " · " + VillageDefenseSystem.status(server.overworld()));
             case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 장비 강화 피해 보정 " + (safe * 4) + "%";
-            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 전술과 직업 기술 연구 기반";
+            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 공용 전술·직업 성장·기술 장착 연구 기반";
             case INFIRMARY -> "최대 내구도 " + (520 + safe * 110) + " · 즉시 치료량 " + Math.round((6.0f + safe * 4.0f) / 2.0f) + "칸";
             case STOREHOUSE -> "최대 내구도 " + (560 + safe * 120) + " · 일일 식량·성장 장비·습격 보상 강화";
             case BARRACKS -> "최대 내구도 " + (620 + safe * 130) + " · 훈련 XP " + (30 + safe * 18)
                     + " · 용병 정원 " + (1 + safe / 2);
         };
+    }
+
+    private static String towerLine(String name, boolean active, String effect) {
+        return (active ? "§a활성 §f" : "§8잠김 §7") + name + " · " + effect;
     }
 
     private static String durabilitySummary() {
@@ -396,6 +498,18 @@ public final class VillageUiService {
     private static void broadcastQuick(MinecraftServer server, ServerPlayer player, String text) {
         server.getPlayerList().broadcastSystemMessage(Component.literal(
                 "§b[빠른 신호] §f" + player.getGameProfile().name() + ": " + text), false);
+    }
+
+    private static boolean requireTownHall(ServerPlayer player, String message) {
+        if (VillageLocationRules.isNearTownHall(player)) return true;
+        player.sendSystemMessage(Component.literal("§c" + message));
+        return false;
+    }
+
+    private static boolean requireSkillHall(ServerPlayer player, String message) {
+        if (VillageLocationRules.isNearSkillHall(player)) return true;
+        player.sendSystemMessage(Component.literal("§c" + message));
+        return false;
     }
 
     private static void add(List<String> actions, List<String> labels, String... pairs) {
