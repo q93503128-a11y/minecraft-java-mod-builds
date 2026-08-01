@@ -103,7 +103,7 @@ public final class VillageRespawnSystem {
 
     private static void teleportToVillage(ServerPlayer player, MinecraftServer server) {
         ServerLevel destination = server.overworld();
-        BlockPos center = VillageCouncilState.villageCenter().orElse(destination.getSharedSpawnPos());
+        BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition());
         BlockPos target = null;
         for (int z = 12; z <= 22 && target == null; z++) {
             for (int x = -5; x <= 5; x++) {
@@ -135,6 +135,6 @@ public final class VillageRespawnSystem {
 
     public static String hudText(ServerPlayer player) {
         return "§c전투 불능 §8│ §f부활까지 §e" + remainingSeconds(player) + "초"
-                + " §8│ §7적은 시설을 공격 중입니다";
+                + " §8│ §7적은 시설 공격을 계속합니다";
     }
 }
