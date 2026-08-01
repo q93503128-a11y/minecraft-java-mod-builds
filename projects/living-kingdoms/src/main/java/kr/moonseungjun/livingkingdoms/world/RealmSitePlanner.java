@@ -129,7 +129,7 @@ public final class RealmSitePlanner {
         int x = centerX + offset[0];
         int z = centerZ + offset[1];
         int y = "silvana_tree_home".equals(residenceId)
-                ? baseY + 17
+                ? Math.max(70, Math.min(122, baseY)) + 17
                 : built ? surfaceY(level, x, z) + 1 : Math.max(68, baseY + 1);
         return new BlockPos(x, y, z);
     }
