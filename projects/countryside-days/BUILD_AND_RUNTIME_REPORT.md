@@ -1,7 +1,7 @@
 # Countryside Days Build and Runtime Report
 
-- Workflow run: 30702045487
-- Source commit: 602365c749419443012ac6392f0284ba9b1d4e8f
+- Workflow run: 30721993744
+- Source commit: e6adeb7b7237158ecb2b149f9d26f00699a0b58a
 - Mod version: 0.1.0-alpha.12
 - Minecraft: 26.2
 - Java: 25
@@ -41,13 +41,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.36s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.39s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadClient[0m[0m
 [1m*** Started working on [4mdownloadServer[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.03s
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.03s
+[1m*** Started working on [4mdownloadClient[0m[0m
+ [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -56,7 +56,7 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 0.93s
+Total runtime: 1.17s
 
 
 > Task :compileJava
@@ -68,9 +68,9 @@ Total runtime: 0.93s
 > Task :jar
 > Task :assemble
 > Task :build
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1785591395951.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1785624453514.json
 
-BUILD SUCCESSFUL in 15s
+BUILD SUCCESSFUL in 23s
 7 actionable tasks: 7 executed
 Configuration cache entry stored.
 ```
@@ -84,9 +84,9 @@ Calculating task graph as no cached configuration is available for tasks: runDat
 > Configure project :
 Creating Minecraft artifacts without recompilation.
 
+> Task :createMinecraftArtifacts UP-TO-DATE
 > Task :generateGameTestStructure UP-TO-DATE
 > Task :generateModMetadata UP-TO-DATE
-> Task :createMinecraftArtifacts UP-TO-DATE
 > Task :processResources UP-TO-DATE
 > Task :compileJava UP-TO-DATE
 > Task :classes UP-TO-DATE
@@ -100,45 +100,45 @@ Using Minecraft asset root: /home/runner/.gradle/caches/neoformruntime/assets
 > Task :prepareDataRun
 
 > Task :runData
-2026-08-01T13:36:56.194609830Z main WARN Advanced terminal features are not available in this environment
-[13:36:56] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 100ms
-[13:36:56] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (CLIENT in DEV)
-[13:36:56] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
-[13:36:56] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 14ms
-[13:36:56] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
-[13:36:56] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
-[13:36:56] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
-[13:36:56] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Not loading early display in headless mode.
-[13:36:56] [main/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
-[13:36:56] [main/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
-[13:36:56] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
-[13:36:56] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
+2026-08-01T22:48:04.491194720Z main WARN Advanced terminal features are not available in this environment
+[22:48:04] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 114ms
+[22:48:04] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (CLIENT in DEV)
+[22:48:04] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
+[22:48:04] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 21ms
+[22:48:04] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
+[22:48:04] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
+[22:48:04] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
+[22:48:04] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Not loading early display in headless mode.
+[22:48:04] [main/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
+[22:48:04] [main/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
+[22:48:05] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
+[22:48:05] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
      Mod List:
 		Name Version (Mod Id)
 
 		Countryside Days 0.1.0-alpha.12 (countrysidedays)
 		Minecraft 26.2 (minecraft)
 		NeoForge 26.2.0.38-beta (neoforge)
-[13:36:56] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=CLIENT
-[13:36:56] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
-[13:36:56] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
-[13:36:57] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
+[22:48:05] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=CLIENT
+[22:48:05] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
+[22:48:05] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
+[22:48:05] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
  - countrysidedays (composite(folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main), folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main)))
  - minecraft (composite(filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar)), filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar))))
  - mixinextras.neoforge (jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > mixinextras-neoforge-0.5.4.jar))
  - neoforge (composite(filtered(jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar))))
  - net.neoforged.fml.generated (empty(VirtualJar/net.neoforged.fml.generated))
-[13:36:57] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 37ms
-[13:36:57] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
-[13:37:01] [main/INFO] [ne.ne.ne.da.lo.DatagenModLoader/]: Initializing Data Gatherer for mods [countrysidedays]
-[13:37:01] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
-[13:37:02] [main/INFO] [minecraft/DataGenerator]: All providers took: 0 ms
-[13:37:02] [main/INFO] [minecraft/HashCache]: Caching: total files: 0, old count: 0, new count: 0, removed stale: 0, written: 0
-[13:37:02] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Closing FML Loader 2bc6b1d1
-[13:37:02] [main/INFO] [ne.ne.fm.ModLoader/]: Clearing ModLoader
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/datagen-1785591411606.json
+[22:48:05] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 44ms
+[22:48:05] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
+[22:48:11] [main/INFO] [ne.ne.ne.da.lo.DatagenModLoader/]: Initializing Data Gatherer for mods [countrysidedays]
+[22:48:11] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
+[22:48:12] [main/INFO] [minecraft/DataGenerator]: All providers took: 0 ms
+[22:48:12] [main/INFO] [minecraft/HashCache]: Caching: total files: 0, old count: 0, new count: 0, removed stale: 0, written: 0
+[22:48:12] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Closing FML Loader d2b2097
+[22:48:12] [main/INFO] [ne.ne.fm.ModLoader/]: Clearing ModLoader
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/datagen-1785624477044.json
 
-BUILD SUCCESSFUL in 14s
+BUILD SUCCESSFUL in 19s
 8 actionable tasks: 3 executed, 5 up-to-date
 Configuration cache entry stored.
 ```
@@ -152,78 +152,79 @@ Calculating task graph as no cached configuration is available for tasks: runGam
 > Configure project :
 Creating Minecraft artifacts without recompilation.
 
+> Task :generateModMetadata UP-TO-DATE
+> Task :downloadAssets UP-TO-DATE
 > Task :generateGameTestStructure UP-TO-DATE
 > Task :createMinecraftArtifacts UP-TO-DATE
-> Task :downloadAssets UP-TO-DATE
-> Task :generateModMetadata UP-TO-DATE
+> Task :prepareGameTestServerRun
 > Task :compileJava UP-TO-DATE
 > Task :processResources
 > Task :classes
-> Task :prepareGameTestServerRun
 
 > Task :runGameTestServer
-2026-08-01T13:37:09.075604004Z main WARN Advanced terminal features are not available in this environment
-[13:37:09] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 96ms
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (DEDICATED_SERVER in DEV)
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
-[13:37:09] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 15ms
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
-[13:37:09] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Not loading early display in headless mode.
-[13:37:09] [main/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
-[13:37:09] [main/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
-[13:37:09] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
-[13:37:09] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
+2026-08-01T22:48:21.201891466Z main WARN Advanced terminal features are not available in this environment
+[22:48:21] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 122ms
+[22:48:21] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (DEDICATED_SERVER in DEV)
+[22:48:21] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
+[22:48:21] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 19ms
+[22:48:21] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
+[22:48:21] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
+[22:48:21] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
+[22:48:21] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Not loading early display in headless mode.
+[22:48:21] [main/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
+[22:48:21] [main/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
+[22:48:21] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
+[22:48:21] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
      Mod List:
 		Name Version (Mod Id)
 
 		Countryside Days 0.1.0-alpha.12 (countrysidedays)
 		Minecraft 26.2 (minecraft)
 		NeoForge 26.2.0.38-beta (neoforge)
-[13:37:09] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=SERVER
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
+[22:48:22] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=SERVER
+[22:48:22] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
+[22:48:22] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
+[22:48:22] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
  - countrysidedays (composite(folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main), folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main)))
  - minecraft (composite(filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar)), filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar))))
  - mixinextras.neoforge (jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > mixinextras-neoforge-0.5.4.jar))
  - neoforge (composite(filtered(jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar))))
  - net.neoforged.fml.generated (empty(VirtualJar/net.neoforged.fml.generated))
-[13:37:09] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 35ms
-[13:37:10] [main/INFO] [minecraft/GameTestMainUtil]: Running GameTestMain with cwd '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run', universe path 'gametestserver'
-[13:37:10] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
-[13:37:14] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
-[13:37:14] [modloading-worker-0/INFO] [kr.co.CountrysideDays/]: Countryside Days 0.1.0-alpha.12 core content registered
-[13:37:16] [main/INFO] [minecraft/RecipeManager]: Loaded 1592 recipes
-[13:37:16] [main/INFO] [minecraft/AdvancementTree]: Loaded 1688 advancements
-[13:37:16] [main/INFO] [ne.ne.ne.co.cr.RecipePriorityManager/]: Loaded 0 recipe priority overrides
-[13:37:16] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Selecting global world spawn...
-[13:37:16] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Loading 0 persistent chunks...
-[13:37:16] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Preparing spawn area: 100%
-[13:37:16] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Time elapsed: 313 ms
-[13:37:16] [Server thread/INFO] [minecraft/GameTestServer]: Started game test server
-[13:37:16] [Server thread/INFO] [ne.ne.ne.se.pe.PermissionAPI/]: Successfully initialized permission handler neoforge:default_handler
-[13:37:16] [Server thread/INFO] [minecraft/GameTestServer]: 3 tests are now running at position -168709, -59, 7458251!
-[13:37:18] [Server thread/INFO] [minecraft/GameTestRunner]: Running test environment 'minecraft:default' batch 0 (3 tests)...
-[13:37:18] [Server thread/INFO] [minecraft/GameTestServer]: [+++]
-[13:37:18] [Server thread/INFO] [minecraft/GameTestServer]: ========= 3 GAME TESTS COMPLETE IN 1.833 s ======================
-[13:37:18] [Server thread/INFO] [minecraft/GameTestServer]: All 3 required tests passed :)
-[13:37:18] [Server thread/INFO] [minecraft/GameTestServer]: ====================================================
-[13:37:18] [Server thread/INFO] [minecraft/MinecraftServer]: Stopping server
-[13:37:18] [Server thread/INFO] [minecraft/MinecraftServer]: Saving players
-[13:37:18] [Server thread/INFO] [minecraft/MinecraftServer]: Saving worlds
-[13:37:19] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:overworld
-[13:37:21] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:the_nether
-[13:37:21] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:the_end
-[13:37:21] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (world): All chunks are saved
-[13:37:21] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
-[13:37:21] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
-[13:37:21] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage: All dimensions are saved
-[13:37:21] [Server thread/INFO] [minecraft/GameTestServer]: Game test server shutting down
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/gametest-1785591425804.json
+[22:48:22] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 36ms
+[22:48:22] [main/INFO] [minecraft/GameTestMainUtil]: Running GameTestMain with cwd '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run', universe path 'gametestserver'
+[22:48:22] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
+[22:48:27] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
+[22:48:28] [modloading-worker-0/INFO] [kr.co.CountrysideDays/]: Countryside Days 0.1.0-alpha.12 core content registered
+[22:48:30] [main/INFO] [minecraft/RecipeManager]: Loaded 1592 recipes
+[22:48:30] [main/INFO] [minecraft/AdvancementTree]: Loaded 1688 advancements
+[22:48:30] [main/INFO] [ne.ne.ne.co.cr.RecipePriorityManager/]: Loaded 0 recipe priority overrides
+[22:48:30] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Selecting global world spawn...
+[22:48:31] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Loading 0 persistent chunks...
+[22:48:31] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Preparing spawn area: 100%
+[22:48:31] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Time elapsed: 536 ms
+[22:48:31] [Server thread/INFO] [minecraft/GameTestServer]: Started game test server
+[22:48:31] [Server thread/INFO] [ne.ne.ne.se.pe.PermissionAPI/]: Successfully initialized permission handler neoforge:default_handler
+[22:48:31] [Server thread/INFO] [minecraft/GameTestServer]: 3 tests are now running at position 1510270, -59, 10634583!
+[22:48:33] [Server thread/INFO] [minecraft/GameTestRunner]: Running test environment 'minecraft:default' batch 0 (3 tests)...
+[22:48:33] [Server thread/WARN] [minecraft/MinecraftServer]: Can't keep up! Is the server overloaded? Running 2026ms or 40 ticks behind
+[22:48:34] [Server thread/INFO] [minecraft/GameTestServer]: [+++]
+[22:48:34] [Server thread/INFO] [minecraft/GameTestServer]: ========= 3 GAME TESTS COMPLETE IN 2.749 s ======================
+[22:48:34] [Server thread/INFO] [minecraft/GameTestServer]: All 3 required tests passed :)
+[22:48:34] [Server thread/INFO] [minecraft/GameTestServer]: ====================================================
+[22:48:34] [Server thread/INFO] [minecraft/MinecraftServer]: Stopping server
+[22:48:34] [Server thread/INFO] [minecraft/MinecraftServer]: Saving players
+[22:48:34] [Server thread/INFO] [minecraft/MinecraftServer]: Saving worlds
+[22:48:35] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:overworld
+[22:48:36] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:the_nether
+[22:48:36] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:the_end
+[22:48:36] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[22:48:36] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[22:48:36] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[22:48:36] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage: All dimensions are saved
+[22:48:36] [Server thread/INFO] [minecraft/GameTestServer]: Game test server shutting down
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/gametest-1785624496878.json
 
-BUILD SUCCESSFUL in 19s
+BUILD SUCCESSFUL in 24s
 8 actionable tasks: 3 executed, 5 up-to-date
 Configuration cache entry stored.
 ```
@@ -238,86 +239,86 @@ Calculating task graph as no cached configuration is available for tasks: runSer
 Creating Minecraft artifacts without recompilation.
 
 > Task :generateGameTestStructure UP-TO-DATE
-> Task :createMinecraftArtifacts UP-TO-DATE
 > Task :generateModMetadata UP-TO-DATE
 > Task :downloadAssets UP-TO-DATE
+> Task :createMinecraftArtifacts UP-TO-DATE
 > Task :processResources UP-TO-DATE
 > Task :compileJava UP-TO-DATE
 > Task :classes UP-TO-DATE
 > Task :prepareServerRun
 
 > Task :runServer
-2026-08-01T13:37:28.649849270Z main WARN Advanced terminal features are not available in this environment
-[13:37:28] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 100ms
-[13:37:28] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (DEDICATED_SERVER in DEV)
-[13:37:28] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
-[13:37:28] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 13ms
-[13:37:28] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
-[13:37:28] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
-[13:37:28] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
-[13:37:28] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Not loading early display in headless mode.
-[13:37:28] [main/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
-[13:37:28] [main/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
-[13:37:29] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
-[13:37:29] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
+2026-08-01T22:48:45.673688023Z main WARN Advanced terminal features are not available in this environment
+[22:48:45] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 125ms
+[22:48:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (DEDICATED_SERVER in DEV)
+[22:48:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
+[22:48:45] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 17ms
+[22:48:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
+[22:48:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
+[22:48:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
+[22:48:45] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Not loading early display in headless mode.
+[22:48:45] [main/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
+[22:48:46] [main/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
+[22:48:46] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
+[22:48:46] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
      Mod List:
 		Name Version (Mod Id)
 
 		Countryside Days 0.1.0-alpha.12 (countrysidedays)
 		Minecraft 26.2 (minecraft)
 		NeoForge 26.2.0.38-beta (neoforge)
-[13:37:29] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=SERVER
-[13:37:29] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
-[13:37:29] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
-[13:37:29] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
+[22:48:46] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=SERVER
+[22:48:46] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
+[22:48:46] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
+[22:48:46] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
  - countrysidedays (composite(folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main), folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main)))
  - minecraft (composite(filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar)), filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar))))
  - mixinextras.neoforge (jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > mixinextras-neoforge-0.5.4.jar))
  - neoforge (composite(filtered(jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar))))
  - net.neoforged.fml.generated (empty(VirtualJar/net.neoforged.fml.generated))
-[13:37:29] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 19ms
-[13:37:30] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, targets] with inputs: [0.1 -0.5 .9, 0 0 0]
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, destination] and [teleport, targets] with inputs: [Player, 0123, @e, dd12be42-52a9-4a91-a8a1-11c01849e498]
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets] and [teleport, destination] with inputs: [Player, 0123, dd12be42-52a9-4a91-a8a1-11c01849e498]
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets, location] and [teleport, targets, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, set, time] and [time, set, timemarker] with inputs: [0, 0s, 0d, 0t]
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, set, timemarker] and [time, set, time] with inputs: [012]
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, of, clock, set, time] and [time, of, clock, set, timemarker] with inputs: [0, 0s, 0d, 0t]
-[13:37:34] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, of, clock, set, timemarker] and [time, of, clock, set, time] with inputs: [012]
-[13:37:35] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
-[13:37:35] [modloading-worker-0/INFO] [kr.co.CountrysideDays/]: Countryside Days 0.1.0-alpha.12 core content registered
-[13:37:35] [main/INFO] [mojang/YggdrasilAuthenticationService]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
-[13:37:36] [Worker-Main-3/INFO] [minecraft/Main]: No existing world data, creating new world
-[13:37:36] [Worker-Main-3/ERROR] [minecraft/DedicatedServerProperties]: No key layers in MapLike[{}]
-[13:37:36] [main/INFO] [minecraft/RecipeManager]: Loaded 1592 recipes
-[13:37:36] [main/INFO] [minecraft/AdvancementTree]: Loaded 1688 advancements
-[13:37:36] [main/INFO] [ne.ne.ne.co.cr.RecipePriorityManager/]: Loaded 0 recipe priority overrides
-[13:37:36] [Server thread/INFO] [minecraft/DedicatedServer]: Starting minecraft server version 26.2
-[13:37:36] [Server thread/INFO] [minecraft/DedicatedServer]: Loading properties
-[13:37:36] [Server thread/INFO] [minecraft/DedicatedServer]: Default game type: SURVIVAL
-[13:37:36] [Server thread/INFO] [minecraft/MinecraftServer]: Generating keypair
-[13:37:36] [Server thread/INFO] [minecraft/DedicatedServer]: Starting Minecraft server on *:25565
-[13:37:37] [Server thread/WARN] [minecraft/DedicatedServer]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
-[13:37:37] [Server thread/WARN] [minecraft/DedicatedServer]: The server will make no attempt to authenticate usernames. Beware.
-[13:37:37] [Server thread/WARN] [minecraft/DedicatedServer]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
-[13:37:37] [Server thread/WARN] [minecraft/DedicatedServer]: To change this, set "online-mode" to "true" in the server.properties file.
-[13:37:37] [Server thread/INFO] [minecraft/DedicatedServer]: Preparing level "world"
-[13:37:37] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Selecting global world spawn...
-[13:37:37] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Loading 0 persistent chunks...
-[13:37:37] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Preparing spawn area: 100%
-[13:37:37] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Time elapsed: 329 ms
-[13:37:37] [Server thread/INFO] [minecraft/DedicatedServer]: Done (0.480s)! For help, type "help"
-[13:37:37] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
-[13:37:38] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
-[13:37:38] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
-[13:37:38] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (world): All chunks are saved
-[13:37:38] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
-[13:37:38] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
-[13:37:38] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage: All dimensions are saved
-[13:37:38] [Server thread/INFO] [ne.ne.ne.se.pe.PermissionAPI/]: Successfully initialized permission handler neoforge:default_handler
-[13:37:38] [Server thread/INFO] [kr.co.CountrysideDays/]: Countryside worldgen audit passed: deterministic spawn marker=Block{minecraft:dandelion}
+[22:48:46] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 46ms
+[22:48:47] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, targets] with inputs: [0.1 -0.5 .9, 0 0 0]
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, destination] and [teleport, targets] with inputs: [Player, 0123, @e, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets] and [teleport, destination] with inputs: [Player, 0123, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets, location] and [teleport, targets, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, set, time] and [time, set, timemarker] with inputs: [0, 0s, 0d, 0t]
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, set, timemarker] and [time, set, time] with inputs: [012]
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, of, clock, set, time] and [time, of, clock, set, timemarker] with inputs: [0, 0s, 0d, 0t]
+[22:48:53] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, of, clock, set, timemarker] and [time, of, clock, set, time] with inputs: [012]
+[22:48:53] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
+[22:48:54] [modloading-worker-0/INFO] [kr.co.CountrysideDays/]: Countryside Days 0.1.0-alpha.12 core content registered
+[22:48:54] [main/INFO] [mojang/YggdrasilAuthenticationService]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
+[22:48:55] [Worker-Main-1/INFO] [minecraft/Main]: No existing world data, creating new world
+[22:48:55] [Worker-Main-1/ERROR] [minecraft/DedicatedServerProperties]: No key layers in MapLike[{}]
+[22:48:56] [main/INFO] [minecraft/RecipeManager]: Loaded 1592 recipes
+[22:48:56] [main/INFO] [minecraft/AdvancementTree]: Loaded 1688 advancements
+[22:48:56] [main/INFO] [ne.ne.ne.co.cr.RecipePriorityManager/]: Loaded 0 recipe priority overrides
+[22:48:56] [Server thread/INFO] [minecraft/DedicatedServer]: Starting minecraft server version 26.2
+[22:48:56] [Server thread/INFO] [minecraft/DedicatedServer]: Loading properties
+[22:48:56] [Server thread/INFO] [minecraft/DedicatedServer]: Default game type: SURVIVAL
+[22:48:56] [Server thread/INFO] [minecraft/MinecraftServer]: Generating keypair
+[22:48:56] [Server thread/INFO] [minecraft/DedicatedServer]: Starting Minecraft server on *:25565
+[22:48:56] [Server thread/WARN] [minecraft/DedicatedServer]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[22:48:56] [Server thread/WARN] [minecraft/DedicatedServer]: The server will make no attempt to authenticate usernames. Beware.
+[22:48:56] [Server thread/WARN] [minecraft/DedicatedServer]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[22:48:56] [Server thread/WARN] [minecraft/DedicatedServer]: To change this, set "online-mode" to "true" in the server.properties file.
+[22:48:56] [Server thread/INFO] [minecraft/DedicatedServer]: Preparing level "world"
+[22:48:56] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Selecting global world spawn...
+[22:48:57] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Loading 0 persistent chunks...
+[22:48:57] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Preparing spawn area: 100%
+[22:48:57] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Time elapsed: 509 ms
+[22:48:57] [Server thread/INFO] [minecraft/DedicatedServer]: Done (0.684s)! For help, type "help"
+[22:48:57] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[22:48:57] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[22:48:57] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[22:48:57] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[22:48:57] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[22:48:57] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[22:48:57] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage: All dimensions are saved
+[22:48:57] [Server thread/INFO] [ne.ne.ne.se.pe.PermissionAPI/]: Successfully initialized permission handler neoforge:default_handler
+[22:48:57] [Server thread/INFO] [kr.co.CountrysideDays/]: Countryside worldgen audit passed: deterministic spawn marker=Block{minecraft:dandelion}
 ```
 
 ## client log tail
@@ -329,9 +330,9 @@ Calculating task graph as no cached configuration is available for tasks: runCli
 > Configure project :
 Creating Minecraft artifacts without recompilation.
 
-> Task :downloadAssets UP-TO-DATE
 > Task :generateGameTestStructure UP-TO-DATE
 > Task :generateModMetadata UP-TO-DATE
+> Task :downloadAssets UP-TO-DATE
 > Task :createMinecraftArtifacts UP-TO-DATE
 > Task :processResources UP-TO-DATE
 > Task :compileJava UP-TO-DATE
@@ -339,56 +340,56 @@ Creating Minecraft artifacts without recompilation.
 > Task :prepareClientRun
 
 > Task :runClient
-2026-08-01T13:37:45.494799346Z main WARN Advanced terminal features are not available in this environment
-[13:37:45] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 110ms
-[13:37:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (CLIENT in DEV)
-[13:37:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
-[13:37:45] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 15ms
-[13:37:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
-[13:37:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
-[13:37:45] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
-[13:37:45] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Loading ImmediateWindowProvider fmlearlywindow
-[13:37:48] [fml-loadingscreen/INFO] [ne.ne.fm.ea.re.LoadingScreenRenderer/]: GL info: llvmpipe (LLVM 20.1.2, 256 bits) GL version 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.2, Mesa
-[13:37:48] [ForkJoinPool.commonPool-worker-1/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
-[13:37:48] [ForkJoinPool.commonPool-worker-1/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
-[13:37:48] [ForkJoinPool.commonPool-worker-1/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
-[13:37:48] [ForkJoinPool.commonPool-worker-1/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
+2026-08-01T22:49:07.531425116Z main WARN Advanced terminal features are not available in this environment
+[22:49:07] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 106ms
+[22:49:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (CLIENT in DEV)
+[22:49:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
+[22:49:07] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 18ms
+[22:49:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
+[22:49:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
+[22:49:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
+[22:49:07] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Loading ImmediateWindowProvider fmlearlywindow
+[22:49:11] [fml-loadingscreen/INFO] [ne.ne.fm.ea.re.LoadingScreenRenderer/]: GL info: llvmpipe (LLVM 20.1.2, 256 bits) GL version 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.2, Mesa
+[22:49:11] [ForkJoinPool.commonPool-worker-3/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
+[22:49:11] [ForkJoinPool.commonPool-worker-3/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
+[22:49:11] [ForkJoinPool.commonPool-worker-3/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
+[22:49:11] [ForkJoinPool.commonPool-worker-3/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
      Mod List:
 		Name Version (Mod Id)
 
 		Countryside Days 0.1.0-alpha.12 (countrysidedays)
 		Minecraft 26.2 (minecraft)
 		NeoForge 26.2.0.38-beta (neoforge)
-[13:37:48] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=CLIENT
-[13:37:48] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
-[13:37:48] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
-[13:37:48] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
+[22:49:11] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=CLIENT
+[22:49:11] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
+[22:49:11] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
+[22:49:11] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
  - countrysidedays (composite(folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main), folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main)))
  - minecraft (composite(filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar)), filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar))))
  - mixinextras.neoforge (jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > mixinextras-neoforge-0.5.4.jar))
  - neoforge (composite(filtered(jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar))))
  - net.neoforged.fml.generated (empty(VirtualJar/net.neoforged.fml.generated))
-[13:37:48] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 28ms
-[13:37:50] [Datafixer Bootstrap #0/INFO] [mojang/DataFixerBuilder]: 298 Datafixer optimizations took 397 milliseconds
-[13:37:50] [pool-6-thread-1/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, targets] with inputs: [0.1 -0.5 .9, 0 0 0]
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, destination] and [teleport, targets] with inputs: [Player, 0123, @e, dd12be42-52a9-4a91-a8a1-11c01849e498]
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets] and [teleport, destination] with inputs: [Player, 0123, dd12be42-52a9-4a91-a8a1-11c01849e498]
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets, location] and [teleport, targets, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, set, time] and [time, set, timemarker] with inputs: [0, 0s, 0d, 0t]
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, set, timemarker] and [time, set, time] with inputs: [012]
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, of, clock, set, time] and [time, of, clock, set, timemarker] with inputs: [0, 0s, 0d, 0t]
-[13:37:54] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, of, clock, set, timemarker] and [time, of, clock, set, time] with inputs: [012]
-[13:37:54] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
-[13:37:55] [Render thread/INFO] [mojang/YggdrasilAuthenticationService]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
-[13:37:55] [Render thread/INFO] [minecraft/Minecraft]: Setting user: Dev
-[13:37:55] [Render thread/INFO] [minecraft/Minecraft]: Backend library: LWJGL version 3.4.1+2
-[13:37:55] [Render thread/INFO] [minecraft/Minecraft]: Using graphics backend OpenGL, using drivers: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.2
-[13:37:55] [Render thread/INFO] [minecraft/Minecraft]: Using graphics device: llvmpipe (LLVM 20.1.2, 256 bits) (Mesa)
-[13:37:55] [Render thread/INFO] [minecraft/Minecraft]: Using graphics device extensions: GL_ARB_multi_draw_indirect, GL_ARB_buffer_storage, GL_ARB_shader_draw_parameters, GL_ARB_base_instance, GL_KHR_debug, GL_ARB_draw_indirect, GL_ARB_clip_control, GL_ARB_vertex_attrib_binding, GL_ARB_direct_state_access, GL_EXT_texture_filter_anisotropic
-[13:37:55] [Render thread/INFO] [kr.co.CountrysideDays/]: Countryside Days compact navigation HUD registered
-[13:37:55] [Render thread/ERROR] [mojang/Narrator]: Error while loading the narrator
+[22:49:12] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 47ms
+[22:49:13] [Datafixer Bootstrap #0/INFO] [mojang/DataFixerBuilder]: 298 Datafixer optimizations took 560 milliseconds
+[22:49:14] [pool-6-thread-1/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, targets] with inputs: [0.1 -0.5 .9, 0 0 0]
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, destination] and [teleport, targets] with inputs: [Player, 0123, @e, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets] and [teleport, destination] with inputs: [Player, 0123, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets, location] and [teleport, targets, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, set, time] and [time, set, timemarker] with inputs: [0, 0s, 0d, 0t]
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, set, timemarker] and [time, set, time] with inputs: [012]
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, of, clock, set, time] and [time, of, clock, set, timemarker] with inputs: [0, 0s, 0d, 0t]
+[22:49:19] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [time, of, clock, set, timemarker] and [time, of, clock, set, time] with inputs: [012]
+[22:49:19] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
+[22:49:20] [Render thread/INFO] [mojang/YggdrasilAuthenticationService]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
+[22:49:20] [Render thread/INFO] [minecraft/Minecraft]: Setting user: Dev
+[22:49:20] [Render thread/INFO] [minecraft/Minecraft]: Backend library: LWJGL version 3.4.1+2
+[22:49:20] [Render thread/INFO] [minecraft/Minecraft]: Using graphics backend OpenGL, using drivers: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.2
+[22:49:20] [Render thread/INFO] [minecraft/Minecraft]: Using graphics device: llvmpipe (LLVM 20.1.2, 256 bits) (Mesa)
+[22:49:20] [Render thread/INFO] [minecraft/Minecraft]: Using graphics device extensions: GL_ARB_multi_draw_indirect, GL_ARB_buffer_storage, GL_ARB_shader_draw_parameters, GL_ARB_base_instance, GL_KHR_debug, GL_ARB_draw_indirect, GL_ARB_clip_control, GL_ARB_vertex_attrib_binding, GL_ARB_direct_state_access, GL_EXT_texture_filter_anisotropic
+[22:49:21] [Render thread/INFO] [kr.co.CountrysideDays/]: Countryside Days compact navigation HUD registered
+[22:49:21] [Render thread/ERROR] [mojang/Narrator]: Error while loading the narrator
 com.mojang.text2speech.Narrator$InitializeException: Failed to load library flite
 	at com.mojang.text2speech.NarratorLinux$FliteLibrary.loadNative(NarratorLinux.java:82) ~[text2speech-1.19.12.jar:?] {}
 	at com.mojang.text2speech.NarratorLinux.<init>(NarratorLinux.java:19) ~[text2speech-1.19.12.jar:?] {}
@@ -454,13 +455,13 @@ Native library (linux-x86-64/libflite.so) not found in resource path (/home/runn
 		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104) ~[?:?] {}
 		at java.base/java.lang.reflect.Method.invoke(Method.java:565) ~[?:?] {}
 		at net.neoforged.devlaunch.Main.main(Main.java:57) [DevLaunch-1.0.2.jar:?] {}
-[13:37:55] [modloading-worker-0/INFO] [kr.co.CountrysideDays/]: Countryside Days 0.1.0-alpha.12 core content registered
-[13:37:55] [Render thread/INFO] [minecraft/ReloadableResourceManager]: Reloading ResourceManager: vanilla, mod_resources, mod/countrysidedays, mod/neoforge
-[13:37:56] [resourceLoad/INFO] [minecraft/UnihexProvider]: Found unifont_all_no_pua-17.0.01.hex, loading
-[13:37:56] [resourceLoad/INFO] [minecraft/UnihexProvider]: Found unifont_pua-17.0.01.hex, loading
-[13:37:56] [resourceLoad/INFO] [minecraft/UnihexProvider]: Found unifont_jp_patch-17.0.01.hex, loading
-[13:37:57] [Render thread/WARN] [mojang/GlProgram]: neoforge:pipeline/item_cutout_unlit shader program does not use sampler Sampler2 defined in the pipeline. This might be a bug.
-[13:37:57] [Render thread/WARN] [mojang/GlProgram]: neoforge:pipeline/item_translucent_unlit shader program does not use sampler Sampler2 defined in the pipeline. This might be a bug.
+[22:49:21] [modloading-worker-0/INFO] [kr.co.CountrysideDays/]: Countryside Days 0.1.0-alpha.12 core content registered
+[22:49:21] [Render thread/INFO] [minecraft/ReloadableResourceManager]: Reloading ResourceManager: vanilla, mod_resources, mod/countrysidedays, mod/neoforge
+[22:49:22] [resourceLoad/INFO] [minecraft/UnihexProvider]: Found unifont_all_no_pua-17.0.01.hex, loading
+[22:49:22] [resourceLoad/INFO] [minecraft/UnihexProvider]: Found unifont_pua-17.0.01.hex, loading
+[22:49:22] [resourceLoad/INFO] [minecraft/UnihexProvider]: Found unifont_jp_patch-17.0.01.hex, loading
+[22:49:24] [Render thread/WARN] [mojang/GlProgram]: neoforge:pipeline/item_translucent_unlit shader program does not use sampler Sampler2 defined in the pipeline. This might be a bug.
+[22:49:24] [Render thread/WARN] [mojang/GlProgram]: neoforge:pipeline/item_cutout_unlit shader program does not use sampler Sampler2 defined in the pipeline. This might be a bug.
 ALSA lib confmisc.c:855:(parse_card) cannot find card '0'
 ALSA lib conf.c:5208:(_snd_config_evaluate) function snd_func_card_inum returned error: No such file or directory
 ALSA lib confmisc.c:422:(snd_func_concat) error evaluating strings
@@ -477,7 +478,7 @@ ALSA lib confmisc.c:1342:(snd_func_refer) error evaluating name
 ALSA lib conf.c:5208:(_snd_config_evaluate) function snd_func_refer returned error: No such file or directory
 ALSA lib conf.c:5731:(snd_config_expand) Evaluate error: No such file or directory
 ALSA lib pcm.c:2721:(snd_pcm_open_noupdate) Unknown PCM default
-[13:37:58] [Render thread/ERROR] [minecraft/SoundEngine]: Error starting SoundSystem. Turning off sounds & music
+[22:49:24] [Render thread/ERROR] [minecraft/SoundEngine]: Error starting SoundSystem. Turning off sounds & music
 java.lang.IllegalStateException: Failed to open OpenAL device
 	at TRANSFORMER/minecraft@26.2/com.mojang.blaze3d.audio.Library.openDeviceOrFallback(Library.java:185) ~[minecraft-patched-26.2.0.38-beta.jar:?] {}
 	at TRANSFORMER/minecraft@26.2/com.mojang.blaze3d.audio.Library.init(Library.java:66) ~[minecraft-patched-26.2.0.38-beta.jar:?] {}
@@ -500,17 +501,10 @@ java.lang.IllegalStateException: Failed to open OpenAL device
 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104) ~[?:?] {}
 	at java.base/java.lang.reflect.Method.invoke(Method.java:565) ~[?:?] {}
 	at net.neoforged.devlaunch.Main.main(Main.java:57) [DevLaunch-1.0.2.jar:?] {}
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x256x0 minecraft:textures/atlas/particles.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 128x128x0 minecraft:textures/atlas/decorated_pot.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 2048x1024x0 minecraft:textures/atlas/armor_trims.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x256x0 minecraft:textures/atlas/paintings.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 1024x512x0 minecraft:textures/atlas/shield_patterns.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 2048x2048x4 minecraft:textures/atlas/blocks.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x512x0 minecraft:textures/atlas/chest.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 256x128x0 minecraft:textures/atlas/celestials.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 1024x512x0 minecraft:textures/atlas/banner_patterns.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 1024x512x0 minecraft:textures/atlas/items.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 1024x1024x0 minecraft:textures/atlas/gui.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 128x64x0 minecraft:textures/atlas/map_decorations.png-atlas
-[13:37:58] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x512x0 minecraft:textures/atlas/shulker_boxes.png-atlas
+[22:49:24] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x256x0 minecraft:textures/atlas/particles.png-atlas
+[22:49:24] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 128x128x0 minecraft:textures/atlas/decorated_pot.png-atlas
+[22:49:24] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 2048x1024x0 minecraft:textures/atlas/armor_trims.png-atlas
+[22:49:24] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x256x0 minecraft:textures/atlas/paintings.png-atlas
+[22:49:24] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 1024x512x0 minecraft:textures/atlas/shield_patterns.png-atlas
+[22:49:24] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 2048x2048x4 minecraft:textures/atlas/blocks.png-atlas
 ```
