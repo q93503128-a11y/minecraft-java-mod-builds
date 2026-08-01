@@ -11,7 +11,7 @@ import net.minecraft.world.entity.Relative;
 
 import java.util.Set;
 
-/** Entry point for queued noise-realm preparation and final player placement. */
+/** Entry point for queued realm preparation and final verified player placement. */
 public final class LivingRealmWorldManager {
     private LivingRealmWorldManager() {
     }
@@ -23,7 +23,7 @@ public final class LivingRealmWorldManager {
     static boolean finishPlacement(ServerPlayer player, OriginProfile profile) {
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
         if (realm == null) {
-            LivingKingdoms.LOGGER.error("Living Kingdoms noise realm is not loaded");
+            LivingKingdoms.LOGGER.error("Living Kingdoms realm is not loaded");
             return false;
         }
         PlayableOriginCatalog.ResidenceOption residence = PlayableOriginCatalog.residences().get(profile.residenceId());
@@ -31,20 +31,24 @@ public final class LivingRealmWorldManager {
         RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(realm, profile.homelandId());
         if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) return false;
 
-        // Finish the authored city before the loading screen closes. The underground marker makes
-        // this a one-time upgrade and also repairs existing alpha.4 worlds on their next login.
         ErdenCapitalIntegrityFinalizer.ensure(realm, profile.homelandId(), site);
         if ("erden_kingdom".equals(profile.homelandId())) {
             RealmFacilityFinisher.ensureCriticalFacilities(realm, site);
         }
         ConstructionDebrisCleaner.schedule(realm, profile.homelandId(), site);
 
-        BlockPos feet = SafeResidenceLocator.residence(
-                realm, profile.homelandId(), profile.residenceId());
-        boolean moved = player.teleportTo(realm, feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5,
-                Set.<Relative>of(), player.getYRot(), player.getXRot(), true);
+        BlockPos feet = SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
+        if (!SafeResidenceLocator.isWalkable(realm, feet)) {
+            LivingKingdoms.LOGGER.error("Rejected unsafe final residence spawn {} for {}", feet, player.getUUID());
+            return false;
+        }
+        float yaw = SafeResidenceLocator.yaw(profile.homelandId(), profile.residenceId());
+        boolean moved = player.teleportTo(realm,
+                feet.getX() + 0.5D, feet.getY(), feet.getZ() + 0.5D,
+                Set.<Relative>of(), yaw, 0.0F, true);
         if (moved) {
-            player.setDeltaMovement(0.0, 0.0, 0.0);
+            player.setDeltaMovement(0.0D, 0.0D, 0.0D);
+            player.fallDistance = 0.0F;
             player.sendSystemMessage(Component.literal(
                     "§6[살아있는 왕국] §f" + residence.displayName() + "에서 "
                             + affiliation(profile.homelandId()) + " 소속으로 삶을 시작합니다."
