@@ -61,11 +61,90 @@ var generateStaffTextures = tasks.register('generateStaffTextures') {
     }
 }
 
+var generatedSpellbookResources = layout.buildDirectory.dir('generated/resources/spellbooks')
+var generateSpellbookResources = tasks.register('generateSpellbookResources') {
+    var catalog = file('src/main/spellbooks.json')
+    inputs.file catalog
+    outputs.dir generatedSpellbookResources
+    doLast {
+        var root = generatedSpellbookResources.get().asFile
+        delete root
+        var entries = new groovy.json.JsonSlurper().parse(catalog) as List
+        def writeJson = { File target, Object value ->
+            target.parentFile.mkdirs()
+            target.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(value)) + '\n', 'UTF-8')
+        }
+
+        writeJson(new File(root, 'assets/arcanecircle/items/beginner_grimoire.json'), [
+                model: [type: 'minecraft:model', model: 'minecraft:item/written_book']
+        ])
+
+        Map<Integer, List<String>> tradeTags = [:].withDefault { [] }
+        String primerTrade = 'arcanecircle:librarian/level_1/beginner_grimoire'
+        tradeTags[1] << primerTrade
+        writeJson(new File(root, 'data/arcanecircle/villager_trade/librarian/level_1/beginner_grimoire.json'), [
+                wants: [id: 'minecraft:emerald', count: 12],
+                gives: [id: 'arcanecircle:beginner_grimoire', count: 1],
+                max_uses: 2,
+                xp: 8,
+                reputation_discount: 0.05
+        ])
+
+        entries.each { entry ->
+            String spellId = entry.id as String
+            String itemId = "spellbook_${spellId}"
+            int level = entry.level as int
+            writeJson(new File(root, "assets/arcanecircle/items/${itemId}.json"), [
+                    model: [type: 'minecraft:model', model: 'minecraft:item/enchanted_book']
+            ])
+            writeJson(new File(root, "data/arcanecircle/recipe/${itemId}.json"), [
+                    type: 'minecraft:crafting_shaped',
+                    category: 'misc',
+                    pattern: ['ABA', 'CDC', 'AEA'],
+                    key: [
+                            A: entry.ring,
+                            B: entry.seal,
+                            C: entry.catalyst,
+                            D: 'minecraft:enchanted_book',
+                            E: entry.core
+                    ],
+                    result: [id: "arcanecircle:${itemId}", count: 1]
+            ])
+            Map trade = [
+                    wants: [id: entry.price_item, count: entry.price_count],
+                    gives: [id: "arcanecircle:${itemId}", count: 1],
+                    max_uses: level >= 4 ? 1 : 2,
+                    xp: level * level * 6,
+                    reputation_discount: 0.05
+            ]
+            if (entry.second_item != null) {
+                trade.additional_wants = [id: entry.second_item, count: entry.second_count]
+            }
+            String tradeId = "arcanecircle:librarian/level_${level}/${itemId}"
+            tradeTags[level] << tradeId
+            writeJson(new File(root,
+                    "data/arcanecircle/villager_trade/librarian/level_${level}/${itemId}.json"), trade)
+        }
+
+        tradeTags.each { level, values ->
+            writeJson(new File(root, "data/minecraft/tags/villager_trade/librarian/level_${level}.json"), [
+                    replace: false,
+                    values: values
+            ])
+        }
+    }
+}
+
 sourceSets.main.resources.srcDir generateModMetadata
 sourceSets.main.resources.srcDir generatedStaffResources
-tasks.named('processResources').configure { dependsOn generateStaffTextures }
+sourceSets.main.resources.srcDir generatedSpellbookResources
+tasks.named('processResources').configure {
+    dependsOn generateStaffTextures
+    dependsOn generateSpellbookResources
+}
 neoForge.ideSyncTask generateModMetadata
 neoForge.ideSyncTask generateStaffTextures
+neoForge.ideSyncTask generateSpellbookResources
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
