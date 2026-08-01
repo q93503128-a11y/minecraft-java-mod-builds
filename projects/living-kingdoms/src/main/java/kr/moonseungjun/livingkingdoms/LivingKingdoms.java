@@ -8,6 +8,8 @@ import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
+import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
+import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -20,6 +22,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 
 @Mod(LivingKingdoms.MOD_ID)
@@ -31,6 +34,7 @@ public final class LivingKingdoms {
         FoundationCatalog.bootstrap();
         modEventBus.addListener(LivingKingdomsNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
+        NeoForge.EVENT_BUS.addListener(this::onServerTick);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
@@ -46,6 +50,10 @@ public final class LivingKingdoms {
     private void onServerStarting(ServerStartingEvent event) {
         OriginProfileManager.initialize(event.getServer());
         StarterRealmDiagnostics.runIfRequested(event.getServer());
+    }
+
+    private void onServerTick(ServerTickEvent.Post event) {
+        RealmBuildCoordinator.onServerTick(event);
     }
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -96,6 +104,6 @@ public final class LivingKingdoms {
     }
 
     private void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        kr.moonseungjun.livingkingdoms.world.StarterNpcManager.handleInteraction(event);
+        StarterNpcManager.handleInteraction(event);
     }
 }
