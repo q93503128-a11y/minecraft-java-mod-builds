@@ -1,6 +1,7 @@
 package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
+import kr.moonseungjun.livingkingdoms.network.RealmBuildProgressPayload;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import net.minecraft.network.chat.Component;
@@ -9,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Util;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.command.generation.GenerationTask;
 
 import java.util.LinkedHashSet;
@@ -33,11 +35,15 @@ public final class RealmBuildCoordinator {
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
         if (realm == null) {
             player.sendSystemMessage(Component.literal("§c[살아있는 왕국] 판타지 대륙을 불러오지 못했습니다."));
+            send(player, profile.homelandId(), "failed", 0,
+                    "판타지 대륙을 불러오지 못했습니다.", false, true);
             return;
         }
         if (RealmSitePlanner.isBuilt(realm, profile.homelandId())) {
             LivingRealmWorldManager.finishPlacement(player, profile);
             StarterNpcManager.ensureForPlayer(player, profile);
+            send(player, profile.homelandId(), "complete", 100,
+                    "왕국 준비가 끝났습니다. 선택한 거주지로 이동합니다.", true, false);
             return;
         }
 
@@ -46,12 +52,14 @@ public final class RealmBuildCoordinator {
             job.waitingPlayers.add(player.getUUID());
             if (!job.started) {
                 job.started = true;
+                setStatus(job, "survey", 6, "안전한 수도 부지를 조사하고 있습니다.");
                 startSiteSurvey(realm, profile.homelandId(), job);
             }
         }
+        sendCurrent(player, profile.homelandId(), job);
         player.sendSystemMessage(Component.literal(
                 "§6[왕국 준비] §f선택한 소속의 수도와 거주지를 실제 지형에 맞춰 건설하고 있습니다. "
-                        + "입지 조사와 건설을 서버를 멈추지 않도록 분리해 진행합니다."
+                        + "진행 화면은 건설이 끝날 때까지 유지됩니다."
         ));
     }
 
@@ -65,6 +73,7 @@ public final class RealmBuildCoordinator {
             job.completions.add(completion);
             if (!job.started) {
                 job.started = true;
+                setStatus(job, "survey", 6, "안전한 수도 부지를 조사하고 있습니다.");
                 startSiteSurvey(realm, homelandId, job);
             }
         }
@@ -101,6 +110,8 @@ public final class RealmBuildCoordinator {
             synchronized (job) {
                 job.site = existing;
             }
+            updateProgress(homelandId, job, "chunks", 26,
+                    "기록된 수도 부지의 주변 지역을 준비하고 있습니다.", true);
             startSelectedSitePregeneration(realm, homelandId, job, existing);
             return;
         }
@@ -109,6 +120,8 @@ public final class RealmBuildCoordinator {
             if (job.finished || job.selectingSite) return;
             job.selectingSite = true;
         }
+        updateProgress(homelandId, job, "survey", 8,
+                "물과 절벽을 피해 수도 후보를 비교하고 있습니다.", true);
         LivingKingdoms.LOGGER.info("Starting background generator survey for {}", homelandId);
         job.surveyFuture = CompletableFuture.supplyAsync(
                 () -> RealmSitePlanner.surveyGeneratedTerrain(realm, homelandId),
@@ -126,6 +139,8 @@ public final class RealmBuildCoordinator {
                     job.site = stored;
                     job.selectingSite = false;
                 }
+                updateProgress(homelandId, job, "chunks", 26,
+                        "수도 부지를 확정했습니다. 주변 지역을 준비하고 있습니다.", true);
                 startSelectedSitePregeneration(realm, homelandId, job, stored);
             } catch (Throwable storeFailure) {
                 failBuild(homelandId, job, storeFailure);
@@ -173,6 +188,7 @@ public final class RealmBuildCoordinator {
         }
         task.run(new GenerationTask.Listener() {
             private int lastReported;
+            private int lastClientPercent = 25;
 
             @Override
             public void update(int ok, int error, int skipped, int total) {
@@ -183,6 +199,14 @@ public final class RealmBuildCoordinator {
                             "Realm {} chunk preparation {} progress {}/{} errors={}",
                             phase, homelandId, done, total, error
                     );
+                }
+                int clientPercent = 26 + Math.round(done / (float) Math.max(1, total) * 19.0F);
+                if (clientPercent >= lastClientPercent + 4 || done == total) {
+                    lastClientPercent = clientPercent;
+                    realm.getServer().submit(() -> updateProgress(
+                            homelandId, job, "chunks", clientPercent,
+                            "수도와 거주지 주변 청크를 생성하고 있습니다.", false
+                    ));
                 }
             }
 
@@ -203,6 +227,8 @@ public final class RealmBuildCoordinator {
             if (generationErrors > 0) {
                 throw new IllegalStateException("Construction chunk preparation reported " + generationErrors + " errors");
             }
+            updateProgress(homelandId, job, "planning", 47,
+                    "도로, 시설, 거주지 배치를 조립하고 있습니다.", true);
             long started = System.nanoTime();
             RealmSiteLayoutSavedData.RealmSite site;
             synchronized (job) {
@@ -216,6 +242,8 @@ public final class RealmBuildCoordinator {
                 job.preparingPlan = false;
                 if (job.task != null) job.task.stop();
             }
+            updateProgress(homelandId, job, "building", 50,
+                    "건설 계획을 구역별로 적용하고 있습니다.", true);
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
             LivingKingdoms.LOGGER.info(
                     "Prepared incremental homeland plan {} operations={} estimated_writes={} planning_ms={}",
@@ -230,13 +258,17 @@ public final class RealmBuildCoordinator {
     }
 
     private static void reportProgress(String homelandId, BuildJob job, IncrementalWorldEditPlan plan) {
-        int percent = Math.min(100, Math.round(plan.progress() * 100.0F));
-        if (percent < job.lastReportedPercent + 10 && percent != 100) return;
-        job.lastReportedPercent = percent;
-        LivingKingdoms.LOGGER.info(
-                "Realm construction {} progress {}% ({}/{})",
-                homelandId, percent, plan.appliedWrites(), plan.estimatedWrites()
-        );
+        int planPercent = Math.min(100, Math.round(plan.progress() * 100.0F));
+        if (planPercent >= job.lastReportedPercent + 10 || planPercent == 100) {
+            job.lastReportedPercent = planPercent;
+            LivingKingdoms.LOGGER.info(
+                    "Realm construction {} progress {}% ({}/{})",
+                    homelandId, planPercent, plan.appliedWrites(), plan.estimatedWrites()
+            );
+        }
+        int clientPercent = 50 + Math.round(plan.progress() * 48.0F);
+        updateProgress(homelandId, job, "building", clientPercent,
+                "도로와 건물을 구역별로 배치하고 있습니다.", false);
     }
 
     private static void completeBuild(String homelandId, BuildJob job) {
@@ -254,7 +286,9 @@ public final class RealmBuildCoordinator {
             }
             synchronized (job) {
                 job.finished = true;
+                setStatus(job, "complete", 100, "왕국 준비가 끝났습니다. 선택한 거주지로 이동합니다.");
             }
+            broadcast(homelandId, job, true, false, true);
             notifyCompletions(job, null);
             JOBS.remove(homelandId, job);
         } catch (Throwable throwable) {
@@ -266,11 +300,14 @@ public final class RealmBuildCoordinator {
         synchronized (job) {
             if (job.finished) return;
             job.finished = true;
+            setStatus(job, "failed", job.progressPercent,
+                    "왕국 생성에 실패했습니다. 서버 로그를 확인하십시오.");
         }
         JOBS.remove(homelandId, job);
         LivingKingdoms.LOGGER.error("Failed incremental homeland construction for {}", homelandId, failure);
         if (job.task != null) job.task.stop();
         if (job.surveyFuture != null) job.surveyFuture.cancel(true);
+        broadcast(homelandId, job, false, true, true);
         for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
             ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
             if (player != null) {
@@ -280,6 +317,61 @@ public final class RealmBuildCoordinator {
             }
         }
         notifyCompletions(job, failure);
+    }
+
+    private static void updateProgress(String homelandId, BuildJob job, String phase,
+                                       int percent, String message, boolean force) {
+        boolean changed;
+        synchronized (job) {
+            int safePercent = Math.max(job.progressPercent, Math.min(100, percent));
+            changed = force || !phase.equals(job.phase) || safePercent >= job.lastSentClientPercent + 4;
+            setStatus(job, phase, safePercent, message);
+            if (changed) job.lastSentClientPercent = safePercent;
+        }
+        if (changed) broadcast(homelandId, job, false, false, false);
+    }
+
+    private static void setStatus(BuildJob job, String phase, int percent, String message) {
+        job.phase = phase;
+        job.progressPercent = Math.max(0, Math.min(100, percent));
+        job.progressMessage = message;
+    }
+
+    private static void sendCurrent(ServerPlayer player, String homelandId, BuildJob job) {
+        String phase;
+        int percent;
+        String message;
+        synchronized (job) {
+            phase = job.phase;
+            percent = job.progressPercent;
+            message = job.progressMessage;
+        }
+        send(player, homelandId, phase, percent, message, false, false);
+    }
+
+    private static void broadcast(String homelandId, BuildJob job,
+                                  boolean complete, boolean failed, boolean force) {
+        String phase;
+        int percent;
+        String message;
+        Set<UUID> players;
+        synchronized (job) {
+            phase = job.phase;
+            percent = job.progressPercent;
+            message = job.progressMessage;
+            players = Set.copyOf(job.waitingPlayers);
+        }
+        for (UUID playerId : players) {
+            ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
+            if (player != null) send(player, homelandId, phase, percent, message, complete, failed);
+        }
+    }
+
+    private static void send(ServerPlayer player, String homelandId, String phase,
+                             int percent, String message, boolean complete, boolean failed) {
+        PacketDistributor.sendToPlayer(player, new RealmBuildProgressPayload(
+                homelandId, phase, percent, message, complete, failed
+        ));
     }
 
     private static void notifyCompletions(BuildJob job, Throwable failure) {
@@ -305,6 +397,10 @@ public final class RealmBuildCoordinator {
         private RealmSiteLayoutSavedData.RealmSite site;
         private IncrementalWorldEditPlan plan;
         private int lastReportedPercent = -10;
+        private int lastSentClientPercent = -1;
+        private String phase = "preparing";
+        private int progressPercent = 2;
+        private String progressMessage = "출신과 소속을 확인하고 있습니다.";
 
         private BuildJob(ServerLevel realm) {
             this.realm = realm;
