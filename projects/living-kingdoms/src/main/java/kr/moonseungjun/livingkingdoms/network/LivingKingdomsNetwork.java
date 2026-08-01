@@ -11,7 +11,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.Set;
 
 public final class LivingKingdomsNetwork {
-    public static final String PROTOCOL_VERSION = "realm-codex-3";
+    public static final String PROTOCOL_VERSION = "realm-codex-4";
     private static final Set<String> CODEX_PAGES = Set.of("overview", "equipment", "map", "skills", "status");
 
     private LivingKingdomsNetwork() {
@@ -21,6 +21,7 @@ public final class LivingKingdomsNetwork {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
         registrar.playToClient(OpenOriginScreenPayload.TYPE, OpenOriginScreenPayload.STREAM_CODEC);
         registrar.playToClient(OriginSubmissionResultPayload.TYPE, OriginSubmissionResultPayload.STREAM_CODEC);
+        registrar.playToClient(RealmBuildProgressPayload.TYPE, RealmBuildProgressPayload.STREAM_CODEC);
         registrar.playToClient(OpenCodexPayload.TYPE, OpenCodexPayload.STREAM_CODEC);
         registrar.playToServer(SubmitOriginPayload.TYPE, SubmitOriginPayload.STREAM_CODEC, LivingKingdomsNetwork::handleSubmit);
         registrar.playToServer(RequestCodexPayload.TYPE, RequestCodexPayload.STREAM_CODEC, LivingKingdomsNetwork::handleCodex);
