@@ -47,6 +47,7 @@ jobs:
           python3 tools/test_village_zone.py
           python3 tools/test_progression_loop.py
           python3 tools/test_fortress_layout.py
+          python3 tools/test_runtime_safety.py
 
       - name: Clean NeoForge build
         working-directory: ${{ env.PROJECT_DIR }}
