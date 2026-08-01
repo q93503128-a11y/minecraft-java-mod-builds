@@ -1,9 +1,11 @@
 package kr.countrysidedays.gameplay;
 
+import kr.countrysidedays.network.EstateHudPayload;
 import kr.countrysidedays.registry.ModItems;
 import kr.countrysidedays.world.CountrysideRegionManager;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.FlatCountrysideBootstrap;
+import kr.countrysidedays.world.PlayerEstateLayout;
 import kr.countrysidedays.world.StarterHomesteadGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -23,6 +25,7 @@ import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Optional;
 
@@ -46,18 +49,28 @@ public final class RuralGameplayHandler {
         }
 
         CountrysideWorldData data = CountrysideWorldData.get(serverLevel.getServer());
-        boolean hadHomestead = data.homesteadOrigin().isPresent();
-        Optional<BlockPos> homestead = FlatCountrysideBootstrap.ensureGenerated(serverLevel, player.blockPosition());
-        boolean becameOwner = data.claimHomesteadOwner(player.getUUID(), player.getScoreboardName());
-        homestead.ifPresent(origin -> {
-            RuralNpcManager.ensureForHomestead(serverLevel, origin);
-            StarterHomesteadGenerator.refreshOwnershipSigns(
-                    serverLevel,
-                    origin,
-                    data.ownerName(),
-                    data.restaurantName()
+        Optional<BlockPos> village = FlatCountrysideBootstrap.ensureGenerated(serverLevel, player.blockPosition());
+        if (village.isEmpty()) return;
+
+        BlockPos villageOrigin = village.get();
+        RuralNpcManager.ensurePublicVillage(serverLevel, villageOrigin);
+
+        CountrysideWorldData.EstateAllocation allocation = data.ensureEstate(
+                player.getUUID(), player.getScoreboardName(), villageOrigin
+        );
+        CountrysideWorldData.PlayerEstate estate = allocation.estate();
+        BlockPos estateOrigin = estate.originPos();
+        if (allocation.created()) {
+            StarterHomesteadGenerator.buildPlayerEstate(
+                    serverLevel, estateOrigin, estate.ownerName(), estate.restaurantName()
             );
-        });
+            StarterHomesteadGenerator.connectEstateToVillage(serverLevel, villageOrigin, estateOrigin);
+            RuralNpcManager.ensureEstateAnimals(serverLevel, estate);
+        } else {
+            StarterHomesteadGenerator.refreshEstateSigns(
+                    serverLevel, estateOrigin, estate.ownerName(), estate.restaurantName()
+            );
+        }
 
         boolean firstArrival = player.addTag(STARTER_KIT_TAG);
         if (firstArrival) {
@@ -66,31 +79,34 @@ public final class RuralGameplayHandler {
             player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_kit"));
         }
 
-        if (homestead.isPresent() && (firstArrival || !hadHomestead || becameOwner)) {
-            BlockPos origin = homestead.get();
+        if (firstArrival || allocation.created()) {
+            BlockPos home = PlayerEstateLayout.home(estateOrigin);
+            BlockPos restaurant = PlayerEstateLayout.restaurant(estateOrigin);
+            BlockPos farm = PlayerEstateLayout.farm(estateOrigin);
+            BlockPos ranch = PlayerEstateLayout.ranch(estateOrigin);
             player.sendSystemMessage(Component.translatable(
-                    "message.countrysidedays.homestead_ready",
-                    origin.getX(), origin.getY(), origin.getZ()
+                    "message.countrysidedays.personal_estate_ready",
+                    estateOrigin.getX(), estateOrigin.getY(), estateOrigin.getZ()
             ));
             player.sendSystemMessage(Component.translatable(
                     "message.countrysidedays.property_deed",
-                    origin.getX() - 34, origin.getY(), origin.getZ() - 25,
-                    origin.getX() + 10, origin.getY(), origin.getZ() - 4,
-                    origin.getX() - 7, origin.getY(), origin.getZ() - 5,
-                    origin.getX() + 9, origin.getY(), origin.getZ() + 52
+                    home.getX(), home.getZ(),
+                    farm.getX(), farm.getZ(),
+                    restaurant.getX(), restaurant.getZ(),
+                    ranch.getX(), ranch.getZ()
             ));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.meet_resident"));
             player.sendSystemMessage(Component.translatable("message.countrysidedays.keep_inventory_enabled"));
         }
+
+        syncEstateHud(player, estate);
     }
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)
                 || !(player.level() instanceof ServerLevel serverLevel)
                 || serverLevel.dimension() != Level.OVERWORLD
-                || !CountrysideRegionManager.isFlatWorld(serverLevel)) {
-            return;
-        }
+                || !CountrysideRegionManager.isFlatWorld(serverLevel)) return;
 
         if (player.tickCount % 40 == 0) {
             serverLevel.getEntitiesOfClass(
@@ -101,9 +117,19 @@ public final class RuralGameplayHandler {
         }
 
         if (player.tickCount % 100 == 0) {
-            CountrysideWorldData.get(serverLevel.getServer()).homesteadOrigin()
-                    .ifPresent(origin -> RuralNpcManager.tickVillage(serverLevel, origin));
+            CountrysideWorldData data = CountrysideWorldData.get(serverLevel.getServer());
+            data.homesteadOrigin().ifPresent(origin -> RuralNpcManager.tickVillage(serverLevel, origin));
+            data.estate(player.getUUID()).ifPresent(estate -> syncEstateHud(player, estate));
         }
+    }
+
+    private static void syncEstateHud(ServerPlayer player, CountrysideWorldData.PlayerEstate estate) {
+        BlockPos home = PlayerEstateLayout.home(estate.originPos());
+        BlockPos restaurant = PlayerEstateLayout.restaurant(estate.originPos());
+        PacketDistributor.sendToPlayer(player, new EstateHudPayload(
+                home.getX(), home.getY(), home.getZ(),
+                restaurant.getX(), restaurant.getY(), restaurant.getZ()
+        ));
     }
 
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
