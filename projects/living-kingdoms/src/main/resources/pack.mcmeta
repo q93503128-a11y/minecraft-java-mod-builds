@@ -1,0 +1,19 @@
+{
+  "pack": {
+    "description": "Living Kingdoms authored fantasy rules",
+    "min_format": [1, 0],
+    "max_format": [999, 0]
+  },
+  "filter": {
+    "block": [
+      {
+        "namespace": "minecraft",
+        "path": "recipe/.*"
+      },
+      {
+        "namespace": "minecraft",
+        "path": "recipes/.*"
+      }
+    ]
+  }
+}
