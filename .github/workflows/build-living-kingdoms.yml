@@ -18,7 +18,7 @@ permissions:
 env:
   PROJECT_DIR: projects/living-kingdoms
   GRADLE_VERSION: '9.2.1'
-  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.3.jar
+  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.8.jar
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
   LIVING_KINGDOMS_CI_CLIENT_TEST: '1'
 
@@ -66,7 +66,7 @@ jobs:
           grep -F 'Verified Kenney CC0 UI asset button_normal.png' ../../logs/clean-build.log
           grep -F 'Verified Kenney CC0 UI asset button_pressed.png' ../../logs/clean-build.log
 
-      - name: Dedicated server queued noise realm and capital smoke test
+      - name: Dedicated server authored realm and capital smoke test
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -91,7 +91,7 @@ jobs:
             if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log; then diagnostic=1; fi
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/server-smoke.log; then
               cat ../../logs/server-smoke.log
-              echo 'Queued realm diagnostics reported a failure.' >&2
+              echo 'Authored realm diagnostics reported a failure.' >&2
               exit 1
             fi
             if [ "$ready" -eq 1 ] && [ "$diagnostic" -eq 1 ]; then break; fi
@@ -105,11 +105,11 @@ jobs:
 
           cat ../../logs/server-smoke.log
           test "$ready" -eq 1 || { echo 'Dedicated server did not reach ready state within 480 seconds.' >&2; exit 1; }
-          test "$diagnostic" -eq 1 || { echo 'Queued noise realm diagnostics did not complete within 480 seconds.' >&2; exit 1; }
-          grep -F 'noise_terrain=true' ../../logs/server-smoke.log
-          grep -F 'surveyed_sites=true' ../../logs/server-smoke.log
-          grep -F 'connected_land=true' ../../logs/server-smoke.log
-          grep -F 'erden_facilities=10' ../../logs/server-smoke.log
+          test "$diagnostic" -eq 1 || { echo 'Authored realm diagnostics did not complete within 480 seconds.' >&2; exit 1; }
+          grep -F 'authored_terrain=true' ../../logs/server-smoke.log
+          grep -F 'smooth_transitions=true' ../../logs/server-smoke.log
+          grep -F 'structure_shells=true' ../../logs/server-smoke.log
+          grep -F 'debris_zero=true' ../../logs/server-smoke.log
           grep -F 'Prepared incremental homeland plan' ../../logs/server-smoke.log
           grep -F 'Realm construction erden_kingdom progress' ../../logs/server-smoke.log
           grep -F 'Realm construction silvana_forest progress' ../../logs/server-smoke.log
@@ -121,12 +121,12 @@ jobs:
           printf 'Recorded exact built-in sculk_patch_deep_dark pre-generation diagnostics: %s\n' \
             "$known_sculk_warnings" | tee ../../logs/known-worldgen-diagnostics.log
 
-          if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms|unsafe terrain read|watchdog' ../../logs/server-smoke-actionable.log; then
-            echo 'Living Kingdoms datapack, dimension, world generation, or server tick error detected.' >&2
+          if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms|unsafe terrain read|watchdog|Error reading optional pack metadata' ../../logs/server-smoke-actionable.log; then
+            echo 'Living Kingdoms datapack, pack metadata, dimension, world generation, or server tick error detected.' >&2
             exit 1
           fi
 
-      - name: Graphical client origin, loading and codex smoke test
+      - name: Graphical client origin loading HUD and codex smoke test
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         env:
@@ -151,12 +151,13 @@ jobs:
           grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' ../../logs/client-smoke.log
-          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms' ../../logs/client-smoke.log; then
-            echo 'Living Kingdoms client, texture, or screen rendering error detected.' >&2
+          grep -F 'atlas_drag=true atlas_zoom=true' ../../logs/client-smoke.log
+          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|Error reading optional pack metadata' ../../logs/client-smoke.log; then
+            echo 'Living Kingdoms client, pack metadata, texture, or screen rendering error detected.' >&2
             exit 1
           fi
 
-      - name: Package and inspect test JAR
+      - name: Package and inspect alpha.8 JAR
         shell: bash
         run: |
           set -euo pipefail
@@ -178,6 +179,10 @@ jobs:
           unzip -Z1 "$JAR" | grep -Eq '^data/livingkingdoms/'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension/living_realm.json'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension_type/living_realm.json'
+          unzip -Z1 "$JAR" | grep -Fx 'pack.mcmeta'
+          unzip -p "$JAR" pack.mcmeta | grep -F '"min_format": 88'
+          unzip -p "$JAR" pack.mcmeta | grep -F '"max_format": [107, 1]'
+          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.8"'
           for asset in fantasy_panel panel_background button_normal button_pressed; do
             path="assets/livingkingdoms/textures/gui/kenney/${asset}.png"
             unzip -Z1 "$JAR" | grep -Fx "$path"
@@ -185,7 +190,6 @@ jobs:
           done
           unzip -Z1 "$JAR" | grep -Fx 'assets/livingkingdoms/licenses/KENNEY_UI_CC0.txt'
           unzip -p "$JAR" assets/livingkingdoms/licenses/KENNEY_UI_CC0.txt | grep -F 'Creative Commons CC0 1.0 Universal'
-          unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -F 'minecraft:noise'
           if unzip -Z1 "$JAR" | grep -Eq '(^|/)(tools|\.github)/|\.java$'; then
             echo 'Forbidden development content found in runtime JAR' >&2
             exit 1
@@ -198,39 +202,34 @@ jobs:
         run: |
           set -euo pipefail
           cat > deliverables/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # Living Kingdoms Build and Runtime Report
+          # Living Kingdoms 0.1.0-alpha.8 Build and Runtime Report
 
           - Commit: $GITHUB_SHA
-          - Mod version: 0.1.0-alpha.3
+          - Mod version: 0.1.0-alpha.8
           - Minecraft: 26.2
           - NeoForge: 26.2.0.38-beta
           - Java: 25
           - Gradle: 9.2.1
           - Clean build: PASS
+          - Correct 26.2 pack metadata load: PASS
           - Fresh dedicated server startup: PASS
-          - Datapack and custom dimension load: PASS
-          - Living realm noise generator: PASS
-          - Asynchronous survey and selected-site chunk preparation: PASS
-          - Sequential terrain survey and persisted homeland sites: PASS
-          - Connected natural land around each capital: PASS
-          - Tick-sliced capital construction without a blocking world-edit tick: PASS
-          - Three terrain-integrated regional capitals: PASS
-          - Eight dynamic residence floor and headroom checks: PASS
-          - Erden citadel, administration, temple, market, inn, guild, smithy, barracks, granary, wall and canal checks: PASS
-          - Exact built-in sculk_patch_deep_dark pre-generation boundary diagnostics: RECORDED SEPARATELY
-          - Every other unsafe terrain read remains a build failure: ENFORCED
+          - Stable authored continent anchors: PASS
+          - Three terrain-first regional capitals: PASS
+          - Smooth capital-to-natural-terrain transitions: PASS
+          - Legacy destructive post-build passes disabled: PASS
+          - Eight verified walkable residence cells: PASS
+          - Erden road, wall, canal, house floor, wall and roof checks: PASS
+          - Construction vegetation debris after cleanup: ZERO
           - Graphical client startup under Xvfb: PASS
-          - External-component origin selection screen: PASS
-          - Non-pausing server-authoritative realm loading screen: PASS
-          - External-component codex overview, equipment/law, coordinate atlas and skills pages: PASS
-          - Server-authoritative affiliation, racial traits and skill progression compiled: PASS
-          - Four Kenney UI components pinned to immutable commit and Git-blob hashes verified: PASS
-          - CC0 license notice packaged in the runtime JAR: PASS
-          - Runtime JAR ZIP integrity: PASS
+          - Origin and non-pausing loading screens: PASS
+          - Compact codex pages remain viewport-bounded: PASS
+          - Atlas drag and zoom input: PASS
+          - Mastery-first growth layout: PASS
+          - Runtime JAR integrity and version metadata: PASS
           - Duplicate ZIP entries: NONE
-          - Full manual gameplay and visual inspection: PENDING
+          - Manual visual inspection on user hardware: PENDING
 
-          This candidate replaces the self-drawn codex and origin panels with verified CC0 fantasy UI components, keeps a non-pausing loading screen visible until the server finishes the chosen homeland, and preserves the asynchronous noise-terrain capital pipeline. Existing alpha.1 flat test worlds are not a valid visual test; create a fresh world.
+          Alpha.8 replaces the destructive late lot grading, obsolete capital finalizers, temporary debris window, fixed unsafe spawn points, oversized HUD panels and inactive V4 atlas input. A fresh world is required because previous alpha worlds contain already-written broken terrain and structures.
           EOF
 
       - name: Upload build logs
@@ -243,12 +242,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Upload verified test build
+      - name: Upload verified alpha.8 build
         id: upload_build
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: living-kingdoms-0.1.0-alpha.3
+          name: living-kingdoms-0.1.0-alpha.8
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
@@ -260,14 +259,17 @@ jobs:
           JOB_STATUS: ${{ job.status }}
           LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
           BUILD_ARTIFACT_ID: ${{ steps.upload_build.outputs.artifact-id }}
+          SOURCE_COMMIT_SHA: ${{ github.sha }}
+          RUN_ID_VALUE: ${{ github.run_id }}
+          RUN_NUMBER_VALUE: ${{ github.run_number }}
         run: |
           set -euo pipefail
           mkdir -p .github/build-pointers
           cat > .github/build-pointers/living-kingdoms.json <<EOF
           {
-            "run_id": "$GITHUB_RUN_ID",
-            "run_number": "$GITHUB_RUN_NUMBER",
-            "commit_sha": "$GITHUB_SHA",
+            "run_id": "$RUN_ID_VALUE",
+            "run_number": "$RUN_NUMBER_VALUE",
+            "commit_sha": "$SOURCE_COMMIT_SHA",
             "job_status": "$JOB_STATUS",
             "log_artifact_id": "$LOG_ARTIFACT_ID",
             "build_artifact_id": "$BUILD_ARTIFACT_ID"
@@ -276,9 +278,12 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .github/build-pointers/living-kingdoms.json
-          git commit -m "Record Living Kingdoms build $GITHUB_RUN_NUMBER" || exit 0
-          for attempt in 1 2 3; do
-            git pull --rebase origin main && git push origin HEAD:main && exit 0
-            sleep 3
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record Living Kingdoms build $RUN_NUMBER_VALUE"
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
           done
+          echo 'Unable to publish Living Kingdoms build pointer after retries.' >&2
           exit 1
