@@ -2,34 +2,26 @@
 from __future__ import annotations
 
 import hashlib
-import re
 import sys
 import zipfile
 from pathlib import Path
 
 MOD_ID = "villageguardians"
 CLASS_PREFIX = "kr/moonseungjun/villageguardians/"
-REQUIRED_LICENSED_ASSETS = {
+REQUIRED_ASSETS = {
     "assets/minecraft/textures/gui/container/inventory.png",
     "assets/minecraft/textures/gui/sprites/widget/button.png",
     "assets/minecraft/textures/gui/sprites/widget/button_highlighted.png",
-    "data/villageguardians/structure/external/town_hall.nbt",
-    "data/villageguardians/structure/external/barracks.nbt",
-    "data/villageguardians/structure/external/smithy.nbt",
-    "data/villageguardians/structure/external/skill_hall.nbt",
-    "data/villageguardians/structure/external/storehouse.nbt",
-    "data/villageguardians/structure/external/infirmary.nbt",
     "META-INF/villageguardians/THIRD_PARTY_NOTICES.txt",
-    "META-INF/villageguardians/towns-and-towers-selection.txt",
+    "META-INF/villageguardians/licensed-gui-assets.txt",
 }
-TOWN_HALL_LINE = re.compile(
-    r"^town_hall \((\d+), (\d+), (\d+)\) <- (.+)$",
-    re.MULTILINE,
-)
-NON_BUILDING_TOKENS = (
-    "meeting_point", "/streets/", "/street/", "corner_",
-    "town_centers", "town_centres", "well", "fountain", "/roads/", "/paths/",
-)
+REQUIRED_CLASSES = {
+    "kr/moonseungjun/villageguardians/VillageSimpleBuildingBuilder.class",
+    "kr/moonseungjun/villageguardians/VillageFortressBuildings.class",
+    "kr/moonseungjun/villageguardians/VillageSkillTreeSystem.class",
+    "kr/moonseungjun/villageguardians/VillageHudSystem.class",
+    "kr/moonseungjun/villageguardians/VillageHealthDisplaySystem.class",
+}
 
 
 def fail(message: str) -> None:
@@ -64,33 +56,30 @@ def main() -> None:
             if any(name.endswith(".java") for name in names):
                 fail("Development Java source files are present in the JAR")
 
-            missing_assets = sorted(REQUIRED_LICENSED_ASSETS - name_set)
+            missing_assets = sorted(REQUIRED_ASSETS - name_set)
             if missing_assets:
                 fail(f"Missing licensed runtime assets: {missing_assets}")
-            for asset in sorted(REQUIRED_LICENSED_ASSETS):
-                if asset.endswith((".png", ".nbt")) and len(jar.read(asset)) < 32:
+            missing_classes = sorted(REQUIRED_CLASSES - name_set)
+            if missing_classes:
+                fail(f"Missing required v0.9 runtime classes: {missing_classes}")
+            for asset in sorted(REQUIRED_ASSETS):
+                if asset.endswith(".png") and len(jar.read(asset)) < 32:
                     fail(f"Licensed runtime asset is unexpectedly empty: {asset}")
+
+            external_structures = [
+                name for name in names
+                if name.startswith("data/villageguardians/structure/external/") and name.endswith(".nbt")
+            ]
+            if external_structures:
+                fail(f"Removed third-party structure NBT files are still bundled: {external_structures}")
 
             notice = jar.read(
                 "META-INF/villageguardians/THIRD_PARTY_NOTICES.txt"
             ).decode("utf-8")
-            if "Default Dark Mode" not in notice or "Towns and Towers" not in notice:
-                fail("Third-party notice does not identify both licensed asset sources")
-
-            selection = jar.read(
-                "META-INF/villageguardians/towns-and-towers-selection.txt"
-            ).decode("utf-8")
-            match = TOWN_HALL_LINE.search(selection)
-            if match is None:
-                fail("Town hall selection manifest does not expose its dimensions")
-            width, height, depth = map(int, match.group(1, 2, 3))
-            source_path = match.group(4).lower()
-            if width < 8 or depth < 8 or height < 8:
-                fail(f"Town hall is not a real multi-level building: {(width, height, depth)}")
-            if width * depth < 80:
-                fail(f"Town hall footprint is too small: {(width, height, depth)}")
-            if any(token in source_path for token in NON_BUILDING_TOKENS):
-                fail(f"Town hall incorrectly selected a road/plaza structure: {source_path}")
+            if "Default Dark Mode" not in notice:
+                fail("Third-party notice does not identify the licensed GUI source")
+            if "No third-party structure NBT files are bundled" not in notice:
+                fail("Third-party notice does not record the custom-building migration")
     except zipfile.BadZipFile as exc:
         fail(f"Invalid JAR/ZIP: {exc}")
 
@@ -99,8 +88,8 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
-    print("[PASS] Licensed GUI and six external building structures are present")
-    print(f"[PASS] Town hall dimensions: {width} x {height} x {depth}")
+    print("[PASS] Original custom buildings and v0.9 gameplay systems are present")
+    print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
 
