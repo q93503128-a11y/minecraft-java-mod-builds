@@ -46,10 +46,10 @@ public final class ModItems {
             110, 0.72, 1.36, 1.48, 0.68, 1.35, SpellDefinition.School.SPACE, 1.80);
     public static final StaffProfile SAGE_PROFILE = new StaffProfile(
             "sage_staff", "현자의 지팡이", "고위 회로를 적은 마력으로 빠르게 반복하는 4써클급 범용 지팡이.", "균열 지팡이 + 마법이 부여된 책 + 금 블록 + 다이아몬드 블록",
-            155, 0.60, 1.52, 1.36, 0.56, 1.78, SpellDefinition.School.ARCANE, 1.40);
+            620, 0.44, 2.10, 1.75, 0.42, 2.20, SpellDefinition.School.ARCANE, 1.70);
     public static final StaffProfile ARCHMAGE_PROFILE = new StaffProfile(
             "archmage_staff", "대마도사의 지팡이", "5써클 영역술을 전제로 모든 마법 수치를 압도적으로 증폭한다.", "현자의 지팡이 + 네더의 별 + 메아리 조각 + 네더라이트 블록",
-            280, 0.46, 2.20, 1.80, 0.43, 2.15, null, 1.0);
+            1800, 0.24, 3.80, 2.85, 0.23, 3.60, null, 1.0);
 
     public static final DeferredItem<ArcaneStaffItem> NOVICE_STAFF = registerStaff("novice_staff", NOVICE_PROFILE, Rarity.COMMON);
     public static final DeferredItem<ArcaneStaffItem> EMBER_STAFF = registerStaff("ember_staff", EMBER_PROFILE, Rarity.UNCOMMON);
@@ -120,6 +120,20 @@ public final class ModItems {
 
     public static DeferredItem<SpellbookItem> spellbook(String spellId) {
         return SPELLBOOKS.get(spellId);
+    }
+
+    public static DeferredItem<? extends net.minecraft.world.item.Item> staffItem(String id) {
+        return switch (id) {
+            case "ember_staff" -> EMBER_STAFF;
+            case "glacial_staff" -> GLACIAL_STAFF;
+            case "zephyr_staff" -> ZEPHYR_STAFF;
+            case "aegis_staff" -> AEGIS_STAFF;
+            case "verdant_staff" -> VERDANT_STAFF;
+            case "rift_staff" -> RIFT_STAFF;
+            case "sage_staff" -> SAGE_STAFF;
+            case "archmage_staff" -> ARCHMAGE_STAFF;
+            default -> NOVICE_STAFF;
+        };
     }
 
     public static StaffProfile profile(String id) {

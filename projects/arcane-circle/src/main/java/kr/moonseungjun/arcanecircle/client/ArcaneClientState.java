@@ -42,6 +42,11 @@ public final class ArcaneClientState {
         catch (NumberFormatException ignored) { return fallback; }
     }
 
+    public static long longInteger(String key, long fallback) {
+        try { return Long.parseLong(values.getOrDefault(key, Long.toString(fallback))); }
+        catch (NumberFormatException ignored) { return fallback; }
+    }
+
     public static double decimal(String key, double fallback) {
         try { return Double.parseDouble(values.getOrDefault(key, Double.toString(fallback))); }
         catch (NumberFormatException ignored) { return fallback; }

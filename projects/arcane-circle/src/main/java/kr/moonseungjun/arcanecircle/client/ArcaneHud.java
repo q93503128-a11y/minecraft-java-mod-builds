@@ -67,6 +67,7 @@ public final class ArcaneHud {
                 x, y + slotSize - 21, 0xFFE7DDF7);
         g.text(font, Component.literal(compactName(ArcaneClientState.text("staff", "맨손"), 12)),
                 x, y + 1, 0xFFFFD489);
+        g.text(font, Component.literal("아르카나 " + ArcaneClientState.longInteger("marks", 0L)), x, y + 36, 0xFFFFD66F);
     }
 
     private static void drawManaTop(GuiGraphicsExtractor g, Font font, int width, int y) {

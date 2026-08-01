@@ -271,6 +271,8 @@ public final class SpellCastingService {
             return;
         }
         CombatGrowthService.Impact impact = CombatGrowthService.measure(combatSnapshot, spell.circle());
+        long marksEarned = kr.moonseungjun.arcanecircle.world.ArcaneEconomyService
+                .awardCombat(player, impact, spell.circle());
 
         data.startCooldown(player, spell.id(), cast.cooldownTicks());
         MagicPlayerData.CastProgress progress = data.completeCast(player, cast, impact);
@@ -292,7 +294,7 @@ public final class SpellCastingService {
                     : impact.strongHits() > 0 ? " §e강적 적중 " + impact.strongHits() : "";
             player.sendSystemMessage(Component.literal("§5[주문 숙련] §f적중 " + impact.hits()
                     + " · 처치 " + impact.kills() + threat + " §7· 숙련 +" + impact.masteryGain()
-                    + " · 통찰 +" + impact.insightGain()));
+                    + " · 통찰 +" + impact.insightGain() + " · 아르카나 +" + marksEarned));
         }
 
         ServerLevel level = (ServerLevel) player.level();
@@ -320,6 +322,7 @@ public final class SpellCastingService {
         return switch (id) {
             case "mend" -> player.getHealth() < player.getMaxHealth();
             case "blink", "rift_step", "spatial_gate" -> findBlinkDestination(player, range).isPresent();
+            case "plane_shift", "demiplane", "gate" -> true;
             default -> true;
         };
     }
@@ -333,7 +336,7 @@ public final class SpellCastingService {
         ServerLevel level = (ServerLevel) player.level();
         SpellDefinition spell = cast.spell();
         double radius = 0.72 + spell.circle() * 0.20 + (cast.fusion() ? 0.35 : 0.0);
-        renderAnchoredSigil(level, player, spell, cast.range(), radius, cast.fusion() ? 3 : 2);
+        SpellSigilService.renderRelease(player, spell, cast.range());
         level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
                 SoundSource.PLAYERS, cast.fusion() ? 1.0F : 0.72F,
                 1.25F - spell.circle() * 0.08F);
@@ -348,7 +351,7 @@ public final class SpellCastingService {
         double baseRange = Math.max(1.0, spell.range());
         double rangeRatio = Math.max(0.75, Math.min(2.6, range / baseRange));
         double radius = (0.76 + spell.circle() * 0.18) * Math.sqrt(rangeRatio);
-        renderAnchoredSigil(level, player, spell, range, radius, 2);
+        SpellSigilService.renderCharge(player, spell, range);
         if (elapsed == 0L) {
             level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
                     SoundSource.PLAYERS, 0.42F, 1.58F - spell.circle() * 0.07F);
@@ -497,7 +500,7 @@ public final class SpellCastingService {
             case "tempest_domain" -> tempestDomain(player, range, power);
             case "aegis_citadel" -> aegisCitadel(player, range, power);
             case "arcane_annihilation" -> arcaneAnnihilation(player, range, power);
-            default -> ExpandedSpellEffects.execute(player, id, range, power);
+            default -> HighCircleSpellEffects.execute(player, id, range, power);
         };
     }
 

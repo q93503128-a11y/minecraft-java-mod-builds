@@ -5,6 +5,11 @@ import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import kr.moonseungjun.arcanecircle.network.EquipSpellPayload;
 import kr.moonseungjun.arcanecircle.network.RequestGrimoirePayload;
+import kr.moonseungjun.arcanecircle.network.PurchaseAcademyItemPayload;
+import kr.moonseungjun.arcanecircle.network.ChooseTraditionPayload;
+import kr.moonseungjun.arcanecircle.world.AcademyOfferCatalog;
+import kr.moonseungjun.arcanecircle.world.MagicTradition;
+import kr.moonseungjun.arcanecircle.magic.SpellWorldLore;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -24,6 +29,7 @@ public final class GrimoireScreen extends Screen {
             new Tab("atlas", "주문"),
             new Tab("recipes", "융합식"),
             new Tab("staffs", "지팡이"),
+            new Tab("academy", "마법학원"),
             new Tab("core", "마력핵"));
     private static final Map<String, Integer> SAVED_SCROLL = new HashMap<>();
     private static int savedOffsetX;
@@ -109,6 +115,33 @@ public final class GrimoireScreen extends Screen {
                 }
             }
         }
+        if ("academy".equals(page)) {
+            MagicTradition[] traditions = {MagicTradition.ARCANE, MagicTradition.DIVINE,
+                    MagicTradition.OCCULT, MagicTradition.PRIMAL};
+            for (int i = 0; i < traditions.length; i++) {
+                if (inside(event.x(), event.y(), l.traditionCard(i))) {
+                    ClientPacketDistributor.sendToServer(new ChooseTraditionPayload(traditions[i].name()));
+                    notice(traditions[i].displayName() + " 조율 요청");
+                    return true;
+                }
+            }
+            for (int circle = 0; circle <= SpellCatalog.IMPLEMENTED_MAX_CIRCLE; circle++) {
+                if (inside(event.x(), event.y(), l.circleFilter(circle))) {
+                    savedCircleFilter = circle;
+                    contentScroll = 0;
+                    notice(circle == 0 ? "전체 상품 표시" : circle + "써클 상품만 표시");
+                    return true;
+                }
+            }
+            List<AcademyOfferCatalog.Offer> offers = AcademyOfferCatalog.forCircle(savedCircleFilter);
+            for (int i = 0; i < offers.size(); i++) {
+                if (inside(event.x(), event.y(), l.academyOffer(i, contentScroll))) {
+                    ClientPacketDistributor.sendToServer(new PurchaseAcademyItemPayload(offers.get(i).id()));
+                    notice(offers.get(i).displayName() + " 구매 요청");
+                    return true;
+                }
+            }
+        }
         return super.mouseClicked(event, doubleClick);
     }
 
@@ -150,6 +183,7 @@ public final class GrimoireScreen extends Screen {
         switch (page) {
             case "recipes" -> recipes(g, l, mouseX, mouseY);
             case "staffs" -> staffs(g, l, mouseX, mouseY);
+            case "academy" -> academy(g, l, mouseX, mouseY);
             case "core" -> core(g, l, time);
             default -> atlas(g, l, mouseX, mouseY, time);
         }
@@ -375,6 +409,55 @@ public final class GrimoireScreen extends Screen {
         g.text(font, Component.literal(shorten("제작: " + profile.recipeHint(), Math.max(20, r.w() / 6))), tx, r.y() + 45, 0xFF8C93A7);
     }
 
+
+    private void academy(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
+        Rect c = l.content();
+        long marks = ArcaneClientState.longInteger("marks", 0L);
+        MagicTradition current = MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND"));
+        g.text(font, Component.literal("아르카나  " + marks), c.x() + 8, c.y() + 4, 0xFFFFD66F);
+        g.text(font, Component.literal("현재 학부  " + current.displayName()), c.right() - 150, c.y() + 4, 0xFFDCC6F4);
+        MagicTradition[] traditions = {MagicTradition.ARCANE, MagicTradition.DIVINE,
+                MagicTradition.OCCULT, MagicTradition.PRIMAL};
+        for (int i = 0; i < traditions.length; i++) {
+            Rect card = l.traditionCard(i);
+            MagicTradition tradition = traditions[i];
+            boolean selected = current == tradition;
+            boolean hover = inside(mouseX, mouseY, card);
+            g.fill(card.x(), card.y(), card.right(), card.bottom(), selected ? 0xFF4C2E68 : hover ? 0xFF26344F : 0xFF111827);
+            g.fill(card.x(), card.bottom() - 2, card.right(), card.bottom(), selected ? 0xFFFFD36B : 0xFF765C9A);
+            g.centeredText(font, Component.literal(tradition.displayName()), card.x() + card.w() / 2,
+                    card.y() + 5, selected ? 0xFFFFE7A8 : 0xFFEADCF7);
+            g.centeredText(font, Component.literal(shorten(tradition.description(), Math.max(10, card.w() / 6))),
+                    card.x() + card.w() / 2, card.y() + 18, 0xFF9CA8BE);
+        }
+        drawCircleFilters(g, l, mouseX, mouseY);
+        int top = l.academyListTop();
+        g.enableScissor(c.x(), top, c.right(), c.bottom() - 17);
+        List<AcademyOfferCatalog.Offer> offers = AcademyOfferCatalog.forCircle(savedCircleFilter);
+        for (int i = 0; i < offers.size(); i++) {
+            Rect card = l.academyOffer(i, contentScroll);
+            AcademyOfferCatalog.Offer offer = offers.get(i);
+            boolean hover = inside(mouseX, mouseY, card);
+            long price = offer.basePrice();
+            if (offer.kind() == AcademyOfferCatalog.Kind.SPELLBOOK
+                    && current != MagicTradition.UNBOUND
+                    && SpellWorldLore.tradition(offer.targetId()) == current) {
+                price = Math.max(1L, Math.round(price * 0.82));
+            }
+            g.fill(card.x(), card.y(), card.right(), card.bottom(), hover ? 0xFF293A58 : 0xFF111827);
+            g.fill(card.x(), card.y(), card.x() + 3, card.bottom(), marks >= price ? 0xFF72C6A1 : 0xFFB85A69);
+            g.text(font, Component.literal(offer.circle() + "C  " + offer.displayName()), card.x() + 9, card.y() + 6,
+                    marks >= price ? 0xFFEDE5F7 : 0xFF9A8990);
+            g.text(font, Component.literal(shorten(offer.description(), Math.max(16, card.w() / 6))),
+                    card.x() + 9, card.y() + 19, 0xFF9FB0C8);
+            String priceText = price + " 아르카나";
+            g.text(font, Component.literal(priceText), card.right() - Math.max(78, font.width(priceText) + 8),
+                    card.y() + 7, marks >= price ? 0xFFFFD66F : 0xFFE06A79);
+        }
+        g.disableScissor();
+        footer(g, l, "전투·강적 처치로 아르카나 획득 · 학부 일치 주문서 18% 할인");
+    }
+
     private void core(GuiGraphicsExtractor g, Layout l, long time) {
         Rect c = l.content();
         int circle = ArcaneClientState.integer("circle", 1);
@@ -410,7 +493,7 @@ public final class GrimoireScreen extends Screen {
                 ArcaneClientState.text("staff", "맨손"),
                 shorten(ArcaneClientState.text("staff_summary", "효과 없음"), 25),
                 shorten(currentStaffStats(), 25),
-                "1~5C 구현 · 6~9C 연구 중");
+                "1~9C 완전 구현 · 아르카나 경제");
 
         if (!compact) {
             drawCorePanel(g, c.x() + 10, c.y() + 30, 170, "마력핵 상태", coreLines);
@@ -515,6 +598,7 @@ public final class GrimoireScreen extends Screen {
         return switch (page) {
             case "recipes" -> l.maxRecipeScroll(SpellCatalog.fusions().size());
             case "staffs" -> l.maxStaffScroll(ModItems.profiles().size());
+            case "academy" -> l.maxAcademyScroll(AcademyOfferCatalog.forCircle(savedCircleFilter).size());
             case "atlas" -> l.maxAtlasScroll(visibleSpells().size());
             default -> 0;
         };
@@ -576,7 +660,8 @@ public final class GrimoireScreen extends Screen {
     }
 
     private static String normalize(String page) {
-        return "recipes".equals(page) || "staffs".equals(page) || "core".equals(page) ? page : "atlas";
+        return "recipes".equals(page) || "staffs".equals(page) || "academy".equals(page)
+                || "core".equals(page) ? page : "atlas";
     }
 
     private static String shorten(String value, int max) {
@@ -609,14 +694,20 @@ public final class GrimoireScreen extends Screen {
         int manaExtra() { return content().w() < 430 ? 16 : 0; }
         int slotTop() { return content().y() + 25 + manaExtra(); }
         int filterTop() { return slotTop() + slotSize() + 7; }
-        int gridTop() { return filterTop() + 25; }
+        int filterRows() { return content().w() < 540 && SpellCatalog.IMPLEMENTED_MAX_CIRCLE >= 8 ? 2 : 1; }
+        int gridTop() { return filterTop() + 5 + filterRows() * 22; }
         Rect circleFilter(int circle) {
             Rect c = content();
             int count = SpellCatalog.IMPLEMENTED_MAX_CIRCLE + 1;
-            int gap = c.w() < 420 ? 2 : 5;
-            int width = Math.max(34, Math.min(62, (c.w() - gap * (count - 1)) / count));
-            int total = width * count + gap * (count - 1);
-            return new Rect(cx() - total / 2 + circle * (width + gap), filterTop(), width, 20);
+            int rows = filterRows();
+            int perRow = (count + rows - 1) / rows;
+            int row = circle / perRow;
+            int col = circle % perRow;
+            int inRow = Math.min(perRow, count - row * perRow);
+            int gap = c.w() < 420 ? 2 : 4;
+            int width = Math.max(28, Math.min(54, (c.w() - gap * (inRow - 1)) / inRow));
+            int total = width * inRow + gap * (inRow - 1);
+            return new Rect(cx() - total / 2 + col * (width + gap), filterTop() + row * 22, width, 20);
         }
         int listTop() { return content().y() + 30 + manaExtra(); }
         int slotSize() {
@@ -669,6 +760,27 @@ public final class GrimoireScreen extends Screen {
             int rows = (count + staffColumns() - 1) / staffColumns();
             int totalH = rows * 64;
             return Math.max(0, totalH - Math.max(40, content().bottom() - listTop() - 18));
+        }
+        Rect traditionCard(int index) {
+            Rect c = content();
+            int gap = 5;
+            int width = Math.max(70, (c.w() - gap * 3) / 4);
+            return new Rect(c.x() + index * (width + gap), c.y() + 20, width, 34);
+        }
+        int academyListTop() { return gridTop() + 2; }
+        Rect academyOffer(int index, int scroll) {
+            Rect c = content();
+            int cols = c.w() >= 620 ? 2 : 1;
+            int gap = 6;
+            int cardW = Math.max(150, (c.w() - gap * (cols - 1)) / cols);
+            int row = index / cols;
+            int col = index % cols;
+            return new Rect(c.x() + col * (cardW + gap), academyListTop() + row * 42 - scroll, cardW, 36);
+        }
+        int maxAcademyScroll(int count) {
+            int cols = content().w() >= 620 ? 2 : 1;
+            int rows = (count + cols - 1) / cols;
+            return Math.max(0, rows * 42 - Math.max(40, content().bottom() - academyListTop() - 18));
         }
     }
 }

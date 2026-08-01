@@ -6,6 +6,8 @@ import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.network.ArcaneNetwork;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
+import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
+import kr.moonseungjun.arcanecircle.world.MagicWorldService;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,7 +23,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.7.0-alpha.1";
+    public static final String VERSION = "0.8.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -43,8 +45,10 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         boolean firstAwakening = data.ensureProfile(player);
+        ArcaneEconomyService.balance(player);
         grantStarterStaffOnce(player, data);
         grantStarterPrimerOnce(player, data);
+        MagicWorldService.onLogin(player, firstAwakening);
         if (firstAwakening) {
             player.sendSystemMessage(Component.literal(
                     "§5[구중 마법학] §f마력핵만 각성했습니다. 아직 익힌 주문은 없습니다."));
@@ -84,6 +88,7 @@ public final class ArcaneCircle {
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         SpellCastingService.clearSession(player.getUUID());
+        MagicWorldService.onRespawn(player);
         ArcaneNetwork.sync(player);
     }
 
@@ -96,6 +101,7 @@ public final class ArcaneCircle {
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         SpellCastingService.tickCharge(player);
+        MagicWorldService.tick(player);
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         if (player.tickCount % 10 == 0) data.regenerate(player);
         if (player.tickCount % 5 == 0) ArcaneNetwork.sync(player);

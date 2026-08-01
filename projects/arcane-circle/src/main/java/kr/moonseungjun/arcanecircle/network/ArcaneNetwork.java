@@ -4,6 +4,7 @@ import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem.StaffProfile;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
+import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,8 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-7";
-    private static final Set<String> PAGES = Set.of("atlas", "recipes", "staffs", "core", "sync");
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-8";
+    private static final Set<String> PAGES = Set.of("atlas", "recipes", "staffs", "core", "academy", "sync");
 
     private ArcaneNetwork() {}
 
@@ -31,6 +32,10 @@ public final class ArcaneNetwork {
         registrar.playToServer(QueueFusionPayload.TYPE, QueueFusionPayload.STREAM_CODEC, ArcaneNetwork::handleQueueFusion);
         registrar.playToServer(CommitFusionPayload.TYPE, CommitFusionPayload.STREAM_CODEC, ArcaneNetwork::handleCommitFusion);
         registrar.playToServer(EquipSpellPayload.TYPE, EquipSpellPayload.STREAM_CODEC, ArcaneNetwork::handleEquip);
+        registrar.playToServer(PurchaseAcademyItemPayload.TYPE, PurchaseAcademyItemPayload.STREAM_CODEC,
+                ArcaneNetwork::handlePurchase);
+        registrar.playToServer(ChooseTraditionPayload.TYPE, ChooseTraditionPayload.STREAM_CODEC,
+                ArcaneNetwork::handleTradition);
     }
 
     public static void sync(ServerPlayer player) {
@@ -75,6 +80,20 @@ public final class ArcaneNetwork {
             SpellCastingService.cancelCharge(player, true);
         }
         context.reply(snapshot(player, "sync"));
+    }
+
+    private static void handlePurchase(PurchaseAcademyItemPayload payload, IPayloadContext context) {
+        ServerPlayer player = requirePlayer(context);
+        if (player == null) return;
+        kr.moonseungjun.arcanecircle.world.ArcaneEconomyService.purchase(player, payload.offerId());
+        context.reply(snapshot(player, "academy"));
+    }
+
+    private static void handleTradition(ChooseTraditionPayload payload, IPayloadContext context) {
+        ServerPlayer player = requirePlayer(context);
+        if (player == null) return;
+        kr.moonseungjun.arcanecircle.world.ArcaneEconomyService.chooseTradition(player, payload.traditionId());
+        context.reply(snapshot(player, "academy"));
     }
 
     private static void handleEquip(EquipSpellPayload payload, IPayloadContext context) {
@@ -137,6 +156,9 @@ public final class ArcaneNetwork {
                 + ";staff_range=" + permille(staff.rangeMultiplier())
                 + ";staff_cooldown=" + permille(staff.cooldownMultiplier())
                 + ";staff_regen=" + permille(staff.regenMultiplier())
+                + ";" + "marks=" + kr.moonseungjun.arcanecircle.world.ArcaneEconomyService.balance(player)
+                + ";" + "tradition=" + kr.moonseungjun.arcanecircle.world.ArcaneWorldData
+                        .get(((ServerLevel) player.level()).getServer()).tradition(player).name()
                 + ";known=" + known
                 + ";mastery=" + mastery
                 + ";spell_count=" + SpellCatalog.spells().size();

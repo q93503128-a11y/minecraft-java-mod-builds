@@ -30,7 +30,7 @@ import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.SigilAnchor.TAR
  * anchors, Minecraft effects and fusion formulae are balanced specifically for this mod.
  */
 public final class SpellCatalog {
-    public static final int IMPLEMENTED_MAX_CIRCLE = 5;
+    public static final int IMPLEMENTED_MAX_CIRCLE = 9;
     public static final int WORLD_MAX_CIRCLE = 9;
 
     private static final Map<String, SpellDefinition> SPELLS = new LinkedHashMap<>();
@@ -152,6 +152,95 @@ public final class SpellCatalog {
                 "대상의 의지를 압도해 오랫동안 전투 능력을 봉쇄한다.");
         add("insect_plague", "곤충 떼", 5, 176, 660, 22.0, 24.0, LIFE, BOOK, GROUND_TARGET,
                 "굶주린 곤충 떼를 불러 지속적인 범위 피해를 준다.");
+
+
+        // 6th Circle — battlefield domination and major transformation.
+        add("disintegrate", "분해", 6, 330, 900, 34.0, 56.0, ARCANE, BOOK, FRONT,
+                "가느다란 녹색 광선으로 물질과 생명체의 결합을 붕괴시킨다.");
+        add("globe_of_invulnerability", "무적의 구체", 6, 360, 1200, 0.0, 52.0, WARD, BOOK, BODY,
+                "하위 주문을 밀어내는 거대한 구형 역장을 전개한다.");
+        add("mass_suggestion", "대규모 제안", 6, 310, 1100, 38.0, 18.0, ARCANE, BOOK, GROUND_TARGET,
+                "여러 적의 의식을 동시에 지배해 전투 의지를 꺾는다.");
+        add("move_earth", "대지 이동", 6, 350, 1000, 34.0, 42.0, LIFE, BOOK, GROUND_TARGET,
+                "대지를 뒤집는 충격으로 넓은 범위의 적을 띄우고 무너뜨린다.");
+        add("sunbeam", "태양 광선", 6, 345, 820, 38.0, 52.0, LIFE, BOOK, FRONT,
+                "눈부신 태양광을 직선으로 방출해 적을 태우고 실명시킨다.");
+        add("true_seeing", "진실의 시야", 6, 280, 1300, 40.0, 1.0, ARCANE, BOOK, BODY,
+                "투명화와 환영을 꿰뚫고 주변 존재를 감지한다.");
+        add("freezing_sphere", "냉동 구체", 6, 350, 900, 36.0, 50.0, FROST, BOOK, FRONT,
+                "폭발하는 극저온 구체로 넓은 지역을 얼린다.");
+        add("eyebite", "사악한 눈", 6, 320, 900, 32.0, 36.0, ARCANE, BOOK, TARGET,
+                "저주의 시선으로 대상을 공포와 쇠약에 빠뜨린다.");
+        add("flesh_to_stone", "육신 석화", 6, 355, 1100, 30.0, 40.0, WARD, BOOK, TARGET,
+                "생명체의 육신을 돌처럼 굳혀 움직임을 봉쇄한다.");
+        add("circle_of_death", "죽음의 원", 6, 390, 1250, 34.0, 58.0, LIFE, BOOK, GROUND_TARGET,
+                "넓은 죽음의 파동을 펼쳐 약한 적을 쓸어버린다.");
+
+        // 7th Circle — fortress-breaking and planar magic.
+        add("delayed_blast_fireball", "지연 폭발 화염구", 7, 590, 1500, 44.0, 82.0, FIRE, BOOK, GROUND_TARGET,
+                "고밀도 화염핵을 축적한 뒤 거대한 폭발을 일으킨다.");
+        add("etherealness", "에테르화", 7, 520, 1800, 0.0, 1.0, SPACE, BOOK, BODY,
+                "짧은 시간 물질계의 간섭에서 벗어나 피해를 무시한다.");
+        add("finger_of_death", "죽음의 손가락", 7, 630, 1700, 38.0, 95.0, LIFE, BOOK, TARGET,
+                "단일 대상의 생명력을 직접 붕괴시키는 죽음의 광선을 쏜다.");
+        add("fire_storm", "화염 폭풍", 7, 650, 1650, 46.0, 84.0, FIRE, BOOK, GROUND_TARGET,
+                "여러 화염 기둥을 연쇄적으로 떨어뜨려 전장을 불태운다.");
+        add("forcecage", "역장 감옥", 7, 610, 1900, 40.0, 55.0, WARD, BOOK, TARGET,
+                "도망칠 수 없는 다층 역장 감옥으로 강적을 봉쇄한다.");
+        add("plane_shift", "차원 이동", 7, 560, 2200, 0.0, 1.0, SPACE, BOOK, BODY,
+                "공간층을 넘어 마법학원 귀환 회로로 즉시 이동한다.");
+        add("prismatic_spray", "무지개 분사", 7, 620, 1450, 38.0, 76.0, ARCANE, BOOK, FRONT,
+                "일곱 빛깔 광선을 흩뿌려 서로 다른 원소와 상태 효과를 준다.");
+        add("reverse_gravity", "중력 반전", 7, 600, 1600, 40.0, 48.0, SPACE, BOOK, GROUND_TARGET,
+                "광범위한 중력을 뒤집어 적들을 하늘로 솟구치게 한다.");
+        add("simulacrum", "시뮬라크럼", 7, 680, 2400, 0.0, 64.0, FROST, BOOK, BODY,
+                "얼음과 비전력으로 자신의 대리체를 만들어 치명상을 대신 받게 한다.");
+        add("teleport", "순간이동", 7, 570, 1500, 72.0, 1.0, SPACE, BOOK, GROUND_TARGET,
+                "시야 너머의 안전한 지점까지 공간을 접어 이동한다.");
+
+        // 8th Circle — regional and reality-warping magic.
+        add("antimagic_field", "반마법장", 8, 920, 2400, 16.0, 72.0, WARD, BOOK, GROUND_SELF,
+                "주변의 마법 효과를 지우고 적의 강화 상태를 소거한다.");
+        add("clone", "클론", 8, 980, 3200, 0.0, 95.0, LIFE, BOOK, BODY,
+                "치명상을 대신 받아내는 생명 복제 회로를 자신에게 각인한다.");
+        add("control_weather", "기후 조종", 8, 900, 2600, 64.0, 70.0, WIND, BOOK, GROUND_SELF,
+                "하늘과 대기의 흐름을 장악해 번개와 폭풍을 불러온다.");
+        add("demiplane", "반차원", 8, 950, 3000, 0.0, 1.0, SPACE, BOOK, BODY,
+                "안전한 학원 성소와 연결된 임시 반차원을 연다.");
+        add("dominate_monster", "괴물 지배", 8, 1040, 2800, 42.0, 72.0, ARCANE, BOOK, TARGET,
+                "강력한 괴물의 의지를 완전히 압도해 전투 능력을 봉쇄한다.");
+        add("earthquake", "지진", 8, 1100, 3000, 50.0, 120.0, LIFE, BOOK, GROUND_TARGET,
+                "대규모 지진으로 전장을 뒤흔들고 적을 공중으로 던진다.");
+        add("feeblemind", "정신 붕괴", 8, 990, 2600, 40.0, 88.0, ARCANE, BOOK, TARGET,
+                "대상의 사고와 마법 저항을 파괴해 극심한 쇠약을 준다.");
+        add("incendiary_cloud", "소이 구름", 8, 1060, 2700, 48.0, 110.0, FIRE, BOOK, GROUND_TARGET,
+                "계속 타오르는 거대한 화염 구름으로 지역을 봉쇄한다.");
+        add("maze", "미궁", 8, 960, 2500, 42.0, 80.0, SPACE, BOOK, TARGET,
+                "대상의 공간 인식을 뒤틀어 한동안 전투에서 이탈시킨다.");
+        add("sunburst", "태양 폭발", 8, 1120, 2800, 52.0, 125.0, LIFE, BOOK, GROUND_TARGET,
+                "전장을 백색 태양광으로 뒤덮어 적들을 태우고 실명시킨다.");
+
+        // 9th Circle — archmage miracles and world-scale battle magic.
+        add("meteor_swarm", "유성우", 9, 2200, 4200, 72.0, 230.0, FIRE, BOOK, GROUND_TARGET,
+                "네 개의 거대 유성을 광범위한 전장에 떨어뜨린다.");
+        add("power_word_kill", "죽음의 권능어", 9, 1900, 5000, 52.0, 260.0, LIFE, BOOK, TARGET,
+                "약해진 존재의 생명을 명령 한마디로 끊는다.");
+        add("prismatic_wall", "무지개 장벽", 9, 2050, 4600, 56.0, 180.0, WARD, BOOK, GROUND_TARGET,
+                "일곱 겹 원소 장벽으로 거대한 전선을 봉쇄한다.");
+        add("shapechange", "형상변환", 9, 1800, 5200, 0.0, 150.0, LIFE, BOOK, BODY,
+                "대마수의 육체 능력을 재현해 압도적인 전투 상태가 된다.");
+        add("time_stop", "시간 정지", 9, 2400, 6000, 48.0, 1.0, SPACE, BOOK, GROUND_SELF,
+                "자신을 제외한 주변 적의 시간을 일시적으로 멈춘다.");
+        add("true_polymorph", "진정한 변신", 9, 2100, 5600, 40.0, 170.0, LIFE, BOOK, TARGET,
+                "생명체의 형상과 전투 능력을 근본적으로 다시 쓴다.");
+        add("weird", "기괴한 환영", 9, 2150, 4800, 55.0, 190.0, ARCANE, BOOK, GROUND_TARGET,
+                "다수의 적에게 최악의 공포를 실체화해 정신을 파괴한다.");
+        add("wish", "소원", 9, 3000, 7200, 0.0, 1.0, ARCANE, BOOK, BODY,
+                "현실을 제한적으로 다시 써 생명·마력·주문 회로를 복구한다.");
+        add("gate", "게이트", 9, 2300, 5200, 80.0, 1.0, SPACE, BOOK, GROUND_TARGET,
+                "거대한 차원문을 열어 학원과 먼 전장을 즉시 연결한다.");
+        add("foresight", "예지", 9, 1750, 5000, 0.0, 100.0, ARCANE, BOOK, BODY,
+                "다가올 위험을 미리 읽어 회피·방어·시야를 극한까지 높인다.");
 
         // Fusion results also use established fantasy spell names.
         addFusion("burning_hands", "불타는 손", 2, 30, 105, 8.0, 8.0, FIRE, FRONT,
@@ -282,18 +371,30 @@ public final class SpellCatalog {
             case 3 -> 260;
             case 4 -> 720;
             case 5 -> 1600;
+            case 6 -> 3400;
+            case 7 -> 7200;
+            case 8 -> 15000;
+            case 9 -> 32000;
             default -> 0;
         };
     }
 
     public static int emeraldEquivalentPrice(int circle) {
+        return arcaneMarkPrice(circle);
+    }
+
+    public static int arcaneMarkPrice(int circle) {
         return switch (circle) {
-            case 1 -> 18;
-            case 2 -> 45;
-            case 3 -> 126;
-            case 4 -> 360;
-            case 5 -> 900;
-            default -> 18;
+            case 1 -> 40;
+            case 2 -> 120;
+            case 3 -> 450;
+            case 4 -> 1800;
+            case 5 -> 8000;
+            case 6 -> 32000;
+            case 7 -> 140000;
+            case 8 -> 650000;
+            case 9 -> 3000000;
+            default -> 40;
         };
     }
 

@@ -1,537 +1,512 @@
 [
   {
     "id": "light",
+    "name": "빛",
     "circle": 1,
-    "catalyst": "minecraft:glowstone_dust",
-    "ring": "minecraft:amethyst_shard",
-    "seal": "minecraft:lapis_lazuli",
-    "core": "minecraft:gold_ingot",
-    "level": 1,
-    "price_item": "minecraft:emerald",
-    "price_count": 18
+    "level": 1
   },
   {
     "id": "grease",
+    "name": "기름막",
     "circle": 1,
-    "catalyst": "minecraft:slime_ball",
-    "ring": "minecraft:amethyst_shard",
-    "seal": "minecraft:lapis_lazuli",
-    "core": "minecraft:gold_ingot",
-    "level": 1,
-    "price_item": "minecraft:emerald",
-    "price_count": 18
+    "level": 1
   },
   {
     "id": "sleep",
+    "name": "수면",
     "circle": 1,
-    "catalyst": "minecraft:poppy",
-    "ring": "minecraft:amethyst_shard",
-    "seal": "minecraft:lapis_lazuli",
-    "core": "minecraft:gold_ingot",
-    "level": 1,
-    "price_item": "minecraft:emerald",
-    "price_count": 18
+    "level": 1
   },
   {
     "id": "thunderwave",
+    "name": "천둥파동",
     "circle": 1,
-    "catalyst": "minecraft:goat_horn",
-    "ring": "minecraft:amethyst_shard",
-    "seal": "minecraft:lapis_lazuli",
-    "core": "minecraft:gold_ingot",
-    "level": 1,
-    "price_item": "minecraft:emerald",
-    "price_count": 18
+    "level": 1
   },
   {
     "id": "mage_armor",
+    "name": "마법 갑주",
     "circle": 1,
-    "catalyst": "minecraft:chainmail_chestplate",
-    "ring": "minecraft:amethyst_shard",
-    "seal": "minecraft:lapis_lazuli",
-    "core": "minecraft:gold_ingot",
-    "level": 1,
-    "price_item": "minecraft:emerald",
-    "price_count": 18
+    "level": 1
   },
   {
     "id": "scorching_ray",
+    "name": "작열 광선",
     "circle": 2,
-    "catalyst": "minecraft:blaze_powder",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "misty_step",
+    "name": "안개 걸음",
     "circle": 2,
-    "catalyst": "minecraft:ender_pearl",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "web",
+    "name": "거미줄",
     "circle": 2,
-    "catalyst": "minecraft:cobweb",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "mirror_image",
+    "name": "거울상",
     "circle": 2,
-    "catalyst": "minecraft:glass",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "invisibility",
+    "name": "투명화",
     "circle": 2,
-    "catalyst": "minecraft:fermented_spider_eye",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "gust_of_wind",
+    "name": "돌풍",
     "circle": 2,
-    "catalyst": "minecraft:breeze_rod",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "hold_person",
+    "name": "인간형 속박",
     "circle": 2,
-    "catalyst": "minecraft:lead",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "shatter",
+    "name": "분쇄",
     "circle": 2,
-    "catalyst": "minecraft:amethyst_shard",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "blur",
+    "name": "흐릿함",
     "circle": 2,
-    "catalyst": "minecraft:phantom_membrane",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "levitate",
+    "name": "부유",
     "circle": 2,
-    "catalyst": "minecraft:feather",
-    "ring": "minecraft:amethyst_block",
-    "seal": "minecraft:lapis_block",
-    "core": "minecraft:diamond",
-    "level": 2,
-    "price_item": "minecraft:emerald",
-    "price_count": 45
+    "level": 2
   },
   {
     "id": "fireball",
+    "name": "화염구",
     "circle": 3,
-    "catalyst": "minecraft:fire_charge",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "lightning_bolt",
+    "name": "번개 줄기",
     "circle": 3,
-    "catalyst": "minecraft:lightning_rod",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "fly",
+    "name": "비행",
     "circle": 3,
-    "catalyst": "minecraft:elytra",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "haste",
+    "name": "가속",
     "circle": 3,
-    "catalyst": "minecraft:sugar",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "dispel_magic",
+    "name": "마법 해제",
     "circle": 3,
-    "catalyst": "minecraft:milk_bucket",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "vampiric_touch",
+    "name": "흡혈의 손길",
     "circle": 3,
-    "catalyst": "minecraft:ghast_tear",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "slow",
+    "name": "둔화",
     "circle": 3,
-    "catalyst": "minecraft:soul_sand",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "protection_from_energy",
+    "name": "에너지 보호",
     "circle": 3,
-    "catalyst": "minecraft:magma_cream",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "sleet_storm",
+    "name": "진눈깨비 폭풍",
     "circle": 3,
-    "catalyst": "minecraft:packed_ice",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "blink",
+    "name": "점멸",
     "circle": 3,
-    "catalyst": "minecraft:ender_eye",
-    "ring": "minecraft:diamond",
-    "seal": "minecraft:amethyst_block",
-    "core": "minecraft:echo_shard",
-    "level": 3,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 14
+    "level": 3
   },
   {
     "id": "wall_of_fire",
+    "name": "화염벽",
     "circle": 4,
-    "catalyst": "minecraft:blaze_rod",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "ice_storm",
+    "name": "얼음 폭풍",
     "circle": 4,
-    "catalyst": "minecraft:blue_ice",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "greater_invisibility",
+    "name": "상급 투명화",
     "circle": 4,
-    "catalyst": "minecraft:echo_shard",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "resilient_sphere",
+    "name": "탄성 구체",
     "circle": 4,
-    "catalyst": "minecraft:beacon",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "dimension_door",
+    "name": "차원문",
     "circle": 4,
-    "catalyst": "minecraft:crying_obsidian",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "stoneskin",
+    "name": "돌가죽",
     "circle": 4,
-    "catalyst": "minecraft:obsidian",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "confusion",
+    "name": "혼란",
     "circle": 4,
-    "catalyst": "minecraft:chorus_fruit",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "blight",
+    "name": "황폐",
     "circle": 4,
-    "catalyst": "minecraft:wither_rose",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "freedom_of_movement",
+    "name": "이동의 자유",
     "circle": 4,
-    "catalyst": "minecraft:rabbit_foot",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "phantasmal_killer",
+    "name": "환영 살해자",
     "circle": 4,
-    "catalyst": "minecraft:wither_skeleton_skull",
-    "ring": "minecraft:diamond_block",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:netherite_ingot",
-    "level": 4,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 40,
-    "second_item": "minecraft:diamond",
-    "second_count": 4
+    "level": 4
   },
   {
     "id": "cone_of_cold",
+    "name": "냉기 원뿔",
     "circle": 5,
-    "catalyst": "minecraft:blue_ice",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "wall_of_force",
+    "name": "역장벽",
     "circle": 5,
-    "catalyst": "minecraft:beacon",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "cloudkill",
+    "name": "독구름",
     "circle": 5,
-    "catalyst": "minecraft:dragon_breath",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "telekinesis",
+    "name": "염동력",
     "circle": 5,
-    "catalyst": "minecraft:shulker_shell",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "flame_strike",
+    "name": "화염 기둥",
     "circle": 5,
-    "catalyst": "minecraft:nether_star",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "hold_monster",
+    "name": "괴물 속박",
     "circle": 5,
-    "catalyst": "minecraft:heavy_core",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "mass_cure_wounds",
+    "name": "광역 치유",
     "circle": 5,
-    "catalyst": "minecraft:enchanted_golden_apple",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "passwall",
+    "name": "통과문",
     "circle": 5,
-    "catalyst": "minecraft:reinforced_deepslate",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "dominate_person",
+    "name": "인간형 지배",
     "circle": 5,
-    "catalyst": "minecraft:ominous_bottle",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
   },
   {
     "id": "insect_plague",
+    "name": "곤충 떼",
     "circle": 5,
-    "catalyst": "minecraft:bee_nest",
-    "ring": "minecraft:netherite_ingot",
-    "seal": "minecraft:echo_shard",
-    "core": "minecraft:nether_star",
-    "level": 5,
-    "price_item": "minecraft:emerald_block",
-    "price_count": 64,
-    "second_item": "minecraft:nether_star",
-    "second_count": 1
+    "level": 5
+  },
+  {
+    "id": "disintegrate",
+    "name": "분해",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "globe_of_invulnerability",
+    "name": "무적의 구체",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "mass_suggestion",
+    "name": "대규모 제안",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "move_earth",
+    "name": "대지 이동",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "sunbeam",
+    "name": "태양 광선",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "true_seeing",
+    "name": "진실의 시야",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "freezing_sphere",
+    "name": "냉동 구체",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "eyebite",
+    "name": "사악한 눈",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "flesh_to_stone",
+    "name": "육신 석화",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "circle_of_death",
+    "name": "죽음의 원",
+    "circle": 6,
+    "level": 5
+  },
+  {
+    "id": "delayed_blast_fireball",
+    "name": "지연 폭발 화염구",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "etherealness",
+    "name": "에테르화",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "finger_of_death",
+    "name": "죽음의 손가락",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "fire_storm",
+    "name": "화염 폭풍",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "forcecage",
+    "name": "역장 감옥",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "plane_shift",
+    "name": "차원 이동",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "prismatic_spray",
+    "name": "무지개 분사",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "reverse_gravity",
+    "name": "중력 반전",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "simulacrum",
+    "name": "시뮬라크럼",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "teleport",
+    "name": "순간이동",
+    "circle": 7,
+    "level": 5
+  },
+  {
+    "id": "antimagic_field",
+    "name": "반마법장",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "clone",
+    "name": "클론",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "control_weather",
+    "name": "기후 조종",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "demiplane",
+    "name": "반차원",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "dominate_monster",
+    "name": "괴물 지배",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "earthquake",
+    "name": "지진",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "feeblemind",
+    "name": "정신 붕괴",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "incendiary_cloud",
+    "name": "소이 구름",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "maze",
+    "name": "미궁",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "sunburst",
+    "name": "태양 폭발",
+    "circle": 8,
+    "level": 5
+  },
+  {
+    "id": "meteor_swarm",
+    "name": "유성우",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "power_word_kill",
+    "name": "죽음의 권능어",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "prismatic_wall",
+    "name": "무지개 장벽",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "shapechange",
+    "name": "형상변환",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "time_stop",
+    "name": "시간 정지",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "true_polymorph",
+    "name": "진정한 변신",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "weird",
+    "name": "기괴한 환영",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "wish",
+    "name": "소원",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "gate",
+    "name": "게이트",
+    "circle": 9,
+    "level": 5
+  },
+  {
+    "id": "foresight",
+    "name": "예지",
+    "circle": 9,
+    "level": 5
   }
 ]

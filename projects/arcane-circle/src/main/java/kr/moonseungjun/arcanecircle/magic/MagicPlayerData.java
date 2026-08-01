@@ -233,6 +233,15 @@ public final class MagicPlayerData extends SavedData {
         }
 
         StaffProfile staff = ModItems.equipped(player);
+        kr.moonseungjun.arcanecircle.world.ArcaneWorldData world =
+                kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer());
+        kr.moonseungjun.arcanecircle.world.MagicTradition chosen = world.tradition(player);
+        boolean facultyMatch = chosen != kr.moonseungjun.arcanecircle.world.MagicTradition.UNBOUND
+                && SpellWorldLore.tradition(spell.id()) == chosen;
+        double facultyMana = facultyMatch ? chosen.manaMultiplier() : 1.0;
+        double facultyPower = facultyMatch ? chosen.powerMultiplier() : 1.0;
+        double facultyRange = facultyMatch ? chosen.rangeMultiplier() : 1.0;
+        double facultyCooldown = facultyMatch ? chosen.cooldownMultiplier() : 1.0;
         int masteryGap = Math.max(0, state.circle - spell.circle());
         int proficiency = SpellCatalog.masteryTier(state.mastery(spellId));
         double circleMana = Math.max(0.48, 1.0 - masteryGap * 0.09);
@@ -245,11 +254,11 @@ public final class MagicPlayerData extends SavedData {
         double masteryPower = 1.0 + proficiency * 0.04;
 
         int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * circleMana * masteryMana
-                * staff.manaCostMultiplier()));
+                * staff.manaCostMultiplier() * facultyMana));
         int cooldown = Math.max(8, (int) Math.round(spell.cooldownTicks() * circleCooldown * masteryCooldown
-                * staff.cooldownMultiplier()));
-        double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier();
-        double power = spell.power() * circlePower * masteryPower * staff.powerFor(spell.school());
+                * staff.cooldownMultiplier() * facultyCooldown));
+        double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier() * facultyRange;
+        double power = spell.power() * circlePower * masteryPower * staff.powerFor(spell.school()) * facultyPower;
 
         if (state.mana + 0.0001 < manaCost) {
             return CastPreparation.failure("마력이 부족합니다. 필요 " + manaCost + " / 현재 " + (int) state.mana);
@@ -263,6 +272,10 @@ public final class MagicPlayerData extends SavedData {
         MageState state = state(player);
         CombatGrowthService.Impact result = impact == null ? CombatGrowthService.Impact.NONE : impact;
         state.mana = Math.max(0.0, state.mana - cast.manaCost());
+        if ("wish".equals(cast.spell().id())) {
+            state.mana = effectiveStats(player).maxMana();
+            state.cooldowns.entrySet().removeIf(entry -> !"wish".equals(entry.getKey()));
+        }
 
         int beforeMastery = state.mastery.getOrDefault(cast.spell().id(), 0);
         int masteryGain = Math.max(1, result.masteryGain());
@@ -389,7 +402,7 @@ public final class MagicPlayerData extends SavedData {
         private boolean starterPrimerGranted;
 
         private MageState(PlayerEntry entry) {
-            this.circle = Math.max(1, Math.min(5, entry.circle()));
+            this.circle = Math.max(1, Math.min(SpellCatalog.IMPLEMENTED_MAX_CIRCLE, entry.circle()));
             this.insight = Math.max(0, entry.insight());
             this.known = new LinkedHashSet<>();
             for (String spellId : entry.known()) {
@@ -421,7 +434,7 @@ public final class MagicPlayerData extends SavedData {
                     .forEach(value -> cooldowns.put(value.spellId(), value));
             this.starterStaffGranted = entry.starterStaffGranted();
             this.starterPrimerGranted = entry.starterPrimerGranted();
-            this.mana = Math.max(0.0, Math.min(4096.0, entry.mana()));
+            this.mana = Math.max(0.0, Math.min(20000.0, entry.mana()));
         }
 
         private static MageState fresh() {
@@ -469,10 +482,18 @@ public final class MagicPlayerData extends SavedData {
         }
         public Map<String, Integer> mastery() { return Map.copyOf(mastery); }
         public int baseMaxMana() {
-            return switch (circle) { case 2 -> 180; case 3 -> 300; case 4 -> 480; case 5 -> 750; default -> 100; };
+            return switch (circle) {
+                case 2 -> 180; case 3 -> 300; case 4 -> 480; case 5 -> 750;
+                case 6 -> 1150; case 7 -> 1800; case 8 -> 2800; case 9 -> 4500;
+                default -> 100;
+            };
         }
         public double baseRegenPerHalfSecond() {
-            return switch (circle) { case 2 -> 2.0; case 3 -> 3.2; case 4 -> 4.8; case 5 -> 7.0; default -> 1.0; };
+            return switch (circle) {
+                case 2 -> 2.0; case 3 -> 3.2; case 4 -> 4.8; case 5 -> 7.0;
+                case 6 -> 10.5; case 7 -> 15.5; case 8 -> 23.0; case 9 -> 34.0;
+                default -> 1.0;
+            };
         }
         public int nextCircleInsight() {
             return circle >= 5 ? 0 : SpellCatalog.circleInsightThreshold(circle + 1);
