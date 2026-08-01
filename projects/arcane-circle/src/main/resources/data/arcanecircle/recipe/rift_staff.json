@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "arcanecircle:novice_staff",
+    "minecraft:ender_eye",
+    "minecraft:crying_obsidian"
+  ],
+  "result": {
+    "count": 1,
+    "id": "arcanecircle:rift_staff"
+  }
+}
