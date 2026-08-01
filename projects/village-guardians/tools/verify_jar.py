@@ -23,6 +23,10 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageDoorSystem.class",
     "kr/moonseungjun/villageguardians/VillageDefenseSystem.class",
     "kr/moonseungjun/villageguardians/VillageDefenseTowerBuilder.class",
+    "kr/moonseungjun/villageguardians/VillageGatePrioritySystem.class",
+    "kr/moonseungjun/villageguardians/VillageRespawnSystem.class",
+    "kr/moonseungjun/villageguardians/VillageFundingSystem.class",
+    "kr/moonseungjun/villageguardians/VillageLocationRules.class",
     "kr/moonseungjun/villageguardians/VillageCombatTechniqueSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeData.class",
@@ -35,6 +39,7 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageInventoryPanel.class",
     "kr/moonseungjun/villageguardians/VillageUiScreen.class",
     "kr/moonseungjun/villageguardians/VillageActionDescriptions.class",
+    "kr/moonseungjun/villageguardians/VillageStarterKit.class",
     "kr/moonseungjun/villageguardians/VillageClientKeys.class",
     "kr/moonseungjun/villageguardians/VillageStructureHud.class",
     "kr/moonseungjun/villageguardians/VillageHudSystem.class",
@@ -106,8 +111,9 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
-    print("[PASS] Pan/zoom trees, five roles, dual skill loadouts and stable UI classes are present")
-    print("[PASS] Persistent mercenaries, four fixed tower types and progressive equipment are present")
+    print("[PASS] Independent-scroll UI, pan/zoom trees, five roles and dual skill loadouts are present")
+    print("[PASS] Research-hall skills, town-hall tower command and coin-funded supplies are present")
+    print("[PASS] Closed-gate priority, delayed revival and persistent mercenaries are present")
     print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
