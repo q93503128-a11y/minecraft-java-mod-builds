@@ -329,7 +329,7 @@ public final class RanchLifeManager {
     }
 
     private static int gameDay(ServerLevel level) {
-        return (int) Math.max(0L, level.getDayTime() / 24000L);
+        return (int) Math.max(0L, level.getOverworldClockTime() / 24000L);
     }
 
     private static void moveTo(Animal animal, BlockPos target, double speed) {
