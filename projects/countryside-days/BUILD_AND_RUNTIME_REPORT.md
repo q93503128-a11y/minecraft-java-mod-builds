@@ -1,7 +1,7 @@
 # Countryside Days Build and Runtime Report
 
-- Workflow run: 30678606023
-- Source commit: e1bc7ddbd7da80cac9bf3ca47a7f486b6ced9bab
+- Workflow run: 30678712103
+- Source commit: acc84e64d8b626ffd1877550891e8c6b0c5a9d42
 - Mod version: 0.1.0-alpha.7
 - Minecraft: 26.2
 - Java: 25
@@ -9,9 +9,9 @@
 - NeoForge: 26.2.0.38-beta
 - Wrapper generation: success
 - Toolchain verification: success
-- Clean build: cancelled
-- Datagen: skipped
-- Required GameTest server: skipped
+- Clean build: success
+- Datagen: success
+- Required GameTest server: failure
 - Runtime data reload validation: skipped
 - Superflat countryside server smoke test and generation audit: skipped
 - Client smoke test: skipped
@@ -39,7 +39,7 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.43s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.39s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
 [1m*** Started working on [4mdownloadServer[0m[0m
@@ -54,7 +54,7 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.30s
+Total runtime: 1.15s
 
 
 > Task :compileJava
@@ -66,9 +66,313 @@ Total runtime: 1.30s
 > Task :jar
 > Task :assemble
 > Task :build
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1785548772347.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1785548966049.json
 
-BUILD SUCCESSFUL in 20s
+BUILD SUCCESSFUL in 18s
 7 actionable tasks: 7 executed
+Configuration cache entry stored.
+```
+
+## datagen log tail
+```text
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Calculating task graph as no cached configuration is available for tasks: runData
+
+> Configure project :
+Creating Minecraft artifacts without recompilation.
+
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :generateGameTestStructure UP-TO-DATE
+> Task :generateModMetadata UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :classes UP-TO-DATE
+
+> Task :downloadAssets
+Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/tmp/downloadAssets/nfrt_artifact_manifest.properties
+Downloading asset index 32
+Using Minecraft asset root: /home/runner/.gradle/caches/neoformruntime/assets
+  ↓ https://piston-meta.mojang.com/v1/packages/a7b53da5fa967c3e8196712f1b734bbc9df44bb6/32.json
+
+> Task :prepareDataRun
+
+> Task :runData
+2026-08-01T01:49:50.998940733Z main WARN Advanced terminal features are not available in this environment
+[01:49:51] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 101ms
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (CLIENT in DEV)
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
+[01:49:51] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 19ms
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
+[01:49:51] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Not loading early display in headless mode.
+[01:49:51] [main/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
+[01:49:51] [main/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
+[01:49:51] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
+[01:49:51] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
+     Mod List:
+		Name Version (Mod Id)
+
+		Countryside Days 0.1.0-alpha.7 (countrysidedays)
+		Minecraft 26.2 (minecraft)
+		NeoForge 26.2.0.38-beta (neoforge)
+[01:49:51] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=CLIENT
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
+ - countrysidedays (composite(folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main), folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main)))
+ - minecraft (composite(filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar)), filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar))))
+ - mixinextras.neoforge (jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > mixinextras-neoforge-0.5.4.jar))
+ - neoforge (composite(filtered(jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar))))
+ - net.neoforged.fml.generated (empty(VirtualJar/net.neoforged.fml.generated))
+[01:49:51] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 28ms
+[01:49:52] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
+[01:49:57] [main/INFO] [ne.ne.ne.da.lo.DatagenModLoader/]: Initializing Data Gatherer for mods [countrysidedays]
+[01:49:57] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
+[01:49:58] [main/INFO] [minecraft/DataGenerator]: All providers took: 0 ms
+[01:49:58] [main/INFO] [minecraft/HashCache]: Caching: total files: 0, old count: 0, new count: 0, removed stale: 0, written: 0
+[01:49:58] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Closing FML Loader 72d5b45c
+[01:49:58] [main/INFO] [ne.ne.fm.ModLoader/]: Clearing ModLoader
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/datagen-1785548984870.json
+
+BUILD SUCCESSFUL in 17s
+8 actionable tasks: 3 executed, 5 up-to-date
+Configuration cache entry stored.
+```
+
+## gametest log tail
+```text
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Calculating task graph as no cached configuration is available for tasks: runGameTestServer
+
+> Configure project :
+Creating Minecraft artifacts without recompilation.
+
+> Task :generateGameTestStructure UP-TO-DATE
+> Task :generateModMetadata UP-TO-DATE
+> Task :downloadAssets UP-TO-DATE
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :prepareGameTestServerRun
+> Task :processResources
+> Task :classes
+
+> Task :runGameTestServer
+2026-08-01T01:50:07.342461840Z main WARN Advanced terminal features are not available in this environment
+[01:50:07] [main/INFO] [ne.ne.fm.st.Entrypoint/]: JVM Uptime at startup: 150ms
+[01:50:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Starting FancyModLoader version 11.0.13 (DEDICATED_SERVER in DEV)
+[01:50:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Game directory: /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run
+[01:50:07] [main/INFO] [ne.ne.fm.lo.EarlyServiceDiscovery/]: Found 2 early service jars (out of 100) in 17ms
+[01:50:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Early Services:
+[01:50:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/earlydisplay/11.0.13/491a1bedecb33802fa118cae384b60f91f6f0241/earlydisplay-11.0.13.jar
+[01:50:07] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged.fancymodloader/loader/11.0.13/c9c89eaf35535990110088224d188748d81eaecf/loader-11.0.13.jar
+[01:50:07] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Not loading early display in headless mode.
+[01:50:07] [main/INFO] [ne.ne.fm.lo.mo.lo.GameLocator/]: Detected a joined NeoForge and Minecraft configuration. Applying filtering...
+[01:50:07] [main/INFO] [ne.ne.fm.lo.mo.lo.InDevFolderLocator/CORE]: Got mod coordinates countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main:countrysidedays%%/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main from env
+[01:50:07] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
+[01:50:07] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
+     Mod List:
+		Name Version (Mod Id)
+
+		Countryside Days 0.1.0-alpha.7 (countrysidedays)
+		Minecraft 26.2 (minecraft)
+		NeoForge 26.2.0.38-beta (neoforge)
+[01:50:08] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=FML Env=SERVER
+[01:50:08] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Loading FML Plugins:
+[01:50:08] [main/INFO] [ne.ne.fm.lo.FMLLoader/]:  - /home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > net.neoforged.neoforge-coremods-26.2.0.38-beta.jar
+[01:50:08] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Building game content classloader:
+ - countrysidedays (composite(folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/classes/java/main), folder(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/resources/main)))
+ - minecraft (composite(filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar)), filtered(jar(/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/build/moddev/artifacts/minecraft-patched-26.2.0.38-beta.jar))))
+ - mixinextras.neoforge (jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar > mixinextras-neoforge-0.5.4.jar))
+ - neoforge (composite(filtered(jar(/home/runner/.gradle/caches/modules-2/files-2.1/net.neoforged/neoforge/26.2.0.38-beta/834b865da52ab174fce8510678eba33fce08544b/neoforge-26.2.0.38-beta-universal.jar))))
+ - net.neoforged.fml.generated (empty(VirtualJar/net.neoforged.fml.generated))
+[01:50:08] [main/INFO] [ne.ne.fm.lo.FMLLoader/]: Built game content classloader in 36ms
+[01:50:08] [main/INFO] [minecraft/GameTestMainUtil]: Running GameTestMain with cwd '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/countryside-days/run', universe path 'gametestserver'
+[01:50:08] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
+[01:50:13] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 26.2.0.38-beta, for MC 26.2
+[01:50:14] [modloading-worker-0/INFO] [kr.co.CountrysideDays/]: Countryside Days 0.1.0-alpha.7 core content registered
+[01:50:16] [main/INFO] [minecraft/RecipeManager]: Loaded 1587 recipes
+[01:50:16] [main/INFO] [minecraft/AdvancementTree]: Loaded 1688 advancements
+[01:50:16] [main/INFO] [ne.ne.ne.co.cr.RecipePriorityManager/]: Loaded 0 recipe priority overrides
+[01:50:16] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Selecting global world spawn...
+[01:50:17] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Loading 0 persistent chunks...
+[01:50:17] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Preparing spawn area: 100%
+[01:50:17] [Server thread/INFO] [minecraft/LoggingLevelLoadListener]: Time elapsed: 489 ms
+[01:50:17] [Server thread/INFO] [minecraft/GameTestServer]: Started game test server
+[01:50:17] [Server thread/INFO] [ne.ne.ne.se.pe.PermissionAPI/]: Successfully initialized permission handler neoforge:default_handler
+[01:50:17] [Server thread/INFO] [minecraft/GameTestServer]: 3 tests are now running at position 13315092, -59, -845649!
+[01:50:19] [Server thread/INFO] [minecraft/GameTestRunner]: Running test environment 'minecraft:default' batch 0 (3 tests)...
+[01:50:19] [Server thread/WARN] [minecraft/MinecraftServer]: Can't keep up! Is the server overloaded? Running 2045ms or 40 ticks behind
+[01:50:19] [Server thread/ERROR] [minecraft/LogTestReporter]: countrysidedays:homestead_layout failed at 13315098, -59, -845649! Expected block Cauldron: got Stone Brick Slab at 13315142, -52, -845594 (relative: 44, 6, 54) on tick 0
+[01:50:19] [Server thread/INFO] [minecraft/GameTestServer]: [+X+]
+[01:50:19] [Server thread/INFO] [minecraft/GameTestServer]: ========= 3 GAME TESTS COMPLETE IN 2.161 s ======================
+[01:50:19] [Server thread/ERROR] [minecraft/GameTestServer]: 1 required tests failed :(
+[01:50:19] [Server thread/ERROR] [minecraft/GameTestServer]:    - countrysidedays:homestead_layout: Expected block Cauldron: got Stone Brick Slab at 13315142, -52, -845594 (relative: 44, 6, 54) on tick 0
+
+::error title=GameTest Failure::1 required game tests failed: countrysidedays:homestead_layout
+
+[01:50:19] [Server thread/INFO] [minecraft/GameTestServer]: ====================================================
+[01:50:19] [Server thread/INFO] [minecraft/MinecraftServer]: Stopping server
+[01:50:19] [Server thread/INFO] [minecraft/MinecraftServer]: Saving players
+[01:50:19] [Server thread/INFO] [minecraft/MinecraftServer]: Saving worlds
+[01:50:20] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:overworld
+[01:50:21] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:the_end
+[01:50:21] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[Test Level]'/minecraft:the_nether
+[01:50:21] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[01:50:21] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[01:50:21] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[01:50:21] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage: All dimensions are saved
+[01:50:21] [Server thread/INFO] [minecraft/GameTestServer]: Game test server shutting down
+
+> Task :runGameTestServer FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/gametest-1785549003061.json
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':runGameTestServer'.
+> Process 'command '/usr/lib/jvm/temurin-25-jdk-amd64/bin/java'' finished with non-zero exit value 1
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':runGameTestServer'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/usr/lib/jvm/temurin-25-jdk-amd64/bin/java'' finished with non-zero exit value 1
+	at org.gradle.process.internal.DefaultExecHandle$ExecResultImpl.assertNormalExitValue(DefaultExecHandle.java:450)
+	at org.gradle.process.internal.DefaultJavaExecAction.execute(DefaultJavaExecAction.java:58)
+	at org.gradle.api.tasks.JavaExec.exec(JavaExec.java:166)
+	at net.neoforged.moddevgradle.internal.RunGameTask.exec(RunGameTask.java:51)
+	at org.gradle.internal.reflect.JavaMethod.invoke(JavaMethod.java:125)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.doExecute(StandardTaskAction.java:58)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.execute(StandardTaskAction.java:51)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.execute(StandardTaskAction.java:29)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:237)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:220)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:203)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:170)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:68)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:38)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:28)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:75)
+	at org.gradle.internal.Either$Right.fold(Either.java:176)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:64)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:35)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:62)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:40)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:76)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:45)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:136)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:38)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:297)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:44)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:31)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:64)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:132)
+	... 30 more
+
+
+BUILD FAILED in 22s
+8 actionable tasks: 3 executed, 5 up-to-date
 Configuration cache entry stored.
 ```
