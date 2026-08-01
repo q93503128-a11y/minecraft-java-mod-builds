@@ -12,23 +12,24 @@ import java.util.List;
 
 public final class VillageUiScreen extends Screen {
     private static final String SEP = "\u001F";
-    private static final int OVERLAY = 0xD005080D;
-    private static final int PANEL = 0xFF0C1219;
-    private static final int SURFACE = 0xFF131E28;
-    private static final int SURFACE_HOVER = 0xFF1C2B38;
-    private static final int BORDER = 0xFF405568;
-    private static final int TEXT = 0xFFF3F7FA;
-    private static final int MUTED = 0xFFA6B4C0;
-    private static final int ACCENT = 0xFF43D6BC;
-    private static final int GOLD = 0xFFF1C35D;
-    private static final int RED = 0xFFE06A72;
-    private static final int CARD_HEIGHT = 58;
+    private static final int OVERLAY = 0xB805080D;
+    private static final int PANEL = 0xFF0A1017;
+    private static final int SURFACE = 0xFF14212C;
+    private static final int SURFACE_DARK = 0xFF0D171F;
+    private static final int SURFACE_HOVER = 0xFF203342;
+    private static final int BORDER = 0xFF587083;
+    private static final int TEXT = 0xFFFFFFFF;
+    private static final int MUTED = 0xFFC1CDD6;
+    private static final int ACCENT = 0xFF45D8C0;
+    private static final int GOLD = 0xFFF4C861;
+    private static final int RED = 0xFFE8757E;
+    private static final int CARD_HEIGHT = 56;
     private static final int CARD_GAP = 8;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final String[] actions;
     private final String[] labels;
-    private int selectedIndex = -1;
+    private int selectedIndex;
     private int bodyScroll;
     private int actionScroll;
     private int footerScroll;
@@ -38,6 +39,7 @@ public final class VillageUiScreen extends Screen {
         this.payload = payload;
         actions = payload.actions().isBlank() ? new String[0] : payload.actions().split(SEP, -1);
         labels = payload.labels().isBlank() ? new String[0] : payload.labels().split(SEP, -1);
+        selectedIndex = Math.min(actions.length, labels.length) == 1 ? 0 : -1;
     }
 
     @Override
@@ -54,7 +56,7 @@ public final class VillageUiScreen extends Screen {
         Areas areas = areas(layout);
         graphics.fill(layout.left() - 2, layout.top() - 2, layout.right() + 2, layout.bottom() + 2, BORDER);
         graphics.fill(layout.left(), layout.top(), layout.right(), layout.bottom(), PANEL);
-        graphics.fill(layout.left(), layout.top(), layout.left() + 4, layout.bottom(), accent());
+        graphics.fill(layout.left(), layout.top(), layout.left() + 5, layout.bottom(), accent());
         renderHeader(graphics, mouseX, mouseY, layout);
         renderBody(graphics, areas);
         renderActions(graphics, mouseX, mouseY, areas);
@@ -63,121 +65,138 @@ public final class VillageUiScreen extends Screen {
     }
 
     private void renderHeader(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Layout layout) {
-        int left = layout.left() + 18;
-        int closeX = layout.right() - 37;
-        graphics.text(font, payload.title(), left, layout.top() + 12, TEXT, false);
+        int left = layout.left() + 19;
+        int closeX = layout.right() - 39;
+        graphics.text(font, payload.title(), left, layout.top() + 13, TEXT, false);
         List<FormattedCharSequence> subtitleLines = font.split(Component.literal(subtitle()),
-                Math.max(100, closeX - left - 12));
+                Math.max(100, closeX - left - 14));
         if (!subtitleLines.isEmpty()) {
-            graphics.text(font, subtitleLines.getFirst(), left, layout.top() + 31, MUTED, false);
+            graphics.text(font, subtitleLines.getFirst(), left, layout.top() + 32, MUTED, false);
         }
-        boolean hovered = inside(mouseX, mouseY, closeX, layout.top() + 10, 27, 27);
-        graphics.fill(closeX, layout.top() + 10, closeX + 27, layout.top() + 37,
-                hovered ? 0xFF6B3038 : SURFACE_HOVER);
-        graphics.centeredText(font, "×", closeX + 13, layout.top() + 19, hovered ? TEXT : MUTED);
+        boolean hovered = inside(mouseX, mouseY, closeX, layout.top() + 10, 29, 29);
+        graphics.fill(closeX, layout.top() + 10, closeX + 29, layout.top() + 39,
+                hovered ? 0xFF79343D : SURFACE_HOVER);
+        graphics.centeredText(font, "×", closeX + 14, layout.top() + 20, hovered ? TEXT : MUTED);
     }
 
     private void renderBody(GuiGraphicsExtractor graphics, Areas areas) {
-        graphics.fill(areas.bodyLeft(), areas.bodyTop(), areas.bodyRight(), areas.bodyBottom(), SURFACE);
-        int textLeft = areas.bodyLeft() + 14;
-        int textRight = areas.bodyRight() - 14;
+        drawPanel(graphics, areas.bodyLeft(), areas.bodyTop(), areas.bodyRight(), areas.bodyBottom(), SURFACE);
+        int textLeft = areas.bodyLeft() + 16;
+        int textRight = areas.bodyRight() - 16;
         List<FormattedCharSequence> lines = bodyLines(Math.max(100, textRight - textLeft));
-        int contentHeight = Math.max(1, lines.size() * 12);
-        int visible = Math.max(1, areas.bodyBottom() - areas.bodyTop() - 18);
+        int contentHeight = Math.max(1, lines.size() * 13 + 4);
+        int textTop = areas.bodyTop() + 13;
+        int textBottom = areas.bodyBottom() - 10;
+        int visible = Math.max(1, textBottom - textTop);
         int maxScroll = Math.max(0, contentHeight - visible);
         bodyScroll = clamp(bodyScroll, 0, maxScroll);
-        graphics.enableScissor(areas.bodyLeft(), areas.bodyTop(), areas.bodyRight(), areas.bodyBottom());
-        int y = areas.bodyTop() + 9 - bodyScroll;
+        graphics.enableScissor(areas.bodyLeft() + 2, areas.bodyTop() + 2,
+                areas.bodyRight() - 2, areas.bodyBottom() - 2);
+        int y = textTop - bodyScroll;
         for (FormattedCharSequence line : lines) {
-            if (y + 10 >= areas.bodyTop() && y <= areas.bodyBottom()) {
+            if (y >= textTop - 10 && y <= textBottom) {
                 graphics.text(font, line, textLeft, y, TEXT, false);
             }
-            y += 12;
+            y += 13;
         }
         graphics.disableScissor();
-        drawScrollbar(graphics, areas.bodyRight() - 5, areas.bodyTop() + 5,
-                areas.bodyBottom() - 5, bodyScroll, maxScroll, visible, contentHeight);
+        drawScrollbar(graphics, areas.bodyRight() - 7, areas.bodyTop() + 8,
+                areas.bodyBottom() - 8, bodyScroll, maxScroll, visible, contentHeight);
     }
 
     private void renderActions(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Areas areas) {
-        graphics.fill(areas.actionLeft(), areas.actionTop(), areas.actionRight(), areas.actionBottom(), 0xFF0A1017);
+        drawPanel(graphics, areas.actionLeft(), areas.actionTop(), areas.actionRight(), areas.actionBottom(), SURFACE_DARK);
         int count = Math.min(actions.length, labels.length);
-        int columns = areas.actionWidth() >= 520 ? 2 : 1;
-        int cardWidth = Math.max(140,
+        int columns = areas.actionWidth() >= 470 ? 2 : 1;
+        int cardWidth = Math.max(132,
                 (areas.actionWidth() - 24 - CARD_GAP * (columns - 1)) / columns);
-        int rows = Math.max(0, (count + columns - 1) / columns);
-        int contentHeight = rows == 0 ? 0
-                : rows * CARD_HEIGHT + Math.max(0, rows - 1) * CARD_GAP;
-        int visible = Math.max(1, areas.actionHeight() - 18);
+        int rows = count == 0 ? 0 : (count + columns - 1) / columns;
+        int contentHeight = rows == 0 ? 0 : rows * CARD_HEIGHT + Math.max(0, rows - 1) * CARD_GAP;
+        int visible = Math.max(1, areas.actionHeight() - 20);
         int maxScroll = Math.max(0, contentHeight - visible);
         actionScroll = clamp(actionScroll, 0, maxScroll);
 
-        graphics.enableScissor(areas.actionLeft(), areas.actionTop(), areas.actionRight(), areas.actionBottom());
+        graphics.enableScissor(areas.actionLeft() + 2, areas.actionTop() + 2,
+                areas.actionRight() - 2, areas.actionBottom() - 2);
         for (int index = 0; index < count; index++) {
-            int x = areas.actionLeft() + 10 + (index % columns) * (cardWidth + CARD_GAP);
-            int y = areas.actionTop() + 9 + (index / columns) * (CARD_HEIGHT + CARD_GAP) - actionScroll;
-            boolean hovered = inside(mouseX, mouseY, x, y, cardWidth, CARD_HEIGHT);
+            int x = areas.actionLeft() + 11 + (index % columns) * (cardWidth + CARD_GAP);
+            int y = areas.actionTop() + 10 + (index / columns) * (CARD_HEIGHT + CARD_GAP) - actionScroll;
+            boolean visibleCard = y + CARD_HEIGHT > areas.actionTop() && y < areas.actionBottom();
+            boolean hovered = visibleCard && inside(mouseX, mouseY, x, y, cardWidth, CARD_HEIGHT);
             boolean selected = selectedIndex == index;
             int color = selected ? GOLD : hovered ? accent() : BORDER;
             graphics.fill(x - 1, y - 1, x + cardWidth + 1, y + CARD_HEIGHT + 1, color);
             graphics.fill(x, y, x + cardWidth, y + CARD_HEIGHT,
                     selected || hovered ? SURFACE_HOVER : SURFACE);
-            graphics.fill(x, y, x + 5, y + CARD_HEIGHT, accent());
+            graphics.fill(x, y, x + 5, y + CARD_HEIGHT, selected ? GOLD : accent());
             String[] parts = labelParts(labels[index]);
-            graphics.text(font, compact(parts[0], Math.max(14, cardWidth / 7)),
+            graphics.text(font, compact(parts[0], Math.max(13, cardWidth / 7)),
                     x + 15, y + 10, TEXT, false);
             List<FormattedCharSequence> detailLines = font.split(Component.literal(parts[1]),
-                    Math.max(90, cardWidth - 30));
-            int lineY = y + 29;
+                    Math.max(86, cardWidth - 30));
+            int lineY = y + 30;
             for (int line = 0; line < Math.min(2, detailLines.size()); line++) {
                 graphics.text(font, detailLines.get(line), x + 15, lineY, MUTED, false);
                 lineY += 11;
             }
         }
         graphics.disableScissor();
-        drawScrollbar(graphics, areas.actionRight() - 5, areas.actionTop() + 5,
-                areas.actionBottom() - 5, actionScroll, maxScroll, visible, contentHeight);
+        drawScrollbar(graphics, areas.actionRight() - 7, areas.actionTop() + 8,
+                areas.actionBottom() - 8, actionScroll, maxScroll, visible, contentHeight);
     }
 
     private void renderFooter(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Areas areas) {
-        graphics.fill(areas.footerLeft(), areas.footerTop(), areas.footerRight(), areas.footerBottom(), SURFACE);
-        String title = selectedIndex < 0 ? "항목을 선택하세요" : labelParts(labels[selectedIndex])[0];
+        drawPanel(graphics, areas.footerLeft(), areas.footerTop(), areas.footerRight(), areas.footerBottom(), SURFACE);
+        String title = selectedIndex < 0 ? "기능을 선택하세요" : labelParts(labels[selectedIndex])[0];
         String detail = selectedIndex < 0
-                ? "위 목록에서 항목을 선택하면 효과와 비용을 확인한 뒤 실행할 수 있습니다."
+                ? "기능 목록에서 항목을 선택하면 효과와 비용이 여기에 표시됩니다."
                 : VillageActionDescriptions.describe(actions[selectedIndex], labels[selectedIndex]);
-        graphics.text(font, compact(title, Math.max(20, areas.footerWidth() / 8)),
-                areas.footerLeft() + 14, areas.footerTop() + 11, TEXT, false);
+        graphics.text(font, compact(title, Math.max(18, areas.footerWidth() / 7)),
+                areas.footerLeft() + 16, areas.footerTop() + 13, TEXT, false);
 
-        int buttonWidth = Math.min(180, Math.max(110, areas.footerWidth() / 4));
-        int buttonX = areas.footerRight() - buttonWidth - 14;
-        int buttonY = areas.footerBottom() - 40;
-        int detailRight = buttonX - 12;
-        int detailWidth = Math.max(100, detailRight - areas.footerLeft() - 14);
+        boolean tallPane = areas.footerHeight() >= 165;
+        int buttonWidth;
+        int buttonX;
+        int buttonY = areas.footerBottom() - 43;
+        int detailRight;
+        int textBottom;
+        if (tallPane) {
+            buttonWidth = Math.max(100, areas.footerWidth() - 32);
+            buttonX = areas.footerLeft() + 16;
+            detailRight = areas.footerRight() - 16;
+            textBottom = buttonY - 11;
+        } else {
+            buttonWidth = Math.min(180, Math.max(112, areas.footerWidth() / 4));
+            buttonX = areas.footerRight() - buttonWidth - 16;
+            detailRight = buttonX - 13;
+            textBottom = areas.footerBottom() - 10;
+        }
+
+        int textTop = areas.footerTop() + 36;
+        int detailWidth = Math.max(90, detailRight - areas.footerLeft() - 16);
         List<FormattedCharSequence> lines = font.split(Component.literal(detail), detailWidth);
-        int contentHeight = Math.max(1, lines.size() * 12);
-        int textTop = areas.footerTop() + 31;
-        int textBottom = areas.footerBottom() - 9;
+        int contentHeight = Math.max(1, lines.size() * 13);
         int visible = Math.max(1, textBottom - textTop);
         int maxScroll = Math.max(0, contentHeight - visible);
         footerScroll = clamp(footerScroll, 0, maxScroll);
-        graphics.enableScissor(areas.footerLeft(), textTop, detailRight, textBottom);
+        graphics.enableScissor(areas.footerLeft() + 2, textTop, detailRight, textBottom);
         int y = textTop - footerScroll;
         for (FormattedCharSequence line : lines) {
-            if (y + 10 >= textTop && y <= textBottom) {
-                graphics.text(font, line, areas.footerLeft() + 14, y, MUTED, false);
+            if (y >= textTop - 10 && y <= textBottom) {
+                graphics.text(font, line, areas.footerLeft() + 16, y, MUTED, false);
             }
-            y += 12;
+            y += 13;
         }
         graphics.disableScissor();
-        drawScrollbar(graphics, detailRight - 4, textTop, textBottom,
+        drawScrollbar(graphics, detailRight - 5, textTop, textBottom,
                 footerScroll, maxScroll, visible, contentHeight);
 
         boolean active = selectedIndex >= 0;
-        boolean hovered = active && inside(mouseX, mouseY, buttonX, buttonY, buttonWidth, 29);
-        graphics.fill(buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + 30,
+        boolean hovered = active && inside(mouseX, mouseY, buttonX, buttonY, buttonWidth, 30);
+        graphics.fill(buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + 31,
                 hovered ? GOLD : active ? accent() : BORDER);
-        graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 29,
-                hovered ? 0xFF342D1B : active ? SURFACE_HOVER : 0xFF171E25);
+        graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 30,
+                hovered ? 0xFF3D341E : active ? SURFACE_HOVER : 0xFF172028);
         String execute = active ? VillageActionDescriptions.executeLabel(actions[selectedIndex]) : "선택 필요";
         graphics.centeredText(font, compact(execute, Math.max(11, buttonWidth / 7)),
                 buttonX + buttonWidth / 2, buttonY + 10, active ? TEXT : MUTED);
@@ -188,30 +207,29 @@ public final class VillageUiScreen extends Screen {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
         Layout layout = layout();
         Areas areas = areas(layout);
-        if (inside(click.x(), click.y(), layout.right() - 37, layout.top() + 10, 27, 27)) {
+        if (inside(click.x(), click.y(), layout.right() - 39, layout.top() + 10, 29, 29)) {
             onClose();
             return true;
         }
 
         int count = Math.min(actions.length, labels.length);
-        int columns = areas.actionWidth() >= 520 ? 2 : 1;
-        int cardWidth = Math.max(140,
+        int columns = areas.actionWidth() >= 470 ? 2 : 1;
+        int cardWidth = Math.max(132,
                 (areas.actionWidth() - 24 - CARD_GAP * (columns - 1)) / columns);
         for (int index = 0; index < count; index++) {
-            int x = areas.actionLeft() + 10 + (index % columns) * (cardWidth + CARD_GAP);
-            int y = areas.actionTop() + 9 + (index / columns) * (CARD_HEIGHT + CARD_GAP) - actionScroll;
-            if (inside(click.x(), click.y(), x, y, cardWidth, CARD_HEIGHT)) {
+            int x = areas.actionLeft() + 11 + (index % columns) * (cardWidth + CARD_GAP);
+            int y = areas.actionTop() + 10 + (index / columns) * (CARD_HEIGHT + CARD_GAP) - actionScroll;
+            if (y + CARD_HEIGHT > areas.actionTop() && y < areas.actionBottom()
+                    && inside(click.x(), click.y(), x, y, cardWidth, CARD_HEIGHT)) {
                 selectedIndex = index;
                 footerScroll = 0;
                 return true;
             }
         }
 
-        int buttonWidth = Math.min(180, Math.max(110, areas.footerWidth() / 4));
-        int buttonX = areas.footerRight() - buttonWidth - 14;
-        int buttonY = areas.footerBottom() - 40;
-        if (selectedIndex >= 0
-                && inside(click.x(), click.y(), buttonX, buttonY, buttonWidth, 29)) {
+        ButtonArea button = buttonArea(areas);
+        if (selectedIndex >= 0 && inside(click.x(), click.y(),
+                button.x(), button.y(), button.width(), button.height())) {
             executeSelected();
             return true;
         }
@@ -221,23 +239,29 @@ public final class VillageUiScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         Areas areas = areas(layout());
-        int amount = (int) Math.round(vertical * 40);
-        if (inside(mouseX, mouseY, areas.bodyLeft(), areas.bodyTop(),
-                areas.bodyWidth(), areas.bodyHeight())) {
+        int amount = (int) Math.round(vertical * 42);
+        if (inside(mouseX, mouseY, areas.bodyLeft(), areas.bodyTop(), areas.bodyWidth(), areas.bodyHeight())) {
             bodyScroll = Math.max(0, bodyScroll - amount);
             return true;
         }
-        if (inside(mouseX, mouseY, areas.actionLeft(), areas.actionTop(),
-                areas.actionWidth(), areas.actionHeight())) {
+        if (inside(mouseX, mouseY, areas.actionLeft(), areas.actionTop(), areas.actionWidth(), areas.actionHeight())) {
             actionScroll = Math.max(0, actionScroll - amount);
             return true;
         }
-        if (inside(mouseX, mouseY, areas.footerLeft(), areas.footerTop(),
-                areas.footerWidth(), areas.footerHeight())) {
+        if (inside(mouseX, mouseY, areas.footerLeft(), areas.footerTop(), areas.footerWidth(), areas.footerHeight())) {
             footerScroll = Math.max(0, footerScroll - amount);
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
+    }
+
+    private ButtonArea buttonArea(Areas areas) {
+        boolean tallPane = areas.footerHeight() >= 165;
+        int width = tallPane
+                ? Math.max(100, areas.footerWidth() - 32)
+                : Math.min(180, Math.max(112, areas.footerWidth() / 4));
+        int x = tallPane ? areas.footerLeft() + 16 : areas.footerRight() - width - 16;
+        return new ButtonArea(x, areas.footerBottom() - 43, width, 30);
     }
 
     private void executeSelected() {
@@ -267,14 +291,19 @@ public final class VillageUiScreen extends Screen {
                 raw.length > 1 ? raw[1] : "선택해 내용을 확인하세요"};
     }
 
+    private void drawPanel(GuiGraphicsExtractor graphics, int left, int top, int right, int bottom, int color) {
+        graphics.fill(left - 1, top - 1, right + 1, bottom + 1, BORDER);
+        graphics.fill(left, top, right, bottom, color);
+    }
+
     private void drawScrollbar(GuiGraphicsExtractor graphics, int x, int top, int bottom,
                                int scroll, int maxScroll, int visible, int content) {
-        if (maxScroll <= 0 || content <= visible) return;
-        int track = Math.max(1, bottom - top);
+        if (maxScroll <= 0 || content <= visible || bottom <= top) return;
+        int track = bottom - top;
         int thumb = Math.max(18, track * visible / Math.max(visible, content));
         int y = top + (track - thumb) * clamp(scroll, 0, maxScroll) / maxScroll;
-        graphics.fill(x, top, x + 3, bottom, 0xFF05080B);
-        graphics.fill(x, y, x + 3, y + thumb, accent());
+        graphics.fill(x, top, x + 4, bottom, 0xFF05090D);
+        graphics.fill(x, y, x + 4, y + thumb, accent());
     }
 
     private int accent() {
@@ -290,7 +319,6 @@ public final class VillageUiScreen extends Screen {
             case "building" -> "시설 현장 기능";
             case "management" -> "시설 수리와 강화";
             case "equipment_shop" -> "레벨·방어 일수별 성장 장비";
-            case "quick_chat" -> "빠른 수호단 신호";
             case "caller" -> "휴대용 상태·통신·귀환 메뉴";
             case "tower_control" -> "회관 방어탑·성벽 지휘";
             case "funding" -> "개인 주화로 공동 보급품 조달";
@@ -302,29 +330,46 @@ public final class VillageUiScreen extends Screen {
     }
 
     private Layout layout() {
-        int margin = 5;
-        int panelWidth = Math.max(350, Math.min(940, width - margin * 2));
-        int panelHeight = Math.max(270, Math.min(620, height - margin * 2));
-        panelWidth = Math.min(panelWidth, width - 2);
-        panelHeight = Math.min(panelHeight, height - 2);
+        int margin = 4;
+        int panelWidth = Math.min(1060, Math.max(1, width - margin * 2));
+        int panelHeight = Math.min(760, Math.max(1, height - margin * 2));
         return new Layout((width - panelWidth) / 2, (height - panelHeight) / 2,
                 panelWidth, panelHeight);
     }
 
     private Areas areas(Layout layout) {
-        int left = layout.left() + 14;
-        int right = layout.right() - 14;
-        int contentTop = layout.top() + 55;
-        int footerHeight = Math.max(88, Math.min(108, layout.height() / 4));
-        int footerTop = layout.bottom() - footerHeight - 12;
-        int available = Math.max(100, footerTop - contentTop - 8);
-        int bodyHeight = Math.max(62, Math.min(104, available / 3));
-        int bodyBottom = contentTop + bodyHeight;
-        int actionTop = bodyBottom + 8;
-        int actionBottom = Math.max(actionTop + 50, footerTop - 8);
-        return new Areas(left, contentTop, right, bodyBottom,
-                left, actionTop, right, actionBottom,
-                left, footerTop, right, layout.bottom() - 12);
+        int left = layout.left() + 15;
+        int right = layout.right() - 15;
+        int top = layout.top() + 57;
+        int bottom = layout.bottom() - 13;
+        int contentWidth = Math.max(1, right - left);
+        int contentHeight = Math.max(1, bottom - top);
+        boolean sideBySide = contentWidth >= 600 && contentHeight < 500;
+
+        if (sideBySide) {
+            int rightPaneWidth = clamp(contentWidth * 38 / 100, 245, 390);
+            int split = right - rightPaneWidth;
+            int bodyHeight = clamp(contentHeight * 36 / 100, 92, 150);
+            return new Areas(
+                    left, top, split - 7, top + bodyHeight,
+                    left, top + bodyHeight + 9, split - 7, bottom,
+                    split + 7, top, right, bottom);
+        }
+
+        int footerHeight = clamp(contentHeight * 25 / 100, 94, 132);
+        int bodyHeight = clamp(contentHeight * 24 / 100, 72, 136);
+        int actionTop = top + bodyHeight + 9;
+        int footerTop = bottom - footerHeight;
+        int minimumActionHeight = CARD_HEIGHT + 20;
+        if (footerTop - actionTop - 9 < minimumActionHeight) {
+            int shortage = minimumActionHeight - (footerTop - actionTop - 9);
+            bodyHeight = Math.max(58, bodyHeight - shortage);
+            actionTop = top + bodyHeight + 9;
+        }
+        return new Areas(
+                left, top, right, top + bodyHeight,
+                left, actionTop, right, footerTop - 9,
+                left, footerTop, right, bottom);
     }
 
     private String compact(String value, int max) {
@@ -359,4 +404,6 @@ public final class VillageUiScreen extends Screen {
         int footerWidth() { return footerRight - footerLeft; }
         int footerHeight() { return footerBottom - footerTop; }
     }
+
+    private record ButtonArea(int x, int y, int width, int height) {}
 }
