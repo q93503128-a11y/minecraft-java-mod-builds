@@ -27,6 +27,8 @@ def main() -> None:
     inventory = read("VillageInventoryPanel.java")
     town_hall = read("VillageTownHallScreen.java")
     generic_ui = read("VillageUiScreen.java")
+    facility_screen = read("VillageFacilityScreen.java")
+    status_screen = read("VillageStatusScreen.java")
     quick_chat = read("VillageQuickChatScreen.java")
     ui_service = read("VillageUiService.java")
     client_ui = read("VillageClientUi.java")
@@ -135,17 +137,33 @@ def main() -> None:
 
     assert "sideBySide" in generic_ui
     assert "rightPaneWidth" in generic_ui
+    assert "contentWidth * 27 / 100" in generic_ui
     assert "selectedIndex = Math.min(actions.length, labels.length) == 1 ? 0 : -1" in generic_ui
     assert "footerScroll" in generic_ui
     assert "actionScroll" in generic_ui
     assert "bodyScroll" in generic_ui
     assert generic_ui.count("enableScissor") >= 3
+
+    assert "informationLines" in facility_screen
+    assert "contentWidth * 29 / 100" in facility_screen
+    assert "CARD_HEIGHT = 44" in facility_screen
+    assert "현장에서 바로 수리·강화" in facility_screen
+    assert facility_screen.count("enableScissor") >= 2
+    assert "VillageUiActionPayload(action)" in facility_screen
+
+    assert "Read-only status page" in status_screen
+    assert "현재 수호자 정보" in status_screen
+    assert "ClientPacketDistributor" not in status_screen
+    assert "actions" not in status_screen
+
     assert "누르는 즉시 전송" in quick_chat
     assert "VillageUiActionPayload(actions[index])" in quick_chat
     assert "OVERLAY = 0x4A000000" in quick_chat
 
     assert 'case "role_progress" -> new VillageRoleProgressScreen(payload)' in client_ui
     assert 'case "quick_chat" -> new VillageQuickChatScreen(payload)' in client_ui
+    assert 'case "status" -> new VillageStatusScreen(payload)' in client_ui
+    assert 'case "building", "management" -> new VillageFacilityScreen(payload)' in client_ui
     assert 'GLFW.GLFW_KEY_R' in client_keys
     assert 'GLFW.GLFW_KEY_G' in client_keys
     assert 'GLFW.GLFW_KEY_C' in client_keys
@@ -157,7 +175,11 @@ def main() -> None:
     assert "openTowerControl" in ui_service
     assert "openFunding" in ui_service
     assert "requireSkillHall" in ui_service
-    assert "VillageLocationRules.isNearSkillHall" in ui_service
+    assert "requireManagementAccess" in ui_service
+    assert "VillageLocationRules.isNear(player, building)" in ui_service
+    assert 'send(player, "status", "수호자 상태", body, List.of(), List.of())' in ui_service
+    assert '"manage:" + building.id()' in ui_service
+    assert '"open_building:" + building.id()' in ui_service
     assert 'case WALLS -> "open_tower_control"' in ui_service
     assert '"open_role_progress_current"' in ui_service
     assert '"role_node:"' in ui_service
@@ -198,13 +220,20 @@ def main() -> None:
     assert "VillageBuildingSignatures.remove" in world
     assert "BATTLEFIELD_RADIUS, 96, BATTLEFIELD_RADIUS" in world
     assert "Blocks.AMETHYST_BLOCK" in world
+    assert "Blocks.COPPER_BLOCK" in world
+    assert "center.below(6)" in world
     assert "buildGateShield" in signatures
     assert "buildCrown" in signatures
     assert "buildHammer" in signatures
     assert "buildRune" in signatures
-    assert "buildHealingCross" in signatures
+    assert "buildHealingCross" not in signatures
     assert "buildSupplyCrate" in signatures
     assert "buildCrossedBlades" in signatures
+    assert "VillageBuildingCatalog.entrance" in signatures
+    assert "entranceFacing().getOpposite()" in signatures
+    assert "building == VillageProgressionSystem.Building.INFIRMARY" in signatures
+    assert "spec.height()" not in signatures
+    assert "clearAbove" not in signatures
 
     assert "VillageWorldSystem.isNorthGatePassable" in gate_priority
     assert "mob.setTarget(null)" in gate_priority
@@ -239,14 +268,17 @@ def main() -> None:
     assert "120 + level * 72 + level * level * 7" in rpg_progress
     assert "new RpgProgress(level, 0).experienceToNextLevel()" in council
 
-    print("[PASS] Responsive facility UI switches to non-overlapping side panes on short screens")
+    print("[PASS] Facility information owns the large pane while action and cost controls stay compact")
+    print("[PASS] Status is a dedicated read-only screen without generic action controls")
+    print("[PASS] Every facility terminal exposes local repair and upgrade management")
+    print("[PASS] Roof signatures are removed and replaced by front-facing facade marks")
+    print("[PASS] The infirmary keeps its original front cross without a duplicate signature")
     print("[PASS] C opens a transparent one-click quick communication overlay")
     print("[PASS] Daytime grants sustained Speed II while night removes it naturally")
     print("[PASS] All unauthorized natural mobs are blocked throughout the battlefield")
     print("[PASS] Raid drops are cleared and rewards stay inside the progression economy")
     print("[PASS] Waves advance after a clear or force-advance after sixty seconds")
     print("[PASS] Defense towers are physically built only after installation stages")
-    print("[PASS] Every facility has a distant rooftop signature glyph")
     print("[PASS] Closed gates and delayed revival continue to protect the defense loop")
 
 
