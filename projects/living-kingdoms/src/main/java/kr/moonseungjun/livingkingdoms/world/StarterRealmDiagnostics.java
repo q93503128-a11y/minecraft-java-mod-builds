@@ -72,6 +72,7 @@ public final class StarterRealmDiagnostics {
 
             RealmSiteLayoutSavedData.RealmSite erden = RealmSitePlanner.site(realm, "erden_kingdom");
             if (erden == null) throw new IllegalStateException("Erden site is missing");
+            RealmFacilityFinisher.ensureCriticalFacilities(realm, erden);
             verifyErdenFacilities(realm, erden);
 
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
