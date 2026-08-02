@@ -92,6 +92,19 @@ public final class AuthoredBiomeSource extends BiomeSource {
 
         if (surface < 63.0) return ocean;
         if (surface < 67.0) return beach;
+
+        // Capital districts override river and border bands. Their terrain plateaus already bridge or
+        // redirect waterways, so leaving a river biome under a dry market would be inconsistent.
+        if (inside(x, z, 0.0, 0.0, 560.0)) return plains;
+        if (inside(x, z, -2_400.0, -1_200.0, 540.0)) return silvana;
+        if (inside(x, z, 2_200.0, -1_500.0, 560.0)) return kardum;
+        if (inside(x, z, 3_400.0, 300.0, 480.0)) return steppe;
+        if (inside(x, z, 600.0, 2_500.0, 470.0)) return plains;
+        if (inside(x, z, 3_200.0, 2_600.0, 490.0)) return sahar;
+        if (inside(x, z, 3_800.0, -2_800.0, 480.0)) return ruins;
+        if (inside(x, z, 0.0, -4_200.0, 560.0)) return dragonlands;
+        if (inside(x, z, -4_200.0, 1_800.0, 420.0)) return archipelago;
+
         if (riverStrength(x, z) > 0.52 && surface < 77.0) return river;
 
         double silvanaWeight = radial(x, z, -2_400.0, -1_200.0, 1_350.0);
@@ -117,6 +130,12 @@ public final class AuthoredBiomeSource extends BiomeSource {
         // Central and Velas lowlands alternate in broad, stable belts instead of noisy biome specks.
         double belt = stableNoise(x * 0.00115, z * 0.00115, 0xC13FA9A902A6328FL);
         return belt > -0.04 ? forest : plains;
+    }
+
+    private static boolean inside(double x, double z, double cx, double cz, double radius) {
+        double dx = x - cx;
+        double dz = z - cz;
+        return dx * dx + dz * dz <= radius * radius;
     }
 
     private static double riverStrength(double x, double z) {
