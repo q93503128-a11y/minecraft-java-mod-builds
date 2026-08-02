@@ -1,0 +1,13 @@
+run=30743891723
+source=19f7bb402487c488dff3402063d70e7f366608cc
+prepare=failure
+compile=skipped
+datagen=skipped
+gametest=skipped
+verify=skipped
+upload=skipped
+--- patch parts ---
+projects/countryside-days/tools/alpha16_patch_00.part|20000|235e95d2aaf9816778bbe6294cb708d93e491cfbc3a9fc7d5fdfbccbf13cd7ac
+projects/countryside-days/tools/alpha16_patch_01.part|20000|d5a846569029a418af977b5d1603b9d10a6dfac567694be75999017032ecf8e6
+projects/countryside-days/tools/alpha16_patch_02.part|20000|894425de72a1504f5e30a5d0dcf281be42aa022e2a04fad75dd1f7fcd0ca9010
+projects/countryside-days/tools/alpha16_patch_03.part|19884|e9e107742928cacdbc0c6434101f4d713204396472f69d6ed933fbf99f3f8f9e
