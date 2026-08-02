@@ -37,9 +37,9 @@ build = (ROOT / "build.gradle").read_text(encoding="utf-8")
 properties = (ROOT / "gradle.properties").read_text(encoding="utf-8")
 workflow = (ROOT.parents[1] / ".github/workflows/build-arcane-circle.yml").read_text(encoding="utf-8")
 
-need(properties, ["mod_version=0.10.0-alpha.1"], "version")
-need(workflow, ["0.10.0-alpha.1", "apply_v10_overhaul.py", "single-pass casting"], "workflow")
-need(main, ['VERSION = "0.10.0-alpha.1"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
+need(properties, ["mod_version=0.11.0-alpha.1"], "version")
+need(workflow, ["0.11.0-alpha.1", "apply_v11_overhaul.py", "release-cast vector sigils"], "workflow")
+need(main, ['VERSION = "0.11.0-alpha.1"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
 need(catalog, [
     "IMPLEMENTED_MAX_CIRCLE = 9", "WORLD_MAX_CIRCLE = 9", "meteor_swarm",
     "power_word_kill", "prismatic_wall", "shapechange", "time_stop", "wish", "gate",
@@ -65,7 +65,7 @@ need(high, [
     "power_word_kill", "prismatic_wall", "time_stop", "wish", "gate"
 ], "high-circle effects")
 need(casting, [
-    "SpellSigilService.renderChargeStep", "SpellSigilService.renderRelease", "requiredCastTicks",
+     "requiredCastTicks",
     "HighCircleSpellEffects.execute", "marksEarned"
 ], "casting integration")
 if "SpellSigilService.renderReadyPulse" in casting:
@@ -88,7 +88,7 @@ for obsolete in ("GameRules", "getSharedSpawnPos", "setDefaultSpawnPos", "setExh
     if obsolete in world:
         raise SystemExit(f"obsolete pre-26.2 world API remains: {obsolete}")
 need(network, [
-    'PROTOCOL_VERSION = "ninefold-arcana-10"', "PurchaseAcademyItemPayload.TYPE",
+    'PROTOCOL_VERSION = "ninefold-arcana-11"', "PurchaseAcademyItemPayload.TYPE",
     "ChooseTraditionPayload.TYPE", '"academy"', '"marks="', '"tradition="', '";charge_required="'
 ], "academy and cast-time network")
 need(screen, [
@@ -98,9 +98,8 @@ need(screen, [
 for movable in ("dragging", "savedOffsetX", "mouseDragged", "상단을 드래그"):
     if movable in screen:
         raise SystemExit(f"movable full-screen UI remains: {movable}")
-need(hud, ["int slotW", "int slotH = 28", "fitName", "chargingFraction"], "compact spell HUD")
-if "int desired = width >= 600 ? 58" in hud or "int slotSize" in hud:
-    raise SystemExit("large square spell HUD remains")
+need(hud, ["int slotSize = width >= 520 ? 36", "fitName", "chargingFraction",
+    "drawCastingSigil", "partialRing"], "compact square spell HUD")
 need(items, ["ARCHMAGE_PROFILE", "spellbooks"], "magic equipment")
 
 if "villager_trade" in build or "crafting_shaped" in build:
@@ -113,7 +112,7 @@ if len(books) != 85 or by_circle[1] != 5 or any(by_circle[circle] != 10 for circ
     raise SystemExit(f"spellbook distribution mismatch: total={len(books)}, circles={by_circle}")
 
 index = json.loads((RES / "data/arcanecircle/spell_catalog/index.json").read_text(encoding="utf-8"))
-if index.get("version") != "0.10.0-alpha.1" or index.get("direct_spells") != 90:
+if index.get("version") != "0.11.0-alpha.1" or index.get("direct_spells") != 90:
     raise SystemExit("v0.10 spell catalogue index mismatch")
 if index.get("economy") != "single persistent Arcana wallet" or index.get("crafting_progression") is not False:
     raise SystemExit("magic-world economy index mismatch")
@@ -133,4 +132,4 @@ for staff, encoded in textures.items():
 if len(textures) != 9 or len(hashes) != 9:
     raise SystemExit("staff textures are missing or duplicated")
 
-print("Arcane Circle v0.10 dense UI and single-pass casting contract: PASS")
+print("Arcane Circle v0.10 dense UI and release-cast vector sigils contract: PASS")

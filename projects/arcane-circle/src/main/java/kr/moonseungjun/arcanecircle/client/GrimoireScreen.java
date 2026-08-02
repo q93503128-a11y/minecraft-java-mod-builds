@@ -391,16 +391,10 @@ public final class GrimoireScreen extends Screen {
     }
 
     private Layout layout() {
-        int targetH = switch (page) {
-            case "atlas" -> atlasCircle == 0 ? 150 : 238;
-            case "academy" -> academyCircle == 0 ? 188 : 278;
-            case "core" -> 210;
-            default -> 300;
-        };
-        int panelW = Math.min(620, Math.max(300, width - 28));
-        int panelH = Math.min(targetH, Math.max(180, height - 24));
-        panelW = Math.min(panelW, Math.max(1, width - 10));
-        panelH = Math.min(panelH, Math.max(1, height - 10));
+        int panelW = Math.min(720, Math.max(360, width - 40));
+        int panelH = Math.min(410, Math.max(260, height - 36));
+        panelW = Math.min(panelW, Math.max(1, width - 12));
+        panelH = Math.min(panelH, Math.max(1, height - 12));
         return new Layout((width - panelW) / 2, (height - panelH) / 2, panelW, panelH);
     }
 
@@ -434,7 +428,7 @@ public final class GrimoireScreen extends Screen {
         Rect back(){Rect c=content();return new Rect(c.x(),c.y(),66,19);}
 
         Rect circleCard(int circle){
-            Rect c=content(); int cols=c.w()>=520?9:3; int gap=4; int col=(circle-1)%cols,row=(circle-1)/cols;
+            Rect c=content(); int cols=c.w()>=420?9:3; int gap=4; int col=(circle-1)%cols,row=(circle-1)/cols;
             int w=(c.w()-gap*(cols-1))/cols; int h=cols==9?36:34;
             return new Rect(c.x()+col*(w+gap),c.y()+28+row*(h+gap),w,h);
         }
@@ -458,7 +452,7 @@ public final class GrimoireScreen extends Screen {
 
         Rect tradition(int i){Rect c=content();int gap=4;int w=(c.w()-gap*3)/4;return new Rect(c.x()+i*(w+gap),c.y()+20,w,20);}
         Rect academyCircleCard(int circle){
-            Rect c=content();int cols=c.w()>=520?9:3,gap=4;int w=(c.w()-gap*(cols-1))/cols;int col=(circle-1)%cols,row=(circle-1)/cols;int h=34;
+            Rect c=content();int cols=c.w()>=420?9:3,gap=4;int w=(c.w()-gap*(cols-1))/cols;int col=(circle-1)%cols,row=(circle-1)/cols;int h=34;
             return new Rect(c.x()+col*(w+gap),c.y()+48+row*(h+gap),w,h);
         }
         Rect academyBack(){Rect c=content();return new Rect(c.x(),c.y()+45,66,19);}

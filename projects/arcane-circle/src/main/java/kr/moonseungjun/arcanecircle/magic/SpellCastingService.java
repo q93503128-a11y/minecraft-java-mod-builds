@@ -41,8 +41,6 @@ public final class SpellCastingService {
         private final String spellId;
         private final long startedAt;
         private final int requiredTicks;
-        private int lastStage = -1;
-        private long lastReadyPulse;
 
         private ChargeState(int slot, String spellId, long startedAt, int requiredTicks) {
             this.slot = slot;
@@ -90,8 +88,6 @@ public final class SpellCastingService {
         ServerLevel level = (ServerLevel) player.level();
         level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
                 SoundSource.PLAYERS, 0.45F, 1.18F);
-        SpellSigilService.renderChargeStep(player, cast.spell(), cast.range(), 0);
-        charge.lastStage = 0;
     }
 
     public static void releaseSlotCharge(ServerPlayer player, int slot) {
@@ -143,19 +139,8 @@ public final class SpellCastingService {
             return;
         }
 
-        int stage = Math.min(SpellSigilService.CHARGE_STAGES - 1,
-                (int) (elapsed * SpellSigilService.CHARGE_STAGES / Math.max(1, charge.requiredTicks)));
-        if (stage > charge.lastStage) {
-            for (int next = charge.lastStage + 1; next <= stage; next++) {
-                SpellSigilService.renderChargeStep(player, spell, cast.range(), next);
-            }
-            charge.lastStage = stage;
-        }
-
-        if (elapsed >= charge.requiredTicks) {
-            CHARGES.remove(player.getUUID());
-            castPrepared(player, data, cast);
-        }
+        // The client draws one persistent vector seal. Completion only arms the spell;
+        // releaseSlotCharge performs the cast when the player lets go.
     }
 
     public static void cancelCharge(ServerPlayer player, boolean notify) {
@@ -196,7 +181,7 @@ public final class SpellCastingService {
         int circleGap = Math.max(0, state.circle() - spell.circle());
         int circleGapReduction = circleGap * 4;
         int masteryReduction = SpellCatalog.masteryTier(state.mastery(spell.id())) * 2;
-        return Math.max(0, base - circleGapReduction - masteryReduction);
+        return Math.max(2, base - circleGapReduction - masteryReduction);
     }
 
     public static void queueFusionSlot(ServerPlayer player, int slot) {
@@ -383,7 +368,6 @@ public final class SpellCastingService {
         ServerLevel level = (ServerLevel) player.level();
         SpellDefinition spell = cast.spell();
         double radius = 0.72 + spell.circle() * 0.20 + (cast.fusion() ? 0.35 : 0.0);
-        SpellSigilService.renderRelease(player, spell, cast.range());
         level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
                 SoundSource.PLAYERS, cast.fusion() ? 1.0F : 0.72F,
                 1.25F - spell.circle() * 0.08F);
@@ -391,13 +375,6 @@ public final class SpellCastingService {
             level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
                     SoundSource.PLAYERS, 0.85F, cast.ingredients().size() == 3 ? 1.55F : 1.35F);
         }
-    }
-
-    private static void renderCharge(ServerPlayer player, SpellDefinition spell, long elapsed, double range) {
-        int required = Math.max(1, requiredCastTicks(player, spell));
-        int stage = Math.min(SpellSigilService.CHARGE_STAGES - 1,
-                (int) (elapsed * SpellSigilService.CHARGE_STAGES / required));
-        SpellSigilService.renderChargeStep(player, spell, range, stage);
     }
 
     private static void renderAnchoredSigil(ServerLevel level, ServerPlayer player, SpellDefinition spell,
@@ -507,9 +484,9 @@ public final class SpellCastingService {
 
     private static boolean execute(ServerPlayer player, String id, double range, double power) {
         return switch (id) {
-            case "arcane_dart" -> bolt(player, range, power, ParticleTypes.ENCHANT, 0, 0);
-            case "ember" -> bolt(player, range, power, ParticleTypes.FLAME, 100, 0);
-            case "frost_needle" -> bolt(player, range, power, ParticleTypes.SNOWFLAKE, 0, 90);
+            case "arcane_dart" -> arcaneDart(player, range, power);
+            case "ember" -> emberShot(player, range, power);
+            case "frost_needle" -> frostNeedle(player, range, power);
             case "gale_step" -> dash(player, range, power);
             case "lesser_ward" -> ward(player, 1, power);
             case "mend" -> mend(player, power);
@@ -544,6 +521,55 @@ public final class SpellCastingService {
             case "arcane_annihilation" -> arcaneAnnihilation(player, range, power);
             default -> HighCircleSpellEffects.execute(player, id, range, power);
         };
+    }
+
+    private static boolean arcaneDart(ServerPlayer player, double range, double power) {
+        ServerLevel level = (ServerLevel) player.level();
+        Optional<Mob> target = lookTarget(player, range);
+        Vec3 start = frontOrigin(player, 1.25);
+        Vec3 end = target.map(Mob::getEyePosition).orElse(start.add(player.getLookAngle().normalize().scale(range)));
+        Vec3 side = new Vec3(-player.getLookAngle().z, 0.0, player.getLookAngle().x).normalize().scale(0.16);
+        particleLine(level, start.add(side), end, ParticleTypes.ENCHANT, 22);
+        particleLine(level, start.subtract(side), end, ParticleTypes.END_ROD, 22);
+        target.ifPresent(mob -> {
+            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 50, 0));
+            burst(level, mob.getEyePosition(), ParticleTypes.ENCHANT, 14, 0.32);
+        });
+        level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
+                SoundSource.PLAYERS, 0.45F, 1.65F);
+        return true;
+    }
+
+    private static boolean emberShot(ServerPlayer player, double range, double power) {
+        ServerLevel level = (ServerLevel) player.level();
+        Optional<Mob> target = lookTarget(player, range);
+        boolean result = bolt(player, range, power, ParticleTypes.FLAME, 120, 0);
+        target.ifPresent(primary -> {
+            for (Mob mob : nearbyTargets(player, primary.position(), 1.8, 1.5)) {
+                if (mob == primary) continue;
+                mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.35));
+                mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 60));
+            }
+            burst(level, primary.position().add(0.0, 0.7, 0.0), ParticleTypes.FLAME, 24, 0.65);
+        });
+        level.playSound(null, player.blockPosition(), SoundEvents.FIRECHARGE_USE,
+                SoundSource.PLAYERS, 0.55F, 1.25F);
+        return result;
+    }
+
+    private static boolean frostNeedle(ServerPlayer player, double range, double power) {
+        ServerLevel level = (ServerLevel) player.level();
+        Optional<Mob> target = lookTarget(player, range);
+        boolean result = bolt(player, range, power * 0.92, ParticleTypes.SNOWFLAKE, 0, 140);
+        target.ifPresent(mob -> {
+            mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 75, 2));
+            mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 150));
+            burst(level, mob.getEyePosition(), ParticleTypes.SNOWFLAKE, 20, 0.42);
+        });
+        level.playSound(null, player.blockPosition(), SoundEvents.GLASS_BREAK,
+                SoundSource.PLAYERS, 0.38F, 1.75F);
+        return result;
     }
 
     private static boolean bolt(ServerPlayer player, double range, double power, ParticleOptions particle,

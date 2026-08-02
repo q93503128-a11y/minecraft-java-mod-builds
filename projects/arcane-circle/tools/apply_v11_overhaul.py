@@ -370,7 +370,6 @@ replacement = '''    private Layout layout() {
 '''
 patch(screen, start, replacement)
 patch(screen, "int cols=c.w()>=520?9:3", "int cols=c.w()>=420?9:3")
-patch(screen, "int cols=c.w()>=520?9:3,gap=4", "int cols=c.w()>=420?9:3,gap=4")
 
 # Bring the broad contract forward after v0.10 regenerated it.
 contract = ROOT / "tools/test_magic_contract.py"

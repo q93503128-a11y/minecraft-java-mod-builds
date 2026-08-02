@@ -37,14 +37,13 @@ public final class ArcaneClient {
     }
 
     /**
-     * Runs before vanilla processes hotbar key clicks. The same physical 1-5 press is consumed from
+     * Runs before vanilla processes hotbar key clicks. The all physical 1-9 presses are consumed from
      * the vanilla mapping, so spell input never changes the selected item slot.
      */
     public static void onClientTickPre(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.gui.screen() != null) return;
-        for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
-            if (!SLOT_KEYS[slot].isDown()) continue;
+        for (int slot = 0; slot < minecraft.options.keyHotbarSlots.length; slot++) {
             while (minecraft.options.keyHotbarSlots[slot].consumeClick()) {}
         }
     }
