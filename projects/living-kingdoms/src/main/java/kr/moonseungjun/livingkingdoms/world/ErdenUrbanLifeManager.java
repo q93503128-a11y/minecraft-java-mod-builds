@@ -248,7 +248,7 @@ public final class ErdenUrbanLifeManager {
                 placeUpperBed(level, room, -2, 3, bed("gray_bed"));
                 placeUpperBed(level, room, -2, 7, bed("gray_bed"));
                 placeUpper(level, room, 3, 7, 1, Blocks.CHEST);
-                placeUpper(level, room, 0, 9, 1, Blocks.WEAPONSMITH_TABLE);
+                placeUpper(level, room, 0, 9, 1, Blocks.SMITHING_TABLE);
             }
             case "bathhouse" -> {
                 for (int depth : new int[]{3, 5, 7}) {
