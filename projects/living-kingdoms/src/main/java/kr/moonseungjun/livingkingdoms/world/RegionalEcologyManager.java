@@ -96,7 +96,7 @@ public final class RegionalEcologyManager {
     }
 
     private static int season(ServerLevel level) {
-        return (int) ((level.getDayTime() / 24_000L / 24L) & 3L);
+        return (int) ((level.getGameTime() / 24_000L / 24L) & 3L);
     }
 
     private static long mix(long value) {
