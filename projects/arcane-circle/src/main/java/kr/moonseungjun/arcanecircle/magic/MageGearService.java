@@ -18,6 +18,7 @@ import java.util.UUID;
  * A robe is one item from the player's point of view, but reserves both chest and leg slots.
  */
 public final class MageGearService {
+    private static final String TWO_SLOT_ROBE_RUNTIME = "mage_robe_hem";
     private static final Set<UUID> ROBE_SLOT_WARNED = new HashSet<>();
 
     private MageGearService() {}
