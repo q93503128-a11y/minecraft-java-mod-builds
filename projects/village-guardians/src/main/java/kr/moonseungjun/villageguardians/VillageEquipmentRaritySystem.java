@@ -39,12 +39,13 @@ public final class VillageEquipmentRaritySystem {
             for (int secondSlot = firstSlot + 1; secondSlot < limit; secondSlot++) {
                 ItemStack second = player.getInventory().getItem(secondSlot);
                 if (second.getItem() != first.getItem() || rarityOf(second) != rarity) continue;
+                Item item = first.getItem();
                 first.shrink(1);
                 second.shrink(1);
-                ItemStack result = create(first.getItem(), rarity.next());
+                ItemStack result = create(item, rarity.next());
                 if (!player.addItem(result)) player.drop(result, false);
                 player.getInventory().setChanged();
-                return displayName(first.getItem()) + " 두 개를 " + rarity.next().displayName()
+                return displayName(item) + " 두 개를 " + rarity.next().displayName()
                         + " 등급으로 합성했습니다. 재화는 소모되지 않았습니다.";
             }
         }
