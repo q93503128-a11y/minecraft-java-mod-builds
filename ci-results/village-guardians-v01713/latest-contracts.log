@@ -44,13 +44,21 @@ defense_xp_multiplier=1.5
 [PASS] Twenty active skills combine real gameplay with dedicated display-actor scenes
 [PASS] CC0 fantasy visual references are documented without untracked binaries
 Village Guardians v0.17.4 UI, location and shortcut contracts passed.
+[PASS] Daily shop inventory rotates and hides future stock
+[PASS] Equipment, armour and supplies use bounded pixel-fit layouts
+[PASS] Caller opens a screen-safe PUBG-style quick communication wheel
+[PASS] Smithy fusion explicitly selects three compatible items
+[PASS] Skill-hall entry opens skills only and defense research titles stay concise
+[PASS] Skills use non-particle display actors and infirmary upgrades have real utility
+Village Guardians v0.17.6 gameplay, UI, item and defeat contracts passed.
+Village Guardians v0.17.7 contracts passed.
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 77, in <module>
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0178_gameplay.py", line 69, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 22, in main
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0178_gameplay.py", line 17, in main
     visuals = read("VillageSkillVisualSystem.java")
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 8, in read
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0178_gameplay.py", line 8, in read
     return (JAVA / name).read_text(encoding="utf-8")
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/usr/lib/python3.12/pathlib.py", line 1029, in read_text
