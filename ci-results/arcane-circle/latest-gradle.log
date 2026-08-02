@@ -1,11 +1,1 @@
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v0121_alpha5_hierarchy_v2.py", line 75, in <module>
-    exec(compile(source, str(original), "exec"))
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v0121_alpha5_hierarchy.py", line 394, in <module>
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v0121_alpha5_hierarchy.py", line 386, in main
-    main()
-    ^^^^^^^
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v0121_alpha5_hierarchy.py", line 335, in patch_damage_attribution
-    text = text.replace("private static void castNaturalSpell(ServerLevel level, Mob caster)",
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-RuntimeError: unattributed spell damage remains: ['ExpandedSpellEffects.java', 'HighCircleSpellEffects.java']
+Arcane Circle v0.12.1-alpha.5 hierarchy, affiliations and aggro installed
