@@ -10,18 +10,17 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
- * Removes item entities created by authored terrain replacement without deleting live player loot.
+ * One-shot cleanup for authored construction.
+ *
+ * <p>Normal gameplay loot is never deleted after the site opens. Construction writes already use
+ * drop-suppressing update flags; this class only catches delayed vegetation drops during the final
+ * stabilization window.</p>
  */
 public final class ConstructionDebrisCleaner {
-    private static final Map<String, Integer> CLEANUP_RADII = Map.of(
-            "erden_kingdom", 330,
-            "silvana_forest", 260,
-            "kardum_league", 270
-    );
+    private static final int ERDEN_CONSTRUCTION_RADIUS = 1_000;
     private static final Set<Item> NATURAL_DEBRIS = Set.of(
             Items.DEAD_BUSH,
             Items.WHEAT_SEEDS,
@@ -55,86 +54,66 @@ public final class ConstructionDebrisCleaner {
     private ConstructionDebrisCleaner() {
     }
 
-    /**
-     * Called exactly when an authored capital finishes, before waiting players enter it. Every item
-     * entity inside the construction district is therefore a build by-product and can be discarded.
-     */
+    /** Called once before waiting players enter the newly built Erden district. */
     public static int cleanConstructionCompletion(ServerLevel level, String homelandId,
                                                   RealmSiteLayoutSavedData.RealmSite site) {
-        AABB bounds = bounds(level, homelandId, site);
-        List<ItemEntity> debris = level.getEntitiesOfClass(ItemEntity.class, bounds);
+        requireErden(homelandId);
+        List<ItemEntity> debris = level.getEntitiesOfClass(ItemEntity.class, bounds(level, site));
         debris.forEach(ItemEntity::discard);
         if (!debris.isEmpty()) {
             LivingKingdoms.LOGGER.info(
-                    "Removed {} total construction item entities around {} before player placement",
-                    debris.size(), homelandId
+                    "Removed {} total construction item entities around Erden before player placement",
+                    debris.size()
             );
         }
         return debris.size();
     }
 
-    /** Safe during play: removes only the known natural drops caused by delayed block updates. */
+    /** Used during the bounded stabilization pass and by diagnostics. */
     public static void schedule(ServerLevel level, String homelandId,
                                 RealmSiteLayoutSavedData.RealmSite site) {
-        int removed = cleanNaturalDebris(level, homelandId, site);
+        requireErden(homelandId);
+        int removed = cleanNaturalDebris(level, site);
         if (removed > 0) {
-            LivingKingdoms.LOGGER.info(
-                    "Removed {} delayed construction vegetation drops around {}",
-                    removed, homelandId
-            );
+            LivingKingdoms.LOGGER.info("Removed {} delayed construction vegetation drops around Erden", removed);
         }
     }
 
     public static int cleanIfPathological(ServerLevel level, String homelandId,
                                           RealmSiteLayoutSavedData.RealmSite site) {
-        return cleanNaturalDebris(level, homelandId, site);
+        requireErden(homelandId);
+        return cleanNaturalDebris(level, site);
     }
 
+    /** Compatibility hook. Continuous cleanup was removed because it could delete legitimate loot. */
     public static void onServerTick(ServerTickEvent.Post event) {
-        if (event.getServer().getTickCount() % 20 != 0) return;
-        ServerLevel level = event.getServer().getLevel(StarterRealmManager.REALM_KEY);
-        if (level == null) return;
-        for (String homelandId : CLEANUP_RADII.keySet()) {
-            RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, homelandId);
-            if (site != null && site.built()) cleanNaturalDebris(level, homelandId, site);
-        }
     }
 
+    /** Compatibility hook. Item spawning during ordinary play is never cancelled. */
     public static void onEntityJoin(EntityJoinLevelEvent event) {
-        if (!(event.getEntity() instanceof ItemEntity item)
-                || !(event.getLevel() instanceof ServerLevel level)
-                || !level.dimension().equals(StarterRealmManager.REALM_KEY)
-                || !NATURAL_DEBRIS.contains(item.getItem().getItem())) return;
-        if (insideAnyBuiltSettlement(level, item.getX(), item.getZ())) event.setCanceled(true);
     }
 
-    private static boolean insideAnyBuiltSettlement(ServerLevel level, double x, double z) {
-        for (Map.Entry<String, Integer> entry : CLEANUP_RADII.entrySet()) {
-            RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, entry.getKey());
-            if (site == null || !site.built()) continue;
-            int radius = entry.getValue();
-            double dx = x - site.centerX();
-            double dz = z - site.centerZ();
-            if (dx * dx + dz * dz <= (double) radius * radius) return true;
-        }
-        return false;
-    }
-
-    private static int cleanNaturalDebris(ServerLevel level, String homelandId,
+    private static int cleanNaturalDebris(ServerLevel level,
                                           RealmSiteLayoutSavedData.RealmSite site) {
         List<ItemEntity> debris = level.getEntitiesOfClass(ItemEntity.class,
-                bounds(level, homelandId, site),
+                bounds(level, site),
                 entity -> NATURAL_DEBRIS.contains(entity.getItem().getItem()));
         debris.forEach(ItemEntity::discard);
         return debris.size();
     }
 
-    private static AABB bounds(ServerLevel level, String homelandId,
-                               RealmSiteLayoutSavedData.RealmSite site) {
-        int radius = CLEANUP_RADII.getOrDefault(homelandId, 280);
+    private static AABB bounds(ServerLevel level, RealmSiteLayoutSavedData.RealmSite site) {
         return new AABB(
-                site.centerX() - radius, level.getMinY(), site.centerZ() - radius,
-                site.centerX() + radius + 1, level.getMaxY(), site.centerZ() + radius + 1
+                site.centerX() - ERDEN_CONSTRUCTION_RADIUS, level.getMinY(),
+                site.centerZ() - ERDEN_CONSTRUCTION_RADIUS,
+                site.centerX() + ERDEN_CONSTRUCTION_RADIUS + 1, level.getMaxY(),
+                site.centerZ() + ERDEN_CONSTRUCTION_RADIUS + 1
         );
+    }
+
+    private static void requireErden(String homelandId) {
+        if (!"erden_kingdom".equals(homelandId)) {
+            throw new IllegalArgumentException("Inactive homeland cleanup request: " + homelandId);
+        }
     }
 }
