@@ -49,6 +49,7 @@ jobs:
           python3 tools/fix_v12_migration.py
           set -o pipefail
           python3 tools/apply_v12_overhaul.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/update_v12_contract.py
           git diff --check
 
       - name: Audit magic world and v0.12 contracts
