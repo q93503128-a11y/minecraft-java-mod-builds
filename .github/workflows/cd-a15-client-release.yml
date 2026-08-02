@@ -1,0 +1,110 @@
+name: Complete Countryside Days alpha.15 client audit and release
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cd-a15-client-release.yml']
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: projects/countryside-days
+
+jobs:
+  release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25'}
+
+      - name: Install virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Clean Java 25 build
+        run: |
+          mkdir -p ci-logs
+          if [ ! -x ./gradlew ]; then gradle wrapper --gradle-version 9.2.1 --distribution-type bin; chmod +x gradlew; fi
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build-release.log
+
+      - name: Audit complete client registration
+        timeout-minutes: 8
+        run: |
+          rm -rf run/logs
+          setsid env LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s '-screen 0 1280x720x24' ./gradlew --no-daemon runClient --stacktrace > ci-logs/client-release.log 2>&1 &
+          PID=$!; READY=0
+          for SECOND in $(seq 1 300); do
+            if grep -q 'Backend library: LWJGL' ci-logs/client-release.log \
+              && grep -Eq 'Sound engine started|Created:.*minecraft:textures/atlas' ci-logs/client-release.log \
+              && grep -q 'Countryside Days 0.1.0-alpha.15 core content registered' ci-logs/client-release.log \
+              && grep -q 'Countryside Days compact navigation HUD registered' ci-logs/client-release.log; then
+              READY=1; break
+            fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          kill -TERM -- -$PID 2>/dev/null || true
+          wait "$PID" 2>/dev/null || true
+          tail -n 350 ci-logs/client-release.log
+          [ "$READY" -eq 1 ]
+          ! grep -n -E "Failed to create window|ModLoadingException|Caught previously unhandled exception|ReportedException|Missing item model for location countrysidedays:|Unable to load model.*countrysidedays:" ci-logs/client-release.log
+
+      - name: Verify executable JAR
+        run: |
+          JAR=build/libs/countrysidedays-0.1.0-alpha.15.jar
+          python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification-release.log
+          mkdir -p build/deliverables release
+          cp "$JAR" build/deliverables/
+          cp "$JAR" release/
+          sha256sum "$JAR" > release/countrysidedays-0.1.0-alpha.15.jar.sha256
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.15-jar
+          path: projects/countryside-days/build/deliverables/countrysidedays-0.1.0-alpha.15.jar
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.15-client-release-logs
+          path: projects/countryside-days/ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Commit final audit report
+        working-directory: .
+        run: |
+          rm -f .github/workflows/cd-a15-audit.yml .github/workflows/cd-a15-client-release.yml
+          cat > projects/countryside-days/BUILD_AND_RUNTIME_REPORT.md <<REPORT
+          # Countryside Days Build and Runtime Report
+
+          - Full build/data/server audit run: 30745438700
+          - Final client/JAR release run: ${GITHUB_RUN_ID}
+          - Source commit: ${GITHUB_SHA}
+          - Mod version: 0.1.0-alpha.15
+          - Clean Java 25 build: success
+          - Datagen: success
+          - Required GameTests: success
+          - Runtime data validation: success
+          - Explicit countryside flat server: success
+          - Complete virtual-display client registration: success
+          - Executable JAR inspection: success
+          REPORT
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A projects/countryside-days .github/workflows
+          git commit -m 'Release verified Countryside Days alpha.15'
+          git pull --rebase origin main
+          git push origin HEAD:main
