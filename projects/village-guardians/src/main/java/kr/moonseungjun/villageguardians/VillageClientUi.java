@@ -19,7 +19,10 @@ public final class VillageClientUi {
                             case "town_hall" -> new VillageTownHallScreen(payload);
                             case "role_progress" -> new VillageRoleProgressScreen(payload);
                             case "quick_chat" -> new VillageQuickChatScreen(payload);
-                            case "status" -> new VillageStatusScreen(payload);
+                            case "status", "wave_intel" -> new VillageStatusScreen(payload);
+                            case "equipment_shop" -> new VillageShopScreen(payload);
+                            case "building", "management", "funding", "tower_control", "tower_detail", "caller" ->
+                                    new VillageFacilityScreen(payload);
                             default -> new VillageUiScreen(payload);
                         }));
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
