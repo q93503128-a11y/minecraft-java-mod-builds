@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -15,22 +16,43 @@ import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
-/** Persistent classed mercenaries. Entity tags preserve class, level and kills across reloads. */
+/** Persistent classed mercenaries backed by world SavedData rather than removed entity tag APIs. */
 public final class VillageMercenarySystem {
-    private static final String TAG = "vg_mercenary";
-    private static final String CLASS_PREFIX = "vg_merc_class_";
-    private static final String LEVEL_PREFIX = "vg_merc_level_";
-    private static final String KILLS_PREFIX = "vg_merc_kills_";
+    private static final Map<UUID, MercenaryClass> CLASSES = new LinkedHashMap<>();
+    private static final Map<UUID, Integer> LEVELS = new LinkedHashMap<>();
+    private static final Map<UUID, Integer> KILLS = new LinkedHashMap<>();
+    private static VillageMercenaryData savedData;
     private static int tickCounter;
 
     private VillageMercenarySystem() {}
 
+    public static synchronized void initializeServer(MinecraftServer server) {
+        savedData = server.overworld().getDataStorage().computeIfAbsent(VillageMercenaryData.TYPE);
+        CLASSES.clear();
+        LEVELS.clear();
+        KILLS.clear();
+        savedData.classes().forEach((key, value) -> parseUuid(key, uuid -> {
+            MercenaryClass kind = MercenaryClass.fromId(value);
+            if (kind != null) CLASSES.put(uuid, kind);
+        }));
+        savedData.levels().forEach((key, value) -> parseUuid(key,
+                uuid -> LEVELS.put(uuid, Math.max(1, Math.min(5, value)))));
+        savedData.kills().forEach((key, value) -> parseUuid(key,
+                uuid -> KILLS.put(uuid, Math.max(0, value))));
+        sanitize();
+        persist();
+        tickCounter = 0;
+    }
+
     public static void reset() { tickCounter = 0; }
 
-    public static boolean recognize(Mob mob) {
-        if (!(mob instanceof IronGolem) || !mob.getTags().contains(TAG)) return false;
+    public static synchronized boolean recognize(Mob mob) {
+        if (!(mob instanceof IronGolem) || !CLASSES.containsKey(mob.getUUID())) return false;
         mob.setPersistenceRequired();
         VillageWorldSystem.markAllowedGameMob(mob);
         refreshName(mob);
@@ -42,7 +64,7 @@ public final class VillageMercenarySystem {
         return 150 + kind.ordinal() * 35 + VillageProgressionSystem.barracksLevel() * 25;
     }
 
-    public static String hire(ServerPlayer player, MercenaryClass kind) {
+    public static synchronized String hire(ServerPlayer player, MercenaryClass kind) {
         if (kind == null) return "알 수 없는 용병 병과입니다.";
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.BARRACKS)) {
             return "병영이 파괴되어 용병을 고용할 수 없습니다.";
@@ -65,20 +87,21 @@ public final class VillageMercenarySystem {
         mercenary.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
         mercenary.setPlayerCreated(true);
         mercenary.setPersistenceRequired();
-        mercenary.addTag(TAG);
-        mercenary.addTag(CLASS_PREFIX + kind.id());
-        mercenary.addTag(LEVEL_PREFIX + "1");
-        mercenary.addTag(KILLS_PREFIX + "0");
+        CLASSES.put(mercenary.getUUID(), kind);
+        LEVELS.put(mercenary.getUUID(), 1);
+        KILLS.put(mercenary.getUUID(), 0);
+        persist();
         applyClassPassives(mercenary, kind, 1);
         refreshName(mercenary);
         VillageWorldSystem.markAllowedGameMob(mercenary);
         if (!level.addFreshEntity(mercenary)) {
+            unregister(mercenary.getUUID());
             VillageWorldSystem.unmarkAllowedGameMob(mercenary.getUUID());
             VillageProgressionSystem.addCoins(player, cost, "용병 배치 실패 환불");
             return "용병 배치에 실패해 주화를 돌려드렸습니다.";
         }
         return kind.displayName() + " 고용 완료 · Lv.1 · 현재 " + (current + 1) + " / " + cap
-                + " · 생존하는 동안 저장과 재접속 후에도 유지됩니다.";
+                + " · 사망하지 않는 한 저장과 재접속 후에도 유지됩니다.";
     }
 
     public static void tick(MinecraftServer server) {
@@ -87,9 +110,10 @@ public final class VillageMercenarySystem {
         ServerLevel level = server.overworld();
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
-        AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96, VillageWorldSystem.BATTLEFIELD_RADIUS);
+        AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96,
+                VillageWorldSystem.BATTLEFIELD_RADIUS);
         for (IronGolem mercenary : level.getEntitiesOfClass(IronGolem.class, area,
-                entity -> entity.getTags().contains(TAG))) {
+                entity -> isMercenary(entity.getUUID()))) {
             recognize(mercenary);
             MercenaryClass kind = mercenaryClass(mercenary);
             int rank = rank(mercenary);
@@ -100,18 +124,21 @@ public final class VillageMercenarySystem {
         }
     }
 
-    public static void awardKillExperience(MinecraftServer server, Vec3 deathPosition) {
+    public static synchronized void awardKillExperience(MinecraftServer server, Vec3 deathPosition) {
         if (server == null || deathPosition == null) return;
         ServerLevel level = server.overworld();
         AABB area = new AABB(deathPosition, deathPosition).inflate(48.0);
+        boolean changed = false;
         for (IronGolem mercenary : level.getEntitiesOfClass(IronGolem.class, area,
-                entity -> entity.getTags().contains(TAG) && entity.isAlive())) {
-            int kills = kills(mercenary) + 1;
-            int currentRank = rank(mercenary);
+                entity -> isMercenary(entity.getUUID()) && entity.isAlive())) {
+            UUID uuid = mercenary.getUUID();
+            int kills = KILLS.getOrDefault(uuid, 0) + 1;
+            int currentRank = LEVELS.getOrDefault(uuid, 1);
             int nextRank = Math.min(5, 1 + kills / 8);
-            replaceNumericTag(mercenary, KILLS_PREFIX, kills);
+            KILLS.put(uuid, kills);
+            changed = true;
             if (nextRank > currentRank) {
-                replaceNumericTag(mercenary, LEVEL_PREFIX, nextRank);
+                LEVELS.put(uuid, nextRank);
                 applyClassPassives(mercenary, mercenaryClass(mercenary), nextRank);
                 refreshName(mercenary);
                 level.sendParticles(ParticleTypes.HAPPY_VILLAGER,
@@ -119,13 +146,19 @@ public final class VillageMercenarySystem {
                         16, 0.45, 0.7, 0.45, 0.05);
             }
         }
+        if (changed) persist();
+    }
+
+    public static synchronized void handleDeath(Mob mob) {
+        if (mob != null && isMercenary(mob.getUUID())) unregister(mob.getUUID());
     }
 
     public static String status(MinecraftServer server) {
         if (server == null) return "용병 상태를 확인할 수 없습니다.";
         ServerLevel level = server.overworld();
         return "용병 " + count(level) + " / " + capacity()
-                + " · 용병 교리 Lv." + VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.MERCENARY)
+                + " · 용병 교리 Lv."
+                + VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.MERCENARY)
                 + " · 적 처치 경험으로 최대 Lv.5까지 성장";
     }
 
@@ -134,11 +167,13 @@ public final class VillageMercenarySystem {
                 + VillageDefenseResearchSystem.mercenaryCapacityBonus();
     }
 
-    private static int count(ServerLevel level) {
+    private static synchronized int count(ServerLevel level) {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return 0;
-        AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96, VillageWorldSystem.BATTLEFIELD_RADIUS);
-        return level.getEntitiesOfClass(IronGolem.class, area, entity -> entity.getTags().contains(TAG)).size();
+        AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96,
+                VillageWorldSystem.BATTLEFIELD_RADIUS);
+        return level.getEntitiesOfClass(IronGolem.class, area,
+                entity -> isMercenary(entity.getUUID())).size();
     }
 
     private static void rangedAttack(ServerLevel level, IronGolem mercenary, int rank) {
@@ -158,11 +193,12 @@ public final class VillageMercenarySystem {
         float amount = 1.5f + rank * 0.8f;
         AABB area = medic.getBoundingBox().inflate(8.0 + rank);
         for (IronGolem ally : level.getEntitiesOfClass(IronGolem.class, area,
-                entity -> entity.getTags().contains(TAG) && entity.isAlive())) {
+                entity -> isMercenary(entity.getUUID()) && entity.isAlive())) {
             ally.heal(amount);
         }
+        double radiusSquared = (8.0 + rank) * (8.0 + rank);
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (player.level() == level && player.distanceToSqr(medic) <= (8.0 + rank) * (8.0 + rank)
+            if (player.level() == level && player.distanceToSqr(medic) <= radiusSquared
                     && !VillageRespawnSystem.isDowned(player)) player.heal(amount * 0.65f);
         }
         level.sendParticles(ParticleTypes.HEART, medic.getX(), medic.getY() + 1.4, medic.getZ(),
@@ -172,42 +208,33 @@ public final class VillageMercenarySystem {
     private static void applyClassPassives(IronGolem mercenary, MercenaryClass kind, int rank) {
         int duration = 20 * 60 * 60;
         if (kind == MercenaryClass.BASTION) {
-            mercenary.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, Math.min(2, rank / 2), false, false));
-            mercenary.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, Math.min(3, rank - 1), false, false));
+            mercenary.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration,
+                    Math.min(2, rank / 2), false, false));
+            mercenary.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration,
+                    Math.min(3, rank - 1), false, false));
         } else if (kind == MercenaryClass.STRIKER) {
-            mercenary.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration, Math.min(2, rank / 2), false, false));
-            mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, Math.min(1, rank / 3), false, false));
+            mercenary.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration,
+                    Math.min(2, rank / 2), false, false));
+            mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration,
+                    Math.min(1, rank / 3), false, false));
         } else if (kind == MercenaryClass.RANGER) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 0, false, false));
         } else if (kind == MercenaryClass.MEDIC) {
-            mercenary.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, Math.min(1, rank / 3), false, false));
+            mercenary.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration,
+                    Math.min(1, rank / 3), false, false));
         }
     }
 
-    private static MercenaryClass mercenaryClass(Mob mob) {
-        for (String tag : mob.getTags()) {
-            if (tag.startsWith(CLASS_PREFIX)) return MercenaryClass.fromId(tag.substring(CLASS_PREFIX.length()));
-        }
-        return MercenaryClass.BASTION;
+    private static synchronized MercenaryClass mercenaryClass(Mob mob) {
+        return CLASSES.getOrDefault(mob.getUUID(), MercenaryClass.BASTION);
     }
 
-    private static int rank(Mob mob) { return numericTag(mob, LEVEL_PREFIX, 1); }
-    private static int kills(Mob mob) { return numericTag(mob, KILLS_PREFIX, 0); }
-
-    private static int numericTag(Mob mob, String prefix, int fallback) {
-        for (String tag : mob.getTags()) {
-            if (!tag.startsWith(prefix)) continue;
-            try { return Integer.parseInt(tag.substring(prefix.length())); }
-            catch (NumberFormatException ignored) { return fallback; }
-        }
-        return fallback;
+    private static synchronized int rank(Mob mob) {
+        return LEVELS.getOrDefault(mob.getUUID(), 1);
     }
 
-    private static void replaceNumericTag(Mob mob, String prefix, int value) {
-        String old = null;
-        for (String tag : mob.getTags()) if (tag.startsWith(prefix)) { old = tag; break; }
-        if (old != null) mob.removeTag(old);
-        mob.addTag(prefix + value);
+    private static synchronized boolean isMercenary(UUID uuid) {
+        return uuid != null && CLASSES.containsKey(uuid);
     }
 
     private static void refreshName(Mob mob) {
@@ -221,13 +248,46 @@ public final class VillageMercenarySystem {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     BlockPos pos = origin.offset(dx, 0, dz);
-                    if (level.getBlockState(pos.below()).isSolidRender()
+                    BlockPos floor = pos.below();
+                    if (level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)
                             && level.getBlockState(pos).isAir()
                             && level.getBlockState(pos.above()).isAir()) return pos;
                 }
             }
         }
         return origin.above();
+    }
+
+    private static synchronized void unregister(UUID uuid) {
+        CLASSES.remove(uuid);
+        LEVELS.remove(uuid);
+        KILLS.remove(uuid);
+        persist();
+    }
+
+    private static synchronized void sanitize() {
+        LEVELS.keySet().removeIf(uuid -> !CLASSES.containsKey(uuid));
+        KILLS.keySet().removeIf(uuid -> !CLASSES.containsKey(uuid));
+        for (UUID uuid : CLASSES.keySet()) {
+            LEVELS.put(uuid, Math.max(1, Math.min(5, LEVELS.getOrDefault(uuid, 1))));
+            KILLS.put(uuid, Math.max(0, KILLS.getOrDefault(uuid, 0)));
+        }
+    }
+
+    private static synchronized void persist() {
+        if (savedData == null) return;
+        Map<String, String> classes = new LinkedHashMap<>();
+        CLASSES.forEach((uuid, kind) -> classes.put(uuid.toString(), kind.id()));
+        Map<String, Integer> levels = new LinkedHashMap<>();
+        LEVELS.forEach((uuid, value) -> levels.put(uuid.toString(), value));
+        Map<String, Integer> kills = new LinkedHashMap<>();
+        KILLS.forEach((uuid, value) -> kills.put(uuid.toString(), value));
+        savedData.replace(classes, levels, kills);
+    }
+
+    private static void parseUuid(String value, java.util.function.Consumer<UUID> consumer) {
+        try { consumer.accept(UUID.fromString(value)); }
+        catch (IllegalArgumentException ignored) { }
     }
 
     public enum MercenaryClass {
