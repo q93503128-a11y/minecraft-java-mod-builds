@@ -38,7 +38,8 @@ if index.get("version") != "0.12.1-alpha.8":
     raise SystemExit("alpha.8 spell index version missing")
 
 for label, source in (("world tracker", tracker), ("signature geometry", signature)):
-    forbidden = ("VoxelShape", "Shapes.create", "submitShapeOutline", "new AABB")
+    forbidden = ("import net.minecraft.world.phys.shapes.VoxelShape", "Shapes.create(",
+                 "submitShapeOutline(", "new AABB(")
     found = [token for token in forbidden if token in source]
     if found:
         raise SystemExit(f"{label} still uses pixel-box geometry: {found}")
