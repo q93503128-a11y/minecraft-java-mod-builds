@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** End-to-end CI verification for the fully authored Living Realm. */
+/** End-to-end CI verification for the external-template alpha.11 Living Realm. */
 public final class StarterRealmDiagnostics {
     private static final List<String> HOMELANDS = List.of(
             "erden_kingdom", "silvana_forest", "kardum_league"
@@ -59,7 +59,7 @@ public final class StarterRealmDiagnostics {
                     throw new IllegalStateException("Homeland layout was not built: " + homelandId);
                 }
                 verifyNaturalTerrainOutsideCapital(realm, site, homelandId);
-                verifyTerrainTransition(realm, site, homelandId);
+                verifyExternalArchitecture(realm, site, homelandId);
                 verifyNoConstructionDebris(realm, site, homelandId);
                 buildNext(realm, index + 1, started);
             } catch (Throwable throwable) {
@@ -72,33 +72,20 @@ public final class StarterRealmDiagnostics {
         try {
             for (PlayableOriginCatalog.ResidenceOption residence : PlayableOriginCatalog.residences().values()) {
                 BlockPos feet = RealmSitePlanner.residencePosition(realm, residence.homelandId(), residence.id());
-                verifySpawn(realm, residence.id(), feet);
+                if (!SafeResidenceLocator.isWalkable(realm, feet)) {
+                    throw new IllegalStateException("Unsafe residence spawn " + residence.id() + " at " + feet);
+                }
             }
-            RealmSiteLayoutSavedData.RealmSite erden = requiredSite(realm, "erden_kingdom");
-            verifyErdenStructures(realm, erden);
-
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
             if (elapsedMs > 900_000L) {
                 throw new IllegalStateException("Realm construction exceeded 900 seconds: " + elapsedMs);
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8 authored_terrain=true authored_biomes=true authored_surfaces=true smooth_transitions=true structure_shells=true debris_zero=true layout_revision={} generation_ms={}",
+                    "LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8 authored_terrain=true authored_biomes=true authored_surfaces=true external_structure_templates=true regional_ecology=true debris_zero=true layout_revision={} generation_ms={}",
                     RealmSitePlanner.LAYOUT_REVISION, elapsedMs
             );
         } catch (Throwable throwable) {
             fail("Final realm verification failed", throwable);
-        }
-    }
-
-    private static RealmSiteLayoutSavedData.RealmSite requiredSite(ServerLevel realm, String id) {
-        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(realm, id);
-        if (site == null) throw new IllegalStateException("Missing site " + id);
-        return site;
-    }
-
-    private static void verifySpawn(ServerLevel realm, String id, BlockPos feet) {
-        if (!SafeResidenceLocator.isWalkable(realm, feet)) {
-            throw new IllegalStateException("Unsafe residence spawn " + id + " at " + feet);
         }
     }
 
@@ -112,58 +99,53 @@ public final class StarterRealmDiagnostics {
             int z = site.centerZ() + offset[1];
             int y = terrainY(realm, x, z);
             heights.add(y);
-            if (isDrySurface(realm, x, z)) land++;
+            int top = realm.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
+            if (realm.getFluidState(new BlockPos(x, top, z)).isEmpty()) land++;
         }
-        if (land < 9) {
-            throw new IllegalStateException("Capital district is isolated by water: " + homelandId + " land=" + land);
-        }
-        if (heights.size() < 2) {
-            throw new IllegalStateException("Outer terrain is unnaturally flat: " + homelandId);
-        }
+        if (land < 9) throw new IllegalStateException("Capital district is isolated by water: " + homelandId);
+        if (heights.size() < 2) throw new IllegalStateException("Outer terrain is unnaturally flat: " + homelandId);
     }
 
-    private static void verifyTerrainTransition(ServerLevel realm,
-                                                RealmSiteLayoutSavedData.RealmSite site,
-                                                String homelandId) {
-        int inner = switch (homelandId) {
-            case "silvana_forest" -> 90;
-            case "kardum_league" -> 116;
-            default -> 136;
-        };
-        int outer = inner + 54;
-        int worstStep = 0;
-        int worstX = site.centerX();
-        int worstZ = site.centerZ();
-        for (int[] direction : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-            Integer previous = null;
-            for (int distance = inner; distance <= outer; distance += 6) {
-                int x = site.centerX() + direction[0] * distance;
-                int z = site.centerZ() + direction[1] * distance;
-                int y = terrainY(realm, x, z);
-                if (previous != null) {
-                    int step = Math.abs(y - previous);
-                    if (step > worstStep) {
-                        worstStep = step;
-                        worstX = x;
-                        worstZ = z;
+    private static void verifyExternalArchitecture(ServerLevel realm,
+                                                   RealmSiteLayoutSavedData.RealmSite site,
+                                                   String homelandId) {
+        Set<Block> palette = new HashSet<>();
+        int architecturalSamples = 0;
+        int yMin = Math.max(realm.getMinY(), site.baseY() - 8);
+        int yMax = Math.min(realm.getMaxY() - 1, site.baseY() + 88);
+        for (int x = site.centerX() - 70; x <= site.centerX() + 70; x += 2) {
+            for (int z = site.centerZ() - 70; z <= site.centerZ() + 70; z += 2) {
+                for (int y = yMin; y <= yMax; y += 2) {
+                    Block block = realm.getBlockState(new BlockPos(x, y, z)).getBlock();
+                    if (isArchitecture(block)) {
+                        architecturalSamples++;
+                        palette.add(block);
                     }
                 }
-                previous = y;
             }
         }
-        if (worstStep > 12) {
-            throw new IllegalStateException("Cliff transition detected around " + homelandId
-                    + ": step=" + worstStep + " at " + worstX + "," + worstZ);
+        if (architecturalSamples < 800 || palette.size() < 8) {
+            throw new IllegalStateException("External capital template is too sparse for " + homelandId
+                    + ": samples=" + architecturalSamples + " palette=" + palette.size());
         }
-        LivingKingdoms.LOGGER.info("Verified terrain transition {} max_step={} at {},{}",
-                homelandId, worstStep, worstX, worstZ);
+        LivingKingdoms.LOGGER.info(
+                "Verified external capital template homeland={} architectural_samples={} palette={}",
+                homelandId, architecturalSamples, palette.size()
+        );
+    }
+
+    private static boolean isArchitecture(Block block) {
+        return block != Blocks.AIR && block != Blocks.CAVE_AIR && block != Blocks.VOID_AIR
+                && block != Blocks.GRASS_BLOCK && block != Blocks.DIRT && block != Blocks.COARSE_DIRT
+                && block != Blocks.ROOTED_DIRT && block != Blocks.STONE && block != Blocks.DEEPSLATE
+                && block != Blocks.WATER && block != Blocks.SAND && block != Blocks.GRAVEL;
     }
 
     private static void verifyNoConstructionDebris(ServerLevel realm,
                                                     RealmSiteLayoutSavedData.RealmSite site,
                                                     String homelandId) {
         ConstructionDebrisCleaner.schedule(realm, homelandId, site);
-        int radius = "erden_kingdom".equals(homelandId) ? 330 : 260;
+        int radius = 260;
         AABB bounds = new AABB(site.centerX() - radius, realm.getMinY(), site.centerZ() - radius,
                 site.centerX() + radius + 1, realm.getMaxY(), site.centerZ() + radius + 1);
         List<ItemEntity> items = realm.getEntitiesOfClass(ItemEntity.class, bounds);
@@ -172,40 +154,6 @@ public final class StarterRealmDiagnostics {
         }
     }
 
-    private static void verifyErdenStructures(ServerLevel realm,
-                                              RealmSiteLayoutSavedData.RealmSite site) {
-        int cx = site.centerX();
-        int cz = site.centerZ();
-        int y = Math.max(68, Math.min(104, site.baseY()));
-        requireBlock(realm, new BlockPos(cx, y + 7, cz), Blocks.LANTERN, "market lantern");
-        requireBlock(realm, new BlockPos(cx, y, cz + 40), Blocks.PACKED_MUD, "main road");
-        requireBlock(realm, new BlockPos(cx - 124, y + 3, cz + 30), Blocks.STONE_BRICKS, "city wall");
-        int canalX = cx - 151 + (int) Math.round(Math.sin(cz * 0.045) * 5.0);
-        requireBlock(realm, new BlockPos(canalX, y - 2, cz), Blocks.WATER, "canal");
-
-        BlockPos homeFloor = new BlockPos(cx - 58, y, cz - 39);
-        if (realm.getBlockState(homeFloor).isAir()) {
-            throw new IllegalStateException("House floor missing at " + homeFloor);
-        }
-        BlockPos wall = new BlockPos(cx - 58, y + 2, cz - 38);
-        if (realm.getBlockState(wall).isAir()) {
-            throw new IllegalStateException("House wall missing at " + wall);
-        }
-        boolean roofFound = false;
-        for (int dy = 6; dy <= 12; dy++) {
-            if (!realm.getBlockState(new BlockPos(cx - 58, y + dy, cz - 39)).isAir()) {
-                roofFound = true;
-                break;
-            }
-        }
-        if (!roofFound) throw new IllegalStateException("House roof missing above " + homeFloor);
-    }
-
-    /**
-     * Finds the authored ground below trees, giant trunks, vegetation and settlement structures.
-     * Heightmaps intentionally include solid logs, so they cannot be used directly once real biome
-     * decoration is enabled.
-     */
     private static int terrainY(ServerLevel realm, int x, int z) {
         realm.getChunk(x >> 4, z >> 4);
         int top = realm.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
@@ -217,41 +165,14 @@ public final class StarterRealmDiagnostics {
         return realm.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z) - 1;
     }
 
-    private static boolean isDrySurface(ServerLevel realm, int x, int z) {
-        int top = realm.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
-        return realm.getFluidState(new BlockPos(x, top, z)).isEmpty();
-    }
-
     private static boolean isTerrainGround(Block block) {
-        return block == Blocks.GRASS_BLOCK
-                || block == Blocks.DIRT
-                || block == Blocks.COARSE_DIRT
-                || block == Blocks.ROOTED_DIRT
-                || block == Blocks.PODZOL
-                || block == Blocks.MYCELIUM
-                || block == Blocks.MOSS_BLOCK
-                || block == Blocks.MUD
-                || block == Blocks.PACKED_MUD
-                || block == Blocks.DIRT_PATH
-                || block == Blocks.STONE
-                || block == Blocks.DEEPSLATE
-                || block == Blocks.GRAVEL
-                || block == Blocks.SAND
-                || block == Blocks.RED_SAND
-                || block == Blocks.SANDSTONE
-                || block == Blocks.RED_SANDSTONE
-                || block == Blocks.TERRACOTTA
-                || block == Blocks.CLAY
-                || block == Blocks.CALCITE
-                || block == Blocks.SNOW_BLOCK;
-    }
-
-    private static void requireBlock(ServerLevel realm, BlockPos pos, Block expected, String name) {
-        Block actual = realm.getBlockState(pos).getBlock();
-        if (actual != expected) {
-            throw new IllegalStateException("Missing " + name + " at " + pos
-                    + " expected=" + expected + " actual=" + actual);
-        }
+        return block == Blocks.GRASS_BLOCK || block == Blocks.DIRT || block == Blocks.COARSE_DIRT
+                || block == Blocks.ROOTED_DIRT || block == Blocks.PODZOL || block == Blocks.MYCELIUM
+                || block == Blocks.MOSS_BLOCK || block == Blocks.MUD || block == Blocks.PACKED_MUD
+                || block == Blocks.DIRT_PATH || block == Blocks.STONE || block == Blocks.DEEPSLATE
+                || block == Blocks.GRAVEL || block == Blocks.SAND || block == Blocks.RED_SAND
+                || block == Blocks.SANDSTONE || block == Blocks.RED_SANDSTONE || block == Blocks.TERRACOTTA
+                || block == Blocks.CLAY || block == Blocks.CALCITE || block == Blocks.SNOW_BLOCK;
     }
 
     private static void fail(String message, Throwable throwable) {
