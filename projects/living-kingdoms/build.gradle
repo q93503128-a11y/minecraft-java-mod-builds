@@ -26,9 +26,14 @@ def kenneyUiAssets = [
         [output: 'minimap_arrow.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_arrow_a.png", blob: 'd3999611a2608d9953db7ebdd1cda9c293c47b09']
 ]
 
-// The one active external asset is an inner-citadel reference part, not a complete city.
+// Every structure below is BuildSchem CC BY 4.0. The castle supplies the inner citadel and wall
+// modules; the remaining independent buildings become functional district landmarks and compounds.
 def externalStructureAssets = [
-        [output: 'medieval_castle.schem', slug: 'ultimate-medieval-survival-castle-mansion', title: 'Ultimate Medieval Survival Castle Mansion']
+        [output: 'medieval_castle.schem', slug: 'ultimate-medieval-survival-castle-mansion', title: 'Ultimate Medieval Survival Castle Mansion'],
+        [output: 'medieval_manor.schem', slug: 'ultimate-medieval-manor-survival-base', title: 'Ultimate Medieval Manor Survival Base'],
+        [output: 'all_in_one_house.schem', slug: 'ultimate-all-in-one-survival-house', title: 'Ultimate All In One Survival House'],
+        [output: 'fantasy_castle_house.schem', slug: 'ultimate-fantasy-starter-castle-house', title: 'Ultimate Fantasy Starter Castle House'],
+        [output: 'village_church.schem', slug: 'ultimate-medieval-village-church-survival-base', title: 'Ultimate Medieval Village Church Survival Base']
 ]
 
 def prepareKenneyUiAssets = tasks.register('prepareKenneyUiAssets') {
@@ -69,7 +74,7 @@ def prepareExternalStructures = tasks.register('prepareExternalStructures') {
         def attribution = new StringBuilder('Living Kingdoms external structure attribution\n\n')
         attribution.append('License: Creative Commons Attribution 4.0 International\n')
         attribution.append('https://creativecommons.org/licenses/by/4.0/\n\n')
-        attribution.append('Use inside Living Kingdoms: cleaned and adapted inner-citadel reference part only.\n\n')
+        attribution.append('Use inside Living Kingdoms: terrain-cleaned, rotated and adapted Erden architecture parts and functional district buildings.\n\n')
         externalStructureAssets.each { asset ->
             URI source = new URI("https://www.schemcraft.com/schematics/${asset.slug}/download")
             byte[] archive = source.toURL().openStream().withCloseable { it.readAllBytes() }
