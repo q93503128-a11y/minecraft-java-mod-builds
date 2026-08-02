@@ -1,3 +1,4 @@
+# Second trigger after enabling the alpha.14 applier.
 name: Apply Countryside Days alpha.14
 
 on:
@@ -33,7 +34,6 @@ jobs:
 
           project = root / 'projects/countryside-days'
 
-          # Hiring must consume shift-interaction before ordinary resident dialogue.
           path = project / 'src/main/java/kr/countrysidedays/CountrysideDays.java'
           text = path.read_text('utf-8')
           text = text.replace(
@@ -44,7 +44,6 @@ jobs:
           )
           path.write_text(text, 'utf-8')
 
-          # Do not let the general dialogue handler override a completed hire action.
           path = project / 'src/main/java/kr/countrysidedays/gameplay/RuralNpcManager.java'
           text = path.read_text('utf-8')
           text = text.replace(
@@ -56,7 +55,6 @@ jobs:
           )
           path.write_text(text, 'utf-8')
 
-          # Minecraft 26.2 StreamCodec.composite does not support fifteen fields.
           path = project / 'src/main/java/kr/countrysidedays/network/EstateHudPayload.java'
           text = path.read_text('utf-8').replace('import net.minecraft.network.codec.ByteBufCodecs;\n', '')
           begin = text.index('    public static final StreamCodec<RegistryFriendlyByteBuf, EstateHudPayload> STREAM_CODEC =')
@@ -95,7 +93,6 @@ jobs:
     };'''
           path.write_text(text[:begin] + codec + text[end:], 'utf-8')
 
-          # Remove a duplicate local declaration if an older staged snapshot contains it.
           path = project / 'src/main/java/kr/countrysidedays/world/StarterHomesteadGenerator.java'
           text = path.read_text('utf-8')
           duplicate = ('        int doorZ = frontAtMaxZ ? depth - 1 : 0;\n'
