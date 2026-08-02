@@ -17,7 +17,7 @@ def main() -> None:
     visuals = read("VillageSkillVisualSystem.java")
     descriptions = read("VillageActionDescriptions.java")
 
-    assert "mod_version=0.17.9-alpha.1" in props
+    assert "mod_version=0.17.10-alpha.1" in props
     for branch in ("power", "guard", "support", "ranged", "mobility"):
         assert tree.count(f'("{branch}_') == 10
         assert f'{branch.upper()}_10' in tree
@@ -55,8 +55,8 @@ def main() -> None:
     assert "test_equip:" in controller
     assert "test_cast:" not in controller
     assert "test_equip:" in controller
-    assert "K로 이 화면" in controller
-    assert "if (VillageSkillTestSystem.isEnabled(player)) openSkillTest(player);" in controller
+    assert "K로 다시 엽니다" in controller
+    assert "if (VillageSkillTestSystem.isEnabled(player)) openSkillTestSkillManager(player);" in controller
     assert "외부 시험장" in descriptions
     assert 'return "임시 장착"' in descriptions
 

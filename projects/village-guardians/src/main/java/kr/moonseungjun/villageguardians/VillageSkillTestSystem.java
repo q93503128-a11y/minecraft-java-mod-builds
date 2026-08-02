@@ -78,14 +78,15 @@ public final class VillageSkillTestSystem {
         selectedRole(player);
         ensureDefaultLoadout(player);
 
-        BlockPos start = arena.offset(0, 0, 11);
+        BlockPos start = arena.offset(0, 0, 10);
         player.teleportTo(level, start.getX() + 0.5, start.getY(), start.getZ() + 0.5,
                 Set.of(), 180.0f, 0.0f, true);
         player.setDeltaMovement(Vec3.ZERO);
         String targets = spawnTargets(player);
         return "외부 기술 시험장으로 이동했습니다."
-                + "\n뒤쪽의 기술 시험 관리함을 열어 직업과 Z/X 기술을 변경할 수 있습니다."
-                + "\nK를 눌러도 같은 관리 화면을 엽니다. " + targets;
+                + "\n금색 바닥 관리함은 직업, 청금석 바닥 관리함은 Z/X 기술을 담당합니다."
+                + "\n기술을 장착하면 창이 닫히며, 그 뒤 Z/X로 실제 시전합니다. K는 기술 관리함을 엽니다. "
+                + targets;
     }
 
     public static String disable(ServerPlayer player) {
@@ -271,17 +272,26 @@ public final class VillageSkillTestSystem {
                 || !(event.getEntity() instanceof ServerPlayer player)
                 || !(player.level() instanceof ServerLevel)
                 || !isEnabled(player)) return false;
-        BlockPos box = managementBoxPosition();
-        if (box == null || !box.equals(event.getPos())) return false;
+        BlockPos clicked = event.getPos();
+        BlockPos roleBox = roleManagementBoxPosition();
+        BlockPos skillBox = skillManagementBoxPosition();
+        if (roleBox == null || skillBox == null) return false;
+        if (!clicked.equals(roleBox) && !clicked.equals(skillBox)) return false;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
-        VillageUiController.openSkillTest(player);
+        if (clicked.equals(roleBox)) VillageUiController.openSkillTestRoleManager(player);
+        else VillageUiController.openSkillTestSkillManager(player);
         return true;
     }
 
-    public static BlockPos managementBoxPosition() {
+    public static BlockPos roleManagementBoxPosition() {
         BlockPos arena = arenaCenter();
-        return arena == null ? null : arena.offset(0, 0, 14);
+        return arena == null ? null : arena.offset(-3, 0, 14);
+    }
+
+    public static BlockPos skillManagementBoxPosition() {
+        BlockPos arena = arenaCenter();
+        return arena == null ? null : arena.offset(3, 0, 14);
     }
 
     private static BlockPos arenaCenter() {
@@ -312,12 +322,17 @@ public final class VillageSkillTestSystem {
         for (int x = -2; x <= 2; x++) {
             VillageFortressTerrain.set(level, center.offset(x, -1, 10), Blocks.GOLD_BLOCK);
         }
-        BlockPos box = managementBoxPosition();
-        if (box != null) {
-            VillageFortressTerrain.set(level, box.below(), Blocks.GOLD_BLOCK);
-            VillageFortressTerrain.set(level, box, Blocks.BARREL);
-            VillageFortressTerrain.set(level, box.west(), Blocks.SEA_LANTERN);
-            VillageFortressTerrain.set(level, box.east(), Blocks.SEA_LANTERN);
+        BlockPos roleBox = roleManagementBoxPosition();
+        BlockPos skillBox = skillManagementBoxPosition();
+        if (roleBox != null) {
+            VillageFortressTerrain.set(level, roleBox.below(), Blocks.GOLD_BLOCK);
+            VillageFortressTerrain.set(level, roleBox, Blocks.BARREL);
+            VillageFortressTerrain.set(level, roleBox.west(), Blocks.SEA_LANTERN);
+        }
+        if (skillBox != null) {
+            VillageFortressTerrain.set(level, skillBox.below(), Blocks.LAPIS_BLOCK);
+            VillageFortressTerrain.set(level, skillBox, Blocks.BARREL);
+            VillageFortressTerrain.set(level, skillBox.east(), Blocks.SEA_LANTERN);
         }
     }
 

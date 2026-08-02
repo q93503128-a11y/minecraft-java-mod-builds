@@ -42,7 +42,7 @@ final class VillageActionDescriptions {
             return label + "\n이전 시험 UI 호환 경로로 Z 시험 슬롯에 장착합니다.";
         }
         if (action.startsWith("test_equip:")) {
-            return label + "\n목록을 한 번 클릭하면 선택한 Z/X 시험 슬롯에 즉시 임시 장착합니다.";
+            return label + "\n선택한 Z/X 시험 슬롯에 장착한 뒤 화면을 닫습니다. 화면이 닫힌 상태에서 Z/X를 눌러 시전합니다.";
         }
         if (action.startsWith("gear:")) {
             return label + "\n수호 주화로 장비를 구매합니다. 강한 상품은 방어 일수에 따라 입고됩니다.";
@@ -62,7 +62,9 @@ final class VillageActionDescriptions {
             case "open_skill_tree" -> "기술 연구소의 공용 전술 발전 화면을 엽니다.";
             case "open_role_progress_current" -> "현재 직업의 세 갈래 성장과 두 기술 슬롯을 관리합니다.";
             case "open_role_skill_research" -> "기술 연구소에서 현재 직업의 기술 습득과 Z/X 장착만 관리합니다.";
-            case "open_skill_test" -> "외부 시험장으로 이동해 전용 관리함에서 직업과 Z/X 기술을 고르고 실제 입력으로 시험합니다.";
+            case "open_skill_test" -> "외부 시험장으로 이동해 분리된 직업·스킬 관리함에서 시험 설정을 관리합니다.";
+            case "open_skill_test_roles" -> "금색 바닥 직업 관리함을 엽니다.";
+            case "open_skill_test_skills" -> "청금석 바닥 스킬 관리함을 엽니다.";
             case "test_spawn" -> "외부 시험장의 고정 표적 여섯 개를 다시 배치합니다.";
             case "test_clear" -> "자신이 만든 시험 표적만 정리합니다.";
             case "test_exit" -> "시험 표적과 임시 장착을 정리하고 원래 위치로 복귀합니다.";

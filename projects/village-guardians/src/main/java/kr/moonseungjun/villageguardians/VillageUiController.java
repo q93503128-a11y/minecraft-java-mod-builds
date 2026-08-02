@@ -270,45 +270,80 @@ public final class VillageUiController {
 
     public static void openSkillTest(ServerPlayer player) {
         boolean alreadyEnabled = VillageSkillTestSystem.isEnabled(player);
+        String mode = prepareSkillTest(player);
+        if (mode == null) return;
+        if (alreadyEnabled) sendSkillTestSkillManager(player, mode);
+        else sendSkillTestRoleManager(player, mode);
+    }
+
+    public static void openSkillTestRoleManager(ServerPlayer player) {
+        String mode = prepareSkillTest(player);
+        if (mode != null) sendSkillTestRoleManager(player, mode);
+    }
+
+    public static void openSkillTestSkillManager(ServerPlayer player) {
+        String mode = prepareSkillTest(player);
+        if (mode != null) sendSkillTestSkillManager(player, mode);
+    }
+
+    private static String prepareSkillTest(ServerPlayer player) {
+        boolean alreadyEnabled = VillageSkillTestSystem.isEnabled(player);
         if (!alreadyEnabled && !VillageLocationRules.isNearSkillHall(player)) {
             openResult(player, "기술 시험", "기술 시험 시작은 기술 연구소 연구대 근처에서만 가능합니다.",
                     "open_role_skill_research");
-            return;
+            return null;
         }
         String mode = alreadyEnabled
-                ? "외부 시험장 활성화 · 뒤쪽 관리함 또는 K로 이 화면을 열 수 있습니다."
+                ? "외부 시험장 활성화"
                 : VillageSkillTestSystem.enable(player);
         if (!VillageSkillTestSystem.isEnabled(player)) {
             openResult(player, "기술 시험", mode, "open_role_skill_research");
-            return;
+            return null;
         }
+        return mode;
+    }
 
-        VillageRole role = VillageSkillTestSystem.selectedRole(player);
+    private static void sendSkillTestRoleManager(ServerPlayer player, String mode) {
+        VillageRole selected = VillageSkillTestSystem.selectedRole(player);
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         for (VillageRole candidate : VillageRole.values()) {
             actions.add("test_role:" + candidate.id());
-            labels.add((candidate == role ? "선택됨 · " : "") + candidate.displayName()
+            labels.add((candidate == selected ? "선택됨 · " : "") + candidate.displayName()
                     + "|" + candidate.overview()
                     + "\n시험 전용 직업만 변경하며 실제 직업·성장·저장값은 바뀌지 않습니다.");
         }
+        add(actions, labels,
+                "open_skill_test_skills", "스킬 관리함 열기|현재 시험 직업의 Z/X 기술 장착 화면",
+                "test_exit", "시험 종료·복귀|시험 데이터를 정리하고 원래 위치로 복귀");
+        String body = mode
+                + "\n현재 시험 직업: " + selected.displayName()
+                + "\n금색 바닥 직업 관리함입니다. 청금석 바닥 관리함에서는 스킬을 장착합니다.";
+        send(player, "skill_test_role", "시험 직업 관리함", body, actions, labels);
+    }
+
+    private static void sendSkillTestSkillManager(ServerPlayer player, String mode) {
+        VillageRole role = VillageSkillTestSystem.selectedRole(player);
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
         for (VillageRoleSkillSystem.ActiveSkill skill : VillageRoleSkillSystem.skillsFor(role)) {
             actions.add("test_equip:" + skill.id() + ":0");
             labels.add("Z · " + skill.displayName() + "|" + skill.description()
-                    + "\n한 번 클릭하면 Z 시험 슬롯에 즉시 장착합니다.");
+                    + "\n선택하면 Z 슬롯에 장착되고 창이 자동으로 닫힙니다.");
             actions.add("test_equip:" + skill.id() + ":1");
             labels.add("X · " + skill.displayName() + "|" + skill.description()
-                    + "\n한 번 클릭하면 X 시험 슬롯에 즉시 장착합니다.");
+                    + "\n선택하면 X 슬롯에 장착되고 창이 자동으로 닫힙니다.");
         }
         add(actions, labels,
-                "test_spawn", "시험 표적 재배치|외부 시험장 중앙에 체력·밀림 저항이 다른 표적 6개 생성",
+                "open_skill_test_roles", "직업 관리함 열기|시험할 직업을 변경",
+                "test_spawn", "시험 표적 재배치|체력·밀림 저항이 다른 표적 6개 생성",
                 "test_clear", "시험 표적 정리|현재 내가 만든 시험 표적 제거",
                 "test_exit", "시험 종료·복귀|표적과 임시 장착을 정리하고 원래 위치로 복귀");
         String body = mode
                 + "\n현재 시험 직업: " + role.displayName()
                 + "\n현재 임시 장착: " + VillageSkillTestSystem.loadoutSummary(player)
-                + "\n직업·Z/X 항목은 목록에서 한 번 클릭하면 즉시 적용됩니다.";
-        send(player, "skill_test", "기술 시험 관리함", body, actions, labels);
+                + "\n기술 선택 후 창이 닫히면 Z/X를 눌러 실제 시전합니다. K로 다시 엽니다.";
+        send(player, "skill_test_skill", "시험 스킬 관리함", body, actions, labels);
     }
 
     public static void openResult(ServerPlayer player, String title, String result, String returnAction) {
@@ -357,6 +392,14 @@ public final class VillageUiController {
         if (action == null || action.isBlank() || action.equals("facility_info")) return true;
         MinecraftServer server = player.level().getServer();
         if (server == null) return true;
+
+        if (action.startsWith("use_skill:")) {
+            int slot;
+            try { slot = Integer.parseInt(action.substring(10)); }
+            catch (NumberFormatException ignored) { slot = 0; }
+            player.sendSystemMessage(Component.literal("§b" + VillageRpgSystem.useRoleSkill(player, slot)));
+            return true;
+        }
 
         if (action.startsWith("repair:") || action.startsWith("upgrade:")) {
             boolean repair = action.startsWith("repair:");
@@ -504,7 +547,7 @@ public final class VillageUiController {
         if (action.startsWith("test_role:")) {
             player.sendSystemMessage(Component.literal("§b"
                     + VillageSkillTestSystem.selectRole(player, action.substring(10))));
-            openSkillTest(player);
+            openSkillTestRoleManager(player);
             return true;
         }
         if (action.startsWith("test_choose:")) {
@@ -522,7 +565,6 @@ public final class VillageUiController {
                 player.sendSystemMessage(Component.literal("§b"
                         + VillageSkillTestSystem.equip(player, parts[1], slot)));
             }
-            openSkillTest(player);
             return true;
         }
         if (action.startsWith("relic_select:")) {
@@ -537,7 +579,7 @@ public final class VillageUiController {
             case "open_personal_progress" -> openPersonalProgress(player);
             case "open_skill_tree" -> openSkillTree(player);
             case "open_role_progress_current" -> {
-                if (VillageSkillTestSystem.isEnabled(player)) openSkillTest(player);
+                if (VillageSkillTestSystem.isEnabled(player)) openSkillTestSkillManager(player);
                 else openRoleProgress(player);
             }
             case "open_role_skill_research" -> openRoleSkillResearch(player);
@@ -549,13 +591,15 @@ public final class VillageUiController {
             case "open_mercenary_command" -> openMercenaryCommand(player);
             case "open_defense_research" -> openDefenseResearch(player);
             case "open_skill_test" -> openSkillTest(player);
+            case "open_skill_test_roles" -> openSkillTestRoleManager(player);
+            case "open_skill_test_skills" -> openSkillTestSkillManager(player);
             case "test_spawn" -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageSkillTestSystem.spawnTargets(player)));
-                openSkillTest(player);
+                openSkillTestSkillManager(player);
             }
             case "test_clear" -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageSkillTestSystem.clearTargets(player)));
-                openSkillTest(player);
+                openSkillTestSkillManager(player);
             }
             case "test_exit" -> openResult(player, "기술 시험", VillageSkillTestSystem.disable(player),
                     VillageCouncilState.roleOf(player.getUUID()).isPresent()
