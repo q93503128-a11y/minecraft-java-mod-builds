@@ -61,6 +61,7 @@ public final class ErdenCapitalStreamingBuilder {
         if (!active.plan().done()) return;
 
         ChunkPos completedChunk = new ChunkPos(active.chunkX(), active.chunkZ());
+        ErdenUrbanInfrastructureBuilder.finalizeChunk(level, completedChunk);
         ConstructionDebrisCleaner.cleanStreamedChunkCompletion(level, completedChunk);
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
