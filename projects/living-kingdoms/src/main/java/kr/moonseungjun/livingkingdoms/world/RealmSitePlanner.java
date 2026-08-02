@@ -6,15 +6,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.Heightmap;
 
-/**
- * Owns the fixed political geography of the authored fantasy continent.
- *
- * <p>Capitals are never searched for inside vanilla terrain. Every homeland has a permanent map
- * coordinate and design elevation. The living realm generator is responsible for creating the
- * continent around these anchors; the settlement builder only performs local architectural grading.</p>
- */
+/** Owns the fixed political geography of the authored fantasy continent. */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 11;
+    public static final int LAYOUT_REVISION = 12;
 
     private RealmSitePlanner() {
     }
@@ -89,7 +83,6 @@ public final class RealmSitePlanner {
         return level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
     }
 
-    /** Permanent world-map coordinates. These never move between seeds or servers. */
     public static int[] nominalCenter(String homelandId) {
         return switch (homelandId) {
             case "silvana_forest" -> new int[]{-2_400, -1_200};
@@ -104,7 +97,6 @@ public final class RealmSitePlanner {
         };
     }
 
-    /** Design elevations match the intended regional silhouette, not sampled vanilla ground. */
     public static int designedBaseY(String homelandId) {
         return switch (homelandId) {
             case "silvana_forest" -> 79;
