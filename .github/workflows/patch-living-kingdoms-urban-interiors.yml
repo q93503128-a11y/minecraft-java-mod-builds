@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/patch-living-kingdoms-urban-interiors.yml'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanInteriorBuilder.java'
+  workflow_dispatch:
 
 permissions:
   contents: write
