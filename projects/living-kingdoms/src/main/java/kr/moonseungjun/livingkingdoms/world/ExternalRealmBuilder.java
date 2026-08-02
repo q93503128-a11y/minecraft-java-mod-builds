@@ -2,7 +2,7 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -126,7 +126,7 @@ public final class ExternalRealmBuilder {
 
     private static BlockState parseState(String specification) {
         String id = blockId(specification);
-        ResourceLocation key = ResourceLocation.parse(id);
+        Identifier key = Identifier.parse(id);
         Block block = BuiltInRegistries.BLOCK.getValue(key);
         if (block == null || block == Blocks.AIR && !"minecraft:air".equals(id)) {
             throw new IllegalStateException("Unknown external schematic block " + id);
