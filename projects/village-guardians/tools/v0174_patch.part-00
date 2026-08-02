@@ -52,7 +52,7 @@ replace_once(
 ''',
     '''    private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.getConnection() == null || minecraft.screen != null) {
+        if (minecraft.player == null || minecraft.getConnection() == null || minecraft.gui.screen() != null) {
             drain(ROLE_SKILL_ONE);
             drain(ROLE_SKILL_TWO);
             drain(QUICK_COMMUNICATION);
