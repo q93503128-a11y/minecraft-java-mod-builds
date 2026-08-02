@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/build-countryside-days.yml'
-      - 'projects/countryside-days/tools/prepare_alpha16_exact.py'
+      - 'projects/countryside-days/tools/prepare_alpha17_exact.py'
 
 permissions:
   contents: write
@@ -21,25 +21,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Upload staged alpha.16 patch parts
-        id: patchparts
-        uses: actions/upload-artifact@v4
-        with:
-          name: countryside-days-alpha16-patch-parts
-          path: projects/countryside-days/tools/alpha16_patch_*.part
-          if-no-files-found: error
-          retention-days: 2
-
-      - name: Prepare exact alpha.16 source
+      - name: Prepare exact alpha.17 source
         id: prepare
-        run: |
-          for FILE in projects/countryside-days/tools/alpha16_patch_0{0,1,2,3}.part; do
-            printf '%s|' "$FILE"
-            wc -c < "$FILE" | tr -d '\n'
-            printf '|'
-            sha256sum "$FILE" | cut -d' ' -f1
-          done | tee /tmp/cd-a16-parts.txt
-          python3 projects/countryside-days/tools/prepare_alpha16_exact.py
+        run: python3 projects/countryside-days/tools/prepare_alpha17_exact.py
 
       - uses: actions/setup-java@v4
         with:
@@ -59,14 +43,14 @@ jobs:
             chmod +x gradlew
           fi
           set -o pipefail
-          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a16-build.log
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a17-build.log
 
       - name: Datagen
         id: datagen
         working-directory: projects/countryside-days
         run: |
           set -o pipefail
-          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee /tmp/cd-a16-datagen.log
+          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee /tmp/cd-a17-datagen.log
 
       - name: Required GameTests
         id: gametest
@@ -85,27 +69,27 @@ jobs:
           simulation-distance=6
           PROPERTIES
           set -o pipefail
-          ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee /tmp/cd-a16-gametest.log
+          ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee /tmp/cd-a17-gametest.log
 
       - name: Verify executable JAR
         id: verify
         working-directory: projects/countryside-days
         run: |
-          JAR=build/libs/countrysidedays-0.1.0-alpha.16.jar
+          JAR=build/libs/countrysidedays-0.1.0-alpha.17.jar
           test -s "$JAR"
-          python3 tools/verify_jar.py "$JAR" | tee /tmp/cd-a16-jar.log
+          python3 tools/verify_jar.py "$JAR" | tee /tmp/cd-a17-jar.log
           unzip -t "$JAR"
           ! unzip -Z1 "$JAR" | grep -q '\.java$'
           unzip -Z1 "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
           unzip -Z1 "$JAR" | grep -q 'kr/countrysidedays/CountrysideDays.class'
-          sha256sum "$JAR" | tee /tmp/cd-a16-sha256.txt
+          sha256sum "$JAR" | tee /tmp/cd-a17-sha256.txt
 
       - name: Upload verified JAR
         id: upload
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.16-jar
-          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.16.jar
+          name: countryside-days-0.1.0-alpha.17-jar
+          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.17.jar
           if-no-files-found: error
           retention-days: 14
 
@@ -120,7 +104,7 @@ jobs:
           UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
         run: |
           git restore --source=HEAD --staged --worktree projects/countryside-days || true
-          DEST=release-transfer/countryside-days-alpha16-status
+          DEST=release-transfer/countryside-days-alpha17-status
           mkdir -p "$DEST"
           FILE="$DEST/${GITHUB_RUN_ID}.txt"
           {
@@ -132,15 +116,14 @@ jobs:
             echo gametest=$GAMETEST_OUTCOME
             echo verify=$VERIFY_OUTCOME
             echo upload=$UPLOAD_OUTCOME
-            [ ! -f /tmp/cd-a16-parts.txt ] || { echo '--- patch parts ---'; cat /tmp/cd-a16-parts.txt; }
-            [ ! -f /tmp/cd-a16-sha256.txt ] || { echo '--- jar ---'; cat /tmp/cd-a16-sha256.txt; }
-            [ ! -f /tmp/cd-a16-build.log ] || { echo '--- build tail ---'; tail -n 180 /tmp/cd-a16-build.log; }
-            [ ! -f /tmp/cd-a16-datagen.log ] || { echo '--- datagen tail ---'; tail -n 80 /tmp/cd-a16-datagen.log; }
-            [ ! -f /tmp/cd-a16-gametest.log ] || { echo '--- gametest tail ---'; tail -n 180 /tmp/cd-a16-gametest.log; }
+            [ ! -f /tmp/cd-a17-sha256.txt ] || { echo '--- jar ---'; cat /tmp/cd-a17-sha256.txt; }
+            [ ! -f /tmp/cd-a17-build.log ] || { echo '--- build tail ---'; tail -n 220 /tmp/cd-a17-build.log; }
+            [ ! -f /tmp/cd-a17-datagen.log ] || { echo '--- datagen tail ---'; tail -n 100 /tmp/cd-a17-datagen.log; }
+            [ ! -f /tmp/cd-a17-gametest.log ] || { echo '--- gametest tail ---'; tail -n 220 /tmp/cd-a17-gametest.log; }
           } > "$FILE"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add "$FILE"
-          git commit -m "Record Countryside Days alpha.16 result ${GITHUB_RUN_ID}"
+          git commit -m "Record Countryside Days alpha.17 result ${GITHUB_RUN_ID}"
           git pull --rebase origin main
           git push origin HEAD:main
