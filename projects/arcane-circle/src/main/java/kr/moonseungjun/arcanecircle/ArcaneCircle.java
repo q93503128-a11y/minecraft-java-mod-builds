@@ -2,6 +2,7 @@ package kr.moonseungjun.arcanecircle;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
+import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
@@ -26,7 +27,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.7";
+    public static final String VERSION = "0.12.1-alpha.8";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -38,6 +39,8 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(ArcaneVitalityService::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(ArcaneVitalityService::onHeal);
         NeoForge.EVENT_BUS.addListener(ArcaneMageService::onInteract);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("Arcane Circle {} loaded with {} classic spells, {} fusion formulae, {} spellbooks and {} staves",
