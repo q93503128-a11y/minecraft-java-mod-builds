@@ -52,27 +52,35 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
+          def migrate_counts(path: Path) -> None:
+              lines = path.read_text(encoding='utf-8').splitlines()
+              branches = ('power_', 'guard_', 'support_', 'ranged_', 'mobility_')
+              output = []
+              for line in lines:
+                  if 'common.count' in line and any(branch in line for branch in branches):
+                      line = line.replace('== 8', '== 10')
+                  output.append(line)
+              path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+
           depth = Path('tools/test_progression_depth.py')
-          text = depth.read_text(encoding='utf-8')
-          for branch in ('power', 'guard', 'support', 'ranged', 'mobility'):
-              old = f'''assert common.count('(\"{branch}_') == 8'''
-              new = f'''assert common.count('(\"{branch}_') == 10'''
-              text = text.replace(old, new)
-          depth.write_text(text, encoding='utf-8')
+          migrate_counts(depth)
 
           legacy = Path('tools/test_v0177_gameplay.py')
-          text = legacy.read_text(encoding='utf-8')
-          text = text.replace('''common.count('(\"mobility_') == 8''',
-                              '''common.count('(\"mobility_') == 10''')
-          text = text.replace('''assert "test_cast:" in ui and "useTestSkill" in role and "targetsNear" in test''',
-                              '''assert "test_choose:" in ui and "VillageSkillTestSystem.equippedSkill" in role and "targetsNear" in test''')
-          legacy.write_text(text, encoding='utf-8')
+          lines = legacy.read_text(encoding='utf-8').splitlines()
+          output = []
+          for line in lines:
+              if 'common.count' in line and 'mobility_' in line:
+                  line = line.replace('== 8', '== 10')
+              if 'assert "test_cast:" in ui and "useTestSkill" in role and "targetsNear" in test' in line:
+                  line = '    assert "test_choose:" in ui and "VillageSkillTestSystem.equippedSkill" in role and "targetsNear" in test'
+              output.append(line)
+          legacy.write_text('\n'.join(output) + '\n', encoding='utf-8')
 
           migrated = depth.read_text(encoding='utf-8')
-          for branch in ('power', 'guard', 'support', 'ranged', 'mobility'):
-              expected = f'''assert common.count('(\"{branch}_') == 10'''
-              if expected not in migrated:
-                  raise SystemExit(f'failed to migrate {branch} node-count contract')
+          for branch in ('power_', 'guard_', 'support_', 'ranged_', 'mobility_'):
+              matching = [line for line in migrated.splitlines() if 'common.count' in line and branch in line]
+              if len(matching) != 1 or '== 10' not in matching[0]:
+                  raise SystemExit(f'failed to migrate {branch} node-count contract: {matching}')
           PY
           rm -f tools/apply_v0178.py tools/v0178_patch.b64
 
