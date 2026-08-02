@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/build-countryside-days.yml'
-      - 'projects/countryside-days/tools/prepare_alpha17_exact.py'
+      - 'projects/countryside-days/tools/prepare_alpha17_retry.py'
 
 permissions:
   contents: write
@@ -23,7 +23,7 @@ jobs:
 
       - name: Prepare exact alpha.17 source
         id: prepare
-        run: python3 projects/countryside-days/tools/prepare_alpha17_exact.py
+        run: python3 projects/countryside-days/tools/prepare_alpha17_retry.py
 
       - uses: actions/setup-java@v4
         with:
