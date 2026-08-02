@@ -1,5 +1,7 @@
 package kr.moonseungjun.livingkingdoms.world;
 
+import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
@@ -14,6 +16,7 @@ public final class ErdenUrbanInfrastructureBuilder {
     public static final int DIAGNOSTIC_CISTERN_X = -580;
     public static final int DIAGNOSTIC_CISTERN_Z = -280;
 
+    private static final int FINALIZE_UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
     private static final List<ServiceNode> SERVICE_NODES = List.of(
             new ServiceNode(-280, -280, ServiceType.WELL),
             new ServiceNode(280, -280, ServiceType.WELL),
@@ -46,8 +49,24 @@ public final class ErdenUrbanInfrastructureBuilder {
         addBuildingAccess(plan, level, chunk);
         for (ServiceNode node : SERVICE_NODES) {
             if (!node.intersects(chunk)) continue;
-            if (node.type == ServiceType.WELL) placeWell(plan, level, chunk, node);
-            else placeFireCistern(plan, level, chunk, node);
+            if (node.type == ServiceType.WELL) placeWell(plan, chunk, node);
+            else placeFireCistern(plan, chunk, node);
+        }
+    }
+
+    /**
+     * Reasserts the stable centre of civic water facilities after every other edit in this cell has
+     * completed. This uses the authored terrain height rather than a heightmap that may already
+     * include a neighbouring external facade.
+     */
+    public static void finalizeChunk(ServerLevel level, ChunkPos chunk) {
+        for (ServiceNode node : SERVICE_NODES) {
+            if (!contains(chunk, node.x, node.z)) continue;
+            int baseY = serviceBaseY(node);
+            setNow(level, node.x, baseY - 1, node.z, Blocks.STONE_BRICKS);
+            setNow(level, node.x, baseY, node.z, Blocks.WATER);
+            setNow(level, node.x, baseY + 1, node.z, Blocks.AIR);
+            setNow(level, node.x, baseY + 2, node.z, Blocks.AIR);
         }
     }
 
@@ -146,9 +165,9 @@ public final class ErdenUrbanInfrastructureBuilder {
         }
     }
 
-    private static void placeWell(IncrementalWorldEditPlan plan, ServerLevel level,
+    private static void placeWell(IncrementalWorldEditPlan plan,
                                   ChunkPos chunk, ServiceNode node) {
-        int baseY = RealmSitePlanner.surfaceY(level, node.x, node.z);
+        int baseY = serviceBaseY(node);
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
                 int x = node.x + dx;
@@ -177,9 +196,9 @@ public final class ErdenUrbanInfrastructureBuilder {
         setClipped(plan, chunk, node.x, baseY + 3, node.z, Blocks.LANTERN);
     }
 
-    private static void placeFireCistern(IncrementalWorldEditPlan plan, ServerLevel level,
+    private static void placeFireCistern(IncrementalWorldEditPlan plan,
                                          ChunkPos chunk, ServiceNode node) {
-        int baseY = RealmSitePlanner.surfaceY(level, node.x, node.z);
+        int baseY = serviceBaseY(node);
         for (int dx = -3; dx <= 3; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
                 int x = node.x + dx;
@@ -199,6 +218,10 @@ public final class ErdenUrbanInfrastructureBuilder {
         setClipped(plan, chunk, node.x, baseY + 2, node.z - 3, Blocks.BELL);
     }
 
+    private static int serviceBaseY(ServiceNode node) {
+        return (int) Math.round(AuthoredContinentDensity.surfaceHeight(node.x, node.z));
+    }
+
     private static boolean segmentIntersects(ChunkPos chunk, int x1, int z1, int x2, int z2, int margin) {
         int minX = Math.min(x1, x2) - margin;
         int maxX = Math.max(x1, x2) + margin;
@@ -211,6 +234,13 @@ public final class ErdenUrbanInfrastructureBuilder {
     private static void setClipped(IncrementalWorldEditPlan plan, ChunkPos chunk,
                                    int x, int y, int z, Block block) {
         if (contains(chunk, x, z)) plan.addSet(x, y, z, block);
+    }
+
+    private static void setNow(ServerLevel level, int x, int y, int z, Block block) {
+        if (y < level.getMinY() || y >= level.getMaxY()) return;
+        BlockPos pos = new BlockPos(x, y, z);
+        if (level.getBlockState(pos).is(block)) return;
+        level.setBlock(pos, block.defaultBlockState(), FINALIZE_UPDATE_FLAGS);
     }
 
     private static boolean contains(ChunkPos chunk, int x, int z) {
