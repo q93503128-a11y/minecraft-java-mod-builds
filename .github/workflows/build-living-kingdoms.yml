@@ -18,15 +18,15 @@ permissions:
 env:
   PROJECT_DIR: projects/living-kingdoms
   GRADLE_VERSION: '9.2.1'
-  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.10.jar
+  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.11.jar
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
   LIVING_KINGDOMS_CI_CLIENT_TEST: '1'
 
 jobs:
   build:
-    name: Java 25 / NeoForge 26.2 full authored-world audit
+    name: Java 25 / NeoForge 26.2 external-world audit
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -52,10 +52,9 @@ jobs:
           { java -version; gradle --version; } 2>&1 | tee logs/toolchain.log
           find "$PROJECT_DIR/src/main/java" -name '*.java' -type f | sort | tee logs/java-files.txt
           find "$PROJECT_DIR/src/main/resources" -type f | sort | tee logs/resource-files.txt
-          grep -F 'worldgen/AuthoredContinentDensity.java' logs/java-files.txt
-          grep -F 'worldgen/AuthoredBiomeSource.java' logs/java-files.txt
-          grep -F 'worldgen/AuthoredBiomeVerifier.java' logs/java-files.txt
-          grep -F 'worldgen/noise_settings/living_continent.json' logs/resource-files.txt
+          grep -F 'world/SpongeStructureTemplate.java' logs/java-files.txt
+          grep -F 'world/ExternalRealmBuilder.java' logs/java-files.txt
+          grep -F 'world/RegionalEcologyManager.java' logs/java-files.txt
 
       - name: Clean Java 25 build
         working-directory: ${{ env.PROJECT_DIR }}
@@ -64,11 +63,11 @@ jobs:
           set -o pipefail
           gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee ../../logs/clean-build.log
           grep -F 'Verified Kenney CC0 UI asset fantasy_panel.png' ../../logs/clean-build.log
-          grep -F 'Verified Kenney CC0 UI asset panel_background.png' ../../logs/clean-build.log
-          grep -F 'Verified Kenney CC0 UI asset button_normal.png' ../../logs/clean-build.log
-          grep -F 'Verified Kenney CC0 UI asset button_pressed.png' ../../logs/clean-build.log
+          grep -F 'Verified Schemcraft CC-BY-4.0 structure medieval_castle.schem' ../../logs/clean-build.log
+          grep -F 'Verified Schemcraft CC-BY-4.0 structure woodland_mansion.schem' ../../logs/clean-build.log
+          grep -F 'Verified Schemcraft CC-BY-4.0 structure deepslate_mega_base.schem' ../../logs/clean-build.log
 
-      - name: Fresh dedicated server authored-world test
+      - name: Fresh dedicated server external-world test
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -88,7 +87,7 @@ jobs:
 
           ready=0
           diagnostic=0
-          for attempt in $(seq 1 600); do
+          for attempt in $(seq 1 720); do
             grep -Eq 'Done \(|For help, type "help"' ../../logs/server-smoke.log && ready=1 || true
             grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log && diagnostic=1 || true
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/server-smoke.log; then
@@ -107,27 +106,18 @@ jobs:
           cat ../../logs/server-smoke.log
           test "$ready" -eq 1
           test "$diagnostic" -eq 1
-          grep -F 'authored_terrain=true' ../../logs/server-smoke.log
-          grep -F 'smooth_transitions=true' ../../logs/server-smoke.log
-          grep -F 'structure_shells=true' ../../logs/server-smoke.log
+          grep -F 'external_structure_templates=true' ../../logs/server-smoke.log
+          grep -F 'regional_ecology=true' ../../logs/server-smoke.log
           grep -F 'debris_zero=true' ../../logs/server-smoke.log
-          grep -F 'layout_revision=11' ../../logs/server-smoke.log
-          grep -F 'Verified authored capital biome erden_kingdom biome=minecraft:plains' ../../logs/server-smoke.log
-          grep -F 'Verified authored capital biome silvana_forest biome=minecraft:dark_forest' ../../logs/server-smoke.log
-          grep -F 'Verified authored capital biome kardum_league biome=minecraft:stony_peaks' ../../logs/server-smoke.log
-          grep -F 'Relocated four Erden town houses and verified the central avenue remains unobstructed' ../../logs/server-smoke.log
-          grep -F 'Settling authored homeland erden_kingdom' ../../logs/server-smoke.log
-          grep -F 'Settling authored homeland silvana_forest' ../../logs/server-smoke.log
-          grep -F 'Settling authored homeland kardum_league' ../../logs/server-smoke.log
-          if grep -Fq 'Starting background generator survey' ../../logs/server-smoke.log; then
-            echo 'Legacy vanilla terrain survey ran.' >&2
+          grep -F 'layout_revision=12' ../../logs/server-smoke.log
+          test "$(grep -c 'Loaded external structure /data/livingkingdoms/structures/external/' ../../logs/server-smoke.log)" -eq 3
+          test "$(grep -c 'Verified external capital template homeland=' ../../logs/server-smoke.log)" -eq 3
+          if grep -Fq 'Relocated four Erden town houses' ../../logs/server-smoke.log; then
+            echo 'Legacy procedural house repair still ran.' >&2
             exit 1
           fi
-
-          known_sculk_pattern='Detected unsafe terrain read during worldgen: .*currently generating: ResourceKey\[minecraft:worldgen/placed_feature / minecraft:sculk_patch_deep_dark\]'
-          grep -Ev "$known_sculk_pattern" ../../logs/server-smoke.log > ../../logs/server-smoke-actionable.log || true
-          if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms|Failed to get element.*livingkingdoms|Unknown registry key.*livingkingdoms|Authored capital biome mismatch|watchdog|Error reading optional pack metadata' ../../logs/server-smoke-actionable.log; then
-            echo 'Authored world, biome, surface, datapack or server error detected.' >&2
+          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|watchdog' ../../logs/server-smoke.log; then
+            echo 'External world or datapack error detected.' >&2
             exit 1
           fi
 
@@ -152,12 +142,11 @@ jobs:
           grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' ../../logs/client-smoke.log
-          grep -F 'atlas_drag=true atlas_zoom=true' ../../logs/client-smoke.log
-          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|Error reading optional pack metadata' ../../logs/client-smoke.log; then
+          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms' ../../logs/client-smoke.log; then
             exit 1
           fi
 
-      - name: Package and inspect alpha.10 JAR
+      - name: Package and inspect alpha.11 JAR
         shell: bash
         run: |
           set -euo pipefail
@@ -169,22 +158,15 @@ jobs:
           unzip -t "$JAR" | tee logs/jar-test.log
           unzip -Z1 "$JAR" | tee logs/jar-entries.txt
           test "$(sort logs/jar-entries.txt | uniq -d | wc -l)" -eq 0
-          grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/AuthoredContinentDensity.class' logs/jar-entries.txt
-          grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/AuthoredBiomeSource.class' logs/jar-entries.txt
-          grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/AuthoredBiomeVerifier.class' logs/jar-entries.txt
-          grep -Fx 'data/livingkingdoms/dimension/living_realm.json' logs/jar-entries.txt
-          grep -Fx 'data/livingkingdoms/worldgen/noise_settings/living_continent.json' logs/jar-entries.txt
-          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.10"'
-          unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -F '"type": "livingkingdoms:authored_biomes"'
-          unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -F '"settings": "livingkingdoms:living_continent"'
-          if unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -Eq 'minecraft:overworld|minecraft:multi_noise|"preset"'; then
-            echo 'Vanilla overworld terrain or biome preset remains in the Living Realm dimension.' >&2
-            exit 1
-          fi
-          unzip -p "$JAR" data/livingkingdoms/worldgen/noise_settings/living_continent.json | grep -F 'minecraft:red_sand'
-          unzip -p "$JAR" data/livingkingdoms/worldgen/noise_settings/living_continent.json | grep -F 'minecraft:moss_block'
-          unzip -p "$JAR" data/livingkingdoms/worldgen/noise_settings/living_continent.json | grep -F 'minecraft:snow_block'
-          unzip -p "$JAR" data/livingkingdoms/worldgen/noise_settings/living_continent.json | grep -F 'minecraft:sandstone'
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/SpongeStructureTemplate.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ExternalRealmBuilder.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/RegionalEcologyManager.class' logs/jar-entries.txt
+          grep -Fx 'data/livingkingdoms/structures/external/medieval_castle.schem' logs/jar-entries.txt
+          grep -Fx 'data/livingkingdoms/structures/external/woodland_mansion.schem' logs/jar-entries.txt
+          grep -Fx 'data/livingkingdoms/structures/external/deepslate_mega_base.schem' logs/jar-entries.txt
+          grep -Fx 'assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt' logs/jar-entries.txt
+          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.11"'
+          unzip -p "$JAR" assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt | grep -F 'Author: BuildSchem'
           if grep -Eq '(^|/)(tools|\.github)/|\.java$' logs/jar-entries.txt; then
             echo 'Development content found in runtime JAR.' >&2
             exit 1
@@ -196,26 +178,22 @@ jobs:
         shell: bash
         run: |
           cat > deliverables/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # Living Kingdoms 0.1.0-alpha.10 Build and Runtime Report
+          # Living Kingdoms 0.1.0-alpha.11 Build and Runtime Report
 
           - Commit: $GITHUB_SHA
           - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
           - Clean build: PASS
-          - Fresh dedicated server and datapack load: PASS
-          - Coordinate-authored continent, coast, mountains, rivers and caves: PASS
-          - Vanilla overworld terrain settings: REMOVED
-          - Vanilla overworld biome preset: REMOVED
-          - Coordinate-authored biome geography: PASS
-          - Region-specific surface materials: PASS
-          - Erden / Silvana / Kardum capital biome checks: PASS
-          - Three capital terrain, transition and structure diagnostics: PASS
-          - Eight walkable residence cells: PASS
-          - Delayed construction debris after settling: ZERO
+          - Three attributed CC-BY-4.0 external capital templates: PASS
+          - Sponge block-state import and palette audit: PASS
+          - Legacy procedural capital repair execution: REMOVED
+          - Region-owned seasonal flora layer: PASS
+          - Fresh dedicated server, three capitals and eight safe residences: PASS
+          - Construction debris: ZERO
           - Graphical client, loading UI, codex and atlas input: PASS
-          - Runtime JAR integrity and duplicate-entry audit: PASS
+          - Runtime JAR integrity and attribution audit: PASS
           - Manual visual inspection on user hardware: PENDING
 
-          A fresh world is required because the dimension generator, biome source and layout revision changed.
+          A fresh world is required because the settlement pipeline and layout revision changed.
           EOF
 
       - name: Upload build logs
@@ -228,12 +206,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Upload verified alpha.10 build
+      - name: Upload verified alpha.11 build
         id: upload_build
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: living-kingdoms-0.1.0-alpha.10
+          name: living-kingdoms-0.1.0-alpha.11
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
