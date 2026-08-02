@@ -270,7 +270,12 @@ public final class GrimoireScreen extends Screen {
             SpellCatalog.FusionFormula formula = formulas.get(i);
             SpellDefinition result = SpellCatalog.spell(formula.result()).orElseThrow();
             int accent = ArcaneRenderUtil.schoolColor(result.school());
-            boolean ready = formula.ingredients().stream().allMatch(id -> ArcaneClientState.cooldownRemainingTicks(id) <= 0);
+            int playerCircle = ArcaneClientState.integer("circle", 1);
+            boolean circleReady = result.circle() <= playerCircle;
+            boolean learned = formula.ingredients().stream().allMatch(id -> ArcaneClientState.known().contains(id));
+            boolean cooldownReady = formula.ingredients().stream()
+                    .allMatch(id -> ArcaneClientState.cooldownRemainingTicks(id) <= 0);
+            boolean ready = circleReady && learned && cooldownReady;
             g.fill(r.x(), r.y(), r.right(), r.bottom(), inside(mouseX, mouseY, r) ? 0xFF25344B : 0xFF111927);
             g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), ready ? accent : 0xFFB75B68);
             g.text(font, Component.literal(fit(result.circle() + "C  " + result.name(), r.w() - 10)), r.x() + 6, r.y() + 5, 0xFFF0E7FA);
@@ -280,7 +285,11 @@ public final class GrimoireScreen extends Screen {
             String meta = "MP " + result.manaCost() + " · 쿨 " + String.format("%.1fs", result.cooldownTicks() / 20.0)
                     + " · 숙련 " + ArcaneClientState.mastery(result.id()) + "/" + SpellCatalog.masteryRequired(result.id());
             g.text(font, Component.literal(fit(meta, r.w() - 10)), r.x() + 6, r.y() + 31, 0xFF9FB6D2);
-            String readiness = ready ? "재료 주문 쿨타임 준비 완료" : "재료 주문 쿨타임 대기 중";
+            String readiness = !circleReady
+                    ? "융합 불가 · 필요 " + result.circle() + "써클 / 현재 " + playerCircle + "써클"
+                    : !learned ? "융합 불가 · 재료 주문 미습득"
+                    : !cooldownReady ? "융합 불가 · 재료 주문 쿨타임 대기 중"
+                    : "융합 가능 · 재료 주문 준비 완료";
             g.text(font, Component.literal(fit(readiness, r.w() - 10)), r.x() + 6, r.y() + 43,
                     ready ? 0xFF76D5A5 : 0xFFE07882);
         }
@@ -418,14 +427,17 @@ public final class GrimoireScreen extends Screen {
                 "회복 " + String.format("%.1f", ArcaneClientState.regenPerSecond()) + "/초",
                 "통찰 " + ArcaneClientState.integer("insight", 0),
                 "아르카나 " + ArcaneClientState.longInteger("marks", 0L)));
-        infoPanel(g, c.x() + 268, c.y() + 28, Math.max(150, c.w() - 268), "장비", List.of(
+        infoPanel(g, c.x() + 268, c.y() + 28, Math.max(150, c.w() - 268), "장비 / 소속", List.of(
                 ArcaneClientState.text("staff", "맨손"),
-                "소속 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).displayName(),
-                "저단계 주문 자동 단축", "건축 허용"));
+                ArcaneClientState.text("gear_hat", "모자 없음"),
+                ArcaneClientState.text("gear_robe", "로브 없음"),
+                ArcaneClientState.text("gear_boots", "마도화 없음"),
+                "소속 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).displayName()));
     }
 
     private void infoPanel(GuiGraphicsExtractor g, int x, int y, int w, String title, List<String> lines) {
-        g.fill(x, y, x + w, y + 82, 0xFF101827); g.fill(x, y, x + w, y + 2, 0xFF745797);
+        int panelHeight = Math.max(82, 34 + lines.size() * 13);
+        g.fill(x, y, x + w, y + panelHeight, 0xFF101827); g.fill(x, y, x + w, y + 2, 0xFF745797);
         g.text(font, Component.literal(title), x + 8, y + 8, 0xFFE8D9F5);
         for (int i = 0; i < lines.size(); i++) g.text(font, Component.literal(fit(lines.get(i), w - 16)), x + 8, y + 25 + i * 13, 0xFF9EABC0);
     }
@@ -466,10 +478,13 @@ public final class GrimoireScreen extends Screen {
         // v0.10 intentionally leaves the bottom edge empty: no tutorial sentence competes with content.
     }
     private void drawNotice(GuiGraphicsExtractor g, Layout l) {
-        if (notice.isBlank() || System.currentTimeMillis() > noticeUntil) return;
-        int w = Math.min(l.panelW() - 30, Math.max(110, font.width(notice) + 20)); int x = l.cx() - w / 2;
+        String serverNotice = ArcaneClientState.noticeText();
+        String shown = !serverNotice.isBlank() ? serverNotice
+                : (!notice.isBlank() && System.currentTimeMillis() <= noticeUntil ? notice : "");
+        if (shown.isBlank()) return;
+        int w = Math.min(l.panelW() - 30, Math.max(110, font.width(shown) + 20)); int x = l.cx() - w / 2;
         g.fill(x, l.top() + 48, x + w, l.top() + 67, 0xF0181324); g.fill(x, l.top() + 48, x + w, l.top() + 50, 0xFFFFD36B);
-        g.centeredText(font, Component.literal(notice), l.cx(), l.top() + 54, 0xFFFFE8B4);
+        g.centeredText(font, Component.literal(fit(shown, w - 12)), l.cx(), l.top() + 54, 0xFFFFE8B4);
     }
     private void notice(String text) { notice = text; noticeUntil = System.currentTimeMillis() + 1800L; }
 

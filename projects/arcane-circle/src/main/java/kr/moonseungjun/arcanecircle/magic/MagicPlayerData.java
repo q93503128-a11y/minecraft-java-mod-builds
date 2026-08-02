@@ -165,12 +165,13 @@ public final class MagicPlayerData extends SavedData {
     public EffectiveStats effectiveStats(ServerPlayer player) {
         MageState state = state(player);
         StaffProfile staff = ModItems.equipped(player);
-        int maxMana = Math.max(1, state.baseMaxMana() + staff.maxManaBonus());
+        MageGearService.GearStats gear = MageGearService.stats(player);
+        int maxMana = Math.max(1, state.baseMaxMana() + staff.maxManaBonus() + gear.maxManaBonus());
         if (state.mana > maxMana) {
             state.mana = maxMana;
             setDirty();
         }
-        double regen = state.baseRegenPerHalfSecond() * staff.regenMultiplier();
+        double regen = state.baseRegenPerHalfSecond() * staff.regenMultiplier() * gear.regenMultiplier();
         return new EffectiveStats(maxMana, regen, staff);
     }
 
@@ -233,6 +234,7 @@ public final class MagicPlayerData extends SavedData {
         }
 
         StaffProfile staff = ModItems.equipped(player);
+        MageGearService.GearStats gear = MageGearService.stats(player);
         kr.moonseungjun.arcanecircle.world.ArcaneWorldData world =
                 kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer());
         kr.moonseungjun.arcanecircle.world.MagicTradition chosen = world.tradition(player);
@@ -253,11 +255,30 @@ public final class MagicPlayerData extends SavedData {
         double masteryPower = 1.0 + proficiency * 0.04;
 
         int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * circleMana * masteryMana
-                * staff.manaCostMultiplier() * facultyMana));
+                * staff.manaCostMultiplier() * gear.manaCostMultiplier() * facultyMana));
         int cooldown = Math.max(8, (int) Math.round(spell.cooldownTicks() * circleCooldown * masteryCooldown
-                * staff.cooldownMultiplier() * facultyCooldown));
-        double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier() * facultyRange;
-        double power = spell.power() * circlePower * masteryPower * staff.powerFor(spell.school()) * facultyPower;
+                * staff.cooldownMultiplier() * gear.cooldownMultiplier() * facultyCooldown));
+        double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier()
+                * gear.rangeMultiplier() * facultyRange;
+        double power = spell.power() * circlePower * masteryPower * staff.powerFor(spell.school())
+                * gear.powerMultiplier() * facultyPower;
+        if (fusion) {
+            double strongestIngredient = 0.0;
+            for (String ingredientId : ingredients) {
+                SpellDefinition ingredient = SpellCatalog.spell(ingredientId).orElse(null);
+                if (ingredient == null) continue;
+                int ingredientGap = Math.max(0, state.circle - ingredient.circle());
+                int ingredientTier = SpellCatalog.masteryTier(state.mastery(ingredient.id()));
+                double ingredientPower = ingredient.power()
+                        * (1.0 + ingredientGap * 0.10)
+                        * (1.0 + ingredientTier * 0.04)
+                        * staff.powerFor(ingredient.school())
+                        * gear.powerMultiplier();
+                strongestIngredient = Math.max(strongestIngredient, ingredientPower);
+            }
+            double fusionFloor = strongestIngredient * (ingredients.size() >= 3 ? 1.45 : 1.25);
+            power = Math.max(power, fusionFloor);
+        }
 
         if (state.mana + 0.0001 < manaCost) {
             return CastPreparation.failure("마력이 부족합니다. 필요 " + manaCost + " / 현재 " + (int) state.mana);

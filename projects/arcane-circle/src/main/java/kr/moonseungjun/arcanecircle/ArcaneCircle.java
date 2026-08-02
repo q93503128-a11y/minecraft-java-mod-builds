@@ -3,6 +3,7 @@ package kr.moonseungjun.arcanecircle;
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
+import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.network.ArcaneNetwork;
@@ -25,7 +26,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.5";
+    public static final String VERSION = "0.12.1-alpha.6";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -58,7 +59,7 @@ public final class ArcaneCircle {
             player.sendSystemMessage(Component.literal(
                     "§d초심자 마도서§f를 읽어 1써클 기초 주문을 각인하고, 이후 주문서를 수집하세요."));
             player.sendSystemMessage(Component.literal(
-                    "§71~5를 길게 눌러 회로를 그리고, 완성된 뒤 키를 놓아 시전합니다. X+숫자는 융합입니다."));
+                    "§71~5를 길게 눌러 회로를 전개합니다. 누른 채 다른 숫자 주문을 더하면 융합되고, 처음 누른 키를 놓아 시전합니다."));
             player.sendSystemMessage(Component.literal(
                     "§7자신보다 낮은 써클 주문은 성장과 숙련에 따라 빠르게 전개되며 충분한 격차에서는 즉발됩니다."));
         }
@@ -87,6 +88,7 @@ public final class ArcaneCircle {
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         SpellCastingService.clearSession(event.getEntity().getUUID());
         ArcaneNoticeService.clear(event.getEntity().getUUID());
+        MageGearService.clear(event.getEntity().getUUID());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -106,6 +108,7 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         SpellCastingService.tickCharge(player);
         MagicWorldService.tick(player);
+        if (player.tickCount % 10 == 0) MageGearService.tick(player);
         if (player.tickCount % 20 == 0) ArcaneMageService.tickNear(player);
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         if (player.tickCount % 10 == 0) data.regenerate(player);

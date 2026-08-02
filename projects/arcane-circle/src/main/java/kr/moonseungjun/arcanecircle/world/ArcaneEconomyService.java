@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.world;
 
+import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.CombatGrowthService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellWorldLore;
@@ -39,13 +40,13 @@ public final class ArcaneEconomyService {
     public static boolean purchase(ServerPlayer player, String offerId) {
         AcademyOfferCatalog.Offer offer = AcademyOfferCatalog.offer(offerId).orElse(null);
         if (offer == null) {
-            player.sendSystemMessage(Component.literal("§c[학원 상점] §f존재하지 않는 거래입니다."));
+            ArcaneNoticeService.push(player, Component.literal("§c[학원 상점] §f존재하지 않는 거래입니다."));
             return false;
         }
         long price = priceFor(player, offer);
         ArcaneWorldData world = data(player);
         if (!world.spendMarks(player, price)) {
-            player.sendSystemMessage(Component.literal("§c[학원 상점] §f아르카나가 부족합니다. 필요 "
+            ArcaneNoticeService.push(player, Component.literal("§c[학원 상점] §f아르카나가 부족합니다. 필요 "
                     + price + " / 보유 " + world.balance(player)));
             return false;
         }
@@ -54,9 +55,10 @@ public final class ArcaneEconomyService {
             case PRIMER -> new ItemStack(ModItems.BEGINNER_GRIMOIRE.get());
             case SPELLBOOK -> new ItemStack(ModItems.spellbook(offer.targetId()).get());
             case STAFF -> new ItemStack(ModItems.staffItem(offer.targetId()).get());
+            case GEAR -> new ItemStack(ModItems.gearItem(offer.targetId()).get());
         };
         if (!player.getInventory().add(stack)) player.drop(stack, false);
-        player.sendSystemMessage(Component.literal("§6[학원 상점] §f" + offer.displayName()
+        ArcaneNoticeService.push(player, Component.literal("§6[학원 상점] §f" + offer.displayName()
                 + " 구매 완료 · §d-" + price + " 아르카나 §7(잔액 " + world.balance(player) + ")"));
         return true;
     }
@@ -72,15 +74,15 @@ public final class ArcaneEconomyService {
         ArcaneWorldData world = data(player);
         long cost = traditionCost(player, tradition);
         if (cost == 0L && world.tradition(player) == tradition) {
-            player.sendSystemMessage(Component.literal("§7[소속 등록] §f이미 " + tradition.displayName() + "에 소속되어 있습니다."));
+            ArcaneNoticeService.push(player, Component.literal("§7[소속 등록] §f이미 " + tradition.displayName() + "에 소속되어 있습니다."));
             return true;
         }
         if (!world.chooseTradition(player, tradition, cost)) {
-            player.sendSystemMessage(Component.literal("§c[소속 등록] §f아르카나가 부족하거나 잘못된 소속입니다. 필요 "
+            ArcaneNoticeService.push(player, Component.literal("§c[소속 등록] §f아르카나가 부족하거나 잘못된 소속입니다. 필요 "
                     + cost + " / 보유 " + world.balance(player)));
             return false;
         }
-        player.sendSystemMessage(Component.literal("§5[소속 등록] §f" + tradition.displayName()
+        ArcaneNoticeService.push(player, Component.literal("§5[소속 등록] §f" + tradition.displayName()
                 + " 소속으로 등록되었습니다. §7비용 " + cost + " 아르카나"));
         return true;
     }

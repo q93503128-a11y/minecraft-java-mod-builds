@@ -1,6 +1,5 @@
 {
   "key.arcanecircle.grimoire": "구중 마도서 열기",
-  "key.arcanecircle.fusion_modifier": "융합 주문 준비",
   "key.arcanecircle.slot_1": "마법 슬롯 1 충전",
   "key.arcanecircle.slot_2": "마법 슬롯 2 충전",
   "key.arcanecircle.slot_3": "마법 슬롯 3 충전",
@@ -102,5 +101,9 @@
   "item.arcanecircle.spellbook_gate": "주문서: 게이트",
   "item.arcanecircle.spellbook_foresight": "주문서: 예지",
   "gui.arcanecircle.academy": "마법학원",
-  "currency.arcanecircle.arcana": "아르카나"
+  "currency.arcanecircle.arcana": "아르카나",
+  "item.arcanecircle.mage_hat": "비전 모자",
+  "item.arcanecircle.mage_robe": "중층 마도 로브",
+  "item.arcanecircle.mage_robe_hem": "중층 마도 로브 자락",
+  "item.arcanecircle.mage_boots": "유랑 마도화"
 }

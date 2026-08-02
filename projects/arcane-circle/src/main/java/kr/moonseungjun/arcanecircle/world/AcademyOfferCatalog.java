@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 public final class AcademyOfferCatalog {
-    public enum Kind { PRIMER, SPELLBOOK, STAFF }
+    public enum Kind { PRIMER, SPELLBOOK, STAFF, GEAR }
     public record Offer(String id, String displayName, String description, int circle, long basePrice,
                         Kind kind, String targetId) {}
 
@@ -34,6 +34,12 @@ public final class AcademyOfferCatalog {
             result.add(new Offer("staff:" + profile.id(), profile.displayName(), profile.summary(),
                     circle, staffPrices[index], Kind.STAFF, profile.id()));
         }
+        result.add(new Offer("gear:mage_hat", "비전 모자", "MP·회복·마력 효율에 특화된 모자.",
+                2, 1800L, Kind.GEAR, "mage_hat"));
+        result.add(new Offer("gear:mage_boots", "유랑 마도화", "이동·도약·사거리·재사용 속도에 특화된 신발.",
+                2, 2400L, Kind.GEAR, "mage_boots"));
+        result.add(new Offer("gear:mage_robe", "중층 마도 로브", "몸과 바지 슬롯을 함께 사용하며 생존력과 주문 위력을 높입니다.",
+                3, 7200L, Kind.GEAR, "mage_robe"));
         cached = List.copyOf(result);
         return cached;
     }

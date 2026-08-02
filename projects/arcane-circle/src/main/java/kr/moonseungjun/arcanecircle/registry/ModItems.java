@@ -9,7 +9,10 @@ import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.equipment.ArmorMaterials;
+import net.minecraft.world.item.equipment.ArmorType;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
@@ -61,6 +64,19 @@ public final class ModItems {
     public static final DeferredItem<ArcaneStaffItem> SAGE_STAFF = registerStaff("sage_staff", SAGE_PROFILE, Rarity.EPIC);
     public static final DeferredItem<ArcaneStaffItem> ARCHMAGE_STAFF = registerStaff("archmage_staff", ARCHMAGE_PROFILE, Rarity.EPIC);
 
+    public static final DeferredItem<Item> MAGE_HAT = ITEMS.registerItem("mage_hat",
+            properties -> new Item(properties.rarity(Rarity.UNCOMMON)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.HELMET)));
+    public static final DeferredItem<Item> MAGE_ROBE = ITEMS.registerItem("mage_robe",
+            properties -> new Item(properties.rarity(Rarity.RARE)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.CHESTPLATE)));
+    public static final DeferredItem<Item> MAGE_ROBE_HEM = ITEMS.registerItem("mage_robe_hem",
+            properties -> new Item(properties.rarity(Rarity.RARE)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.LEGGINGS)));
+    public static final DeferredItem<Item> MAGE_BOOTS = ITEMS.registerItem("mage_boots",
+            properties -> new Item(properties.rarity(Rarity.UNCOMMON)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.BOOTS)));
+
     public static final DeferredItem<BeginnerGrimoireItem> BEGINNER_GRIMOIRE = ITEMS.registerItem(
             "beginner_grimoire", properties -> new BeginnerGrimoireItem(properties.rarity(Rarity.UNCOMMON)));
     private static final Map<String, DeferredItem<SpellbookItem>> SPELLBOOKS = registerSpellbooks();
@@ -100,6 +116,9 @@ public final class ModItems {
     private static void addCreativeItems(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             for (DeferredItem<ArcaneStaffItem> item : all()) event.accept(item.get());
+            event.accept(MAGE_HAT.get());
+            event.accept(MAGE_ROBE.get());
+            event.accept(MAGE_BOOTS.get());
             event.accept(BEGINNER_GRIMOIRE.get());
             for (DeferredItem<SpellbookItem> item : SPELLBOOKS.values()) event.accept(item.get());
         }
@@ -138,6 +157,15 @@ public final class ModItems {
 
     public static StaffProfile profile(String id) {
         return PROFILE_BY_ID.getOrDefault(id, StaffProfile.NONE);
+    }
+
+    public static DeferredItem<? extends Item> gearItem(String id) {
+        return switch (id) {
+            case "mage_hat" -> MAGE_HAT;
+            case "mage_robe" -> MAGE_ROBE;
+            case "mage_boots" -> MAGE_BOOTS;
+            default -> MAGE_HAT;
+        };
     }
 
     private static Map<String, StaffProfile> buildProfileIndex() {

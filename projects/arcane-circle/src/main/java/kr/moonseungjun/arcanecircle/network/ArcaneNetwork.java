@@ -3,6 +3,7 @@ package kr.moonseungjun.arcanecircle.network;
 import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem.StaffProfile;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
+import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
@@ -129,6 +130,7 @@ public final class ArcaneNetwork {
         MagicPlayerData.MageState state = magicData.state(player);
         MagicPlayerData.EffectiveStats stats = magicData.effectiveStats(player);
         StaffProfile staff = stats.staff();
+        MageGearService.GearStats gear = MageGearService.stats(player);
         ArcaneQuestData.QuestStatus quest = ArcaneQuestData.get(((ServerLevel) player.level()).getServer()).status(player);
         String known = state.known().stream().sorted().collect(Collectors.joining("|"));
         String mastery = SpellCatalog.spells().values().stream()
@@ -169,6 +171,11 @@ public final class ArcaneNetwork {
                 + ";staff_range=" + permille(staff.rangeMultiplier())
                 + ";staff_cooldown=" + permille(staff.cooldownMultiplier())
                 + ";staff_regen=" + permille(staff.regenMultiplier())
+                + ";gear_hat=" + MageGearService.hatName(player)
+                + ";gear_robe=" + MageGearService.robeName(player)
+                + ";gear_boots=" + MageGearService.bootsName(player)
+                + ";gear_mana=" + gear.maxManaBonus()
+                + ";gear_regen=" + permille(gear.regenMultiplier())
                 + ";" + "marks=" + kr.moonseungjun.arcanecircle.world.ArcaneEconomyService.balance(player)
                 + ";" + "tradition=" + kr.moonseungjun.arcanecircle.world.ArcaneWorldData
                         .get(((ServerLevel) player.level()).getServer()).tradition(player).name()

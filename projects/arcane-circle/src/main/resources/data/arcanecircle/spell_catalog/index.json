@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.5",
+  "version": "0.12.1-alpha.6",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -128,5 +128,13 @@
     "VILLAIN"
   ],
   "spell_damage_attribution": "caster_bound",
-  "fusion_ui": "circle_hierarchy"
+  "fusion_ui": "circle_hierarchy",
+  "fusion_input": "number_key_chord",
+  "fusion_power_floor": "125_percent_of_strongest_source_or_145_percent_for_triple",
+  "mage_gear": [
+    "hat",
+    "two_slot_robe",
+    "boots"
+  ],
+  "feather_fall_ticks": 120
 }

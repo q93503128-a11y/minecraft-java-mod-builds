@@ -32,7 +32,7 @@ public final class ExpandedSpellEffects {
             case "fire_bolt" -> missile(player, range, power, ParticleTypes.FLAME, 120, 0);
             case "ray_of_frost" -> missile(player, range, power, ParticleTypes.SNOWFLAKE, 0, 120);
             case "shield" -> ward(player, power, 170, 1);
-            case "feather_fall" -> featherFall(player, 720);
+            case "feather_fall" -> featherFall(player, 120);
             case "light" -> light(player);
             case "grease" -> hinderingField(player, range, 4.0, 180, 4, ParticleTypes.WITCH);
             case "sleep" -> sleep(player, range);

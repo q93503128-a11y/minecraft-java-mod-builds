@@ -217,7 +217,7 @@ public final class SpellCastingService {
         FusionQueueState queue = FUSION_QUEUES.computeIfAbsent(player.getUUID(), ignored -> new FusionQueueState());
         if (now - queue.updatedAt > QUEUE_TIMEOUT_TICKS) queue.ingredients.clear();
         if (queue.ingredients.size() >= 3) {
-            fail(player, "삼중 융합 회로가 이미 가득 찼습니다. X를 놓아 시전하세요.");
+            fail(player, "삼중 융합 회로가 이미 가득 찼습니다. 처음 누른 주문 키를 놓아 시전하세요.");
             return;
         }
 
@@ -241,13 +241,19 @@ public final class SpellCastingService {
                 queue.requiredTicks = requiredFusionCastTicks(player, result, queue.ingredients.size());
             }
             MagicPlayerData.CastPreparation fusion = data(player).prepareFusion(player, queue.ingredients);
-            if (fusion.accepted()) {
-                WorldMagicService.charge(player, result, true, queue.ingredients, fusion.range(), 0.0);
+            String extension = SpellCatalog.canExtend(queue.ingredients) ? " · 세 번째 주문 추가 가능" : "";
+            if (!fusion.accepted()) {
+                queue.resultId = "";
+                queue.chargeStartedAt = -1L;
+                queue.requiredTicks = 0;
+                WorldMagicService.stop(player);
+                fail(player, result.name() + " 융합 불가 · " + fusion.message() + extension);
+                return;
             }
-            String extension = SpellCatalog.canExtend(queue.ingredients) ? " §8· 세 번째 회로 추가 가능" : "";
+            WorldMagicService.charge(player, result, true, queue.ingredients, fusion.range(), 0.0);
             ArcaneNoticeService.push(player, Component.literal("§5[융합 전개] §d" + names + " §f→ §e"
                     + result.name() + " §7· " + String.format("%.1f", queue.requiredTicks / 20.0)
-                    + "초 유지 후 X를 놓아 시전" + extension));
+                    + "초 유지 후 처음 누른 키를 놓아 시전" + extension));
         } else {
             queue.resultId = "";
             queue.chargeStartedAt = -1L;
@@ -281,7 +287,7 @@ public final class SpellCastingService {
         if (elapsed < queue.requiredTicks) {
             int percent = (int) Math.round(100.0 * elapsed / Math.max(1, queue.requiredTicks));
             ArcaneNoticeService.push(player, Component.literal("§7[융합 취소] 복합 회로 전개 " + percent
-                    + "% · 완성 전에 X를 놓았습니다."));
+                    + "% · 완성 전에 처음 누른 키를 놓았습니다."));
             return;
         }
         MagicPlayerData data = data(player);
