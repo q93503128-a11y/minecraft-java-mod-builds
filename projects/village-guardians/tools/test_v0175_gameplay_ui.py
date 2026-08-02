@@ -29,7 +29,7 @@ def main() -> None:
     assert 'EQUIPMENT("장비")' in shop and 'ARCANE_FOCUS("arcane_focus"' in shop
     assert "Category.EQUIPMENT, Items.BLAZE_ROD" in shop
     assert "currentOffers(day).contains" in shop
-    assert "shop_utility|전리품 판매" in controller
+    assert "shop_utility|판매용 잡템 일괄 정산" in controller
     assert "VillageEquipmentShop.currentOffers(day)" in controller
     assert 'EQUIPMENT("장비")' in shop_ui
     assert "font.width(normalized)" in shop_ui and "contentWidth < 330" in shop_ui
