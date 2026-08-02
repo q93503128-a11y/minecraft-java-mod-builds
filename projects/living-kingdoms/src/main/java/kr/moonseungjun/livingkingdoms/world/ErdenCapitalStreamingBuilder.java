@@ -18,11 +18,11 @@ import java.util.Set;
  * Applies the 2.4 x 1.8 km capital blueprint one loaded 16 x 16 metre cell at a time.
  *
  * <p>This avoids pregenerating more than ten thousand chunks during character creation while keeping
- * every road, wall module and district boundary deterministic. A chunk is marked complete only after
+ * every road, wall module and district building deterministic. A chunk is marked complete only after
  * all of its incremental block writes finish.</p>
  */
 public final class ErdenCapitalStreamingBuilder {
-    public static final int CAPITAL_REVISION = 1;
+    public static final int CAPITAL_REVISION = 2;
     public static final int WEST_WALL_X = -1_200;
     public static final int EAST_WALL_X = 1_200;
     public static final int NORTH_WALL_Z = -900;
@@ -113,6 +113,7 @@ public final class ErdenCapitalStreamingBuilder {
         IncrementalWorldEditPlan plan = new IncrementalWorldEditPlan();
         addRoadNetwork(plan, level, chunk);
         ExternalRealmBuilder.addCapitalWallChunk(plan, level, chunk);
+        ExternalDistrictBuildingBuilder.addChunk(plan, level, chunk);
         return plan;
     }
 
