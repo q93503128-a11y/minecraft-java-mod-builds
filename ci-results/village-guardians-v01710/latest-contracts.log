@@ -59,7 +59,7 @@ Village Guardians v0.17.7 contracts passed.
 [PASS] Test arena owns separate role and skill management barrels
 [PASS] Test-only job selection leaves permanent role and progression untouched
 [PASS] Skill cards directly assign Z/X and the real keyed cast path reads the test loadout
-[PASS] Client Z/X mappings register on the NeoForge mod event bus
+[PASS] Client Z/X mappings are registered by the client event subscriber
 [PASS] Z/X packets route directly to the real role-skill cast system
 [PASS] Role and skill management use separate physical barrels and screens
 [PASS] Equipping closes the skill screen so in-game Z/X input is no longer drained
