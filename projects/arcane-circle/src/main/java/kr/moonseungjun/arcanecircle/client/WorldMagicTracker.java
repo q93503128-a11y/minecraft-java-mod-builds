@@ -85,7 +85,7 @@ public final class WorldMagicTracker {
             event.getPoseStack().pushPose();
             event.getPoseStack().translate(offset.x, offset.y, offset.z);
             event.getSubmitNodeCollector().submitShapeOutline(event.getPoseStack(), entry.geometry,
-                    RenderTypes.lines(), entry.argb, Math.max(1.2F, baseWidth * 1.25F), false);
+                    RenderTypes.lines(), entry.argb, Math.max(0.85F, baseWidth * 0.90F), false);
             event.getPoseStack().popPose();
         }
     }
@@ -95,12 +95,12 @@ public final class WorldMagicTracker {
         Basis basis = basis(spell, normal);
         VoxelShape shape = Shapes.empty();
         double outer = 0.42 + spell.circle() * 0.095 + Math.min(0.32, range * 0.008) + (fusion ? 0.18 : 0.0);
-        int ringPoints = 38 + spell.circle() * 4;
+        int ringPoints = 48 + spell.circle() * 5;
         // The primary concentric count is exactly the spell circle: 1C=1, 2C=2 ... 9C=9.
         for (int ring = 0; ring < spell.circle(); ring++) {
             double radius = outer * (1.0 - ring * 0.66 / Math.max(1.0, spell.circle()));
             double localProgress = Math.max(0.0, Math.min(1.0, progress * spell.circle() - ring));
-            shape = Shapes.or(shape, partialCircle(basis, radius, ringPoints, localProgress, 0.018));
+            shape = Shapes.or(shape, partialCircle(basis, radius, ringPoints, localProgress, 0.011));
         }
         if (progress >= 0.16) {
             int sides = 3 + Math.floorMod(spell.id().hashCode(), 6);
@@ -108,7 +108,7 @@ public final class WorldMagicTracker {
                     Math.max(0.0, Math.min(1.0, (progress - 0.16) / 0.46)), 0.019));
         }
         if (progress >= 0.36) {
-            int spokes = Math.min(14, 3 + spell.circle() + Math.floorMod(spell.id().hashCode(), 3));
+            int spokes = Math.min(13, 3 + spell.circle() + Math.floorMod(spell.id().hashCode(), 3));
             int shown = (int) Math.floor(spokes * Math.min(1.0, (progress - 0.36) / 0.42));
             for (int i = 0; i < shown; i++) {
                 double angle = Math.PI * 2.0 * i / spokes;
@@ -117,7 +117,7 @@ public final class WorldMagicTracker {
             }
         }
         if (spell.circle() >= 3 && progress >= 0.60) {
-            int satellites = Math.min(8, spell.circle() - 1);
+            int satellites = Math.min(6, spell.circle() - 1);
             for (int i = 0; i < satellites; i++) {
                 double angle = Math.PI * 2.0 * i / satellites;
                 Vec3 satelliteCenter = basis.point(angle, outer * 1.22);
@@ -199,6 +199,7 @@ public final class WorldMagicTracker {
             shape = Shapes.or(shape, circle(portal, portalRadius, 72, 0.035));
             shape = Shapes.or(shape, circleAround(portal, direction.scale(0.28), portalRadius * 0.82, 60, 0.03));
         }
+        shape = Shapes.or(shape, SignatureGeometry.build(spell, direction, range));
         return shape;
     }
 
@@ -286,13 +287,13 @@ public final class WorldMagicTracker {
 
     private static int color(SpellDefinition spell) {
         return switch (spell.school()) {
-            case FIRE -> 0xFFFF7048;
-            case FROST -> 0xFF6DE4FF;
-            case WIND -> 0xFF76E6BD;
-            case WARD -> 0xFFC595FF;
-            case LIFE -> 0xFF73E38E;
-            case SPACE -> 0xFFA382FF;
-            default -> 0xFF82A8FF;
+            case FIRE -> 0xD8FF7048;
+            case FROST -> 0xD86DE4FF;
+            case WIND -> 0xD876E6BD;
+            case WARD -> 0xD8C595FF;
+            case LIFE -> 0xD873E38E;
+            case SPACE -> 0xD8A382FF;
+            default -> 0xD882A8FF;
         };
     }
 

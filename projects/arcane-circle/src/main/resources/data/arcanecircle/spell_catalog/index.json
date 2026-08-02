@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.1",
+  "version": "0.12.1-alpha.2",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -52,5 +52,14 @@
   "villager_currency": false,
   "visual_core": "world_geometry_no_particles",
   "fusion_casting": "charged_release",
-  "particle_core_calls": 0
+  "particle_core_calls": 0,
+  "release_geometry": "per_spell_signature_geometry",
+  "signature_models": [
+    "meteor",
+    "tornado",
+    "portal",
+    "force_cage",
+    "barrier_wall",
+    "barrier_dome"
+  ]
 }

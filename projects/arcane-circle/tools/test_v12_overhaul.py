@@ -31,7 +31,7 @@ client_main = read("src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircleClien
 state = read("src/main/java/kr/moonseungjun/arcanecircle/client/ArcaneClientState.java")
 version = read("gradle.properties")
 
-need(version, ["mod_version=0.12.1-alpha.1"], "version")
+need(version, ["mod_version=0.12.1-alpha.2"], "version")
 need(network, ["ninefold-arcana-12-1", "WorldMagicPayload.TYPE", "fusion_charge_ticks",
                "fusion_charge_required"], "network")
 need(handlers, ["handleWorldMagic", "WorldMagicTracker.accept"], "client payload handler")
