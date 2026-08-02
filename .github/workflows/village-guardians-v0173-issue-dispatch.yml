@@ -1,0 +1,98 @@
+name: Village Guardians v0.17.3 Issue Dispatch
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apply-and-build:
+    if: github.event.issue.title == '[build] Village Guardians v0.17.3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-read-only: false
+
+      - name: Apply compact UI source
+        working-directory: projects/village-guardians
+        run: python3 tools/apply_v0173_ui_cleanup.py
+
+      - name: Run contracts
+        working-directory: projects/village-guardians
+        run: |
+          python3 tools/test_rpg_balance.py
+          python3 tools/test_village_zone.py
+          python3 tools/test_progression_loop.py
+          python3 tools/test_progression_depth.py
+          python3 tools/test_fortress_layout.py
+          python3 tools/test_runtime_safety.py
+          python3 tools/test_action_layout.py
+          python3 tools/test_enemy_content.py
+
+      - name: Build and verify
+        working-directory: projects/village-guardians
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0173-issue.log"
+          python3 tools/verify_jar.py build/libs/villageguardians-0.17.3-alpha.1.jar
+          mkdir -p ../../deliverables-v0173-issue
+          cp build/libs/villageguardians-0.17.3-alpha.1.jar ../../deliverables-v0173-issue/
+          cp build/libs/villageguardians-0.17.3-alpha.1.jar.sha256 ../../deliverables-v0173-issue/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.17.3-alpha.1
+          path: deliverables-v0173-issue/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit source and artifact
+        run: |
+          mkdir -p published/village-guardians
+          cp deliverables-v0173-issue/* published/village-guardians/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/village-guardians/src projects/village-guardians/tools \
+                  projects/village-guardians/gradle.properties published/village-guardians
+          if ! git diff --cached --quiet; then
+            git commit -m 'Apply Village Guardians v0.17.3 compact UI and verified JAR'
+            git pull --rebase origin main
+            git push
+          fi
+
+      - name: Record result
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p ci-results/village-guardians-v0173
+          cp "$GITHUB_WORKSPACE/village-guardians-v0173-issue.log" ci-results/village-guardians-v0173/latest-gradle.log 2>/dev/null || \
+            printf '%s\n' 'Gradle build did not start.' > ci-results/village-guardians-v0173/latest-gradle.log
+          cat > ci-results/village-guardians-v0173/status.txt <<EOF
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          issue=${{ github.event.issue.number }}
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898266+github-actions[bot]@users.noreply.github.com'
+          git add ci-results/village-guardians-v0173
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Village Guardians v0.17.3 issue build for ${GITHUB_SHA::7}"
+            git pull --rebase origin main
+            git push
+          fi
