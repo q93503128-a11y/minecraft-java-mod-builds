@@ -1,0 +1,72 @@
+name: Export Countryside Days alpha.15 JAR
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cd-a15-export-jar.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore corrected alpha.15 source
+        run: |
+          git checkout bbf9ccdac21e6bc8a3f0958433e218ae731760f4 -- projects/countryside-days
+          grep -q 'mod_version=0.1.0-alpha.15' projects/countryside-days/gradle.properties
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Build and verify JAR
+        working-directory: projects/countryside-days
+        run: |
+          if [ ! -x ./gradlew ]; then
+            gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+            chmod +x gradlew
+          fi
+          ./gradlew --no-daemon clean build --stacktrace
+          JAR=build/libs/countrysidedays-0.1.0-alpha.15.jar
+          test -s "$JAR"
+          python3 tools/verify_jar.py "$JAR"
+          unzip -t "$JAR"
+
+      - name: Encode verified JAR for transfer
+        run: |
+          rm -rf release-transfer/countryside-days-alpha15
+          mkdir -p release-transfer/countryside-days-alpha15
+          JAR=projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.15.jar
+          base64 -w0 "$JAR" > /tmp/cd-a15.b64
+          split -b 60000 -d -a 2 /tmp/cd-a15.b64 release-transfer/countryside-days-alpha15/part-
+          {
+            echo "filename=countrysidedays-0.1.0-alpha.15.jar"
+            echo "size=$(stat -c%s "$JAR")"
+            echo "sha256=$(sha256sum "$JAR" | cut -d' ' -f1)"
+            echo "base64_size=$(stat -c%s /tmp/cd-a15.b64)"
+            echo "parts=$(find release-transfer/countryside-days-alpha15 -name 'part-*' | wc -l)"
+            echo "source=bbf9ccdac21e6bc8a3f0958433e218ae731760f4"
+          } > release-transfer/countryside-days-alpha15/MANIFEST.txt
+
+      - name: Publish transfer files
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add release-transfer/countryside-days-alpha15
+          git commit -m 'Publish verified Countryside Days alpha.15 JAR transfer'
+          git pull --rebase origin main
+          git push origin HEAD:main
