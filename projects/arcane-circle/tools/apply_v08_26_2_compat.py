@@ -38,8 +38,6 @@ rewrite_idempotent(academy, [
     ("        level.setDefaultSpawnPos(origin.offset(0, 1, -10), 0.0F);\n", ""),
 ])
 
-# v0.8 has one academy economy. Remove every checked-in remnant from the old
-# survival crafting and librarian-trade progression before resources are packed.
 legacy_resource_dirs = (
     ROOT / "src/main/resources/data/arcanecircle/recipe",
     ROOT / "src/main/resources/data/arcanecircle/villager_trade",
@@ -65,15 +63,18 @@ for forbidden in (
     if forbidden in world_source or forbidden in academy_source:
         raise RuntimeError(f"obsolete 26.2 symbol remains: {forbidden}")
 
-for required in (
-    "ArcaneAcademyBuilder.build(level, player.blockPosition())",
-    "level.getGameTime()",
-):
-    if required not in world_source:
-        raise RuntimeError(f"Minecraft 26.2 world behavior missing: {required}")
+if "level.getGameTime()" not in world_source:
+    raise RuntimeError("Minecraft 26.2 world clock behavior missing: level.getGameTime()")
+
+# v0.10 deliberately removes the generated test academy. Older sources may still
+# use the compatible player-position builder call, but a natural-world source must
+# never be rejected merely because that placeholder call is absent.
+if "ArcaneAcademyBuilder.build" in world_source and \
+        "ArcaneAcademyBuilder.build(level, player.blockPosition())" not in world_source:
+    raise RuntimeError("incompatible academy builder call remains")
 
 for legacy_dir in legacy_resource_dirs:
     if legacy_dir.exists():
         raise RuntimeError(f"legacy survival economy resources remain: {legacy_dir}")
 
-print("Arcane v0.8 Minecraft 26.2 compatibility and legacy-resource cleanup: PASS")
+print("Arcane Minecraft 26.2 compatibility and legacy-resource cleanup: PASS")
