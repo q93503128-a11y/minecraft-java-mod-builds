@@ -60,6 +60,8 @@ public final class ErdenCapitalStreamingBuilder {
         active.plan().apply(level, TICK_BUDGET);
         if (!active.plan().done()) return;
 
+        ChunkPos completedChunk = new ChunkPos(active.chunkX(), active.chunkZ());
+        ConstructionDebrisCleaner.cleanStreamedChunkCompletion(level, completedChunk);
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
         data.mark(active.chunkPos(), CAPITAL_REVISION);
