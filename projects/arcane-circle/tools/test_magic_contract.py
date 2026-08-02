@@ -58,7 +58,7 @@ need(lore, [
 need(sigils, [
     "renderChargeStep", "renderReadyPulse", "renderRelease", "CHARGE_STAGES",
     "radialCompartments", "centralSeal", "runeTicks", "spell.id().hashCode()",
-    "case LANCE", "case CROWN"
+    "case LANCE", "CROWN"
 ], "staged per-spell sigil rendering")
 need(high, [
     "disintegrate", "forcecage", "antimagic_field", "earthquake", "meteor_swarm",
