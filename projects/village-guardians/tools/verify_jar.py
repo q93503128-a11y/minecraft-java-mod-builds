@@ -29,7 +29,8 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageWaveTrait.class",
     "kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.class",
     "kr/moonseungjun/villageguardians/VillageWarfrontSystem.class",
-    "kr/moonseungjun/villageguardians/VillageSkillVisualSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSkillEffectSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSkillEffectSystem$DisplayAccess.class",
     "kr/moonseungjun/villageguardians/VillageGatePrioritySystem.class",
     "kr/moonseungjun/villageguardians/VillageRespawnSystem.class",
     "kr/moonseungjun/villageguardians/VillageRaidLootSystem.class",
@@ -55,6 +56,9 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageStructureHud.class",
     "kr/moonseungjun/villageguardians/VillageHudSystem.class",
     "kr/moonseungjun/villageguardians/VillageHealthDisplaySystem.class",
+}
+OBSOLETE_CLASSES = {
+    "kr/moonseungjun/villageguardians/VillageSkillVisualSystem.class",
 }
 
 
@@ -96,6 +100,9 @@ def main() -> None:
             missing_classes = sorted(REQUIRED_CLASSES - name_set)
             if missing_classes:
                 fail(f"Missing required runtime classes: {missing_classes}")
+            obsolete_classes = sorted(OBSOLETE_CLASSES & name_set)
+            if obsolete_classes:
+                fail(f"Obsolete runtime classes are still bundled: {obsolete_classes}")
             for asset in sorted(REQUIRED_ASSETS):
                 if asset.endswith(".png") and len(jar.read(asset)) < 32:
                     fail(f"Licensed runtime asset is unexpectedly empty: {asset}")
@@ -131,7 +138,8 @@ def main() -> None:
     print("[PASS] Ten regular enemy roles, four bosses and eight wave traits are present")
     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
     print("[PASS] Twelve persistent tower branches alter attacks and world silhouettes")
-    print("[PASS] Twenty active skills have role-specific readable combat effects")
+    print("[PASS] Twenty active skills include the non-particle display-actor effect engine")
+    print("[PASS] Obsolete generic skill-visual facade is not bundled")
     print("[PASS] CC0 visual references are documented without untracked binaries")
     print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
