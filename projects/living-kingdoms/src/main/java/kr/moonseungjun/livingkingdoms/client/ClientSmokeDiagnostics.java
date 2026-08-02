@@ -25,9 +25,9 @@ final class ClientSmokeDiagnostics {
         Minecraft minecraft = Minecraft.getInstance();
 
         if (diagnosticScreen == null && ticks >= OPEN_AFTER_TICKS) {
-            diagnosticScreen = new ResponsiveOriginSelectionScreen(1);
+            diagnosticScreen = new ResponsiveOriginSelectionScreen(2);
             minecraft.gui.setScreen(diagnosticScreen);
-            LivingKingdoms.LOGGER.info("LK_CLIENT_DIAGNOSTIC_SCREEN_OPENED responsive=true");
+            LivingKingdoms.LOGGER.info("LK_CLIENT_DIAGNOSTIC_SCREEN_OPENED responsive=true schema=2");
             return;
         }
 
@@ -36,16 +36,16 @@ final class ClientSmokeDiagnostics {
                 throw new IllegalStateException("Responsive origin controls extend outside the current client viewport");
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true responsive=true viewport={}x{} controls_fit=true",
+                    "LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true rendered_window=true responsive=true viewport={}x{} controls_fit=true",
                     diagnosticScreen.width, diagnosticScreen.height
             );
         }
 
         if (ticks == 188) {
-            loadingScreen = new RealmLoadingScreen("도로와 건물을 구역별로 배치하고 있습니다.");
+            loadingScreen = new RealmLoadingScreen("에르덴 왕도와 생활권을 준비하고 있습니다.");
             loadingScreen.update(new RealmBuildProgressPayload(
                     "erden_kingdom", "building", 64,
-                    "도로와 건물을 구역별로 배치하고 있습니다.", false, false
+                    "에르덴 왕도와 생활권을 준비하고 있습니다.", false, false
             ));
             minecraft.gui.setScreen(loadingScreen);
         }
