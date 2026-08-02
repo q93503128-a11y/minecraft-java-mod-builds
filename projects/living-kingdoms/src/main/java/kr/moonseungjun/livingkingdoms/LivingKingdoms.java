@@ -12,9 +12,8 @@ import kr.moonseungjun.livingkingdoms.world.ConstructionDebrisCleaner;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
-import kr.moonseungjun.livingkingdoms.world.RealmCivicRealismFinisher;
-import kr.moonseungjun.livingkingdoms.world.RealmFacilityFinisher;
 import kr.moonseungjun.livingkingdoms.world.RealmSitePlanner;
+import kr.moonseungjun.livingkingdoms.world.RegionalEcologyManager;
 import kr.moonseungjun.livingkingdoms.world.SelectionStagingManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
@@ -70,8 +69,7 @@ public final class LivingKingdoms {
 
     private void onServerTick(ServerTickEvent.Post event) {
         RealmBuildCoordinator.onServerTick(event);
-        RealmFacilityFinisher.onServerTick(event);
-        RealmCivicRealismFinisher.onServerTick(event);
+        RegionalEcologyManager.onServerTick(event);
         ConstructionDebrisCleaner.onServerTick(event);
     }
 
@@ -113,14 +111,12 @@ public final class LivingKingdoms {
             if (gameTime % 40L == 0L) OriginProfileManager.requestSelection(player);
             return;
         }
-
         OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
             ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
             if (realm != null && !RealmSitePlanner.isBuilt(realm, profile.homelandId()) && gameTime % 20L == 0L) {
                 SelectionStagingManager.ensure(player);
             }
         });
-
         FantasyWorldRules.tick(player);
         SkillProgressionManager.tick(player);
         SkillCrimeHooks.tick(player);
