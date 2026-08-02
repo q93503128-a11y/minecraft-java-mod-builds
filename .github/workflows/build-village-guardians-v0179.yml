@@ -87,6 +87,8 @@ jobs:
           for path in Path('tools').glob('test_*.py'):
               text = path.read_text(encoding='utf-8')
               updated = text.replace('mod_version=0.17.8-alpha.1', 'mod_version=0.17.9-alpha.1')
+              updated = updated.replace('assert "K: 시험 메뉴 다시 열기" in controller',
+                                        'assert "K로 이 화면" in controller')
               if updated != text:
                   path.write_text(updated, encoding='utf-8')
           PY
