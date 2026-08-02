@@ -30,7 +30,7 @@ public final class VillageSkillTreeScreen extends Screen {
 
     private static double savedPanX;
     private static double savedPanY;
-    private static double savedZoom = 0.74;
+    private static double savedZoom = 0.50;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final String[] actions;
@@ -120,12 +120,14 @@ public final class VillageSkillTreeScreen extends Screen {
             if (x + nodeSize < viewport.left() || x > viewport.right()
                     || y + nodeSize < viewport.top() || y > viewport.bottom()) continue;
             int color = branchColor(node.branch());
-            int border = switch (node.status()) {
-                case "습득" -> color;
-                case "습득 가능" -> GOLD;
-                case "데이터 잠금" -> RED;
-                default -> BORDER;
-            };
+            int border = node.tier() == 10 && !"습득".equals(node.status())
+                    ? GOLD
+                    : switch (node.status()) {
+                        case "습득" -> color;
+                        case "습득 가능" -> GOLD;
+                        case "데이터 잠금" -> RED;
+                        default -> BORDER;
+                    };
             boolean hovered = inside(mouseX, mouseY, x, y, nodeSize, nodeSize);
             boolean selected = selectedIndex == index;
             graphics.fill(x - 2, y - 2, x + nodeSize + 2, y + nodeSize + 2,
@@ -249,7 +251,7 @@ public final class VillageSkillTreeScreen extends Screen {
         int minusX = percentX - 27;
         if (inside(click.x(), click.y(), closeX, 7, 20, 20)) { onClose(); return true; }
         if (inside(click.x(), click.y(), centerX, 7, 38, 20)) {
-            savedPanX = 0; savedPanY = 0; savedZoom = 0.74; return true;
+            savedPanX = 0; savedPanY = 0; savedZoom = 0.50; return true;
         }
         if (inside(click.x(), click.y(), minusX, 7, 22, 20)) {
             setZoom(savedZoom - 0.12, width / 2.0, height / 2.0); return true;
@@ -317,7 +319,7 @@ public final class VillageSkillTreeScreen extends Screen {
     private void setZoom(double requested, double mouseX, double mouseY) {
         Viewport viewport = viewport();
         double old = savedZoom;
-        double next = clamp(requested, 0.50, 1.55);
+        double next = clamp(requested, 0.38, 1.55);
         double centerX = (viewport.left() + viewport.right()) / 2.0;
         double centerY = (viewport.top() + viewport.bottom()) / 2.0;
         double worldX = (mouseX - centerX - savedPanX) / old;
@@ -343,19 +345,10 @@ public final class VillageSkillTreeScreen extends Screen {
                     ? actions[index].substring(11) : actions[index];
             Branch branch = branch(id);
             int tier = tier(id);
-            double distance = 86.0;
-            double worldX = switch (branch) {
-                case POWER -> tier * distance;
-                case GUARD -> -tier * distance;
-                case MOBILITY -> tier * distance * 0.72;
-                default -> 0;
-            };
-            double worldY = switch (branch) {
-                case RANGED -> -tier * distance;
-                case SUPPORT -> tier * distance;
-                case MOBILITY -> tier * distance * 0.72;
-                default -> 0;
-            };
+            double distance = 72.0;
+            double angle = Math.toRadians(branchAngleDegrees(branch));
+            double worldX = Math.cos(angle) * tier * distance;
+            double worldY = Math.sin(angle) * tier * distance;
             nodes.add(new NodeVisual(actions[index], id, title, description, status,
                     branch, tier, pointCost, worldX, worldY));
         }
@@ -377,6 +370,16 @@ public final class VillageSkillTreeScreen extends Screen {
         if (id.startsWith("ranged_")) return Branch.RANGED;
         if (id.startsWith("mobility_")) return Branch.MOBILITY;
         return Branch.POWER;
+    }
+
+    private static double branchAngleDegrees(Branch branch) {
+        return switch (branch) {
+            case POWER -> -90.0;
+            case RANGED -> -18.0;
+            case MOBILITY -> 54.0;
+            case SUPPORT -> 126.0;
+            case GUARD -> 198.0;
+        };
     }
 
     private int tier(String id) {
@@ -449,7 +452,15 @@ public final class VillageSkillTreeScreen extends Screen {
                 graphics.fill(x + size - 10, y + 3, x + size - 4, y + 7, color);
             }
         }
-        if (tier >= 5) graphics.fill(x + 3, y + 3, x + 6, y + 6, GOLD);
+        if (tier >= 9) {
+            graphics.fill(x + 2, y + 2, x + 6, y + 4, GOLD);
+            graphics.fill(x + size - 6, y + 2, x + size - 2, y + 4, GOLD);
+            graphics.fill(x + 2, y + size - 4, x + 6, y + size - 2, GOLD);
+            graphics.fill(x + size - 6, y + size - 4, x + size - 2, y + size - 2, GOLD);
+        } else if (tier >= 5) {
+            graphics.fill(x + 3, y + 3, x + 6, y + 6, GOLD);
+        }
+        if (tier == 10) graphics.fill(cx - 2, cy - 2, cx + 2, cy + 2, GOLD);
     }
 
     private int branchColor(Branch branch) {

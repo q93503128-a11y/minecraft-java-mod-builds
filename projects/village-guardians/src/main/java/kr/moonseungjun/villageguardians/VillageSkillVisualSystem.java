@@ -50,7 +50,9 @@ public final class VillageSkillVisualSystem {
     }
 
     private static List<Mob> targets(ServerLevel level, ServerPlayer player, double radius, int limit) {
-        return VillageRaidSystem.activeEnemiesNear(level, player.position(), radius, limit, null);
+        return VillageSkillTestSystem.isEnabled(player)
+                ? VillageSkillTestSystem.targetsNear(level, player, radius, limit)
+                : VillageRaidSystem.activeEnemiesNear(level, player.position(), radius, limit, null);
     }
 
     private static void pushFromPlayer(ServerLevel level, ServerPlayer player, double radius, int limit,

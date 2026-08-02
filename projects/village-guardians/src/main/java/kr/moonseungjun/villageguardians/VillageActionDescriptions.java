@@ -35,6 +35,12 @@ final class VillageActionDescriptions {
         if (action.startsWith("role_skill_equip:")) {
             return label + "\n습득한 기술을 어디서나 Z 또는 X 슬롯에 장착합니다.";
         }
+        if (action.startsWith("test_choose:")) {
+            return label + "\n외부 시험장에서 사용할 임시 Z/X 슬롯을 선택합니다.";
+        }
+        if (action.startsWith("test_equip:")) {
+            return label + "\n습득 여부와 비용을 무시하고 선택한 시험 슬롯에만 임시 장착합니다.";
+        }
         if (action.startsWith("gear:")) {
             return label + "\n수호 주화로 장비를 구매합니다. 강한 상품은 방어 일수에 따라 입고됩니다.";
         }
@@ -53,10 +59,10 @@ final class VillageActionDescriptions {
             case "open_skill_tree" -> "기술 연구소의 공용 전술 발전 화면을 엽니다.";
             case "open_role_progress_current" -> "현재 직업의 세 갈래 성장과 두 기술 슬롯을 관리합니다.";
             case "open_role_skill_research" -> "기술 연구소에서 현재 직업의 기술 습득과 Z/X 장착만 관리합니다.";
-            case "open_skill_test" -> "현재 직업의 모든 기술을 비용·재사용 대기시간 없이 시험합니다.";
-            case "test_spawn" -> "시험용 고정 표적 6개를 전방에 재배치합니다.";
-            case "test_clear" -> "내가 만든 시험 표적을 제거합니다.";
-            case "test_exit" -> "시험 모드를 종료하고 표적을 정리합니다.";
+            case "open_skill_test" -> "외부 시험장으로 이동해 기술을 Z/X에 임시 장착하고 실제 입력으로 시험합니다.";
+            case "test_spawn" -> "외부 시험장의 고정 표적 여섯 개를 다시 배치합니다.";
+            case "test_clear" -> "자신이 만든 시험 표적만 정리합니다.";
+            case "test_exit" -> "시험 표적과 임시 장착을 정리하고 원래 위치로 복귀합니다.";
             case "open_fusion" -> "대장간에서 같은 종류·같은 등급 장비 세 개를 직접 선택해 합성합니다.";
             case "open_quick_chat" -> "접속 중인 수호단에게 보낼 빠른 신호를 엽니다.";
             case "open_dashboard", "open_mayor" -> "마을 회관의 직업 배치와 시설 관리 화면을 엽니다.";
@@ -123,6 +129,8 @@ final class VillageActionDescriptions {
         if (action.startsWith("skill_node:") || action.startsWith("role_node:")) return "노드 습득";
         if (action.startsWith("role_skill_unlock:") || action.startsWith("research_skill_unlock:")) return "기술 습득";
         if (action.startsWith("role_skill_equip:") || action.startsWith("research_skill_equip:")) return "기술 장착";
+        if (action.startsWith("test_choose:")) return "슬롯 선택";
+        if (action.startsWith("test_equip:")) return "임시 장착";
         if (action.startsWith("repair:")) return "시설 수리";
         if (action.startsWith("upgrade:")) return "시설 강화";
         if (action.startsWith("tower_branch:")) return "분기 적용";

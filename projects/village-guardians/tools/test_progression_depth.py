@@ -22,12 +22,12 @@ def main() -> None:
     role_ui = read("VillageRoleProgressScreen.java")
     shop_ui = read("VillageShopScreen.java")
 
-    assert common.count('("power_') == 8
-    assert common.count('("guard_') == 8
-    assert common.count('("support_') == 8
-    assert common.count('("ranged_') == 8
+    assert common.count('("power_') == 10
+    assert common.count('("guard_') == 10
+    assert common.count('("support_') == 10
+    assert common.count('("ranged_') == 10
     assert "Math.max(0, level - 1)" in common
-    assert common.count('(\"mobility_') == 8
+    assert common.count('(\"mobility_') == 10
     assert "pointCost()" in common
     assert "sharedSupplyChance" in common and "teamHealOnKillAmount" in common
     assert "Codec.LONG" in common_data and "Long.SIZE - 1" in common_data
@@ -48,8 +48,8 @@ def main() -> None:
     assert "VillageDefenseResearchSystem.MAX_LEVEL" in research_data
     assert '"/" + VillageDefenseResearchSystem.MAX_LEVEL' in controller
 
-    assert "double distance = 86.0" in common_ui
-    assert "savedZoom = 0.74" in common_ui
+    assert "double distance = 72.0" in common_ui
+    assert "savedZoom = 0.50" in common_ui
     assert "double y = -tier * 76.0" in role_ui
     assert "savedZoom = 0.74" in role_ui
     assert "renderDetail" not in common_ui
@@ -61,7 +61,7 @@ def main() -> None:
     assert "ChatFormatting.stripFormatting" in shop_ui
     assert "§l" not in shop_ui and "§6" not in shop_ui
 
-    print("[PASS] Common tactical tree has 40 nodes, five branches and tier-scaled point costs")
+    print("[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs")
     print("[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration")
     print("[PASS] Emergency barrier, momentum and party recovery are wired into combat")
     print("[PASS] Defense research expands from 9 to 15 upgrades")

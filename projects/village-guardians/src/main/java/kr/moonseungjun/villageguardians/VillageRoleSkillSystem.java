@@ -194,8 +194,10 @@ public final class VillageRoleSkillSystem {
 
     public static synchronized Optional<ActiveSkill> equippedSkill(ServerPlayer player, int slot) {
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        if (role == null) {
-            return Optional.empty();
+        if (role == null) return Optional.empty();
+        if (VillageSkillTestSystem.isEnabled(player)) {
+            return VillageSkillTestSystem.equippedSkill(player, slot)
+                    .filter(skill -> skill.role() == role);
         }
         return ActiveSkill.parse(EQUIPPED_SKILLS.get(loadoutKey(player.getUUID(), role, slot == 1 ? 1 : 0)))
                 .filter(skill -> skill.role() == role && hasSkill(player, skill));
@@ -247,11 +249,15 @@ public final class VillageRoleSkillSystem {
         if (!(player.level() instanceof ServerLevel level)) {
             return "현재 월드에서는 기술을 사용할 수 없습니다.";
         }
+        boolean testing = VillageSkillTestSystem.isEnabled(player);
         long now = System.currentTimeMillis();
         String cooldownKey = player.getUUID() + "|" + skill.id();
-        long readyAt = READY_AT.getOrDefault(cooldownKey, 0L);
-        if (readyAt > now) {
-            return skill.displayName() + " 재사용까지 " + Math.max(1L, (readyAt - now + 999L) / 1000L) + "초";
+        if (!testing) {
+            long readyAt = READY_AT.getOrDefault(cooldownKey, 0L);
+            if (readyAt > now) {
+                return skill.displayName() + " 재사용까지 "
+                        + Math.max(1L, (readyAt - now + 999L) / 1000L) + "초";
+            }
         }
 
         float power = powerMultiplier(player, role)
@@ -260,6 +266,9 @@ public final class VillageRoleSkillSystem {
         int special = specialRank(player, role);
         cast(level, player, skill, power, duration, special);
 
+        if (testing) {
+            return skill.displayName() + " 사용 완료 | 시험 모드 · 재사용 대기시간 없음";
+        }
         int cooldown = Math.max(7,
                 skill.baseCooldownSeconds()
                         - VillageProgressionSystem.skillCooldownReductionSeconds(player)

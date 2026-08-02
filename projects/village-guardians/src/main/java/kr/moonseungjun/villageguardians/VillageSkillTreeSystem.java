@@ -56,12 +56,8 @@ public final class VillageSkillTreeSystem {
             return "사용한 포인트가 획득 포인트보다 많아 안전 잠금되었습니다.";
         }
         Node node = Node.parse(nodeId).orElse(null);
-        if (node == null) {
-            return "알 수 없는 전술 노드입니다.";
-        }
-        if (has(player, node)) {
-            return node.title() + "은(는) 이미 습득했습니다.";
-        }
+        if (node == null) return "알 수 없는 전술 노드입니다.";
+        if (has(player, node)) return node.title() + "은(는) 이미 습득했습니다.";
         if (node.prerequisite() != null && !has(player, node.prerequisite())) {
             return "먼저 " + node.prerequisite().title() + "을(를) 습득해야 합니다.";
         }
@@ -79,15 +75,9 @@ public final class VillageSkillTreeSystem {
     }
 
     public static String nodeStatus(ServerPlayer player, Node node) {
-        if (has(player, node)) {
-            return "습득";
-        }
-        if (!hasValidAllocation(player)) {
-            return "데이터 잠금";
-        }
-        if (node.prerequisite() != null && !has(player, node.prerequisite())) {
-            return "잠김";
-        }
+        if (has(player, node)) return "습득";
+        if (!hasValidAllocation(player)) return "데이터 잠금";
+        if (node.prerequisite() != null && !has(player, node.prerequisite())) return "잠김";
         return availablePoints(player) >= node.pointCost()
                 ? "습득 가능" : node.pointCost() + "P 필요";
     }
@@ -99,17 +89,23 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.POWER_4)) bonus += 0.08f;
         if (has(player, Node.POWER_7)) bonus += 0.10f;
         if (has(player, Node.POWER_8)) bonus += 0.12f;
+        if (has(player, Node.POWER_9)) bonus += 0.14f;
+        if (has(player, Node.POWER_10)) bonus += 0.18f;
         return 1.0f + bonus;
     }
 
     public static float executionMultiplier(ServerPlayer player, float health, float maximum) {
         if (maximum <= 0.0f) return 1.0f;
         float ratio = health / maximum;
+        if (has(player, Node.POWER_10) && ratio <= 0.75f) return 1.45f;
+        if (has(player, Node.POWER_9) && ratio <= 0.60f) return 1.35f;
         if (has(player, Node.POWER_6) && ratio <= 0.40f) return 1.24f;
         return has(player, Node.POWER_3) && ratio <= 0.30f ? 1.18f : 1.0f;
     }
 
     public static int killMomentumSeconds(ServerPlayer player) {
+        if (has(player, Node.POWER_10)) return 18;
+        if (has(player, Node.POWER_9)) return 12;
         if (has(player, Node.POWER_7)) return 8;
         return has(player, Node.POWER_6) ? 5 : 0;
     }
@@ -120,17 +116,23 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.RANGED_4)) bonus += 0.10f;
         if (has(player, Node.RANGED_6)) bonus += 0.12f;
         if (has(player, Node.RANGED_8)) bonus += 0.14f;
+        if (has(player, Node.RANGED_9)) bonus += 0.16f;
+        if (has(player, Node.RANGED_10)) bonus += 0.20f;
         return 1.0f + bonus;
     }
 
     public static float projectileExecutionMultiplier(ServerPlayer player, float health, float maximum) {
         if (maximum <= 0.0f) return 1.0f;
         float ratio = health / maximum;
+        if (has(player, Node.RANGED_10) && ratio <= 0.80f) return 1.45f;
+        if (has(player, Node.RANGED_9) && ratio <= 0.70f) return 1.36f;
         if (has(player, Node.RANGED_8) && ratio <= 0.60f) return 1.30f;
         return has(player, Node.RANGED_7) && ratio <= 0.50f ? 1.22f : 1.0f;
     }
 
     public static int projectileFireBonusTicks(ServerPlayer player) {
+        if (has(player, Node.RANGED_10)) return 260;
+        if (has(player, Node.RANGED_9)) return 210;
         if (has(player, Node.RANGED_7)) return 140;
         return has(player, Node.RANGED_2) ? 70 : 0;
     }
@@ -141,6 +143,8 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.RANGED_5)) extra += 2;
         if (has(player, Node.RANGED_7)) extra += 2;
         if (has(player, Node.RANGED_8)) extra += 3;
+        if (has(player, Node.RANGED_9)) extra += 3;
+        if (has(player, Node.RANGED_10)) extra += 4;
         return extra;
     }
 
@@ -151,12 +155,16 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.GUARD_4)) reduction += 0.06f;
         if (has(player, Node.GUARD_6)) reduction += 0.04f;
         if (has(player, Node.GUARD_8)) reduction += 0.05f;
-        return Math.max(0.65f, 1.0f - reduction);
+        if (has(player, Node.GUARD_9)) reduction += 0.05f;
+        if (has(player, Node.GUARD_10)) reduction += 0.07f;
+        return Math.max(0.55f, 1.0f - reduction);
     }
 
     public static float lowHealthIncomingMultiplier(ServerPlayer player) {
-        return has(player, Node.GUARD_3) && player.getHealth() <= player.getMaxHealth() * 0.35f
-                ? 0.82f : 1.0f;
+        float ratio = player.getHealth() / Math.max(1.0f, player.getMaxHealth());
+        if (has(player, Node.GUARD_10) && ratio <= 0.65f) return 0.70f;
+        if (has(player, Node.GUARD_9) && ratio <= 0.50f) return 0.76f;
+        return has(player, Node.GUARD_3) && ratio <= 0.35f ? 0.82f : 1.0f;
     }
 
     public static boolean emergencyBarrierUnlocked(ServerPlayer player) {
@@ -168,10 +176,14 @@ public final class VillageSkillTreeSystem {
     }
 
     public static int emergencyBarrierCooldownSeconds(ServerPlayer player) {
+        if (has(player, Node.GUARD_10)) return 18;
+        if (has(player, Node.GUARD_9)) return 30;
         return has(player, Node.GUARD_7) ? 55 : 90;
     }
 
     public static int emergencyBarrierAbsorptionAmplifier(ServerPlayer player) {
+        if (has(player, Node.GUARD_10)) return 5;
+        if (has(player, Node.GUARD_9)) return 4;
         return has(player, Node.GUARD_7) ? 3 : 1;
     }
 
@@ -181,6 +193,8 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.SUPPORT_4)) bonus += 0.10f;
         if (has(player, Node.SUPPORT_6)) bonus += 0.12f;
         if (has(player, Node.SUPPORT_8)) bonus += 0.15f;
+        if (has(player, Node.SUPPORT_9)) bonus += 0.18f;
+        if (has(player, Node.SUPPORT_10)) bonus += 0.22f;
         return 1.0f + bonus;
     }
 
@@ -191,6 +205,8 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.SUPPORT_6)) reduction += 2;
         if (has(player, Node.SUPPORT_7)) reduction += 1;
         if (has(player, Node.SUPPORT_8)) reduction += 2;
+        if (has(player, Node.SUPPORT_9)) reduction += 2;
+        if (has(player, Node.SUPPORT_10)) reduction += 3;
         return reduction;
     }
 
@@ -203,23 +219,37 @@ public final class VillageSkillTreeSystem {
         float chance = 0.12f;
         if (has(player, Node.SUPPORT_6)) chance += 0.05f;
         if (has(player, Node.SUPPORT_7)) chance += 0.03f;
+        if (has(player, Node.SUPPORT_9)) chance += 0.07f;
+        if (has(player, Node.SUPPORT_10)) chance += 0.10f;
         return chance;
     }
 
     public static float killHealAmount(ServerPlayer player) {
         float amount = 0.0f;
         if (has(player, Node.POWER_5)) amount += 2.0f;
+        if (has(player, Node.POWER_9)) amount += 2.0f;
+        if (has(player, Node.POWER_10)) amount += 3.0f;
         if (has(player, Node.SUPPORT_5)) amount += 1.0f;
         return amount;
     }
 
     public static float teamHealOnKillAmount(ServerPlayer player) {
+        if (has(player, Node.SUPPORT_10)) return 6.0f;
+        if (has(player, Node.SUPPORT_9)) return 4.0f;
         if (has(player, Node.SUPPORT_8)) return 3.0f;
         return has(player, Node.SUPPORT_7) ? 2.0f : 0.0f;
     }
 
     public static int passiveSpeedAmplifier(ServerPlayer player, boolean daytime) {
-        if (daytime) return 2 + (has(player, Node.MOBILITY_6) ? 1 : 0);
+        if (daytime) {
+            int amplifier = 2;
+            if (has(player, Node.MOBILITY_6)) amplifier++;
+            if (has(player, Node.MOBILITY_9)) amplifier++;
+            if (has(player, Node.MOBILITY_10)) amplifier++;
+            return amplifier;
+        }
+        if (has(player, Node.MOBILITY_10)) return 3;
+        if (has(player, Node.MOBILITY_9)) return 2;
         if (has(player, Node.MOBILITY_4)) return 1;
         return has(player, Node.MOBILITY_1) ? 0 : -1;
     }
@@ -232,6 +262,8 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.MOBILITY_2)) bonus += 0.06f;
         if (has(player, Node.MOBILITY_5)) bonus += 0.08f;
         if (has(player, Node.MOBILITY_8)) bonus += 0.12f;
+        if (has(player, Node.MOBILITY_9)) bonus += 0.14f;
+        if (has(player, Node.MOBILITY_10)) bonus += 0.18f;
         return 1.0f + bonus;
     }
 
@@ -240,16 +272,23 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.MOBILITY_3)) result++;
         if (has(player, Node.MOBILITY_6)) result++;
         if (has(player, Node.MOBILITY_8)) result += 2;
+        if (has(player, Node.MOBILITY_9)) result += 2;
+        if (has(player, Node.MOBILITY_10)) result += 3;
         return result;
     }
 
     public static int killSpeedSeconds(ServerPlayer player) {
+        if (has(player, Node.MOBILITY_10)) return 18;
+        if (has(player, Node.MOBILITY_9)) return 12;
         if (has(player, Node.MOBILITY_8)) return 8;
         return has(player, Node.MOBILITY_7) ? 5 : 0;
     }
 
     public static float sprintIncomingMultiplier(ServerPlayer player) {
-        return has(player, Node.MOBILITY_7) && player.isSprinting() ? 0.88f : 1.0f;
+        if (!player.isSprinting()) return 1.0f;
+        if (has(player, Node.MOBILITY_10)) return 0.62f;
+        if (has(player, Node.MOBILITY_9)) return 0.74f;
+        return has(player, Node.MOBILITY_7) ? 0.88f : 1.0f;
     }
 
     public static synchronized void resetForNewGame() {
@@ -261,9 +300,7 @@ public final class VillageSkillTreeSystem {
     public static int branchRanks(ServerPlayer player, Branch branch) {
         int count = 0;
         for (Node node : Node.values()) {
-            if (node.branch() == branch && has(player, node)) {
-                count++;
-            }
+            if (node.branch() == branch && has(player, node)) count++;
         }
         return count;
     }
@@ -328,27 +365,38 @@ public final class VillageSkillTreeSystem {
         RANGED_4("ranged_4", "관통 장력", "화살과 투사체 피해 추가 +10%", Branch.RANGED, 4, RANGED_3),
         RANGED_5("ranged_5", "분열 사격", "연쇄 사격 대상 +2", Branch.RANGED, 5, RANGED_4),
 
-        // Appended to preserve every existing saved-mask ordinal.
-        POWER_6("power_6", "포식자의 감각", "체력 40% 이하의 적에게 피해 +24%, 처치 시 잠시 힘을 얻음", Branch.POWER, 6, POWER_5),
-        POWER_7("power_7", "전쟁의 화신", "모든 공격 피해 +10%, 처치 연속 강화 지속시간 증가", Branch.POWER, 7, POWER_6),
+        // Existing ordinals are preserved; every extension remains appended.
+        POWER_6("power_6", "포식자의 감각", "체력 40% 이하 적에게 피해 +24%, 처치 후 전투 가속", Branch.POWER, 6, POWER_5),
+        POWER_7("power_7", "전쟁의 화신", "모든 공격 피해 +10%, 처치 연속 강화 지속 증가", Branch.POWER, 7, POWER_6),
         GUARD_6("guard_6", "재생 태세", "받는 피해 추가 4% 감소, 낮은 체력에서 재생 발동", Branch.GUARD, 6, GUARD_5),
-        GUARD_7("guard_7", "불굴의 심장", "응급 장막의 보호량 증가, 재사용 대기시간 90초에서 55초로 감소", Branch.GUARD, 7, GUARD_6),
-        SUPPORT_6("support_6", "전선 군수관", "처치 주화 +12%, 기술 재사용 -2초, 공동 보급 회수율 증가", Branch.SUPPORT, 6, SUPPORT_5),
+        GUARD_7("guard_7", "불굴의 심장", "응급 장막 보호량 증가, 재사용 55초", Branch.GUARD, 7, GUARD_6),
+        SUPPORT_6("support_6", "전선 군수관", "처치 주화 +12%, 기술 재사용 -2초, 보급 회수율 증가", Branch.SUPPORT, 6, SUPPORT_5),
         SUPPORT_7("support_7", "연대의 맹세", "처치 시 주변 아군 체력 1칸 회복, 기술 재사용 -1초", Branch.SUPPORT, 7, SUPPORT_6),
         RANGED_6("ranged_6", "초장력 시위", "화살과 투사체 피해 추가 +12%", Branch.RANGED, 6, RANGED_5),
-        RANGED_7("ranged_7", "종결 사격", "체력 50% 이하 적 대상 투사체 피해 +22%, 연쇄 대상 +2, 발화 지속 증가", Branch.RANGED, 7, RANGED_6),
+        RANGED_7("ranged_7", "종결 사격", "체력 50% 이하 적에게 투사체 피해 +22%, 연쇄·발화 강화", Branch.RANGED, 7, RANGED_6),
         POWER_8("power_8", "절대 공세", "모든 공격 피해 추가 +12%", Branch.POWER, 8, POWER_7),
         GUARD_8("guard_8", "요새의 심장", "받는 피해 추가 5% 감소", Branch.GUARD, 8, GUARD_7),
         SUPPORT_8("support_8", "총군수 지휘", "처치 주화 +15%, 기술 재사용 -2초, 주변 회복 강화", Branch.SUPPORT, 8, SUPPORT_7),
-        RANGED_8("ranged_8", "천공 사격", "투사체 피해 +14%, 체력 60% 이하 대상 추가 피해와 연쇄 대상 +3", Branch.RANGED, 8, RANGED_7),
-        MOBILITY_1("mobility_1", "경량 장비", "밤에도 이동 속도 I을 유지합니다.", Branch.MOBILITY, 1, null),
+        RANGED_8("ranged_8", "천공 사격", "투사체 피해 +14%, 체력 60% 이하 적과 연쇄 사격 강화", Branch.RANGED, 8, RANGED_7),
+        MOBILITY_1("mobility_1", "경량 장비", "밤에도 이동 속도 I을 유지", Branch.MOBILITY, 1, null),
         MOBILITY_2("mobility_2", "유동 공세", "이동 중 공격 피해 +6%", Branch.MOBILITY, 2, MOBILITY_1),
         MOBILITY_3("mobility_3", "빠른 호흡", "직업 기술 재사용 대기시간 -1초", Branch.MOBILITY, 3, MOBILITY_2),
-        MOBILITY_4("mobility_4", "전장 질주", "밤 이동 속도가 II로 증가합니다.", Branch.MOBILITY, 4, MOBILITY_3),
+        MOBILITY_4("mobility_4", "전장 질주", "밤 이동 속도가 II로 증가", Branch.MOBILITY, 4, MOBILITY_3),
         MOBILITY_5("mobility_5", "관성 타격", "이동 중 공격 피해 추가 +8%", Branch.MOBILITY, 5, MOBILITY_4),
         MOBILITY_6("mobility_6", "신속한 전환", "낮 이동 속도 단계 +1, 직업 기술 재사용 -1초", Branch.MOBILITY, 6, MOBILITY_5),
-        MOBILITY_7("mobility_7", "회피 기동", "질주 중 받는 피해 12% 감소, 처치 후 5초간 가속", Branch.MOBILITY, 7, MOBILITY_6),
-        MOBILITY_8("mobility_8", "번개 보법", "이동 중 피해 +12%, 기술 재사용 -2초, 처치 가속 8초", Branch.MOBILITY, 8, MOBILITY_7);
+        MOBILITY_7("mobility_7", "회피 기동", "질주 중 받는 피해 12% 감소, 처치 후 5초 가속", Branch.MOBILITY, 7, MOBILITY_6),
+        MOBILITY_8("mobility_8", "번개 보법", "이동 중 피해 +12%, 기술 재사용 -2초, 처치 가속 8초", Branch.MOBILITY, 8, MOBILITY_7),
+
+        POWER_9("power_9", "살육 순환", "공격 피해 +14%, 체력 60% 이하 적 피해 +35%, 처치 회복·가속 강화", Branch.POWER, 9, POWER_8),
+        POWER_10("power_10", "전쟁신의 심장", "공격 피해 +18%, 체력 75% 이하 적 피해 +45%, 처치 시 강한 회복과 18초 전투 가속", Branch.POWER, 10, POWER_9),
+        GUARD_9("guard_9", "불멸 방진", "받는 피해 추가 5% 감소, 체력 50% 이하 피해 24% 감소, 응급 장막 재사용 30초", Branch.GUARD, 9, GUARD_8),
+        GUARD_10("guard_10", "성채화", "받는 피해 추가 7% 감소, 체력 65% 이하 피해 30% 감소, 응급 장막 재사용 18초", Branch.GUARD, 10, GUARD_9),
+        SUPPORT_9("support_9", "전장 재분배", "처치 주화 +18%, 기술 재사용 -2초, 주변 아군 회복 2칸과 보급 회수 강화", Branch.SUPPORT, 9, SUPPORT_8),
+        SUPPORT_10("support_10", "수호단 총지휘", "처치 주화 +22%, 기술 재사용 -3초, 주변 아군 회복 3칸과 보급 회수 대폭 강화", Branch.SUPPORT, 10, SUPPORT_9),
+        RANGED_9("ranged_9", "별궤도 사격", "투사체 피해 +16%, 체력 70% 이하 적 피해 +36%, 연쇄·발화 대폭 강화", Branch.RANGED, 9, RANGED_8),
+        RANGED_10("ranged_10", "천궁 붕괴", "투사체 피해 +20%, 체력 80% 이하 적 피해 +45%, 최대 연쇄 사격과 장기 발화", Branch.RANGED, 10, RANGED_9),
+        MOBILITY_9("mobility_9", "잔상 기동", "이동 중 피해 +14%, 기술 재사용 -2초, 질주 피해 26% 감소, 처치 가속 12초", Branch.MOBILITY, 9, MOBILITY_8),
+        MOBILITY_10("mobility_10", "시간 절단 보법", "이동 중 피해 +18%, 기술 재사용 -3초, 질주 피해 38% 감소, 야간 속도 IV와 처치 가속 18초", Branch.MOBILITY, 10, MOBILITY_9);
 
         private final String id;
         private final String title;
@@ -357,13 +405,7 @@ public final class VillageSkillTreeSystem {
         private final int tier;
         private final Node prerequisite;
 
-        Node(
-                String id,
-                String title,
-                String description,
-                Branch branch,
-                int tier,
-                Node prerequisite) {
+        Node(String id, String title, String description, Branch branch, int tier, Node prerequisite) {
             this.id = id;
             this.title = title;
             this.description = description;
@@ -378,14 +420,12 @@ public final class VillageSkillTreeSystem {
         public Branch branch() { return branch; }
         public int tier() { return tier; }
         public Node prerequisite() { return prerequisite; }
-        public int pointCost() { return Math.max(1, Math.min(3, (tier + 2) / 3)); }
+        public int pointCost() { return Math.max(1, Math.min(4, (tier + 2) / 3)); }
 
         public static Optional<Node> parse(String value) {
             if (value == null) return Optional.empty();
             String normalized = value.toLowerCase(Locale.ROOT);
-            return Arrays.stream(values())
-                    .filter(node -> node.id.equals(normalized))
-                    .findFirst();
+            return Arrays.stream(values()).filter(node -> node.id.equals(normalized)).findFirst();
         }
     }
 }

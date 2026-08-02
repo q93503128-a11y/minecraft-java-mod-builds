@@ -269,23 +269,59 @@ public final class VillageUiController {
     }
 
     public static void openSkillTest(ServerPlayer player) {
-        if (!VillageLocationRules.isNearSkillHall(player)) {
-            openResult(player, "기술 시험", "기술 연구소 연구대 근처에서만 사용할 수 있습니다.", "open_role_skill_research");
+        boolean alreadyEnabled = VillageSkillTestSystem.isEnabled(player);
+        if (!alreadyEnabled && !VillageLocationRules.isNearSkillHall(player)) {
+            openResult(player, "기술 시험", "기술 시험 시작은 기술 연구소 연구대 근처에서만 가능합니다.",
+                    "open_role_skill_research");
             return;
         }
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        if (role == null) { openResult(player, "기술 시험", "직업을 먼저 선택하세요.", "open_dashboard"); return; }
-        String mode = VillageSkillTestSystem.enable(player);
-        List<String> actions = new ArrayList<>(); List<String> labels = new ArrayList<>();
-        for (VillageRoleSkillSystem.ActiveSkill skill : VillageRoleSkillSystem.skillsFor(role)) {
-            actions.add("test_cast:" + skill.id());
-            labels.add(skill.displayName() + "|" + skill.description()
-                    + "\n습득 여부·재사용 대기시간·재화를 무시하고 즉시 시험합니다.");
+        if (role == null) {
+            openResult(player, "기술 시험", "직업을 먼저 선택하세요.", "open_dashboard");
+            return;
         }
-        add(actions, labels, "test_spawn", "시험 표적 재배치|전방에 체력이 다른 고정 표적 6개 생성",
+        String mode = alreadyEnabled
+                ? "외부 시험장 활성화 · K로 이 메뉴를 다시 열 수 있습니다."
+                : VillageSkillTestSystem.enable(player);
+        if (!VillageSkillTestSystem.isEnabled(player)) {
+            openResult(player, "기술 시험", mode, "open_role_skill_research");
+            return;
+        }
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (VillageRoleSkillSystem.ActiveSkill skill : VillageRoleSkillSystem.skillsFor(role)) {
+            actions.add("test_choose:" + skill.id());
+            labels.add(skill.displayName() + "|" + skill.description()
+                    + "\n선택 후 Z 또는 X 시험 슬롯에 임시 장착합니다.");
+        }
+        add(actions, labels,
+                "test_spawn", "시험 표적 재배치|외부 시험장 중앙에 체력·밀림 저항이 다른 표적 6개 생성",
                 "test_clear", "시험 표적 정리|현재 내가 만든 시험 표적 제거",
-                "test_exit", "시험 모드 종료|표적을 정리하고 일반 전투 판정으로 복귀");
-        send(player, "skill_test", role.displayName() + " 기술 시험", mode, actions, labels);
+                "test_exit", "시험 종료·복귀|표적과 임시 장착을 정리하고 원래 위치로 복귀");
+        String body = mode + "\n\n현재 임시 장착: " + VillageSkillTestSystem.loadoutSummary(player)
+                + "\nZ/X: 실제 기술 사용 · K: 시험 메뉴 다시 열기";
+        send(player, "skill_test", role.displayName() + " 외부 기술 시험", body, actions, labels);
+    }
+
+    private static void openSkillTestSlot(ServerPlayer player, String skillId) {
+        if (!VillageSkillTestSystem.isEnabled(player)) {
+            openResult(player, "기술 시험", "시험 모드가 종료되었습니다.", "open_role_skill_research");
+            return;
+        }
+        VillageRoleSkillSystem.ActiveSkill skill =
+                VillageRoleSkillSystem.ActiveSkill.parse(skillId).orElse(null);
+        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        if (skill == null || role == null || skill.role() != role) {
+            openResult(player, "기술 시험", "현재 직업의 기술이 아닙니다.", "open_skill_test");
+            return;
+        }
+        send(player, "skill_test", skill.displayName() + " 임시 장착",
+                skill.description() + "\n\n습득 여부와 비용을 무시하고 시험 슬롯에만 임시 장착합니다.",
+                List.of("test_equip:" + skill.id() + ":0",
+                        "test_equip:" + skill.id() + ":1", "open_skill_test"),
+                List.of("Z 슬롯에 장착|Z키로 실제 모션과 판정 시험",
+                        "X 슬롯에 장착|X키로 실제 모션과 판정 시험",
+                        "기술 목록으로 돌아가기|다른 기술 선택"));
     }
 
     public static void openResult(ServerPlayer player, String title, String result, String returnAction) {
@@ -478,9 +514,21 @@ public final class VillageUiController {
             }
             return true;
         }
-        if (action.startsWith("test_cast:")) {
-            openResult(player, "기술 시험 결과", VillageRpgSystem.testRoleSkill(player, action.substring(10)),
-                    "open_skill_test"); return true;
+        if (action.startsWith("test_choose:")) {
+            openSkillTestSlot(player, action.substring(12));
+            return true;
+        }
+        if (action.startsWith("test_equip:")) {
+            String[] parts = action.split(":", 3);
+            int slot = 0;
+            if (parts.length == 3) {
+                try { slot = Integer.parseInt(parts[2]); }
+                catch (NumberFormatException ignored) { slot = 0; }
+                player.sendSystemMessage(Component.literal("§b"
+                        + VillageSkillTestSystem.equip(player, parts[1], slot)));
+            }
+            openSkillTest(player);
+            return true;
         }
         if (action.startsWith("relic_select:")) {
             player.sendSystemMessage(Component.literal("§d" + VillageRelicSystem.select(player, action.substring(13))));
@@ -493,7 +541,10 @@ public final class VillageUiController {
             case "open_status" -> openStatus(player);
             case "open_personal_progress" -> openPersonalProgress(player);
             case "open_skill_tree" -> openSkillTree(player);
-            case "open_role_progress_current" -> openRoleProgress(player);
+            case "open_role_progress_current" -> {
+                if (VillageSkillTestSystem.isEnabled(player)) openSkillTest(player);
+                else openRoleProgress(player);
+            }
             case "open_role_skill_research" -> openRoleSkillResearch(player);
             case "open_forge_enhancement" -> openForgeEnhancement(player);
             case "open_fusion" -> openFusion(player);
@@ -548,7 +599,7 @@ public final class VillageUiController {
             case SKILL_HALL -> add(actions, labels,
                     "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 Z/X 장착만 관리",
                     "open_defense_research", "마을 방어 연구|용병·포탑·전리품 연구 트리",
-                    "open_skill_test", "기술 시험 모드|고정 표적을 생성하고 현재 직업 기술을 무제한 시험");
+                    "open_skill_test", "외부 기술 시험장|야외 시험장으로 이동해 Z/X에 기술을 임시 장착하고 실제 모션 시험");
             case INFIRMARY -> { }
             case BARRACKS -> add(actions, labels,
                     "open_mercenary_command", "용병 고용·성장|병과를 선택해 지속 용병 배치");
