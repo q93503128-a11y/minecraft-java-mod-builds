@@ -1,0 +1,91 @@
+name: Patch Living Kingdoms population audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-population-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extend standard Erden audit
+        run: |
+          set -euo pipefail
+          path='.github/workflows/build-living-kingdoms.yml'
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/build-living-kingdoms.yml')
+          text = path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  """            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log; then
+              break
+            fi
+""",
+                  """            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log \\
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/server-smoke.log; then
+              break
+            fi
+"""
+              ),
+              (
+                  """          grep -F 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log
+          grep -F 'metre_scale=true' ../../logs/server-smoke.log
+""",
+                  """          grep -F 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log
+          grep -F 'Prepared Erden household population households=77 residents=231 workers=154 dependents=77 owned_homes=77 assigned_workplaces=154 vacancies=2 shifts=early,late,night' ../../logs/server-smoke.log
+          grep -F 'Processed Erden household economy day=' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3 ledger=true shortages=0 shifts=true ownership=true' ../../logs/server-smoke.log
+          grep -F 'metre_scale=true' ../../logs/server-smoke.log
+"""
+              ),
+              (
+                  """          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|watchdog' ../../logs/server-smoke.log; then
+""",
+                  """          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|watchdog' ../../logs/server-smoke.log; then
+"""
+              ),
+              (
+                  """          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenUrbanInfrastructureBuilder.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/StructurelessNoiseChunkGenerator.class' logs/jar-entries.txt
+""",
+                  """          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenUrbanInfrastructureBuilder.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationSavedData.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationCiChunkRetainer.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/StructurelessNoiseChunkGenerator.class' logs/jar-entries.txt
+"""
+              ),
+              (
+                  """          - Interior walkability, NPC population and law simulation: NOT YET COMPLETE
+""",
+                  """          - Household population, loaded-area routines and aggregate civic ledger: PASS
+          - Physical inventory economy, demographic change and law simulation: NOT YET COMPLETE
+"""
+              ),
+          ]
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f'expected one audit fragment, found {text.count(old)} for {old[:80]!r}')
+              text = text.replace(old, new)
+          path.write_text(text, encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$path"
+          git commit -m 'Audit Erden household population in standard build'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
