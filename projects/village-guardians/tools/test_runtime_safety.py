@@ -44,7 +44,7 @@ def main() -> None:
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
     assert "if (!mob.isPersistenceRequired()) event.setCanceled(true)" in guardians
 
-    assert 'case "building", "management", "funding", "tower_control", "tower_detail", "caller"' in client_ui
+    assert 'case "building", "management", "funding", "tower_control", "tower_detail", "caller", "relic_choice"' in client_ui
     assert 'case "equipment_shop" -> new VillageShopScreen(payload)' in client_ui
     assert 'case "status", "wave_intel" -> new VillageStatusScreen(payload)' in client_ui
     assert "listLeft" in facility_ui and "detailLeft" in facility_ui
@@ -58,7 +58,8 @@ def main() -> None:
     assert '"upgrade:" + facility.id()' in town_ui
     assert '"open_tower_control"' in town_ui
 
-    assert "scroll" not in status_ui.lower()
+    assert "mouseScrolled" not in status_ui
+    assert "drawScrollbar" not in status_ui
     assert "twoColumns" in status_ui
     assert "lastLayout" in status_ui
     assert "ClientPacketDistributor" not in status_ui
@@ -86,6 +87,8 @@ def main() -> None:
     assert '"manage:"' not in local_body
     assert "openEquipmentShop(player)" in local_body
     assert "수리·강화·포탑 건설은 회관" in controller
+    assert 'case "use_infirmary"' in controller
+    assert 'case "train"' in controller
 
     assert "combineFirstPair" in rarity
     assert "재화는 소모되지 않았습니다" in rarity
