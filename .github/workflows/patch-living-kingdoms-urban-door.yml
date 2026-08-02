@@ -1,0 +1,66 @@
+name: Patch Living Kingdoms Urban Door Selection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-urban-door.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prefer real low doors when the terrain-cleaned edge has none
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java')
+          text = source.read_text(encoding='utf-8')
+          old = '''        int lowest = doors.stream().mapToInt(BuildingBlock::y).min().orElse(0);
+                  return doors.stream()
+                          .filter(block -> block.y <= lowest + 1)
+                          .filter(block -> block.x <= 5 || block.x >= width - 6
+                                  || block.z <= 5 || block.z >= length - 6)
+                          .toList();
+          '''
+          new = '''        int lowest = doors.stream().mapToInt(BuildingBlock::y).min().orElse(0);
+                  List<BuildingBlock> lowDoors = doors.stream()
+                          .filter(block -> block.y <= lowest + 1)
+                          .toList();
+                  List<BuildingBlock> edgeDoors = lowDoors.stream()
+                          .filter(block -> block.x <= 5 || block.x >= width - 6
+                                  || block.z <= 5 || block.z >= length - 6)
+                          .toList();
+                  return edgeDoors.isEmpty() ? lowDoors : edgeDoors;
+          '''
+          if old not in text:
+              raise SystemExit('Expected urban entrance selector was not found exactly once')
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one selector occurrence, found {text.count(old)}')
+          source.write_text(text.replace(old, new), encoding='utf-8')
+          Path('.github/workflows/patch-living-kingdoms-urban-door.yml').unlink()
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java
+          git add -u .github/workflows/patch-living-kingdoms-urban-door.yml
+          git commit -m 'Use actual low doors for Erden facade fragments'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
