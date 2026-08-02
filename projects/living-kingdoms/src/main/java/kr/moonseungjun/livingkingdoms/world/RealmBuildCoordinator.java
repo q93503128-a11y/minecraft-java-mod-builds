@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Util;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.command.generation.GenerationTask;
@@ -17,11 +16,10 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-/** Surveys generator columns off-thread, pregenerates the selected site, then builds over safe server ticks. */
+/** Prepares fixed authored continent anchors, pregenerates them, then builds over safe server ticks. */
 public final class RealmBuildCoordinator {
     private static final int CONSTRUCTION_PREGEN_RADIUS_CHUNKS = 15;
     private static final int NORMAL_TICK_BUDGET = 3_000;
@@ -52,13 +50,13 @@ public final class RealmBuildCoordinator {
             job.waitingPlayers.add(player.getUUID());
             if (!job.started) {
                 job.started = true;
-                setStatus(job, "survey", 6, "안전한 수도 부지를 조사하고 있습니다.");
-                startSiteSurvey(realm, profile.homelandId(), job);
+                setStatus(job, "terrain", 8, "판타지 대륙의 고정 지형을 준비하고 있습니다.");
+                startAuthoredSite(realm, profile.homelandId(), job);
             }
         }
         sendCurrent(player, profile.homelandId(), job);
         player.sendSystemMessage(Component.literal(
-                "§6[왕국 준비] §f선택한 소속의 수도와 거주지를 실제 지형에 맞춰 건설하고 있습니다. "
+                "§6[왕국 준비] §f정해진 판타지 대륙 좌표에 수도와 거주지를 건설하고 있습니다. "
                         + "진행 화면은 건설이 끝날 때까지 유지됩니다."
         ));
     }
@@ -73,8 +71,8 @@ public final class RealmBuildCoordinator {
             job.completions.add(completion);
             if (!job.started) {
                 job.started = true;
-                setStatus(job, "survey", 6, "안전한 수도 부지를 조사하고 있습니다.");
-                startSiteSurvey(realm, homelandId, job);
+                setStatus(job, "terrain", 8, "판타지 대륙의 고정 지형을 준비하고 있습니다.");
+                startAuthoredSite(realm, homelandId, job);
             }
         }
     }
@@ -104,48 +102,23 @@ public final class RealmBuildCoordinator {
         }
     }
 
-    private static void startSiteSurvey(ServerLevel realm, String homelandId, BuildJob job) {
-        RealmSiteLayoutSavedData.RealmSite existing = RealmSitePlanner.site(realm, homelandId);
-        if (existing != null && existing.revision() >= RealmSitePlanner.LAYOUT_REVISION) {
+    private static void startAuthoredSite(ServerLevel realm, String homelandId, BuildJob job) {
+        try {
+            RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.ensureSite(realm, homelandId);
             synchronized (job) {
-                job.site = existing;
+                if (job.finished) return;
+                job.site = site;
             }
-            updateProgress(homelandId, job, "chunks", 26,
-                    "기록된 수도 부지의 주변 지역을 준비하고 있습니다.", true);
-            startSelectedSitePregeneration(realm, homelandId, job, existing);
-            return;
+            updateProgress(homelandId, job, "chunks", 24,
+                    "설계된 수도권 지형 청크를 생성하고 있습니다.", true);
+            LivingKingdoms.LOGGER.info(
+                    "Preparing authored homeland {} at fixed anchor {},{} baseY={}",
+                    homelandId, site.centerX(), site.centerZ(), site.baseY()
+            );
+            startSelectedSitePregeneration(realm, homelandId, job, site);
+        } catch (Throwable throwable) {
+            failBuild(homelandId, job, throwable);
         }
-
-        synchronized (job) {
-            if (job.finished || job.selectingSite) return;
-            job.selectingSite = true;
-        }
-        updateProgress(homelandId, job, "survey", 8,
-                "물과 절벽을 피해 수도 후보를 비교하고 있습니다.", true);
-        LivingKingdoms.LOGGER.info("Starting background generator survey for {}", homelandId);
-        job.surveyFuture = CompletableFuture.supplyAsync(
-                () -> RealmSitePlanner.surveyGeneratedTerrain(realm, homelandId),
-                Util.backgroundExecutor()
-        );
-        job.surveyFuture.whenComplete((surveyed, throwable) -> realm.getServer().submit(() -> {
-            if (throwable != null) {
-                failBuild(homelandId, job, throwable);
-                return;
-            }
-            try {
-                RealmSiteLayoutSavedData.RealmSite stored = RealmSitePlanner.storeSurvey(realm, homelandId, surveyed);
-                synchronized (job) {
-                    if (job.finished) return;
-                    job.site = stored;
-                    job.selectingSite = false;
-                }
-                updateProgress(homelandId, job, "chunks", 26,
-                        "수도 부지를 확정했습니다. 주변 지역을 준비하고 있습니다.", true);
-                startSelectedSitePregeneration(realm, homelandId, job, stored);
-            } catch (Throwable storeFailure) {
-                failBuild(homelandId, job, storeFailure);
-            }
-        }));
     }
 
     private static void startSelectedSitePregeneration(
@@ -188,7 +161,7 @@ public final class RealmBuildCoordinator {
         }
         task.run(new GenerationTask.Listener() {
             private int lastReported;
-            private int lastClientPercent = 25;
+            private int lastClientPercent = 23;
 
             @Override
             public void update(int ok, int error, int skipped, int total) {
@@ -200,7 +173,7 @@ public final class RealmBuildCoordinator {
                             phase, homelandId, done, total, error
                     );
                 }
-                int clientPercent = 26 + Math.round(done / (float) Math.max(1, total) * 19.0F);
+                int clientPercent = 24 + Math.round(done / (float) Math.max(1, total) * 21.0F);
                 if (clientPercent >= lastClientPercent + 4 || done == total) {
                     lastClientPercent = clientPercent;
                     realm.getServer().submit(() -> updateProgress(
@@ -234,7 +207,7 @@ public final class RealmBuildCoordinator {
             synchronized (job) {
                 site = job.site;
             }
-            if (site == null) throw new IllegalStateException("Selected homeland site is unavailable");
+            if (site == null) throw new IllegalStateException("Authored homeland site is unavailable");
             IncrementalWorldEditPlan plan = PlannedRealmBuilder.create(realm, homelandId, site);
             synchronized (job) {
                 if (job.finished) return;
@@ -273,6 +246,9 @@ public final class RealmBuildCoordinator {
 
     private static void completeBuild(String homelandId, BuildJob job) {
         try {
+            RealmSiteLayoutSavedData.RealmSite site = job.site;
+            if (site == null) throw new IllegalStateException("Authored homeland site disappeared before completion");
+            ConstructionDebrisCleaner.cleanConstructionCompletion(job.realm, homelandId, site);
             RealmSitePlanner.markBuilt(job.realm, homelandId);
             for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
                 ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
@@ -306,7 +282,6 @@ public final class RealmBuildCoordinator {
         JOBS.remove(homelandId, job);
         LivingKingdoms.LOGGER.error("Failed incremental homeland construction for {}", homelandId, failure);
         if (job.task != null) job.task.stop();
-        if (job.surveyFuture != null) job.surveyFuture.cancel(true);
         broadcast(homelandId, job, false, true, true);
         for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
             ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
@@ -389,10 +364,8 @@ public final class RealmBuildCoordinator {
         private final Set<UUID> waitingPlayers = new LinkedHashSet<>();
         private final Set<Consumer<Throwable>> completions = new LinkedHashSet<>();
         private boolean started;
-        private boolean selectingSite;
         private boolean preparingPlan;
         private boolean finished;
-        private CompletableFuture<RealmSiteLayoutSavedData.RealmSite> surveyFuture;
         private GenerationTask task;
         private RealmSiteLayoutSavedData.RealmSite site;
         private IncrementalWorldEditPlan plan;
