@@ -51,7 +51,8 @@ def main() -> None:
 
     assert 'case "building", "management", "funding", "tower_control", "tower_detail", "caller", "relic_choice"' in client_ui
     assert 'case "equipment_shop" -> new VillageShopScreen(payload)' in client_ui
-    assert 'case "status", "wave_intel" -> new VillageStatusScreen(payload)' in client_ui
+    assert 'case "status" -> new VillageStatusScreen(payload)' in client_ui
+    assert 'case "wave_intel", "skill_test", "game_over" -> new VillageFacilityScreen(payload)' in client_ui
     assert "listLeft" in facility_ui and "detailLeft" in facility_ui
     assert "selectedIndex = actionCount() > 0 ? 0 : -1" in facility_ui
     assert "PANEL = 0xFFE4D8BF" in facility_ui
@@ -151,7 +152,7 @@ def main() -> None:
     assert "offerToParty" in relic
     assert "relic_select:" in relic
     assert "pending" in read("VillageRelicData.java")
-    assert "baseRoster" in wave and "specialRoster" in wave and "boss" in wave
+    assert "previews(ServerPlayer player)" in wave and "WavePreview" in wave and "previewArchetype" in wave
 
     assert "DoubleBlockHalf.LOWER" in facade
     assert "기능 단말기" in facade
