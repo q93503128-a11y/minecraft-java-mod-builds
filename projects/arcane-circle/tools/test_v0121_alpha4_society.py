@@ -16,6 +16,8 @@ fusion = read("src/main/java/kr/moonseungjun/arcanecircle/magic/FusionSpellEffec
 notice = read("src/main/java/kr/moonseungjun/arcanecircle/magic/ArcaneNoticeService.java")
 mage = read("src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneMageService.java")
 quests = read("src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneQuestData.java")
+economy = read("src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEconomyService.java")
+world_data = read("src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneWorldData.java")
 network = read("src/main/java/kr/moonseungjun/arcanecircle/network/ArcaneNetwork.java")
 state = read("src/main/java/kr/moonseungjun/arcanecircle/client/ArcaneClientState.java")
 hud = read("src/main/java/kr/moonseungjun/arcanecircle/client/ArcaneHud.java")
@@ -45,6 +47,9 @@ need(fusion, ("steamBurst", "frostStep", "thunderCage", "solarGuard", "voidLance
 need(mage, ("MAGE_TAG", "CIRCLE_PREFIX", "level.isVillage", "onInteract",
             "ArcaneNetwork.openPage", "castResidentSpell", "castHostileSpell"), "mage residents")
 need(quests, ("mage_commissions_v1", "recordCast", "claim", "ArcaneWorldData.get"), "persistent commissions")
+need(economy, ("FIRST_TRADITION_COST = 750L", "TRADITION_CHANGE_COST = 5000L",
+               "traditionCost", "world.chooseTradition(player, tradition, cost)"), "universal Arcana economy")
+need(world_data, ("if (!spendMarks(player, attunementCost)) return false",), "paid faculty attunement")
 need(network, ("notice_seq=", "notice_ttl=", "quest_id=", "quest_reward=", "openPage"), "snapshot additions")
 need(state, ("noticeVisible", "noticeText", "cooldownRemainingTicks(String spellId)"), "client notice state")
 need(hud, ("drawRaisedNotice", "ArcaneClientState.noticeVisible"), "raised spell notice")
