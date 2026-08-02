@@ -82,6 +82,14 @@ jobs:
           PY
           python3 -m py_compile tools/apply_v0179.py
           python3 tools/apply_v0179.py
+          python3 - <<'PY'
+          from pathlib import Path
+          for path in Path('tools').glob('test_*.py'):
+              text = path.read_text(encoding='utf-8')
+              updated = text.replace('mod_version=0.17.8-alpha.1', 'mod_version=0.17.9-alpha.1')
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+          PY
           rm -f tools/apply_v0179.py
 
       - name: Run complete contracts
