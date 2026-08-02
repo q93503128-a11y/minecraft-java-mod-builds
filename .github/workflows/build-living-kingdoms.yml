@@ -18,13 +18,13 @@ permissions:
 env:
   PROJECT_DIR: projects/living-kingdoms
   GRADLE_VERSION: '9.2.1'
-  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.11.jar
+  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.12.jar
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
   LIVING_KINGDOMS_CI_CLIENT_TEST: '1'
 
 jobs:
   build:
-    name: Java 25 / NeoForge 26.2 external-world audit
+    name: Java 25 / NeoForge 26.2 Erden world audit
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -55,6 +55,7 @@ jobs:
           grep -F 'world/SpongeStructureTemplate.java' logs/java-files.txt
           grep -F 'world/ExternalRealmBuilder.java' logs/java-files.txt
           grep -F 'world/RegionalEcologyManager.java' logs/java-files.txt
+          grep -F 'docs/ERDEN_KINGDOM_WORLD_BIBLE.md' < <(find "$PROJECT_DIR" -type f | sort)
 
       - name: Clean Java 25 build
         working-directory: ${{ env.PROJECT_DIR }}
@@ -64,10 +65,12 @@ jobs:
           gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee ../../logs/clean-build.log
           grep -F 'Verified Kenney CC0 UI asset fantasy_panel.png' ../../logs/clean-build.log
           grep -F 'Verified Schemcraft CC-BY-4.0 structure medieval_castle.schem' ../../logs/clean-build.log
-          grep -F 'Verified Schemcraft CC-BY-4.0 structure woodland_mansion.schem' ../../logs/clean-build.log
-          grep -F 'Verified Schemcraft CC-BY-4.0 structure deepslate_mega_base.schem' ../../logs/clean-build.log
+          if grep -Eq 'woodland_mansion|deepslate_mega_base' ../../logs/clean-build.log; then
+            echo 'Inactive kingdom structure asset was still packaged.' >&2
+            exit 1
+          fi
 
-      - name: Fresh dedicated server external-world test
+      - name: Fresh dedicated server Erden-world test
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -89,7 +92,7 @@ jobs:
           diagnostic=0
           for attempt in $(seq 1 720); do
             grep -Eq 'Done \(|For help, type "help"' ../../logs/server-smoke.log && ready=1 || true
-            grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log && diagnostic=1 || true
+            grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log && diagnostic=1 || true
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/server-smoke.log; then
               cat ../../logs/server-smoke.log
               exit 1
@@ -106,18 +109,23 @@ jobs:
           cat ../../logs/server-smoke.log
           test "$ready" -eq 1
           test "$diagnostic" -eq 1
-          grep -F 'external_structure_templates=true' ../../logs/server-smoke.log
-          grep -F 'regional_ecology=true' ../../logs/server-smoke.log
+          grep -F 'metre_scale=true' ../../logs/server-smoke.log
+          grep -F 'cleaned_citadel_part=true' ../../logs/server-smoke.log
+          grep -F 'terrain_integrated_roads=true' ../../logs/server-smoke.log
           grep -F 'debris_zero=true' ../../logs/server-smoke.log
-          grep -F 'layout_revision=12' ../../logs/server-smoke.log
-          test "$(grep -c 'Loaded external structure /data/livingkingdoms/structures/external/' ../../logs/server-smoke.log)" -eq 3
-          test "$(grep -c 'Verified external capital template homeland=' ../../logs/server-smoke.log)" -eq 3
+          grep -F 'layout_revision=13' ../../logs/server-smoke.log
+          test "$(grep -c 'Loaded external structure /data/livingkingdoms/structures/external/' ../../logs/server-smoke.log)" -eq 1
+          test "$(grep -c 'Verified cleaned Erden citadel' ../../logs/server-smoke.log)" -eq 1
+          if grep -Eq 'silvana_forest|kardum_league|woodland_mansion|deepslate_mega_base' ../../logs/server-smoke.log; then
+            echo 'Inactive kingdom construction path still ran.' >&2
+            exit 1
+          fi
           if grep -Fq 'Relocated four Erden town houses' ../../logs/server-smoke.log; then
             echo 'Legacy procedural house repair still ran.' >&2
             exit 1
           fi
           if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|watchdog' ../../logs/server-smoke.log; then
-            echo 'External world or datapack error detected.' >&2
+            echo 'Erden world or datapack error detected.' >&2
             exit 1
           fi
 
@@ -139,14 +147,14 @@ jobs:
           set -e
           cat ../../logs/client-smoke.log
           test "$client_status" -eq 0
-          grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection rendered_window=true' ../../logs/client-smoke.log
+          grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' ../../logs/client-smoke.log
           grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' ../../logs/client-smoke.log
           if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms' ../../logs/client-smoke.log; then
             exit 1
           fi
 
-      - name: Package and inspect alpha.11 JAR
+      - name: Package and inspect alpha.12 JAR
         shell: bash
         run: |
           set -euo pipefail
@@ -162,10 +170,12 @@ jobs:
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ExternalRealmBuilder.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/RegionalEcologyManager.class' logs/jar-entries.txt
           grep -Fx 'data/livingkingdoms/structures/external/medieval_castle.schem' logs/jar-entries.txt
-          grep -Fx 'data/livingkingdoms/structures/external/woodland_mansion.schem' logs/jar-entries.txt
-          grep -Fx 'data/livingkingdoms/structures/external/deepslate_mega_base.schem' logs/jar-entries.txt
           grep -Fx 'assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt' logs/jar-entries.txt
-          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.11"'
+          if grep -Eq 'woodland_mansion|deepslate_mega_base' logs/jar-entries.txt; then
+            echo 'Inactive kingdom structure found in runtime JAR.' >&2
+            exit 1
+          fi
+          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.12"'
           unzip -p "$JAR" assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt | grep -F 'Author: BuildSchem'
           if grep -Eq '(^|/)(tools|\.github)/|\.java$' logs/jar-entries.txt; then
             echo 'Development content found in runtime JAR.' >&2
@@ -178,22 +188,24 @@ jobs:
         shell: bash
         run: |
           cat > deliverables/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # Living Kingdoms 0.1.0-alpha.11 Build and Runtime Report
+          # Living Kingdoms 0.1.0-alpha.12 Build and Runtime Report
 
           - Commit: $GITHUB_SHA
           - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
           - Clean build: PASS
-          - Three attributed CC-BY-4.0 external capital templates: PASS
-          - Sponge block-state import and palette audit: PASS
-          - Legacy procedural capital repair execution: REMOVED
-          - Region-owned seasonal flora layer: PASS
-          - Fresh dedicated server, three capitals and eight safe residences: PASS
+          - Exposed origins: human / Erden / common resident / citizen-quarter room only
+          - One-block-per-metre world plan: PASS
+          - Licensed external architecture role: cleaned inner-citadel part only
+          - Imported source terrain, flora and small isolated fragments: REMOVED
+          - Terrain-following capital links: PASS
+          - Fresh dedicated server, active Erden site and one safe residence: PASS
           - Construction debris: ZERO
-          - Graphical client, loading UI, codex and atlas input: PASS
+          - Graphical client, fixed origin UI, loading UI, codex and atlas input: PASS
           - Runtime JAR integrity and attribution audit: PASS
+          - Full 2.4 km capital and national settlement network: DESIGN LOCKED, NOT YET COMPLETE
           - Manual visual inspection on user hardware: PENDING
 
-          A fresh world is required because the settlement pipeline and layout revision changed.
+          A fresh world is required because the origin schema, imported architecture filter and layout revision changed.
           EOF
 
       - name: Upload build logs
@@ -206,12 +218,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Upload verified alpha.11 build
+      - name: Upload verified alpha.12 build
         id: upload_build
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: living-kingdoms-0.1.0-alpha.11
+          name: living-kingdoms-0.1.0-alpha.12
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
