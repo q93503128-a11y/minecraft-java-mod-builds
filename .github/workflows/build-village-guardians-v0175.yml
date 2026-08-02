@@ -53,13 +53,20 @@ jobs:
           python3 tools/apply_v0175.py
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('tools/test_progression_depth.py')
-          text = path.read_text(encoding='utf-8')
-          text = text.replace('assert "ACTION_HEIGHT = 24" in shop_ui',
-                              'assert "ACTION_HEIGHT = 20" in shop_ui')
-          text = text.replace('assert "* 24 / 100" in shop_ui',
-                              'assert "contentWidth < 330" in shop_ui')
-          path.write_text(text, encoding='utf-8')
+
+          test_path = Path('tools/test_progression_depth.py')
+          test_text = test_path.read_text(encoding='utf-8')
+          test_text = test_text.replace('assert "ACTION_HEIGHT = 24" in shop_ui',
+                                        'assert "ACTION_HEIGHT = 20" in shop_ui')
+          test_text = test_text.replace('assert "* 24 / 100" in shop_ui',
+                                        'assert "contentWidth < 330" in shop_ui')
+          test_path.write_text(test_text, encoding='utf-8')
+
+          visual_path = Path('src/main/java/kr/moonseungjun/villageguardians/VillageSkillVisualSystem.java')
+          visual_text = visual_path.read_text(encoding='utf-8')
+          visual_text = visual_text.replace('SoundEvents.SHIELD_BLOCK, 1.15f, 0.78f',
+                                            'SoundEvents.SHIELD_BLOCK.value(), 1.15f, 0.78f')
+          visual_path.write_text(visual_text, encoding='utf-8')
           PY
           rm -f tools/apply_v0175.py tools/v0175_b64.part-* tools/v0175_patch.py.gz.b64
 
