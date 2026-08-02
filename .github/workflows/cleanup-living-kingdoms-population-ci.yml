@@ -1,0 +1,58 @@
+name: Clean Living Kingdoms population CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-living-kingdoms-population-ci.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove temporary population diagnostics
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiDiagnostics;\n', '')
+          text = text.replace('        ErdenPopulationCiDiagnostics.onServerTick(event);\n', '')
+          path.write_text(text, encoding='utf-8')
+          PY
+          git rm --ignore-unmatch \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationCiDiagnostics.java \
+            .github/workflows/validate-living-kingdoms-population.yml \
+            .github/workflows/validate-living-kingdoms-population-v2.yml \
+            .github/workflows/validate-living-kingdoms-population-final.yml \
+            .github/workflows/validate-living-kingdoms-population-diagnostic.yml \
+            .github/workflows/validate-living-kingdoms-population-complete.yml \
+            .github/workflows/validate-living-kingdoms-population-pass.yml \
+            .github/workflows/validate-living-kingdoms-population-loaded.yml \
+            .github/workflows/patch-living-kingdoms-population-comparator.yml \
+            .github/workflows/patch-living-kingdoms-population-ci-retention.yml \
+            .github/workflows/patch-living-kingdoms-population-audit.yml \
+            .github/workflows/cleanup-living-kingdoms-population-ci.yml \
+            .github/build-pointers/living-kingdoms-population.json \
+            .github/build-pointers/living-kingdoms-population-v2.json \
+            .github/build-pointers/living-kingdoms-population-final.json \
+            .github/build-pointers/living-kingdoms-population-diagnostic.json \
+            .github/build-pointers/living-kingdoms-population-complete.json \
+            .github/build-pointers/living-kingdoms-population-pass.json
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Clean completed Erden population diagnostics'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
