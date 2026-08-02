@@ -79,6 +79,7 @@ for name in ("test_magic_contract.py", "test_v12_overhaul.py", "test_v12_1_clean
     source = path.read_text(encoding="utf-8").replace(OLD_VERSION, NEW_VERSION)
     if name == "test_magic_contract.py":
         source = source.replace("apply_v12_1_particle_cleanup.py", "apply_v0121_alpha2_signature_geometry.py")
+        source = source.replace("all-circle world geometry", "per-spell world geometry")
     path.write_text(source, encoding="utf-8")
 
 print("Arcane Circle v0.12.1-alpha.2 signature geometry installed")
