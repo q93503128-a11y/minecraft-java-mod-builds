@@ -20,7 +20,7 @@ env:
 
 jobs:
   build:
-    name: Java 25 / NeoForge 26.2 vector sigils and release casting
+    name: Java 25 / NeoForge 26.2 release-cast vector sigils
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
