@@ -3,67 +3,41 @@ package kr.moonseungjun.livingkingdoms.world;
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.NoiseColumn;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.RandomState;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
-/** Persists stable political geography and requires connected dry land around every capital. */
+/**
+ * Owns the fixed political geography of the authored fantasy continent.
+ *
+ * <p>Capitals are never searched for inside vanilla terrain. Every homeland has a permanent map
+ * coordinate and design elevation. The living realm generator is responsible for creating the
+ * continent around these anchors; the settlement builder only performs local architectural grading.</p>
+ */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 8;
-    private static final int SEARCH_RADIUS = 2_048;
-    private static final int SEARCH_STEP = 256;
-    private static final int[][] OUTER_SAMPLES = {
-            {224, 0}, {-224, 0}, {0, 224}, {0, -224},
-            {224, 224}, {-224, 224}, {224, -224}, {-224, -224},
-            {112, 224}, {-112, 224}, {112, -224}, {-112, -224},
-            {224, 112}, {-224, 112}, {224, -112}, {-224, -112}
-    };
+    public static final int LAYOUT_REVISION = 9;
 
     private RealmSitePlanner() {
     }
 
-    public static RealmSiteLayoutSavedData.RealmSite surveyGeneratedTerrain(ServerLevel level,
-                                                                             String homelandId) {
-        int[] anchor = nominalCenter(homelandId);
-        List<Candidate> candidates = new ArrayList<>();
-        for (int dx = -SEARCH_RADIUS; dx <= SEARCH_RADIUS; dx += SEARCH_STEP) {
-            for (int dz = -SEARCH_RADIUS; dz <= SEARCH_RADIUS; dz += SEARCH_STEP) {
-                candidates.add(sample(level, homelandId, anchor[0] + dx, anchor[1] + dz, dx, dz));
-            }
-        }
-        Comparator<Candidate> score = Comparator.comparingDouble(Candidate::score);
-        Candidate selected = candidates.stream()
-                .filter(candidate -> candidate.water() <= 4 && candidate.outerWater() <= 7)
-                .min(score)
-                .orElseGet(() -> candidates.stream()
-                        .filter(candidate -> candidate.outerWater() <= 9)
-                        .min(score)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "No connected capital district exists for " + homelandId)));
+    public static RealmSiteLayoutSavedData.RealmSite designedSite(String homelandId) {
+        int[] center = nominalCenter(homelandId);
+        int baseY = designedBaseY(homelandId);
         LivingKingdoms.LOGGER.info(
-                "Authored district {} selected {},{} baseY={} inner_land={}/25 outer_land={}/16 range={} distance={} score={}",
-                homelandId, selected.x(), selected.z(), selected.baseY(),
-                25 - selected.water(), 16 - selected.outerWater(), selected.range(),
-                selected.distance(), selected.score()
+                "Using authored homeland anchor {} at {},{} baseY={} revision={}",
+                homelandId, center[0], center[1], baseY, LAYOUT_REVISION
         );
         return new RealmSiteLayoutSavedData.RealmSite(
-                selected.x(), selected.z(), selected.baseY(), LAYOUT_REVISION, false
+                center[0], center[1], baseY, LAYOUT_REVISION, false
         );
     }
 
-    public static synchronized RealmSiteLayoutSavedData.RealmSite storeSurvey(
-            ServerLevel level, String homelandId, RealmSiteLayoutSavedData.RealmSite surveyed) {
+    public static synchronized RealmSiteLayoutSavedData.RealmSite storeDesignedSite(
+            ServerLevel level, String homelandId) {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
         RealmSiteLayoutSavedData.RealmSite current = data.site(homelandId).orElse(null);
         if (current != null && current.revision() >= LAYOUT_REVISION) return current;
-        data.put(homelandId, surveyed);
-        return surveyed;
+        RealmSiteLayoutSavedData.RealmSite designed = designedSite(homelandId);
+        data.put(homelandId, designed);
+        return designed;
     }
 
     public static synchronized RealmSiteLayoutSavedData.RealmSite ensureSite(ServerLevel level,
@@ -71,17 +45,16 @@ public final class RealmSitePlanner {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
         RealmSiteLayoutSavedData.RealmSite current = data.site(homelandId).orElse(null);
         if (current != null && current.revision() >= LAYOUT_REVISION) return current;
-        return storeSurvey(level, homelandId, surveyGeneratedTerrain(level, homelandId));
+        return storeDesignedSite(level, homelandId);
     }
 
     public static synchronized void markBuilt(ServerLevel level, String homelandId) {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
         data.markBuilt(homelandId, LAYOUT_REVISION);
         RealmSiteLayoutSavedData.RealmSite site = data.site(homelandId).orElseThrow();
-        int removed = ConstructionDebrisCleaner.cleanConstructionCompletion(level, homelandId, site);
         LivingKingdoms.LOGGER.info(
-                "Completed authored homeland {} at {},{}, baseY={}, revision={}, construction_drops_removed={}",
-                homelandId, site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION, removed
+                "Completed authored homeland {} at {},{}, baseY={}, revision={}",
+                homelandId, site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION
         );
     }
 
@@ -102,7 +75,7 @@ public final class RealmSitePlanner {
         }
         int[] center = site == null ? nominalCenter(homelandId)
                 : new int[]{site.centerX(), site.centerZ()};
-        int baseY = site == null ? preferredBaseY(homelandId) : site.baseY();
+        int baseY = site == null ? designedBaseY(homelandId) : site.baseY();
         int[] offset = residenceOffset(residenceId);
         int y = "silvana_tree_home".equals(residenceId) ? baseY + 17 : baseY + 1;
         return new BlockPos(center[0] + offset[0], y, center[1] + offset[1]);
@@ -113,6 +86,7 @@ public final class RealmSitePlanner {
         return level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
     }
 
+    /** Permanent world-map coordinates. These never move between seeds or servers. */
     public static int[] nominalCenter(String homelandId) {
         return switch (homelandId) {
             case "silvana_forest" -> new int[]{-2_400, -1_200};
@@ -127,59 +101,17 @@ public final class RealmSitePlanner {
         };
     }
 
-    private static Candidate sample(ServerLevel level, String homelandId,
-                                    int x, int z, int offsetX, int offsetZ) {
-        ChunkGenerator generator = level.getChunkSource().getGenerator();
-        RandomState randomState = level.getChunkSource().randomState();
-        List<Integer> heights = new ArrayList<>(25);
-        int water = 0;
-        int min = Integer.MAX_VALUE;
-        int max = Integer.MIN_VALUE;
-        for (int dx = -128; dx <= 128; dx += 64) {
-            for (int dz = -128; dz <= 128; dz += 64) {
-                TerrainPoint point = generatedPoint(generator, randomState, level, x + dx, z + dz);
-                heights.add(point.y());
-                min = Math.min(min, point.y());
-                max = Math.max(max, point.y());
-                if (point.water()) water++;
-            }
-        }
-        int outerWater = 0;
-        for (int[] offset : OUTER_SAMPLES) {
-            if (generatedPoint(generator, randomState, level, x + offset[0], z + offset[1]).water()) {
-                outerWater++;
-            }
-        }
-        heights.sort(Integer::compareTo);
-        int median = heights.get(heights.size() / 2);
-        int preferred = preferredBaseY(homelandId);
-        int baseY = clamp(median, preferred - 10, preferred + 22);
-        double distance = Math.hypot(offsetX, offsetZ);
-        double terrainPreference;
-        if ("kardum_league".equals(homelandId)) {
-            terrainPreference = Math.abs((max - min) - 18) * 80.0 + Math.max(0, 76 - median) * 500.0;
-        } else if ("silvana_forest".equals(homelandId)) {
-            terrainPreference = Math.abs((max - min) - 9) * 110.0;
-        } else {
-            terrainPreference = (max - min) * 180.0;
-        }
-        double score = water * 30_000.0 + outerWater * 45_000.0
-                + terrainPreference + distance * 1.5;
-        return new Candidate(x, z, baseY, water, outerWater, max - min, distance, score);
-    }
-
-    private static TerrainPoint generatedPoint(ChunkGenerator generator, RandomState randomState,
-                                                ServerLevel level, int x, int z) {
-        int y = generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE, level, randomState) - 1;
-        NoiseColumn column = generator.getBaseColumn(x, z, level, randomState);
-        BlockState state = column.getBlock(y);
-        return new TerrainPoint(y, !state.getFluidState().isEmpty());
-    }
-
-    private static int preferredBaseY(String homelandId) {
+    /** Design elevations match the intended regional silhouette, not sampled vanilla ground. */
+    public static int designedBaseY(String homelandId) {
         return switch (homelandId) {
-            case "silvana_forest" -> 76;
-            case "kardum_league" -> 86;
+            case "silvana_forest" -> 79;
+            case "kardum_league" -> 92;
+            case "red_steppe" -> 76;
+            case "velas_free_city" -> 68;
+            case "sahar_theocracy" -> 73;
+            case "grey_crown_ruins" -> 88;
+            case "northern_dragonlands" -> 105;
+            case "western_archipelago" -> 67;
             default -> 72;
         };
     }
@@ -197,12 +129,4 @@ public final class RealmSitePlanner {
             default -> new int[]{26, 36};
         };
     }
-
-    private static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
-    }
-
-    private record TerrainPoint(int y, boolean water) {}
-    private record Candidate(int x, int z, int baseY, int water, int outerWater, int range,
-                             double distance, double score) {}
 }
