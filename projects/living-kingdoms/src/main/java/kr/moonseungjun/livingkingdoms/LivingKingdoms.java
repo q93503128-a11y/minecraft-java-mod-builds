@@ -19,6 +19,7 @@ import kr.moonseungjun.livingkingdoms.world.SelectionStagingManager;
 import kr.moonseungjun.livingkingdoms.world.StarterNpcManager;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmDiagnostics;
 import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
+import kr.moonseungjun.livingkingdoms.worldgen.LivingWorldgenTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -42,6 +43,7 @@ public final class LivingKingdoms {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public LivingKingdoms(IEventBus modEventBus) {
+        LivingWorldgenTypes.register(modEventBus);
         FoundationCatalog.bootstrap();
         modEventBus.addListener(LivingKingdomsNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
