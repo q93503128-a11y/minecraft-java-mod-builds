@@ -57,7 +57,7 @@ def main() -> None:
     assert "openSkillTestSlot" in controller
     assert "K: 시험 메뉴 다시 열기" in controller
     assert "if (VillageSkillTestSystem.isEnabled(player)) openSkillTest(player);" in controller
-    assert "외부 기술 시험장" in descriptions
+    assert "외부 시험장" in descriptions
     assert 'return "임시 장착"' in descriptions
 
     print("[PASS] Common growth has five ten-stage branches with functional late capstones")
