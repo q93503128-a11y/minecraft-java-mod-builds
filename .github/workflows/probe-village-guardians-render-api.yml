@@ -42,30 +42,22 @@ jobs:
           }
           EOF
           CP="$(gradle --no-daemon --no-configuration-cache -q -I "$RUNNER_TEMP/cp.gradle" printCompileJavaClasspath | tail -n 1)"
-          OUT="$GITHUB_WORKSPACE/ci-results/village-guardians-render-api.txt"
-          mkdir -p "$(dirname "$OUT")"
-          {
-            echo '=== CLASSPATH ==='
-            echo "$CP"
-            echo '=== KeyMapping ==='
-            javap -classpath "$CP" -p net.minecraft.client.KeyMapping || true
-            echo '=== InputConstants ==='
-            javap -classpath "$CP" -p com.mojang.blaze3d.platform.InputConstants com.mojang.blaze3d.platform.InputConstants\$Key com.mojang.blaze3d.platform.InputConstants\$Type || true
-            echo '=== Display ==='
-            javap -classpath "$CP" -p net.minecraft.world.entity.Display net.minecraft.world.entity.Display\$ItemDisplay net.minecraft.world.entity.Display\$BlockDisplay || true
-            echo '=== EntityTypes ==='
-            javap -classpath "$CP" -p net.minecraft.world.entity.EntityTypes || true
-            echo '=== Transformation ==='
-            javap -classpath "$CP" -p com.mojang.math.Transformation org.joml.Quaternionf org.joml.Vector3f || true
-            echo '=== ItemDisplayContext ==='
-            javap -classpath "$CP" -p net.minecraft.world.item.ItemDisplayContext || true
-          } > "$OUT" 2>&1
+          OUT="$GITHUB_WORKSPACE/ci-results/village-guardians-render-api"
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          javap -classpath "$CP" -p net.minecraft.client.KeyMapping > "$OUT/keymapping.txt" 2>&1 || true
+          javap -classpath "$CP" -p com.mojang.blaze3d.platform.InputConstants com.mojang.blaze3d.platform.InputConstants\$Key com.mojang.blaze3d.platform.InputConstants\$Type > "$OUT/inputconstants.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.world.entity.Display > "$OUT/display.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.world.entity.Display\$ItemDisplay > "$OUT/item-display.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.world.entity.Display\$BlockDisplay > "$OUT/block-display.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.world.entity.EntityTypes > "$OUT/entity-types.txt" 2>&1 || true
+          javap -classpath "$CP" -p com.mojang.math.Transformation > "$OUT/transformation.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.world.item.ItemDisplayContext > "$OUT/item-display-context.txt" 2>&1 || true
       - name: Commit probe
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ci-results/village-guardians-render-api.txt
-          git commit -m 'Record Village Guardians mapped render API probe' || exit 0
+          git add ci-results/village-guardians-render-api
+          git commit -m 'Split Village Guardians mapped render API probe' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
