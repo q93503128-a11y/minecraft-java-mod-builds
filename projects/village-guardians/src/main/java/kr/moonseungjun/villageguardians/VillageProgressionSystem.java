@@ -1,6 +1,8 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -215,7 +217,11 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized float smithyDamageMultiplier(ServerPlayer player) {
-        return 1.0f + smithyLevel * 0.04f + forgeRank(player) * 0.12f;
+        return 1.0f + smithyLevel * 0.04f;
+    }
+
+    public static synchronized int experienceMultiplierPercent() {
+        return isOperational(Building.BARRACKS) ? 100 + barracksLevel * 10 : 100;
     }
 
     public static synchronized float learnedSkillDamageMultiplier(ServerPlayer player) {
@@ -280,6 +286,8 @@ public final class VillageProgressionSystem {
         int count = 3 + storehouseLevel * 2;
         ItemStack bread = Items.BREAD.getDefaultInstance();
         bread.setCount(count);
+        bread.set(DataComponents.CUSTOM_NAME,
+                Component.literal("마을 배급빵").withStyle(ChatFormatting.GOLD));
         giveOrDrop(player, bread);
         CLAIM_DAYS.put(player.getUUID(), day);
         persist();
@@ -306,6 +314,8 @@ public final class VillageProgressionSystem {
         }
         ItemStack arrows = Items.ARROW.getDefaultInstance();
         arrows.setCount(count);
+        arrows.set(DataComponents.CUSTOM_NAME,
+                Component.literal("수호 화살").withStyle(ChatFormatting.WHITE));
         giveOrDrop(player, arrows);
         return "화살 " + count + "개 구매 완료 | 남은 주화 " + coins(player);
     }
@@ -321,25 +331,14 @@ public final class VillageProgressionSystem {
         }
         ItemStack food = Items.COOKED_BEEF.getDefaultInstance();
         food.setCount(count);
+        food.set(DataComponents.CUSTOM_NAME,
+                Component.literal("전투 건량").withStyle(ChatFormatting.GOLD));
         giveOrDrop(player, food);
         return "전투 식량 " + count + "개 구매 완료 | 남은 주화 " + coins(player);
     }
 
     public static synchronized String improveForgeRank(ServerPlayer player) {
-        if (!isOperational(Building.SMITHY)) {
-            return "대장간이 파괴되어 장비 강화를 할 수 없습니다.";
-        }
-        int current = forgeRank(player);
-        if (current >= MAX_PERSONAL_RANK) {
-            return "대장간 장비 강화가 최고 단계입니다.";
-        }
-        int cost = 80 + current * 100;
-        if (!spendCoins(player, cost)) {
-            return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + coins(player);
-        }
-        FORGE_RANKS.put(player.getUUID(), current + 1);
-        persist();
-        return "장비 강화 단계 " + (current + 1) + " 달성 | 공격력 보너스 상승";
+        return "장비 강화는 대장간에서 강화할 장비를 직접 선택하는 방식으로 변경되었습니다.";
     }
 
     public static synchronized String learnNextSkill(ServerPlayer player) {
@@ -360,51 +359,41 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized String train(ServerPlayer player) {
-        if (!isOperational(Building.BARRACKS)) {
-            return "병영이 파괴되어 훈련할 수 없습니다.";
-        }
-        long now = System.currentTimeMillis();
-        long readyAt = TRAINING_READY_AT.getOrDefault(player.getUUID(), 0L);
-        if (readyAt > now) {
-            long seconds = Math.max(1L, (readyAt - now + 999L) / 1000L);
-            return "다음 훈련까지 " + seconds + "초 남았습니다.";
-        }
-        int xp = 30 + barracksLevel * 18;
-        VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(player, xp);
-        TRAINING_READY_AT.put(player.getUUID(), now + 180_000L);
-        return "병영 훈련 완료 | XP " + result.awardedExperience()
-                + " | 현재 레벨 " + result.current().level();
+        return "병영 훈련은 패시브 효과입니다. 현재 모든 경험치 획득량 +"
+                + (experienceMultiplierPercent() - 100) + "%";
     }
 
     public static synchronized String useInfirmary(ServerPlayer player) {
-        if (!isOperational(Building.INFIRMARY)) {
-            return "의무소가 파괴되어 치료할 수 없습니다.";
-        }
-        int level = infirmaryLevel;
-        float heal = 8.0f + level * 4.0f;
-        float before = player.getHealth();
-        player.heal(heal);
-        if (level >= 1) clearTreatmentEffects(player);
-        if (level >= 2) {
-            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * (6 + level * 2),
-                    level >= 5 ? 1 : 0, false, true, true));
-        }
-        if (level >= 3) {
-            player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 20 * 35,
-                    Math.min(2, level - 3), false, true, true));
-        }
-        if (level >= 5) {
-            player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 20 * 8, 0, false, true, true));
-        }
-        float restored = Math.max(0.0f, player.getHealth() - before);
-        return "응급 치료 완료 | 체력 " + Math.round(restored / 2.0f) + "칸 회복"
-                + (level >= 1 ? " · 해로운 상태 제거" : "")
-                + (level >= 3 ? " · 보호막 지급" : "");
+        if (!isOperational(Building.INFIRMARY)) return "의무소가 파괴되어 효과를 받을 수 없습니다.";
+        if (isDaytime()) player.setHealth(player.getMaxHealth());
+        applyInfirmaryBuffs(player);
+        return "의무소 효과 적용 | 낮에는 체력이 완전히 회복되고 시설 단계에 따라 전투 버프를 받습니다.";
     }
 
     public static synchronized int respawnDelayTicks() {
-        int seconds = isOperational(Building.INFIRMARY) ? Math.max(10, 20 - infirmaryLevel * 2) : 20;
-        return seconds * 20;
+        return 20 * 20;
+    }
+
+    public static void tickInfirmary(MinecraftServer server) {
+        if (!isOperational(Building.INFIRMARY)) return;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (!player.isAlive() || !VillageCouncilState.isInsideVillage(player)) continue;
+            if (isDaytime()) player.setHealth(player.getMaxHealth());
+            applyInfirmaryBuffs(player);
+        }
+    }
+
+    private static boolean isDaytime() {
+        return VillageCouncilState.currentPhase() == VillageTimePhase.DAY;
+    }
+
+    private static void applyInfirmaryBuffs(ServerPlayer player) {
+        int level = infirmaryLevel();
+        if (level >= 1) player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 60, 0, false, true, true));
+        if (level >= 2) player.addEffect(new MobEffectInstance(MobEffects.SPEED, 60, 0, false, true, true));
+        if (level >= 3) player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 60, 0, false, true, true));
+        if (level >= 4) player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, true, true));
+        if (level >= 5) player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 0, false, true, true));
     }
 
     private static void clearTreatmentEffects(ServerPlayer player) {
@@ -486,7 +475,7 @@ public final class VillageProgressionSystem {
                     false);
         }
 
-        if (allCoreBuildingsDestroyed()) {
+        if (building == Building.TOWN_HALL && next == 0 && !gameOver) {
             gameOver = true;
             persist();
             VillageRaidSystem.triggerGameOver(server);
@@ -494,21 +483,9 @@ public final class VillageProgressionSystem {
     }
 
     public static void healRaidParty(MinecraftServer server, boolean victory) {
-        int level = infirmaryLevel();
-        if (!isOperational(Building.INFIRMARY) || (level <= 0 && !victory)) return;
-        float heal = victory ? 10.0f + level * 4.0f : 2.0f + level * 2.0f;
+        if (!isOperational(Building.INFIRMARY)) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (!VillageCouncilState.isInsideVillage(player)) continue;
-            player.heal(heal);
-            if (level >= 1) clearTreatmentEffects(player);
-            if (level >= 2) {
-                player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * (5 + level),
-                        level >= 5 ? 1 : 0, false, true, true));
-            }
-            if (victory && level >= 3) {
-                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 20 * 45,
-                        Math.min(2, level - 3), false, true, true));
-            }
+            if (VillageCouncilState.isInsideVillage(player)) applyInfirmaryBuffs(player);
         }
     }
 
@@ -571,12 +548,7 @@ public final class VillageProgressionSystem {
     }
 
     private static boolean allCoreBuildingsDestroyed() {
-        for (Building building : Building.values()) {
-            if (building != Building.WALLS && isOperational(building)) {
-                return false;
-            }
-        }
-        return true;
+        return !isOperational(Building.TOWN_HALL);
     }
 
     private static void setLevel(Building building, int value) {

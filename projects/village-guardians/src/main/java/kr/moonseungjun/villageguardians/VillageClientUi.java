@@ -22,6 +22,7 @@ public final class VillageClientUi {
                             case "status", "wave_intel" -> new VillageStatusScreen(payload);
                             case "equipment_shop" -> new VillageShopScreen(payload);
                             case "equipment_fusion" -> new VillageFusionScreen(payload);
+                            case "result" -> new VillageResultScreen(payload);
                             case "building", "management", "funding", "tower_control", "tower_detail", "caller", "relic_choice" ->
                                     new VillageFacilityScreen(payload);
                             default -> new VillageUiScreen(payload);

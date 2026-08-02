@@ -159,7 +159,9 @@ public final class VillageCouncilState {
     }
 
     public static synchronized ExperienceResult grantExperience(ServerPlayer player, int requestedAmount) {
-        int amount = Math.max(0, requestedAmount);
+        int baseAmount = Math.max(0, requestedAmount);
+        int amount = Math.max(0, Math.round(baseAmount
+                * VillageProgressionSystem.experienceMultiplierPercent() / 100.0f));
         RpgProgress previous = progressOf(player.getUUID());
         int level = previous.level();
         int experience = previous.experience();
@@ -189,7 +191,7 @@ public final class VillageCouncilState {
         String next = progress.level() >= RpgProgress.MAX_LEVEL
                 ? "최고 레벨" : progress.experience() + "/" + progress.experienceToNextLevel() + " XP";
         return "레벨 " + progress.level() + " | " + next
-                + " | 장비 강화 " + VillageProgressionSystem.forgeRank(player)
+                + " | 장착 장비 최고 강화 +" + VillageEquipmentRaritySystem.bestEquippedEnhancement(player)
                 + " | 능력 습득 " + VillageProgressionSystem.skillRank(player);
     }
 

@@ -208,7 +208,7 @@ public final class VillageRaidSystem {
         discardEnemies(server);
         clearState();
         server.getPlayerList().broadcastSystemMessage(
-                Component.literal("§4[게임 오버] §f모든 핵심 시설이 파괴되었습니다."), false);
+                Component.literal("§4[게임 오버] §f마을 회관이 파괴되었습니다."), false);
         VillageUiService.openGameOverForAll(server);
     }
 

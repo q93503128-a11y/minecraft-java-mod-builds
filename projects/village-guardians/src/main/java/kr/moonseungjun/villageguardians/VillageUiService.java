@@ -287,7 +287,7 @@ public final class VillageUiService {
     }
 
     public static void openGameOverForAll(MinecraftServer server) {
-        String body = "§c마을의 모든 핵심 건물이 파괴되었습니다.\n\n§f이전 날부터 시작하면 현재 성장을 유지합니다.\n"
+        String body = "§c마을 회관이 파괴되어 방어에 실패했습니다.\n\n§f이전 날부터 시작하면 현재 성장을 유지합니다.\n"
                 + "§f처음부터 시작하면 마을 발전과 개인 성장을 초기화합니다.";
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             send(player, "game_over", "마을 방어 실패", body,
@@ -301,11 +301,12 @@ public final class VillageUiService {
                 + durabilitySummary();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             send(player, "victory", "방어 성공", body,
-                    List.of("open_caller_menu"), List.of("호출기 메뉴|상태 확인과 마을 귀환"));
+                    List.of("open_quick_chat"), List.of("빠른 통신|수호단 신호 전송"));
         }
     }
 
     public static void handleAction(ServerPlayer player, String action) {
+        if ("facility_info".equals(action)) return;
         MinecraftServer server = player.level().getServer();
         if (server == null || action == null || action.isBlank()) return;
 
@@ -605,7 +606,19 @@ public final class VillageUiService {
 
     private static void send(ServerPlayer player, String screenId, String title, String body,
                              List<String> actions, List<String> labels) {
+        List<String> outputActions = new ArrayList<>(actions);
+        List<String> outputLabels = new ArrayList<>(labels);
+        if (usesFacilityInformation(screenId) && !body.isBlank() && !outputActions.contains("facility_info")) {
+            outputActions.add(0, "facility_info");
+            outputLabels.add(0, "시설 정보|현재 단계·내구도·고유 효과 확인");
+        }
         VillageNetwork.open(player, new VillageNetwork.OpenVillageUiPayload(
-                screenId, title, body, String.join(SEP, actions), String.join(SEP, labels)));
+                screenId, title, body, String.join(SEP, outputActions), String.join(SEP, outputLabels)));
+    }
+
+    private static boolean usesFacilityInformation(String screenId) {
+        return screenId.equals("building") || screenId.equals("management") || screenId.equals("funding")
+                || screenId.equals("tower_control") || screenId.equals("tower_detail")
+                || screenId.equals("caller") || screenId.equals("relic_choice");
     }
 }

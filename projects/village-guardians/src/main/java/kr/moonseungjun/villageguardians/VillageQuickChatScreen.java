@@ -39,18 +39,19 @@ public final class VillageQuickChatScreen extends Screen {
         int count = Math.min(actions.length, labels.length);
         int centerX = width / 2;
         int centerY = height / 2;
-        int centerWidth = Math.min(176, Math.max(116, width - 24));
-        int centerHeight = 50;
+        int centerWidth = 56;
+        int centerHeight = 18;
         int centerLeft = centerX - centerWidth / 2;
         int centerTop = centerY - centerHeight / 2;
 
         graphics.text(font, fit("B/U 빠른 통신 · 선택 즉시 전송 · ESC 닫기", Math.max(1, width - 20)),
                 10, 9, MUTED, false);
-        graphics.fill(centerLeft - 2, centerTop - 2, centerLeft + centerWidth + 2,
-                centerTop + centerHeight + 2, BORDER);
-        graphics.fill(centerLeft, centerTop, centerLeft + centerWidth, centerTop + centerHeight, PANEL);
-        graphics.centeredText(font, fit("빠른 통신", centerWidth - 16), centerX, centerTop + 11, TEXT);
-        graphics.centeredText(font, fit("가운데 클릭: 닫기", centerWidth - 16), centerX, centerTop + 29, MUTED);
+        boolean closeHovered = inside(mouseX, mouseY, centerLeft, centerTop, centerWidth, centerHeight);
+        graphics.fill(centerLeft - 1, centerTop - 1, centerLeft + centerWidth + 1,
+                centerTop + centerHeight + 1, closeHovered ? ACCENT : BORDER);
+        graphics.fill(centerLeft, centerTop, centerLeft + centerWidth, centerTop + centerHeight,
+                closeHovered ? CARD_HOVER : PANEL);
+        graphics.centeredText(font, "닫기", centerX, centerTop + 5, closeHovered ? TEXT : MUTED);
 
         for (int index = 0; index < count; index++) {
             OptionBounds bounds = optionBounds(index, count, centerX, centerY);
@@ -78,8 +79,8 @@ public final class VillageQuickChatScreen extends Screen {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
         int centerX = width / 2;
         int centerY = height / 2;
-        int centerWidth = Math.min(176, Math.max(116, width - 24));
-        int centerHeight = 50;
+        int centerWidth = 56;
+        int centerHeight = 18;
         int centerLeft = centerX - centerWidth / 2;
         int centerTop = centerY - centerHeight / 2;
         if (inside(click.x(), click.y(), centerLeft, centerTop, centerWidth, centerHeight)) {

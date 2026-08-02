@@ -106,9 +106,9 @@ def main() -> None:
     assert "nextEffect" in controller
     assert "upgradeCost" in controller
     assert "repairCost" in controller
-    assert 'case "smithy_forge_upgrade"' in controller
+    assert 'case "forge_upgrade", "smithy_forge_upgrade"' in controller
     assert '"smithy_forge_upgrade"' in controller
-    assert "개인 장비 피해 보정 강화" in controller
+    assert "장비 선택 강화" in controller
     assert "openPersonalProgress(ServerPlayer player)" in controller
     assert "openSkillTree(player);" in controller
     assert "장비 강화는 대장간 단말기 근처에서만 가능합니다." in controller
@@ -130,7 +130,7 @@ def main() -> None:
     assert "인벤토리 화면의 빠른 통신 버튼" in starter
 
     assert "combineSelected" in rarity and "fusionCandidates" in rarity
-    assert "재화는 소모되지 않았습니다" in rarity
+    assert "등급 하나로 합성했습니다" in rarity
     assert len([line for line in rarity.splitlines() if line.strip().startswith(("COMMON(", "UNCOMMON(", "RARE(", "EPIC(", "LEGENDARY("))]) == 5
     assert "event.getDrops().clear()" in raid_loot
     assert "createRaidDrop" in raid_loot
@@ -175,7 +175,7 @@ def main() -> None:
     print("[PASS] Town hall shows current/next effects and exact repair or upgrade costs")
     print("[PASS] Status strips unreadable legacy white formatting and remains scroll-free")
     print("[PASS] Caller item is removed while inventory and keyboard access remain")
-    print("[PASS] Smithy strengthening and cost-free rarity fusion are both available")
+    print("[PASS] Selected equipment enhancement and rarity fusion are both available")
     print("[PASS] Building crest migration restores facade blocks instead of carving holes")
     print("[PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired")
 

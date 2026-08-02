@@ -122,11 +122,12 @@ public final class VillageFacilityScreen extends Screen {
         panel(graphics, areas.detailLeft(), areas.detailTop(), areas.detailRight(), areas.detailBottom(), SURFACE);
         int textLeft = areas.detailLeft() + 15;
         int textRight = areas.detailRight() - 15;
-        int buttonWidth = selectedIndex >= 0 ? Math.min(108, Math.max(70, areas.detailWidth() / 4)) : 0;
+        boolean executable = selectedIndex >= 0 && !informationSelected();
+        int buttonWidth = executable ? Math.min(108, Math.max(70, areas.detailWidth() / 4)) : 0;
         int buttonLeft = textRight - buttonWidth;
         int buttonTop = areas.detailBottom() - ACTION_HEIGHT - 11;
         int textTop = areas.detailTop() + 13;
-        int textBottom = selectedIndex >= 0 ? buttonTop - 8 : areas.detailBottom() - 11;
+        int textBottom = executable ? buttonTop - 8 : areas.detailBottom() - 11;
 
         List<DetailLine> lines = detailLines(Math.max(100, textRight - textLeft));
         int contentHeight = 2;
@@ -149,7 +150,7 @@ public final class VillageFacilityScreen extends Screen {
         scrollbar(graphics, areas.detailRight() - 6, textTop, textBottom,
                 detailScroll, maxScroll, visibleHeight, contentHeight);
 
-        if (selectedIndex < 0) return;
+        if (!executable) return;
         boolean hovered = inside(mouseX, mouseY, buttonLeft, buttonTop, buttonWidth, ACTION_HEIGHT);
         graphics.fill(buttonLeft - 1, buttonTop - 1, buttonLeft + buttonWidth + 1,
                 buttonTop + ACTION_HEIGHT + 1, hovered ? GOLD : accent());
@@ -165,15 +166,16 @@ public final class VillageFacilityScreen extends Screen {
         if (selectedIndex >= 0) {
             String[] parts = labelParts(labels[selectedIndex]);
             addWrapped(result, parts[0], width, accent(), 13, 0);
-            if (!parts[1].isBlank()) addWrapped(result, parts[1], width, TEXT, 11, 2);
-            addWrapped(result, VillageActionDescriptions.describe(actions[selectedIndex], parts[0]),
-                    width, MUTED, 11, 5);
+            if (!informationSelected()) {
+                if (!parts[1].isBlank()) addWrapped(result, parts[1], width, TEXT, 11, 2);
+                addWrapped(result, VillageActionDescriptions.describe(actions[selectedIndex], parts[0]),
+                        width, MUTED, 11, 5);
+            }
         }
-        if (!payload.body().isBlank()) {
-            addWrapped(result, "현재 정보", width, accent(), 11, 7);
+        if (shouldShowBody()) {
             for (String paragraph : plain(payload.body()).split("\n", -1)) {
                 if (paragraph.isBlank()) result.add(new DetailLine(FormattedCharSequence.EMPTY, TEXT, 7, 0));
-                else addWrapped(result, paragraph, width, TEXT, 11, 0);
+                else addWrapped(result, paragraph, width, TEXT, 11, 2);
             }
         }
         if (result.isEmpty()) addWrapped(result, "표시할 정보가 없습니다.", width, MUTED, 11, 0);
@@ -210,7 +212,7 @@ public final class VillageFacilityScreen extends Screen {
                 return true;
             }
         }
-        if (selectedIndex >= 0) {
+        if (selectedIndex >= 0 && !informationSelected()) {
             int buttonWidth = Math.min(108, Math.max(70, areas.detailWidth() / 4));
             int buttonLeft = areas.detailRight() - 15 - buttonWidth;
             int buttonTop = areas.detailBottom() - ACTION_HEIGHT - 11;
@@ -238,7 +240,7 @@ public final class VillageFacilityScreen extends Screen {
     }
 
     private void executeSelected() {
-        if (selectedIndex < 0 || selectedIndex >= actionCount()) return;
+        if (selectedIndex < 0 || selectedIndex >= actionCount() || informationSelected()) return;
         String action = actions[selectedIndex];
         String[] parts = labelParts(labels[selectedIndex]);
         String description = VillageActionDescriptions.describe(action, parts[0]);
@@ -250,6 +252,15 @@ public final class VillageFacilityScreen extends Screen {
     }
 
     private int actionCount() { return Math.min(actions.length, labels.length); }
+
+    private boolean informationSelected() {
+        return selectedIndex >= 0 && selectedIndex < actionCount()
+                && "facility_info".equals(actions[selectedIndex]);
+    }
+
+    private boolean shouldShowBody() {
+        return !payload.body().isBlank() && (actionCount() == 0 || informationSelected());
+    }
 
     private String[] labelParts(String label) {
         String[] raw = label.split("\\|", 2);

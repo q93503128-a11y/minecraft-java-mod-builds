@@ -11,21 +11,16 @@ public final class VillageLocalActionSystem {
         if (player == null || action == null) return false;
         switch (action) {
             case "use_infirmary" -> {
-                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.INFIRMARY)) {
-                    player.sendSystemMessage(Component.literal("§c치료는 의무소 단말기 근처에서만 가능합니다."));
-                    return true;
-                }
-                player.sendSystemMessage(Component.literal("§a" + VillageProgressionSystem.useInfirmary(player)));
-                VillageUiController.openBuilding(player, VillageProgressionSystem.Building.INFIRMARY);
+                VillageUiController.openResult(player, "의무소",
+                        "의무소는 자동 버프 건물입니다. 낮에는 마을 안에서 체력이 항상 완전히 회복됩니다.",
+                        "open_dashboard");
                 return true;
             }
             case "train" -> {
-                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
-                    player.sendSystemMessage(Component.literal("§c전투 훈련은 병영 단말기 근처에서만 가능합니다."));
-                    return true;
-                }
-                player.sendSystemMessage(Component.literal("§e" + VillageProgressionSystem.train(player)));
-                VillageUiController.openBuilding(player, VillageProgressionSystem.Building.BARRACKS);
+                VillageUiController.openResult(player, "병영 훈련",
+                        "전투 훈련은 패시브로 변경되었습니다. 현재 모든 경험치 획득량 +"
+                                + (VillageProgressionSystem.experienceMultiplierPercent() - 100) + "%",
+                        "open_dashboard");
                 return true;
             }
             default -> { return false; }

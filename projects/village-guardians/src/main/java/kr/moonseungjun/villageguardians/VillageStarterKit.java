@@ -18,11 +18,16 @@ public final class VillageStarterKit {
 
     public static void grantOnLogin(ServerPlayer player) {
         if (player.addTag(STARTER_KIT_TAG)) {
-            giveOrDrop(player, Items.IRON_SWORD.getDefaultInstance());
-            giveOrDrop(player, Items.SHIELD.getDefaultInstance());
-            giveOrDrop(player, Items.BOW.getDefaultInstance());
+            giveOrDrop(player, VillageEquipmentRaritySystem.createNamed(
+                    Items.IRON_SWORD, VillageEquipmentRaritySystem.Rarity.COMMON, "초임 수호검"));
+            giveOrDrop(player, VillageEquipmentRaritySystem.createNamed(
+                    Items.SHIELD, VillageEquipmentRaritySystem.Rarity.COMMON, "초임 수호 방패"));
+            giveOrDrop(player, VillageEquipmentRaritySystem.createNamed(
+                    Items.BOW, VillageEquipmentRaritySystem.Rarity.COMMON, "초임 성루궁"));
             ItemStack arrows = Items.ARROW.getDefaultInstance();
             arrows.setCount(64);
+            arrows.set(DataComponents.CUSTOM_NAME,
+                    Component.literal("수호 화살").withStyle(ChatFormatting.WHITE));
             giveOrDrop(player, arrows);
             player.sendSystemMessage(Component.literal(
                     "§a[지급 완료] §f기본 전투 장비와 첫 화살 64개가 지급되었습니다."));

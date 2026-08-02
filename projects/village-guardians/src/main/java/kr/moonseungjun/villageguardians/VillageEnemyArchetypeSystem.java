@@ -10,6 +10,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.Items;
@@ -49,6 +50,7 @@ public final class VillageEnemyArchetypeSystem {
             int wave,
             boolean boss) {
         equip(mob, archetype);
+        applyArchetypeAttributes(mob, archetype, day);
         applyArchetypeEffects(mob, archetype, day, wave);
         trait.applyLongEffects(mob);
         mob.setCustomName(Component.literal(displayName(archetype, trait, day, wave, boss)));
@@ -294,9 +296,20 @@ public final class VillageEnemyArchetypeSystem {
         }
     }
 
+    private static void applyArchetypeAttributes(Mob mob, Archetype archetype, int day) {
+        if (archetype == Archetype.RUSHER) {
+            var health = mob.getAttribute(Attributes.MAX_HEALTH);
+            if (health != null) health.setBaseValue(Math.min(20.0, 11.0 + Math.max(0, day - 1) * 0.65));
+            var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+            if (attack != null) attack.setBaseValue(Math.min(4.0, 1.5 + Math.max(0, day - 1) * 0.12));
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.19);
+        }
+    }
+
     private static void applyArchetypeEffects(Mob mob, Archetype archetype, int day, int wave) {
         switch (archetype) {
-            case RUSHER -> mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG_EFFECT_TICKS, 2));
+            case RUSHER -> { }
             case BULWARK -> {
                 mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 1));
                 mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, LONG_EFFECT_TICKS, 0));

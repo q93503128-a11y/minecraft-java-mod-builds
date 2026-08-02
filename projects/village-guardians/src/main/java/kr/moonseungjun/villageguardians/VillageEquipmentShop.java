@@ -178,16 +178,21 @@ public final class VillageEquipmentShop {
         public float meleeMultiplier() { return meleeMultiplier; }
         public float projectileMultiplier() { return projectileMultiplier; }
 
+        public VillageEquipmentRaritySystem.Rarity rarity() {
+            if (requiredDay >= 9) return VillageEquipmentRaritySystem.Rarity.LEGENDARY;
+            if (requiredDay >= 6) return VillageEquipmentRaritySystem.Rarity.EPIC;
+            if (requiredDay >= 4) return VillageEquipmentRaritySystem.Rarity.RARE;
+            if (requiredDay >= 2) return VillageEquipmentRaritySystem.Rarity.UNCOMMON;
+            return VillageEquipmentRaritySystem.Rarity.COMMON;
+        }
+
         public ItemStack createStack() {
-            ItemStack stack = item.getDefaultInstance();
-            stack.set(DataComponents.CUSTOM_NAME, Component.literal(displayName).withStyle(ChatFormatting.GOLD));
-            return stack;
+            return VillageEquipmentRaritySystem.createNamed(item, rarity(), displayName);
         }
 
         public boolean matches(ItemStack stack) {
-            if (stack.isEmpty() || stack.getItem() != item) return false;
-            Component name = stack.get(DataComponents.CUSTOM_NAME);
-            return name != null && displayName.equals(ChatFormatting.stripFormatting(name.getString()));
+            return !stack.isEmpty() && stack.getItem() == item
+                    && displayName.equals(VillageEquipmentRaritySystem.baseDisplayName(stack));
         }
 
         public static Optional<Offer> parse(String value) {

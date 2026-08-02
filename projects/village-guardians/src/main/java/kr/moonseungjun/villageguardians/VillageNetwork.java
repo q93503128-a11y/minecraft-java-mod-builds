@@ -45,7 +45,7 @@ public final class VillageNetwork {
                 "레벨 " + progress.level() + " · " + xp,
                 role,
                 "주화 " + VillageProgressionSystem.coins(player)
-                        + " · 장비 +" + VillageProgressionSystem.forgeRank(player),
+                        + " · 장비 최고 +" + VillageEquipmentRaritySystem.bestEquippedEnhancement(player),
                 "개인 연구 +" + VillageProgressionSystem.skillRank(player)
                         + " · 유물 " + VillageRelicSystem.summary(player)
                         + " · " + VillageCouncilState.currentDay() + "일 "

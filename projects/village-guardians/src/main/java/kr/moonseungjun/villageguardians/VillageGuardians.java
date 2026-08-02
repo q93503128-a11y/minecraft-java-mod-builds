@@ -159,6 +159,7 @@ public final class VillageGuardians {
             VillageCouncilState.enforceFrozenTime(event.getServer());
             VillageGlobalMobPurgeSystem.purge(event.getServer());
             VillageRpgSystem.refreshPassives(event.getServer());
+            VillageProgressionSystem.tickInfirmary(event.getServer());
             for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
                 if (!VillageRespawnSystem.isDowned(player)) player.setGameMode(GameType.ADVENTURE);
             }

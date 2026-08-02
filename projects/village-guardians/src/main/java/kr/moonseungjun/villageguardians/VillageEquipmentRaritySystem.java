@@ -15,9 +15,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Curated raid equipment drops and explicit cost-free three-to-one rarity fusion. */
+/** Graded game equipment, three-item fusion and per-item smithy enhancement. */
 public final class VillageEquipmentRaritySystem {
     private static final int MAIN_INVENTORY_SLOTS = 36;
+    private static final int MAX_ENHANCEMENT = 5;
     private static final List<Item> EARLY_ITEMS = List.of(
             Items.IRON_SWORD, Items.BOW, Items.SHIELD, Items.IRON_CHESTPLATE, Items.CROSSBOW);
     private static final List<Item> LATE_ITEMS = List.of(
@@ -29,8 +30,13 @@ public final class VillageEquipmentRaritySystem {
     public static ItemStack createRaidDrop(int day, boolean boss, RandomSource random) {
         List<Item> pool = day >= 6 ? LATE_ITEMS : EARLY_ITEMS;
         Item item = pool.get(random.nextInt(pool.size()));
-        Rarity rarity = rollRarity(day, boss, random);
-        return create(item, rarity);
+        return createNamed(item, rollRarity(day, boss, random), displayName(item));
+    }
+
+    public static ItemStack createNamed(Item item, Rarity rarity, String name) {
+        ItemStack stack = item.getDefaultInstance();
+        applyName(stack, rarity, name, 0);
+        return stack;
     }
 
     public static List<FusionCandidate> fusionCandidates(ServerPlayer player) {
@@ -40,9 +46,11 @@ public final class VillageEquipmentRaritySystem {
             ItemStack stack = player.getInventory().getItem(slot);
             Rarity rarity = rarityOf(stack);
             if (rarity == null || rarity == Rarity.LEGENDARY) continue;
-            String group = stack.getItem().toString() + "@" + rarity.name();
-            result.add(new FusionCandidate(slot, group, displayName(stack.getItem()),
-                    rarity.displayName(), stack.getItem().toString()));
+            int enhancement = enhancementLevel(stack);
+            String group = stack.getItem() + "@" + rarity.name() + "@" + enhancement;
+            result.add(new FusionCandidate(slot, group, baseDisplayName(stack),
+                    rarity.displayName() + (enhancement > 0 ? " · 강화 +" + enhancement : ""),
+                    stack.getItem().toString()));
         }
         return List.copyOf(result);
     }
@@ -57,51 +65,84 @@ public final class VillageEquipmentRaritySystem {
         ItemStack second = player.getInventory().getItem(secondSlot);
         ItemStack third = player.getInventory().getItem(thirdSlot);
         Rarity rarity = rarityOf(first);
+        int enhancement = enhancementLevel(first);
         if (rarity == null || rarity == Rarity.LEGENDARY
                 || rarityOf(second) != rarity || rarityOf(third) != rarity
+                || enhancementLevel(second) != enhancement || enhancementLevel(third) != enhancement
                 || second.getItem() != first.getItem() || third.getItem() != first.getItem()) {
-            return "같은 종류·같은 등급의 합성 가능한 장비 세 개를 선택해야 합니다.";
+            return "같은 종류·같은 등급·같은 강화 단계 장비 세 개를 선택해야 합니다.";
         }
         Item item = first.getItem();
+        String name = baseDisplayName(first);
         first.shrink(1);
         second.shrink(1);
         third.shrink(1);
-        ItemStack result = create(item, rarity.next());
+        ItemStack result = createNamed(item, rarity.next(), name);
+        applyName(result, rarity.next(), name, enhancement);
         if (!player.addItem(result)) player.drop(result, false);
         player.getInventory().setChanged();
-        return displayName(item) + " 세 개를 " + rarity.next().displayName()
-                + " 등급 하나로 합성했습니다. 재화는 소모되지 않았습니다.";
+        return name + " 세 개를 " + rarity.next().displayName() + " 등급 하나로 합성했습니다."
+                + (enhancement > 0 ? " 강화 +" + enhancement + "는 유지됩니다." : "");
     }
 
-    /** Legacy compatibility helper; new UI always asks the player to choose three items. */
-    @Deprecated
-    public static String combineFirstPair(ServerPlayer player) {
-        List<FusionCandidate> candidates = fusionCandidates(player);
-        for (int first = 0; first < candidates.size(); first++) {
-            for (int second = first + 1; second < candidates.size(); second++) {
-                for (int third = second + 1; third < candidates.size(); third++) {
-                    FusionCandidate a = candidates.get(first);
-                    FusionCandidate b = candidates.get(second);
-                    FusionCandidate c = candidates.get(third);
-                    if (a.group().equals(b.group()) && a.group().equals(c.group())) {
-                        return combineSelected(player, a.slot(), b.slot(), c.slot());
-                    }
-                }
-            }
+    public static List<EnhancementCandidate> enhancementCandidates(ServerPlayer player) {
+        List<EnhancementCandidate> result = new ArrayList<>();
+        int maximum = maximumEnhancement();
+        int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());
+        for (int slot = 0; slot < limit; slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            Rarity rarity = rarityOf(stack);
+            if (rarity == null || !isUpgradeable(stack.getItem())) continue;
+            int current = enhancementLevel(stack);
+            result.add(new EnhancementCandidate(slot, baseDisplayName(stack), rarity.displayName(),
+                    current, maximum, enhancementCost(stack), stack.getItem().toString()));
         }
-        return "같은 종류·같은 등급의 습격 장비 세 개가 필요합니다.";
+        return List.copyOf(result);
+    }
+
+    public static String enhanceSelected(ServerPlayer player, int slot) {
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.SMITHY)) {
+            return "대장간이 파괴되어 장비를 강화할 수 없습니다.";
+        }
+        int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());
+        if (slot < 0 || slot >= limit) return "강화할 장비 슬롯이 올바르지 않습니다.";
+        ItemStack stack = player.getInventory().getItem(slot);
+        Rarity rarity = rarityOf(stack);
+        if (rarity == null || !isUpgradeable(stack.getItem())) return "게임 전용 등급 장비만 강화할 수 있습니다.";
+        int current = enhancementLevel(stack);
+        int maximum = maximumEnhancement();
+        if (current >= maximum) {
+            return "현재 대장간에서는 " + baseDisplayName(stack) + "을(를) 더 강화할 수 없습니다. 최대 +" + maximum;
+        }
+        int cost = enhancementCost(stack);
+        if (!VillageProgressionSystem.spendCoins(player, cost)) {
+            return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.coins(player);
+        }
+        applyName(stack, rarity, baseDisplayName(stack), current + 1);
+        player.getInventory().setChanged();
+        return baseDisplayName(stack) + " 강화 성공 | +" + (current + 1)
+                + " / +" + maximum + " | 남은 주화 " + VillageProgressionSystem.coins(player);
+    }
+
+    public static int maximumEnhancement() {
+        return Math.min(MAX_ENHANCEMENT, Math.max(1, VillageProgressionSystem.smithyLevel() + 1));
+    }
+
+    public static int enhancementCost(ItemStack stack) {
+        Rarity rarity = rarityOf(stack);
+        return 65 + enhancementLevel(stack) * 85 + (rarity == null ? 0 : rarity.powerStep() * 25);
     }
 
     public static float meleeMultiplier(ItemStack stack) {
         Rarity rarity = rarityOf(stack);
         if (rarity == null || !isMelee(stack.getItem())) return 1.0f;
-        return 1.0f + rarity.powerStep() * 0.055f;
+        return 1.0f + rarity.powerStep() * 0.055f + enhancementLevel(stack) * 0.045f;
     }
 
     public static float projectileMultiplier(ItemStack stack) {
         Rarity rarity = rarityOf(stack);
         if (rarity == null || !isProjectile(stack.getItem())) return 1.0f;
-        return 1.0f + rarity.powerStep() * 0.055f;
+        return 1.0f + rarity.powerStep() * 0.055f + enhancementLevel(stack) * 0.045f;
     }
 
     public static float incomingMultiplier(ServerPlayer player) {
@@ -110,12 +151,24 @@ public final class VillageEquipmentRaritySystem {
                 EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
             reduction += rarityReduction(player.getItemBySlot(slot));
         }
-        return Math.max(0.72f, 1.0f - reduction);
+        return Math.max(0.68f, 1.0f - reduction);
     }
 
     public static float skillMultiplier(ServerPlayer player) {
-        int step = Math.max(rarityStep(player.getMainHandItem()), rarityStep(player.getOffhandItem()));
-        return 1.0f + step * 0.035f;
+        ItemStack main = player.getMainHandItem();
+        ItemStack off = player.getOffhandItem();
+        float mainBonus = rarityStep(main) * 0.035f + enhancementLevel(main) * 0.03f;
+        float offBonus = rarityStep(off) * 0.035f + enhancementLevel(off) * 0.03f;
+        return 1.0f + Math.max(mainBonus, offBonus);
+    }
+
+    public static int bestEquippedEnhancement(ServerPlayer player) {
+        int best = Math.max(enhancementLevel(player.getMainHandItem()), enhancementLevel(player.getOffhandItem()));
+        for (EquipmentSlot slot : new EquipmentSlot[]{
+                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            best = Math.max(best, enhancementLevel(player.getItemBySlot(slot)));
+        }
+        return best;
     }
 
     public static Rarity rarityOf(ItemStack stack) {
@@ -129,12 +182,48 @@ public final class VillageEquipmentRaritySystem {
         return null;
     }
 
-    private static ItemStack create(Item item, Rarity rarity) {
-        ItemStack stack = item.getDefaultInstance();
+    public static int enhancementLevel(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return 0;
+        Component name = stack.get(DataComponents.CUSTOM_NAME);
+        if (name == null) return 0;
+        String plain = ChatFormatting.stripFormatting(name.getString());
+        int marker = plain.lastIndexOf(" +");
+        if (marker < 0 || marker + 2 >= plain.length()) return 0;
+        String raw = plain.substring(marker + 2);
+        for (int index = 0; index < raw.length(); index++) {
+            if (!Character.isDigit(raw.charAt(index))) return 0;
+        }
+        try { return Math.max(0, Integer.parseInt(raw)); }
+        catch (NumberFormatException ignored) { return 0; }
+    }
+
+    public static String baseDisplayName(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return "장비";
+        Component name = stack.get(DataComponents.CUSTOM_NAME);
+        String plain = name == null ? displayName(stack.getItem())
+                : ChatFormatting.stripFormatting(name.getString());
+        for (Rarity rarity : Rarity.values()) {
+            String prefix = "[" + rarity.displayName() + "] ";
+            if (plain.startsWith(prefix)) {
+                plain = plain.substring(prefix.length());
+                break;
+            }
+        }
+        int marker = plain.lastIndexOf(" +");
+        if (marker >= 0 && marker + 2 < plain.length()) {
+            String raw = plain.substring(marker + 2);
+            boolean digits = !raw.isEmpty();
+            for (int index = 0; index < raw.length(); index++) digits &= Character.isDigit(raw.charAt(index));
+            if (digits) plain = plain.substring(0, marker);
+        }
+        return plain;
+    }
+
+    private static void applyName(ItemStack stack, Rarity rarity, String name, int enhancement) {
+        String suffix = enhancement > 0 ? " +" + enhancement : "";
         stack.set(DataComponents.CUSTOM_NAME,
-                Component.literal("[" + rarity.displayName() + "] " + displayName(item))
+                Component.literal("[" + rarity.displayName() + "] " + name + suffix)
                         .withStyle(rarity.formatting()));
-        return stack;
     }
 
     private static Rarity rollRarity(int day, boolean boss, RandomSource random) {
@@ -149,12 +238,17 @@ public final class VillageEquipmentRaritySystem {
     private static float rarityReduction(ItemStack stack) {
         Rarity rarity = rarityOf(stack);
         if (rarity == null || !(isArmor(stack.getItem()) || stack.getItem() == Items.SHIELD)) return 0.0f;
-        return rarity.powerStep() * 0.012f;
+        return rarity.powerStep() * 0.012f + enhancementLevel(stack) * 0.008f;
     }
 
     private static int rarityStep(ItemStack stack) {
         Rarity rarity = rarityOf(stack);
         return rarity == null ? 0 : rarity.powerStep();
+    }
+
+    private static boolean isUpgradeable(Item item) {
+        return isMelee(item) || isProjectile(item) || isArmor(item)
+                || item == Items.SHIELD || item == Items.BLAZE_ROD;
     }
 
     private static boolean isMelee(Item item) {
@@ -173,18 +267,24 @@ public final class VillageEquipmentRaritySystem {
                 || item == Items.NETHERITE_CHESTPLATE || item == Items.NETHERITE_LEGGINGS || item == Items.NETHERITE_BOOTS;
     }
 
-    private static String displayName(Item item) {
+    public static String displayName(Item item) {
         if (item == Items.BOW) return "수호 장궁";
         if (item == Items.CROSSBOW) return "수호 쇠뇌";
+        if (item == Items.TRIDENT) return "성문 수호창";
         if (item == Items.SHIELD) return "수호 방패";
+        if (item == Items.BLAZE_ROD) return "비전 집중봉";
         if (item == Items.IRON_SWORD || item == Items.DIAMOND_SWORD || item == Items.NETHERITE_SWORD) return "수호검";
         if (item == Items.IRON_AXE || item == Items.DIAMOND_AXE || item == Items.NETHERITE_AXE) return "전투 도끼";
         if (item == Items.IRON_CHESTPLATE || item == Items.DIAMOND_CHESTPLATE || item == Items.NETHERITE_CHESTPLATE) return "수호 흉갑";
         if (item == Items.IRON_HELMET || item == Items.DIAMOND_HELMET || item == Items.NETHERITE_HELMET) return "수호 투구";
+        if (item == Items.IRON_LEGGINGS || item == Items.DIAMOND_LEGGINGS || item == Items.NETHERITE_LEGGINGS) return "수호 각반";
+        if (item == Items.IRON_BOOTS || item == Items.DIAMOND_BOOTS || item == Items.NETHERITE_BOOTS) return "수호 장화";
         return "습격 장비";
     }
 
     public record FusionCandidate(int slot, String group, String name, String rarity, String itemId) {}
+    public record EnhancementCandidate(int slot, String name, String rarity, int current, int maximum,
+                                       int cost, String itemId) {}
 
     public enum Rarity {
         COMMON("일반", ChatFormatting.GRAY, 1),
