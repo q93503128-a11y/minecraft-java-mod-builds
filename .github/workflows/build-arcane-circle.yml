@@ -55,6 +55,13 @@ jobs:
           PY
           set -o pipefail
           python3 tools/apply_v11_overhaul.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/test_magic_contract.py')
+          s = p.read_text(encoding='utf-8')
+          p.write_text(s.replace('PROTOCOL_VERSION = "ninefold-arcana-10"',
+                                 'PROTOCOL_VERSION = "ninefold-arcana-11"'), encoding='utf-8')
+          PY
           git diff --check
 
       - name: Audit magic world and v0.11 contracts
