@@ -19,11 +19,18 @@ required = (
 )
 missing = [token for token in required if token not in tracker]
 if missing:
-    signature_start = tracker.find("private static Signature signature")
-    print("--- decoded signature snippet ---")
-    print(tracker[signature_start:signature_start + 1100])
-    print("--- decoded alpha lines ---")
-    print("\n".join(line for line in tracker.splitlines() if "lpha" in line or "ALPHA" in line))
+    lines = tracker.splitlines()
+    print("--- decoded lines 370-420 ---")
+    for number in range(370, min(421, len(lines) + 1)):
+        print(f"{number:04d}: {lines[number - 1]!r}")
+    print("--- decoded lines 510-545 ---")
+    for number in range(510, min(546, len(lines) + 1)):
+        print(f"{number:04d}: {lines[number - 1]!r}")
+    print("--- fuzzy token lines ---")
+    for number, line in enumerate(lines, 1):
+        lowered = line.lower()
+        if any(token in lowered for token in ("mete", "weath", "forc", "alpha", "lpha", "signat")):
+            print(f"{number:04d}: {line!r}")
     raise SystemExit(f"signature geometry contract missing: {missing}")
 if "Math.max(1.2F, baseWidth * 1.25F)" in tracker:
     raise SystemExit("legacy thick line width remains")
