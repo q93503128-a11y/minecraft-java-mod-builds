@@ -14,15 +14,15 @@ jobs:
   build:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Prepare exact alpha.15 source
+      - name: Prepare exact alpha.16 source
         id: prepare
-        run: python3 projects/countryside-days/tools/prepare_alpha15_exact.py
+        run: python3 projects/countryside-days/tools/prepare_alpha16_exact.py
 
       - uses: actions/setup-java@v4
         with:
@@ -33,7 +33,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Clean build and verify
+      - name: Clean Java 25 build
         id: compile
         working-directory: projects/countryside-days
         run: |
@@ -42,74 +42,87 @@ jobs:
             chmod +x gradlew
           fi
           set -o pipefail
-          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a15-final-build.log
-          JAR=build/libs/countrysidedays-0.1.0-alpha.15.jar
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a16-build.log
+
+      - name: Datagen
+        id: datagen
+        working-directory: projects/countryside-days
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee /tmp/cd-a16-datagen.log
+
+      - name: Required GameTests
+        id: gametest
+        timeout-minutes: 25
+        working-directory: projects/countryside-days
+        run: |
+          mkdir -p run/gametestserver
+          cat > run/gametestserver/server.properties <<'PROPERTIES'
+          level-name=gametestworld
+          level-type=minecraft:flat
+          generator-settings={"biome":"countrysidedays:rural_plains","features":true,"lakes":false,"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":8},{"block":"minecraft:grass_block","height":1}],"structure_overrides":[]}
+          generate-structures=true
+          online-mode=false
+          spawn-protection=0
+          view-distance=8
+          simulation-distance=6
+          PROPERTIES
+          set -o pipefail
+          ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee /tmp/cd-a16-gametest.log
+
+      - name: Verify executable JAR
+        id: verify
+        working-directory: projects/countryside-days
+        run: |
+          JAR=build/libs/countrysidedays-0.1.0-alpha.16.jar
           test -s "$JAR"
-          python3 tools/verify_jar.py "$JAR"
+          python3 tools/verify_jar.py "$JAR" | tee /tmp/cd-a16-jar.log
           unzip -t "$JAR"
-          sha256sum "$JAR"
+          ! unzip -Z1 "$JAR" | grep -q '\.java$'
+          unzip -Z1 "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
+          unzip -Z1 "$JAR" | grep -q 'kr/countrysidedays/CountrysideDays.class'
+          sha256sum "$JAR" | tee /tmp/cd-a16-sha256.txt
 
       - name: Upload verified JAR
         id: upload
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.15-jar
-          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.15.jar
+          name: countryside-days-0.1.0-alpha.16-jar
+          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.16.jar
           if-no-files-found: error
           retention-days: 14
-
-      - name: Publish transfer copy
-        id: export
-        run: |
-          JAR=projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.15.jar
-          DEST=release-transfer/countryside-days-alpha15
-          rm -rf "$DEST"
-          mkdir -p "$DEST"
-          base64 -w0 "$JAR" > /tmp/cd-a15-final.b64
-          split -b 40000 -d -a 2 /tmp/cd-a15-final.b64 "$DEST/part-"
-          {
-            echo filename=countrysidedays-0.1.0-alpha.15.jar
-            echo size=$(stat -c%s "$JAR")
-            echo sha256=$(sha256sum "$JAR" | cut -d' ' -f1)
-            echo base64_size=$(stat -c%s /tmp/cd-a15-final.b64)
-            echo parts=$(find "$DEST" -name 'part-*' | wc -l)
-            echo run=$GITHUB_RUN_ID
-          } > "$DEST/MANIFEST.txt"
-
-          git restore --source=HEAD --staged --worktree projects/countryside-days
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add "$DEST"
-          git commit -m 'Publish verified Countryside Days alpha.15 JAR transfer final'
-          git pull --rebase origin main
-          git push origin HEAD:main
 
       - name: Record result
         if: always()
         env:
           PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
           COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          DATAGEN_OUTCOME: ${{ steps.datagen.outcome }}
+          GAMETEST_OUTCOME: ${{ steps.gametest.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
           UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
-          EXPORT_OUTCOME: ${{ steps.export.outcome }}
         run: |
           git restore --source=HEAD --staged --worktree projects/countryside-days || true
-          DEST=release-transfer/countryside-days-alpha15-status
+          DEST=release-transfer/countryside-days-alpha16-status
           mkdir -p "$DEST"
-          FILE="$DEST/final-${GITHUB_RUN_ID}.txt"
+          FILE="$DEST/${GITHUB_RUN_ID}.txt"
           {
             echo run=$GITHUB_RUN_ID
+            echo source=$GITHUB_SHA
             echo prepare=$PREPARE_OUTCOME
             echo compile=$COMPILE_OUTCOME
+            echo datagen=$DATAGEN_OUTCOME
+            echo gametest=$GAMETEST_OUTCOME
+            echo verify=$VERIFY_OUTCOME
             echo upload=$UPLOAD_OUTCOME
-            echo export=$EXPORT_OUTCOME
-            if [ -f /tmp/cd-a15-final-build.log ]; then
-              echo '--- build tail ---'
-              tail -n 180 /tmp/cd-a15-final-build.log
-            fi
+            [ ! -f /tmp/cd-a16-sha256.txt ] || { echo '--- jar ---'; cat /tmp/cd-a16-sha256.txt; }
+            [ ! -f /tmp/cd-a16-build.log ] || { echo '--- build tail ---'; tail -n 180 /tmp/cd-a16-build.log; }
+            [ ! -f /tmp/cd-a16-datagen.log ] || { echo '--- datagen tail ---'; tail -n 80 /tmp/cd-a16-datagen.log; }
+            [ ! -f /tmp/cd-a16-gametest.log ] || { echo '--- gametest tail ---'; tail -n 180 /tmp/cd-a16-gametest.log; }
           } > "$FILE"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add "$FILE"
-          git commit -m "Record Countryside Days alpha.15 final ${GITHUB_RUN_ID}"
+          git commit -m "Record Countryside Days alpha.16 result ${GITHUB_RUN_ID}"
           git pull --rebase origin main
           git push origin HEAD:main
