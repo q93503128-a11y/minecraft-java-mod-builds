@@ -78,9 +78,10 @@ public final class RealmSitePlanner {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
         data.markBuilt(homelandId, LAYOUT_REVISION);
         RealmSiteLayoutSavedData.RealmSite site = data.site(homelandId).orElseThrow();
+        int removed = ConstructionDebrisCleaner.cleanConstructionCompletion(level, homelandId, site);
         LivingKingdoms.LOGGER.info(
-                "Completed authored homeland {} at {},{}, baseY={}, revision={}",
-                homelandId, site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION
+                "Completed authored homeland {} at {},{}, baseY={}, revision={}, construction_drops_removed={}",
+                homelandId, site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION, removed
         );
     }
 
