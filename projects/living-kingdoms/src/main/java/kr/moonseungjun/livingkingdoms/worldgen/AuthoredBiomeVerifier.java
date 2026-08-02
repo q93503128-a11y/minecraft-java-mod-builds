@@ -7,21 +7,17 @@ import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
 
-/** Fails world construction when political geography and generated biome geography disagree. */
+/** Fails construction when the active Erden capital and generated ecological geography disagree. */
 public final class AuthoredBiomeVerifier {
     private AuthoredBiomeVerifier() {
     }
 
     public static void verifyCapital(ServerLevel level, String homelandId,
                                      RealmSiteLayoutSavedData.RealmSite site) {
-        String expected = switch (homelandId) {
-            case "erden_kingdom" -> "minecraft:plains";
-            case "silvana_forest" -> "minecraft:dark_forest";
-            case "kardum_league" -> "minecraft:stony_peaks";
-            default -> null;
-        };
-        if (expected == null) return;
-
+        if (!"erden_kingdom".equals(homelandId)) {
+            throw new IllegalArgumentException("Inactive homeland biome verification: " + homelandId);
+        }
+        String expected = "minecraft:meadow";
         BlockPos sample = new BlockPos(site.centerX(), site.baseY() + 2, site.centerZ());
         Holder<Biome> biome = level.getBiome(sample);
         String actual = biome.unwrapKey()
@@ -29,14 +25,13 @@ public final class AuthoredBiomeVerifier {
                 .orElse("<direct-biome>");
         if (!expected.equals(actual)) {
             throw new IllegalStateException(
-                    "Authored capital biome mismatch for " + homelandId
-                            + ": expected=" + expected + " actual=" + actual
-                            + " at " + sample.toShortString()
+                    "Erden capital ecological region mismatch: expected=" + expected
+                            + " actual=" + actual + " at " + sample.toShortString()
             );
         }
         LivingKingdoms.LOGGER.info(
-                "Verified authored capital biome {} biome={} at {},{},{}",
-                homelandId, actual, sample.getX(), sample.getY(), sample.getZ()
+                "Verified Erden capital ecological region biome={} at {},{},{}",
+                actual, sample.getX(), sample.getY(), sample.getZ()
         );
     }
 }
