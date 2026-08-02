@@ -83,7 +83,7 @@ public final class StarterRealmDiagnostics {
                                 .orElseThrow(() -> new IllegalStateException(
                                         "Residential access anchor was not prepared"));
                 ErdenCapitalStreamingBuilder.requestChunk(
-                        realm, accessSample.midX() >> 4, accessSample.midZ() >> 4);
+                        realm, midpointX(accessSample) >> 4, midpointZ(accessSample) >> 4);
                 pending = new PendingVerification(
                         server, realm, site, started, server.getTickCount(), accessSample);
                 LivingKingdoms.LOGGER.info(
@@ -115,7 +115,8 @@ public final class StarterRealmDiagnostics {
                     state.realm, sample.chunkX(), sample.chunkZ())) return;
         }
         if (!ErdenCapitalStreamingBuilder.isChunkBuilt(
-                state.realm, state.accessSample.midX() >> 4, state.accessSample.midZ() >> 4)) return;
+                state.realm, midpointX(state.accessSample) >> 4,
+                midpointZ(state.accessSample) >> 4)) return;
         pending = null;
         try {
             verifyStreamedCapital(state.realm, state.accessSample);
@@ -217,18 +218,31 @@ public final class StarterRealmDiagnostics {
                     + BuiltInBlockName.name(drainWater) + " roof=" + BuiltInBlockName.name(drainRoof));
         }
 
-        int accessY = realm.getHeight(
-                Heightmap.Types.WORLD_SURFACE, accessSample.midX(), accessSample.midZ()) - 1;
-        Block access = realm.getBlockState(new BlockPos(
-                accessSample.midX(), accessY, accessSample.midZ())).getBlock();
+        int accessX = midpointX(accessSample);
+        int accessZ = midpointZ(accessSample);
+        int accessY = realm.getHeight(Heightmap.Types.WORLD_SURFACE, accessX, accessZ) - 1;
+        Block access = realm.getBlockState(new BlockPos(accessX, accessY, accessZ)).getBlock();
         if (access != Blocks.PACKED_MUD && access != Blocks.STONE_BRICKS) {
             throw new IllegalStateException("Residential entrance is not connected to a road: "
                     + BuiltInBlockName.name(access));
         }
         LivingKingdoms.LOGGER.info(
                 "Verified Erden urban infrastructure well=true fire_cistern=true royal_culvert=true access_role={} access_length={}",
-                accessSample.role(), accessSample.length()
+                accessSample.role(), accessLength(accessSample)
         );
+    }
+
+    private static int midpointX(ExternalDistrictBuildingBuilder.BuildingEntrance entrance) {
+        return (entrance.x() + entrance.roadX()) / 2;
+    }
+
+    private static int midpointZ(ExternalDistrictBuildingBuilder.BuildingEntrance entrance) {
+        return (entrance.z() + entrance.roadZ()) / 2;
+    }
+
+    private static int accessLength(ExternalDistrictBuildingBuilder.BuildingEntrance entrance) {
+        return Math.max(Math.abs(entrance.roadX() - entrance.x()),
+                Math.abs(entrance.roadZ() - entrance.z()));
     }
 
     private static void verifyArchitectureChunk(ServerLevel realm, StreamSample sample) {
