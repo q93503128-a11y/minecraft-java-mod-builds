@@ -33,7 +33,7 @@ final class CodexSmokeDiagnostics {
         if (ticks == 194) {
             verify("growth_tree");
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,growth_mastery,growth_tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true",
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills growth_views=mastery,tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true",
                     active.width, active.height
             );
         }
