@@ -22,6 +22,7 @@ public final class VillageTownHallInteraction {
         if (expected == null || !expected.equals(event.getPos())) return false;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
+        VillageFacadeMigrationSystem.ensure(level);
         VillageUiController.openDashboard(player);
         return true;
     }
