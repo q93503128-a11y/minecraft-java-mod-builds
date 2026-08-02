@@ -46,6 +46,13 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/apply_v11_overhaul.py')
+          s = p.read_text(encoding='utf-8')
+          duplicate = 'patch(screen, "int cols=c.w()>=520?9:3,gap=4", "int cols=c.w()>=420?9:3,gap=4")\n'
+          p.write_text(s.replace(duplicate, ''), encoding='utf-8')
+          PY
           set -o pipefail
           python3 tools/apply_v11_overhaul.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
           git diff --check
