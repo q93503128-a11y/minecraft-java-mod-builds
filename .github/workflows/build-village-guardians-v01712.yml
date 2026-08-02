@@ -44,6 +44,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/apply_v01712.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''text = replace_once(text,
+                              "        spawningGeneratedArrow = false;\\n",
+                              "        spawningGeneratedArrow = false;\\n        replayingEcho = false;\\n",
+                              "echo guard reset")'''
+          new = '''text = replace_once(text,
+                              "        MOVING.clear();\\n        SHIELDS.clear();\\n        spawningGeneratedArrow = false;\\n    }\\n",
+                              "        MOVING.clear();\\n        SHIELDS.clear();\\n        spawningGeneratedArrow = false;\\n        replayingEcho = false;\\n    }\\n",
+                              "echo guard reset")'''
+          if old not in text:
+              raise SystemExit('echo reset patch block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
           python3 -m py_compile tools/apply_v01712.py
           python3 tools/apply_v01712.py
           python3 - <<'PY'
