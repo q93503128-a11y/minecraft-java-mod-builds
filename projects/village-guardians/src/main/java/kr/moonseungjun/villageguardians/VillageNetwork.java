@@ -10,24 +10,22 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 public final class VillageNetwork {
-    private VillageNetwork() {
-    }
+    private VillageNetwork() {}
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("3");
+        var registrar = event.registrar("4");
         registrar.playToClient(OpenVillageUiPayload.TYPE, OpenVillageUiPayload.STREAM_CODEC);
         registrar.playToClient(PlayerStatusPayload.TYPE, PlayerStatusPayload.STREAM_CODEC);
         registrar.playToServer(VillageUiActionPayload.TYPE, VillageUiActionPayload.STREAM_CODEC,
                 (payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
+                    if (context.player() instanceof ServerPlayer player
+                            && !VillageUiController.handleAction(player, payload.action())) {
                         VillageUiService.handleAction(player, payload.action());
                     }
                 });
         registrar.playToServer(RequestPlayerStatusPayload.TYPE, RequestPlayerStatusPayload.STREAM_CODEC,
                 (payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        sendPlayerStatus(player);
-                    }
+                    if (context.player() instanceof ServerPlayer player) sendPlayerStatus(player);
                 });
     }
 
@@ -41,14 +39,14 @@ public final class VillageNetwork {
                 ? "최고 레벨"
                 : progress.experience() + "/" + progress.experienceToNextLevel() + " XP";
         String role = VillageCouncilState.roleOf(player.getUUID())
-                .map(VillageRole::displayName)
-                .orElse("미선택");
+                .map(VillageRole::displayName).orElse("미선택");
         PacketDistributor.sendToPlayer(player, new PlayerStatusPayload(
                 "레벨 " + progress.level() + " · " + xp,
                 role,
                 "주화 " + VillageProgressionSystem.coins(player)
                         + " · 장비 +" + VillageProgressionSystem.forgeRank(player),
-                "능력 +" + VillageProgressionSystem.skillRank(player)
+                "개인 연구 +" + VillageProgressionSystem.skillRank(player)
+                        + " · 유물 " + VillageRelicSystem.summary(player)
                         + " · " + VillageCouncilState.currentDay() + "일 "
                         + VillageCouncilState.currentPhase().koreanName()));
     }
@@ -70,9 +68,7 @@ public final class VillageNetwork {
                 OpenVillageUiPayload::new);
 
         @Override
-        public Type<? extends CustomPacketPayload> type() {
-            return TYPE;
-        }
+        public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
     public record VillageUiActionPayload(String action) implements CustomPacketPayload {
@@ -83,9 +79,7 @@ public final class VillageNetwork {
                 VillageUiActionPayload::new);
 
         @Override
-        public Type<? extends CustomPacketPayload> type() {
-            return TYPE;
-        }
+        public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
     public record RequestPlayerStatusPayload(String source) implements CustomPacketPayload {
@@ -96,9 +90,7 @@ public final class VillageNetwork {
                 RequestPlayerStatusPayload::new);
 
         @Override
-        public Type<? extends CustomPacketPayload> type() {
-            return TYPE;
-        }
+        public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
     public record PlayerStatusPayload(
@@ -116,8 +108,6 @@ public final class VillageNetwork {
                 PlayerStatusPayload::new);
 
         @Override
-        public Type<? extends CustomPacketPayload> type() {
-            return TYPE;
-        }
+        public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 }
