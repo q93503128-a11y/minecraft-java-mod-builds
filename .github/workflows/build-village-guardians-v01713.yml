@@ -81,8 +81,8 @@ jobs:
             python3 tools/test_v0177_gameplay.py
             python3 tools/test_v0178_gameplay.py
             python3 tools/test_v0179_skill_test_box.py
-            python3 tools/test_v01710_skill_test_runtime.py
-            python3 tools/test_v01711_skill_hud_ui.py
+            python3 tools/test_v01710_skill_input.py
+            python3 tools/test_v01711_hud_skills.py
             python3 tools/test_v01712_role_abilities.py
             python3 tools/test_v01713_effects_and_keys.py
           } 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v01713-contracts.log"
