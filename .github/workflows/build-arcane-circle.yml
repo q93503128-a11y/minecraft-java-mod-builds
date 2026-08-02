@@ -13,14 +13,14 @@ permissions:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.8.0-alpha.1
-  EXPECTED_JAR: arcanecircle-0.8.0-alpha.1.jar
+  MOD_VERSION: 0.9.0-alpha.1
+  EXPECTED_JAR: arcanecircle-0.9.0-alpha.1.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 / NeoForge 26.2 Ninefold Magic World build
+    name: Java 25 / NeoForge 26.2 fixed UI and staged casting
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -42,17 +42,19 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Apply Ninefold Magic World migration
+      - name: Apply v0.9 usability migration
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -o pipefail
-          python3 tools/apply_v08_magic_world.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/apply_v09_usability.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
           git diff --check
 
-      - name: Audit 1-9 circles academy economy and sigils
+      - name: Audit magic world and usability contracts
         working-directory: ${{ env.PROJECT_DIR }}
-        run: python3 tools/test_magic_contract.py
+        run: |
+          python3 tools/test_magic_contract.py
+          python3 tools/test_v09_usability.py
 
       - name: Clean NeoForge build
         working-directory: ${{ env.PROJECT_DIR }}
@@ -62,7 +64,7 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
 
-      - name: Verify magic-world runtime JAR
+      - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           test -f "build/libs/$EXPECTED_JAR"
@@ -74,55 +76,81 @@ jobs:
       - name: Upload verified JAR
         uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.8.0-alpha.1
+          name: arcanecircle-0.9.0-alpha.1
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish generated source and verified JAR
+      - name: Publish clean source and verified JAR
         shell: bash
         run: |
-          mkdir -p "$PUBLISHED_DIR"
-          rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
-          cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
-          cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
-          if git diff --cached --quiet; then
-            echo 'Published v0.8 source and JAR already match.'
-          else
-            git commit -m 'Publish Arcane Circle v0.8 Ninefold Magic World'
-            git pull --rebase origin main
-            git push
-          fi
+          touch "$PROJECT_DIR/.gitignore"
+          grep -qxF '.gradle/' "$PROJECT_DIR/.gitignore" || printf '%s\n' '.gradle/' >> "$PROJECT_DIR/.gitignore"
+          grep -qxF 'build/' "$PROJECT_DIR/.gitignore" || printf '%s\n' 'build/' >> "$PROJECT_DIR/.gitignore"
+
+          rm -rf /tmp/arcane-v09-source
+          mkdir -p /tmp/arcane-v09-source
+          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-v09-source/
+
+          published=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$PROJECT_DIR"
+            mkdir -p "$PROJECT_DIR"
+            rsync -a /tmp/arcane-v09-source/ "$PROJECT_DIR/"
+            rm -rf "$PROJECT_DIR/build" "$PROJECT_DIR/.gradle"
+            mkdir -p "$PUBLISHED_DIR"
+            rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
+            cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+            cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+            git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
+            if git diff --cached --quiet; then published=1; break; fi
+            git commit -m 'Publish Arcane Circle v0.9 fixed grimoire and staged casting'
+            if git push origin HEAD:main; then published=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$published" -eq 1
 
       - name: Record CI result
         if: always()
         shell: bash
         run: |
-          mkdir -p "$CI_RESULT_DIR"
+          set -euo pipefail
+          rm -rf /tmp/arcane-ci-result
+          mkdir -p /tmp/arcane-ci-result
           if test -f "$GITHUB_WORKSPACE/arcane-circle-gradle.log"; then
-            cp "$GITHUB_WORKSPACE/arcane-circle-gradle.log" "$CI_RESULT_DIR/latest-gradle.log"
+            cp "$GITHUB_WORKSPACE/arcane-circle-gradle.log" /tmp/arcane-ci-result/latest-gradle.log
           elif test -f "$GITHUB_WORKSPACE/arcane-circle-migration.log"; then
-            cp "$GITHUB_WORKSPACE/arcane-circle-migration.log" "$CI_RESULT_DIR/latest-gradle.log"
+            cp "$GITHUB_WORKSPACE/arcane-circle-migration.log" /tmp/arcane-ci-result/latest-gradle.log
           else
-            printf '%s\n' 'Build pipeline did not produce a diagnostic log.' > "$CI_RESULT_DIR/latest-gradle.log"
+            printf '%s\n' 'Build pipeline did not produce a diagnostic log.' > /tmp/arcane-ci-result/latest-gradle.log
           fi
-          cat > "$CI_RESULT_DIR/status.txt" <<STATUS
+          cat > /tmp/arcane-ci-result/status.txt <<STATUS
           status=${{ job.status }}
           source_sha=$GITHUB_SHA
           run_id=$GITHUB_RUN_ID
           run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           java=25
           gradle=9.2.1
+          version=$MOD_VERSION
           STATUS
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$CI_RESULT_DIR/status.txt" "$CI_RESULT_DIR/latest-gradle.log"
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "Record Arcane Circle CI result for ${GITHUB_SHA::7}"
-          git pull --rebase origin main
-          git push
+          recorded=0
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$CI_RESULT_DIR"
+            mkdir -p "$CI_RESULT_DIR"
+            cp -a /tmp/arcane-ci-result/. "$CI_RESULT_DIR/"
+            git add -A "$CI_RESULT_DIR"
+            if git diff --cached --quiet; then recorded=1; break; fi
+            git commit -m "Record Arcane Circle v0.9 CI result for ${GITHUB_SHA::7}"
+            if git push origin HEAD:main; then recorded=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$recorded" -eq 1
