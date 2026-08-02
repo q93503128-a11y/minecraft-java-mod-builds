@@ -1,0 +1,57 @@
+name: Export Countryside Days alpha.17 source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/export-countryside-alpha17-source.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct exact alpha.17 source
+        run: python3 projects/countryside-days/tools/prepare_alpha17_exact.py
+
+      - name: Archive source
+        run: |
+          cd projects/countryside-days
+          zip -qr ../../countryside-days-alpha17-source.zip . \
+            -x 'build/*' 'run/*' '.gradle/*' '*.jar'
+          unzip -t ../../countryside-days-alpha17-source.zip
+          sha256sum ../../countryside-days-alpha17-source.zip | tee /tmp/source-sha.txt
+
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-alpha17-source
+          path: countryside-days-alpha17-source.zip
+          if-no-files-found: error
+          retention-days: 2
+
+      - name: Record export
+        if: always()
+        run: |
+          git restore --source=HEAD --staged --worktree projects/countryside-days || true
+          mkdir -p release-transfer/countryside-days-alpha17-source
+          FILE=release-transfer/countryside-days-alpha17-source/${GITHUB_RUN_ID}.txt
+          {
+            echo run=$GITHUB_RUN_ID
+            echo source=$GITHUB_SHA
+            [ ! -f /tmp/source-sha.txt ] || cat /tmp/source-sha.txt
+          } > "$FILE"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$FILE"
+          git commit -m "Export Countryside Days alpha.17 source ${GITHUB_RUN_ID}"
+          git pull --rebase origin main
+          git push origin HEAD:main
