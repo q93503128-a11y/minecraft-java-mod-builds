@@ -19,9 +19,6 @@ import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -46,7 +43,6 @@ import java.util.UUID;
  * enemy displacement and spatial sounds instead of particle geometry.
  */
 public final class VillageRoleAbilitySystem {
-    private static final String GENERATED_ARROW = "vg_generated_arrow";
     private static final Map<UUID, Long> SPIN_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> RAPID_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> RICOCHET_UNTIL = new HashMap<>();
@@ -58,7 +54,6 @@ public final class VillageRoleAbilitySystem {
     private static final List<ScheduledAction> SCHEDULED = new ArrayList<>();
     private static final List<AreaState> AREAS = new ArrayList<>();
     private static final Map<UUID, MovingSkill> MOVING = new LinkedHashMap<>();
-    private static final Map<UUID, ShieldBlocks> SHIELDS = new HashMap<>();
     private static boolean spawningGeneratedArrow;
     private static boolean replayingEcho;
 
@@ -76,7 +71,7 @@ public final class VillageRoleAbilitySystem {
         SCHEDULED.clear();
         AREAS.clear();
         MOVING.clear();
-        SHIELDS.clear();
+        VillageSkillEffectSystem.reset();
         spawningGeneratedArrow = false;
         replayingEcho = false;
     }
@@ -92,6 +87,7 @@ public final class VillageRoleAbilitySystem {
         int playerLevel = VillageCouncilState.levelOf(player.getUUID());
         int duration = Math.max(40, Math.round((120 + playerLevel * 3) * durationMultiplier));
         Vec3 forward = horizontalLook(player);
+        VillageSkillEffectSystem.startCast(level, player, skill, duration, forward);
         switch (skill) {
             case VANGUARD_WHIRLWIND -> {
                 SPIN_UNTIL.put(player.getUUID(), now + Math.max(38, duration / 2));
@@ -201,13 +197,11 @@ public final class VillageRoleAbilitySystem {
                 FORTRESS_UNTIL.put(player.getUUID(), now + Math.max(100, duration));
                 player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, Math.max(100, duration), 5 + Math.min(3, specialRank), false, false, true));
                 player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.max(100, duration), 3, false, false, true));
-                updateShieldBlocks(level, player, true, 2);
                 play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 1.4f, 0.55f);
             }
             case WARDEN_FIELD -> {
                 AEGIS_UNTIL.put(player.getUUID(), now + Math.max(160, duration * 2L));
                 player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.max(160, duration * 2), 1, false, false, true));
-                updateShieldBlocks(level, player, false, 2);
                 play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.0f, 0.7f);
             }
         }
@@ -231,6 +225,7 @@ public final class VillageRoleAbilitySystem {
         tickAreas(server, now);
         tickMoving(server, now);
         cleanupExpired(server, now);
+        VillageSkillEffectSystem.tick(server);
     }
 
     private static void tickPlayers(MinecraftServer server, long now) {
@@ -238,8 +233,7 @@ public final class VillageRoleAbilitySystem {
             if (!(player.level() instanceof ServerLevel level) || VillageRespawnSystem.isDowned(player)) continue;
             UUID id = player.getUUID();
             if (SPIN_UNTIL.getOrDefault(id, 0L) >= now) {
-                player.setYRot(player.getYRot() + 34.0f);
-                player.setYHeadRot(player.getYRot());
+                player.setYBodyRot((float) ((now * 34.0) % 360.0));
                 if (now % 3L == 0L) {
                     player.swing(InteractionHand.MAIN_HAND, true);
                     damageRadius(level, player, player.position(), 4.7, 10,
@@ -258,10 +252,8 @@ public final class VillageRoleAbilitySystem {
                 player.hurtMarked = true;
                 if (now % 5L == 0L) {
                     pushFront(level, player, 3.6, 16, 0.38, 0.04, 0.0f);
-                    updateShieldBlocks(level, player, true, 2);
-                }
+                    }
             } else if (AEGIS_UNTIL.getOrDefault(id, 0L) >= now) {
-                updateShieldBlocks(level, player, false, 2);
                 if (now % 3L == 0L) pushFront(level, player, 4.6, 20, 0.7, 0.08, 1.2f);
                 if (player.isSprinting() && now - LAST_AEGIS_DASH.getOrDefault(id, -100L) >= 14L) {
                     LAST_AEGIS_DASH.put(id, now);
@@ -418,14 +410,6 @@ public final class VillageRoleAbilitySystem {
         FORTRESS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         AEGIS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         CHARGE_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
-        Iterator<Map.Entry<UUID, ShieldBlocks>> shieldIterator = SHIELDS.entrySet().iterator();
-        while (shieldIterator.hasNext()) {
-            Map.Entry<UUID, ShieldBlocks> entry = shieldIterator.next();
-            if (FORTRESS_UNTIL.getOrDefault(entry.getKey(), 0L) >= now
-                    || AEGIS_UNTIL.getOrDefault(entry.getKey(), 0L) >= now) continue;
-            restoreShield(server, entry.getValue());
-            shieldIterator.remove();
-        }
     }
 
     public static void handleArrowLoose(ArrowLooseEvent event) {
@@ -471,11 +455,14 @@ public final class VillageRoleAbilitySystem {
                 chain.remove(primary);
                 chain.sort(Comparator.comparingDouble(primary::distanceToSqr));
                 float damage = Math.max(2.0f, event.getAmount() * 0.68f);
+                List<Mob> visualChain = new ArrayList<>();
                 for (int i = 0; i < Math.min(5, chain.size()); i++) {
                     Mob target = chain.get(i);
+                    visualChain.add(target);
                     hurt(level, target, damage * (1.0f - i * 0.10f));
                     play(level, target.position(), SoundEvents.ARROW_HIT, 0.55f, 1.2f + i * 0.06f);
                 }
+                VillageSkillEffectSystem.ricochet(level, attacker, primary, visualChain);
             }
         }
         if (event.getEntity() instanceof ServerPlayer defender
@@ -510,6 +497,7 @@ public final class VillageRoleAbilitySystem {
     private static void bladeWave(ServerLevel level, ServerPlayer player, float power, int specialRank) {
         player.swing(InteractionHand.MAIN_HAND, true);
         Vec3 direction = horizontalLook(player);
+        VillageSkillEffectSystem.bladeWave(level, player, direction);
         launchMoving(level, player, MovingKind.BLADE, new ItemStack(Items.IRON_SWORD),
                 1.45, 18, (5.2f + VillageCouncilState.levelOf(player.getUUID()) * 0.28f) * power,
                 1.35, specialRank, direction);
@@ -521,21 +509,13 @@ public final class VillageRoleAbilitySystem {
         damageRadius(level, player, player.position(), 8.5, 32,
                 (14.0f + VillageCouncilState.levelOf(player.getUUID()) * 0.72f) * power,
                 false, 1.05, 0.38);
-        BlockPos center = player.blockPosition();
-        for (int dx = -4; dx <= 4; dx++) {
-            for (int dz = -4; dz <= 4; dz++) {
-                double distance = Math.sqrt(dx * dx + dz * dz);
-                if (distance < 2.0 || distance > 4.5 || (dx + dz) % 2 != 0) continue;
-                BlockPos floor = center.offset(dx, -1, dz);
-                BlockState state = level.getBlockState(floor);
-                if (!state.isAir()) level.levelEvent(2001, floor, Block.getId(state));
-            }
-        }
+        VillageSkillEffectSystem.slamImpact(level, player);
         play(level, player.position(), SoundEvents.GENERIC_EXPLODE.value(), 1.5f, 0.55f);
         play(level, player.position(), SoundEvents.ANVIL_LAND, 1.1f, 0.62f);
     }
 
     private static void arrowRain(ServerLevel level, ServerPlayer player, Vec3 center, float power, int specialRank) {
+        VillageSkillEffectSystem.arrowRainImpact(level, player, center);
         List<Mob> targets = targetsNear(level, player, center, 8.5, 36);
         int count = Math.min(targets.size(), 5 + specialRank);
         for (int i = 0; i < count; i++) {
@@ -551,6 +531,7 @@ public final class VillageRoleAbilitySystem {
         player.stopUsingItem();
         player.swing(InteractionHand.MAIN_HAND, true);
         Vec3 direction = horizontalLook(player);
+        VillageSkillEffectSystem.energyArrow(level, player, direction);
         float damage = (28.0f + VillageCouncilState.levelOf(player.getUUID()) * 1.15f) * power;
         launchMoving(level, player, MovingKind.ENERGY_ARROW, new ItemStack(Items.SPECTRAL_ARROW),
                 2.1, 35, damage, 3.6, specialRank, direction);
@@ -565,6 +546,7 @@ public final class VillageRoleAbilitySystem {
 
     private static void shieldCharge(ServerLevel level, ServerPlayer player, float power, int specialRank) {
         player.swing(InteractionHand.OFF_HAND, true);
+        VillageSkillEffectSystem.shieldCharge(level, player, horizontalLook(player));
         for (int i = 0; i < 5; i++) {
             Vec3 center = player.position().add(horizontalLook(player).scale(1.0 + i * 1.2));
             for (Mob target : targetsNear(level, player, center, 2.3, 12)) {
@@ -595,11 +577,15 @@ public final class VillageRoleAbilitySystem {
         if (barrier || specialRank >= 2) {
             target.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 120, 1 + Math.min(3, specialRank), false, false, true));
         }
-        if (target.level() instanceof ServerLevel level) play(level, target.position(), SoundEvents.AMETHYST_BLOCK_CHIME, 1.0f, 1.28f);
+        if (target.level() instanceof ServerLevel level) {
+            VillageSkillEffectSystem.healLink(level, player, target);
+            play(level, target.position(), SoundEvents.AMETHYST_BLOCK_CHIME, 1.0f, 1.28f);
+        }
     }
 
     private static void cleanseAllies(ServerPlayer player, float heal, int specialRank) {
-        for (ServerPlayer ally : allies(player, -1.0)) {
+        List<ServerPlayer> affected = allies(player, -1.0);
+        for (ServerPlayer ally : affected) {
             ally.removeEffect(MobEffects.POISON);
             ally.removeEffect(MobEffects.WITHER);
             ally.removeEffect(MobEffects.WEAKNESS);
@@ -608,14 +594,19 @@ public final class VillageRoleAbilitySystem {
             ally.removeEffect(MobEffects.HUNGER);
             healScaled(ally, heal);
         }
-        if (player.level() instanceof ServerLevel level) play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.0f, 1.35f);
+        if (player.level() instanceof ServerLevel level) {
+            VillageSkillEffectSystem.cleanse(level, player, affected);
+            play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.0f, 1.35f);
+        }
     }
 
     private static void miracle(ServerPlayer player, float heal, int specialRank, int duration) {
         MinecraftServer server = player.level().getServer();
         if (server == null) return;
-        for (ServerPlayer ally : server.getPlayerList().getPlayers()) {
-            if (ally.level() != player.level()) continue;
+        List<ServerPlayer> affected = server.getPlayerList().getPlayers().stream()
+                .filter(ally -> ally.level() == player.level())
+                .toList();
+        for (ServerPlayer ally : affected) {
             if (VillageRespawnSystem.isDowned(ally)) VillageRespawnSystem.reviveNow(ally, "기적의 대성역");
             healScaled(ally, heal);
             int amplifier = lowHealthAmplifier(ally, 2 + Math.min(3, specialRank));
@@ -623,6 +614,7 @@ public final class VillageRoleAbilitySystem {
             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, 1, false, false, true));
         }
         if (player.level() instanceof ServerLevel level) {
+            VillageSkillEffectSystem.miracle(level, player, affected);
             play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.4f, 0.82f);
             play(level, player.position(), SoundEvents.TOTEM_USE, 1.0f, 1.0f);
         }
@@ -714,39 +706,6 @@ public final class VillageRoleAbilitySystem {
         bolt.setVisualOnly(true);
         bolt.snapTo(position.x, position.y, position.z);
         level.addFreshEntity(bolt);
-    }
-
-    private static void updateShieldBlocks(ServerLevel level, ServerPlayer player, boolean fortress, int distance) {
-        UUID id = player.getUUID();
-        ShieldBlocks previous = SHIELDS.remove(id);
-        if (previous != null) restoreShield(level.getServer(), previous);
-        Vec3 forward = horizontalLook(player);
-        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
-        Vec3 center = player.position().add(forward.scale(distance));
-        int halfWidth = fortress ? 2 : 1;
-        int height = fortress ? 4 : 3;
-        Map<BlockPos, BlockState> replaced = new LinkedHashMap<>();
-        for (int horizontal = -halfWidth; horizontal <= halfWidth; horizontal++) {
-            for (int vertical = 0; vertical < height; vertical++) {
-                Vec3 point = center.add(right.scale(horizontal)).add(0.0, vertical, 0.0);
-                BlockPos pos = BlockPos.containing(point);
-                BlockState state = level.getBlockState(pos);
-                if (!state.isAir()) continue;
-                replaced.put(pos, state);
-                level.setBlock(pos, Blocks.GLASS.defaultBlockState(), 3);
-            }
-        }
-        SHIELDS.put(id, new ShieldBlocks(level, replaced));
-    }
-
-    private static void restoreShield(MinecraftServer server, ShieldBlocks shield) {
-        if (server == null) return;
-        ServerLevel level = shield.level();
-        for (Map.Entry<BlockPos, BlockState> entry : shield.replaced().entrySet()) {
-            if (level.getBlockState(entry.getKey()).is(Blocks.GLASS)) {
-                level.setBlock(entry.getKey(), entry.getValue(), 3);
-            }
-        }
     }
 
     private static List<Mob> targetsNear(
@@ -922,5 +881,4 @@ public final class VillageRoleAbilitySystem {
     }
 
     private record SlamState(long startedAt, float power, int specialRank, Vec3 origin) {}
-    private record ShieldBlocks(ServerLevel level, Map<BlockPos, BlockState> replaced) {}
 }

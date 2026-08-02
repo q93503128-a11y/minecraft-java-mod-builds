@@ -25,6 +25,7 @@ public final class VillageClientKeys {
     private static final KeyMapping ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_K);
     private static final KeyMapping CALLER = key("caller", GLFW.GLFW_KEY_U);
     private static boolean tickListenerRegistered;
+    private static boolean legacySkillBindingsChecked;
 
     private VillageClientKeys() {}
 
@@ -49,6 +50,9 @@ public final class VillageClientKeys {
 
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null && minecraft.getConnection() != null) {
+            migrateLegacySkillBindings(minecraft);
+        }
         if (minecraft.player == null || minecraft.getConnection() == null || minecraft.gui.screen() != null) {
             drain(ROLE_SKILL_ONE);
             drain(ROLE_SKILL_TWO);
@@ -66,6 +70,20 @@ public final class VillageClientKeys {
         consume(GROWTH, "open_skill_tree");
         consume(ROLE_PROGRESS, "open_role_progress_current");
         consume(CALLER, "open_quick_chat");
+    }
+
+    private static void migrateLegacySkillBindings(Minecraft minecraft) {
+        if (legacySkillBindingsChecked) return;
+        legacySkillBindingsChecked = true;
+        int first = ROLE_SKILL_ONE.getKey().getValue();
+        int second = ROLE_SKILL_TWO.getKey().getValue();
+        boolean oldPair = (first == GLFW.GLFW_KEY_R && second == GLFW.GLFW_KEY_G)
+                || (first == GLFW.GLFW_KEY_G && second == GLFW.GLFW_KEY_R);
+        if (!oldPair) return;
+        ROLE_SKILL_ONE.setKey(InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_Z));
+        ROLE_SKILL_TWO.setKey(InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_X));
+        KeyMapping.resetMapping();
+        minecraft.options.save();
     }
 
     private static void drain(KeyMapping mapping) {
