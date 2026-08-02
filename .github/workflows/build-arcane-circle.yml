@@ -2,6 +2,11 @@ name: Build Arcane Circle
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/arcane-circle/**'
+      - '.github/workflows/build-arcane-circle.yml'
 
 permissions:
   contents: write
@@ -18,27 +23,134 @@ jobs:
     name: Java 25 / NeoForge 26.2 dense UI and single-pass casting
     runs-on: ubuntu-latest
     timeout-minutes: 90
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout latest main
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
-      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
+          cache-read-only: false
+
       - name: Apply v0.10 overhaul
         working-directory: ${{ env.PROJECT_DIR }}
-        run: python3 tools/apply_v10_overhaul.py
-      - name: Audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/apply_v10_overhaul.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          git diff --check
+
+      - name: Audit magic world and v0.10 contracts
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           python3 tools/test_magic_contract.py
           python3 tools/test_v10_overhaul.py
-      - name: Build
+
+      - name: Clean NeoForge build
         working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+          set -o pipefail
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
+
+      - name: Verify runtime JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          mkdir -p ../../deliverables
+          cp "build/libs/$EXPECTED_JAR" ../../deliverables/
+          cp "build/libs/$EXPECTED_JAR.sha256" ../../deliverables/
+
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: arcanecircle-0.10.0-alpha.1
+          path: deliverables/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish clean source and verified JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          touch "$PROJECT_DIR/.gitignore"
+          grep -qxF '.gradle/' "$PROJECT_DIR/.gitignore" || printf '%s\n' '.gradle/' >> "$PROJECT_DIR/.gitignore"
+          grep -qxF 'build/' "$PROJECT_DIR/.gitignore" || printf '%s\n' 'build/' >> "$PROJECT_DIR/.gitignore"
+
+          rm -rf /tmp/arcane-v10-source
+          mkdir -p /tmp/arcane-v10-source
+          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-v10-source/
+
+          published=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$PROJECT_DIR"
+            mkdir -p "$PROJECT_DIR"
+            rsync -a /tmp/arcane-v10-source/ "$PROJECT_DIR/"
+            rm -rf "$PROJECT_DIR/build" "$PROJECT_DIR/.gradle"
+            mkdir -p "$PUBLISHED_DIR"
+            rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
+            cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+            cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+            git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
+            if git diff --cached --quiet; then published=1; break; fi
+            git commit -m 'Publish Arcane Circle v0.10 dense UI and single-pass casting'
+            if git push origin HEAD:main; then published=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$published" -eq 1
+
+      - name: Record CI result
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/arcane-ci-result
+          mkdir -p /tmp/arcane-ci-result
+          if test -f "$GITHUB_WORKSPACE/arcane-circle-gradle.log"; then
+            cp "$GITHUB_WORKSPACE/arcane-circle-gradle.log" /tmp/arcane-ci-result/latest-gradle.log
+          elif test -f "$GITHUB_WORKSPACE/arcane-circle-migration.log"; then
+            cp "$GITHUB_WORKSPACE/arcane-circle-migration.log" /tmp/arcane-ci-result/latest-gradle.log
+          else
+            printf '%s\n' 'Build pipeline did not produce a diagnostic log.' > /tmp/arcane-ci-result/latest-gradle.log
+          fi
+          cat > /tmp/arcane-ci-result/status.txt <<STATUS
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
+          version=$MOD_VERSION
+          STATUS
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          recorded=0
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$CI_RESULT_DIR"
+            mkdir -p "$CI_RESULT_DIR"
+            cp -a /tmp/arcane-ci-result/. "$CI_RESULT_DIR/"
+            git add -A "$CI_RESULT_DIR"
+            if git diff --cached --quiet; then recorded=1; break; fi
+            git commit -m "Record Arcane Circle v0.10 CI result for ${GITHUB_SHA::7}"
+            if git push origin HEAD:main; then recorded=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$recorded" -eq 1
