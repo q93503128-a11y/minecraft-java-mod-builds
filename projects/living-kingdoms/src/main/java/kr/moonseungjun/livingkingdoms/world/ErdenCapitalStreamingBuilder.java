@@ -1,0 +1,203 @@
+package kr.moonseungjun.livingkingdoms.world;
+
+import kr.moonseungjun.livingkingdoms.LivingKingdoms;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Applies the 2.4 x 1.8 km capital blueprint one loaded 16 x 16 metre cell at a time.
+ *
+ * <p>This avoids pregenerating more than ten thousand chunks during character creation while keeping
+ * every road, wall module and district boundary deterministic. A chunk is marked complete only after
+ * all of its incremental block writes finish.</p>
+ */
+public final class ErdenCapitalStreamingBuilder {
+    public static final int CAPITAL_REVISION = 1;
+    public static final int WEST_WALL_X = -1_200;
+    public static final int EAST_WALL_X = 1_200;
+    public static final int NORTH_WALL_Z = -900;
+    public static final int SOUTH_WALL_Z = 900;
+
+    private static final int STREAM_MARGIN = 48;
+    private static final int TICK_BUDGET = 2_400;
+    private static final ArrayDeque<Long> PENDING = new ArrayDeque<>();
+    private static final Set<Long> QUEUED = new HashSet<>();
+    private static MinecraftServer queuedServer;
+    private static ActiveChunk active;
+
+    private ErdenCapitalStreamingBuilder() {
+    }
+
+    public static void onChunkLoad(ChunkEvent.Load event) {
+        if (!(event.getLevel() instanceof ServerLevel level)
+                || !level.dimension().equals(StarterRealmManager.REALM_KEY)) return;
+        ChunkPos chunk = event.getChunk().getPos();
+        if (!intersectsCapital(chunk)) return;
+        enqueue(level, chunk.toLong());
+    }
+
+    public static void onServerTick(ServerTickEvent.Post event) {
+        MinecraftServer server = event.getServer();
+        ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);
+        if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
+        if (queuedServer != null && queuedServer != server) clearQueue();
+        queuedServer = server;
+
+        if (active == null) startNext(level);
+        if (active == null) return;
+        if (!level.hasChunk(active.chunkX, active.chunkZ)) {
+            QUEUED.remove(active.chunkPos);
+            active = null;
+            return;
+        }
+
+        active.plan.apply(level, TICK_BUDGET);
+        if (!active.plan.done()) return;
+
+        ErdenCapitalChunkSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
+        data.mark(active.chunkPos, CAPITAL_REVISION);
+        QUEUED.remove(active.chunkPos);
+        active = null;
+    }
+
+    public static int builtChunkCount(ServerLevel level) {
+        return level.getDataStorage().computeIfAbsent(ErdenCapitalChunkSavedData.TYPE)
+                .builtCount(CAPITAL_REVISION);
+    }
+
+    private static void enqueue(ServerLevel level, long chunkPos) {
+        ErdenCapitalChunkSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
+        if (!data.needs(chunkPos, CAPITAL_REVISION) || !QUEUED.add(chunkPos)) return;
+        PENDING.addLast(chunkPos);
+    }
+
+    private static void startNext(ServerLevel level) {
+        ErdenCapitalChunkSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
+        while (!PENDING.isEmpty()) {
+            long packed = PENDING.removeFirst();
+            if (!data.needs(packed, CAPITAL_REVISION)) {
+                QUEUED.remove(packed);
+                continue;
+            }
+            ChunkPos chunk = new ChunkPos(packed);
+            if (!level.hasChunk(chunk.x, chunk.z)) {
+                QUEUED.remove(packed);
+                continue;
+            }
+            IncrementalWorldEditPlan plan = createChunkPlan(level, chunk);
+            active = new ActiveChunk(packed, chunk.x, chunk.z, plan);
+            LivingKingdoms.LOGGER.debug(
+                    "Prepared streamed Erden capital chunk {},{} writes={} operations={}",
+                    chunk.x, chunk.z, plan.estimatedWrites(), plan.operationCount()
+            );
+            return;
+        }
+    }
+
+    private static IncrementalWorldEditPlan createChunkPlan(ServerLevel level, ChunkPos chunk) {
+        IncrementalWorldEditPlan plan = new IncrementalWorldEditPlan();
+        addRoadNetwork(plan, level, chunk);
+        ExternalRealmBuilder.addCapitalWallChunk(plan, level, chunk);
+        return plan;
+    }
+
+    private static void addRoadNetwork(IncrementalWorldEditPlan plan, ServerLevel level, ChunkPos chunk) {
+        int minX = chunk.getMinBlockX();
+        int minZ = chunk.getMinBlockZ();
+        for (int x = minX; x <= minX + 15; x++) {
+            for (int z = minZ; z <= minZ + 15; z++) {
+                if (!insideWalls(x, z) || insideCitadel(x, z)) continue;
+                RoadClass roadClass = classifyRoad(x, z);
+                if (roadClass == RoadClass.NONE) continue;
+
+                int surfaceY = RealmSitePlanner.surfaceY(level, x, z);
+                BlockPos surface = new BlockPos(x, surfaceY, z);
+                boolean fluid = !level.getFluidState(surface).isEmpty();
+                if (fluid && roadClass != RoadClass.ROYAL) continue;
+
+                if (fluid && roadClass == RoadClass.ROYAL) {
+                    int floor = level.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z) - 1;
+                    if (Math.floorMod(x + z, 6) == 0) {
+                        plan.addFill(x, floor + 1, z, x, surfaceY - 1, z, Blocks.STONE_BRICKS);
+                    }
+                    plan.addSet(x, surfaceY, z, Blocks.STONE_BRICKS);
+                } else {
+                    plan.addSet(x, surfaceY, z,
+                            roadClass == RoadClass.ROYAL ? Blocks.POLISHED_ANDESITE : Blocks.PACKED_MUD);
+                }
+                plan.addFill(x, surfaceY + 1, z, x, surfaceY + 3, z, Blocks.AIR);
+            }
+        }
+    }
+
+    private static RoadClass classifyRoad(int x, int z) {
+        if (Math.abs(x) <= 7 || Math.abs(z) <= 6) return RoadClass.ROYAL;
+        if (Math.abs(x - 600) <= 4 || Math.abs(x + 600) <= 4
+                || Math.abs(z - 300) <= 4 || Math.abs(z + 300) <= 4) {
+            return RoadClass.DISTRICT;
+        }
+
+        boolean innerRing = (Math.abs(Math.abs(x) - 1_075) <= 4 && Math.abs(z) <= 790)
+                || (Math.abs(Math.abs(z) - 775) <= 4 && Math.abs(x) <= 1_075);
+        if (innerRing) return RoadClass.DISTRICT;
+
+        int curvedX = x + (int) Math.round(Math.sin(z / 185.0) * 17.0);
+        int curvedZ = z + (int) Math.round(Math.sin(x / 210.0) * 15.0);
+        boolean laneX = modularDistance(curvedX, 132) <= 2;
+        boolean laneZ = modularDistance(curvedZ, 118) <= 2;
+        return laneX || laneZ ? RoadClass.LOCAL : RoadClass.NONE;
+    }
+
+    private static int modularDistance(int coordinate, int spacing) {
+        int remainder = Math.floorMod(coordinate, spacing);
+        return Math.min(remainder, spacing - remainder);
+    }
+
+    private static boolean insideWalls(int x, int z) {
+        return x > WEST_WALL_X + 10 && x < EAST_WALL_X - 10
+                && z > NORTH_WALL_Z + 10 && z < SOUTH_WALL_Z - 10;
+    }
+
+    private static boolean insideCitadel(int x, int z) {
+        return x >= -82 && x <= 82 && z >= -82 && z <= 82;
+    }
+
+    private static boolean intersectsCapital(ChunkPos chunk) {
+        int minX = chunk.getMinBlockX();
+        int maxX = minX + 15;
+        int minZ = chunk.getMinBlockZ();
+        int maxZ = minZ + 15;
+        return maxX >= WEST_WALL_X - STREAM_MARGIN && minX <= EAST_WALL_X + STREAM_MARGIN
+                && maxZ >= NORTH_WALL_Z - STREAM_MARGIN && minZ <= SOUTH_WALL_Z + STREAM_MARGIN;
+    }
+
+    private static void clearQueue() {
+        PENDING.clear();
+        QUEUED.clear();
+        active = null;
+    }
+
+    private enum RoadClass {
+        NONE,
+        LOCAL,
+        DISTRICT,
+        ROYAL
+    }
+
+    private record ActiveChunk(long chunkPos, int chunkX, int chunkZ,
+                               IncrementalWorldEditPlan plan) {
+    }
+}
