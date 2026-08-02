@@ -26,6 +26,7 @@ public final class ErdenCapitalStreamingBuilder {
     private static final int TICK_BUDGET = 2_400;
     private static final ArrayDeque<Long> PENDING = new ArrayDeque<>();
     private static final Set<Long> QUEUED = new HashSet<>();
+    private static final Set<Long> RETAINED_REQUESTS = new HashSet<>();
     private static MinecraftServer queuedServer;
     private static ActiveChunk active;
 
@@ -51,6 +52,7 @@ public final class ErdenCapitalStreamingBuilder {
         if (active == null) return;
         if (!level.hasChunk(active.chunkX(), active.chunkZ())) {
             QUEUED.remove(active.chunkPos());
+            releaseRetained(level, active.chunkPos());
             active = null;
             return;
         }
@@ -62,17 +64,27 @@ public final class ErdenCapitalStreamingBuilder {
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
         data.mark(active.chunkPos(), CAPITAL_REVISION);
         QUEUED.remove(active.chunkPos());
+        releaseRetained(level, active.chunkPos());
         active = null;
     }
 
+    /**
+     * Requests deterministic completion of one capital cell even when no player is keeping it loaded.
+     * The temporary force-load is removed as soon as that cell is marked complete.
+     */
     public static void requestChunk(ServerLevel level, int chunkX, int chunkZ) {
         ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
         if (!intersectsCapital(chunk)) {
             throw new IllegalArgumentException("Requested chunk is outside the Erden capital: "
                     + chunkX + "," + chunkZ);
         }
+        long packed = pack(chunkX, chunkZ);
+        ErdenCapitalChunkSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
+        if (!data.needs(packed, CAPITAL_REVISION)) return;
+        if (RETAINED_REQUESTS.add(packed)) level.setChunkForced(chunkX, chunkZ, true);
         level.getChunk(chunkX, chunkZ);
-        enqueue(level, pack(chunkX, chunkZ), true);
+        enqueue(level, packed, true);
     }
 
     public static boolean isChunkBuilt(ServerLevel level, int chunkX, int chunkZ) {
@@ -88,7 +100,10 @@ public final class ErdenCapitalStreamingBuilder {
     private static void enqueue(ServerLevel level, long chunkPos, boolean visibleFirst) {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
-        if (!data.needs(chunkPos, CAPITAL_REVISION)) return;
+        if (!data.needs(chunkPos, CAPITAL_REVISION)) {
+            releaseRetained(level, chunkPos);
+            return;
+        }
         if (QUEUED.add(chunkPos)) {
             if (visibleFirst) PENDING.addFirst(chunkPos);
             else PENDING.addLast(chunkPos);
@@ -104,12 +119,14 @@ public final class ErdenCapitalStreamingBuilder {
             long packed = PENDING.removeFirst();
             if (!data.needs(packed, CAPITAL_REVISION)) {
                 QUEUED.remove(packed);
+                releaseRetained(level, packed);
                 continue;
             }
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
             if (!level.hasChunk(chunkX, chunkZ)) {
                 QUEUED.remove(packed);
+                releaseRetained(level, packed);
                 continue;
             }
             ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
@@ -214,9 +231,23 @@ public final class ErdenCapitalStreamingBuilder {
         return (int) packed;
     }
 
+    private static void releaseRetained(ServerLevel level, long packed) {
+        if (!RETAINED_REQUESTS.remove(packed)) return;
+        level.setChunkForced(unpackX(packed), unpackZ(packed), false);
+    }
+
     private static void clearQueue() {
+        if (queuedServer != null) {
+            ServerLevel previous = queuedServer.getLevel(StarterRealmManager.REALM_KEY);
+            if (previous != null) {
+                for (long packed : Set.copyOf(RETAINED_REQUESTS)) {
+                    previous.setChunkForced(unpackX(packed), unpackZ(packed), false);
+                }
+            }
+        }
         PENDING.clear();
         QUEUED.clear();
+        RETAINED_REQUESTS.clear();
         active = null;
     }
 
