@@ -9,6 +9,7 @@ import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
+import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
@@ -70,6 +71,7 @@ public final class LivingKingdoms {
     private void onServerTick(ServerTickEvent.Post event) {
         RealmBuildCoordinator.onServerTick(event);
         ErdenCapitalStreamingBuilder.onServerTick(event);
+        ErdenUrbanInteriorBuilder.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
     }
