@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
+import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import kr.moonseungjun.livingkingdoms.worldgen.StructurelessNoiseChunkGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -20,11 +21,16 @@ import java.util.Set;
 /** End-to-end CI verification for the active one-metre-scale Erden slice. */
 public final class StarterRealmDiagnostics {
     private static final String ACTIVE_HOMELAND = "erden_kingdom";
-    private static final int[][] OUTER_TERRAIN_SAMPLES = {
+    private static final int[][] CAPITAL_APPROACH_SAMPLES = {
             {224, 0}, {-224, 0}, {0, 224}, {0, -224},
             {224, 224}, {-224, 224}, {224, -224}, {-224, -224},
             {112, 224}, {-112, 224}, {112, -224}, {-112, -224},
             {224, 112}, {-224, 112}, {224, -112}, {-224, -112}
+    };
+    private static final int[][] REGIONAL_RELIEF_SAMPLES = {
+            {4_000, 0}, {-4_000, 0}, {0, 4_000}, {0, -4_000},
+            {8_000, 3_000}, {-8_000, 3_000}, {8_000, -3_000}, {-8_000, -3_000},
+            {12_000, 6_000}, {-12_000, 6_000}, {12_000, -6_000}, {-12_000, -6_000}
     };
     private static final StreamSample[] STREAM_SAMPLES = {
             new StreamSample("royal_avenue", 0, 200, false),
@@ -59,7 +65,7 @@ public final class StarterRealmDiagnostics {
                     throw new IllegalStateException("Erden layout was not built");
                 }
                 verifyStructurelessGenerator(realm);
-                verifyNaturalTerrainOutsideCapital(realm, site);
+                verifyCapitalApproachesAndRegionalRelief(realm, site);
                 verifyExternalArchitecture(realm, site);
                 verifyNoConstructionDebris(realm, site);
                 for (StreamSample sample : STREAM_SAMPLES) {
@@ -138,8 +144,7 @@ public final class StarterRealmDiagnostics {
         }
 
         for (int i = 1; i < STREAM_SAMPLES.length; i++) {
-            StreamSample sample = STREAM_SAMPLES[i];
-            verifyArchitectureChunk(realm, sample);
+            verifyArchitectureChunk(realm, STREAM_SAMPLES[i]);
         }
     }
 
@@ -173,20 +178,35 @@ public final class StarterRealmDiagnostics {
         );
     }
 
-    private static void verifyNaturalTerrainOutsideCapital(ServerLevel realm,
-                                                            RealmSiteLayoutSavedData.RealmSite site) {
-        Set<Integer> heights = new HashSet<>();
+    private static void verifyCapitalApproachesAndRegionalRelief(
+            ServerLevel realm, RealmSiteLayoutSavedData.RealmSite site) {
         int land = 0;
-        for (int[] offset : OUTER_TERRAIN_SAMPLES) {
+        for (int[] offset : CAPITAL_APPROACH_SAMPLES) {
             int x = site.centerX() + offset[0];
             int z = site.centerZ() + offset[1];
-            int y = terrainY(realm, x, z);
-            heights.add(y);
             int top = realm.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
             if (realm.getFluidState(new BlockPos(x, top, z)).isEmpty()) land++;
         }
         if (land < 9) throw new IllegalStateException("Erden capital district is isolated by water");
-        if (heights.size() < 2) throw new IllegalStateException("Erden outer terrain is unnaturally flat");
+
+        Set<Integer> designedHeights = new HashSet<>();
+        int minimum = Integer.MAX_VALUE;
+        int maximum = Integer.MIN_VALUE;
+        for (int[] offset : REGIONAL_RELIEF_SAMPLES) {
+            int height = (int) Math.round(AuthoredContinentDensity.surfaceHeight(
+                    site.centerX() + offset[0], site.centerZ() + offset[1]));
+            designedHeights.add(height);
+            minimum = Math.min(minimum, height);
+            maximum = Math.max(maximum, height);
+        }
+        if (designedHeights.size() < 4 || maximum - minimum < 8) {
+            throw new IllegalStateException("Erden regional relief is too uniform: distinct="
+                    + designedHeights.size() + " range=" + (maximum - minimum));
+        }
+        LivingKingdoms.LOGGER.info(
+                "Verified Erden capital approaches land_samples={} regional_relief_distinct={} range={}m",
+                land, designedHeights.size(), maximum - minimum
+        );
     }
 
     private static void verifyExternalArchitecture(ServerLevel realm,
