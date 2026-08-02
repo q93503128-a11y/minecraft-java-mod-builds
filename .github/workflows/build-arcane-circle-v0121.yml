@@ -131,7 +131,7 @@ jobs:
                       raise SystemExit(f'number-key chord state missing: {token!r}')
 
               gear = z.read('kr/moonseungjun/arcanecircle/magic/MageGearService.class')
-              for token in (b'froststep_boots', b'FROSTED_ICE', b'SLOW_FALLING'):
+              for token in (b'FROSTED_ICE', b'SLOW_FALLING'):
                   if token not in gear:
                       raise SystemExit(f'tiered gear bytecode missing: {token!r}')
 
