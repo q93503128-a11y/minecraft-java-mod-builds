@@ -26,10 +26,9 @@ def kenneyUiAssets = [
         [output: 'minimap_arrow.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_arrow_a.png", blob: 'd3999611a2608d9953db7ebdd1cda9c293c47b09']
 ]
 
+// The one active external asset is an inner-citadel reference part, not a complete city.
 def externalStructureAssets = [
-        [output: 'medieval_castle.schem', slug: 'ultimate-medieval-survival-castle-mansion', title: 'Ultimate Medieval Survival Castle Mansion'],
-        [output: 'woodland_mansion.schem', slug: 'ultimate-woodland-mansion-survival-base', title: 'Ultimate Woodland Mansion Survival Base'],
-        [output: 'deepslate_mega_base.schem', slug: 'ultimate-survival-starter-mega-base', title: 'Ultimate Survival Starter Mega Base']
+        [output: 'medieval_castle.schem', slug: 'ultimate-medieval-survival-castle-mansion', title: 'Ultimate Medieval Survival Castle Mansion']
 ]
 
 def prepareKenneyUiAssets = tasks.register('prepareKenneyUiAssets') {
@@ -70,6 +69,7 @@ def prepareExternalStructures = tasks.register('prepareExternalStructures') {
         def attribution = new StringBuilder('Living Kingdoms external structure attribution\n\n')
         attribution.append('License: Creative Commons Attribution 4.0 International\n')
         attribution.append('https://creativecommons.org/licenses/by/4.0/\n\n')
+        attribution.append('Use inside Living Kingdoms: cleaned and adapted inner-citadel reference part only.\n\n')
         externalStructureAssets.each { asset ->
             URI source = new URI("https://www.schemcraft.com/schematics/${asset.slug}/download")
             byte[] archive = source.toURL().openStream().withCloseable { it.readAllBytes() }
