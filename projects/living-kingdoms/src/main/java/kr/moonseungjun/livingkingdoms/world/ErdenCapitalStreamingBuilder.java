@@ -14,13 +14,7 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Applies the 2.4 x 1.8 km capital blueprint one loaded 16 x 16 metre cell at a time.
- *
- * <p>This avoids pregenerating more than ten thousand chunks during character creation while keeping
- * every road, wall module and district building deterministic. A chunk is marked complete only after
- * all of its incremental block writes finish.</p>
- */
+/** Builds the 2.4 x 1.8 km capital one loaded 16 x 16 metre cell at a time. */
 public final class ErdenCapitalStreamingBuilder {
     public static final int CAPITAL_REVISION = 2;
     public static final int WEST_WALL_X = -1_200;
@@ -43,7 +37,7 @@ public final class ErdenCapitalStreamingBuilder {
                 || !level.dimension().equals(StarterRealmManager.REALM_KEY)) return;
         ChunkPos chunk = event.getChunk().getPos();
         if (!intersectsCapital(chunk)) return;
-        enqueue(level, pack(chunk.x(), chunk.z()));
+        enqueue(level, pack(chunk.x(), chunk.z()), false);
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -78,7 +72,7 @@ public final class ErdenCapitalStreamingBuilder {
                     + chunkX + "," + chunkZ);
         }
         level.getChunk(chunkX, chunkZ);
-        enqueue(level, pack(chunkX, chunkZ));
+        enqueue(level, pack(chunkX, chunkZ), true);
     }
 
     public static boolean isChunkBuilt(ServerLevel level, int chunkX, int chunkZ) {
@@ -91,11 +85,16 @@ public final class ErdenCapitalStreamingBuilder {
                 .builtCount(CAPITAL_REVISION);
     }
 
-    private static void enqueue(ServerLevel level, long chunkPos) {
+    private static void enqueue(ServerLevel level, long chunkPos, boolean visibleFirst) {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
-        if (!data.needs(chunkPos, CAPITAL_REVISION) || !QUEUED.add(chunkPos)) return;
-        PENDING.addLast(chunkPos);
+        if (!data.needs(chunkPos, CAPITAL_REVISION)) return;
+        if (QUEUED.add(chunkPos)) {
+            if (visibleFirst) PENDING.addFirst(chunkPos);
+            else PENDING.addLast(chunkPos);
+        } else if (visibleFirst && PENDING.remove(chunkPos)) {
+            PENDING.addFirst(chunkPos);
+        }
     }
 
     private static void startNext(ServerLevel level) {
