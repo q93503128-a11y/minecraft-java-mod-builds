@@ -48,6 +48,27 @@ jobs:
           python3 tools/v01713/apply.py
           python3 - <<'PY'
           from pathlib import Path
+
+          keys = Path('src/main/java/kr/moonseungjun/villageguardians/VillageClientKeys.java')
+          text = keys.read_text(encoding='utf-8')
+          old = '''        if (minecraft.player != null) {
+              minecraft.player.displayClientMessage(
+                      net.minecraft.network.chat.Component.literal(
+                              "§b기존 R/G 기술 키를 Z/X로 자동 변경했습니다."), false);
+          }
+          '''
+          if old not in text:
+              raise SystemExit('legacy key migration message block not found')
+          keys.write_text(text.replace(old, '', 1), encoding='utf-8')
+
+          ability = Path('src/main/java/kr/moonseungjun/villageguardians/VillageRoleAbilitySystem.java')
+          text = ability.read_text(encoding='utf-8')
+          old = '                player.setYBodyRot(player.getYBodyRot() + 34.0f);\n'
+          new = '                player.setYBodyRot((float) ((now * 34.0) % 360.0));\n'
+          if old not in text:
+              raise SystemExit('whirlwind body rotation adaptation not found')
+          ability.write_text(text.replace(old, new, 1), encoding='utf-8')
+
           for path in Path('tools').glob('test_*.py'):
               text = path.read_text(encoding='utf-8')
               updated = text.replace('mod_version=0.17.12-alpha.1', 'mod_version=0.17.13-alpha.1')
