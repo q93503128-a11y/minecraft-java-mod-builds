@@ -58,7 +58,7 @@ public final class ArcaneMageService {
         for (Mob mob : level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(56.0),
                 value -> value.isAlive() && SPELLCASTER_TYPES.contains(typePath(value)))) {
             ensureNaturalMage(mob);
-            castNaturalSpell(level, mob);
+            castHostileSpell(level, mob);
         }
 
         if ((level.getGameTime() & 255L) == 0L) {
@@ -239,7 +239,7 @@ public final class ArcaneMageService {
                 .stream().min(Comparator.comparingDouble(caster::distanceToSqr)).orElse(null);
     }
 
-    private static void castNaturalSpell(ServerLevel level, Mob caster) {
+    private static void castHostileSpell(ServerLevel level, Mob caster) {
         MageProfile mage = profile(caster);
         LivingEntity target = caster.getTarget();
         if (target == null || !target.isAlive()) return;

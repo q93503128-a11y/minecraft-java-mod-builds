@@ -27,11 +27,12 @@ import java.util.Set;
 public final class GrimoireScreen extends Screen {
     private static final List<Tab> TABS = List.of(
             new Tab("atlas", "주문"), new Tab("recipes", "융합"), new Tab("staffs", "지팡이"),
-            new Tab("academy", "학원"), new Tab("core", "마력핵"));
+            new Tab("academy", "마도회"), new Tab("core", "마력핵"));
     private static final Map<String, Integer> SAVED_SCROLL = new HashMap<>();
     private static int activeSlot = -1;
     private static String selectedStaffId = "";
     private static int atlasCircle;
+    private static int fusionCircle;
     private static int academyCircle;
 
     private final String page;
@@ -61,6 +62,7 @@ public final class GrimoireScreen extends Screen {
             if (inside(event.x(), event.y(), l.tab(i))) { request(TABS.get(i).id()); return true; }
         }
         if ("atlas".equals(page)) return clickAtlas(event, l) || super.mouseClicked(event, doubleClick);
+        if ("recipes".equals(page)) return clickRecipes(event, l) || super.mouseClicked(event, doubleClick);
         if ("academy".equals(page)) return clickAcademy(event, l) || super.mouseClicked(event, doubleClick);
         if ("staffs".equals(page)) return clickStaffs(event, l) || super.mouseClicked(event, doubleClick);
         return super.mouseClicked(event, doubleClick);
@@ -90,12 +92,33 @@ public final class GrimoireScreen extends Screen {
         return false;
     }
 
+    private boolean clickRecipes(MouseButtonEvent event, Layout l) {
+        if (fusionCircle == 0) {
+            for (int circle = 1; circle <= 9; circle++) {
+                if (inside(event.x(), event.y(), l.circleCard(circle))) {
+                    fusionCircle = circle;
+                    scroll = 0;
+                    saveScroll();
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (inside(event.x(), event.y(), l.back())) {
+            fusionCircle = 0;
+            scroll = 0;
+            saveScroll();
+            return true;
+        }
+        return false;
+    }
+
     private boolean clickAcademy(MouseButtonEvent event, Layout l) {
         MagicTradition[] traditions = traditions();
         for (int i = 0; i < traditions.length; i++) {
             if (inside(event.x(), event.y(), l.tradition(i))) {
                 ClientPacketDistributor.sendToServer(new ChooseTraditionPayload(traditions[i].name()));
-                notice(traditions[i].displayName() + " 조율 요청"); return true;
+                notice(traditions[i].displayName() + " 소속 등록 요청"); return true;
             }
         }
         if (academyCircle == 0) {
@@ -230,12 +253,20 @@ public final class GrimoireScreen extends Screen {
     }
 
     private void recipes(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
-        sectionTitle(g, l, "융합", "");
-        Rect viewport = l.listViewport(24);
+        if (fusionCircle == 0) {
+            sectionTitle(g, l, "융합 써클", "결과 주문의 써클별로 분류합니다");
+            for (int circle = 1; circle <= 9; circle++) drawFusionCircleCard(g, l.circleCard(circle), circle, mouseX, mouseY);
+            return;
+        }
+
+        Rect back = l.back();
+        button(g, back, "‹ 써클", inside(mouseX, mouseY, back), true);
+        g.text(font, Component.literal(fusionCircle + "C 융합"), back.right() + 8, back.y() + 5, 0xFFF1E8FA);
+        Rect viewport = l.listViewport(49);
         g.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
-        List<SpellCatalog.FusionFormula> formulas = SpellCatalog.fusions();
+        List<SpellCatalog.FusionFormula> formulas = fusionFormulasInCircle(fusionCircle);
         for (int i = 0; i < formulas.size(); i++) {
-            Rect r = l.wideCard(i, scroll, 54, 24);
+            Rect r = l.wideCard(i, scroll, 54, 49);
             SpellCatalog.FusionFormula formula = formulas.get(i);
             SpellDefinition result = SpellCatalog.spell(formula.result()).orElseThrow();
             int accent = ArcaneRenderUtil.schoolColor(result.school());
@@ -254,6 +285,18 @@ public final class GrimoireScreen extends Screen {
                     ready ? 0xFF76D5A5 : 0xFFE07882);
         }
         g.disableScissor();
+    }
+
+    private void drawFusionCircleCard(GuiGraphicsExtractor g, Rect r, int circle, int mouseX, int mouseY) {
+        int count = fusionFormulasInCircle(circle).size();
+        boolean unlocked = circle <= ArcaneClientState.integer("circle", 1);
+        boolean hover = inside(mouseX, mouseY, r);
+        int accent = count == 0 ? 0xFF4D4F59 : unlocked ? circleColor(circle) : 0xFF5B5364;
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF26344A : 0xFF121A29);
+        g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), accent);
+        ArcaneRenderUtil.ring(g, r.x() + 15, r.y() + r.h() / 2, 8, accent);
+        g.text(font, Component.literal(circle + "C"), r.x() + 28, r.y() + 6, count > 0 ? 0xFFF5EDFF : 0xFF777881);
+        g.text(font, Component.literal(Integer.toString(count)), r.x() + 29, r.y() + 18, accent);
     }
 
     private void staffs(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
@@ -377,7 +420,7 @@ public final class GrimoireScreen extends Screen {
                 "아르카나 " + ArcaneClientState.longInteger("marks", 0L)));
         infoPanel(g, c.x() + 268, c.y() + 28, Math.max(150, c.w() - 268), "장비", List.of(
                 ArcaneClientState.text("staff", "맨손"),
-                "학부 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).displayName(),
+                "소속 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).displayName(),
                 "저단계 주문 자동 단축", "건축 허용"));
     }
 
@@ -440,11 +483,11 @@ public final class GrimoireScreen extends Screen {
     }
     private void request(String next) { saveScroll(); ClientPacketDistributor.sendToServer(new RequestGrimoirePayload(next)); }
     private void saveScroll() { SAVED_SCROLL.put(scrollKey(), scroll); }
-    private String scrollKey() { return page + ":" + ("atlas".equals(page) ? atlasCircle : "academy".equals(page) ? academyCircle : 0); }
+    private String scrollKey() { return page + ":" + ("atlas".equals(page) ? atlasCircle : "recipes".equals(page) ? fusionCircle : "academy".equals(page) ? academyCircle : 0); }
 
     private int maxScroll(Layout l) {
         return switch (page) {
-            case "recipes" -> l.maxWideScroll(SpellCatalog.fusions().size(), 54, 24);
+            case "recipes" -> fusionCircle == 0 ? 0 : l.maxWideScroll(fusionFormulasInCircle(fusionCircle).size(), 54, 49);
             case "staffs" -> l.maxStaffScroll(ModItems.profiles().size());
             case "academy" -> academyCircle == 0 ? 0 : l.maxOfferScroll(AcademyOfferCatalog.forCircle(academyCircle).size());
             case "atlas" -> atlasCircle == 0 ? 0 : l.maxSpellScroll(SpellCatalog.spellsInCircle(atlasCircle).size());
@@ -473,12 +516,16 @@ public final class GrimoireScreen extends Screen {
                 + signed((int)Math.round((p.cooldownMultiplier()-1)*100)) + "%";
     }
     private static String signed(int v) { return v >= 0 ? "+" + v : Integer.toString(v); }
+    private static List<SpellCatalog.FusionFormula> fusionFormulasInCircle(int circle) {
+        return SpellCatalog.fusions().stream().filter(formula -> SpellCatalog.spell(formula.result())
+                .map(spell -> spell.circle() == circle).orElse(false)).toList();
+    }
     private static MagicTradition[] traditions() { return new MagicTradition[]{MagicTradition.ARCANE, MagicTradition.DIVINE, MagicTradition.OCCULT, MagicTradition.PRIMAL}; }
     private static String normalize(String p) { return "recipes".equals(p)||"staffs".equals(p)||"academy".equals(p)||"core".equals(p) ? p : "atlas"; }
     private static boolean inside(double x, double y, Rect r) { return x >= r.x() && y >= r.y() && x < r.right() && y < r.bottom(); }
     private static int clamp(int v, int min, int max) { return Math.max(min, Math.min(max, v)); }
     private static int circleColor(int c) { return switch(c){case 1->0xFF7DA7E8;case 2->0xFF78B7D8;case 3->0xFF75C6B0;case 4->0xFFE0B86C;case 5->0xFFE18A72;case 6->0xFFC783D9;case 7->0xFFA879E7;case 8->0xFF8A6BE0;default->0xFFE4C56A;}; }
-    private static String circleSubtitle(int c) { return switch(c){case 1->"기초 회로";case 2->"전투 입문";case 3->"정규 마도";case 4->"상급 전술";case 5->"전장 지배";case 6->"대마법";case 7->"차원 마법";case 8->"현실 간섭";default->"궁극 마법";}; }
+    private static String circleSubtitle(int c) { return switch(c){case 1->"기초 회로";case 2->"전투 입문";case 3->"정규 마도";case 4->"상급 전술";case 5->"전장 지배";case 6->"대마법사";case 7->"초월 마법";case 8->"신화 마법";default->"세계급 의식";}; }
 
     private record Tab(String id, String label) {}
     private record Rect(int x, int y, int w, int h) { int right(){return x+w;} int bottom(){return y+h;} }

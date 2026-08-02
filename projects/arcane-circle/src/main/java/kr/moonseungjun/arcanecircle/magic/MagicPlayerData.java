@@ -236,12 +236,11 @@ public final class MagicPlayerData extends SavedData {
         kr.moonseungjun.arcanecircle.world.ArcaneWorldData world =
                 kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer());
         kr.moonseungjun.arcanecircle.world.MagicTradition chosen = world.tradition(player);
-        boolean facultyMatch = chosen != kr.moonseungjun.arcanecircle.world.MagicTradition.UNBOUND
-                && SpellWorldLore.tradition(spell.id()) == chosen;
-        double facultyMana = facultyMatch ? chosen.manaMultiplier() : 1.0;
-        double facultyPower = facultyMatch ? chosen.powerMultiplier() : 1.0;
-        double facultyRange = facultyMatch ? chosen.rangeMultiplier() : 1.0;
-        double facultyCooldown = facultyMatch ? chosen.cooldownMultiplier() : 1.0;
+        // Affiliation is a social team, not a spell school. It never locks or buffs a school directly.
+        double facultyMana = 1.0;
+        double facultyPower = 1.0;
+        double facultyRange = 1.0;
+        double facultyCooldown = 1.0;
         int masteryGap = Math.max(0, state.circle - spell.circle());
         int proficiency = SpellCatalog.masteryTier(state.mastery(spellId));
         double circleMana = Math.max(0.48, 1.0 - masteryGap * 0.09);

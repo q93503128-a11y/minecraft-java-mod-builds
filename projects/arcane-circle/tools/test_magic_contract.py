@@ -37,9 +37,9 @@ build = (ROOT / "build.gradle").read_text(encoding="utf-8")
 properties = (ROOT / "gradle.properties").read_text(encoding="utf-8")
 workflow = (ROOT.parents[1] / ".github/workflows/build-arcane-circle-v0121.yml").read_text(encoding="utf-8")
 
-need(properties, ["mod_version=0.12.1-alpha.4"], "version")
-need(workflow, ["0.12.1-alpha.4", "test_v0121_alpha4_society.py", "per-spell world geometry"], "workflow")
-need(main, ['VERSION = "0.12.1-alpha.4"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
+need(properties, ["mod_version=0.12.1-alpha.5"], "version")
+need(workflow, ["0.12.1-alpha.5", "test_v0121_alpha4_society.py", "per-spell world geometry"], "workflow")
+need(main, ['VERSION = "0.12.1-alpha.5"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
 need(catalog, [
     "IMPLEMENTED_MAX_CIRCLE = 9", "WORLD_MAX_CIRCLE = 9", "meteor_swarm",
     "power_word_kill", "prismatic_wall", "shapechange", "time_stop", "wish", "gate",
@@ -117,7 +117,7 @@ if len(books) != 85 or by_circle[1] != 5 or any(by_circle[circle] != 10 for circ
     raise SystemExit(f"spellbook distribution mismatch: total={len(books)}, circles={by_circle}")
 
 index = json.loads((RES / "data/arcanecircle/spell_catalog/index.json").read_text(encoding="utf-8"))
-if index.get("version") != "0.12.1-alpha.4" or index.get("direct_spells") != 90:
+if index.get("version") != "0.12.1-alpha.5" or index.get("direct_spells") != 90:
     raise SystemExit("v0.10 spell catalogue index mismatch")
 if index.get("economy") != "single persistent Arcana wallet" or index.get("crafting_progression") is not False:
     raise SystemExit("magic-world economy index mismatch")

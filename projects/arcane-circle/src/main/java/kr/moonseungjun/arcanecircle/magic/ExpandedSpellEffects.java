@@ -107,7 +107,7 @@ public final class ExpandedSpellEffects {
         Vec3 end = target.map(Mob::getEyePosition).orElse(start.add(player.getLookAngle().normalize().scale(range)));
         beam(level, start, end, particle, Math.max(28, (int) Math.round(range * 2.5)));
         target.ifPresent(mob -> {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             if (fireTicks > 0) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), fireTicks));
             if (freezeTicks > 0) {
                 mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + freezeTicks));
@@ -128,7 +128,7 @@ public final class ExpandedSpellEffects {
         for (int lane = -1; lane <= 1; lane++) beam(level, start.add(right.scale(lane * 0.17)), end,
                 particle, Math.max(30, (int) Math.round(range * 2.5)));
         target.ifPresent(mob -> {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 1.15));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 1.15));
             if (ignite) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 180));
         });
         return true;
@@ -141,7 +141,7 @@ public final class ExpandedSpellEffects {
         Mob mob = target.get();
         ServerLevel level = level(player);
         beam(level, front(player, 1.4), mob.getEyePosition(), particle, Math.max(30, (int) (range * 2.4)));
-        mob.hurtServer(level, level.damageSources().magic(), (float) power);
+        ArcaneDamage.hurt(level, player, mob, (float) power);
         if (weakness) mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 220, 3));
         return true;
     }
@@ -150,7 +150,7 @@ public final class ExpandedSpellEffects {
                                       ParticleOptions particle, boolean fire, boolean freeze, boolean lingering) {
         ServerLevel level = level(player);
         for (Mob mob : nearby(player, center, radius, Math.max(4.0, radius * 0.7))) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             if (fire) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 260));
             if (freeze) {
                 mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 300));
@@ -226,7 +226,7 @@ public final class ExpandedSpellEffects {
         for (Mob mob : nearby(player, origin, range, 4.5)) {
             Vec3 direction = horizontalDirection(origin, mob.position());
             if (direction.dot(look) < 0.42) continue;
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.push(direction.x * 1.55, 0.34, direction.z * 1.55);
             if (fire) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 180));
         }
@@ -285,7 +285,7 @@ public final class ExpandedSpellEffects {
         for (int lane = -2; lane <= 2; lane++) beam(level, start.add(right(player).scale(lane * 0.27)),
                 end.add(right(player).scale(lane * 0.27)), ParticleTypes.CLOUD, Math.max(28, (int) (range * 2.0)));
         for (Mob mob : lineTargets(player, range, 2.1)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.55));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.55));
             mob.push(look.x * 2.0, 0.3, look.z * 2.0);
         }
         return true;
@@ -297,7 +297,7 @@ public final class ExpandedSpellEffects {
         Mob mob = target.get();
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, duration, amplifier));
         mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, duration, Math.max(2, amplifier / 2)));
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) (power * 0.35));
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (power * 0.35));
         for (double y = 0.2; y < mob.getBbHeight() + 0.3; y += 0.42) {
             ring(level(player), mob.position().add(0.0, y, 0.0), Math.max(0.7, mob.getBbWidth()),
                     ParticleTypes.END_ROD, 22);
@@ -327,7 +327,7 @@ public final class ExpandedSpellEffects {
         for (int lane = -1; lane <= 1; lane++) beam(level, start.add(right(player).scale(lane * 0.11)),
                 end.add(right(player).scale(lane * 0.11)), particle, Math.max(45, (int) (range * 3.0)));
         for (Mob mob : lineTargets(player, range, 1.55)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             if (shock) mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 70, 2));
         }
         return true;
@@ -357,7 +357,7 @@ public final class ExpandedSpellEffects {
             mob.removeEffect(MobEffects.ABSORPTION);
             mob.removeEffect(MobEffects.REGENERATION);
             mob.removeEffect(MobEffects.INVISIBILITY);
-            mob.hurtServer(level(player), level(player).damageSources().magic(), (float) Math.max(2.0, power * 0.35));
+            mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) Math.max(2.0, power * 0.35));
             burst(level(player), mob.getEyePosition(), ParticleTypes.END_ROD, 36, 0.6);
         } else {
             freedom(player);
@@ -370,7 +370,7 @@ public final class ExpandedSpellEffects {
         if (target.isEmpty()) return false;
         Mob mob = target.get();
         beam(level(player), mob.getEyePosition(), player.position().add(0.0, 1.0, 0.0), ParticleTypes.WITCH, 36);
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
         player.heal((float) Math.max(2.0, power * 0.58));
         return true;
     }
@@ -429,7 +429,7 @@ public final class ExpandedSpellEffects {
         Optional<Mob> target = lookTarget(player, range);
         if (target.isEmpty()) return false;
         Mob mob = target.get();
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
         mob.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 220, 0));
         mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 220, 5));
         burst(level(player), mob.getEyePosition(), ParticleTypes.WITCH, 65, 0.9);
@@ -443,7 +443,7 @@ public final class ExpandedSpellEffects {
         for (Mob mob : nearby(player, origin, range, 5.5)) {
             Vec3 direction = horizontalDirection(origin, mob.position());
             if (direction.dot(look) < 0.45) continue;
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 560));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 320, 5));
         }
@@ -460,7 +460,7 @@ public final class ExpandedSpellEffects {
         if (target.isEmpty()) return false;
         Mob mob = target.get();
         Vec3 look = player.getLookAngle().normalize();
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) (power * 0.7));
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (power * 0.7));
         mob.push(look.x * 2.8, 1.15, look.z * 2.8);
         mob.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 55, 2));
         beam(level(player), front(player, 1.4), mob.getEyePosition(), ParticleTypes.ENCHANT, 44);
@@ -500,7 +500,7 @@ public final class ExpandedSpellEffects {
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 520, 7));
         mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 520, 6));
         mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 520, 0));
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) (power * 0.4));
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (power * 0.4));
         shell(level(player), mob.position().add(0.0, mob.getBbHeight() * 0.5, 0.0),
                 Math.max(1.0, mob.getBbWidth() * 1.3), ParticleTypes.ENCHANT);
         return true;
@@ -522,7 +522,7 @@ public final class ExpandedSpellEffects {
         beam(level, start.add(0.0, 0.08, 0.0), end, ParticleTypes.SNOWFLAKE, 32);
         beam(level, start.add(0.0, -0.08, 0.0), end, ParticleTypes.ENCHANT, 32);
         target.ifPresent(mob -> {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 1.2));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 1.2));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 120));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 120));
         });
@@ -544,7 +544,7 @@ public final class ExpandedSpellEffects {
         double scale = 1.0;
         for (Mob target : targets) {
             beam(level, from, target.getEyePosition(), ParticleTypes.ELECTRIC_SPARK, 32);
-            target.hurtServer(level, level.damageSources().magic(), (float) (power * scale));
+            ArcaneDamage.hurt(level, player, target, (float) (power * scale));
             from = target.getEyePosition();
             scale *= 0.84;
         }
@@ -565,7 +565,7 @@ public final class ExpandedSpellEffects {
         AABB box = new AABB(center.add(right.scale(-halfWidth)), center.add(right.scale(halfWidth)))
                 .inflate(1.3, Math.max(4.0, halfWidth * 0.6), 1.3);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, box, candidate -> validTarget(player, candidate))) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             if (fire) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 320));
             if (particle == ParticleTypes.SNOWFLAKE) {
                 mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 360));

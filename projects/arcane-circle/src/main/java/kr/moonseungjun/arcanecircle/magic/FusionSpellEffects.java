@@ -49,7 +49,7 @@ public final class FusionSpellEffects {
         for (Mob mob : hostiles(player, Math.min(11.0, range))) {
             Vec3 delta = mob.position().subtract(player.position());
             if (horizontal(delta).dot(look) < 0.25) continue;
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 75, 2));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 45));
             Vec3 push = horizontal(delta).scale(0.35);
@@ -64,7 +64,7 @@ public final class FusionSpellEffects {
         Vec3 look = horizontal(player.getLookAngle());
         player.push(look.x * Math.min(2.2, 0.8 + range * 0.08), 0.18, look.z * Math.min(2.2, 0.8 + range * 0.08));
         for (Mob mob : hostiles(player, 4.5)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.65));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.65));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 120));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 90, 2));
         }
@@ -78,7 +78,7 @@ public final class FusionSpellEffects {
         if (target.isEmpty()) return false;
         ServerLevel level = (ServerLevel) player.level();
         Mob mob = target.get();
-        mob.hurtServer(level, level.damageSources().magic(), (float) power);
+        ArcaneDamage.hurt(level, player, mob, (float) power);
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 130, 5));
         mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 130, 2));
         mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 130, 0));
@@ -93,7 +93,7 @@ public final class FusionSpellEffects {
         player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 300, 0));
         player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 160, Math.min(2, amplifier / 2)));
         for (Mob mob : hostiles(player, Math.min(8.0, range))) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.42));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.42));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 100));
         }
         sound(level, player, SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.3F);
@@ -113,7 +113,7 @@ public final class FusionSpellEffects {
             if (projected < 0.0 || projected > length) continue;
             Vec3 closest = start.add(direction.scale(projected));
             if (closest.distanceToSqr(mob.getEyePosition()) > 2.25) continue;
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 90, 0));
         }
         sound(level, player, SoundEvents.ENDERMAN_TELEPORT, 0.85F, 0.65F);
@@ -124,7 +124,7 @@ public final class FusionSpellEffects {
         ServerLevel level = (ServerLevel) player.level();
         double radius = Math.min(18.0, Math.max(6.0, range * 0.45));
         for (Mob mob : hostiles(player, radius)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.72));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.72));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 260));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 180, 4));
             mob.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 180, 2));
@@ -138,7 +138,7 @@ public final class FusionSpellEffects {
         if (target.isEmpty()) return false;
         ServerLevel level = (ServerLevel) player.level();
         Mob mob = target.get();
-        mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.58));
+        ArcaneDamage.hurt(level, player, mob, (float) (power * 0.58));
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 260, 6));
         mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 260, 4));
         mob.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 35, 0));
@@ -159,7 +159,7 @@ public final class FusionSpellEffects {
             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 1));
         }
         for (Mob mob : hostiles(player, radius)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.62));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.62));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 180));
         }
         sound(level, player, SoundEvents.TOTEM_USE, 1.0F, 1.05F);
@@ -171,7 +171,7 @@ public final class FusionSpellEffects {
         double radius = Math.min(28.0, Math.max(12.0, range * 0.38));
         for (Mob mob : hostiles(player, radius)) {
             double distanceScale = Math.max(0.35, 1.0 - Math.sqrt(player.distanceToSqr(mob)) / radius);
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * distanceScale));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * distanceScale));
             mob.push(0.0, 0.65 + distanceScale * 0.9, 0.0);
             mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 180, 3));
         }

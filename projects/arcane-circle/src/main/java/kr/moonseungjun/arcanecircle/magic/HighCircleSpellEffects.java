@@ -110,7 +110,7 @@ public final class HighCircleSpellEffects {
         line(level, start, end, particle, Math.max(48, (int) range * 3));
         List<Mob> hits = lineTargets(player, start, end, 1.6);
         for (Mob mob : hits) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * (lethal ? 1.25 : 1.0)));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * (lethal ? 1.25 : 1.0)));
             if (!lethal) mob.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 180, 1));
         }
         burst(level, end, particle, 80, 1.0);
@@ -131,7 +131,7 @@ public final class HighCircleSpellEffects {
         for (Mob mob : mobs) {
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, duration, amplifier));
             mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, duration, amplifier));
-            if (damageScale > 0) mob.hurtServer(level(player), level(player).damageSources().magic(), (float) (range * damageScale));
+            if (damageScale > 0) mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (range * damageScale));
         }
         ring(level(player), center.add(0, 0.2, 0), Math.max(7.0, range * 0.26), ParticleTypes.WITCH, 120);
         return true;
@@ -142,7 +142,7 @@ public final class HighCircleSpellEffects {
         Vec3 center = aim(player, Math.max(8.0, radius * 1.4));
         double r = Math.max(8.0, radius);
         for (Mob mob : enemies(player, center, r)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             Vec3 away = mob.position().subtract(center).normalize();
             mob.push(away.x * (huge ? 2.2 : 1.4), huge ? 1.8 : 1.1, away.z * (huge ? 2.2 : 1.4));
         }
@@ -166,7 +166,7 @@ public final class HighCircleSpellEffects {
         Vec3 center = aim(player, range);
         double scaled = radius * Math.max(1.0, Math.sqrt(range / 25.0));
         for (Mob mob : enemies(player, center, scaled)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             if (fireTicks > 0) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), fireTicks));
             if (freeze) mob.setTicksFrozen(mob.getTicksRequiredToFreeze() + 500);
         }
@@ -179,7 +179,7 @@ public final class HighCircleSpellEffects {
         Optional<Mob> target = target(player, range);
         if (target.isEmpty()) return false;
         Mob mob = target.get();
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
         mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, duration, 5));
         mob.addEffect(new MobEffectInstance(fear ? MobEffects.SLOWNESS : MobEffects.BLINDNESS, duration, 5));
         burst(level(player), mob.getEyePosition(), ParticleTypes.WITCH, 90, 0.8);
@@ -190,7 +190,7 @@ public final class HighCircleSpellEffects {
         Optional<Mob> target = target(player, range);
         if (target.isEmpty()) return false;
         Mob mob = target.get();
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, duration, 255));
         mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, 4));
         burst(level(player), mob.position().add(0, 1, 0), ParticleTypes.ASH, 120, 0.7);
@@ -210,7 +210,7 @@ public final class HighCircleSpellEffects {
         if (target.isEmpty()) return false;
         Mob mob = target.get();
         line(level(player), player.getEyePosition(), mob.getEyePosition(), ParticleTypes.SOUL_FIRE_FLAME, 90);
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) (power * 1.45));
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (power * 1.45));
         mob.addEffect(new MobEffectInstance(MobEffects.WITHER, 300, 4));
         return true;
     }
@@ -254,7 +254,7 @@ public final class HighCircleSpellEffects {
             line(level, start, end, colors.get(Math.floorMod(i, colors.size())), 70);
         }
         for (Mob mob : enemies(player, start.add(player.getLookAngle().scale(range * 0.55)), range * 0.45)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             int roll = level.getRandom().nextInt(4);
             mob.addEffect(new MobEffectInstance(roll == 0 ? MobEffects.BLINDNESS
                     : roll == 1 ? MobEffects.WITHER : roll == 2 ? MobEffects.SLOWNESS : MobEffects.WEAKNESS, 260, 3));
@@ -266,7 +266,7 @@ public final class HighCircleSpellEffects {
         Vec3 center = aim(player, range);
         double radius = Math.max(10.0, range * 0.32);
         for (Mob mob : enemies(player, center, radius)) {
-            mob.hurtServer(level(player), level(player).damageSources().magic(), (float) (power * 0.45));
+            mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (power * 0.45));
             mob.push(0, 3.2 + power / 80.0, 0);
             mob.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 160, 5));
         }
@@ -312,7 +312,7 @@ public final class HighCircleSpellEffects {
         Vec3 center = player.position();
         double radius = Math.max(18.0, range * 0.55);
         for (Mob mob : enemies(player, center, radius)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.70));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.70));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 360, 3));
 
         }
@@ -325,7 +325,7 @@ public final class HighCircleSpellEffects {
         Vec3 center = aim(player, range);
         double radius = Math.max(10.0, range * 0.30);
         for (Mob mob : enemies(player, center, radius)) {
-            mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+            mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
             if (fire) mob.setRemainingFireTicks(400);
         }
         burst(level(player), center.add(0, 2, 0), particle, 260, radius * 0.55);
@@ -337,7 +337,7 @@ public final class HighCircleSpellEffects {
         Optional<Mob> target = target(player, range);
         if (target.isEmpty()) return false;
         Mob mob = target.get();
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) (power * 0.35));
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (power * 0.35));
         mob.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 800, 5));
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 800, 8));
         mob.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 800, 2));
@@ -363,7 +363,7 @@ public final class HighCircleSpellEffects {
         Mob mob = target.get();
         double threshold = Math.max(60.0, power * 0.85);
         float damage = mob.getHealth() <= threshold ? mob.getHealth() + mob.getMaxHealth() + 10.0F : (float) (power * 0.65);
-        mob.hurtServer(level(player), level(player).damageSources().magic(), damage);
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), damage);
         burst(level(player), mob.getEyePosition(), ParticleTypes.SOUL, 200, 1.4);
         return true;
     }
@@ -381,7 +381,7 @@ public final class HighCircleSpellEffects {
             }
         }
         for (Mob mob : enemies(player, center, half + 3.0)) {
-            mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+            mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 500, 7));
         }
         return true;
@@ -414,7 +414,7 @@ public final class HighCircleSpellEffects {
         Optional<Mob> target = target(player, range);
         if (target.isEmpty()) return shapechange(player, power);
         Mob mob = target.get();
-        mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 1200, 10));
         mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 1200, 10));
         mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 1200, 0));
@@ -426,7 +426,7 @@ public final class HighCircleSpellEffects {
         Vec3 center = aim(player, range);
         double radius = Math.max(14.0, range * 0.35);
         for (Mob mob : enemies(player, center, radius)) {
-            mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+            mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
             mob.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 500, 4));
             mob.addEffect(new MobEffectInstance(MobEffects.WITHER, 500, 5));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 500, 5));
@@ -472,7 +472,7 @@ public final class HighCircleSpellEffects {
     private static void blastAt(ServerPlayer player, Vec3 center, double power, double radius,
                                 ParticleOptions particle, boolean fire) {
         for (Mob mob : enemies(player, center, radius)) {
-            mob.hurtServer(level(player), level(player).damageSources().magic(), (float) power);
+            mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
             if (fire) mob.setRemainingFireTicks(400);
         }
         burst(level(player), center.add(0, 1, 0), particle, 180, radius * 0.4);

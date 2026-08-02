@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.4",
+  "version": "0.12.1-alpha.5",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -88,5 +88,45 @@
     "spellbooks",
     "staves",
     "mage_services"
-  ]
+  ],
+  "circle_hierarchy": {
+    "6": "grand_archmage",
+    "7": "transcendent",
+    "8": "mythic",
+    "9": "world_unique_final_boss"
+  },
+  "natural_circle_weights": {
+    "1": 59000,
+    "2": 25000,
+    "3": 10000,
+    "4": 4000,
+    "5": 1500,
+    "6": 400,
+    "7": 80,
+    "8": 20,
+    "9": 0
+  },
+  "affiliations": [
+    "UNBOUND",
+    "ARCANE",
+    "DIVINE",
+    "OCCULT",
+    "PRIMAL"
+  ],
+  "affiliation_display": {
+    "ARCANE": "왕국 마도연맹",
+    "DIVINE": "백은 성약",
+    "OCCULT": "녹월 결사",
+    "PRIMAL": "재의 밀약"
+  },
+  "mage_roles": [
+    "WANDERER",
+    "HOUSEHOLD",
+    "LICENSED",
+    "WARDEN",
+    "SCHOLAR",
+    "VILLAIN"
+  ],
+  "spell_damage_attribution": "caster_bound",
+  "fusion_ui": "circle_hierarchy"
 }

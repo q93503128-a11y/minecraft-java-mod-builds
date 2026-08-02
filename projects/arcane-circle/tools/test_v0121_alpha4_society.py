@@ -29,8 +29,8 @@ def need(source: str, tokens: tuple[str, ...], label: str) -> None:
     if missing:
         raise SystemExit(f"{label} missing: {missing}")
 
-need(properties, ("mod_version=0.12.1-alpha.4",), "version")
-need(main, ('VERSION = "0.12.1-alpha.4"', "ArcaneMageService::onInteract", "ArcaneMageService.tickNear"), "lifecycle")
+need(properties, ("mod_version=0.12.1-alpha.5",), "version")
+need(main, ('VERSION = "0.12.1-alpha.5"', "ArcaneMageService::onInteract", "ArcaneMageService.tickNear"), "lifecycle")
 need(catalog, (
     'addFusion("steam_burst"', 'addFusion("frost_step"', 'addFusion("thunder_cage"',
     'addFusion("solar_guard"', 'addFusion("void_lance"', 'addFusion("winter_domain"',
@@ -58,7 +58,7 @@ need(screen, (
     "clickStaffs", "drawStaffRecipe", "recipeHint()", "questPanel"
 ), "grimoire interaction details")
 
-if index.get("version") != "0.12.1-alpha.4":
+if index.get("version") != "0.12.1-alpha.5":
     raise SystemExit("alpha.4 catalogue version missing")
 if index.get("fusion_spells") != 19:
     raise SystemExit("catalogue fusion count mismatch")
@@ -67,4 +67,4 @@ if index.get("mage_residents") is not True or index.get("mage_currency") != "arc
 if index.get("commission_currency") != "arcana":
     raise SystemExit("commission currency metadata missing")
 
-print("Arcane Circle v0.12.1-alpha.4 fusion, UI and mage society contract: PASS")
+print("Arcane Circle v0.12.1-alpha.5 fusion, UI and mage society contract: PASS")

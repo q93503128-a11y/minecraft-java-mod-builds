@@ -29,8 +29,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public final class SpellCastingService {
-    private static final long QUEUE_TIMEOUT_TICKS = 200L;
-    private static final long CHARGE_TIMEOUT_TICKS = 400L;
+    private static final long QUEUE_TIMEOUT_TICKS = 2400L;
+    private static final long CHARGE_TIMEOUT_TICKS = 1600L;
 
     private static final class FusionQueueState {
         private final List<String> ingredients = new ArrayList<>();
@@ -187,11 +187,15 @@ public final class SpellCastingService {
 
     public static int requiredCastTicks(ServerPlayer player, SpellDefinition spell) {
         MagicPlayerData.MageState state = data(player).state(player);
-        int base = 4 + spell.circle() * 4;
-        int circleGap = Math.max(0, state.circle() - spell.circle());
-        int circleGapReduction = circleGap * 4;
-        int masteryReduction = SpellCatalog.masteryTier(state.mastery(spell.id())) * 2;
-        return Math.max(2, base - circleGapReduction - masteryReduction);
+        int circle = Math.max(1, Math.min(9, spell.circle()));
+        int[] sameCircleTicks = {0, 10, 18, 30, 50, 84, 140, 230, 380, 620};
+        int[] minimumTicks = {0, 3, 5, 8, 14, 24, 50, 90, 170, 360};
+        int circleGap = Math.max(0, state.circle() - circle);
+        int masteryTier = SpellCatalog.masteryTier(state.mastery(spell.id()));
+        double gapScale = Math.pow(0.78, circleGap);
+        double masteryScale = Math.max(0.72, 1.0 - masteryTier * 0.028);
+        int calculated = (int) Math.round(sameCircleTicks[circle] * gapScale * masteryScale);
+        return Math.max(minimumTicks[circle], calculated);
     }
 
     public static void queueFusionSlot(ServerPlayer player, int slot) {
@@ -339,11 +343,25 @@ public final class SpellCastingService {
 
     public static int requiredFusionCastTicks(ServerPlayer player, SpellDefinition result, int ingredientCount) {
         MagicPlayerData.MageState state = data(player).state(player);
+        int circle = Math.max(1, Math.min(9, result.circle()));
         int direct = requiredCastTicks(player, result);
         int masteryTier = SpellCatalog.masteryTier(state.mastery(result.id()));
         boolean registered = state.known().contains(result.id());
-        int unfamiliarPenalty = registered ? 7 : 18 + ingredientCount * 5 + result.circle() * 2;
-        return Math.max(direct + 5, direct + unfamiliarPenalty - masteryTier * 2);
+        double complexity = 1.35 + Math.max(0, ingredientCount - 2) * 0.18 + circle * 0.055;
+        int unfamiliarPenalty = registered ? 8 : 18 + ingredientCount * 7 + circle * 3;
+        int calculated = (int) Math.ceil(direct * complexity) + unfamiliarPenalty - masteryTier * 3;
+        int minimum = switch (circle) {
+            case 1 -> 20;
+            case 2 -> 34;
+            case 3 -> 56;
+            case 4 -> 90;
+            case 5 -> 150;
+            case 6 -> 240;
+            case 7 -> 380;
+            case 8 -> 620;
+            default -> 960;
+        };
+        return Math.max(minimum, calculated);
     }
 
     private static String fusionCooldownBlock(ServerPlayer player, List<String> ingredients) {
@@ -578,7 +596,7 @@ public final class SpellCastingService {
         particleLine(level, start.add(side), end, ParticleTypes.ENCHANT, 22);
         particleLine(level, start.subtract(side), end, ParticleTypes.END_ROD, 22);
         target.ifPresent(mob -> {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 50, 0));
             burst(level, mob.getEyePosition(), ParticleTypes.ENCHANT, 14, 0.32);
         });
@@ -594,7 +612,7 @@ public final class SpellCastingService {
         target.ifPresent(primary -> {
             for (Mob mob : nearbyTargets(player, primary.position(), 1.8, 1.5)) {
                 if (mob == primary) continue;
-                mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.35));
+                ArcaneDamage.hurt(level, player, mob, (float) (power * 0.35));
                 mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 60));
             }
             burst(level, primary.position().add(0.0, 0.7, 0.0), ParticleTypes.FLAME, 24, 0.65);
@@ -628,7 +646,7 @@ public final class SpellCastingService {
                 particle == ParticleTypes.ENCHANT ? ParticleTypes.END_ROD : ParticleTypes.ENCHANT, 34);
         if (target.isPresent()) {
             Mob mob = target.get();
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             if (fireTicks > 0) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), fireTicks));
             if (freezeBonus > 0) mob.setTicksFrozen(Math.max(mob.getTicksFrozen(),
                     mob.getTicksRequiredToFreeze() + freezeBonus + (int) Math.round(power * 8.0)));
@@ -644,7 +662,7 @@ public final class SpellCastingService {
         Mob mob = target.get();
         spiralBeam(level, frontOrigin(player, 1.35), mob.getEyePosition(), ParticleTypes.SNOWFLAKE,
                 ParticleTypes.END_ROD, 32);
-        mob.hurtServer(level, level.damageSources().magic(), (float) power);
+        ArcaneDamage.hurt(level, player, mob, (float) power);
         mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze()
                 + 180 + (int) Math.round(power * 10.0)));
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 3));
@@ -713,7 +731,7 @@ public final class SpellCastingService {
         double scale = 1.0;
         for (Mob mob : targets) {
             particleLine(level, from, mob.getEyePosition(), ParticleTypes.ELECTRIC_SPARK, 28);
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * scale));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * scale));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 35, 1));
             from = mob.getEyePosition();
             scale *= 0.78;
@@ -728,7 +746,7 @@ public final class SpellCastingService {
         spiralBeam(level, start, end, particle, ParticleTypes.END_ROD, 52);
         List<Mob> targets = lineTargets(player, range, 1.25);
         for (int index = 0; index < targets.size(); index++) {
-            targets.get(index).hurtServer(level, level.damageSources().magic(),
+            targets.get(index).hurtServer(level, level.damageSources().playerAttack(player),
                     (float) (power * Math.max(0.55, 1.0 - index * 0.12)));
         }
         burst(level, end, particle, 18, 0.35);
@@ -743,7 +761,7 @@ public final class SpellCastingService {
                 .filter(mob -> horizontalDirection(origin, mob.position()).dot(look) > 0.45)
                 .toList();
         for (Mob mob : targets) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 180));
         }
         for (int step = 1; step <= 12; step++) {
@@ -821,7 +839,7 @@ public final class SpellCastingService {
         }
         List<Mob> targets = lineTargets(player, range, 1.45);
         for (Mob mob : targets) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             Vec3 away = mob.position().subtract(player.position()).normalize();
             mob.push(away.x * 0.9, 0.18, away.z * 0.9);
         }
@@ -838,7 +856,7 @@ public final class SpellCastingService {
                                   ParticleOptions particle, boolean fire, boolean freeze) {
         ServerLevel level = (ServerLevel) player.level();
         for (Mob mob : nearbyTargets(player, center, radius, 4.0)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             if (fire) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 180));
             if (freeze) mob.setTicksFrozen(Math.max(mob.getTicksFrozen(),
                     mob.getTicksRequiredToFreeze() + 180 + (int) Math.round(power * 8.0)));
@@ -860,7 +878,7 @@ public final class SpellCastingService {
         for (Mob target : targets) {
             spiralBeam(level, from, target.getEyePosition(), ParticleTypes.ELECTRIC_SPARK,
                     ParticleTypes.ENCHANT, 24);
-            target.hurtServer(level, level.damageSources().magic(), (float) (power * scale));
+            ArcaneDamage.hurt(level, player, target, (float) (power * scale));
             from = target.getEyePosition();
             scale *= 0.82;
         }
@@ -877,7 +895,7 @@ public final class SpellCastingService {
         spiralBeam(level, start.add(0.0, -0.14, 0.0), end, ParticleTypes.SNOWFLAKE, ParticleTypes.END_ROD, 38);
         if (target.isPresent()) {
             Mob mob = target.get();
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 1.45));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 1.45));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 140));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 120));
         }
@@ -891,7 +909,7 @@ public final class SpellCastingService {
         for (Mob mob : nearbyTargets(player, player.position(), range, 4.0)) {
             Vec3 away = mob.position().subtract(player.position()).normalize();
             mob.push(away.x * 1.6, 0.35, away.z * 1.6);
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.65));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.65));
         }
         dome(level, player.position().add(0.0, 0.2, 0.0), Math.max(2.5, range * 0.45), ParticleTypes.CLOUD);
         return true;
@@ -907,7 +925,7 @@ public final class SpellCastingService {
                 entity.heal((float) (power * 0.65));
                 entity.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 1));
             } else if (entity instanceof Mob mob && validTarget(player, mob)) {
-                mob.hurtServer(level, level.damageSources().magic(), (float) power);
+                ArcaneDamage.hurt(level, player, mob, (float) power);
                 mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 220));
             }
         }
@@ -941,7 +959,7 @@ public final class SpellCastingService {
         Vec3 center = aimGround(player, range);
         double radius = 6.0;
         for (Mob mob : nearbyTargets(player, center, radius, 5.0)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 320));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 260, 4));
         }
@@ -964,7 +982,7 @@ public final class SpellCastingService {
             particleLine(level, base, base.add(0.0, 4.5, 0.0), ParticleTypes.ELECTRIC_SPARK, 20);
         }
         for (Mob mob : nearbyTargets(player, center, radius, 4.0)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 1.1));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 1.1));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 180, 5));
             mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 180, 0));
         }
@@ -988,7 +1006,7 @@ public final class SpellCastingService {
         Vec3 center = aimGround(player, range);
         ServerLevel level = (ServerLevel) player.level();
         for (Mob mob : nearbyTargets(player, center, 8.0, 6.0)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 1.25));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 1.25));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 420));
         }
         for (int ringIndex = 1; ringIndex <= 7; ringIndex++) {
@@ -1003,7 +1021,7 @@ public final class SpellCastingService {
         Vec3 center = aimGround(player, range);
         ServerLevel level = (ServerLevel) player.level();
         for (Mob mob : nearbyTargets(player, center, 8.0, 6.0)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) (power * 1.2));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 1.2));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 600));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 360, 6));
         }
@@ -1019,7 +1037,7 @@ public final class SpellCastingService {
         Vec3 center = aimGround(player, range);
         ServerLevel level = (ServerLevel) player.level();
         for (Mob mob : nearbyTargets(player, center, 9.0, 7.0)) {
-            mob.hurtServer(level, level.damageSources().magic(), (float) power);
+            ArcaneDamage.hurt(level, player, mob, (float) power);
             Vec3 away = mob.position().subtract(center).normalize();
             mob.push(away.x * 2.1, 0.9, away.z * 2.1);
             mob.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 45, 1));
@@ -1062,7 +1080,7 @@ public final class SpellCastingService {
         }
         List<Mob> targets = lineTargets(player, range, 2.2);
         for (int index = 0; index < targets.size(); index++) {
-            targets.get(index).hurtServer(level, level.damageSources().magic(),
+            targets.get(index).hurtServer(level, level.damageSources().playerAttack(player),
                     (float) (power * Math.max(0.65, 1.15 - index * 0.08)));
         }
         burst(level, end, ParticleTypes.WITCH, 80, 1.4);

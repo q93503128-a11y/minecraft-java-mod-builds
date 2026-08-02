@@ -32,14 +32,8 @@ public final class ArcaneEconomyService {
     }
 
     public static long priceFor(ServerPlayer player, AcademyOfferCatalog.Offer offer) {
-        long price = offer.basePrice();
-        MagicTradition chosen = data(player).tradition(player);
-        if (offer.kind() == AcademyOfferCatalog.Kind.SPELLBOOK
-                && chosen != MagicTradition.UNBOUND
-                && SpellWorldLore.tradition(offer.targetId()) == chosen) {
-            price = Math.max(1L, Math.round(price * 0.82));
-        }
-        return price;
+        // Social affiliation does not discount a magical school. All affiliations use one Arcana market.
+        return offer.basePrice();
     }
 
     public static boolean purchase(ServerPlayer player, String offerId) {
@@ -78,16 +72,16 @@ public final class ArcaneEconomyService {
         ArcaneWorldData world = data(player);
         long cost = traditionCost(player, tradition);
         if (cost == 0L && world.tradition(player) == tradition) {
-            player.sendSystemMessage(Component.literal("§7[학부 조율] §f이미 " + tradition.displayName() + "에 소속되어 있습니다."));
+            player.sendSystemMessage(Component.literal("§7[소속 등록] §f이미 " + tradition.displayName() + "에 소속되어 있습니다."));
             return true;
         }
         if (!world.chooseTradition(player, tradition, cost)) {
-            player.sendSystemMessage(Component.literal("§c[학부 조율] §f아르카나가 부족하거나 잘못된 학부입니다. 필요 "
+            player.sendSystemMessage(Component.literal("§c[소속 등록] §f아르카나가 부족하거나 잘못된 소속입니다. 필요 "
                     + cost + " / 보유 " + world.balance(player)));
             return false;
         }
-        player.sendSystemMessage(Component.literal("§5[학부 조율] §f" + tradition.displayName()
-                + "에 마력핵을 조율했습니다. §7비용 " + cost + " 아르카나"));
+        player.sendSystemMessage(Component.literal("§5[소속 등록] §f" + tradition.displayName()
+                + " 소속으로 등록되었습니다. §7비용 " + cost + " 아르카나"));
         return true;
     }
 }

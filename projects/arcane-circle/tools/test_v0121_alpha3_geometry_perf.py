@@ -58,11 +58,11 @@ if "while (RELEASES.size() >= MAX_RELEASE_VISUALS)" not in tracker:
 if "if (submitted >= MAX_FRAME_PRIMITIVES)" not in tracker:
     raise SystemExit("per-frame primitive cap missing")
 
-if "mod_version=0.12.1-alpha.4" not in properties:
+if "mod_version=0.12.1-alpha.5" not in properties:
     raise SystemExit("alpha.3 Gradle version missing")
-if 'VERSION = "0.12.1-alpha.4"' not in main:
+if 'VERSION = "0.12.1-alpha.5"' not in main:
     raise SystemExit("alpha.3 runtime version missing")
-if index.get("version") != "0.12.1-alpha.4":
+if index.get("version") != "0.12.1-alpha.5":
     raise SystemExit("alpha.3 catalogue version missing")
 if index.get("release_geometry") != "bounded_primitive_batches":
     raise SystemExit("bounded primitive catalogue metadata missing")
@@ -74,4 +74,4 @@ for path in (JAVA / "magic").glob("*.java"):
 if particle_files:
     raise SystemExit(f"particle-centered magic code remains: {particle_files}")
 
-print("Arcane Circle v0.12.1-alpha.4 bounded geometry freeze contract: PASS")
+print("Arcane Circle v0.12.1-alpha.5 bounded geometry freeze contract: PASS")
