@@ -67,12 +67,15 @@ jobs:
           gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/server-smoke.log 2>&1 &
           pid=$!
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          passed=0
           for attempt in $(seq 1 900); do
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/server-smoke.log; then
               cat ../../logs/server-smoke.log
               exit 1
             fi
-            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log; then
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/server-smoke.log; then
+              passed=1
               break
             fi
             if ! kill -0 "$pid" 2>/dev/null; then
@@ -82,7 +85,11 @@ jobs:
             sleep 1
           done
           cat ../../logs/server-smoke.log
+          test "$passed" -eq 1
           grep -F 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log
+          grep -F 'Prepared Erden household population households=77 residents=231 workers=154 dependents=77 owned_homes=77 assigned_workplaces=154 vacancies=2 shifts=early,late,night' ../../logs/server-smoke.log
+          grep -F 'Processed Erden household economy day=' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3 ledger=true shortages=0 shifts=true ownership=true' ../../logs/server-smoke.log
           grep -F 'metre_scale=true' ../../logs/server-smoke.log
           grep -F 'structureless_generator=true' ../../logs/server-smoke.log
           grep -F 'vanilla_structures_blocked=true' ../../logs/server-smoke.log
@@ -127,7 +134,7 @@ jobs:
             echo 'Inactive kingdom or legacy repair path ran.' >&2
             exit 1
           fi
-          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|watchdog' ../../logs/server-smoke.log; then
+          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|Item debris remained around Erden|watchdog' ../../logs/server-smoke.log; then
             exit 1
           fi
 
@@ -174,6 +181,10 @@ jobs:
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ExternalDistrictBuildingBuilder.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenUrbanInfrastructureBuilder.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationSavedData.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationCiChunkRetainer.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenDiagnosticDebrisSettler.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/StructurelessNoiseChunkGenerator.class' logs/jar-entries.txt
           if grep -Eq 'woodland_mansion|deepslate_mega_base|(^|/)(tools|\.github)/|\.java$' logs/jar-entries.txt; then
             exit 1
@@ -195,9 +206,10 @@ jobs:
           - Urban roles: tenements, shops, bakeries, inns, stables, guard posts, bathhouses and warehouses
           - Detected building entrances and terrain-following road access: PASS
           - Royal culverts, road-edge drainage, 12 wells and 8 fire cisterns: PASS
+          - Household population, loaded-area routines and aggregate civic ledger: PASS
           - Construction debris: ZERO
           - Graphical UI and atlas input: PASS
-          - Interior walkability, NPC population and law simulation: NOT YET COMPLETE
+          - Physical inventory economy, demographic change and law simulation: NOT YET COMPLETE
           - Public user test build: NOT RELEASED
           EOF
 
