@@ -43,7 +43,7 @@ public final class ErdenCapitalStreamingBuilder {
                 || !level.dimension().equals(StarterRealmManager.REALM_KEY)) return;
         ChunkPos chunk = event.getChunk().getPos();
         if (!intersectsCapital(chunk)) return;
-        enqueue(level, chunk.toLong());
+        enqueue(level, pack(chunk.x(), chunk.z()));
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -55,19 +55,19 @@ public final class ErdenCapitalStreamingBuilder {
 
         if (active == null) startNext(level);
         if (active == null) return;
-        if (!level.hasChunk(active.chunkX, active.chunkZ)) {
-            QUEUED.remove(active.chunkPos);
+        if (!level.hasChunk(active.chunkX(), active.chunkZ())) {
+            QUEUED.remove(active.chunkPos());
             active = null;
             return;
         }
 
-        active.plan.apply(level, TICK_BUDGET);
-        if (!active.plan.done()) return;
+        active.plan().apply(level, TICK_BUDGET);
+        if (!active.plan().done()) return;
 
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
-        data.mark(active.chunkPos, CAPITAL_REVISION);
-        QUEUED.remove(active.chunkPos);
+        data.mark(active.chunkPos(), CAPITAL_REVISION);
+        QUEUED.remove(active.chunkPos());
         active = null;
     }
 
@@ -92,16 +92,18 @@ public final class ErdenCapitalStreamingBuilder {
                 QUEUED.remove(packed);
                 continue;
             }
-            ChunkPos chunk = new ChunkPos(packed);
-            if (!level.hasChunk(chunk.x, chunk.z)) {
+            int chunkX = unpackX(packed);
+            int chunkZ = unpackZ(packed);
+            if (!level.hasChunk(chunkX, chunkZ)) {
                 QUEUED.remove(packed);
                 continue;
             }
+            ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
             IncrementalWorldEditPlan plan = createChunkPlan(level, chunk);
-            active = new ActiveChunk(packed, chunk.x, chunk.z, plan);
+            active = new ActiveChunk(packed, chunkX, chunkZ, plan);
             LivingKingdoms.LOGGER.debug(
                     "Prepared streamed Erden capital chunk {},{} writes={} operations={}",
-                    chunk.x, chunk.z, plan.estimatedWrites(), plan.operationCount()
+                    chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount()
             );
             return;
         }
@@ -182,6 +184,18 @@ public final class ErdenCapitalStreamingBuilder {
         int maxZ = minZ + 15;
         return maxX >= WEST_WALL_X - STREAM_MARGIN && minX <= EAST_WALL_X + STREAM_MARGIN
                 && maxZ >= NORTH_WALL_Z - STREAM_MARGIN && minZ <= SOUTH_WALL_Z + STREAM_MARGIN;
+    }
+
+    private static long pack(int chunkX, int chunkZ) {
+        return ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
+    }
+
+    private static int unpackX(long packed) {
+        return (int) (packed >> 32);
+    }
+
+    private static int unpackZ(long packed) {
+        return (int) packed;
     }
 
     private static void clearQueue() {
