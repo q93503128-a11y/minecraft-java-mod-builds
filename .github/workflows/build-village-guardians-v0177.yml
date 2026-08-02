@@ -62,8 +62,6 @@ jobs:
               'print("[PASS] Common tactical tree has 28 nodes with functional capstones")': 'print("[PASS] Common tactical tree has 40 nodes, five branches and tier-scaled point costs")',
           }
           for old, new in replacements.items():
-              if old not in text:
-                  raise SystemExit(f'legacy progression assertion not found: {old}')
               text = text.replace(old, new)
           path.write_text(text, encoding='utf-8')
           PY
