@@ -1,8 +1,8 @@
 {
-  "run_id": "30730002550",
-  "run_number": "346",
-  "commit_sha": "c62876066dfd7680a88e7b2dc799600fc0730bc2",
+  "run_id": "30730072633",
+  "run_number": "347",
+  "commit_sha": "1fa51851f33eb342588ec71a211a32459516686b",
   "job_status": "failure",
-  "log_artifact_id": "8827629797",
+  "log_artifact_id": "8827677421",
   "build_artifact_id": ""
 }
