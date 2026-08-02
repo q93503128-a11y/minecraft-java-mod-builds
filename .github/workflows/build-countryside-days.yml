@@ -1,4 +1,3 @@
-# Second trigger after enabling the alpha.14 applier.
 name: Apply Countryside Days alpha.14
 
 on:
@@ -20,88 +19,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Decode and apply staged source
+      - name: Decode staged alpha.14 source
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import base64, io, zipfile
-
           root = Path('.')
           payload = root / 'projects/countryside-days/tools/alpha14_payload.b64'
           archive = base64.b64decode(payload.read_text('ascii'))
           with zipfile.ZipFile(io.BytesIO(archive)) as source:
               source.extractall(root / 'projects/countryside-days')
-
-          project = root / 'projects/countryside-days'
-
-          path = project / 'src/main/java/kr/countrysidedays/CountrysideDays.java'
-          text = path.read_text('utf-8')
-          text = text.replace(
-              '        NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);\n'
-              '        NeoForge.EVENT_BUS.addListener(VillageLifeManager::onEntityInteract);',
-              '        NeoForge.EVENT_BUS.addListener(VillageLifeManager::onEntityInteract);\n'
-              '        NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);'
-          )
-          path.write_text(text, 'utf-8')
-
-          path = project / 'src/main/java/kr/countrysidedays/gameplay/RuralNpcManager.java'
-          text = path.read_text('utf-8')
-          text = text.replace(
-              '    public static void handleInteraction(PlayerInteractEvent.EntityInteract event) {\n'
-              '        if (!(event.getEntity() instanceof ServerPlayer player)',
-              '    public static void handleInteraction(PlayerInteractEvent.EntityInteract event) {\n'
-              '        if (event.isCanceled()) return;\n'
-              '        if (!(event.getEntity() instanceof ServerPlayer player)'
-          )
-          path.write_text(text, 'utf-8')
-
-          path = project / 'src/main/java/kr/countrysidedays/network/EstateHudPayload.java'
-          text = path.read_text('utf-8').replace('import net.minecraft.network.codec.ByteBufCodecs;\n', '')
-          begin = text.index('    public static final StreamCodec<RegistryFriendlyByteBuf, EstateHudPayload> STREAM_CODEC =')
-          end = text.index('\n\n    @Override', begin)
-          codec = '''    public static final StreamCodec<RegistryFriendlyByteBuf, EstateHudPayload> STREAM_CODEC = new StreamCodec<>() {
-        @Override
-        public EstateHudPayload decode(RegistryFriendlyByteBuf buffer) {
-            return new EstateHudPayload(
-                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readBoolean(),
-                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), buffer.readVarInt()
-            );
-        }
-
-        @Override
-        public void encode(RegistryFriendlyByteBuf buffer, EstateHudPayload payload) {
-            buffer.writeVarInt(payload.homeX());
-            buffer.writeVarInt(payload.homeY());
-            buffer.writeVarInt(payload.homeZ());
-            buffer.writeVarInt(payload.restaurantX());
-            buffer.writeVarInt(payload.restaurantY());
-            buffer.writeVarInt(payload.restaurantZ());
-            buffer.writeVarInt(payload.riverX());
-            buffer.writeVarInt(payload.riverY());
-            buffer.writeVarInt(payload.riverZ());
-            buffer.writeBoolean(payload.restaurantOpen());
-            buffer.writeVarInt(payload.customersToday());
-            buffer.writeVarInt(payload.customerCap());
-            buffer.writeVarInt(payload.totalCustomers());
-            buffer.writeVarInt(payload.progressionStage());
-            buffer.writeVarInt(payload.pendingRanchProducts());
-        }
-    };'''
-          path.write_text(text[:begin] + codec + text[end:], 'utf-8')
-
-          path = project / 'src/main/java/kr/countrysidedays/world/StarterHomesteadGenerator.java'
-          text = path.read_text('utf-8')
-          duplicate = ('        int doorZ = frontAtMaxZ ? depth - 1 : 0;\n'
-                       '        int doorZ = frontAtMaxZ ? depth - 1 : 0;\n')
-          path.write_text(text.replace(duplicate, '        int doorZ = frontAtMaxZ ? depth - 1 : 0;\n'), 'utf-8')
-
           payload.unlink()
           PY
-      - name: Commit alpha.14 project files only
+      - name: Commit Countryside Days project only
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
