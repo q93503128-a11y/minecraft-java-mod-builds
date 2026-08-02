@@ -1,0 +1,100 @@
+name: Validate Living Kingdoms urban life
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-living-kingdoms-urban-life.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PROJECT_DIR: projects/living-kingdoms
+      LIVING_KINGDOMS_CI_REALM_TEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Java 25 clean build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon clean build --stacktrace --console=plain
+      - name: Fresh Erden upper-floor and citizen runtime test
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-urban-life-ci
+          mkdir -p run ../../../urban-life-validation
+          printf 'level-name=livingkingdoms-urban-life-ci\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../../urban-life-validation/server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          passed=0
+          for attempt in $(seq 1 300); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../../urban-life-validation/server.log; then
+              cat ../../../urban-life-validation/server.log
+              exit 1
+            fi
+            if grep -Fq 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=true stairs=true' ../../../urban-life-validation/server.log \
+              && grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../../urban-life-validation/server.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../../urban-life-validation/server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat ../../../urban-life-validation/server.log
+          test "$passed" -eq 1
+          grep -F 'Prepared Erden upper-floor conversions buildings=233 stair_steps=4 role_spaces=8 citizen_assignments=8' ../../../urban-life-validation/server.log
+          grep -F 'Prepared Erden citizen home-work assignments citizens=8 unique_homes=true unique_workplaces=true routines=home,work' ../../../urban-life-validation/server.log
+          grep -F 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS role=bakery' ../../../urban-life-validation/server.log
+          grep -F 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=true stairs=true' ../../../urban-life-validation/server.log
+          grep -F 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../../urban-life-validation/server.log
+          if grep -Eqi 'Unable to complete Erden urban interior|Erden upper floor has incomplete|No Erden workplace available|No Erden home available|Exception loading level|watchdog' ../../../urban-life-validation/server.log; then
+            exit 1
+          fi
+      - name: Upload validation log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-urban-life-${{ github.run_number }}
+          path: urban-life-validation/server.log
+          retention-days: 30
+      - name: Publish validation pointer
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/build-pointers
+          printf '{\n  "run_id": "%s",\n  "run_number": "%s",\n  "commit_sha": "%s",\n  "job_status": "%s"\n}\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_NUMBER" "$GITHUB_SHA" "$JOB_STATUS" \
+            > .github/build-pointers/living-kingdoms-urban-life.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/living-kingdoms-urban-life.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record Erden urban life validation $GITHUB_RUN_NUMBER"
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
