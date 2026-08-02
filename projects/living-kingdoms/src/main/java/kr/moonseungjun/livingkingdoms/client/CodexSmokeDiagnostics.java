@@ -4,11 +4,11 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
-/** CI-only graphical and interaction verification for every codex page. */
+/** CI-only graphical and interaction verification for every V5 codex view. */
 final class CodexSmokeDiagnostics {
     private static final boolean ENABLED = "1".equals(System.getenv("LIVING_KINGDOMS_CI_CLIENT_TEST"));
     private static int ticks;
-    private static RealmCodexScreenV4 active;
+    private static RealmCodexScreenV5 active;
 
     private CodexSmokeDiagnostics() {
     }
@@ -25,18 +25,22 @@ final class CodexSmokeDiagnostics {
         if (ticks == 126) verify("overview");
         if (ticks == 130) open(minecraft, "equipment");
         if (ticks == 150) verify("equipment");
-        if (ticks == 154) open(minecraft, "skills");
-        if (ticks == 176) {
-            verify("skills");
+        if (ticks == 154) open(minecraft, "growth");
+        if (ticks == 172) verify("growth_mastery");
+        if (ticks == 174 && (active == null || !active.selectGrowthViewForTest("tree"))) {
+            throw new IllegalStateException("Could not switch the V5 codex to its auxiliary tree view");
+        }
+        if (ticks == 194) {
+            verify("growth_tree");
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true",
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,growth_mastery,growth_tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true",
                     active.width, active.height
             );
         }
     }
 
     private static void open(Minecraft minecraft, String page) {
-        active = new RealmCodexScreenV4(page, sampleSnapshot());
+        active = new RealmCodexScreenV5(page, sampleSnapshot());
         minecraft.gui.setScreen(active);
         LivingKingdoms.LOGGER.info("LK_CLIENT_CODEX_SCREEN_OPENED page={}", page);
     }
@@ -55,7 +59,9 @@ final class CodexSmokeDiagnostics {
 
     private static void verify(String page) {
         if (active == null || !active.allRequiredControlsFit()) {
-            throw new IllegalStateException("Codex page extends outside or overlaps the current viewport: " + page);
+            throw new IllegalStateException(
+                    "Codex view extends outside or overlaps the current viewport: " + page
+            );
         }
     }
 
