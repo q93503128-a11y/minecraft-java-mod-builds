@@ -38,7 +38,7 @@ properties = (ROOT / "gradle.properties").read_text(encoding="utf-8")
 workflow = (ROOT.parents[1] / ".github/workflows/build-arcane-circle-v0121.yml").read_text(encoding="utf-8")
 
 need(properties, ["mod_version=0.12.1-alpha.4"], "version")
-need(workflow, ["0.12.1-alpha.4", "apply_v0121_alpha4_arcane_society.py", "per-spell world geometry"], "workflow")
+need(workflow, ["0.12.1-alpha.4", "test_v0121_alpha4_society.py", "per-spell world geometry"], "workflow")
 need(main, ['VERSION = "0.12.1-alpha.4"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
 need(catalog, [
     "IMPLEMENTED_MAX_CIRCLE = 9", "WORLD_MAX_CIRCLE = 9", "meteor_swarm",
@@ -76,7 +76,8 @@ need(data, [
 ], "nine-circle persistence and faculties")
 
 need(world_data, ["long marks", "MagicTradition tradition", "academyBuilt", "balance("], "world wallet")
-need(economy, ["priceFor", "purchase", "chooseTradition", "awardCombat"], "Arcana economy")
+need(economy, ["priceFor", "purchase", "chooseTradition", "awardCombat",
+               "FIRST_TRADITION_COST", "TRADITION_CHANGE_COST"], "Arcana economy")
 need(offers, ["SPELLBOOK", "STAFF", "forCircle"], "academy offers")
 need(world, ["setFoodLevel(20)", "GameType.SURVIVAL", "teleportToAcademy", "level.getGameTime()"],
      "Minecraft 26.2 natural magic-world shell")
