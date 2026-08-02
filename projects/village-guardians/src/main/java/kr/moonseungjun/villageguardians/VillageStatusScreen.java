@@ -9,7 +9,7 @@ import net.minecraft.util.FormattedCharSequence;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Compact read-only page. Status and wave intelligence always fit without a selector or scrollbar. */
+/** Compact read-only page. Status and wave intelligence fit without selectors or scrolling. */
 public final class VillageStatusScreen extends Screen {
     private static final int OVERLAY = 0x65000000;
     private static final int PANEL = 0xFFF0E5CC;
@@ -22,6 +22,7 @@ public final class VillageStatusScreen extends Screen {
     private static final int RED = 0xFFB95050;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
+    private Layout lastLayout;
 
     public VillageStatusScreen(VillageNetwork.OpenVillageUiPayload payload) {
         super(Component.literal(payload.title()));
@@ -49,6 +50,7 @@ public final class VillageStatusScreen extends Screen {
         int panelHeight = Math.min(height - 12, Math.max(170, 92 + rows * 16));
         int panelWidth = Math.min(width - 12, maximumWidth);
         Layout layout = new Layout((width - panelWidth) / 2, (height - panelHeight) / 2, panelWidth, panelHeight);
+        lastLayout = layout;
 
         graphics.fill(layout.left() - 2, layout.top() - 2, layout.right() + 2, layout.bottom() + 2, BORDER);
         graphics.fill(layout.left(), layout.top(), layout.right(), layout.bottom(), PANEL);
@@ -101,16 +103,10 @@ public final class VillageStatusScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-        if (click.button() == 0) {
-            int panelWidth = Math.min(width - 12, Math.min(820, Math.max(300, width - 20)));
-            int left = (width - panelWidth) / 2;
-            if (inside(click.x(), click.y(), left + panelWidth - 39, 6, 31, height - 12)) {
-                // The close button is always in the upper-right of the centered panel.
-                if (click.y() < height / 2) {
-                    onClose();
-                    return true;
-                }
-            }
+        if (click.button() == 0 && lastLayout != null
+                && inside(click.x(), click.y(), lastLayout.right() - 39, lastLayout.top() + 9, 29, 29)) {
+            onClose();
+            return true;
         }
         return super.mouseClicked(click, doubled);
     }
