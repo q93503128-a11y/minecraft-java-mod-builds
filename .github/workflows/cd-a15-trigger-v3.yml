@@ -1,0 +1,19 @@
+name: Trigger Countryside Days alpha.15 exact v3
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cd-a15-trigger-v3.yml']
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch exact v3 build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cd-a15-export-exact3.yml --repo "$GITHUB_REPOSITORY" --ref main
