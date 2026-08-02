@@ -1,0 +1,971 @@
+package kr.moonseungjun.livingkingdoms.world;
+
+import kr.moonseungjun.livingkingdoms.LivingKingdoms;
+import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
+
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Fills the gaps between large capital anchors with entrance-centred facade fragments cut from
+ * attributed external buildings. The result is streamed per chunk, keeps the original block states,
+ * and connects every retained entrance to the nearest planned street.
+ */
+public final class ExternalUrbanFabricBuilder {
+    private static final String MANOR =
+            "/data/livingkingdoms/structures/external/medieval_manor.schem";
+    private static final String HOUSE =
+            "/data/livingkingdoms/structures/external/all_in_one_house.schem";
+    private static final String CASTLE_HOUSE =
+            "/data/livingkingdoms/structures/external/fantasy_castle_house.schem";
+
+    private static final int MIN_COMPONENT_BLOCKS = 24;
+    private static final int MAX_ROAD_SEARCH = 72;
+    private static final int ACCESS_HALF_WIDTH = 1;
+    private static final Map<String, SourceTemplate> TEMPLATE_CACHE = new HashMap<>();
+    private static final Map<String, String> LEGACY_BLOCK_IDS = Map.of(
+            "minecraft:chain", "minecraft:iron_chain",
+            "minecraft:grass", "minecraft:short_grass"
+    );
+    private static final Set<String> SKIPPED_TERRAIN = Set.of(
+            "minecraft:air", "minecraft:cave_air", "minecraft:void_air", "minecraft:structure_void",
+            "minecraft:grass_block", "minecraft:dirt", "minecraft:coarse_dirt", "minecraft:rooted_dirt",
+            "minecraft:podzol", "minecraft:mycelium", "minecraft:moss_block", "minecraft:moss_carpet",
+            "minecraft:farmland", "minecraft:dirt_path", "minecraft:mud", "minecraft:packed_mud",
+            "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:clay",
+            "minecraft:water", "minecraft:lava", "minecraft:snow", "minecraft:snow_block"
+    );
+    private static final Set<String> SKIPPED_FLORA = Set.of(
+            "minecraft:short_grass", "minecraft:tall_grass", "minecraft:fern", "minecraft:large_fern",
+            "minecraft:dead_bush", "minecraft:rose_bush", "minecraft:peony", "minecraft:lilac",
+            "minecraft:sunflower", "minecraft:dandelion", "minecraft:poppy", "minecraft:blue_orchid",
+            "minecraft:allium", "minecraft:azure_bluet", "minecraft:oxeye_daisy", "minecraft:cornflower",
+            "minecraft:lily_of_the_valley", "minecraft:wither_rose", "minecraft:pink_petals",
+            "minecraft:azalea", "minecraft:flowering_azalea", "minecraft:vine", "minecraft:lily_pad",
+            "minecraft:sugar_cane", "minecraft:bamboo", "minecraft:cactus", "minecraft:wheat",
+            "minecraft:carrots", "minecraft:potatoes", "minecraft:beetroots", "minecraft:pumpkin_stem",
+            "minecraft:melon_stem", "minecraft:sweet_berry_bush", "minecraft:cocoa"
+    );
+
+    private static final List<Exclusion> EXCLUSIONS = List.of(
+            new Exclusion(0, 0, 150, 150),
+            new Exclusion(-390, -520, 90, 82), new Exclusion(390, -520, 90, 82),
+            new Exclusion(-700, -610, 94, 90), new Exclusion(-700, -350, 94, 90),
+            new Exclusion(710, -560, 110, 98), new Exclusion(720, -270, 110, 98),
+            new Exclusion(-720, 540, 82, 82), new Exclusion(-400, 610, 82, 82),
+            new Exclusion(760, 590, 82, 82), new Exclusion(360, 300, 92, 82),
+            new Exclusion(650, 220, 92, 82), new Exclusion(620, 520, 92, 82),
+            new Exclusion(-170, 600, 92, 82), new Exclusion(170, 600, 92, 82),
+            new Exclusion(-990, -420, 92, 82), new Exclusion(-980, 250, 92, 82),
+
+            new Exclusion(-1020, -720, 88, 80), new Exclusion(-820, -720, 82, 80),
+            new Exclusion(-180, -720, 88, 80), new Exclusion(180, -720, 88, 80),
+            new Exclusion(820, -720, 82, 80), new Exclusion(1020, -720, 88, 80),
+            new Exclusion(-1020, -180, 88, 80), new Exclusion(-780, -180, 94, 86),
+            new Exclusion(-360, -180, 88, 80), new Exclusion(360, -180, 88, 80),
+            new Exclusion(780, -180, 94, 86), new Exclusion(1020, -180, 88, 80),
+            new Exclusion(-1020, 180, 88, 80), new Exclusion(-780, 180, 94, 86),
+            new Exclusion(-360, 180, 88, 80), new Exclusion(360, 180, 88, 80),
+            new Exclusion(780, 180, 94, 86), new Exclusion(1020, 180, 88, 80),
+            new Exclusion(-1020, 720, 88, 80), new Exclusion(-820, 720, 82, 80),
+            new Exclusion(-180, 720, 88, 80), new Exclusion(180, 720, 88, 80),
+            new Exclusion(820, 720, 82, 80), new Exclusion(1020, 720, 88, 80)
+    );
+
+    private static volatile List<UrbanPlacement> cachedPlacements;
+    private static volatile List<UrbanEntrance> cachedEntrances;
+    private static volatile Map<UrbanRole, Integer> cachedRoleCounts;
+
+    private ExternalUrbanFabricBuilder() {
+    }
+
+    public static void addChunk(IncrementalWorldEditPlan plan, ServerLevel level, ChunkPos chunk) {
+        for (UrbanPlacement placement : placements()) {
+            if (!placement.intersects(chunk)) continue;
+            pasteClipped(plan, level, chunk, placement);
+            addAccessPath(plan, level, chunk, placement.entrance);
+        }
+    }
+
+    public static int plotCount() {
+        return placements().size();
+    }
+
+    public static int facadeStyleCount() {
+        int count = 0;
+        for (String resource : List.of(HOUSE, CASTLE_HOUSE, MANOR)) {
+            count += template(resource).fragments.size();
+        }
+        return count;
+    }
+
+    public static int roleCount(String roleId) {
+        UrbanRole role = UrbanRole.fromId(roleId);
+        return roleCounts().getOrDefault(role, 0);
+    }
+
+    public static Map<String, Integer> roleCountsForDiagnostics() {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        roleCounts().forEach((role, count) -> result.put(role.id, count));
+        return Map.copyOf(result);
+    }
+
+    public static List<UrbanEntrance> entrances() {
+        List<UrbanEntrance> result = cachedEntrances;
+        if (result != null) return result;
+        placements();
+        return cachedEntrances;
+    }
+
+    public static UrbanEntrance diagnosticEntrance() {
+        return entrances().stream()
+                .filter(entrance -> entrance.role.equals(UrbanRole.BAKERY.id))
+                .findFirst()
+                .orElseGet(() -> entrances().getFirst());
+    }
+
+    private static List<UrbanPlacement> placements() {
+        List<UrbanPlacement> result = cachedPlacements;
+        if (result != null) return result;
+        synchronized (ExternalUrbanFabricBuilder.class) {
+            result = cachedPlacements;
+            if (result == null) {
+                result = List.copyOf(createPlacements());
+                cachedPlacements = result;
+                List<UrbanEntrance> entrances = result.stream()
+                        .map(UrbanPlacement::entrance)
+                        .toList();
+                cachedEntrances = List.copyOf(entrances);
+                EnumMap<UrbanRole, Integer> counts = new EnumMap<>(UrbanRole.class);
+                for (UrbanPlacement placement : result) {
+                    counts.merge(placement.role, 1, Integer::sum);
+                }
+                cachedRoleCounts = Map.copyOf(counts);
+                LivingKingdoms.LOGGER.info(
+                        "Prepared Erden continuous urban fabric plots={} entrances={} facade_styles={} roles={}",
+                        result.size(), entrances.size(), facadeStyleCount(), roleCountsForDiagnostics()
+                );
+            }
+            return result;
+        }
+    }
+
+    private static Map<UrbanRole, Integer> roleCounts() {
+        placements();
+        return cachedRoleCounts;
+    }
+
+    private static List<UrbanPlacement> createPlacements() {
+        List<UrbanPlacement> result = new ArrayList<>();
+        addBand(result, -1_145, 1_145, -850, -625, 48, 46, 0x31A9D3);
+        addBand(result, -1_145, 1_145, -465, -255, 52, 48, 0x4D17B1);
+        addBand(result, -1_145, 1_145, 255, 465, 52, 48, 0x62C59F);
+        addBand(result, -1_145, 1_145, 625, 850, 48, 46, 0x7B2E11);
+        addBand(result, -1_145, -255, -115, 115, 50, 48, 0x1585AF);
+        addBand(result, 255, 1_145, -115, 115, 50, 48, 0x2F993D);
+
+        if (result.size() < 180) {
+            throw new IllegalStateException("Continuous Erden urban fabric is too sparse: "
+                    + result.size());
+        }
+        return result;
+    }
+
+    private static void addBand(List<UrbanPlacement> result,
+                                int minX, int maxX, int minZ, int maxZ,
+                                int stepX, int stepZ, int salt) {
+        int row = 0;
+        for (int z = minZ; z <= maxZ; z += stepZ) {
+            int shift = (row++ & 1) == 0 ? 0 : stepX / 2;
+            for (int x = minX + shift; x <= maxX; x += stepX) {
+                int hash = mix(x, z, salt);
+                UrbanRole role = chooseRole(x, z, hash);
+                String resource = chooseResource(role, hash);
+                SourceTemplate source = template(resource);
+                FacadeFragment fragment = source.fragments.get(
+                        Math.floorMod(hash >>> 4, source.fragments.size()));
+                UrbanPlacement placement = choosePlacement(
+                        x, z, role, resource, fragment, hash);
+                if (placement != null) result.add(placement);
+            }
+        }
+    }
+
+    private static UrbanRole chooseRole(int x, int z, int hash) {
+        int selector = Math.floorMod(hash, 100);
+        boolean marketBelt = Math.abs(z) <= 130 || Math.abs(x) >= 850;
+        if (marketBelt) {
+            if (selector < 30) return UrbanRole.SHOP;
+            if (selector < 45) return UrbanRole.BAKERY;
+            if (selector < 59) return UrbanRole.INN;
+            if (selector < 72) return UrbanRole.WAREHOUSE;
+            if (selector < 82) return UrbanRole.BATHHOUSE;
+            if (selector < 91) return UrbanRole.STABLE;
+            return UrbanRole.GUARD_POST;
+        }
+        if (selector < 52) return UrbanRole.TENEMENT;
+        if (selector < 65) return UrbanRole.SHOP;
+        if (selector < 75) return UrbanRole.BAKERY;
+        if (selector < 84) return UrbanRole.INN;
+        if (selector < 91) return UrbanRole.STABLE;
+        if (selector < 96) return UrbanRole.BATHHOUSE;
+        return UrbanRole.GUARD_POST;
+    }
+
+    private static String chooseResource(UrbanRole role, int hash) {
+        return switch (role) {
+            case TENEMENT -> (hash & 1) == 0 ? HOUSE : CASTLE_HOUSE;
+            case SHOP, BAKERY, WAREHOUSE -> HOUSE;
+            case INN, STABLE, GUARD_POST -> (hash & 2) == 0 ? MANOR : CASTLE_HOUSE;
+            case BATHHOUSE -> MANOR;
+        };
+    }
+
+    private static UrbanPlacement choosePlacement(int centerX, int centerZ,
+                                                  UrbanRole role, String resource,
+                                                  FacadeFragment fragment, int hash) {
+        Rotation[] rotations = Rotation.values();
+        UrbanPlacement best = null;
+        int bestScore = Integer.MAX_VALUE;
+        int start = Math.floorMod(hash >>> 9, rotations.length);
+        for (int offset = 0; offset < rotations.length; offset++) {
+            Rotation rotation = rotations[(start + offset) % rotations.length];
+            int width = rotatedWidth(fragment, rotation);
+            int length = rotatedLength(fragment, rotation);
+            int minX = centerX - width / 2;
+            int minZ = centerZ - length / 2;
+            int maxX = minX + width - 1;
+            int maxZ = minZ + length - 1;
+            if (!insideCapital(minX, minZ, maxX, maxZ)) continue;
+            if (overlapsExclusion(minX, minZ, maxX, maxZ)) continue;
+            if (overlapsRoad(minX, minZ, maxX, maxZ)) continue;
+            if (overlapsServiceNode(minX, minZ, maxX, maxZ)) continue;
+
+            RotatedOffset entranceOffset = rotate(
+                    fragment.entranceX, fragment.entranceZ,
+                    fragment.width, fragment.length, rotation);
+            int entranceX = minX + entranceOffset.x;
+            int entranceZ = minZ + entranceOffset.z;
+            RoadTarget road = nearestRoad(
+                    entranceX, entranceZ, minX, minZ, maxX, maxZ);
+            if (road == null) continue;
+            int distance = Math.abs(road.x - entranceX) + Math.abs(road.z - entranceZ);
+            int score = distance * 10 + Math.floorMod(hash + offset * 17, 9);
+            if (score < bestScore) {
+                UrbanEntrance entrance = new UrbanEntrance(
+                        role.id, entranceX, entranceZ, road.x, road.z);
+                best = new UrbanPlacement(
+                        resource, centerX, centerZ, rotation, role, fragment, entrance);
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    private static boolean insideCapital(int minX, int minZ, int maxX, int maxZ) {
+        return minX > ErdenCapitalStreamingBuilder.WEST_WALL_X + 18
+                && maxX < ErdenCapitalStreamingBuilder.EAST_WALL_X - 18
+                && minZ > ErdenCapitalStreamingBuilder.NORTH_WALL_Z + 18
+                && maxZ < ErdenCapitalStreamingBuilder.SOUTH_WALL_Z - 18;
+    }
+
+    private static boolean overlapsExclusion(int minX, int minZ, int maxX, int maxZ) {
+        for (Exclusion exclusion : EXCLUSIONS) {
+            if (maxX >= exclusion.centerX - exclusion.halfWidth
+                    && minX <= exclusion.centerX + exclusion.halfWidth
+                    && maxZ >= exclusion.centerZ - exclusion.halfLength
+                    && minZ <= exclusion.centerZ + exclusion.halfLength) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean overlapsRoad(int minX, int minZ, int maxX, int maxZ) {
+        for (int x = minX; x <= maxX; x += 2) {
+            for (int z = minZ; z <= maxZ; z += 2) {
+                if (ErdenCapitalStreamingBuilder.roadClassAt(x, z)
+                        != ErdenCapitalStreamingBuilder.RoadClass.NONE) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean overlapsServiceNode(int minX, int minZ, int maxX, int maxZ) {
+        int[][] nodes = {
+                {-280, -280}, {280, -280}, {-280, 280}, {280, 280},
+                {-880, -280}, {880, -280}, {-880, 280}, {880, 280},
+                {-280, -680}, {280, -680}, {-280, 680}, {280, 680},
+                {-580, -280}, {580, -280}, {-580, 280}, {580, 280},
+                {-1080, -280}, {1080, -280}, {-1080, 280}, {1080, 280}
+        };
+        for (int[] node : nodes) {
+            if (node[0] >= minX - 8 && node[0] <= maxX + 8
+                    && node[1] >= minZ - 8 && node[1] <= maxZ + 8) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void pasteClipped(IncrementalWorldEditPlan plan, ServerLevel level,
+                                     ChunkPos chunk, UrbanPlacement placement) {
+        FacadeFragment fragment = placement.fragment;
+        int rotatedWidth = rotatedWidth(fragment, placement.rotation);
+        int rotatedLength = rotatedLength(fragment, placement.rotation);
+        int originX = placement.centerX - rotatedWidth / 2;
+        int originZ = placement.centerZ - rotatedLength / 2;
+        int baseY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(
+                placement.centerX, placement.centerZ));
+        int minChunkX = chunk.getMinBlockX();
+        int maxChunkX = minChunkX + 15;
+        int minChunkZ = chunk.getMinBlockZ();
+        int maxChunkZ = minChunkZ + 15;
+
+        Map<Long, VerticalSpan> spans = new LinkedHashMap<>();
+        List<PlacedBlock> placed = new ArrayList<>();
+        for (BuildingBlock block : fragment.blocks) {
+            RotatedOffset offset = rotate(
+                    block.x, block.z, fragment.width, fragment.length, placement.rotation);
+            int x = originX + offset.x;
+            int z = originZ + offset.z;
+            if (x < minChunkX || x > maxChunkX || z < minChunkZ || z > maxChunkZ) continue;
+            int y = baseY + block.y;
+            spans.merge(columnKey(x, z),
+                    new VerticalSpan(x, z, y, y), VerticalSpan::merge);
+            placed.add(new PlacedBlock(
+                    x, y, z, block.state.rotate(placement.rotation)));
+        }
+        if (placed.isEmpty()) return;
+
+        for (VerticalSpan span : spans.values()) {
+            int surfaceY = RealmSitePlanner.surfaceY(level, span.x, span.z);
+            plan.addFill(span.x, span.minY, span.z,
+                    span.x, Math.max(surfaceY, span.maxY + 2), span.z, Blocks.AIR);
+            if (surfaceY < span.minY - 1) {
+                plan.addFill(span.x, surfaceY + 1, span.z,
+                        span.x, span.minY - 1, span.z, Blocks.STONE_BRICKS);
+            }
+            plan.addSet(span.x, span.minY - 1, span.z, Blocks.STONE_BRICKS);
+        }
+        for (PlacedBlock block : placed) {
+            plan.addSet(block.x, block.y, block.z, block.state);
+        }
+    }
+
+    private static void addAccessPath(IncrementalWorldEditPlan plan, ServerLevel level,
+                                      ChunkPos chunk, UrbanEntrance entrance) {
+        if (!segmentIntersects(
+                chunk, entrance.x, entrance.z, entrance.roadX, entrance.roadZ, 2)) {
+            return;
+        }
+        int deltaX = entrance.roadX - entrance.x;
+        int deltaZ = entrance.roadZ - entrance.z;
+        int steps = Math.max(Math.abs(deltaX), Math.abs(deltaZ));
+        if (steps == 0) return;
+        boolean eastWest = Math.abs(deltaX) >= Math.abs(deltaZ);
+        for (int step = 0; step <= steps; step++) {
+            int centerX = entrance.x + Math.round(deltaX * (step / (float) steps));
+            int centerZ = entrance.z + Math.round(deltaZ * (step / (float) steps));
+            for (int width = -ACCESS_HALF_WIDTH; width <= ACCESS_HALF_WIDTH; width++) {
+                int x = eastWest ? centerX : centerX + width;
+                int z = eastWest ? centerZ + width : centerZ;
+                if (!contains(chunk, x, z)) continue;
+                int surfaceY = RealmSitePlanner.surfaceY(level, x, z);
+                plan.addSet(x, surfaceY, z, Blocks.PACKED_MUD);
+                if (step > 2) {
+                    plan.addFill(x, surfaceY + 1, z, x, surfaceY + 3, z, Blocks.AIR);
+                }
+            }
+        }
+    }
+
+    private static SourceTemplate template(String resource) {
+        return TEMPLATE_CACHE.computeIfAbsent(resource, ExternalUrbanFabricBuilder::decode);
+    }
+
+    private static SourceTemplate decode(String resource) {
+        SpongeStructureTemplate source = SpongeStructureTemplate.load(resource);
+        int width = source.width();
+        int height = source.height();
+        int length = source.length();
+        int layer = width * length;
+        int volume = layer * height;
+        BlockState[] palette = new BlockState[source.palette().size()];
+        for (int i = 0; i < palette.length; i++) {
+            palette[i] = parseState(source.palette().get(i));
+        }
+
+        BitSet candidates = new BitSet(volume);
+        for (int y = 0; y < height; y++) {
+            for (int z = 0; z < length; z++) {
+                for (int x = 0; x < width; x++) {
+                    int paletteId = source.paletteIndex(x, y, z);
+                    if (paletteId < 0 || paletteId >= palette.length) continue;
+                    String id = blockId(source.palette().get(paletteId));
+                    if (isSkippedSourceBlock(id) || palette[paletteId].isAir()) continue;
+                    candidates.set(x + z * width + y * layer);
+                }
+            }
+        }
+        BitSet retained = retainStructuralComponents(candidates, width, height, length);
+        if (retained.cardinality() < 900) {
+            throw new IllegalStateException("External urban source is too sparse: "
+                    + resource + " blocks=" + retained.cardinality());
+        }
+
+        int minX = width;
+        int maxX = -1;
+        int minY = height;
+        int maxY = -1;
+        int minZ = length;
+        int maxZ = -1;
+        List<RawBlock> raw = new ArrayList<>(retained.cardinality());
+        for (int index = retained.nextSetBit(0);
+             index >= 0;
+             index = retained.nextSetBit(index + 1)) {
+            int y = index / layer;
+            int local = index - y * layer;
+            int z = local / width;
+            int x = local - z * width;
+            int paletteId = source.paletteIndex(x, y, z);
+            raw.add(new RawBlock(x, y, z, palette[paletteId]));
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+            minZ = Math.min(minZ, z);
+            maxZ = Math.max(maxZ, z);
+        }
+
+        List<BuildingBlock> blocks = new ArrayList<>(raw.size());
+        for (RawBlock block : raw) {
+            blocks.add(new BuildingBlock(
+                    block.x - minX,
+                    block.y - minY,
+                    block.z - minZ,
+                    block.state
+            ));
+        }
+        int templateWidth = maxX - minX + 1;
+        int templateHeight = maxY - minY + 1;
+        int templateLength = maxZ - minZ + 1;
+        List<BuildingBlock> doors = findEntranceBlocks(
+                blocks, templateWidth, templateLength);
+        List<FacadeFragment> fragments = createFragments(
+                blocks, doors, templateWidth, templateHeight, templateLength);
+        SourceTemplate template = new SourceTemplate(
+                templateWidth, templateHeight, templateLength,
+                List.copyOf(blocks), fragments);
+        LivingKingdoms.LOGGER.info(
+                "Prepared external urban facade kit resource={} fragments={} blocks={} dimensions={}x{}x{}",
+                resource, fragments.size(), blocks.size(),
+                templateWidth, templateHeight, templateLength
+        );
+        return template;
+    }
+
+    private static List<FacadeFragment> createFragments(
+            List<BuildingBlock> sourceBlocks,
+            List<BuildingBlock> entrances,
+            int width, int height, int length) {
+        List<BuildingBlock> candidates = entrances.isEmpty()
+                ? List.of(new BuildingBlock(width / 2, 1, 0, Blocks.OAK_DOOR.defaultBlockState()))
+                : entrances;
+        LinkedHashSet<FrontSide> usedSides = new LinkedHashSet<>();
+        List<FacadeFragment> result = new ArrayList<>();
+        for (BuildingBlock entrance : candidates) {
+            FrontSide side = nearestSide(entrance.x, entrance.z, width, length);
+            if (!usedSides.add(side)) continue;
+            FacadeFragment fragment = cropFragment(
+                    sourceBlocks, entrance, side, width, height, length);
+            if (fragment.blocks.size() >= 500) result.add(fragment);
+        }
+        if (result.isEmpty()) {
+            result.add(cropFragment(
+                    sourceBlocks,
+                    new BuildingBlock(width / 2, 1, 0, Blocks.OAK_DOOR.defaultBlockState()),
+                    FrontSide.NORTH, width, height, length));
+        }
+        return List.copyOf(result);
+    }
+
+    private static FacadeFragment cropFragment(
+            List<BuildingBlock> sourceBlocks,
+            BuildingBlock entrance,
+            FrontSide side,
+            int width, int height, int length) {
+        int frontage = Math.min(34, side.horizontal ? length : width);
+        int depth = Math.min(38, side.horizontal ? width : length);
+        int minX;
+        int maxX;
+        int minZ;
+        int maxZ;
+        switch (side) {
+            case NORTH -> {
+                minX = clamp(entrance.x - frontage / 2, 0, Math.max(0, width - frontage));
+                maxX = Math.min(width - 1, minX + frontage - 1);
+                minZ = 0;
+                maxZ = Math.min(length - 1, depth - 1);
+            }
+            case SOUTH -> {
+                minX = clamp(entrance.x - frontage / 2, 0, Math.max(0, width - frontage));
+                maxX = Math.min(width - 1, minX + frontage - 1);
+                maxZ = length - 1;
+                minZ = Math.max(0, maxZ - depth + 1);
+            }
+            case WEST -> {
+                minX = 0;
+                maxX = Math.min(width - 1, depth - 1);
+                minZ = clamp(entrance.z - frontage / 2, 0, Math.max(0, length - frontage));
+                maxZ = Math.min(length - 1, minZ + frontage - 1);
+            }
+            case EAST -> {
+                maxX = width - 1;
+                minX = Math.max(0, maxX - depth + 1);
+                minZ = clamp(entrance.z - frontage / 2, 0, Math.max(0, length - frontage));
+                maxZ = Math.min(length - 1, minZ + frontage - 1);
+            }
+            default -> throw new IllegalStateException("Unexpected front side " + side);
+        }
+
+        Map<Long, BuildingBlock> selected = new LinkedHashMap<>();
+        for (BuildingBlock block : sourceBlocks) {
+            if (block.x < minX || block.x > maxX
+                    || block.z < minZ || block.z > maxZ) {
+                continue;
+            }
+            BuildingBlock normalized = new BuildingBlock(
+                    block.x - minX,
+                    block.y,
+                    block.z - minZ,
+                    block.state);
+            selected.put(localKey(normalized.x, normalized.y, normalized.z), normalized);
+        }
+
+        int fragmentWidth = maxX - minX + 1;
+        int fragmentLength = maxZ - minZ + 1;
+        BlockState wall = dominantWallState(selected.values());
+        int sealHeight = Math.min(22, Math.max(8, height - 1));
+        boolean cutWest = minX > 0 && side != FrontSide.WEST;
+        boolean cutEast = maxX < width - 1 && side != FrontSide.EAST;
+        boolean cutNorth = minZ > 0 && side != FrontSide.NORTH;
+        boolean cutSouth = maxZ < length - 1 && side != FrontSide.SOUTH;
+        sealFace(selected, wall, fragmentWidth, fragmentLength, sealHeight,
+                cutWest, cutEast, cutNorth, cutSouth);
+
+        int entranceX = clamp(entrance.x - minX, 1, Math.max(1, fragmentWidth - 2));
+        int entranceZ = clamp(entrance.z - minZ, 1, Math.max(1, fragmentLength - 2));
+        return new FacadeFragment(
+                fragmentWidth, height, fragmentLength,
+                List.copyOf(selected.values()), entranceX, entranceZ);
+    }
+
+    private static void sealFace(
+            Map<Long, BuildingBlock> blocks,
+            BlockState wall,
+            int width, int length, int height,
+            boolean west, boolean east, boolean north, boolean south) {
+        for (int y = 1; y <= height; y++) {
+            if (west) {
+                for (int z = 0; z < length; z++) {
+                    putIfMissing(blocks, new BuildingBlock(0, y, z, wall));
+                }
+            }
+            if (east) {
+                for (int z = 0; z < length; z++) {
+                    putIfMissing(blocks, new BuildingBlock(width - 1, y, z, wall));
+                }
+            }
+            if (north) {
+                for (int x = 0; x < width; x++) {
+                    putIfMissing(blocks, new BuildingBlock(x, y, 0, wall));
+                }
+            }
+            if (south) {
+                for (int x = 0; x < width; x++) {
+                    putIfMissing(blocks, new BuildingBlock(x, y, length - 1, wall));
+                }
+            }
+        }
+    }
+
+    private static void putIfMissing(Map<Long, BuildingBlock> blocks, BuildingBlock block) {
+        blocks.putIfAbsent(localKey(block.x, block.y, block.z), block);
+    }
+
+    private static BlockState dominantWallState(Iterable<BuildingBlock> blocks) {
+        Map<BlockState, Integer> counts = new HashMap<>();
+        for (BuildingBlock block : blocks) {
+            if (block.y < 1 || block.y > 18) continue;
+            Block candidate = block.state.getBlock();
+            String id = BuiltInRegistries.BLOCK.getKey(candidate).toString();
+            if (id.endsWith("_door") || id.endsWith("_trapdoor")
+                    || id.contains("glass") || id.contains("lantern")
+                    || id.contains("torch") || id.contains("fence")
+                    || id.contains("wall") || id.contains("stairs")
+                    || id.contains("slab") || id.contains("carpet")
+                    || candidate == Blocks.CHEST || candidate == Blocks.BARREL) {
+                continue;
+            }
+            counts.merge(block.state, 1, Integer::sum);
+        }
+        return counts.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(Blocks.STONE_BRICKS.defaultBlockState());
+    }
+
+    private static List<BuildingBlock> findEntranceBlocks(
+            List<BuildingBlock> blocks, int width, int length) {
+        List<BuildingBlock> doors = new ArrayList<>();
+        for (BuildingBlock block : blocks) {
+            String id = BuiltInRegistries.BLOCK.getKey(block.state.getBlock()).toString();
+            if (id.endsWith("_door") && !id.endsWith("_trapdoor")) doors.add(block);
+        }
+        if (doors.isEmpty()) return List.of();
+        int lowest = doors.stream().mapToInt(BuildingBlock::y).min().orElse(0);
+        return doors.stream()
+                .filter(block -> block.y <= lowest + 1)
+                .filter(block -> block.x <= 5 || block.x >= width - 6
+                        || block.z <= 5 || block.z >= length - 6)
+                .toList();
+    }
+
+    private static FrontSide nearestSide(int x, int z, int width, int length) {
+        int north = z;
+        int south = length - 1 - z;
+        int west = x;
+        int east = width - 1 - x;
+        int minimum = Math.min(Math.min(north, south), Math.min(west, east));
+        if (minimum == north) return FrontSide.NORTH;
+        if (minimum == south) return FrontSide.SOUTH;
+        if (minimum == west) return FrontSide.WEST;
+        return FrontSide.EAST;
+    }
+
+    private static RoadTarget nearestRoad(int x, int z,
+                                          int buildingMinX, int buildingMinZ,
+                                          int buildingMaxX, int buildingMaxZ) {
+        for (int radius = 1; radius <= MAX_ROAD_SEARCH; radius++) {
+            for (int offset = -radius; offset <= radius; offset++) {
+                RoadTarget top = roadTarget(
+                        x + offset, z - radius,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
+                if (top != null) return top;
+                RoadTarget bottom = roadTarget(
+                        x + offset, z + radius,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
+                if (bottom != null) return bottom;
+            }
+            for (int offset = -radius + 1; offset < radius; offset++) {
+                RoadTarget left = roadTarget(
+                        x - radius, z + offset,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
+                if (left != null) return left;
+                RoadTarget right = roadTarget(
+                        x + radius, z + offset,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
+                if (right != null) return right;
+            }
+        }
+        return null;
+    }
+
+    private static RoadTarget roadTarget(int x, int z,
+                                         int buildingMinX, int buildingMinZ,
+                                         int buildingMaxX, int buildingMaxZ) {
+        if (x >= buildingMinX - 1 && x <= buildingMaxX + 1
+                && z >= buildingMinZ - 1 && z <= buildingMaxZ + 1) {
+            return null;
+        }
+        return ErdenCapitalStreamingBuilder.roadClassAt(x, z)
+                == ErdenCapitalStreamingBuilder.RoadClass.NONE
+                ? null : new RoadTarget(x, z);
+    }
+
+    private static BitSet retainStructuralComponents(
+            BitSet candidates, int width, int height, int length) {
+        int layer = width * length;
+        BitSet remaining = (BitSet) candidates.clone();
+        BitSet retained = new BitSet(layer * height);
+        int[] queue = new int[Math.max(1, candidates.cardinality())];
+        while (!remaining.isEmpty()) {
+            int seed = remaining.nextSetBit(0);
+            int head = 0;
+            int tail = 0;
+            remaining.clear(seed);
+            queue[tail++] = seed;
+            while (head < tail) {
+                int index = queue[head++];
+                int y = index / layer;
+                int local = index - y * layer;
+                int z = local / width;
+                int x = local - z * width;
+                if (x > 0) tail = enqueue(index - 1, remaining, queue, tail);
+                if (x + 1 < width) tail = enqueue(index + 1, remaining, queue, tail);
+                if (z > 0) tail = enqueue(index - width, remaining, queue, tail);
+                if (z + 1 < length) tail = enqueue(index + width, remaining, queue, tail);
+                if (y > 0) tail = enqueue(index - layer, remaining, queue, tail);
+                if (y + 1 < height) tail = enqueue(index + layer, remaining, queue, tail);
+            }
+            if (tail >= MIN_COMPONENT_BLOCKS) {
+                for (int i = 0; i < tail; i++) retained.set(queue[i]);
+            }
+        }
+        return retained;
+    }
+
+    private static int enqueue(int index, BitSet remaining, int[] queue, int tail) {
+        if (!remaining.get(index)) return tail;
+        remaining.clear(index);
+        queue[tail] = index;
+        return tail + 1;
+    }
+
+    private static boolean isSkippedSourceBlock(String id) {
+        return SKIPPED_TERRAIN.contains(id)
+                || SKIPPED_FLORA.contains(id)
+                || id.endsWith("_leaves")
+                || id.endsWith("_sapling")
+                || id.endsWith("_tulip")
+                || id.endsWith("_coral")
+                || id.endsWith("_coral_fan");
+    }
+
+    private static BlockState parseState(String specification) {
+        String originalId = blockId(specification);
+        String id = LEGACY_BLOCK_IDS.getOrDefault(originalId, originalId);
+        Identifier key = Identifier.parse(id);
+        Block block = BuiltInRegistries.BLOCK.getValue(key);
+        if (block == null || block == Blocks.AIR && !"minecraft:air".equals(id)) {
+            throw new IllegalStateException(
+                    "Unknown external schematic block " + originalId
+                            + " (resolved as " + id + ")");
+        }
+        BlockState state = block.defaultBlockState();
+        int open = specification.indexOf('[');
+        int close = specification.lastIndexOf(']');
+        if (open < 0 || close <= open) return state;
+        for (String assignment : specification.substring(open + 1, close).split(",")) {
+            int equals = assignment.indexOf('=');
+            if (equals <= 0) continue;
+            String name = assignment.substring(0, equals).trim();
+            String value = assignment.substring(equals + 1)
+                    .trim().toLowerCase(Locale.ROOT);
+            Property<?> property = block.getStateDefinition().getProperty(name);
+            if (property != null) state = applyProperty(state, property, value);
+        }
+        return state;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static BlockState applyProperty(
+            BlockState state, Property property, String value) {
+        Optional parsed = property.getValue(value);
+        return parsed.isPresent()
+                ? state.setValue(property, (Comparable) parsed.get())
+                : state;
+    }
+
+    private static String blockId(String specification) {
+        int bracket = specification.indexOf('[');
+        return (bracket < 0 ? specification : specification.substring(0, bracket)).trim();
+    }
+
+    private static int rotatedWidth(FacadeFragment fragment, Rotation rotation) {
+        return rotation == Rotation.CLOCKWISE_90
+                || rotation == Rotation.COUNTERCLOCKWISE_90
+                ? fragment.length : fragment.width;
+    }
+
+    private static int rotatedLength(FacadeFragment fragment, Rotation rotation) {
+        return rotation == Rotation.CLOCKWISE_90
+                || rotation == Rotation.COUNTERCLOCKWISE_90
+                ? fragment.width : fragment.length;
+    }
+
+    private static RotatedOffset rotate(
+            int x, int z, int width, int length, Rotation rotation) {
+        return switch (rotation) {
+            case NONE -> new RotatedOffset(x, z);
+            case CLOCKWISE_90 -> new RotatedOffset(length - 1 - z, x);
+            case CLOCKWISE_180 -> new RotatedOffset(
+                    width - 1 - x, length - 1 - z);
+            case COUNTERCLOCKWISE_90 -> new RotatedOffset(
+                    z, width - 1 - x);
+        };
+    }
+
+    private static boolean segmentIntersects(
+            ChunkPos chunk, int x1, int z1, int x2, int z2, int margin) {
+        int minX = Math.min(x1, x2) - margin;
+        int maxX = Math.max(x1, x2) + margin;
+        int minZ = Math.min(z1, z2) - margin;
+        int maxZ = Math.max(z1, z2) + margin;
+        return maxX >= chunk.getMinBlockX()
+                && minX <= chunk.getMinBlockX() + 15
+                && maxZ >= chunk.getMinBlockZ()
+                && minZ <= chunk.getMinBlockZ() + 15;
+    }
+
+    private static boolean contains(ChunkPos chunk, int x, int z) {
+        return x >= chunk.getMinBlockX()
+                && x <= chunk.getMinBlockX() + 15
+                && z >= chunk.getMinBlockZ()
+                && z <= chunk.getMinBlockZ() + 15;
+    }
+
+    private static long columnKey(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xffffffffL);
+    }
+
+    private static long localKey(int x, int y, int z) {
+        return ((long) (x & 0x1fffff) << 42)
+                ^ ((long) (y & 0x3fffff) << 20)
+                ^ (z & 0xfffffL);
+    }
+
+    private static int clamp(int value, int minimum, int maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    private static int mix(int x, int z, int salt) {
+        int value = x * 0x1f1f1f1f ^ z * 0x45d9f3b ^ salt;
+        value ^= value >>> 16;
+        value *= 0x7feb352d;
+        value ^= value >>> 15;
+        value *= 0x846ca68b;
+        return value ^ value >>> 16;
+    }
+
+    private enum UrbanRole {
+        TENEMENT("tenement"),
+        SHOP("shop"),
+        BAKERY("bakery"),
+        INN("inn"),
+        STABLE("stable"),
+        GUARD_POST("guard_post"),
+        BATHHOUSE("bathhouse"),
+        WAREHOUSE("warehouse");
+
+        private final String id;
+
+        UrbanRole(String id) {
+            this.id = id;
+        }
+
+        static UrbanRole fromId(String id) {
+            for (UrbanRole role : values()) {
+                if (role.id.equals(id)) return role;
+            }
+            throw new IllegalArgumentException("Unknown urban role " + id);
+        }
+    }
+
+    private enum FrontSide {
+        NORTH(false),
+        SOUTH(false),
+        WEST(true),
+        EAST(true);
+
+        private final boolean horizontal;
+
+        FrontSide(boolean horizontal) {
+            this.horizontal = horizontal;
+        }
+    }
+
+    private record SourceTemplate(
+            int width, int height, int length,
+            List<BuildingBlock> blocks,
+            List<FacadeFragment> fragments) {
+    }
+
+    private record FacadeFragment(
+            int width, int height, int length,
+            List<BuildingBlock> blocks,
+            int entranceX, int entranceZ) {
+    }
+
+    private record UrbanPlacement(
+            String resource,
+            int centerX, int centerZ,
+            Rotation rotation,
+            UrbanRole role,
+            FacadeFragment fragment,
+            UrbanEntrance entrance) {
+        int rotatedWidth() {
+            return ExternalUrbanFabricBuilder.rotatedWidth(fragment, rotation);
+        }
+
+        int rotatedLength() {
+            return ExternalUrbanFabricBuilder.rotatedLength(fragment, rotation);
+        }
+
+        boolean intersects(ChunkPos chunk) {
+            int width = rotatedWidth();
+            int length = rotatedLength();
+            int minX = centerX - width / 2;
+            int maxX = minX + width - 1;
+            int minZ = centerZ - length / 2;
+            int maxZ = minZ + length - 1;
+            return maxX >= chunk.getMinBlockX()
+                    && minX <= chunk.getMinBlockX() + 15
+                    && maxZ >= chunk.getMinBlockZ()
+                    && minZ <= chunk.getMinBlockZ() + 15;
+        }
+    }
+
+    public record UrbanEntrance(
+            String role, int x, int z, int roadX, int roadZ) {
+    }
+
+    private record Exclusion(
+            int centerX, int centerZ, int halfWidth, int halfLength) {
+    }
+
+    private record RawBlock(int x, int y, int z, BlockState state) {
+    }
+
+    private record BuildingBlock(int x, int y, int z, BlockState state) {
+    }
+
+    private record RotatedOffset(int x, int z) {
+    }
+
+    private record RoadTarget(int x, int z) {
+    }
+
+    private record PlacedBlock(int x, int y, int z, BlockState state) {
+    }
+
+    private record VerticalSpan(int x, int z, int minY, int maxY) {
+        VerticalSpan merge(VerticalSpan other) {
+            return new VerticalSpan(
+                    x, z,
+                    Math.min(minY, other.minY),
+                    Math.max(maxY, other.maxY));
+        }
+    }
+}
