@@ -20,9 +20,6 @@ PARTS = [
     ("alpha16_patch_03.part", 19884, "fb7829d9b28d4effb2f50438179a8d642d8c0e77a19d3d2d996ced68d731991e"),
 ]
 
-# The GitHub text transport substituted these isolated characters while preserving
-# every file length. Repair only the independently compared offsets, then require
-# the original per-part, combined-text, archive, and ZIP checksums to match.
 CORRECTIONS = {
     "alpha16_patch_00.part": [(17705, "X", "V")],
     "alpha16_patch_01.part": [(7747, "7", "9")],
@@ -68,6 +65,25 @@ def repair_transport_text(name: str, text: str) -> str:
     return "".join(chars)
 
 
+def replace_required(path: Path, old: str, new: str) -> None:
+    text = path.read_text("utf-8")
+    if old not in text and new not in text:
+        raise RuntimeError(f"compatibility patch target missing in {path}: {old}")
+    path.write_text(text.replace(old, new), "utf-8")
+
+
+def apply_neoforge_compatibility() -> None:
+    restaurant = PROJECT / "src/main/java/kr/countrysidedays/gameplay/RestaurantTableManager.java"
+    rural_npc = PROJECT / "src/main/java/kr/countrysidedays/gameplay/RuralNpcManager.java"
+    starter = PROJECT / "src/main/java/kr/countrysidedays/world/StarterHomesteadGenerator.java"
+    tests = PROJECT / "src/main/java/kr/countrysidedays/gametest/ModGameTests.java"
+
+    replace_required(restaurant, "SoundEvents.GENERIC_EAT", "SoundEvents.GENERIC_EAT.value()")
+    replace_required(rural_npc, "SoundEvents.NOTE_BLOCK_BELL", "SoundEvents.NOTE_BLOCK_BELL.value()")
+    replace_required(starter, "Blocks.COPPER_BLOCK", "Blocks.RAW_COPPER_BLOCK")
+    replace_required(tests, "Blocks.COPPER_BLOCK", "Blocks.RAW_COPPER_BLOCK")
+
+
 def apply_alpha16_patch() -> None:
     chunks: list[str] = []
     for name, expected_len, expected_sha in PARTS:
@@ -102,6 +118,8 @@ def apply_alpha16_patch() -> None:
             if member.is_absolute() or ".." in member.parts:
                 raise RuntimeError(f"unsafe alpha.16 ZIP member: {name}")
         zf.extractall(PROJECT)
+
+    apply_neoforge_compatibility()
 
     props = (PROJECT / "gradle.properties").read_text("utf-8")
     if "mod_version=0.1.0-alpha.16" not in props:
