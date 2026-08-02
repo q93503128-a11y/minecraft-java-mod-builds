@@ -8,7 +8,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 /** Owns the fixed geography of the active Erden kingdom slice. */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 13;
+    public static final int LAYOUT_REVISION = 14;
 
     private RealmSitePlanner() {
     }
