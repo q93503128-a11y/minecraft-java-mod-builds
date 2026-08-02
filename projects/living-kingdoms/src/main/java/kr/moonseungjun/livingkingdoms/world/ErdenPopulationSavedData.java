@@ -16,7 +16,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-/** Persistent Erden households, residents, deaths and aggregate daily civic supplies. */
+/**
+ * Save-compatible source of truth for Erden households, residents, permanent deaths and the daily
+ * civic supply ledger. Loaded villager entities are only materialised views of this data.
+ */
 public final class ErdenPopulationSavedData extends SavedData {
     public static final int SCHEMA_VERSION = 1;
 
