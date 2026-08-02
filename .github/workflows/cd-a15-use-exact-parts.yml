@@ -1,0 +1,51 @@
+name: Switch Countryside Days alpha.15 to exact payload parts
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cd-a15-use-exact-parts.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  switch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Verify exact chunks and update exporter
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          tools=Path('projects/countryside-days/tools')
+          checks={
+            'alpha15exact_03.part':(8000,'785f1b3d3b25d4482cbac7a7e11eb98436b76882d22935ce0071cfcb369dbcaf'),
+            'alpha15exact_04.part':(8000,'aa843460fb86c04dfff90515fae28237f213dce4dc43fcf6ceb7a5c7480e5a44'),
+            'alpha15exact_11.part':(8000,'8991340273b26d6601fc54df80adfb83e54b88d58a93bc02b017a3f0d104d5a1'),
+            'alpha15exact_12.part':(8000,'bf10be8d174e92ff42def406331ae70837c1a6f85901bdd4a1a6386f0d386bc1')}
+          for name,(length,sha) in checks.items():
+              text=''.join((tools/name).read_text('ascii').split())
+              actual=hashlib.sha256(text.encode()).hexdigest()
+              if len(text)!=length or actual!=sha:
+                  raise SystemExit(f'bad exact chunk {name}: {len(text)} {actual}')
+          p=Path('.github/workflows/cd-a15-export-jar.yml')
+          s=p.read_text('utf-8')
+          s=s.replace("('alpha15fix_03.part',8000,'c216a7b1eb12b7586dea47bfcdb8ed33c7c14ccad5f09e1654c8293ad01cb614'),", "('alpha15exact_03.part',8000,'785f1b3d3b25d4482cbac7a7e11eb98436b76882d22935ce0071cfcb369dbcaf'),")
+          s=s.replace("('alpha15fix_04.part',8000,'8058ef8da669949be9d9aa344130c3a17a0d75b3069438cbf433db60aba4eaad'),", "('alpha15exact_04.part',8000,'aa843460fb86c04dfff90515fae28237f213dce4dc43fcf6ceb7a5c7480e5a44'),")
+          s=s.replace("('alpha15v2_11_12.part',16000,'e341d7db6b6a277721f5aae8d5384a94d68e5778ad0399c302ebaf2a097c3dba'),", "('alpha15exact_11.part',8000,'8991340273b26d6601fc54df80adfb83e54b88d58a93bc02b017a3f0d104d5a1'),\n            ('alpha15exact_12.part',8000,'bf10be8d174e92ff42def406331ae70837c1a6f85901bdd4a1a6386f0d386bc1'),")
+          s=s.replace("    if: github.actor != 'github-actions[bot]'\n",'')
+          if 'alpha15fix_03.part' in s or 'alpha15fix_04.part' in s or 'alpha15v2_11_12.part' in s:
+              raise SystemExit('export workflow replacement incomplete')
+          p.write_text(s,'utf-8')
+          print('exact payload exporter prepared')
+          PY
+          rm -f .github/workflows/cd-a15-use-exact-parts.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/workflows/cd-a15-export-jar.yml .github/workflows/cd-a15-use-exact-parts.yml
+          git commit -m 'Use exact Countryside Days alpha.15 payload parts'
+          git pull --rebase origin main
+          git push origin HEAD:main
