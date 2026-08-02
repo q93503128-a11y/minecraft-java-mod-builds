@@ -1,0 +1,21 @@
+PASS: slowed RPG balance contract
+test_xp_3000=level_7_xp_131
+level30 attack=x2.415
+level30 incoming=61.4%
+level30 bonus_health=20
+total_xp_to_level30=94685
+PASS: expanded village territory contract
+radius=96
+defense_xp_multiplier=1.5
+[PASS] Village progression upgrade costs are monotonic
+[PASS] Smithy, personal forge, and wall upgrades improve combat
+[PASS] Daily bread scales from 3 to 13
+[PASS] Center-to-north-gate avenue contains no buildings
+[PASS] Max storehouse+barracks doubles raid supplies
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_progression_depth.py", line 72, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_progression_depth.py", line 25, in main
+    assert common.count('("power_') == 7
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
