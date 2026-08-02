@@ -3,8 +3,19 @@
   "generator": {
     "type": "minecraft:noise",
     "biome_source": {
-      "type": "minecraft:multi_noise",
-      "preset": "minecraft:overworld"
+      "type": "livingkingdoms:authored_biomes",
+      "ocean": "minecraft:ocean",
+      "beach": "minecraft:beach",
+      "river": "minecraft:river",
+      "plains": "minecraft:plains",
+      "forest": "minecraft:forest",
+      "silvana": "minecraft:dark_forest",
+      "kardum": "minecraft:stony_peaks",
+      "dragonlands": "minecraft:frozen_peaks",
+      "steppe": "minecraft:badlands",
+      "sahar": "minecraft:desert",
+      "ruins": "minecraft:windswept_gravelly_hills",
+      "archipelago": "minecraft:sparse_jungle"
     },
     "settings": "livingkingdoms:living_continent"
   }
