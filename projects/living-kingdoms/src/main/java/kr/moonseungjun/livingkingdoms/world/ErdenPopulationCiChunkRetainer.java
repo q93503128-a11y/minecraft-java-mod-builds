@@ -11,6 +11,7 @@ import java.util.Set;
 public final class ErdenPopulationCiChunkRetainer {
     private static final boolean ENABLED =
             "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
+    private static final int RETAIN_INTERVAL_TICKS = 5;
     private static final Set<Long> RETAINED_CHUNKS = new HashSet<>();
 
     private static MinecraftServer activeServer;
@@ -19,7 +20,8 @@ public final class ErdenPopulationCiChunkRetainer {
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
-        if (!ENABLED) return;
+        if (!ENABLED
+                || event.getServer().getTickCount() % RETAIN_INTERVAL_TICKS != 0) return;
         if (activeServer != event.getServer()) {
             activeServer = event.getServer();
             RETAINED_CHUNKS.clear();
@@ -79,10 +81,16 @@ public final class ErdenPopulationCiChunkRetainer {
              chunkX <= Math.floorDiv(maxX, 16); chunkX++) {
             for (int chunkZ = Math.floorDiv(minZ, 16);
                  chunkZ <= Math.floorDiv(maxZ, 16); chunkZ++) {
-                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                if (!ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ)) {
+                    ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                }
+
+                // requestChunk releases its own temporary ticket when construction finishes.
+                // Reassert the diagnostic ticket afterwards so the interior, upper floor and
+                // resident materialisation stages all observe the same loaded building.
+                level.setChunkForced(chunkX, chunkZ, true);
                 long key = ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
-                if (RETAINED_CHUNKS.add(key)) {
-                    level.setChunkForced(chunkX, chunkZ, true);
+                if (RETAINED_CHUNKS.add(key) || !level.hasChunk(chunkX, chunkZ)) {
                     level.getChunk(chunkX, chunkZ);
                 }
             }
