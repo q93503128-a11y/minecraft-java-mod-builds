@@ -16,7 +16,7 @@ import java.util.Set;
 
 /** Builds the 2.4 x 1.8 km capital one loaded 16 x 16 metre cell at a time. */
 public final class ErdenCapitalStreamingBuilder {
-    public static final int CAPITAL_REVISION = 2;
+    public static final int CAPITAL_REVISION = 3;
     public static final int WEST_WALL_X = -1_200;
     public static final int EAST_WALL_X = 1_200;
     public static final int NORTH_WALL_Z = -900;
@@ -128,6 +128,7 @@ public final class ErdenCapitalStreamingBuilder {
         addRoadNetwork(plan, level, chunk);
         ExternalRealmBuilder.addCapitalWallChunk(plan, level, chunk);
         ExternalDistrictBuildingBuilder.addChunk(plan, level, chunk);
+        ErdenUrbanInfrastructureBuilder.addChunk(plan, level, chunk);
         return plan;
     }
 
@@ -136,8 +137,7 @@ public final class ErdenCapitalStreamingBuilder {
         int minZ = chunk.getMinBlockZ();
         for (int x = minX; x <= minX + 15; x++) {
             for (int z = minZ; z <= minZ + 15; z++) {
-                if (!insideWalls(x, z) || insideCitadel(x, z)) continue;
-                RoadClass roadClass = classifyRoad(x, z);
+                RoadClass roadClass = roadClassAt(x, z);
                 if (roadClass == RoadClass.NONE) continue;
 
                 int surfaceY = RealmSitePlanner.surfaceY(level, x, z);
@@ -160,7 +160,8 @@ public final class ErdenCapitalStreamingBuilder {
         }
     }
 
-    private static RoadClass classifyRoad(int x, int z) {
+    static RoadClass roadClassAt(int x, int z) {
+        if (!insideWalls(x, z) || insideCitadel(x, z)) return RoadClass.NONE;
         if (Math.abs(x) <= 7 || Math.abs(z) <= 6) return RoadClass.ROYAL;
         if (Math.abs(x - 600) <= 4 || Math.abs(x + 600) <= 4
                 || Math.abs(z - 300) <= 4 || Math.abs(z + 300) <= 4) {
@@ -219,7 +220,7 @@ public final class ErdenCapitalStreamingBuilder {
         active = null;
     }
 
-    private enum RoadClass {
+    enum RoadClass {
         NONE,
         LOCAL,
         DISTRICT,
