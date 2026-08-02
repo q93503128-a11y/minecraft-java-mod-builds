@@ -7,6 +7,8 @@ text = full.read_text(encoding="utf-8")
 text = text.replace("build-arcane-circle.yml", "build-arcane-circle-v0121.yml")
 text = text.replace("0.12.0-alpha.1", "0.12.1-alpha.1")
 text = text.replace("ninefold-arcana-12", "ninefold-arcana-12-1")
+text = text.replace('"apply_v12_overhaul.py", "world geometry and charged fusion"',
+                    '"apply_v12_1_particle_cleanup.py", "all-circle world geometry"')
 text = text.replace(
 '''need(sigils, [
     "renderChargeStep", "renderRelease", "CHARGE_STAGES", "radialCompartments",
