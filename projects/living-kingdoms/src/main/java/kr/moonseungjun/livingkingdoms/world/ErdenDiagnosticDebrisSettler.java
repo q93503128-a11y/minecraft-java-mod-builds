@@ -11,17 +11,16 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 public final class ErdenDiagnosticDebrisSettler {
     private static final boolean ENABLED =
             "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
-    private static final int CLEAN_INTERVAL_TICKS = 20;
+    private static final int CLEAN_INTERVAL_TICKS = 10;
 
     private ErdenDiagnosticDebrisSettler() {
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
-        if (!ENABLED) return;
+        if (!ENABLED
+                || event.getServer().getTickCount() % CLEAN_INTERVAL_TICKS != 0) return;
         ServerLevel level = event.getServer().getLevel(StarterRealmManager.REALM_KEY);
-        if (level == null
-                || level.getGameTime() % CLEAN_INTERVAL_TICKS != 0L
-                || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
+        if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
         RealmSiteLayoutSavedData.RealmSite site =
                 RealmSitePlanner.site(level, "erden_kingdom");
         if (site == null) return;
