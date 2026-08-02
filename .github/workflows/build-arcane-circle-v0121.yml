@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Per-Spell World Geometry and Mage Hierarchy
+name: Build Arcane Circle v0.12.1 Alpha.6 Fusion and Mage Gear
 
 on:
   workflow_dispatch:
@@ -17,14 +17,14 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.12.1-alpha.5
-  EXPECTED_JAR: arcanecircle-0.12.1-alpha.5.jar
+  MOD_VERSION: 0.12.1-alpha.6
+  EXPECTED_JAR: arcanecircle-0.12.1-alpha.6.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 direct source build - per-spell world geometry, hierarchy, affiliations and aggro
+    name: Java 25 direct build - chord fusion, visible failures, gear and balance
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -43,23 +43,30 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Install alpha.5 hierarchy rules into the direct Java 25 source build
+      - name: Preserve and audit the alpha.5 hierarchy when migrating an older source tree
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q '^mod_version=0.12.1-alpha.5$' gradle.properties; then
+            python3 tools/apply_v0121_alpha5_hierarchy_v2.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+            python3 tools/test_magic_contract.py
+            python3 tools/test_v12_overhaul.py
+            python3 tools/test_v12_1_cleanup.py
+            python3 tools/test_v0121_alpha3_geometry_perf.py
+            python3 tools/test_v0121_alpha4_society.py
+            python3 tools/test_v0121_alpha5_hierarchy.py
+          fi
+          git diff --check
+
+      - name: Install and audit alpha.6 gameplay rules
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -o pipefail
-          python3 tools/apply_v0121_alpha5_hierarchy_v2.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/apply_v0121_alpha6_fusion_gear.py 2>&1 | tee -a "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/test_v0121_alpha6_fusion_gear.py
           git diff --check
-
-      - name: Audit complete magic runtime, hierarchy and society contracts
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          python3 tools/test_magic_contract.py
-          python3 tools/test_v12_overhaul.py
-          python3 tools/test_v12_1_cleanup.py
-          python3 tools/test_v0121_alpha3_geometry_perf.py
-          python3 tools/test_v0121_alpha4_society.py
-          python3 tools/test_v0121_alpha5_hierarchy.py
 
       - name: Build Java 25 runtime
         working-directory: ${{ env.PROJECT_DIR }}
@@ -69,7 +76,7 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
 
-      - name: Verify hierarchy, attributed damage and mage society bytecode
+      - name: Verify alpha.6 JAR structure and rendering safety
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -80,37 +87,42 @@ jobs:
           from pathlib import Path
           import zipfile
 
-          jar = Path('build/libs/arcanecircle-0.12.1-alpha.5.jar')
+          jar = Path('build/libs/arcanecircle-0.12.1-alpha.6.jar')
           with zipfile.ZipFile(jar) as z:
               names = set(z.namelist())
               required = {
+                  'kr/moonseungjun/arcanecircle/client/ArcaneClient.class',
                   'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
                   'kr/moonseungjun/arcanecircle/magic/ArcaneDamage.class',
-                  'kr/moonseungjun/arcanecircle/world/MageSociety.class',
-                  'kr/moonseungjun/arcanecircle/world/MageSociety$Role.class',
-                  'kr/moonseungjun/arcanecircle/world/MageSociety$Relation.class',
+                  'kr/moonseungjun/arcanecircle/magic/MageGearService.class',
+                  'kr/moonseungjun/arcanecircle/magic/MageGearService$GearStats.class',
                   'kr/moonseungjun/arcanecircle/world/ArcaneMageService.class',
+                  'assets/arcanecircle/items/mage_hat.json',
+                  'assets/arcanecircle/items/mage_robe.json',
+                  'assets/arcanecircle/items/mage_robe_hem.json',
+                  'assets/arcanecircle/items/mage_boots.json',
+                  'assets/arcanecircle/models/item/mage_hat.json',
+                  'assets/arcanecircle/models/item/mage_robe.json',
+                  'assets/arcanecircle/models/item/mage_boots.json',
               }
               missing = required - names
               if missing:
-                  raise SystemExit(f'missing alpha.5 runtime classes: {sorted(missing)}')
-              casting = z.read('kr/moonseungjun/arcanecircle/magic/SpellCastingService.class')
-              for token in (b'sameCircleTicks', b'requiredFusionCastTicks'):
-                  if token not in casting:
-                      raise SystemExit(f'cast hierarchy bytecode missing: {token!r}')
+                  raise SystemExit(f'missing alpha.6 runtime entries: {sorted(missing)}')
+              client = z.read('kr/moonseungjun/arcanecircle/client/ArcaneClient.class')
+              for forbidden in (b'fusion_modifier', b'FUSION_MODIFIER_KEY'):
+                  if forbidden in client:
+                      raise SystemExit(f'obsolete X fusion input remains: {forbidden!r}')
+              for token in (b'primarySlot', b'fusionChord'):
+                  if token not in client:
+                      raise SystemExit(f'number-key chord state missing: {token!r}')
+              gear = z.read('kr/moonseungjun/arcanecircle/magic/MageGearService.class')
+              for token in (b'mage_robe_hem', b'gear_hat', b'gear_robe'):
+                  if token not in gear and token != b'gear_hat' and token != b'gear_robe':
+                      raise SystemExit(f'gear bytecode missing: {token!r}')
               damage = z.read('kr/moonseungjun/arcanecircle/magic/ArcaneDamage.class')
               for token in (b'playerAttack', b'mobAttack', b'setTarget'):
                   if token not in damage:
                       raise SystemExit(f'attributed damage bytecode missing: {token!r}')
-              mage = z.read('kr/moonseungjun/arcanecircle/world/ArcaneMageService.class')
-              for token in (b'weightedCircle', b'residentAffiliation', b'naturalAffiliation',
-                            b'castResidentSpell', b'castHostileSpell'):
-                  if token not in mage:
-                      raise SystemExit(f'mage hierarchy bytecode missing: {token!r}')
-              screen = z.read('kr/moonseungjun/arcanecircle/client/GrimoireScreen.class')
-              for token in (b'fusionCircle', b'fusionFormulasInCircle'):
-                  if token not in screen:
-                      raise SystemExit(f'fusion hierarchy UI bytecode missing: {token!r}')
               offenders = []
               for name in names:
                   if name.startswith('kr/moonseungjun/arcanecircle/magic/') and name.endswith('.class'):
@@ -118,7 +130,7 @@ jobs:
                           offenders.append(name)
               if offenders:
                   raise SystemExit(f'particle-centered magic bytecode remains: {offenders}')
-          print('Arcane Circle alpha.5 JAR audit: PASS')
+          print('Arcane Circle alpha.6 JAR audit: PASS')
           PY
           javap -classpath "build/libs/$EXPECTED_JAR" -c -p \
             kr.moonseungjun.arcanecircle.client.WorldMagicTracker \
@@ -134,7 +146,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.12.1-alpha.5
+          name: arcanecircle-0.12.1-alpha.6
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
@@ -164,7 +176,7 @@ jobs:
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
             git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12.1-alpha.5 hierarchy and affiliations [skip ci]'
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.6 fusion and mage gear [skip ci]'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
@@ -206,7 +218,7 @@ jobs:
             cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "Record Arcane Circle v0.12.1-alpha.5 CI result for ${GITHUB_SHA::7} [skip ci]"
+            git commit -m "Record Arcane Circle v0.12.1-alpha.6 CI result for ${GITHUB_SHA::7} [skip ci]"
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 2))
           done
