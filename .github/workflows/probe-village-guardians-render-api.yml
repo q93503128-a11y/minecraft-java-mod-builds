@@ -33,17 +33,20 @@ jobs:
           allprojects {
             afterEvaluate { p ->
               if (p.plugins.hasPlugin('java')) {
-                p.tasks.register('printCompileClasspath') {
-                  doLast { println p.sourceSets.main.compileClasspath.asPath }
+                p.tasks.register('printCompileJavaClasspath') {
+                  dependsOn p.tasks.named('createMinecraftArtifacts')
+                  doLast { println p.tasks.named('compileJava').get().classpath.asPath }
                 }
               }
             }
           }
           EOF
-          CP="$(gradle --no-daemon --no-configuration-cache -q -I "$RUNNER_TEMP/cp.gradle" printCompileClasspath | tail -n 1)"
+          CP="$(gradle --no-daemon --no-configuration-cache -q -I "$RUNNER_TEMP/cp.gradle" printCompileJavaClasspath | tail -n 1)"
           OUT="$GITHUB_WORKSPACE/ci-results/village-guardians-render-api.txt"
           mkdir -p "$(dirname "$OUT")"
           {
+            echo '=== CLASSPATH ==='
+            echo "$CP"
             echo '=== KeyMapping ==='
             javap -classpath "$CP" -p net.minecraft.client.KeyMapping || true
             echo '=== InputConstants ==='
