@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** End-to-end CI verification for the revision 8 authored realm. */
+/** End-to-end CI verification for the fully authored Living Realm. */
 public final class StarterRealmDiagnostics {
     private static final List<String> HOMELANDS = List.of(
             "erden_kingdom", "silvana_forest", "kardum_league"
@@ -82,7 +82,7 @@ public final class StarterRealmDiagnostics {
                 throw new IllegalStateException("Realm construction exceeded 900 seconds: " + elapsedMs);
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8 authored_terrain=true smooth_transitions=true structure_shells=true debris_zero=true layout_revision={} generation_ms={}",
+                    "LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8 authored_terrain=true authored_biomes=true authored_surfaces=true smooth_transitions=true structure_shells=true debris_zero=true layout_revision={} generation_ms={}",
                     RealmSitePlanner.LAYOUT_REVISION, elapsedMs
             );
         } catch (Throwable throwable) {
@@ -112,7 +112,7 @@ public final class StarterRealmDiagnostics {
             int z = site.centerZ() + offset[1];
             int y = terrainY(realm, x, z);
             heights.add(y);
-            if (realm.getFluidState(new BlockPos(x, y, z)).isEmpty()) land++;
+            if (isDrySurface(realm, x, z)) land++;
         }
         if (land < 9) {
             throw new IllegalStateException("Capital district is isolated by water: " + homelandId + " land=" + land);
@@ -151,8 +151,6 @@ public final class StarterRealmDiagnostics {
                 previous = y;
             }
         }
-        // Six horizontal blocks per sample: values above twelve still expose the artificial box
-        // cliffs seen in earlier alphas, while a ten-block natural ridge is retained as terrain.
         if (worstStep > 12) {
             throw new IllegalStateException("Cliff transition detected around " + homelandId
                     + ": step=" + worstStep + " at " + worstX + "," + worstZ);
@@ -203,9 +201,49 @@ public final class StarterRealmDiagnostics {
         if (!roofFound) throw new IllegalStateException("House roof missing above " + homeFloor);
     }
 
+    /**
+     * Finds the authored ground below trees, giant trunks, vegetation and settlement structures.
+     * Heightmaps intentionally include solid logs, so they cannot be used directly once real biome
+     * decoration is enabled.
+     */
     private static int terrainY(ServerLevel realm, int x, int z) {
         realm.getChunk(x >> 4, z >> 4);
-        return realm.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+        int top = realm.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
+        int bottom = Math.max(realm.getMinY(), top - 96);
+        for (int y = top; y >= bottom; y--) {
+            Block block = realm.getBlockState(new BlockPos(x, y, z)).getBlock();
+            if (isTerrainGround(block)) return y;
+        }
+        return realm.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z) - 1;
+    }
+
+    private static boolean isDrySurface(ServerLevel realm, int x, int z) {
+        int top = realm.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
+        return realm.getFluidState(new BlockPos(x, top, z)).isEmpty();
+    }
+
+    private static boolean isTerrainGround(Block block) {
+        return block == Blocks.GRASS_BLOCK
+                || block == Blocks.DIRT
+                || block == Blocks.COARSE_DIRT
+                || block == Blocks.ROOTED_DIRT
+                || block == Blocks.PODZOL
+                || block == Blocks.MYCELIUM
+                || block == Blocks.MOSS_BLOCK
+                || block == Blocks.MUD
+                || block == Blocks.PACKED_MUD
+                || block == Blocks.DIRT_PATH
+                || block == Blocks.STONE
+                || block == Blocks.DEEPSLATE
+                || block == Blocks.GRAVEL
+                || block == Blocks.SAND
+                || block == Blocks.RED_SAND
+                || block == Blocks.SANDSTONE
+                || block == Blocks.RED_SANDSTONE
+                || block == Blocks.TERRACOTTA
+                || block == Blocks.CLAY
+                || block == Blocks.CALCITE
+                || block == Blocks.SNOW_BLOCK;
     }
 
     private static void requireBlock(ServerLevel realm, BlockPos pos, Block expected, String name) {
