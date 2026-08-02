@@ -1,0 +1,90 @@
+replace_once(town, "compact(state, Math.max(9, w / 6))", "compact(state, w - 22)")
+replace_once(town, "compact(button.label(), Math.max(10, bound.width() / 6))", "compact(button.label(), bound.width() - 10)")
+replace_once(
+    town,
+    '''    private Split split(Layout layout) {
+        int left = layout.left() + 15;
+        int right = layout.right() - 15;
+        int top = layout.top() + 64;
+        int bottom = layout.bottom() - 13;
+        int listWidth = clamp((right - left) * 24 / 100, 125, 205);
+        return new Split(new Pane(left, top, left + listWidth, bottom),
+                new Pane(left + listWidth + 8, top, right, bottom));
+    }
+''',
+    '''    private Split split(Layout layout) {
+        int left = layout.left() + 15;
+        int right = layout.right() - 15;
+        int top = layout.top() + 64;
+        int bottom = layout.bottom() - 13;
+        int contentWidth = right - left;
+        if (contentWidth < 260) {
+            int availableHeight = Math.max(1, bottom - top);
+            int listHeight = clamp(availableHeight * 36 / 100, 72,
+                    Math.max(72, availableHeight - 96));
+            return new Split(new Pane(left, top, right, top + listHeight),
+                    new Pane(left, top + listHeight + 7, right, bottom));
+        }
+        int listWidth = clamp(contentWidth * 24 / 100, 125, 205);
+        return new Split(new Pane(left, top, left + listWidth, bottom),
+                new Pane(left + listWidth + 8, top, right, bottom));
+    }
+''')
+replace_once(
+    town,
+    '''    private String compact(String value, int max) {
+        String normalized = plain(value).replace('\\n', ' ');
+        return normalized.length() <= max ? normalized
+                : normalized.substring(0, Math.max(1, max - 1)) + "…";
+    }
+''',
+    '''    private String compact(String value, int maxWidth) {
+        String normalized = plain(value).replace('\\n', ' ');
+        if (maxWidth <= 0) return "";
+        if (font.width(normalized) <= maxWidth) return normalized;
+        String suffix = "…";
+        if (font.width(suffix) > maxWidth) return "";
+        int end = normalized.length();
+        while (end > 0 && font.width(normalized.substring(0, end) + suffix) > maxWidth) end--;
+        return normalized.substring(0, end) + suffix;
+    }
+''')
+
+facility = JAVA / "VillageFacilityScreen.java"
+replace_once(
+    facility,
+    '''        graphics.text(font, plain(payload.title()), left, layout.top() + 10, TEXT, false);
+        graphics.text(font, subtitle(), left, layout.top() + 27, MUTED, false);
+''',
+    '''        int textWidth = Math.max(32, closeX - left - 8);
+        graphics.text(font, compact(plain(payload.title()), textWidth), left, layout.top() + 10, TEXT, false);
+        graphics.text(font, compact(subtitle(), textWidth), left, layout.top() + 27, MUTED, false);
+''')
+replace_once(facility, "compact(parts[0], Math.max(9, cardWidth / 6))", "compact(parts[0], cardWidth - 19)")
+replace_once(
+    facility,
+    "compact(VillageActionDescriptions.executeLabel(actions[selectedIndex]), Math.max(9, buttonWidth / 6))",
+    "compact(VillageActionDescriptions.executeLabel(actions[selectedIndex]), buttonWidth - 10)")
+replace_once(
+    facility,
+    '''    private String compact(String value, int max) {
+        String normalized = plain(value).replace('\\n', ' ');
+        return normalized.length() <= max ? normalized
+                : normalized.substring(0, Math.max(1, max - 1)) + "…";
+    }
+''',
+    '''    private String compact(String value, int maxWidth) {
+        String normalized = plain(value).replace('\\n', ' ');
+        if (maxWidth <= 0) return "";
+        if (font.width(normalized) <= maxWidth) return normalized;
+        String suffix = "…";
+        if (font.width(suffix) > maxWidth) return "";
+        int end = normalized.length();
+        while (end > 0 && font.width(normalized.substring(0, end) + suffix) > maxWidth) end--;
+        return normalized.substring(0, end) + suffix;
+    }
+''')
+
+# Keep the personal growth popover inside every viewport and use all available vertical space.
+skill_tree = JAVA / "VillageSkillTreeScreen.java"
+replace_once(
