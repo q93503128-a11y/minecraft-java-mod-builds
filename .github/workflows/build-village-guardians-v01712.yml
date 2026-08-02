@@ -60,8 +60,9 @@ jobs:
               raise SystemExit('echo reset patch block not found')
           path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
-          python3 -m py_compile tools/apply_v01712.py
+          python3 -m py_compile tools/apply_v01712.py tools/fix_v01712_compile.py
           python3 tools/apply_v01712.py
+          python3 tools/fix_v01712_compile.py
           python3 - <<'PY'
           from pathlib import Path
           for path in Path('tools').glob('test_*.py'):
@@ -70,7 +71,7 @@ jobs:
               if updated != text:
                   path.write_text(updated, encoding='utf-8')
           PY
-          rm -f tools/apply_v01712.py
+          rm -f tools/apply_v01712.py tools/fix_v01712_compile.py
 
       - name: Run complete contracts
         working-directory: ${{ env.PROJECT_DIR }}
