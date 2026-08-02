@@ -20,6 +20,7 @@ jobs:
           fetch-depth: 0
 
       - name: Restore corrected alpha.15 source
+        id: restore
         run: |
           git checkout bbf9ccdac21e6bc8a3f0958433e218ae731760f4 -- projects/countryside-days
           grep -q 'mod_version=0.1.0-alpha.15' projects/countryside-days/gradle.properties
@@ -34,19 +35,21 @@ jobs:
           gradle-version: '9.2.1'
 
       - name: Build and verify JAR
+        id: build
         working-directory: projects/countryside-days
         run: |
           if [ ! -x ./gradlew ]; then
             gradle wrapper --gradle-version 9.2.1 --distribution-type bin
             chmod +x gradlew
           fi
-          ./gradlew --no-daemon clean build --stacktrace
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a15-build.log
           JAR=build/libs/countrysidedays-0.1.0-alpha.15.jar
           test -s "$JAR"
           python3 tools/verify_jar.py "$JAR"
           unzip -t "$JAR"
 
       - name: Encode verified JAR for transfer
+        id: encode
         run: |
           rm -rf release-transfer/countryside-days-alpha15
           mkdir -p release-transfer/countryside-days-alpha15
@@ -60,13 +63,46 @@ jobs:
             echo "base64_size=$(stat -c%s /tmp/cd-a15.b64)"
             echo "parts=$(find release-transfer/countryside-days-alpha15 -name 'part-*' | wc -l)"
             echo "source=bbf9ccdac21e6bc8a3f0958433e218ae731760f4"
+            echo "run=${GITHUB_RUN_ID}"
           } > release-transfer/countryside-days-alpha15/MANIFEST.txt
 
       - name: Publish transfer files
+        id: publish
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add release-transfer/countryside-days-alpha15
           git commit -m 'Publish verified Countryside Days alpha.15 JAR transfer'
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Publish diagnostic status
+        if: always()
+        working-directory: .
+        env:
+          RESTORE_OUTCOME: ${{ steps.restore.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          ENCODE_OUTCOME: ${{ steps.encode.outcome }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+        run: |
+          mkdir -p release-transfer/countryside-days-alpha15-status
+          STATUS=release-transfer/countryside-days-alpha15-status/${GITHUB_RUN_ID}.txt
+          {
+            echo "run=${GITHUB_RUN_ID}"
+            echo "source=${GITHUB_SHA}"
+            echo "restore=${RESTORE_OUTCOME}"
+            echo "build=${BUILD_OUTCOME}"
+            echo "encode=${ENCODE_OUTCOME}"
+            echo "publish=${PUBLISH_OUTCOME}"
+            if [ -f /tmp/cd-a15-build.log ]; then
+              echo '--- build tail ---'
+              tail -n 80 /tmp/cd-a15-build.log
+            fi
+          } > "$STATUS"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$STATUS"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record Countryside Days alpha.15 export ${GITHUB_RUN_ID}"
           git pull --rebase origin main
           git push origin HEAD:main
