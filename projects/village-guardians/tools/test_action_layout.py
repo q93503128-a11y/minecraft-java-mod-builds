@@ -15,7 +15,7 @@ def clamp(value: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, value))
 
 
-def facility_split(screen_width: int, screen_height: int) -> tuple[int, int, int]:
+def facility_split(screen_width: int, screen_height: int) -> tuple[int, int, int, bool]:
     panel_width = min(880, max(330, screen_width - 16))
     panel_width = min(panel_width, max(1, screen_width - 2))
     panel_height = min(540, max(230, screen_height - 16))
@@ -24,8 +24,8 @@ def facility_split(screen_width: int, screen_height: int) -> tuple[int, int, int
     if content_width >= 340:
         list_width = clamp(content_width * 24 // 100, 118, 198)
         detail_width = content_width - list_width - 8
-        return list_width, detail_width, panel_height - 60
-    return content_width, content_width, panel_height - 67
+        return list_width, detail_width, panel_height - 60, True
+    return content_width, content_width, panel_height - 67, False
 
 
 def main() -> None:
@@ -52,14 +52,17 @@ def main() -> None:
     assert "legacy-format colour leakage" in STATUS
 
     for width, height in ((380, 260), (520, 300), (640, 360), (800, 450), (1000, 600), (1648, 928)):
-        left, right, content_height = facility_split(width, height)
-        if width >= 380:
+        left, right, content_height, horizontal = facility_split(width, height)
+        if horizontal:
             assert left <= 198, (width, left)
             assert right > left, (width, left, right)
+        else:
+            assert left == right, (width, left, right)
         assert right >= 170, (width, right)
         assert content_height >= 160, (height, content_height)
 
     print("[PASS] Facility selectors remain narrow while descriptions receive most of the width")
+    print("[PASS] Very narrow screens switch to stacked layout without false width failures")
     print("[PASS] Town hall uses compact lists and explicit current/next upgrade comparison")
     print("[PASS] Action buttons are capped at 142x24 instead of spanning the whole panel")
     print("[PASS] Status text is dark, stripped of legacy white formatting, and fits without scrolling")
