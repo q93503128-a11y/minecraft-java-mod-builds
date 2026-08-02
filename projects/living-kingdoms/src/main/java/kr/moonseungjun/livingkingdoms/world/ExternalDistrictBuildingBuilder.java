@@ -22,13 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Terrain-cleans and places attributed external buildings as functional capital landmarks.
- *
- * <p>These are not random decoration. Every placement belongs to a named district role: government,
- * temple, military, guild, river trade, noble estate or citizen compound. The same architectural
- * family is rotated and spaced along the deterministic road plan rather than pasted as one giant map.</p>
- */
+/** Terrain-cleans and places attributed external buildings as functional capital blocks. */
 public final class ExternalDistrictBuildingBuilder {
     private static final String MANOR =
             "/data/livingkingdoms/structures/external/medieval_manor.schem";
@@ -65,39 +59,64 @@ public final class ExternalDistrictBuildingBuilder {
     );
     private static final int MIN_COMPONENT_BLOCKS = 24;
 
-    private static final List<Placement> PLACEMENTS = List.of(
-            // Crown and administration quarter.
+    private static final List<Placement> LANDMARK_PLACEMENTS = List.of(
             new Placement(MANOR, -390, -520, Rotation.CLOCKWISE_90, "royal_chancery"),
             new Placement(MANOR, 390, -520, Rotation.COUNTERCLOCKWISE_90, "treasury_court"),
             new Placement(MANOR, -700, -610, Rotation.NONE, "western_noble_estate"),
             new Placement(MANOR, -700, -350, Rotation.CLOCKWISE_180, "magistrates_estate"),
-
-            // Temple and learning quarter.
             new Placement(CHURCH, 710, -560, Rotation.COUNTERCLOCKWISE_90, "great_temple"),
             new Placement(CHURCH, 720, -270, Rotation.CLOCKWISE_90, "pilgrim_hospital"),
-
-            // Military quarter and gate reserves.
             new Placement(CASTLE_HOUSE, -720, 540, Rotation.CLOCKWISE_90, "western_barracks"),
             new Placement(CASTLE_HOUSE, -400, 610, Rotation.NONE, "royal_guard_academy"),
             new Placement(CASTLE_HOUSE, 760, 590, Rotation.COUNTERCLOCKWISE_90, "eastern_watch_barracks"),
-
-            // Market, artisan and citizen compounds.
             new Placement(HOUSE, 360, 300, Rotation.CLOCKWISE_180, "merchant_guildhall"),
             new Placement(HOUSE, 650, 220, Rotation.COUNTERCLOCKWISE_90, "covered_craft_hall"),
             new Placement(HOUSE, 620, 520, Rotation.CLOCKWISE_90, "artisan_compound"),
             new Placement(HOUSE, -170, 600, Rotation.NONE, "citizen_court_west"),
             new Placement(HOUSE, 170, 600, Rotation.CLOCKWISE_180, "citizen_court_east"),
-
-            // Silver River trade quarter. Buildings face the wharf road, not the water itself.
             new Placement(HOUSE, -990, -420, Rotation.CLOCKWISE_90, "north_river_warehouse"),
             new Placement(HOUSE, -980, 250, Rotation.COUNTERCLOCKWISE_90, "south_river_warehouse")
     );
+
+    /** Large furnished external homes act as block anchors; alleys and civic services fill their gaps. */
+    private static final List<Placement> RESIDENTIAL_PLACEMENTS = List.of(
+            new Placement(HOUSE, -1020, -720, Rotation.CLOCKWISE_90, "residential_north_01"),
+            new Placement(CASTLE_HOUSE, -820, -720, Rotation.NONE, "residential_north_02"),
+            new Placement(HOUSE, -180, -720, Rotation.CLOCKWISE_180, "residential_north_03"),
+            new Placement(HOUSE, 180, -720, Rotation.NONE, "residential_north_04"),
+            new Placement(CASTLE_HOUSE, 820, -720, Rotation.CLOCKWISE_180, "residential_north_05"),
+            new Placement(HOUSE, 1020, -720, Rotation.COUNTERCLOCKWISE_90, "residential_north_06"),
+
+            new Placement(HOUSE, -1020, -180, Rotation.CLOCKWISE_90, "residential_middle_north_01"),
+            new Placement(MANOR, -780, -180, Rotation.NONE, "residential_middle_north_02"),
+            new Placement(HOUSE, -360, -180, Rotation.CLOCKWISE_180, "residential_middle_north_03"),
+            new Placement(HOUSE, 360, -180, Rotation.NONE, "residential_middle_north_04"),
+            new Placement(MANOR, 780, -180, Rotation.CLOCKWISE_180, "residential_middle_north_05"),
+            new Placement(HOUSE, 1020, -180, Rotation.COUNTERCLOCKWISE_90, "residential_middle_north_06"),
+
+            new Placement(HOUSE, -1020, 180, Rotation.CLOCKWISE_90, "residential_middle_south_01"),
+            new Placement(MANOR, -780, 180, Rotation.CLOCKWISE_180, "residential_middle_south_02"),
+            new Placement(HOUSE, -360, 180, Rotation.NONE, "residential_middle_south_03"),
+            new Placement(HOUSE, 360, 180, Rotation.CLOCKWISE_180, "residential_middle_south_04"),
+            new Placement(MANOR, 780, 180, Rotation.NONE, "residential_middle_south_05"),
+            new Placement(HOUSE, 1020, 180, Rotation.COUNTERCLOCKWISE_90, "residential_middle_south_06"),
+
+            new Placement(HOUSE, -1020, 720, Rotation.CLOCKWISE_90, "residential_south_01"),
+            new Placement(CASTLE_HOUSE, -820, 720, Rotation.CLOCKWISE_180, "residential_south_02"),
+            new Placement(HOUSE, -180, 720, Rotation.NONE, "residential_south_03"),
+            new Placement(HOUSE, 180, 720, Rotation.CLOCKWISE_180, "residential_south_04"),
+            new Placement(CASTLE_HOUSE, 820, 720, Rotation.NONE, "residential_south_05"),
+            new Placement(HOUSE, 1020, 720, Rotation.COUNTERCLOCKWISE_90, "residential_south_06")
+    );
+
+    private static final List<Placement> ALL_PLACEMENTS = combinePlacements();
+    private static volatile List<BuildingEntrance> cachedEntrances;
 
     private ExternalDistrictBuildingBuilder() {
     }
 
     public static void addChunk(IncrementalWorldEditPlan plan, ServerLevel level, ChunkPos chunk) {
-        for (Placement placement : PLACEMENTS) {
+        for (Placement placement : ALL_PLACEMENTS) {
             BuildingTemplate template = template(placement.resource);
             if (!placement.intersects(chunk, template)) continue;
             pasteClipped(plan, level, chunk, template, placement);
@@ -105,7 +124,36 @@ public final class ExternalDistrictBuildingBuilder {
     }
 
     public static int landmarkCount() {
-        return PLACEMENTS.size();
+        return LANDMARK_PLACEMENTS.size();
+    }
+
+    public static int residentialBlockCount() {
+        return RESIDENTIAL_PLACEMENTS.size();
+    }
+
+    public static List<BuildingEntrance> entrances() {
+        List<BuildingEntrance> result = cachedEntrances;
+        if (result != null) return result;
+        synchronized (ExternalDistrictBuildingBuilder.class) {
+            result = cachedEntrances;
+            if (result == null) {
+                result = List.copyOf(computeEntrances());
+                cachedEntrances = result;
+                LivingKingdoms.LOGGER.info(
+                        "Prepared Erden building access anchors entrances={} landmarks={} residential_blocks={}",
+                        result.size(), landmarkCount(), residentialBlockCount()
+                );
+            }
+            return result;
+        }
+    }
+
+    private static List<Placement> combinePlacements() {
+        List<Placement> placements = new ArrayList<>(
+                LANDMARK_PLACEMENTS.size() + RESIDENTIAL_PLACEMENTS.size());
+        placements.addAll(LANDMARK_PLACEMENTS);
+        placements.addAll(RESIDENTIAL_PLACEMENTS);
+        return List.copyOf(placements);
     }
 
     private static BuildingTemplate template(String resource) {
@@ -171,18 +219,40 @@ public final class ExternalDistrictBuildingBuilder {
                     block.state
             ));
         }
+        int templateWidth = maxX - minX + 1;
+        int templateHeight = maxY - minY + 1;
+        int templateLength = maxZ - minZ + 1;
+        List<BuildingBlock> entrances = findEntranceBlocks(
+                blocks, templateWidth, templateLength);
         BuildingTemplate template = new BuildingTemplate(
-                maxX - minX + 1,
-                maxY - minY + 1,
-                maxZ - minZ + 1,
-                List.copyOf(blocks)
+                templateWidth, templateHeight, templateLength,
+                List.copyOf(blocks), entrances
         );
         LivingKingdoms.LOGGER.info(
-                "Prepared external district building resource={} blocks={} dimensions={}x{}x{} discarded={}",
+                "Prepared external district building resource={} blocks={} dimensions={}x{}x{} entrances={} discarded={}",
                 resource, blocks.size(), template.width, template.height, template.length,
-                candidates.cardinality() - retained.cardinality()
+                entrances.size(), candidates.cardinality() - retained.cardinality()
         );
         return template;
+    }
+
+    private static List<BuildingBlock> findEntranceBlocks(List<BuildingBlock> blocks,
+                                                           int width, int length) {
+        List<BuildingBlock> doors = new ArrayList<>();
+        for (BuildingBlock block : blocks) {
+            String id = BuiltInRegistries.BLOCK.getKey(block.state.getBlock()).toString();
+            if (id.endsWith("_door") && !id.endsWith("_trapdoor")) doors.add(block);
+        }
+        if (doors.isEmpty()) return List.of();
+        int lowest = doors.stream().mapToInt(BuildingBlock::y).min().orElse(0);
+        List<BuildingBlock> lowDoors = doors.stream()
+                .filter(block -> block.y <= lowest + 1)
+                .toList();
+        List<BuildingBlock> edgeDoors = lowDoors.stream()
+                .filter(block -> block.x <= 4 || block.x >= width - 5
+                        || block.z <= 4 || block.z >= length - 5)
+                .toList();
+        return edgeDoors.isEmpty() ? List.copyOf(lowDoors) : List.copyOf(edgeDoors);
     }
 
     private static void pasteClipped(IncrementalWorldEditPlan plan, ServerLevel level,
@@ -227,6 +297,115 @@ public final class ExternalDistrictBuildingBuilder {
         for (PlacedBlock block : placed) {
             plan.addSet(block.x, block.y, block.z, block.state);
         }
+    }
+
+    private static List<BuildingEntrance> computeEntrances() {
+        List<BuildingEntrance> result = new ArrayList<>();
+        for (Placement placement : ALL_PLACEMENTS) {
+            BuildingEntrance entrance = locateEntrance(placement, template(placement.resource));
+            if (entrance != null) result.add(entrance);
+        }
+        return result;
+    }
+
+    private static BuildingEntrance locateEntrance(Placement placement, BuildingTemplate template) {
+        int rotatedWidth = placement.rotatedWidth(template);
+        int rotatedLength = placement.rotatedLength(template);
+        int originX = placement.centerX - rotatedWidth / 2;
+        int originZ = placement.centerZ - rotatedLength / 2;
+        List<BuildingBlock> candidates = template.entrances;
+        List<RotatedOffset> fallback = candidates.isEmpty()
+                ? List.of(
+                        new RotatedOffset(template.width / 2, 0),
+                        new RotatedOffset(template.width / 2, template.length - 1),
+                        new RotatedOffset(0, template.length / 2),
+                        new RotatedOffset(template.width - 1, template.length / 2)
+                )
+                : List.of();
+
+        BuildingEntrance best = null;
+        int bestDistance = Integer.MAX_VALUE;
+        if (!candidates.isEmpty()) {
+            for (BuildingBlock candidate : candidates) {
+                RotatedOffset offset = rotate(candidate.x, candidate.z,
+                        template.width, template.length, placement.rotation);
+                BuildingEntrance entrance = entranceForPoint(
+                        placement, originX + offset.x, originZ + offset.z,
+                        originX, originZ, rotatedWidth, rotatedLength);
+                if (entrance == null) continue;
+                int distance = Math.abs(entrance.roadX - entrance.x)
+                        + Math.abs(entrance.roadZ - entrance.z);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    best = entrance;
+                }
+            }
+        } else {
+            for (RotatedOffset local : fallback) {
+                RotatedOffset offset = rotate(local.x, local.z,
+                        template.width, template.length, placement.rotation);
+                BuildingEntrance entrance = entranceForPoint(
+                        placement, originX + offset.x, originZ + offset.z,
+                        originX, originZ, rotatedWidth, rotatedLength);
+                if (entrance == null) continue;
+                int distance = Math.abs(entrance.roadX - entrance.x)
+                        + Math.abs(entrance.roadZ - entrance.z);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    best = entrance;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static BuildingEntrance entranceForPoint(Placement placement, int x, int z,
+                                                       int buildingMinX, int buildingMinZ,
+                                                       int buildingWidth, int buildingLength) {
+        RoadTarget road = nearestRoad(
+                x, z, buildingMinX, buildingMinZ,
+                buildingMinX + buildingWidth - 1,
+                buildingMinZ + buildingLength - 1
+        );
+        if (road == null) return null;
+        return new BuildingEntrance(
+                placement.role, x, z, road.x, road.z,
+                placement.role.startsWith("residential_")
+        );
+    }
+
+    private static RoadTarget nearestRoad(int x, int z,
+                                          int buildingMinX, int buildingMinZ,
+                                          int buildingMaxX, int buildingMaxZ) {
+        for (int radius = 1; radius <= 112; radius++) {
+            for (int offset = -radius; offset <= radius; offset++) {
+                RoadTarget top = roadTarget(x + offset, z - radius,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
+                if (top != null) return top;
+                RoadTarget bottom = roadTarget(x + offset, z + radius,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
+                if (bottom != null) return bottom;
+            }
+            for (int offset = -radius + 1; offset < radius; offset++) {
+                RoadTarget left = roadTarget(x - radius, z + offset,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
+                if (left != null) return left;
+                RoadTarget right = roadTarget(x + radius, z + offset,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
+                if (right != null) return right;
+            }
+        }
+        return null;
+    }
+
+    private static RoadTarget roadTarget(int x, int z,
+                                         int buildingMinX, int buildingMinZ,
+                                         int buildingMaxX, int buildingMaxZ) {
+        if (x >= buildingMinX - 1 && x <= buildingMaxX + 1
+                && z >= buildingMinZ - 1 && z <= buildingMaxZ + 1) return null;
+        return ErdenCapitalStreamingBuilder.roadClassAt(x, z)
+                == ErdenCapitalStreamingBuilder.RoadClass.NONE
+                ? null : new RoadTarget(x, z);
     }
 
     private static BitSet retainStructuralComponents(BitSet candidates,
@@ -327,7 +506,8 @@ public final class ExternalDistrictBuildingBuilder {
     }
 
     private record BuildingTemplate(int width, int height, int length,
-                                    List<BuildingBlock> blocks) {
+                                    List<BuildingBlock> blocks,
+                                    List<BuildingBlock> entrances) {
     }
 
     private record RawBlock(int x, int y, int z, BlockState state) {
@@ -342,10 +522,12 @@ public final class ExternalDistrictBuildingBuilder {
             return rotation == Rotation.CLOCKWISE_90 || rotation == Rotation.COUNTERCLOCKWISE_90
                     ? template.length : template.width;
         }
+
         int rotatedLength(BuildingTemplate template) {
             return rotation == Rotation.CLOCKWISE_90 || rotation == Rotation.COUNTERCLOCKWISE_90
                     ? template.width : template.length;
         }
+
         boolean intersects(ChunkPos chunk, BuildingTemplate template) {
             int width = rotatedWidth(template);
             int length = rotatedLength(template);
@@ -358,7 +540,14 @@ public final class ExternalDistrictBuildingBuilder {
         }
     }
 
+    public record BuildingEntrance(String role, int x, int z,
+                                   int roadX, int roadZ, boolean residential) {
+    }
+
     private record RotatedOffset(int x, int z) {
+    }
+
+    private record RoadTarget(int x, int z) {
     }
 
     private record PlacedBlock(int x, int y, int z, BlockState state) {
