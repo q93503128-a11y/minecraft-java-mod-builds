@@ -204,7 +204,7 @@ public final class VillageRoleSkillSystem {
     public static String loadoutSummary(ServerPlayer player) {
         String first = equippedSkill(player, 0).map(ActiveSkill::displayName).orElse("비어 있음");
         String second = equippedSkill(player, 1).map(ActiveSkill::displayName).orElse("비어 있음");
-        return "R: " + first + " | G: " + second;
+        return "Z: " + first + " | X: " + second;
     }
 
     public static List<ActiveSkill> skillsFor(VillageRole role) {

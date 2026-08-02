@@ -46,10 +46,14 @@ def main() -> None:
     assert "VillageDefenseResearchSystem.MAX_LEVEL" in research_data
     assert '"/" + VillageDefenseResearchSystem.MAX_LEVEL' in controller
 
-    assert "double distance = 92.0" in common_ui
-    assert "savedZoom = 0.82" in common_ui
-    assert "double y = -tier * 88.0" in role_ui
-    assert "savedZoom = 0.86" in role_ui
+    assert "double distance = 86.0" in common_ui
+    assert "savedZoom = 0.74" in common_ui
+    assert "double y = -tier * 76.0" in role_ui
+    assert "savedZoom = 0.74" in role_ui
+    assert "renderDetail" not in common_ui
+    assert "Bubble" in common_ui
+    assert "TreeBubble" in role_ui and "SkillBubble" in role_ui
+    assert "renderTreeFooter" not in role_ui and "renderSkillFooter" not in role_ui
     assert "ACTION_HEIGHT = 24" in shop_ui
     assert "* 24 / 100" in shop_ui
     assert "ChatFormatting.stripFormatting" in shop_ui

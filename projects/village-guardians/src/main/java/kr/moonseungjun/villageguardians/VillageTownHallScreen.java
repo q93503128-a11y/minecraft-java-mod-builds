@@ -15,10 +15,10 @@ import java.util.List;
 public final class VillageTownHallScreen extends Screen {
     private static final String SEP = "\u001F";
     private static final int OVERLAY = 0x65000000;
-    private static final int PANEL = 0xFFF1E6CF;
-    private static final int SURFACE = 0xFFFFFAEE;
-    private static final int SURFACE_ALT = 0xFFE9DCC1;
-    private static final int SELECTED = 0xFFFFE1A2;
+    private static final int PANEL = 0xFFE4D8BF;
+    private static final int SURFACE = 0xFFF1E9D7;
+    private static final int SURFACE_ALT = 0xFFD8CBB1;
+    private static final int SELECTED = 0xFFE1C98F;
     private static final int BORDER = 0xFF6F5B43;
     private static final int TEXT = 0xFF211A14;
     private static final int MUTED = 0xFF62584D;
@@ -28,9 +28,9 @@ public final class VillageTownHallScreen extends Screen {
     private static final int BLUE = 0xFF466FA8;
     private static final int PURPLE = 0xFF74509A;
     private static final int GREEN = 0xFF39764F;
-    private static final int CARD_HEIGHT = 36;
-    private static final int CARD_GAP = 4;
-    private static final int ACTION_HEIGHT = 24;
+    private static final int CARD_HEIGHT = 30;
+    private static final int CARD_GAP = 3;
+    private static final int ACTION_HEIGHT = 20;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final List<RoleCard> roles = new ArrayList<>();
@@ -95,7 +95,7 @@ public final class VillageTownHallScreen extends Screen {
                 close ? 0xFFE2AAAA : SURFACE_ALT);
         graphics.centeredText(font, "×", closeX + 13, layout.top() + 16, close ? RED : TEXT);
 
-        int tabY = layout.top() + 43;
+        int tabY = layout.top() + 40;
         int gap = 5;
         int total = layout.width() - 32;
         int tabWidth = (total - gap * 2) / 3;
@@ -109,10 +109,10 @@ public final class VillageTownHallScreen extends Screen {
     private void drawTab(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
                          int x, int y, int width, Tab value) {
         boolean active = tab == value;
-        boolean hovered = inside(mouseX, mouseY, x, y, width, 23);
-        graphics.fill(x - 1, y - 1, x + width + 1, y + 24, active ? value.accent() : BORDER);
-        graphics.fill(x, y, x + width, y + 23, active ? SELECTED : hovered ? SURFACE : SURFACE_ALT);
-        graphics.centeredText(font, value.displayName(), x + width / 2, y + 7, active ? TEXT : MUTED);
+        boolean hovered = inside(mouseX, mouseY, x, y, width, 18);
+        graphics.fill(x - 1, y - 1, x + width + 1, y + 19, active ? value.accent() : BORDER);
+        graphics.fill(x, y, x + width, y + 18, active ? SELECTED : hovered ? SURFACE : SURFACE_ALT);
+        graphics.centeredText(font, value.displayName(), x + width / 2, y + 5, active ? TEXT : MUTED);
     }
 
     private void renderRoleList(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Pane pane) {
@@ -132,7 +132,7 @@ public final class VillageTownHallScreen extends Screen {
             card(graphics, x, y, w, selected, hovered, accent);
             graphics.text(font, compact(role.name(), Math.max(10, w / 6)), x + 11, y + 7, TEXT, false);
             graphics.text(font, role.current() ? "현재" : "선택",
-                    x + 11, y + 22, role.current() ? TEAL : MUTED, false);
+                    x + 11, y + 18, role.current() ? TEAL : MUTED, false);
             y += CARD_HEIGHT + CARD_GAP;
         }
         graphics.disableScissor();
@@ -159,13 +159,13 @@ public final class VillageTownHallScreen extends Screen {
             String state = tab == Tab.REPAIR
                     ? facility.hp() + "/" + facility.maxHp()
                     : facility.level();
-            graphics.text(font, compact(state, Math.max(9, w / 6)), x + 11, y + 20, MUTED, false);
+            graphics.text(font, compact(state, Math.max(9, w / 6)), x + 11, y + 17, MUTED, false);
             int barLeft = x + 11;
             int barRight = x + w - 8;
-            graphics.fill(barLeft, y + 30, barRight, y + 33, 0xFFC6B79D);
+            graphics.fill(barLeft, y + 25, barRight, y + 28, 0xFFC6B79D);
             int fill = facility.maxHp() <= 0 ? 0
                     : Math.round((barRight - barLeft) * facility.hp() / (float) facility.maxHp());
-            graphics.fill(barLeft, y + 30, barLeft + Math.max(0, fill), y + 33, accent);
+            graphics.fill(barLeft, y + 25, barLeft + Math.max(0, fill), y + 28, accent);
             y += CARD_HEIGHT + CARD_GAP;
         }
         graphics.disableScissor();
@@ -277,18 +277,18 @@ public final class VillageTownHallScreen extends Screen {
     private List<DetailLine> sectionLines(List<Section> sections, int width) {
         List<DetailLine> lines = new ArrayList<>();
         for (Section section : sections) {
-            int gap = lines.isEmpty() ? 0 : 7;
+            int gap = lines.isEmpty() ? 0 : 5;
             List<FormattedCharSequence> title = font.split(Component.literal(plain(section.title())), width);
             boolean first = true;
             for (FormattedCharSequence line : title) {
-                lines.add(new DetailLine(line, section.color(), section.major() ? 16 : 13, first ? gap : 0));
+                lines.add(new DetailLine(line, section.color(), section.major() ? 13 : 11, first ? gap : 0));
                 first = false;
             }
             if (!section.body().isBlank()) {
                 List<FormattedCharSequence> body = font.split(Component.literal(plain(section.body())), width);
                 first = true;
                 for (FormattedCharSequence line : body) {
-                    lines.add(new DetailLine(line, TEXT, 13, first ? 2 : 0));
+                    lines.add(new DetailLine(line, TEXT, 11, first ? 2 : 0));
                     first = false;
                 }
             }
@@ -308,7 +308,7 @@ public final class VillageTownHallScreen extends Screen {
             graphics.fill(bound.x(), bound.y(), bound.x() + bound.width(), bound.y() + ACTION_HEIGHT,
                     hovered ? 0xFFFFE8B5 : SELECTED);
             graphics.centeredText(font, compact(button.label(), Math.max(10, bound.width() / 6)),
-                    bound.x() + bound.width() / 2, bound.y() + 7, TEXT);
+                    bound.x() + bound.width() / 2, bound.y() + 5, TEXT);
         }
     }
 
@@ -316,7 +316,7 @@ public final class VillageTownHallScreen extends Screen {
         if (buttons.isEmpty()) return List.of();
         int gap = 6;
         int available = pane.width() - 32;
-        int width = Math.min(142, Math.max(82, (available - gap * (buttons.size() - 1)) / buttons.size()));
+        int width = Math.min(112, Math.max(72, (available - gap * (buttons.size() - 1)) / buttons.size()));
         int total = width * buttons.size() + gap * (buttons.size() - 1);
         int x = pane.right() - 16 - total;
         List<ButtonBounds> result = new ArrayList<>();
@@ -335,12 +335,12 @@ public final class VillageTownHallScreen extends Screen {
             onClose();
             return true;
         }
-        int tabY = layout.top() + 43;
+        int tabY = layout.top() + 40;
         int gap = 5;
         int tabWidth = (layout.width() - 32 - gap * 2) / 3;
         int x = layout.left() + 16;
         for (Tab value : Tab.values()) {
-            if (inside(click.x(), click.y(), x, tabY, tabWidth, 23)) {
+            if (inside(click.x(), click.y(), x, tabY, tabWidth, 18)) {
                 tab = value;
                 listScroll = 0;
                 detailScroll = 0;
@@ -479,7 +479,7 @@ public final class VillageTownHallScreen extends Screen {
     private Split split(Layout layout) {
         int left = layout.left() + 15;
         int right = layout.right() - 15;
-        int top = layout.top() + 76;
+        int top = layout.top() + 64;
         int bottom = layout.bottom() - 13;
         int listWidth = clamp((right - left) * 24 / 100, 125, 205);
         return new Split(new Pane(left, top, left + listWidth, bottom),

@@ -380,7 +380,6 @@ public final class VillageUiService {
             return;
         }
         if (action.startsWith("role_skill_equip:")) {
-            if (!requireSkillHall(player, "기술 장착은 기술 연구소에서만 가능합니다.")) return;
             String[] parts = action.split(":", 3);
             if (parts.length == 3) {
                 int slot;

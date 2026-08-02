@@ -15,19 +15,19 @@ import java.util.List;
 public final class VillageFacilityScreen extends Screen {
     private static final String SEP = "\u001F";
     private static final int OVERLAY = 0x65000000;
-    private static final int PANEL = 0xFFF1E6CF;
-    private static final int SURFACE = 0xFFFFFAEE;
-    private static final int SURFACE_ALT = 0xFFE9DCC1;
-    private static final int SELECTED = 0xFFFFE1A2;
+    private static final int PANEL = 0xFFE4D8BF;
+    private static final int SURFACE = 0xFFF1E9D7;
+    private static final int SURFACE_ALT = 0xFFD8CBB1;
+    private static final int SELECTED = 0xFFE1C98F;
     private static final int BORDER = 0xFF6F5B43;
     private static final int TEXT = 0xFF211A14;
     private static final int MUTED = 0xFF62584D;
     private static final int TEAL = 0xFF267E73;
     private static final int GOLD = 0xFFB87B20;
     private static final int RED = 0xFFAA4545;
-    private static final int CARD_HEIGHT = 36;
-    private static final int CARD_GAP = 4;
-    private static final int ACTION_HEIGHT = 24;
+    private static final int CARD_HEIGHT = 30;
+    private static final int CARD_GAP = 3;
+    private static final int ACTION_HEIGHT = 20;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final String[] actions;
@@ -110,7 +110,7 @@ public final class VillageFacilityScreen extends Screen {
             String[] parts = labelParts(labels[index]);
             graphics.text(font, compact(parts[0], Math.max(9, cardWidth / 6)), x + 10, y + 6, TEXT, false);
             List<FormattedCharSequence> lines = font.split(Component.literal(plain(parts[1])), Math.max(60, cardWidth - 19));
-            if (!lines.isEmpty()) graphics.text(font, lines.getFirst(), x + 10, y + 21, MUTED, false);
+            if (!lines.isEmpty()) graphics.text(font, lines.getFirst(), x + 10, y + 18, MUTED, false);
         }
         graphics.disableScissor();
         scrollbar(graphics, areas.listRight() - 5, listTop + 3, areas.listBottom() - 5,
@@ -121,7 +121,7 @@ public final class VillageFacilityScreen extends Screen {
         panel(graphics, areas.detailLeft(), areas.detailTop(), areas.detailRight(), areas.detailBottom(), SURFACE);
         int textLeft = areas.detailLeft() + 15;
         int textRight = areas.detailRight() - 15;
-        int buttonWidth = selectedIndex >= 0 ? Math.min(142, Math.max(86, areas.detailWidth() / 3)) : 0;
+        int buttonWidth = selectedIndex >= 0 ? Math.min(108, Math.max(70, areas.detailWidth() / 4)) : 0;
         int buttonLeft = textRight - buttonWidth;
         int buttonTop = areas.detailBottom() - ACTION_HEIGHT - 11;
         int textTop = areas.detailTop() + 13;
@@ -156,26 +156,26 @@ public final class VillageFacilityScreen extends Screen {
                 hovered ? 0xFFFFE8B5 : SELECTED);
         graphics.centeredText(font,
                 compact(VillageActionDescriptions.executeLabel(actions[selectedIndex]), Math.max(9, buttonWidth / 6)),
-                buttonLeft + buttonWidth / 2, buttonTop + 7, TEXT);
+                buttonLeft + buttonWidth / 2, buttonTop + 5, TEXT);
     }
 
     private List<DetailLine> detailLines(int width) {
         List<DetailLine> result = new ArrayList<>();
         if (selectedIndex >= 0) {
             String[] parts = labelParts(labels[selectedIndex]);
-            addWrapped(result, parts[0], width, accent(), 16, 0);
-            if (!parts[1].isBlank()) addWrapped(result, parts[1], width, TEXT, 13, 3);
+            addWrapped(result, parts[0], width, accent(), 13, 0);
+            if (!parts[1].isBlank()) addWrapped(result, parts[1], width, TEXT, 11, 2);
             addWrapped(result, VillageActionDescriptions.describe(actions[selectedIndex], parts[0]),
-                    width, MUTED, 13, 8);
+                    width, MUTED, 11, 5);
         }
         if (!payload.body().isBlank()) {
-            addWrapped(result, "현재 정보", width, accent(), 13, 10);
+            addWrapped(result, "현재 정보", width, accent(), 11, 7);
             for (String paragraph : plain(payload.body()).split("\n", -1)) {
                 if (paragraph.isBlank()) result.add(new DetailLine(FormattedCharSequence.EMPTY, TEXT, 7, 0));
-                else addWrapped(result, paragraph, width, TEXT, 13, 0);
+                else addWrapped(result, paragraph, width, TEXT, 11, 0);
             }
         }
-        if (result.isEmpty()) addWrapped(result, "표시할 정보가 없습니다.", width, MUTED, 13, 0);
+        if (result.isEmpty()) addWrapped(result, "표시할 정보가 없습니다.", width, MUTED, 11, 0);
         return result;
     }
 
@@ -210,7 +210,7 @@ public final class VillageFacilityScreen extends Screen {
             }
         }
         if (selectedIndex >= 0) {
-            int buttonWidth = Math.min(142, Math.max(86, areas.detailWidth() / 3));
+            int buttonWidth = Math.min(108, Math.max(70, areas.detailWidth() / 4));
             int buttonLeft = areas.detailRight() - 15 - buttonWidth;
             int buttonTop = areas.detailBottom() - ACTION_HEIGHT - 11;
             if (inside(click.x(), click.y(), buttonLeft, buttonTop, buttonWidth, ACTION_HEIGHT)) {
@@ -276,7 +276,7 @@ public final class VillageFacilityScreen extends Screen {
     private Areas areas(Layout layout) {
         int left = layout.left() + 14;
         int right = layout.right() - 14;
-        int top = layout.top() + 48;
+        int top = layout.top() + 43;
         int bottom = layout.bottom() - 12;
         int contentWidth = right - left;
         if (contentWidth >= 340) {

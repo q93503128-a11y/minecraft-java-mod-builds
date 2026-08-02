@@ -30,10 +30,10 @@ final class VillageActionDescriptions {
             return label + "\n기술 연구소에서 요구 레벨과 수호 주화를 지불해 직업 성장 효과를 습득합니다.";
         }
         if (action.startsWith("role_skill_unlock:")) {
-            return label + "\n요구 레벨과 수호 주화를 사용해 직업 기술을 습득합니다.";
+            return label + "\n기술 연구소에서 요구 레벨과 수호 주화를 사용해 습득합니다.";
         }
         if (action.startsWith("role_skill_equip:")) {
-            return label + "\n습득한 기술을 R 또는 G 슬롯에 장착합니다.";
+            return label + "\n습득한 기술을 어디서나 Z 또는 X 슬롯에 장착합니다.";
         }
         if (action.startsWith("gear:")) {
             return label + "\n수호 주화로 장비를 구매합니다. 강한 상품은 방어 일수에 따라 입고됩니다.";

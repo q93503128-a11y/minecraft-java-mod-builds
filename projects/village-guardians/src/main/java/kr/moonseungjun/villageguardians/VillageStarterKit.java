@@ -39,7 +39,7 @@ public final class VillageStarterKit {
         if (firstNotice) {
             player.sendSystemMessage(Component.literal(
                     "§6[수호단 조작] §f호출기는 인벤토리 화면의 전용 버튼에서 엽니다. "
-                            + "I 상태 · P 개인 성장 · O 직업 성장 · V 호출기 · C 빠른 통신 · R/G 기술"));
+                            + "H 상태 · J 성장 · K 직업 성장 · U 호출기 · B 빠른 통신 · Z/X 기술"));
         } else if (removed) {
             player.sendSystemMessage(Component.literal(
                     "§e기존 호출기 아이템을 제거했습니다. 인벤토리 화면의 호출기 버튼을 사용하세요."));

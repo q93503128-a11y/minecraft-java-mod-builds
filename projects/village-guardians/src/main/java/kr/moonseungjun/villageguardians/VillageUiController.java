@@ -60,16 +60,16 @@ public final class VillageUiController {
                 + "직업 " + (role == null ? "미배치" : role.displayName()) + " · 주화 "
                 + VillageProgressionSystem.coins(player) + " · 보급품 " + VillageProgressionSystem.supplies() + "\n"
                 + VillageRaidSystem.status() + "\n\n"
-                + "단축키: I 상태 · P 개인 성장 · O 직업 성장 · V 호출기 · C 빠른 통신 · R/G 기술";
+                + "단축키: H 상태 · J 성장 · K 직업 성장 · U 호출기 · B 빠른 통신 · Z/X 기술";
         send(player, "caller", "마을 수호단 호출기", body,
-                List.of("open_status", "open_personal_progress", "open_role_progress_current",
+                List.of("open_status", "open_skill_tree", "open_role_progress_current",
                         "open_wave_intel", "open_quick_chat", "return_village"),
                 List.of(
-                        "상태 (I)|현재 전투 상태와 재화 확인",
-                        "개인 성장 (P)|개인 전술과 장비 숙련 강화",
-                        "직업 성장 (O)|현재 직업의 세 갈래 성장 확인",
+                        "상태 (H)|현재 전투 상태와 재화 확인",
+                        "성장 (J)|공용 전술 성장 트리 바로 열기",
+                        "직업 성장 (K)|현재 직업의 세 갈래 성장 확인",
                         "다음 웨이브 정보|예상 병과·특성·보스 정찰",
-                        "빠른 통신 (C)|접속 중인 수호단에게 즉시 신호",
+                        "빠른 통신 (B)|접속 중인 수호단에게 즉시 신호",
                         "마을 귀환|전투 중이 아닐 때 중앙 광장으로 귀환"));
     }
 
@@ -86,24 +86,12 @@ public final class VillageUiController {
                 + " · 공동 보급품 " + VillageProgressionSystem.supplies() + "\n"
                 + "마을  제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName() + " · " + VillageRaidSystem.status() + "\n"
-                + "I 상태 · P 개인 성장 · O 직업 성장 · V 호출기 · C 통신 · R/G 기술";
+                + "H 상태 · J 성장 · K 직업 성장 · U 호출기 · B 통신 · Z/X 기술";
         send(player, "status", "수호자 상태", body, List.of(), List.of());
     }
 
     public static void openPersonalProgress(ServerPlayer player) {
-        int forge = VillageProgressionSystem.forgeRank(player);
-        int nextCost = 80 + forge * 100;
-        String forgeLabel = forge >= VillageProgressionSystem.MAX_PERSONAL_RANK
-                ? "장비 숙련 최고 단계|추가 강화 없음"
-                : "장비 숙련 +" + (forge + 1) + " · 주화 " + nextCost
-                + "|근접·원거리 장비 피해 보정 강화";
-        send(player, "caller", "개인 성장", "어디서나 개인 성장 상태를 확인하고 강화할 수 있습니다.\n"
-                        + "주화 " + VillageProgressionSystem.coins(player)
-                        + " · 장비 숙련 +" + forge
-                        + " · 전술 포인트 " + VillageSkillTreeSystem.availablePoints(player) + "P",
-                List.of("open_skill_tree", "forge_upgrade", "open_status"),
-                List.of("개인 전술 발전|연결형 전술 트리 열기", forgeLabel,
-                        "상태로 돌아가기|현재 능력과 재화 확인"));
+        openSkillTree(player);
     }
 
     public static void openSkillTree(ServerPlayer player) {
@@ -117,7 +105,7 @@ public final class VillageUiController {
         String body = "사용 가능 " + VillageSkillTreeSystem.availablePoints(player)
                 + "P · 획득 " + VillageSkillTreeSystem.earnedPoints(player)
                 + "P · 드래그 이동 · 휠 확대/축소";
-        send(player, "skill_tree", "개인 전술 발전", body, actions, labels);
+        send(player, "skill_tree", "성장", body, actions, labels);
     }
 
     public static void openRoleProgress(ServerPlayer player) {
@@ -151,7 +139,7 @@ public final class VillageUiController {
         String summary = "Lv." + VillageCouncilState.levelOf(player.getUUID())
                 + " · 주화 " + VillageProgressionSystem.coins(player)
                 + " · " + VillageRoleSkillSystem.loadoutSummary(player)
-                + " · 성장 노드는 어디서나, 기술 습득·장착은 연구소에서";
+                + " · 성장 노드는 어디서나 · 기술 습득은 연구소 · 장착은 어디서나";
         send(player, "role_progress", role.displayName() + " 성장",
                 role.id() + "|" + role.displayName() + "|" + summary, actions, labels);
     }
@@ -321,8 +309,12 @@ public final class VillageUiController {
             case "open_mercenary_command" -> openMercenaryCommand(player);
             case "open_defense_research" -> openDefenseResearch(player);
             case "forge_upgrade" -> {
-                player.sendSystemMessage(Component.literal("§e" + VillageProgressionSystem.improveForgeRank(player)));
-                openPersonalProgress(player);
+                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {
+                    player.sendSystemMessage(Component.literal("§c장비 강화는 대장간 단말기 근처에서만 가능합니다."));
+                } else {
+                    player.sendSystemMessage(Component.literal("§e" + VillageProgressionSystem.improveForgeRank(player)));
+                    openBuilding(player, VillageProgressionSystem.Building.SMITHY);
+                }
             }
             case "smithy_forge_upgrade" -> {
                 if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {

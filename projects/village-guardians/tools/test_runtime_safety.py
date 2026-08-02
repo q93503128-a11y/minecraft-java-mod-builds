@@ -55,9 +55,9 @@ def main() -> None:
     assert "listLeft" in facility_ui and "detailLeft" in facility_ui
     assert "selectedIndex = actionCount() > 0 ? 0 : -1" in facility_ui
     assert "PANEL = 0xFFF1E6CF" in facility_ui
-    assert "CARD_HEIGHT = 36" in facility_ui
-    assert "ACTION_HEIGHT = 24" in facility_ui
-    assert "Math.min(142" in facility_ui
+    assert "CARD_HEIGHT = 30" in facility_ui
+    assert "ACTION_HEIGHT = 20" in facility_ui
+    assert "Math.min(108" in facility_ui
     assert "contentWidth >= 340" in facility_ui
     assert "ChatFormatting.stripFormatting" in facility_ui
 
@@ -69,9 +69,9 @@ def main() -> None:
     assert '"open_tower_control"' in town_ui
     assert "다음 단계 변화" in town_ui
     assert "강화 비용" in town_ui
-    assert "CARD_HEIGHT = 36" in town_ui
+    assert "CARD_HEIGHT = 30" in town_ui
     assert "* 24 / 100" in town_ui
-    assert "Math.min(142" in town_ui
+    assert "Math.min(112" in town_ui
 
     assert "mouseScrolled" not in status_ui
     assert "drawScrollbar" not in status_ui
@@ -89,11 +89,11 @@ def main() -> None:
     assert "VillageRelicSystem" in shop
 
     assert '"open_status"' in inventory
-    assert '"open_personal_progress"' in inventory
+    assert '"open_skill_tree"' in inventory
     assert '"open_role_progress_current"' in inventory
     assert '"open_caller_menu"' in inventory
-    assert "C 통신 · R/G 기술" in inventory
-    for key in ("GLFW_KEY_I", "GLFW_KEY_P", "GLFW_KEY_O", "GLFW_KEY_V", "GLFW_KEY_C"):
+    assert "B 통신 · Z/X 기술" in inventory
+    for key in ("GLFW_KEY_Z", "GLFW_KEY_X", "GLFW_KEY_B", "GLFW_KEY_H", "GLFW_KEY_J", "GLFW_KEY_K", "GLFW_KEY_U"):
         assert key in keys
 
     assert "claim_bread" not in controller
@@ -109,6 +109,14 @@ def main() -> None:
     assert 'case "smithy_forge_upgrade"' in controller
     assert '"smithy_forge_upgrade"' in controller
     assert "개인 장비 피해 보정 강화" in controller
+    assert "openPersonalProgress(ServerPlayer player)" in controller
+    assert "openSkillTree(player);" in controller
+    assert "장비 강화는 대장간 단말기 근처에서만 가능합니다." in controller
+    assert "기술 장착은 기술 연구소에서만 가능합니다." not in read("VillageUiService.java")
+    assert "직업 기술 습득은 기술 연구소에서만 가능합니다." in read("VillageUiService.java")
+    assert "TreeBubble" in read("VillageRoleProgressScreen.java")
+    assert "SkillBubble" in read("VillageRoleProgressScreen.java")
+    assert "renderDetail" not in read("VillageSkillTreeScreen.java")
     assert "forge_combine" in controller
     assert 'case "use_infirmary"' in local_actions
     assert 'case "train"' in local_actions
