@@ -1,0 +1,65 @@
+name: Inspect Village Guardians v0.17.3 UI Targets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.inspect-trigger-v0173'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan current UI and input code
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('projects/village-guardians')
+          out = Path('ci-results/village-guardians-v0173/ui-targets.txt')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          needles = [
+              '개인 성장', '상태로 돌아가기', '장비 숙련', '개인 F', 'C 통신',
+              'R/G 기술', 'role_skill_unlock', 'role_skill_equip', 'KeyMapping',
+              'InputConstants', 'GLFW', 'skill_hall', 'smithy', 'personal',
+              'VillageRoleProgressScreen', 'VillageSkillTreeScreen', 'VillageFacilityScreen'
+          ]
+          files = sorted([p for p in root.rglob('*') if p.is_file() and p.suffix in {'.java', '.json', '.toml', '.properties', '.py'}])
+          lines = []
+          for p in files:
+              try:
+                  text = p.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              matched = []
+              split = text.splitlines()
+              for i, line in enumerate(split, 1):
+                  if any(n.lower() in line.lower() for n in needles):
+                      lo = max(1, i - 3)
+                      hi = min(len(split), i + 3)
+                      context = '\n'.join(f'{j:04d}: {split[j-1]}' for j in range(lo, hi + 1))
+                      matched.append(context)
+              if matched:
+                  lines.append(f'===== {p.as_posix()} =====')
+                  lines.extend(matched)
+                  lines.append('')
+          out.write_text('\n'.join(lines), encoding='utf-8')
+          print(f'wrote {out} with {len(lines)} blocks')
+          PY
+      - name: Commit inspection report
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ci-results/village-guardians-v0173/ui-targets.txt
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record Village Guardians v0.17.3 UI targets'
+            git pull --rebase origin main
+            git push
+          fi
