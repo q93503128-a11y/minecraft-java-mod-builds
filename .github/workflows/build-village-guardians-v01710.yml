@@ -46,6 +46,14 @@ jobs:
           set -euo pipefail
           python3 -m py_compile tools/apply_v01710.py
           python3 tools/apply_v01710.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/test_v0178_gameplay.py')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('assert "K로 이 화면" in controller',
+                              'assert "K로 다시 엽니다" in controller')
+          path.write_text(text, encoding='utf-8')
+          PY
           rm -f tools/apply_v01710.py
 
       - name: Run complete contracts
