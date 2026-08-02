@@ -2,6 +2,8 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
@@ -185,11 +187,11 @@ public final class ErdenUrbanInteriorBuilder {
 
     private static void furnishTenement(
             IncrementalWorldEditPlan plan, ChunkPos chunk, InteriorRoom room) {
-        placeBed(plan, chunk, room, -room.halfWidth + 1, 5, Blocks.WHITE_BED);
-        placeBed(plan, chunk, room, room.halfWidth - 1, 5, Blocks.LIGHT_GRAY_BED);
+        placeBed(plan, chunk, room, -room.halfWidth + 1, 5, bed("white_bed"));
+        placeBed(plan, chunk, room, room.halfWidth - 1, 5, bed("light_gray_bed"));
         if (room.depth >= 10) {
-            placeBed(plan, chunk, room, -room.halfWidth + 1, 9, Blocks.BROWN_BED);
-            placeBed(plan, chunk, room, room.halfWidth - 1, 9, Blocks.GRAY_BED);
+            placeBed(plan, chunk, room, -room.halfWidth + 1, 9, bed("brown_bed"));
+            placeBed(plan, chunk, room, room.halfWidth - 1, 9, bed("gray_bed"));
         }
         place(plan, chunk, room, -room.halfWidth, 3, 1, Blocks.BARREL);
         place(plan, chunk, room, room.halfWidth, 3, 1, Blocks.BARREL);
@@ -224,8 +226,8 @@ public final class ErdenUrbanInteriorBuilder {
             IncrementalWorldEditPlan plan, ChunkPos chunk, InteriorRoom room) {
         placeTable(plan, chunk, room, -2, 4);
         placeTable(plan, chunk, room, 2, 4);
-        placeBed(plan, chunk, room, -room.halfWidth + 1, 8, Blocks.RED_BED);
-        placeBed(plan, chunk, room, room.halfWidth - 1, 8, Blocks.BLUE_BED);
+        placeBed(plan, chunk, room, -room.halfWidth + 1, 8, bed("red_bed"));
+        placeBed(plan, chunk, room, room.halfWidth - 1, 8, bed("blue_bed"));
         place(plan, chunk, room, -room.halfWidth, room.depth, 1, Blocks.BARREL);
         place(plan, chunk, room, room.halfWidth, room.depth, 1, Blocks.CHEST);
     }
@@ -294,6 +296,15 @@ public final class ErdenUrbanInteriorBuilder {
             InteriorRoom room, int lateral, int depth) {
         place(plan, chunk, room, lateral, depth, 1, Blocks.OAK_FENCE);
         place(plan, chunk, room, lateral, depth, 2, Blocks.OAK_PRESSURE_PLATE);
+    }
+
+    private static BedBlock bed(String path) {
+        Block block = BuiltInRegistries.BLOCK.getValue(
+                Identifier.fromNamespaceAndPath("minecraft", path));
+        if (!(block instanceof BedBlock bed)) {
+            throw new IllegalStateException("Missing Minecraft bed block minecraft:" + path);
+        }
+        return bed;
     }
 
     private static void placeBed(
