@@ -88,7 +88,7 @@ for obsolete in ("GameRules", "getSharedSpawnPos", "setDefaultSpawnPos", "setExh
         raise SystemExit(f"obsolete pre-26.2 world API remains: {obsolete}")
 need(network, [
     "PurchaseAcademyItemPayload.TYPE", "ChooseTraditionPayload.TYPE", '"academy"',
-    '"marks="', '"tradition="', '"charge_required="'
+    '"marks="', '"tradition="', '";charge_required="'
 ], "academy and cast-time network")
 need(screen, [
     'new Tab("academy", "학원")', "atlasCircle == 0", "circleCard(circle)",
