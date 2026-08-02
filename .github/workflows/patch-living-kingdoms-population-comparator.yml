@@ -1,0 +1,43 @@
+name: Patch Living Kingdoms population comparator
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-population-comparator.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply typed comparator patch
+        run: |
+          set -euo pipefail
+          path='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java'
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java')
+          text = path.read_text(encoding='utf-8')
+          old = '.min(Comparator.comparingLong(entrance -> distanceSquared('
+          new = '.min(Comparator.<ExternalUrbanFabricBuilder.UrbanEntrance>comparingLong(entrance -> distanceSquared('
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one comparator occurrence, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$path"
+          git commit -m 'Type Erden workplace distance comparator'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
