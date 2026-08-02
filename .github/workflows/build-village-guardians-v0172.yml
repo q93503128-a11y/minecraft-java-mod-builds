@@ -37,23 +37,7 @@ jobs:
       - name: Apply audited source patch
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          replacements = (
-              (Path('src/main/java/kr/moonseungjun/villageguardians/VillageSkillTreeScreen.java'),
-               'int top = Math.max(112, height - 88);',
-               'int top = Math.max(132, height - 108);'),
-              (Path('src/main/java/kr/moonseungjun/villageguardians/VillageShopScreen.java'),
-               'int listWidth = clamp((right - left) * 35 / 100, 190, 310);',
-               'int listWidth = clamp((right - left) * 24 / 100, 118, 198);'),
-          )
-          for path, old, new in replacements:
-              text = path.read_text(encoding='utf-8')
-              if old in text:
-                  path.write_text(text.replace(old, new), encoding='utf-8')
-              elif new not in text:
-                  raise RuntimeError(f'{path}: prepatch target missing')
-          PY
+          python3 tools/apply_v0172_compat_prepatch.py
           python3 tools/apply_v0172_progression_audit.py
 
       - name: Run complete contracts
