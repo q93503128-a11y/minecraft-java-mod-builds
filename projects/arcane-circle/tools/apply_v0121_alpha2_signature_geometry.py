@@ -10,7 +10,7 @@ JAVA = ROOT / "src/main/java/kr/moonseungjun/arcanecircle"
 TARGET = JAVA / "client/WorldMagicTracker.java"
 OLD_VERSION = "0.12.1-alpha.1"
 NEW_VERSION = "0.12.1-alpha.2"
-SOURCE_SHA256 = "f0791cb317960032ae36500128977cfc3fb7992d695899ebb4660b98cfbb9334"
+SOURCE_SHA256 = "d0ae2e22aae56be60b02c78b9f7ad66b5c0d3fa2e1f786b8b34cd46921e1b3c9"
 TOKENS = (
     "RELEASE_FRAME_NS", "meteorGeometry", "tornadoGeometry", "portalGeometry",
     "forceCageGeometry", "barrierWallGeometry", "barrierDomeGeometry",
