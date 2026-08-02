@@ -6,7 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-/** Compact front-facing crests. They never touch the roof or doorway opening. */
+/** Compact front-facing crests. Old crest space is rebuilt as facade instead of air. */
 final class VillageBuildingSignatures {
     private static final Block BACKDROP = Blocks.POLISHED_DEEPSLATE;
 
@@ -32,7 +32,10 @@ final class VillageBuildingSignatures {
         BlockPos anchor = entrance.relative(spec.entranceFacing().getOpposite()).above(4);
         Direction sideways = spec.entranceFacing().getClockWise();
 
-        clearPlane(level, anchor, sideways, 2, -1, 2); // remove the former oversized mark first
+        // The previous migration cleared a 5x4 plane to air and then filled only 3x3,
+        // which created the large hole visible above the entrance. Rebuild the full
+        // former mark as the original facade material before placing the small crest.
+        fillPlane(level, anchor, sideways, 2, -1, 2, spec.panel());
         buildBackdrop(level, anchor, sideways, 1, 0, 2);
         switch (building) {
             case TOWN_HALL -> buildCrown(level, anchor, sideways);
@@ -54,7 +57,7 @@ final class VillageBuildingSignatures {
         BlockPos origin = villageCenter.offset(spec.dx(), 0, spec.dz());
         BlockPos entrance = VillageBuildingCatalog.entrance(level, origin, spec);
         BlockPos anchor = entrance.relative(spec.entranceFacing().getOpposite()).above(4);
-        clearPlane(level, anchor, spec.entranceFacing().getClockWise(), 2, -1, 2);
+        fillPlane(level, anchor, spec.entranceFacing().getClockWise(), 2, -1, 2, spec.panel());
     }
 
     private static void buildCrown(ServerLevel level, BlockPos anchor, Direction side) {
@@ -121,20 +124,21 @@ final class VillageBuildingSignatures {
 
     private static void buildBackdrop(ServerLevel level, BlockPos anchor, Direction sideways,
                                       int halfWidth, int minVertical, int maxVertical) {
+        fillPlane(level, anchor, sideways, halfWidth, minVertical, maxVertical, BACKDROP);
+    }
+
+    private static void fillPlane(ServerLevel level, BlockPos anchor, Direction sideways,
+                                  int halfWidth, int minVertical, int maxVertical, Block block) {
         for (int lateral = -halfWidth; lateral <= halfWidth; lateral++) {
             for (int vertical = minVertical; vertical <= maxVertical; vertical++) {
-                mark(level, anchor, sideways, lateral, vertical, BACKDROP);
+                mark(level, anchor, sideways, lateral, vertical, block);
             }
         }
     }
 
     private static void clearPlane(ServerLevel level, BlockPos anchor, Direction sideways,
                                    int halfWidth, int minVertical, int maxVertical) {
-        for (int lateral = -halfWidth; lateral <= halfWidth; lateral++) {
-            for (int vertical = minVertical; vertical <= maxVertical; vertical++) {
-                mark(level, anchor, sideways, lateral, vertical, Blocks.AIR);
-            }
-        }
+        fillPlane(level, anchor, sideways, halfWidth, minVertical, maxVertical, Blocks.AIR);
     }
 
     private static void mark(ServerLevel level, BlockPos anchor, Direction sideways,
