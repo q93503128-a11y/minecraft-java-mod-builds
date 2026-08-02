@@ -1,0 +1,81 @@
+name: Publish corrected Countryside Days alpha.15 source
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cd-a15-publish-source.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Apply source fixes and create GameTest templates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import gzip, struct
+          root=Path('projects/countryside-days')
+
+          p=root/'src/main/java/kr/countrysidedays/gameplay/VillageLifeManager.java'
+          s=p.read_text('utf-8')
+          old='''        if (!(event.getEntity() instanceof ServerPlayer player)) return;\n        if (!(event.getLevel() instanceof ServerLevel level)) return;\n'''
+          new='''        ServerPlayer player = event.getEntity();\n        if (!(event.getLevel() instanceof ServerLevel level)) return;\n'''
+          if old in s: s=s.replace(old,new)
+          elif new not in s: raise SystemExit('VillageLifeManager target missing')
+          p.write_text(s,'utf-8')
+
+          targets=[
+            ('src/main/java/kr/countrysidedays/world/StarterHomesteadGenerator.java',
+             'origin.offset(PlayerEstateLayout.MIN_X - 4, -2, PlayerEstateLayout.MIN_Z - 4)',
+             'origin.offset(PlayerEstateLayout.MAX_X + 5, 12, PlayerEstateLayout.MAX_Z + 5)'),
+            ('src/main/java/kr/countrysidedays/world/PublicVillageExpansionBuilder.java',
+             'origin.offset(-MAP_HALF_WIDTH - 4, -2, -MAP_HALF_DEPTH - 4)',
+             'origin.offset(MAP_HALF_WIDTH + 5, 14, MAP_HALF_DEPTH + 5)')]
+          old_loop='''        for (ItemEntity item : new ArrayList<>(level.getEntities().getAll().stream()\n                .filter(ItemEntity.class::isInstance)\n                .map(ItemEntity.class::cast)\n                .toList())) {\n'''
+          for rel,lo,hi in targets:
+            p=root/rel; s=p.read_text('utf-8')
+            if 'import net.minecraft.world.phys.AABB;' not in s:
+              lines=s.splitlines(True)
+              idx=max(i for i,x in enumerate(lines) if x.startswith('import net.minecraft.world.level.block.state'))
+              lines.insert(idx+1,'import net.minecraft.world.phys.AABB;\n')
+              s=''.join(lines)
+            new_loop=f'''        AABB bounds = new AABB(\n                {lo},\n                {hi}\n        );\n        for (ItemEntity item : new ArrayList<>(level.getEntitiesOfClass(ItemEntity.class, bounds))) {{\n'''
+            if old_loop in s: s=s.replace(old_loop,new_loop)
+            elif new_loop not in s: raise SystemExit('debris target missing '+rel)
+            p.write_text(s,'utf-8')
+
+          p=root/'src/main/resources/data/countrysidedays/worldgen/biome/rural_plains.json'
+          s=p.read_text('utf-8').replace('minecraft:trees_birch_and_oak_leaf_litter','minecraft:trees_birch_and_oak')
+          p.write_text(s,'utf-8')
+
+          def u16(v):
+            b=v.encode('utf-8'); return struct.pack('>H',len(b))+b
+          def tag(t,n,p): return bytes([t])+u16(n)+p
+          def lst(t,items): return bytes([t])+struct.pack('>i',len(items))+b''.join(items)
+          def compound(items): return b''.join(items)+b'\x00'
+          palette=compound([tag(8,'Name',u16('minecraft:air'))])
+          body=compound([
+            tag(3,'DataVersion',struct.pack('>i',0)),
+            tag(9,'size',lst(3,[struct.pack('>i',1)]*3)),
+            tag(9,'palette',lst(10,[palette])),
+            tag(9,'blocks',lst(10,[])),
+            tag(9,'entities',lst(10,[]))])
+          raw=bytes([10])+u16('')+body
+          out=root/'src/main/resources/data/countrysidedays/structure'; out.mkdir(parents=True,exist_ok=True)
+          for name in ('homestead_layout.nbt','world_data_round_trip.nbt'):
+            with gzip.GzipFile(filename='',mode='wb',fileobj=(out/name).open('wb'),mtime=0) as f: f.write(raw)
+          print('corrected alpha.15 source prepared')
+          PY
+          rm -f .github/workflows/cd-a15-publish-source.yml .github/workflows/cd-a15-finalize.yml .github/workflows/cd-a15-patch-p04.yml .github/workflows/cd-a15-patch-p04b.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A projects/countryside-days .github/workflows
+          git commit -m 'Fix Countryside Days alpha.15 compile, worldgen, and GameTest data'
+          git pull --rebase origin main
+          git push origin HEAD:main
