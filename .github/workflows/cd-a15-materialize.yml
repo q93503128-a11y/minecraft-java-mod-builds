@@ -1,0 +1,105 @@
+name: Countryside Days alpha.15 materialize
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cd-a15-materialize.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: projects/countryside-days
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+
+      - name: Restore exact source
+        id: restore
+        working-directory: .
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, io, zipfile
+          r=Path('.').resolve(); p=r/'projects/countryside-days'; t=p/'tools'
+          specs=[
+          ('alpha15v2_00.part',8000,'05764a738c93db7933e60f6db85fea2d6cf168297536e79146ef28dc1eb96349'),
+          ('alpha15v2_01.part',8000,'f62307daf23ace1c04c1c4b09fdf75e3ba2a24018c550a90558753f00fc6f8b6'),
+          ('alpha15v2_02.part',8000,'647cf040b1669045f8e57f2a0eb67968e81c1753621095be6d3f4be046e00beb'),
+          ('alpha15fix_03.part',8000,'c216a7b1eb12b7586dea47bfcdb8ed33c7c14ccad5f09e1654c8293ad01cb614'),
+          ('alpha15fix_04.part',8000,'8058ef8da669949be9d9aa344130c3a17a0d75b3069438cbf433db60aba4eaad'),
+          ('alpha15v2_05_06.part',16000,'ba4d245f3e29c0710e903a25c7fc2ada8cd306675bf373b8e001c22d88f931e9'),
+          ('alpha15v2_07_08.part',16000,'17528aa349b2a47a0192ddf71506d270487439261742b3212e8b3407e6846c3d'),
+          ('alpha15v2_09_10.part',16000,'a975b3c098d730d4077d8729118537ebd9c7f96aebd4455c8cb1f8dc1ed270c2'),
+          ('alpha15v2_11_12.part',16000,'e341d7db6b6a277721f5aae8d5384a94d68e5778ad0399c302ebaf2a097c3dba'),
+          ('alpha15v2_13_14.part',16000,'a1dd5c64d5d0524d691a228af3d07c35195a1ec76046947d647d9f080b256f05'),
+          ('alpha15v2_15_16.part',16000,'0b84bdbbb7d5a93b360911a75c608961515cea999960e8027746ef296619418f'),
+          ('alpha15v2_17_18.part',9648,'870c0a5b8faed07c9597402175e58b7659ed41ead761cb3a82f45f9bab6477d6')]
+          out=[]
+          for n,l,h in specs:
+              s=''.join((t/n).read_text('ascii').split())
+              if len(s)!=l or hashlib.sha256(s.encode()).hexdigest()!=h: raise SystemExit('bad part '+n)
+              out.append(s)
+          s=''.join(out)
+          if len(s)!=145648 or hashlib.sha256(s.encode()).hexdigest()!='2215f32a4fda34d490241a811051e9164eb39a4f31831894e9ce3df3361ec4ca': raise SystemExit('bad combined text')
+          b=base64.b64decode(s,validate=True)
+          if len(b)!=109234 or hashlib.sha256(b).hexdigest()!='5499bb9fe956c9bf11a6f311105e03bcc694bc2adeed74080431cd882d80b835': raise SystemExit('bad archive')
+          with zipfile.ZipFile(io.BytesIO(b)) as z:
+              if z.testzip(): raise SystemExit('bad zip')
+              for n in z.namelist():
+                  q=Path(n)
+                  if not n.startswith('projects/countryside-days/') or '..' in q.parts or q.is_absolute(): raise SystemExit('unsafe '+n)
+              z.extractall(r)
+          if 'mod_version=0.1.0-alpha.15' not in (p/'gradle.properties').read_text(): raise SystemExit('wrong version')
+          print('alpha.15 source restored')
+          PY
+
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25'}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '9.2.1'}
+
+      - name: Clean build
+        id: build
+        run: |
+          mkdir -p ci-logs
+          if [ ! -x ./gradlew ]; then gradle wrapper --gradle-version 9.2.1 --distribution-type bin; chmod +x gradlew; fi
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-alpha15-materialize-${{ github.run_id }}
+          path: projects/countryside-days/ci-logs/
+          if-no-files-found: warn
+
+      - name: Commit restored source
+        if: always()
+        working-directory: .
+        env:
+          RESTORE: ${{ steps.restore.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+        run: |
+          if [ "$RESTORE" = success ]; then
+            rm -f projects/countryside-days/tools/alpha15v2_*.part projects/countryside-days/tools/alpha15fix_*.part projects/countryside-days/tools/alpha15_source_00.part
+            rm -f projects/countryside-days/tools/alpha14_*.part projects/countryside-days/tools/alpha14_*.b64
+            rm -f .github/workflows/cd-a15-materialize.yml .github/workflows/countryside-days-alpha15.yml .github/workflows/countryside-days-alpha15-compile.yml
+          fi
+          printf '# Countryside Days Build and Runtime Report\n\n- Workflow run: %s\n- Mod version: 0.1.0-alpha.15\n- Payload materialization: %s\n- Clean Java 25 build: %s\n- Full runtime audit: pending\n' "$GITHUB_RUN_ID" "$RESTORE" "$BUILD" > projects/countryside-days/BUILD_AND_RUNTIME_REPORT.md
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A projects/countryside-days .github/workflows
+          git diff --cached --quiet && exit 0
+          git commit -m "Materialize Countryside Days alpha.15 ($BUILD)"
+          git pull --rebase origin main
+          git push origin HEAD:main
