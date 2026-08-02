@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          python3 tools/apply_v0121_alpha5_hierarchy.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/apply_v0121_alpha5_hierarchy_v2.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
           git diff --check
 
       - name: Audit complete magic runtime, hierarchy and society contracts
