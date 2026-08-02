@@ -1,4 +1,1 @@
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v0121_alpha2_signature_geometry.py", line 36, in <module>
-    raise RuntimeError(f"renderer payload digest mismatch: {digest}")
-RuntimeError: renderer payload digest mismatch: 54b49a8b9c98acc6e5c72ca54112a756b5d3e2bcb7f56f3d71a168f65f6d6f25
+No diagnostic log.
