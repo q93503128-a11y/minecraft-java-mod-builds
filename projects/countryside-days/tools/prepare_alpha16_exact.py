@@ -19,6 +19,26 @@ PARTS = [
     ("alpha16_patch_02.part", 20000, "80182dad1af4bab46bf7253940c0fbd534501d8b66ef2e8a860c20e53c53c1f6"),
     ("alpha16_patch_03.part", 19884, "fb7829d9b28d4effb2f50438179a8d642d8c0e77a19d3d2d996ced68d731991e"),
 ]
+
+# The GitHub text transport substituted these isolated characters while preserving
+# every file length. Repair only the independently compared offsets, then require
+# the original per-part, combined-text, archive, and ZIP checksums to match.
+CORRECTIONS = {
+    "alpha16_patch_00.part": [(17705, "X", "V")],
+    "alpha16_patch_01.part": [(7747, "7", "9")],
+    "alpha16_patch_02.part": [(5933, "X", "V"), (11313, "Z", "d")],
+    "alpha16_patch_03.part": [
+        (10210, "p", "q"),
+        (10345, "X", "V"),
+        (16699, "I", "A"),
+        (17195, "I", "A"),
+        (17883, "I", "A"),
+        (19135, "I", "A"),
+        (19281, "X", "V"),
+        (19695, "I", "A"),
+    ],
+}
+
 ENCODED_LEN = 79884
 ENCODED_SHA = "a2c8b2177646c165e488a7958fa414742a8daf1d9f40f63308cfcc5c31773d54"
 ARCHIVE_SHA = "e5942fbae1c58ab7cbb6808971f7cb7d4c24da5b1618472e698a058b44c29faa"
@@ -36,6 +56,18 @@ def restore_alpha15() -> None:
     )
 
 
+def repair_transport_text(name: str, text: str) -> str:
+    chars = list(text)
+    for offset, observed, expected in CORRECTIONS.get(name, []):
+        if offset >= len(chars) or chars[offset] != observed:
+            actual = chars[offset] if offset < len(chars) else "<out-of-range>"
+            raise RuntimeError(
+                f"unexpected transport byte in {name} at {offset}: {actual!r}, expected {observed!r}"
+            )
+        chars[offset] = expected
+    return "".join(chars)
+
+
 def apply_alpha16_patch() -> None:
     chunks: list[str] = []
     for name, expected_len, expected_sha in PARTS:
@@ -43,6 +75,7 @@ def apply_alpha16_patch() -> None:
         if not path.is_file():
             raise FileNotFoundError(f"missing alpha.16 patch part: {path}")
         text = "".join(path.read_text("ascii").split())
+        text = repair_transport_text(name, text)
         actual_sha = sha256(text.encode("ascii"))
         if len(text) != expected_len or actual_sha != expected_sha:
             raise RuntimeError(
