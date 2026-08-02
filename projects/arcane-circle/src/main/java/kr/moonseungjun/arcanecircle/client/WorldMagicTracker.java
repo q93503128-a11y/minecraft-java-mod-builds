@@ -17,7 +17,6 @@ import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,38 +27,78 @@ public final class WorldMagicTracker {
     private static final Map<UUID, Visual> CHARGES = new HashMap<>();
     private static final List<Visual> RELEASES = new ArrayList<>();
 
+    private static final int MAX_CHARGE_PRIMITIVES = 320;
+    private static final int MAX_RELEASE_PRIMITIVES = 512;
+    private static final int MAX_RELEASE_VISUALS = 24;
+    private static final int MAX_FRAME_PRIMITIVES = 1024;
+    private static final double MAX_RENDER_DISTANCE_SQR = 128.0 * 128.0;
+    private static final long CHARGE_TTL_NS = 650_000_000L;
+
     private WorldMagicTracker() {}
 
     public static void accept(WorldMagicPayload payload) {
         Map<String, String> values = parse(payload.state());
         String kind = values.getOrDefault("kind", "");
         UUID caster;
-        try { caster = UUID.fromString(values.getOrDefault("caster", "")); }
-        catch (IllegalArgumentException ignored) { return; }
+        try {
+            caster = UUID.fromString(values.getOrDefault("caster", ""));
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+
         if ("stop".equals(kind)) {
             CHARGES.remove(caster);
             return;
         }
+
         SpellDefinition spell = SpellCatalog.spell(values.getOrDefault("spell", "")).orElse(null);
         if (spell == null) return;
+
         boolean fusion = integer(values, "fusion", 0) != 0;
         int ingredients = Math.max(0, integer(values, "ingredients", 0));
-        Vec3 center = new Vec3(decimal(values, "x", 0), decimal(values, "y", 0), decimal(values, "z", 0));
-        Vec3 direction = new Vec3(decimal(values, "dx", 0), decimal(values, "dy", 0), decimal(values, "dz", 1));
+        Vec3 center = new Vec3(
+                decimal(values, "x", 0),
+                decimal(values, "y", 0),
+                decimal(values, "z", 0));
+        Vec3 direction = new Vec3(
+                decimal(values, "dx", 0),
+                decimal(values, "dy", 0),
+                decimal(values, "dz", 1));
         if (direction.lengthSqr() < 0.00001) direction = new Vec3(0, 0, 1);
         direction = direction.normalize();
+
         double range = Math.max(0.1, decimal(values, "range", spell.range()));
         double power = Math.max(0.1, decimal(values, "power", spell.power()));
-        double progress = Math.max(0.0, Math.min(1.0, decimal(values, "progress", 1.0)));
+        double progress = clamp(decimal(values, "progress", 1.0), 0.0, 1.0);
         int duration = Math.max(2, integer(values, "duration", 10));
         long now = System.nanoTime();
+
         if ("charge".equals(kind)) {
-            VoxelShape geometry = buildCharge(spell, fusion, ingredients, direction, progress, range);
-            CHARGES.put(caster, new Visual(caster, center, geometry, color(spell), now + 550_000_000L));
-        } else if ("release".equals(kind)) {
-            VoxelShape geometry = buildRelease(spell, fusion, ingredients, direction, range, power);
-            RELEASES.add(new Visual(caster, center, geometry, color(spell),
-                    now + duration * 50_000_000L));
+            int progressStep = Math.max(0, Math.min(20, (int) Math.floor(progress * 20.0 + 0.0001)));
+            GeometryKey key = GeometryKey.charge(spell.id(), fusion, ingredients, progressStep, direction, range);
+            Visual previous = CHARGES.get(caster);
+            List<VoxelShape> geometry;
+            if (previous != null && key.equals(previous.key)) {
+                geometry = previous.geometry;
+            } else {
+                double quantizedProgress = progressStep / 20.0;
+                geometry = buildCharge(spell, fusion, ingredients, direction, quantizedProgress, range);
+            }
+            CHARGES.put(caster, new Visual(
+                    caster, center, geometry, color(spell), now + CHARGE_TTL_NS, key));
+            return;
+        }
+
+        if ("release".equals(kind)) {
+            List<VoxelShape> geometry = buildRelease(spell, fusion, ingredients, direction, range, power);
+            while (RELEASES.size() >= MAX_RELEASE_VISUALS) RELEASES.remove(0);
+            RELEASES.add(new Visual(
+                    caster,
+                    center,
+                    geometry,
+                    color(spell),
+                    now + duration * 50_000_000L,
+                    GeometryKey.release(spell.id(), direction, range)));
             CHARGES.remove(caster);
         }
     }
@@ -69,7 +108,8 @@ public final class WorldMagicTracker {
         CHARGES.values().removeIf(visual -> visual.expiresAt < now);
         RELEASES.removeIf(visual -> visual.expiresAt < now);
         if (CHARGES.isEmpty() && RELEASES.isEmpty()) return;
-        List<RenderEntry> entries = new ArrayList<>();
+
+        List<RenderEntry> entries = new ArrayList<>(CHARGES.size() + RELEASES.size());
         for (Visual visual : CHARGES.values()) entries.add(visual.renderEntry());
         for (Visual visual : RELEASES) entries.add(visual.renderEntry());
         event.getRenderState().setRenderData(DATA_KEY, List.copyOf(entries));
@@ -78,129 +118,271 @@ public final class WorldMagicTracker {
     public static void onSubmit(SubmitCustomGeometryEvent event) {
         List<RenderEntry> entries = event.getLevelRenderState().getRenderData(DATA_KEY);
         if (entries == null || entries.isEmpty()) return;
+
         Vec3 camera = event.getLevelRenderState().cameraRenderState.pos;
-        float baseWidth = Minecraft.getInstance().gameRenderer.gameRenderState().windowRenderState.appropriateLineWidth;
+        float baseWidth = Minecraft.getInstance().gameRenderer.gameRenderState()
+                .windowRenderState.appropriateLineWidth;
+        float lineWidth = Math.max(0.85F, baseWidth * 0.90F);
+        int submitted = 0;
+
         for (RenderEntry entry : entries) {
             Vec3 offset = entry.center.subtract(camera);
+            if (offset.lengthSqr() > MAX_RENDER_DISTANCE_SQR) continue;
+
             event.getPoseStack().pushPose();
             event.getPoseStack().translate(offset.x, offset.y, offset.z);
-            event.getSubmitNodeCollector().submitShapeOutline(event.getPoseStack(), entry.geometry,
-                    RenderTypes.lines(), entry.argb, Math.max(0.85F, baseWidth * 0.90F), false);
+            for (VoxelShape primitive : entry.geometry) {
+                if (submitted >= MAX_FRAME_PRIMITIVES) break;
+                event.getSubmitNodeCollector().submitShapeOutline(
+                        event.getPoseStack(),
+                        primitive,
+                        RenderTypes.lines(),
+                        entry.argb,
+                        lineWidth,
+                        false);
+                submitted++;
+            }
             event.getPoseStack().popPose();
+            if (submitted >= MAX_FRAME_PRIMITIVES) break;
         }
     }
 
-    private static VoxelShape buildCharge(SpellDefinition spell, boolean fusion, int ingredients,
-                                          Vec3 normal, double progress, double range) {
+    private static List<VoxelShape> buildCharge(
+            SpellDefinition spell,
+            boolean fusion,
+            int ingredients,
+            Vec3 normal,
+            double progress,
+            double range) {
+        List<VoxelShape> shapes = new ArrayList<>(Math.min(MAX_CHARGE_PRIMITIVES, 128));
         Basis basis = basis(spell, normal);
-        VoxelShape shape = Shapes.empty();
-        double outer = 0.42 + spell.circle() * 0.095 + Math.min(0.32, range * 0.008) + (fusion ? 0.18 : 0.0);
-        int ringPoints = 48 + spell.circle() * 5;
-        // The primary concentric count is exactly the spell circle: 1C=1, 2C=2 ... 9C=9.
+        double outer = 0.42
+                + spell.circle() * 0.095
+                + Math.min(0.32, range * 0.008)
+                + (fusion ? 0.18 : 0.0);
+        int ringPoints = 16 + spell.circle();
+
+        // The primary concentric count remains exact: 1C=1 ring ... 9C=9 rings.
         for (int ring = 0; ring < spell.circle(); ring++) {
             double radius = outer * (1.0 - ring * 0.66 / Math.max(1.0, spell.circle()));
-            double localProgress = Math.max(0.0, Math.min(1.0, progress * spell.circle() - ring));
-            shape = Shapes.or(shape, partialCircle(basis, radius, ringPoints, localProgress, 0.011));
+            double localProgress = clamp(progress * spell.circle() - ring, 0.0, 1.0);
+            addPartialCircle(
+                    shapes, basis, Vec3.ZERO, radius, ringPoints, localProgress, 0.013,
+                    MAX_CHARGE_PRIMITIVES);
         }
+
         if (progress >= 0.16) {
             int sides = 3 + Math.floorMod(spell.id().hashCode(), 6);
-            shape = Shapes.or(shape, polygon(basis, outer * 0.56, sides,
-                    Math.max(0.0, Math.min(1.0, (progress - 0.16) / 0.46)), 0.019));
+            addPolygon(
+                    shapes,
+                    basis,
+                    Vec3.ZERO,
+                    outer * 0.56,
+                    sides,
+                    clamp((progress - 0.16) / 0.46, 0.0, 1.0),
+                    0.017,
+                    MAX_CHARGE_PRIMITIVES);
         }
+
         if (progress >= 0.36) {
-            int spokes = Math.min(13, 3 + spell.circle() + Math.floorMod(spell.id().hashCode(), 3));
+            int spokes = Math.min(11, 3 + spell.circle() + Math.floorMod(spell.id().hashCode(), 3));
             int shown = (int) Math.floor(spokes * Math.min(1.0, (progress - 0.36) / 0.42));
             for (int i = 0; i < shown; i++) {
                 double angle = Math.PI * 2.0 * i / spokes;
-                shape = Shapes.or(shape, segment(basis.point(angle, outer * 0.28),
-                        basis.point(angle, outer * 0.92), 8, 0.017));
+                addSegment(
+                        shapes,
+                        basis.point(angle, outer * 0.28),
+                        basis.point(angle, outer * 0.92),
+                        5,
+                        0.015,
+                        MAX_CHARGE_PRIMITIVES);
             }
         }
+
         if (spell.circle() >= 3 && progress >= 0.60) {
-            int satellites = Math.min(6, spell.circle() - 1);
+            int satellites = Math.min(5, spell.circle() - 1);
             for (int i = 0; i < satellites; i++) {
                 double angle = Math.PI * 2.0 * i / satellites;
                 Vec3 satelliteCenter = basis.point(angle, outer * 1.22);
-                shape = Shapes.or(shape, circleAround(basis, satelliteCenter, outer * 0.16,
-                        20 + spell.circle(), 0.016));
-                shape = Shapes.or(shape, segment(basis.point(angle, outer), satelliteCenter, 5, 0.015));
+                addCircle(
+                        shapes,
+                        basis,
+                        satelliteCenter,
+                        outer * 0.16,
+                        14 + spell.circle(),
+                        0.014,
+                        MAX_CHARGE_PRIMITIVES);
+                addSegment(
+                        shapes,
+                        basis.point(angle, outer),
+                        satelliteCenter,
+                        4,
+                        0.014,
+                        MAX_CHARGE_PRIMITIVES);
             }
         }
+
         if (fusion && ingredients >= 2 && progress >= 0.42) {
-            for (int i = 0; i < ingredients; i++) {
-                double angle = -Math.PI / 2.0 + Math.PI * 2.0 * i / ingredients;
+            int visibleIngredients = Math.min(3, ingredients);
+            for (int i = 0; i < visibleIngredients; i++) {
+                double angle = -Math.PI / 2.0 + Math.PI * 2.0 * i / visibleIngredients;
                 Vec3 satelliteCenter = basis.point(angle, outer * 1.48);
-                shape = Shapes.or(shape, circleAround(basis, satelliteCenter, outer * 0.25,
-                        28, 0.022));
-                shape = Shapes.or(shape, polygonAround(basis, satelliteCenter, outer * 0.17,
-                        3 + i, 0.019));
-                shape = Shapes.or(shape, segment(Vec3.ZERO, satelliteCenter, 9, 0.017));
+                addCircle(
+                        shapes,
+                        basis,
+                        satelliteCenter,
+                        outer * 0.25,
+                        20,
+                        0.016,
+                        MAX_CHARGE_PRIMITIVES);
+                addPolygon(
+                        shapes,
+                        basis,
+                        satelliteCenter,
+                        outer * 0.17,
+                        3 + i,
+                        1.0,
+                        0.015,
+                        MAX_CHARGE_PRIMITIVES);
+                addSegment(
+                        shapes,
+                        Vec3.ZERO,
+                        satelliteCenter,
+                        6,
+                        0.014,
+                        MAX_CHARGE_PRIMITIVES);
             }
         }
-        return shape;
+
+        return List.copyOf(shapes);
     }
 
-    private static VoxelShape buildRelease(SpellDefinition spell, boolean fusion, int ingredients,
-                                           Vec3 direction, double range, double power) {
+    private static List<VoxelShape> buildRelease(
+            SpellDefinition spell,
+            boolean fusion,
+            int ingredients,
+            Vec3 direction,
+            double range,
+            double power) {
+        List<VoxelShape> shapes = new ArrayList<>(MAX_RELEASE_PRIMITIVES);
+        append(shapes, buildCharge(spell, fusion, ingredients, direction, 1.0, range), MAX_RELEASE_PRIMITIVES);
         Basis basis = basis(spell, direction);
-        VoxelShape shape = buildCharge(spell, fusion, ingredients, direction, 1.0, range);
-        double scale = 0.65 + spell.circle() * 0.13 + Math.min(0.8, power * 0.015);
+
         switch (spell.sigilAnchor()) {
             case FRONT -> {
                 double length = Math.min(34.0, Math.max(3.0, range));
                 Vec3 end = direction.scale(length);
-                shape = Shapes.or(shape, segment(Vec3.ZERO, end, Math.max(20, (int) (length * 3)),
-                        0.035 + spell.circle() * 0.008));
+                addSegment(
+                        shapes,
+                        Vec3.ZERO,
+                        end,
+                        Math.min(40, Math.max(12, (int) Math.ceil(length * 1.5))),
+                        0.030 + spell.circle() * 0.004,
+                        MAX_RELEASE_PRIMITIVES);
                 if (spell.circle() >= 4) {
                     Vec3 side = basis.right.scale(0.14 + spell.circle() * 0.025);
-                    shape = Shapes.or(shape, segment(side, end.add(side), 30, 0.024));
-                    shape = Shapes.or(shape, segment(side.scale(-1), end.add(side.scale(-1)), 30, 0.024));
+                    addSegment(shapes, side, end.add(side), 20, 0.021, MAX_RELEASE_PRIMITIVES);
+                    addSegment(
+                            shapes,
+                            side.scale(-1),
+                            end.add(side.scale(-1)),
+                            20,
+                            0.021,
+                            MAX_RELEASE_PRIMITIVES);
                 }
-                shape = Shapes.or(shape, sphereLattice(end, 0.28 + spell.circle() * 0.09, spell.circle()));
+                addSphereLattice(
+                        shapes,
+                        end,
+                        0.28 + spell.circle() * 0.09,
+                        spell.circle(),
+                        MAX_RELEASE_PRIMITIVES);
             }
             case FEET, GROUND_SELF, GROUND_TARGET -> {
                 Basis ground = Basis.ground();
                 double radius = Math.min(17.0, Math.max(1.8, range * 0.24 + spell.circle() * 0.42));
                 int rings = Math.max(2, Math.min(9, spell.circle()));
                 for (int i = 1; i <= rings; i++) {
-                    shape = Shapes.or(shape, circle(ground, radius * i / rings, 48 + i * 4, 0.035));
+                    addCircle(
+                            shapes,
+                            ground,
+                            Vec3.ZERO,
+                            radius * i / rings,
+                            20 + Math.min(12, i * 2),
+                            0.023,
+                            MAX_RELEASE_PRIMITIVES);
                 }
-                int pillars = 4 + spell.circle();
+                int pillars = Math.min(10, 4 + spell.circle());
                 for (int i = 0; i < pillars; i++) {
                     double angle = Math.PI * 2.0 * i / pillars;
                     Vec3 base = ground.point(angle, radius * 0.82);
-                    shape = Shapes.or(shape, segment(base, base.add(0, 1.2 + spell.circle() * 0.32, 0),
-                            10 + spell.circle(), 0.04));
+                    addSegment(
+                            shapes,
+                            base,
+                            base.add(0, 1.2 + spell.circle() * 0.32, 0),
+                            8,
+                            0.027,
+                            MAX_RELEASE_PRIMITIVES);
                 }
             }
-            case BODY -> {
-                double radius = 1.15 + spell.circle() * 0.22;
-                shape = Shapes.or(shape, sphereLattice(new Vec3(0, -0.75, 0), radius, spell.circle() + 2));
-            }
+            case BODY -> addSphereLattice(
+                    shapes,
+                    new Vec3(0, -0.75, 0),
+                    1.15 + spell.circle() * 0.22,
+                    spell.circle() + 2,
+                    MAX_RELEASE_PRIMITIVES);
             case TARGET -> {
                 double radius = 0.75 + spell.circle() * 0.15;
                 Basis ground = Basis.ground();
-                for (int level = 0; level < 3 + spell.circle() / 2; level++) {
+                int levels = Math.min(6, 3 + spell.circle() / 2);
+                for (int level = 0; level < levels; level++) {
                     Vec3 offset = new Vec3(0, -0.8 + level * 0.48, 0);
-                    shape = Shapes.or(shape, circleAround(ground, offset, radius, 36, 0.028));
+                    addCircle(
+                            shapes,
+                            ground,
+                            offset,
+                            radius,
+                            24,
+                            0.022,
+                            MAX_RELEASE_PRIMITIVES);
                 }
-                int bars = 5 + spell.circle();
+                int bars = Math.min(12, 5 + spell.circle());
                 for (int i = 0; i < bars; i++) {
                     double angle = Math.PI * 2.0 * i / bars;
                     Vec3 low = ground.point(angle, radius).add(0, -0.8, 0);
-                    shape = Shapes.or(shape, segment(low, low.add(0, 1.9 + spell.circle() * 0.08, 0),
-                            12, 0.03));
+                    addSegment(
+                            shapes,
+                            low,
+                            low.add(0, 1.9 + spell.circle() * 0.08, 0),
+                            9,
+                            0.024,
+                            MAX_RELEASE_PRIMITIVES);
                 }
             }
         }
+
         if (spell.school() == SpellDefinition.School.SPACE) {
             Basis portal = basis(spell, direction);
             double portalRadius = 0.9 + spell.circle() * 0.16;
-            shape = Shapes.or(shape, circle(portal, portalRadius, 72, 0.035));
-            shape = Shapes.or(shape, circleAround(portal, direction.scale(0.28), portalRadius * 0.82, 60, 0.03));
+            addCircle(
+                    shapes,
+                    portal,
+                    Vec3.ZERO,
+                    portalRadius,
+                    36,
+                    0.024,
+                    MAX_RELEASE_PRIMITIVES);
+            addCircle(
+                    shapes,
+                    portal,
+                    direction.scale(0.28),
+                    portalRadius * 0.82,
+                    32,
+                    0.022,
+                    MAX_RELEASE_PRIMITIVES);
         }
-        shape = Shapes.or(shape, SignatureGeometry.build(spell, direction, range));
-        return shape;
+
+        SignatureGeometry.append(spell, direction, range, shapes, MAX_RELEASE_PRIMITIVES);
+        return List.copyOf(shapes);
     }
 
     private static Basis basis(SpellDefinition spell, Vec3 normal) {
@@ -210,79 +392,124 @@ public final class WorldMagicTracker {
         };
     }
 
-    private static VoxelShape sphereLattice(Vec3 center, double radius, int detail) {
-        VoxelShape shape = Shapes.empty();
+    private static void addSphereLattice(
+            List<VoxelShape> shapes,
+            Vec3 center,
+            double radius,
+            int detail,
+            int budget) {
         Basis ground = Basis.ground();
-        shape = Shapes.or(shape, circleAround(ground, center, radius, 48, 0.032));
-        Basis verticalX = new Basis(new Vec3(1, 0, 0), new Vec3(0, 1, 0));
-        Basis verticalZ = new Basis(new Vec3(0, 0, 1), new Vec3(0, 1, 0));
-        shape = Shapes.or(shape, circleAround(verticalX, center, radius, 48, 0.032));
-        shape = Shapes.or(shape, circleAround(verticalZ, center, radius, 48, 0.032));
-        for (int i = 1; i < Math.min(5, detail); i++) {
-            double y = radius * (-0.65 + i * 1.3 / Math.min(5, detail));
+        addCircle(shapes, ground, center, radius, 28, 0.023, budget);
+        addCircle(
+                shapes,
+                new Basis(new Vec3(1, 0, 0), new Vec3(0, 1, 0)),
+                center,
+                radius,
+                28,
+                0.023,
+                budget);
+        addCircle(
+                shapes,
+                new Basis(new Vec3(0, 0, 1), new Vec3(0, 1, 0)),
+                center,
+                radius,
+                28,
+                0.023,
+                budget);
+        int latitudes = Math.min(3, Math.max(0, detail - 1));
+        for (int i = 1; i <= latitudes; i++) {
+            double y = radius * (-0.55 + i * 1.10 / (latitudes + 1));
             double r = Math.sqrt(Math.max(0.05, radius * radius - y * y));
-            shape = Shapes.or(shape, circleAround(ground, center.add(0, y, 0), r, 36, 0.022));
+            addCircle(shapes, ground, center.add(0, y, 0), r, 22, 0.019, budget);
         }
-        return shape;
     }
 
-    private static VoxelShape partialCircle(Basis basis, double radius, int points, double progress, double size) {
-        VoxelShape shape = Shapes.empty();
+    private static void addPartialCircle(
+            List<VoxelShape> shapes,
+            Basis basis,
+            Vec3 center,
+            double radius,
+            int points,
+            double progress,
+            double size,
+            int budget) {
         int shown = Math.max(0, Math.min(points, (int) Math.ceil(points * progress)));
-        for (int i = 0; i < shown; i++) {
+        for (int i = 0; i < shown && shapes.size() < budget; i++) {
             double angle = -Math.PI / 2.0 + Math.PI * 2.0 * i / points;
-            shape = Shapes.or(shape, pointBox(basis.point(angle, radius), size));
+            addPoint(shapes, center.add(basis.point(angle, radius)), size, budget);
         }
-        return shape;
     }
 
-    private static VoxelShape circle(Basis basis, double radius, int points, double size) {
-        return partialCircle(basis, radius, points, 1.0, size);
+    private static void addCircle(
+            List<VoxelShape> shapes,
+            Basis basis,
+            Vec3 center,
+            double radius,
+            int points,
+            double size,
+            int budget) {
+        addPartialCircle(shapes, basis, center, radius, points, 1.0, size, budget);
     }
 
-    private static VoxelShape circleAround(Basis basis, Vec3 center, double radius, int points, double size) {
-        VoxelShape shape = Shapes.empty();
-        for (int i = 0; i < points; i++) {
-            double angle = Math.PI * 2.0 * i / points;
-            shape = Shapes.or(shape, pointBox(center.add(basis.point(angle, radius)), size));
-        }
-        return shape;
-    }
-
-    private static VoxelShape polygon(Basis basis, double radius, int sides, double progress, double size) {
-        return polygonAround(basis, Vec3.ZERO, radius, sides, size, progress);
-    }
-
-    private static VoxelShape polygonAround(Basis basis, Vec3 center, double radius, int sides, double size) {
-        return polygonAround(basis, center, radius, sides, size, 1.0);
-    }
-
-    private static VoxelShape polygonAround(Basis basis, Vec3 center, double radius, int sides,
-                                            double size, double progress) {
-        VoxelShape shape = Shapes.empty();
+    private static void addPolygon(
+            List<VoxelShape> shapes,
+            Basis basis,
+            Vec3 center,
+            double radius,
+            int sides,
+            double progress,
+            double size,
+            int budget) {
         int shownEdges = Math.max(0, Math.min(sides, (int) Math.ceil(sides * progress)));
-        List<Vec3> vertices = new ArrayList<>();
+        List<Vec3> vertices = new ArrayList<>(sides);
         for (int i = 0; i < sides; i++) {
             double angle = -Math.PI / 2.0 + Math.PI * 2.0 * i / sides;
             vertices.add(center.add(basis.point(angle, radius)));
         }
-        for (int i = 0; i < shownEdges; i++) {
-            shape = Shapes.or(shape, segment(vertices.get(i), vertices.get((i + 1) % sides), 10, size));
+        for (int i = 0; i < shownEdges && shapes.size() < budget; i++) {
+            addSegment(
+                    shapes,
+                    vertices.get(i),
+                    vertices.get((i + 1) % sides),
+                    6,
+                    size,
+                    budget);
         }
-        return shape;
     }
 
-    private static VoxelShape segment(Vec3 start, Vec3 end, int points, double size) {
-        VoxelShape shape = Shapes.empty();
-        for (int i = 0; i <= points; i++) {
-            shape = Shapes.or(shape, pointBox(start.lerp(end, i / (double) points), size));
+    private static void addSegment(
+            List<VoxelShape> shapes,
+            Vec3 start,
+            Vec3 end,
+            int points,
+            double size,
+            int budget) {
+        int safePoints = Math.max(1, points);
+        for (int i = 0; i <= safePoints && shapes.size() < budget; i++) {
+            addPoint(shapes, start.lerp(end, i / (double) safePoints), size, budget);
         }
-        return shape;
     }
 
-    private static VoxelShape pointBox(Vec3 point, double half) {
-        return Shapes.create(new AABB(point.x - half, point.y - half, point.z - half,
-                point.x + half, point.y + half, point.z + half));
+    private static void addPoint(
+            List<VoxelShape> shapes,
+            Vec3 point,
+            double half,
+            int budget) {
+        if (shapes.size() >= budget) return;
+        shapes.add(Shapes.create(new AABB(
+                point.x - half,
+                point.y - half,
+                point.z - half,
+                point.x + half,
+                point.y + half,
+                point.z + half)));
+    }
+
+    private static void append(List<VoxelShape> target, List<VoxelShape> source, int budget) {
+        for (VoxelShape shape : source) {
+            if (target.size() >= budget) return;
+            target.add(shape);
+        }
     }
 
     private static int color(SpellDefinition spell) {
@@ -307,27 +534,99 @@ public final class WorldMagicTracker {
     }
 
     private static int integer(Map<String, String> values, String key, int fallback) {
-        try { return Integer.parseInt(values.getOrDefault(key, Integer.toString(fallback))); }
-        catch (NumberFormatException ignored) { return fallback; }
+        try {
+            return Integer.parseInt(values.getOrDefault(key, Integer.toString(fallback)));
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
     }
 
     private static double decimal(Map<String, String> values, String key, double fallback) {
-        try { return Double.parseDouble(values.getOrDefault(key, Double.toString(fallback))); }
-        catch (NumberFormatException ignored) { return fallback; }
+        try {
+            return Double.parseDouble(values.getOrDefault(key, Double.toString(fallback)));
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
     }
 
-    private record Visual(UUID caster, Vec3 center, VoxelShape geometry, int argb, long expiresAt) {
-        RenderEntry renderEntry() { return new RenderEntry(center, geometry, argb); }
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
-    private record RenderEntry(Vec3 center, VoxelShape geometry, int argb) {}
+
+    private record Visual(
+            UUID caster,
+            Vec3 center,
+            List<VoxelShape> geometry,
+            int argb,
+            long expiresAt,
+            GeometryKey key) {
+        RenderEntry renderEntry() {
+            return new RenderEntry(center, geometry, argb);
+        }
+    }
+
+    private record RenderEntry(Vec3 center, List<VoxelShape> geometry, int argb) {}
+
+    private record GeometryKey(
+            String spellId,
+            boolean fusion,
+            int ingredients,
+            int progressStep,
+            int directionX,
+            int directionY,
+            int directionZ,
+            int rangeStep,
+            boolean release) {
+        static GeometryKey charge(
+                String spellId,
+                boolean fusion,
+                int ingredients,
+                int progressStep,
+                Vec3 direction,
+                double range) {
+            return new GeometryKey(
+                    spellId,
+                    fusion,
+                    ingredients,
+                    progressStep,
+                    quantize(direction.x, 18),
+                    quantize(direction.y, 18),
+                    quantize(direction.z, 18),
+                    quantize(range, 4),
+                    false);
+        }
+
+        static GeometryKey release(String spellId, Vec3 direction, double range) {
+            return new GeometryKey(
+                    spellId,
+                    false,
+                    0,
+                    20,
+                    quantize(direction.x, 18),
+                    quantize(direction.y, 18),
+                    quantize(direction.z, 18),
+                    quantize(range, 4),
+                    true);
+        }
+
+        private static int quantize(double value, int scale) {
+            return (int) Math.round(value * scale);
+        }
+    }
+
     private record Basis(Vec3 right, Vec3 up) {
-        static Basis ground() { return new Basis(new Vec3(1, 0, 0), new Vec3(0, 0, 1)); }
+        static Basis ground() {
+            return new Basis(new Vec3(1, 0, 0), new Vec3(0, 0, 1));
+        }
+
         static Basis facing(Vec3 normal) {
-            Vec3 reference = Math.abs(normal.y) > 0.92 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
-            Vec3 right = normal.cross(reference).normalize();
-            Vec3 up = right.cross(normal).normalize();
+            Vec3 safe = normal.lengthSqr() < 0.00001 ? new Vec3(0, 0, 1) : normal.normalize();
+            Vec3 reference = Math.abs(safe.y) > 0.92 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
+            Vec3 right = safe.cross(reference).normalize();
+            Vec3 up = right.cross(safe).normalize();
             return new Basis(right, up);
         }
+
         Vec3 point(double angle, double radius) {
             return right.scale(Math.cos(angle) * radius).add(up.scale(Math.sin(angle) * radius));
         }

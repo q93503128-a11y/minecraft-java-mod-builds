@@ -9,7 +9,7 @@ network = (JAVA / "network/ArcaneNetwork.java").read_text(encoding="utf-8")
 tracker = (JAVA / "client/WorldMagicTracker.java").read_text(encoding="utf-8")
 service = (JAVA / "magic/WorldMagicService.java").read_text(encoding="utf-8")
 
-if "mod_version=0.12.1-alpha.2" not in properties:
+if "mod_version=0.12.1-alpha.3" not in properties:
     raise SystemExit("v0.12.1 version missing")
 if "ninefold-arcana-12-1" not in network:
     raise SystemExit("v0.12.1 network protocol missing")

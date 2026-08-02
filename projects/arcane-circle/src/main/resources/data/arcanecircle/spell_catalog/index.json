@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.2",
+  "version": "0.12.1-alpha.3",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -53,7 +53,7 @@
   "visual_core": "world_geometry_no_particles",
   "fusion_casting": "charged_release",
   "particle_core_calls": 0,
-  "release_geometry": "per_spell_signature_geometry",
+  "release_geometry": "bounded_primitive_batches",
   "signature_models": [
     "meteor",
     "tornado",
@@ -61,5 +61,12 @@
     "force_cage",
     "barrier_wall",
     "barrier_dome"
-  ]
+  ],
+  "performance_guard": {
+    "voxel_boolean_unions": 0,
+    "charge_primitive_cap": 320,
+    "release_primitive_cap": 512,
+    "frame_primitive_cap": 1024,
+    "charge_progress_steps": 20
+  }
 }
