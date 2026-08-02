@@ -76,7 +76,7 @@ def main() -> None:
     assert "VillageRoleAbilitySystem.cast" in role_skills
     assert role_skills.count("case ") >= 20
     for token in (
-        "SPIN_UNTIL", "Snowball", "Arrow", "spawnVisualLightning",
+        "SPIN_UNTIL", "EntityTypes.SNOWBALL", "Arrow", "spawnVisualLightning",
         "healLowestAlly", "reviveNow", "SHIELDS", "player.swing",
         "target.push", "SoundEvents"
     ):
