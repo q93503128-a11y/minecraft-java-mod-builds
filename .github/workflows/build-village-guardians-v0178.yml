@@ -49,6 +49,31 @@ jobs:
           echo '513c2543e91629e7617b8508c75052d93ca342e57fda54bf4327835d4a6153f4  tools/apply_v0178.py' | sha256sum -c -
           python3 -m py_compile tools/apply_v0178.py
           python3 tools/apply_v0178.py
+          python3 - <<'PY'
+          from pathlib import Path
+
+          depth = Path('tools/test_progression_depth.py')
+          text = depth.read_text(encoding='utf-8')
+          for branch in ('power', 'guard', 'support', 'ranged', 'mobility'):
+              old = f'''assert common.count('(\"{branch}_') == 8'''
+              new = f'''assert common.count('(\"{branch}_') == 10'''
+              text = text.replace(old, new)
+          depth.write_text(text, encoding='utf-8')
+
+          legacy = Path('tools/test_v0177_gameplay.py')
+          text = legacy.read_text(encoding='utf-8')
+          text = text.replace('''common.count('(\"mobility_') == 8''',
+                              '''common.count('(\"mobility_') == 10''')
+          text = text.replace('''assert "test_cast:" in ui and "useTestSkill" in role and "targetsNear" in test''',
+                              '''assert "test_choose:" in ui and "VillageSkillTestSystem.equippedSkill" in role and "targetsNear" in test''')
+          legacy.write_text(text, encoding='utf-8')
+
+          migrated = depth.read_text(encoding='utf-8')
+          for branch in ('power', 'guard', 'support', 'ranged', 'mobility'):
+              expected = f'''assert common.count('(\"{branch}_') == 10'''
+              if expected not in migrated:
+                  raise SystemExit(f'failed to migrate {branch} node-count contract')
+          PY
           rm -f tools/apply_v0178.py tools/v0178_patch.b64
 
       - name: Run complete contracts
