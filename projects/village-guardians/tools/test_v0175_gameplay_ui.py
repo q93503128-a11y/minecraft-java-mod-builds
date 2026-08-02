@@ -19,7 +19,7 @@ def main() -> None:
     fusion = read("VillageFusionScreen.java")
     role_ui = read("VillageRoleProgressScreen.java")
     client_ui = read("VillageClientUi.java")
-    visuals = read("VillageSkillVisualSystem.java")
+    visuals = read("VillageSkillEffectSystem.java")
     progression = read("VillageProgressionSystem.java")
     respawn = read("VillageRespawnSystem.java")
     inventory = read("VillageInventoryPanel.java")
@@ -58,7 +58,8 @@ def main() -> None:
     assert "다음 단계 비용: 주화" in controller
 
     assert "ParticleTypes" not in visuals and "sendParticles" not in visuals
-    assert "pushFromPlayer" in visuals and "tauntTargets" in visuals
+    assert "Display.ItemDisplay" in visuals and "Display.BlockDisplay" in visuals
+    assert "Mode.WHIRLWIND" in visuals and "Mode.FORTRESS" in visuals
 
     assert "respawnDelayTicks" in progression
     assert "clearTreatmentEffects" in progression
@@ -70,7 +71,7 @@ def main() -> None:
     print("[PASS] Caller opens a screen-safe PUBG-style quick communication wheel")
     print("[PASS] Smithy fusion explicitly selects three compatible items")
     print("[PASS] Skill-hall entry opens skills only and defense research titles stay concise")
-    print("[PASS] Skills no longer draw particle geometry and infirmary upgrades have real utility")
+    print("[PASS] Skills use non-particle display actors and infirmary upgrades have real utility")
 
 
 if __name__ == "__main__":
