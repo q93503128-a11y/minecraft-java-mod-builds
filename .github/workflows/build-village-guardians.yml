@@ -12,9 +12,9 @@ permissions:
 
 env:
   PROJECT_DIR: projects/village-guardians
-  MOD_VERSION: 0.17.2-alpha.1
-  EXPECTED_JAR: villageguardians-0.17.2-alpha.1.jar
-  RELEASE_TAG: village-guardians-v0.17.2-alpha.1
+  MOD_VERSION: 0.17.3-alpha.1
+  EXPECTED_JAR: villageguardians-0.17.3-alpha.1.jar
+  RELEASE_TAG: village-guardians-v0.17.3-alpha.1
   PUBLISHED_DIR: published/village-guardians
   CI_RESULT_DIR: ci-results/village-guardians
 
@@ -40,33 +40,9 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Apply UI and progression audit patch
+      - name: Apply compact UI and routing cleanup
         working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          replacements = (
-              (
-                  Path('src/main/java/kr/moonseungjun/villageguardians/VillageSkillTreeScreen.java'),
-                  'int top = Math.max(112, height - 88);',
-                  'int top = Math.max(132, height - 108);',
-              ),
-              (
-                  Path('src/main/java/kr/moonseungjun/villageguardians/VillageShopScreen.java'),
-                  'int listWidth = clamp((right - left) * 35 / 100, 190, 310);',
-                  'int listWidth = clamp((right - left) * 24 / 100, 118, 198);',
-              ),
-          )
-          for path, old, new in replacements:
-              text = path.read_text(encoding='utf-8')
-              if old in text:
-                  text = text.replace(old, new)
-                  path.write_text(text, encoding='utf-8')
-              elif new not in text:
-                  raise RuntimeError(f'{path}: audit prepatch target not found')
-          PY
-          python3 tools/apply_v0172_progression_audit.py
+        run: python3 tools/apply_v0173_ui_cleanup.py
 
       - name: Run deterministic contract tests
         working-directory: ${{ env.PROJECT_DIR }}
@@ -99,29 +75,22 @@ jobs:
       - name: Upload verified JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: villageguardians-0.17.2-alpha.1
+          name: villageguardians-0.17.3-alpha.1
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
 
-      - name: Commit audited source and verified JAR
+      - name: Commit compact source and verified JAR
         run: |
           mkdir -p "$PUBLISHED_DIR"
           cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
           cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add \
-            "$PROJECT_DIR/src" \
-            "$PROJECT_DIR/tools" \
-            "$PROJECT_DIR/docs" \
-            "$PROJECT_DIR/gradle.properties" \
-            "$PUBLISHED_DIR/$EXPECTED_JAR" \
-            "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
-          if git diff --cached --quiet; then
-            echo 'Audited source and published JAR already match this build.'
-          else
-            git commit -m 'Apply Village Guardians v0.17.2 audit and publish verified JAR'
+          git add "$PROJECT_DIR/src" "$PROJECT_DIR/tools" "$PROJECT_DIR/gradle.properties" \
+                  "$PUBLISHED_DIR/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Apply Village Guardians v0.17.3 compact growth UI and JAR'
             git pull --rebase origin main
             git push
           fi
@@ -134,8 +103,8 @@ jobs:
             gh release upload "$RELEASE_TAG" deliverables/* --clobber
           else
             gh release create "$RELEASE_TAG" deliverables/* \
-              --title 'Village Guardians v0.17.2-alpha.1' \
-              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2 beta. Performs a source-level UI, accessibility and progression audit using WCAG 2.2 and Xbox Accessibility Guideline criteria. Standardizes the remaining shop interface around a narrow selector, wide detail pane, compact action button, dark readable text and disabled locked actions. Reworks tree overview spacing and detail hierarchy. Expands the shared tactical tree from 20 to 28 nodes, each role tree from 9 to 15 nodes for 75 role upgrades total, and village defense research from 9 to 15 upgrades. Activates the formerly disconnected emergency-barrier node and adds functional attack momentum, low-health recovery, party healing, logistics and ranged-finisher capstones while preserving existing ordinal-based save masks.'
+              --title 'Village Guardians v0.17.3-alpha.1' \
+              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2 beta. Removes the permanent lower detail panels from both tactical trees and replaces them with compact node-anchored popovers. Rebuilds skill management as small square cards with inline Z/X slot choices, keeps learning laboratory-only while allowing equipment anywhere, routes inventory Growth directly to the tree, confines equipment strengthening to the smithy, moves shortcuts away from vanilla defaults, reduces oversized buttons and spacing, darkens bright interfaces, and adds pixel-width clipping to prevent text overflow.'
           fi
 
       - name: Record CI result in repository
@@ -159,9 +128,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898266+github-actions[bot]@users.noreply.github.com'
           git add "$CI_RESULT_DIR/status.txt" "$CI_RESULT_DIR/latest-gradle.log"
-          if git diff --cached --quiet; then
-            exit 0
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Village Guardians CI result for ${GITHUB_SHA::7}"
+            git pull --rebase origin main
+            git push
           fi
-          git commit -m "Record Village Guardians CI result for ${GITHUB_SHA::7}"
-          git pull --rebase origin main
-          git push
