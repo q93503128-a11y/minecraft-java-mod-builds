@@ -1,0 +1,157 @@
+name: Build Village Guardians v0.17.8 Star Growth and Skill Arena
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.build-trigger-v0178'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: village-guardians-v0178-main
+  cancel-in-progress: false
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  EXPECTED_JAR: villageguardians-0.17.8-alpha.1.jar
+  PUBLISHED_DIR: published/village-guardians
+  RESULT_DIR: ci-results/village-guardians-v0178
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-read-only: false
+
+      - name: Apply v0.17.8 source patch
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '862c3641c81df411066e56e6fb7a2d8a77221d3ecaa397137e300faf8cca6441  tools/v0178_patch.b64' | sha256sum -c -
+          base64 --decode tools/v0178_patch.b64 | gzip --decompress > tools/apply_v0178.py
+          echo '513c2543e91629e7617b8508c75052d93ca342e57fda54bf4327835d4a6153f4  tools/apply_v0178.py' | sha256sum -c -
+          python3 -m py_compile tools/apply_v0178.py
+          python3 tools/apply_v0178.py
+          rm -f tools/apply_v0178.py tools/v0178_patch.b64
+
+      - name: Run complete contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            python3 tools/test_rpg_balance.py
+            python3 tools/test_village_zone.py
+            python3 tools/test_progression_loop.py
+            python3 tools/test_progression_depth.py
+            python3 tools/test_fortress_layout.py
+            python3 tools/test_runtime_safety.py
+            python3 tools/test_action_layout.py
+            python3 tools/test_enemy_content.py
+            python3 tools/test_v0174_ui_safety.py
+            python3 tools/test_v0175_gameplay_ui.py
+            python3 tools/test_v0176_gameplay.py
+            python3 tools/test_v0177_gameplay.py
+            python3 tools/test_v0178_gameplay.py
+          } 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0178-contracts.log"
+
+      - name: Build Java 25 JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain \
+            2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0178-gradle.log"
+
+      - name: Verify artifact
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          mkdir -p "$GITHUB_WORKSPACE/deliverables-v0178"
+          cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables-v0178/"
+          cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables-v0178/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0178-contracts.log" "$GITHUB_WORKSPACE/deliverables-v0178/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0178-gradle.log" "$GITHUB_WORKSPACE/deliverables-v0178/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.17.8-alpha.1
+          path: deliverables-v0178/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish verified source and JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PUBLISHED_DIR"
+          cp "deliverables-v0178/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+          cp "deliverables-v0178/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A "$PROJECT_DIR/src" "$PROJECT_DIR/tools" "$PROJECT_DIR/gradle.properties" \
+                     "$PUBLISHED_DIR/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Apply Village Guardians v0.17.8 star growth and outdoor skill arena'
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Record result
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          FINAL_STATUS='${{ job.status }}'
+          TEMP_DIR="$RUNNER_TEMP/village-guardians-v0178-result"
+          rm -rf "$TEMP_DIR" && mkdir -p "$TEMP_DIR"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0178-contracts.log" "$TEMP_DIR/latest-contracts.log" 2>/dev/null || printf '%s\n' 'Contracts did not finish.' > "$TEMP_DIR/latest-contracts.log"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0178-gradle.log" "$TEMP_DIR/latest-gradle.log" 2>/dev/null || printf '%s\n' 'Gradle did not finish.' > "$TEMP_DIR/latest-gradle.log"
+          cat > "$TEMP_DIR/status.txt" <<EOF
+          status=$FINAL_STATUS
+          trigger_sha=$GITHUB_SHA
+          published_commit=$(git rev-parse HEAD 2>/dev/null)
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
+          version=0.17.8-alpha.1
+          EOF
+          git reset --hard HEAD
+          git clean -fd
+          mkdir -p "$RESULT_DIR"
+          cp "$TEMP_DIR"/* "$RESULT_DIR/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULT_DIR"
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Village Guardians v0.17.8 result for ${GITHUB_SHA::7}"
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
