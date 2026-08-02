@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class OriginProfileManager {
-    public static final int ORIGIN_SCHEMA_VERSION = 1;
+    public static final int ORIGIN_SCHEMA_VERSION = 2;
 
     private static LivingKingdomsSavedData savedData;
 
@@ -48,11 +48,11 @@ public final class OriginProfileManager {
             return new OriginSubmissionResultPayload(false, "세계 저장 데이터가 아직 준비되지 않았습니다.");
         }
         if (savedData.profile(player.getUUID()).isPresent()) {
-            return new OriginSubmissionResultPayload(false, "이미 출신 선택을 완료했습니다.");
+            return new OriginSubmissionResultPayload(false, "이미 시민 기록을 완료했습니다.");
         }
         if (!isSafeId(payload.speciesId()) || !isSafeId(payload.homelandId())
                 || !isSafeId(payload.backgroundId()) || !isSafeId(payload.residenceId())) {
-            return new OriginSubmissionResultPayload(false, "허용되지 않은 선택 ID입니다.");
+            return new OriginSubmissionResultPayload(false, "허용되지 않은 기록 ID입니다.");
         }
 
         PlayableOriginCatalog.ValidationResult validation = PlayableOriginCatalog.validate(
@@ -60,7 +60,7 @@ public final class OriginProfileManager {
         );
         if (!validation.valid()) {
             String reason = validation.errors().isEmpty()
-                    ? "선택 조합이 유효하지 않습니다."
+                    ? "시민 기록 조합이 유효하지 않습니다."
                     : validation.errors().getFirst();
             return new OriginSubmissionResultPayload(false, reason);
         }
@@ -73,12 +73,12 @@ public final class OriginProfileManager {
         StarterLoadoutManager.grant(player, profile);
         LivingRealmWorldManager.requestPlacement(player, profile);
         LivingKingdoms.LOGGER.info(
-                "Player {} completed origin selection: species={}, homeland={}, background={}, residence={}",
+                "Player {} registered as an Erden citizen: species={}, homeland={}, background={}, residence={}",
                 player.getGameProfile().name(), profile.speciesId(), profile.homelandId(),
                 profile.backgroundId(), profile.residenceId()
         );
         return new OriginSubmissionResultPayload(true,
-                "출신과 기본 소속이 확정되었습니다. 왕국 준비가 끝나면 선택한 거주지로 이동합니다.");
+                "에르덴 시민 기록이 확정되었습니다. 왕도 준비가 끝나면 시민구 거주지로 이동합니다.");
     }
 
     private static boolean isSafeId(String value) {
