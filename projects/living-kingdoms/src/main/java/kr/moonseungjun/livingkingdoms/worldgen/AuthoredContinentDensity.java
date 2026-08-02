@@ -5,11 +5,11 @@ import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
 /**
- * Deterministic coordinate-authored terrain for the entire Living Realm.
+ * One-block-per-metre authored terrain for the complete Erden kingdom footprint.
  *
- * <p>This function deliberately does not sample or adapt to the vanilla overworld. Political regions,
- * coastlines, mountain chains, river valleys and safe capital plateaus are part of one permanent map.
- * World seeds may still affect biome decoration, but they never move the continental geography.</p>
+ * <p>The active landmass is approximately 48 km east-west by 40 km north-south. It contains a
+ * navigable river basin, western mineral hills, northern forest uplands, eastern marshes and a
+ * southern grain belt. No legacy test capitals remain in this density function.</p>
  */
 public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
     INSTANCE;
@@ -18,17 +18,6 @@ public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
             KeyDispatchDataCodec.of(MapCodec.unit(INSTANCE));
 
     private static final double SEA_LEVEL = 63.0;
-    private static final Capital[] CAPITALS = {
-            new Capital(0, 0, 72.0, 520.0),
-            new Capital(-2_400, -1_200, 79.0, 470.0),
-            new Capital(2_200, -1_500, 92.0, 500.0),
-            new Capital(3_400, 300, 76.0, 420.0),
-            new Capital(600, 2_500, 68.0, 420.0),
-            new Capital(3_200, 2_600, 73.0, 430.0),
-            new Capital(3_800, -2_800, 88.0, 430.0),
-            new Capital(0, -4_200, 105.0, 500.0),
-            new Capital(-4_200, 1_800, 67.0, 360.0)
-    };
 
     @Override
     public double compute(FunctionContext context) {
@@ -38,14 +27,13 @@ public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
         double surface = surfaceHeight(x, z);
         double density = (surface - y) / 18.0;
 
-        // Deep caves are carved from the authored rock mass, but the upper eight blocks remain whole
-        // so roads, houses and settlement floors never open into random holes.
+        // Settlement floors and roads keep a solid ten-metre crust. Deeper caves remain part of the
+        // natural geology and can later be assigned to mines, aquifers and dungeons deliberately.
         if (y < surface - 10.0 && y > -48) {
-            double cave = Math.abs(fractal3(x * 0.021, y * 0.028, z * 0.021, 0x61C8864680B583EBL));
-            double caveLimit = y < 5 ? 0.69 : 0.75;
-            if (cave > caveLimit) {
-                density -= (cave - caveLimit) * 7.5;
-            }
+            double cave = Math.abs(fractal3(x * 0.020, y * 0.028, z * 0.020,
+                    0x61C8864680B583EBL));
+            double limit = y < 5 ? 0.69 : 0.75;
+            if (cave > limit) density -= (cave - limit) * 7.5;
         }
         return density;
     }
@@ -66,94 +54,96 @@ public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
     }
 
     public static double surfaceHeight(double x, double z) {
-        double broad = fractal2(x * 0.00042, z * 0.00042, 0x9E3779B97F4A7C15L);
-        double hills = fractal2(x * 0.00155, z * 0.00155, 0xD1B54A32D192ED03L);
-        double detail = fractal2(x * 0.0065, z * 0.0065, 0x94D049BB133111EBL);
+        double continental = fractal2(x * 0.00010, z * 0.00010, 0x9E3779B97F4A7C15L);
+        double regional = fractal2(x * 0.00034, z * 0.00034, 0xD1B54A32D192ED03L);
+        double hills = fractal2(x * 0.00115, z * 0.00115, 0x94D049BB133111EBL);
+        double detail = fractal2(x * 0.0042, z * 0.0042, 0xDB4F0B9175AE2165L);
 
-        // Three overlapping plates form the main continent. A separate western field becomes an
-        // archipelago rather than an accidental vanilla ocean biome.
-        double central = ellipse(x + 100.0, z + 250.0, 4_650.0, 3_650.0);
-        double north = ellipse(x, z + 3_250.0, 2_350.0, 2_250.0);
-        double east = ellipse(x - 2_650.0, z - 900.0, 2_550.0, 2_850.0);
-        double west = ellipse(x + 3_350.0, z - 850.0, 2_000.0, 2_350.0);
-        double land = Math.max(Math.max(central, north), Math.max(east, west));
-        land += broad * 0.18;
-
-        // Western archipelago: fixed large islands with noise-cut channels.
-        double archipelago = ellipse(x + 4_250.0, z - 1_750.0, 1_450.0, 1_250.0)
-                + hills * 0.32 - 0.12;
-        land = Math.max(land, archipelago);
+        // The kingdom occupies a large, irregular peninsula rather than the old miniature island.
+        double erden = ellipse(x + 250.0, z - 150.0, 24_000.0, 20_000.0);
+        erden += continental * 0.12 + regional * 0.05;
 
         double surface;
-        if (land <= -0.10) {
-            // Ocean floor and abyssal shelves.
-            surface = 43.0 + broad * 8.0 + detail * 2.0;
-        } else if (land < 0.08) {
-            // Beaches and shallow coastal shelves.
-            double t = smoothstep(-0.10, 0.08, land);
-            surface = lerp(54.0 + hills * 3.0, 67.0 + hills * 4.0, t);
+        if (erden <= -0.08) {
+            surface = 42.0 + continental * 8.0 + hills * 2.0;
+        } else if (erden < 0.035) {
+            double coast = smoothstep(-0.08, 0.035, erden);
+            surface = lerp(53.0 + regional * 3.0, 67.0 + hills * 2.5, coast);
         } else {
-            surface = 69.0 + Math.min(land, 0.9) * 17.0 + hills * 7.0 + detail * 2.2;
+            surface = 69.0 + Math.min(erden, 0.85) * 12.0
+                    + continental * 7.0 + regional * 5.0 + hills * 2.8 + detail * 0.8;
         }
 
-        // Major mountain systems. Kardum and the northern dragonlands are intentionally dominant.
-        double kardum = radial(x, z, 2_200.0, -1_500.0, 1_300.0);
-        double dragon = radial(x, z, 0.0, -4_200.0, 1_550.0);
-        double greyCrown = radial(x, z, 3_800.0, -2_800.0, 950.0);
-        double ridge = Math.abs(fractal2(x * 0.0025, z * 0.0025, 0xBF58476D1CE4E5B9L));
-        surface += kardum * (16.0 + ridge * 30.0);
-        surface += dragon * (24.0 + ridge * 42.0);
-        surface += greyCrown * (9.0 + ridge * 17.0);
+        // Western mineral hills and north-western ridges form the kingdom's stone and iron belt.
+        double west = smoothstep(3_000.0, 19_000.0, -x);
+        double westRidge = Math.abs(fractal2(x * 0.00078, z * 0.00078,
+                0xBF58476D1CE4E5B9L));
+        surface += west * (5.0 + westRidge * 21.0);
 
-        // Silvana is a protected forest basin with tall outer ridges and a broad inhabitable floor.
-        double silvana = radial(x, z, -2_400.0, -1_200.0, 1_050.0);
-        surface -= silvana * 6.0;
-        surface += ring(x, z, -2_400.0, -1_200.0, 780.0, 270.0) * 14.0;
+        // Northern forest uplands are high enough to change climate without becoming a continuous
+        // impassable wall. Local passes remain available for roads and settlements.
+        double north = smoothstep(4_000.0, 17_500.0, -z);
+        double northRidge = Math.abs(fractal2(x * 0.00092, z * 0.00092,
+                0xC13FA9A902A6328FL));
+        surface += north * (4.0 + northRidge * 14.0);
 
-        // Sahar dunes and the red steppe stay wide and traversable instead of becoming random cliffs.
-        double sahar = radial(x, z, 3_200.0, 2_600.0, 1_250.0);
-        double steppe = radial(x, z, 3_400.0, 300.0, 1_100.0);
-        surface += sahar * (Math.sin(x * 0.018 + z * 0.006) * 3.2 + 2.0);
-        surface += steppe * (hills * 2.5 - 1.0);
+        // Eastern marsh country is a shallow, poorly drained basin with raised natural levees.
+        double east = smoothstep(6_000.0, 19_000.0, x);
+        double marshBand = 1.0 - smoothstep(0.0, 14_000.0, Math.abs(z - 1_200.0));
+        surface -= east * marshBand * (4.0 + Math.max(0.0, regional) * 2.0);
 
-        // Authored river corridors. Their beds cross the central continent and reach the sea.
-        surface -= riverCut(x, z, 0.0, 520.0, 680.0, 48.0, 10.0);
-        surface -= riverCut(z, x, -450.0, 760.0, 910.0, 42.0, 8.0);
-        surface -= riverCut(x + z * 0.24, z, 1_350.0, 930.0, 1_250.0, 38.0, 7.0);
+        // The southern grain belt is broad and gently rolling, not a mathematically flat platform.
+        double south = smoothstep(5_000.0, 17_000.0, z);
+        double farmTarget = 70.0 + continental * 3.0 + regional * 2.2 + detail * 0.5;
+        surface = lerp(surface, farmTarget, south * 0.58);
 
-        // Capital districts are part of the terrain design itself. The settlement builder performs
-        // only local landscaping; it no longer searches for or conquers a random vanilla hill.
-        for (Capital capital : CAPITALS) {
-            double distance = Math.hypot(x - capital.x, z - capital.z);
-            if (distance >= capital.radius) continue;
-            double blend = 1.0 - smoothstep(capital.radius * 0.52, capital.radius, distance);
-            double localRoll = fractal2((x - capital.x) * 0.004, (z - capital.z) * 0.004,
-                    0xDB4F0B9175AE2165L) * 2.4;
-            surface = lerp(surface, capital.height + localRoll, blend);
+        // Silver River: a 180-260 m floodplain with a navigable main channel. It passes the western
+        // side of the capital and continues to the southern coast.
+        double riverCenterX = silverRiverCenterX(z);
+        double riverDistance = Math.abs(x - riverCenterX);
+        double floodplain = 1.0 - smoothstep(95.0, 310.0, riverDistance);
+        double channel = 1.0 - smoothstep(0.0, 72.0, riverDistance);
+        surface -= floodplain * 4.0 + channel * 7.5;
+
+        // A western tributary creates the crossing that originally justified the royal capital.
+        double tributaryCenterZ = 2_650.0 + Math.sin(x / 2_700.0) * 520.0;
+        double tributaryDistance = Math.abs(z - tributaryCenterZ);
+        double tributary = 1.0 - smoothstep(45.0, 185.0, tributaryDistance);
+        if (x < 1_500.0 && x > -12_000.0) surface -= tributary * 5.5;
+
+        // The 6.2 x 5 km metropolitan basin follows natural relief. Only the inner citadel terrace is
+        // strongly stabilised; residential districts keep several metres of elevation change.
+        double capitalDistance = Math.hypot(x, z);
+        if (capitalDistance < 3_300.0) {
+            double urbanBlend = 1.0 - smoothstep(1_600.0, 3_300.0, capitalDistance);
+            double urbanRoll = fractal2(x * 0.00115, z * 0.00115,
+                    0x8CB92BA72F3D8DD7L) * 3.1;
+            surface = lerp(surface, 72.0 + urbanRoll, urbanBlend * 0.62);
+        }
+        double citadelDistance = Math.hypot(x, z + 220.0);
+        if (citadelDistance < 310.0) {
+            double terrace = 1.0 - smoothstep(190.0, 310.0, citadelDistance);
+            double local = fractal2(x * 0.004, (z + 220.0) * 0.004,
+                    0xA24BAED4963EE407L) * 0.7;
+            surface = lerp(surface, 74.0 + local, terrace * 0.88);
         }
         return surface;
     }
 
+    public static double silverRiverStrength(double x, double z) {
+        double distance = Math.abs(x - silverRiverCenterX(z));
+        return 1.0 - smoothstep(72.0, 310.0, distance);
+    }
+
+    private static double silverRiverCenterX(double z) {
+        return -820.0 + Math.sin(z / 2_900.0) * 470.0
+                + Math.sin(z / 930.0) * 105.0;
+    }
+
     private static double ellipse(double x, double z, double radiusX, double radiusZ) {
-        double distance = Math.sqrt((x * x) / (radiusX * radiusX) + (z * z) / (radiusZ * radiusZ));
+        double distance = Math.sqrt((x * x) / (radiusX * radiusX)
+                + (z * z) / (radiusZ * radiusZ));
         return 1.0 - distance;
-    }
-
-    private static double radial(double x, double z, double cx, double cz, double radius) {
-        return 1.0 - smoothstep(0.0, radius, Math.hypot(x - cx, z - cz));
-    }
-
-    private static double ring(double x, double z, double cx, double cz, double radius, double width) {
-        double d = Math.abs(Math.hypot(x - cx, z - cz) - radius);
-        return 1.0 - smoothstep(0.0, width, d);
-    }
-
-    private static double riverCut(double primary, double secondary, double phase,
-                                   double wavelength, double bendScale, double halfWidth, double depth) {
-        double center = phase + Math.sin(secondary / wavelength) * bendScale
-                + Math.sin(secondary / (wavelength * 0.37)) * bendScale * 0.19;
-        double distance = Math.abs(primary - center);
-        return (1.0 - smoothstep(halfWidth, halfWidth * 3.2, distance)) * depth;
     }
 
     private static double fractal2(double x, double z, long salt) {
@@ -161,8 +151,8 @@ public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
         double amplitude = 0.58;
         double frequency = 1.0;
         for (int octave = 0; octave < 4; octave++) {
-            total += valueNoise2(x * frequency, z * frequency, salt + octave * 0x9E3779B97F4A7C15L)
-                    * amplitude;
+            total += valueNoise2(x * frequency, z * frequency,
+                    salt + octave * 0x9E3779B97F4A7C15L) * amplitude;
             frequency *= 2.03;
             amplitude *= 0.5;
         }
@@ -244,8 +234,5 @@ public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
 
     private static double lerp(double a, double b, double t) {
         return a + (b - a) * t;
-    }
-
-    private record Capital(double x, double z, double height, double radius) {
     }
 }
