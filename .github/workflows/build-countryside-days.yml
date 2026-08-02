@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/build-countryside-days.yml'
+      - 'projects/countryside-days/tools/prepare_alpha16_exact.py'
 
 permissions:
   contents: write
