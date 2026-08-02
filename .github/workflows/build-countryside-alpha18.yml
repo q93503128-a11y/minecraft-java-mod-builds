@@ -1,0 +1,135 @@
+name: Build Countryside Days alpha.18
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-countryside-alpha18.yml'
+      - 'projects/countryside-days/tools/prepare_alpha18_exact.py'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare exact alpha.18 source
+        id: prepare
+        run: python3 projects/countryside-days/tools/prepare_alpha18_exact.py
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Clean Java 25 build
+        id: compile
+        working-directory: projects/countryside-days
+        run: |
+          if [ ! -x ./gradlew ]; then
+            gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+            chmod +x gradlew
+          fi
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a18-build.log
+
+      - name: Datagen
+        id: datagen
+        working-directory: projects/countryside-days
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee /tmp/cd-a18-datagen.log
+
+      - name: Required GameTests
+        id: gametest
+        timeout-minutes: 25
+        working-directory: projects/countryside-days
+        run: |
+          rm -rf run/gametestserver/gametestworld
+          mkdir -p run/gametestserver
+          cat > run/gametestserver/server.properties <<'PROPERTIES'
+          level-name=gametestworld
+          level-type=minecraft:flat
+          generator-settings={"biome":"countrysidedays:rural_plains","features":true,"lakes":false,"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":8},{"block":"minecraft:grass_block","height":1}],"structure_overrides":[]}
+          generate-structures=true
+          online-mode=false
+          spawn-protection=0
+          view-distance=8
+          simulation-distance=6
+          PROPERTIES
+          set -o pipefail
+          ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee /tmp/cd-a18-gametest.log
+
+      - name: Verify alpha.18 contracts and executable JAR
+        id: verify
+        working-directory: projects/countryside-days
+        run: |
+          JAR=build/libs/countrysidedays-0.1.0-alpha.18.jar
+          test -s "$JAR"
+          grep -Rqs 'alpha18OccupiedSeats' src/main/java
+          grep -Rqs 'alpha18Clock' src/main/java
+          grep -Rqs 'alpha18 freshwater-only' src/main/java
+          grep -Rqs 'alpha18HayEfficiency = 6' src/main/java
+          grep -Rqs 'alpha18WaterEfficiency = 8' src/main/java
+          ! grep -q 'teleportTo(' src/main/java/kr/countrysidedays/gameplay/VillageLifeManager.java
+          python3 tools/verify_jar.py "$JAR" | tee /tmp/cd-a18-jar.log
+          unzip -t "$JAR"
+          ! unzip -Z1 "$JAR" | grep -q '\.java$'
+          unzip -Z1 "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
+          unzip -Z1 "$JAR" | grep -q 'kr/countrysidedays/CountrysideDays.class'
+          sha256sum "$JAR" | tee /tmp/cd-a18-sha256.txt
+
+      - name: Upload verified JAR
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.18-jar
+          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.18.jar
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Record result
+        if: always()
+        env:
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          DATAGEN_OUTCOME: ${{ steps.datagen.outcome }}
+          GAMETEST_OUTCOME: ${{ steps.gametest.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+        run: |
+          git restore --source=HEAD --staged --worktree projects/countryside-days || true
+          DEST=release-transfer/countryside-days-alpha18-status
+          mkdir -p "$DEST"
+          FILE="$DEST/${GITHUB_RUN_ID}.txt"
+          {
+            echo run=$GITHUB_RUN_ID
+            echo source=$GITHUB_SHA
+            echo prepare=$PREPARE_OUTCOME
+            echo compile=$COMPILE_OUTCOME
+            echo datagen=$DATAGEN_OUTCOME
+            echo gametest=$GAMETEST_OUTCOME
+            echo verify=$VERIFY_OUTCOME
+            echo upload=$UPLOAD_OUTCOME
+            [ ! -f /tmp/cd-a18-sha256.txt ] || { echo '--- jar ---'; cat /tmp/cd-a18-sha256.txt; }
+            [ ! -f /tmp/cd-a18-build.log ] || { echo '--- build tail ---'; tail -n 240 /tmp/cd-a18-build.log; }
+            [ ! -f /tmp/cd-a18-datagen.log ] || { echo '--- datagen tail ---'; tail -n 120 /tmp/cd-a18-datagen.log; }
+            [ ! -f /tmp/cd-a18-gametest.log ] || { echo '--- gametest tail ---'; tail -n 240 /tmp/cd-a18-gametest.log; }
+          } > "$FILE"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$FILE"
+          git commit -m "Record Countryside Days alpha.18 result ${GITHUB_RUN_ID}"
+          git pull --rebase origin main
+          git push origin HEAD:main
