@@ -11,34 +11,25 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 public final class VillageTownHallInteraction {
     private static final long ROLE_MANAGEMENT_DISTANCE_SQUARED = 16L * 16L;
 
-    private VillageTownHallInteraction() {
-    }
+    private VillageTownHallInteraction() {}
 
     public static boolean handle(PlayerInteractEvent.RightClickBlock event) {
         if (event.getHand() != InteractionHand.MAIN_HAND
                 || !(event.getEntity() instanceof ServerPlayer player)
                 || !(player.level() instanceof ServerLevel level)
-                || !level.getBlockState(event.getPos()).is(Blocks.LECTERN)) {
-            return false;
-        }
+                || !level.getBlockState(event.getPos()).is(Blocks.LECTERN)) return false;
         BlockPos expected = terminalPosition(level);
-        if (expected == null || !expected.equals(event.getPos())) {
-            return false;
-        }
+        if (expected == null || !expected.equals(event.getPos())) return false;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
-        VillageUiService.openDashboard(player);
+        VillageUiController.openDashboard(player);
         return true;
     }
 
     public static boolean isNearTownHall(ServerPlayer player) {
-        if (!(player.level() instanceof ServerLevel level)) {
-            return false;
-        }
+        if (!(player.level() instanceof ServerLevel level)) return false;
         BlockPos expected = terminalPosition(level);
-        if (expected == null) {
-            return false;
-        }
+        if (expected == null) return false;
         BlockPos current = player.blockPosition();
         long dx = (long) current.getX() - expected.getX();
         long dy = (long) current.getY() - expected.getY();
@@ -48,12 +39,8 @@ public final class VillageTownHallInteraction {
 
     private static BlockPos terminalPosition(ServerLevel level) {
         BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
-        if (villageCenter == null) {
-            return null;
-        }
-        return VillageFortressBuildings.terminalPosition(
-                level,
-                villageCenter,
+        if (villageCenter == null) return null;
+        return VillageFortressBuildings.terminalPosition(level, villageCenter,
                 VillageProgressionSystem.Building.TOWN_HALL);
     }
 }
