@@ -1,0 +1,186 @@
+name: Finalize Village Guardians v0.17.5 Quick Communication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.build-trigger-v0175-cleanup'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: village-guardians-v0175-cleanup-main
+  cancel-in-progress: false
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  EXPECTED_JAR: villageguardians-0.17.5-alpha.1.jar
+  PUBLISHED_DIR: published/village-guardians
+  RESULT_DIR: ci-results/village-guardians-v0175-cleanup
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-read-only: false
+
+      - name: Remove obsolete caller wording
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          controller = Path('src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java')
+          text = controller.read_text(encoding='utf-8')
+          old = 'H 상태 · J 성장 · K 직업 성장 · U 호출기 · B 통신 · Z/X 기술'
+          new = 'H 상태 · J 성장 · K 직업 성장 · B/U 통신 · Z/X 기술'
+          if old not in text:
+              raise SystemExit('VillageUiController stale shortcut text not found')
+          controller.write_text(text.replace(old, new), encoding='utf-8')
+
+          starter = Path('src/main/java/kr/moonseungjun/villageguardians/VillageStarterKit.java')
+          text = starter.read_text(encoding='utf-8')
+          replacements = {
+              'H 상태 · J 성장 · K 직업 성장 · U 빠른 통신 · B 빠른 통신 · Z/X 기술':
+                  'H 상태 · J 성장 · K 직업 성장 · B/U 빠른 통신 · Z/X 기술',
+              '인벤토리 화면의 호출기 버튼을 사용하세요.':
+                  '인벤토리 화면의 빠른 통신 버튼을 사용하세요.'
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'VillageStarterKit text not found: {old}')
+              text = text.replace(old, new)
+          starter.write_text(text, encoding='utf-8')
+
+          runtime = Path('tools/test_runtime_safety.py')
+          text = runtime.read_text(encoding='utf-8')
+          text = text.replace('assert "인벤토리 화면의 호출기 버튼" in starter',
+                              'assert "인벤토리 화면의 빠른 통신 버튼" in starter')
+          runtime.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Run complete contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            python3 tools/test_rpg_balance.py
+            python3 tools/test_village_zone.py
+            python3 tools/test_progression_loop.py
+            python3 tools/test_progression_depth.py
+            python3 tools/test_fortress_layout.py
+            python3 tools/test_runtime_safety.py
+            python3 tools/test_action_layout.py
+            python3 tools/test_enemy_content.py
+            python3 tools/test_v0174_ui_safety.py
+            python3 tools/test_v0175_gameplay_ui.py
+          } 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0175-cleanup-contracts.log"
+
+      - name: Build Java 25 runtime JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain \
+            2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0175-cleanup-gradle.log"
+
+      - name: Verify and stage artifact
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          mkdir -p "$GITHUB_WORKSPACE/deliverables-v0175-cleanup"
+          cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables-v0175-cleanup/"
+          cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables-v0175-cleanup/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0175-cleanup-contracts.log" "$GITHUB_WORKSPACE/deliverables-v0175-cleanup/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0175-cleanup-gradle.log" "$GITHUB_WORKSPACE/deliverables-v0175-cleanup/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.17.5-alpha.1-final
+          path: deliverables-v0175-cleanup/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit finalized source and JAR to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PUBLISHED_DIR"
+          cp "deliverables-v0175-cleanup/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+          cp "deliverables-v0175-cleanup/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$PROJECT_DIR/src" "$PROJECT_DIR/tools" \
+                  "$PUBLISHED_DIR/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Finalize Village Guardians v0.17.5 quick communication labels and JAR'
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Record dedicated result
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          FINAL_STATUS='${{ job.status }}'
+          TEMP_DIR="$RUNNER_TEMP/village-guardians-v0175-cleanup-result"
+          rm -rf "$TEMP_DIR"
+          mkdir -p "$TEMP_DIR"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0175-cleanup-contracts.log" "$TEMP_DIR/latest-contracts.log" 2>/dev/null || \
+            printf '%s\n' 'Contract checks did not finish.' > "$TEMP_DIR/latest-contracts.log"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0175-cleanup-gradle.log" "$TEMP_DIR/latest-gradle.log" 2>/dev/null || \
+            printf '%s\n' 'Gradle build did not finish.' > "$TEMP_DIR/latest-gradle.log"
+          PUBLISHED_COMMIT="$(git rev-parse HEAD 2>/dev/null)"
+          cat > "$TEMP_DIR/status.txt" <<EOF
+          status=$FINAL_STATUS
+          trigger_sha=$GITHUB_SHA
+          published_commit=$PUBLISHED_COMMIT
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
+          version=0.17.5-alpha.1
+          EOF
+          git reset --hard HEAD
+          git clean -fd
+          mkdir -p "$RESULT_DIR"
+          cp "$TEMP_DIR/status.txt" "$RESULT_DIR/status.txt"
+          cp "$TEMP_DIR/latest-contracts.log" "$RESULT_DIR/latest-contracts.log"
+          cp "$TEMP_DIR/latest-gradle.log" "$RESULT_DIR/latest-gradle.log"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULT_DIR"
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Village Guardians v0.17.5 cleanup result for ${GITHUB_SHA::7}"
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
