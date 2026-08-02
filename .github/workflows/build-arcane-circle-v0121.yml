@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Fusion and Mage Society
+name: Build Arcane Circle v0.12.1 Per-Spell World Geometry, Fusion and Mage Society
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   build:
-    name: Java 25 / NeoForge 26.2 fusion, UI and mage society
+    name: Java 25 / NeoForge 26.2 per-spell world geometry, fusion, UI and mage society
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
