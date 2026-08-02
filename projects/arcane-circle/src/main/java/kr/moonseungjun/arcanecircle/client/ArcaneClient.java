@@ -24,9 +24,10 @@ public final class ArcaneClient {
             new KeyMapping("key.arcanecircle.slot_4", InputConstants.KEY_4, KeyMapping.Category.MISC),
             new KeyMapping("key.arcanecircle.slot_5", InputConstants.KEY_5, KeyMapping.Category.MISC)
     };
-
     private static final boolean[] SLOT_WAS_DOWN = new boolean[5];
     private static boolean fusionWasDown;
+    private static int protectedSelectedSlot = -1;
+    private static boolean numberInputActive;
 
     private ArcaneClient() {}
 
@@ -36,15 +37,15 @@ public final class ArcaneClient {
         for (KeyMapping key : SLOT_KEYS) event.register(key);
     }
 
-    /**
-     * Runs before vanilla processes hotbar key clicks. The all physical 1-9 presses are consumed from
-     * the vanilla mapping, so spell input never changes the selected item slot.
-     */
     public static void onClientTickPre(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.gui.screen() != null) return;
-        for (int slot = 0; slot < minecraft.options.keyHotbarSlots.length; slot++) {
-            while (minecraft.options.keyHotbarSlots[slot].consumeClick()) {}
+        protectedSelectedSlot = minecraft.player.getInventory().getSelectedSlot();
+        numberInputActive = false;
+        for (KeyMapping vanilla : minecraft.options.keyHotbarSlots) {
+            numberInputActive |= vanilla.isDown();
+            vanilla.setDown(false);
+            while (vanilla.consumeClick()) {}
         }
     }
 
@@ -56,7 +57,10 @@ public final class ArcaneClient {
             drainClicks();
             return;
         }
-
+        if (numberInputActive && protectedSelectedSlot >= 0
+                && minecraft.player.getInventory().getSelectedSlot() != protectedSelectedSlot) {
+            minecraft.player.getInventory().setSelectedSlot(protectedSelectedSlot);
+        }
         if (minecraft.gui.screen() != null) {
             while (GRIMOIRE_KEY.consumeClick()) {}
             drainSlotClicks();
@@ -71,18 +75,14 @@ public final class ArcaneClient {
             fusionWasDown = false;
             return;
         }
-
         while (GRIMOIRE_KEY.consumeClick()) {
             ClientPacketDistributor.sendToServer(new RequestGrimoirePayload("atlas"));
         }
-
         boolean fusionDown = FUSION_MODIFIER_KEY.isDown();
         if (!fusionWasDown && fusionDown) {
-            // Entering fusion mode cancels a normal spell that was being held.
             ClientPacketDistributor.sendToServer(new CommitFusionPayload(1));
             for (int slot = 0; slot < SLOT_WAS_DOWN.length; slot++) SLOT_WAS_DOWN[slot] = false;
         }
-
         for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
             boolean down = SLOT_KEYS[slot].isDown();
             if (down && !SLOT_WAS_DOWN[slot]) {
@@ -94,7 +94,6 @@ public final class ArcaneClient {
             SLOT_WAS_DOWN[slot] = down;
             while (SLOT_KEYS[slot].consumeClick()) {}
         }
-
         if (fusionWasDown && !fusionDown) {
             ClientPacketDistributor.sendToServer(new CommitFusionPayload(0));
             for (int slot = 0; slot < SLOT_WAS_DOWN.length; slot++) SLOT_WAS_DOWN[slot] = false;
@@ -104,14 +103,14 @@ public final class ArcaneClient {
 
     private static void resetInput() {
         fusionWasDown = false;
+        protectedSelectedSlot = -1;
+        numberInputActive = false;
         for (int slot = 0; slot < SLOT_WAS_DOWN.length; slot++) SLOT_WAS_DOWN[slot] = false;
     }
-
     private static void drainClicks() {
         while (GRIMOIRE_KEY.consumeClick()) {}
         drainSlotClicks();
     }
-
     private static void drainSlotClicks() {
         for (KeyMapping key : SLOT_KEYS) while (key.consumeClick()) {}
     }

@@ -34,6 +34,9 @@ public final class SpellCastingService {
     private static final class FusionQueueState {
         private final List<String> ingredients = new ArrayList<>();
         private long updatedAt;
+        private long chargeStartedAt = -1L;
+        private int requiredTicks;
+        private String resultId = "";
     }
 
     private static final class ChargeState {
@@ -83,6 +86,7 @@ public final class SpellCastingService {
 
         ChargeState charge = new ChargeState(slot, cast.spell().id(), serverClock(player), required);
         CHARGES.put(player.getUUID(), charge);
+        WorldMagicService.charge(player, cast.spell(), false, List.of(), cast.range(), 0.0);
         player.sendOverlayMessage(Component.literal("§5[회로 전개] §f" + cast.spell().name()
                 + " §7· " + String.format("%.1f", required / 20.0) + "초"));
         ServerLevel level = (ServerLevel) player.level();
@@ -95,6 +99,7 @@ public final class SpellCastingService {
         if (charge == null || charge.slot != slot) return;
         long elapsed = serverClock(player) - charge.startedAt;
         CHARGES.remove(player.getUUID());
+        WorldMagicService.stop(player);
         if (elapsed > CHARGE_TIMEOUT_TICKS) {
             player.sendOverlayMessage(Component.literal("§7[시전 취소] 유지 한계를 넘어 마법진이 해제되었습니다."));
             return;
@@ -119,6 +124,7 @@ public final class SpellCastingService {
     }
 
     public static void tickCharge(ServerPlayer player) {
+        tickFusion(player);
         ChargeState charge = CHARGES.get(player.getUUID());
         if (charge == null) return;
         long now = serverClock(player);
@@ -139,12 +145,15 @@ public final class SpellCastingService {
             return;
         }
 
-        // The client draws one persistent vector seal. Completion only arms the spell;
-        // releaseSlotCharge performs the cast when the player lets go.
+        if ((elapsed & 1L) == 0L) {
+            WorldMagicService.charge(player, spell, false, List.of(), cast.range(),
+                    Math.min(1.0, elapsed / (double) Math.max(1, charge.requiredTicks)));
+        }
     }
 
     public static void cancelCharge(ServerPlayer player, boolean notify) {
         ChargeState removed = CHARGES.remove(player.getUUID());
+        if (removed != null) WorldMagicService.stop(player);
         if (notify && removed != null) {
             player.sendOverlayMessage(Component.literal("§7[시전 취소] 전개한 마법진을 해제했습니다."));
         }
@@ -216,10 +225,24 @@ public final class SpellCastingService {
         String names = displayChain(queue.ingredients, " §7+ §d");
         if (exact.isPresent()) {
             SpellDefinition result = SpellCatalog.spell(exact.get().result()).orElseThrow();
+            if (!result.id().equals(queue.resultId)) {
+                queue.resultId = result.id();
+                queue.chargeStartedAt = now;
+                queue.requiredTicks = requiredFusionCastTicks(player, result, queue.ingredients.size());
+            }
+            MagicPlayerData.CastPreparation fusion = data(player).prepareFusion(player, queue.ingredients);
+            if (fusion.accepted()) {
+                WorldMagicService.charge(player, result, true, queue.ingredients, fusion.range(), 0.0);
+            }
             String extension = SpellCatalog.canExtend(queue.ingredients) ? " §8· 세 번째 회로 추가 가능" : "";
-            player.sendOverlayMessage(Component.literal("§5[융합 준비] §d" + names + " §f→ §e"
-                    + result.name() + " §7· X를 놓아 시전" + extension));
+            player.sendOverlayMessage(Component.literal("§5[융합 전개] §d" + names + " §f→ §e"
+                    + result.name() + " §7· " + String.format("%.1f", queue.requiredTicks / 20.0)
+                    + "초 유지 후 X를 놓아 시전" + extension));
         } else {
+            queue.resultId = "";
+            queue.chargeStartedAt = -1L;
+            queue.requiredTicks = 0;
+            WorldMagicService.stop(player);
             player.sendOverlayMessage(Component.literal("§5[융합 대기] §d" + names + " §7· 후보 "
                     + candidates.size() + "개 · 주문을 하나 더 선택"));
         }
@@ -227,18 +250,32 @@ public final class SpellCastingService {
 
     public static void commitFusion(ServerPlayer player) {
         FusionQueueState queue = FUSION_QUEUES.remove(player.getUUID());
+        WorldMagicService.stop(player);
         if (queue == null || queue.ingredients.isEmpty()) return;
-        if (serverClock(player) - queue.updatedAt > QUEUE_TIMEOUT_TICKS) {
+        long now = serverClock(player);
+        if (now - queue.updatedAt > QUEUE_TIMEOUT_TICKS) {
             player.sendOverlayMessage(Component.literal("§7[융합 취소] 회로 유지 시간이 지나 해제되었습니다."));
             return;
         }
         List<String> ingredients = List.copyOf(queue.ingredients);
-        if (ingredients.size() < 2) {
-            player.sendOverlayMessage(Component.literal("§7[융합 취소] 두 개 이상의 주문이 필요합니다."));
+        if (ingredients.size() < 2 || queue.resultId.isBlank() || queue.chargeStartedAt < 0L) {
+            player.sendOverlayMessage(Component.literal("§7[융합 취소] 완성된 융합식과 전개 시간이 필요합니다."));
+            return;
+        }
+        long elapsed = now - queue.chargeStartedAt;
+        if (elapsed < queue.requiredTicks) {
+            int percent = (int) Math.round(100.0 * elapsed / Math.max(1, queue.requiredTicks));
+            player.sendOverlayMessage(Component.literal("§7[융합 취소] 복합 회로 전개 " + percent
+                    + "% · 완성 전에 X를 놓았습니다."));
             return;
         }
         MagicPlayerData data = data(player);
-        castPrepared(player, data, data.prepareFusion(player, ingredients));
+        MagicPlayerData.CastPreparation cast = data.prepareFusion(player, ingredients);
+        if (!cast.accepted() || !queue.resultId.equals(cast.spell().id())) {
+            fail(player, cast.accepted() ? "융합 중 결과 회로가 변경되었습니다." : cast.message());
+            return;
+        }
+        castPrepared(player, data, cast);
     }
 
     public static void clearFusion(ServerPlayer player) {
@@ -247,6 +284,7 @@ public final class SpellCastingService {
 
     public static void clearFusion(ServerPlayer player, boolean notify) {
         FusionQueueState removed = FUSION_QUEUES.remove(player.getUUID());
+        if (removed != null) WorldMagicService.stop(player);
         if (notify && removed != null && !removed.ingredients.isEmpty()) {
             player.sendOverlayMessage(Component.literal("§7[융합 취소] 대기 중인 회로를 해제했습니다."));
         }
@@ -270,6 +308,59 @@ public final class SpellCastingService {
             return List.of();
         }
         return List.copyOf(queue.ingredients);
+    }
+
+    public static String fusionChargingSpell(ServerPlayer player) {
+        FusionQueueState state = FUSION_QUEUES.get(player.getUUID());
+        return state == null ? "" : state.resultId;
+    }
+
+    public static int fusionChargingTicks(ServerPlayer player) {
+        FusionQueueState state = FUSION_QUEUES.get(player.getUUID());
+        if (state == null || state.chargeStartedAt < 0L) return 0;
+        return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, serverClock(player) - state.chargeStartedAt));
+    }
+
+    public static int fusionChargingRequiredTicks(ServerPlayer player) {
+        FusionQueueState state = FUSION_QUEUES.get(player.getUUID());
+        return state == null ? 0 : state.requiredTicks;
+    }
+
+    public static int requiredFusionCastTicks(ServerPlayer player, SpellDefinition result, int ingredientCount) {
+        MagicPlayerData.MageState state = data(player).state(player);
+        int direct = requiredCastTicks(player, result);
+        int masteryTier = SpellCatalog.masteryTier(state.mastery(result.id()));
+        boolean registered = state.known().contains(result.id());
+        int unfamiliarPenalty = registered ? 7 : 18 + ingredientCount * 5 + result.circle() * 2;
+        return Math.max(direct + 5, direct + unfamiliarPenalty - masteryTier * 2);
+    }
+
+    private static void tickFusion(ServerPlayer player) {
+        FusionQueueState queue = FUSION_QUEUES.get(player.getUUID());
+        if (queue == null || queue.resultId.isBlank() || queue.chargeStartedAt < 0L) return;
+        long now = serverClock(player);
+        if (now - queue.updatedAt > QUEUE_TIMEOUT_TICKS) {
+            FUSION_QUEUES.remove(player.getUUID());
+            WorldMagicService.stop(player);
+            return;
+        }
+        SpellDefinition result = SpellCatalog.spell(queue.resultId).orElse(null);
+        if (result == null) {
+            FUSION_QUEUES.remove(player.getUUID());
+            WorldMagicService.stop(player);
+            return;
+        }
+        MagicPlayerData.CastPreparation cast = data(player).prepareFusion(player, queue.ingredients);
+        if (!cast.accepted() || !queue.resultId.equals(cast.spell().id())) {
+            FUSION_QUEUES.remove(player.getUUID());
+            WorldMagicService.stop(player);
+            return;
+        }
+        long elapsed = now - queue.chargeStartedAt;
+        if ((elapsed & 1L) == 0L) {
+            WorldMagicService.charge(player, result, true, queue.ingredients, cast.range(),
+                    Math.min(1.0, elapsed / (double) Math.max(1, queue.requiredTicks)));
+        }
     }
 
     private static MagicPlayerData data(ServerPlayer player) {
@@ -297,6 +388,7 @@ public final class SpellCastingService {
         }
 
         CombatGrowthService.Snapshot combatSnapshot = CombatGrowthService.capture(player, cast.range());
+        WorldMagicService.release(player, cast);
         releasePrelude(player, cast);
         if (!execute(player, spell.id(), cast.range(), cast.power())) {
             fail(player, "시전 조건이 사라져 주문이 중단되었습니다.");
@@ -334,8 +426,7 @@ public final class SpellCastingService {
             player.sendSystemMessage(Component.literal("§6[융합 각인] §f" + spell.name()
                     + "의 완성 회로가 마력핵에 새겨졌습니다. 이제 1~5 슬롯에 장착할 수 있습니다."));
             horizontalSigil(level, player.position().add(0.0, 0.12, 0.0), spell, 2.4, 2);
-            level.sendParticles(ParticleTypes.WITCH, player.getX(), player.getY() + 1.0, player.getZ(),
-                    48, 0.9, 0.9, 0.9, 0.045);
+            WorldMagicService.noParticles();
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
                     SoundSource.PLAYERS, 1.0F, 1.2F);
         }
@@ -377,98 +468,17 @@ public final class SpellCastingService {
         }
     }
 
-    private static void renderAnchoredSigil(ServerLevel level, ServerPlayer player, SpellDefinition spell,
-                                            double range, double radius, int density) {
-        switch (spell.sigilAnchor()) {
-            case FRONT -> {
-                Vec3 look = player.getLookAngle().normalize();
-                Vec3 center = player.getEyePosition().add(look.scale(1.35 + spell.circle() * 0.05));
-                verticalSigil(level, center, look, spell, radius, density);
-            }
-            case FEET -> horizontalSigil(level, player.position().add(0.0, 0.08, 0.0), spell, radius, density);
-            case BODY -> {
-                horizontalSigil(level, player.position().add(0.0, 0.12, 0.0), spell, radius, density);
-                ring(level, player.position().add(0.0, 1.05, 0.0), radius * 0.72, schoolParticle(spell),
-                        Math.max(12, 12 * density));
-            }
-            case GROUND_SELF -> horizontalSigil(level, player.position().add(0.0, 0.08, 0.0), spell,
-                    radius * 1.25, density);
-            case GROUND_TARGET -> horizontalSigil(level, aimGround(player, Math.max(4.0, range)), spell,
-                    radius * 1.18, density);
-            case TARGET -> {
-                Vec3 center = lookTarget(player, Math.max(6.0, range)).map(Mob::position)
-                        .orElse(player.getEyePosition().add(player.getLookAngle().normalize().scale(2.0)));
-                horizontalSigil(level, center.add(0.0, 0.08, 0.0), spell, radius, density);
-            }
-        }
-    }
+    private static void renderAnchoredSigil(ServerLevel level, ServerPlayer player, SpellDefinition spell, double range, double radius, int density) {}
 
-    private static void verticalSigil(ServerLevel level, Vec3 center, Vec3 normal, SpellDefinition spell,
-                                      double radius, int density) {
-        Vec3 upReference = Math.abs(normal.y) > 0.92 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
-        Vec3 right = normal.cross(upReference).normalize();
-        Vec3 up = right.cross(normal).normalize();
-        int outer = Math.max(36, 34 + spell.circle() * 6 + density * 4);
-        planeRing(level, center, right, up, radius, ParticleTypes.END_ROD, outer);
-        planeRing(level, center, right, up, radius * 0.72, schoolParticle(spell), Math.max(28, outer - 10));
-        planeRing(level, center, right, up, radius * 0.34, ParticleTypes.END_ROD, 24);
-        int sides = 4 + Math.min(5, spell.circle());
-        planePolygon(level, center, right, up, radius * 0.82, sides, ParticleTypes.END_ROD, 8 + density * 2);
-        planeLine(level, center.add(right.scale(-radius * 0.55)), center.add(right.scale(radius * 0.55)),
-                schoolParticle(spell), 12 + density * 2);
-        planeLine(level, center.add(up.scale(-radius * 0.55)), center.add(up.scale(radius * 0.55)),
-                schoolParticle(spell), 12 + density * 2);
-        level.sendParticles(schoolParticle(spell), center.x, center.y, center.z,
-                3 + spell.circle(), 0.025, 0.025, 0.025, 0.0);
-    }
+    private static void verticalSigil(ServerLevel level, Vec3 center, Vec3 normal, SpellDefinition spell, double radius, int density) {}
 
-    private static void planeRing(ServerLevel level, Vec3 center, Vec3 right, Vec3 up, double radius,
-                                  ParticleOptions particle, int points) {
-        for (int index = 0; index < points; index++) {
-            double angle = Math.PI * 2.0 * index / points;
-            Vec3 point = center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
-            level.sendParticles(particle, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-        }
-    }
+    private static void planeRing(ServerLevel level, Vec3 center, Vec3 right, Vec3 up, double radius, ParticleOptions particle, int points) {}
 
-    private static void planePolygon(ServerLevel level, Vec3 center, Vec3 right, Vec3 up, double radius,
-                                     int sides, ParticleOptions particle, int pointsPerEdge) {
-        List<Vec3> vertices = new ArrayList<>();
-        for (int index = 0; index < sides; index++) {
-            double angle = -Math.PI / 2.0 + Math.PI * 2.0 * index / sides;
-            vertices.add(center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius)));
-        }
-        for (int index = 0; index < vertices.size(); index++) {
-            planeLine(level, vertices.get(index), vertices.get((index + 1) % vertices.size()), particle, pointsPerEdge);
-        }
-    }
+    private static void planePolygon(ServerLevel level, Vec3 center, Vec3 right, Vec3 up, double radius, int sides, ParticleOptions particle, int pointsPerEdge) {}
 
-    private static void planeLine(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {
-        particleLine(level, start, end, particle, Math.max(2, points));
-    }
+    private static void planeLine(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {}
 
-    private static void horizontalSigil(ServerLevel level, Vec3 center, SpellDefinition spell,
-                                        double radius, int density) {
-        int outer = Math.max(36, 34 + spell.circle() * 6 + density * 4);
-        ring(level, center, radius, ParticleTypes.END_ROD, outer);
-        ring(level, center.add(0.0, 0.025, 0.0), radius * 0.72, schoolParticle(spell), Math.max(28, outer - 10));
-        ring(level, center.add(0.0, 0.05, 0.0), radius * 0.34, ParticleTypes.END_ROD, 24);
-        int sides = 4 + Math.min(5, spell.circle());
-        List<Vec3> vertices = new ArrayList<>();
-        for (int index = 0; index < sides; index++) {
-            double angle = -Math.PI / 2.0 + Math.PI * 2.0 * index / sides;
-            vertices.add(center.add(Math.cos(angle) * radius * 0.82, 0.07,
-                    Math.sin(angle) * radius * 0.82));
-        }
-        for (int index = 0; index < vertices.size(); index++) {
-            particleLine(level, vertices.get(index), vertices.get((index + 1) % vertices.size()),
-                    ParticleTypes.END_ROD, 8 + density * 2);
-        }
-        particleLine(level, center.add(-radius * 0.55, 0.08, 0.0), center.add(radius * 0.55, 0.08, 0.0),
-                schoolParticle(spell), 12 + density * 2);
-        particleLine(level, center.add(0.0, 0.08, -radius * 0.55), center.add(0.0, 0.08, radius * 0.55),
-                schoolParticle(spell), 12 + density * 2);
-    }
+    private static void horizontalSigil(ServerLevel level, Vec3 center, SpellDefinition spell, double radius, int density) {}
 
     private static ParticleOptions schoolParticle(SpellDefinition spell) {
         return switch (spell.school()) {
@@ -703,8 +713,7 @@ public final class SpellCastingService {
         for (int step = 1; step <= 12; step++) {
             double distance = range * step / 12.0;
             Vec3 center = origin.add(look.scale(distance)).add(0.0, 0.25, 0.0);
-            level.sendParticles(ParticleTypes.FLAME, center.x, center.y, center.z,
-                    8 + step / 2, distance * 0.08, 0.15, distance * 0.08, 0.03);
+            WorldMagicService.noParticles();
         }
         return true;
     }
@@ -730,8 +739,7 @@ public final class SpellCastingService {
         player.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 34 + (int) Math.round(power * 3.0), 1));
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 220, 0));
         ServerLevel level = (ServerLevel) player.level();
-        level.sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY(), player.getZ(),
-                28, 0.45, 0.12, 0.45, 0.04);
+        WorldMagicService.noParticles();
         return true;
     }
 
@@ -741,11 +749,9 @@ public final class SpellCastingService {
         if (destinationResult.isEmpty()) return false;
         BlockPos origin = player.blockPosition();
         BlockPos destination = destinationResult.get();
-        level.sendParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1.0, player.getZ(),
-                30 + tier * 18, 0.5, 0.9, 0.5, 0.12);
+        WorldMagicService.noParticles();
         player.teleportTo(destination.getX() + 0.5, destination.getY(), destination.getZ() + 0.5);
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY() + 1.0, player.getZ(),
-                32 + tier * 20, 0.6, 1.0, 0.6, 0.08);
+        WorldMagicService.noParticles();
         if (tier > 0) {
             int duration = 35 + tier * 35 + (int) Math.round(power * 18.0);
             player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, tier >= 2 ? 2 : 0));
@@ -877,7 +883,7 @@ public final class SpellCastingService {
                 double angle = t * Math.PI;
                 Vec3 p = center.add(wing * Math.sin(angle) * range * 0.65,
                         0.4 + Math.sin(angle) * 2.0, Math.cos(angle) * range * 0.38);
-                level.sendParticles(ParticleTypes.FLAME, p.x, p.y, p.z, 2, 0.05, 0.05, 0.05, 0.01);
+                WorldMagicService.noParticles();
             }
         }
         return true;
@@ -907,7 +913,7 @@ public final class SpellCastingService {
             double angle = i * 2.399963229728653;
             double r = radius * Math.sqrt((i + 1) / 90.0);
             Vec3 p = center.add(Math.cos(angle) * r, 0.2 + (i % 9) * 0.45, Math.sin(angle) * r);
-            level.sendParticles(ParticleTypes.SNOWFLAKE, p.x, p.y, p.z, 1, 0.08, 0.15, 0.08, 0.02);
+            WorldMagicService.noParticles();
         }
         return true;
     }
@@ -953,8 +959,7 @@ public final class SpellCastingService {
             ring(level, center.add(0.0, 0.12 + ringIndex * 0.04, 0.0), ringIndex * 1.15,
                     ringIndex % 2 == 0 ? ParticleTypes.LAVA : ParticleTypes.FLAME, 24 + ringIndex * 8);
         }
-        level.sendParticles(ParticleTypes.FLAME, center.x, center.y + 1.0, center.z,
-                120, 4.5, 1.3, 4.5, 0.04);
+        WorldMagicService.noParticles();
         return true;
     }
 
@@ -970,8 +975,7 @@ public final class SpellCastingService {
             ring(level, center.add(0.0, layer * 0.42, 0.0), 8.0 - layer * 0.8,
                     ParticleTypes.SNOWFLAKE, 64 - layer * 5);
         }
-        level.sendParticles(ParticleTypes.END_ROD, center.x, center.y + 1.0, center.z,
-                72, 4.0, 1.8, 4.0, 0.01);
+        WorldMagicService.noParticles();
         return true;
     }
 
@@ -988,8 +992,7 @@ public final class SpellCastingService {
             double angle = spiral * 0.55;
             double r = 1.2 + spiral * 0.075;
             Vec3 p = center.add(Math.cos(angle) * r, 0.2 + (spiral % 12) * 0.32, Math.sin(angle) * r);
-            level.sendParticles(spiral % 4 == 0 ? ParticleTypes.ELECTRIC_SPARK : ParticleTypes.CLOUD,
-                    p.x, p.y, p.z, 1, 0.04, 0.08, 0.04, 0.01);
+            WorldMagicService.noParticles();
         }
         return true;
     }
@@ -1030,14 +1033,7 @@ public final class SpellCastingService {
         return true;
     }
 
-    private static void healingVisual(ServerLevel level, Vec3 center, double scale) {
-        for (int layer = 0; layer < 4; layer++) {
-            ring(level, center.add(0.0, 0.2 + layer * 0.42, 0.0), (0.55 + layer * 0.12) * scale,
-                    ParticleTypes.HAPPY_VILLAGER, 20);
-        }
-        level.sendParticles(ParticleTypes.END_ROD, center.x, center.y + 1.0, center.z,
-                16, 0.4 * scale, 0.7, 0.4 * scale, 0.03);
-    }
+    private static void healingVisual(ServerLevel level, Vec3 center, double scale) {}
 
     private static Optional<Mob> lookTarget(ServerPlayer player, double range) {
         Vec3 start = player.getEyePosition();
@@ -1155,55 +1151,15 @@ public final class SpellCastingService {
         return closest.distanceToSqr(point);
     }
 
-    private static void spiralBeam(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions core,
-                                   ParticleOptions accent, int points) {
-        Vec3 delta = end.subtract(start);
-        double length = Math.max(0.001, delta.length());
-        Vec3 direction = delta.scale(1.0 / length);
-        Vec3 reference = Math.abs(direction.y) > 0.92 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
-        Vec3 right = direction.cross(reference).normalize();
-        Vec3 up = right.cross(direction).normalize();
-        for (int index = 0; index <= points; index++) {
-            double t = index / (double) points;
-            Vec3 center = start.add(delta.scale(t));
-            double angle = t * Math.PI * 8.0;
-            double radius = 0.06 + Math.sin(Math.PI * t) * 0.12;
-            Vec3 orbit = center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
-            level.sendParticles(core, center.x, center.y, center.z, 1, 0, 0, 0, 0);
-            if ((index & 1) == 0) level.sendParticles(accent, orbit.x, orbit.y, orbit.z, 1, 0, 0, 0, 0);
-        }
-    }
+    private static void spiralBeam(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions core, ParticleOptions accent, int points) {}
 
-    private static void particleLine(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {
-        Vec3 delta = end.subtract(start);
-        for (int index = 0; index <= points; index++) {
-            double t = index / (double) points;
-            Vec3 p = start.add(delta.scale(t));
-            level.sendParticles(particle, p.x, p.y, p.z, 1, 0, 0, 0, 0);
-        }
-    }
+    private static void particleLine(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {}
 
-    private static void ring(ServerLevel level, Vec3 center, double radius, ParticleOptions particle, int points) {
-        for (int index = 0; index < points; index++) {
-            double angle = Math.PI * 2.0 * index / points;
-            double x = center.x + Math.cos(angle) * radius;
-            double z = center.z + Math.sin(angle) * radius;
-            level.sendParticles(particle, x, center.y, z, 1, 0, 0, 0, 0);
-        }
-    }
+    private static void ring(ServerLevel level, Vec3 center, double radius, ParticleOptions particle, int points) {}
 
-    private static void dome(ServerLevel level, Vec3 center, double radius, ParticleOptions particle) {
-        for (int layer = 1; layer <= 5; layer++) {
-            double phi = Math.PI * layer / 12.0;
-            double ringRadius = Math.cos(phi) * radius;
-            double y = center.y + Math.sin(phi) * radius;
-            ring(level, new Vec3(center.x, y, center.z), ringRadius, particle, 22 + layer * 3);
-        }
-    }
+    private static void dome(ServerLevel level, Vec3 center, double radius, ParticleOptions particle) {}
 
-    private static void burst(ServerLevel level, Vec3 center, ParticleOptions particle, int count, double spread) {
-        level.sendParticles(particle, center.x, center.y, center.z, count, spread, spread, spread, 0.04);
-    }
+    private static void burst(ServerLevel level, Vec3 center, ParticleOptions particle, int count, double spread) {}
 
     private static void fail(ServerPlayer player, String message) {
         player.sendOverlayMessage(Component.literal("§c[마법 실패] §f" + message));

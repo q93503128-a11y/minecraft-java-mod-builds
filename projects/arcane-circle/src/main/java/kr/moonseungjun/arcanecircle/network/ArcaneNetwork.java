@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-11";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12";
     private static final Set<String> PAGES = Set.of("atlas", "recipes", "staffs", "core", "academy", "sync");
 
     private ArcaneNetwork() {}
@@ -26,6 +26,7 @@ public final class ArcaneNetwork {
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
         registrar.playToClient(GrimoireSnapshotPayload.TYPE, GrimoireSnapshotPayload.STREAM_CODEC);
+        registrar.playToClient(WorldMagicPayload.TYPE, WorldMagicPayload.STREAM_CODEC);
         registrar.playToServer(RequestGrimoirePayload.TYPE, RequestGrimoirePayload.STREAM_CODEC, ArcaneNetwork::handleRequest);
         registrar.playToServer(BeginCastPayload.TYPE, BeginCastPayload.STREAM_CODEC, ArcaneNetwork::handleBeginCast);
         registrar.playToServer(ReleaseCastPayload.TYPE, ReleaseCastPayload.STREAM_CODEC, ArcaneNetwork::handleReleaseCast);
@@ -147,6 +148,9 @@ public final class ArcaneNetwork {
                 + ";queue_result=" + result
                 + ";queue_candidates=" + candidates
                 + ";queue_extend=" + (SpellCatalog.canExtend(queue) ? 1 : 0)
+                + ";fusion_charging=" + SpellCastingService.fusionChargingSpell(player)
+                + ";fusion_charge_ticks=" + SpellCastingService.fusionChargingTicks(player)
+                + ";fusion_charge_required=" + SpellCastingService.fusionChargingRequiredTicks(player)
                 + ";cooldowns=" + magicData.cooldownSnapshot(player)
                 + ";staff_id=" + staff.id()
                 + ";staff=" + staff.displayName()

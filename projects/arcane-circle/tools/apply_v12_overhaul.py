@@ -38,7 +38,6 @@ def replace_method(source: str, signature: str, replacement: str) -> str:
 def strip_calls(source: str, token: str) -> str:
     while token in source:
         pos = source.index(token)
-        line_start = source.rfind("\n", 0, pos) + 1
         paren = source.find("(", pos)
         depth = 0
         end = -1
@@ -56,8 +55,7 @@ def strip_calls(source: str, token: str) -> str:
                     break
         if end < 0:
             raise RuntimeError(f"unclosed call: {token}")
-        indent = source[line_start:pos]
-        source = source[:line_start] + indent + "WorldMagicService.noParticles();" + source[end:]
+        source = source[:pos] + "WorldMagicService.noParticles();" + source[end:]
     return source
 
 
@@ -1080,7 +1078,7 @@ casting = casting.replace(
         releasePrelude(player, cast);
 ''')
 # Remove every explicit particle spawn from the server spell implementation.
-casting = strip_calls(casting, ".sendParticles")
+casting = strip_calls(casting, "level.sendParticles")
 # Visual helper bodies remain API-compatible but do no server-side work.
 for signature, replacement in [
     ("    private static void renderAnchoredSigil(", "    private static void renderAnchoredSigil(ServerLevel level, ServerPlayer player, SpellDefinition spell, double range, double radius, int density) {}"),
@@ -1105,8 +1103,8 @@ casting_path.write_text(casting, encoding="utf-8")
 # Runtime JAR must contain world geometry and must not regress to screen/particle circles.
 verify = ROOT / "tools/verify_jar.py"
 verify_text = verify.read_text(encoding="utf-8")
-needle = '    "kr/moonseungjun/arcanecircle/network/ArcaneNetwork.class",\n'
-addition = ('    "kr/moonseungjun/arcanecircle/network/ArcaneNetwork.class",\n'
+needle = '    "kr/moonseungjun/arcanecircle/ArcaneCircle.class",\n'
+addition = ('    "kr/moonseungjun/arcanecircle/ArcaneCircle.class",\n'
             '    "kr/moonseungjun/arcanecircle/network/WorldMagicPayload.class",\n'
             '    "kr/moonseungjun/arcanecircle/magic/WorldMagicService.class",\n'
             '    "kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class",\n')

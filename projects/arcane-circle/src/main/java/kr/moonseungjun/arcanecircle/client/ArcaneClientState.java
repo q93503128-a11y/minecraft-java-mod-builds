@@ -117,6 +117,28 @@ public final class ArcaneClientState {
         return integer("queue_extend", 0) != 0;
     }
 
+    public static int fusionChargingTicks() {
+        int snapshotTicks = integer("fusion_charge_ticks", 0);
+        if (text("fusion_charging", "").isBlank()) return 0;
+        long elapsed = Math.max(0L, (System.nanoTime() - updatedAtNanos) / 50_000_000L);
+        return snapshotTicks + (int) Math.min(Integer.MAX_VALUE, elapsed);
+    }
+
+    public static int fusionChargingRequiredTicks() {
+        return Math.max(0, integer("fusion_charge_required", 0));
+    }
+
+    public static double fusionChargingFraction() {
+        int required = fusionChargingRequiredTicks();
+        if (required <= 0) return 0.0;
+        return Math.min(1.0, fusionChargingTicks() / (double) required);
+    }
+
+    public static boolean fusionChargingReady() {
+        int required = fusionChargingRequiredTicks();
+        return required > 0 && fusionChargingTicks() >= required;
+    }
+
     public static Set<String> known() {
         return split(text("known", "")).stream().collect(Collectors.toUnmodifiableSet());
     }
