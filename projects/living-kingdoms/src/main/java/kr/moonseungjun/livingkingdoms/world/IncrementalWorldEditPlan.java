@@ -3,6 +3,7 @@ package kr.moonseungjun.livingkingdoms.world;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,15 +14,19 @@ import java.util.Map;
 public final class IncrementalWorldEditPlan {
     private static final ThreadLocal<IncrementalWorldEditPlan> ACTIVE = new ThreadLocal<>();
     private static final int CONSTRUCTION_UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
+    private static final int LEGACY_TERRAIN_COLUMN_HEIGHT = 8;
 
     private final List<Operation> operations = new ArrayList<>();
     /** Original generator surface, sampled once per column while the plan is assembled. */
     private final Map<Long, Integer> originalSurfaceHeights = new HashMap<>();
     /** Surface that earlier operations in this same plan have already promised to create. */
     private final Map<Long, Integer> plannedSurfaceHeights = new HashMap<>();
+    /** Surface cap belonging to a discarded legacy cut/fill column. */
+    private final Map<Long, Integer> suppressedTerrainCaps = new HashMap<>();
     private int operationIndex;
     private long estimatedWrites;
     private long appliedWrites;
+    private long suppressedTerrainWrites;
 
     public static Scope activate(IncrementalWorldEditPlan plan) {
         if (ACTIVE.get() != null) throw new IllegalStateException("Nested world-edit planning is not supported");
@@ -53,7 +58,18 @@ public final class IncrementalWorldEditPlan {
         return originalSurfaceHeights.size();
     }
 
+    public long suppressedTerrainWrites() {
+        return suppressedTerrainWrites;
+    }
+
     public void addSet(int x, int y, int z, Block block) {
+        long key = columnKey(x, z);
+        Integer cap = suppressedTerrainCaps.get(key);
+        if (cap != null && cap == y && isTerrainSurface(block)) {
+            suppressedTerrainCaps.remove(key);
+            suppressedTerrainWrites++;
+            return;
+        }
         operations.add(new SetOperation(x, y, z, block));
         estimatedWrites++;
     }
@@ -66,8 +82,23 @@ public final class IncrementalWorldEditPlan {
         int maxY = Math.max(y1, y2);
         int minZ = Math.min(z1, z2);
         int maxZ = Math.max(z1, z2);
+        long writes = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+
+        // The old capital builder flattened an enormous rectangle by scheduling one tall cut/fill
+        // column for every x/z coordinate. The authored generator now creates the capital plateau,
+        // so replaying those columns only carves cliffs into correct terrain. Small three-block road
+        // clearances, canals, rooms, foundations, trees and all multi-column structures remain intact.
+        if (minX == maxX && minZ == maxZ
+                && maxY - minY + 1 >= LEGACY_TERRAIN_COLUMN_HEIGHT
+                && isLegacyTerrainColumnMaterial(block)) {
+            int surfaceCap = block == Blocks.AIR ? minY - 1 : maxY + 1;
+            suppressedTerrainCaps.put(columnKey(minX, minZ), surfaceCap);
+            suppressedTerrainWrites += writes;
+            return;
+        }
+
         operations.add(new BoxOperation(minX, minY, minZ, maxX, maxY, maxZ, block));
-        estimatedWrites += (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+        estimatedWrites += writes;
     }
 
     public int apply(ServerLevel level, int budget) {
@@ -101,6 +132,27 @@ public final class IncrementalWorldEditPlan {
 
     public float progress() {
         return estimatedWrites == 0L ? 1.0F : Math.min(1.0F, appliedWrites / (float) estimatedWrites);
+    }
+
+    private static boolean isLegacyTerrainColumnMaterial(Block block) {
+        return block == Blocks.AIR
+                || block == Blocks.DIRT
+                || block == Blocks.COARSE_DIRT
+                || block == Blocks.ROOTED_DIRT
+                || block == Blocks.STONE
+                || block == Blocks.MOSS_BLOCK;
+    }
+
+    private static boolean isTerrainSurface(Block block) {
+        return block == Blocks.GRASS_BLOCK
+                || block == Blocks.DIRT
+                || block == Blocks.COARSE_DIRT
+                || block == Blocks.ROOTED_DIRT
+                || block == Blocks.STONE
+                || block == Blocks.MOSS_BLOCK
+                || block == Blocks.PODZOL
+                || block == Blocks.MYCELIUM
+                || block == Blocks.SAND;
     }
 
     private static long columnKey(int x, int z) {
