@@ -1,0 +1,6 @@
+filename=countrysidedays-0.1.0-alpha.15.jar
+size=197514
+sha256=1ab2c3233284dbb6945c35b07fdd89d2c4a53b67585c03a58f32a922e6e18a49
+base64_size=263352
+parts=7
+run=30740015542
