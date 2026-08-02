@@ -645,11 +645,14 @@ public final class ExternalUrbanFabricBuilder {
         }
         if (doors.isEmpty()) return List.of();
         int lowest = doors.stream().mapToInt(BuildingBlock::y).min().orElse(0);
-        return doors.stream()
+        List<BuildingBlock> lowDoors = doors.stream()
                 .filter(block -> block.y <= lowest + 1)
+                .toList();
+        List<BuildingBlock> edgeDoors = lowDoors.stream()
                 .filter(block -> block.x <= 5 || block.x >= width - 6
                         || block.z <= 5 || block.z >= length - 6)
                 .toList();
+        return edgeDoors.isEmpty() ? lowDoors : edgeDoors;
     }
 
     private static FrontSide nearestSide(int x, int z, int width, int length) {
