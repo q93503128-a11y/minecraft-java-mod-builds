@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.8.0-alpha.1";
+    public static final String VERSION = "0.9.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -55,9 +55,9 @@ public final class ArcaneCircle {
             player.sendSystemMessage(Component.literal(
                     "§d초심자 마도서§f를 읽어 1써클 기초 주문을 각인하고, 이후 주문서를 수집하세요."));
             player.sendSystemMessage(Component.literal(
-                    "§71~5를 누르고 유지: 선명한 마법진 전개 · 숫자키 놓기: 발사 · X+숫자: 융합"));
+                    "§71~5를 길게 눌러 회로를 그리고, 완성된 뒤 키를 놓아 시전합니다. X+숫자는 융합입니다."));
             player.sendSystemMessage(Component.literal(
-                    "§7주문 숙련은 빈 시전보다 적중·처치·강적 상대 성과에서 훨씬 빠르게 오릅니다."));
+                    "§7자신보다 낮은 써클 주문은 성장과 숙련에 따라 빠르게 전개되며 충분한 격차에서는 즉발됩니다."));
         }
         ArcaneNetwork.sync(player);
     }
