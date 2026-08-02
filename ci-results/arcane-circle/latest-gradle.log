@@ -1,7 +1,2 @@
 Arcane Circle v0.10 dense UI, compact HUD, single-pass casting and placeholder-world removal: PASS
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v11_overhaul.py", line 373, in <module>
-    patch(screen, "int cols=c.w()>=520?9:3,gap=4", "int cols=c.w()>=420?9:3,gap=4")
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v11_overhaul.py", line 13, in patch
-    raise RuntimeError(f"missing patch token in {path}: {old[:90]!r}")
-RuntimeError: missing patch token in /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/client/GrimoireScreen.java: 'int cols=c.w()>=520?9:3,gap=4'
+Arcane Circle v0.11 square HUD, vector sigils, release casting and detailed starter spells: PASS
