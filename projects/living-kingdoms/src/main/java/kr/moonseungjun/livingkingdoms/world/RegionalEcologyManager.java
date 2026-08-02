@@ -13,6 +13,11 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 public final class RegionalEcologyManager {
     private static final int FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
     private static final long UPDATE_INTERVAL = 200L;
+    private static final int CIVIC_EXCLUSION_RADIUS = 220;
+    private static final int[][] CIVIC_CENTERS = {
+            {0, 0}, {-2_400, -1_200}, {2_200, -1_500}, {3_400, 300},
+            {600, 2_500}, {3_200, 2_600}, {3_800, -2_800}, {0, -4_200}, {-4_200, 1_800}
+    };
 
     private RegionalEcologyManager() {
     }
@@ -34,6 +39,7 @@ public final class RegionalEcologyManager {
             int dz = (int) Math.floorMod(seed, 97L) - 48;
             int x = player.getBlockX() + dx;
             int z = player.getBlockZ() + dz;
+            if (isProtectedCivicZone(x, z)) continue;
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
             BlockPos ground = new BlockPos(x, y - 1, z);
             BlockPos plant = ground.above();
@@ -41,6 +47,7 @@ public final class RegionalEcologyManager {
             Ecology ecology = ecologyAt(x, z);
             BlockState flora = ecology.flora(seed, season(level));
             if (flora.isAir() || !validGround(level.getBlockState(ground).getBlock(), ecology)) continue;
+            if (!flora.canSurvive(level, plant)) continue;
             level.setBlock(plant, flora, FLAGS);
             if ((seed & 31L) == 0L) growAuthoredTree(level, plant, ecology, seed);
         }
@@ -68,6 +75,16 @@ public final class RegionalEcologyManager {
                 }
             }
         }
+    }
+
+    private static boolean isProtectedCivicZone(int x, int z) {
+        long radiusSquared = (long) CIVIC_EXCLUSION_RADIUS * CIVIC_EXCLUSION_RADIUS;
+        for (int[] center : CIVIC_CENTERS) {
+            long dx = x - (long) center[0];
+            long dz = z - (long) center[1];
+            if (dx * dx + dz * dz <= radiusSquared) return true;
+        }
+        return false;
     }
 
     private static boolean validGround(Block ground, Ecology ecology) {
