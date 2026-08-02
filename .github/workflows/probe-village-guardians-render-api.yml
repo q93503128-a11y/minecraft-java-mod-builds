@@ -1,0 +1,68 @@
+name: Probe Village Guardians Render API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.probe-render-api'
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Probe mapped APIs
+        working-directory: projects/village-guardians
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/cp.gradle" <<'EOF'
+          allprojects {
+            afterEvaluate { p ->
+              if (p.plugins.hasPlugin('java')) {
+                p.tasks.register('printCompileClasspath') {
+                  doLast { println p.sourceSets.main.compileClasspath.asPath }
+                }
+              }
+            }
+          }
+          EOF
+          CP="$(gradle --no-daemon --no-configuration-cache -q -I "$RUNNER_TEMP/cp.gradle" printCompileClasspath | tail -n 1)"
+          OUT="$GITHUB_WORKSPACE/ci-results/village-guardians-render-api.txt"
+          mkdir -p "$(dirname "$OUT")"
+          {
+            echo '=== KeyMapping ==='
+            javap -classpath "$CP" -p net.minecraft.client.KeyMapping || true
+            echo '=== InputConstants ==='
+            javap -classpath "$CP" -p com.mojang.blaze3d.platform.InputConstants com.mojang.blaze3d.platform.InputConstants\$Key com.mojang.blaze3d.platform.InputConstants\$Type || true
+            echo '=== Display ==='
+            javap -classpath "$CP" -p net.minecraft.world.entity.Display net.minecraft.world.entity.Display\$ItemDisplay net.minecraft.world.entity.Display\$BlockDisplay || true
+            echo '=== EntityTypes ==='
+            javap -classpath "$CP" -p net.minecraft.world.entity.EntityTypes || true
+            echo '=== Transformation ==='
+            javap -classpath "$CP" -p com.mojang.math.Transformation org.joml.Quaternionf org.joml.Vector3f || true
+            echo '=== ItemDisplayContext ==='
+            javap -classpath "$CP" -p net.minecraft.world.item.ItemDisplayContext || true
+          } > "$OUT" 2>&1
+      - name: Commit probe
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ci-results/village-guardians-render-api.txt
+          git commit -m 'Record Village Guardians mapped render API probe' || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
