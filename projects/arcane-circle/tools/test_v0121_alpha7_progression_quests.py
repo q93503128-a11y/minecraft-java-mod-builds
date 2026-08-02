@@ -73,7 +73,7 @@ need(quest_payload, ('"quest_action"', "QuestActionPayload(String action)"), "qu
 need(network, (
     '"quests"', "QuestActionPayload.TYPE", "handleQuest",
     '"accept"', '"reject"', '"claim:"',
-    '"quest_count="', '"quest_offer"', '"quest_0"'
+    '"quest_count="', '"quest_offer"', '"quest_" + index'
 ), "quest network snapshot")
 need(screen, (
     'new Tab("quests", "의뢰")', "clickQuests", "QuestActionPayload",
