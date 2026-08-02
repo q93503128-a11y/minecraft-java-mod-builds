@@ -48,6 +48,8 @@ jobs:
           echo '52556c663d5e38b3ffa01e99d021a12b478d01178eb29931111c58c82a588286  tools/apply_v0177.py' | sha256sum -c -
           python3 -m py_compile tools/apply_v0177.py
           python3 tools/apply_v0177.py
+          cp tools/VillageSkillTestSystem.v0177.java.txt \
+             src/main/java/kr/moonseungjun/villageguardians/VillageSkillTestSystem.java
           python3 - <<'PY'
           from pathlib import Path
           path = Path('tools/test_progression_depth.py')
@@ -65,7 +67,7 @@ jobs:
               text = text.replace(old, new)
           path.write_text(text, encoding='utf-8')
           PY
-          rm -f tools/apply_v0177.py tools/v0177_seg_*
+          rm -f tools/apply_v0177.py tools/v0177_seg_* tools/VillageSkillTestSystem.v0177.java.txt
 
       - name: Run complete contracts
         working-directory: ${{ env.PROJECT_DIR }}
