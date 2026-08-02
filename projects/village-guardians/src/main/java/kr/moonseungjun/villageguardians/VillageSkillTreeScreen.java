@@ -28,7 +28,7 @@ public final class VillageSkillTreeScreen extends Screen {
 
     private static double savedPanX;
     private static double savedPanY;
-    private static double savedZoom = 1.0;
+    private static double savedZoom = 0.82;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final String[] actions;
@@ -126,7 +126,7 @@ public final class VillageSkillTreeScreen extends Screen {
             graphics.fill(x, y, x + nodeSize, y + nodeSize, hovered || selected ? 0xFF1C2A35 : SURFACE);
             drawNodeIcon(graphics, node.branch(), node.tier(), x + 6, y + 6, nodeSize - 12,
                     "습득".equals(node.status()) ? color : border);
-            if (savedZoom >= 0.82) {
+            if (savedZoom >= 0.72) {
                 String title = compact(node.title(), savedZoom >= 1.18 ? 16 : 10);
                 graphics.centeredText(font, title, cx, y + nodeSize + 6, hovered || selected ? TEXT : MUTED);
             }
@@ -158,7 +158,7 @@ public final class VillageSkillTreeScreen extends Screen {
     }
 
     private void renderDetail(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        int top = Math.max(112, height - 88);
+        int top = Math.max(132, height - 108);
         graphics.fill(0, top, width, height, PANEL);
         graphics.fill(0, top, width, top + 2, BORDER);
         String title = "노드를 선택하세요";
@@ -167,7 +167,7 @@ public final class VillageSkillTreeScreen extends Screen {
         int color = MUTED;
         if (selectedIndex >= 0 && selectedIndex < nodes.size()) {
             NodeVisual node = nodes.get(selectedIndex);
-            title = node.title();
+            title = branchName(node.branch()) + " " + node.tier() + "단계 · " + node.title();
             description = node.description();
             status = node.status();
             color = branchColor(node.branch());
@@ -204,11 +204,11 @@ public final class VillageSkillTreeScreen extends Screen {
         int percentX = plusX - 48;
         int minusX = percentX - 34;
         if (inside(click.x(), click.y(), closeX, 10, 26, 25)) { onClose(); return true; }
-        if (inside(click.x(), click.y(), centerX, 10, 46, 25)) { savedPanX = 0; savedPanY = 0; savedZoom = 1.0; return true; }
+        if (inside(click.x(), click.y(), centerX, 10, 46, 25)) { savedPanX = 0; savedPanY = 0; savedZoom = 0.82; return true; }
         if (inside(click.x(), click.y(), minusX, 10, 28, 25)) { setZoom(savedZoom - 0.15, width / 2.0, height / 2.0); return true; }
         if (inside(click.x(), click.y(), plusX, 10, 28, 25)) { setZoom(savedZoom + 0.15, width / 2.0, height / 2.0); return true; }
 
-        int top = Math.max(112, height - 88);
+        int top = Math.max(132, height - 108);
         int buttonWidth = Math.min(126, Math.max(92, width / 5));
         int buttonX = width - buttonWidth - 16;
         if (selectedIndex >= 0 && "습득 가능".equals(nodes.get(selectedIndex).status())
@@ -279,7 +279,7 @@ public final class VillageSkillTreeScreen extends Screen {
             String id = actions[index].startsWith("skill_node:") ? actions[index].substring(11) : actions[index];
             Branch branch = branch(id);
             int tier = tier(id);
-            double distance = 105.0 + tier * 13.0;
+            double distance = 92.0;
             double worldX = switch (branch) {
                 case POWER -> tier * distance;
                 case GUARD -> -tier * distance;
@@ -356,7 +356,16 @@ public final class VillageSkillTreeScreen extends Screen {
         return switch (status) { case "습득" -> ACCENT; case "습득 가능" -> GOLD; case "데이터 잠금" -> RED; default -> MUTED; };
     }
 
-    private Viewport viewport() { return new Viewport(0, 48, width, Math.max(49, height - 88)); }
+    private String branchName(Branch branch) {
+        return switch (branch) {
+            case POWER -> "공격";
+            case GUARD -> "방어";
+            case SUPPORT -> "지원";
+            case RANGED -> "사격";
+        };
+    }
+
+    private Viewport viewport() { return new Viewport(0, 48, width, Math.max(49, height - 108)); }
 
     private String compact(String value, int max) {
         String normalized = value.replace('\n', ' ');

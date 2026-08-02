@@ -1,5 +1,6 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -15,17 +16,18 @@ import java.util.Locale;
 public final class VillageShopScreen extends Screen {
     private static final String SEP = "\u001F";
     private static final int OVERLAY = 0x65000000;
-    private static final int PANEL = 0xFFF0E5CC;
-    private static final int SURFACE = 0xFFFFF8E8;
-    private static final int SURFACE_ALT = 0xFFE6D9BE;
-    private static final int SELECTED = 0xFFFFE2A8;
-    private static final int BORDER = 0xFF75634C;
-    private static final int TEXT = 0xFF241D17;
-    private static final int MUTED = 0xFF6D6256;
-    private static final int GOLD = 0xFFC78B2D;
-    private static final int TEAL = 0xFF2E8E80;
-    private static final int CARD_HEIGHT = 52;
-    private static final int CARD_GAP = 6;
+    private static final int PANEL = 0xFFF1E6CF;
+    private static final int SURFACE = 0xFFFFFAEE;
+    private static final int SURFACE_ALT = 0xFFE9DCC1;
+    private static final int SELECTED = 0xFFFFE1A2;
+    private static final int BORDER = 0xFF6F5B43;
+    private static final int TEXT = 0xFF211A14;
+    private static final int MUTED = 0xFF62584D;
+    private static final int GOLD = 0xFFB87B20;
+    private static final int TEAL = 0xFF267E73;
+    private static final int CARD_HEIGHT = 40;
+    private static final int CARD_GAP = 4;
+    private static final int ACTION_HEIGHT = 24;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final List<OfferCard> offers = new ArrayList<>();
@@ -96,7 +98,7 @@ public final class VillageShopScreen extends Screen {
         int right = layout.right() - 18;
         int top = layout.top() + 88;
         int bottom = layout.bottom() - 16;
-        int listWidth = clamp((right - left) * 35 / 100, 190, 310);
+        int listWidth = clamp((right - left) * 24 / 100, 118, 198);
         Pane list = new Pane(left, top, left + listWidth, bottom);
         Pane detail = new Pane(left + listWidth + 10, top, right, bottom);
         graphics.fill(list.left() - 1, list.top() - 1, list.right() + 1, list.bottom() + 1, BORDER);
@@ -125,8 +127,8 @@ public final class VillageShopScreen extends Screen {
                     selected ? GOLD : hovered ? TEAL : BORDER);
             graphics.fill(x, y, x + cardWidth, y + CARD_HEIGHT, selected ? SELECTED : SURFACE);
             graphics.fill(x, y, x + 5, y + CARD_HEIGHT, selected ? GOLD : TEAL);
-            graphics.text(font, compact(card.name(), Math.max(13, cardWidth / 7)), x + 14, y + 9, TEXT, false);
-            graphics.text(font, compact(card.cost(), Math.max(13, cardWidth / 7)), x + 14, y + 29,
+            graphics.text(font, compact(plain(card.name()), Math.max(11, cardWidth / 7)), x + 12, y + 6, TEXT, false);
+            graphics.text(font, compact(plain(card.cost()), Math.max(11, cardWidth / 7)), x + 12, y + 23,
                     card.available() ? GOLD : MUTED, false);
             y += CARD_HEIGHT + CARD_GAP;
         }
@@ -141,21 +143,22 @@ public final class VillageShopScreen extends Screen {
             return;
         }
         OfferCard card = offers.get(selectedIndex);
-        int buttonLeft = pane.left() + 20;
-        int buttonRight = pane.right() - 20;
-        int buttonTop = pane.bottom() - 49;
-        int textLeft = pane.left() + 20;
-        int textRight = pane.right() - 20;
-        int textTop = pane.top() + 18;
-        int textBottom = buttonTop - 12;
+        int buttonWidth = Math.min(142, Math.max(86, pane.width() / 3));
+        int buttonRight = pane.right() - 15;
+        int buttonLeft = buttonRight - buttonWidth;
+        int buttonTop = pane.bottom() - ACTION_HEIGHT - 11;
+        int textLeft = pane.left() + 15;
+        int textRight = pane.right() - 15;
+        int textTop = pane.top() + 14;
+        int textBottom = buttonTop - 8;
         List<FormattedCharSequence> lines = new ArrayList<>();
-        lines.addAll(font.split(Component.literal("§l" + card.name()), Math.max(100, textRight - textLeft)));
+        lines.addAll(font.split(Component.literal(plain(card.name())), Math.max(100, textRight - textLeft)));
         lines.add(FormattedCharSequence.EMPTY);
-        lines.addAll(font.split(Component.literal("§6" + card.cost()), Math.max(100, textRight - textLeft)));
+        lines.addAll(font.split(Component.literal(plain(card.cost())), Math.max(100, textRight - textLeft)));
         lines.add(FormattedCharSequence.EMPTY);
-        lines.addAll(font.split(Component.literal(card.effect()), Math.max(100, textRight - textLeft)));
+        lines.addAll(font.split(Component.literal(plain(card.effect())), Math.max(100, textRight - textLeft)));
         lines.add(FormattedCharSequence.EMPTY);
-        lines.addAll(font.split(Component.literal(card.status()), Math.max(100, textRight - textLeft)));
+        lines.addAll(font.split(Component.literal(plain(card.status())), Math.max(100, textRight - textLeft)));
         int contentHeight = Math.max(1, lines.size() * 16);
         int viewport = Math.max(1, textBottom - textTop);
         int maxScroll = Math.max(0, contentHeight - viewport);
@@ -170,13 +173,14 @@ public final class VillageShopScreen extends Screen {
         scrollbar(graphics, pane.right() - 8, textTop, textBottom,
                 detailScroll, maxScroll, viewport, contentHeight);
 
-        boolean hovered = inside(mouseX, mouseY, buttonLeft, buttonTop, buttonRight - buttonLeft, 34);
-        graphics.fill(buttonLeft - 1, buttonTop - 1, buttonRight + 1, buttonTop + 35,
-                hovered ? TEAL : GOLD);
-        graphics.fill(buttonLeft, buttonTop, buttonRight, buttonTop + 34,
-                hovered ? 0xFFD7F1E9 : SELECTED);
-        graphics.centeredText(font, actionLabel(card.action()), (buttonLeft + buttonRight) / 2,
-                buttonTop + 12, TEXT);
+        boolean active = card.available();
+        boolean hovered = active && inside(mouseX, mouseY, buttonLeft, buttonTop, buttonWidth, ACTION_HEIGHT);
+        graphics.fill(buttonLeft - 1, buttonTop - 1, buttonRight + 1, buttonTop + ACTION_HEIGHT + 1,
+                active ? (hovered ? TEAL : GOLD) : BORDER);
+        graphics.fill(buttonLeft, buttonTop, buttonRight, buttonTop + ACTION_HEIGHT,
+                active ? (hovered ? 0xFFD7F1E9 : SELECTED) : SURFACE_ALT);
+        graphics.centeredText(font, active ? actionLabel(card.action()) : "잠김", (buttonLeft + buttonRight) / 2,
+                buttonTop + 7, active ? TEXT : MUTED);
     }
 
     @Override
@@ -216,9 +220,13 @@ public final class VillageShopScreen extends Screen {
         }
         if (selectedIndex >= 0 && selectedIndex < offers.size()) {
             Pane detail = panes.detail();
-            if (inside(click.x(), click.y(), detail.left() + 20, detail.bottom() - 49,
-                    detail.width() - 40, 34)) {
-                execute(offers.get(selectedIndex));
+            OfferCard card = offers.get(selectedIndex);
+            int buttonWidth = Math.min(142, Math.max(86, detail.width() / 3));
+            int buttonLeft = detail.right() - 15 - buttonWidth;
+            int buttonTop = detail.bottom() - ACTION_HEIGHT - 11;
+            if (card.available() && inside(click.x(), click.y(), buttonLeft, buttonTop,
+                    buttonWidth, ACTION_HEIGHT)) {
+                execute(card);
                 return true;
             }
         }
@@ -241,7 +249,7 @@ public final class VillageShopScreen extends Screen {
     }
 
     private void execute(OfferCard card) {
-        String detail = card.effect() + "\n" + card.cost();
+        String detail = plain(card.effect()) + "\n" + plain(card.cost());
         if (VillageActionDescriptions.requiresConfirmation(card.action()) && minecraft != null) {
             minecraft.gui.setScreen(new VillageConfirmScreen(this, card.action(), card.name(), detail));
         } else {
@@ -262,8 +270,8 @@ public final class VillageShopScreen extends Screen {
         for (int i = 0; i < count; i++) {
             String[] p = labels[i].split("\\|", -1);
             if (p.length >= 7 && "shop".equals(p[0])) {
-                offers.add(new OfferCard(actions[i], Category.parse(p[1]), p[2], p[3], p[4], p[5],
-                        "available".equals(p[6])));
+                offers.add(new OfferCard(actions[i], Category.parse(p[1]), plain(p[2]), plain(p[3]),
+                        plain(p[4]), plain(p[5]), "available".equals(p[6])));
             } else {
                 String[] basic = labels[i].split("\\|", 2);
                 offers.add(new OfferCard(actions[i], Category.OTHER, basic[0], "", basic.length > 1 ? basic[1] : "", "", true));
@@ -296,7 +304,7 @@ public final class VillageShopScreen extends Screen {
         int right = layout.right() - 18;
         int top = layout.top() + 88;
         int bottom = layout.bottom() - 16;
-        int listWidth = clamp((right - left) * 35 / 100, 190, 310);
+        int listWidth = clamp((right - left) * 24 / 100, 118, 198);
         return new ContentPanes(new Pane(left, top, left + listWidth, bottom),
                 new Pane(left + listWidth + 10, top, right, bottom));
     }
@@ -309,6 +317,11 @@ public final class VillageShopScreen extends Screen {
         int y = top + (track - thumb) * clamp(value, 0, maximum) / maximum;
         graphics.fill(x, top, x + 4, bottom, 0xFFB9AA91);
         graphics.fill(x, y, x + 4, y + thumb, GOLD);
+    }
+
+    private String plain(String value) {
+        String stripped = ChatFormatting.stripFormatting(value == null ? "" : value);
+        return stripped == null ? "" : stripped;
     }
 
     private String compact(String value, int maximum) {

@@ -19,6 +19,7 @@ public final class VillageRpgSystem {
     public static void resetTransientState() {
         VillageCombatTechniqueSystem.reset();
         VillageRoleSkillSystem.resetTransientState();
+        VillagePersonalCombatSystem.reset();
     }
 
     public static void refreshPassives(MinecraftServer server) {
@@ -38,6 +39,7 @@ public final class VillageRpgSystem {
                 && player.getOffhandItem().is(Items.SHIELD)) {
             player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 0));
         }
+        VillagePersonalCombatSystem.applyLowHealthPassive(player);
     }
 
     public static void handleIncomingDamage(LivingIncomingDamageEvent event) {
@@ -53,6 +55,10 @@ public final class VillageRpgSystem {
             value *= VillageEquipmentShop.outgoingMultiplier(attacker, projectile);
             if (event.getEntity() instanceof Monster monster) {
                 value *= VillageSkillTreeSystem.executionMultiplier(attacker, monster.getHealth(), monster.getMaxHealth());
+                if (projectile) {
+                    value *= VillageSkillTreeSystem.projectileExecutionMultiplier(
+                            attacker, monster.getHealth(), monster.getMaxHealth());
+                }
             }
             event.setAmount(event.getAmount() * value);
         }
@@ -65,6 +71,7 @@ public final class VillageRpgSystem {
             if (VillageCouncilState.isInsideVillage(defender)) value *= VillageProgressionSystem.wallDamageMultiplier();
             event.setAmount(event.getAmount() * value);
         }
+        VillagePersonalCombatSystem.handleIncomingDamage(event);
         VillageCombatTechniqueSystem.handleIncomingDamage(event);
     }
 
@@ -79,9 +86,11 @@ public final class VillageRpgSystem {
         VillageProgressionSystem.addCoins(killer, coins, "적 처치");
         float heal = VillageSkillTreeSystem.killHealAmount(killer);
         if (heal > 0.0f) killer.heal(heal);
+        VillagePersonalCombatSystem.applyKillMomentum(killer);
+        VillagePersonalCombatSystem.healNearbyAlliesOnKill(killer);
         MinecraftServer server = killer.level().getServer();
-        if (server != null && VillageSkillTreeSystem.sharedSupplyChanceUnlocked(killer)
-                && killer.getRandom().nextFloat() < 0.12f) {
+        float supplyChance = VillageSkillTreeSystem.sharedSupplyChance(killer);
+        if (server != null && supplyChance > 0.0f && killer.getRandom().nextFloat() < supplyChance) {
             VillageProgressionSystem.addSupplies(server, 1, "공동 회수");
         }
         killer.sendSystemMessage(Component.literal("§d+" + result.awardedExperience() + " XP"));

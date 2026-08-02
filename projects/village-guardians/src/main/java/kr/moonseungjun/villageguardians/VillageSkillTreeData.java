@@ -53,7 +53,7 @@ public final class VillageSkillTreeData extends SavedData {
 
     private static int sanitizeMask(int value) {
         int nodeCount = VillageSkillTreeSystem.Node.values().length;
-        int allowedBits = (1 << nodeCount) - 1;
+        int allowedBits = nodeCount >= Integer.SIZE - 1 ? Integer.MAX_VALUE : (1 << nodeCount) - 1;
         return Math.max(0, value) & allowedBits;
     }
 }

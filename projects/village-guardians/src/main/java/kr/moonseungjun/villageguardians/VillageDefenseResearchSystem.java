@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class VillageDefenseResearchSystem {
+    public static final int MAX_LEVEL = 5;
     private static final EnumMap<Branch, Integer> LEVELS = new EnumMap<>(Branch.class);
     private static VillageDefenseResearchData savedData;
 
@@ -18,7 +19,7 @@ public final class VillageDefenseResearchSystem {
         LEVELS.clear();
         savedData.levels().forEach((id, value) -> {
             Branch branch = Branch.fromId(id);
-            if (branch != null) LEVELS.put(branch, Math.max(0, Math.min(3, value)));
+            if (branch != null) LEVELS.put(branch, Math.max(0, Math.min(MAX_LEVEL, value)));
         });
         persist();
     }
@@ -35,7 +36,7 @@ public final class VillageDefenseResearchSystem {
     public static synchronized String upgrade(ServerPlayer player, Branch branch) {
         if (branch == null) return "알 수 없는 연구 분야입니다.";
         int current = level(branch);
-        if (current >= 3) return branch.displayName() + " 연구가 최고 단계입니다.";
+        if (current >= MAX_LEVEL) return branch.displayName() + " 연구가 최고 단계입니다.";
         int cost = upgradeCost(branch);
         if (!VillageProgressionSystem.spendCoins(player, cost)) {
             return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.coins(player);
@@ -46,23 +47,23 @@ public final class VillageDefenseResearchSystem {
     }
 
     public static float mercenaryDamageMultiplier() {
-        return 1.0f + level(Branch.MERCENARY) * 0.14f;
+        return 1.0f + level(Branch.MERCENARY) * 0.12f;
     }
 
     public static int mercenaryCapacityBonus() {
-        return level(Branch.MERCENARY);
+        return Math.min(3, level(Branch.MERCENARY));
     }
 
     public static float towerDamageMultiplier() {
-        return 1.0f + level(Branch.TOWER) * 0.12f;
+        return 1.0f + level(Branch.TOWER) * 0.10f;
     }
 
     public static float equipmentDropBonus() {
-        return level(Branch.LOGISTICS) * 0.035f;
+        return level(Branch.LOGISTICS) * 0.03f;
     }
 
     public static float lootValueMultiplier() {
-        return 1.0f + level(Branch.LOGISTICS) * 0.12f;
+        return 1.0f + level(Branch.LOGISTICS) * 0.10f;
     }
 
     private static synchronized void persist() {
@@ -90,9 +91,9 @@ public final class VillageDefenseResearchSystem {
 
         public String description(int level) {
             return switch (this) {
-                case MERCENARY -> "용병 정원 +" + level + " · 용병 피해 +" + (level * 14) + "%";
-                case TOWER -> "모든 방어탑 피해 +" + (level * 12) + "%";
-                case LOGISTICS -> "장비 드랍률과 전리품 판매가치 강화 · 현재 판매 +" + (level * 12) + "%";
+                case MERCENARY -> "용병 정원 +" + Math.min(3, level) + " · 용병 피해 +" + (level * 12) + "%";
+                case TOWER -> "모든 방어탑 피해 +" + (level * 10) + "%";
+                case LOGISTICS -> "장비 드랍률과 전리품 판매가치 강화 · 현재 판매 +" + (level * 10) + "%";
             };
         }
 

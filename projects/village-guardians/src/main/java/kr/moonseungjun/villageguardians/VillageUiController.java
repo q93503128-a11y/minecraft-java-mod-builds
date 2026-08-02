@@ -134,7 +134,7 @@ public final class VillageUiController {
         }
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
-        for (VillageRoleSkillSystem.RoleNode node : VillageRoleSkillSystem.RoleNode.values()) {
+        for (VillageRoleSkillSystem.RoleNode node : VillageRoleSkillSystem.nodes()) {
             actions.add("role_node:" + role.id() + ":" + node.id());
             labels.add(String.join("|", "node", node.id(), node.branch().name().toLowerCase(),
                     Integer.toString(node.tier()), node.title(role), node.description(role),
@@ -233,8 +233,9 @@ public final class VillageUiController {
             int level = VillageDefenseResearchSystem.level(branch);
             int cost = VillageDefenseResearchSystem.upgradeCost(branch);
             actions.add("defense_research:" + branch.id());
-            labels.add(branch.displayName() + " Lv." + level + "/3"
-                    + (level >= 3 ? "" : " · 주화 " + cost) + "|" + branch.description(level));
+            labels.add(branch.displayName() + " Lv." + level + "/" + VillageDefenseResearchSystem.MAX_LEVEL
+                    + (level >= VillageDefenseResearchSystem.MAX_LEVEL ? "" : " · 주화 " + cost)
+                    + "|" + branch.description(level));
         }
         send(player, "building", "마을 방어 연구", "용병·포탑·전리품 운용을 연구합니다.", actions, labels);
     }

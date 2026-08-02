@@ -60,16 +60,36 @@ public final class VillageRoleSkillSystem {
     }
 
     public static float durationMultiplier(ServerPlayer player, VillageRole role) {
-        return 1.0f + branchRank(player, role, RoleBranch.DURATION) * 0.16f;
+        int rank = branchRank(player, role, RoleBranch.DURATION);
+        float bonus = Math.min(3, rank) * 0.16f + Math.max(0, rank - 3) * 0.11f;
+        return 1.0f + bonus;
     }
 
     public static float powerMultiplier(ServerPlayer player, VillageRole role) {
         int rank = branchRank(player, role, RoleBranch.POWER);
-        return 1.0f + rank * 0.14f + (rank >= 3 ? 0.08f : 0.0f);
+        float bonus = Math.min(3, rank) * 0.14f
+                + (rank >= 3 ? 0.08f : 0.0f)
+                + Math.max(0, rank - 3) * 0.11f;
+        return 1.0f + bonus;
     }
 
     public static int specialRank(ServerPlayer player, VillageRole role) {
         return branchRank(player, role, RoleBranch.SPECIAL);
+    }
+
+    public static int roleTreeCooldownReductionSeconds(ServerPlayer player, VillageRole role) {
+        int duration = branchRank(player, role, RoleBranch.DURATION);
+        int special = branchRank(player, role, RoleBranch.SPECIAL);
+        return Math.max(0, duration - 3) + Math.max(0, special - 3);
+    }
+
+    public static List<RoleNode> nodes() {
+        return Arrays.stream(RoleNode.values())
+                .sorted((first, second) -> {
+                    int branch = Integer.compare(first.branch().ordinal(), second.branch().ordinal());
+                    return branch != 0 ? branch : Integer.compare(first.tier(), second.tier());
+                })
+                .toList();
     }
 
     public static synchronized String purchaseNode(
@@ -243,7 +263,8 @@ public final class VillageRoleSkillSystem {
         int cooldown = Math.max(7,
                 skill.baseCooldownSeconds()
                         - VillageProgressionSystem.skillCooldownReductionSeconds(player)
-                        - VillageSkillTreeSystem.cooldownReductionSeconds(player));
+                        - VillageSkillTreeSystem.cooldownReductionSeconds(player)
+                        - roleTreeCooldownReductionSeconds(player, role));
         READY_AT.put(cooldownKey, now + cooldown * 1000L);
         return skill.displayName() + " 사용 완료 | 재사용 " + cooldown + "초";
     }
@@ -467,7 +488,15 @@ public final class VillageRoleSkillSystem {
         POWER_3("power_3", RoleBranch.POWER, 3, 18, 520, POWER_2),
         SPECIAL_1("special_1", RoleBranch.SPECIAL, 1, 5, 150, null),
         SPECIAL_2("special_2", RoleBranch.SPECIAL, 2, 12, 340, SPECIAL_1),
-        SPECIAL_3("special_3", RoleBranch.SPECIAL, 3, 21, 620, SPECIAL_2);
+        SPECIAL_3("special_3", RoleBranch.SPECIAL, 3, 21, 620, SPECIAL_2),
+
+        // Appended so existing role-tree masks keep their original ordinal meaning.
+        DURATION_4("duration_4", RoleBranch.DURATION, 4, 24, 880, DURATION_3),
+        DURATION_5("duration_5", RoleBranch.DURATION, 5, 29, 1280, DURATION_4),
+        POWER_4("power_4", RoleBranch.POWER, 4, 24, 920, POWER_3),
+        POWER_5("power_5", RoleBranch.POWER, 5, 29, 1340, POWER_4),
+        SPECIAL_4("special_4", RoleBranch.SPECIAL, 4, 25, 980, SPECIAL_3),
+        SPECIAL_5("special_5", RoleBranch.SPECIAL, 5, 30, 1450, SPECIAL_4);
 
         private final String id;
         private final RoleBranch branch;
@@ -526,15 +555,19 @@ public final class VillageRoleSkillSystem {
 
         public String description(VillageRole role) {
             return switch (branch) {
-                case DURATION -> "모든 " + role.displayName() + " 기술의 강화·제어 지속시간이 단계당 16% 증가합니다.";
-                case POWER -> "모든 " + role.displayName() + " 기술의 피해 또는 치유량이 증가하며 3단계에서 추가 증폭됩니다.";
-                case SPECIAL -> switch (role) {
+                case DURATION -> tier <= 3
+                        ? "모든 " + role.displayName() + " 기술의 강화·제어 지속시간이 단계당 16% 증가합니다."
+                        : "고급 지속 단계입니다. 지속시간 +11%, IV·V 단계마다 기술 재사용 대기시간도 1초 감소합니다.";
+                case POWER -> tier <= 3
+                        ? "모든 " + role.displayName() + " 기술의 피해 또는 치유량이 증가하며 3단계에서 추가 증폭됩니다."
+                        : "고급 위력 단계입니다. 기술 피해 또는 치유량이 단계당 추가 11% 증가합니다.";
+                case SPECIAL -> (switch (role) {
                     case VANGUARD -> "기술 적중 시 흡혈, 약화, 낮은 체력 적 처형 보정을 순서대로 추가합니다.";
                     case RANGER -> "사격 기술의 대상 수, 약화, 낮은 체력 적 마무리 능력을 강화합니다.";
                     case ARCANIST -> "원소 기술의 대상 수와 약화 효과, 마무리 폭발력을 강화합니다.";
                     case LUMINAR -> "치유 기술에 재생과 흡수 보호막을 추가하고 보호 강도를 높입니다.";
                     case WARDEN -> "도발·방패 기술의 약화와 둔화, 아군 보호막을 강화합니다.";
-                };
+                }) + (tier >= 4 ? " 고급 단계에서는 대상 수와 효과 강도가 더 오르고 재사용 대기시간이 단계당 1초 감소합니다." : "");
             };
         }
 
@@ -545,7 +578,13 @@ public final class VillageRoleSkillSystem {
         }
 
         private static String roman(int value) {
-            return switch (value) { case 1 -> "I"; case 2 -> "II"; default -> "III"; };
+            return switch (value) {
+                case 1 -> "I";
+                case 2 -> "II";
+                case 3 -> "III";
+                case 4 -> "IV";
+                default -> "V";
+            };
         }
     }
 

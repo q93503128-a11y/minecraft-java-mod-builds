@@ -40,7 +40,7 @@ public final class VillageDefenseResearchData extends SavedData {
         Map<String, Integer> result = new LinkedHashMap<>();
         source.forEach((key, value) -> {
             VillageDefenseResearchSystem.Branch branch = VillageDefenseResearchSystem.Branch.fromId(key);
-            if (branch != null && value != null) result.put(branch.id(), Math.max(0, Math.min(3, value)));
+            if (branch != null && value != null) result.put(branch.id(), Math.max(0, Math.min(VillageDefenseResearchSystem.MAX_LEVEL, value)));
         });
         return result;
     }

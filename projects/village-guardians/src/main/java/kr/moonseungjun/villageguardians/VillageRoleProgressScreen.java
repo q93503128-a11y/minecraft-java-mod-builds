@@ -25,11 +25,11 @@ public final class VillageRoleProgressScreen extends Screen {
     private static final int BLUE = 0xFF78A7ED;
     private static final int PURPLE = 0xFFB38AE8;
     private static final int HEADER_HEIGHT = 76;
-    private static final int FOOTER_HEIGHT = 112;
+    private static final int FOOTER_HEIGHT = 126;
     private static final int SKILL_CARD_HEIGHT = 70;
     private static final int SKILL_GAP = 8;
 
-    private static double savedZoom = 1.0;
+    private static double savedZoom = 0.86;
     private static double savedPanX;
     private static double savedPanY;
 
@@ -180,7 +180,8 @@ public final class VillageRoleProgressScreen extends Screen {
         graphics.fill(0, top, width, top + 2, BORDER);
         TreeEntry node = selectedNode >= 0 && selectedNode < nodes.size() ? nodes.get(selectedNode) : null;
         String title = node == null ? "성장 노드를 선택하세요"
-                : node.title() + " · 요구 Lv." + node.level() + " · 주화 " + node.cost();
+                : node.branch().displayName() + " " + node.tier() + "단계 · " + node.title()
+                + " · 요구 Lv." + node.level() + " · 주화 " + node.cost();
         String desc = node == null
                 ? "지속·위력·특수 세 갈래 효과는 장착한 모든 직업 기술에 공통 적용됩니다."
                 : node.description();
@@ -313,7 +314,7 @@ public final class VillageRoleProgressScreen extends Screen {
         int percentX = plusX - 51;
         int minusX = percentX - 34;
         if (inside(click.x(), click.y(), centerX, 10, 49, 28)) {
-            savedZoom = 1.0; savedPanX = 0; savedPanY = 0; return true;
+            savedPanX = 0; savedPanY = 0; savedZoom = 0.86; return true;
         }
         if (inside(click.x(), click.y(), minusX, 10, 28, 28)) {
             setZoom(savedZoom - 0.15, width / 2.0, contentViewport().top() + contentViewport().height() / 2.0);
@@ -437,7 +438,7 @@ public final class VillageRoleProgressScreen extends Screen {
                     case POWER -> 0;
                     case SPECIAL -> 165;
                 };
-                double y = -tier * 120.0;
+                double y = -tier * 88.0;
                 nodes.add(new TreeEntry(actions[i], p[1], branch, tier, p[4], p[5],
                         parseInt(p[6], 1), parseInt(p[7], 0), p[8], x, y));
             } else if (p.length >= 8 && "skill".equals(p[0])) {
@@ -600,6 +601,15 @@ public final class VillageRoleProgressScreen extends Screen {
     private enum Tab { TREE, SKILLS }
     private enum Branch {
         DURATION, POWER, SPECIAL;
+
+        String displayName() {
+            return switch (this) {
+                case DURATION -> "지속";
+                case POWER -> "위력";
+                case SPECIAL -> "특수";
+            };
+        }
+
         static Branch parse(String value) {
             if (value == null) return POWER;
             return switch (value.toLowerCase()) {
