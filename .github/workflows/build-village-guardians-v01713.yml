@@ -48,18 +48,16 @@ jobs:
           python3 tools/v01713/apply.py
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           keys = Path('src/main/java/kr/moonseungjun/villageguardians/VillageClientKeys.java')
           text = keys.read_text(encoding='utf-8')
-          old = '''        if (minecraft.player != null) {
-              minecraft.player.displayClientMessage(
-                      net.minecraft.network.chat.Component.literal(
-                              "§b기존 R/G 기술 키를 Z/X로 자동 변경했습니다."), false);
-          }
-          '''
-          if old not in text:
+          text, count = re.subn(
+              r'\n\s*if \(minecraft\.player != null\) \{\n\s*minecraft\.player\.displayClientMessage\(.*?\n\s*\}\n',
+              '\n', text, count=1, flags=re.S)
+          if count != 1:
               raise SystemExit('legacy key migration message block not found')
-          keys.write_text(text.replace(old, '', 1), encoding='utf-8')
+          keys.write_text(text, encoding='utf-8')
 
           ability = Path('src/main/java/kr/moonseungjun/villageguardians/VillageRoleAbilitySystem.java')
           text = ability.read_text(encoding='utf-8')
