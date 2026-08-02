@@ -1,0 +1,112 @@
+name: Build Countryside Days alpha.15 v4
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cd-a15-build-v4.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare exact alpha.15 source
+        id: prepare
+        run: python3 projects/countryside-days/tools/prepare_alpha15_exact.py
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Clean build and verify
+        id: compile
+        working-directory: projects/countryside-days
+        run: |
+          if [ ! -x ./gradlew ]; then
+            gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+            chmod +x gradlew
+          fi
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a15-v4-build.log
+          JAR=build/libs/countrysidedays-0.1.0-alpha.15.jar
+          test -s "$JAR"
+          python3 tools/verify_jar.py "$JAR"
+          unzip -t "$JAR"
+          sha256sum "$JAR"
+
+      - name: Upload JAR artifact
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.15-jar
+          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.15.jar
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish JAR transfer
+        id: export
+        run: |
+          JAR=projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.15.jar
+          DEST=release-transfer/countryside-days-alpha15
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+          base64 -w0 "$JAR" > /tmp/cd-a15-v4.b64
+          split -b 40000 -d -a 2 /tmp/cd-a15-v4.b64 "$DEST/part-"
+          {
+            echo filename=countrysidedays-0.1.0-alpha.15.jar
+            echo size=$(stat -c%s "$JAR")
+            echo sha256=$(sha256sum "$JAR" | cut -d' ' -f1)
+            echo base64_size=$(stat -c%s /tmp/cd-a15-v4.b64)
+            echo parts=$(find "$DEST" -name 'part-*' | wc -l)
+            echo run=$GITHUB_RUN_ID
+          } > "$DEST/MANIFEST.txt"
+          git restore --source=HEAD --staged --worktree projects/countryside-days
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$DEST"
+          git commit -m 'Publish verified Countryside Days alpha.15 JAR transfer v4'
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Record status
+        if: always()
+        env:
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+          EXPORT_OUTCOME: ${{ steps.export.outcome }}
+        run: |
+          git restore --source=HEAD --staged --worktree projects/countryside-days || true
+          DEST=release-transfer/countryside-days-alpha15-status
+          mkdir -p "$DEST"
+          FILE="$DEST/v4-${GITHUB_RUN_ID}.txt"
+          {
+            echo run=$GITHUB_RUN_ID
+            echo prepare=$PREPARE_OUTCOME
+            echo compile=$COMPILE_OUTCOME
+            echo upload=$UPLOAD_OUTCOME
+            echo export=$EXPORT_OUTCOME
+            if [ -f /tmp/cd-a15-v4-build.log ]; then
+              echo '--- build tail ---'
+              tail -n 160 /tmp/cd-a15-v4-build.log
+            fi
+          } > "$FILE"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$FILE"
+          git commit -m "Record Countryside Days alpha.15 v4 ${GITHUB_RUN_ID}"
+          git pull --rebase origin main
+          git push origin HEAD:main
