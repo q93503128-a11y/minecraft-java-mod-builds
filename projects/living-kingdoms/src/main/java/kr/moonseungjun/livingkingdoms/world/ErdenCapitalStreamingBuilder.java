@@ -16,7 +16,7 @@ import java.util.Set;
 
 /** Builds the 2.4 x 1.8 km capital one loaded 16 x 16 metre cell at a time. */
 public final class ErdenCapitalStreamingBuilder {
-    public static final int CAPITAL_REVISION = 3;
+    public static final int CAPITAL_REVISION = 4;
     public static final int WEST_WALL_X = -1_200;
     public static final int EAST_WALL_X = 1_200;
     public static final int NORTH_WALL_Z = -900;
@@ -145,6 +145,7 @@ public final class ErdenCapitalStreamingBuilder {
         addRoadNetwork(plan, level, chunk);
         ExternalRealmBuilder.addCapitalWallChunk(plan, level, chunk);
         ExternalDistrictBuildingBuilder.addChunk(plan, level, chunk);
+        ExternalUrbanFabricBuilder.addChunk(plan, level, chunk);
         ErdenUrbanInfrastructureBuilder.addChunk(plan, level, chunk);
         return plan;
     }
