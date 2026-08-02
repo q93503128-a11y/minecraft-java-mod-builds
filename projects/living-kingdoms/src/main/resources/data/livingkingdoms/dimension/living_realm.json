@@ -1,7 +1,7 @@
 {
   "type": "livingkingdoms:living_realm",
   "generator": {
-    "type": "minecraft:noise",
+    "type": "livingkingdoms:structureless_noise",
     "biome_source": {
       "type": "livingkingdoms:authored_biomes",
       "sea": "minecraft:ocean",
