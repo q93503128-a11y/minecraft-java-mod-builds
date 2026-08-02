@@ -21,6 +21,7 @@ def main() -> None:
     tower_combat = read("VillageDefenseSystem.java")
     tower_builder = read("VillageDefenseTowerBuilder.java")
     ability = read("VillageRoleAbilitySystem.java")
+    effects = read("VillageSkillEffectSystem.java")
     role_skills = read("VillageRoleSkillSystem.java")
     ui = read("VillageUiService.java")
     notices = (ROOT / "src/main/resources/META-INF/villageguardians/THIRD_PARTY_NOTICES.txt").read_text(encoding="utf-8")
@@ -77,11 +78,18 @@ def main() -> None:
     assert role_skills.count("case ") >= 20
     for token in (
         "SPIN_UNTIL", "EntityTypes.SNOWBALL", "Arrow", "spawnVisualLightning",
-        "healLowestAlly", "reviveNow", "SHIELDS", "player.swing",
-        "target.push", "SoundEvents"
+        "healLowestAlly", "reviveNow", "player.swing", "target.push", "SoundEvents",
+        "VillageSkillEffectSystem.startCast"
     ):
         assert token in ability
+    for token in (
+        "Display.ItemDisplay", "Display.BlockDisplay", "Mode.WHIRLWIND",
+        "Mode.FROST_FIELD", "Mode.TORNADO", "Mode.HEAL_FIELD",
+        "Mode.FORTRESS", "Mode.AEGIS"
+    ):
+        assert token in effects
     assert "ParticleTypes" not in ability and "sendParticles" not in ability
+    assert "ParticleTypes" not in effects and "sendParticles" not in effects
 
     assert "Tiny Creatures" in notices
     assert "CC0 1.0 Universal" in notices
@@ -91,7 +99,7 @@ def main() -> None:
     print("[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs")
     print("[PASS] Five-day milestone sieges and endless warfront tiers remain scalable")
     print("[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes")
-    print("[PASS] Twenty active skills use distinct motion, projectiles, fields, shields and spatial sound")
+    print("[PASS] Twenty active skills combine real gameplay with dedicated display-actor scenes")
     print("[PASS] CC0 fantasy visual references are documented without untracked binaries")
 
 
