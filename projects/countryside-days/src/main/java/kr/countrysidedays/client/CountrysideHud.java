@@ -55,12 +55,15 @@ public final class CountrysideHud {
 
         BlockPos home = ClientEstateState.home();
         BlockPos restaurant = ClientEstateState.restaurant();
-        Component navigation = home == null || restaurant == null
+        BlockPos river = ClientEstateState.river();
+        Component navigation = home == null || restaurant == null || river == null
                 ? Component.translatable("hud.countrysidedays.syncing")
                 : Component.literal(
                         "집 " + relativeArrow(player, home) + " " + distance(player.blockPosition(), home) + "m"
                                 + "   식당 " + relativeArrow(player, restaurant) + " "
                                 + distance(player.blockPosition(), restaurant) + "m"
+                                + "   강 " + relativeArrow(player, river) + " "
+                                + distance(player.blockPosition(), river) + "m"
                 );
         int navWidth = Math.max(142, minecraft.font.width(navigation) + 18);
         drawFixedPanel(

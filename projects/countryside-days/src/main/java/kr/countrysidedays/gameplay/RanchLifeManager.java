@@ -1,15 +1,20 @@
 package kr.countrysidedays.gameplay;
 
+import kr.countrysidedays.registry.ModItems;
 import kr.countrysidedays.world.CountrysideWorldData;
 import kr.countrysidedays.world.PlayerEstateLayout;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
@@ -36,6 +41,7 @@ public final class RanchLifeManager {
     private static final String ATE_DAY_PREFIX = "cd_ateday_";
     private static final String DRANK_DAY_PREFIX = "cd_drankday_";
     private static final String BRED_DAY_PREFIX = "cd_bredday_";
+    public static final String PRIVATE_LIVESTOCK_V14_TAG = "cd_private_livestock_v14";
     private static final int MAX_HUNGER = 100;
     private static final int DAILY_HUNGER_LOSS = 18;
     private static final int FEED_THRESHOLD = 55;
@@ -48,6 +54,7 @@ public final class RanchLifeManager {
     public static void initializeAnimal(Animal animal, CountrysideWorldData.PlayerEstate estate) {
         int currentDay = animal.level() instanceof ServerLevel level ? gameDay(level) : 0;
         animal.addTag(OWNER_PREFIX + estate.ownerUuid());
+        animal.addTag(PRIVATE_LIVESTOCK_V14_TAG);
         setIntTag(animal, HUNGER_PREFIX, MAX_HUNGER);
         setIntTag(animal, LAST_DAY_PREFIX, currentDay);
         setIntTag(animal, ATE_DAY_PREFIX, -1);
@@ -59,6 +66,15 @@ public final class RanchLifeManager {
 
     public static boolean belongsTo(Animal animal, String ownerUuid) {
         return ownerUuid(animal).map(ownerUuid::equals).orElse(false);
+    }
+
+    public static void purgeLegacyEstateAnimals(ServerLevel level, CountrysideWorldData.PlayerEstate estate) {
+        level.getEntitiesOfClass(
+                Animal.class,
+                new AABB(estate.originPos()).inflate(72.0, 20.0, 72.0),
+                animal -> belongsTo(animal, estate.ownerUuid())
+                        && !animal.entityTags().contains(PRIVATE_LIVESTOCK_V14_TAG)
+        ).forEach(Animal::discard);
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -77,6 +93,18 @@ public final class RanchLifeManager {
                 || !(event.getPlayer() instanceof ServerPlayer player)) return;
 
         CountrysideWorldData data = CountrysideWorldData.get(level.getServer());
+        String adoptionSpecies = adoptionSpecies(event.getItemStack());
+        if (adoptionSpecies != null) {
+            event.cancelWithResult(InteractionResult.SUCCESS_SERVER);
+            CountrysideWorldData.PlayerEstate ownEstate = data.estate(player.getUUID()).orElse(null);
+            if (ownEstate == null || !PlayerEstateLayout.isRanchArea(ownEstate.originPos(), event.getPos())) {
+                player.sendOverlayMessage(Component.translatable("message.countrysidedays.adoption_inside_ranch"));
+                return;
+            }
+            adoptAnimal(level, player, ownEstate, adoptionSpecies, event.getPos().above(), event.getItemStack());
+            return;
+        }
+
         CountrysideWorldData.PlayerEstate estate = data.estateAt(event.getPos()).orElse(null);
         if (estate == null
                 || !event.getPos().equals(PlayerEstateLayout.ranchCollectionBarrel(estate.originPos()))) return;
@@ -156,6 +184,52 @@ public final class RanchLifeManager {
         }
     }
 
+
+    private static String adoptionSpecies(ItemStack stack) {
+        if (stack.is(ModItems.COW_ADOPTION_TICKET.get())) return "cow";
+        if (stack.is(ModItems.SHEEP_ADOPTION_TICKET.get())) return "sheep";
+        if (stack.is(ModItems.CHICKEN_ADOPTION_TICKET.get())) return "chicken";
+        return null;
+    }
+
+    private static void adoptAnimal(
+            ServerLevel level,
+            ServerPlayer player,
+            CountrysideWorldData.PlayerEstate estate,
+            String species,
+            BlockPos requestedPos,
+            ItemStack ticket
+    ) {
+        long count = level.getEntitiesOfClass(
+                Animal.class,
+                ranchBounds(estate.originPos()),
+                animal -> belongsTo(animal, estate.ownerUuid())
+                        && animal.getType().toString().contains(species)
+        ).size();
+        if (count >= MAX_ANIMALS_PER_SPECIES) {
+            player.sendOverlayMessage(Component.translatable("message.countrysidedays.adoption_limit"));
+            return;
+        }
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE
+                .getOptional(Identifier.fromNamespaceAndPath("minecraft", species))
+                .orElse(null);
+        if (type == null) return;
+        Entity created = type.create(level, EntitySpawnReason.COMMAND);
+        if (!(created instanceof Animal animal)) return;
+        BlockPos pos = requestedPos;
+        if (!level.getBlockState(pos).isAir() || !level.getBlockState(pos.above()).isAir()) {
+            pos = PlayerEstateLayout.ranch(estate.originPos());
+        }
+        animal.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        initializeAnimal(animal, estate);
+        if (!level.addFreshEntity(animal)) return;
+        if (!player.getAbilities().instabuild) ticket.shrink(1);
+        player.sendSystemMessage(Component.translatable(
+                "message.countrysidedays.adoption_success",
+                speciesName(animal)
+        ));
+    }
+
     private static void tickEstate(
             ServerLevel level,
             CountrysideWorldData data,
@@ -163,10 +237,12 @@ public final class RanchLifeManager {
     ) {
         BlockPos origin = estate.originPos();
         AABB ranch = ranchBounds(origin);
+        purgeLegacyEstateAnimals(level, estate);
         List<Animal> ownedAnimals = level.getEntitiesOfClass(
                 Animal.class,
                 new AABB(origin).inflate(72.0, 20.0, 72.0),
                 animal -> belongsTo(animal, estate.ownerUuid())
+                        && animal.entityTags().contains(PRIVATE_LIVESTOCK_V14_TAG)
         );
         if (ownedAnimals.isEmpty()) return;
 

@@ -32,6 +32,7 @@ public final class EstateWorkerManager {
 
     private static final Identifier VILLAGER_ID = Identifier.fromNamespaceAndPath("minecraft", "villager");
     private static final String CONTRACT_TAG = "cd_worker_contract_v2";
+    private static final String HIRED_V14_TAG = "cd_worker_hired_v14";
     private static final String OWNER_PREFIX = "cd_worker_owner_";
     private static final String ROLE_PREFIX = "cd_worker_role_";
     private static final String PAID_DAY_PREFIX = "cd_worker_paid_day_";
@@ -100,6 +101,11 @@ public final class EstateWorkerManager {
             return;
         }
         if (!villager.entityTags().contains(CONTRACT_TAG)) return;
+        // Alpha.13 could leave generated workers in old saves. Only an explicit alpha.14 hire survives.
+        if (!villager.entityTags().contains(HIRED_V14_TAG)) {
+            villager.discard();
+            return;
+        }
 
         UUID owner = ownerUuid(villager).orElse(null);
         String role = role(villager).orElse(null);
@@ -246,6 +252,7 @@ public final class EstateWorkerManager {
         villager.setInvulnerable(true);
         villager.setCustomNameVisible(false);
         villager.addTag(CONTRACT_TAG);
+        villager.addTag(HIRED_V14_TAG);
         villager.addTag(OWNER_PREFIX + estate.ownerUuid());
         villager.addTag(ROLE_PREFIX + role);
         villager.setVillagerData(villager.getVillagerData()

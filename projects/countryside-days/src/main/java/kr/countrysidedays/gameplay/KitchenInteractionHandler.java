@@ -62,8 +62,7 @@ public final class KitchenInteractionHandler {
             player.sendSystemMessage(Component.translatable(
                     open
                             ? "message.countrysidedays.restaurant_opened"
-                            : "message.countrysidedays.restaurant_closed_by_owner",
-                    CountrysideWorldData.DAILY_CUSTOMER_CAP
+                            : "message.countrysidedays.restaurant_closed_by_owner"
             ));
             return;
         }

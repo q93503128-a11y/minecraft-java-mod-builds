@@ -1,6 +1,7 @@
 package kr.countrysidedays;
 
 import com.mojang.logging.LogUtils;
+import kr.countrysidedays.gameplay.CountrysideSeatManager;
 import kr.countrysidedays.gameplay.KitchenInteractionHandler;
 import kr.countrysidedays.gameplay.RanchLifeManager;
 import kr.countrysidedays.gameplay.RuralGameplayHandler;
@@ -24,7 +25,7 @@ import org.slf4j.Logger;
 @Mod(CountrysideDays.MOD_ID)
 public final class CountrysideDays {
     public static final String MOD_ID = "countrysidedays";
-    public static final String VERSION = "0.1.0-alpha.13";
+    public static final String VERSION = "0.1.0-alpha.14";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public CountrysideDays(IEventBus modEventBus) {
@@ -40,13 +41,15 @@ public final class CountrysideDays {
         NeoForge.EVENT_BUS.addListener(CountrysidePropertyManager::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(KitchenInteractionHandler::onUseItemOnBlock);
         NeoForge.EVENT_BUS.addListener(KitchenInteractionHandler::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(CountrysideSeatManager::onUseBlock);
+        NeoForge.EVENT_BUS.addListener(CountrysideSeatManager::onServerTick);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onEntityJoinLevel);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onBlockDrops);
         NeoForge.EVENT_BUS.addListener(RuralGameplayHandler::onItemFished);
-        NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);
         NeoForge.EVENT_BUS.addListener(VillageLifeManager::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(RuralNpcManager::handleInteraction);
         NeoForge.EVENT_BUS.addListener(VillageLifeManager::onServerTick);
         NeoForge.EVENT_BUS.addListener(RanchLifeManager::onServerTick);
         NeoForge.EVENT_BUS.addListener(RanchLifeManager::onUseBlock);
@@ -56,7 +59,7 @@ public final class CountrysideDays {
     }
 
     private void registerPayloads(RegisterPayloadHandlersEvent event) {
-        event.registrar("1").playToClient(EstateHudPayload.TYPE, EstateHudPayload.STREAM_CODEC);
+        event.registrar("2").playToClient(EstateHudPayload.TYPE, EstateHudPayload.STREAM_CODEC);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

@@ -34,6 +34,8 @@ import java.util.Optional;
 public final class RuralGameplayHandler {
     private static final String STARTER_KIT_TAG = "countrysidedays_starter_kit_alpha10";
     private static final String STARTER_HOE_TAG = "countrysidedays_starter_hoe_alpha12";
+    private static final String STARTER_COINS_TAG = "countrysidedays_starter_coins_alpha14";
+    private static final int STARTER_COINS = 20;
     private static final String PRIVATE_LIVESTOCK_OWNER_PREFIX = "cd_owner_";
     private static final float WILD_HERB_CHANCE = 0.32F;
     private static final float RIVER_FISH_CHANCE = 0.45F;
@@ -71,6 +73,8 @@ public final class RuralGameplayHandler {
             VillageLifeManager.prepareNewEstate(serverLevel, estateOrigin);
             StarterHomesteadGenerator.connectEstateToVillage(serverLevel, villageOrigin, estateOrigin);
         } else {
+            StarterHomesteadGenerator.normalizePlayerEstate(serverLevel, estateOrigin);
+            StarterHomesteadGenerator.connectEstateToVillage(serverLevel, villageOrigin, estateOrigin);
             StarterHomesteadGenerator.refreshEstateSigns(
                     serverLevel, estateOrigin, estate.ownerName(), estate.restaurantName()
             );
@@ -85,6 +89,8 @@ public final class RuralGameplayHandler {
             SharedRestaurantAccess.setOpen(data, false);
         }
         for (CountrysideWorldData.PlayerEstate existingEstate : data.estates()) {
+            StarterHomesteadGenerator.normalizePlayerEstate(serverLevel, existingEstate.originPos());
+            RuralNpcManager.ensureEstateAnimals(serverLevel, existingEstate);
             boolean isSharedRestaurant = existingEstate.ownerUuid().equals(sharedRestaurant.ownerUuid());
             SharedRestaurantBuilder.normalizeEstate(
                     serverLevel,
@@ -94,7 +100,6 @@ public final class RuralGameplayHandler {
             );
         }
 
-        RuralNpcManager.ensureEstateAnimals(serverLevel, estate);
         BlockPos ranchSupply = PlayerEstateLayout.ranchSupplyBarrel(estateOrigin);
         if (!serverLevel.getBlockState(ranchSupply).is(Blocks.BARREL)) {
             serverLevel.setBlock(ranchSupply, Blocks.BARREL.defaultBlockState(), 3);
@@ -114,6 +119,12 @@ public final class RuralGameplayHandler {
         if (player.addTag(STARTER_HOE_TAG)) {
             giveOrDrop(player, Items.STONE_HOE.getDefaultInstance());
             player.sendSystemMessage(Component.translatable("message.countrysidedays.starter_hoe"));
+        }
+        if (player.addTag(STARTER_COINS_TAG)) {
+            giveOrDrop(player, new ItemStack(ModItems.VILLAGE_COIN.get(), STARTER_COINS));
+            player.sendSystemMessage(Component.translatable(
+                    "message.countrysidedays.starter_coins", STARTER_COINS
+            ));
         }
 
         if (firstArrival || allocation.created()) {
@@ -165,16 +176,19 @@ public final class RuralGameplayHandler {
                 .orElse(ownEstate);
         BlockPos home = PlayerEstateLayout.home(ownEstate.originPos());
         BlockPos restaurant = PlayerEstateLayout.restaurant(restaurantEstate.originPos());
-        long day = Math.max(0L, player.level().getOverworldClockTime() / 24000L);
+        BlockPos river = data.homesteadOrigin()
+                .map(CountrysideFishingManager::riverLandmark)
+                .orElse(restaurant);
         int pendingRanchProducts = ownEstate.pendingEggs()
                 + ownEstate.pendingMilk()
                 + ownEstate.pendingWool();
         PacketDistributor.sendToPlayer(player, new EstateHudPayload(
                 home.getX(), home.getY(), home.getZ(),
                 restaurant.getX(), restaurant.getY(), restaurant.getZ(),
+                river.getX(), river.getY(), river.getZ(),
                 restaurantEstate.restaurantOpen(),
-                restaurantEstate.customersServedToday(day),
-                CountrysideWorldData.DAILY_CUSTOMER_CAP,
+                RuralNpcManager.activeGuestCount(player.level(), restaurantEstate.originPos()),
+                PlayerEstateLayout.RESTAURANT_SEAT_COUNT,
                 restaurantEstate.customersServed(),
                 restaurantEstate.progressionStage(),
                 pendingRanchProducts

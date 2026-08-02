@@ -12,6 +12,7 @@ import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlers
 public final class ClientEstateState {
     private static BlockPos home;
     private static BlockPos restaurant;
+    private static BlockPos river;
     private static boolean restaurantOpen;
     private static int customersToday;
     private static int customerCap;
@@ -29,6 +30,7 @@ public final class ClientEstateState {
             restaurant = new BlockPos(
                     payload.restaurantX(), payload.restaurantY(), payload.restaurantZ()
             );
+            river = new BlockPos(payload.riverX(), payload.riverY(), payload.riverZ());
             restaurantOpen = payload.restaurantOpen();
             customersToday = payload.customersToday();
             customerCap = payload.customerCap();
@@ -44,6 +46,10 @@ public final class ClientEstateState {
 
     public static BlockPos restaurant() {
         return restaurant;
+    }
+
+    public static BlockPos river() {
+        return river;
     }
 
     public static boolean restaurantOpen() {
