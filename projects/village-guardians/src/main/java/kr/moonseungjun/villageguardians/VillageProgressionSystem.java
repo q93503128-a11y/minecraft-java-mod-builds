@@ -6,6 +6,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -378,9 +380,38 @@ public final class VillageProgressionSystem {
         if (!isOperational(Building.INFIRMARY)) {
             return "의무소가 파괴되어 치료할 수 없습니다.";
         }
-        float heal = 6.0f + infirmaryLevel * 4.0f;
+        int level = infirmaryLevel;
+        float heal = 8.0f + level * 4.0f;
+        float before = player.getHealth();
         player.heal(heal);
-        return "의무소 치료 완료 | 체력 " + Math.round(heal / 2.0f) + "칸 회복";
+        if (level >= 1) clearTreatmentEffects(player);
+        if (level >= 2) {
+            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * (6 + level * 2),
+                    level >= 5 ? 1 : 0, false, true, true));
+        }
+        if (level >= 3) {
+            player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 20 * 35,
+                    Math.min(2, level - 3), false, true, true));
+        }
+        if (level >= 5) {
+            player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 20 * 8, 0, false, true, true));
+        }
+        float restored = Math.max(0.0f, player.getHealth() - before);
+        return "응급 치료 완료 | 체력 " + Math.round(restored / 2.0f) + "칸 회복"
+                + (level >= 1 ? " · 해로운 상태 제거" : "")
+                + (level >= 3 ? " · 보호막 지급" : "");
+    }
+
+    public static synchronized int respawnDelayTicks() {
+        int seconds = isOperational(Building.INFIRMARY) ? Math.max(10, 20 - infirmaryLevel * 2) : 20;
+        return seconds * 20;
+    }
+
+    private static void clearTreatmentEffects(ServerPlayer player) {
+        player.removeEffect(MobEffects.POISON);
+        player.removeEffect(MobEffects.WITHER);
+        player.removeEffect(MobEffects.WEAKNESS);
+        player.removeEffect(MobEffects.SLOWNESS);
     }
 
     public static synchronized String upgrade(ServerPlayer player, Building building) {
@@ -464,13 +495,19 @@ public final class VillageProgressionSystem {
 
     public static void healRaidParty(MinecraftServer server, boolean victory) {
         int level = infirmaryLevel();
-        if (!isOperational(Building.INFIRMARY) || (level <= 0 && !victory)) {
-            return;
-        }
-        float heal = victory ? 8.0f + level * 4.0f : level * 2.0f;
+        if (!isOperational(Building.INFIRMARY) || (level <= 0 && !victory)) return;
+        float heal = victory ? 10.0f + level * 4.0f : 2.0f + level * 2.0f;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (VillageCouncilState.isInsideVillage(player)) {
-                player.heal(heal);
+            if (!VillageCouncilState.isInsideVillage(player)) continue;
+            player.heal(heal);
+            if (level >= 1) clearTreatmentEffects(player);
+            if (level >= 2) {
+                player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * (5 + level),
+                        level >= 5 ? 1 : 0, false, true, true));
+            }
+            if (victory && level >= 3) {
+                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 20 * 45,
+                        Math.min(2, level - 3), false, true, true));
             }
         }
     }

@@ -80,7 +80,7 @@ def main() -> None:
     assert "lastLayout" in status_ui
     assert "ClientPacketDistributor" not in status_ui
 
-    assert 'WEAPON("무기")' in shop_ui
+    assert 'EQUIPMENT("장비")' in shop_ui
     assert 'ARMOR("방어구")' in shop_ui
     assert 'OTHER("기타")' in shop_ui
     assert "renderOfferList" in shop_ui and "renderOfferDetail" in shop_ui
@@ -91,7 +91,7 @@ def main() -> None:
     assert '"open_status"' in inventory
     assert '"open_skill_tree"' in inventory
     assert '"open_role_progress_current"' in inventory
-    assert '"open_caller_menu"' in inventory
+    assert '"open_quick_chat"' in inventory
     assert "B 통신 · Z/X 기술" in inventory
     for key in ("GLFW_KEY_Z", "GLFW_KEY_X", "GLFW_KEY_B", "GLFW_KEY_H", "GLFW_KEY_J", "GLFW_KEY_K", "GLFW_KEY_U"):
         assert key in keys
@@ -129,7 +129,7 @@ def main() -> None:
     assert "호출기 아이템은 폐지" in starter
     assert "인벤토리 화면의 호출기 버튼" in starter
 
-    assert "combineFirstPair" in rarity
+    assert "combineSelected" in rarity and "fusionCandidates" in rarity
     assert "재화는 소모되지 않았습니다" in rarity
     assert len([line for line in rarity.splitlines() if line.strip().startswith(("COMMON(", "UNCOMMON(", "RARE(", "EPIC(", "LEGENDARY("))]) == 5
     assert "event.getDrops().clear()" in raid_loot

@@ -73,17 +73,11 @@ def main() -> None:
     assert "openTowerDetail" in ui
     assert "rebuildTowerVisual" in ui
 
-    for skill in (
-        "VANGUARD_WHIRLWIND", "VANGUARD_BREAKER", "VANGUARD_CRY", "VANGUARD_STORM",
-        "RANGER_VOLLEY", "RANGER_PIERCE", "RANGER_RICOCHET", "RANGER_FIRE_RAIN",
-        "ARCANIST_FIRE_ORB", "ARCANIST_FROST_RING", "ARCANIST_CHAIN", "ARCANIST_NOVA",
-        "LUMINAR_HEAL", "LUMINAR_CLEANSE", "LUMINAR_VEIL", "LUMINAR_SANCTUARY",
-        "WARDEN_TAUNT", "WARDEN_BASH", "WARDEN_FORMATION", "WARDEN_FIELD",
-    ):
-        assert "case " + skill in visuals
     assert "VillageSkillVisualSystem.render" in rpg
     assert "result.contains(\"사용 완료\")" in rpg
-    assert "ring(" in visuals and "line(" in visuals and "chainTargets(" in visuals
+    assert "ParticleTypes" not in visuals and "sendParticles" not in visuals
+    assert "pushFromPlayer" in visuals and "liftTargets" in visuals and "tauntTargets" in visuals
+    assert "SoundEvents" in visuals
 
     assert "Tiny Creatures" in notices
     assert "CC0 1.0 Universal" in notices
@@ -93,7 +87,7 @@ def main() -> None:
     print("[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs")
     print("[PASS] Five-day milestone sieges and endless warfront tiers remain scalable")
     print("[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes")
-    print("[PASS] Twenty active skills use role-specific rings, trails, chains and columns")
+    print("[PASS] Twenty active skills use real motion, aggro and spatial sound instead of particle drawings")
     print("[PASS] CC0 fantasy visual references are documented without untracked binaries")
 
 

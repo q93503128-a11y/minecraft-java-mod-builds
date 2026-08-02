@@ -54,8 +54,8 @@ def main() -> None:
     assert "Bubble" in common_ui
     assert "TreeBubble" in role_ui and "SkillBubble" in role_ui
     assert "renderTreeFooter" not in role_ui and "renderSkillFooter" not in role_ui
-    assert "ACTION_HEIGHT = 24" in shop_ui
-    assert "* 24 / 100" in shop_ui
+    assert "ACTION_HEIGHT = 20" in shop_ui
+    assert "contentWidth < 330" in shop_ui
     assert "ChatFormatting.stripFormatting" in shop_ui
     assert "§l" not in shop_ui and "§6" not in shop_ui
 

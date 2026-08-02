@@ -62,9 +62,11 @@ public final class VillageRespawnSystem {
         player.setRemainingFireTicks(0);
         player.setDeltaMovement(Vec3.ZERO);
         player.setGameMode(GameType.SPECTATOR);
-        RESPAWN_AT.put(player.getUUID(), server.overworld().getGameTime() + RESPAWN_DELAY_TICKS);
+        int delay = VillageProgressionSystem.respawnDelayTicks();
+        RESPAWN_AT.put(player.getUUID(), server.overworld().getGameTime() + delay);
         player.sendSystemMessage(Component.literal(
-                "§c[전투 불능] §f20초 후 마을 광장에서 부활합니다. 적은 시설 공격을 계속합니다."));
+                "§c[전투 불능] §f" + (delay / 20)
+                        + "초 후 마을 광장에서 부활합니다. 적은 시설 공격을 계속합니다."));
         return true;
     }
 

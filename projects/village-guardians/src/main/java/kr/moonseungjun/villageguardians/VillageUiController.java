@@ -54,23 +54,7 @@ public final class VillageUiController {
     }
 
     public static void openCaller(ServerPlayer player) {
-        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        String body = "제 " + VillageCouncilState.currentDay() + "일 "
-                + VillageCouncilState.currentPhase().koreanName() + "\n"
-                + "직업 " + (role == null ? "미배치" : role.displayName()) + " · 주화 "
-                + VillageProgressionSystem.coins(player) + " · 보급품 " + VillageProgressionSystem.supplies() + "\n"
-                + VillageRaidSystem.status() + "\n\n"
-                + "단축키: H 상태 · J 성장 · K 직업 성장 · U 호출기 · B 빠른 통신 · Z/X 기술";
-        send(player, "caller", "마을 수호단 호출기", body,
-                List.of("open_status", "open_skill_tree", "open_role_progress_current",
-                        "open_wave_intel", "open_quick_chat", "return_village"),
-                List.of(
-                        "상태 (H)|현재 전투 상태와 재화 확인",
-                        "성장 (J)|공용 전술 성장 트리 바로 열기",
-                        "직업 성장 (K)|현재 직업의 세 갈래 성장 확인",
-                        "다음 웨이브 정보|예상 병과·특성·보스 정찰",
-                        "빠른 통신 (B)|접속 중인 수호단에게 즉시 신호",
-                        "마을 귀환|전투 중이 아닐 때 중앙 광장으로 귀환"));
+        VillageUiService.openQuickChat(player);
     }
 
     public static void openStatus(ServerPlayer player) {
@@ -144,6 +128,32 @@ public final class VillageUiController {
                 role.id() + "|" + role.displayName() + "|" + summary, actions, labels);
     }
 
+    public static void openRoleSkillResearch(ServerPlayer player) {
+        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        if (role == null) {
+            player.sendSystemMessage(Component.literal("§c마을 회관에서 직업을 먼저 배치하세요."));
+            return;
+        }
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            player.sendSystemMessage(Component.literal("§c직업 기술 습득은 기술 연구소 연구대 근처에서만 가능합니다."));
+            return;
+        }
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (VillageRoleSkillSystem.ActiveSkill skill : VillageRoleSkillSystem.skillsFor(role)) {
+            int slot = VillageRoleSkillSystem.equippedSlot(player, skill);
+            actions.add("research_skill_unlock:" + skill.id());
+            labels.add(String.join("|", "skill", skill.id(), skill.displayName(), skill.description(),
+                    Integer.toString(skill.requiredLevel()), Integer.toString(skill.coinCost()),
+                    VillageRoleSkillSystem.skillStatus(player, skill), Integer.toString(slot)));
+        }
+        String summary = "Lv." + VillageCouncilState.levelOf(player.getUUID())
+                + " · 주화 " + VillageProgressionSystem.coins(player)
+                + " · 습득은 연구소 · 습득 후 Z/X 장착 변경";
+        send(player, "role_skills", "직업 기술 연구",
+                role.id() + "|" + role.displayName() + "|" + summary, actions, labels);
+    }
+
     public static void openWaveIntel(ServerPlayer player) {
         send(player, "wave_intel", "다음 웨이브 정보",
                 VillageWaveIntelSystem.report(), List.of(), List.of());
@@ -152,12 +162,13 @@ public final class VillageUiController {
     public static void openEquipmentShop(ServerPlayer player) {
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
-        for (VillageEquipmentShop.Offer offer : VillageEquipmentShop.offers()) {
+        int day = VillageCouncilState.currentDay();
+        for (VillageEquipmentShop.Offer offer : VillageEquipmentShop.currentOffers(day)) {
             String status = VillageEquipmentShop.status(player, offer);
             boolean available = "available".equals(status);
             actions.add("gear:" + offer.id());
             labels.add(String.join("|", "shop", offer.category().name().toLowerCase(), offer.displayName(),
-                    "주화 " + offer.cost(), offer.effect() + " · 제 " + offer.requiredDay() + "일부터 판매",
+                    "주화 " + offer.cost(), offer.effect() + " · 오늘 입고",
                     available ? "구매 가능" : status, available ? "available" : "locked"));
         }
         int arrows = 16 + VillageProgressionSystem.storehouseLevel() * 4;
@@ -166,12 +177,11 @@ public final class VillageUiController {
                 "원거리 전투 보급", "구매 가능", true);
         addShop(actions, labels, "buy_food", "other", "전투 식량 " + food + "개", "주화 18",
                 "허기 회복용 익힌 소고기", "구매 가능", true);
-        addShop(actions, labels, "sell_loot", "other", "몬스터 전리품 판매", "일괄 정산",
-                "주 인벤토리의 판매 가능 전리품만 안전하게 정산", "판매 가능", true);
+        actions.add("sell_loot");
+        labels.add("shop_utility|전리품 판매");
         send(player, "equipment_shop", "상점",
-                "레벨 제한 없이 구매할 수 있으며 강한 장비는 방어 일수에 따라 입고됩니다.\n"
-                        + "현재 제 " + VillageCouncilState.currentDay() + "일 · 주화 "
-                        + VillageProgressionSystem.coins(player), actions, labels);
+                "제 " + day + "일 오늘의 입고품 · 주화 " + VillageProgressionSystem.coins(player)
+                        + " · 장비 재고는 매일 교체", actions, labels);
     }
 
     public static void openBuilding(ServerPlayer player, VillageProgressionSystem.Building building) {
@@ -193,6 +203,23 @@ public final class VillageUiController {
         List<String> labels = new ArrayList<>();
         if (usable) fillLocalActions(player, building, actions, labels);
         send(player, "building", building.displayName(), body, actions, labels);
+    }
+
+    public static void openFusion(ServerPlayer player) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {
+            player.sendSystemMessage(Component.literal("§c장비 합성은 대장간 단말기 근처에서만 가능합니다."));
+            return;
+        }
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (VillageEquipmentRaritySystem.FusionCandidate candidate
+                : VillageEquipmentRaritySystem.fusionCandidates(player)) {
+            actions.add("fusion_pick:" + candidate.slot());
+            labels.add(String.join("|", "fusion", Integer.toString(candidate.slot()), candidate.group(),
+                    candidate.name(), candidate.rarity(), candidate.itemId()));
+        }
+        send(player, "equipment_fusion", "장비 합성",
+                "같은 종류·같은 등급 장비 세 개를 선택해 다음 등급 하나로 합성합니다.", actions, labels);
     }
 
     public static void openMercenaryCommand(ServerPlayer player) {
@@ -221,9 +248,11 @@ public final class VillageUiController {
             int level = VillageDefenseResearchSystem.level(branch);
             int cost = VillageDefenseResearchSystem.upgradeCost(branch);
             actions.add("defense_research:" + branch.id());
-            labels.add(branch.displayName() + " Lv." + level + "/" + VillageDefenseResearchSystem.MAX_LEVEL
-                    + (level >= VillageDefenseResearchSystem.MAX_LEVEL ? "" : " · 주화 " + cost)
-                    + "|" + branch.description(level));
+            String detail = "Lv." + level + "/" + VillageDefenseResearchSystem.MAX_LEVEL
+                    + "\n현재 효과: " + branch.description(level)
+                    + (level >= VillageDefenseResearchSystem.MAX_LEVEL
+                    ? "\n최고 단계" : "\n다음 단계 비용: 주화 " + cost);
+            labels.add(branch.displayName() + "|" + detail);
         }
         send(player, "building", "마을 방어 연구", "용병·포탑·전리품 운용을 연구합니다.", actions, labels);
     }
@@ -291,6 +320,46 @@ public final class VillageUiController {
             openEquipmentShop(player);
             return true;
         }
+        if (action.startsWith("fusion_combine:")) {
+            if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {
+                player.sendSystemMessage(Component.literal("§c장비 합성은 대장간 단말기 근처에서만 가능합니다."));
+                return true;
+            }
+            String[] raw = action.substring(15).split(",", -1);
+            if (raw.length == 3) {
+                try {
+                    String result = VillageEquipmentRaritySystem.combineSelected(player,
+                            Integer.parseInt(raw[0]), Integer.parseInt(raw[1]), Integer.parseInt(raw[2]));
+                    player.sendSystemMessage(Component.literal("§e" + result));
+                } catch (NumberFormatException ignored) {
+                    player.sendSystemMessage(Component.literal("§c합성할 장비 선택값이 올바르지 않습니다."));
+                }
+            }
+            openFusion(player);
+            return true;
+        }
+        if (action.startsWith("research_skill_unlock:")) {
+            if (!VillageLocationRules.isNearSkillHall(player)) {
+                player.sendSystemMessage(Component.literal("§c직업 기술 습득은 기술 연구소에서만 가능합니다."));
+                return true;
+            }
+            player.sendSystemMessage(Component.literal("§b"
+                    + VillageRoleSkillSystem.unlockSkill(player, action.substring(22))));
+            openRoleSkillResearch(player);
+            return true;
+        }
+        if (action.startsWith("research_skill_equip:")) {
+            String[] parts = action.split(":", 3);
+            if (parts.length == 3) {
+                int slot;
+                try { slot = Integer.parseInt(parts[2]); }
+                catch (NumberFormatException ignored) { slot = 0; }
+                player.sendSystemMessage(Component.literal("§b"
+                        + VillageRoleSkillSystem.equipSkill(player, parts[1], slot)));
+                openRoleSkillResearch(player);
+            }
+            return true;
+        }
         if (action.startsWith("hire_mercenary:")) {
             if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
                 player.sendSystemMessage(Component.literal("§c용병 고용은 병영 단말기 근처에서만 가능합니다."));
@@ -323,6 +392,8 @@ public final class VillageUiController {
             case "open_personal_progress" -> openPersonalProgress(player);
             case "open_skill_tree" -> openSkillTree(player);
             case "open_role_progress_current" -> openRoleProgress(player);
+            case "open_role_skill_research" -> openRoleSkillResearch(player);
+            case "open_fusion" -> openFusion(player);
             case "open_wave_intel" -> openWaveIntel(player);
             case "open_equipment_shop" -> openEquipmentShop(player);
             case "open_mercenary_command" -> openMercenaryCommand(player);
@@ -343,14 +414,7 @@ public final class VillageUiController {
                     openBuilding(player, VillageProgressionSystem.Building.SMITHY);
                 }
             }
-            case "forge_combine" -> {
-                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {
-                    player.sendSystemMessage(Component.literal("§c장비 합성은 대장간 단말기 근처에서만 가능합니다."));
-                } else {
-                    player.sendSystemMessage(Component.literal("§e" + VillageEquipmentRaritySystem.combineFirstPair(player)));
-                    openBuilding(player, VillageProgressionSystem.Building.SMITHY);
-                }
-            }
+            case "forge_combine" -> openFusion(player);
             case "buy_arrows" -> {
                 if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
                     player.sendSystemMessage(Component.literal("§c화살 구매는 창고 단말기 근처에서만 가능합니다."));
@@ -393,13 +457,13 @@ public final class VillageUiController {
                                 ? "장비 강화 최고 단계|개인 장비 피해 보정이 최대입니다."
                                 : "장비 강화 +" + (rank + 1) + " · 주화 " + cost
                                 + "|근접·원거리 장비 피해 보정을 강화",
-                        "forge_combine", "동종 장비 합성|같은 종류·같은 등급 두 개를 무료로 상위 등급 합성");
+                        "open_fusion", "장비 3개 합성|같은 종류·같은 등급 세 개를 직접 골라 상위 등급 하나로 합성");
             }
             case SKILL_HALL -> add(actions, labels,
-                    "open_role_progress_current", "직업 기술 연구|기술 습득·장착과 직업 성장 확인",
+                    "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 Z/X 장착만 관리",
                     "open_defense_research", "마을 방어 연구|용병·포탑·전리품 연구 트리");
             case INFIRMARY -> add(actions, labels,
-                    "use_infirmary", "즉시 치료|시설 단계에 따라 체력 회복");
+                    "use_infirmary", "응급 치료|체력 회복·상태 해제·보호막을 시설 단계에 따라 제공");
             case BARRACKS -> add(actions, labels,
                     "train", "전투 훈련|재사용 대기시간 후 경험치 획득",
                     "open_mercenary_command", "용병 고용·성장|병과를 선택해 지속 용병 배치");
@@ -410,10 +474,10 @@ public final class VillageUiController {
     private static String localDescription(ServerPlayer player, VillageProgressionSystem.Building building) {
         return switch (building) {
             case WALLS -> "현장에서는 정찰만 확인합니다. 수리·강화·포탑 건설은 회관에서 진행합니다.";
-            case SMITHY -> "개인 장비 피해 보정 강화와 같은 종류·같은 등급 장비의 무료 합성을 담당합니다. 현재 장비 강화 +"
+            case SMITHY -> "개인 장비 피해 보정 강화와 같은 종류·같은 등급 장비 세 개의 선택 합성을 담당합니다. 현재 장비 강화 +"
                     + VillageProgressionSystem.forgeRank(player) + ".";
             case SKILL_HALL -> "직업 기술과 용병·포탑 방어 연구를 담당합니다.";
-            case INFIRMARY -> "전투 중 입은 피해를 즉시 치료합니다.";
+            case INFIRMARY -> "응급 치료, 해로운 상태 제거, 재생·보호막과 부활 시간 단축을 담당합니다.";
             case BARRACKS -> "용병 병과 고용과 훈련을 담당합니다.";
             case STOREHOUSE -> "장비·식량·화살 구매와 전리품 판매를 담당합니다.";
             case TOWN_HALL -> "직업 배치와 모든 시설 수리·강화·건설을 담당합니다.";
@@ -428,8 +492,11 @@ public final class VillageUiController {
             case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 마을 장비 공격 보정 +" + (safe * 4)
                     + "% · 개인 장비 강화·등급 합성";
             case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 직업 기술·마을 방어 연구";
-            case INFIRMARY -> "최대 내구도 " + (520 + safe * 110) + " · 즉시 치료량 "
-                    + Math.round((6.0f + safe * 4.0f) / 2.0f) + "칸";
+            case INFIRMARY -> "최대 내구도 " + (520 + safe * 110)
+                    + " · 치료 " + Math.round((8.0f + safe * 4.0f) / 2.0f) + "칸"
+                    + " · 부활 " + Math.max(10, 20 - safe * 2) + "초"
+                    + (safe >= 1 ? " · 상태 해제" : "")
+                    + (safe >= 3 ? " · 보호막" : "");
             case STOREHOUSE -> "최대 내구도 " + (560 + safe * 120) + " · 상품·전리품 정산 효율 강화";
             case BARRACKS -> "최대 내구도 " + (620 + safe * 130) + " · 훈련 XP " + (30 + safe * 18)
                     + " · 기본 용병 정원 " + (1 + safe / 2);

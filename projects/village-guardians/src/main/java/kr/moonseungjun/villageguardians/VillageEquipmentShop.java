@@ -9,6 +9,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -18,8 +19,36 @@ public final class VillageEquipmentShop {
     private VillageEquipmentShop() {}
 
     public static List<Offer> offers() { return List.of(Offer.values()); }
+
     public static List<Offer> offers(Category category) {
         return Arrays.stream(Offer.values()).filter(offer -> offer.category() == category).toList();
+    }
+
+    /** Deterministic daily inventory. Eligible items rotate instead of accumulating forever. */
+    public static List<Offer> currentOffers(int day) {
+        int safeDay = Math.max(1, day);
+        List<Offer> result = new ArrayList<>();
+        result.addAll(rotatingOffers(Category.EQUIPMENT, safeDay, 3));
+        result.addAll(rotatingOffers(Category.ARMOR, safeDay, 2));
+        return List.copyOf(result);
+    }
+
+    public static boolean isStocked(Offer offer, int day) {
+        return offer != null && currentOffers(day).contains(offer);
+    }
+
+    private static List<Offer> rotatingOffers(Category category, int day, int maximum) {
+        List<Offer> eligible = Arrays.stream(Offer.values())
+                .filter(offer -> offer.category() == category && offer.requiredDay() <= day)
+                .toList();
+        if (eligible.isEmpty()) return List.of();
+        int count = Math.min(maximum, eligible.size());
+        int start = Math.floorMod(day - 1 + category.ordinal() * 2, eligible.size());
+        List<Offer> selected = new ArrayList<>();
+        for (int index = 0; index < count; index++) {
+            selected.add(eligible.get((start + index) % eligible.size()));
+        }
+        return List.copyOf(selected);
     }
 
     public static String purchase(ServerPlayer player, String offerId) {
@@ -29,7 +58,7 @@ public final class VillageEquipmentShop {
             return "상점이 파괴되어 장비를 구매할 수 없습니다.";
         }
         int day = VillageCouncilState.currentDay();
-        if (day < offer.requiredDay()) return "제 " + offer.requiredDay() + "일부터 판매됩니다.";
+        if (!isStocked(offer, day)) return "오늘 입고된 상품이 아닙니다. 상점 목록을 다시 확인하세요.";
         if (!VillageProgressionSystem.spendCoins(player, offer.cost())) {
             return "수호 주화가 부족합니다. 필요 " + offer.cost();
         }
@@ -39,8 +68,7 @@ public final class VillageEquipmentShop {
     }
 
     public static String status(ServerPlayer player, Offer offer) {
-        int day = VillageCouncilState.currentDay();
-        if (day < offer.requiredDay()) return offer.requiredDay() + "일차 판매 시작";
+        if (!isStocked(offer, VillageCouncilState.currentDay())) return "오늘 미입고";
         if (VillageProgressionSystem.coins(player) < offer.cost()) return "주화 " + offer.cost() + " 필요";
         return "available";
     }
@@ -89,32 +117,32 @@ public final class VillageEquipmentShop {
     }
 
     public enum Category {
-        WEAPON("무기"), ARMOR("방어구"), OTHER("기타");
+        EQUIPMENT("장비"), ARMOR("방어구"), OTHER("기타");
         private final String displayName;
         Category(String displayName) { this.displayName = displayName; }
         public String displayName() { return displayName; }
     }
 
     public enum Offer {
-        WATCH_SWORD("watch_sword", "파수대 철검", Category.WEAPON, Items.IRON_SWORD, 1, 90,
+        WATCH_SWORD("watch_sword", "파수대 철검", Category.EQUIPMENT, Items.IRON_SWORD, 1, 90,
                 "근접 공격 강화", 1.08f, 1.0f),
-        HUNTER_BOW("hunter_bow", "성루 사냥활", Category.WEAPON, Items.BOW, 2, 140,
+        HUNTER_BOW("hunter_bow", "성루 사냥활", Category.EQUIPMENT, Items.BOW, 2, 140,
                 "원거리 공격 강화", 1.0f, 1.10f),
         WARD_SHIELD("ward_shield", "수호 문양 방패", Category.ARMOR, Items.SHIELD, 2, 170,
                 "받는 피해 감소", 1.0f, 1.0f),
-        VETERAN_BLADE("veteran_blade", "노련한 수호검", Category.WEAPON, Items.DIAMOND_SWORD, 4, 330,
+        VETERAN_BLADE("veteran_blade", "노련한 수호검", Category.EQUIPMENT, Items.DIAMOND_SWORD, 4, 330,
                 "근접 공격 크게 강화", 1.17f, 1.0f),
-        SIEGE_CROSSBOW("siege_crossbow", "공성 파쇄쇠뇌", Category.WEAPON, Items.CROSSBOW, 5, 390,
+        SIEGE_CROSSBOW("siege_crossbow", "공성 파쇄쇠뇌", Category.EQUIPMENT, Items.CROSSBOW, 5, 390,
                 "원거리 공격 크게 강화", 1.0f, 1.20f),
-        ARCANE_FOCUS("arcane_focus", "비전 집중봉", Category.OTHER, Items.BLAZE_ROD, 5, 420,
+        ARCANE_FOCUS("arcane_focus", "비전 집중봉", Category.EQUIPMENT, Items.BLAZE_ROD, 5, 420,
                 "장착 기술 피해와 치유 강화", 1.0f, 1.0f),
         BASTION_CHEST("bastion_chest", "성채 수호 흉갑", Category.ARMOR, Items.DIAMOND_CHESTPLATE, 6, 560,
                 "생존력 강화", 1.0f, 1.0f),
         AEGIS_CHEST("aegis_chest", "최후 방벽 흉갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 9, 900,
                 "후반 생존력 크게 강화", 1.0f, 1.0f),
-        DAWN_BLADE("dawn_blade", "새벽 절단검", Category.WEAPON, Items.NETHERITE_SWORD, 10, 980,
+        DAWN_BLADE("dawn_blade", "새벽 절단검", Category.EQUIPMENT, Items.NETHERITE_SWORD, 10, 980,
                 "최상급 근접 공격 강화", 1.28f, 1.0f),
-        STAR_BOW("star_bow", "별빛 장궁", Category.WEAPON, Items.BOW, 10, 980,
+        STAR_BOW("star_bow", "별빛 장궁", Category.EQUIPMENT, Items.BOW, 10, 980,
                 "최상급 원거리 공격 강화", 1.0f, 1.28f);
 
         private final String id;
@@ -144,7 +172,6 @@ public final class VillageEquipmentShop {
         public String displayName() { return displayName; }
         public Category category() { return category; }
         public int requiredDay() { return requiredDay; }
-        /** Compatibility metadata for the unreachable legacy shop renderer; purchases never check it. */
         @Deprecated public int requiredLevel() { return 0; }
         public int cost() { return cost; }
         public String effect() { return effect; }

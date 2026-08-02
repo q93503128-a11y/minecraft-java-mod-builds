@@ -10,9 +10,12 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-/** Curated raid equipment drops and cost-free two-to-one rarity fusion at the smithy. */
+/** Curated raid equipment drops and explicit cost-free three-to-one rarity fusion. */
 public final class VillageEquipmentRaritySystem {
     private static final int MAIN_INVENTORY_SLOTS = 36;
     private static final List<Item> EARLY_ITEMS = List.of(
@@ -30,26 +33,63 @@ public final class VillageEquipmentRaritySystem {
         return create(item, rarity);
     }
 
-    public static String combineFirstPair(ServerPlayer player) {
+    public static List<FusionCandidate> fusionCandidates(ServerPlayer player) {
+        List<FusionCandidate> result = new ArrayList<>();
         int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());
-        for (int firstSlot = 0; firstSlot < limit; firstSlot++) {
-            ItemStack first = player.getInventory().getItem(firstSlot);
-            Rarity rarity = rarityOf(first);
+        for (int slot = 0; slot < limit; slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            Rarity rarity = rarityOf(stack);
             if (rarity == null || rarity == Rarity.LEGENDARY) continue;
-            for (int secondSlot = firstSlot + 1; secondSlot < limit; secondSlot++) {
-                ItemStack second = player.getInventory().getItem(secondSlot);
-                if (second.getItem() != first.getItem() || rarityOf(second) != rarity) continue;
-                Item item = first.getItem();
-                first.shrink(1);
-                second.shrink(1);
-                ItemStack result = create(item, rarity.next());
-                if (!player.addItem(result)) player.drop(result, false);
-                player.getInventory().setChanged();
-                return displayName(item) + " 두 개를 " + rarity.next().displayName()
-                        + " 등급으로 합성했습니다. 재화는 소모되지 않았습니다.";
+            String group = stack.getItem().toString() + "@" + rarity.name();
+            result.add(new FusionCandidate(slot, group, displayName(stack.getItem()),
+                    rarity.displayName(), stack.getItem().toString()));
+        }
+        return List.copyOf(result);
+    }
+
+    public static String combineSelected(ServerPlayer player, int firstSlot, int secondSlot, int thirdSlot) {
+        int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());
+        Set<Integer> unique = new HashSet<>(List.of(firstSlot, secondSlot, thirdSlot));
+        if (unique.size() != 3 || unique.stream().anyMatch(slot -> slot < 0 || slot >= limit)) {
+            return "서로 다른 인벤토리 장비 세 개를 선택해야 합니다.";
+        }
+        ItemStack first = player.getInventory().getItem(firstSlot);
+        ItemStack second = player.getInventory().getItem(secondSlot);
+        ItemStack third = player.getInventory().getItem(thirdSlot);
+        Rarity rarity = rarityOf(first);
+        if (rarity == null || rarity == Rarity.LEGENDARY
+                || rarityOf(second) != rarity || rarityOf(third) != rarity
+                || second.getItem() != first.getItem() || third.getItem() != first.getItem()) {
+            return "같은 종류·같은 등급의 합성 가능한 장비 세 개를 선택해야 합니다.";
+        }
+        Item item = first.getItem();
+        first.shrink(1);
+        second.shrink(1);
+        third.shrink(1);
+        ItemStack result = create(item, rarity.next());
+        if (!player.addItem(result)) player.drop(result, false);
+        player.getInventory().setChanged();
+        return displayName(item) + " 세 개를 " + rarity.next().displayName()
+                + " 등급 하나로 합성했습니다. 재화는 소모되지 않았습니다.";
+    }
+
+    /** Legacy compatibility helper; new UI always asks the player to choose three items. */
+    @Deprecated
+    public static String combineFirstPair(ServerPlayer player) {
+        List<FusionCandidate> candidates = fusionCandidates(player);
+        for (int first = 0; first < candidates.size(); first++) {
+            for (int second = first + 1; second < candidates.size(); second++) {
+                for (int third = second + 1; third < candidates.size(); third++) {
+                    FusionCandidate a = candidates.get(first);
+                    FusionCandidate b = candidates.get(second);
+                    FusionCandidate c = candidates.get(third);
+                    if (a.group().equals(b.group()) && a.group().equals(c.group())) {
+                        return combineSelected(player, a.slot(), b.slot(), c.slot());
+                    }
+                }
             }
         }
-        return "같은 종류·같은 등급의 습격 장비 두 개가 필요합니다.";
+        return "같은 종류·같은 등급의 습격 장비 세 개가 필요합니다.";
     }
 
     public static float meleeMultiplier(ItemStack stack) {
@@ -143,6 +183,8 @@ public final class VillageEquipmentRaritySystem {
         if (item == Items.IRON_HELMET || item == Items.DIAMOND_HELMET || item == Items.NETHERITE_HELMET) return "수호 투구";
         return "습격 장비";
     }
+
+    public record FusionCandidate(int slot, String group, String name, String rarity, String itemId) {}
 
     public enum Rarity {
         COMMON("일반", ChatFormatting.GRAY, 1),

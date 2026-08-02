@@ -32,6 +32,7 @@ public final class VillageRoleProgressScreen extends Screen {
     private static double savedPanY;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
+    private final boolean skillsOnly;
     private final List<TreeEntry> nodes = new ArrayList<>();
     private final List<SkillEntry> skills = new ArrayList<>();
     private String roleId = "";
@@ -46,6 +47,8 @@ public final class VillageRoleProgressScreen extends Screen {
     public VillageRoleProgressScreen(VillageNetwork.OpenVillageUiPayload payload) {
         super(Component.literal(payload.title()));
         this.payload = payload;
+        this.skillsOnly = "role_skills".equals(payload.screenId());
+        this.tab = skillsOnly ? Tab.SKILLS : Tab.TREE;
         parsePayload();
     }
 
@@ -70,16 +73,21 @@ public final class VillageRoleProgressScreen extends Screen {
         graphics.fill(0, 0, width, HEADER_HEIGHT, PANEL);
         graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, BORDER);
         int closeX = width - 28;
-        int controlsLeft = tab == Tab.TREE ? closeX - 134 : closeX;
-        graphics.text(font, fit(roleName + " 성장", Math.max(80, controlsLeft - 18)),
-                10, 6, TEXT, false);
+        int controlsLeft = tab == Tab.TREE && !skillsOnly ? closeX - 134 : closeX;
+        graphics.text(font, fit(skillsOnly ? roleName + " 기술 연구" : roleName + " 성장",
+                        Math.max(80, controlsLeft - 18)), 10, 6, TEXT, false);
         graphics.text(font, fit(summary, Math.max(80, controlsLeft - 18)),
                 10, 19, MUTED, false);
-        drawTab(graphics, mouseX, mouseY, 10, 33, 84, "성장 경로", tab == Tab.TREE);
-        drawTab(graphics, mouseX, mouseY, 100, 33, 84, "기술 관리", tab == Tab.SKILLS);
+        if (!skillsOnly) {
+            drawTab(graphics, mouseX, mouseY, 10, 33, 84, "성장 경로", tab == Tab.TREE);
+            drawTab(graphics, mouseX, mouseY, 100, 33, 84, "기술 관리", tab == Tab.SKILLS);
+        } else {
+            graphics.text(font, fit("기술 습득과 Z/X 장착", Math.max(80, closeX - 18)),
+                    10, 36, ACCENT, false);
+        }
 
         drawSmall(graphics, mouseX, mouseY, closeX, 7, 20, "×");
-        if (tab == Tab.TREE) {
+        if (tab == Tab.TREE && !skillsOnly) {
             int centerX = closeX - 42;
             int plusX = centerX - 26;
             int percentX = plusX - 36;
@@ -397,17 +405,17 @@ public final class VillageRoleProgressScreen extends Screen {
             onClose();
             return true;
         }
-        if (inside(click.x(), click.y(), 10, 33, 84, 17)) {
+        if (!skillsOnly && inside(click.x(), click.y(), 10, 33, 84, 17)) {
             tab = Tab.TREE;
             selectedSkill = -1;
             return true;
         }
-        if (inside(click.x(), click.y(), 100, 33, 84, 17)) {
+        if (!skillsOnly && inside(click.x(), click.y(), 100, 33, 84, 17)) {
             tab = Tab.SKILLS;
             selectedNode = -1;
             return true;
         }
-        if (tab == Tab.TREE) return clickTree(click) || super.mouseClicked(click, doubled);
+        if (tab == Tab.TREE && !skillsOnly) return clickTree(click) || super.mouseClicked(click, doubled);
         return clickSkills(click) || super.mouseClicked(click, doubled);
     }
 
@@ -462,12 +470,12 @@ public final class VillageRoleProgressScreen extends Screen {
             if (bubble.learned()) {
                 if (inside(click.x(), click.y(), bubble.firstX(), bubble.buttonY(),
                         bubble.buttonWidth(), bubble.buttonHeight())) {
-                    send("role_skill_equip:" + bubble.skill().id() + ":0");
+                    send(equipAction(bubble.skill().id(), 0));
                     return true;
                 }
                 if (inside(click.x(), click.y(), bubble.secondX(), bubble.buttonY(),
                         bubble.buttonWidth(), bubble.buttonHeight())) {
-                    send("role_skill_equip:" + bubble.skill().id() + ":1");
+                    send(equipAction(bubble.skill().id(), 1));
                     return true;
                 }
             } else if (bubble.unlockable()
@@ -706,6 +714,10 @@ public final class VillageRoleProgressScreen extends Screen {
         int end = normalized.length();
         while (end > 1 && font.width(normalized.substring(0, end) + suffix) > maxWidth) end--;
         return normalized.substring(0, Math.max(1, end)) + suffix;
+    }
+
+    private String equipAction(String skillId, int slot) {
+        return (skillsOnly ? "research_skill_equip:" : "role_skill_equip:") + skillId + ":" + slot;
     }
 
     private void send(String action) {

@@ -65,7 +65,7 @@ public final class VillageClientKeys {
         consume(STATUS, "open_status");
         consume(GROWTH, "open_skill_tree");
         consume(ROLE_PROGRESS, "open_role_progress_current");
-        consume(CALLER, "open_caller_menu");
+        consume(CALLER, "open_quick_chat");
     }
 
     private static void drain(KeyMapping mapping) {

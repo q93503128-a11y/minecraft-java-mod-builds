@@ -51,20 +51,7 @@ public final class VillageUiService {
     }
 
     public static void openCallerMenu(ServerPlayer player) {
-        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        String body = "§f제 " + VillageCouncilState.currentDay() + "일 "
-                + VillageCouncilState.currentPhase().koreanName() + "\n"
-                + "§f직업: " + (role == null ? "미배치" : role.displayName()) + "\n"
-                + "§e수호 주화: " + VillageProgressionSystem.coins(player)
-                + " §6· 공동 보급품: " + VillageProgressionSystem.supplies() + "\n"
-                + "§f" + VillageRaidSystem.status() + "\n\n"
-                + "§7각 시설 단말기에서 기능과 수리·강화를 바로 이용할 수 있습니다. 직업 배치는 회관, 전술·직업 기술은 기술 연구소에서 진행합니다.";
-        send(player, "caller", "마을 수호단 호출기", body,
-                List.of("open_status", "open_quick_chat", "return_village"),
-                List.of(
-                        "수호자 상태|레벨·직업·재화와 장착 기술만 확인",
-                        "빠른 신호|접속 중인 수호단에게 즉시 신호 전송",
-                        "마을 귀환|전투 중이 아닐 때 중앙 광장으로 귀환"));
+        openQuickChat(player);
     }
 
     public static void openQuickChat(ServerPlayer player) {
@@ -442,7 +429,7 @@ public final class VillageUiService {
 
         switch (action) {
             case "open_dashboard", "open_mayor" -> openDashboard(player);
-            case "open_manual", "open_caller_menu" -> openCallerMenu(player);
+            case "open_manual", "open_caller_menu" -> openQuickChat(player);
             case "open_quick_chat" -> openQuickChat(player);
             case "open_status" -> openPlayerStatus(player);
             case "open_skill_tree" -> openSkillTree(player);
@@ -456,7 +443,9 @@ public final class VillageUiService {
             case "chat_ready" -> broadcastQuick(server, player, "준비 완료. 시간 진행 가능합니다.");
             case "chat_gate" -> broadcastQuick(server, player, "전원 북쪽 성문으로 집결!");
             case "chat_repair" -> broadcastQuick(server, player, "손상 시설 확인 후 현장 단말기에서 수리 바랍니다.");
-            case "chat_help" -> broadcastQuick(server, player, "지원 요청! 제 위치로 모여 주세요.");
+            case "chat_help" -> broadcastQuick(server, player, "지원 요청! 좌표 "
+                    + player.blockPosition().getX() + ", " + player.blockPosition().getY() + ", "
+                    + player.blockPosition().getZ() + "로 모여 주세요.");
             case "claim_bread" -> actAndReopen(player, () -> VillageProgressionSystem.claimDailyBread(player), VillageProgressionSystem.Building.STOREHOUSE);
             case "buy_arrows" -> actAndReopen(player, () -> VillageProgressionSystem.buyArrows(player), VillageProgressionSystem.Building.STOREHOUSE);
             case "buy_food" -> actAndReopen(player, () -> VillageProgressionSystem.buyFood(player), VillageProgressionSystem.Building.STOREHOUSE);

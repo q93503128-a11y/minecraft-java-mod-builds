@@ -83,7 +83,7 @@ public final class VillageInventoryPanel {
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
                 layout.left() + 9, firstY + 21, buttonWidth, "직업 K", ACCENT);
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 9 + buttonWidth + gap, firstY + 21, buttonWidth, "호출 U", GOLD);
+                layout.left() + 9 + buttonWidth + gap, firstY + 21, buttonWidth, "통신 U", GOLD);
     }
 
     private static void drawRow(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,
@@ -124,7 +124,7 @@ public final class VillageInventoryPanel {
             action = "open_role_progress_current";
         } else if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 9 + buttonWidth + gap,
                 firstY + 21, buttonWidth, 16)) {
-            action = "open_caller_menu";
+            action = "open_quick_chat";
         }
         if (action != null) {
             ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
