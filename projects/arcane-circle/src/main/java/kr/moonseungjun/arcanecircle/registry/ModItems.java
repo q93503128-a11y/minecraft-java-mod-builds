@@ -76,6 +76,30 @@ public final class ModItems {
     public static final DeferredItem<Item> MAGE_BOOTS = ITEMS.registerItem("mage_boots",
             properties -> new Item(properties.rarity(Rarity.UNCOMMON)
                     .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.BOOTS)));
+    public static final DeferredItem<Item> SAGE_HAT = ITEMS.registerItem("sage_hat",
+            properties -> new Item(properties.rarity(Rarity.RARE)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.HELMET)));
+    public static final DeferredItem<Item> SAGE_ROBE = ITEMS.registerItem("sage_robe",
+            properties -> new Item(properties.rarity(Rarity.EPIC)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.CHESTPLATE)));
+    public static final DeferredItem<Item> SAGE_ROBE_HEM = ITEMS.registerItem("sage_robe_hem",
+            properties -> new Item(properties.rarity(Rarity.EPIC)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.LEGGINGS)));
+    public static final DeferredItem<Item> SKYWALKER_BOOTS = ITEMS.registerItem("skywalker_boots",
+            properties -> new Item(properties.rarity(Rarity.RARE)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.BOOTS)));
+    public static final DeferredItem<Item> ARCHMAGE_CROWN = ITEMS.registerItem("archmage_crown",
+            properties -> new Item(properties.rarity(Rarity.EPIC)
+                    .humanoidArmor(ArmorMaterials.GOLD, ArmorType.HELMET)));
+    public static final DeferredItem<Item> ARCHMAGE_ROBE = ITEMS.registerItem("archmage_robe",
+            properties -> new Item(properties.rarity(Rarity.EPIC)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.CHESTPLATE)));
+    public static final DeferredItem<Item> ARCHMAGE_ROBE_HEM = ITEMS.registerItem("archmage_robe_hem",
+            properties -> new Item(properties.rarity(Rarity.EPIC)
+                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.LEGGINGS)));
+    public static final DeferredItem<Item> FROSTSTEP_BOOTS = ITEMS.registerItem("froststep_boots",
+            properties -> new Item(properties.rarity(Rarity.EPIC)
+                    .humanoidArmor(ArmorMaterials.DIAMOND, ArmorType.BOOTS)));
 
     public static final DeferredItem<BeginnerGrimoireItem> BEGINNER_GRIMOIRE = ITEMS.registerItem(
             "beginner_grimoire", properties -> new BeginnerGrimoireItem(properties.rarity(Rarity.UNCOMMON)));
@@ -119,6 +143,12 @@ public final class ModItems {
             event.accept(MAGE_HAT.get());
             event.accept(MAGE_ROBE.get());
             event.accept(MAGE_BOOTS.get());
+            event.accept(SAGE_HAT.get());
+            event.accept(SAGE_ROBE.get());
+            event.accept(SKYWALKER_BOOTS.get());
+            event.accept(ARCHMAGE_CROWN.get());
+            event.accept(ARCHMAGE_ROBE.get());
+            event.accept(FROSTSTEP_BOOTS.get());
             event.accept(BEGINNER_GRIMOIRE.get());
             for (DeferredItem<SpellbookItem> item : SPELLBOOKS.values()) event.accept(item.get());
         }
@@ -164,6 +194,12 @@ public final class ModItems {
             case "mage_hat" -> MAGE_HAT;
             case "mage_robe" -> MAGE_ROBE;
             case "mage_boots" -> MAGE_BOOTS;
+            case "sage_hat" -> SAGE_HAT;
+            case "sage_robe" -> SAGE_ROBE;
+            case "skywalker_boots" -> SKYWALKER_BOOTS;
+            case "archmage_crown" -> ARCHMAGE_CROWN;
+            case "archmage_robe" -> ARCHMAGE_ROBE;
+            case "froststep_boots" -> FROSTSTEP_BOOTS;
             default -> MAGE_HAT;
         };
     }

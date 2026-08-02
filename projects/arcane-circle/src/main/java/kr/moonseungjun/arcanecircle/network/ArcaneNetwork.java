@@ -21,8 +21,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1";
-    private static final Set<String> PAGES = Set.of("atlas", "recipes", "staffs", "core", "academy", "sync");
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha7";
+    private static final Set<String> PAGES = Set.of(
+            "atlas", "recipes", "staffs", "core", "academy", "quests", "sync");
 
     private ArcaneNetwork() {}
 
@@ -40,6 +41,7 @@ public final class ArcaneNetwork {
                 ArcaneNetwork::handlePurchase);
         registrar.playToServer(ChooseTraditionPayload.TYPE, ChooseTraditionPayload.STREAM_CODEC,
                 ArcaneNetwork::handleTradition);
+        registrar.playToServer(QuestActionPayload.TYPE, QuestActionPayload.STREAM_CODEC, ArcaneNetwork::handleQuest);
     }
 
     public static void sync(ServerPlayer player) {
@@ -94,15 +96,31 @@ public final class ArcaneNetwork {
     private static void handlePurchase(PurchaseAcademyItemPayload payload, IPayloadContext context) {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
-        kr.moonseungjun.arcanecircle.world.ArcaneEconomyService.purchase(player, payload.offerId());
+        ArcaneEconomyService.purchase(player, payload.offerId());
         context.reply(snapshot(player, "academy"));
     }
 
     private static void handleTradition(ChooseTraditionPayload payload, IPayloadContext context) {
         ServerPlayer player = requirePlayer(context);
         if (player == null) return;
-        kr.moonseungjun.arcanecircle.world.ArcaneEconomyService.chooseTradition(player, payload.traditionId());
+        ArcaneEconomyService.chooseTradition(player, payload.traditionId());
         context.reply(snapshot(player, "academy"));
+    }
+
+    private static void handleQuest(QuestActionPayload payload, IPayloadContext context) {
+        ServerPlayer player = requirePlayer(context);
+        if (player == null) return;
+        ArcaneQuestData quests = ArcaneQuestData.get(((ServerLevel) player.level()).getServer());
+        String action = payload.action() == null ? "" : payload.action();
+        if ("accept".equals(action)) quests.acceptOffer(player);
+        else if ("reject".equals(action)) quests.rejectOffer(player);
+        else if (action.startsWith("claim:")) {
+            try { quests.claim(player, Integer.parseInt(action.substring("claim:".length()))); }
+            catch (NumberFormatException ignored) {
+                ArcaneNoticeService.push(player, Component.literal("§c[의뢰] 잘못된 보상 요청입니다."));
+            }
+        }
+        context.reply(snapshot(player, "quests"));
     }
 
     private static void handleEquip(EquipSpellPayload payload, IPayloadContext context) {
@@ -110,7 +128,8 @@ public final class ArcaneNetwork {
         if (player == null) return;
         boolean selected = data(player).selectSpell(player, payload.slot(), payload.spellId());
         if (!selected) {
-            player.sendSystemMessage(Component.literal("§c[마도서] §f현재 써클에서 사용할 수 없거나 아직 각인되지 않은 주문입니다."));
+            ArcaneNoticeService.push(player, Component.literal(
+                    "§c[마도서] §f현재 써클에서 사용할 수 없거나 아직 각인되지 않은 주문입니다."));
         }
         context.reply(snapshot(player, "sync"));
     }
@@ -131,7 +150,10 @@ public final class ArcaneNetwork {
         MagicPlayerData.EffectiveStats stats = magicData.effectiveStats(player);
         StaffProfile staff = stats.staff();
         MageGearService.GearStats gear = MageGearService.stats(player);
-        ArcaneQuestData.QuestStatus quest = ArcaneQuestData.get(((ServerLevel) player.level()).getServer()).status(player);
+        ArcaneQuestData questData = ArcaneQuestData.get(((ServerLevel) player.level()).getServer());
+        List<ArcaneQuestData.QuestStatus> quests = questData.statuses(player);
+        ArcaneQuestData.QuestStatus offered = questData.offerStatus(player);
+        ArcaneQuestData.QuestStatus legacyQuest = quests.isEmpty() ? ArcaneQuestData.QuestStatus.NONE : quests.getFirst();
         String known = state.known().stream().sorted().collect(Collectors.joining("|"));
         String mastery = SpellCatalog.spells().values().stream()
                 .map(spell -> spell.id() + ":" + state.mastery(spell.id()))
@@ -176,22 +198,46 @@ public final class ArcaneNetwork {
                 + ";gear_boots=" + MageGearService.bootsName(player)
                 + ";gear_mana=" + gear.maxManaBonus()
                 + ";gear_regen=" + permille(gear.regenMultiplier())
-                + ";" + "marks=" + kr.moonseungjun.arcanecircle.world.ArcaneEconomyService.balance(player)
-                + ";" + "tradition=" + kr.moonseungjun.arcanecircle.world.ArcaneWorldData
+                + ";marks=" + ArcaneEconomyService.balance(player)
+                + ";tradition=" + kr.moonseungjun.arcanecircle.world.ArcaneWorldData
                         .get(((ServerLevel) player.level()).getServer()).tradition(player).name()
                 + ";known=" + known
                 + ";mastery=" + mastery
                 + ";notice_seq=" + ArcaneNoticeService.sequence(player)
                 + ";notice_ttl=" + ArcaneNoticeService.ttl(player)
                 + ";notice=" + ArcaneNoticeService.text(player)
-                + ";quest_id=" + quest.id()
-                + ";quest_target=" + quest.target()
-                + ";quest_progress=" + quest.progress()
-                + ";quest_circle=" + quest.circle()
-                + ";quest_reward=" + quest.reward()
-                + ";quest_desc=" + quest.description()
+                + ";quest_id=" + legacyQuest.id()
+                + ";quest_target=" + legacyQuest.target()
+                + ";quest_progress=" + legacyQuest.progress()
+                + ";quest_circle=" + legacyQuest.circle()
+                + ";quest_reward=" + legacyQuest.reward()
+                + ";quest_desc=" + legacyQuest.description()
+                + ";" + questSnapshot(offered, quests)
                 + ";spell_count=" + SpellCatalog.spells().size();
         return new GrimoireSnapshotPayload(page, snapshot);
+    }
+
+    private static String questSnapshot(ArcaneQuestData.QuestStatus offered,
+                                        List<ArcaneQuestData.QuestStatus> quests) {
+        StringBuilder result = new StringBuilder();
+        result.append("quest_count=").append(Math.min(ArcaneQuestData.MAX_ACTIVE, quests.size()));
+        appendQuest(result, "quest_offer", offered);
+        for (int index = 0; index < ArcaneQuestData.MAX_ACTIVE; index++) {
+            ArcaneQuestData.QuestStatus quest = index < quests.size()
+                    ? quests.get(index) : ArcaneQuestData.QuestStatus.NONE;
+            appendQuest(result, "quest_" + index, quest);
+        }
+        return result.toString();
+    }
+
+    private static void appendQuest(StringBuilder result, String prefix, ArcaneQuestData.QuestStatus quest) {
+        result.append(';').append(prefix).append("_id=").append(quest.id())
+                .append(';').append(prefix).append("_target=").append(quest.target())
+                .append(';').append(prefix).append("_progress=").append(quest.progress())
+                .append(';').append(prefix).append("_circle=").append(quest.circle())
+                .append(';').append(prefix).append("_reward=").append(quest.reward())
+                .append(';').append(prefix).append("_desc=").append(quest.description())
+                .append(';').append(prefix).append("_affiliation=").append(quest.affiliation().name());
     }
 
     private static int permille(double value) {

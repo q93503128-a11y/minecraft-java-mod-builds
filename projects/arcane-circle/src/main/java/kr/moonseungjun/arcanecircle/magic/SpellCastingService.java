@@ -80,8 +80,7 @@ public final class SpellCastingService {
         clearFusion(player, false);
         int required = requiredCastTicks(player, cast.spell());
         if (required <= 0) {
-            CHARGES.remove(player.getUUID());
-            castPrepared(player, data, cast);
+            CHARGES.put(player.getUUID(), new ChargeState(slot, cast.spell().id(), serverClock(player), 0));
             return;
         }
 
@@ -146,6 +145,7 @@ public final class SpellCastingService {
             return;
         }
 
+        if (charge.requiredTicks <= 0) return;
         if ((elapsed & 1L) == 0L) {
             WorldMagicService.charge(player, spell, false, List.of(), cast.range(),
                     Math.min(1.0, elapsed / (double) Math.max(1, charge.requiredTicks)));
@@ -195,7 +195,14 @@ public final class SpellCastingService {
         double gapScale = Math.pow(0.78, circleGap);
         double masteryScale = Math.max(0.72, 1.0 - masteryTier * 0.028);
         int calculated = (int) Math.round(sameCircleTicks[circle] * gapScale * masteryScale);
-        return Math.max(minimumTicks[circle], calculated);
+        int instantGap = circle <= 2 ? 4 : circle <= 4 ? 5 : 99;
+        if (circleGap >= instantGap || (circleGap >= 3 && masteryTier >= 8)) return 0;
+        int bounded = Math.max(minimumTicks[circle], calculated);
+        kr.moonseungjun.arcanecircle.world.MagicTradition chosen =
+                kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer())
+                        .tradition(player);
+        int result = (int) Math.round(bounded * chosen.castTimeMultiplier());
+        return result <= 1 ? 0 : result;
     }
 
     public static void queueFusionSlot(ServerPlayer player, int slot) {
@@ -367,7 +374,9 @@ public final class SpellCastingService {
             case 8 -> 620;
             default -> 960;
         };
-        return Math.max(minimum, calculated);
+        int resultTicks = Math.max(minimum, calculated);
+        if (registered && result.circle() <= 3 && masteryTier >= 8) return 0;
+        return resultTicks;
     }
 
     private static String fusionCooldownBlock(ServerPlayer player, List<String> ingredients) {
@@ -458,7 +467,8 @@ public final class SpellCastingService {
         data.startCooldown(player, spell.id(), cast.cooldownTicks());
         if (cast.fusion()) startFusionIngredientCooldowns(player, data, cast.ingredients());
         MagicPlayerData.CastProgress progress = data.completeCast(player, cast, impact);
-        ArcaneQuestData.get(((ServerLevel) player.level()).getServer()).recordCast(player, impact, spell.circle());
+        ArcaneQuestData.get(((ServerLevel) player.level()).getServer())
+                .recordCast(player, impact, spell.circle(), cast.fusion());
         MagicPlayerData.MageState state = data.state(player);
         MagicPlayerData.EffectiveStats stats = data.effectiveStats(player);
 
@@ -469,15 +479,16 @@ public final class SpellCastingService {
         } else {
             ArcaneNoticeService.push(player, Component.literal("§b" + spell.name() + " §f시전 · 마력 "
                     + (int) state.mana() + "/" + stats.maxMana() + " · 쿨 "
-                    + String.format("%.1f", cast.cooldownTicks() / 20.0) + "초"));
+                    + (cast.cooldownTicks() <= 0 ? "없음" : String.format("%.1f", cast.cooldownTicks() / 20.0) + "초")));
         }
 
         if (impact.meaningful()) {
             String threat = impact.strongKills() > 0 ? " §6강적 처치 " + impact.strongKills()
                     : impact.strongHits() > 0 ? " §e강적 적중 " + impact.strongHits() : "";
             player.sendSystemMessage(Component.literal("§5[주문 숙련] §f적중 " + impact.hits()
-                    + " · 처치 " + impact.kills() + threat + " §7· 숙련 +" + impact.masteryGain()
-                    + " · 통찰 +" + impact.insightGain() + " · 아르카나 +" + marksEarned));
+                    + " · 처치 " + impact.kills() + threat + " §7· 최고 위협 " + impact.peakThreat()
+                    + " · 숙련 +" + impact.masteryGain() + " · 통찰 +" + impact.insightGain()
+                    + " · 아르카나 +" + marksEarned));
         }
 
         ServerLevel level = (ServerLevel) player.level();

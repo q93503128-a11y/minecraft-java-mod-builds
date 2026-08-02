@@ -105,5 +105,13 @@
   "item.arcanecircle.mage_hat": "비전 모자",
   "item.arcanecircle.mage_robe": "중층 마도 로브",
   "item.arcanecircle.mage_robe_hem": "중층 마도 로브 자락",
-  "item.arcanecircle.mage_boots": "유랑 마도화"
+  "item.arcanecircle.mage_boots": "유랑 마도화",
+  "item.arcanecircle.sage_hat": "현자의 모자",
+  "item.arcanecircle.sage_robe": "현자의 로브",
+  "item.arcanecircle.sage_robe_hem": "현자의 로브 자락",
+  "item.arcanecircle.skywalker_boots": "천공 마도화",
+  "item.arcanecircle.archmage_crown": "대마도사 관",
+  "item.arcanecircle.archmage_robe": "대마도사 예복",
+  "item.arcanecircle.archmage_robe_hem": "대마도사 예복 자락",
+  "item.arcanecircle.froststep_boots": "빙결 보행화"
 }

@@ -171,7 +171,11 @@ public final class MagicPlayerData extends SavedData {
             state.mana = maxMana;
             setDirty();
         }
-        double regen = state.baseRegenPerHalfSecond() * staff.regenMultiplier() * gear.regenMultiplier();
+        kr.moonseungjun.arcanecircle.world.MagicTradition chosen =
+                kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer())
+                        .tradition(player);
+        double regen = state.baseRegenPerHalfSecond() * staff.regenMultiplier() * gear.regenMultiplier()
+                * chosen.regenMultiplier();
         return new EffectiveStats(maxMana, regen, staff);
     }
 
@@ -238,17 +242,17 @@ public final class MagicPlayerData extends SavedData {
         kr.moonseungjun.arcanecircle.world.ArcaneWorldData world =
                 kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer());
         kr.moonseungjun.arcanecircle.world.MagicTradition chosen = world.tradition(player);
-        // Affiliation is a social team, not a spell school. It never locks or buffs a school directly.
-        double facultyMana = 1.0;
-        double facultyPower = 1.0;
-        double facultyRange = 1.0;
-        double facultyCooldown = 1.0;
+        // Affiliations never lock a school, but each teaches an explicit doctrine with a drawback.
+        double facultyMana = chosen.manaMultiplier();
+        double facultyPower = chosen.powerFor(spell.school());
+        double facultyRange = chosen.rangeMultiplier();
+        double facultyCooldown = chosen.cooldownMultiplier();
         int masteryGap = Math.max(0, state.circle - spell.circle());
         int proficiency = SpellCatalog.masteryTier(state.mastery(spellId));
-        double circleMana = Math.max(0.48, 1.0 - masteryGap * 0.09);
-        double circleCooldown = Math.max(0.38, 1.0 - masteryGap * 0.14);
-        double circleRange = 1.0 + masteryGap * 0.08;
-        double circlePower = 1.0 + masteryGap * 0.10;
+        double circleMana = Math.max(0.06, Math.pow(0.72, masteryGap));
+        double circleCooldown = Math.max(0.08, Math.pow(0.62, masteryGap));
+        double circleRange = 1.0 + masteryGap * 0.07;
+        double circlePower = 1.0 + masteryGap * 0.04;
         double masteryMana = Math.max(0.80, 1.0 - proficiency * 0.02);
         double masteryCooldown = Math.max(0.70, 1.0 - proficiency * 0.03);
         double masteryRange = 1.0 + proficiency * 0.02;
@@ -256,11 +260,14 @@ public final class MagicPlayerData extends SavedData {
 
         int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * circleMana * masteryMana
                 * staff.manaCostMultiplier() * gear.manaCostMultiplier() * facultyMana));
-        int cooldown = Math.max(8, (int) Math.round(spell.cooldownTicks() * circleCooldown * masteryCooldown
-                * staff.cooldownMultiplier() * gear.cooldownMultiplier() * facultyCooldown));
+        double rawCooldown = spell.cooldownTicks() * circleCooldown * masteryCooldown
+                * staff.cooldownMultiplier() * gear.cooldownMultiplier() * facultyCooldown;
+        int cooldown = rawCooldown < 0.75 ? 0 : Math.max(1, (int) Math.round(rawCooldown));
         double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier()
                 * gear.rangeMultiplier() * facultyRange;
-        double power = spell.power() * circlePower * masteryPower * staff.powerFor(spell.school())
+        double tierPower = SpellCatalog.isDamaging(spell.id())
+                ? SpellCatalog.damageTierMultiplier(spell.circle()) : 1.0;
+        double power = spell.power() * tierPower * circlePower * masteryPower * staff.powerFor(spell.school())
                 * gear.powerMultiplier() * facultyPower;
         if (fusion) {
             double strongestIngredient = 0.0;
@@ -270,14 +277,18 @@ public final class MagicPlayerData extends SavedData {
                 int ingredientGap = Math.max(0, state.circle - ingredient.circle());
                 int ingredientTier = SpellCatalog.masteryTier(state.mastery(ingredient.id()));
                 double ingredientPower = ingredient.power()
-                        * (1.0 + ingredientGap * 0.10)
+                        * (SpellCatalog.isDamaging(ingredient.id())
+                                ? SpellCatalog.damageTierMultiplier(ingredient.circle()) : 1.0)
+                        * (1.0 + ingredientGap * 0.04)
                         * (1.0 + ingredientTier * 0.04)
                         * staff.powerFor(ingredient.school())
-                        * gear.powerMultiplier();
+                        * gear.powerMultiplier()
+                        * chosen.powerFor(ingredient.school());
                 strongestIngredient = Math.max(strongestIngredient, ingredientPower);
             }
-            double fusionFloor = strongestIngredient * (ingredients.size() >= 3 ? 1.45 : 1.25);
-            power = Math.max(power, fusionFloor);
+            double fusionFloor = strongestIngredient * (ingredients.size() >= 3 ? 1.55 : 1.32)
+                    * chosen.fusionMultiplier();
+            power = Math.max(power * chosen.fusionMultiplier(), fusionFloor);
         }
 
         if (state.mana + 0.0001 < manaCost) {
@@ -338,7 +349,11 @@ public final class MagicPlayerData extends SavedData {
 
     public void startCooldown(ServerPlayer player, String spellId, int totalTicks) {
         MageState state = state(player);
-        int total = Math.max(1, totalTicks);
+        if (totalTicks <= 0) {
+            if (state.cooldowns.remove(spellId) != null) setDirty();
+            return;
+        }
+        int total = totalTicks;
         state.cooldowns.put(spellId, new CooldownEntry(spellId, serverClock(player) + total, total));
         setDirty();
     }

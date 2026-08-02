@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.Acquisition.BOOK;
 import static kr.moonseungjun.arcanecircle.magic.SpellDefinition.Acquisition.FUSION;
@@ -35,6 +36,18 @@ public final class SpellCatalog {
 
     private static final Map<String, SpellDefinition> SPELLS = new LinkedHashMap<>();
     private static final List<FusionFormula> FUSIONS = new ArrayList<>();
+    private static final Set<String> DAMAGING_SPELLS = Set.of(
+            "magic_missile", "fire_bolt", "ray_of_frost", "thunderwave", "scorching_ray", "shatter",
+            "fireball", "lightning_bolt", "vampiric_touch", "sleet_storm", "wall_of_fire", "ice_storm",
+            "blight", "phantasmal_killer", "cone_of_cold", "cloudkill", "flame_strike", "insect_plague",
+            "disintegrate", "move_earth", "sunbeam", "freezing_sphere", "eyebite", "circle_of_death",
+            "delayed_blast_fireball", "finger_of_death", "fire_storm", "prismatic_spray", "simulacrum",
+            "antimagic_field", "clone", "control_weather", "dominate_monster", "earthquake", "feeblemind",
+            "incendiary_cloud", "maze", "sunburst", "meteor_swarm", "power_word_kill", "prismatic_wall",
+            "shapechange", "true_polymorph", "weird", "foresight", "burning_hands", "ice_knife",
+            "chromatic_orb", "wind_wall", "fire_shield", "wall_of_ice", "chain_lightning", "arcane_hand",
+            "steam_burst", "frost_step", "thunder_cage", "solar_guard", "void_lance", "winter_domain",
+            "astral_prison", "phoenix_requiem", "world_sunder");
     private static boolean bootstrapped;
 
     private SpellCatalog() {}
@@ -360,6 +373,24 @@ public final class SpellCatalog {
 
     public static boolean isFusionResult(String spellId) {
         return spell(spellId).map(spell -> spell.acquisition() == FUSION).orElse(false);
+    }
+
+    public static boolean isDamaging(String spellId) {
+        return spellId != null && DAMAGING_SPELLS.contains(spellId);
+    }
+
+    public static double damageTierMultiplier(int circle) {
+        return switch (circle) {
+            case 2 -> 1.18;
+            case 3 -> 1.42;
+            case 4 -> 1.75;
+            case 5 -> 2.15;
+            case 6 -> 2.65;
+            case 7 -> 3.25;
+            case 8 -> 4.00;
+            case 9 -> 5.00;
+            default -> 1.00;
+        };
     }
 
     public static int masteryRequired(String resultId) {

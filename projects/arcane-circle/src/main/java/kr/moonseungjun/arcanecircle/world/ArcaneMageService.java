@@ -75,18 +75,12 @@ public final class ArcaneMageService {
 
         MageProfile mage = profile(villager);
         ArcaneQuestData quests = ArcaneQuestData.get(((ServerLevel) player.level()).getServer());
-        ArcaneQuestData.QuestStatus status = quests.status(player);
-        if (status.complete()) quests.claim(player);
-        else if (!status.active()) quests.assign(player, mage.circle());
-        else {
-            ArcaneNoticeService.push(player, Component.literal("§5[마도사 의뢰] §f" + status.description()
-                    + " §d" + status.progress() + "/" + status.target() + " §7· 보상 " + status.reward() + " A"), 90);
-        }
+        quests.offer(player, mage.circle(), mage.affiliation());
 
         player.sendSystemMessage(Component.literal(color(mage.affiliation()) + "[" + mage.circle() + "써클 "
                 + mage.role().displayName() + " 마도사] §f소속 §7" + mage.affiliation().displayName()
                 + " §f· 주문서와 지팡이는 아르카나로 거래합니다."));
-        ArcaneNetwork.openPage(player, "academy");
+        ArcaneNetwork.openPage(player, "quests");
     }
 
     public static boolean isMage(Entity entity) {
@@ -193,7 +187,8 @@ public final class ArcaneMageService {
     private static void castResidentSpell(ServerLevel level, Villager caster) {
         MageProfile mage = profile(caster);
         long now = level.getGameTime();
-        int interval = Math.max(34, 92 - mage.circle() * 7);
+        int interval = Math.max(22, (int) Math.round((92 - mage.circle() * 7)
+                * mage.affiliation().cooldownMultiplier()));
         if (!ready(caster, now, interval)) return;
 
         LivingEntity target = findResidentTarget(level, caster, mage);
@@ -209,7 +204,8 @@ public final class ArcaneMageService {
 
         float roleScale = mage.role() == MageSociety.Role.WARDEN ? 1.18F
                 : mage.role() == MageSociety.Role.VILLAIN ? 1.28F : 1.0F;
-        float damage = (1.8F + mage.circle() * 1.25F) * roleScale;
+        float damage = (float) ((1.8F + mage.circle() * 1.25F) * roleScale
+                * mage.affiliation().powerMultiplier());
         ArcaneDamage.hurt(level, caster, target, damage);
         if (target instanceof Mob mob) mob.setTarget(caster);
         if (mage.circle() >= 2) target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
@@ -221,6 +217,8 @@ public final class ArcaneMageService {
     }
 
     private static LivingEntity findResidentTarget(ServerLevel level, Villager caster, MageProfile mage) {
+        LivingEntity attacker = recentAttacker(caster);
+        if (attacker != null && caster.distanceToSqr(attacker) <= 32.0 * 32.0) return attacker;
         LivingEntity hostileMage = level.getEntitiesOfClass(Mob.class, caster.getBoundingBox().inflate(15.0),
                         value -> value.isAlive() && isMage(value)
                                 && MageSociety.hostile(mage.affiliation(), affiliation(value)))
@@ -241,22 +239,29 @@ public final class ArcaneMageService {
 
     private static void castHostileSpell(ServerLevel level, Mob caster) {
         MageProfile mage = profile(caster);
-        LivingEntity target = caster.getTarget();
+        LivingEntity attacker = recentAttacker(caster);
+        LivingEntity target = attacker != null ? attacker : caster.getTarget();
         if (target == null || !target.isAlive()) return;
+        boolean retaliating = attacker != null && target == attacker;
+        if (retaliating && caster.getTarget() != target) caster.setTarget(target);
         MagicTradition targetAffiliation = target instanceof ServerPlayer player
                 ? affiliation(player) : isMage(target) ? affiliation(target) : MagicTradition.UNBOUND;
-        if (MageSociety.avoidsAutoTarget(mage.affiliation(), targetAffiliation)) {
+        if (!retaliating && MageSociety.avoidsAutoTarget(mage.affiliation(), targetAffiliation)) {
             caster.setTarget(null);
             return;
         }
-        if (isMage(target) && !MageSociety.hostile(mage.affiliation(), targetAffiliation)
+        if (!retaliating && isMage(target) && !MageSociety.hostile(mage.affiliation(), targetAffiliation)
                 && mage.role() != MageSociety.Role.VILLAIN) return;
         if (caster.distanceToSqr(target) > 30.0 * 30.0) return;
 
         long now = level.getGameTime();
-        if (!ready(caster, now, Math.max(30, 94 - mage.circle() * 7))) return;
+        int interval = Math.max(20, (int) Math.round((94 - mage.circle() * 7)
+                * mage.affiliation().cooldownMultiplier()));
+        if (!ready(caster, now, interval)) return;
         float roleScale = mage.role() == MageSociety.Role.VILLAIN ? 1.30F : 1.0F;
-        ArcaneDamage.hurt(level, caster, target, (2.0F + mage.circle() * 1.28F) * roleScale);
+        float doctrineScale = (float) mage.affiliation().powerMultiplier();
+        ArcaneDamage.hurt(level, caster, target,
+                (2.0F + mage.circle() * 1.28F) * roleScale * doctrineScale);
         switch ((mage.circle() + mage.role().ordinal()) % 4) {
             case 0 -> target.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 18 + mage.circle() * 2, 0));
             case 1 -> target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
@@ -323,6 +328,12 @@ public final class ArcaneMageService {
         if ("witch".equals(type)) return roll < 45 ? MageSociety.Role.WANDERER
                 : roll < 78 ? MageSociety.Role.SCHOLAR : MageSociety.Role.HOUSEHOLD;
         return roll < 55 ? MageSociety.Role.WARDEN : MageSociety.Role.SCHOLAR;
+    }
+
+    private static LivingEntity recentAttacker(LivingEntity caster) {
+        LivingEntity attacker = caster.getLastHurtByMob();
+        if (attacker == null || !attacker.isAlive() || attacker == caster) return null;
+        return attacker;
     }
 
     private static void pushAway(LivingEntity caster, LivingEntity target, double strength) {

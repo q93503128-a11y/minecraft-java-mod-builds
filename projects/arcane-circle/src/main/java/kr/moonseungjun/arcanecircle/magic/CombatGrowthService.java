@@ -1,25 +1,37 @@
 package kr.moonseungjun.arcanecircle.magic;
 
+import kr.moonseungjun.arcanecircle.world.ArcaneMageService;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/** Measures the real combat result of one cast instead of rewarding empty spam. */
+/** Measures actual combat output and estimates enemy strength from the complete combat profile. */
 public final class CombatGrowthService {
+    private static final List<EquipmentSlot> THREAT_SLOTS = List.of(
+            EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
+            EquipmentSlot.FEET, EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND);
+
     private CombatGrowthService() {}
 
-    public record Sample(Mob mob, float health, float maxHealth) {}
+    public record Sample(Mob mob, float health, float maxHealth, int threat) {}
     public record Snapshot(List<Sample> samples) {
         public static final Snapshot EMPTY = new Snapshot(List.of());
     }
     public record Impact(int hits, int kills, int strongHits, int strongKills, int damage, int masteryGain,
-                         int insightGain) {
-        public static final Impact NONE = new Impact(0, 0, 0, 0, 0, 1, 0);
+                         int insightGain, int threatPoints, int peakThreat, long combatValue) {
+        public static final Impact NONE = new Impact(0, 0, 0, 0, 0, 1, 0, 0, 0, 0L);
         public boolean meaningful() { return hits > 0 || kills > 0; }
     }
 
@@ -29,7 +41,7 @@ public final class CombatGrowthService {
         AABB box = player.getBoundingBox().inflate(radius, Math.max(10.0, radius * 0.55), radius);
         List<Sample> samples = new ArrayList<>();
         for (Mob mob : level.getEntitiesOfClass(Mob.class, box, mob -> validTarget(player, mob))) {
-            samples.add(new Sample(mob, mob.getHealth(), mob.getMaxHealth()));
+            samples.add(new Sample(mob, mob.getHealth(), mob.getMaxHealth(), threatScore(mob)));
         }
         return new Snapshot(List.copyOf(samples));
     }
@@ -41,7 +53,9 @@ public final class CombatGrowthService {
         int strongHits = 0;
         int strongKills = 0;
         double damage = 0.0;
-        int threat = 0;
+        int threatPoints = 0;
+        int peakThreat = 0;
+        long combatValue = 0L;
 
         for (Sample sample : snapshot.samples()) {
             Mob mob = sample.mob();
@@ -52,32 +66,87 @@ public final class CombatGrowthService {
 
             hits++;
             damage += dealt;
-            int tier = threatTier(sample.maxHealth());
-            if (tier > 0) {
-                strongHits++;
-                threat += tier;
-            }
+            int threat = Math.max(1, sample.threat());
+            peakThreat = Math.max(peakThreat, threat);
+            int tier = threatTier(threat);
+            if (tier > 0) strongHits++;
             if (killed) {
                 kills++;
                 if (tier > 0) strongKills++;
-                threat += 2 + tier * 2;
             }
+
+            threatPoints = Math.min(1_000_000, threatPoints
+                    + (killed ? threat * 2 : Math.max(1, threat / 5)));
+            long hitValue = Math.max(1L, Math.round(Math.pow(threat, 1.25) * 0.60));
+            long killValue = killed ? Math.max(1L, Math.round(Math.pow(threat, 1.75) * 1.80)) : 0L;
+            combatValue = Math.min(50_000_000L, combatValue + hitValue + killValue);
         }
 
         if (hits == 0 && kills == 0) return Impact.NONE;
-        int damagePoints = Math.min(12, (int) Math.floor(damage / 12.0));
-        int mastery = 1 + hits + kills * 3 + threat + damagePoints;
-        int insight = hits + kills * 3 + threat * 2 + Math.max(0, spellCircle - 1);
-        return new Impact(hits, kills, strongHits, strongKills, (int) Math.round(damage), mastery, insight);
+        int damagePoints = Math.min(18, (int) Math.floor(damage / 10.0));
+        int mastery = 1 + hits + kills * 3 + Math.min(36, threatPoints / 8) + damagePoints;
+        int insight = hits + kills * 3 + Math.min(90, threatPoints / 4) + Math.max(0, spellCircle - 1);
+        return new Impact(hits, kills, strongHits, strongKills, (int) Math.round(damage),
+                mastery, insight, threatPoints, peakThreat, combatValue);
     }
 
-    private static int threatTier(float maxHealth) {
-        if (maxHealth >= 300.0F) return 6;
-        if (maxHealth >= 160.0F) return 4;
-        if (maxHealth >= 80.0F) return 3;
-        if (maxHealth >= 40.0F) return 2;
-        if (maxHealth >= 25.0F) return 1;
+    public static int threatScore(Mob mob) {
+        double health = Math.max(1.0, mob.getMaxHealth());
+        double attack = attribute(mob, Attributes.ATTACK_DAMAGE);
+        double armor = attribute(mob, Attributes.ARMOR);
+        double toughness = attribute(mob, Attributes.ARMOR_TOUGHNESS);
+        double speed = attribute(mob, Attributes.MOVEMENT_SPEED);
+        double follow = attribute(mob, Attributes.FOLLOW_RANGE);
+        int equipment = 0;
+        for (EquipmentSlot slot : THREAT_SLOTS) if (!mob.getItemBySlot(slot).isEmpty()) equipment++;
+
+        double score = 1.0
+                + Math.sqrt(health) * 0.80
+                + Math.pow(Math.max(0.0, attack), 1.25) * 0.80
+                + Math.pow(Math.max(0.0, armor), 1.12) * 0.36
+                + toughness * 0.90
+                + speed * 8.0
+                + follow / 20.0
+                + equipment * 1.5
+                + mob.getActiveEffects().size() * 1.25;
+        if (mob instanceof Enemy) score *= 1.10;
+        if (ArcaneMageService.isMage(mob)) {
+            int circle = ArcaneMageService.circle(mob);
+            score += circle * circle * 2.6;
+        }
+
+        String type = typePath(mob);
+        score += switch (type) {
+            case "warden" -> 80.0;
+            case "wither" -> 95.0;
+            case "ender_dragon" -> 110.0;
+            case "elder_guardian" -> 34.0;
+            case "ravager" -> 25.0;
+            case "evoker" -> 20.0;
+            case "piglin_brute" -> 14.0;
+            default -> 0.0;
+        };
+        return Math.max(1, Math.min(250, (int) Math.round(score)));
+    }
+
+    private static double attribute(Mob mob, Holder<Attribute> attribute) {
+        AttributeInstance instance = mob.getAttribute(attribute);
+        return instance == null ? 0.0 : instance.getValue();
+    }
+
+    private static int threatTier(int threat) {
+        if (threat >= 150) return 6;
+        if (threat >= 100) return 5;
+        if (threat >= 65) return 4;
+        if (threat >= 40) return 3;
+        if (threat >= 24) return 2;
+        if (threat >= 16) return 1;
         return 0;
+    }
+
+    private static String typePath(Mob mob) {
+        var key = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
+        return key == null ? "" : key.getPath();
     }
 
     private static boolean validTarget(ServerPlayer player, Mob mob) {

@@ -24,10 +24,13 @@ public final class ArcaneEconomyService {
 
     public static long awardCombat(ServerPlayer player, CombatGrowthService.Impact impact, int spellCircle) {
         if (impact == null || !impact.meaningful()) return 0L;
-        long reward = Math.max(1L, spellCircle)
-                * (impact.hits() * 2L + impact.kills() * 14L + impact.strongHits() * 18L
-                + impact.strongKills() * 120L + Math.max(0, impact.damage()) / 8L);
-        reward = Math.max(1L, reward);
+        MagicTradition affiliation = ArcaneMageService.affiliation(player);
+        long base = impact.hits() * 3L + impact.kills() * 18L
+                + Math.max(0, impact.damage()) / 5L
+                + Math.max(0, impact.threatPoints())
+                + Math.max(0L, impact.combatValue());
+        long reward = Math.max(1L, Math.round(Math.max(1, spellCircle) * base
+                * affiliation.combatRewardMultiplier()));
         data(player).addMarks(player, reward);
         return reward;
     }
