@@ -1,42 +1,14 @@
-# Valid applier trigger.
-name: Apply Countryside Days alpha.14
+name: Countryside Days source update paused
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/build-countryside-days.yml'
 
 permissions:
-  contents: write
-
-concurrency:
-  group: countryside-days-alpha14-apply
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  apply:
+  paused:
+    if: false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Decode staged alpha.14 source
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import base64, io, zipfile
-          root = Path('.')
-          payload = root / 'projects/countryside-days/tools/alpha14_payload.b64'
-          archive = base64.b64decode(payload.read_text('ascii'))
-          with zipfile.ZipFile(io.BytesIO(archive)) as source:
-              source.extractall(root / 'projects/countryside-days')
-          payload.unlink()
-          PY
-      - name: Commit Countryside Days project only
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add projects/countryside-days
-          git commit -m 'Implement Countryside Days alpha.14 living village overhaul'
-          git pull --rebase origin main
-          git push origin HEAD:main
+      - run: echo "Temporary source applier disabled"
