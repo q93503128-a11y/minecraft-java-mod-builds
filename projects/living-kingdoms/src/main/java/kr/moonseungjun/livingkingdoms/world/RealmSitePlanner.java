@@ -13,7 +13,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * continent around these anchors; the settlement builder only performs local architectural grading.</p>
  */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 9;
+    public static final int LAYOUT_REVISION = 10;
 
     private RealmSitePlanner() {
     }
@@ -50,8 +50,9 @@ public final class RealmSitePlanner {
 
     public static synchronized void markBuilt(ServerLevel level, String homelandId) {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
-        data.markBuilt(homelandId, LAYOUT_REVISION);
         RealmSiteLayoutSavedData.RealmSite site = data.site(homelandId).orElseThrow();
+        RealmLayoutIntegrity.apply(level, homelandId, site);
+        data.markBuilt(homelandId, LAYOUT_REVISION);
         LivingKingdoms.LOGGER.info(
                 "Completed authored homeland {} at {},{}, baseY={}, revision={}",
                 homelandId, site.centerX(), site.centerZ(), site.baseY(), LAYOUT_REVISION
