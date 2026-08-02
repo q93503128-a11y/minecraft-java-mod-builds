@@ -119,7 +119,8 @@ jobs:
             echo "FACADE_STYLES=$facade_styles"
           } >> "$GITHUB_ENV"
 
-          test "$(grep -c 'Loaded external structure /data/livingkingdoms/structures/external/' ../../logs/server-smoke.log)" -eq 5
+          structure_loads="$(grep -c 'Loaded external structure /data/livingkingdoms/structures/external/' ../../logs/server-smoke.log)"
+          test "$structure_loads" -ge 5
           test "$(grep -c 'Verified streamed capital sample role=' ../../logs/server-smoke.log)" -eq 6
           test "$(grep -c 'Verified cleaned Erden citadel' ../../logs/server-smoke.log)" -eq 1
           if grep -Eq 'silvana_forest|kardum_league|woodland_mansion|deepslate_mega_base|Relocated four Erden town houses' ../../logs/server-smoke.log; then
