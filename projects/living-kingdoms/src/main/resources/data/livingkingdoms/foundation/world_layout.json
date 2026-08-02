@@ -1,37 +1,111 @@
 {
-  "schema": 1,
-  "worldId": "ardesia_core",
-  "coreBounds": {
-    "minX": -16000,
-    "maxX": 16000,
-    "minZ": -16000,
-    "maxZ": 16000
+  "schema": 2,
+  "worldId": "ardesia_rebuild",
+  "blockScaleMeters": 1,
+  "activeScope": "erden_kingdom",
+  "simulation": {
+    "offscreenPopulationEnabled": true,
+    "activeNpcBudgetPerPlayer": 96,
+    "populationIsNotOneEntityPerResident": true
+  },
+  "worldBounds": {
+    "minX": -24000,
+    "maxX": 24000,
+    "minZ": -20000,
+    "maxZ": 20000,
+    "widthMeters": 48000,
+    "lengthMeters": 40000,
+    "areaSquareKilometers": 1920
   },
   "regions": [
-    {"id": "erden_kingdom", "center": [0, 0], "type": "kingdom"},
-    {"id": "silvana_forest", "center": [-9000, -1500], "type": "forest_realm"},
-    {"id": "kardum_league", "center": [-2500, -9000], "type": "mountain_league"},
-    {"id": "red_steppe", "center": [9500, -1000], "type": "tribal_confederation"},
-    {"id": "velas_free_city", "center": [1500, 7500], "type": "free_city"},
-    {"id": "sahar_theocracy", "center": [9000, 9000], "type": "desert_theocracy"},
-    {"id": "grey_crown_ruins", "center": [8500, -7500], "type": "ruined_realm"},
-    {"id": "northern_dragonlands", "center": [0, -15000], "type": "frontier"},
-    {"id": "western_archipelago", "center": [-14000, 7000], "type": "archipelago"}
+    {
+      "id": "erden_kingdom",
+      "displayName": "에르덴 왕국",
+      "type": "river_plain_kingdom",
+      "capitalCenter": [0, 0],
+      "targetSimulatedPopulation": 68000,
+      "terrain": ["central_river_plain", "western_hills", "northern_forest", "eastern_marsh", "southern_farmland"],
+      "economy": ["grain", "river_trade", "timber", "wool", "iron_tools", "ceramics"],
+      "law": {
+        "jurisdictionLevels": ["royal", "chartered_town", "manorial", "temple"],
+        "process": ["report", "investigation", "detention", "hearing", "judgment", "sentence"],
+        "lethalForceIsDefault": false
+      }
+    }
   ],
-  "firstVerticalSlice": {
-    "id": "loen_province",
-    "homeland": "erden_kingdom",
-    "requiredSites": [
-      "walled_town",
-      "river_fishing_village",
-      "rural_village_west",
-      "rural_village_east",
-      "border_fort",
-      "wanderer_camp",
-      "small_tribal_settlement",
-      "road_inn",
-      "dungeon_old_quarry",
-      "dungeon_flooded_crypt"
+  "capital": {
+    "id": "arden_capital",
+    "center": [0, 0],
+    "role": "royal_capital_and_river_market",
+    "walledExtentMeters": [2400, 1800],
+    "metropolitanExtentMeters": [6200, 5000],
+    "targetSimulatedPopulation": 11800,
+    "citadel": {
+      "center": [0, -220],
+      "maximumExtentMeters": [480, 360],
+      "externalArchitectureRole": "inner_citadel_parts_only"
+    },
+    "districts": [
+      {"id": "royal_ward", "center": [0, -220], "sizeMeters": [520, 420]},
+      {"id": "temple_ward", "center": [-520, -100], "sizeMeters": [520, 620]},
+      {"id": "high_market", "center": [420, 80], "sizeMeters": [620, 520]},
+      {"id": "craft_ward", "center": [520, 620], "sizeMeters": [720, 520]},
+      {"id": "river_ward", "center": [-420, 650], "sizeMeters": [820, 460]},
+      {"id": "citizen_quarter", "center": [320, 180], "sizeMeters": [720, 680]},
+      {"id": "north_barracks", "center": [540, -620], "sizeMeters": [520, 400]},
+      {"id": "west_gate_quarter", "center": [-760, 160], "sizeMeters": [460, 620]}
+    ],
+    "requiredInfrastructure": [
+      "curtain_wall", "four_main_gates", "drainage", "wells", "cisterns", "sewers",
+      "market_halls", "warehouses", "river_quays", "bridges", "stables", "barracks",
+      "court", "prison", "hospital", "temple", "cemetery", "fire_watch"
+    ]
+  },
+  "settlementNetwork": {
+    "marketTowns": 6,
+    "villages": 18,
+    "hamlets": 40,
+    "manorEstates": 12,
+    "monasteries": 4,
+    "borderForts": 3,
+    "minesAndQuarries": 5,
+    "roadInns": 14,
+    "averageVillageSpacingMeters": 3200,
+    "averageRoadInnSpacingMeters": 5200
+  },
+  "primarySites": [
+    {"id": "loen_market_town", "center": [-6200, 3600], "role": "grain_market"},
+    {"id": "silver_river_port", "center": [1800, 7200], "role": "river_port"},
+    {"id": "west_hill_town", "center": [-9200, -2600], "role": "wool_and_stone"},
+    {"id": "northwood_town", "center": [-1800, -8200], "role": "timber_and_charcoal"},
+    {"id": "east_marsh_town", "center": [8600, 1800], "role": "fish_reeds_and_salt"},
+    {"id": "south_gate_town", "center": [3800, 9800], "role": "caravan_exchange"}
+  ],
+  "transport": {
+    "royalRoadWidthMeters": 9,
+    "regionalRoadWidthMeters": 6,
+    "villageRoadWidthMeters": 4,
+    "capitalStreetWidthsMeters": [5, 7, 11, 15],
+    "principalRoutes": [
+      ["arden_capital", "loen_market_town"],
+      ["arden_capital", "silver_river_port"],
+      ["arden_capital", "west_hill_town"],
+      ["arden_capital", "northwood_town"],
+      ["arden_capital", "east_marsh_town"],
+      ["arden_capital", "south_gate_town"]
+    ]
+  },
+  "completionGate": {
+    "additionalKingdomsLocked": true,
+    "unlockRequirements": [
+      "capital_all_districts_playable",
+      "six_market_towns_playable",
+      "rural_food_supply_simulated",
+      "trade_routes_operational",
+      "law_and_court_loop_operational",
+      "daily_npc_life_operational",
+      "vanilla_structures_blocked",
+      "custom_ecology_operational"
     ]
   }
 }
