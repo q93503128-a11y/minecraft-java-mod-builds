@@ -84,7 +84,7 @@ public final class VillageUiController {
         for (VillageSkillTreeSystem.Node node : VillageSkillTreeSystem.nodes()) {
             actions.add("skill_node:" + node.id());
             labels.add(node.title() + "|" + node.description() + "|"
-                    + VillageSkillTreeSystem.nodeStatus(player, node));
+                    + VillageSkillTreeSystem.nodeStatus(player, node) + "|" + node.pointCost());
         }
         String body = "사용 가능 " + VillageSkillTreeSystem.availablePoints(player)
                 + "P · 획득 " + VillageSkillTreeSystem.earnedPoints(player)
@@ -155,8 +155,13 @@ public final class VillageUiController {
     }
 
     public static void openWaveIntel(ServerPlayer player) {
-        send(player, "wave_intel", "다음 웨이브 정보",
-                VillageWaveIntelSystem.report(), List.of(), List.of());
+        List<String> actions = new ArrayList<>(); List<String> labels = new ArrayList<>();
+        if (VillageCouncilState.currentPhase() == VillageTimePhase.DAY) {
+            for (VillageWaveIntelSystem.WavePreview preview : VillageWaveIntelSystem.previews(player)) {
+                actions.add("wave_info:" + preview.wave()); labels.add(preview.title() + "|" + preview.detail());
+            }
+        }
+        send(player, "wave_intel", "다음 밤 적 정찰", VillageWaveIntelSystem.report(player), actions, labels);
     }
 
     public static void openEquipmentShop(ServerPlayer player) {
@@ -221,7 +226,9 @@ public final class VillageUiController {
             String status = candidate.current() >= candidate.maximum()
                     ? "현재 대장간 최대 강화" : "다음 강화 주화 " + candidate.cost();
             labels.add(candidate.name() + "|" + candidate.rarity() + " · 강화 +" + candidate.current()
-                    + " / +" + candidate.maximum() + " · " + status);
+                    + " / +" + candidate.maximum() + " · " + status
+                    + "\n현재 수치: " + candidate.currentEffect()
+                    + "\n강화 후 수치: " + candidate.nextEffect());
         }
         send(player, "building", "장비 강화",
                 "강화할 장비를 직접 선택합니다. 대장간 레벨이 오르면 가능한 최대 강화 단계가 증가합니다.",
@@ -261,6 +268,26 @@ public final class VillageUiController {
                 "같은 종류·같은 등급 장비 세 개를 선택해 다음 등급 하나로 합성합니다.", actions, labels);
     }
 
+    public static void openSkillTest(ServerPlayer player) {
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            openResult(player, "기술 시험", "기술 연구소 연구대 근처에서만 사용할 수 있습니다.", "open_role_skill_research");
+            return;
+        }
+        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        if (role == null) { openResult(player, "기술 시험", "직업을 먼저 선택하세요.", "open_dashboard"); return; }
+        String mode = VillageSkillTestSystem.enable(player);
+        List<String> actions = new ArrayList<>(); List<String> labels = new ArrayList<>();
+        for (VillageRoleSkillSystem.ActiveSkill skill : VillageRoleSkillSystem.skillsFor(role)) {
+            actions.add("test_cast:" + skill.id());
+            labels.add(skill.displayName() + "|" + skill.description()
+                    + "\n습득 여부·재사용 대기시간·재화를 무시하고 즉시 시험합니다.");
+        }
+        add(actions, labels, "test_spawn", "시험 표적 재배치|전방에 체력이 다른 고정 표적 6개 생성",
+                "test_clear", "시험 표적 정리|현재 내가 만든 시험 표적 제거",
+                "test_exit", "시험 모드 종료|표적을 정리하고 일반 전투 판정으로 복귀");
+        send(player, "skill_test", role.displayName() + " 기술 시험", mode, actions, labels);
+    }
+
     public static void openResult(ServerPlayer player, String title, String result, String returnAction) {
         send(player, "result", title, result,
                 returnAction == null || returnAction.isBlank() ? List.of() : List.of(returnAction),
@@ -294,9 +321,10 @@ public final class VillageUiController {
             int cost = VillageDefenseResearchSystem.upgradeCost(branch);
             actions.add("defense_research:" + branch.id());
             String detail = "Lv." + level + "/" + VillageDefenseResearchSystem.MAX_LEVEL
-                    + "\n현재 효과: " + branch.description(level)
-                    + (level >= VillageDefenseResearchSystem.MAX_LEVEL
-                    ? "\n최고 단계" : "\n다음 단계 비용: 주화 " + cost);
+                    + "\n현재 수치: " + branch.description(level)
+                    + (level >= VillageDefenseResearchSystem.MAX_LEVEL ? "\n최고 단계"
+                    : "\n강화 후 수치: " + branch.description(level + 1)
+                    + "\n다음 단계 비용: 주화 " + cost);
             labels.add(branch.displayName() + "|" + detail);
         }
         send(player, "building", "마을 방어 연구", "용병·포탑·전리품 운용을 연구합니다.", actions, labels);
@@ -450,6 +478,10 @@ public final class VillageUiController {
             }
             return true;
         }
+        if (action.startsWith("test_cast:")) {
+            openResult(player, "기술 시험 결과", VillageRpgSystem.testRoleSkill(player, action.substring(10)),
+                    "open_skill_test"); return true;
+        }
         if (action.startsWith("relic_select:")) {
             player.sendSystemMessage(Component.literal("§d" + VillageRelicSystem.select(player, action.substring(13))));
             return true;
@@ -470,6 +502,10 @@ public final class VillageUiController {
             case "open_item_sell" -> openItemSell(player);
             case "open_mercenary_command" -> openMercenaryCommand(player);
             case "open_defense_research" -> openDefenseResearch(player);
+            case "open_skill_test" -> openSkillTest(player);
+            case "test_spawn" -> openResult(player, "시험 표적", VillageSkillTestSystem.spawnTargets(player), "open_skill_test");
+            case "test_clear" -> openResult(player, "시험 표적", VillageSkillTestSystem.clearTargets(player), "open_skill_test");
+            case "test_exit" -> openResult(player, "기술 시험", VillageSkillTestSystem.disable(player), "open_role_skill_research");
             case "forge_upgrade", "smithy_forge_upgrade" -> openForgeEnhancement(player);
             case "forge_combine" -> openFusion(player);
             case "buy_arrows" -> {
@@ -511,7 +547,8 @@ public final class VillageUiController {
                     "open_fusion", "장비 3개 합성|같은 종류·같은 등급·같은 강화 단계 세 개를 상위 등급으로 합성");
             case SKILL_HALL -> add(actions, labels,
                     "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 Z/X 장착만 관리",
-                    "open_defense_research", "마을 방어 연구|용병·포탑·전리품 연구 트리");
+                    "open_defense_research", "마을 방어 연구|용병·포탑·전리품 연구 트리",
+                    "open_skill_test", "기술 시험 모드|고정 표적을 생성하고 현재 직업 기술을 무제한 시험");
             case INFIRMARY -> { }
             case BARRACKS -> add(actions, labels,
                     "open_mercenary_command", "용병 고용·성장|병과를 선택해 지속 용병 배치");
@@ -587,6 +624,7 @@ public final class VillageUiController {
     private static boolean usesFacilityInformation(String screenId) {
         return screenId.equals("building") || screenId.equals("management") || screenId.equals("funding")
                 || screenId.equals("tower_control") || screenId.equals("tower_detail")
-                || screenId.equals("caller") || screenId.equals("relic_choice");
+                || screenId.equals("caller") || screenId.equals("relic_choice")
+                || screenId.equals("wave_intel") || screenId.equals("skill_test");
     }
 }

@@ -69,6 +69,10 @@ public final class VillageRelicSystem {
         return player != null && relic != null && (OWNED.getOrDefault(player.getUUID(), 0) & relic.bit()) != 0;
     }
 
+    public static synchronized void resetForNewGame() {
+        OWNED.clear(); PENDING.clear(); persist();
+    }
+
     public static float meleeMultiplier(ServerPlayer player) {
         float result = 1.0f;
         if (has(player, Relic.WAR_SIGIL)) result *= 1.08f;

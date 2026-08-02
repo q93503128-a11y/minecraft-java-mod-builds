@@ -41,6 +41,30 @@ public final class VillageEnemyArchetypeSystem {
         return mob == null ? null : new SpawnedEnemy(mob, archetype, boss);
     }
 
+    public static Archetype previewArchetype(
+            int day, int wave, int index, boolean boss, VillageWaveTrait trait) {
+        return boss ? bossForDay(day) : select(day, wave, index, trait);
+    }
+
+    public static String combatRole(Archetype archetype) {
+        return switch (archetype) {
+            case GRUNT -> "기본 근접 전열";
+            case RUSHER -> "저체력 고기동 척후";
+            case BULWARK -> "방패·중장갑 전열";
+            case SAPPER -> "시설 집중 폭파";
+            case MARKSMAN -> "후방 원거리 사격";
+            case SHIELDBREAKER -> "성벽·방패 파쇄";
+            case HEXER -> "약화·둔화 주술";
+            case WAR_CHANTER -> "주변 적 공격·속도 강화";
+            case NECROMANCER -> "회복·보호막 지원";
+            case TOWER_HUNTER -> "포탑 교란 원거리";
+            case SIEGE_BEAST -> "대형 공성·충격파";
+            case IRON_WARLORD -> "중장갑 지휘 보스";
+            case PLAGUE_ARCHON -> "독·회복·교란 보스";
+            case DREAD_KNIGHT -> "암흑·흡혈 근접 보스";
+        };
+    }
+
     public static void configure(
             ServerLevel level,
             Mob mob,
@@ -49,6 +73,8 @@ public final class VillageEnemyArchetypeSystem {
             int day,
             int wave,
             boolean boss) {
+        mob.setPersistenceRequired();
+        mob.setCanPickUpLoot(false);
         equip(mob, archetype);
         applyArchetypeAttributes(mob, archetype, day);
         applyArchetypeEffects(mob, archetype, day, wave);

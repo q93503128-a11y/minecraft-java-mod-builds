@@ -201,7 +201,7 @@ public final class VillageSkillTreeScreen extends Screen {
                     bubble.buttonY() + bubble.buttonHeight() + 1, hovered ? GOLD : ACCENT);
             graphics.fill(bubble.buttonX(), bubble.buttonY(), bubble.buttonX() + bubble.buttonWidth(),
                     bubble.buttonY() + bubble.buttonHeight(), hovered ? 0xFF27332D : SURFACE);
-            graphics.centeredText(font, "습득 · 1P", bubble.buttonX() + bubble.buttonWidth() / 2,
+            graphics.centeredText(font, "습득 · " + node.pointCost() + "P", bubble.buttonX() + bubble.buttonWidth() / 2,
                     bubble.buttonY() + 5, TEXT);
         }
     }
@@ -330,10 +330,15 @@ public final class VillageSkillTreeScreen extends Screen {
     private void buildNodes() {
         int count = Math.min(actions.length, labels.length);
         for (int index = 0; index < count; index++) {
-            String[] parts = labels[index].split("\\|", 3);
+            String[] parts = labels[index].split("\\|", 4);
             String title = parts.length > 0 ? parts[0] : labels[index];
             String description = parts.length > 1 ? parts[1] : "상세 효과 없음";
             String status = parts.length > 2 ? parts[2] : "잠김";
+            int pointCost = 1;
+            if (parts.length > 3) {
+                try { pointCost = Math.max(1, Integer.parseInt(parts[3])); }
+                catch (NumberFormatException ignored) { pointCost = 1; }
+            }
             String id = actions[index].startsWith("skill_node:")
                     ? actions[index].substring(11) : actions[index];
             Branch branch = branch(id);
@@ -342,15 +347,17 @@ public final class VillageSkillTreeScreen extends Screen {
             double worldX = switch (branch) {
                 case POWER -> tier * distance;
                 case GUARD -> -tier * distance;
+                case MOBILITY -> tier * distance * 0.72;
                 default -> 0;
             };
             double worldY = switch (branch) {
                 case RANGED -> -tier * distance;
                 case SUPPORT -> tier * distance;
+                case MOBILITY -> tier * distance * 0.72;
                 default -> 0;
             };
             nodes.add(new NodeVisual(actions[index], id, title, description, status,
-                    branch, tier, worldX, worldY));
+                    branch, tier, pointCost, worldX, worldY));
         }
     }
 
@@ -368,6 +375,7 @@ public final class VillageSkillTreeScreen extends Screen {
         if (id.startsWith("guard_")) return Branch.GUARD;
         if (id.startsWith("support_")) return Branch.SUPPORT;
         if (id.startsWith("ranged_")) return Branch.RANGED;
+        if (id.startsWith("mobility_")) return Branch.MOBILITY;
         return Branch.POWER;
     }
 
@@ -435,6 +443,11 @@ public final class VillageSkillTreeScreen extends Screen {
                 graphics.fill(cx - 2, y + 3, cx + 2, y + size - 3, color);
                 graphics.fill(x + 3, cy - 2, x + size - 3, cy + 2, color);
             }
+            case MOBILITY -> {
+                graphics.fill(x + 3, y + size - 5, x + size - 4, y + size - 3, color);
+                graphics.fill(x + size - 7, y + 3, x + size - 4, y + size - 3, color);
+                graphics.fill(x + size - 10, y + 3, x + size - 4, y + 7, color);
+            }
         }
         if (tier >= 5) graphics.fill(x + 3, y + 3, x + 6, y + 6, GOLD);
     }
@@ -445,6 +458,7 @@ public final class VillageSkillTreeScreen extends Screen {
             case GUARD -> BLUE;
             case RANGED -> PURPLE;
             case SUPPORT -> GREEN;
+            case MOBILITY -> ACCENT;
         };
     }
 
@@ -463,6 +477,7 @@ public final class VillageSkillTreeScreen extends Screen {
             case GUARD -> "방어";
             case SUPPORT -> "지원";
             case RANGED -> "사격";
+            case MOBILITY -> "기동";
         };
     }
 
@@ -496,7 +511,7 @@ public final class VillageSkillTreeScreen extends Screen {
         if (minecraft != null) minecraft.gui.setScreen(null);
     }
 
-    private enum Branch { POWER, GUARD, RANGED, SUPPORT }
+    private enum Branch { POWER, GUARD, RANGED, SUPPORT, MOBILITY }
 
     private record Viewport(int left, int top, int right, int bottom) {
         int width() { return right - left; }
@@ -504,7 +519,7 @@ public final class VillageSkillTreeScreen extends Screen {
     }
 
     private record NodeVisual(String action, String id, String title, String description,
-                              String status, Branch branch, int tier,
+                              String status, Branch branch, int tier, int pointCost,
                               double worldX, double worldY) {}
 
     private record Bubble(int x, int y, int width, int height,

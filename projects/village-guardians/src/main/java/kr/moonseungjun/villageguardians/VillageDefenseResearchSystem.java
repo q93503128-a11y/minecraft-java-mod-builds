@@ -41,9 +41,12 @@ public final class VillageDefenseResearchSystem {
         if (!VillageProgressionSystem.spendCoins(player, cost)) {
             return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.coins(player);
         }
+        String before = branch.description(current);
         LEVELS.put(branch, current + 1);
         persist();
-        return branch.displayName() + " Lv." + (current + 1) + " 연구 완료";
+        String after = branch.description(current + 1);
+        return branch.displayName() + " Lv." + (current + 1) + " 연구 완료"
+                + "\n현재 수치: " + before + "\n강화 후 수치: " + after;
     }
 
     public static float mercenaryDamageMultiplier() {
@@ -64,6 +67,11 @@ public final class VillageDefenseResearchSystem {
 
     public static float lootValueMultiplier() {
         return 1.0f + level(Branch.LOGISTICS) * 0.10f;
+    }
+
+    public static synchronized void resetForNewGame() {
+        LEVELS.clear();
+        persist();
     }
 
     private static synchronized void persist() {

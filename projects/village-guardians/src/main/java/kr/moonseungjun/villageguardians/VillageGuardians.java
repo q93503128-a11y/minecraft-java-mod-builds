@@ -42,6 +42,7 @@ public final class VillageGuardians {
         VillageDefenseResearchSystem.initializeServer(event.getServer());
         VillageRelicSystem.initializeServer(event.getServer());
         VillageMercenarySystem.initializeServer(event.getServer());
+        VillageSkillTestSystem.initializeServer(event.getServer());
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
@@ -110,6 +111,7 @@ public final class VillageGuardians {
                 || level != level.getServer().overworld()
                 || !(event.getEntity() instanceof Mob mob)) return;
         if (VillageMercenarySystem.recognize(mob)) return;
+        if (VillageSkillTestSystem.recognize(mob)) return;
         if (VillageDefenseSystem.recognizeDefenseMob(mob)) return;
         if (VillageWorldSystem.isAllowedGameMob(mob)) return;
         if (!mob.isPersistenceRequired()) event.setCanceled(true);

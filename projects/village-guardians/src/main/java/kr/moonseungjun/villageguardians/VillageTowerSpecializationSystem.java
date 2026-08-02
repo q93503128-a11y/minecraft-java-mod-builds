@@ -111,6 +111,10 @@ public final class VillageTowerSpecializationSystem {
                 + " 강화 완료";
     }
 
+    public static synchronized void resetForNewGame() {
+        BRANCHES.clear(); RANKS.clear(); DISABLED_TICKS.clear(); disableCursor = 0; persist();
+    }
+
     public static synchronized void disableRandomInstalledTower(int ticks) {
         List<TowerKind> candidates = List.of(TowerKind.values()).stream()
                 .filter(VillageTowerSpecializationSystem::installed)

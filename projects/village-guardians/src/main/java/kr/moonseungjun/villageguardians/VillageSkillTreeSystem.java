@@ -12,7 +12,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class VillageSkillTreeSystem {
-    private static final Map<UUID, Integer> UNLOCKED_MASKS = new LinkedHashMap<>();
+    private static final Map<UUID, Long> UNLOCKED_MASKS = new LinkedHashMap<>();
+    private static final Map<UUID, Integer> SPENT_POINTS = new LinkedHashMap<>();
     private static VillageSkillTreeData savedData;
 
     private VillageSkillTreeSystem() {
@@ -22,22 +23,19 @@ public final class VillageSkillTreeSystem {
         savedData = server.overworld().getDataStorage().computeIfAbsent(VillageSkillTreeData.TYPE);
         UNLOCKED_MASKS.clear();
         UNLOCKED_MASKS.putAll(savedData.masks());
+        SPENT_POINTS.clear();
+        SPENT_POINTS.putAll(savedData.spentPoints());
+        UNLOCKED_MASKS.forEach((uuid, mask) -> SPENT_POINTS.putIfAbsent(uuid, Long.bitCount(mask)));
         persist();
     }
 
     public static int earnedPoints(ServerPlayer player) {
         int level = VillageCouncilState.levelOf(player.getUUID());
-        return Math.max(0, (level - 1) / 2);
+        return Math.max(0, level - 1);
     }
 
     public static int spentPoints(ServerPlayer player) {
-        int spent = 0;
-        for (Node node : Node.values()) {
-            if (has(player, node)) {
-                spent++;
-            }
-        }
-        return spent;
+        return Math.max(0, SPENT_POINTS.getOrDefault(player.getUUID(), 0));
     }
 
     public static boolean hasValidAllocation(ServerPlayer player) {
@@ -49,8 +47,8 @@ public final class VillageSkillTreeSystem {
     }
 
     public static synchronized boolean has(ServerPlayer player, Node node) {
-        int mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0);
-        return (mask & bit(node)) != 0;
+        long mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0L);
+        return (mask & bit(node)) != 0L;
     }
 
     public static synchronized String purchase(ServerPlayer player, String nodeId) {
@@ -67,13 +65,17 @@ public final class VillageSkillTreeSystem {
         if (node.prerequisite() != null && !has(player, node.prerequisite())) {
             return "먼저 " + node.prerequisite().title() + "을(를) 습득해야 합니다.";
         }
-        if (availablePoints(player) <= 0) {
-            return "사용 가능한 전술 포인트가 없습니다. 2레벨마다 1포인트를 얻습니다.";
+        int cost = node.pointCost();
+        if (availablePoints(player) < cost) {
+            return "전술 포인트가 부족합니다. 필요 " + cost + "P, 현재 " + availablePoints(player)
+                    + "P · 레벨이 오를 때마다 1P를 얻습니다.";
         }
-        int mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0);
+        long mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0L);
         UNLOCKED_MASKS.put(player.getUUID(), mask | bit(node));
+        SPENT_POINTS.put(player.getUUID(), spentPoints(player) + cost);
         persist();
-        return node.title() + " 습득 완료 | 남은 포인트 " + availablePoints(player);
+        return node.title() + " 습득 완료 | 사용 " + cost + "P · 남은 포인트 "
+                + availablePoints(player) + "P";
     }
 
     public static String nodeStatus(ServerPlayer player, Node node) {
@@ -86,7 +88,8 @@ public final class VillageSkillTreeSystem {
         if (node.prerequisite() != null && !has(player, node.prerequisite())) {
             return "잠김";
         }
-        return availablePoints(player) > 0 ? "습득 가능" : "포인트 필요";
+        return availablePoints(player) >= node.pointCost()
+                ? "습득 가능" : node.pointCost() + "P 필요";
     }
 
     public static float outgoingDamageMultiplier(ServerPlayer player) {
@@ -95,6 +98,7 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.POWER_2)) bonus += 0.06f;
         if (has(player, Node.POWER_4)) bonus += 0.08f;
         if (has(player, Node.POWER_7)) bonus += 0.10f;
+        if (has(player, Node.POWER_8)) bonus += 0.12f;
         return 1.0f + bonus;
     }
 
@@ -115,12 +119,15 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.RANGED_1)) bonus += 0.08f;
         if (has(player, Node.RANGED_4)) bonus += 0.10f;
         if (has(player, Node.RANGED_6)) bonus += 0.12f;
+        if (has(player, Node.RANGED_8)) bonus += 0.14f;
         return 1.0f + bonus;
     }
 
     public static float projectileExecutionMultiplier(ServerPlayer player, float health, float maximum) {
-        return has(player, Node.RANGED_7) && maximum > 0.0f && health / maximum <= 0.50f
-                ? 1.22f : 1.0f;
+        if (maximum <= 0.0f) return 1.0f;
+        float ratio = health / maximum;
+        if (has(player, Node.RANGED_8) && ratio <= 0.60f) return 1.30f;
+        return has(player, Node.RANGED_7) && ratio <= 0.50f ? 1.22f : 1.0f;
     }
 
     public static int projectileFireBonusTicks(ServerPlayer player) {
@@ -133,6 +140,7 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.RANGED_3)) extra++;
         if (has(player, Node.RANGED_5)) extra += 2;
         if (has(player, Node.RANGED_7)) extra += 2;
+        if (has(player, Node.RANGED_8)) extra += 3;
         return extra;
     }
 
@@ -142,7 +150,8 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.GUARD_2)) reduction += 0.05f;
         if (has(player, Node.GUARD_4)) reduction += 0.06f;
         if (has(player, Node.GUARD_6)) reduction += 0.04f;
-        return Math.max(0.72f, 1.0f - reduction);
+        if (has(player, Node.GUARD_8)) reduction += 0.05f;
+        return Math.max(0.65f, 1.0f - reduction);
     }
 
     public static float lowHealthIncomingMultiplier(ServerPlayer player) {
@@ -171,6 +180,7 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.SUPPORT_1)) bonus += 0.08f;
         if (has(player, Node.SUPPORT_4)) bonus += 0.10f;
         if (has(player, Node.SUPPORT_6)) bonus += 0.12f;
+        if (has(player, Node.SUPPORT_8)) bonus += 0.15f;
         return 1.0f + bonus;
     }
 
@@ -180,6 +190,7 @@ public final class VillageSkillTreeSystem {
         if (has(player, Node.SUPPORT_4)) reduction += 2;
         if (has(player, Node.SUPPORT_6)) reduction += 2;
         if (has(player, Node.SUPPORT_7)) reduction += 1;
+        if (has(player, Node.SUPPORT_8)) reduction += 2;
         return reduction;
     }
 
@@ -203,7 +214,48 @@ public final class VillageSkillTreeSystem {
     }
 
     public static float teamHealOnKillAmount(ServerPlayer player) {
+        if (has(player, Node.SUPPORT_8)) return 3.0f;
         return has(player, Node.SUPPORT_7) ? 2.0f : 0.0f;
+    }
+
+    public static int passiveSpeedAmplifier(ServerPlayer player, boolean daytime) {
+        if (daytime) return 2 + (has(player, Node.MOBILITY_6) ? 1 : 0);
+        if (has(player, Node.MOBILITY_4)) return 1;
+        return has(player, Node.MOBILITY_1) ? 0 : -1;
+    }
+
+    public static float movingDamageMultiplier(ServerPlayer player) {
+        double horizontal = player.getDeltaMovement().x * player.getDeltaMovement().x
+                + player.getDeltaMovement().z * player.getDeltaMovement().z;
+        if (horizontal < 0.012) return 1.0f;
+        float bonus = 0.0f;
+        if (has(player, Node.MOBILITY_2)) bonus += 0.06f;
+        if (has(player, Node.MOBILITY_5)) bonus += 0.08f;
+        if (has(player, Node.MOBILITY_8)) bonus += 0.12f;
+        return 1.0f + bonus;
+    }
+
+    public static int mobilityCooldownReductionSeconds(ServerPlayer player) {
+        int result = 0;
+        if (has(player, Node.MOBILITY_3)) result++;
+        if (has(player, Node.MOBILITY_6)) result++;
+        if (has(player, Node.MOBILITY_8)) result += 2;
+        return result;
+    }
+
+    public static int killSpeedSeconds(ServerPlayer player) {
+        if (has(player, Node.MOBILITY_8)) return 8;
+        return has(player, Node.MOBILITY_7) ? 5 : 0;
+    }
+
+    public static float sprintIncomingMultiplier(ServerPlayer player) {
+        return has(player, Node.MOBILITY_7) && player.isSprinting() ? 0.88f : 1.0f;
+    }
+
+    public static synchronized void resetForNewGame() {
+        UNLOCKED_MASKS.clear();
+        SPENT_POINTS.clear();
+        persist();
     }
 
     public static int branchRanks(ServerPlayer player, Branch branch) {
@@ -225,21 +277,20 @@ public final class VillageSkillTreeSystem {
                 .toList();
     }
 
-    private static int bit(Node node) {
-        return 1 << node.ordinal();
+    private static long bit(Node node) {
+        return 1L << node.ordinal();
     }
 
     private static void persist() {
-        if (savedData != null) {
-            savedData.replace(UNLOCKED_MASKS);
-        }
+        if (savedData != null) savedData.replace(UNLOCKED_MASKS, SPENT_POINTS);
     }
 
     public enum Branch {
         POWER("공격"),
         GUARD("방어"),
         SUPPORT("지원"),
-        RANGED("사격");
+        RANGED("사격"),
+        MOBILITY("기동");
 
         private final String displayName;
 
@@ -285,7 +336,19 @@ public final class VillageSkillTreeSystem {
         SUPPORT_6("support_6", "전선 군수관", "처치 주화 +12%, 기술 재사용 -2초, 공동 보급 회수율 증가", Branch.SUPPORT, 6, SUPPORT_5),
         SUPPORT_7("support_7", "연대의 맹세", "처치 시 주변 아군 체력 1칸 회복, 기술 재사용 -1초", Branch.SUPPORT, 7, SUPPORT_6),
         RANGED_6("ranged_6", "초장력 시위", "화살과 투사체 피해 추가 +12%", Branch.RANGED, 6, RANGED_5),
-        RANGED_7("ranged_7", "종결 사격", "체력 50% 이하 적 대상 투사체 피해 +22%, 연쇄 대상 +2, 발화 지속 증가", Branch.RANGED, 7, RANGED_6);
+        RANGED_7("ranged_7", "종결 사격", "체력 50% 이하 적 대상 투사체 피해 +22%, 연쇄 대상 +2, 발화 지속 증가", Branch.RANGED, 7, RANGED_6),
+        POWER_8("power_8", "절대 공세", "모든 공격 피해 추가 +12%", Branch.POWER, 8, POWER_7),
+        GUARD_8("guard_8", "요새의 심장", "받는 피해 추가 5% 감소", Branch.GUARD, 8, GUARD_7),
+        SUPPORT_8("support_8", "총군수 지휘", "처치 주화 +15%, 기술 재사용 -2초, 주변 회복 강화", Branch.SUPPORT, 8, SUPPORT_7),
+        RANGED_8("ranged_8", "천공 사격", "투사체 피해 +14%, 체력 60% 이하 대상 추가 피해와 연쇄 대상 +3", Branch.RANGED, 8, RANGED_7),
+        MOBILITY_1("mobility_1", "경량 장비", "밤에도 이동 속도 I을 유지합니다.", Branch.MOBILITY, 1, null),
+        MOBILITY_2("mobility_2", "유동 공세", "이동 중 공격 피해 +6%", Branch.MOBILITY, 2, MOBILITY_1),
+        MOBILITY_3("mobility_3", "빠른 호흡", "직업 기술 재사용 대기시간 -1초", Branch.MOBILITY, 3, MOBILITY_2),
+        MOBILITY_4("mobility_4", "전장 질주", "밤 이동 속도가 II로 증가합니다.", Branch.MOBILITY, 4, MOBILITY_3),
+        MOBILITY_5("mobility_5", "관성 타격", "이동 중 공격 피해 추가 +8%", Branch.MOBILITY, 5, MOBILITY_4),
+        MOBILITY_6("mobility_6", "신속한 전환", "낮 이동 속도 단계 +1, 직업 기술 재사용 -1초", Branch.MOBILITY, 6, MOBILITY_5),
+        MOBILITY_7("mobility_7", "회피 기동", "질주 중 받는 피해 12% 감소, 처치 후 5초간 가속", Branch.MOBILITY, 7, MOBILITY_6),
+        MOBILITY_8("mobility_8", "번개 보법", "이동 중 피해 +12%, 기술 재사용 -2초, 처치 가속 8초", Branch.MOBILITY, 8, MOBILITY_7);
 
         private final String id;
         private final String title;
@@ -315,6 +378,7 @@ public final class VillageSkillTreeSystem {
         public Branch branch() { return branch; }
         public int tier() { return tier; }
         public Node prerequisite() { return prerequisite; }
+        public int pointCost() { return Math.max(1, Math.min(3, (tier + 2) / 3)); }
 
         public static Optional<Node> parse(String value) {
             if (value == null) return Optional.empty();

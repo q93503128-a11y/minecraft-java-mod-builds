@@ -264,9 +264,26 @@ public final class VillageRoleSkillSystem {
                 skill.baseCooldownSeconds()
                         - VillageProgressionSystem.skillCooldownReductionSeconds(player)
                         - VillageSkillTreeSystem.cooldownReductionSeconds(player)
+                        - VillageSkillTreeSystem.mobilityCooldownReductionSeconds(player)
                         - roleTreeCooldownReductionSeconds(player, role));
         READY_AT.put(cooldownKey, now + cooldown * 1000L);
         return skill.displayName() + " 사용 완료 | 재사용 " + cooldown + "초";
+    }
+
+    public static String useTestSkill(ServerPlayer player, String skillId) {
+        if (!VillageSkillTestSystem.isEnabled(player)) return "먼저 기술 시험 모드를 활성화해야 합니다.";
+        ActiveSkill skill = ActiveSkill.parse(skillId).orElse(null);
+        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        if (skill == null || role == null || skill.role() != role) return "현재 직업의 기술만 시험할 수 있습니다.";
+        if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 시험할 수 없습니다.";
+        cast(level, player, skill, powerMultiplier(player, role)
+                * VillageProgressionSystem.learnedSkillDamageMultiplier(player),
+                durationMultiplier(player, role), specialRank(player, role));
+        return skill.displayName() + " 시험 시전 완료 · 비용과 재사용 대기시간 없음";
+    }
+
+    public static synchronized void resetForNewGame() {
+        TREE_MASKS.clear(); SKILL_MASKS.clear(); EQUIPPED_SKILLS.clear(); READY_AT.clear(); persist();
     }
 
     private static void cast(
@@ -341,7 +358,10 @@ public final class VillageRoleSkillSystem {
                     (11.0f + playerLevel * 0.70f) * power, buffTicks * 2, Math.max(2, specialRank), true);
 
             case WARDEN_TAUNT -> {
-                for (Mob target : VillageRaidSystem.activeEnemiesNear(level, player.position(), 9.0, 14, null)) {
+                List<Mob> tauntTargets = VillageSkillTestSystem.isEnabled(player)
+                        ? VillageSkillTestSystem.targetsNear(level, player, 9.0, 14)
+                        : VillageRaidSystem.activeEnemiesNear(level, player.position(), 9.0, 14, null);
+                for (Mob target : tauntTargets) {
                     target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, buffTicks, Math.min(2, specialRank)));
                     target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, buffTicks, Math.min(2, specialRank)));
                 }
@@ -376,8 +396,10 @@ public final class VillageRoleSkillSystem {
             float damage,
             int specialRank,
             boolean lifeSteal) {
-        List<Mob> targets = VillageRaidSystem.activeEnemiesNear(
-                level, player.position(), radius, limit + specialRank, null);
+        List<Mob> targets = VillageSkillTestSystem.isEnabled(player)
+                ? VillageSkillTestSystem.targetsNear(level, player, radius, limit + specialRank)
+                : VillageRaidSystem.activeEnemiesNear(
+                        level, player.position(), radius, limit + specialRank, null);
         int hits = 0;
         for (Mob target : targets) {
             if (!target.isAlive()) {

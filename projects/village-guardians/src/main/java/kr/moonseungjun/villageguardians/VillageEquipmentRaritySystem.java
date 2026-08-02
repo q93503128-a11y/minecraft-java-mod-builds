@@ -28,7 +28,26 @@ public final class VillageEquipmentRaritySystem {
     private VillageEquipmentRaritySystem() {}
 
     public static ItemStack createRaidDrop(int day, boolean boss, RandomSource random) {
-        List<Item> pool = day >= 6 ? LATE_ITEMS : EARLY_ITEMS;
+        return createRaidDrop(day, boss, null, random);
+    }
+
+    public static ItemStack createRaidDrop(int day, boolean boss,
+            VillageEnemyArchetypeSystem.Archetype archetype, RandomSource random) {
+        List<Item> pool;
+        if (boss || archetype == null) pool = day >= 6 ? LATE_ITEMS : EARLY_ITEMS;
+        else pool = switch (archetype) {
+            case RUSHER, GRUNT, SHIELDBREAKER -> List.of(
+                    day >= 6 ? Items.DIAMOND_SWORD : Items.IRON_SWORD,
+                    day >= 6 ? Items.DIAMOND_AXE : Items.IRON_AXE, Items.SHIELD);
+            case BULWARK, SIEGE_BEAST, IRON_WARLORD, DREAD_KNIGHT -> List.of(Items.SHIELD,
+                    day >= 6 ? Items.DIAMOND_CHESTPLATE : Items.IRON_CHESTPLATE,
+                    day >= 6 ? Items.DIAMOND_HELMET : Items.IRON_HELMET);
+            case MARKSMAN, TOWER_HUNTER, WAR_CHANTER -> List.of(Items.BOW, Items.CROSSBOW,
+                    day >= 6 ? Items.DIAMOND_HELMET : Items.IRON_HELMET);
+            case SAPPER -> List.of(Items.CROSSBOW, Items.IRON_AXE, Items.SHIELD);
+            case HEXER, NECROMANCER, PLAGUE_ARCHON -> List.of(Items.BLAZE_ROD, Items.BOW,
+                    day >= 6 ? Items.DIAMOND_CHESTPLATE : Items.IRON_CHESTPLATE);
+        };
         Item item = pool.get(random.nextInt(pool.size()));
         return createNamed(item, rollRarity(day, boss, random), displayName(item));
     }
@@ -95,7 +114,9 @@ public final class VillageEquipmentRaritySystem {
             if (rarity == null || !isUpgradeable(stack.getItem())) continue;
             int current = enhancementLevel(stack);
             result.add(new EnhancementCandidate(slot, baseDisplayName(stack), rarity.displayName(),
-                    current, maximum, enhancementCost(stack), stack.getItem().toString()));
+                    current, maximum, enhancementCost(stack), stack.getItem().toString(),
+                    enhancementEffectSummary(stack, current),
+                    current >= maximum ? "최대 강화" : enhancementEffectSummary(stack, current + 1)));
         }
         return List.copyOf(result);
     }
@@ -122,6 +143,29 @@ public final class VillageEquipmentRaritySystem {
         player.getInventory().setChanged();
         return baseDisplayName(stack) + " 강화 성공 | +" + (current + 1)
                 + " / +" + maximum + " | 남은 주화 " + VillageProgressionSystem.coins(player);
+    }
+
+    public static String enhancementEffectSummary(ItemStack stack, int enhancement) {
+        Rarity rarity = rarityOf(stack);
+        if (rarity == null) return "등급 효과 없음";
+        int safe = Math.max(0, enhancement);
+        Item item = stack.getItem();
+        if (isMelee(item) || isProjectile(item)) {
+            float value = 1.0f + rarity.powerStep() * 0.055f + safe * 0.045f;
+            String type = isMelee(item) ? "근접" : "원거리";
+            return String.format(java.util.Locale.ROOT, "%s 피해 x%.3f (+%.1f%%)",
+                    type, value, (value - 1.0f) * 100.0f);
+        }
+        if (isArmor(item) || item == Items.SHIELD) {
+            float reduction = rarity.powerStep() * 0.012f + safe * 0.008f;
+            return String.format(java.util.Locale.ROOT, "장비 단독 피해 감소 %.1f%%", reduction * 100.0f);
+        }
+        if (item == Items.BLAZE_ROD) {
+            float value = 1.0f + rarity.powerStep() * 0.035f + safe * 0.03f;
+            return String.format(java.util.Locale.ROOT, "직업 기술 효과 x%.3f (+%.1f%%)",
+                    value, (value - 1.0f) * 100.0f);
+        }
+        return "강화 단계 +" + safe;
     }
 
     public static int maximumEnhancement() {
@@ -284,7 +328,7 @@ public final class VillageEquipmentRaritySystem {
 
     public record FusionCandidate(int slot, String group, String name, String rarity, String itemId) {}
     public record EnhancementCandidate(int slot, String name, String rarity, int current, int maximum,
-                                       int cost, String itemId) {}
+                                       int cost, String itemId, String currentEffect, String nextEffect) {}
 
     public enum Rarity {
         COMMON("일반", ChatFormatting.GRAY, 1),

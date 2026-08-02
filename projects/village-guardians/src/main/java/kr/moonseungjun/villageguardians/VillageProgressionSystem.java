@@ -33,6 +33,10 @@ public final class VillageProgressionSystem {
     private static final Map<UUID, Integer> FORGE_RANKS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> SKILL_RANKS = new LinkedHashMap<>();
     private static final EnumMap<Building, Integer> DURABILITY = new EnumMap<>(Building.class);
+    private static final EnumMap<Building, Integer> NIGHT_START_DURABILITY = new EnumMap<>(Building.class);
+    private static int nightPlanDay;
+    private static int nightPlanPlayers = 1;
+    private static boolean retryPlanLocked;
 
     private static VillageProgressionData savedData;
     private static int supplies = 180;
@@ -69,10 +73,16 @@ public final class VillageProgressionSystem {
         TRAINING_READY_AT.clear();
 
         DURABILITY.clear();
+        NIGHT_START_DURABILITY.clear();
         Map<String, Integer> loadedDurability = savedData.buildingDurability();
+        nightPlanDay = Math.max(0, loadedDurability.getOrDefault("$night_plan_day", 0));
+        nightPlanPlayers = Math.max(1, loadedDurability.getOrDefault("$night_plan_players", 1));
+        retryPlanLocked = loadedDurability.getOrDefault("$retry_plan_locked", 0) > 0;
         for (Building building : Building.values()) {
             int loaded = loadedDurability.getOrDefault(building.id(), maxDurability(building));
             DURABILITY.put(building, Math.max(0, Math.min(maxDurability(building), loaded)));
+            int snapshot = loadedDurability.getOrDefault("$night_" + building.id(), loaded);
+            NIGHT_START_DURABILITY.put(building, Math.max(0, Math.min(maxDurability(building), snapshot)));
         }
         persist();
     }
@@ -129,6 +139,28 @@ public final class VillageProgressionSystem {
 
     public static synchronized String status(ServerPlayer player) {
         return status() + " | 내 수호 주화 " + coins(player);
+    }
+
+    public static synchronized void captureNightStartSnapshot(MinecraftServer server) {
+        NIGHT_START_DURABILITY.clear();
+        for (Building building : Building.values()) NIGHT_START_DURABILITY.put(building, durability(building));
+        int day = VillageCouncilState.currentDay();
+        if (!(retryPlanLocked && nightPlanDay == day)) {
+            nightPlanDay = day;
+            nightPlanPlayers = Math.max(1, server.getPlayerList().getPlayerCount());
+        }
+        retryPlanLocked = false;
+        VillageMercenarySystem.captureNightSnapshot(server);
+        persist();
+    }
+    public static synchronized int plannedRaidPlayerCount(MinecraftServer server) {
+        return nightPlanDay == VillageCouncilState.currentDay() ? Math.max(1, nightPlanPlayers)
+                : Math.max(1, server.getPlayerList().getPlayerCount());
+    }
+    public static synchronized int previewRaidPlayerCount(MinecraftServer server) {
+        if (server == null) return Math.max(1, nightPlanPlayers);
+        if (retryPlanLocked && nightPlanDay == VillageCouncilState.currentDay()) return Math.max(1, nightPlanPlayers);
+        return Math.max(1, server.getPlayerList().getPlayerCount());
     }
 
     public static synchronized int supplies() {
@@ -501,35 +533,39 @@ public final class VillageProgressionSystem {
 
     public static synchronized void resetForRestart(MinecraftServer server, boolean fromStart) {
         gameOver = false;
+        VillageRaidSystem.resetAfterRestart(server);
+        VillageSkillTestSystem.clearAll(server);
         if (fromStart) {
-            supplies = 180;
-            wallLevel = 0;
-            smithyLevel = 0;
-            infirmaryLevel = 0;
-            storehouseLevel = 0;
-            barracksLevel = 0;
-            skillHallLevel = 0;
-            CLAIM_DAYS.clear();
-            FORGE_RANKS.clear();
-            SKILL_RANKS.clear();
-            COINS.clear();
+            supplies = 180; wallLevel = 0; smithyLevel = 0; infirmaryLevel = 0;
+            storehouseLevel = 0; barracksLevel = 0; skillHallLevel = 0;
+            CLAIM_DAYS.clear(); FORGE_RANKS.clear(); SKILL_RANKS.clear(); COINS.clear();
+            NIGHT_START_DURABILITY.clear(); nightPlanDay = 0; nightPlanPlayers = 1; retryPlanLocked = false;
+            VillageSkillTreeSystem.resetForNewGame();
+            VillageRoleSkillSystem.resetForNewGame();
+            VillageDefenseResearchSystem.resetForNewGame();
+            VillageTowerSpecializationSystem.resetForNewGame();
+            VillageRelicSystem.resetForNewGame();
+            VillageMercenarySystem.resetForNewGame(server);
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 COINS.put(player.getUUID(), STARTING_COINS);
                 FORGE_RANKS.put(player.getUUID(), 0);
                 SKILL_RANKS.put(player.getUUID(), 0);
             }
         } else {
-            supplies = Math.max(100, supplies);
+            retryPlanLocked = true;
+            VillageMercenarySystem.restoreNightSnapshot(server);
         }
-
         DURABILITY.clear();
         for (Building building : Building.values()) {
-            DURABILITY.put(building, maxDurability(building));
+            int restored = fromStart ? maxDurability(building)
+                    : NIGHT_START_DURABILITY.getOrDefault(building, maxDurability(building));
+            DURABILITY.put(building, Math.max(0, Math.min(maxDurability(building), restored)));
         }
         persist();
         VillageCouncilState.restartGameDay(server, fromStart);
         VillageWorldSystem.forceRebuild(server);
-        VillageRaidSystem.resetAfterRestart(server);
+        if (fromStart) for (ServerPlayer player : server.getPlayerList().getPlayers())
+            VillageStarterKit.resetForNewGame(player);
     }
 
     public static int upgradeCost(int currentLevel) {
@@ -571,6 +607,10 @@ public final class VillageProgressionSystem {
         }
         Map<String, Integer> encodedDurability = new LinkedHashMap<>();
         DURABILITY.forEach((building, hp) -> encodedDurability.put(building.id(), hp));
+        NIGHT_START_DURABILITY.forEach((building, hp) -> encodedDurability.put("$night_" + building.id(), hp));
+        encodedDurability.put("$night_plan_day", nightPlanDay);
+        encodedDurability.put("$night_plan_players", Math.max(1, nightPlanPlayers));
+        encodedDurability.put("$retry_plan_locked", retryPlanLocked ? 1 : 0);
         savedData.replaceState(
                 supplies,
                 wallLevel,

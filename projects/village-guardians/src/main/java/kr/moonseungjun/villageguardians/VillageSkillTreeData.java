@@ -12,9 +12,15 @@ import java.util.UUID;
 
 public final class VillageSkillTreeData extends SavedData {
     private static final Codec<VillageSkillTreeData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.unboundedMap(Codec.STRING, Codec.LONG)
+                    .optionalFieldOf("unlocked_masks_v2", Map.of())
+                    .forGetter(data -> data.unlockedMasks),
             Codec.unboundedMap(Codec.STRING, Codec.INT)
                     .optionalFieldOf("unlocked_masks", Map.of())
-                    .forGetter(data -> data.unlockedMasks)
+                    .forGetter(data -> data.legacyMasks),
+            Codec.unboundedMap(Codec.STRING, Codec.INT)
+                    .optionalFieldOf("spent_points_v2", Map.of())
+                    .forGetter(data -> data.spentPoints)
     ).apply(instance, VillageSkillTreeData::new));
 
     public static final SavedDataType<VillageSkillTreeData> TYPE = new SavedDataType<>(
@@ -22,38 +28,55 @@ public final class VillageSkillTreeData extends SavedData {
             level -> new VillageSkillTreeData(),
             level -> CODEC);
 
-    private Map<String, Integer> unlockedMasks;
+    private Map<String, Long> unlockedMasks;
+    private Map<String, Integer> legacyMasks;
+    private Map<String, Integer> spentPoints;
 
-    public VillageSkillTreeData() {
-        this(Map.of());
+    public VillageSkillTreeData() { this(Map.of(), Map.of(), Map.of()); }
+
+    private VillageSkillTreeData(Map<String, Long> masks, Map<String, Integer> legacy,
+                                 Map<String, Integer> spent) {
+        unlockedMasks = new LinkedHashMap<>();
+        masks.forEach((uuid, mask) -> unlockedMasks.put(uuid, sanitizeMask(mask)));
+        legacyMasks = new LinkedHashMap<>(legacy);
+        if (unlockedMasks.isEmpty()) {
+            legacy.forEach((uuid, mask) -> unlockedMasks.put(uuid,
+                    sanitizeMask(Integer.toUnsignedLong(mask))));
+        }
+        spentPoints = new LinkedHashMap<>();
+        spent.forEach((uuid, value) -> spentPoints.put(uuid, Math.max(0, value)));
     }
 
-    private VillageSkillTreeData(Map<String, Integer> unlockedMasks) {
-        this.unlockedMasks = new LinkedHashMap<>();
-        unlockedMasks.forEach((uuid, mask) -> this.unlockedMasks.put(uuid, sanitizeMask(mask)));
-    }
-
-    public Map<UUID, Integer> masks() {
-        Map<UUID, Integer> parsed = new LinkedHashMap<>();
-        unlockedMasks.forEach((uuidText, mask) -> {
-            try {
-                parsed.put(UUID.fromString(uuidText), sanitizeMask(mask));
-            } catch (IllegalArgumentException ignored) {
-                // Ignore only the damaged player entry.
-            }
+    public Map<UUID, Long> masks() {
+        Map<UUID, Long> result = new LinkedHashMap<>();
+        unlockedMasks.forEach((raw, mask) -> {
+            try { result.put(UUID.fromString(raw), sanitizeMask(mask)); }
+            catch (IllegalArgumentException ignored) { }
         });
-        return parsed;
+        return result;
     }
 
-    public void replace(Map<UUID, Integer> masks) {
+    public Map<UUID, Integer> spentPoints() {
+        Map<UUID, Integer> result = new LinkedHashMap<>();
+        spentPoints.forEach((raw, value) -> {
+            try { result.put(UUID.fromString(raw), Math.max(0, value)); }
+            catch (IllegalArgumentException ignored) { }
+        });
+        return result;
+    }
+
+    public void replace(Map<UUID, Long> masks, Map<UUID, Integer> spent) {
         unlockedMasks = new LinkedHashMap<>();
         masks.forEach((uuid, mask) -> unlockedMasks.put(uuid.toString(), sanitizeMask(mask)));
+        legacyMasks = new LinkedHashMap<>();
+        spentPoints = new LinkedHashMap<>();
+        spent.forEach((uuid, value) -> spentPoints.put(uuid.toString(), Math.max(0, value)));
         setDirty();
     }
 
-    private static int sanitizeMask(int value) {
-        int nodeCount = VillageSkillTreeSystem.Node.values().length;
-        int allowedBits = nodeCount >= Integer.SIZE - 1 ? Integer.MAX_VALUE : (1 << nodeCount) - 1;
-        return Math.max(0, value) & allowedBits;
+    private static long sanitizeMask(long value) {
+        int count = VillageSkillTreeSystem.Node.values().length;
+        long allowed = count >= Long.SIZE - 1 ? Long.MAX_VALUE : (1L << count) - 1L;
+        return Math.max(0L, value) & allowed;
     }
 }

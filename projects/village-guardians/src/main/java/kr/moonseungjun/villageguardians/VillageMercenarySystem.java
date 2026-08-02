@@ -16,7 +16,9 @@ import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -27,6 +29,7 @@ public final class VillageMercenarySystem {
     private static final Map<UUID, Integer> LEVELS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> KILLS = new LinkedHashMap<>();
     private static VillageMercenaryData savedData;
+    private static final List<MercenarySnapshot> NIGHT_SNAPSHOT = new ArrayList<>();
     private static int tickCounter;
 
     private VillageMercenarySystem() {}
@@ -46,6 +49,7 @@ public final class VillageMercenarySystem {
                 uuid -> KILLS.put(uuid, Math.max(0, value))));
         sanitize();
         persist();
+        NIGHT_SNAPSHOT.clear();
         tickCounter = 0;
     }
 
@@ -102,6 +106,41 @@ public final class VillageMercenarySystem {
         }
         return kind.displayName() + " 고용 완료 · Lv.1 · 현재 " + (current + 1) + " / " + cap
                 + " · 사망하지 않는 한 저장과 재접속 후에도 유지됩니다.";
+    }
+
+    public static synchronized void captureNightSnapshot(MinecraftServer server) {
+        NIGHT_SNAPSHOT.clear();
+        CLASSES.forEach((uuid, kind) -> NIGHT_SNAPSHOT.add(new MercenarySnapshot(
+                kind, LEVELS.getOrDefault(uuid, 1), KILLS.getOrDefault(uuid, 0))));
+    }
+    public static synchronized void restoreNightSnapshot(MinecraftServer server) {
+        discardCurrent(server); CLASSES.clear(); LEVELS.clear(); KILLS.clear();
+        ServerLevel level = server.overworld();
+        BlockPos origin = VillageWorldSystem.buildingCenter(VillageProgressionSystem.Building.BARRACKS);
+        int index = 0;
+        for (MercenarySnapshot snapshot : NIGHT_SNAPSHOT) {
+            IronGolem mob = EntityTypes.IRON_GOLEM.create(level, EntitySpawnReason.EVENT);
+            if (mob == null) continue;
+            BlockPos spawn = safeSpawn(level, origin.offset((index % 3) * 2, 0, (index / 3) * 2));
+            mob.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
+            mob.setPlayerCreated(true); mob.setPersistenceRequired();
+            CLASSES.put(mob.getUUID(), snapshot.kind()); LEVELS.put(mob.getUUID(), snapshot.level());
+            KILLS.put(mob.getUUID(), snapshot.kills()); applyClassPassives(mob, snapshot.kind(), snapshot.level());
+            refreshName(mob); VillageWorldSystem.markAllowedGameMob(mob);
+            if (!level.addFreshEntity(mob)) { unregister(mob.getUUID()); VillageWorldSystem.unmarkAllowedGameMob(mob.getUUID()); }
+            index++;
+        }
+        persist();
+    }
+    public static synchronized void resetForNewGame(MinecraftServer server) {
+        discardCurrent(server); CLASSES.clear(); LEVELS.clear(); KILLS.clear(); NIGHT_SNAPSHOT.clear();
+        tickCounter = 0; persist();
+    }
+    private static void discardCurrent(MinecraftServer server) {
+        for (UUID uuid : new java.util.HashSet<>(CLASSES.keySet())) {
+            var entity = server.overworld().getEntity(uuid); if (entity != null) entity.discard();
+            VillageWorldSystem.unmarkAllowedGameMob(uuid);
+        }
     }
 
     public static void tick(MinecraftServer server) {
@@ -242,6 +281,8 @@ public final class VillageMercenarySystem {
         mob.setCustomName(Component.literal(kind.displayName() + " Lv." + rank(mob)));
         mob.setCustomNameVisible(true);
     }
+
+    private record MercenarySnapshot(MercenaryClass kind, int level, int kills) {}
 
     private static BlockPos safeSpawn(ServerLevel level, BlockPos origin) {
         for (int radius = 2; radius <= 8; radius++) {

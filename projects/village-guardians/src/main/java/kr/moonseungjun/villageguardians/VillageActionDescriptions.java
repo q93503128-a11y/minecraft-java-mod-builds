@@ -24,7 +24,7 @@ final class VillageActionDescriptions {
             return label + "\n마을 회관에서 현재 직업을 변경합니다. 성장과 기술 관리는 기술 연구소에서 진행합니다.";
         }
         if (action.startsWith("skill_node:")) {
-            return label + "\n기술 연구소에서 전술 포인트 1개를 사용해 공용 전술을 습득합니다.";
+            return label + "\n레벨당 1개씩 얻는 전술 포인트를 사용합니다. 비용은 단계에 따라 1~3P입니다.";
         }
         if (action.startsWith("role_node:")) {
             return label + "\n기술 연구소에서 요구 레벨과 수호 주화를 지불해 직업 성장 효과를 습득합니다.";
@@ -53,6 +53,10 @@ final class VillageActionDescriptions {
             case "open_skill_tree" -> "기술 연구소의 공용 전술 발전 화면을 엽니다.";
             case "open_role_progress_current" -> "현재 직업의 세 갈래 성장과 두 기술 슬롯을 관리합니다.";
             case "open_role_skill_research" -> "기술 연구소에서 현재 직업의 기술 습득과 Z/X 장착만 관리합니다.";
+            case "open_skill_test" -> "현재 직업의 모든 기술을 비용·재사용 대기시간 없이 시험합니다.";
+            case "test_spawn" -> "시험용 고정 표적 6개를 전방에 재배치합니다.";
+            case "test_clear" -> "내가 만든 시험 표적을 제거합니다.";
+            case "test_exit" -> "시험 모드를 종료하고 표적을 정리합니다.";
             case "open_fusion" -> "대장간에서 같은 종류·같은 등급 장비 세 개를 직접 선택해 합성합니다.";
             case "open_quick_chat" -> "접속 중인 수호단에게 보낼 빠른 신호를 엽니다.";
             case "open_dashboard", "open_mayor" -> "마을 회관의 직업 배치와 시설 관리 화면을 엽니다.";
@@ -80,7 +84,7 @@ final class VillageActionDescriptions {
             case "chat_help" -> "모든 접속 플레이어에게 현재 위치 지원 요청을 보냅니다.";
             case "vote_yes" -> "현재 시간 진행 투표에 찬성합니다.";
             case "vote_no" -> "현재 시간 진행 투표에 반대합니다.";
-            case "restart_previous" -> "성장과 강화를 유지하고 이전 날부터 다시 시작합니다.";
+            case "restart_previous" -> "패배한 밤을 취소하고 같은 날 낮 정비 시간으로 돌아갑니다.";
             case "restart_start" -> "마을 발전과 개인 성장을 초기화하고 첫날부터 다시 시작합니다.";
             default -> label == null || label.isBlank()
                     ? "선택한 동작을 실행합니다."
@@ -126,6 +130,7 @@ final class VillageActionDescriptions {
         if (action.startsWith("funding:")) return "보급 조달";
         if (action.startsWith("gear:")) return "장비 구매";
         if (action.startsWith("forge_enhance:")) return "장비 강화";
+        if (action.startsWith("test_cast:")) return "시험 시전";
         if (action.startsWith("sell_item:")) return "판매";
         if (action.startsWith("manage:")) return "수리·강화";
         if (action.startsWith("building:")) return "이용";

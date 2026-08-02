@@ -51,6 +51,12 @@ public final class VillageStarterKit {
         }
     }
 
+    public static void resetForNewGame(ServerPlayer player) {
+        player.getInventory().clearContent();
+        player.removeTag(STARTER_KIT_TAG); player.removeTag(CALLER_MIGRATION_TAG);
+        grantOnLogin(player);
+    }
+
     public static void grantMayorCaller(ServerPlayer player) { grantCaller(player); }
 
     public static void handleItemInteraction(PlayerInteractEvent.RightClickItem event) {

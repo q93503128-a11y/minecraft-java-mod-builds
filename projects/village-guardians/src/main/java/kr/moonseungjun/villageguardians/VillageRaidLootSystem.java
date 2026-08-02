@@ -11,65 +11,74 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
-import java.util.List;
+import java.util.EnumMap;
+import java.util.Map;
 
-/** Raid rewards use game-specific sale loot names and graded equipment. */
 public final class VillageRaidLootSystem {
-    private static final List<SaleLoot> COMMON_SALE_LOOT = List.of(
-            new SaleLoot(Items.BONE, "금 간 오크 송곳니", ChatFormatting.GRAY),
-            new SaleLoot(Items.STRING, "찢긴 전투 끈", ChatFormatting.GRAY),
-            new SaleLoot(Items.SPIDER_EYE, "응고된 마력낭", ChatFormatting.DARK_PURPLE),
-            new SaleLoot(Items.GUNPOWDER, "폭파병 화약 주머니", ChatFormatting.GOLD));
-    private static final List<SaleLoot> BOSS_SALE_LOOT = List.of(
-            new SaleLoot(Items.ENDER_PEARL, "뒤틀린 지휘핵", ChatFormatting.LIGHT_PURPLE),
-            new SaleLoot(Items.BLAZE_ROD, "전쟁 주술봉 파편", ChatFormatting.GOLD));
+    private static final Map<VillageEnemyArchetypeSystem.Archetype, SaleLoot> SALE_LOOT =
+            new EnumMap<>(VillageEnemyArchetypeSystem.Archetype.class);
+    static {
+        put(VillageEnemyArchetypeSystem.Archetype.GRUNT, Items.BONE, "금 간 전열병 송곳니", ChatFormatting.GRAY);
+        put(VillageEnemyArchetypeSystem.Archetype.RUSHER, Items.FLINT, "척후병의 닳은 단검 조각", ChatFormatting.GRAY);
+        put(VillageEnemyArchetypeSystem.Archetype.BULWARK, Items.IRON_NUGGET, "찌그러진 방패 고리", ChatFormatting.WHITE);
+        put(VillageEnemyArchetypeSystem.Archetype.SAPPER, Items.GUNPOWDER, "폭파병 화약 주머니", ChatFormatting.GOLD);
+        put(VillageEnemyArchetypeSystem.Archetype.MARKSMAN, Items.FEATHER, "사수의 찢긴 깃", ChatFormatting.WHITE);
+        put(VillageEnemyArchetypeSystem.Archetype.SHIELDBREAKER, Items.IRON_NUGGET, "파쇄병 도끼날 파편", ChatFormatting.DARK_GRAY);
+        put(VillageEnemyArchetypeSystem.Archetype.HEXER, Items.SPIDER_EYE, "응고된 저주 마력낭", ChatFormatting.DARK_PURPLE);
+        put(VillageEnemyArchetypeSystem.Archetype.WAR_CHANTER, Items.GOAT_HORN, "전쟁 고수의 갈라진 뿔", ChatFormatting.GOLD);
+        put(VillageEnemyArchetypeSystem.Archetype.NECROMANCER, Items.COAL, "사령술사의 검은 뼛가루", ChatFormatting.DARK_PURPLE);
+        put(VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER, Items.AMETHYST_SHARD, "탑 사냥꾼의 조준 렌즈", ChatFormatting.AQUA);
+        put(VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST, Items.HEAVY_CORE, "공성 야수의 파쇄핵", ChatFormatting.LIGHT_PURPLE);
+        put(VillageEnemyArchetypeSystem.Archetype.IRON_WARLORD, Items.NETHERITE_SCRAP, "철의 전쟁군주 휘장", ChatFormatting.GOLD);
+        put(VillageEnemyArchetypeSystem.Archetype.PLAGUE_ARCHON, Items.ENDER_PEARL, "역병 대주교의 뒤틀린 심장", ChatFormatting.DARK_PURPLE);
+        put(VillageEnemyArchetypeSystem.Archetype.DREAD_KNIGHT, Items.ECHO_SHARD, "공포 기사의 암흑 갑편", ChatFormatting.DARK_AQUA);
+    }
 
     private VillageRaidLootSystem() {}
+    private static void put(VillageEnemyArchetypeSystem.Archetype type, Item item,
+                            String name, ChatFormatting color) {
+        SALE_LOOT.put(type, new SaleLoot(item, name, color));
+    }
 
     public static void handleDrops(LivingDropsEvent event) {
+        if (VillageSkillTestSystem.isTestDummy(event.getEntity())) { event.getDrops().clear(); return; }
         if (!VillageRaidSystem.isRaidEnemy(event.getEntity())) return;
         event.getDrops().clear();
-        if (!(event.getSource().getEntity() instanceof ServerPlayer killer)) return;
-
-        RandomSource random = event.getEntity().getRandom();
-        boolean boss = event.getEntity() instanceof Mob mob && isBoss(mob);
-        float logistics = VillageDefenseResearchSystem.equipmentDropBonus();
-
-        if (random.nextFloat() < (boss ? 1.0f : 0.28f)) {
-            SaleLoot loot = boss
-                    ? BOSS_SALE_LOOT.get(random.nextInt(BOSS_SALE_LOOT.size()))
-                    : COMMON_SALE_LOOT.get(random.nextInt(COMMON_SALE_LOOT.size()));
-            ItemStack stack = namedSaleLoot(loot);
+        if (!(event.getSource().getEntity() instanceof ServerPlayer killer)
+                || !(event.getEntity() instanceof Mob mob)) return;
+        RandomSource random = mob.getRandom();
+        VillageEnemyArchetypeSystem.Archetype type = VillageRaidSystem.archetypeOf(mob);
+        boolean boss = type != null && VillageEnemyArchetypeSystem.isBoss(type);
+        SaleLoot loot = SALE_LOOT.get(type);
+        float chance = boss ? 1.0f : switch (type == null
+                ? VillageEnemyArchetypeSystem.Archetype.GRUNT : type) {
+            case GRUNT, RUSHER -> 0.28f;
+            case BULWARK, MARKSMAN -> 0.36f;
+            case SAPPER, SHIELDBREAKER, HEXER, WAR_CHANTER -> 0.48f;
+            case NECROMANCER, TOWER_HUNTER -> 0.62f;
+            default -> 1.0f;
+        };
+        if (loot != null && random.nextFloat() < chance) {
+            ItemStack stack = named(loot);
             stack.setCount(boss ? 2 + random.nextInt(3) : 1 + random.nextInt(2));
-            giveOrDrop(killer, stack);
+            give(killer, stack);
         }
-
-        float equipmentChance = boss ? 1.0f : 0.045f + logistics;
+        float equipmentChance = boss ? 1.0f : 0.045f
+                + VillageDefenseResearchSystem.equipmentDropBonus();
         if (random.nextFloat() < equipmentChance) {
-            giveOrDrop(killer, VillageEquipmentRaritySystem.createRaidDrop(
-                    VillageCouncilState.currentDay(), boss, random));
+            give(killer, VillageEquipmentRaritySystem.createRaidDrop(
+                    VillageCouncilState.currentDay(), boss, type, random));
         }
     }
 
-    private static ItemStack namedSaleLoot(SaleLoot loot) {
+    private static ItemStack named(SaleLoot loot) {
         ItemStack stack = loot.item().getDefaultInstance();
         stack.set(DataComponents.CUSTOM_NAME,
                 Component.literal("[판매용] " + loot.name()).withStyle(loot.color()));
         return stack;
     }
-
-    private static boolean isBoss(Mob mob) {
-        if (VillageRaidSystem.isBossEnemy(mob)) return true;
-        String name = mob.getCustomName() == null ? "" : mob.getCustomName().getString();
-        for (VillageEnemyArchetypeSystem.Archetype archetype : VillageEnemyArchetypeSystem.Archetype.values()) {
-            if (VillageEnemyArchetypeSystem.isBoss(archetype) && name.contains(archetype.displayName())) return true;
-        }
-        return false;
-    }
-
-    private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
+    private static void give(ServerPlayer player, ItemStack stack) {
         if (!player.addItem(stack)) player.drop(stack, false);
     }
-
     private record SaleLoot(Item item, String name, ChatFormatting color) {}
 }

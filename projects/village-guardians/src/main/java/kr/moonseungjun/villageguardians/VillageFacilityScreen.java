@@ -166,11 +166,9 @@ public final class VillageFacilityScreen extends Screen {
         if (selectedIndex >= 0) {
             String[] parts = labelParts(labels[selectedIndex]);
             addWrapped(result, parts[0], width, accent(), 13, 0);
-            if (!informationSelected()) {
-                if (!parts[1].isBlank()) addWrapped(result, parts[1], width, TEXT, 11, 2);
-                addWrapped(result, VillageActionDescriptions.describe(actions[selectedIndex], parts[0]),
-                        width, MUTED, 11, 5);
-            }
+            if (!parts[1].isBlank()) addWrapped(result, parts[1], width, TEXT, 11, 2);
+            if (!informationSelected()) addWrapped(result,
+                    VillageActionDescriptions.describe(actions[selectedIndex], parts[0]), width, MUTED, 11, 5);
         }
         if (shouldShowBody()) {
             for (String paragraph : plain(payload.body()).split("\n", -1)) {
@@ -255,11 +253,13 @@ public final class VillageFacilityScreen extends Screen {
 
     private boolean informationSelected() {
         return selectedIndex >= 0 && selectedIndex < actionCount()
-                && "facility_info".equals(actions[selectedIndex]);
+                && ("facility_info".equals(actions[selectedIndex])
+                || actions[selectedIndex].startsWith("wave_info:"));
     }
 
     private boolean shouldShowBody() {
-        return !payload.body().isBlank() && (actionCount() == 0 || informationSelected());
+        return !payload.body().isBlank() && (actionCount() == 0 || informationSelected()
+                || "game_over".equals(payload.screenId()));
     }
 
     private String[] labelParts(String label) {

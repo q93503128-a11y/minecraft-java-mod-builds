@@ -220,12 +220,15 @@ public final class VillageCouncilState {
     }
 
     public static synchronized void restartGameDay(MinecraftServer server, boolean fromStart) {
-        villageDay = fromStart ? 1 : Math.max(1, villageDay - 1);
+        villageDay = fromStart ? 1 : Math.max(1, villageDay);
         timePhase = VillageTimePhase.DAY;
         activeProposal = null;
         if (fromStart) {
-            ROLES.clear();
-            RPG_PROGRESS.replaceAll((uuid, progress) -> RpgProgress.initial());
+            mayorId = null; mayorName = "없음"; ROLES.clear(); RPG_PROGRESS.clear();
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                if (mayorId == null) { mayorId = player.getUUID(); mayorName = player.getGameProfile().name(); }
+                RPG_PROGRESS.put(player.getUUID(), RpgProgress.initial());
+            }
         }
         persist();
         freezeAndApplyTime(server);
@@ -235,8 +238,8 @@ public final class VillageCouncilState {
             player.heal(player.getMaxHealth());
         }
         grantDailyFoodToOnlinePlayers(server);
-        broadcast(server, fromStart ? "§6마을 방어를 처음부터 다시 시작합니다."
-                : "§6이전 날 낮부터 마을 방어를 다시 시작합니다.");
+        broadcast(server, fromStart ? "§6마을 방어를 처음부터 완전히 다시 시작합니다."
+                : "§6패배한 밤의 전투를 취소하고 같은 날 낮 정비 시간으로 돌아왔습니다.");
     }
 
     private static void evaluateProposal(MinecraftServer server) {
@@ -256,7 +259,10 @@ public final class VillageCouncilState {
 
     private static void advanceTime(MinecraftServer server) {
         VillageTimePhase previous = timePhase;
-        timePhase = timePhase.next();
+        VillageTimePhase next = timePhase.next();
+        if (previous == VillageTimePhase.DAY && next == VillageTimePhase.NIGHT)
+            VillageProgressionSystem.captureNightStartSnapshot(server);
+        timePhase = next;
         if (previous == VillageTimePhase.NIGHT && timePhase == VillageTimePhase.DAY) {
             villageDay++;
         }

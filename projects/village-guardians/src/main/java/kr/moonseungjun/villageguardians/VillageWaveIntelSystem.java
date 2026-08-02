@@ -1,46 +1,60 @@
 package kr.moonseungjun.villageguardians;
 
-/** Readable forecast assembled from the actual day-based enemy roster. */
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 public final class VillageWaveIntelSystem {
     private VillageWaveIntelSystem() {}
 
-    public static String report() {
+    public static List<WavePreview> previews(ServerPlayer player) {
+        MinecraftServer server = player.level().getServer();
         int day = VillageCouncilState.currentDay();
-        StringBuilder text = new StringBuilder();
-        text.append("§b현재 전황\n§f").append(VillageRaidSystem.status()).append("\n\n");
-        text.append("§b예상 일반 병과\n§f").append(baseRoster(day)).append("\n\n");
-        text.append("§b특수 병과 해금\n§f").append(specialRoster(day)).append("\n\n");
-        text.append("§6예상 보스\n§f").append(boss(day)).append("\n\n");
-        text.append("§7실제 웨이브 특성은 표준·물량·중장갑·공성·추격·주술·광란·재생 중 하나로 정해집니다. ")
-                .append("강제 진군 때문에 잔존 적이 있어도 약 60초 후 다음 웨이브가 합류할 수 있습니다.");
-        return text.toString();
+        int players = VillageProgressionSystem.previewRaidPlayerCount(server);
+        int maximum = VillageRaidSystem.previewMaxWaves(day);
+        List<WavePreview> result = new ArrayList<>();
+        for (int wave = 1; wave <= maximum; wave++) {
+            VillageWaveTrait trait = VillageWaveTrait.select(day, wave);
+            int count = VillageRaidSystem.previewWaveCount(day, wave, players, trait);
+            int bosses = VillageRaidSystem.previewBossCount(day, wave, maximum, count);
+            Map<VillageEnemyArchetypeSystem.Archetype, Integer> roster = new LinkedHashMap<>();
+            for (int index = 0; index < count; index++) {
+                boolean boss = index < bosses;
+                VillageEnemyArchetypeSystem.Archetype archetype =
+                        VillageEnemyArchetypeSystem.previewArchetype(day, wave, index, boss, trait);
+                roster.merge(archetype, 1, Integer::sum);
+            }
+            List<String> lines = new ArrayList<>();
+            roster.forEach((type, amount) -> lines.add(type.displayName() + " ×" + amount
+                    + " · " + VillageEnemyArchetypeSystem.combatRole(type)));
+            String detail = "예상 총 " + count + "명" + (bosses > 0 ? " · 보스 " + bosses + "명" : "")
+                    + "\n특성: " + trait.description() + "\n대응: " + trait.counterHint()
+                    + "\n병력:\n- " + String.join("\n- ", lines);
+            result.add(new WavePreview(wave, maximum, trait, count, bosses, detail));
+        }
+        return List.copyOf(result);
     }
 
-    private static String baseRoster(int day) {
-        String roster = "전열병, 돌격병";
-        if (day >= 2) roster += ", 방패병";
-        if (day >= 3) roster += ", 사수";
-        if (day >= 4) roster += ", 폭파병";
-        if (day >= 5) roster += ", 파쇄병";
-        return roster;
+    public static String report(ServerPlayer player) {
+        if (VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
+            return "현재 야간 습격이 진행 중입니다.\n" + VillageRaidSystem.status()
+                    + "\n전체 다음 밤 편성표는 낮 정비 시간에 확인할 수 있습니다.";
+        }
+        int players = VillageProgressionSystem.previewRaidPlayerCount(player.level().getServer());
+        return "제 " + VillageCouncilState.currentDay() + "일 밤 예정 편성 · 기준 수호자 "
+                + players + "명\n웨이브 특성·병과·수량은 확정되며 재도전해도 동일합니다.";
     }
 
-    private static String specialRoster(int day) {
-        if (day < 6) return "아직 주술·지휘 병과는 확인되지 않았습니다.";
-        String roster = "저주술사";
-        if (day >= 8) roster += ", 전쟁 고수";
-        if (day >= 9) roster += ", 탑 사냥꾼";
-        if (day >= 11) roster += ", 강령술사";
-        return roster;
+    public static String report() {
+        return "낮 정비 시간에 성벽 정찰 화면에서 웨이브별 편성을 확인하세요.";
     }
 
-    private static String boss(int day) {
-        int cycle = Math.floorMod(Math.max(3, day) - 3, 4);
-        return switch (cycle) {
-            case 0 -> "공성 야수 · 시설 피해와 충격파에 특화";
-            case 1 -> "철의 전쟁군주 · 주변 적을 강화하는 지휘형";
-            case 2 -> "역병 대주교 · 독·회복·포탑 교란형";
-            default -> "공포 기사 · 암흑·흡혈·근접 압박형";
-        };
+    public record WavePreview(int wave, int maximumWaves, VillageWaveTrait trait,
+                              int count, int bossCount, String detail) {
+        public String title() { return "웨이브 " + wave + "/" + maximumWaves + " · " + trait.displayName(); }
     }
 }

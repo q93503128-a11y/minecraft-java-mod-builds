@@ -22,13 +22,15 @@ def main() -> None:
     role_ui = read("VillageRoleProgressScreen.java")
     shop_ui = read("VillageShopScreen.java")
 
-    assert common.count('("power_') == 7
-    assert common.count('("guard_') == 7
-    assert common.count('("support_') == 7
-    assert common.count('("ranged_') == 7
-    assert "(level - 1) / 2" in common
+    assert common.count('("power_') == 8
+    assert common.count('("guard_') == 8
+    assert common.count('("support_') == 8
+    assert common.count('("ranged_') == 8
+    assert "Math.max(0, level - 1)" in common
+    assert common.count('(\"mobility_') == 8
+    assert "pointCost()" in common
     assert "sharedSupplyChance" in common and "teamHealOnKillAmount" in common
-    assert "Integer.SIZE - 1" in common_data
+    assert "Codec.LONG" in common_data and "Long.SIZE - 1" in common_data
 
     for branch in ("DURATION", "POWER", "SPECIAL"):
         assert role.count(branch + "_") >= 5
@@ -59,7 +61,7 @@ def main() -> None:
     assert "ChatFormatting.stripFormatting" in shop_ui
     assert "§l" not in shop_ui and "§6" not in shop_ui
 
-    print("[PASS] Common tactical tree has 28 nodes with functional capstones")
+    print("[PASS] Common tactical tree has 40 nodes, five branches and tier-scaled point costs")
     print("[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration")
     print("[PASS] Emergency barrier, momentum and party recovery are wired into combat")
     print("[PASS] Defense research expands from 9 to 15 upgrades")

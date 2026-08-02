@@ -19,7 +19,8 @@ public final class VillageClientUi {
                             case "town_hall" -> new VillageTownHallScreen(payload);
                             case "role_progress", "role_skills" -> new VillageRoleProgressScreen(payload);
                             case "quick_chat" -> new VillageQuickChatScreen(payload);
-                            case "status", "wave_intel" -> new VillageStatusScreen(payload);
+                            case "status" -> new VillageStatusScreen(payload);
+                            case "wave_intel", "skill_test", "game_over" -> new VillageFacilityScreen(payload);
                             case "equipment_shop" -> new VillageShopScreen(payload);
                             case "equipment_fusion" -> new VillageFusionScreen(payload);
                             case "result" -> new VillageResultScreen(payload);

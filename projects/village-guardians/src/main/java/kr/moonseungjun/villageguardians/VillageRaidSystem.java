@@ -84,6 +84,7 @@ public final class VillageRaidSystem {
 
         purgeMissingEnemies(server);
         directEnemies(server);
+        if (VillageProgressionSystem.isGameOver()) return;
         waveElapsedTicks++;
 
         if (wave >= maxWaves) {
@@ -212,10 +213,25 @@ public final class VillageRaidSystem {
         VillageUiService.openGameOverForAll(server);
     }
 
+    public static int previewMaxWaves(int day) {
+        return Math.min(8, 3 + Math.max(0, day - 1) / 2);
+    }
+
+    public static int previewWaveCount(int day, int previewWave, int players, VillageWaveTrait trait) {
+        int base = 4 + previewWave * 2 + Math.max(1, players) * 2 + Math.min(30, day * 2)
+                + VillageWarfrontSystem.countBonus(day);
+        return trait.adjustedCount(base);
+    }
+
+    public static int previewBossCount(int day, int previewWave, int maximumWaves, int count) {
+        return Math.min(Math.max(0, count),
+                VillageWarfrontSystem.bonusBossCount(day, previewWave, maximumWaves));
+    }
+
     private static void scheduleRaid(MinecraftServer server) {
         if (isRaidLocked() || VillageProgressionSystem.isGameOver()) return;
         int day = VillageCouncilState.currentDay();
-        maxWaves = Math.min(8, 3 + Math.max(0, day - 1) / 2);
+        maxWaves = previewMaxWaves(day);
         countdownTicks = FIRST_WAVE_COUNTDOWN_TICKS;
         wave = 0;
         betweenWaveTicks = 0;
@@ -232,12 +248,10 @@ public final class VillageRaidSystem {
     private static void spawnWave(MinecraftServer server) {
         ServerLevel level = server.overworld();
         BlockPos origin = VillageWorldSystem.northSpawnOrigin();
-        int players = Math.max(1, server.getPlayerList().getPlayerCount());
+        int players = VillageProgressionSystem.plannedRaidPlayerCount(server);
         int day = VillageCouncilState.currentDay();
         currentTrait = VillageWaveTrait.select(day, wave);
-        int baseRequested = 4 + wave * 2 + players * 2 + Math.min(30, day * 2)
-                + VillageWarfrontSystem.countBonus(day);
-        int requested = currentTrait.adjustedCount(baseRequested);
+        int requested = previewWaveCount(day, wave, players, currentTrait);
         int capacity = Math.max(0, MAX_ACTIVE_ENEMIES - ACTIVE_ENEMIES.size());
         int count = Math.min(requested, capacity);
         int bossCount = Math.min(count, VillageWarfrontSystem.bonusBossCount(day, wave, maxWaves));
@@ -372,6 +386,8 @@ public final class VillageRaidSystem {
         double chosenDistance = PLAYER_PRIORITY_RANGE * PLAYER_PRIORITY_RANGE;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()) continue;
+            if (VillageLocationRules.isEnemyIgnoredElevation(player)
+                    || Math.abs(player.getY() - mob.getY()) > 3.5) continue;
             double distance = player.distanceToSqr(mob);
             if (distance <= chosenDistance) {
                 chosenDistance = distance;
@@ -435,7 +451,7 @@ public final class VillageRaidSystem {
         while (iterator.hasNext()) {
             UUID uuid = iterator.next();
             Entity entity = server.overworld().getEntity(uuid);
-            if (entity == null || !entity.isAlive()) {
+            if (entity != null && !entity.isAlive()) {
                 releaseEnemy(server, uuid, entity);
                 iterator.remove();
             }

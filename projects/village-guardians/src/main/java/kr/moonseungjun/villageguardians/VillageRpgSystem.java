@@ -31,9 +31,12 @@ public final class VillageRpgSystem {
         if (bonus > 0) {
             player.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, 80, Math.max(0, bonus / 4 - 1)));
         }
-        if (VillageCouncilState.currentPhase() == VillageTimePhase.DAY
-                && !VillageRespawnSystem.isDowned(player)) {
-            player.addEffect(new MobEffectInstance(MobEffects.SPEED, 50, 1, false, false, true));
+        if (!VillageRespawnSystem.isDowned(player)) {
+            boolean daytime = VillageCouncilState.currentPhase() == VillageTimePhase.DAY;
+            int speedAmplifier = VillageSkillTreeSystem.passiveSpeedAmplifier(player, daytime);
+            if (speedAmplifier >= 0) {
+                player.addEffect(new MobEffectInstance(MobEffects.SPEED, 50, speedAmplifier, false, false, true));
+            }
         }
         if (VillageCouncilState.roleOf(player.getUUID()).orElse(null) == VillageRole.WARDEN
                 && player.getOffhandItem().is(Items.SHIELD)) {
@@ -51,6 +54,7 @@ public final class VillageRpgSystem {
             value *= VillageProgressionSystem.smithyDamageMultiplier(attacker);
             value *= VillageProgressionSystem.learnedSkillDamageMultiplier(attacker);
             value *= VillageSkillTreeSystem.outgoingDamageMultiplier(attacker);
+            value *= VillageSkillTreeSystem.movingDamageMultiplier(attacker);
             value *= projectile ? VillageSkillTreeSystem.projectileDamageMultiplier(attacker) : 1.0f;
             value *= VillageEquipmentShop.outgoingMultiplier(attacker, projectile);
             if (event.getEntity() instanceof Monster monster) {
@@ -67,6 +71,7 @@ public final class VillageRpgSystem {
             value *= roleIncomingMultiplier(defender);
             value *= VillageSkillTreeSystem.incomingDamageMultiplier(defender);
             value *= VillageSkillTreeSystem.lowHealthIncomingMultiplier(defender);
+            value *= VillageSkillTreeSystem.sprintIncomingMultiplier(defender);
             value *= VillageEquipmentShop.incomingMultiplier(defender);
             if (VillageCouncilState.isInsideVillage(defender)) value *= VillageProgressionSystem.wallDamageMultiplier();
             event.setAmount(event.getAmount() * value);
@@ -77,6 +82,7 @@ public final class VillageRpgSystem {
 
     public static void handleDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof Monster defeated)
+                || VillageSkillTestSystem.isTestDummy(defeated)
                 || !(event.getSource().getEntity() instanceof ServerPlayer killer)) return;
         int base = Math.min(90, 7 + Math.round(defeated.getMaxHealth() * 0.48f));
         int reward = VillageCouncilState.isInsideVillage(killer) ? Math.round(base * 1.18f) : base;
@@ -87,6 +93,10 @@ public final class VillageRpgSystem {
         float heal = VillageSkillTreeSystem.killHealAmount(killer);
         if (heal > 0.0f) killer.heal(heal);
         VillagePersonalCombatSystem.applyKillMomentum(killer);
+        int speedSeconds = VillageSkillTreeSystem.killSpeedSeconds(killer);
+        if (speedSeconds > 0) {
+            killer.addEffect(new MobEffectInstance(MobEffects.SPEED, speedSeconds * 20, 2, false, false, true));
+        }
         VillagePersonalCombatSystem.healNearbyAlliesOnKill(killer);
         MinecraftServer server = killer.level().getServer();
         float supplyChance = VillageSkillTreeSystem.sharedSupplyChance(killer);
@@ -108,6 +118,14 @@ public final class VillageRpgSystem {
         if (equipped.isPresent() && result.contains("사용 완료")) {
             VillageSkillVisualSystem.render(player, equipped.get());
         }
+        return result;
+    }
+
+    public static String testRoleSkill(ServerPlayer player, String skillId) {
+        VillageRoleSkillSystem.ActiveSkill skill =
+                VillageRoleSkillSystem.ActiveSkill.parse(skillId).orElse(null);
+        String result = VillageRoleSkillSystem.useTestSkill(player, skillId);
+        if (skill != null && result.contains("시험 시전 완료")) VillageSkillVisualSystem.render(player, skill);
         return result;
     }
 
