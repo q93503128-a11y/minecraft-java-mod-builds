@@ -36,7 +36,7 @@ final class VillageActionDescriptions {
             return label + "\n습득한 기술을 R 또는 G 슬롯에 장착합니다.";
         }
         if (action.startsWith("gear:")) {
-            return label + "\n수호 주화로 성장 장비를 구매합니다. 요구 레벨과 방어 일수를 충족해야 합니다.";
+            return label + "\n수호 주화로 장비를 구매합니다. 강한 상품은 방어 일수에 따라 입고됩니다.";
         }
         if (action.startsWith("funding:")) {
             return label + "\n개인 수호 주화를 공동 보급품으로 전환해 시설 수리와 강화에 사용합니다.";
@@ -48,8 +48,8 @@ final class VillageActionDescriptions {
             return label + "\n현재 방어탑 전문 분기의 위력·범위·특수 효과를 한 단계 강화합니다.";
         }
         return switch (action) {
-            case "open_status" -> "레벨·직업·재화·현재 장착 기술만 확인하는 상태 화면을 엽니다.";
-            case "open_caller_menu", "open_manual" -> "호출기의 상태·통신·귀환 메뉴로 돌아갑니다.";
+            case "open_status" -> "레벨·직업·재화·현재 장착 기술을 한 화면에서 확인합니다.";
+            case "open_caller_menu", "open_manual" -> "인벤토리에서 여는 수호단 메뉴로 돌아갑니다.";
             case "open_skill_tree" -> "기술 연구소의 공용 전술 발전 화면을 엽니다.";
             case "open_role_progress_current" -> "현재 직업의 세 갈래 성장과 두 기술 슬롯을 관리합니다.";
             case "open_quick_chat" -> "접속 중인 수호단에게 보낼 빠른 신호를 엽니다.";
@@ -61,13 +61,14 @@ final class VillageActionDescriptions {
             case "buy_arrows" -> label + "\n수호 주화로 화살 묶음을 구매합니다.";
             case "buy_food" -> label + "\n수호 주화로 전투 식량을 구매합니다.";
             case "sell_loot" -> "판매 가능한 몬스터 전리품을 수호 주화로 일괄 교환합니다.";
-            case "open_equipment_shop" -> "레벨과 방어 일수에 따라 해금되는 성장 장비 상점을 엽니다.";
-            case "forge_upgrade" -> label + "\n수호 주화로 개인 장비 공격 보너스를 강화합니다.";
+            case "open_equipment_shop" -> "무기·방어구·기타 카테고리 상점을 엽니다.";
+            case "forge_upgrade", "smithy_forge_upgrade" -> label + "\n수호 주화로 개인 장비의 근접·원거리 피해 보정을 강화합니다.";
+            case "forge_combine" -> label + "\n같은 종류·같은 등급 장비 두 개를 재화 없이 상위 등급 하나로 합성합니다.";
             case "skill_learn" -> label + "\n수호 주화로 연구 단계를 높여 기술 피해와 재사용 효율을 강화합니다.";
             case "train" -> label + "\n병영 훈련으로 경험치를 획득합니다.";
             case "hire_mercenary" -> label + "\n수호 주화로 영구 용병을 고용합니다. 사망 전까지 저장과 재접속 후에도 유지됩니다.";
             case "tower_status" -> "활성화된 방어탑 종류와 현재 용병 수·정원을 확인합니다.";
-            case "wall_status_local" -> "현재 성벽 내구도를 확인합니다. 같은 단말기의 시설 수리·강화 기능으로 관리할 수 있습니다.";
+            case "wall_status_local" -> "현재 성벽 내구도를 확인합니다. 시설 수리·강화는 회관에서 진행합니다.";
             case "use_infirmary" -> "의무소 단계에 따라 즉시 체력을 회복합니다.";
             case "chat_ready" -> "모든 접속 플레이어에게 준비 완료 신호를 보냅니다.";
             case "chat_gate" -> "모든 접속 플레이어에게 북문 집결 신호를 보냅니다.";
@@ -99,6 +100,8 @@ final class VillageActionDescriptions {
                 || action.equals("buy_food")
                 || action.equals("sell_loot")
                 || action.equals("forge_upgrade")
+                || action.equals("smithy_forge_upgrade")
+                || action.equals("forge_combine")
                 || action.equals("skill_learn")
                 || action.equals("train")
                 || action.equals("hire_mercenary")
@@ -120,6 +123,8 @@ final class VillageActionDescriptions {
         if (action.startsWith("gear:")) return "장비 구매";
         if (action.startsWith("manage:")) return "수리·강화";
         if (action.startsWith("building:")) return "이용";
+        if (action.equals("smithy_forge_upgrade") || action.equals("forge_upgrade")) return "장비 강화";
+        if (action.equals("forge_combine")) return "장비 합성";
         if (action.startsWith("open_")) return "열기";
         if (action.startsWith("buy_")) return "구매";
         if (action.equals("sell_loot")) return "판매";
