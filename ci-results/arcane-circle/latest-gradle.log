@@ -1,4 +1,1 @@
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v0121_alpha2_signature_geometry.py", line 36, in <module>
-    raise RuntimeError(f"renderer payload digest mismatch: {digest}")
-RuntimeError: renderer payload digest mismatch: d0ae2e22aae56be60b02c78b9f7ad66b5c0d3fa2e1f786b8b34cd46921e1b3c9
+Arcane Circle v0.12.1-alpha.2 signature geometry installed
