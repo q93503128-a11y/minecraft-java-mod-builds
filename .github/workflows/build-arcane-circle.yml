@@ -13,14 +13,14 @@ permissions:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.10.0-alpha.1
-  EXPECTED_JAR: arcanecircle-0.10.0-alpha.1.jar
+  MOD_VERSION: 0.11.0-alpha.1
+  EXPECTED_JAR: arcanecircle-0.11.0-alpha.1.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 / NeoForge 26.2 dense UI and single-pass casting
+    name: Java 25 / NeoForge 26.2 vector sigils and release casting
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -42,19 +42,19 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Apply v0.10 overhaul
+      - name: Apply v0.11 overhaul
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -o pipefail
-          python3 tools/apply_v10_overhaul.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/apply_v11_overhaul.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
           git diff --check
 
-      - name: Audit magic world and v0.10 contracts
+      - name: Audit magic world and v0.11 contracts
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           python3 tools/test_magic_contract.py
-          python3 tools/test_v10_overhaul.py
+          python3 tools/test_v11_overhaul.py
 
       - name: Clean NeoForge build
         working-directory: ${{ env.PROJECT_DIR }}
@@ -76,7 +76,7 @@ jobs:
       - name: Upload verified JAR
         uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.10.0-alpha.1
+          name: arcanecircle-0.11.0-alpha.1
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
@@ -91,9 +91,9 @@ jobs:
           grep -qxF '.gradle/' "$PROJECT_DIR/.gitignore" || printf '%s\n' '.gradle/' >> "$PROJECT_DIR/.gitignore"
           grep -qxF 'build/' "$PROJECT_DIR/.gitignore" || printf '%s\n' 'build/' >> "$PROJECT_DIR/.gitignore"
 
-          rm -rf /tmp/arcane-v10-source
-          mkdir -p /tmp/arcane-v10-source
-          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-v10-source/
+          rm -rf /tmp/arcane-v11-source
+          mkdir -p /tmp/arcane-v11-source
+          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-v11-source/
 
           published=0
           for attempt in 1 2 3 4 5 6; do
@@ -101,7 +101,7 @@ jobs:
             git reset --hard origin/main
             rm -rf "$PROJECT_DIR"
             mkdir -p "$PROJECT_DIR"
-            rsync -a /tmp/arcane-v10-source/ "$PROJECT_DIR/"
+            rsync -a /tmp/arcane-v11-source/ "$PROJECT_DIR/"
             rm -rf "$PROJECT_DIR/build" "$PROJECT_DIR/.gradle"
             mkdir -p "$PUBLISHED_DIR"
             rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
@@ -109,7 +109,7 @@ jobs:
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
             git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.10 dense UI and single-pass casting'
+            git commit -m 'Publish Arcane Circle v0.11 vector sigils and release casting'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
@@ -149,7 +149,7 @@ jobs:
             cp -a /tmp/arcane-ci-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then recorded=1; break; fi
-            git commit -m "Record Arcane Circle v0.10 CI result for ${GITHUB_SHA::7}"
+            git commit -m "Record Arcane Circle v0.11 CI result for ${GITHUB_SHA::7}"
             if git push origin HEAD:main; then recorded=1; break; fi
             sleep $((attempt * 2))
           done
