@@ -4,18 +4,15 @@
     "type": "minecraft:noise",
     "biome_source": {
       "type": "livingkingdoms:authored_biomes",
-      "ocean": "minecraft:ocean",
-      "beach": "minecraft:beach",
-      "river": "minecraft:river",
-      "plains": "minecraft:plains",
-      "forest": "minecraft:forest",
-      "silvana": "minecraft:dark_forest",
-      "kardum": "minecraft:stony_peaks",
-      "dragonlands": "minecraft:frozen_peaks",
-      "steppe": "minecraft:badlands",
-      "sahar": "minecraft:desert",
-      "ruins": "minecraft:windswept_gravelly_hills",
-      "archipelago": "minecraft:sparse_jungle"
+      "sea": "minecraft:ocean",
+      "coast": "minecraft:beach",
+      "silver_river": "minecraft:river",
+      "central_lowlands": "minecraft:meadow",
+      "northern_forest": "minecraft:forest",
+      "western_hills": "minecraft:windswept_hills",
+      "eastern_marsh": "minecraft:swamp",
+      "southern_farmland": "minecraft:flower_forest",
+      "highlands": "minecraft:stony_peaks"
     },
     "settings": "livingkingdoms:living_continent"
   }
