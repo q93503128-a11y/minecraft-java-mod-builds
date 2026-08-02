@@ -6,9 +6,6 @@ ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/arcanecircle"
 RES = ROOT / "src/main/resources"
 
-# Normalize the generated world code against the exact Minecraft 26.2 mappings
-# before inspecting or compiling it. The compatibility rewrite is idempotent per
-# clean migration run and fails loudly if an expected generated anchor changes.
 subprocess.run([sys.executable, str(ROOT / "tools/apply_v08_26_2_compat.py")], check=True)
 
 
@@ -41,9 +38,9 @@ build = (ROOT / "build.gradle").read_text(encoding="utf-8")
 properties = (ROOT / "gradle.properties").read_text(encoding="utf-8")
 workflow = (ROOT.parents[1] / ".github/workflows/build-arcane-circle.yml").read_text(encoding="utf-8")
 
-need(properties, ["mod_version=0.8.0-alpha.1"], "version")
-need(workflow, ["0.8.0-alpha.1", "apply_v08_magic_world.py", "Ninefold Magic World"], "workflow")
-need(main, ['VERSION = "0.8.0-alpha.1"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
+need(properties, ["mod_version=0.9.0-alpha.1"], "version")
+need(workflow, ["0.9.0-alpha.1", "apply_v09_usability.py", "staged casting"], "workflow")
+need(main, ['VERSION = "0.9.0-alpha.1"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
 need(catalog, [
     "IMPLEMENTED_MAX_CIRCLE = 9", "WORLD_MAX_CIRCLE = 9", "meteor_swarm",
     "power_word_kill", "prismatic_wall", "shapechange", "time_stop", "wish", "gate",
@@ -59,16 +56,17 @@ need(lore, [
     "SEAL", "CLOCK", "SPIRAL", "STORM", "CROWN"
 ], "licensed lore and sigil grammar")
 need(sigils, [
-    "renderCharge", "renderRelease", "rangeRatio", "signature", "polygonRotated",
-    "spell.id().hashCode()", "case LANCE", "case CROWN"
-], "per-spell sigil rendering")
+    "renderChargeStep", "renderReadyPulse", "renderRelease", "CHARGE_STAGES",
+    "radialCompartments", "centralSeal", "runeTicks", "spell.id().hashCode()",
+    "case LANCE", "case CROWN"
+], "staged per-spell sigil rendering")
 need(high, [
     "disintegrate", "forcecage", "antimagic_field", "earthquake", "meteor_swarm",
     "power_word_kill", "prismatic_wall", "time_stop", "wish", "gate"
 ], "high-circle effects")
 need(casting, [
-    "SpellSigilService.renderCharge", "SpellSigilService.renderRelease",
-    "HighCircleSpellEffects.execute", "marksEarned"
+    "SpellSigilService.renderChargeStep", "SpellSigilService.renderReadyPulse",
+    "SpellSigilService.renderRelease", "requiredCastTicks", "HighCircleSpellEffects.execute", "marksEarned"
 ], "casting integration")
 need(data, [
     "SpellCatalog.IMPLEMENTED_MAX_CIRCLE", "facultyMana", "facultyPower",
@@ -81,20 +79,25 @@ need(offers, ["SPELLBOOK", "STAFF", "forCircle"], "academy offers")
 need(academy, ["61x61", "central rotunda", "Four faculty halls", "return origin"], "academy generation")
 need(world, [
     "ArcaneAcademyBuilder.build(level, player.blockPosition())", "setFoodLevel(20)",
-    "GameType.ADVENTURE", "teleportToAcademy", "level.getGameTime()"
-], "Minecraft 26.2 magic-world replacement")
+    "GameType.SURVIVAL", "teleportToAcademy", "level.getGameTime()"
+], "Minecraft 26.2 builder magic-world shell")
+if "GameType.ADVENTURE" in world:
+    raise SystemExit("forced adventure mode remains")
 for obsolete in ("GameRules", "getSharedSpawnPos", "setDefaultSpawnPos", "setExhaustion", "getDayTime"):
     if obsolete in world or obsolete in academy:
         raise SystemExit(f"obsolete pre-26.2 world API remains: {obsolete}")
 need(network, [
     "PurchaseAcademyItemPayload.TYPE", "ChooseTraditionPayload.TYPE", '"academy"',
-    '"marks="', '"tradition="'
-], "academy network")
+    '"marks="', '"tradition="', '"charge_required="'
+], "academy and cast-time network")
 need(screen, [
-    'new Tab("academy", "마법학원")', "IMPLEMENTED_MAX_CIRCLE", "traditionCard",
-    "academyOffer", "아르카나"
-], "academy UI")
-need(hud, ["아르카나", "marks"], "Arcana HUD")
+    'new Tab("academy", "학원")', "atlasCircle == 0", "circleCard(circle)",
+    "academyCircle == 0", "academyOffer", "아르카나"
+], "fixed hierarchical academy UI")
+for movable in ("dragging", "savedOffsetX", "mouseDragged", "상단을 드래그"):
+    if movable in screen:
+        raise SystemExit(f"movable full-screen UI remains: {movable}")
+need(hud, ["아르카나", "marks", "fitName", "chargingFraction"], "Arcana HUD")
 need(items, ["ARCHMAGE_PROFILE", "spellbooks"], "magic equipment")
 
 if "villager_trade" in build or "crafting_shaped" in build:
@@ -107,8 +110,8 @@ if len(books) != 85 or by_circle[1] != 5 or any(by_circle[circle] != 10 for circ
     raise SystemExit(f"spellbook distribution mismatch: total={len(books)}, circles={by_circle}")
 
 index = json.loads((RES / "data/arcanecircle/spell_catalog/index.json").read_text(encoding="utf-8"))
-if index.get("version") != "0.8.0-alpha.1" or index.get("direct_spells") != 90:
-    raise SystemExit("v0.8 spell catalogue index mismatch")
+if index.get("version") != "0.9.0-alpha.1" or index.get("direct_spells") != 90:
+    raise SystemExit("v0.9 spell catalogue index mismatch")
 if index.get("economy") != "single persistent Arcana wallet" or index.get("crafting_progression") is not False:
     raise SystemExit("magic-world economy index mismatch")
 if index.get("implemented_circles") != list(range(1, 10)):
@@ -127,4 +130,4 @@ for staff, encoded in textures.items():
 if len(textures) != 9 or len(hashes) != 9:
     raise SystemExit("staff textures are missing or duplicated")
 
-print("Arcane Circle v0.8 Ninefold Magic World contract: PASS")
+print("Arcane Circle v0.9 fixed grimoire and staged casting contract: PASS")
