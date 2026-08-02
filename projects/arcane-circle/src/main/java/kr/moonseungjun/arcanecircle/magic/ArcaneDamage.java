@@ -12,7 +12,7 @@ public final class ArcaneDamage {
     public static boolean hurt(ServerLevel level, ServerPlayer caster, LivingEntity target, float amount) {
         if (target == null || !target.isAlive() || amount <= 0.0F) return false;
         boolean damaged = target.hurtServer(level, level.damageSources().playerAttack(caster), amount);
-        if (damaged && target instanceof Mob mob && mob != caster) {
+        if (damaged && target instanceof Mob mob && target != caster) {
             mob.setTarget(caster);
         }
         return damaged;
@@ -21,7 +21,7 @@ public final class ArcaneDamage {
     public static boolean hurt(ServerLevel level, LivingEntity caster, LivingEntity target, float amount) {
         if (target == null || !target.isAlive() || amount <= 0.0F) return false;
         boolean damaged = target.hurtServer(level, level.damageSources().mobAttack(caster), amount);
-        if (damaged && target instanceof Mob mob && mob != caster) {
+        if (damaged && target instanceof Mob mob && target != caster) {
             mob.setTarget(caster);
         }
         return damaged;
