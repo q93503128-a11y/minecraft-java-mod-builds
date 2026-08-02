@@ -23,6 +23,7 @@ public final class VillageBuildingInteractionRouter {
         if (building == null || building == VillageProgressionSystem.Building.TOWN_HALL) return false;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
+        VillageFacadeMigrationSystem.ensure(level);
         VillageUiController.openBuilding(player, building);
         return true;
     }
