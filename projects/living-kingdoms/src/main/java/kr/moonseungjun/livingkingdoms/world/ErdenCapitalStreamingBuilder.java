@@ -71,6 +71,21 @@ public final class ErdenCapitalStreamingBuilder {
         active = null;
     }
 
+    public static void requestChunk(ServerLevel level, int chunkX, int chunkZ) {
+        ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
+        if (!intersectsCapital(chunk)) {
+            throw new IllegalArgumentException("Requested chunk is outside the Erden capital: "
+                    + chunkX + "," + chunkZ);
+        }
+        level.getChunk(chunkX, chunkZ);
+        enqueue(level, pack(chunkX, chunkZ));
+    }
+
+    public static boolean isChunkBuilt(ServerLevel level, int chunkX, int chunkZ) {
+        return level.getDataStorage().computeIfAbsent(ErdenCapitalChunkSavedData.TYPE)
+                .isBuilt(pack(chunkX, chunkZ), CAPITAL_REVISION);
+    }
+
     public static int builtChunkCount(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(ErdenCapitalChunkSavedData.TYPE)
                 .builtCount(CAPITAL_REVISION);
