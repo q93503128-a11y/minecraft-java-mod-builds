@@ -1,12 +1,14 @@
 package kr.moonseungjun.arcanecircle;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.network.ArcaneNetwork;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
 import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
+import kr.moonseungjun.arcanecircle.world.ArcaneMageService;
 import kr.moonseungjun.arcanecircle.world.MagicWorldService;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -23,7 +25,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.3";
+    public static final String VERSION = "0.12.1-alpha.4";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -35,6 +37,7 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(ArcaneMageService::onInteract);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("Arcane Circle {} loaded with {} classic spells, {} fusion formulae, {} spellbooks and {} staves",
                 VERSION, SpellCatalog.spells().size(), SpellCatalog.fusions().size(),
@@ -83,6 +86,7 @@ public final class ArcaneCircle {
 
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         SpellCastingService.clearSession(event.getEntity().getUUID());
+        ArcaneNoticeService.clear(event.getEntity().getUUID());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -102,6 +106,7 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         SpellCastingService.tickCharge(player);
         MagicWorldService.tick(player);
+        if (player.tickCount % 20 == 0) ArcaneMageService.tickNear(player);
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         if (player.tickCount % 10 == 0) data.regenerate(player);
         if (player.tickCount % 5 == 0) ArcaneNetwork.sync(player);
@@ -109,5 +114,6 @@ public final class ArcaneCircle {
 
     private void onServerStopped(ServerStoppedEvent event) {
         SpellCastingService.clearAllSessions();
+        ArcaneNoticeService.clearAll();
     }
 }

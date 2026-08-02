@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.magic;
 
+import kr.moonseungjun.arcanecircle.world.ArcaneQuestData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleOptions;
@@ -87,7 +88,7 @@ public final class SpellCastingService {
         ChargeState charge = new ChargeState(slot, cast.spell().id(), serverClock(player), required);
         CHARGES.put(player.getUUID(), charge);
         WorldMagicService.charge(player, cast.spell(), false, List.of(), cast.range(), 0.0);
-        player.sendOverlayMessage(Component.literal("§5[회로 전개] §f" + cast.spell().name()
+        ArcaneNoticeService.push(player, Component.literal("§5[회로 전개] §f" + cast.spell().name()
                 + " §7· " + String.format("%.1f", required / 20.0) + "초"));
         ServerLevel level = (ServerLevel) player.level();
         level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
@@ -101,12 +102,12 @@ public final class SpellCastingService {
         CHARGES.remove(player.getUUID());
         WorldMagicService.stop(player);
         if (elapsed > CHARGE_TIMEOUT_TICKS) {
-            player.sendOverlayMessage(Component.literal("§7[시전 취소] 유지 한계를 넘어 마법진이 해제되었습니다."));
+            ArcaneNoticeService.push(player, Component.literal("§7[시전 취소] 유지 한계를 넘어 마법진이 해제되었습니다."));
             return;
         }
         if (elapsed < charge.requiredTicks) {
             int percent = (int) Math.round(100.0 * elapsed / Math.max(1, charge.requiredTicks));
-            player.sendOverlayMessage(Component.literal("§7[시전 취소] 회로 전개 " + percent + "% · 완성 전에 키를 놓았습니다."));
+            ArcaneNoticeService.push(player, Component.literal("§7[시전 취소] 회로 전개 " + percent + "% · 완성 전에 키를 놓았습니다."));
             return;
         }
         MagicPlayerData data = data(player);
@@ -155,7 +156,7 @@ public final class SpellCastingService {
         ChargeState removed = CHARGES.remove(player.getUUID());
         if (removed != null) WorldMagicService.stop(player);
         if (notify && removed != null) {
-            player.sendOverlayMessage(Component.literal("§7[시전 취소] 전개한 마법진을 해제했습니다."));
+            ArcaneNoticeService.push(player, Component.literal("§7[시전 취소] 전개한 마법진을 해제했습니다."));
         }
     }
 
@@ -202,6 +203,11 @@ public final class SpellCastingService {
             fail(player, "현재 사용할 수 없는 주문 슬롯입니다.");
             return;
         }
+        String cooldownBlock = fusionCooldownBlock(player, List.of(spellId));
+        if (!cooldownBlock.isBlank()) {
+            fail(player, cooldownBlock);
+            return;
+        }
 
         long now = serverClock(player);
         FusionQueueState queue = FUSION_QUEUES.computeIfAbsent(player.getUUID(), ignored -> new FusionQueueState());
@@ -235,7 +241,7 @@ public final class SpellCastingService {
                 WorldMagicService.charge(player, result, true, queue.ingredients, fusion.range(), 0.0);
             }
             String extension = SpellCatalog.canExtend(queue.ingredients) ? " §8· 세 번째 회로 추가 가능" : "";
-            player.sendOverlayMessage(Component.literal("§5[융합 전개] §d" + names + " §f→ §e"
+            ArcaneNoticeService.push(player, Component.literal("§5[융합 전개] §d" + names + " §f→ §e"
                     + result.name() + " §7· " + String.format("%.1f", queue.requiredTicks / 20.0)
                     + "초 유지 후 X를 놓아 시전" + extension));
         } else {
@@ -243,7 +249,7 @@ public final class SpellCastingService {
             queue.chargeStartedAt = -1L;
             queue.requiredTicks = 0;
             WorldMagicService.stop(player);
-            player.sendOverlayMessage(Component.literal("§5[융합 대기] §d" + names + " §7· 후보 "
+            ArcaneNoticeService.push(player, Component.literal("§5[융합 대기] §d" + names + " §7· 후보 "
                     + candidates.size() + "개 · 주문을 하나 더 선택"));
         }
     }
@@ -254,18 +260,23 @@ public final class SpellCastingService {
         if (queue == null || queue.ingredients.isEmpty()) return;
         long now = serverClock(player);
         if (now - queue.updatedAt > QUEUE_TIMEOUT_TICKS) {
-            player.sendOverlayMessage(Component.literal("§7[융합 취소] 회로 유지 시간이 지나 해제되었습니다."));
+            ArcaneNoticeService.push(player, Component.literal("§7[융합 취소] 회로 유지 시간이 지나 해제되었습니다."));
             return;
         }
         List<String> ingredients = List.copyOf(queue.ingredients);
+        String cooldownBlock = fusionCooldownBlock(player, ingredients);
+        if (!cooldownBlock.isBlank()) {
+            fail(player, cooldownBlock);
+            return;
+        }
         if (ingredients.size() < 2 || queue.resultId.isBlank() || queue.chargeStartedAt < 0L) {
-            player.sendOverlayMessage(Component.literal("§7[융합 취소] 완성된 융합식과 전개 시간이 필요합니다."));
+            ArcaneNoticeService.push(player, Component.literal("§7[융합 취소] 완성된 융합식과 전개 시간이 필요합니다."));
             return;
         }
         long elapsed = now - queue.chargeStartedAt;
         if (elapsed < queue.requiredTicks) {
             int percent = (int) Math.round(100.0 * elapsed / Math.max(1, queue.requiredTicks));
-            player.sendOverlayMessage(Component.literal("§7[융합 취소] 복합 회로 전개 " + percent
+            ArcaneNoticeService.push(player, Component.literal("§7[융합 취소] 복합 회로 전개 " + percent
                     + "% · 완성 전에 X를 놓았습니다."));
             return;
         }
@@ -286,7 +297,7 @@ public final class SpellCastingService {
         FusionQueueState removed = FUSION_QUEUES.remove(player.getUUID());
         if (removed != null) WorldMagicService.stop(player);
         if (notify && removed != null && !removed.ingredients.isEmpty()) {
-            player.sendOverlayMessage(Component.literal("§7[융합 취소] 대기 중인 회로를 해제했습니다."));
+            ArcaneNoticeService.push(player, Component.literal("§7[융합 취소] 대기 중인 회로를 해제했습니다."));
         }
     }
 
@@ -333,6 +344,28 @@ public final class SpellCastingService {
         boolean registered = state.known().contains(result.id());
         int unfamiliarPenalty = registered ? 7 : 18 + ingredientCount * 5 + result.circle() * 2;
         return Math.max(direct + 5, direct + unfamiliarPenalty - masteryTier * 2);
+    }
+
+    private static String fusionCooldownBlock(ServerPlayer player, List<String> ingredients) {
+        MagicPlayerData magic = data(player);
+        for (String ingredient : ingredients) {
+            MagicPlayerData.CooldownStatus status = magic.cooldownStatus(player, ingredient);
+            if (!status.active()) continue;
+            String name = SpellCatalog.spell(ingredient).map(SpellDefinition::name).orElse(ingredient);
+            return name + " 재사용 대기시간이 " + String.format("%.1f", status.remainingTicks() / 20.0)
+                    + "초 남아 융합할 수 없습니다.";
+        }
+        return "";
+    }
+
+    private static void startFusionIngredientCooldowns(ServerPlayer player, MagicPlayerData magic,
+                                                       List<String> ingredients) {
+        for (String ingredient : ingredients) {
+            MagicPlayerData.CastPreparation preview = magic.preview(player, ingredient);
+            int total = preview.accepted() ? preview.cooldownTicks()
+                    : SpellCatalog.spell(ingredient).map(SpellDefinition::cooldownTicks).orElse(20);
+            magic.startCooldown(player, ingredient, total);
+        }
     }
 
     private static void tickFusion(ServerPlayer player) {
@@ -399,16 +432,18 @@ public final class SpellCastingService {
                 .awardCombat(player, impact, spell.circle());
 
         data.startCooldown(player, spell.id(), cast.cooldownTicks());
+        if (cast.fusion()) startFusionIngredientCooldowns(player, data, cast.ingredients());
         MagicPlayerData.CastProgress progress = data.completeCast(player, cast, impact);
+        ArcaneQuestData.get(((ServerLevel) player.level()).getServer()).recordCast(player, impact, spell.circle());
         MagicPlayerData.MageState state = data.state(player);
         MagicPlayerData.EffectiveStats stats = data.effectiveStats(player);
 
         if (cast.fusion() && progress.mastery().changed()) {
             String chain = displayChain(cast.ingredients(), " §7× §b");
-            player.sendOverlayMessage(Component.literal("§d" + chain + " §f→ §e" + spell.name()
+            ArcaneNoticeService.push(player, Component.literal("§d" + chain + " §f→ §e" + spell.name()
                     + " §7· 숙련 " + progress.mastery().casts() + "/" + progress.mastery().required()));
         } else {
-            player.sendOverlayMessage(Component.literal("§b" + spell.name() + " §f시전 · 마력 "
+            ArcaneNoticeService.push(player, Component.literal("§b" + spell.name() + " §f시전 · 마력 "
                     + (int) state.mana() + "/" + stats.maxMana() + " · 쿨 "
                     + String.format("%.1f", cast.cooldownTicks() / 20.0) + "초"));
         }
@@ -493,6 +528,7 @@ public final class SpellCastingService {
     }
 
     private static boolean execute(ServerPlayer player, String id, double range, double power) {
+        if (FusionSpellEffects.supports(id)) return FusionSpellEffects.execute(player, id, range, power);
         return switch (id) {
             case "arcane_dart" -> arcaneDart(player, range, power);
             case "ember" -> emberShot(player, range, power);
@@ -1162,7 +1198,7 @@ public final class SpellCastingService {
     private static void burst(ServerLevel level, Vec3 center, ParticleOptions particle, int count, double spread) {}
 
     private static void fail(ServerPlayer player, String message) {
-        player.sendOverlayMessage(Component.literal("§c[마법 실패] §f" + message));
+        ArcaneNoticeService.push(player, Component.literal("§c[마법 실패] §f" + message));
         ((ServerLevel) player.level()).playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_BASS.value(),
                 SoundSource.PLAYERS, 0.35F, 0.7F);
     }

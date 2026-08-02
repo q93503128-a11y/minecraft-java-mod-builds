@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.3",
+  "version": "0.12.1-alpha.4",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -13,7 +13,7 @@
     9
   ],
   "direct_spells": 90,
-  "fusion_spells": 10,
+  "fusion_spells": 19,
   "world_max_circle": 9,
   "economy": "single persistent Arcana wallet",
   "survival_replacement": [
@@ -68,5 +68,25 @@
     "release_primitive_cap": 512,
     "frame_primitive_cap": 1024,
     "charge_progress_steps": 20
-  }
+  },
+  "mage_residents": true,
+  "mage_entity_circles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "mage_currency": "arcana",
+  "commission_currency": "arcana",
+  "arcana_uses": [
+    "faculty",
+    "spellbooks",
+    "staves",
+    "mage_services"
+  ]
 }

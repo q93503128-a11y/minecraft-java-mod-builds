@@ -1,10 +1,12 @@
 package kr.moonseungjun.arcanecircle.network;
 
 import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem.StaffProfile;
+import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
+import kr.moonseungjun.arcanecircle.world.ArcaneQuestData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -41,6 +43,11 @@ public final class ArcaneNetwork {
 
     public static void sync(ServerPlayer player) {
         PacketDistributor.sendToPlayer(player, snapshot(player, "sync"));
+    }
+
+    public static void openPage(ServerPlayer player, String page) {
+        String requested = PAGES.contains(page) && !"sync".equals(page) ? page : "academy";
+        PacketDistributor.sendToPlayer(player, snapshot(player, requested));
     }
 
     private static void handleRequest(RequestGrimoirePayload payload, IPayloadContext context) {
@@ -122,6 +129,7 @@ public final class ArcaneNetwork {
         MagicPlayerData.MageState state = magicData.state(player);
         MagicPlayerData.EffectiveStats stats = magicData.effectiveStats(player);
         StaffProfile staff = stats.staff();
+        ArcaneQuestData.QuestStatus quest = ArcaneQuestData.get(((ServerLevel) player.level()).getServer()).status(player);
         String known = state.known().stream().sorted().collect(Collectors.joining("|"));
         String mastery = SpellCatalog.spells().values().stream()
                 .map(spell -> spell.id() + ":" + state.mastery(spell.id()))
@@ -166,6 +174,15 @@ public final class ArcaneNetwork {
                         .get(((ServerLevel) player.level()).getServer()).tradition(player).name()
                 + ";known=" + known
                 + ";mastery=" + mastery
+                + ";notice_seq=" + ArcaneNoticeService.sequence(player)
+                + ";notice_ttl=" + ArcaneNoticeService.ttl(player)
+                + ";notice=" + ArcaneNoticeService.text(player)
+                + ";quest_id=" + quest.id()
+                + ";quest_target=" + quest.target()
+                + ";quest_progress=" + quest.progress()
+                + ";quest_circle=" + quest.circle()
+                + ";quest_reward=" + quest.reward()
+                + ";quest_desc=" + quest.description()
                 + ";spell_count=" + SpellCatalog.spells().size();
         return new GrimoireSnapshotPayload(page, snapshot);
     }

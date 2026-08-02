@@ -157,16 +157,34 @@ public final class ArcaneClientState {
     }
 
     public static int cooldownRemainingTicks(int slot) {
-        Cooldown cooldown = cooldowns.get(slot(slot));
+        return cooldownRemainingTicks(slot(slot));
+    }
+
+    public static int cooldownRemainingTicks(String spellId) {
+        Cooldown cooldown = cooldowns.get(spellId);
         if (cooldown == null) return 0;
         long elapsed = Math.max(0L, (System.nanoTime() - updatedAtNanos) / 50_000_000L);
         return Math.max(0, cooldown.remainingTicks() - (int) Math.min(Integer.MAX_VALUE, elapsed));
     }
 
     public static double cooldownFraction(int slot) {
-        Cooldown cooldown = cooldowns.get(slot(slot));
+        return cooldownFraction(slot(slot));
+    }
+
+    public static double cooldownFraction(String spellId) {
+        Cooldown cooldown = cooldowns.get(spellId);
         if (cooldown == null || cooldown.totalTicks() <= 0) return 0.0;
-        return Math.min(1.0, cooldownRemainingTicks(slot) / (double) cooldown.totalTicks());
+        return Math.min(1.0, cooldownRemainingTicks(spellId) / (double) cooldown.totalTicks());
+    }
+
+    public static boolean noticeVisible() {
+        if (text("notice", "").isBlank()) return false;
+        long elapsed = Math.max(0L, (System.nanoTime() - updatedAtNanos) / 50_000_000L);
+        return integer("notice_ttl", 0) > elapsed;
+    }
+
+    public static String noticeText() {
+        return noticeVisible() ? text("notice", "") : "";
     }
 
     public static double regenPerSecond() {

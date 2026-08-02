@@ -263,6 +263,24 @@ public final class SpellCatalog {
                 "거대한 비전 손으로 대상을 붙잡고 밀쳐낸다.", "shield", "telekinesis");
         addFusion("teleportation_circle", "아케인 게이트", 5, 184, 720, 34.0, 1.0, SPACE, GROUND_TARGET,
                 "안정된 원형 전이 회로로 먼 거리를 건넌다.", "blink", "dimension_door", "misty_step");
+        addFusion("steam_burst", "증기 폭발", 2, 34, 135, 10.0, 9.0, FIRE, FRONT,
+                "화염과 냉기를 충돌시켜 뜨거운 증기 충격파를 터뜨린다.", "fire_bolt", "ray_of_frost");
+        addFusion("frost_step", "빙결 보행", 2, 36, 170, 13.0, 6.0, FROST, GROUND_TARGET,
+                "공간 도약 경로를 얼려 이동과 동시에 주변 적을 둔화한다.", "misty_step", "ray_of_frost");
+        addFusion("thunder_cage", "뇌전 감옥", 4, 104, 390, 19.0, 19.0, ARCANE, TARGET,
+                "속박 회로 안에 번개를 가두어 대상을 마비시킨다.", "hold_person", "lightning_bolt");
+        addFusion("solar_guard", "태양 수호진", 6, 320, 940, 0.0, 44.0, LIFE, BODY,
+                "화염 기둥과 에너지 보호를 겹쳐 태양빛 방호장을 만든다.", "flame_strike", "protection_from_energy");
+        addFusion("void_lance", "공허 창", 7, 610, 1520, 42.0, 92.0, SPACE, FRONT,
+                "차원 틈을 따라 분해 광선을 관통시킨다.", "disintegrate", "dimension_door");
+        addFusion("winter_domain", "영구빙결 영역", 7, 640, 1680, 26.0, 86.0, FROST, GROUND_SELF,
+                "극저온 원뿔과 냉동 구체를 합쳐 전장을 얼린다.", "cone_of_cold", "freezing_sphere");
+        addFusion("astral_prison", "성간 감옥", 8, 980, 2500, 46.0, 112.0, WARD, TARGET,
+                "역장 감옥을 접힌 공간에 고정해 탈출을 봉쇄한다.", "forcecage", "dimension_door");
+        addFusion("phoenix_requiem", "불사조 진혼곡", 8, 1060, 2860, 24.0, 128.0, FIRE, GROUND_SELF,
+                "화염 폭풍과 광역 치유를 결합해 아군을 살리고 적을 태운다.", "fire_storm", "mass_cure_wounds", "delayed_blast_fireball");
+        addFusion("world_sunder", "세계 균열", 9, 2450, 6100, 72.0, 250.0, SPACE, GROUND_TARGET,
+                "지진·분해·월드 게이트 회로로 전장을 찢어버린다.", "earthquake", "disintegrate", "gate");
     }
 
     private static void add(String id, String name, int circle, int mana, int cooldown, double range,

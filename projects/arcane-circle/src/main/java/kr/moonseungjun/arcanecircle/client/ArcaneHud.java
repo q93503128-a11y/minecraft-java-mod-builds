@@ -40,6 +40,7 @@ public final class ArcaneHud {
             drawSlot(g, font, startX + slot * (slotSize + gap), y, slotSize, slot);
         }
         drawFusionQueue(g, font, width, y - 15);
+        drawRaisedNotice(g, font, width, y - 42);
     }
 
     private static void drawMana(GuiGraphicsExtractor g, Font font, int startX, int y) {
@@ -83,6 +84,25 @@ public final class ArcaneHud {
             g.fill(x + 1, y + size - 3, x + 1 + fill, y + size - 1,
                     ArcaneClientState.chargingReady() ? 0xFFFFD36B : color);
         }
+    }
+
+    private static void drawRaisedNotice(GuiGraphicsExtractor g, Font font, int width, int y) {
+        if (!ArcaneClientState.noticeVisible()) return;
+        String raw = ArcaneClientState.noticeText();
+        int split = raw.length() > 46 ? raw.lastIndexOf(' ', 46) : -1;
+        if (split < 18 && raw.length() > 46) split = 46;
+        String first = split > 0 ? raw.substring(0, split).trim() : raw;
+        String second = split > 0 ? raw.substring(split).trim() : "";
+        first = compactName(first, 58);
+        second = compactName(second, 58);
+        int textW = Math.max(font.width(first), font.width(second));
+        int boxW = Math.min(width - 16, Math.max(120, textW + 18));
+        int boxH = second.isBlank() ? 17 : 28;
+        int x = (width - boxW) / 2;
+        g.fill(x, y, x + boxW, y + boxH, 0xE6080B16);
+        g.fill(x, y, x + boxW, y + 2, 0xFFB67ADE);
+        g.centeredText(font, Component.literal(first), width / 2, y + 5, 0xFFF4E9FA);
+        if (!second.isBlank()) g.centeredText(font, Component.literal(second), width / 2, y + 16, 0xFFD6C8E3);
     }
 
     private static void drawFusionQueue(GuiGraphicsExtractor g, Font font, int width, int y) {
