@@ -57,6 +57,19 @@ jobs:
           python3 tools/apply_v11_overhaul.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
           python3 - <<'PY'
           from pathlib import Path
+
+          casting = Path('src/main/java/kr/moonseungjun/arcanecircle/magic/SpellCastingService.java')
+          source = casting.read_text(encoding='utf-8')
+          start_token = '    private static void renderCharge(ServerPlayer player, SpellDefinition spell, long elapsed, double range) {'
+          end_token = '    private static void renderAnchoredSigil(ServerLevel level, ServerPlayer player, SpellDefinition spell,'
+          if start_token in source:
+              start = source.index(start_token)
+              end = source.index(end_token, start)
+              source = source[:start] + source[end:]
+          if 'SpellSigilService.renderChargeStep' in source or 'SpellSigilService.renderRelease' in source:
+              raise SystemExit('particle sigil call remains in SpellCastingService')
+          casting.write_text(source, encoding='utf-8')
+
           p = Path('tools/test_magic_contract.py')
           s = p.read_text(encoding='utf-8')
           s = s.replace('PROTOCOL_VERSION = "ninefold-arcana-10"',
