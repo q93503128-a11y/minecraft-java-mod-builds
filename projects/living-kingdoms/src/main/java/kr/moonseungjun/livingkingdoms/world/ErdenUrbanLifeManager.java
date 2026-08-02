@@ -359,7 +359,7 @@ public final class ErdenUrbanLifeManager {
         List<Villager> villagers = level.getEntitiesOfClass(
                 Villager.class, capital,
                 villager -> byName.containsKey(villager.getName().getString()));
-        long dayTime = Math.floorMod(level.getDayTime(), 24_000L);
+        long dayTime = Math.floorMod(level.getGameTime(), 24_000L);
         boolean working = dayTime >= 2_000L && dayTime < 11_000L;
         for (Villager villager : villagers) {
             ErdenUrbanLifeSavedData.Assignment assignment =
