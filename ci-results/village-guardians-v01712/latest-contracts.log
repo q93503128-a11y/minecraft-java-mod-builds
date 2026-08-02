@@ -63,4 +63,9 @@ Village Guardians v0.17.7 contracts passed.
 [PASS] Z/X packets route directly to the real role-skill cast system
 [PASS] Role and skill management use separate physical barrels and screens
 [PASS] Equipping closes the skill screen so in-game Z/X input is no longer drained
-python3: can't open file '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_hud_skills.py': [Errno 2] No such file or directory
+[PASS] Action-bar HUD shows equipped Z/X skills, readiness and a live cooldown bar
+[PASS] Test role and skill managers use a dedicated compact responsive UI
+[PASS] Twenty active skills now own distinct real movement, projectile, field and shield motions
+[PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events
+[PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness
+[PASS] Default shortcut help matches Z/X/B/H/J/K/U registrations
