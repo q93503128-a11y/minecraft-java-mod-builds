@@ -12,9 +12,9 @@ permissions:
 
 env:
   PROJECT_DIR: projects/village-guardians
-  MOD_VERSION: 0.17.0-alpha.1
-  EXPECTED_JAR: villageguardians-0.17.0-alpha.1.jar
-  RELEASE_TAG: village-guardians-v0.17.0-alpha.1
+  MOD_VERSION: 0.17.1-alpha.1
+  EXPECTED_JAR: villageguardians-0.17.1-alpha.1.jar
+  RELEASE_TAG: village-guardians-v0.17.1-alpha.1
   PUBLISHED_DIR: published/village-guardians
   CI_RESULT_DIR: ci-results/village-guardians
 
@@ -70,7 +70,7 @@ jobs:
       - name: Upload verified JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: villageguardians-0.17.0-alpha.1
+          name: villageguardians-0.17.1-alpha.1
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
@@ -86,7 +86,7 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Published JAR already matches this build.'
           else
-            git commit -m 'Publish verified Village Guardians v0.17.0-alpha.1 JAR'
+            git commit -m 'Publish verified Village Guardians v0.17.1-alpha.1 JAR'
             git pull --rebase origin main
             git push
           fi
@@ -99,8 +99,8 @@ jobs:
             gh release upload "$RELEASE_TAG" deliverables/* --clobber
           else
             gh release create "$RELEASE_TAG" deliverables/* \
-              --title 'Village Guardians v0.17.0-alpha.1' \
-              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2 beta. Rebuilds the command interfaces around bright left-navigation and right-detail layouts. The town hall now separates role assignment, repair, and management; all facility repair, upgrades, and tower construction are town-hall-only. The shop opens directly into weapon, armour, and other categories without equipment level gates. Adds inventory and keyboard access to status and growth, strict natural-mob suppression, curated graded raid equipment with free smithy fusion, persistent classed mercenaries, defense research, per-player boss relic choices, next-wave intelligence, compact symmetric facade crests, doorway lintels, and signs beside entrances.'
+              --title 'Village Guardians v0.17.1-alpha.1' \
+              --notes 'Java 25 / Minecraft 26.2 / NeoForge 26.2 beta. Rebuilds the town hall, facility, funding and status interfaces around compact selectors, wide descriptions and bounded action buttons. Legacy formatting is stripped so status text remains dark and readable on the parchment background. Facility management now displays current effects, exact next-stage changes, repair costs and upgrade costs before confirmation. Removes the physical caller item while preserving inventory and shortcut access, restores smithy equipment strengthening alongside free rarity fusion, and repairs the facade migration that carved large holes around entrance crests.'
           fi
 
       - name: Record CI result in repository
