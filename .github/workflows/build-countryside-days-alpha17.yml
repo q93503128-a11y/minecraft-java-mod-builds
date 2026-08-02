@@ -1,0 +1,116 @@
+name: Build Countryside Days Alpha 17
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-countryside-days-alpha17.yml'
+      - 'projects/countryside-days/tools/prepare_alpha17_retry.py'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare alpha.17
+        id: prepare
+        run: python3 projects/countryside-days/tools/prepare_alpha17_retry.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Build
+        id: compile
+        working-directory: projects/countryside-days
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a17-build.log
+      - name: Datagen
+        id: datagen
+        working-directory: projects/countryside-days
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee /tmp/cd-a17-datagen.log
+      - name: GameTests
+        id: gametest
+        timeout-minutes: 25
+        working-directory: projects/countryside-days
+        run: |
+          mkdir -p run/gametestserver
+          cat > run/gametestserver/server.properties <<'PROPERTIES'
+          level-name=gametestworld
+          level-type=minecraft:flat
+          generator-settings={"biome":"countrysidedays:rural_plains","features":true,"lakes":false,"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":8},{"block":"minecraft:grass_block","height":1}],"structure_overrides":[]}
+          generate-structures=true
+          online-mode=false
+          spawn-protection=0
+          view-distance=8
+          simulation-distance=6
+          PROPERTIES
+          set -o pipefail
+          ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee /tmp/cd-a17-gametest.log
+      - name: Verify
+        id: verify
+        working-directory: projects/countryside-days
+        run: |
+          JAR=build/libs/countrysidedays-0.1.0-alpha.17.jar
+          test -s "$JAR"
+          python3 tools/verify_jar.py "$JAR"
+          unzip -t "$JAR"
+          ! unzip -Z1 "$JAR" | grep -q '\.java$'
+          unzip -Z1 "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
+          unzip -Z1 "$JAR" | grep -q 'kr/countrysidedays/CountrysideDays.class'
+          sha256sum "$JAR" | tee /tmp/cd-a17-sha256.txt
+      - name: Upload JAR
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.17-jar
+          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.17.jar
+          if-no-files-found: error
+          retention-days: 14
+      - name: Record result
+        if: always()
+        env:
+          PREPARE: ${{ steps.prepare.outcome }}
+          COMPILE: ${{ steps.compile.outcome }}
+          DATAGEN: ${{ steps.datagen.outcome }}
+          GAMETEST: ${{ steps.gametest.outcome }}
+          VERIFY: ${{ steps.verify.outcome }}
+          UPLOAD: ${{ steps.upload.outcome }}
+        run: |
+          git restore --source=HEAD --staged --worktree projects/countryside-days || true
+          DIR=release-transfer/countryside-days-alpha17-retry-status
+          mkdir -p "$DIR"
+          FILE="$DIR/${GITHUB_RUN_ID}.txt"
+          {
+            echo run=$GITHUB_RUN_ID
+            echo source=$GITHUB_SHA
+            echo prepare=$PREPARE
+            echo compile=$COMPILE
+            echo datagen=$DATAGEN
+            echo gametest=$GAMETEST
+            echo verify=$VERIFY
+            echo upload=$UPLOAD
+            [ ! -f /tmp/cd-a17-sha256.txt ] || { echo '--- jar ---'; cat /tmp/cd-a17-sha256.txt; }
+            [ ! -f /tmp/cd-a17-build.log ] || { echo '--- build tail ---'; tail -n 220 /tmp/cd-a17-build.log; }
+            [ ! -f /tmp/cd-a17-datagen.log ] || { echo '--- datagen tail ---'; tail -n 100 /tmp/cd-a17-datagen.log; }
+            [ ! -f /tmp/cd-a17-gametest.log ] || { echo '--- gametest tail ---'; tail -n 220 /tmp/cd-a17-gametest.log; }
+          } > "$FILE"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$FILE"
+          git commit -m "Record Countryside Days alpha.17 retry ${GITHUB_RUN_ID}"
+          git pull --rebase origin main
+          git push origin HEAD:main
