@@ -1,0 +1,242 @@
+Compiled from "VillageClientKeys.java"
+public final class kr.moonseungjun.villageguardians.VillageClientKeys {
+  private static final net.minecraft.client.KeyMapping$Category CATEGORY;
+
+  private static final net.minecraft.client.KeyMapping ROLE_SKILL_ONE;
+
+  private static final net.minecraft.client.KeyMapping ROLE_SKILL_TWO;
+
+  private static final net.minecraft.client.KeyMapping QUICK_COMMUNICATION;
+
+  private static final net.minecraft.client.KeyMapping STATUS;
+
+  private static final net.minecraft.client.KeyMapping GROWTH;
+
+  private static final net.minecraft.client.KeyMapping ROLE_PROGRESS;
+
+  private static final net.minecraft.client.KeyMapping CALLER;
+
+  private static boolean tickListenerRegistered;
+
+  private static boolean legacySkillBindingsChecked;
+
+  private kr.moonseungjun.villageguardians.VillageClientKeys();
+    Code:
+         0: aload_0
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return
+
+  private static net.minecraft.client.KeyMapping key(java.lang.String, int);
+    Code:
+         0: new           #7                  // class net/minecraft/client/KeyMapping
+         3: dup
+         4: aload_0
+         5: invokedynamic #9,  0              // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+        10: getstatic     #13                 // Field com/mojang/blaze3d/platform/InputConstants$Type.KEYSYM:Lcom/mojang/blaze3d/platform/InputConstants$Type;
+        13: iload_1
+        14: getstatic     #19                 // Field CATEGORY:Lnet/minecraft/client/KeyMapping$Category;
+        17: invokespecial #25                 // Method net/minecraft/client/KeyMapping."<init>":(Ljava/lang/String;Lcom/mojang/blaze3d/platform/InputConstants$Type;ILnet/minecraft/client/KeyMapping$Category;)V
+        20: areturn
+
+  public static void registerKeyMappings(net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent);
+    Code:
+         0: aload_0
+         1: getstatic     #28                 // Field ROLE_SKILL_ONE:Lnet/minecraft/client/KeyMapping;
+         4: invokevirtual #32                 // Method net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.register:(Lnet/minecraft/client/KeyMapping;)V
+         7: aload_0
+         8: getstatic     #38                 // Field ROLE_SKILL_TWO:Lnet/minecraft/client/KeyMapping;
+        11: invokevirtual #32                 // Method net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.register:(Lnet/minecraft/client/KeyMapping;)V
+        14: aload_0
+        15: getstatic     #41                 // Field QUICK_COMMUNICATION:Lnet/minecraft/client/KeyMapping;
+        18: invokevirtual #32                 // Method net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.register:(Lnet/minecraft/client/KeyMapping;)V
+        21: aload_0
+        22: getstatic     #44                 // Field STATUS:Lnet/minecraft/client/KeyMapping;
+        25: invokevirtual #32                 // Method net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.register:(Lnet/minecraft/client/KeyMapping;)V
+        28: aload_0
+        29: getstatic     #47                 // Field GROWTH:Lnet/minecraft/client/KeyMapping;
+        32: invokevirtual #32                 // Method net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.register:(Lnet/minecraft/client/KeyMapping;)V
+        35: aload_0
+        36: getstatic     #50                 // Field ROLE_PROGRESS:Lnet/minecraft/client/KeyMapping;
+        39: invokevirtual #32                 // Method net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.register:(Lnet/minecraft/client/KeyMapping;)V
+        42: aload_0
+        43: getstatic     #53                 // Field CALLER:Lnet/minecraft/client/KeyMapping;
+        46: invokevirtual #32                 // Method net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.register:(Lnet/minecraft/client/KeyMapping;)V
+        49: getstatic     #56                 // Field tickListenerRegistered:Z
+        52: ifne          72
+        55: iconst_1
+        56: putstatic     #56                 // Field tickListenerRegistered:Z
+        59: getstatic     #60                 // Field net/neoforged/neoforge/common/NeoForge.EVENT_BUS:Lnet/neoforged/bus/api/IEventBus;
+        62: invokedynamic #66,  0             // InvokeDynamic #1:accept:()Ljava/util/function/Consumer;
+        67: invokeinterface #70,  2           // InterfaceMethod net/neoforged/bus/api/IEventBus.addListener:(Ljava/util/function/Consumer;)V
+        72: return
+
+  private static void onClientTick(net.neoforged.neoforge.client.event.ClientTickEvent$Post);
+    Code:
+         0: invokestatic  #76                 // Method net/minecraft/client/Minecraft.getInstance:()Lnet/minecraft/client/Minecraft;
+         3: astore_1
+         4: aload_1
+         5: getfield      #82                 // Field net/minecraft/client/Minecraft.player:Lnet/minecraft/client/player/LocalPlayer;
+         8: ifnull        22
+        11: aload_1
+        12: invokevirtual #86                 // Method net/minecraft/client/Minecraft.getConnection:()Lnet/minecraft/client/multiplayer/ClientPacketListener;
+        15: ifnull        22
+        18: aload_1
+        19: invokestatic  #90                 // Method migrateLegacySkillBindings:(Lnet/minecraft/client/Minecraft;)V
+        22: aload_1
+        23: getfield      #82                 // Field net/minecraft/client/Minecraft.player:Lnet/minecraft/client/player/LocalPlayer;
+        26: ifnull        46
+        29: aload_1
+        30: invokevirtual #86                 // Method net/minecraft/client/Minecraft.getConnection:()Lnet/minecraft/client/multiplayer/ClientPacketListener;
+        33: ifnull        46
+        36: aload_1
+        37: getfield      #94                 // Field net/minecraft/client/Minecraft.gui:Lnet/minecraft/client/gui/Gui;
+        40: invokevirtual #98                 // Method net/minecraft/client/gui/Gui.screen:()Lnet/minecraft/client/gui/screens/Screen;
+        43: ifnull        89
+        46: getstatic     #28                 // Field ROLE_SKILL_ONE:Lnet/minecraft/client/KeyMapping;
+        49: invokestatic  #104                // Method drain:(Lnet/minecraft/client/KeyMapping;)V
+        52: getstatic     #38                 // Field ROLE_SKILL_TWO:Lnet/minecraft/client/KeyMapping;
+        55: invokestatic  #104                // Method drain:(Lnet/minecraft/client/KeyMapping;)V
+        58: getstatic     #41                 // Field QUICK_COMMUNICATION:Lnet/minecraft/client/KeyMapping;
+        61: invokestatic  #104                // Method drain:(Lnet/minecraft/client/KeyMapping;)V
+        64: getstatic     #44                 // Field STATUS:Lnet/minecraft/client/KeyMapping;
+        67: invokestatic  #104                // Method drain:(Lnet/minecraft/client/KeyMapping;)V
+        70: getstatic     #47                 // Field GROWTH:Lnet/minecraft/client/KeyMapping;
+        73: invokestatic  #104                // Method drain:(Lnet/minecraft/client/KeyMapping;)V
+        76: getstatic     #50                 // Field ROLE_PROGRESS:Lnet/minecraft/client/KeyMapping;
+        79: invokestatic  #104                // Method drain:(Lnet/minecraft/client/KeyMapping;)V
+        82: getstatic     #53                 // Field CALLER:Lnet/minecraft/client/KeyMapping;
+        85: invokestatic  #104                // Method drain:(Lnet/minecraft/client/KeyMapping;)V
+        88: return
+        89: getstatic     #28                 // Field ROLE_SKILL_ONE:Lnet/minecraft/client/KeyMapping;
+        92: ldc           #107                // String use_skill:0
+        94: invokestatic  #109                // Method consume:(Lnet/minecraft/client/KeyMapping;Ljava/lang/String;)V
+        97: getstatic     #38                 // Field ROLE_SKILL_TWO:Lnet/minecraft/client/KeyMapping;
+       100: ldc           #113                // String use_skill:1
+       102: invokestatic  #109                // Method consume:(Lnet/minecraft/client/KeyMapping;Ljava/lang/String;)V
+       105: getstatic     #41                 // Field QUICK_COMMUNICATION:Lnet/minecraft/client/KeyMapping;
+       108: ldc           #115                // String open_quick_chat
+       110: invokestatic  #109                // Method consume:(Lnet/minecraft/client/KeyMapping;Ljava/lang/String;)V
+       113: getstatic     #44                 // Field STATUS:Lnet/minecraft/client/KeyMapping;
+       116: ldc           #117                // String open_status
+       118: invokestatic  #109                // Method consume:(Lnet/minecraft/client/KeyMapping;Ljava/lang/String;)V
+       121: getstatic     #47                 // Field GROWTH:Lnet/minecraft/client/KeyMapping;
+       124: ldc           #119                // String open_skill_tree
+       126: invokestatic  #109                // Method consume:(Lnet/minecraft/client/KeyMapping;Ljava/lang/String;)V
+       129: getstatic     #50                 // Field ROLE_PROGRESS:Lnet/minecraft/client/KeyMapping;
+       132: ldc           #121                // String open_role_progress_current
+       134: invokestatic  #109                // Method consume:(Lnet/minecraft/client/KeyMapping;Ljava/lang/String;)V
+       137: getstatic     #53                 // Field CALLER:Lnet/minecraft/client/KeyMapping;
+       140: ldc           #115                // String open_quick_chat
+       142: invokestatic  #109                // Method consume:(Lnet/minecraft/client/KeyMapping;Ljava/lang/String;)V
+       145: return
+
+  private static void migrateLegacySkillBindings(net.minecraft.client.Minecraft);
+    Code:
+         0: getstatic     #123                // Field legacySkillBindingsChecked:Z
+         3: ifeq          7
+         6: return
+         7: iconst_1
+         8: putstatic     #123                // Field legacySkillBindingsChecked:Z
+        11: getstatic     #28                 // Field ROLE_SKILL_ONE:Lnet/minecraft/client/KeyMapping;
+        14: invokevirtual #126                // Method net/minecraft/client/KeyMapping.getKey:()Lcom/mojang/blaze3d/platform/InputConstants$Key;
+        17: invokevirtual #130                // Method com/mojang/blaze3d/platform/InputConstants$Key.getValue:()I
+        20: istore_1
+        21: getstatic     #38                 // Field ROLE_SKILL_TWO:Lnet/minecraft/client/KeyMapping;
+        24: invokevirtual #126                // Method net/minecraft/client/KeyMapping.getKey:()Lcom/mojang/blaze3d/platform/InputConstants$Key;
+        27: invokevirtual #130                // Method com/mojang/blaze3d/platform/InputConstants$Key.getValue:()I
+        30: istore_2
+        31: iload_1
+        32: bipush        82
+        34: if_icmpne     43
+        37: iload_2
+        38: bipush        71
+        40: if_icmpeq     55
+        43: iload_1
+        44: bipush        71
+        46: if_icmpne     59
+        49: iload_2
+        50: bipush        82
+        52: if_icmpne     59
+        55: iconst_1
+        56: goto          60
+        59: iconst_0
+        60: istore_3
+        61: iload_3
+        62: ifne          66
+        65: return
+        66: getstatic     #28                 // Field ROLE_SKILL_ONE:Lnet/minecraft/client/KeyMapping;
+        69: getstatic     #13                 // Field com/mojang/blaze3d/platform/InputConstants$Type.KEYSYM:Lcom/mojang/blaze3d/platform/InputConstants$Type;
+        72: bipush        90
+        74: invokevirtual #138                // Method com/mojang/blaze3d/platform/InputConstants$Type.getOrCreate:(I)Lcom/mojang/blaze3d/platform/InputConstants$Key;
+        77: invokevirtual #142                // Method net/minecraft/client/KeyMapping.setKey:(Lcom/mojang/blaze3d/platform/InputConstants$Key;)V
+        80: getstatic     #38                 // Field ROLE_SKILL_TWO:Lnet/minecraft/client/KeyMapping;
+        83: getstatic     #13                 // Field com/mojang/blaze3d/platform/InputConstants$Type.KEYSYM:Lcom/mojang/blaze3d/platform/InputConstants$Type;
+        86: bipush        88
+        88: invokevirtual #138                // Method com/mojang/blaze3d/platform/InputConstants$Type.getOrCreate:(I)Lcom/mojang/blaze3d/platform/InputConstants$Key;
+        91: invokevirtual #142                // Method net/minecraft/client/KeyMapping.setKey:(Lcom/mojang/blaze3d/platform/InputConstants$Key;)V
+        94: invokestatic  #146                // Method net/minecraft/client/KeyMapping.resetMapping:()V
+        97: aload_0
+        98: getfield      #149                // Field net/minecraft/client/Minecraft.options:Lnet/minecraft/client/Options;
+       101: invokevirtual #153                // Method net/minecraft/client/Options.save:()V
+       104: return
+
+  private static void drain(net.minecraft.client.KeyMapping);
+    Code:
+         0: aload_0
+         1: invokevirtual #158                // Method net/minecraft/client/KeyMapping.consumeClick:()Z
+         4: ifeq          10
+         7: goto          0
+        10: return
+
+  private static void consume(net.minecraft.client.KeyMapping, java.lang.String);
+    Code:
+         0: aload_0
+         1: invokevirtual #158                // Method net/minecraft/client/KeyMapping.consumeClick:()Z
+         4: ifeq          25
+         7: new           #162                // class kr/moonseungjun/villageguardians/VillageNetwork$VillageUiActionPayload
+        10: dup
+        11: aload_1
+        12: invokespecial #164                // Method kr/moonseungjun/villageguardians/VillageNetwork$VillageUiActionPayload."<init>":(Ljava/lang/String;)V
+        15: iconst_0
+        16: anewarray     #167                // class net/minecraft/network/protocol/common/custom/CustomPacketPayload
+        19: invokestatic  #169                // Method net/neoforged/neoforge/client/network/ClientPacketDistributor.sendToServer:(Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V
+        22: goto          0
+        25: return
+
+  static {};
+    Code:
+         0: ldc           #177                // String villageguardians
+         2: ldc           #179                // String controls
+         4: invokestatic  #181                // Method net/minecraft/resources/Identifier.fromNamespaceAndPath:(Ljava/lang/String;Ljava/lang/String;)Lnet/minecraft/resources/Identifier;
+         7: invokestatic  #187                // Method net/minecraft/client/KeyMapping$Category.register:(Lnet/minecraft/resources/Identifier;)Lnet/minecraft/client/KeyMapping$Category;
+        10: putstatic     #19                 // Field CATEGORY:Lnet/minecraft/client/KeyMapping$Category;
+        13: ldc           #192                // String role_skill_one
+        15: bipush        90
+        17: invokestatic  #194                // Method key:(Ljava/lang/String;I)Lnet/minecraft/client/KeyMapping;
+        20: putstatic     #28                 // Field ROLE_SKILL_ONE:Lnet/minecraft/client/KeyMapping;
+        23: ldc           #198                // String role_skill_two
+        25: bipush        88
+        27: invokestatic  #194                // Method key:(Ljava/lang/String;I)Lnet/minecraft/client/KeyMapping;
+        30: putstatic     #38                 // Field ROLE_SKILL_TWO:Lnet/minecraft/client/KeyMapping;
+        33: ldc           #200                // String quick_communication
+        35: bipush        66
+        37: invokestatic  #194                // Method key:(Ljava/lang/String;I)Lnet/minecraft/client/KeyMapping;
+        40: putstatic     #41                 // Field QUICK_COMMUNICATION:Lnet/minecraft/client/KeyMapping;
+        43: ldc           #202                // String status
+        45: bipush        72
+        47: invokestatic  #194                // Method key:(Ljava/lang/String;I)Lnet/minecraft/client/KeyMapping;
+        50: putstatic     #44                 // Field STATUS:Lnet/minecraft/client/KeyMapping;
+        53: ldc           #204                // String personal_progress
+        55: bipush        74
+        57: invokestatic  #194                // Method key:(Ljava/lang/String;I)Lnet/minecraft/client/KeyMapping;
+        60: putstatic     #47                 // Field GROWTH:Lnet/minecraft/client/KeyMapping;
+        63: ldc           #206                // String role_progress
+        65: bipush        75
+        67: invokestatic  #194                // Method key:(Ljava/lang/String;I)Lnet/minecraft/client/KeyMapping;
+        70: putstatic     #50                 // Field ROLE_PROGRESS:Lnet/minecraft/client/KeyMapping;
+        73: ldc           #208                // String caller
+        75: bipush        85
+        77: invokestatic  #194                // Method key:(Ljava/lang/String;I)Lnet/minecraft/client/KeyMapping;
+        80: putstatic     #53                 // Field CALLER:Lnet/minecraft/client/KeyMapping;
+        83: return
+}
