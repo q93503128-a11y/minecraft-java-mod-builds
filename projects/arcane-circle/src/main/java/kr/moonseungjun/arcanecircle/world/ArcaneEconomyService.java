@@ -1,4 +1,3 @@
-
 package kr.moonseungjun.arcanecircle.world;
 
 import kr.moonseungjun.arcanecircle.magic.CombatGrowthService;
@@ -11,6 +10,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 public final class ArcaneEconomyService {
+    public static final long FIRST_TRADITION_COST = 750L;
+    public static final long TRADITION_CHANGE_COST = 5000L;
+
     private ArcaneEconomyService() {}
 
     private static ArcaneWorldData data(ServerPlayer player) {
@@ -65,17 +67,27 @@ public final class ArcaneEconomyService {
         return true;
     }
 
+    public static long traditionCost(ServerPlayer player, MagicTradition requested) {
+        ArcaneWorldData world = data(player);
+        if (requested == null || requested == MagicTradition.UNBOUND || world.tradition(player) == requested) return 0L;
+        return world.tradition(player) == MagicTradition.UNBOUND ? FIRST_TRADITION_COST : TRADITION_CHANGE_COST;
+    }
+
     public static boolean chooseTradition(ServerPlayer player, String traditionId) {
         MagicTradition tradition = MagicTradition.parse(traditionId);
         ArcaneWorldData world = data(player);
-        MagicTradition before = world.tradition(player);
-        long cost = before == MagicTradition.UNBOUND ? 0L : 5000L;
+        long cost = traditionCost(player, tradition);
+        if (cost == 0L && world.tradition(player) == tradition) {
+            player.sendSystemMessage(Component.literal("§7[학부 조율] §f이미 " + tradition.displayName() + "에 소속되어 있습니다."));
+            return true;
+        }
         if (!world.chooseTradition(player, tradition, cost)) {
-            player.sendSystemMessage(Component.literal("§c[학부 변경] §f아르카나가 부족하거나 잘못된 학부입니다."));
+            player.sendSystemMessage(Component.literal("§c[학부 조율] §f아르카나가 부족하거나 잘못된 학부입니다. 필요 "
+                    + cost + " / 보유 " + world.balance(player)));
             return false;
         }
         player.sendSystemMessage(Component.literal("§5[학부 조율] §f" + tradition.displayName()
-                + "에 마력핵을 조율했습니다." + (cost > 0 ? " §7비용 " + cost + " 아르카나" : "")));
+                + "에 마력핵을 조율했습니다. §7비용 " + cost + " 아르카나"));
         return true;
     }
 }
