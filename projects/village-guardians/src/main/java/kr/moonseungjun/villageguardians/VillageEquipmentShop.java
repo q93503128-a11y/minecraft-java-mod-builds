@@ -144,6 +144,8 @@ public final class VillageEquipmentShop {
         public String displayName() { return displayName; }
         public Category category() { return category; }
         public int requiredDay() { return requiredDay; }
+        /** Compatibility metadata for the unreachable legacy shop renderer; purchases never check it. */
+        @Deprecated public int requiredLevel() { return 0; }
         public int cost() { return cost; }
         public String effect() { return effect; }
         public float meleeMultiplier() { return meleeMultiplier; }
