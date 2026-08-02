@@ -83,6 +83,20 @@ public final class ArcaneClientState {
         return snapshotTicks + (int) Math.min(Integer.MAX_VALUE, elapsed);
     }
 
+    public static int chargingRequiredTicks() {
+        return Math.max(0, integer("charge_required", 0));
+    }
+
+    public static double chargingFraction() {
+        int required = chargingRequiredTicks();
+        if (required <= 0 || chargingSpell().isBlank()) return 0.0;
+        return Math.min(1.0, chargingTicks() / (double) required);
+    }
+
+    public static boolean chargingReady() {
+        return !chargingSpell().isBlank() && chargingTicks() >= chargingRequiredTicks();
+    }
+
     public static boolean isChargingSlot(int slot) {
         return chargingSlot() == slot && !chargingSpell().isBlank();
     }

@@ -25,7 +25,7 @@ public final class MagicWorldService {
             BlockPos origin = data.academyOrigin();
             BlockPos arrival = origin.offset(0, 1, -10);
             player.teleportTo(arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5);
-            player.setGameMode(GameType.ADVENTURE);
+            player.setGameMode(GameType.SURVIVAL);
             data.addMarks(player, firstAwakening ? 120L : 40L);
             player.sendSystemMessage(Component.literal("§5[천구 마법학원] §f학원 중앙 회로에 도착했습니다."
                     + " 생존 욕구와 사망 손실은 비활성화되며 모든 거래는 §d아르카나§f로 통일됩니다."));
@@ -33,6 +33,7 @@ public final class MagicWorldService {
     }
 
     public static void onRespawn(ServerPlayer player) {
+        if (!player.isCreative() && !player.isSpectator()) player.setGameMode(GameType.SURVIVAL);
         ArcaneWorldData data = ArcaneWorldData.get(((ServerLevel) player.level()).getServer());
         BlockPos origin = data.academyOrigin();
         BlockPos arrival = origin.offset(0, 1, -10);
@@ -40,6 +41,9 @@ public final class MagicWorldService {
     }
 
     public static void tick(ServerPlayer player) {
+        if (player.tickCount % 100 == 0 && !player.isCreative() && !player.isSpectator()) {
+            player.setGameMode(GameType.SURVIVAL);
+        }
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(20.0F);
         if (player.tickCount % 80 == 0) awakenNearbyEnemies(player);

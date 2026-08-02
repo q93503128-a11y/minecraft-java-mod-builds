@@ -31,23 +31,16 @@ public final class ArcaneHud {
         int height = minecraft.getWindow().getGuiScaledHeight();
         Font font = minecraft.font;
 
-        int gap = width < 360 ? 2 : 3;
-        int slotSize = Math.max(20, Math.min(27, (width - 18 - gap * 4) / 5));
+        int gap = width < 360 ? 2 : 4;
+        int desired = width >= 600 ? 58 : width >= 430 ? 46 : 32;
+        int slotSize = Math.max(24, Math.min(desired, (width - 18 - gap * 4) / 5));
         int total = slotSize * 5 + gap * 4;
         int startX = Math.max(4, (width - total) / 2);
         // Keep the spell strip safely above hearts, hunger and the vanilla hotbar.
         int y = Math.max(8, height - slotSize - 59);
 
-        // Preserve the old left-side mana/status scale and position on wide displays.
-        if (width >= 500) {
-            int legacySlot = 38;
-            int legacyGap = 4;
-            int legacyStart = Math.max(4, (width - legacySlot * 5 - legacyGap * 4) / 2);
-            int legacyY = Math.max(8, height - legacySlot - 29);
-            drawManaSide(g, font, legacyStart, legacyY, legacySlot);
-        } else {
-            drawManaTop(g, font, width, y - 13);
-        }
+        if (width >= 500) drawManaSide(g, font, startX, y, slotSize);
+        else drawManaTop(g, font, width, y - 13);
 
         for (int slot = 0; slot < 5; slot++) {
             drawSlot(g, font, startX + slot * (slotSize + gap), y, slotSize, slot);
@@ -105,8 +98,8 @@ public final class ArcaneHud {
             ArcaneRenderUtil.spellRune(g, x + size / 2, y + size / 2 - (size >= 25 ? 2 : 0), spell,
                     Math.max(4, size / 5), remaining > 0 ? 0xFF827B89 : 0xFFF8F2FF);
             if (size >= 25) {
-                String name = compactName(spell.name(), 3);
-                g.centeredText(font, Component.literal(name), x + size / 2, y + size - 9,
+                String name = fitName(font, spell.name(), size - 5);
+                g.centeredText(font, Component.literal(name), x + size / 2, y + size - 10,
                         remaining > 0 ? 0xFF8B8492 : charging ? 0xFFFFE0A2 : 0xFFDCD4E9);
             }
         } else {
@@ -117,8 +110,10 @@ public final class ArcaneHud {
                     : String.format("%.1f", remaining / 20.0);
             g.centeredText(font, Component.literal(seconds), x + size / 2, y + size / 2 - 5, 0xFFFFFFFF);
         } else if (charging) {
-            String charge = ArcaneClientState.chargingTicks() >= 20 ? "READY" : "...";
-            g.centeredText(font, Component.literal(charge), x + size / 2, y - 10, 0xFFFFD36B);
+            int progress = (int) Math.round((size - 4) * ArcaneClientState.chargingFraction());
+            g.fill(x + 2, y + size - 4, x + size - 2, y + size - 2, 0xFF282D38);
+            g.fill(x + 2, y + size - 4, x + 2 + progress, y + size - 2,
+                    ArcaneClientState.chargingReady() ? 0xFFFFD36B : color);
         }
     }
 
@@ -223,6 +218,15 @@ public final class ArcaneHud {
 
     private static String signed(int value) {
         return value >= 0 ? "+" + value : Integer.toString(value);
+    }
+
+    private static String fitName(Font font, String value, int pixels) {
+        if (value == null || pixels <= 0) return "";
+        if (font.width(value) <= pixels) return value;
+        String suffix = "…";
+        int end = value.length();
+        while (end > 0 && font.width(value.substring(0, end) + suffix) > pixels) end--;
+        return end <= 0 ? suffix : value.substring(0, end) + suffix;
     }
 
     private static String compactName(String value, int max) {

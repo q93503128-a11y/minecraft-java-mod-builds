@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 public final class SpellCastingService {
     private static final long QUEUE_TIMEOUT_TICKS = 200L;
-    private static final long CHARGE_TIMEOUT_TICKS = 240L;
+    private static final long CHARGE_TIMEOUT_TICKS = 400L;
 
     private static final class FusionQueueState {
         private final List<String> ingredients = new ArrayList<>();
@@ -40,11 +40,15 @@ public final class SpellCastingService {
         private final int slot;
         private final String spellId;
         private final long startedAt;
+        private final int requiredTicks;
+        private int lastStage = -1;
+        private long lastReadyPulse;
 
-        private ChargeState(int slot, String spellId, long startedAt) {
+        private ChargeState(int slot, String spellId, long startedAt, int requiredTicks) {
             this.slot = slot;
             this.spellId = spellId;
             this.startedAt = startedAt;
+            this.requiredTicks = requiredTicks;
         }
     }
 
@@ -65,24 +69,43 @@ public final class SpellCastingService {
             fail(player, String.format("%s 재사용까지 %.1f초", cast.spell().name(), cooldown.remainingTicks() / 20.0));
             return;
         }
-        clearFusion(player, false);
-        ChargeState previous = CHARGES.put(player.getUUID(),
-                new ChargeState(slot, cast.spell().id(), serverClock(player)));
-        if (previous == null || !previous.spellId.equals(cast.spell().id())) {
-            player.sendOverlayMessage(Component.literal("§5[회로 전개] §f" + cast.spell().name()
-                    + " §7· 숫자키를 놓으면 시전"));
-            ServerLevel level = (ServerLevel) player.level();
-            level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
-                    SoundSource.PLAYERS, 0.55F, 1.18F);
+
+        ChargeState existing = CHARGES.get(player.getUUID());
+        if (existing != null && existing.slot == slot && existing.spellId.equals(cast.spell().id())) {
+            return;
         }
-        renderCharge(player, cast.spell(), 0L, cast.range());
+
+        clearFusion(player, false);
+        int required = requiredCastTicks(player, cast.spell());
+        if (required <= 0) {
+            CHARGES.remove(player.getUUID());
+            castPrepared(player, data, cast);
+            return;
+        }
+
+        ChargeState charge = new ChargeState(slot, cast.spell().id(), serverClock(player), required);
+        CHARGES.put(player.getUUID(), charge);
+        player.sendOverlayMessage(Component.literal("§5[회로 전개] §f" + cast.spell().name()
+                + " §7· " + String.format("%.1f", required / 20.0) + "초"));
+        ServerLevel level = (ServerLevel) player.level();
+        level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
+                SoundSource.PLAYERS, 0.45F, 1.18F);
+        SpellSigilService.renderChargeStep(player, cast.spell(), cast.range(), 0);
+        charge.lastStage = 0;
     }
 
     public static void releaseSlotCharge(ServerPlayer player, int slot) {
-        ChargeState charge = CHARGES.remove(player.getUUID());
+        ChargeState charge = CHARGES.get(player.getUUID());
         if (charge == null || charge.slot != slot) return;
-        if (serverClock(player) - charge.startedAt > CHARGE_TIMEOUT_TICKS) {
+        long elapsed = serverClock(player) - charge.startedAt;
+        CHARGES.remove(player.getUUID());
+        if (elapsed > CHARGE_TIMEOUT_TICKS) {
             player.sendOverlayMessage(Component.literal("§7[시전 취소] 유지 한계를 넘어 마법진이 해제되었습니다."));
+            return;
+        }
+        if (elapsed < charge.requiredTicks) {
+            int percent = (int) Math.round(100.0 * elapsed / Math.max(1, charge.requiredTicks));
+            player.sendOverlayMessage(Component.literal("§7[시전 취소] 회로 전개 " + percent + "% · 완성 전에 키를 놓았습니다."));
             return;
         }
         MagicPlayerData data = data(player);
@@ -111,7 +134,6 @@ public final class SpellCastingService {
             }
             return;
         }
-        if (Math.floorMod(player.tickCount, 4) != 0) return;
         SpellDefinition spell = SpellCatalog.spell(charge.spellId).orElse(null);
         if (spell == null || !data(player).state(player).known().contains(spell.id())) {
             CHARGES.remove(player.getUUID());
@@ -122,7 +144,19 @@ public final class SpellCastingService {
             CHARGES.remove(player.getUUID());
             return;
         }
-        renderCharge(player, spell, elapsed, cast.range());
+
+        int stage = Math.min(SpellSigilService.CHARGE_STAGES - 1,
+                (int) (elapsed * SpellSigilService.CHARGE_STAGES / Math.max(1, charge.requiredTicks)));
+        if (stage > charge.lastStage) {
+            for (int next = charge.lastStage + 1; next <= stage; next++) {
+                SpellSigilService.renderChargeStep(player, spell, cast.range(), next);
+            }
+            charge.lastStage = stage;
+        }
+        if (elapsed >= charge.requiredTicks && now - charge.lastReadyPulse >= 16L) {
+            SpellSigilService.renderReadyPulse(player, spell, cast.range());
+            charge.lastReadyPulse = now;
+        }
     }
 
     public static void cancelCharge(ServerPlayer player, boolean notify) {
@@ -150,6 +184,19 @@ public final class SpellCastingService {
         ChargeState state = CHARGES.get(player.getUUID());
         if (state == null) return 0;
         return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, serverClock(player) - state.startedAt));
+    }
+
+    public static int chargingRequiredTicks(ServerPlayer player) {
+        ChargeState state = CHARGES.get(player.getUUID());
+        return state == null ? 0 : state.requiredTicks;
+    }
+
+    public static int requiredCastTicks(ServerPlayer player, SpellDefinition spell) {
+        MagicPlayerData.MageState state = data(player).state(player);
+        int base = 10 + spell.circle() * 8;
+        int circleGapReduction = Math.max(0, state.circle() - spell.circle()) * 6;
+        int masteryReduction = SpellCatalog.masteryTier(state.mastery(spell.id())) * 2;
+        return Math.max(0, base - circleGapReduction - masteryReduction);
     }
 
     public static void queueFusionSlot(ServerPlayer player, int slot) {
@@ -347,15 +394,10 @@ public final class SpellCastingService {
     }
 
     private static void renderCharge(ServerPlayer player, SpellDefinition spell, long elapsed, double range) {
-        ServerLevel level = (ServerLevel) player.level();
-        double baseRange = Math.max(1.0, spell.range());
-        double rangeRatio = Math.max(0.75, Math.min(2.6, range / baseRange));
-        double radius = (0.76 + spell.circle() * 0.18) * Math.sqrt(rangeRatio);
-        SpellSigilService.renderCharge(player, spell, range);
-        if (elapsed == 0L) {
-            level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
-                    SoundSource.PLAYERS, 0.42F, 1.58F - spell.circle() * 0.07F);
-        }
+        int required = Math.max(1, requiredCastTicks(player, spell));
+        int stage = Math.min(SpellSigilService.CHARGE_STAGES - 1,
+                (int) (elapsed * SpellSigilService.CHARGE_STAGES / required));
+        SpellSigilService.renderChargeStep(player, spell, range, stage);
     }
 
     private static void renderAnchoredSigil(ServerLevel level, ServerPlayer player, SpellDefinition spell,
