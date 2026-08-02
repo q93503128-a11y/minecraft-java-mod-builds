@@ -70,6 +70,7 @@ public final class LivingKingdoms {
     private void onServerTick(ServerTickEvent.Post event) {
         RealmBuildCoordinator.onServerTick(event);
         ErdenCapitalStreamingBuilder.onServerTick(event);
+        StarterRealmDiagnostics.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
     }
 
