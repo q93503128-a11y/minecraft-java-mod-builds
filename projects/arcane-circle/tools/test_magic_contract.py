@@ -93,9 +93,9 @@ need(network, [
     "ChooseTraditionPayload.TYPE", '"academy"', '"marks="', '"tradition="', '";charge_required="'
 ], "academy and cast-time network")
 need(screen, [
-    'new Tab("academy", "학원")', "atlasCircle == 0", "circleCard(circle)",
+    'new Tab("academy", "마도회")', "atlasCircle == 0", "circleCard(circle)",
     "academyCircle == 0", "offerCard", "아르카나"
-], "dense hierarchical academy UI")
+], "dense hierarchical mage society UI")
 for movable in ("dragging", "savedOffsetX", "mouseDragged", "상단을 드래그"):
     if movable in screen:
         raise SystemExit(f"movable full-screen UI remains: {movable}")
