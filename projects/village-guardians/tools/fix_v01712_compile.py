@@ -76,6 +76,7 @@ test_path = ROOT / "tools/test_v01712_role_abilities.py"
 if test_path.exists():
     test = test_path.read_text(encoding="utf-8")
     test = test.replace('"Snowball"', '"EntityTypes.SNOWBALL"')
+    test = test.replace('"LIGHT_BLUE_STAINED_GLASS"', '"Blocks.GLASS"')
     test_path.write_text(test, encoding="utf-8")
 
 print("Applied NeoForge 26.2 compile adaptations for role abilities")
