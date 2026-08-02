@@ -130,7 +130,9 @@ jobs:
           javap -classpath "build/libs/$EXPECTED_JAR" -c -p \
             kr.moonseungjun.villageguardians.VillageClientKeys \
             > "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log"
-          grep -q 'org/lwjgl/glfw/GLFW' "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log"
+          grep -q 'KeyMapping.setKey' "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log"
+          grep -q 'KeyMapping.resetMapping' "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log"
+          grep -q 'Options.save' "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log"
           strings "build/libs/$EXPECTED_JAR" | grep -q 'VillageSkillEffectSystem'
           mkdir -p "$GITHUB_WORKSPACE/deliverables-v01713"
           cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables-v01713/"
