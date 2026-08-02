@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Signature Geometry
+name: Build Arcane Circle v0.12.1 Per-Spell Geometry
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   build:
-    name: Java 25 / NeoForge 26.2 all-circle world geometry and signature meshes
+    name: Java 25 / NeoForge 26.2 per-spell world geometry
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -80,6 +80,7 @@ jobs:
               names = set(z.namelist())
               required = {
                   'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
+                  'kr/moonseungjun/arcanecircle/client/SignatureGeometry.class',
                   'kr/moonseungjun/arcanecircle/magic/WorldMagicService.class',
                   'kr/moonseungjun/arcanecircle/network/WorldMagicPayload.class',
               }
@@ -93,16 +94,16 @@ jobs:
                           offenders.append(name)
               if offenders:
                   raise SystemExit(f'particle-centered magic bytecode remains: {offenders}')
-              tracker = z.read('kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class')
+              signatures = z.read('kr/moonseungjun/arcanecircle/client/SignatureGeometry.class')
               tokens = [
-                  b'meteorGeometry', b'tornadoGeometry', b'portalGeometry',
-                  b'forceCageGeometry', b'barrierWallGeometry', b'barrierDomeGeometry',
-                  b'meteor_swarm', b'forcecage', b'wall_of_force', b'antimagic_field'
+                  b'meteor', b'tornado', b'portal', b'cage', b'wall', b'dome',
+                  b'meteor_swarm', b'control_weather', b'forcecage',
+                  b'wall_of_force', b'antimagic_field'
               ]
-              absent = [token.decode() for token in tokens if token not in tracker]
+              absent = [token.decode() for token in tokens if token not in signatures]
               if absent:
                   raise SystemExit(f'signature renderer bytecode missing: {absent}')
-          print('animated signature geometry bytecode audit: PASS')
+          print('per-spell signature geometry bytecode audit: PASS')
           PY
           mkdir -p ../../deliverables
           cp "build/libs/$EXPECTED_JAR" ../../deliverables/
@@ -140,7 +141,7 @@ jobs:
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
             git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12.1-alpha.2 signature geometry'
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.2 per-spell geometry'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
