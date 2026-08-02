@@ -6,7 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-/** Flat, front-facing facility marks. Nothing is placed on a building roof. */
+/** Compact front-facing crests. They never touch the roof or doorway opening. */
 final class VillageBuildingSignatures {
     private static final Block BACKDROP = Blocks.POLISHED_DEEPSLATE;
 
@@ -26,30 +26,28 @@ final class VillageBuildingSignatures {
             buildGateShield(level, villageCenter);
             return;
         }
-
         VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
         BlockPos origin = villageCenter.offset(spec.dx(), 0, spec.dz());
         BlockPos entrance = VillageBuildingCatalog.entrance(level, origin, spec);
         BlockPos anchor = entrance.relative(spec.entranceFacing().getOpposite()).above(4);
         Direction sideways = spec.entranceFacing().getClockWise();
 
-        buildBackdrop(level, anchor, sideways, 2, -1, 2);
+        clearPlane(level, anchor, sideways, 2, -1, 2); // remove the former oversized mark first
+        buildBackdrop(level, anchor, sideways, 1, 0, 2);
         switch (building) {
             case TOWN_HALL -> buildCrown(level, anchor, sideways);
             case SMITHY -> buildHammer(level, anchor, sideways);
             case SKILL_HALL -> buildRune(level, anchor, sideways);
             case STOREHOUSE -> buildSupplyCrate(level, anchor, sideways);
             case BARRACKS -> buildCrossedBlades(level, anchor, sideways);
-            case INFIRMARY, WALLS -> {
-            }
+            case INFIRMARY, WALLS -> { }
         }
     }
 
     static void remove(ServerLevel level, BlockPos villageCenter, VillageProgressionSystem.Building building) {
         if (building == VillageProgressionSystem.Building.INFIRMARY) return;
         if (building == VillageProgressionSystem.Building.WALLS) {
-            BlockPos anchor = gateAnchor(villageCenter);
-            clearPlane(level, anchor, Direction.EAST, 3, -2, 2);
+            clearPlane(level, gateAnchor(villageCenter), Direction.EAST, 3, -2, 2);
             return;
         }
         VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
@@ -59,81 +57,66 @@ final class VillageBuildingSignatures {
         clearPlane(level, anchor, spec.entranceFacing().getClockWise(), 2, -1, 2);
     }
 
-    private static void buildCrown(ServerLevel level, BlockPos anchor, Direction sideways) {
-        line(level, anchor, sideways, -2, 2, 0, Blocks.GOLD_BLOCK);
-        mark(level, anchor, sideways, -2, 1, Blocks.GOLD_BLOCK);
-        mark(level, anchor, sideways, 0, 2, Blocks.SEA_LANTERN);
-        mark(level, anchor, sideways, 2, 1, Blocks.GOLD_BLOCK);
-        mark(level, anchor, sideways, 0, 1, Blocks.GOLD_BLOCK);
+    private static void buildCrown(ServerLevel level, BlockPos anchor, Direction side) {
+        mark(level, anchor, side, -1, 0, Blocks.GOLD_BLOCK);
+        mark(level, anchor, side, 0, 0, Blocks.GOLD_BLOCK);
+        mark(level, anchor, side, 1, 0, Blocks.GOLD_BLOCK);
+        mark(level, anchor, side, -1, 2, Blocks.GOLD_BLOCK);
+        mark(level, anchor, side, 0, 1, Blocks.SEA_LANTERN);
+        mark(level, anchor, side, 1, 2, Blocks.GOLD_BLOCK);
     }
 
-    private static void buildHammer(ServerLevel level, BlockPos anchor, Direction sideways) {
-        mark(level, anchor, sideways, 0, -1, Blocks.IRON_BLOCK);
-        mark(level, anchor, sideways, 0, 0, Blocks.IRON_BLOCK);
-        mark(level, anchor, sideways, 0, 1, Blocks.IRON_BLOCK);
-        line(level, anchor, sideways, -2, 2, 2, Blocks.BRICKS);
-        mark(level, anchor, sideways, -2, 1, Blocks.MAGMA_BLOCK);
-        mark(level, anchor, sideways, 2, 1, Blocks.MAGMA_BLOCK);
+    private static void buildHammer(ServerLevel level, BlockPos anchor, Direction side) {
+        mark(level, anchor, side, 0, 0, Blocks.IRON_BLOCK);
+        mark(level, anchor, side, 0, 1, Blocks.IRON_BLOCK);
+        mark(level, anchor, side, -1, 2, Blocks.BRICKS);
+        mark(level, anchor, side, 0, 2, Blocks.BRICKS);
+        mark(level, anchor, side, 1, 2, Blocks.MAGMA_BLOCK);
     }
 
-    private static void buildRune(ServerLevel level, BlockPos anchor, Direction sideways) {
-        mark(level, anchor, sideways, 0, -1, Blocks.PURPUR_BLOCK);
-        mark(level, anchor, sideways, -1, 0, Blocks.PURPUR_BLOCK);
-        mark(level, anchor, sideways, 1, 0, Blocks.PURPUR_BLOCK);
-        mark(level, anchor, sideways, -2, 1, Blocks.PURPUR_BLOCK);
-        mark(level, anchor, sideways, 2, 1, Blocks.PURPUR_BLOCK);
-        mark(level, anchor, sideways, -1, 2, Blocks.PURPUR_BLOCK);
-        mark(level, anchor, sideways, 1, 2, Blocks.PURPUR_BLOCK);
-        mark(level, anchor, sideways, 0, 1, Blocks.AMETHYST_BLOCK);
-        mark(level, anchor, sideways, 0, 2, Blocks.SEA_LANTERN);
+    private static void buildRune(ServerLevel level, BlockPos anchor, Direction side) {
+        mark(level, anchor, side, 0, 0, Blocks.PURPUR_BLOCK);
+        mark(level, anchor, side, -1, 1, Blocks.PURPUR_BLOCK);
+        mark(level, anchor, side, 0, 1, Blocks.AMETHYST_BLOCK);
+        mark(level, anchor, side, 1, 1, Blocks.PURPUR_BLOCK);
+        mark(level, anchor, side, 0, 2, Blocks.SEA_LANTERN);
     }
 
-    private static void buildSupplyCrate(ServerLevel level, BlockPos anchor, Direction sideways) {
-        for (int lateral = -2; lateral <= 2; lateral++) {
-            for (int vertical = -1; vertical <= 1; vertical++) {
-                Block material = Math.abs(lateral) == 2 || vertical == -1 || vertical == 1
-                        ? Blocks.GOLD_BLOCK : Blocks.HAY_BLOCK;
-                mark(level, anchor, sideways, lateral, vertical, material);
-            }
+    private static void buildSupplyCrate(ServerLevel level, BlockPos anchor, Direction side) {
+        for (int lateral = -1; lateral <= 1; lateral++) {
+            mark(level, anchor, side, lateral, 0, Blocks.GOLD_BLOCK);
+            mark(level, anchor, side, lateral, 2, Blocks.GOLD_BLOCK);
         }
-        mark(level, anchor, sideways, 0, 0, Blocks.SEA_LANTERN);
-        mark(level, anchor, sideways, 0, 2, Blocks.GOLD_BLOCK);
+        mark(level, anchor, side, -1, 1, Blocks.GOLD_BLOCK);
+        mark(level, anchor, side, 0, 1, Blocks.HAY_BLOCK);
+        mark(level, anchor, side, 1, 1, Blocks.GOLD_BLOCK);
     }
 
-    private static void buildCrossedBlades(ServerLevel level, BlockPos anchor, Direction sideways) {
-        for (int step = -2; step <= 2; step++) {
-            int verticalA = step + 1;
-            int verticalB = 1 - step;
-            if (verticalA >= -1 && verticalA <= 2) {
-                mark(level, anchor, sideways, step, verticalA, Blocks.IRON_BLOCK);
-            }
-            if (verticalB >= -1 && verticalB <= 2) {
-                mark(level, anchor, sideways, step, verticalB, Blocks.NETHER_BRICKS);
-            }
-        }
-        mark(level, anchor, sideways, 0, 1, Blocks.SEA_LANTERN);
+    private static void buildCrossedBlades(ServerLevel level, BlockPos anchor, Direction side) {
+        mark(level, anchor, side, -1, 0, Blocks.IRON_BLOCK);
+        mark(level, anchor, side, 0, 1, Blocks.SEA_LANTERN);
+        mark(level, anchor, side, 1, 2, Blocks.IRON_BLOCK);
+        mark(level, anchor, side, 1, 0, Blocks.NETHER_BRICKS);
+        mark(level, anchor, side, -1, 2, Blocks.NETHER_BRICKS);
     }
 
     private static void buildGateShield(ServerLevel level, BlockPos villageCenter) {
         BlockPos anchor = gateAnchor(villageCenter);
-        Direction sideways = Direction.EAST;
-        buildBackdrop(level, anchor, sideways, 3, -2, 2);
-        for (int lateral = -3; lateral <= 3; lateral++) {
-            int lower = Math.abs(lateral) <= 1 ? -2 : Math.abs(lateral) <= 2 ? -1 : 0;
-            for (int vertical = lower; vertical <= 2; vertical++) {
-                Block material = Math.abs(lateral) == 3 || vertical == 2 || vertical == lower
-                        ? Blocks.IRON_BLOCK : Blocks.NETHER_WART_BLOCK;
-                mark(level, anchor, sideways, lateral, vertical, material);
+        Direction side = Direction.EAST;
+        buildBackdrop(level, anchor, side, 2, -1, 2);
+        for (int lateral = -2; lateral <= 2; lateral++) {
+            int low = Math.abs(lateral) == 2 ? 0 : -1;
+            for (int vertical = low; vertical <= 2; vertical++) {
+                mark(level, anchor, side, lateral, vertical,
+                        Math.abs(lateral) == 2 || vertical == low ? Blocks.IRON_BLOCK : Blocks.NETHER_WART_BLOCK);
             }
         }
-        line(level, anchor, sideways, -1, 1, 0, Blocks.GOLD_BLOCK);
-        mark(level, anchor, sideways, 0, -1, Blocks.GOLD_BLOCK);
-        mark(level, anchor, sideways, 0, 1, Blocks.GOLD_BLOCK);
-        mark(level, anchor, sideways, 0, 0, Blocks.SEA_LANTERN);
+        mark(level, anchor, side, 0, 0, Blocks.SEA_LANTERN);
+        mark(level, anchor, side, 0, 1, Blocks.GOLD_BLOCK);
     }
 
-    private static BlockPos gateAnchor(BlockPos villageCenter) {
-        return villageCenter.offset(0, 9, -VillageWorldSystem.FORTRESS_RADIUS + 3);
+    private static BlockPos gateAnchor(BlockPos center) {
+        return center.offset(0, 9, -VillageWorldSystem.FORTRESS_RADIUS + 3);
     }
 
     private static void buildBackdrop(ServerLevel level, BlockPos anchor, Direction sideways,
@@ -151,13 +134,6 @@ final class VillageBuildingSignatures {
             for (int vertical = minVertical; vertical <= maxVertical; vertical++) {
                 mark(level, anchor, sideways, lateral, vertical, Blocks.AIR);
             }
-        }
-    }
-
-    private static void line(ServerLevel level, BlockPos anchor, Direction sideways,
-                             int from, int to, int vertical, Block block) {
-        for (int lateral = from; lateral <= to; lateral++) {
-            mark(level, anchor, sideways, lateral, vertical, block);
         }
     }
 
