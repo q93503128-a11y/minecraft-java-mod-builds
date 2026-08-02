@@ -44,6 +44,7 @@ public final class VillageGuardians {
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
+        VillageTowerResearchBonusSystem.reset();
         VillageMercenarySystem.reset();
         VillageGatePrioritySystem.reset();
         VillageRespawnSystem.reset();
@@ -71,6 +72,7 @@ public final class VillageGuardians {
             VillageStarterKit.grantOnLogin(player);
             VillageRpgSystem.refreshPlayerPassive(player);
             VillageRespawnSystem.onLogin(player);
+            VillageRelicSystem.openChoice(player);
             if (VillageProgressionSystem.isGameOver() && server != null) VillageUiService.openGameOverForAll(server);
         }
     }
@@ -143,6 +145,7 @@ public final class VillageGuardians {
         VillageRaidSystem.tick(event.getServer());
         VillageGatePrioritySystem.tick(event.getServer());
         VillageDefenseSystem.tick(event.getServer());
+        VillageTowerResearchBonusSystem.tick(event.getServer());
         VillageMercenarySystem.tick(event.getServer());
         VillageRespawnSystem.tick(event.getServer());
         VillageStructureHud.tick(event.getServer());
@@ -153,7 +156,7 @@ public final class VillageGuardians {
         if (maintenanceTicks >= 20) {
             maintenanceTicks = 0;
             VillageCouncilState.enforceFrozenTime(event.getServer());
-            VillageWorldSystem.purgeUnauthorizedVillageMobs(event.getServer());
+            VillageGlobalMobPurgeSystem.purge(event.getServer());
             VillageRpgSystem.refreshPassives(event.getServer());
             for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
                 if (!VillageRespawnSystem.isDowned(player)) player.setGameMode(GameType.ADVENTURE);
