@@ -14,6 +14,8 @@ def read(name: str) -> str:
 def main() -> None:
     guardians = read("VillageGuardians.java")
     controller = read("VillageUiController.java")
+    local_actions = read("VillageLocalActionSystem.java")
+    network = read("VillageNetwork.java")
     client_ui = read("VillageClientUi.java")
     facility_ui = read("VillageFacilityScreen.java")
     town_ui = read("VillageTownHallScreen.java")
@@ -87,8 +89,9 @@ def main() -> None:
     assert '"manage:"' not in local_body
     assert "openEquipmentShop(player)" in local_body
     assert "수리·강화·포탑 건설은 회관" in controller
-    assert 'case "use_infirmary"' in controller
-    assert 'case "train"' in controller
+    assert 'case "use_infirmary"' in local_actions
+    assert 'case "train"' in local_actions
+    assert "VillageLocalActionSystem.handle" in network
 
     assert "combineFirstPair" in rarity
     assert "재화는 소모되지 않았습니다" in rarity
