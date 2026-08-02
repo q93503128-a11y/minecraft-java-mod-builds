@@ -17,13 +17,13 @@ import org.lwjgl.glfw.GLFW;
 public final class VillageClientKeys {
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "controls"));
-    private static final KeyMapping ROLE_SKILL_ONE = key("role_skill_one", GLFW.GLFW_KEY_R);
-    private static final KeyMapping ROLE_SKILL_TWO = key("role_skill_two", GLFW.GLFW_KEY_G);
-    private static final KeyMapping QUICK_COMMUNICATION = key("quick_communication", GLFW.GLFW_KEY_C);
-    private static final KeyMapping STATUS = key("status", GLFW.GLFW_KEY_I);
-    private static final KeyMapping PERSONAL_PROGRESS = key("personal_progress", GLFW.GLFW_KEY_P);
-    private static final KeyMapping ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_O);
-    private static final KeyMapping CALLER = key("caller", GLFW.GLFW_KEY_V);
+    private static final KeyMapping ROLE_SKILL_ONE = key("role_skill_one", GLFW.GLFW_KEY_Z);
+    private static final KeyMapping ROLE_SKILL_TWO = key("role_skill_two", GLFW.GLFW_KEY_X);
+    private static final KeyMapping QUICK_COMMUNICATION = key("quick_communication", GLFW.GLFW_KEY_B);
+    private static final KeyMapping STATUS = key("status", GLFW.GLFW_KEY_H);
+    private static final KeyMapping GROWTH = key("personal_progress", GLFW.GLFW_KEY_J);
+    private static final KeyMapping ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_K);
+    private static final KeyMapping CALLER = key("caller", GLFW.GLFW_KEY_U);
     private static boolean tickListenerRegistered;
 
     private VillageClientKeys() {}
@@ -38,7 +38,7 @@ public final class VillageClientKeys {
         event.register(ROLE_SKILL_TWO);
         event.register(QUICK_COMMUNICATION);
         event.register(STATUS);
-        event.register(PERSONAL_PROGRESS);
+        event.register(GROWTH);
         event.register(ROLE_PROGRESS);
         event.register(CALLER);
         if (!tickListenerRegistered) {
@@ -53,7 +53,7 @@ public final class VillageClientKeys {
         consume(minecraft, ROLE_SKILL_TWO, "use_skill:1");
         consume(minecraft, QUICK_COMMUNICATION, "open_quick_chat");
         consume(minecraft, STATUS, "open_status");
-        consume(minecraft, PERSONAL_PROGRESS, "open_personal_progress");
+        consume(minecraft, GROWTH, "open_skill_tree");
         consume(minecraft, ROLE_PROGRESS, "open_role_progress_current");
         consume(minecraft, CALLER, "open_caller_menu");
     }
