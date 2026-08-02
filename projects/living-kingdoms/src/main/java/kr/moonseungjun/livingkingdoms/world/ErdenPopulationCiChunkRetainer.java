@@ -2,7 +2,6 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.HashSet;
@@ -81,7 +80,7 @@ public final class ErdenPopulationCiChunkRetainer {
             for (int chunkZ = Math.floorDiv(minZ, 16);
                  chunkZ <= Math.floorDiv(maxZ, 16); chunkZ++) {
                 ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
-                long key = ChunkPos.asLong(chunkX, chunkZ);
+                long key = ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
                 if (RETAINED_CHUNKS.add(key)) {
                     level.setChunkForced(chunkX, chunkZ, true);
                     level.getChunk(chunkX, chunkZ);
