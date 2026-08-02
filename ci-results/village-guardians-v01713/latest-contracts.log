@@ -1,1 +1,75 @@
-Contracts did not finish.
+PASS: slowed RPG balance contract
+test_xp_3000=level_7_xp_131
+level30 attack=x2.415
+level30 incoming=61.4%
+level30 bonus_health=20
+total_xp_to_level30=94685
+PASS: expanded village territory contract
+radius=96
+defense_xp_multiplier=1.5
+[PASS] Village progression upgrade costs are monotonic
+[PASS] Smithy, personal forge, and wall upgrades improve combat
+[PASS] Daily bread scales from 3 to 13
+[PASS] Center-to-north-gate avenue contains no buildings
+[PASS] Max storehouse+barracks doubles raid supplies
+[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs
+[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration
+[PASS] Emergency barrier, momentum and party recovery are wired into combat
+[PASS] Defense research expands from 9 to 15 upgrades
+[PASS] Skill trees fit overview spacing and the shop uses compact safe actions
+[PASS] Compact buildings stay inside the fortress without overlap
+[PASS] Every facility entrance faces and reaches the central road or plaza
+[PASS] Town hall remains at least twice a normal facility after resizing
+[PASS] Closed gate spans the complete tower opening without side slits
+[PASS] Wall top has a flat three-block center walkway and planned rail openings
+[PASS] Wall stairs connect directly to the landing
+[PASS] Return destination is inside the plaza and clear of the bell and buildings
+[PASS] Compact split menus use narrow selectors, wide details and bounded action buttons
+[PASS] Town hall shows current/next effects and exact repair or upgrade costs
+[PASS] Status strips unreadable legacy white formatting and remains scroll-free
+[PASS] Caller item is removed while inventory and keyboard access remain
+[PASS] Selected equipment enhancement and rarity fusion are both available
+[PASS] Building crest migration restores facade blocks instead of carving holes
+[PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired
+[PASS] Facility selectors remain narrow while descriptions receive most of the width
+[PASS] Very narrow screens switch to stacked layout without false width failures
+[PASS] Town hall uses shorter cards and explicit current/next upgrade comparison
+[PASS] Action buttons are capped at 108x20 or 112x20 instead of spanning panels
+[PASS] Growth trees use anchored popovers and reserve the full height for main content
+[PASS] Status text is dark, stripped of legacy white formatting, and fits without scrolling
+[PASS] Eight readable wave traits include deterministic counters and previews
+[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs
+[PASS] Five-day milestone sieges and endless warfront tiers remain scalable
+[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes
+[PASS] Twenty active skills combine real gameplay with dedicated display-actor scenes
+[PASS] CC0 fantasy visual references are documented without untracked binaries
+Village Guardians v0.17.4 UI, location and shortcut contracts passed.
+[PASS] Daily shop inventory rotates and hides future stock
+[PASS] Equipment, armour and supplies use bounded pixel-fit layouts
+[PASS] Caller opens a screen-safe PUBG-style quick communication wheel
+[PASS] Smithy fusion explicitly selects three compatible items
+[PASS] Skill-hall entry opens skills only and defense research titles stay concise
+[PASS] Skills use non-particle display actors and infirmary upgrades have real utility
+Village Guardians v0.17.6 gameplay, UI, item and defeat contracts passed.
+Village Guardians v0.17.7 contracts passed.
+[PASS] Common growth has five ten-stage branches with functional late capstones
+[PASS] Growth nodes radiate at equal 72-degree intervals in a five-point star layout
+[PASS] Outdoor test arena teleports, restores position and owns reward-free targets
+[PASS] Test skills temporarily equip to Z/X and use the real keyed cast/display path
+[PASS] Test arena owns separate role and skill management barrels
+[PASS] Test-only job selection leaves permanent role and progression untouched
+[PASS] Skill cards directly assign Z/X and the real keyed cast path reads the test loadout
+[PASS] Client Z/X mappings are registered by the client event subscriber
+[PASS] Z/X packets route directly to the real role-skill cast system
+[PASS] Role and skill management use separate physical barrels and screens
+[PASS] Equipping closes the skill screen so in-game Z/X input is no longer drained
+[PASS] Action-bar HUD shows equipped Z/X skills, readiness and a live cooldown bar
+[PASS] Test role and skill managers use a dedicated compact responsive UI
+[PASS] Twenty active skills own real movement, projectile, field and display-actor motions
+[PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events
+[PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness
+[PASS] Default shortcut help matches Z/X/B/H/J/K/U registrations
+[PASS] Saved legacy R/G skill bindings migrate to real Z/X and persist
+[PASS] Garen-style whirlwind owns six visible swords and six rotating arc actors
+[PASS] All twenty skills use bounded item/block display scenes without particles
+[PASS] Temporary glass walls, block-break particles and obsolete visual facade are removed
