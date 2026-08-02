@@ -1,4 +1,4 @@
 village-guardians-0.17.1-alpha.1
-source-ready=2026-08-02T10:47:00+09:00
+source-ready=2026-08-02T10:52:00+09:00
 audit=compact-ui-readable-status-upgrade-diff-no-caller-facade-smithy
-retry=0
+retry=1
