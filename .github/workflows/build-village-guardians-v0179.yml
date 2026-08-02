@@ -58,9 +58,17 @@ jobs:
           '''
           new = '''text = replace_once(
               text,
+              "    public static void initializeServer(MinecraftServer server) {\\n"
+              "        ENABLED.clear();\\n"
+              "        DUMMIES.clear();\\n"
+              "        OWNERS.clear();\\n"
               "        RETURN_POINTS.clear();\\n"
               "        TEST_LOADOUTS.clear();\\n"
               "    }\\n",
+              "    public static void initializeServer(MinecraftServer server) {\\n"
+              "        ENABLED.clear();\\n"
+              "        DUMMIES.clear();\\n"
+              "        OWNERS.clear();\\n"
               "        RETURN_POINTS.clear();\\n"
               "        TEST_LOADOUTS.clear();\\n"
               "        TEST_ROLES.clear();\\n"
