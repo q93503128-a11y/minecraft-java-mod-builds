@@ -13,11 +13,17 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Persists stable political geography and surveys only a small district around each capital. */
+/** Persists stable political geography and requires connected dry land around every capital. */
 public final class RealmSitePlanner {
     public static final int LAYOUT_REVISION = 8;
-    private static final int SEARCH_RADIUS = 512;
-    private static final int SEARCH_STEP = 128;
+    private static final int SEARCH_RADIUS = 2_048;
+    private static final int SEARCH_STEP = 256;
+    private static final int[][] OUTER_SAMPLES = {
+            {224, 0}, {-224, 0}, {0, 224}, {0, -224},
+            {224, 224}, {-224, 224}, {224, -224}, {-224, -224},
+            {112, 224}, {-112, 224}, {112, -224}, {-112, -224},
+            {224, 112}, {-224, 112}, {224, -112}, {-224, -112}
+    };
 
     private RealmSitePlanner() {
     }
@@ -31,12 +37,20 @@ public final class RealmSitePlanner {
                 candidates.add(sample(level, homelandId, anchor[0] + dx, anchor[1] + dz, dx, dz));
             }
         }
-        Candidate selected = candidates.stream().min(Comparator.comparingDouble(Candidate::score))
-                .orElseThrow(() -> new IllegalStateException("No authored site candidates for " + homelandId));
+        Comparator<Candidate> score = Comparator.comparingDouble(Candidate::score);
+        Candidate selected = candidates.stream()
+                .filter(candidate -> candidate.water() <= 4 && candidate.outerWater() <= 7)
+                .min(score)
+                .orElseGet(() -> candidates.stream()
+                        .filter(candidate -> candidate.outerWater() <= 9)
+                        .min(score)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "No connected capital district exists for " + homelandId)));
         LivingKingdoms.LOGGER.info(
-                "Authored district {} selected {},{} baseY={} dry={}/25 range={} distance={} score={}",
+                "Authored district {} selected {},{} baseY={} inner_land={}/25 outer_land={}/16 range={} distance={} score={}",
                 homelandId, selected.x(), selected.z(), selected.baseY(),
-                25 - selected.water(), selected.range(), selected.distance(), selected.score()
+                25 - selected.water(), 16 - selected.outerWater(), selected.range(),
+                selected.distance(), selected.score()
         );
         return new RealmSiteLayoutSavedData.RealmSite(
                 selected.x(), selected.z(), selected.baseY(), LAYOUT_REVISION, false
@@ -129,6 +143,12 @@ public final class RealmSitePlanner {
                 if (point.water()) water++;
             }
         }
+        int outerWater = 0;
+        for (int[] offset : OUTER_SAMPLES) {
+            if (generatedPoint(generator, randomState, level, x + offset[0], z + offset[1]).water()) {
+                outerWater++;
+            }
+        }
         heights.sort(Integer::compareTo);
         int median = heights.get(heights.size() / 2);
         int preferred = preferredBaseY(homelandId);
@@ -142,8 +162,9 @@ public final class RealmSitePlanner {
         } else {
             terrainPreference = (max - min) * 180.0;
         }
-        double score = water * 20_000.0 + terrainPreference + distance * 2.0;
-        return new Candidate(x, z, baseY, water, max - min, distance, score);
+        double score = water * 30_000.0 + outerWater * 45_000.0
+                + terrainPreference + distance * 1.5;
+        return new Candidate(x, z, baseY, water, outerWater, max - min, distance, score);
     }
 
     private static TerrainPoint generatedPoint(ChunkGenerator generator, RandomState randomState,
@@ -181,6 +202,6 @@ public final class RealmSitePlanner {
     }
 
     private record TerrainPoint(int y, boolean water) {}
-    private record Candidate(int x, int z, int baseY, int water, int range,
+    private record Candidate(int x, int z, int baseY, int water, int outerWater, int range,
                              double distance, double score) {}
 }
