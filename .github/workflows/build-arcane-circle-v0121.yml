@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Alpha.6 Fusion and Mage Gear
+name: Build Arcane Circle v0.12.1 Alpha.6 Per-Spell World Geometry and Mage Gear
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   build:
-    name: Java 25 direct build - chord fusion, visible failures, gear and balance
+    name: Java 25 direct build - per-spell world geometry, chord fusion, gear and balance
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -116,9 +116,8 @@ jobs:
                   if token not in client:
                       raise SystemExit(f'number-key chord state missing: {token!r}')
               gear = z.read('kr/moonseungjun/arcanecircle/magic/MageGearService.class')
-              for token in (b'mage_robe_hem', b'gear_hat', b'gear_robe'):
-                  if token not in gear and token != b'gear_hat' and token != b'gear_robe':
-                      raise SystemExit(f'gear bytecode missing: {token!r}')
+              if b'mage_robe_hem' not in gear:
+                  raise SystemExit('two-slot robe runtime missing')
               damage = z.read('kr/moonseungjun/arcanecircle/magic/ArcaneDamage.class')
               for token in (b'playerAttack', b'mobAttack', b'setTarget'):
                   if token not in damage:
