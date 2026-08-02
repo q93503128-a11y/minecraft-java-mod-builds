@@ -177,7 +177,7 @@ public final class VillageTownHallScreen extends Screen {
         if (roles.isEmpty()) return;
         RoleCard role = roles.get(clamp(selectedRole, 0, roles.size() - 1));
         List<Section> sections = new ArrayList<>();
-        sections.add(new Section(role.name(), roleColor(role.id()), true));
+        sections.add(new Section(role.name(), "", roleColor(role.id()), true));
         sections.add(new Section("역할", role.overview(), TEXT, false));
         sections.add(new Section("상시 효과", role.passive(), TEAL, false));
         sections.add(new Section("전투 방식", role.active(), GOLD, false));
@@ -196,7 +196,7 @@ public final class VillageTownHallScreen extends Screen {
         FacilityCard facility = facilities.get(clamp(selectedFacility, 0, facilities.size() - 1));
         int stateColor = facility.hp() <= 0 ? RED : facility.hp() < facility.maxHp() ? GOLD : TEAL;
         List<Section> sections = new ArrayList<>();
-        sections.add(new Section(facility.name(), stateColor, true));
+        sections.add(new Section(facility.name(), "", stateColor, true));
         sections.add(new Section("시설 상태",
                 facility.level() + " · 내구도 " + facility.hp() + " / " + facility.maxHp(), TEXT, false));
 
