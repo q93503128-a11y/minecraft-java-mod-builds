@@ -1,4 +1,3 @@
-
 package kr.moonseungjun.arcanecircle.world;
 
 import com.mojang.serialization.Codec;
@@ -93,11 +92,11 @@ public final class ArcaneWorldData extends SavedData {
 
     public MagicTradition tradition(ServerPlayer player) { return profile(player).tradition; }
 
-    public boolean chooseTradition(ServerPlayer player, MagicTradition tradition, long changeCost) {
-        if (tradition == null || tradition == MagicTradition.UNBOUND) return false;
+    public boolean chooseTradition(ServerPlayer player, MagicTradition tradition, long attunementCost) {
+        if (tradition == null || tradition == MagicTradition.UNBOUND || attunementCost < 0L) return false;
         Profile profile = profile(player);
         if (profile.tradition == tradition) return true;
-        if (profile.tradition != MagicTradition.UNBOUND && !spendMarks(player, changeCost)) return false;
+        if (!spendMarks(player, attunementCost)) return false;
         profile.tradition = tradition;
         setDirty();
         return true;
