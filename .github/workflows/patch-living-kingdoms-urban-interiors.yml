@@ -1,0 +1,101 @@
+name: Patch Living Kingdoms urban interiors
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-urban-interiors.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wire functional interiors
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  '''        for (PlacedBlock block : placed) {
+            plan.addSet(block.x, block.y, block.z, block.state);
+        }
+    }
+
+    private static void addAccessPath''',
+                  '''        for (PlacedBlock block : placed) {
+            plan.addSet(block.x, block.y, block.z, block.state);
+        }
+        ErdenUrbanInteriorBuilder.addChunk(
+                plan,
+                chunk,
+                placement.role.id,
+                originX,
+                baseY + fragment.entranceFloorY,
+                originZ,
+                rotatedWidth,
+                rotatedLength,
+                placement.entrance.x,
+                placement.entrance.z,
+                placement.entrance.roadX,
+                placement.entrance.roadZ);
+    }
+
+    private static void addAccessPath'''
+              ),
+              (
+                  '''        return new FacadeFragment(
+                fragmentWidth, height, fragmentLength,
+                List.copyOf(selected.values()), entranceX, entranceZ);''',
+                  '''        return new FacadeFragment(
+                fragmentWidth, height, fragmentLength,
+                List.copyOf(selected.values()),
+                entranceX, Math.max(0, entrance.y - 1), entranceZ);'''
+              ),
+              (
+                  '''    private record FacadeFragment(
+            int width, int height, int length,
+            List<BuildingBlock> blocks,
+            int entranceX, int entranceZ) {
+    }''',
+                  '''    private record FacadeFragment(
+            int width, int height, int length,
+            List<BuildingBlock> blocks,
+            int entranceX, int entranceFloorY, int entranceZ) {
+    }'''
+              )
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one patch target, found {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit source and remove patch workflow
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/patch-living-kingdoms-urban-interiors.yml
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java
+          git commit -m 'Integrate functional interiors into Erden urban streaming'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
