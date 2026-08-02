@@ -48,14 +48,33 @@ jobs:
           python3 tools/apply_v01710.py
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('tools/test_v0178_gameplay.py')
-          text = path.read_text(encoding='utf-8')
+
+          keys = Path('src/main/java/kr/moonseungjun/villageguardians/VillageClientKeys.java')
+          key_text = keys.read_text(encoding='utf-8')
+          key_text = key_text.replace(
+              '@EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID, bus = EventBusSubscriber.Bus.MOD)',
+              '@EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)')
+          keys.write_text(key_text, encoding='utf-8')
+
+          old_test = Path('tools/test_v0178_gameplay.py')
+          text = old_test.read_text(encoding='utf-8')
           text = text.replace('assert "K로 이 화면" in controller',
                               'assert "K로 다시 엽니다" in controller')
           text = text.replace(
               'assert "if (VillageSkillTestSystem.isEnabled(player)) openSkillTest(player);" in controller',
               'assert "if (VillageSkillTestSystem.isEnabled(player)) openSkillTestSkillManager(player);" in controller')
-          path.write_text(text, encoding='utf-8')
+          old_test.write_text(text, encoding='utf-8')
+
+          runtime = Path('tools/test_v01710_skill_input.py')
+          runtime_text = runtime.read_text(encoding='utf-8')
+          runtime_text = runtime_text.replace(
+              'assert "bus = EventBusSubscriber.Bus.MOD" in keys',
+              'assert "@EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)" in keys\n'
+              '    assert "registerKeyMappings(RegisterKeyMappingsEvent event)" in keys')
+          runtime_text = runtime_text.replace(
+              '[PASS] Client Z/X mappings register on the NeoForge mod event bus',
+              '[PASS] Client Z/X mappings are registered by the client event subscriber')
+          runtime.write_text(runtime_text, encoding='utf-8')
           PY
           rm -f tools/apply_v01710.py
 
