@@ -9,6 +9,7 @@ import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
+import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanLifeManager;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
@@ -23,6 +24,7 @@ import kr.moonseungjun.livingkingdoms.world.StarterRealmManager;
 import kr.moonseungjun.livingkingdoms.worldgen.LivingWorldgenTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -74,6 +76,7 @@ public final class LivingKingdoms {
         ErdenCapitalStreamingBuilder.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
+        ErdenPopulationManager.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
     }
@@ -145,6 +148,10 @@ public final class LivingKingdoms {
 
     private void onLivingDeath(LivingDeathEvent event) {
         if (FantasyWorldRules.handleDefeat(event)) return;
+        if (event.getEntity() instanceof Villager villager
+                && villager.level() instanceof ServerLevel level) {
+            ErdenPopulationManager.markDeadIfResident(level, villager);
+        }
         CrimeManager.handleDeath(event);
     }
 
@@ -159,6 +166,7 @@ public final class LivingKingdoms {
 
     private void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         StarterNpcManager.handleInteraction(event);
+        ErdenPopulationManager.handleInteraction(event);
     }
 
     private void onWorkstationInteraction(PlayerInteractEvent.RightClickBlock event) {
