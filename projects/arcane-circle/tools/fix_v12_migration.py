@@ -55,5 +55,8 @@ if old in text:
     text = text.replace(old, new)
 text = text.replace('strip_calls(casting, ".sendParticles")',
                     'strip_calls(casting, "level.sendParticles")')
+text = text.replace(
+    '''needle = '    "kr/moonseungjun/arcanecircle/network/ArcaneNetwork.class",\\n'\naddition = ('    "kr/moonseungjun/arcanecircle/network/ArcaneNetwork.class",\\n'\n''',
+    '''needle = '    "kr/moonseungjun/arcanecircle/ArcaneCircle.class",\\n'\naddition = ('    "kr/moonseungjun/arcanecircle/ArcaneCircle.class",\\n'\n''')
 path.write_text(text, encoding="utf-8")
-print("v0.12 migration call stripper normalized")
+print("v0.12 migration call stripper and JAR insertion point normalized")
