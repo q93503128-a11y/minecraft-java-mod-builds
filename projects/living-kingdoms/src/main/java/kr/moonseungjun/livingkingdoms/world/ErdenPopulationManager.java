@@ -221,7 +221,7 @@ public final class ErdenPopulationManager {
             int homeX,
             int homeZ) {
         return available.stream()
-                .min(Comparator.comparingLong(entrance -> distanceSquared(
+                .min(Comparator.<ExternalUrbanFabricBuilder.UrbanEntrance>comparingLong(entrance -> distanceSquared(
                                 homeX, homeZ, entrance.x(), entrance.z()))
                         .thenComparing(ExternalUrbanFabricBuilder.UrbanEntrance::role)
                         .thenComparingInt(ExternalUrbanFabricBuilder.UrbanEntrance::z)
