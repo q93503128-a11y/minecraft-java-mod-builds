@@ -18,6 +18,10 @@ import java.util.Set;
 /** Builds capital cores from attributed external schematics instead of procedural box buildings. */
 public final class ExternalRealmBuilder {
     private static final Map<String, SpongeStructureTemplate> CACHE = new HashMap<>();
+    private static final Map<String, String> LEGACY_BLOCK_IDS = Map.of(
+            "minecraft:chain", "minecraft:iron_chain",
+            "minecraft:grass", "minecraft:short_grass"
+    );
     private static final Set<String> SKIPPED_TERRAIN = Set.of(
             "minecraft:air", "minecraft:cave_air", "minecraft:void_air", "minecraft:structure_void",
             "minecraft:grass_block", "minecraft:dirt", "minecraft:coarse_dirt", "minecraft:rooted_dirt"
@@ -125,11 +129,16 @@ public final class ExternalRealmBuilder {
     }
 
     private static BlockState parseState(String specification) {
-        String id = blockId(specification);
+        String originalId = blockId(specification);
+        String id = LEGACY_BLOCK_IDS.getOrDefault(originalId, originalId);
+        if (!id.equals(originalId)) {
+            LivingKingdoms.LOGGER.debug("Migrating external schematic block id {} -> {}", originalId, id);
+        }
         Identifier key = Identifier.parse(id);
         Block block = BuiltInRegistries.BLOCK.getValue(key);
         if (block == null || block == Blocks.AIR && !"minecraft:air".equals(id)) {
-            throw new IllegalStateException("Unknown external schematic block " + id);
+            throw new IllegalStateException("Unknown external schematic block " + originalId
+                    + " (resolved as " + id + ")");
         }
         BlockState state = block.defaultBlockState();
         int open = specification.indexOf('[');
