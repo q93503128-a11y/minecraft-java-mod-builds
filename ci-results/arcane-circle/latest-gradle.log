@@ -1,4 +1,1 @@
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/apply_v12_overhaul.py", line 1112, in <module>
-    raise RuntimeError("verify_jAR required entry insertion point missing")
-RuntimeError: verify_jAR required entry insertion point missing
+Arcane Circle v0.12 world geometry, charged fusion and compact HUD overhaul applied
