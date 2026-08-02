@@ -1,0 +1,184 @@
+name: Build Village Guardians v0.17.13 Effects and Keys
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.build-trigger-v01713'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: village-guardians-v01713-main
+  cancel-in-progress: false
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  EXPECTED_JAR: villageguardians-0.17.13-alpha.1.jar
+  PUBLISHED_DIR: published/village-guardians
+  RESULT_DIR: ci-results/village-guardians-v01713
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-read-only: false
+
+      - name: Apply v0.17.13 source overhaul
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/v01713/apply.py
+          python3 tools/v01713/apply.py
+          python3 - <<'PY'
+          from pathlib import Path
+          for path in Path('tools').glob('test_*.py'):
+              text = path.read_text(encoding='utf-8')
+              updated = text.replace('mod_version=0.17.12-alpha.1', 'mod_version=0.17.13-alpha.1')
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+          PY
+          rm -rf tools/v01713
+          rm -f tools/fix_v01712_compile.py
+          rm -f .probe-render-api
+          rm -f "$GITHUB_WORKSPACE/.github/workflows/probe-village-guardians-render-api.yml"
+          rm -rf "$GITHUB_WORKSPACE/ci-results/village-guardians-render-api"
+          rm -f "$GITHUB_WORKSPACE/ci-results/village-guardians-render-api.txt"
+
+      - name: Run complete contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            python3 tools/test_rpg_balance.py
+            python3 tools/test_village_zone.py
+            python3 tools/test_progression_loop.py
+            python3 tools/test_progression_depth.py
+            python3 tools/test_fortress_layout.py
+            python3 tools/test_runtime_safety.py
+            python3 tools/test_action_layout.py
+            python3 tools/test_enemy_content.py
+            python3 tools/test_v0174_ui_safety.py
+            python3 tools/test_v0175_gameplay_ui.py
+            python3 tools/test_v0176_gameplay.py
+            python3 tools/test_v0177_gameplay.py
+            python3 tools/test_v0178_gameplay.py
+            python3 tools/test_v0179_skill_test_box.py
+            python3 tools/test_v01710_skill_test_runtime.py
+            python3 tools/test_v01711_skill_hud_ui.py
+            python3 tools/test_v01712_role_abilities.py
+            python3 tools/test_v01713_effects_and_keys.py
+          } 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v01713-contracts.log"
+
+      - name: Build Java 25 JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain \
+            2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v01713-gradle.log"
+
+      - name: Verify artifact and bytecode
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          unzip -l "build/libs/$EXPECTED_JAR" | grep -q 'VillageSkillEffectSystem.class'
+          unzip -l "build/libs/$EXPECTED_JAR" | grep -q 'VillageSkillEffectSystem\$DisplayAccess.class'
+          if unzip -l "build/libs/$EXPECTED_JAR" | grep -q 'VillageSkillVisualSystem.class'; then
+            echo 'Obsolete VillageSkillVisualSystem remains in JAR' >&2
+            exit 1
+          fi
+          javap -classpath "build/libs/$EXPECTED_JAR" -c -p \
+            kr.moonseungjun.villageguardians.VillageClientKeys \
+            > "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log"
+          grep -q 'org/lwjgl/glfw/GLFW' "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log"
+          strings "build/libs/$EXPECTED_JAR" | grep -q 'VillageSkillEffectSystem'
+          mkdir -p "$GITHUB_WORKSPACE/deliverables-v01713"
+          cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables-v01713/"
+          cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables-v01713/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v01713-contracts.log" "$GITHUB_WORKSPACE/deliverables-v01713/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v01713-gradle.log" "$GITHUB_WORKSPACE/deliverables-v01713/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log" "$GITHUB_WORKSPACE/deliverables-v01713/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.17.13-alpha.1
+          path: deliverables-v01713/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish verified source and JAR directly to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PUBLISHED_DIR"
+          cp "deliverables-v01713/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+          cp "deliverables-v01713/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A "$PROJECT_DIR" "$PUBLISHED_DIR" .github/workflows ci-results
+          if ! git diff --cached --quiet; then
+            git commit -m 'Apply Village Guardians v0.17.13 real skill effects and key migration'
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Record result
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          FINAL_STATUS='${{ job.status }}'
+          TEMP_DIR="$RUNNER_TEMP/village-guardians-v01713-result"
+          rm -rf "$TEMP_DIR" && mkdir -p "$TEMP_DIR"
+          cp "$GITHUB_WORKSPACE/village-guardians-v01713-contracts.log" "$TEMP_DIR/latest-contracts.log" 2>/dev/null || printf '%s\n' 'Contracts did not finish.' > "$TEMP_DIR/latest-contracts.log"
+          cp "$GITHUB_WORKSPACE/village-guardians-v01713-gradle.log" "$TEMP_DIR/latest-gradle.log" 2>/dev/null || printf '%s\n' 'Gradle did not finish.' > "$TEMP_DIR/latest-gradle.log"
+          cp "$GITHUB_WORKSPACE/village-guardians-v01713-keys-bytecode.log" "$TEMP_DIR/keys-bytecode.log" 2>/dev/null || true
+          cat > "$TEMP_DIR/status.txt" <<EOF
+          status=$FINAL_STATUS
+          trigger_sha=$GITHUB_SHA
+          published_commit=$(git rev-parse HEAD 2>/dev/null)
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
+          version=0.17.13-alpha.1
+          EOF
+          git reset --hard HEAD
+          git clean -fd
+          mkdir -p "$RESULT_DIR"
+          cp "$TEMP_DIR"/* "$RESULT_DIR/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULT_DIR"
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Village Guardians v0.17.13 result for ${GITHUB_SHA::7}"
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
