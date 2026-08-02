@@ -185,8 +185,7 @@ public final class ExpandedSpellEffects {
 
     private static boolean featherFall(ServerPlayer player, int duration) {
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, duration, 0));
-        level(player).sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY() + 0.2, player.getZ(),
-                28, 0.55, 0.15, 0.55, 0.01);
+
         return true;
     }
 
@@ -234,8 +233,7 @@ public final class ExpandedSpellEffects {
         for (int step = 1; step <= 12; step++) {
             double distance = range * step / 12.0;
             Vec3 center = origin.add(look.scale(distance)).add(0.0, 0.65, 0.0);
-            level.sendParticles(particle, center.x, center.y, center.z, 4 + step,
-                    distance * 0.075, 0.28, distance * 0.075, 0.01);
+
         }
         return true;
     }
@@ -317,8 +315,7 @@ public final class ExpandedSpellEffects {
     private static boolean levitate(ServerPlayer player, double power, int duration) {
         player.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 42 + (int) Math.round(power * 2.0), 1));
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, duration, 0));
-        level(player).sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY(), player.getZ(),
-                35, 0.6, 0.15, 0.6, 0.02);
+
         return true;
     }
 
@@ -453,8 +450,7 @@ public final class ExpandedSpellEffects {
         for (int step = 1; step <= 15; step++) {
             double distance = range * step / 15.0;
             Vec3 center = origin.add(look.scale(distance)).add(0.0, 0.75, 0.0);
-            level.sendParticles(ParticleTypes.SNOWFLAKE, center.x, center.y, center.z, 6 + step,
-                    distance * 0.085, 0.5, distance * 0.085, 0.01);
+
         }
         return true;
     }
@@ -587,12 +583,10 @@ public final class ExpandedSpellEffects {
         Optional<BlockPos> destination = findSafeDestination(player, range);
         if (destination.isEmpty()) return false;
         ServerLevel level = level(player);
-        level.sendParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1.0, player.getZ(),
-                35 + tier * 12, 0.6, 1.0, 0.6, 0.08);
+
         BlockPos pos = destination.get();
         player.teleportTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY() + 1.0, player.getZ(),
-                42 + tier * 15, 0.7, 1.1, 0.7, 0.06);
+
         if (tier >= 2) player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
                 80 + tier * 30 + (int) power * 4, Math.min(3, tier - 1)));
         level.playSound(null, pos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.9F, 1.1F - tier * 0.08F);
@@ -741,20 +735,19 @@ public final class ExpandedSpellEffects {
         Vec3 delta = end.subtract(start);
         for (int i = 0; i <= points; i++) {
             Vec3 point = start.add(delta.scale(i / (double) points));
-            level.sendParticles(particle, point.x, point.y, point.z, 1, 0, 0, 0, 0);
+
         }
     }
 
     private static void ring(ServerLevel level, Vec3 center, double radius, ParticleOptions particle, int points) {
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2.0 * i / points;
-            level.sendParticles(particle, center.x + Math.cos(angle) * radius, center.y,
-                    center.z + Math.sin(angle) * radius, 1, 0, 0, 0, 0);
+
         }
     }
 
     private static void burst(ServerLevel level, Vec3 center, ParticleOptions particle, int count, double spread) {
-        level.sendParticles(particle, center.x, center.y, center.z, count, spread, spread, spread, 0.025);
+
     }
 
     private static ServerLevel level(ServerPlayer player) { return (ServerLevel) player.level(); }

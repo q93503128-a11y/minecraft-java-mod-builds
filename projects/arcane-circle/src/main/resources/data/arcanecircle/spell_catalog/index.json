@@ -1,5 +1,5 @@
 {
-  "version": "0.12.0-alpha.1",
+  "version": "0.12.1-alpha.1",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -51,5 +51,6 @@
   "crafting_progression": false,
   "villager_currency": false,
   "visual_core": "world_geometry_no_particles",
-  "fusion_casting": "charged_release"
+  "fusion_casting": "charged_release",
+  "particle_core_calls": 0
 }

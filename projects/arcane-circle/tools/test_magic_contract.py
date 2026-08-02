@@ -35,11 +35,11 @@ hud = read("client/ArcaneHud.java")
 items = read("registry/ModItems.java")
 build = (ROOT / "build.gradle").read_text(encoding="utf-8")
 properties = (ROOT / "gradle.properties").read_text(encoding="utf-8")
-workflow = (ROOT.parents[1] / ".github/workflows/build-arcane-circle.yml").read_text(encoding="utf-8")
+workflow = (ROOT.parents[1] / ".github/workflows/build-arcane-circle-v0121.yml").read_text(encoding="utf-8")
 
-need(properties, ["mod_version=0.12.0-alpha.1"], "version")
-need(workflow, ["0.12.0-alpha.1", "apply_v12_overhaul.py", "world geometry and charged fusion"], "workflow")
-need(main, ['VERSION = "0.12.0-alpha.1"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
+need(properties, ["mod_version=0.12.1-alpha.1"], "version")
+need(workflow, ["0.12.1-alpha.1", "apply_v12_1_particle_cleanup.py", "all-circle world geometry"], "workflow")
+need(main, ['VERSION = "0.12.1-alpha.1"', "MagicWorldService", "ArcaneEconomyService"], "lifecycle")
 need(catalog, [
     "IMPLEMENTED_MAX_CIRCLE = 9", "WORLD_MAX_CIRCLE = 9", "meteor_swarm",
     "power_word_kill", "prismatic_wall", "shapechange", "time_stop", "wish", "gate",
@@ -54,19 +54,19 @@ need(lore, [
     "CC BY 4.0", "SigilFamily", "LANCE", "STAR", "HEX", "PORTAL", "EYE",
     "SEAL", "CLOCK", "SPIRAL", "STORM", "CROWN"
 ], "licensed lore and sigil grammar")
-need(sigils, [
-    "renderChargeStep", "renderRelease", "CHARGE_STAGES", "radialCompartments",
-    "centralSeal", "runeTicks", "spell.id().hashCode()", "case LANCE", "CROWN"
-], "single-pass per-spell sigil rendering")
-if "renderReadyPulse" in sigils:
-    raise SystemExit("ready-loop sigil regeneration remains")
+world_geometry = read("client/WorldMagicTracker.java")
+need(world_geometry, [
+    "ExtractLevelRenderStateEvent", "SubmitCustomGeometryEvent", "submitShapeOutline",
+    "buildCharge", "buildRelease", "for (int ring = 0; ring < spell.circle(); ring++)"
+], "multiplayer world-space sigil geometry")
+need(sigils, ["@Deprecated", "WorldMagicTracker"], "retired compatibility sigil service")
 need(high, [
     "disintegrate", "forcecage", "antimagic_field", "earthquake", "meteor_swarm",
     "power_word_kill", "prismatic_wall", "time_stop", "wish", "gate"
 ], "high-circle effects")
 need(casting, [
-     "requiredCastTicks",
-    "HighCircleSpellEffects.execute", "marksEarned"
+    "requiredCastTicks", "requiredFusionCastTicks", "tickFusion",
+    "HighCircleSpellEffects.execute", "WorldMagicService.release", "marksEarned"
 ], "casting integration")
 if "SpellSigilService.renderReadyPulse" in casting:
     raise SystemExit("ready-loop casting remains")
@@ -88,7 +88,7 @@ for obsolete in ("GameRules", "getSharedSpawnPos", "setDefaultSpawnPos", "setExh
     if obsolete in world:
         raise SystemExit(f"obsolete pre-26.2 world API remains: {obsolete}")
 need(network, [
-    'PROTOCOL_VERSION = "ninefold-arcana-12"', "PurchaseAcademyItemPayload.TYPE",
+    'PROTOCOL_VERSION = "ninefold-arcana-12-1"', "PurchaseAcademyItemPayload.TYPE",
     "ChooseTraditionPayload.TYPE", '"academy"', '"marks="', '"tradition="', '";charge_required="'
 ], "academy and cast-time network")
 need(screen, [
@@ -116,7 +116,7 @@ if len(books) != 85 or by_circle[1] != 5 or any(by_circle[circle] != 10 for circ
     raise SystemExit(f"spellbook distribution mismatch: total={len(books)}, circles={by_circle}")
 
 index = json.loads((RES / "data/arcanecircle/spell_catalog/index.json").read_text(encoding="utf-8"))
-if index.get("version") != "0.12.0-alpha.1" or index.get("direct_spells") != 90:
+if index.get("version") != "0.12.1-alpha.1" or index.get("direct_spells") != 90:
     raise SystemExit("v0.10 spell catalogue index mismatch")
 if index.get("economy") != "single persistent Arcana wallet" or index.get("crafting_progression") is not False:
     raise SystemExit("magic-world economy index mismatch")
@@ -136,4 +136,4 @@ for staff, encoded in textures.items():
 if len(textures) != 9 or len(hashes) != 9:
     raise SystemExit("staff textures are missing or duplicated")
 
-print("Arcane Circle v0.12 nine-circle world geometry and charged fusion contract: PASS")
+print("Arcane Circle v0.12.1 nine-circle particle-free world geometry contract: PASS")

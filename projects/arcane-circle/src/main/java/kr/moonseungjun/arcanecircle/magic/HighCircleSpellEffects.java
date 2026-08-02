@@ -314,7 +314,7 @@ public final class HighCircleSpellEffects {
         for (Mob mob : enemies(player, center, radius)) {
             mob.hurtServer(level, level.damageSources().magic(), (float) (power * 0.70));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 360, 3));
-            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, mob.getX(), mob.getY() + 1, mob.getZ(), 40, 0.8, 1.0, 0.8, 0.06);
+
         }
         for (double r = 4; r <= radius; r += 4) ring(level, center.add(0, 1, 0), r, ParticleTypes.CLOUD, 70);
         return true;
@@ -377,7 +377,7 @@ public final class HighCircleSpellEffects {
         for (int layer = 0; layer < particles.size(); layer++) {
             for (int i = -24; i <= 24; i++) {
                 Vec3 p = center.add(right.scale(i / 24.0 * half)).add(0, layer * 1.1, 0);
-                level(player).sendParticles(particles.get(layer), p.x, p.y, p.z, 2, 0, 0, 0, 0);
+
             }
         }
         for (Mob mob : enemies(player, center, half + 3.0)) {
@@ -482,19 +482,18 @@ public final class HighCircleSpellEffects {
     private static void ring(ServerLevel level, Vec3 center, double radius, ParticleOptions particle, int points) {
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2.0 * i / points;
-            level.sendParticles(particle, center.x + Math.cos(angle) * radius, center.y,
-                    center.z + Math.sin(angle) * radius, 1, 0, 0, 0, 0);
+
         }
     }
 
     private static void line(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {
         for (int i = 0; i <= points; i++) {
             Vec3 p = start.lerp(end, i / (double) points);
-            level.sendParticles(particle, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+
         }
     }
 
     private static void burst(ServerLevel level, Vec3 center, ParticleOptions particle, int count, double spread) {
-        level.sendParticles(particle, center.x, center.y, center.z, count, spread, spread, spread, 0.05);
+
     }
 }

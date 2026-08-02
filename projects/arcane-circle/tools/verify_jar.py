@@ -60,5 +60,5 @@ with zipfile.ZipFile(jar) as archive:
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 checksum = jar.with_name(jar.name + ".sha256")
 checksum.write_text(f"{digest}  {jar.name}\n", encoding="utf-8")
-print(f"Arcane Circle v0.9 JAR verification: PASS ({len(names)} entries)")
+print(f"Arcane Circle v0.12.1 JAR verification: PASS ({len(names)} entries)")
 print(f"SHA-256: {digest}")

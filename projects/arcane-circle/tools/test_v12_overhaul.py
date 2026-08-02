@@ -31,8 +31,8 @@ client_main = read("src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircleClien
 state = read("src/main/java/kr/moonseungjun/arcanecircle/client/ArcaneClientState.java")
 version = read("gradle.properties")
 
-need(version, ["mod_version=0.12.0-alpha.1"], "version")
-need(network, ["ninefold-arcana-12", "WorldMagicPayload.TYPE", "fusion_charge_ticks",
+need(version, ["mod_version=0.12.1-alpha.1"], "version")
+need(network, ["ninefold-arcana-12-1", "WorldMagicPayload.TYPE", "fusion_charge_ticks",
                "fusion_charge_required"], "network")
 need(handlers, ["handleWorldMagic", "WorldMagicTracker.accept"], "client payload handler")
 need(client_main, ["WorldMagicTracker::onExtract", "WorldMagicTracker::onSubmit"], "world render registration")
@@ -63,4 +63,4 @@ need(visual_service, ["PacketDistributor.sendToPlayersNear", "kind=stop", "case 
 need(casting, ["int direct = requiredCastTicks", "registered ? 7 : 18 + ingredientCount * 5",
                "Math.max(direct + 5"], "fusion cast-time penalty")
 
-print("Arcane Circle v0.12 compact HUD, charged fusion and particle-free world geometry contract: PASS")
+print("Arcane Circle v0.12.1 compact HUD, charged fusion and particle-free world geometry contract: PASS")
