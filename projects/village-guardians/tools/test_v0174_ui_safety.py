@@ -36,7 +36,7 @@ def main() -> None:
     assert "Supplier<String> action" in service
     assert "action.get()" in service
     assert "() -> VillageProgressionSystem.learnNextSkill(player)" in service
-    assert "치료는 의무소" in local and "전투 훈련은 병영" in local
+    assert "자동 버프 건물" in local and "전투 훈련은 패시브" in local
 
     assert "font.width(normalized)" in town
     assert "font.width(normalized)" in facility
