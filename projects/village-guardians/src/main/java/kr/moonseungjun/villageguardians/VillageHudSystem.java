@@ -46,11 +46,14 @@ public final class VillageHudSystem {
         String role = VillageCouncilState.roleOf(player.getUUID())
                 .map(VillageRole::shortName)
                 .orElse("역할 없음");
+        String skillHud = VillageRoleSkillSystem.hudSlotText(player, 0)
+                + " §8· " + VillageRoleSkillSystem.hudSlotText(player, 1);
         return "§6" + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName()
-                + " §8│ §bLv." + progress.level() + " §7" + xp + " XP"
+                + " §8│ §bLv." + progress.level() + " §7" + xp
                 + " §8│ §f" + role
-                + " §8│ §e주화 " + VillageProgressionSystem.coins(player)
-                + " §8│ §6보급품 " + VillageProgressionSystem.supplies();
+                + " §8│ " + skillHud
+                + " §8│ §e" + VillageProgressionSystem.coins(player) + "주화"
+                + " §8· §6" + VillageProgressionSystem.supplies() + "보급";
     }
 }

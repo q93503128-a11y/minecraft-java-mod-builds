@@ -208,6 +208,34 @@ public final class VillageRoleSkillSystem {
         return "Z: " + first + " | X: " + second;
     }
 
+    public static synchronized int cooldownRemainingSeconds(ServerPlayer player, int slot) {
+        if (player == null || VillageSkillTestSystem.isEnabled(player)) return 0;
+        ActiveSkill skill = equippedSkill(player, slot).orElse(null);
+        if (skill == null) return 0;
+        long remaining = READY_AT.getOrDefault(player.getUUID() + "|" + skill.id(), 0L)
+                - System.currentTimeMillis();
+        return remaining <= 0L ? 0 : (int) Math.max(1L, (remaining + 999L) / 1000L);
+    }
+
+    public static synchronized float cooldownProgress(ServerPlayer player, int slot) {
+        ActiveSkill skill = equippedSkill(player, slot).orElse(null);
+        if (skill == null || VillageSkillTestSystem.isEnabled(player)) return 0.0f;
+        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        if (role == null) return 0.0f;
+        int total = effectiveCooldownSeconds(player, role, skill);
+        int remaining = cooldownRemainingSeconds(player, slot);
+        return total <= 0 ? 0.0f : Math.max(0.0f, Math.min(1.0f, remaining / (float) total));
+    }
+
+    public static String hudSlotText(ServerPlayer player, int slot) {
+        String key = slot == 0 ? "§bZ" : "§dX";
+        ActiveSkill skill = equippedSkill(player, slot).orElse(null);
+        if (skill == null) return key + " §8비어 있음";
+        int remaining = cooldownRemainingSeconds(player, slot);
+        String state = remaining > 0 ? "§c" + remaining + "초" : "§a준비";
+        return key + " §f" + skill.displayName() + " " + state;
+    }
+
     public static List<ActiveSkill> skillsFor(VillageRole role) {
         return Arrays.stream(ActiveSkill.values()).filter(skill -> skill.role() == role).toList();
     }
@@ -272,14 +300,19 @@ public final class VillageRoleSkillSystem {
         if (testing) {
             return skill.displayName() + " 사용 완료 | 시험 모드 · 재사용 대기시간 없음";
         }
-        int cooldown = Math.max(7,
+        int cooldown = effectiveCooldownSeconds(player, role, skill);
+        READY_AT.put(cooldownKey, now + cooldown * 1000L);
+        return skill.displayName() + " 사용 완료 | 재사용 " + cooldown + "초";
+    }
+
+    private static int effectiveCooldownSeconds(
+            ServerPlayer player, VillageRole role, ActiveSkill skill) {
+        return Math.max(7,
                 skill.baseCooldownSeconds()
                         - VillageProgressionSystem.skillCooldownReductionSeconds(player)
                         - VillageSkillTreeSystem.cooldownReductionSeconds(player)
                         - VillageSkillTreeSystem.mobilityCooldownReductionSeconds(player)
                         - roleTreeCooldownReductionSeconds(player, role));
-        READY_AT.put(cooldownKey, now + cooldown * 1000L);
-        return skill.displayName() + " 사용 완료 | 재사용 " + cooldown + "초";
     }
 
     public static String useTestSkill(ServerPlayer player, String skillId) {
