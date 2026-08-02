@@ -59,8 +59,9 @@ need(visual_service, ["PacketDistributor.sendToPlayersNear", "kind=stop", "case 
                       "case GROUND_TARGET", "MagicPlayerData.CastPreparation"],
      "multiplayer world visual broadcast")
 
-# Fusion must be slower than direct casting before mastery/registration.
-need(casting, ["int direct = requiredCastTicks", "registered ? 7 : 18 + ingredientCount * 5",
-               "Math.max(direct + 5"], "fusion cast-time penalty")
+# Fusion remains slower than direct casting, now with circle-scaled complexity and hard minimums.
+need(casting, ["int direct = requiredCastTicks", "double complexity", "unfamiliarPenalty",
+               "case 8 -> 620", "default -> 960", "Math.max(minimum, calculated)"],
+     "nonlinear fusion cast-time penalty")
 
 print("Arcane Circle v0.12.1 compact HUD, charged fusion and particle-free world geometry contract: PASS")
