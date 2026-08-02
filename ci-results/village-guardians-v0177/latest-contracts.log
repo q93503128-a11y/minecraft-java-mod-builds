@@ -43,10 +43,11 @@ defense_xp_multiplier=1.5
 [PASS] Twelve persistent tower branches alter combat and physical tower silhouettes
 [PASS] Twenty active skills use real motion, aggro and spatial sound instead of particle drawings
 [PASS] CC0 fantasy visual references are documented without untracked binaries
+Village Guardians v0.17.4 UI, location and shortcut contracts passed.
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0174_ui_safety.py", line 55, in <module>
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 77, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0174_ui_safety.py", line 39, in main
-    assert "치료는 의무소" in local and "전투 훈련은 병영" in local
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 32, in main
+    assert "shop_utility|전리품 판매" in controller
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
