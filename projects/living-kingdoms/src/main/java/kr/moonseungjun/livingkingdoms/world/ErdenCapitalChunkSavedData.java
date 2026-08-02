@@ -38,8 +38,11 @@ public final class ErdenCapitalChunkSavedData extends SavedData {
     }
 
     public boolean needs(long chunkPos, int currentRevision) {
-        if (revision != currentRevision) return true;
-        return !builtChunks.contains(chunkPos);
+        return !isBuilt(chunkPos, currentRevision);
+    }
+
+    public boolean isBuilt(long chunkPos, int currentRevision) {
+        return revision == currentRevision && builtChunks.contains(chunkPos);
     }
 
     public void mark(long chunkPos, int currentRevision) {
