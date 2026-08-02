@@ -65,7 +65,7 @@ forbid(sigil, (
 ), "falling or repeated sigil particles")
 
 world = read("world/MagicWorldService.java")
-need(world, ("setFoodLevel(20)", "GameType.SURVIVAL", "physical academy",), "natural magic-world rules")
+need(world, ("setFoodLevel(20)", "GameType.SURVIVAL", "물리 학원 귀환",), "natural magic-world rules")
 forbid(world, (
     "ArcaneAcademyBuilder", "teleportTo(arrival", "setAcademy(", "academyBuilt()"
 ), "placeholder academy usage")
