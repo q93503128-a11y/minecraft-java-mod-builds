@@ -1,4 +1,3 @@
-
 package kr.moonseungjun.arcanecircle.world;
 
 import net.minecraft.core.BlockPos;
@@ -11,52 +10,35 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.GameType;
 
+/** Magic-world rules without the deprecated generated test academy. */
 public final class MagicWorldService {
     private MagicWorldService() {}
 
     public static void onLogin(ServerPlayer player, boolean firstAwakening) {
-        ServerLevel level = (ServerLevel) player.level();
-        ArcaneWorldData data = ArcaneWorldData.get(level.getServer());
-        if (!data.academyBuilt()) {
-            BlockPos origin = ArcaneAcademyBuilder.build(level, player.blockPosition());
-            data.setAcademy(origin);
-        }
+        ArcaneWorldData data = ArcaneWorldData.get(((ServerLevel) player.level()).getServer());
         if (data.claimFirstArrival(player)) {
-            BlockPos origin = data.academyOrigin();
-            BlockPos arrival = origin.offset(0, 1, -10);
-            player.teleportTo(arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5);
-            player.setGameMode(GameType.SURVIVAL);
+            if (!player.isCreative() && !player.isSpectator()) player.setGameMode(GameType.SURVIVAL);
             data.addMarks(player, firstAwakening ? 120L : 40L);
-            player.sendSystemMessage(Component.literal("§5[천구 마법학원] §f학원 중앙 회로에 도착했습니다."
-                    + " 생존 욕구와 사망 손실은 비활성화되며 모든 거래는 §d아르카나§f로 통일됩니다."));
+            player.sendSystemMessage(Component.literal("§5[마력핵 각성] §f주문과 마도서를 사용할 수 있습니다."));
         }
     }
 
     public static void onRespawn(ServerPlayer player) {
         if (!player.isCreative() && !player.isSpectator()) player.setGameMode(GameType.SURVIVAL);
-        ArcaneWorldData data = ArcaneWorldData.get(((ServerLevel) player.level()).getServer());
-        BlockPos origin = data.academyOrigin();
-        BlockPos arrival = origin.offset(0, 1, -10);
-        player.teleportTo(arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5);
     }
 
     public static void tick(ServerPlayer player) {
-        if (player.tickCount % 100 == 0 && !player.isCreative() && !player.isSpectator()) {
-            player.setGameMode(GameType.SURVIVAL);
-        }
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(20.0F);
         if (player.tickCount % 80 == 0) awakenNearbyEnemies(player);
     }
 
     public static BlockPos academy(ServerPlayer player) {
-        return ArcaneWorldData.get(((ServerLevel) player.level()).getServer()).academyOrigin();
+        return player.blockPosition();
     }
 
     public static void teleportToAcademy(ServerPlayer player) {
-        BlockPos origin = academy(player);
-        BlockPos arrival = origin.offset(0, 1, -10);
-        player.teleportTo(arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5);
+        player.sendOverlayMessage(Component.literal("§7물리 학원 귀환은 비활성화되어 있습니다."));
     }
 
     private static void awakenNearbyEnemies(ServerPlayer player) {

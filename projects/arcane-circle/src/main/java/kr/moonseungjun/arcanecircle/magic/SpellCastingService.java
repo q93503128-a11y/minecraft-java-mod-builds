@@ -129,9 +129,6 @@ public final class SpellCastingService {
         long elapsed = now - charge.startedAt;
         if (!player.isAlive() || player.isSpectator() || elapsed > CHARGE_TIMEOUT_TICKS) {
             CHARGES.remove(player.getUUID());
-            if (elapsed > CHARGE_TIMEOUT_TICKS) {
-                player.sendOverlayMessage(Component.literal("§7[시전 취소] 마법진 유지 시간이 끝났습니다."));
-            }
             return;
         }
         SpellDefinition spell = SpellCatalog.spell(charge.spellId).orElse(null);
@@ -139,8 +136,9 @@ public final class SpellCastingService {
             CHARGES.remove(player.getUUID());
             return;
         }
-        MagicPlayerData.CastPreparation cast = data(player).prepareSlot(player, charge.slot);
-        if (!cast.accepted()) {
+        MagicPlayerData data = data(player);
+        MagicPlayerData.CastPreparation cast = data.prepareSlot(player, charge.slot);
+        if (!cast.accepted() || !charge.spellId.equals(cast.spell().id())) {
             CHARGES.remove(player.getUUID());
             return;
         }
@@ -153,9 +151,10 @@ public final class SpellCastingService {
             }
             charge.lastStage = stage;
         }
-        if (elapsed >= charge.requiredTicks && now - charge.lastReadyPulse >= 16L) {
-            SpellSigilService.renderReadyPulse(player, spell, cast.range());
-            charge.lastReadyPulse = now;
+
+        if (elapsed >= charge.requiredTicks) {
+            CHARGES.remove(player.getUUID());
+            castPrepared(player, data, cast);
         }
     }
 
@@ -193,8 +192,9 @@ public final class SpellCastingService {
 
     public static int requiredCastTicks(ServerPlayer player, SpellDefinition spell) {
         MagicPlayerData.MageState state = data(player).state(player);
-        int base = 10 + spell.circle() * 8;
-        int circleGapReduction = Math.max(0, state.circle() - spell.circle()) * 6;
+        int base = 4 + spell.circle() * 4;
+        int circleGap = Math.max(0, state.circle() - spell.circle());
+        int circleGapReduction = circleGap * 4;
         int masteryReduction = SpellCatalog.masteryTier(state.mastery(spell.id())) * 2;
         return Math.max(0, base - circleGapReduction - masteryReduction);
     }

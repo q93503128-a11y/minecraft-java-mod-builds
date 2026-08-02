@@ -31,89 +31,73 @@ public final class ArcaneHud {
         int height = minecraft.getWindow().getGuiScaledHeight();
         Font font = minecraft.font;
 
-        int gap = width < 360 ? 2 : 4;
-        int desired = width >= 600 ? 58 : width >= 430 ? 46 : 32;
-        int slotSize = Math.max(24, Math.min(desired, (width - 18 - gap * 4) / 5));
-        int total = slotSize * 5 + gap * 4;
+        int gap = 3;
+        int slotW = width >= 520 ? 82 : width >= 390 ? 68 : Math.max(48, (width - 20 - gap * 4) / 5);
+        int slotH = 28;
+        int total = slotW * 5 + gap * 4;
         int startX = Math.max(4, (width - total) / 2);
-        // Keep the spell strip safely above hearts, hunger and the vanilla hotbar.
-        int y = Math.max(8, height - slotSize - 59);
+        int y = Math.max(8, height - slotH - 58);
 
-        if (width >= 500) drawManaSide(g, font, startX, y, slotSize);
-        else drawManaTop(g, font, width, y - 13);
-
+        if (width >= 500) drawManaSide(g, font, startX, y, slotH);
+        else drawManaTop(g, font, width, y - 12);
         for (int slot = 0; slot < 5; slot++) {
-            drawSlot(g, font, startX + slot * (slotSize + gap), y, slotSize, slot);
+            drawSlot(g, font, startX + slot * (slotW + gap), y, slotW, slotH, slot);
         }
-        drawFusionQueue(g, font, width, y - (width >= 500 ? 24 : 38));
+        drawFusionQueue(g, font, width, y - 22);
     }
 
-    private static void drawManaSide(GuiGraphicsExtractor g, Font font, int startX, int y, int slotSize) {
+    private static void drawManaSide(GuiGraphicsExtractor g, Font font, int startX, int y, int slotHeight) {
         int mana = ArcaneClientState.integer("mana", 0);
         int max = Math.max(1, ArcaneClientState.integer("max", 100));
-        int barWidth = Math.min(110, Math.max(68, startX - 14));
-        int x = Math.max(6, startX - barWidth - 8);
+        int barWidth = Math.min(94, Math.max(58, startX - 12));
+        int x = Math.max(5, startX - barWidth - 7);
         int fill = (int) Math.round((barWidth - 2) * Math.min(1.0, mana / (double) max));
-        g.fill(x, y + slotSize - 9, x + barWidth, y + slotSize - 2, 0xDC050912);
-        g.fill(x + 1, y + slotSize - 8, x + 1 + fill, y + slotSize - 3, 0xEF5E8EEB);
-        g.text(font, Component.literal(ArcaneClientState.integer("circle", 1) + "C  " + mana + "/" + max),
-                x, y + slotSize - 21, 0xFFE7DDF7);
-        g.text(font, Component.literal(compactName(ArcaneClientState.text("staff", "맨손"), 12)),
-                x, y + 1, 0xFFFFD489);
-        g.text(font, Component.literal("아르카나 " + ArcaneClientState.longInteger("marks", 0L)), x, y + 36, 0xFFFFD66F);
+        g.text(font, Component.literal(ArcaneClientState.integer("circle", 1) + "C  " + mana + "/" + max), x, y + 2, 0xFFE7DDF7);
+        g.fill(x, y + 16, x + barWidth, y + 22, 0xDC050912);
+        g.fill(x + 1, y + 17, x + 1 + fill, y + 21, 0xEF5E8EEB);
     }
 
     private static void drawManaTop(GuiGraphicsExtractor g, Font font, int width, int y) {
         int mana = ArcaneClientState.integer("mana", 0);
         int max = Math.max(1, ArcaneClientState.integer("max", 100));
-        int barWidth = Math.min(170, Math.max(100, width - 70));
+        int barWidth = Math.min(150, Math.max(90, width - 80));
         int x = (width - barWidth) / 2;
         int fill = (int) Math.round((barWidth - 2) * Math.min(1.0, mana / (double) max));
-        g.fill(x, y, x + barWidth, y + 7, 0xDC050912);
-        g.fill(x + 1, y + 1, x + 1 + fill, y + 6, 0xEF5E8EEB);
-        String label = ArcaneClientState.integer("circle", 1) + "C  " + mana + "/" + max;
-        g.centeredText(font, Component.literal(label), width / 2, y - 10, 0xFFE7DDF7);
+        g.fill(x, y, x + barWidth, y + 6, 0xDC050912);
+        g.fill(x + 1, y + 1, x + 1 + fill, y + 5, 0xEF5E8EEB);
+        g.centeredText(font, Component.literal(ArcaneClientState.integer("circle", 1) + "C " + mana + "/" + max), width / 2, y - 10, 0xFFE7DDF7);
     }
 
-    private static void drawSlot(GuiGraphicsExtractor g, Font font, int x, int y, int size, int slot) {
-        String spellId = ArcaneClientState.slot(slot);
-        SpellDefinition spell = SpellCatalog.spell(spellId).orElse(null);
+    private static void drawSlot(GuiGraphicsExtractor g, Font font, int x, int y, int w, int h, int slot) {
+        SpellDefinition spell = SpellCatalog.spell(ArcaneClientState.slot(slot)).orElse(null);
         int color = spell == null ? 0xFF606475 : ArcaneRenderUtil.schoolColor(spell.school());
         int dark = spell == null ? 0xFF171A22 : ArcaneRenderUtil.schoolDark(spell.school());
-        double cooldown = ArcaneClientState.cooldownFraction(slot);
         int remaining = ArcaneClientState.cooldownRemainingTicks(slot);
         boolean charging = ArcaneClientState.isChargingSlot(slot);
-        int frame = charging ? 0xFFFFD36B : 0xE0040610;
 
-        g.fill(x - 1, y - 1, x + size + 1, y + size + 1, frame);
-        g.fill(x, y, x + size, y + size, charging ? 0xEF19243A : 0xEC0A0E1A);
-        g.fill(x + 2, y + 2, x + size - 2, y + size - 2, remaining > 0 ? dark : 0xE312192A);
-        if (remaining > 0) g.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0x66101018);
+        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, charging ? 0xFFFFD36B : 0xD9040610);
+        g.fill(x, y, x + w, y + h, remaining > 0 ? dark : 0xEB101827);
+        g.fill(x, y + h - 2, x + w, y + h, color);
+        g.text(font, Component.literal(Integer.toString(slot + 1)), x + 3, y + 3, 0xFFB8C2D4);
 
-        ArcaneRenderUtil.cooldownArc(g, x, y, size - 1, cooldown,
-                remaining > 0 ? 0xFFF17777 : charging ? 0xFFFFD36B : color, 0xFF34394A);
-        g.text(font, Component.literal(Integer.toString(slot + 1)), x + 2, y + 1, 0xFFF8F2FF);
-
-        if (spell != null) {
-            ArcaneRenderUtil.spellRune(g, x + size / 2, y + size / 2 - (size >= 25 ? 2 : 0), spell,
-                    Math.max(4, size / 5), remaining > 0 ? 0xFF827B89 : 0xFFF8F2FF);
-            if (size >= 25) {
-                String name = fitName(font, spell.name(), size - 5);
-                g.centeredText(font, Component.literal(name), x + size / 2, y + size - 10,
-                        remaining > 0 ? 0xFF8B8492 : charging ? 0xFFFFE0A2 : 0xFFDCD4E9);
-            }
-        } else {
-            g.centeredText(font, Component.literal("-"), x + size / 2, y + size / 2 - 4, 0xFF666B78);
+        if (spell == null) {
+            g.text(font, Component.literal("-"), x + 16, y + 9, 0xFF666B78);
+            return;
         }
+
+        ArcaneRenderUtil.ring(g, x + 17, y + 14, 7, remaining > 0 ? 0xFF706D78 : color);
+        ArcaneRenderUtil.spellRune(g, x + 17, y + 14, spell, 4, remaining > 0 ? 0xFF827B89 : 0xFFF8F2FF);
+        g.text(font, Component.literal(fitName(font, spell.name(), w - 29)), x + 28, y + 4,
+                remaining > 0 ? 0xFF8B8492 : charging ? 0xFFFFE0A2 : 0xFFE6DFED);
+        String meta = remaining > 0 ? String.format("%.1fs", remaining / 20.0) : "MP " + spell.manaCost();
+        g.text(font, Component.literal(meta), x + 28, y + 15, remaining > 0 ? 0xFFF18A8A : 0xFF91A4BF);
+
         if (remaining > 0) {
-            String seconds = remaining >= 200 ? Integer.toString((int) Math.ceil(remaining / 20.0))
-                    : String.format("%.1f", remaining / 20.0);
-            g.centeredText(font, Component.literal(seconds), x + size / 2, y + size / 2 - 5, 0xFFFFFFFF);
+            int fill = (int) Math.round((w - 2) * ArcaneClientState.cooldownFraction(slot));
+            g.fill(x + 1, y + h - 3, x + 1 + fill, y + h - 1, 0xFFE46D78);
         } else if (charging) {
-            int progress = (int) Math.round((size - 4) * ArcaneClientState.chargingFraction());
-            g.fill(x + 2, y + size - 4, x + size - 2, y + size - 2, 0xFF282D38);
-            g.fill(x + 2, y + size - 4, x + 2 + progress, y + size - 2,
-                    ArcaneClientState.chargingReady() ? 0xFFFFD36B : color);
+            int progress = (int) Math.round((w - 2) * ArcaneClientState.chargingFraction());
+            g.fill(x + 1, y + h - 3, x + 1 + progress, y + h - 1, 0xFFFFD36B);
         }
     }
 

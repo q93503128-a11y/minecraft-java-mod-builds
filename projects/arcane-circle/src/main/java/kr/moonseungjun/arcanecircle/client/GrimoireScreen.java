@@ -139,14 +139,16 @@ public final class GrimoireScreen extends Screen {
 
     private void atlas(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
         if (atlasCircle == 0) {
-            sectionTitle(g, l, "주문 써클 선택", "써클을 선택하면 해당 단계의 주문만 표시됩니다.");
-            for (int circle = 1; circle <= 9; circle++) drawCircleCard(g, l.circleCard(circle), circle, mouseX, mouseY, false);
-            footer(g, l, "상위 써클일수록 시전 회로가 복잡하고 전개 시간이 길어집니다.");
+            sectionTitle(g, l, "주문 써클", "");
+            for (int circle = 1; circle <= 9; circle++) {
+                drawCircleCard(g, l.circleCard(circle), circle, mouseX, mouseY, false);
+            }
             return;
         }
+
         Rect back = l.back();
-        button(g, back, "‹  써클 선택", inside(mouseX, mouseY, back), true);
-        g.text(font, Component.literal(atlasCircle + "써클 주문"), back.right() + 12, back.y() + 5, 0xFFF1E8FA);
+        button(g, back, "‹ 써클", inside(mouseX, mouseY, back), true);
+        g.text(font, Component.literal(atlasCircle + "C 주문"), back.right() + 8, back.y() + 5, 0xFFF1E8FA);
         drawMana(g, l, back.y());
         for (int i = 0; i < 5; i++) drawLoadout(g, l.loadout(i), i, mouseX, mouseY);
 
@@ -155,27 +157,22 @@ public final class GrimoireScreen extends Screen {
         List<SpellDefinition> spells = SpellCatalog.spellsInCircle(atlasCircle);
         Set<String> known = ArcaneClientState.known();
         for (int i = 0; i < spells.size(); i++) {
-            SpellDefinition spell = spells.get(i);
-            drawSpell(g, l.spellCard(i, scroll), spell, known.contains(spell.id()), mouseX, mouseY);
+            drawSpell(g, l.spellCard(i, scroll), spells.get(i), known.contains(spells.get(i).id()), mouseX, mouseY);
         }
         g.disableScissor();
-        footer(g, l, "슬롯 선택 → 주문 장착 · 1~5 길게 눌러 회로 전개 · 완성 후 놓아 시전");
     }
 
     private void drawCircleCard(GuiGraphicsExtractor g, Rect r, int circle, int mouseX, int mouseY, boolean shop) {
         boolean unlocked = circle <= ArcaneClientState.integer("circle", 1);
         boolean hover = inside(mouseX, mouseY, r);
         int accent = unlocked ? circleColor(circle) : 0xFF4D4F59;
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF273348 : 0xFF121A29);
-        g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), accent);
-        g.fill(r.x() + 9, r.y() + 9, r.x() + 45, r.bottom() - 9, 0xFF0A0F1B);
-        ArcaneRenderUtil.ring(g, r.x() + 27, r.y() + r.h() / 2, 13, accent);
-        ArcaneRenderUtil.diamond(g, r.x() + 27, r.y() + r.h() / 2, 6, unlocked ? 0xFFF5ECFF : 0xFF686A72);
-        g.text(font, Component.literal(circle + "C"), r.x() + 54, r.y() + 11, unlocked ? 0xFFF5EDFF : 0xFF85848C);
-        String subtitle = shop ? "주문서 · 지팡이" : circleSubtitle(circle);
-        g.text(font, Component.literal(subtitle), r.x() + 54, r.y() + 26, 0xFF9CA9BF);
-        String count = shop ? AcademyOfferCatalog.forCircle(circle).size() + "개 상품" : SpellCatalog.spellsInCircle(circle).size() + "개 주문";
-        g.text(font, Component.literal(count), r.x() + 54, r.y() + 40, unlocked ? accent : 0xFF686A72);
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF26344A : 0xFF121A29);
+        g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), accent);
+        ArcaneRenderUtil.ring(g, r.x() + 15, r.y() + r.h() / 2, 8, accent);
+        ArcaneRenderUtil.diamond(g, r.x() + 15, r.y() + r.h() / 2, 4, unlocked ? 0xFFF5ECFF : 0xFF686A72);
+        g.text(font, Component.literal(circle + "C"), r.x() + 28, r.y() + 6, unlocked ? 0xFFF5EDFF : 0xFF85848C);
+        int count = shop ? AcademyOfferCatalog.forCircle(circle).size() : SpellCatalog.spellsInCircle(circle).size();
+        g.text(font, Component.literal(Integer.toString(count)), r.x() + 29, r.y() + 18, unlocked ? accent : 0xFF666872);
     }
 
     private void drawLoadout(GuiGraphicsExtractor g, Rect r, int slot, int mouseX, int mouseY) {
@@ -183,15 +180,14 @@ public final class GrimoireScreen extends Screen {
         boolean selected = activeSlot == slot;
         boolean hover = inside(mouseX, mouseY, r);
         int accent = spell == null ? 0xFF596171 : ArcaneRenderUtil.schoolColor(spell.school());
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), selected ? 0xFF2A2940 : hover ? 0xFF202B3D : 0xFF111827);
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), selected ? 0xFF2B2940 : hover ? 0xFF202B3D : 0xFF111827);
         g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), selected ? 0xFFFFD36B : accent);
-        g.text(font, Component.literal(Integer.toString(slot + 1)), r.x() + 6, r.y() + 5, 0xFF9AA7BD);
-        String name = spell == null ? "비어 있음" : spell.name();
-        g.centeredText(font, Component.literal(fit(name, r.w() - 26)), r.x() + r.w() / 2 + 5, r.y() + 5,
+        String name = spell == null ? (slot + 1) + "  -" : (slot + 1) + "  " + spell.name();
+        g.text(font, Component.literal(fit(name, r.w() - 8)), r.x() + 4, r.y() + 5,
                 selected ? 0xFFFFE3A2 : 0xFFE7E0ED);
         if (ArcaneClientState.cooldownRemainingTicks(slot) > 0) {
             int fill = (int) Math.round((r.w() - 2) * ArcaneClientState.cooldownFraction(slot));
-            g.fill(r.x() + 1, r.bottom() - 4, r.x() + 1 + fill, r.bottom() - 2, 0xFFE46D78);
+            g.fill(r.x() + 1, r.bottom() - 3, r.x() + 1 + fill, r.bottom() - 1, 0xFFE46D78);
         }
     }
 
@@ -202,46 +198,42 @@ public final class GrimoireScreen extends Screen {
         boolean equipped = ArcaneClientState.slots().contains(spell.id());
         int accent = ArcaneRenderUtil.schoolColor(spell.school());
         g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF25334A : 0xFF111927);
-        g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), usable ? accent : 0xFF484A52);
-        ArcaneRenderUtil.ring(g, r.x() + 23, r.y() + r.h() / 2, 13, usable ? accent : 0xFF555760);
-        if (usable) ArcaneRenderUtil.spellRune(g, r.x() + 23, r.y() + r.h() / 2, spell, 7, 0xFFF8F1FF);
-        else ArcaneRenderUtil.diamond(g, r.x() + 23, r.y() + r.h() / 2, 5, 0xFF696A72);
-        int tx = r.x() + 43;
-        String title = spell.name() + (equipped ? "  · 장착" : "");
-        g.text(font, Component.literal(fit(title, r.w() - 50)), tx, r.y() + 7,
+        g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), usable ? accent : 0xFF484A52);
+        ArcaneRenderUtil.ring(g, r.x() + 16, r.y() + r.h() / 2, 9, usable ? accent : 0xFF555760);
+        if (usable) ArcaneRenderUtil.spellRune(g, r.x() + 16, r.y() + r.h() / 2, spell, 5, 0xFFF8F1FF);
+        else ArcaneRenderUtil.diamond(g, r.x() + 16, r.y() + r.h() / 2, 4, 0xFF696A72);
+        int tx = r.x() + 30;
+        g.text(font, Component.literal(fit(spell.name(), r.w() - 34)), tx, r.y() + 7,
                 usable ? (equipped ? 0xFFFFD98A : 0xFFF0E8F8) : 0xFF777881);
-        String meta = spell.school().displayName() + " · MP " + spell.manaCost() + " · "
-                + (known ? "숙련 " + SpellCatalog.masteryTier(ArcaneClientState.mastery(spell.id())) : "미습득");
-        g.text(font, Component.literal(fit(meta, r.w() - 50)), tx, r.y() + 20, usable ? 0xFF9FB6D2 : 0xFF6F7078);
-        g.text(font, Component.literal(fit(spell.description(), r.w() - 50)), tx, r.y() + 33, 0xFF8996AA);
+        String meta = "MP " + spell.manaCost() + " · " + String.format("%.1fs", spell.cooldownTicks() / 20.0)
+                + (equipped ? " · 장착" : known ? "" : " · 미습득");
+        g.text(font, Component.literal(fit(meta, r.w() - 34)), tx, r.y() + 21,
+                usable ? 0xFF9FB6D2 : 0xFF6F7078);
     }
 
     private void recipes(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
-        sectionTitle(g, l, "융합 마법", "서로 보완되는 2~3개 회로를 겹쳐 새로운 주문을 만듭니다.");
-        Rect viewport = l.listViewport(36);
+        sectionTitle(g, l, "융합", "");
+        Rect viewport = l.listViewport(24);
         g.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
         List<SpellCatalog.FusionFormula> formulas = SpellCatalog.fusions();
         for (int i = 0; i < formulas.size(); i++) {
-            Rect r = l.wideCard(i, scroll, 52, 36);
+            Rect r = l.wideCard(i, scroll, 40, 24);
             SpellCatalog.FusionFormula formula = formulas.get(i);
             SpellDefinition result = SpellCatalog.spell(formula.result()).orElseThrow();
-            boolean hover = inside(mouseX, mouseY, r);
             int accent = ArcaneRenderUtil.schoolColor(result.school());
-            g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF25344B : 0xFF111927);
-            g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), accent);
+            g.fill(r.x(), r.y(), r.right(), r.bottom(), inside(mouseX, mouseY, r) ? 0xFF25344B : 0xFF111927);
+            g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), accent);
+            g.text(font, Component.literal(fit(result.circle() + "C  " + result.name(), r.w() - 10)), r.x() + 6, r.y() + 6, 0xFFF0E7FA);
             String chain = formula.ingredients().stream().map(id -> SpellCatalog.spell(id).map(SpellDefinition::name).orElse(id))
                     .reduce((a, b) -> a + " + " + b).orElse("");
-            g.text(font, Component.literal(result.circle() + "C  " + result.name()), r.x() + 10, r.y() + 8, 0xFFF0E7FA);
-            g.text(font, Component.literal(fit(chain + "  →  " + result.name(), r.w() - 20)), r.x() + 10, r.y() + 23, 0xFF9EB2CD);
-            g.text(font, Component.literal(fit(result.description(), r.w() - 20)), r.x() + 10, r.y() + 37, 0xFF8492A7);
+            g.text(font, Component.literal(fit(chain, r.w() - 10)), r.x() + 6, r.y() + 20, 0xFF93A2B8);
         }
         g.disableScissor();
-        footer(g, l, "X 누름 → 재료 주문 선택 · 완성 가능한 조합만 대기열에 들어갑니다.");
     }
 
     private void staffs(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
-        sectionTitle(g, l, "지팡이 조율", "지팡이는 주문 계통과 전개 속도에 특화된 마력 증폭기입니다.");
-        Rect viewport = l.listViewport(36);
+        sectionTitle(g, l, "지팡이", "");
+        Rect viewport = l.listViewport(24);
         g.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
         List<StaffProfile> profiles = ModItems.profiles();
         for (int i = 0; i < profiles.size(); i++) {
@@ -250,78 +242,82 @@ public final class GrimoireScreen extends Screen {
             boolean equipped = p.id().equals(ArcaneClientState.text("staff_id", "none"));
             int accent = p.favoredSchool() == null ? 0xFFFFC866 : ArcaneRenderUtil.schoolColor(p.favoredSchool());
             g.fill(r.x(), r.y(), r.right(), r.bottom(), inside(mouseX, mouseY, r) ? 0xFF26354B : 0xFF111927);
-            g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), equipped ? 0xFFFFD36B : accent);
-            g.text(font, Component.literal(fit(p.displayName() + (equipped ? "  · 장착" : ""), r.w() - 20)), r.x() + 10, r.y() + 8,
+            g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), equipped ? 0xFFFFD36B : accent);
+            g.text(font, Component.literal(fit(p.displayName() + (equipped ? " · 장착" : ""), r.w() - 12)), r.x() + 6, r.y() + 6,
                     equipped ? 0xFFFFDFA0 : 0xFFF0E8FA);
-            g.text(font, Component.literal(fit(p.summary(), r.w() - 20)), r.x() + 10, r.y() + 23, 0xFF9EADC2);
-            g.text(font, Component.literal(fit(staffStats(p), r.w() - 20)), r.x() + 10, r.y() + 38, 0xFFB8A5CB);
+            g.text(font, Component.literal(fit(staffStats(p), r.w() - 12)), r.x() + 6, r.y() + 21, 0xFF9EADC2);
         }
         g.disableScissor();
-        footer(g, l, "구매는 마법학원에서 진행하며 주 손의 지팡이가 우선 적용됩니다.");
     }
 
     private void academy(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
         Rect c = l.content();
         long marks = ArcaneClientState.longInteger("marks", 0L);
         MagicTradition current = MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND"));
-        g.text(font, Component.literal("아르카나  " + marks), c.x() + 4, c.y() + 3, 0xFFFFD66F);
-        g.text(font, Component.literal("현재 학부  " + current.displayName()), c.right() - 125, c.y() + 3, 0xFFD9C8ED);
+        g.text(font, Component.literal("아르카나 " + marks), c.x() + 2, c.y() + 4, 0xFFFFD66F);
+        g.text(font, Component.literal(current.displayName()), c.right() - font.width(current.displayName()) - 2, c.y() + 4, 0xFFD9C8ED);
+
         MagicTradition[] traditions = traditions();
         for (int i = 0; i < traditions.length; i++) {
-            Rect r = l.tradition(i); MagicTradition t = traditions[i];
-            boolean selected = current == t; boolean hover = inside(mouseX, mouseY, r);
-            g.fill(r.x(), r.y(), r.right(), r.bottom(), selected ? 0xFF3D3157 : hover ? 0xFF253249 : 0xFF111827);
+            Rect r = l.tradition(i);
+            MagicTradition t = traditions[i];
+            boolean selected = current == t;
+            g.fill(r.x(), r.y(), r.right(), r.bottom(), selected ? 0xFF3D3157 : inside(mouseX, mouseY, r) ? 0xFF253249 : 0xFF111827);
             g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), selected ? 0xFFFFD36B : 0xFF6F5A8E);
-            g.centeredText(font, Component.literal(t.displayName()), r.x() + r.w() / 2, r.y() + 6,
+            g.centeredText(font, Component.literal(t.displayName()), r.x() + r.w() / 2, r.y() + 5,
                     selected ? 0xFFFFE4A7 : 0xFFE9E0F1);
-            g.centeredText(font, Component.literal(fit(t.description(), r.w() - 12)), r.x() + r.w() / 2, r.y() + 19, 0xFF8996AA);
         }
+
         if (academyCircle == 0) {
-            g.centeredText(font, Component.literal("구매할 써클 선택"), l.cx(), c.y() + 63, 0xFFE7D9F3);
-            for (int circle = 1; circle <= 9; circle++) drawCircleCard(g, l.academyCircleCard(circle), circle, mouseX, mouseY, true);
-        } else {
-            Rect back = l.academyBack();
-            button(g, back, "‹  써클 선택", inside(mouseX, mouseY, back), true);
-            g.text(font, Component.literal(academyCircle + "써클 학원 상점"), back.right() + 12, back.y() + 5, 0xFFF1E8FA);
-            Rect viewport = l.academyViewport();
-            g.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
-            List<AcademyOfferCatalog.Offer> offers = AcademyOfferCatalog.forCircle(academyCircle);
-            for (int i = 0; i < offers.size(); i++) {
-                Rect r = l.offerCard(i, scroll); AcademyOfferCatalog.Offer offer = offers.get(i);
-                long price = offer.basePrice();
-                if (offer.kind() == AcademyOfferCatalog.Kind.SPELLBOOK && current != MagicTradition.UNBOUND
-                        && SpellWorldLore.tradition(offer.targetId()) == current) price = Math.max(1L, Math.round(price * 0.82));
-                boolean enough = marks >= price;
-                g.fill(r.x(), r.y(), r.right(), r.bottom(), inside(mouseX, mouseY, r) ? 0xFF25344B : 0xFF111927);
-                g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), enough ? 0xFF70C69D : 0xFFB75B68);
-                g.text(font, Component.literal(fit(offer.displayName(), r.w() - 105)), r.x() + 10, r.y() + 8,
-                        enough ? 0xFFF0E8FA : 0xFF988A91);
-                String priceText = price + " A";
-                g.text(font, Component.literal(priceText), r.right() - font.width(priceText) - 10, r.y() + 8,
-                        enough ? 0xFFFFD66F : 0xFFE0717C);
-                g.text(font, Component.literal(fit(offer.description(), r.w() - 20)), r.x() + 10, r.y() + 23, 0xFF8F9DB2);
+            for (int circle = 1; circle <= 9; circle++) {
+                drawCircleCard(g, l.academyCircleCard(circle), circle, mouseX, mouseY, true);
             }
-            g.disableScissor();
+            return;
         }
-        footer(g, l, "전투·강적 처치로 아르카나 획득 · 학부 일치 주문서 할인");
+
+        Rect back = l.academyBack();
+        button(g, back, "‹ 써클", inside(mouseX, mouseY, back), true);
+        g.text(font, Component.literal(academyCircle + "C 상점"), back.right() + 8, back.y() + 5, 0xFFF1E8FA);
+        Rect viewport = l.academyViewport();
+        g.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
+        List<AcademyOfferCatalog.Offer> offers = AcademyOfferCatalog.forCircle(academyCircle);
+        for (int i = 0; i < offers.size(); i++) {
+            Rect r = l.offerCard(i, scroll);
+            AcademyOfferCatalog.Offer offer = offers.get(i);
+            long price = offer.basePrice();
+            if (offer.kind() == AcademyOfferCatalog.Kind.SPELLBOOK && current != MagicTradition.UNBOUND
+                    && SpellWorldLore.tradition(offer.targetId()) == current) {
+                price = Math.max(1L, Math.round(price * 0.82));
+            }
+            boolean enough = marks >= price;
+            g.fill(r.x(), r.y(), r.right(), r.bottom(), inside(mouseX, mouseY, r) ? 0xFF25344B : 0xFF111927);
+            g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), enough ? 0xFF70C69D : 0xFFB75B68);
+            g.text(font, Component.literal(fit(offer.displayName(), r.w() - 10)), r.x() + 6, r.y() + 6,
+                    enough ? 0xFFF0E8FA : 0xFF988A91);
+            g.text(font, Component.literal(price + " A"), r.x() + 6, r.y() + 21,
+                    enough ? 0xFFFFD66F : 0xFFE0717C);
+        }
+        g.disableScissor();
     }
 
     private void core(GuiGraphicsExtractor g, Layout l) {
-        sectionTitle(g, l, "마력핵", "써클과 숙련이 낮은 단계의 시전 시간을 자동으로 단축합니다.");
-        Rect c = l.content(); int circle = ArcaneClientState.integer("circle", 1);
-        int cx = l.cx(); int cy = c.y() + 125;
-        for (int r = 9; r >= 1; r--) ArcaneRenderUtil.ring(g, cx, cy, 10 + r * 7, r <= circle ? 0xFF9C6ED0 : 0xFF303340);
-        ArcaneRenderUtil.fillCircle(g, cx, cy, 15, 0xFF090D17);
-        ArcaneRenderUtil.diamond(g, cx, cy, 9, 0xFFEAD9FF);
-        g.centeredText(font, Component.literal(circle + "C"), cx, cy - 4, 0xFFFFFFFF);
-        infoPanel(g, c.x() + 10, c.y() + 58, 168, "핵 상태", List.of(
-                "마력 " + ArcaneClientState.integer("mana", 0) + "/" + ArcaneClientState.integer("max", 100),
+        sectionTitle(g, l, "마력핵", "");
+        Rect c = l.content();
+        int circle = ArcaneClientState.integer("circle", 1);
+        int iconX = c.x() + 42;
+        int iconY = c.y() + 68;
+        ArcaneRenderUtil.ring(g, iconX, iconY, 22, 0xFF9C6ED0);
+        ArcaneRenderUtil.diamond(g, iconX, iconY, 10, 0xFFEAD9FF);
+        g.centeredText(font, Component.literal(circle + "C"), iconX, iconY - 4, 0xFFFFFFFF);
+        infoPanel(g, c.x() + 80, c.y() + 28, 180, "상태", List.of(
+                "MP " + ArcaneClientState.integer("mana", 0) + "/" + ArcaneClientState.integer("max", 100),
                 "회복 " + String.format("%.1f", ArcaneClientState.regenPerSecond()) + "/초",
-                "통찰 " + ArcaneClientState.integer("insight", 0), "아르카나 " + ArcaneClientState.longInteger("marks", 0L)));
-        infoPanel(g, c.right() - 178, c.y() + 58, 168, "조율", List.of(
-                ArcaneClientState.text("staff", "맨손"), fit(ArcaneClientState.text("staff_summary", "효과 없음"), 150),
-                "학부 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).displayName(), "건축 허용 마법세계"));
-        footer(g, l, "낮은 써클 주문은 성장에 따라 짧아지고 충분한 격차에서는 즉발됩니다.");
+                "통찰 " + ArcaneClientState.integer("insight", 0),
+                "아르카나 " + ArcaneClientState.longInteger("marks", 0L)));
+        infoPanel(g, c.x() + 268, c.y() + 28, Math.max(150, c.w() - 268), "장비", List.of(
+                ArcaneClientState.text("staff", "맨손"),
+                "학부 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).displayName(),
+                "저단계 주문 자동 단축", "건축 허용"));
     }
 
     private void infoPanel(GuiGraphicsExtractor g, int x, int y, int w, String title, List<String> lines) {
@@ -349,8 +345,8 @@ public final class GrimoireScreen extends Screen {
     }
 
     private void sectionTitle(GuiGraphicsExtractor g, Layout l, String title, String subtitle) {
-        Rect c = l.content(); g.text(font, Component.literal(title), c.x() + 4, c.y() + 5, 0xFFF0E7F8);
-        g.text(font, Component.literal(fit(subtitle, c.w() - 8)), c.x() + 4, c.y() + 19, 0xFF8997AC);
+        Rect c = l.content();
+        g.text(font, Component.literal(title), c.x() + 2, c.y() + 5, 0xFFF0E7F8);
     }
     private void drawMana(GuiGraphicsExtractor g, Layout l, int y) {
         int mana = ArcaneClientState.integer("mana", 0), max = Math.max(1, ArcaneClientState.integer("max", 100));
@@ -363,7 +359,7 @@ public final class GrimoireScreen extends Screen {
         g.centeredText(font, Component.literal(text), r.x() + r.w() / 2, r.y() + 5, hover ? 0xFFFFFFFF : 0xFFD8CFDF);
     }
     private void footer(GuiGraphicsExtractor g, Layout l, String text) {
-        g.centeredText(font, Component.literal(fit(text, l.content().w() - 12)), l.cx(), l.bottom() - 17, 0xFF8794A8);
+        // v0.10 intentionally leaves the bottom edge empty: no tutorial sentence competes with content.
     }
     private void drawNotice(GuiGraphicsExtractor g, Layout l) {
         if (notice.isBlank() || System.currentTimeMillis() > noticeUntil) return;
@@ -395,9 +391,16 @@ public final class GrimoireScreen extends Screen {
     }
 
     private Layout layout() {
-        int panelW = Math.min(720, Math.max(330, width - 40));
-        int panelH = Math.min(410, Math.max(250, height - 36));
-        panelW = Math.min(panelW, Math.max(1, width - 12)); panelH = Math.min(panelH, Math.max(1, height - 12));
+        int targetH = switch (page) {
+            case "atlas" -> atlasCircle == 0 ? 150 : 238;
+            case "academy" -> academyCircle == 0 ? 188 : 278;
+            case "core" -> 210;
+            default -> 300;
+        };
+        int panelW = Math.min(620, Math.max(300, width - 28));
+        int panelH = Math.min(targetH, Math.max(180, height - 24));
+        panelW = Math.min(panelW, Math.max(1, width - 10));
+        panelH = Math.min(panelH, Math.max(1, height - 10));
         return new Layout((width - panelW) / 2, (height - panelH) / 2, panelW, panelH);
     }
 
@@ -425,22 +428,42 @@ public final class GrimoireScreen extends Screen {
     private record Rect(int x, int y, int w, int h) { int right(){return x+w;} int bottom(){return y+h;} }
     private record Layout(int left, int top, int panelW, int panelH) {
         int right(){return left+panelW;} int bottom(){return top+panelH;} int cx(){return left+panelW/2;}
-        Rect close(){return new Rect(right()-31,top+9,22,22);} Rect tab(int i){int w=66;return new Rect(cx()-TABS.size()*w/2+i*w,top+7,w,30);}
-        Rect content(){return new Rect(left+16,top+45,panelW-32,panelH-72);} Rect back(){Rect c=content();return new Rect(c.x()+2,c.y()+1,90,23);}
-        Rect circleCard(int circle){Rect c=content();int col=(circle-1)%3,row=(circle-1)/3,gap=8;int w=(c.w()-gap*2)/3;int h=(c.h()-52-gap*2)/3;return new Rect(c.x()+col*(w+gap),c.y()+39+row*(h+gap),w,h);}
-        Rect loadout(int i){Rect c=content();int gap=5;int w=(c.w()-gap*4)/5;return new Rect(c.x()+i*(w+gap),c.y()+31,w,23);}
-        Rect atlasViewport(){Rect c=content();return new Rect(c.x(),c.y()+62,c.w(),c.h()-78);}
-        Rect spellCard(int i,int scroll){Rect v=atlasViewport();int cols=v.w()>=540?2:1,gap=7;int w=(v.w()-gap*(cols-1))/cols;int row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*55-scroll,w,49);}
-        int maxSpellScroll(int count){Rect v=atlasViewport();int cols=v.w()>=540?2:1;int rows=(count+cols-1)/cols;return Math.max(0,rows*55-v.h());}
-        Rect listViewport(int topOffset){Rect c=content();return new Rect(c.x(),c.y()+topOffset,c.w(),c.h()-topOffset-16);}
-        Rect wideCard(int i,int scroll,int h,int topOffset){Rect v=listViewport(topOffset);return new Rect(v.x(),v.y()+i*(h+6)-scroll,v.w(),h);}
-        int maxWideScroll(int count,int h,int topOffset){Rect v=listViewport(topOffset);return Math.max(0,count*(h+6)-v.h());}
-        Rect staffCard(int i,int scroll){Rect v=listViewport(36);int cols=v.w()>=540?2:1,gap=7;int w=(v.w()-gap*(cols-1))/cols;int row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*61-scroll,w,55);}
-        int maxStaffScroll(int count){Rect v=listViewport(36);int cols=v.w()>=540?2:1;return Math.max(0,((count+cols-1)/cols)*61-v.h());}
-        Rect tradition(int i){Rect c=content();int gap=6;int w=(c.w()-gap*3)/4;return new Rect(c.x()+i*(w+gap),c.y()+20,w,35);}
-        Rect academyCircleCard(int circle){Rect c=content();int col=(circle-1)%3,row=(circle-1)/3,gap=8;int w=(c.w()-gap*2)/3;int available=c.h()-102;int h=(available-gap*2)/3;return new Rect(c.x()+col*(w+gap),c.y()+82+row*(h+gap),w,h);}
-        Rect academyBack(){Rect c=content();return new Rect(c.x()+2,c.y()+62,90,23);} Rect academyViewport(){Rect c=content();return new Rect(c.x(),c.y()+93,c.w(),c.h()-109);}
-        Rect offerCard(int i,int scroll){Rect v=academyViewport();int cols=v.w()>=540?2:1,gap=7;int w=(v.w()-gap*(cols-1))/cols;int row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*48-scroll,w,42);}
-        int maxOfferScroll(int count){Rect v=academyViewport();int cols=v.w()>=540?2:1;return Math.max(0,((count+cols-1)/cols)*48-v.h());}
+        Rect close(){return new Rect(right()-27,top+7,20,20);}
+        Rect tab(int i){int w=58;return new Rect(cx()-TABS.size()*w/2+i*w,top+5,w,25);}
+        Rect content(){return new Rect(left+12,top+36,panelW-24,panelH-44);}
+        Rect back(){Rect c=content();return new Rect(c.x(),c.y(),66,19);}
+
+        Rect circleCard(int circle){
+            Rect c=content(); int cols=c.w()>=520?9:3; int gap=4; int col=(circle-1)%cols,row=(circle-1)/cols;
+            int w=(c.w()-gap*(cols-1))/cols; int h=cols==9?36:34;
+            return new Rect(c.x()+col*(w+gap),c.y()+28+row*(h+gap),w,h);
+        }
+        Rect loadout(int i){Rect c=content();int gap=4;int w=(c.w()-gap*4)/5;return new Rect(c.x()+i*(w+gap),c.y()+25,w,18);}
+        Rect atlasViewport(){Rect c=content();return new Rect(c.x(),c.y()+49,c.w(),c.h()-50);}
+        Rect spellCard(int i,int scroll){
+            Rect v=atlasViewport(); int cols=v.w()>=540?5:v.w()>=330?3:2; int gap=5;
+            int w=(v.w()-gap*(cols-1))/cols; int row=i/cols,col=i%cols;
+            return new Rect(v.x()+col*(w+gap),v.y()+row*48-scroll,w,43);
+        }
+        int maxSpellScroll(int count){Rect v=atlasViewport();int cols=v.w()>=540?5:v.w()>=330?3:2;return Math.max(0,((count+cols-1)/cols)*48-v.h());}
+
+        Rect listViewport(int topOffset){Rect c=content();return new Rect(c.x(),c.y()+topOffset,c.w(),c.h()-topOffset);}
+        Rect wideCard(int i,int scroll,int h,int topOffset){
+            Rect v=listViewport(topOffset);int cols=v.w()>=520?3:2,gap=5;int w=(v.w()-gap*(cols-1))/cols;
+            int row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*(h+5)-scroll,w,h);
+        }
+        int maxWideScroll(int count,int h,int topOffset){Rect v=listViewport(topOffset);int cols=v.w()>=520?3:2;return Math.max(0,((count+cols-1)/cols)*(h+5)-v.h());}
+        Rect staffCard(int i,int scroll){Rect v=listViewport(24);int cols=v.w()>=520?3:2,gap=5;int w=(v.w()-gap*(cols-1))/cols;int row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*44-scroll,w,39);}
+        int maxStaffScroll(int count){Rect v=listViewport(24);int cols=v.w()>=520?3:2;return Math.max(0,((count+cols-1)/cols)*44-v.h());}
+
+        Rect tradition(int i){Rect c=content();int gap=4;int w=(c.w()-gap*3)/4;return new Rect(c.x()+i*(w+gap),c.y()+20,w,20);}
+        Rect academyCircleCard(int circle){
+            Rect c=content();int cols=c.w()>=520?9:3,gap=4;int w=(c.w()-gap*(cols-1))/cols;int col=(circle-1)%cols,row=(circle-1)/cols;int h=34;
+            return new Rect(c.x()+col*(w+gap),c.y()+48+row*(h+gap),w,h);
+        }
+        Rect academyBack(){Rect c=content();return new Rect(c.x(),c.y()+45,66,19);}
+        Rect academyViewport(){Rect c=content();return new Rect(c.x(),c.y()+70,c.w(),c.h()-71);}
+        Rect offerCard(int i,int scroll){Rect v=academyViewport();int cols=v.w()>=540?4:2,gap=5;int w=(v.w()-gap*(cols-1))/cols;int row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*43-scroll,w,38);}
+        int maxOfferScroll(int count){Rect v=academyViewport();int cols=v.w()>=540?4:2;return Math.max(0,((count+cols-1)/cols)*43-v.h());}
     }
 }
