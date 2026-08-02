@@ -59,8 +59,16 @@ jobs:
           from pathlib import Path
           p = Path('tools/test_magic_contract.py')
           s = p.read_text(encoding='utf-8')
-          p.write_text(s.replace('PROTOCOL_VERSION = "ninefold-arcana-10"',
-                                 'PROTOCOL_VERSION = "ninefold-arcana-11"'), encoding='utf-8')
+          s = s.replace('PROTOCOL_VERSION = "ninefold-arcana-10"',
+                        'PROTOCOL_VERSION = "ninefold-arcana-11"')
+          old = '''need(hud, ["int slotW", "int slotH = 28", "fitName", "chargingFraction"], "compact spell HUD")
+          if "int desired = width >= 600 ? 58" in hud or "int slotSize" in hud:
+              raise SystemExit("large square spell HUD remains")'''
+          new = '''need(hud, ["int slotSize = width >= 520 ? 36", "fitName", "chargingFraction",
+              "drawCastingSigil", "partialRing"], "compact square spell HUD")'''
+          if old not in s:
+              raise SystemExit('old v0.10 HUD contract block not found')
+          p.write_text(s.replace(old, new), encoding='utf-8')
           PY
           git diff --check
 
