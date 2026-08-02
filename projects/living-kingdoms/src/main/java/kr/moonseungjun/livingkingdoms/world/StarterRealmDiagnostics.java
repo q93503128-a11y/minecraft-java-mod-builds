@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
+import kr.moonseungjun.livingkingdoms.worldgen.StructurelessNoiseChunkGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -10,6 +11,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +26,15 @@ public final class StarterRealmDiagnostics {
             {112, 224}, {-112, 224}, {112, -224}, {-112, -224},
             {224, 112}, {-224, 112}, {224, -112}, {-224, -112}
     };
+    private static final StreamSample[] STREAM_SAMPLES = {
+            new StreamSample("royal_avenue", 0, 200, false),
+            new StreamSample("north_gate", 0, -900, true),
+            new StreamSample("royal_chancery", -390, -520, true),
+            new StreamSample("great_temple", 710, -560, true),
+            new StreamSample("western_barracks", -720, 540, true),
+            new StreamSample("citizen_court", 170, 600, true)
+    };
+    private static PendingVerification pending;
 
     private StarterRealmDiagnostics() {
     }
@@ -47,14 +58,46 @@ public final class StarterRealmDiagnostics {
                 if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) {
                     throw new IllegalStateException("Erden layout was not built");
                 }
+                verifyStructurelessGenerator(realm);
                 verifyNaturalTerrainOutsideCapital(realm, site);
                 verifyExternalArchitecture(realm, site);
                 verifyNoConstructionDebris(realm, site);
-                finishVerification(realm, started);
+                for (StreamSample sample : STREAM_SAMPLES) {
+                    ErdenCapitalStreamingBuilder.requestChunk(realm, sample.chunkX(), sample.chunkZ());
+                }
+                pending = new PendingVerification(server, realm, site, started, server.getTickCount());
+                LivingKingdoms.LOGGER.info(
+                        "LK_REALM_DIAGNOSTIC_STREAM_WAIT samples={} landmarks={}",
+                        STREAM_SAMPLES.length, ExternalDistrictBuildingBuilder.landmarkCount()
+                );
             } catch (Throwable throwable) {
-                fail("Erden verification failed", throwable);
+                fail("Erden verification preparation failed", throwable);
             }
         });
+    }
+
+    public static void onServerTick(ServerTickEvent.Post event) {
+        PendingVerification state = pending;
+        if (state == null || state.server != event.getServer()) return;
+        int age = event.getServer().getTickCount() - state.startedTick;
+        if (age > 3_600) {
+            pending = null;
+            fail("Streamed Erden samples did not finish within 180 seconds", null);
+            return;
+        }
+        if (event.getServer().getTickCount() % 10 != 0) return;
+        for (StreamSample sample : STREAM_SAMPLES) {
+            if (!ErdenCapitalStreamingBuilder.isChunkBuilt(
+                    state.realm, sample.chunkX(), sample.chunkZ())) return;
+        }
+        pending = null;
+        try {
+            verifyStreamedCapital(state.realm);
+            verifyNoConstructionDebris(state.realm, state.site);
+            finishVerification(state.realm, state.startedNanos);
+        } catch (Throwable throwable) {
+            fail("Streamed Erden verification failed", throwable);
+        }
     }
 
     private static void finishVerification(ServerLevel realm, long started) {
@@ -70,12 +113,64 @@ public final class StarterRealmDiagnostics {
                 throw new IllegalStateException("Realm construction exceeded 900 seconds: " + elapsedMs);
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1 metre_scale=true cleaned_citadel_part=true terrain_integrated_roads=true debris_zero=true layout_revision={} generation_ms={}",
+                    "LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1 metre_scale=true structureless_generator=true vanilla_structures_blocked=true cleaned_citadel_part=true streamed_capital=true streamed_samples={} district_landmarks={} terrain_integrated_roads=true external_wall_parts=true debris_zero=true layout_revision={} generation_ms={}",
+                    STREAM_SAMPLES.length, ExternalDistrictBuildingBuilder.landmarkCount(),
                     RealmSitePlanner.LAYOUT_REVISION, elapsedMs
             );
         } catch (Throwable throwable) {
             fail("Final realm verification failed", throwable);
         }
+    }
+
+    private static void verifyStructurelessGenerator(ServerLevel realm) {
+        if (!(realm.getChunkSource().getGenerator() instanceof StructurelessNoiseChunkGenerator)) {
+            throw new IllegalStateException("Living Realm did not use the structureless generator");
+        }
+    }
+
+    private static void verifyStreamedCapital(ServerLevel realm) {
+        StreamSample road = STREAM_SAMPLES[0];
+        int roadY = realm.getHeight(Heightmap.Types.WORLD_SURFACE, road.x, road.z) - 1;
+        Block roadBlock = realm.getBlockState(new BlockPos(road.x, roadY, road.z)).getBlock();
+        if (roadBlock != Blocks.POLISHED_ANDESITE && roadBlock != Blocks.STONE_BRICKS) {
+            throw new IllegalStateException("Royal avenue was not streamed at " + road.x + "," + road.z
+                    + " block=" + BuiltInBlockName.name(roadBlock));
+        }
+
+        for (int i = 1; i < STREAM_SAMPLES.length; i++) {
+            StreamSample sample = STREAM_SAMPLES[i];
+            verifyArchitectureChunk(realm, sample);
+        }
+    }
+
+    private static void verifyArchitectureChunk(ServerLevel realm, StreamSample sample) {
+        int chunkX = sample.chunkX();
+        int chunkZ = sample.chunkZ();
+        int minX = chunkX << 4;
+        int minZ = chunkZ << 4;
+        int minY = Math.max(realm.getMinY(), terrainY(realm, sample.x, sample.z) - 3);
+        int maxY = Math.min(realm.getMaxY() - 1, minY + 96);
+        int blocks = 0;
+        Set<Block> palette = new HashSet<>();
+        for (int x = minX; x <= minX + 15; x++) {
+            for (int z = minZ; z <= minZ + 15; z++) {
+                for (int y = minY; y <= maxY; y++) {
+                    Block block = realm.getBlockState(new BlockPos(x, y, z)).getBlock();
+                    if (!isArchitecture(block)) continue;
+                    blocks++;
+                    palette.add(block);
+                }
+            }
+        }
+        int minimum = sample.architectureExpected ? 90 : 1;
+        if (blocks < minimum || palette.size() < 3) {
+            throw new IllegalStateException("Streamed capital sample is too sparse role=" + sample.role
+                    + " blocks=" + blocks + " palette=" + palette.size());
+        }
+        LivingKingdoms.LOGGER.info(
+                "Verified streamed capital sample role={} chunk={},{} blocks={} palette={}",
+                sample.role, chunkX, chunkZ, blocks, palette.size()
+        );
     }
 
     private static void verifyNaturalTerrainOutsideCapital(ServerLevel realm,
@@ -95,7 +190,7 @@ public final class StarterRealmDiagnostics {
     }
 
     private static void verifyExternalArchitecture(ServerLevel realm,
-                                                   RealmSiteLayoutSavedData.RealmSite site) {
+                                                    RealmSiteLayoutSavedData.RealmSite site) {
         Set<Block> palette = new HashSet<>();
         int architecturalSamples = 0;
         int yMin = Math.max(realm.getMinY(), site.baseY() - 8);
@@ -131,7 +226,7 @@ public final class StarterRealmDiagnostics {
     private static void verifyNoConstructionDebris(ServerLevel realm,
                                                     RealmSiteLayoutSavedData.RealmSite site) {
         ConstructionDebrisCleaner.schedule(realm, ACTIVE_HOMELAND, site);
-        int radius = 900;
+        int radius = 1_300;
         AABB bounds = new AABB(site.centerX() - radius, realm.getMinY(), site.centerZ() - radius,
                 site.centerX() + radius + 1, realm.getMaxY(), site.centerZ() + radius + 1);
         List<ItemEntity> items = realm.getEntitiesOfClass(ItemEntity.class, bounds);
@@ -162,7 +257,27 @@ public final class StarterRealmDiagnostics {
     }
 
     private static void fail(String message, Throwable throwable) {
+        pending = null;
         if (throwable == null) LivingKingdoms.LOGGER.error("LK_REALM_DIAGNOSTIC_FAIL {}", message);
         else LivingKingdoms.LOGGER.error("LK_REALM_DIAGNOSTIC_FAIL {}", message, throwable);
+    }
+
+    private record StreamSample(String role, int x, int z, boolean architectureExpected) {
+        int chunkX() { return x >> 4; }
+        int chunkZ() { return z >> 4; }
+    }
+
+    private record PendingVerification(MinecraftServer server, ServerLevel realm,
+                                       RealmSiteLayoutSavedData.RealmSite site,
+                                       long startedNanos, int startedTick) {
+    }
+
+    /** Avoids a registry dependency merely to print a diagnostic block name. */
+    private static final class BuiltInBlockName {
+        private BuiltInBlockName() {
+        }
+        static String name(Block block) {
+            return block.getDescriptionId();
+        }
     }
 }
