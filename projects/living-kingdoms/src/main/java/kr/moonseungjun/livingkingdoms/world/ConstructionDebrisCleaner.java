@@ -14,17 +14,13 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Removes vegetation drops caused by authored terrain replacement.
- *
- * <p>The previous thirty-second window missed delayed neighbour updates and chunk reloads. A built
- * settlement is now a permanent construction-safe zone: matching natural debris is rejected when it
- * spawns and a low-frequency sweep removes entities already stored in old chunks.</p>
+ * Removes item entities created by authored terrain replacement without deleting live player loot.
  */
 public final class ConstructionDebrisCleaner {
     private static final Map<String, Integer> CLEANUP_RADII = Map.of(
             "erden_kingdom", 330,
-            "silvana_forest", 240,
-            "kardum_league", 250
+            "silvana_forest", 260,
+            "kardum_league", 270
     );
     private static final Set<Item> NATURAL_DEBRIS = Set.of(
             Items.DEAD_BUSH,
@@ -59,12 +55,31 @@ public final class ConstructionDebrisCleaner {
     private ConstructionDebrisCleaner() {
     }
 
+    /**
+     * Called exactly when an authored capital finishes, before waiting players enter it. Every item
+     * entity inside the construction district is therefore a build by-product and can be discarded.
+     */
+    public static int cleanConstructionCompletion(ServerLevel level, String homelandId,
+                                                  RealmSiteLayoutSavedData.RealmSite site) {
+        AABB bounds = bounds(level, homelandId, site);
+        List<ItemEntity> debris = level.getEntitiesOfClass(ItemEntity.class, bounds);
+        debris.forEach(ItemEntity::discard);
+        if (!debris.isEmpty()) {
+            LivingKingdoms.LOGGER.info(
+                    "Removed {} total construction item entities around {} before player placement",
+                    debris.size(), homelandId
+            );
+        }
+        return debris.size();
+    }
+
+    /** Safe during play: removes only the known natural drops caused by delayed block updates. */
     public static void schedule(ServerLevel level, String homelandId,
                                 RealmSiteLayoutSavedData.RealmSite site) {
-        int removed = cleanSettlement(level, homelandId, site);
+        int removed = cleanNaturalDebris(level, homelandId, site);
         if (removed > 0) {
             LivingKingdoms.LOGGER.info(
-                    "Removed {} stored construction vegetation drops around {}",
+                    "Removed {} delayed construction vegetation drops around {}",
                     removed, homelandId
             );
         }
@@ -72,7 +87,7 @@ public final class ConstructionDebrisCleaner {
 
     public static int cleanIfPathological(ServerLevel level, String homelandId,
                                           RealmSiteLayoutSavedData.RealmSite site) {
-        return cleanSettlement(level, homelandId, site);
+        return cleanNaturalDebris(level, homelandId, site);
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -81,7 +96,7 @@ public final class ConstructionDebrisCleaner {
         if (level == null) return;
         for (String homelandId : CLEANUP_RADII.keySet()) {
             RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, homelandId);
-            if (site != null && site.built()) cleanSettlement(level, homelandId, site);
+            if (site != null && site.built()) cleanNaturalDebris(level, homelandId, site);
         }
     }
 
@@ -105,16 +120,21 @@ public final class ConstructionDebrisCleaner {
         return false;
     }
 
-    private static int cleanSettlement(ServerLevel level, String homelandId,
-                                       RealmSiteLayoutSavedData.RealmSite site) {
-        int radius = CLEANUP_RADII.getOrDefault(homelandId, 280);
-        AABB bounds = new AABB(
-                site.centerX() - radius, level.getMinY(), site.centerZ() - radius,
-                site.centerX() + radius + 1, level.getMaxY(), site.centerZ() + radius + 1
-        );
-        List<ItemEntity> debris = level.getEntitiesOfClass(ItemEntity.class, bounds,
+    private static int cleanNaturalDebris(ServerLevel level, String homelandId,
+                                          RealmSiteLayoutSavedData.RealmSite site) {
+        List<ItemEntity> debris = level.getEntitiesOfClass(ItemEntity.class,
+                bounds(level, homelandId, site),
                 entity -> NATURAL_DEBRIS.contains(entity.getItem().getItem()));
         debris.forEach(ItemEntity::discard);
         return debris.size();
+    }
+
+    private static AABB bounds(ServerLevel level, String homelandId,
+                               RealmSiteLayoutSavedData.RealmSite site) {
+        int radius = CLEANUP_RADII.getOrDefault(homelandId, 280);
+        return new AABB(
+                site.centerX() - radius, level.getMinY(), site.centerZ() - radius,
+                site.centerX() + radius + 1, level.getMaxY(), site.centerZ() + radius + 1
+        );
     }
 }
