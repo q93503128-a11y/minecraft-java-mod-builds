@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -15,12 +16,14 @@ import java.util.Set;
 /**
  * One-shot cleanup for authored construction.
  *
- * <p>Normal gameplay loot is never deleted after the site opens. Construction writes already use
- * drop-suppressing update flags; this class only catches delayed vegetation drops during the final
- * stabilization window.</p>
+ * <p>Normal gameplay loot is never deleted continuously. Construction writes already use
+ * drop-suppressing update flags; this class only clears item entities inside a cell at the exact
+ * moment that authored construction for that cell finishes, plus delayed natural vegetation drops
+ * during the bounded capital stabilization checks.</p>
  */
 public final class ConstructionDebrisCleaner {
-    private static final int ERDEN_CONSTRUCTION_RADIUS = 1_000;
+    private static final int ERDEN_CONSTRUCTION_RADIUS = 1_300;
+    private static final int STREAMED_CHUNK_MARGIN = 2;
     private static final Set<Item> NATURAL_DEBRIS = Set.of(
             Items.DEAD_BUSH,
             Items.WHEAT_SEEDS,
@@ -64,6 +67,30 @@ public final class ConstructionDebrisCleaner {
             LivingKingdoms.LOGGER.info(
                     "Removed {} total construction item entities around Erden before player placement",
                     debris.size()
+            );
+        }
+        return debris.size();
+    }
+
+    /**
+     * Clears only the cell whose authored road, building and infrastructure writes just completed.
+     * This method is never called as a continuous gameplay cleaner.
+     */
+    public static int cleanStreamedChunkCompletion(ServerLevel level, ChunkPos chunk) {
+        int minX = chunk.getMinBlockX() - STREAMED_CHUNK_MARGIN;
+        int minZ = chunk.getMinBlockZ() - STREAMED_CHUNK_MARGIN;
+        int maxX = chunk.getMinBlockX() + 16 + STREAMED_CHUNK_MARGIN;
+        int maxZ = chunk.getMinBlockZ() + 16 + STREAMED_CHUNK_MARGIN;
+        AABB chunkBounds = new AABB(
+                minX, level.getMinY(), minZ,
+                maxX, level.getMaxY(), maxZ
+        );
+        List<ItemEntity> debris = level.getEntitiesOfClass(ItemEntity.class, chunkBounds);
+        debris.forEach(ItemEntity::discard);
+        if (!debris.isEmpty()) {
+            LivingKingdoms.LOGGER.debug(
+                    "Removed {} construction item entities after streamed Erden cell {},{}",
+                    debris.size(), chunk.x(), chunk.z()
             );
         }
         return debris.size();
