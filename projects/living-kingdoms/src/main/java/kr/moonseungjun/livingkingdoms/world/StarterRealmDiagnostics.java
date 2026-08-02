@@ -38,7 +38,12 @@ public final class StarterRealmDiagnostics {
             new StreamSample("royal_chancery", -390, -520, true),
             new StreamSample("great_temple", 710, -560, true),
             new StreamSample("western_barracks", -720, 540, true),
-            new StreamSample("citizen_court", 170, 600, true)
+            new StreamSample("citizen_court", 170, 600, true),
+            new StreamSample("residential_north_01", -1020, -720, true),
+            new StreamSample("civic_well", ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_X,
+                    ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_Z, false),
+            new StreamSample("fire_cistern", ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_X,
+                    ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_Z, false)
     };
     private static PendingVerification pending;
 
@@ -71,10 +76,23 @@ public final class StarterRealmDiagnostics {
                 for (StreamSample sample : STREAM_SAMPLES) {
                     ErdenCapitalStreamingBuilder.requestChunk(realm, sample.chunkX(), sample.chunkZ());
                 }
-                pending = new PendingVerification(server, realm, site, started, server.getTickCount());
+                ExternalDistrictBuildingBuilder.BuildingEntrance accessSample =
+                        ExternalDistrictBuildingBuilder.entrances().stream()
+                                .filter(entrance -> entrance.role().equals("residential_north_01"))
+                                .findFirst()
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Residential access anchor was not prepared"));
+                ErdenCapitalStreamingBuilder.requestChunk(
+                        realm, accessSample.midX() >> 4, accessSample.midZ() >> 4);
+                pending = new PendingVerification(
+                        server, realm, site, started, server.getTickCount(), accessSample);
                 LivingKingdoms.LOGGER.info(
-                        "LK_REALM_DIAGNOSTIC_STREAM_WAIT samples={} landmarks={}",
-                        STREAM_SAMPLES.length, ExternalDistrictBuildingBuilder.landmarkCount()
+                        "LK_REALM_DIAGNOSTIC_STREAM_WAIT samples={} landmarks={} residential_blocks={} entrances={} service_nodes={}",
+                        STREAM_SAMPLES.length,
+                        ExternalDistrictBuildingBuilder.landmarkCount(),
+                        ExternalDistrictBuildingBuilder.residentialBlockCount(),
+                        ExternalDistrictBuildingBuilder.entrances().size(),
+                        ErdenUrbanInfrastructureBuilder.serviceNodeCount()
                 );
             } catch (Throwable throwable) {
                 fail("Erden verification preparation failed", throwable);
@@ -96,9 +114,11 @@ public final class StarterRealmDiagnostics {
             if (!ErdenCapitalStreamingBuilder.isChunkBuilt(
                     state.realm, sample.chunkX(), sample.chunkZ())) return;
         }
+        if (!ErdenCapitalStreamingBuilder.isChunkBuilt(
+                state.realm, state.accessSample.midX() >> 4, state.accessSample.midZ() >> 4)) return;
         pending = null;
         try {
-            verifyStreamedCapital(state.realm);
+            verifyStreamedCapital(state.realm, state.accessSample);
             verifyNoConstructionDebris(state.realm, state.site);
             finishVerification(state.realm, state.startedNanos);
         } catch (Throwable throwable) {
@@ -114,14 +134,24 @@ public final class StarterRealmDiagnostics {
                     throw new IllegalStateException("Unsafe residence spawn " + residence.id() + " at " + feet);
                 }
             }
+            int entrances = ExternalDistrictBuildingBuilder.entrances().size();
+            if (entrances < 30) {
+                throw new IllegalStateException("Too few road-connected building entrances: " + entrances);
+            }
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
             if (elapsedMs > 900_000L) {
                 throw new IllegalStateException("Realm construction exceeded 900 seconds: " + elapsedMs);
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1 metre_scale=true structureless_generator=true vanilla_structures_blocked=true cleaned_citadel_part=true streamed_capital=true streamed_samples={} district_landmarks={} terrain_integrated_roads=true external_wall_parts=true debris_zero=true layout_revision={} generation_ms={}",
-                    STREAM_SAMPLES.length, ExternalDistrictBuildingBuilder.landmarkCount(),
-                    RealmSitePlanner.LAYOUT_REVISION, elapsedMs
+                    "LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1 metre_scale=true structureless_generator=true vanilla_structures_blocked=true cleaned_citadel_part=true streamed_capital=true streamed_samples={} district_landmarks={} residential_blocks={} building_entrances={} civic_service_nodes={} access_paths=true drainage=true terrain_integrated_roads=true external_wall_parts=true debris_zero=true capital_revision={} layout_revision={} generation_ms={}",
+                    STREAM_SAMPLES.length,
+                    ExternalDistrictBuildingBuilder.landmarkCount(),
+                    ExternalDistrictBuildingBuilder.residentialBlockCount(),
+                    entrances,
+                    ErdenUrbanInfrastructureBuilder.serviceNodeCount(),
+                    ErdenCapitalStreamingBuilder.CAPITAL_REVISION,
+                    RealmSitePlanner.LAYOUT_REVISION,
+                    elapsedMs
             );
         } catch (Throwable throwable) {
             fail("Final realm verification failed", throwable);
@@ -134,7 +164,9 @@ public final class StarterRealmDiagnostics {
         }
     }
 
-    private static void verifyStreamedCapital(ServerLevel realm) {
+    private static void verifyStreamedCapital(
+            ServerLevel realm,
+            ExternalDistrictBuildingBuilder.BuildingEntrance accessSample) {
         StreamSample road = STREAM_SAMPLES[0];
         int roadY = realm.getHeight(Heightmap.Types.WORLD_SURFACE, road.x, road.z) - 1;
         Block roadBlock = realm.getBlockState(new BlockPos(road.x, roadY, road.z)).getBlock();
@@ -144,8 +176,59 @@ public final class StarterRealmDiagnostics {
         }
 
         for (int i = 1; i < STREAM_SAMPLES.length; i++) {
-            verifyArchitectureChunk(realm, STREAM_SAMPLES[i]);
+            if (STREAM_SAMPLES[i].architectureExpected) {
+                verifyArchitectureChunk(realm, STREAM_SAMPLES[i]);
+            }
         }
+        verifyUrbanInfrastructure(realm, accessSample);
+    }
+
+    private static void verifyUrbanInfrastructure(
+            ServerLevel realm,
+            ExternalDistrictBuildingBuilder.BuildingEntrance accessSample) {
+        int wellY = designedSurfaceY(
+                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_X,
+                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_Z);
+        Block well = realm.getBlockState(new BlockPos(
+                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_X,
+                wellY,
+                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_Z)).getBlock();
+        if (well != Blocks.WATER) {
+            throw new IllegalStateException("Civic well has no water source: " + BuiltInBlockName.name(well));
+        }
+
+        int cisternY = designedSurfaceY(
+                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_X,
+                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_Z);
+        Block cistern = realm.getBlockState(new BlockPos(
+                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_X,
+                cisternY,
+                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_Z)).getBlock();
+        if (cistern != Blocks.WATER) {
+            throw new IllegalStateException("Fire cistern has no water source: "
+                    + BuiltInBlockName.name(cistern));
+        }
+
+        int drainSurface = designedSurfaceY(0, 200);
+        Block drainWater = realm.getBlockState(new BlockPos(0, drainSurface - 3, 200)).getBlock();
+        Block drainRoof = realm.getBlockState(new BlockPos(0, drainSurface - 1, 200)).getBlock();
+        if (drainWater != Blocks.WATER || drainRoof != Blocks.STONE_BRICKS) {
+            throw new IllegalStateException("Royal avenue culvert is incomplete water="
+                    + BuiltInBlockName.name(drainWater) + " roof=" + BuiltInBlockName.name(drainRoof));
+        }
+
+        int accessY = realm.getHeight(
+                Heightmap.Types.WORLD_SURFACE, accessSample.midX(), accessSample.midZ()) - 1;
+        Block access = realm.getBlockState(new BlockPos(
+                accessSample.midX(), accessY, accessSample.midZ())).getBlock();
+        if (access != Blocks.PACKED_MUD && access != Blocks.STONE_BRICKS) {
+            throw new IllegalStateException("Residential entrance is not connected to a road: "
+                    + BuiltInBlockName.name(access));
+        }
+        LivingKingdoms.LOGGER.info(
+                "Verified Erden urban infrastructure well=true fire_cistern=true royal_culvert=true access_role={} access_length={}",
+                accessSample.role(), accessSample.length()
+        );
     }
 
     private static void verifyArchitectureChunk(ServerLevel realm, StreamSample sample) {
@@ -167,8 +250,7 @@ public final class StarterRealmDiagnostics {
                 }
             }
         }
-        int minimum = sample.architectureExpected ? 90 : 1;
-        if (blocks < minimum || palette.size() < 3) {
+        if (blocks < 90 || palette.size() < 3) {
             throw new IllegalStateException("Streamed capital sample is too sparse role=" + sample.role
                     + " blocks=" + blocks + " palette=" + palette.size());
         }
@@ -193,8 +275,7 @@ public final class StarterRealmDiagnostics {
         int minimum = Integer.MAX_VALUE;
         int maximum = Integer.MIN_VALUE;
         for (int[] offset : REGIONAL_RELIEF_SAMPLES) {
-            int height = (int) Math.round(AuthoredContinentDensity.surfaceHeight(
-                    site.centerX() + offset[0], site.centerZ() + offset[1]));
+            int height = designedSurfaceY(site.centerX() + offset[0], site.centerZ() + offset[1]);
             designedHeights.add(height);
             minimum = Math.min(minimum, height);
             maximum = Math.max(maximum, height);
@@ -266,6 +347,10 @@ public final class StarterRealmDiagnostics {
         return realm.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z) - 1;
     }
 
+    private static int designedSurfaceY(int x, int z) {
+        return (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z));
+    }
+
     private static boolean isTerrainGround(Block block) {
         return block == Blocks.GRASS_BLOCK || block == Blocks.DIRT || block == Blocks.COARSE_DIRT
                 || block == Blocks.ROOTED_DIRT || block == Blocks.PODZOL || block == Blocks.MYCELIUM
@@ -289,13 +374,15 @@ public final class StarterRealmDiagnostics {
 
     private record PendingVerification(MinecraftServer server, ServerLevel realm,
                                        RealmSiteLayoutSavedData.RealmSite site,
-                                       long startedNanos, int startedTick) {
+                                       long startedNanos, int startedTick,
+                                       ExternalDistrictBuildingBuilder.BuildingEntrance accessSample) {
     }
 
     /** Avoids a registry dependency merely to print a diagnostic block name. */
     private static final class BuiltInBlockName {
         private BuiltInBlockName() {
         }
+
         static String name(Block block) {
             return block.getDescriptionId();
         }
