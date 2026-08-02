@@ -14,15 +14,13 @@ import java.util.Map;
 public final class IncrementalWorldEditPlan {
     private static final ThreadLocal<IncrementalWorldEditPlan> ACTIVE = new ThreadLocal<>();
     private static final int CONSTRUCTION_UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
-    private static final int LEGACY_TERRAIN_COLUMN_HEIGHT = 8;
 
     private final List<Operation> operations = new ArrayList<>();
     /** Original generator surface, sampled once per column while the plan is assembled. */
     private final Map<Long, Integer> originalSurfaceHeights = new HashMap<>();
     /** Surface that earlier operations in this same plan have already promised to create. */
     private final Map<Long, Integer> plannedSurfaceHeights = new HashMap<>();
-    /** Surface cap belonging to a discarded legacy cut/fill column. */
-    private final Map<Long, Integer> suppressedTerrainCaps = new HashMap<>();
+    private PendingTerrainColumn pendingTerrainColumn;
     private int operationIndex;
     private long estimatedWrites;
     private long appliedWrites;
@@ -64,11 +62,15 @@ public final class IncrementalWorldEditPlan {
 
     public void addSet(int x, int y, int z, Block block) {
         long key = columnKey(x, z);
-        Integer cap = suppressedTerrainCaps.get(key);
-        if (cap != null && cap == y && isTerrainSurface(block)) {
-            suppressedTerrainCaps.remove(key);
-            suppressedTerrainWrites++;
-            return;
+        if (pendingTerrainColumn != null) {
+            if (pendingTerrainColumn.key == key
+                    && pendingTerrainColumn.surfaceY == y
+                    && isTerrainSurface(block)) {
+                suppressedTerrainWrites += pendingTerrainColumn.writes + 1L;
+                pendingTerrainColumn = null;
+                return;
+            }
+            flushPendingTerrainColumn();
         }
         operations.add(new SetOperation(x, y, z, block));
         estimatedWrites++;
@@ -84,24 +86,29 @@ public final class IncrementalWorldEditPlan {
         int maxZ = Math.max(z1, z2);
         long writes = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
 
-        // The old capital builder flattened an enormous rectangle by scheduling one tall cut/fill
-        // column for every x/z coordinate. The authored generator now creates the capital plateau,
-        // so replaying those columns only carves cliffs into correct terrain. Small three-block road
-        // clearances, canals, rooms, foundations, trees and all multi-column structures remain intact.
+        flushPendingTerrainColumn();
+
+        // terrainColumn/surfaceColumn always sample the generator surface, then schedule one natural
+        // vertical cut/fill and immediately cap that same x/z column with grass, moss, dirt or stone.
+        // We delay only that exact candidate until the following command proves what it is. Roads
+        // set their paving block before clearing headroom; canals clear before adding water; rooms use
+        // multi-column boxes. Those patterns therefore flush and remain untouched.
+        long key = columnKey(minX, minZ);
         if (minX == maxX && minZ == maxZ
-                && maxY - minY + 1 >= LEGACY_TERRAIN_COLUMN_HEIGHT
+                && originalSurfaceHeights.containsKey(key)
                 && isLegacyTerrainColumnMaterial(block)) {
-            int surfaceCap = block == Blocks.AIR ? minY - 1 : maxY + 1;
-            suppressedTerrainCaps.put(columnKey(minX, minZ), surfaceCap);
-            suppressedTerrainWrites += writes;
+            int surfaceY = block == Blocks.AIR ? minY - 1 : maxY + 1;
+            pendingTerrainColumn = new PendingTerrainColumn(
+                    key, surfaceY, minX, minY, minZ, maxX, maxY, maxZ, block, writes
+            );
             return;
         }
 
-        operations.add(new BoxOperation(minX, minY, minZ, maxX, maxY, maxZ, block));
-        estimatedWrites += writes;
+        addBoxOperation(minX, minY, minZ, maxX, maxY, maxZ, block, writes);
     }
 
     public int apply(ServerLevel level, int budget) {
+        flushPendingTerrainColumn();
         int used = 0;
         while (operationIndex < operations.size() && used < budget) {
             Operation operation = operations.get(operationIndex);
@@ -115,10 +122,12 @@ public final class IncrementalWorldEditPlan {
     }
 
     public boolean done() {
+        flushPendingTerrainColumn();
         return operationIndex >= operations.size();
     }
 
     public long estimatedWrites() {
+        flushPendingTerrainColumn();
         return estimatedWrites;
     }
 
@@ -127,11 +136,31 @@ public final class IncrementalWorldEditPlan {
     }
 
     public int operationCount() {
+        flushPendingTerrainColumn();
         return operations.size();
     }
 
     public float progress() {
+        flushPendingTerrainColumn();
         return estimatedWrites == 0L ? 1.0F : Math.min(1.0F, appliedWrites / (float) estimatedWrites);
+    }
+
+    private void flushPendingTerrainColumn() {
+        if (pendingTerrainColumn == null) return;
+        PendingTerrainColumn pending = pendingTerrainColumn;
+        pendingTerrainColumn = null;
+        addBoxOperation(
+                pending.minX, pending.minY, pending.minZ,
+                pending.maxX, pending.maxY, pending.maxZ,
+                pending.block, pending.writes
+        );
+    }
+
+    private void addBoxOperation(int minX, int minY, int minZ,
+                                 int maxX, int maxY, int maxZ,
+                                 Block block, long writes) {
+        operations.add(new BoxOperation(minX, minY, minZ, maxX, maxY, maxZ, block));
+        estimatedWrites += writes;
     }
 
     private static boolean isLegacyTerrainColumnMaterial(Block block) {
@@ -265,5 +294,11 @@ public final class IncrementalWorldEditPlan {
         BlockPos pos = new BlockPos(x, y, z);
         if (level.getBlockState(pos).getBlock() == block) return;
         level.setBlock(pos, block.defaultBlockState(), CONSTRUCTION_UPDATE_FLAGS);
+    }
+
+    private record PendingTerrainColumn(long key, int surfaceY,
+                                        int minX, int minY, int minZ,
+                                        int maxX, int maxY, int maxZ,
+                                        Block block, long writes) {
     }
 }
