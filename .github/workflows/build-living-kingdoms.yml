@@ -18,7 +18,7 @@ permissions:
 env:
   PROJECT_DIR: projects/living-kingdoms
   GRADLE_VERSION: '9.2.1'
-  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.8.jar
+  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.9.jar
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
   LIVING_KINGDOMS_CI_CLIENT_TEST: '1'
 
@@ -54,6 +54,9 @@ jobs:
           find "$PROJECT_DIR/src/main/resources" -type f | sort | tee logs/resource-files.txt
           test -s logs/java-files.txt
           test -s logs/resource-files.txt
+          grep -Fx "$PROJECT_DIR/src/main/resources/data/livingkingdoms/worldgen/noise_settings/living_continent.json" logs/resource-files.txt
+          grep -Fx "$PROJECT_DIR/src/main/resources/data/livingkingdoms/worldgen/density_function/terrain/base_density.json" logs/resource-files.txt
+          grep -Fx "$PROJECT_DIR/src/main/resources/data/livingkingdoms/worldgen/density_function/terrain/continent.json" logs/resource-files.txt
 
       - name: Clean build and verify external resources
         working-directory: ${{ env.PROJECT_DIR }}
@@ -86,7 +89,7 @@ jobs:
 
           ready=0
           diagnostic=0
-          for attempt in $(seq 1 480); do
+          for attempt in $(seq 1 540); do
             if grep -Eq 'Done \(|For help, type "help"' ../../logs/server-smoke.log; then ready=1; fi
             if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=3 residences=8' ../../logs/server-smoke.log; then diagnostic=1; fi
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/server-smoke.log; then
@@ -104,12 +107,19 @@ jobs:
           done
 
           cat ../../logs/server-smoke.log
-          test "$ready" -eq 1 || { echo 'Dedicated server did not reach ready state within 480 seconds.' >&2; exit 1; }
-          test "$diagnostic" -eq 1 || { echo 'Authored realm diagnostics did not complete within 480 seconds.' >&2; exit 1; }
+          test "$ready" -eq 1 || { echo 'Dedicated server did not reach ready state within 540 seconds.' >&2; exit 1; }
+          test "$diagnostic" -eq 1 || { echo 'Authored realm diagnostics did not complete within 540 seconds.' >&2; exit 1; }
           grep -F 'authored_terrain=true' ../../logs/server-smoke.log
           grep -F 'smooth_transitions=true' ../../logs/server-smoke.log
           grep -F 'structure_shells=true' ../../logs/server-smoke.log
           grep -F 'debris_zero=true' ../../logs/server-smoke.log
+          grep -F 'Using authored homeland anchor erden_kingdom' ../../logs/server-smoke.log
+          grep -F 'Using authored homeland anchor silvana_forest' ../../logs/server-smoke.log
+          grep -F 'Using authored homeland anchor kardum_league' ../../logs/server-smoke.log
+          if grep -Fq 'Starting background generator survey' ../../logs/server-smoke.log; then
+            echo 'Legacy vanilla terrain survey still ran.' >&2
+            exit 1
+          fi
           grep -F 'Prepared incremental homeland plan' ../../logs/server-smoke.log
           grep -F 'Realm construction erden_kingdom progress' ../../logs/server-smoke.log
           grep -F 'Realm construction silvana_forest progress' ../../logs/server-smoke.log
@@ -121,8 +131,8 @@ jobs:
           printf 'Recorded exact built-in sculk_patch_deep_dark pre-generation diagnostics: %s\n' \
             "$known_sculk_warnings" | tee ../../logs/known-worldgen-diagnostics.log
 
-          if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms|unsafe terrain read|watchdog|Error reading optional pack metadata' ../../logs/server-smoke-actionable.log; then
-            echo 'Living Kingdoms datapack, pack metadata, dimension, world generation, or server tick error detected.' >&2
+          if grep -Eqi 'Failed to load datapacks|Errors in currently selected datapacks|Could not parse|Exception loading level|Failed to parse.*livingkingdoms|Failed to get element.*livingkingdoms|Unknown registry key.*livingkingdoms|unsafe terrain read|watchdog|Error reading optional pack metadata' ../../logs/server-smoke-actionable.log; then
+            echo 'Living Kingdoms datapack, authored noise settings, dimension, world generation, or server tick error detected.' >&2
             exit 1
           fi
 
@@ -157,7 +167,7 @@ jobs:
             exit 1
           fi
 
-      - name: Package and inspect alpha.8 JAR
+      - name: Package and inspect alpha.9 JAR
         shell: bash
         run: |
           set -euo pipefail
@@ -179,10 +189,20 @@ jobs:
           unzip -Z1 "$JAR" | grep -Eq '^data/livingkingdoms/'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension/living_realm.json'
           unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/dimension_type/living_realm.json'
+          unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/worldgen/noise_settings/living_continent.json'
+          unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/worldgen/density_function/terrain/base_density.json'
+          unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/worldgen/density_function/terrain/continent.json'
+          unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/worldgen/density_function/terrain/erosion.json'
+          unzip -Z1 "$JAR" | grep -Fx 'data/livingkingdoms/worldgen/density_function/terrain/ridges.json'
           unzip -Z1 "$JAR" | grep -Fx 'pack.mcmeta'
           unzip -p "$JAR" pack.mcmeta | grep -F '"min_format": 88'
           unzip -p "$JAR" pack.mcmeta | grep -F '"max_format": [107, 1]'
-          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.8"'
+          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.9"'
+          unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -F '"settings": "livingkingdoms:living_continent"'
+          if unzip -p "$JAR" data/livingkingdoms/dimension/living_realm.json | grep -Fq '"settings": "minecraft:overworld"'; then
+            echo 'Runtime dimension still references vanilla overworld terrain settings.' >&2
+            exit 1
+          fi
           for asset in fantasy_panel panel_background button_normal button_pressed; do
             path="assets/livingkingdoms/textures/gui/kenney/${asset}.png"
             unzip -Z1 "$JAR" | grep -Fx "$path"
@@ -202,10 +222,10 @@ jobs:
         run: |
           set -euo pipefail
           cat > deliverables/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # Living Kingdoms 0.1.0-alpha.8 Build and Runtime Report
+          # Living Kingdoms 0.1.0-alpha.9 Build and Runtime Report
 
           - Commit: $GITHUB_SHA
-          - Mod version: 0.1.0-alpha.8
+          - Mod version: 0.1.0-alpha.9
           - Minecraft: 26.2
           - NeoForge: 26.2.0.38-beta
           - Java: 25
@@ -213,23 +233,25 @@ jobs:
           - Clean build: PASS
           - Correct 26.2 pack metadata load: PASS
           - Fresh dedicated server startup: PASS
-          - Stable authored continent anchors: PASS
-          - Three terrain-first regional capitals: PASS
-          - Smooth capital-to-natural-terrain transitions: PASS
+          - Dedicated living continent noise settings: PASS
+          - Vanilla overworld terrain settings removed from living realm: PASS
+          - Vanilla terrain candidate survey removed: PASS
+          - Permanent political geography and capital anchors: PASS
+          - Three authored regional capitals: PASS
+          - Smooth capital-to-generated-terrain transitions: PASS
           - Legacy destructive post-build passes disabled: PASS
           - Eight verified walkable residence cells: PASS
           - Erden road, wall, canal, house floor, wall and roof checks: PASS
-          - Construction vegetation debris after cleanup: ZERO
+          - Construction debris after completion cleanup: ZERO
           - Graphical client startup under Xvfb: PASS
           - Origin and non-pausing loading screens: PASS
           - Compact codex pages remain viewport-bounded: PASS
           - Atlas drag and zoom input: PASS
-          - Mastery-first growth layout: PASS
           - Runtime JAR integrity and version metadata: PASS
           - Duplicate ZIP entries: NONE
           - Manual visual inspection on user hardware: PENDING
 
-          Alpha.8 replaces the destructive late lot grading, obsolete capital finalizers, temporary debris window, fixed unsafe spawn points, oversized HUD panels and inactive V4 atlas input. A fresh world is required because previous alpha worlds contain already-written broken terrain and structures.
+          Alpha.9 replaces the vanilla-overworld terrain reference and capital candidate search with a dedicated living-continent noise router, authored climate fields, fixed world-map anchors and regional design elevations. A fresh world is required because the dimension generator and layout revision changed.
           EOF
 
       - name: Upload build logs
@@ -242,12 +264,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Upload verified alpha.8 build
+      - name: Upload verified alpha.9 build
         id: upload_build
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: living-kingdoms-0.1.0-alpha.8
+          name: living-kingdoms-0.1.0-alpha.9
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
