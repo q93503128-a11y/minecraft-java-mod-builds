@@ -90,6 +90,7 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (VillageSkillTestSystem.handleManagementBox(event)) return;
         if (VillageWorldSystem.handleCentralBellInteraction(event)) return;
         if (VillageWorldSystem.handleGateInteraction(event)) return;
         if (VillageDoorSystem.handle(event)) return;

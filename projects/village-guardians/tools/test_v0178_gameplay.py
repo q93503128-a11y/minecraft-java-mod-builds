@@ -17,7 +17,7 @@ def main() -> None:
     visuals = read("VillageSkillVisualSystem.java")
     descriptions = read("VillageActionDescriptions.java")
 
-    assert "mod_version=0.17.8-alpha.1" in props
+    assert "mod_version=0.17.9-alpha.1" in props
     for branch in ("power", "guard", "support", "ranged", "mobility"):
         assert tree.count(f'("{branch}_') == 10
         assert f'{branch.upper()}_10' in tree
@@ -51,11 +51,11 @@ def main() -> None:
     assert "시험 모드 · 재사용 대기시간 없음" in role
     assert "VillageSkillTestSystem.targetsNear" in visuals
 
-    assert "test_choose:" in controller
+    assert "test_role:" in controller
     assert "test_equip:" in controller
     assert "test_cast:" not in controller
-    assert "openSkillTestSlot" in controller
-    assert "K: 시험 메뉴 다시 열기" in controller
+    assert "test_equip:" in controller
+    assert "K로 이 화면" in controller
     assert "if (VillageSkillTestSystem.isEnabled(player)) openSkillTest(player);" in controller
     assert "외부 시험장" in descriptions
     assert 'return "임시 장착"' in descriptions

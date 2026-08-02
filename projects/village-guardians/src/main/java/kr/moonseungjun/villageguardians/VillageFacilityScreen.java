@@ -83,6 +83,7 @@ public final class VillageFacilityScreen extends Screen {
             case "tower_control", "tower_detail" -> "성벽과 방어탑 지휘";
             case "caller" -> "상태·성장·통신·귀환";
             case "management" -> "회관 전용 시설 관리";
+            case "skill_test" -> "시험 관리함 · 직업과 Z/X 기술 선택";
             default -> "시설 고유 기능";
         };
     }
@@ -207,6 +208,13 @@ public final class VillageFacilityScreen extends Screen {
             if (inside(click.x(), click.y(), x, y, cardWidth, CARD_HEIGHT)) {
                 selectedIndex = index;
                 detailScroll = 0;
+                String selectedAction = actions[index];
+                if ("skill_test".equals(payload.screenId())
+                        && (selectedAction.startsWith("test_role:")
+                        || selectedAction.startsWith("test_equip:"))) {
+                    ClientPacketDistributor.sendToServer(
+                            new VillageNetwork.VillageUiActionPayload(selectedAction));
+                }
                 return true;
             }
         }

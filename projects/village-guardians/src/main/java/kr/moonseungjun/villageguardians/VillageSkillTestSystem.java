@@ -2,6 +2,8 @@ package kr.moonseungjun.villageguardians;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +15,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -32,6 +35,7 @@ public final class VillageSkillTestSystem {
     private static final Map<UUID, UUID> OWNERS = new HashMap<>();
     private static final Map<UUID, ReturnPoint> RETURN_POINTS = new HashMap<>();
     private static final Map<String, String> TEST_LOADOUTS = new HashMap<>();
+    private static final Map<UUID, VillageRole> TEST_ROLES = new HashMap<>();
 
     private VillageSkillTestSystem() {}
 
@@ -41,6 +45,7 @@ public final class VillageSkillTestSystem {
         OWNERS.clear();
         RETURN_POINTS.clear();
         TEST_LOADOUTS.clear();
+        TEST_ROLES.clear();
     }
 
     public static boolean recognize(Mob mob) {
@@ -70,22 +75,24 @@ public final class VillageSkillTestSystem {
         }
         buildArena(level, arena);
         ENABLED.add(player.getUUID());
+        selectedRole(player);
         ensureDefaultLoadout(player);
 
-        BlockPos start = arena.offset(0, 0, 12);
+        BlockPos start = arena.offset(0, 0, 11);
         player.teleportTo(level, start.getX() + 0.5, start.getY(), start.getZ() + 0.5,
                 Set.of(), 180.0f, 0.0f, true);
         player.setDeltaMovement(Vec3.ZERO);
         String targets = spawnTargets(player);
         return "외부 기술 시험장으로 이동했습니다."
-                + "\nZ/X에 임시 장착한 기술을 실제 입력으로 사용해 모션과 판정을 확인하세요."
-                + "\nK를 누르면 시험 장착 메뉴를 다시 엽니다. " + targets;
+                + "\n뒤쪽의 기술 시험 관리함을 열어 직업과 Z/X 기술을 변경할 수 있습니다."
+                + "\nK를 눌러도 같은 관리 화면을 엽니다. " + targets;
     }
 
     public static String disable(ServerPlayer player) {
         String result = clearTargets(player);
         ENABLED.remove(player.getUUID());
         clearLoadout(player.getUUID());
+        TEST_ROLES.remove(player.getUUID());
         ReturnPoint point = RETURN_POINTS.remove(player.getUUID());
         if (point != null && player.level() instanceof ServerLevel level) {
             player.teleportTo(level, point.x(), point.y(), point.z(), Set.of(),
@@ -95,12 +102,31 @@ public final class VillageSkillTestSystem {
         return "기술 시험 모드를 종료하고 원래 위치로 복귀했습니다. " + result;
     }
 
+    public static VillageRole selectedRole(ServerPlayer player) {
+        if (player == null) return VillageRole.VANGUARD;
+        VillageRole selected = TEST_ROLES.get(player.getUUID());
+        if (selected != null) return selected;
+        selected = VillageCouncilState.roleOf(player.getUUID()).orElse(VillageRole.VANGUARD);
+        TEST_ROLES.put(player.getUUID(), selected);
+        return selected;
+    }
+
+    public static String selectRole(ServerPlayer player, String roleId) {
+        if (!isEnabled(player)) return "먼저 외부 기술 시험장을 활성화해야 합니다.";
+        VillageRole role = VillageRole.parse(roleId).orElse(null);
+        if (role == null) return "알 수 없는 시험 직업입니다.";
+        TEST_ROLES.put(player.getUUID(), role);
+        clearLoadout(player.getUUID());
+        ensureDefaultLoadout(player);
+        return role.displayName() + "을(를) 시험 직업으로 선택했습니다. 실제 직업과 성장 데이터는 바뀌지 않습니다.";
+    }
+
     public static String equip(ServerPlayer player, String skillId, int slot) {
         if (!isEnabled(player)) return "먼저 외부 기술 시험장을 활성화해야 합니다.";
         VillageRoleSkillSystem.ActiveSkill skill =
                 VillageRoleSkillSystem.ActiveSkill.parse(skillId).orElse(null);
-        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        if (skill == null || role == null || skill.role() != role) {
+        VillageRole role = selectedRole(player);
+        if (skill == null || skill.role() != role) {
             return "현재 직업의 기술만 시험 슬롯에 장착할 수 있습니다.";
         }
         int safeSlot = slot == 1 ? 1 : 0;
@@ -115,10 +141,10 @@ public final class VillageSkillTestSystem {
 
     public static Optional<VillageRoleSkillSystem.ActiveSkill> equippedSkill(ServerPlayer player, int slot) {
         if (!isEnabled(player)) return Optional.empty();
-        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        VillageRole role = selectedRole(player);
         return VillageRoleSkillSystem.ActiveSkill.parse(
                         TEST_LOADOUTS.get(loadoutKey(player.getUUID(), slot == 1 ? 1 : 0)))
-                .filter(skill -> role != null && skill.role() == role);
+                .filter(skill -> skill.role() == role);
     }
 
     public static String loadoutSummary(ServerPlayer player) {
@@ -199,6 +225,7 @@ public final class VillageSkillTestSystem {
         ENABLED.clear();
         RETURN_POINTS.clear();
         TEST_LOADOUTS.clear();
+        TEST_ROLES.clear();
     }
 
     public static boolean isTestDummy(Entity entity) {
@@ -224,8 +251,8 @@ public final class VillageSkillTestSystem {
 
     private static void ensureDefaultLoadout(ServerPlayer player) {
         if (equippedSkill(player, 0).isPresent() || equippedSkill(player, 1).isPresent()) return;
-        List<VillageRoleSkillSystem.ActiveSkill> skills = VillageCouncilState.roleOf(player.getUUID())
-                .map(VillageRoleSkillSystem::skillsFor).orElse(List.of());
+        List<VillageRoleSkillSystem.ActiveSkill> skills =
+                VillageRoleSkillSystem.skillsFor(selectedRole(player));
         if (!skills.isEmpty()) TEST_LOADOUTS.put(loadoutKey(player.getUUID(), 0), skills.get(0).id());
         if (skills.size() > 1) TEST_LOADOUTS.put(loadoutKey(player.getUUID(), 1), skills.get(1).id());
     }
@@ -237,6 +264,24 @@ public final class VillageSkillTestSystem {
 
     private static String loadoutKey(UUID owner, int slot) {
         return owner + "|" + (slot == 1 ? 1 : 0);
+    }
+
+    public static boolean handleManagementBox(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getHand() != InteractionHand.MAIN_HAND
+                || !(event.getEntity() instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel)
+                || !isEnabled(player)) return false;
+        BlockPos box = managementBoxPosition();
+        if (box == null || !box.equals(event.getPos())) return false;
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        VillageUiController.openSkillTest(player);
+        return true;
+    }
+
+    public static BlockPos managementBoxPosition() {
+        BlockPos arena = arenaCenter();
+        return arena == null ? null : arena.offset(0, 0, 14);
     }
 
     private static BlockPos arenaCenter() {
@@ -266,6 +311,13 @@ public final class VillageSkillTestSystem {
         }
         for (int x = -2; x <= 2; x++) {
             VillageFortressTerrain.set(level, center.offset(x, -1, 10), Blocks.GOLD_BLOCK);
+        }
+        BlockPos box = managementBoxPosition();
+        if (box != null) {
+            VillageFortressTerrain.set(level, box.below(), Blocks.GOLD_BLOCK);
+            VillageFortressTerrain.set(level, box, Blocks.BARREL);
+            VillageFortressTerrain.set(level, box.west(), Blocks.SEA_LANTERN);
+            VillageFortressTerrain.set(level, box.east(), Blocks.SEA_LANTERN);
         }
     }
 

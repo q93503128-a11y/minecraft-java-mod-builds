@@ -193,12 +193,11 @@ public final class VillageRoleSkillSystem {
     }
 
     public static synchronized Optional<ActiveSkill> equippedSkill(ServerPlayer player, int slot) {
+        if (VillageSkillTestSystem.isEnabled(player)) {
+            return VillageSkillTestSystem.equippedSkill(player, slot);
+        }
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         if (role == null) return Optional.empty();
-        if (VillageSkillTestSystem.isEnabled(player)) {
-            return VillageSkillTestSystem.equippedSkill(player, slot)
-                    .filter(skill -> skill.role() == role);
-        }
         return ActiveSkill.parse(EQUIPPED_SKILLS.get(loadoutKey(player.getUUID(), role, slot == 1 ? 1 : 0)))
                 .filter(skill -> skill.role() == role && hasSkill(player, skill));
     }
@@ -238,18 +237,22 @@ public final class VillageRoleSkillSystem {
     }
 
     public static String useEquippedSkill(ServerPlayer player, int slot) {
-        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        boolean testing = VillageSkillTestSystem.isEnabled(player);
+        VillageRole role = testing
+                ? VillageSkillTestSystem.selectedRole(player)
+                : VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         if (role == null) {
             return "마을 회관에서 직업을 먼저 배치해야 합니다.";
         }
         ActiveSkill skill = equippedSkill(player, slot).orElse(null);
         if (skill == null) {
-            return "기술 슬롯 " + (slot + 1) + "이 비어 있습니다. 직업 성장 화면에서 기술을 장착하세요.";
+            return testing
+                    ? "시험 슬롯 " + (slot == 0 ? "Z" : "X") + "이 비어 있습니다. 시험 관리함에서 기술을 장착하세요."
+                    : "기술 슬롯 " + (slot + 1) + "이 비어 있습니다. 직업 성장 화면에서 기술을 장착하세요.";
         }
         if (!(player.level() instanceof ServerLevel level)) {
             return "현재 월드에서는 기술을 사용할 수 없습니다.";
         }
-        boolean testing = VillageSkillTestSystem.isEnabled(player);
         long now = System.currentTimeMillis();
         String cooldownKey = player.getUUID() + "|" + skill.id();
         if (!testing) {
@@ -282,8 +285,8 @@ public final class VillageRoleSkillSystem {
     public static String useTestSkill(ServerPlayer player, String skillId) {
         if (!VillageSkillTestSystem.isEnabled(player)) return "먼저 기술 시험 모드를 활성화해야 합니다.";
         ActiveSkill skill = ActiveSkill.parse(skillId).orElse(null);
-        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        if (skill == null || role == null || skill.role() != role) return "현재 직업의 기술만 시험할 수 있습니다.";
+        VillageRole role = VillageSkillTestSystem.selectedRole(player);
+        if (skill == null || skill.role() != role) return "현재 시험 직업의 기술만 시험할 수 있습니다.";
         if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 시험할 수 없습니다.";
         cast(level, player, skill, powerMultiplier(player, role)
                 * VillageProgressionSystem.learnedSkillDamageMultiplier(player),
