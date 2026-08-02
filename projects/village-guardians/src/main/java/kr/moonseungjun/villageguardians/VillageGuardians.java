@@ -41,11 +41,11 @@ public final class VillageGuardians {
         VillageTowerSpecializationSystem.initializeServer(event.getServer());
         VillageDefenseResearchSystem.initializeServer(event.getServer());
         VillageRelicSystem.initializeServer(event.getServer());
+        VillageMercenarySystem.initializeServer(event.getServer());
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
         VillageTowerResearchBonusSystem.reset();
-        VillageMercenarySystem.reset();
         VillageGatePrioritySystem.reset();
         VillageRespawnSystem.reset();
         VillageStructureHud.reset();
@@ -136,6 +136,7 @@ public final class VillageGuardians {
             VillageMercenarySystem.awardKillExperience(server, event.getEntity().position());
             if (boss) VillageRelicSystem.offerToParty(server);
         }
+        if (event.getEntity() instanceof Mob mob) VillageMercenarySystem.handleDeath(mob);
         VillageRaidSystem.onLivingDeath(event);
         VillageRpgSystem.handleDeath(event);
     }
