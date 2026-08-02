@@ -1,0 +1,44 @@
+name: Repair Countryside Days alpha.15 transfer bytes
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cd-a15-patch-p04.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Repair and verify the transferred chunk
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p=Path('projects/countryside-days/tools/alpha15fix_04.part')
+          s=''.join(p.read_text('ascii').split())
+          if hashlib.sha256(s.encode()).hexdigest()=='8058ef8da669949be9d9aa344130c3a17a0d75b3069438cbf433db60aba4eaad':
+              print('already correct')
+          else:
+              if len(s)!=8000: raise SystemExit(f'unexpected length {len(s)}')
+              s=s[:7493]+s[7495:]
+              s=s[:945]+'yM'+s[945:]
+              actual=hashlib.sha256(s.encode()).hexdigest()
+              if len(s)!=8000 or actual!='8058ef8da669949be9d9aa344130c3a17a0d75b3069438cbf433db60aba4eaad':
+                  raise SystemExit(f'repair failed {len(s)} {actual}')
+              p.write_text(s,'ascii')
+              print('repaired exact chunk 04')
+          PY
+          sed -i '/if: github.actor != '\''github-actions\[bot\]'\''/d' .github/workflows/cd-a15-materialize.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/countryside-days/tools/alpha15fix_04.part .github/workflows/cd-a15-materialize.yml
+          git commit -m 'Repair Countryside Days alpha.15 payload and rerun materialization'
+          git pull --rebase origin main
+          git push origin HEAD:main
