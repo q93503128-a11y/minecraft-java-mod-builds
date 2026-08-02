@@ -47,9 +47,16 @@ final class VillageBuildingFacadeFix {
     private static void movePlaque(ServerLevel level, BlockPos entrance, Direction inward,
                                    Direction sideways, Direction front,
                                    VillageProgressionSystem.Building building) {
-        BlockPos legacy = entrance.relative(sideways.getOpposite(), 3).above(2);
-        if (level.getBlockState(legacy).is(Blocks.OAK_WALL_SIGN)) {
-            level.setBlockAndUpdate(legacy, Blocks.AIR.defaultBlockState());
+        BlockPos legacySign = entrance.relative(sideways.getOpposite(), 3).above(2);
+        if (level.getBlockState(legacySign).is(Blocks.OAK_WALL_SIGN)) {
+            level.setBlockAndUpdate(legacySign, Blocks.AIR.defaultBlockState());
+        }
+
+        BlockPos oldColumn = legacySign.relative(inward);
+        BlockPos mirrorColumn = entrance.relative(sideways, 3).above(2).relative(inward);
+        for (int down = 0; down <= 2; down++) {
+            BlockState mirrored = level.getBlockState(mirrorColumn.below(down));
+            if (!mirrored.isAir()) level.setBlockAndUpdate(oldColumn.below(down), mirrored);
         }
 
         BlockPos signPos = entrance.relative(sideways.getOpposite(), 2).above(1);
