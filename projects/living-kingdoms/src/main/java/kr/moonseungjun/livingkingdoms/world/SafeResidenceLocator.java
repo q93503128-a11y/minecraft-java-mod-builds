@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-/** Resolves and verifies authored interior spawn cells after every construction pass. */
+/** Resolves and verifies the active Erden residence and civic custody cells. */
 public final class SafeResidenceLocator {
     private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
 
@@ -14,44 +14,26 @@ public final class SafeResidenceLocator {
 
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
         RealmSiteLayoutSavedData.RealmSite site = requiredSite(level, homelandId);
-        int cx = site.centerX();
-        int cz = site.centerZ();
-        int y = site.baseY();
-        BlockPos preferred = switch (residenceId) {
-            case "erden_city_room" -> new BlockPos(cx + 26, y + 1, cz + 36);
-            case "erden_farm_home" -> new BlockPos(cx + 132, y + 1, cz + 98);
-            case "river_fishing_hut" -> new BlockPos(cx - 146, y + 1, cz + 91);
-            case "forest_camp" -> new BlockPos(cx + 116, y + 1, cz - 132);
-            case "silvana_tree_home" -> new BlockPos(cx - 45, y + 17, cz - 28);
-            case "silvana_moonwell_lodge" -> new BlockPos(cx + 73, y + 2, cz + 87);
-            case "kardum_gate_lodge" -> new BlockPos(cx - 4, y + 2, cz - 72);
-            case "kardum_worker_quarters" -> new BlockPos(cx - 72, y + 2, cz + 43);
-            default -> new BlockPos(cx + 26, y + 1, cz + 36);
-        };
-        return findOrCreateWalkable(level, preferred, floorFor(residenceId), 6, 8);
+        if (!"erden_city_room".equals(residenceId)) {
+            throw new IllegalArgumentException("Inactive residence: " + residenceId);
+        }
+        int surfaceY = RealmSitePlanner.surfaceY(level, site.centerX() + 320, site.centerZ() + 180);
+        BlockPos preferred = new BlockPos(site.centerX() + 320, surfaceY + 1, site.centerZ() + 180);
+        return findOrCreateWalkable(level, preferred, Blocks.SPRUCE_PLANKS, 12, 12);
     }
 
     public static BlockPos jail(ServerLevel level, String jurisdiction) {
         RealmSiteLayoutSavedData.RealmSite site = requiredSite(level, jurisdiction);
-        int cx = site.centerX();
-        int cz = site.centerZ();
-        int y = site.baseY();
-        BlockPos preferred = switch (jurisdiction) {
-            case "silvana_forest" -> new BlockPos(cx - 67, y + 1, cz + 58);
-            case "kardum_league" -> new BlockPos(cx + 69, y + 11, cz - 64);
-            default -> new BlockPos(cx - 93, y + 1, cz - 31);
-        };
-        return findOrCreateWalkable(level, preferred, Blocks.STONE_BRICKS, 5, 6);
+        int surfaceY = RealmSitePlanner.surfaceY(level, site.centerX() - 360, site.centerZ() - 80);
+        BlockPos preferred = new BlockPos(site.centerX() - 360, surfaceY + 1, site.centerZ() - 80);
+        return findOrCreateWalkable(level, preferred, Blocks.STONE_BRICKS, 8, 10);
     }
 
     public static float yaw(String homelandId, String residenceId) {
-        if ("silvana_forest".equals(homelandId)) return 180.0F;
-        if ("kardum_league".equals(homelandId)) return 0.0F;
-        return switch (residenceId) {
-            case "river_fishing_hut" -> 0.0F;
-            case "forest_camp" -> 180.0F;
-            default -> 180.0F;
-        };
+        if (!"erden_kingdom".equals(homelandId) || !"erden_city_room".equals(residenceId)) {
+            throw new IllegalArgumentException("Inactive origin residence");
+        }
+        return 180.0F;
     }
 
     public static boolean isWalkable(ServerLevel level, BlockPos feet) {
@@ -67,15 +49,6 @@ public final class SafeResidenceLocator {
             throw new IllegalStateException("Authored site is not ready: " + homelandId);
         }
         return site;
-    }
-
-    private static Block floorFor(String residenceId) {
-        return switch (residenceId) {
-            case "forest_camp" -> Blocks.COARSE_DIRT;
-            case "silvana_tree_home", "silvana_moonwell_lodge" -> Blocks.STRIPPED_BIRCH_WOOD;
-            case "kardum_gate_lodge", "kardum_worker_quarters" -> Blocks.POLISHED_DEEPSLATE;
-            default -> Blocks.SPRUCE_PLANKS;
-        };
     }
 
     private static BlockPos findOrCreateWalkable(ServerLevel level, BlockPos preferred, Block floor,
