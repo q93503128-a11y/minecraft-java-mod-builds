@@ -49,10 +49,10 @@ new = '''def patch_damage_attribution() -> None:
             continue
         text = path.read_text(encoding="utf-8")
         updated, direct_count = direct_pattern.subn(r"ArcaneDamage.hurt(level, player, \\1, \\2);", text)
-        # Remaining forms include multiline lambdas and helper returns. Bind their source first,
-        # then collapse ordinary statements through ArcaneDamage when the syntax is simple.
-        source_count = updated.count("level.damageSources().magic()")
-        updated = updated.replace("level.damageSources().magic()", "level.damageSources().playerAttack(player)")
+        # Old effects use several receiver expressions, including level(player) and explicit casts.
+        # Replace the damage source independent of that receiver so no ownerless magic damage survives.
+        source_count = updated.count(".damageSources().magic()")
+        updated = updated.replace(".damageSources().magic()", ".damageSources().playerAttack(player)")
         updated, attributed_count = attributed_pattern.subn(r"ArcaneDamage.hurt(level, player, \\1, \\2);", updated)
         if direct_count or source_count or attributed_count:
             path.write_text(updated, encoding="utf-8")
@@ -64,7 +64,7 @@ new = '''def patch_damage_attribution() -> None:
         if path.name == "ArcaneDamage.java":
             continue
         text = path.read_text(encoding="utf-8")
-        if "damageSources().magic()" in text:
+        if ".damageSources().magic()" in text:
             offenders.append(path.name)
     if offenders:
         raise RuntimeError(f"unattributed spell damage remains: {offenders}")
