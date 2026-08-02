@@ -54,7 +54,7 @@ forbid(casting, ["sendParticles("], "server particle-centered spell visuals")
 
 need(tracker, ["ExtractLevelRenderStateEvent", "SubmitCustomGeometryEvent", "submitShapeOutline",
                "for (int ring = 0; ring < spell.circle(); ring++)", "buildCharge", "buildRelease",
-               "sphereLattice", "spell.sigilAnchor()"], "world-space geometry renderer")
+               "addSphereLattice", "spell.sigilAnchor()"], "world-space geometry renderer")
 need(visual_service, ["PacketDistributor.sendToPlayersNear", "kind=stop", "case FRONT",
                       "case GROUND_TARGET", "MagicPlayerData.CastPreparation"],
      "multiplayer world visual broadcast")
