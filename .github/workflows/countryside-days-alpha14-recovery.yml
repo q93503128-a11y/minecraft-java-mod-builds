@@ -1,0 +1,275 @@
+name: Recover Countryside Days alpha.14
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/countryside-days-alpha14-recovery.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: countryside-days-alpha14-recovery
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: projects/countryside-days
+
+jobs:
+  recover:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Install virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Prepare Gradle wrapper
+        run: |
+          if [ ! -x ./gradlew ]; then
+            gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+            chmod +x gradlew
+          fi
+          java -version
+          ./gradlew --version
+
+      - name: Reject staged or nested source contamination
+        run: |
+          test ! -d projects
+          test -f src/main/java/kr/countrysidedays/CountrysideDays.java
+          grep -q '^mod_version=0.1.0-alpha.14$' gradle.properties
+          find tools -maxdepth 1 -type f \( -name 'alpha14_*.part' -o -name 'alpha14_*.b64' \) -print || true
+
+      - name: Validate UTF-8 localization
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+          root = Path('src/main/resources/assets/countrysidedays/lang')
+          ko = json.loads((root / 'ko_kr.json').read_bytes().decode('utf-8', 'strict'))
+          en = json.loads((root / 'en_us.json').read_bytes().decode('utf-8', 'strict'))
+          if set(ko) != set(en):
+              raise SystemExit(f'localization mismatch: ko-only={set(ko)-set(en)}, en-only={set(en)-set(ko)}')
+          required = (
+              'hud.countrysidedays.shift_open',
+              'hud.countrysidedays.shift_closed',
+              'hud.countrysidedays.river_direction',
+              'message.countrysidedays.starter_coins',
+              'message.countrysidedays.resident_chat',
+              'message.countrysidedays.adoption_success',
+              'item.countrysidedays.cow_adoption_ticket',
+              'item.countrysidedays.sheep_adoption_ticket',
+              'item.countrysidedays.chicken_adoption_ticket',
+          )
+          for key in required:
+              if not isinstance(ko.get(key), str) or not ko[key].strip():
+                  raise SystemExit(f'missing Korean localization: {key}')
+          for key, value in ko.items():
+              if key.startswith('hud.countrysidedays.') and not re.search(r'[가-힣]', re.sub(r'§.', '', value)):
+                  raise SystemExit(f'Korean HUD lacks Korean text: {key}={value!r}')
+          print(f'Validated {len(ko)} matching UTF-8 localization keys.')
+          PY
+
+      - name: Validate requested alpha.14 gameplay contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('src/main/java/kr/countrysidedays')
+          read = lambda p: (root / p).read_text('utf-8')
+          mod = read('CountrysideDays.java')
+          npc = read('gameplay/RuralNpcManager.java')
+          village = read('gameplay/VillageLifeManager.java')
+          worker = read('gameplay/EstateWorkerManager.java')
+          ranch = read('gameplay/RanchLifeManager.java')
+          seat = read('gameplay/CountrysideSeatManager.java')
+          residents = read('gameplay/VillageResidentCatalog.java')
+          gameplay = read('gameplay/RuralGameplayHandler.java')
+          fishing = read('gameplay/CountrysideFishingManager.java')
+          access = read('gameplay/SharedRestaurantAccess.java')
+          data = read('world/CountrysideWorldData.java')
+          estate = read('world/StarterHomesteadGenerator.java')
+          public = read('world/PublicVillageExpansionBuilder.java')
+          restaurant = read('world/SharedRestaurantBuilder.java')
+          layout = read('world/PlayerEstateLayout.java')
+          payload = read('network/EstateHudPayload.java')
+          if '0.1.0-alpha.14' not in mod: raise SystemExit('wrong source version')
+          if mod.index('VillageLifeManager::onEntityInteract') > mod.index('RuralNpcManager::handleInteraction'): raise SystemExit('worker hiring must precede dialogue')
+          if 'if (event.isCanceled()) return;' not in npc: raise SystemExit('handled interaction may be consumed twice')
+          for token in ('CUSTOMER_NAMES', 'ensureSharedCustomers', 'spawnSpeciesIfMissing', 'DAILY_CUSTOMER_CAP'):
+              if token in npc: raise SystemExit(f'legacy customer/private animal code remains: {token}')
+          for token in ('ACTIVE_GUEST_TAG', 'maybeInviteResident', 'nextInt(6)', 'isActiveGuest'):
+              if token not in npc: raise SystemExit(f'real resident guest rotation missing: {token}')
+          if 'RESTAURANT_SEAT_COUNT = 8' not in layout: raise SystemExit('restaurant does not expose eight seats')
+          if not all(x in access + data for x in ('recordGuestService', 'withGuestService')): raise SystemExit('unlimited guest accounting missing')
+          if not all(x in ranch for x in ('COW_ADOPTION_TICKET', 'SHEEP_ADOPTION_TICKET', 'CHICKEN_ADOPTION_TICKET', 'purgeLegacyEstateAnimals', 'PRIVATE_LIVESTOCK_V14_TAG')): raise SystemExit('explicit livestock adoption/migration missing')
+          if not all(x in worker for x in ('HIRED_V14_TAG', 'villager.discard()')) or 'ensureEstateWorker(' in village: raise SystemExit('free automatic workers remain')
+          if not all(x in estate for x in ('clearFormerBarn', 'estatePaths', 'clearPathDrops', 'safeWorldPathDot')): raise SystemExit('estate path/former barn cleanup missing')
+          if residents.count('new Profile(') < 20 or not all(x in residents for x in ('PUBLIC_RESIDENT_TAG', 'household', 'shopCategory')): raise SystemExit('resident household roster incomplete')
+          if not all(x in public for x in ('cottage(', 'workshop(', 'publicRiver(', 'clearLegacyHallLamp')): raise SystemExit('public village buildings/river/hall cleanup missing')
+          if 'resident_progress' in npc: raise SystemExit('Boksun still reports restaurant state')
+          if not all(x in seat for x in ('SEAT_TAG', 'startRiding', 'isSeatOccupied', 'getOpposite()')): raise SystemExit('seat interaction/facing missing')
+          if not all(x in restaurant for x in ('customerSeatFacing(slot).getOpposite()', 'RESTAURANT_SEAT_COUNT')): raise SystemExit('restaurant chair facing missing')
+          if not all(x in fishing + payload for x in ('isPublicRiver', 'riverX', 'riverZ')): raise SystemExit('public river navigation/fishing missing')
+          if 'STARTER_COINS = 20' not in gameplay: raise SystemExit('starter money missing')
+          if 'StreamCodec.composite(' in payload or 'new StreamCodec<>()' not in payload: raise SystemExit('HUD payload codec is unsafe')
+          print('Requested alpha.14 gameplay contracts passed.')
+          PY
+
+      - name: Clean Java 25 build
+        run: |
+          mkdir -p ci-logs
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
+
+      - name: Datagen
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee ci-logs/datagen.log
+
+      - name: Required GameTests
+        timeout-minutes: 25
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee ci-logs/gametest.log
+
+      - name: Reject runtime data errors
+        run: |
+          if grep -n -E "Couldn't parse data file|Failed to parse recipe|Parsing error loading recipe|Failed to parse.*worldgen|biome_modifier" ci-logs/gametest.log ci-logs/datagen.log; then
+            exit 1
+          fi
+
+      - name: Audit explicit countryside flat server
+        timeout-minutes: 8
+        run: |
+          rm -rf run/world run/logs
+          mkdir -p run ci-logs
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'PROPERTIES'
+          level-name=world
+          level-type=minecraft:flat
+          generator-settings={"biome":"countrysidedays:rural_plains","features":true,"lakes":false,"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":8},{"block":"minecraft:grass_block","height":1}],"structure_overrides":[]}
+          generate-structures=true
+          online-mode=false
+          spawn-protection=0
+          view-distance=10
+          simulation-distance=8
+          PROPERTIES
+          setsid ./gradlew --no-daemon runServer --stacktrace > ci-logs/server.log 2>&1 &
+          PID=$!; READY=0
+          for SECOND in $(seq 1 180); do
+            if grep -q "Done (" ci-logs/server.log && grep -q "Countryside worldgen audit passed" ci-logs/server.log; then READY=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          kill -TERM -- "-$PID" 2>/dev/null || true
+          wait "$PID" 2>/dev/null || true
+          tail -n 300 ci-logs/server.log
+          [ "$READY" -eq 1 ]
+          ! grep -n -E "Failed to start the minecraft server|Exception in server tick loop|ModLoadingException|Countryside worldgen audit failed|No key layers in MapLike" ci-logs/server.log
+
+      - name: Audit virtual-display client boot
+        timeout-minutes: 6
+        run: |
+          rm -rf run/logs
+          setsid env LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s '-screen 0 1280x720x24' ./gradlew --no-daemon runClient --stacktrace > ci-logs/client.log 2>&1 &
+          PID=$!; READY=0
+          for SECOND in $(seq 1 150); do
+            if grep -q "Backend library: LWJGL" ci-logs/client.log && grep -Eq "Sound engine started|Created:.*minecraft:textures/atlas" ci-logs/client.log; then READY=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          kill -TERM -- "-$PID" 2>/dev/null || true
+          wait "$PID" 2>/dev/null || true
+          tail -n 300 ci-logs/client.log
+          [ "$READY" -eq 1 ]
+          grep -q "Countryside Days 0.1.0-alpha.14 core content registered" ci-logs/client.log
+          grep -q "Countryside Days compact navigation HUD registered" ci-logs/client.log
+          ! grep -n -E "Failed to create window|ModLoadingException|Caught previously unhandled exception|ReportedException|Missing item model for location countrysidedays:|Unable to load model.*countrysidedays:" ci-logs/client.log
+
+      - name: Verify executable JAR
+        run: |
+          JAR='build/libs/countrysidedays-0.1.0-alpha.14.jar'
+          test -f "$JAR"
+          python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification.log
+          mkdir -p build/deliverables release
+          cp "$JAR" build/deliverables/
+          cp "$JAR" release/
+          sha256sum "$JAR" | tee release/countrysidedays-0.1.0-alpha.14.jar.sha256
+
+      - name: Upload executable JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.14-jar
+          path: projects/countryside-days/build/deliverables/countrysidedays-0.1.0-alpha.14.jar
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.14-recovery-logs
+          path: projects/countryside-days/ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Replace broken workflow and commit verified release
+        working-directory: .
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          recovery = Path('.github/workflows/countryside-days-alpha14-recovery.yml')
+          canonical = Path('.github/workflows/build-countryside-days.yml')
+          text = recovery.read_text('utf-8')
+          text = text.replace('name: Recover Countryside Days alpha.14', 'name: Build Countryside Days')
+          text = text.replace("      - '.github/workflows/countryside-days-alpha14-recovery.yml'", "      - 'projects/countryside-days/**'\n      - '!projects/countryside-days/BUILD_AND_RUNTIME_REPORT.md'\n      - '!projects/countryside-days/release/**'\n      - '.github/workflows/build-countryside-days.yml'")
+          canonical.write_text(text, 'utf-8')
+          recovery.unlink()
+          project = Path('projects/countryside-days')
+          for pattern in ('alpha14_*.part', 'alpha14_*.b64'):
+              for path in (project / 'tools').glob(pattern): path.unlink()
+          nested = project / 'projects'
+          if nested.exists():
+              import shutil
+              shutil.rmtree(nested)
+          report = project / 'BUILD_AND_RUNTIME_REPORT.md'
+          report.write_text(
+              '# Countryside Days Build and Runtime Report\n\n'
+              f'- Workflow run: {__import__("os").environ["GITHUB_RUN_ID"]}\n'
+              f'- Source commit: {__import__("os").environ["GITHUB_SHA"]}\n'
+              '- Mod version: 0.1.0-alpha.14\n'
+              '- UTF-8 localization and gameplay contracts: success\n'
+              '- Clean Java 25 build: success\n'
+              '- Datagen: success\n'
+              '- Required GameTests: success\n'
+              '- Runtime data validation: success\n'
+              '- Explicit countryside flat server: success\n'
+              '- Virtual-display client: success\n'
+              '- Executable JAR inspection: success\n',
+              'utf-8'
+          )
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A .
+          git commit -m "Verify and release Countryside Days alpha.14"
+          git pull --rebase origin main
+          git push origin HEAD:main
