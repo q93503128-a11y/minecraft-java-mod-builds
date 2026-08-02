@@ -13,6 +13,7 @@ def main() -> None:
     props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
     skills = read("VillageRoleSkillSystem.java")
     ability = read("VillageRoleAbilitySystem.java")
+    effects = read("VillageSkillEffectSystem.java")
     rpg = read("VillageRpgSystem.java")
     guard = read("VillageGuardians.java")
     respawn = read("VillageRespawnSystem.java")
@@ -33,11 +34,17 @@ def main() -> None:
         "SPIN_UNTIL", "player.swing", "EntityTypes.SNOWBALL", "ArrowLooseEvent", "spawnSideArrow",
         "RICOCHET_UNTIL", "ARROW_RAIN", "ENERGY_ARROW", "AreaKind.FROST",
         "AreaKind.TORNADO", "spawnVisualLightning", "healLowestAlly", "cleanseAllies",
-        "AreaKind.HEALING", "reviveNow", "SHIELDS", "Blocks.GLASS",
-        "LivingKnockBackEvent", "replayingEcho"
+        "AreaKind.HEALING", "reviveNow", "LivingKnockBackEvent", "replayingEcho",
+        "VillageSkillEffectSystem.startCast"
     ]:
         assert token in ability, token
+    for token in [
+        "Display.ItemDisplay", "Display.BlockDisplay", "Mode.WHIRLWIND", "Mode.ARROW_RAIN",
+        "Mode.FROST_FIELD", "Mode.TORNADO", "Mode.HEAL_FIELD", "Mode.FORTRESS", "Mode.AEGIS"
+    ]:
+        assert token in effects, token
     assert "ParticleTypes" not in ability and "sendParticles" not in ability
+    assert "ParticleTypes" not in effects and "sendParticles" not in effects
     assert "VillageRoleAbilitySystem.tick" in guard
     assert "VillageRoleAbilitySystem.handleArrowLoose" in guard
     assert "VillageRoleAbilitySystem.handleKnockback" in guard
@@ -56,7 +63,7 @@ def main() -> None:
     assert "■" in skills and "□" in skills
     assert "VillageSkillVisualSystem.render" not in rpg
 
-    print("[PASS] Twenty active skills now own distinct real movement, projectile, field and shield motions")
+    print("[PASS] Twenty active skills own real movement, projectile, field and display-actor motions")
     print("[PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events")
     print("[PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness")
     print("[PASS] Default shortcut help matches Z/X/B/H/J/K/U registrations")
