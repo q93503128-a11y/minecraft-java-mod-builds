@@ -19,6 +19,7 @@ public final class VillageNetwork {
         registrar.playToServer(VillageUiActionPayload.TYPE, VillageUiActionPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof ServerPlayer player
+                            && !VillageLocalActionSystem.handle(player, payload.action())
                             && !VillageUiController.handleAction(player, payload.action())) {
                         VillageUiService.handleAction(player, payload.action());
                     }
