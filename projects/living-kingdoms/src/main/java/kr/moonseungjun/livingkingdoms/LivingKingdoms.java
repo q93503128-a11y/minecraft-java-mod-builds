@@ -11,6 +11,7 @@ import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
+import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiDiagnostics;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanLifeManager;
@@ -80,6 +81,7 @@ public final class LivingKingdoms {
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
+        ErdenPopulationCiDiagnostics.onServerTick(event);
         ErdenDiagnosticDebrisSettler.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
