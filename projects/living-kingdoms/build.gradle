@@ -6,68 +6,31 @@ plugins {
 
 version = mod_version
 group = mod_group_id
-
-base {
-    archivesName = mod_id
-}
-
+base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+def externalResourcesDir = layout.buildDirectory.dir('generated/externalResources')
 
 def kenneyAssetCommit = '6c6d1bf81050a21e659356373f3f39029c8d7a0c'
 def kenneyAssetRoot = "https://raw.githubusercontent.com/KooshaPari/Dino/${kenneyAssetCommit}/src/Runtime/UI/Assets/kenney"
 def kenneyUiAssets = [
-        [
-                output: 'fantasy_panel.png',
-                source: "${kenneyAssetRoot}/fantasy-ui-borders/PNG/panel_ornate.png",
-                blob  : '82c2a379b877249029a817e3a0ef36b55cf9a798'
-        ],
-        [
-                output: 'panel_background.png',
-                source: "${kenneyAssetRoot}/ui-pack/PNG/panel_background.png",
-                blob  : '258d992070f873046c5623fbc694e45a526c4b8a'
-        ],
-        [
-                output: 'button_normal.png',
-                source: "${kenneyAssetRoot}/ui-pack/PNG/button_rectangleFlat.png",
-                blob  : 'a9390478c61d3ced14d16a5e2e396c806966989a'
-        ],
-        [
-                output: 'button_pressed.png',
-                source: "${kenneyAssetRoot}/ui-pack/PNG/button_rectangleDepressed.png",
-                blob  : 'd9492b4e48b28823c81b3bc08a1b31156f68c79c'
-        ],
-        [
-                output: 'hud_panel_brown.png',
-                source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/panel_brown.png",
-                blob  : '3e967c361edf770c1a54e0558ff68102ad5e6976'
-        ],
-        [
-                output: 'minimap_ring_brown_detail.png',
-                source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_ring_brown_detail.png",
-                blob  : 'c09659401f7abe506447b56ca56b5137eab9f697'
-        ],
-        [
-                output: 'hud_button_brown.png',
-                source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/button_brown.png",
-                blob  : '73c062e9213a5a10c506e93b71b272c8ea2aec4b'
-        ],
-        [
-                output: 'hud_progress_red.png',
-                source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/progress_red.png",
-                blob  : '570310fff678b3720e8fe4b23f570894d242a492'
-        ],
-        [
-                output: 'hud_progress_green.png',
-                source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/progress_green.png",
-                blob  : '9d7c584007202d94ddcd4a9fc415ad8ca768e17f'
-        ],
-        [
-                output: 'minimap_arrow.png',
-                source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_arrow_a.png",
-                blob  : 'd3999611a2608d9953db7ebdd1cda9c293c47b09'
-        ]
+        [output: 'fantasy_panel.png', source: "${kenneyAssetRoot}/fantasy-ui-borders/PNG/panel_ornate.png", blob: '82c2a379b877249029a817e3a0ef36b55cf9a798'],
+        [output: 'panel_background.png', source: "${kenneyAssetRoot}/ui-pack/PNG/panel_background.png", blob: '258d992070f873046c5623fbc694e45a526c4b8a'],
+        [output: 'button_normal.png', source: "${kenneyAssetRoot}/ui-pack/PNG/button_rectangleFlat.png", blob: 'a9390478c61d3ced14d16a5e2e396c806966989a'],
+        [output: 'button_pressed.png', source: "${kenneyAssetRoot}/ui-pack/PNG/button_rectangleDepressed.png", blob: 'd9492b4e48b28823c81b3bc08a1b31156f68c79c'],
+        [output: 'hud_panel_brown.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/panel_brown.png", blob: '3e967c361edf770c1a54e0558ff68102ad5e6976'],
+        [output: 'minimap_ring_brown_detail.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_ring_brown_detail.png", blob: 'c09659401f7abe506447b56ca56b5137eab9f697'],
+        [output: 'hud_button_brown.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/button_brown.png", blob: '73c062e9213a5a10c506e93b71b272c8ea2aec4b'],
+        [output: 'hud_progress_red.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/progress_red.png", blob: '570310fff678b3720e8fe4b23f570894d242a492'],
+        [output: 'hud_progress_green.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/progress_green.png", blob: '9d7c584007202d94ddcd4a9fc415ad8ca768e17f'],
+        [output: 'minimap_arrow.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_arrow_a.png", blob: 'd3999611a2608d9953db7ebdd1cda9c293c47b09']
 ]
-def externalResourcesDir = layout.buildDirectory.dir('generated/externalResources')
+
+def externalStructureAssets = [
+        [output: 'medieval_castle.schem', slug: 'ultimate-medieval-survival-castle-mansion', title: 'Ultimate Medieval Survival Castle Mansion'],
+        [output: 'woodland_mansion.schem', slug: 'ultimate-woodland-mansion-survival-base', title: 'Ultimate Woodland Mansion Survival Base'],
+        [output: 'deepslate_mega_base.schem', slug: 'ultimate-survival-starter-mega-base', title: 'Ultimate Survival Starter Mega Base']
+]
 
 def prepareKenneyUiAssets = tasks.register('prepareKenneyUiAssets') {
     inputs.property('sourceCommit', kenneyAssetCommit)
@@ -76,33 +39,66 @@ def prepareKenneyUiAssets = tasks.register('prepareKenneyUiAssets') {
         inputs.property("asset${index}GitBlobSha1", asset.blob)
     }
     outputs.files(kenneyUiAssets.collect { asset ->
-        externalResourcesDir.map {
-            it.file("assets/livingkingdoms/textures/gui/kenney/${asset.output}")
-        }
+        externalResourcesDir.map { it.file("assets/livingkingdoms/textures/gui/kenney/${asset.output}") }
     })
-
     doLast {
         kenneyUiAssets.each { asset ->
-            File target = externalResourcesDir.get()
-                    .file("assets/livingkingdoms/textures/gui/kenney/${asset.output}").asFile
+            File target = externalResourcesDir.get().file("assets/livingkingdoms/textures/gui/kenney/${asset.output}").asFile
             target.parentFile.mkdirs()
-            byte[] bytes = new URI(asset.source).toURL().openStream().withCloseable { stream ->
-                stream.readAllBytes()
-            }
+            byte[] bytes = new URI(asset.source).toURL().openStream().withCloseable { it.readAllBytes() }
             def digest = java.security.MessageDigest.getInstance('SHA-1')
             digest.update(("blob ${bytes.length}\u0000").getBytes(java.nio.charset.StandardCharsets.UTF_8))
             digest.update(bytes)
             String actual = java.util.HexFormat.of().formatHex(digest.digest())
-            if (actual != asset.blob) {
-                throw new GradleException(
-                        "Kenney UI asset integrity mismatch for ${asset.output}: expected ${asset.blob}, got ${actual}"
-                )
-            }
+            if (actual != asset.blob) throw new GradleException("Kenney UI asset integrity mismatch for ${asset.output}: expected ${asset.blob}, got ${actual}")
             target.bytes = bytes
-            logger.lifecycle(
-                    "Verified Kenney CC0 UI asset ${asset.output}: git-blob-sha1=${actual}, bytes=${bytes.length}"
-            )
+            logger.lifecycle("Verified Kenney CC0 UI asset ${asset.output}: git-blob-sha1=${actual}, bytes=${bytes.length}")
         }
+    }
+}
+
+def prepareExternalStructures = tasks.register('prepareExternalStructures') {
+    externalStructureAssets.eachWithIndex { asset, index ->
+        inputs.property("structure${index}Url", "https://www.schemcraft.com/schematics/${asset.slug}/download")
+        inputs.property("structure${index}License", 'CC-BY-4.0')
+    }
+    outputs.files(externalStructureAssets.collect { asset ->
+        externalResourcesDir.map { it.file("data/livingkingdoms/structures/external/${asset.output}") }
+    })
+    outputs.file(externalResourcesDir.map { it.file('assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt') })
+    doLast {
+        def attribution = new StringBuilder('Living Kingdoms external structure attribution\n\n')
+        attribution.append('License: Creative Commons Attribution 4.0 International\n')
+        attribution.append('https://creativecommons.org/licenses/by/4.0/\n\n')
+        externalStructureAssets.each { asset ->
+            URI source = new URI("https://www.schemcraft.com/schematics/${asset.slug}/download")
+            byte[] archive = source.toURL().openStream().withCloseable { it.readAllBytes() }
+            byte[] schematic = null
+            new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(archive)).withCloseable { zip ->
+                java.util.zip.ZipEntry entry
+                while ((entry = zip.nextEntry) != null) {
+                    if (!entry.directory && entry.name.toLowerCase(java.util.Locale.ROOT).endsWith('.schem')) {
+                        schematic = zip.readAllBytes()
+                        break
+                    }
+                }
+            }
+            if (schematic == null || schematic.length < 1024 || (schematic[0] & 0xff) != 0x1f || (schematic[1] & 0xff) != 0x8b) {
+                throw new GradleException("Invalid Sponge schematic download for ${asset.slug}")
+            }
+            File target = externalResourcesDir.get().file("data/livingkingdoms/structures/external/${asset.output}").asFile
+            target.parentFile.mkdirs()
+            target.bytes = schematic
+            String sha256 = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance('SHA-256').digest(schematic))
+            logger.lifecycle("Verified Schemcraft CC-BY-4.0 structure ${asset.output}: sha256=${sha256}, bytes=${schematic.length}")
+            attribution.append("${asset.title}\n")
+                    .append("Author: BuildSchem\n")
+                    .append("Source: https://www.schemcraft.com/schematics/${asset.slug}\n")
+                    .append("Downloaded asset SHA-256: ${sha256}\n\n")
+        }
+        File license = externalResourcesDir.get().file('assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt').asFile
+        license.parentFile.mkdirs()
+        license.setText(attribution.toString(), 'UTF-8')
     }
 }
 
@@ -113,44 +109,22 @@ sourceSets.main.resources {
 
 neoForge {
     version = project.neo_version
-
     runs {
-        client {
-            client()
-        }
-        server {
-            server()
-            programArgument '--nogui'
-        }
+        client { client() }
+        server { server(); programArgument '--nogui' }
         data {
             clientData()
-            programArguments.addAll '--mod', project.mod_id,
-                    '--all',
-                    '--output', file('src/generated/resources/').absolutePath,
-                    '--existing', file('src/main/resources/').absolutePath
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').absolutePath, '--existing', file('src/main/resources/').absolutePath
         }
-        configureEach {
-            logLevel = org.slf4j.event.Level.INFO
-        }
+        configureEach { logLevel = org.slf4j.event.Level.INFO }
     }
-
-    mods {
-        "${mod_id}" {
-            sourceSet sourceSets.main
-        }
-    }
+    mods { "${mod_id}" { sourceSet sourceSets.main } }
 }
 
 var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
-    var replaceProperties = [
-            minecraft_version      : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
-            mod_id                 : mod_id,
-            mod_name               : mod_name,
-            mod_license            : mod_license,
-            mod_version            : mod_version
-    ]
+    var replaceProperties = [minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
+                             neo_version: neo_version, mod_id: mod_id, mod_name: mod_name,
+                             mod_license: mod_license, mod_version: mod_version]
     inputs.properties replaceProperties
     expand replaceProperties
     from 'src/main/templates'
@@ -162,6 +136,7 @@ neoForge.ideSyncTask generateModMetadata
 
 tasks.named('processResources').configure {
     dependsOn prepareKenneyUiAssets
+    dependsOn prepareExternalStructures
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -171,19 +146,10 @@ tasks.withType(JavaCompile).configureEach {
 
 jar {
     manifest {
-        attributes(
-                'Specification-Title': mod_name,
-                'Specification-Version': mod_version,
-                'Implementation-Title': mod_name,
-                'Implementation-Version': mod_version,
-                'Automatic-Module-Name': mod_group_id
-        )
+        attributes('Specification-Title': mod_name, 'Specification-Version': mod_version,
+                'Implementation-Title': mod_name, 'Implementation-Version': mod_version,
+                'Automatic-Module-Name': mod_group_id)
     }
 }
 
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
+idea { module { downloadSources = true; downloadJavadoc = true } }
