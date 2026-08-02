@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -14,6 +15,8 @@ public final class LivingWorldgenTypes {
             DeferredRegister.create(Registries.DENSITY_FUNCTION_TYPE, LivingKingdoms.MOD_ID);
     private static final DeferredRegister<MapCodec<? extends BiomeSource>> BIOME_SOURCE_TYPES =
             DeferredRegister.create(Registries.BIOME_SOURCE, LivingKingdoms.MOD_ID);
+    private static final DeferredRegister<MapCodec<? extends ChunkGenerator>> CHUNK_GENERATOR_TYPES =
+            DeferredRegister.create(Registries.CHUNK_GENERATOR, LivingKingdoms.MOD_ID);
 
     static {
         DENSITY_FUNCTION_TYPES.register(
@@ -24,6 +27,10 @@ public final class LivingWorldgenTypes {
                 "authored_biomes",
                 () -> AuthoredBiomeSource.CODEC
         );
+        CHUNK_GENERATOR_TYPES.register(
+                "structureless_noise",
+                () -> StructurelessNoiseChunkGenerator.CODEC
+        );
     }
 
     private LivingWorldgenTypes() {
@@ -32,5 +39,6 @@ public final class LivingWorldgenTypes {
     public static void register(IEventBus modEventBus) {
         DENSITY_FUNCTION_TYPES.register(modEventBus);
         BIOME_SOURCE_TYPES.register(modEventBus);
+        CHUNK_GENERATOR_TYPES.register(modEventBus);
     }
 }
