@@ -52,6 +52,9 @@ jobs:
           text = path.read_text(encoding='utf-8')
           text = text.replace('assert "K로 이 화면" in controller',
                               'assert "K로 다시 엽니다" in controller')
+          text = text.replace(
+              'assert "if (VillageSkillTestSystem.isEnabled(player)) openSkillTest(player);" in controller',
+              'assert "if (VillageSkillTestSystem.isEnabled(player)) openSkillTestSkillManager(player);" in controller')
           path.write_text(text, encoding='utf-8')
           PY
           rm -f tools/apply_v01710.py
