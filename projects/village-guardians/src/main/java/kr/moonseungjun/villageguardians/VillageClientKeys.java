@@ -17,30 +17,30 @@ import org.lwjgl.glfw.GLFW;
 public final class VillageClientKeys {
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "controls"));
-    private static final KeyMapping ROLE_SKILL_ONE = new KeyMapping(
-            "key.villageguardians.role_skill_one",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_R,
-            CATEGORY);
-    private static final KeyMapping ROLE_SKILL_TWO = new KeyMapping(
-            "key.villageguardians.role_skill_two",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_G,
-            CATEGORY);
-    private static final KeyMapping QUICK_COMMUNICATION = new KeyMapping(
-            "key.villageguardians.quick_communication",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_C,
-            CATEGORY);
+    private static final KeyMapping ROLE_SKILL_ONE = key("role_skill_one", GLFW.GLFW_KEY_R);
+    private static final KeyMapping ROLE_SKILL_TWO = key("role_skill_two", GLFW.GLFW_KEY_G);
+    private static final KeyMapping QUICK_COMMUNICATION = key("quick_communication", GLFW.GLFW_KEY_C);
+    private static final KeyMapping STATUS = key("status", GLFW.GLFW_KEY_I);
+    private static final KeyMapping PERSONAL_PROGRESS = key("personal_progress", GLFW.GLFW_KEY_P);
+    private static final KeyMapping ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_O);
+    private static final KeyMapping CALLER = key("caller", GLFW.GLFW_KEY_V);
     private static boolean tickListenerRegistered;
 
     private VillageClientKeys() {}
+
+    private static KeyMapping key(String id, int key) {
+        return new KeyMapping("key.villageguardians." + id, InputConstants.Type.KEYSYM, key, CATEGORY);
+    }
 
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(ROLE_SKILL_ONE);
         event.register(ROLE_SKILL_TWO);
         event.register(QUICK_COMMUNICATION);
+        event.register(STATUS);
+        event.register(PERSONAL_PROGRESS);
+        event.register(ROLE_PROGRESS);
+        event.register(CALLER);
         if (!tickListenerRegistered) {
             tickListenerRegistered = true;
             NeoForge.EVENT_BUS.addListener(VillageClientKeys::onClientTick);
@@ -49,17 +49,20 @@ public final class VillageClientKeys {
 
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        while (ROLE_SKILL_ONE.consumeClick()) {
-            if (minecraft.player != null) ClientPacketDistributor.sendToServer(
-                    new VillageNetwork.VillageUiActionPayload("use_skill:0"));
-        }
-        while (ROLE_SKILL_TWO.consumeClick()) {
-            if (minecraft.player != null) ClientPacketDistributor.sendToServer(
-                    new VillageNetwork.VillageUiActionPayload("use_skill:1"));
-        }
-        while (QUICK_COMMUNICATION.consumeClick()) {
-            if (minecraft.player != null) ClientPacketDistributor.sendToServer(
-                    new VillageNetwork.VillageUiActionPayload("open_quick_chat"));
+        consume(minecraft, ROLE_SKILL_ONE, "use_skill:0");
+        consume(minecraft, ROLE_SKILL_TWO, "use_skill:1");
+        consume(minecraft, QUICK_COMMUNICATION, "open_quick_chat");
+        consume(minecraft, STATUS, "open_status");
+        consume(minecraft, PERSONAL_PROGRESS, "open_personal_progress");
+        consume(minecraft, ROLE_PROGRESS, "open_role_progress_current");
+        consume(minecraft, CALLER, "open_caller_menu");
+    }
+
+    private static void consume(Minecraft minecraft, KeyMapping mapping, String action) {
+        while (mapping.consumeClick()) {
+            if (minecraft.player != null) {
+                ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
+            }
         }
     }
 }
