@@ -56,7 +56,7 @@ need(screen, (
     "int panelW = Math.min(720", "int panelH = Math.min(410",
     "int cols=c.w()>=420?9:3"
 ), "restored large grimoire with dense circle row")
-forbid(screen, ("int targetH = switch (page)", "Math.min(620"), "circleSubtitle(circle)"),
+forbid(screen, ("int targetH = switch (page)", "Math.min(620", "circleSubtitle(circle)"),
        "shrunk window or decorative circle subtitles")
 
 network = read("network/ArcaneNetwork.java")
