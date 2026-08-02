@@ -113,6 +113,11 @@ jobs:
           for role in tenement shop bakery inn stable guard_post bathhouse warehouse; do
             grep -Eq "${role}=[1-9][0-9]*" <<<"$fabric_line"
           done
+          {
+            echo "FABRIC_PLOTS=$fabric_plots"
+            echo "FABRIC_ENTRANCES=$fabric_entrances"
+            echo "FACADE_STYLES=$facade_styles"
+          } >> "$GITHUB_ENV"
 
           test "$(grep -c 'Loaded external structure /data/livingkingdoms/structures/external/' ../../logs/server-smoke.log)" -eq 5
           test "$(grep -c 'Verified streamed capital sample role=' ../../logs/server-smoke.log)" -eq 6
@@ -184,7 +189,8 @@ jobs:
           - Streamed 2.4 x 1.8 km capital plan: PASS
           - Attributed external citadel, wall parts and 16 district landmarks: PASS
           - External residential block anchors: 24
-          - Entrance-centred external facade urban plots: $fabric_plots
+          - Entrance-centred external facade urban plots: $FABRIC_PLOTS
+          - External facade styles: $FACADE_STYLES
           - Urban roles: tenements, shops, bakeries, inns, stables, guard posts, bathhouses and warehouses
           - Detected building entrances and terrain-following road access: PASS
           - Royal culverts, road-edge drainage, 12 wells and 8 fire cisterns: PASS
