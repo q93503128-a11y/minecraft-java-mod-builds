@@ -11,7 +11,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 public final class VillageStarterKit {
     private static final String STARTER_KIT_TAG = "villageguardians_starter_kit_v3";
-    private static final String CALLER_TAG = "villageguardians_public_caller_v5";
+    private static final String CALLER_TAG = "villageguardians_public_caller_v6";
     private static final String CALLER_NAME = "마을 수호단 호출기";
 
     private VillageStarterKit() {}
@@ -38,7 +38,7 @@ public final class VillageStarterKit {
         if (!hasModernCaller(player)) giveOrDrop(player, namedCaller());
         if (firstNotice || migrated) {
             player.sendSystemMessage(Component.literal(
-                    "§6[수호단 통신] §fC키로 투명 빠른 통신창을 엽니다. 호출기 시계 우클릭은 상태·귀환 메뉴입니다."));
+                    "§6[수호단 조작] §fI 상태 · P 개인 성장 · O 직업 성장 · V 호출기 · C 빠른 통신 · R/G 기술"));
         }
     }
 
@@ -50,7 +50,7 @@ public final class VillageStarterKit {
         if (!isCaller(stack)) return;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
-        VillageUiService.openCallerMenu(player);
+        VillageUiController.openCaller(player);
     }
 
     private static ItemStack namedCaller() {
@@ -94,8 +94,7 @@ public final class VillageStarterKit {
 
     private static boolean hasCallerName(ItemStack stack) {
         Component customName = stack.get(DataComponents.CUSTOM_NAME);
-        return customName != null
-                && CALLER_NAME.equals(ChatFormatting.stripFormatting(customName.getString()));
+        return customName != null && CALLER_NAME.equals(ChatFormatting.stripFormatting(customName.getString()));
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
