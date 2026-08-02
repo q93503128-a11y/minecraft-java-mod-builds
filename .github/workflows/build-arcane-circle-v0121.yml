@@ -48,6 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 tools/fix_v0121_alpha8_mappings.py
           python3 tools/apply_v0121_alpha8_visual_vitality.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
           python3 tools/test_v0121_alpha8_visual_vitality.py
           git diff --check
