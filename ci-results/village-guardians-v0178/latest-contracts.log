@@ -52,10 +52,7 @@ Village Guardians v0.17.4 UI, location and shortcut contracts passed.
 [PASS] Skills no longer draw particle geometry and infirmary upgrades have real utility
 Village Guardians v0.17.6 gameplay, UI, item and defeat contracts passed.
 Village Guardians v0.17.7 contracts passed.
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0178_gameplay.py", line 69, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0178_gameplay.py", line 60, in main
-    assert "외부 기술 시험장" in descriptions
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] Common growth has five ten-stage branches with functional late capstones
+[PASS] Growth nodes radiate at equal 72-degree intervals in a five-point star layout
+[PASS] Outdoor test arena teleports, restores position and owns reward-free targets
+[PASS] Test skills temporarily equip to Z/X and use the real keyed cast/visual path
