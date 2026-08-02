@@ -1,0 +1,33 @@
+PASS: slowed RPG balance contract
+test_xp_3000=level_7_xp_131
+level30 attack=x2.415
+level30 incoming=61.4%
+level30 bonus_health=20
+total_xp_to_level30=94685
+PASS: expanded village territory contract
+radius=96
+defense_xp_multiplier=1.5
+[PASS] Village progression upgrade costs are monotonic
+[PASS] Smithy, personal forge, and wall upgrades improve combat
+[PASS] Daily bread scales from 3 to 13
+[PASS] Center-to-north-gate avenue contains no buildings
+[PASS] Max storehouse+barracks doubles raid supplies
+[PASS] Common tactical tree has 28 nodes with functional capstones
+[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration
+[PASS] Emergency barrier, momentum and party recovery are wired into combat
+[PASS] Defense research expands from 9 to 15 upgrades
+[PASS] Skill trees fit overview spacing and the shop uses compact safe actions
+[PASS] Compact buildings stay inside the fortress without overlap
+[PASS] Every facility entrance faces and reaches the central road or plaza
+[PASS] Town hall remains at least twice a normal facility after resizing
+[PASS] Closed gate spans the complete tower opening without side slits
+[PASS] Wall top has a flat three-block center walkway and planned rail openings
+[PASS] Wall stairs connect directly to the landing
+[PASS] Return destination is inside the plaza and clear of the bell and buildings
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety.py", line 184, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety.py", line 109, in main
+    assert 'case "smithy_forge_upgrade"' in controller
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
