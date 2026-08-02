@@ -1,4 +1,5 @@
 name: Patch Living Kingdoms population audit
+# execution revision 2
 
 on:
   push:
@@ -62,6 +63,7 @@ jobs:
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationSavedData.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationCiChunkRetainer.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenDiagnosticDebrisSettler.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/StructurelessNoiseChunkGenerator.class' logs/jar-entries.txt
 """
               ),
