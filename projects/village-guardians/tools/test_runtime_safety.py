@@ -41,6 +41,7 @@ def main() -> None:
     assert guardians.count("VillageRaidSystem.onLivingDeath(event)") == 1
     assert "VillageDefenseResearchSystem.initializeServer" in guardians
     assert "VillageRelicSystem.initializeServer" in guardians
+    assert "VillageMercenarySystem.initializeServer" in guardians
     assert "VillageMercenarySystem.tick" in guardians
     assert "VillageTowerResearchBonusSystem.tick" in guardians
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
@@ -70,7 +71,7 @@ def main() -> None:
     assert 'ARMOR("방어구")' in shop_ui
     assert 'OTHER("기타")' in shop_ui
     assert "renderOfferList" in shop_ui and "renderOfferDetail" in shop_ui
-    assert "requiredLevel" not in shop
+    assert "level < offer.requiredLevel()" not in shop
     assert "requiredDay" in shop
     assert "VillageRelicSystem" in shop
 
@@ -106,6 +107,8 @@ def main() -> None:
         assert branch in research
     for role in ("BASTION", "STRIKER", "RANGER", "MEDIC"):
         assert role in mercenary
+    assert "VillageMercenaryData.TYPE" in mercenary
+    assert "getTags()" not in mercenary
     assert "setPersistenceRequired" in mercenary
     assert "awardKillExperience" in mercenary
     assert "Lv.5" in mercenary
