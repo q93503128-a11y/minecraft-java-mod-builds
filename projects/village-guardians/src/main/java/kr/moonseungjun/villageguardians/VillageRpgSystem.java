@@ -27,7 +27,9 @@ public final class VillageRpgSystem {
     }
 
     public static void refreshPlayerPassive(ServerPlayer player) {
-        int bonus = bonusHealthPoints(VillageCouncilState.levelOf(player.getUUID()));
+        VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        int roleHealth = role == VillageRole.VANGUARD ? 8 : role == VillageRole.WARDEN ? 6 : 0;
+        int bonus = bonusHealthPoints(VillageCouncilState.levelOf(player.getUUID())) + roleHealth;
         if (bonus > 0) {
             player.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, 80, Math.max(0, bonus / 4 - 1)));
         }
@@ -38,9 +40,11 @@ public final class VillageRpgSystem {
                 player.addEffect(new MobEffectInstance(MobEffects.SPEED, 50, speedAmplifier, false, false, true));
             }
         }
-        if (VillageCouncilState.roleOf(player.getUUID()).orElse(null) == VillageRole.WARDEN
-                && player.getOffhandItem().is(Items.SHIELD)) {
-            player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 0));
+        if (role == VillageRole.WARDEN) {
+            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, false, true));
+            if (player.getOffhandItem().is(Items.SHIELD)) {
+                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 0, false, false, true));
+            }
         }
         VillagePersonalCombatSystem.applyLowHealthPassive(player);
     }
@@ -113,20 +117,11 @@ public final class VillageRpgSystem {
     public static String useRoleSkill(ServerPlayer player) { return useRoleSkill(player, 0); }
 
     public static String useRoleSkill(ServerPlayer player, int slot) {
-        var equipped = VillageRoleSkillSystem.equippedSkill(player, slot);
-        String result = VillageRoleSkillSystem.useEquippedSkill(player, slot);
-        if (equipped.isPresent() && result.contains("사용 완료")) {
-            VillageSkillVisualSystem.render(player, equipped.get());
-        }
-        return result;
+        return VillageRoleSkillSystem.useEquippedSkill(player, slot);
     }
 
     public static String testRoleSkill(ServerPlayer player, String skillId) {
-        VillageRoleSkillSystem.ActiveSkill skill =
-                VillageRoleSkillSystem.ActiveSkill.parse(skillId).orElse(null);
-        String result = VillageRoleSkillSystem.useTestSkill(player, skillId);
-        if (skill != null && result.contains("시험 시전 완료")) VillageSkillVisualSystem.render(player, skill);
-        return result;
+        return VillageRoleSkillSystem.useTestSkill(player, skillId);
     }
 
     public static String roleLoadout(ServerPlayer player) {
@@ -137,8 +132,8 @@ public final class VillageRpgSystem {
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         if (role == null) return 1.0f;
         return switch (role) {
-            case VANGUARD -> !projectile && player.getMainHandItem().is(ItemTags.SWORDS) ? 1.20f : 1.02f;
-            case RANGER -> projectile ? (isOnWallTop(player) ? 1.55f : 1.25f) : 0.92f;
+            case VANGUARD -> !projectile && player.getMainHandItem().is(ItemTags.SWORDS) ? 1.28f : 1.08f;
+            case RANGER -> projectile ? (isOnWallTop(player) ? 1.58f : 1.30f) : 0.92f;
             case ARCANIST -> projectile ? 1.04f : 0.98f;
             case LUMINAR -> 0.94f;
             case WARDEN -> 0.96f;
@@ -153,7 +148,7 @@ public final class VillageRpgSystem {
             case RANGER -> 1.02f;
             case ARCANIST -> 1.00f;
             case LUMINAR -> 0.97f;
-            case WARDEN -> player.getOffhandItem().is(Items.SHIELD) ? 0.76f : 0.84f;
+            case WARDEN -> player.getOffhandItem().is(Items.SHIELD) ? 0.72f : 0.82f;
         };
     }
 

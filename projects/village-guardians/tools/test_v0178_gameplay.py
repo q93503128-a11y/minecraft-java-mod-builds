@@ -17,7 +17,7 @@ def main() -> None:
     visuals = read("VillageSkillVisualSystem.java")
     descriptions = read("VillageActionDescriptions.java")
 
-    assert "mod_version=0.17.11-alpha.1" in props
+    assert "mod_version=0.17.12-alpha.1" in props
     for branch in ("power", "guard", "support", "ranged", "mobility"):
         assert tree.count(f'("{branch}_') == 10
         assert f'{branch.upper()}_10' in tree

@@ -18,7 +18,7 @@ def main() -> None:
     screen = read("VillageSkillTestScreen.java")
     visuals = read("VillageSkillVisualSystem.java")
 
-    assert "mod_version=0.17.11-alpha.1" in props
+    assert "mod_version=0.17.12-alpha.1" in props
     assert "cooldownRemainingSeconds" in role
     assert "cooldownProgress" in role
     assert "hudSlotText" in role

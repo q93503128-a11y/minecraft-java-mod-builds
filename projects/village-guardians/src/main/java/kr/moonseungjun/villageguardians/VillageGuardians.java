@@ -14,6 +14,8 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent;
+import net.neoforged.neoforge.event.entity.player.ArrowLooseEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -43,6 +45,7 @@ public final class VillageGuardians {
         VillageRelicSystem.initializeServer(event.getServer());
         VillageMercenarySystem.initializeServer(event.getServer());
         VillageSkillTestSystem.initializeServer(event.getServer());
+        VillageRoleAbilitySystem.reset();
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
@@ -106,6 +109,7 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        VillageRoleAbilitySystem.handleEntityJoin(event);
         if (event.getLevel().isClientSide()
                 || !(event.getLevel() instanceof ServerLevel level)
                 || level.getServer() == null
@@ -122,6 +126,7 @@ public final class VillageGuardians {
     public void onIncomingDamage(LivingIncomingDamageEvent event) {
         VillageWorldSystem.recordCombat(event);
         VillageRpgSystem.handleIncomingDamage(event);
+        VillageRoleAbilitySystem.handleIncomingDamage(event);
         VillageRespawnSystem.handleIncomingDamage(event);
     }
 
@@ -141,11 +146,23 @@ public final class VillageGuardians {
         }
         if (event.getEntity() instanceof Mob mob) VillageMercenarySystem.handleDeath(mob);
         VillageRaidSystem.onLivingDeath(event);
+        VillageRoleAbilitySystem.handleDeath(event);
         VillageRpgSystem.handleDeath(event);
     }
 
     @SubscribeEvent
+    public void onArrowLoose(ArrowLooseEvent event) {
+        VillageRoleAbilitySystem.handleArrowLoose(event);
+    }
+
+    @SubscribeEvent
+    public void onKnockback(LivingKnockBackEvent event) {
+        VillageRoleAbilitySystem.handleKnockback(event);
+    }
+
+    @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
+        VillageRoleAbilitySystem.tick(event.getServer());
         VillageRaidSystem.tick(event.getServer());
         VillageGatePrioritySystem.tick(event.getServer());
         VillageDefenseSystem.tick(event.getServer());

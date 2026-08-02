@@ -232,8 +232,11 @@ public final class VillageRoleSkillSystem {
         ActiveSkill skill = equippedSkill(player, slot).orElse(null);
         if (skill == null) return key + " §8비어 있음";
         int remaining = cooldownRemainingSeconds(player, slot);
-        String state = remaining > 0 ? "§c" + remaining + "초" : "§a준비";
-        return key + " §f" + skill.displayName() + " " + state;
+        if (remaining <= 0) return key + " §f" + skill.displayName() + " §a준비";
+        float progress = cooldownProgress(player, slot);
+        int cooled = Math.max(0, Math.min(5, Math.round((1.0f - progress) * 5.0f)));
+        String bar = "§a" + "■".repeat(cooled) + "§8" + "□".repeat(5 - cooled);
+        return key + " §f" + skill.displayName() + " §c" + remaining + "초 " + bar;
     }
 
     public static List<ActiveSkill> skillsFor(VillageRole role) {
@@ -338,98 +341,27 @@ public final class VillageRoleSkillSystem {
             float power,
             float durationMultiplier,
             int specialRank) {
-        int playerLevel = VillageCouncilState.levelOf(player.getUUID());
-        int buffTicks = Math.round((100 + playerLevel * 4) * durationMultiplier);
         switch (skill) {
-            case VANGUARD_WHIRLWIND -> damageArea(level, player, 5.0, 8,
-                    (6.0f + playerLevel * 0.35f) * power, specialRank, true);
-            case VANGUARD_BREAKER -> {
-                damageArea(level, player, 6.5, 6,
-                        (9.0f + playerLevel * 0.48f) * power, specialRank, true);
-                player.addEffect(new MobEffectInstance(MobEffects.SPEED, buffTicks, Math.min(2, specialRank)));
-            }
-            case VANGUARD_CRY -> {
-                for (ServerPlayer ally : allies(player, 12.0)) {
-                    ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, buffTicks, specialRank >= 2 ? 1 : 0));
-                    ally.addEffect(new MobEffectInstance(MobEffects.SPEED, buffTicks, specialRank >= 3 ? 1 : 0));
-                }
-            }
-            case VANGUARD_STORM -> damageArea(level, player, 8.0, 14,
-                    (11.0f + playerLevel * 0.60f) * power, Math.max(1, specialRank), true);
-
-            case RANGER_VOLLEY -> damageArea(level, player, 12.0, 5,
-                    (5.5f + playerLevel * 0.32f) * power, specialRank, false);
-            case RANGER_PIERCE -> damageArea(level, player, 15.0, 4,
-                    (10.0f + playerLevel * 0.55f) * power, specialRank, false);
-            case RANGER_RICOCHET -> damageArea(level, player, 13.0, 9,
-                    (7.0f + playerLevel * 0.40f) * power, Math.max(1, specialRank), false);
-            case RANGER_FIRE_RAIN -> {
-                List<Mob> targets = damageArea(level, player, 14.0, 14,
-                        (8.0f + playerLevel * 0.44f) * power, specialRank, false);
-                for (Mob target : targets) {
-                    target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 100 + specialRank * 40));
-                }
-            }
-
-            case ARCANIST_FIRE_ORB -> {
-                List<Mob> targets = damageArea(level, player, 9.0, 7,
-                        (8.5f + playerLevel * 0.50f) * power, specialRank, false);
-                targets.forEach(target -> target.setRemainingFireTicks(90 + specialRank * 35));
-            }
-            case ARCANIST_FROST_RING -> {
-                List<Mob> targets = damageArea(level, player, 7.0, 10,
-                        (5.0f + playerLevel * 0.30f) * power, specialRank, false);
-                targets.forEach(target -> target.addEffect(new MobEffectInstance(
-                        MobEffects.SLOWNESS, buffTicks, Math.min(3, 1 + specialRank))));
-            }
-            case ARCANIST_CHAIN -> damageArea(level, player, 12.0, 12,
-                    (7.5f + playerLevel * 0.46f) * power, Math.max(1, specialRank), false);
-            case ARCANIST_NOVA -> damageArea(level, player, 9.0, 16,
-                    (12.0f + playerLevel * 0.65f) * power, Math.max(2, specialRank), false);
-
-            case LUMINAR_HEAL -> healAllies(player, 10.0,
-                    (7.0f + playerLevel * 0.55f) * power, buffTicks, specialRank, false);
-            case LUMINAR_CLEANSE -> {
-                for (ServerPlayer ally : allies(player, 11.0)) {
-                    ally.removeEffect(MobEffects.POISON);
-                    ally.removeEffect(MobEffects.WITHER);
-                    ally.removeEffect(MobEffects.WEAKNESS);
-                    ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, buffTicks, specialRank >= 2 ? 1 : 0));
-                }
-            }
-            case LUMINAR_VEIL -> healAllies(player, 12.0,
-                    (4.0f + playerLevel * 0.30f) * power, buffTicks * 2, specialRank, true);
-            case LUMINAR_SANCTUARY -> healAllies(player, 14.0,
-                    (11.0f + playerLevel * 0.70f) * power, buffTicks * 2, Math.max(2, specialRank), true);
-
-            case WARDEN_TAUNT -> {
-                List<Mob> tauntTargets = VillageSkillTestSystem.isEnabled(player)
-                        ? VillageSkillTestSystem.targetsNear(level, player, 9.0, 14)
-                        : VillageRaidSystem.activeEnemiesNear(level, player.position(), 9.0, 14, null);
-                for (Mob target : tauntTargets) {
-                    target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, buffTicks, Math.min(2, specialRank)));
-                    target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, buffTicks, Math.min(2, specialRank)));
-                }
-                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, buffTicks, 1 + Math.min(1, specialRank)));
-            }
-            case WARDEN_BASH -> {
-                List<Mob> targets = damageArea(level, player, 5.0, 8,
-                        (6.5f + playerLevel * 0.35f) * power, specialRank, true);
-                targets.forEach(target -> target.addEffect(new MobEffectInstance(
-                        MobEffects.SLOWNESS, 40 + specialRank * 20, 4)));
-            }
-            case WARDEN_FORMATION -> {
-                for (ServerPlayer ally : allies(player, 10.0)) {
-                    ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, buffTicks * 2, specialRank >= 2 ? 1 : 0));
-                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, buffTicks * 2, Math.min(3, specialRank)));
-                }
-            }
-            case WARDEN_FIELD -> {
-                for (ServerPlayer ally : allies(player, 14.0)) {
-                    ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, buffTicks * 2, 2));
-                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, buffTicks * 2, 2 + Math.min(2, specialRank)));
-                }
-            }
+            case VANGUARD_WHIRLWIND -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case VANGUARD_BREAKER -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case VANGUARD_CRY -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case VANGUARD_STORM -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case RANGER_VOLLEY -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case RANGER_PIERCE -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case RANGER_RICOCHET -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case RANGER_FIRE_RAIN -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case ARCANIST_FIRE_ORB -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case ARCANIST_FROST_RING -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case ARCANIST_CHAIN -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case ARCANIST_NOVA -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case LUMINAR_HEAL -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case LUMINAR_CLEANSE -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case LUMINAR_VEIL -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case LUMINAR_SANCTUARY -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case WARDEN_TAUNT -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case WARDEN_BASH -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case WARDEN_FORMATION -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
+            case WARDEN_FIELD -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
         }
     }
 
@@ -656,30 +588,30 @@ public final class VillageRoleSkillSystem {
     }
 
     public enum ActiveSkill {
-        VANGUARD_WHIRLWIND("vanguard_whirlwind", VillageRole.VANGUARD, 0, "회전 참격", 2, 70, 18, "주변 적을 한 번에 베고 특수 경로에 따라 체력을 회복합니다."),
-        VANGUARD_BREAKER("vanguard_breaker", VillageRole.VANGUARD, 1, "돌진 분쇄", 7, 190, 24, "전방 돌파를 표현한 강한 범위 일격과 이동 가속을 얻습니다."),
-        VANGUARD_CRY("vanguard_cry", VillageRole.VANGUARD, 2, "전장의 포효", 13, 380, 32, "주변 아군의 공격력과 이동 속도를 강화합니다."),
-        VANGUARD_STORM("vanguard_storm", VillageRole.VANGUARD, 3, "검기 폭풍", 21, 680, 42, "넓은 범위의 다수 적에게 강한 검기 피해를 가합니다."),
+        VANGUARD_WHIRLWIND("vanguard_whirlwind", VillageRole.VANGUARD, 0, "회전 칼날", 2, 70, 18, "가렌의 회전 공격처럼 몸을 돌리며 여러 차례 주변 적을 베고 이동할 수 있습니다."),
+        VANGUARD_BREAKER("vanguard_breaker", VillageRole.VANGUARD, 1, "전투 고양", 7, 190, 24, "검을 치켜들고 함성을 질러 자신과 주변 아군의 공격력·이동 속도를 강화합니다."),
+        VANGUARD_CRY("vanguard_cry", VillageRole.VANGUARD, 2, "검기 난무", 13, 380, 32, "자세를 잡고 검을 연속으로 휘둘러 전방에 여러 개의 실제 검기 투사체를 날립니다."),
+        VANGUARD_STORM("vanguard_storm", VillageRole.VANGUARD, 3, "천붕 강하", 21, 680, 42, "공중으로 도약한 뒤 지면을 내려찍어 바닥을 깨뜨리고 넓은 범위에 피해와 강한 충격을 줍니다."),
 
-        RANGER_VOLLEY("ranger_volley", VillageRole.RANGER, 0, "연발 사격", 2, 70, 16, "주변 여러 적에게 빠른 원거리 피해를 분산합니다."),
-        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "관통 사격", 7, 190, 22, "적은 수의 정예 대상에게 높은 관통 피해를 줍니다."),
-        RANGER_RICOCHET("ranger_ricochet", VillageRole.RANGER, 2, "도탄 연쇄", 13, 380, 30, "여러 적 사이를 튕기는 연쇄 사격을 가합니다."),
-        RANGER_FIRE_RAIN("ranger_fire_rain", VillageRole.RANGER, 3, "화염 폭우", 21, 680, 40, "넓은 범위의 적을 불태우는 대규모 사격을 실행합니다."),
+        RANGER_VOLLEY("ranger_volley", VillageRole.RANGER, 0, "신속 삼연사", 2, 70, 16, "일정 시간 활 충전이 크게 빨라지고 발사한 화살이 세 갈래로 분열합니다."),
+        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "다음 화살의 조준을 강하게 보정하고 첫 적중 뒤 주변 여러 적에게 연쇄 도탄 피해를 줍니다."),
+        RANGER_RICOCHET("ranger_ricochet", VillageRole.RANGER, 2, "천공 화살비", 13, 380, 30, "조준한 넓은 지역에 실제 화살이 여러 차례 떨어져 지속 광역 피해를 줍니다."),
+        RANGER_FIRE_RAIN("ranger_fire_rain", VillageRole.RANGER, 3, "성멸 대궁", 21, 680, 40, "잠시 기를 모은 뒤 초대형 에너지 화살을 발사해 전방의 적을 관통하고 초토화합니다."),
 
-        ARCANIST_FIRE_ORB("arcanist_fire_orb", VillageRole.ARCANIST, 0, "화염 구체", 2, 70, 18, "주변 적에게 폭발 피해와 화염을 가합니다."),
-        ARCANIST_FROST_RING("arcanist_frost_ring", VillageRole.ARCANIST, 1, "서리 고리", 7, 190, 24, "주변 적에게 냉기 피해와 강한 둔화를 부여합니다."),
-        ARCANIST_CHAIN("arcanist_chain", VillageRole.ARCANIST, 2, "연쇄 번개", 13, 380, 30, "다수의 적에게 연쇄되는 비전 피해를 가합니다."),
-        ARCANIST_NOVA("arcanist_nova", VillageRole.ARCANIST, 3, "비전 폭발", 21, 680, 44, "넓은 범위의 적을 한 번에 폭발시키는 궁극 기술입니다."),
+        ARCANIST_FIRE_ORB("arcanist_fire_orb", VillageRole.ARCANIST, 0, "홍염탄", 2, 70, 18, "실제 화염 구체를 전방으로 날려 충돌 지점에서 폭발시키고 적을 불태웁니다."),
+        ARCANIST_FROST_RING("arcanist_frost_ring", VillageRole.ARCANIST, 1, "빙결 지대", 7, 190, 24, "조준 위치에 지속되는 냉기 지대를 만들어 범위 안 적을 강하게 둔화하고 조금씩 피해를 줍니다."),
+        ARCANIST_CHAIN("arcanist_chain", VillageRole.ARCANIST, 2, "폭풍 회랑", 13, 380, 30, "전진하는 토네이도를 만들어 적을 끌어올리고 휩쓸며 낮은 피해와 강한 군중 제어를 가합니다."),
+        ARCANIST_NOVA("arcanist_nova", VillageRole.ARCANIST, 3, "천뢰 폭격", 21, 680, 44, "넓은 목표 지점에 번개가 연속으로 떨어져 다수의 적에게 강한 광역 피해를 줍니다."),
 
-        LUMINAR_HEAL("luminar_heal", VillageRole.LUMINAR, 0, "치유의 빛", 2, 70, 16, "주변 아군의 체력을 즉시 회복합니다."),
-        LUMINAR_CLEANSE("luminar_cleanse", VillageRole.LUMINAR, 1, "정화 기도", 7, 190, 24, "주변 아군의 주요 해로운 효과를 제거하고 재생을 부여합니다."),
-        LUMINAR_VEIL("luminar_veil", VillageRole.LUMINAR, 2, "재생 장막", 13, 380, 32, "아군을 치유하고 오래 지속되는 재생과 보호막을 부여합니다."),
-        LUMINAR_SANCTUARY("luminar_sanctuary", VillageRole.LUMINAR, 3, "생명 성역", 21, 680, 46, "넓은 범위의 아군을 크게 치유하고 강한 보호막을 부여합니다."),
+        LUMINAR_HEAL("luminar_heal", VillageRole.LUMINAR, 0, "응급 성광", 2, 70, 16, "현재 체력 비율이 가장 낮은 아군 한 명을 찾아 큰 폭으로 즉시 회복시킵니다."),
+        LUMINAR_CLEANSE("luminar_cleanse", VillageRole.LUMINAR, 1, "전군 정화", 7, 190, 24, "같은 전장에 있는 모든 아군의 해로운 효과를 제거하고 소량 회복시킵니다."),
+        LUMINAR_VEIL("luminar_veil", VillageRole.LUMINAR, 2, "치유 성역", 13, 380, 32, "주변에 오래 지속되는 회복 지대를 설치해 범위 안 아군을 반복해서 치유합니다."),
+        LUMINAR_SANCTUARY("luminar_sanctuary", VillageRole.LUMINAR, 3, "기적의 대성역", 21, 680, 46, "전장 전체 아군을 크게 치유하고 보호막을 부여하며 전투 불능 아군을 즉시 부활시킵니다."),
 
-        WARDEN_TAUNT("warden_taunt", VillageRole.WARDEN, 0, "도발의 함성", 2, 70, 18, "주변 적을 약화·둔화하고 자신에게 저항을 부여합니다."),
-        WARDEN_BASH("warden_bash", VillageRole.WARDEN, 1, "방패 충격", 7, 190, 22, "주변 적에게 피해와 매우 강한 짧은 둔화를 가합니다."),
-        WARDEN_FORMATION("warden_formation", VillageRole.WARDEN, 2, "철벽 진형", 13, 380, 32, "주변 아군에게 저항과 흡수 보호막을 부여합니다."),
-        WARDEN_FIELD("warden_field", VillageRole.WARDEN, 3, "수호 결계", 21, 680, 46, "넓은 범위의 아군에게 강한 저항과 보호막을 부여합니다.");
+        WARDEN_TAUNT("warden_taunt", VillageRole.WARDEN, 0, "수호 돌진", 2, 70, 18, "방패를 앞세워 전방으로 돌진하고 접촉한 적에게 피해를 주며 강하게 밀어냅니다."),
+        WARDEN_BASH("warden_bash", VillageRole.WARDEN, 1, "위압의 함성", 7, 190, 22, "큰 소리를 질러 주변 적에게 약한 피해를 주고 잠시 자신을 공격하도록 도발합니다."),
+        WARDEN_FORMATION("warden_formation", VillageRole.WARDEN, 2, "거대 방패 태세", 13, 380, 32, "잠시 이동할 수 없는 대신 거대한 보호막과 피해 저항을 얻고 가까운 적을 계속 밀어냅니다."),
+        WARDEN_FIELD("warden_field", VillageRole.WARDEN, 3, "대수호 진군", 21, 680, 46, "전방에 거대한 반투명 에너지 방패를 전개하고 달리면 짧게 돌진하며 접촉한 적을 밀어냅니다.");
 
         private final String id;
         private final VillageRole role;

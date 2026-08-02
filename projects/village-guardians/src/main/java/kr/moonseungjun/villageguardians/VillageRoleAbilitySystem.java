@@ -15,7 +15,6 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.item.ItemStack;
@@ -61,6 +60,7 @@ public final class VillageRoleAbilitySystem {
     private static final Map<UUID, MovingSkill> MOVING = new LinkedHashMap<>();
     private static final Map<UUID, ShieldBlocks> SHIELDS = new HashMap<>();
     private static boolean spawningGeneratedArrow;
+    private static boolean replayingEcho;
 
     private VillageRoleAbilitySystem() {}
 
@@ -78,6 +78,7 @@ public final class VillageRoleAbilitySystem {
         MOVING.clear();
         SHIELDS.clear();
         spawningGeneratedArrow = false;
+        replayingEcho = false;
     }
 
     public static void cast(
@@ -128,7 +129,7 @@ public final class VillageRoleAbilitySystem {
                 RAPID_UNTIL.put(player.getUUID(), now + Math.max(120, duration));
                 player.addEffect(new MobEffectInstance(MobEffects.SPEED, Math.max(120, duration), 1, false, false, true));
                 player.swing(InteractionHand.MAIN_HAND, true);
-                play(level, player.position(), SoundEvents.CROSSBOW_LOADING_END, 1.0f, 1.35f);
+                play(level, player.position(), SoundEvents.CROSSBOW_LOADING_END.value(), 1.0f, 1.35f);
             }
             case RANGER_PIERCE -> {
                 RICOCHET_UNTIL.put(player.getUUID(), now + Math.max(160, duration));
@@ -165,7 +166,7 @@ public final class VillageRoleAbilitySystem {
                 Vec3 center = player.position().add(forward.scale(2.0));
                 AREAS.add(new AreaState(player.getUUID(), AreaKind.TORNADO, center,
                         now + Math.max(100, duration), 5.0, power, specialRank, 0));
-                play(level, center, SoundEvents.BREEZE_WIND_CHARGE_BURST, 1.1f, 0.72f);
+                play(level, center, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 1.1f, 0.72f);
             }
             case ARCANIST_NOVA -> {
                 Vec3 center = aimedGround(player, 13.0);
@@ -211,7 +212,7 @@ public final class VillageRoleAbilitySystem {
             }
         }
 
-        if (skill.role() == VillageRole.ARCANIST) {
+        if (skill.role() == VillageRole.ARCANIST && !replayingEcho) {
             int echoes = 0;
             if (player.getRandom().nextFloat() < 0.30f) echoes++;
             if (player.getRandom().nextFloat() < 0.12f) echoes++;
@@ -289,8 +290,15 @@ public final class VillageRoleAbilitySystem {
                 case ARROW_RAIN -> arrowRain(level, player, action.origin(), action.power(), action.specialRank());
                 case ENERGY_ARROW -> launchEnergyArrow(level, player, action.power(), action.specialRank());
                 case SHIELD_CHARGE -> shieldCharge(level, player, action.power(), action.specialRank());
-                case ARCANE_ECHO -> cast(level, player, action.skill(), action.power(),
-                        action.durationMultiplier(), action.specialRank());
+                case ARCANE_ECHO -> {
+                    replayingEcho = true;
+                    try {
+                        cast(level, player, action.skill(), action.power(),
+                                action.durationMultiplier(), action.specialRank());
+                    } finally {
+                        replayingEcho = false;
+                    }
+                }
             }
         }
     }
@@ -324,7 +332,7 @@ public final class VillageRoleAbilitySystem {
                         target.hurtMarked = true;
                         if (now % 15L == 0L) hurt(level, target, 1.6f * area.power());
                     }
-                    if (now % 15L == 0L) play(level, next, SoundEvents.BREEZE_WIND_CHARGE_BURST, 0.7f, 0.85f);
+                    if (now % 15L == 0L) play(level, next, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 0.7f, 0.85f);
                 }
                 case LIGHTNING -> {
                     if (now % 10L == 0L) {
@@ -435,7 +443,7 @@ public final class VillageRoleAbilitySystem {
                 || !(arrow.getOwner() instanceof ServerPlayer player)
                 || VillageCouncilState.roleOf(player.getUUID()).orElse(null) != VillageRole.RANGER) return;
         aimAssist(level, player, arrow);
-        if (spawningGeneratedArrow || arrow.getTags().contains(GENERATED_ARROW)) return;
+        if (spawningGeneratedArrow) return;
         long now = level.getGameTime();
         if (RAPID_UNTIL.getOrDefault(player.getUUID(), 0L) < now) return;
         spawningGeneratedArrow = true;
@@ -648,7 +656,9 @@ public final class VillageRoleAbilitySystem {
             ServerLevel level, ServerPlayer player, MovingKind kind, ItemStack item,
             double speed, int maxAge, float damage, double radius, int specialRank,
             Vec3 origin, Vec3 direction) {
-        Snowball projectile = new Snowball(level, player);
+        var projectile = EntityTypes.SNOWBALL.create(level, EntitySpawnReason.EVENT);
+        if (projectile == null) return;
+        projectile.setOwner(player);
         projectile.setItem(item);
         projectile.setPos(origin.x, origin.y, origin.z);
         projectile.setNoGravity(true);
@@ -660,22 +670,24 @@ public final class VillageRoleAbilitySystem {
 
     private static void spawnFallingArrow(ServerLevel level, ServerPlayer owner, Vec3 position) {
         Arrow arrow = new Arrow(level, owner, new ItemStack(Items.ARROW), owner.getMainHandItem());
-        arrow.addTag(GENERATED_ARROW);
         arrow.setPos(position.x, position.y, position.z);
         arrow.setDeltaMovement(0.0, -2.4, 0.0);
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
-        level.addFreshEntity(arrow);
+        spawningGeneratedArrow = true;
+        try { level.addFreshEntity(arrow); }
+        finally { spawningGeneratedArrow = false; }
     }
 
     private static void spawnSideArrow(ServerLevel level, ServerPlayer owner, AbstractArrow source, double degrees) {
         Arrow arrow = new Arrow(level, owner, new ItemStack(Items.ARROW), owner.getMainHandItem());
-        arrow.addTag(GENERATED_ARROW);
         arrow.setPos(source.getX(), source.getY(), source.getZ());
         Vec3 velocity = rotateY(source.getDeltaMovement(), Math.toRadians(degrees));
         arrow.setDeltaMovement(velocity);
-        arrow.setBaseDamage(Math.max(1.0, source.getBaseDamage() * 0.82));
+        arrow.setBaseDamage(2.0);
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
-        level.addFreshEntity(arrow);
+        spawningGeneratedArrow = true;
+        try { level.addFreshEntity(arrow); }
+        finally { spawningGeneratedArrow = false; }
     }
 
     private static void aimAssist(ServerLevel level, ServerPlayer player, AbstractArrow arrow) {
@@ -721,22 +733,19 @@ public final class VillageRoleAbilitySystem {
                 BlockState state = level.getBlockState(pos);
                 if (!state.isAir()) continue;
                 replaced.put(pos, state);
-                level.setBlock(pos, Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState(), 3);
+                level.setBlock(pos, Blocks.GLASS.defaultBlockState(), 3);
             }
         }
-        SHIELDS.put(id, new ShieldBlocks(level.dimension().location().toString(), replaced));
+        SHIELDS.put(id, new ShieldBlocks(level, replaced));
     }
 
     private static void restoreShield(MinecraftServer server, ShieldBlocks shield) {
         if (server == null) return;
-        for (ServerLevel level : server.getAllLevels()) {
-            if (!level.dimension().location().toString().equals(shield.dimension())) continue;
-            for (Map.Entry<BlockPos, BlockState> entry : shield.replaced().entrySet()) {
-                if (level.getBlockState(entry.getKey()).is(Blocks.LIGHT_BLUE_STAINED_GLASS)) {
-                    level.setBlock(entry.getKey(), entry.getValue(), 3);
-                }
+        ServerLevel level = shield.level();
+        for (Map.Entry<BlockPos, BlockState> entry : shield.replaced().entrySet()) {
+            if (level.getBlockState(entry.getKey()).is(Blocks.GLASS)) {
+                level.setBlock(entry.getKey(), entry.getValue(), 3);
             }
-            return;
         }
     }
 
@@ -913,5 +922,5 @@ public final class VillageRoleAbilitySystem {
     }
 
     private record SlamState(long startedAt, float power, int specialRank, Vec3 origin) {}
-    private record ShieldBlocks(String dimension, Map<BlockPos, BlockState> replaced) {}
+    private record ShieldBlocks(ServerLevel level, Map<BlockPos, BlockState> replaced) {}
 }

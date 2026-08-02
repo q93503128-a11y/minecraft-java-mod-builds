@@ -103,6 +103,26 @@ public final class VillageRespawnSystem {
         }
     }
 
+    public static boolean reviveNow(ServerPlayer player, String source) {
+        if (player == null || !isDowned(player)) return false;
+        MinecraftServer server = player.level().getServer();
+        if (server == null) return false;
+        RESPAWN_AT.remove(player.getUUID());
+        teleportToVillage(player, server);
+        player.setGameMode(GameType.ADVENTURE);
+        player.setHealth(player.getMaxHealth());
+        player.setAbsorptionAmount(8.0f);
+        player.getFoodData().setFoodLevel(20);
+        player.getFoodData().setSaturation(5.0f);
+        player.setRemainingFireTicks(0);
+        player.setDeltaMovement(Vec3.ZERO);
+        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 120, 4));
+        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 2));
+        VillageRpgSystem.refreshPlayerPassive(player);
+        player.sendSystemMessage(Component.literal("§e[즉시 부활] §f" + source + "의 힘으로 전장에 복귀했습니다."));
+        return true;
+    }
+
     private static void teleportToVillage(ServerPlayer player, MinecraftServer server) {
         ServerLevel destination = server.overworld();
         BlockPos center = VillageCouncilState.villageCenter().orElse(player.blockPosition());
