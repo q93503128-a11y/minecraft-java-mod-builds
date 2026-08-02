@@ -24,6 +24,7 @@ public final class RealmBuildCoordinator {
     private static final int CONSTRUCTION_PREGEN_RADIUS_CHUNKS = 15;
     private static final int NORMAL_TICK_BUDGET = 3_000;
     private static final int BUSY_TICK_BUDGET = 750;
+    private static final int SETTLING_TICKS = 20;
     private static final Map<String, BuildJob> JOBS = new ConcurrentHashMap<>();
 
     private RealmBuildCoordinator() {
@@ -86,16 +87,22 @@ public final class RealmBuildCoordinator {
             String homelandId = entry.getKey();
             BuildJob job = entry.getValue();
             IncrementalWorldEditPlan plan;
+            int settlingTicks;
             synchronized (job) {
                 plan = job.plan;
+                settlingTicks = job.settlingTicks;
             }
             if (plan == null || job.realm.getServer() != event.getServer()) continue;
 
             try {
+                if (settlingTicks >= 0) {
+                    continueSettling(homelandId, job);
+                    continue;
+                }
                 int used = plan.apply(job.realm, remaining);
                 remaining -= used;
                 reportProgress(homelandId, job, plan);
-                if (plan.done()) completeBuild(homelandId, job);
+                if (plan.done()) beginSettling(homelandId, job);
             } catch (Throwable throwable) {
                 failBuild(homelandId, job, throwable);
             }
@@ -219,8 +226,9 @@ public final class RealmBuildCoordinator {
                     "건설 계획을 구역별로 적용하고 있습니다.", true);
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
             LivingKingdoms.LOGGER.info(
-                    "Prepared incremental homeland plan {} operations={} estimated_writes={} planning_ms={}",
-                    homelandId, plan.operationCount(), plan.estimatedWrites(), elapsedMs
+                    "Prepared incremental homeland plan {} operations={} estimated_writes={} suppressed_terrain_writes={} planning_ms={}",
+                    homelandId, plan.operationCount(), plan.estimatedWrites(),
+                    plan.suppressedTerrainWrites(), elapsedMs
             );
         } catch (Throwable throwable) {
             synchronized (job) {
@@ -242,6 +250,36 @@ public final class RealmBuildCoordinator {
         int clientPercent = 50 + Math.round(plan.progress() * 48.0F);
         updateProgress(homelandId, job, "building", clientPercent,
                 "도로와 건물을 구역별로 배치하고 있습니다.", false);
+    }
+
+    private static void beginSettling(String homelandId, BuildJob job) {
+        RealmSiteLayoutSavedData.RealmSite site;
+        synchronized (job) {
+            if (job.finished || job.settlingTicks >= 0) return;
+            site = job.site;
+            job.settlingTicks = SETTLING_TICKS;
+        }
+        if (site == null) throw new IllegalStateException("Authored homeland site disappeared before settling");
+        ConstructionDebrisCleaner.cleanConstructionCompletion(job.realm, homelandId, site);
+        updateProgress(homelandId, job, "settling", 99,
+                "마지막 블록 갱신과 건설 잔해를 정리하고 있습니다.", true);
+        LivingKingdoms.LOGGER.info(
+                "Settling authored homeland {} for {} ticks before player placement",
+                homelandId, SETTLING_TICKS
+        );
+    }
+
+    private static void continueSettling(String homelandId, BuildJob job) {
+        RealmSiteLayoutSavedData.RealmSite site;
+        int remaining;
+        synchronized (job) {
+            if (job.finished || job.settlingTicks < 0) return;
+            site = job.site;
+            remaining = --job.settlingTicks;
+        }
+        if (site == null) throw new IllegalStateException("Authored homeland site disappeared while settling");
+        ConstructionDebrisCleaner.cleanConstructionCompletion(job.realm, homelandId, site);
+        if (remaining <= 0) completeBuild(homelandId, job);
     }
 
     private static void completeBuild(String homelandId, BuildJob job) {
@@ -369,6 +407,7 @@ public final class RealmBuildCoordinator {
         private GenerationTask task;
         private RealmSiteLayoutSavedData.RealmSite site;
         private IncrementalWorldEditPlan plan;
+        private int settlingTicks = -1;
         private int lastReportedPercent = -10;
         private int lastSentClientPercent = -1;
         private String phase = "preparing";
