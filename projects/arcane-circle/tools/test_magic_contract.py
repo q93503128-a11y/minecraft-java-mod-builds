@@ -92,7 +92,7 @@ need(network, [
 ], "academy and cast-time network")
 need(screen, [
     'new Tab("academy", "학원")', "atlasCircle == 0", "circleCard(circle)",
-    "academyCircle == 0", "academyOffer", "아르카나"
+    "academyCircle == 0", "offerCard", "아르카나"
 ], "fixed hierarchical academy UI")
 for movable in ("dragging", "savedOffsetX", "mouseDragged", "상단을 드래그"):
     if movable in screen:
