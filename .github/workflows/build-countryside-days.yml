@@ -22,7 +22,14 @@ jobs:
 
       - name: Prepare exact alpha.16 source
         id: prepare
-        run: python3 projects/countryside-days/tools/prepare_alpha16_exact.py
+        run: |
+          for FILE in projects/countryside-days/tools/alpha16_patch_0{0,1,2,3}.part; do
+            printf '%s|' "$FILE"
+            wc -c < "$FILE" | tr -d '\n'
+            printf '|'
+            sha256sum "$FILE" | cut -d' ' -f1
+          done | tee /tmp/cd-a16-parts.txt
+          python3 projects/countryside-days/tools/prepare_alpha16_exact.py
 
       - uses: actions/setup-java@v4
         with:
@@ -115,6 +122,7 @@ jobs:
             echo gametest=$GAMETEST_OUTCOME
             echo verify=$VERIFY_OUTCOME
             echo upload=$UPLOAD_OUTCOME
+            [ ! -f /tmp/cd-a16-parts.txt ] || { echo '--- patch parts ---'; cat /tmp/cd-a16-parts.txt; }
             [ ! -f /tmp/cd-a16-sha256.txt ] || { echo '--- jar ---'; cat /tmp/cd-a16-sha256.txt; }
             [ ! -f /tmp/cd-a16-build.log ] || { echo '--- build tail ---'; tail -n 180 /tmp/cd-a16-build.log; }
             [ ! -f /tmp/cd-a16-datagen.log ] || { echo '--- datagen tail ---'; tail -n 80 /tmp/cd-a16-datagen.log; }
