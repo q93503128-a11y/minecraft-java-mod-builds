@@ -1,8 +1,8 @@
 {
   "sea_level": 63,
   "disable_mob_generation": false,
-  "aquifers_enabled": true,
-  "ore_veins_enabled": true,
+  "aquifers_enabled": false,
+  "ore_veins_enabled": false,
   "legacy_random_source": false,
   "default_block": {
     "Name": "minecraft:stone"
@@ -20,10 +20,10 @@
     "size_vertical": 2
   },
   "noise_router": {
-    "barrier": "minecraft:overworld/barrier",
-    "fluid_level_floodedness": "minecraft:overworld/fluid_level_floodedness",
-    "fluid_level_spread": "minecraft:overworld/fluid_level_spread",
-    "lava": "minecraft:overworld/lava",
+    "barrier": 0.0,
+    "fluid_level_floodedness": 0.0,
+    "fluid_level_spread": 0.0,
+    "lava": 0.0,
     "temperature": "livingkingdoms:climate/temperature",
     "vegetation": "livingkingdoms:climate/humidity",
     "continents": "livingkingdoms:terrain/continent",
@@ -37,15 +37,16 @@
     },
     "ridges": "livingkingdoms:terrain/ridges",
     "initial_density_without_jaggedness": "livingkingdoms:terrain/base_density",
+    "preliminary_surface_level": "livingkingdoms:terrain/base_density",
     "final_density": {
       "type": "minecraft:clamp",
       "input": "livingkingdoms:terrain/base_density",
       "min": -1.0,
       "max": 1.0
     },
-    "vein_toggle": "minecraft:overworld/vein_toggle",
-    "vein_ridged": "minecraft:overworld/vein_ridged",
-    "vein_gap": "minecraft:overworld/vein_gap"
+    "vein_toggle": 0.0,
+    "vein_ridged": 0.0,
+    "vein_gap": 0.0
   },
   "spawn_target": [
     {
