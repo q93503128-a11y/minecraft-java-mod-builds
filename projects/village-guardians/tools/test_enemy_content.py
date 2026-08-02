@@ -20,8 +20,8 @@ def main() -> None:
     tower_data = read("VillageTowerProgressData.java")
     tower_combat = read("VillageDefenseSystem.java")
     tower_builder = read("VillageDefenseTowerBuilder.java")
-    visuals = read("VillageSkillVisualSystem.java")
-    rpg = read("VillageRpgSystem.java")
+    ability = read("VillageRoleAbilitySystem.java")
+    role_skills = read("VillageRoleSkillSystem.java")
     ui = read("VillageUiService.java")
     notices = (ROOT / "src/main/resources/META-INF/villageguardians/THIRD_PARTY_NOTICES.txt").read_text(encoding="utf-8")
 
@@ -73,11 +73,15 @@ def main() -> None:
     assert "openTowerDetail" in ui
     assert "rebuildTowerVisual" in ui
 
-    assert "VillageSkillVisualSystem.render" in rpg
-    assert "result.contains(\"사용 완료\")" in rpg
-    assert "ParticleTypes" not in visuals and "sendParticles" not in visuals
-    assert "pushFromPlayer" in visuals and "liftTargets" in visuals and "tauntTargets" in visuals
-    assert "SoundEvents" in visuals
+    assert "VillageRoleAbilitySystem.cast" in role_skills
+    assert role_skills.count("case ") >= 20
+    for token in (
+        "SPIN_UNTIL", "Snowball", "Arrow", "spawnVisualLightning",
+        "healLowestAlly", "reviveNow", "SHIELDS", "player.swing",
+        "target.push", "SoundEvents"
+    ):
+        assert token in ability
+    assert "ParticleTypes" not in ability and "sendParticles" not in ability
 
     assert "Tiny Creatures" in notices
     assert "CC0 1.0 Universal" in notices
@@ -87,7 +91,7 @@ def main() -> None:
     print("[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs")
     print("[PASS] Five-day milestone sieges and endless warfront tiers remain scalable")
     print("[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes")
-    print("[PASS] Twenty active skills use real motion, aggro and spatial sound instead of particle drawings")
+    print("[PASS] Twenty active skills use distinct motion, projectiles, fields, shields and spatial sound")
     print("[PASS] CC0 fantasy visual references are documented without untracked binaries")
 
 
