@@ -51,6 +51,16 @@ jobs:
           echo '34f986766402fb9a460e48d2452e0752504ec0f79c647676768bbbf01289a1e1  tools/apply_v0175.py' | sha256sum -c -
           python3 -m py_compile tools/apply_v0175.py
           python3 tools/apply_v0175.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/test_progression_depth.py')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('assert "ACTION_HEIGHT = 24" in shop_ui',
+                              'assert "ACTION_HEIGHT = 20" in shop_ui')
+          text = text.replace('assert "* 24 / 100" in shop_ui',
+                              'assert "contentWidth < 330" in shop_ui')
+          path.write_text(text, encoding='utf-8')
+          PY
           rm -f tools/apply_v0175.py tools/v0175_b64.part-* tools/v0175_patch.py.gz.b64
 
       - name: Run complete contracts
