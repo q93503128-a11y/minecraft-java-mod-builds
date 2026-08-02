@@ -36,13 +36,14 @@
       "to_value": -1.0
     },
     "ridges": "livingkingdoms:terrain/ridges",
-    "initial_density_without_jaggedness": "livingkingdoms:terrain/base_density",
-    "preliminary_surface_level": "livingkingdoms:terrain/base_density",
+    "initial_density_without_jaggedness": {
+      "type": "livingkingdoms:authored_continent"
+    },
+    "preliminary_surface_level": {
+      "type": "livingkingdoms:authored_continent"
+    },
     "final_density": {
-      "type": "minecraft:clamp",
-      "input": "livingkingdoms:terrain/base_density",
-      "min": -1.0,
-      "max": 1.0
+      "type": "livingkingdoms:authored_continent"
     },
     "vein_toggle": 0.0,
     "vein_ridged": 0.0,
