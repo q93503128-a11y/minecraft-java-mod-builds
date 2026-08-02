@@ -1,50 +1,53 @@
 #!/usr/bin/env python3
-"""Verify the action menu never collapses under common Minecraft GUI scales."""
+"""Verify left-navigation/right-detail layouts remain usable at common GUI scales."""
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCREEN = (ROOT / "src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java").read_text(encoding="utf-8")
-CARD_HEIGHT = 44
+JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
+FACILITY = (JAVA / "VillageFacilityScreen.java").read_text(encoding="utf-8")
+SHOP = (JAVA / "VillageShopScreen.java").read_text(encoding="utf-8")
+TOWN = (JAVA / "VillageTownHallScreen.java").read_text(encoding="utf-8")
+STATUS = (JAVA / "VillageStatusScreen.java").read_text(encoding="utf-8")
 
 
 def clamp(value: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, value))
 
 
-def action_height(screen_height: int) -> tuple[int, int, int, int]:
-    panel_height = min(760, max(210, screen_height - 8))
+def facility_split(screen_width: int, screen_height: int) -> tuple[int, int, int]:
+    panel_width = min(960, max(330, screen_width - 16))
+    panel_width = min(panel_width, max(1, screen_width - 2))
+    panel_height = min(610, max(230, screen_height - 16))
     panel_height = min(panel_height, max(1, screen_height - 2))
-    content_height = panel_height - 58
-    gap = 6
-    body_height = clamp(content_height // 5, 38, 62)
-    footer_height = clamp(content_height // 4, 50, 72)
-    available = content_height - body_height - footer_height - gap * 2
-    if available < CARD_HEIGHT + 12:
-        missing = CARD_HEIGHT + 12 - available
-        body_cut = min(max(0, body_height - 32), (missing + 1) // 2)
-        body_height -= body_cut
-        missing -= body_cut
-        footer_height -= min(max(0, footer_height - 44), missing)
-        available = content_height - body_height - footer_height - gap * 2
-    return content_height, body_height, available, footer_height
+    content_width = panel_width - 32
+    if content_width >= 500:
+        list_width = clamp(content_width * 34 // 100, 180, 300)
+        detail_width = content_width - list_width - 10
+        return list_width, detail_width, panel_height - 70
+    return content_width, content_width, panel_height - 78
 
 
 def main() -> None:
-    assert "selectedIndex = actionCount() > 0 ? 0 : -1" in SCREEN
-    assert "actionHeight < CARD_HEIGHT + 12" in SCREEN
+    assert "listLeft" in FACILITY and "detailLeft" in FACILITY
+    assert "selectedIndex = actionCount() > 0 ? 0 : -1" in FACILITY
+    assert "PANEL = 0xFFF0E5CC" in FACILITY
+    assert "renderOfferList" in SHOP and "renderOfferDetail" in SHOP
+    assert 'ROLES("직업 배치"' in TOWN
+    assert 'REPAIR("시설 수리"' in TOWN
+    assert 'MANAGEMENT("관리·건설"' in TOWN
+    assert "twoColumns" in STATUS and "mouseScrolled" not in STATUS
 
-    # The captured 1648x928 screen remains well above 210 logical pixels even
-    # with a large GUI scale. Every supported practical size must show one card.
-    for height in (210, 220, 240, 270, 300, 360, 480, 720):
-        content, body, actions, footer = action_height(height)
-        assert content > 0, (height, content)
-        assert body >= 32, (height, body)
-        assert footer >= 44, (height, footer)
-        assert actions >= CARD_HEIGHT + 12, (height, actions)
+    for width, height in ((520, 300), (640, 360), (800, 450), (1000, 600), (1648, 928)):
+        left, right, content_height = facility_split(width, height)
+        assert left >= 180 or width < 532, (width, left)
+        assert right >= 170, (width, right)
+        assert content_height >= 158, (height, content_height)
 
-    print("[PASS] Action viewport remains at least one full card high from 210px logical height")
-    print("[PASS] Summary and detail panes shrink before action controls")
+    print("[PASS] Facility menus use left navigation and right information/action panes")
+    print("[PASS] Town hall has distinct role, repair and management categories")
+    print("[PASS] Shop has a dedicated categorized layout")
+    print("[PASS] Status information fits without scroll controls")
 
 
 if __name__ == "__main__":
