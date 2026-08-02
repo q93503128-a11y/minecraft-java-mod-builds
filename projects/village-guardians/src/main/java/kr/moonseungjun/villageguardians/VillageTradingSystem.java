@@ -13,18 +13,17 @@ public final class VillageTradingSystem {
     private static final Map<Item, Integer> PRICES = new LinkedHashMap<>();
 
     static {
-        PRICES.put(Items.ROTTEN_FLESH, 1);
+        PRICES.put(Items.ROTTEN_FLESH, 1); // legacy inventory cleanup only; raids no longer drop it.
         PRICES.put(Items.BONE, 2);
         PRICES.put(Items.STRING, 2);
         PRICES.put(Items.SPIDER_EYE, 3);
         PRICES.put(Items.GUNPOWDER, 4);
-        PRICES.put(Items.SLIME_BALL, 4);
+        PRICES.put(Items.SLIME_BALL, 4); // legacy cleanup only; natural slimes are suppressed.
         PRICES.put(Items.ENDER_PEARL, 10);
         PRICES.put(Items.BLAZE_ROD, 12);
     }
 
-    private VillageTradingSystem() {
-    }
+    private VillageTradingSystem() {}
 
     public static String sellMonsterDrops(ServerPlayer player) {
         int soldItems = 0;
@@ -33,18 +32,16 @@ public final class VillageTradingSystem {
         for (int slot = 0; slot < limit; slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
             Integer unitPrice = PRICES.get(stack.getItem());
-            if (unitPrice == null || stack.isEmpty()) {
-                continue;
-            }
+            if (unitPrice == null || stack.isEmpty()) continue;
             int count = stack.getCount();
             soldItems += count;
             value += count * unitPrice;
             player.getInventory().setItem(slot, ItemStack.EMPTY);
         }
-        if (soldItems <= 0) {
-            return "판매 가능한 몬스터 전리품이 없습니다.";
-        }
-        int payout = Math.max(1, Math.round(value * VillageSkillTreeSystem.coinRewardMultiplier(player)));
+        if (soldItems <= 0) return "판매 가능한 몬스터 전리품이 없습니다.";
+        float multiplier = VillageSkillTreeSystem.coinRewardMultiplier(player)
+                * VillageDefenseResearchSystem.lootValueMultiplier();
+        int payout = Math.max(1, Math.round(value * multiplier));
         VillageProgressionSystem.addCoins(player, payout, "전리품 판매");
         return "몬스터 전리품 " + soldItems + "개 판매 완료 | 주화 +" + payout;
     }
