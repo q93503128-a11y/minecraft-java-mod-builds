@@ -76,11 +76,27 @@ jobs:
               output.append(line)
           legacy.write_text('\n'.join(output) + '\n', encoding='utf-8')
 
+          descriptions = Path('src/main/java/kr/moonseungjun/villageguardians/VillageActionDescriptions.java')
+          text = descriptions.read_text(encoding='utf-8')
+          obsolete = (
+              '            case "open_skill_test" -> "현재 직업의 모든 기술을 비용·재사용 대기시간 없이 시험합니다.";\n',
+              '            case "test_spawn" -> "시험용 고정 표적 6개를 전방에 재배치합니다.";\n',
+              '            case "test_clear" -> "내가 만든 시험 표적을 제거합니다.";\n',
+              '            case "test_exit" -> "시험 모드를 종료하고 표적을 정리합니다.";\n',
+          )
+          for line in obsolete:
+              text = text.replace(line, '', 1)
+          descriptions.write_text(text, encoding='utf-8')
+
           migrated = depth.read_text(encoding='utf-8')
           for branch in ('power_', 'guard_', 'support_', 'ranged_', 'mobility_'):
               matching = [line for line in migrated.splitlines() if 'common.count' in line and branch in line]
               if len(matching) != 1 or '== 10' not in matching[0]:
                   raise SystemExit(f'failed to migrate {branch} node-count contract: {matching}')
+          cleaned = descriptions.read_text(encoding='utf-8')
+          for action in ('open_skill_test', 'test_spawn', 'test_clear', 'test_exit'):
+              if cleaned.count(f'case "{action}"') != 1:
+                  raise SystemExit(f'duplicate or missing description case: {action}')
           PY
           rm -f tools/apply_v0178.py tools/v0178_patch.b64
 
