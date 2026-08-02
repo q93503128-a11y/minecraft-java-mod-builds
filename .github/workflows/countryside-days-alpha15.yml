@@ -1,0 +1,295 @@
+name: Build Countryside Days alpha.15
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/countryside-days-alpha15.yml'
+      - 'projects/countryside-days/tools/alpha15v2_*.part'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: countryside-days-alpha15
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: projects/countryside-days
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Materialize exact alpha.15 source
+        working-directory: .
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, io, shutil, zipfile
+
+          root = Path('.').resolve()
+          project = root / 'projects/countryside-days'
+          tools = project / 'tools'
+          specs = [
+              ('alpha15v2_00.part', 8000, '05764a738c93db7933e60f6db85fea2d6cf168297536e79146ef28dc1eb96349'),
+              ('alpha15v2_01.part', 8000, 'f62307daf23ace1c04c1c4b09fdf75e3ba2a24018c550a90558753f00fc6f8b6'),
+              ('alpha15v2_02.part', 8000, '647cf040b1669045f8e57f2a0eb67968e81c1753621095be6d3f4be046e00beb'),
+              ('alpha15v2_03_04.part', 16000, '141cb7fce3cb22de0518288fd507284a5b5b6f94252a6d9784a69f50032bf44d'),
+              ('alpha15v2_05_06.part', 16000, 'ba4d245f3e29c0710e903a25c7fc2ada8cd306675bf373b8e001c22d88f931e9'),
+              ('alpha15v2_07_08.part', 16000, '17528aa349b2a47a0192ddf71506d270487439261742b3212e8b3407e6846c3d'),
+              ('alpha15v2_09_10.part', 16000, 'a975b3c098d730d4077d8729118537ebd9c7f96aebd4455c8cb1f8dc1ed270c2'),
+              ('alpha15v2_11_12.part', 16000, 'e341d7db6b6a277721f5aae8d5384a94d68e5778ad0399c302ebaf2a097c3dba'),
+              ('alpha15v2_13_14.part', 16000, 'a1dd5c64d5d0524d691a228af3d07c35195a1ec76046947d647d9f080b256f05'),
+              ('alpha15v2_15_16.part', 16000, '0b84bdbbb7d5a93b360911a75c608961515cea999960e8027746ef296619418f'),
+              ('alpha15v2_17_18.part', 9648, '870c0a5b8faed07c9597402175e58b7659ed41ead761cb3a82f45f9bab6477d6'),
+          ]
+          chunks = []
+          for name, size, expected_sha in specs:
+              path = tools / name
+              if not path.is_file():
+                  raise SystemExit(f'missing payload part: {name}')
+              text = ''.join(path.read_text('ascii').split())
+              if len(text) != size:
+                  raise SystemExit(f'wrong payload length {name}: {len(text)} != {size}')
+              actual_sha = hashlib.sha256(text.encode('ascii')).hexdigest()
+              if actual_sha != expected_sha:
+                  raise SystemExit(f'wrong payload sha {name}: {actual_sha}')
+              chunks.append(text)
+
+          encoded = ''.join(chunks)
+          if len(encoded) != 145648:
+              raise SystemExit(f'wrong combined payload length: {len(encoded)}')
+          if hashlib.sha256(encoded.encode('ascii')).hexdigest() != '2215f32a4fda34d490241a811051e9164eb39a4f31831894e9ce3df3361ec4ca':
+              raise SystemExit('wrong combined payload text sha')
+          archive = base64.b64decode(encoded, validate=True)
+          if len(archive) != 109234:
+              raise SystemExit(f'wrong archive length: {len(archive)}')
+          if hashlib.sha256(archive).hexdigest() != '5499bb9fe956c9bf11a6f311105e03bcc694bc2adeed74080431cd882d80b835':
+              raise SystemExit('wrong archive sha')
+
+          with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+              bad = zf.testzip()
+              if bad:
+                  raise SystemExit(f'bad zip member: {bad}')
+              names = zf.namelist()
+              for name in names:
+                  p = Path(name)
+                  if not name.startswith('projects/countryside-days/') or '..' in p.parts or p.is_absolute():
+                      raise SystemExit(f'unsafe archive member: {name}')
+              zf.extractall(root)
+
+          shutil.rmtree(project / 'projects', ignore_errors=True)
+          props = (project / 'gradle.properties').read_text('utf-8')
+          if 'mod_version=0.1.0-alpha.15' not in props:
+              raise SystemExit('alpha.15 version missing after extraction')
+          print(f'materialized {len(names)} verified source files')
+          PY
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Install virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Prepare Gradle
+        run: |
+          if [ ! -x ./gradlew ]; then
+            gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+            chmod +x gradlew
+          fi
+          java -version
+          ./gradlew --version
+
+      - name: Validate alpha.15 source contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path('src/main/java/kr/countrysidedays')
+          read = lambda p: (root / p).read_text('utf-8')
+          layout = read('world/PlayerEstateLayout.java')
+          estate = read('world/StarterHomesteadGenerator.java')
+          village = read('world/PublicVillageExpansionBuilder.java')
+          npc = read('gameplay/RuralNpcManager.java')
+          ranch = read('gameplay/RanchLifeManager.java')
+          table = read('gameplay/RestaurantTableManager.java')
+          seat = read('gameplay/CountrysideSeatManager.java')
+          property_manager = read('world/CountrysidePropertyManager.java')
+          gameplay = read('gameplay/RuralGameplayHandler.java')
+          world_data = read('world/CountrysideWorldData.java')
+          mod = read('CountrysideDays.java')
+
+          required = {
+              'version': '0.1.0-alpha.15' in mod,
+              'expanded estate': all(x in layout for x in ('MIN_X = -38', 'MAX_X = 38', 'MIN_Z = -32', 'MAX_Z = 40')),
+              'eight seats': 'RESTAURANT_SEAT_COUNT = 8' in layout,
+              'no private barn': 'privateStorage' in estate and 'barn(level' not in estate,
+              'authored public map': 'MAP_REVISION = 15' in village,
+              'random resident guests': all(x in npc for x in ('ACTIVE_GUEST_TAG', 'maybeInviteResident', 'nextInt(6)')),
+              'no fixed customers': all(x not in npc for x in ('CUSTOMER_NAMES', 'ensureSharedCustomers', 'DAILY_CUSTOMER_CAP')),
+              'autonomous ranch': all(x in ranch for x in ('seekFoodAndWater', 'tryNaturalBreeding', 'MAX_SPECIES_PER_ESTATE')),
+              'table food': all(x in table for x in ('TABLE_FOOD_TAG', 'setItemSlot', 'display.discard')),
+              'seat interaction': all(x in seat for x in ('startRiding', 'RESTAURANT_SEAT_COUNT')),
+              'farmland protection': 'FarmlandTrampleEvent' in property_manager,
+              'starter coins': 'STARTER_COINS = 20' in gameplay,
+              'unlimited guest count': 'withGuestService' in world_data and 'DAILY_CUSTOMER_CAP' not in world_data,
+              'debris cleanup': 'clearDroppedItems' in estate and 'clearDroppedItems' in village,
+          }
+          failed = [name for name, ok in required.items() if not ok]
+          if failed:
+              raise SystemExit('failed alpha.15 contracts: ' + ', '.join(failed))
+
+          lang = Path('src/main/resources/assets/countrysidedays/lang')
+          ko = json.loads((lang / 'ko_kr.json').read_text('utf-8'))
+          en = json.loads((lang / 'en_us.json').read_text('utf-8'))
+          if set(ko) != set(en):
+              raise SystemExit('localization key mismatch')
+          if len(ko) < 100:
+              raise SystemExit(f'too few localization keys: {len(ko)}')
+          print(f'validated {len(ko)} localization keys and {len(required)} gameplay contracts')
+          PY
+
+      - name: Clean Java 25 build
+        run: |
+          mkdir -p ci-logs
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
+
+      - name: Datagen
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee ci-logs/datagen.log
+
+      - name: Required GameTests
+        timeout-minutes: 25
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee ci-logs/gametest.log
+
+      - name: Reject runtime data errors
+        run: |
+          ! grep -n -E "Couldn't parse data file|Failed to parse recipe|Parsing error loading recipe|Failed to parse.*worldgen|biome_modifier" ci-logs/gametest.log ci-logs/datagen.log
+
+      - name: Audit flat countryside server
+        timeout-minutes: 8
+        run: |
+          rm -rf run/world run/logs
+          mkdir -p run ci-logs
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'PROPERTIES'
+          level-name=world
+          level-type=minecraft:flat
+          generator-settings={"biome":"countrysidedays:rural_plains","features":true,"lakes":false,"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":8},{"block":"minecraft:grass_block","height":1}],"structure_overrides":[]}
+          generate-structures=true
+          online-mode=false
+          spawn-protection=0
+          view-distance=10
+          simulation-distance=8
+          PROPERTIES
+          setsid ./gradlew --no-daemon runServer --stacktrace > ci-logs/server.log 2>&1 &
+          PID=$!
+          READY=0
+          for SECOND in $(seq 1 180); do
+            if grep -q "Done (" ci-logs/server.log && grep -q "Countryside worldgen audit passed" ci-logs/server.log; then READY=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          kill -TERM -- "-$PID" 2>/dev/null || true
+          wait "$PID" 2>/dev/null || true
+          tail -n 300 ci-logs/server.log
+          [ "$READY" -eq 1 ]
+          ! grep -n -E "Failed to start the minecraft server|Exception in server tick loop|ModLoadingException|Countryside worldgen audit failed|No key layers in MapLike" ci-logs/server.log
+
+      - name: Audit client boot
+        timeout-minutes: 6
+        run: |
+          rm -rf run/logs
+          setsid env LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s '-screen 0 1280x720x24' ./gradlew --no-daemon runClient --stacktrace > ci-logs/client.log 2>&1 &
+          PID=$!
+          READY=0
+          for SECOND in $(seq 1 150); do
+            if grep -q "Backend library: LWJGL" ci-logs/client.log && grep -Eq "Sound engine started|Created:.*minecraft:textures/atlas" ci-logs/client.log; then READY=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          kill -TERM -- "-$PID" 2>/dev/null || true
+          wait "$PID" 2>/dev/null || true
+          tail -n 300 ci-logs/client.log
+          [ "$READY" -eq 1 ]
+          grep -q "Countryside Days 0.1.0-alpha.15 core content registered" ci-logs/client.log
+          grep -q "Countryside Days compact navigation HUD registered" ci-logs/client.log
+          ! grep -n -E "Failed to create window|ModLoadingException|Caught previously unhandled exception|ReportedException|Missing item model for location countrysidedays:|Unable to load model.*countrysidedays:" ci-logs/client.log
+
+      - name: Verify executable JAR
+        run: |
+          JAR='build/libs/countrysidedays-0.1.0-alpha.15.jar'
+          python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification.log
+          mkdir -p build/deliverables release
+          cp "$JAR" build/deliverables/
+          cp "$JAR" release/
+          sha256sum "$JAR" > release/countrysidedays-0.1.0-alpha.15.jar.sha256
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.15-jar
+          path: projects/countryside-days/build/deliverables/countrysidedays-0.1.0-alpha.15.jar
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.15-logs
+          path: projects/countryside-days/ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Commit verified source and report
+        working-directory: .
+        run: |
+          rm -f projects/countryside-days/tools/alpha15v2_*.part
+          rm -f projects/countryside-days/tools/alpha15_source_00.part
+          rm -f projects/countryside-days/tools/alpha14_*.part projects/countryside-days/tools/alpha14_*.b64
+          rm -f .github/workflows/countryside-days-alpha14-recovery.yml
+          rm -f .github/workflows/countryside-days-alpha14-recovery2.yml
+          rm -f .github/workflows/countryside-days-alpha15.yml
+          cat > projects/countryside-days/BUILD_AND_RUNTIME_REPORT.md <<REPORT
+          # Countryside Days Build and Runtime Report
+
+          - Workflow run: ${GITHUB_RUN_ID}
+          - Source commit: ${GITHUB_SHA}
+          - Mod version: 0.1.0-alpha.15
+          - Payload and UTF-8 source verification: success
+          - Alpha.15 gameplay contracts: success
+          - Clean Java 25 build: success
+          - Datagen: success
+          - Required GameTests: success
+          - Runtime data validation: success
+          - Explicit countryside flat server: success
+          - Virtual-display client: success
+          - Executable JAR inspection: success
+          REPORT
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/countryside-days .github/workflows
+          git commit -m 'Verify and release Countryside Days alpha.15'
+          git pull --rebase origin main
+          git push origin HEAD:main
