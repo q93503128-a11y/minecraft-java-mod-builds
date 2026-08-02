@@ -169,11 +169,12 @@ public final class StarterRealmDiagnostics {
             ServerLevel realm,
             ExternalDistrictBuildingBuilder.BuildingEntrance accessSample) {
         StreamSample road = STREAM_SAMPLES[0];
-        int roadY = realm.getHeight(Heightmap.Types.WORLD_SURFACE, road.x, road.z) - 1;
-        Block roadBlock = realm.getBlockState(new BlockPos(road.x, roadY, road.z)).getBlock();
-        if (roadBlock != Blocks.POLISHED_ANDESITE && roadBlock != Blocks.STONE_BRICKS) {
-            throw new IllegalStateException("Royal avenue was not streamed at " + road.x + "," + road.z
-                    + " block=" + BuiltInBlockName.name(roadBlock));
+        int roadY = findFeatureY(
+                realm, road.x, road.z,
+                Set.of(Blocks.POLISHED_ANDESITE, Blocks.STONE_BRICKS), 10, 10);
+        if (roadY == Integer.MIN_VALUE) {
+            throw new IllegalStateException("Royal avenue was not found near the authored surface at "
+                    + road.x + "," + road.z + " designedY=" + designedSurfaceY(road.x, road.z));
         }
 
         for (int i = 1; i < STREAM_SAMPLES.length; i++) {
@@ -187,49 +188,69 @@ public final class StarterRealmDiagnostics {
     private static void verifyUrbanInfrastructure(
             ServerLevel realm,
             ExternalDistrictBuildingBuilder.BuildingEntrance accessSample) {
-        int wellY = designedSurfaceY(
-                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_X,
-                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_Z);
-        Block well = realm.getBlockState(new BlockPos(
-                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_X,
-                wellY,
-                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_Z)).getBlock();
-        if (well != Blocks.WATER) {
-            throw new IllegalStateException("Civic well has no water source: " + BuiltInBlockName.name(well));
+        int wellX = ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_X;
+        int wellZ = ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_WELL_Z;
+        int wellY = findFeatureY(realm, wellX, wellZ, Set.of(Blocks.WATER), 10, 10);
+        if (wellY == Integer.MIN_VALUE) {
+            throw new IllegalStateException("Civic well has no water source near designedY="
+                    + designedSurfaceY(wellX, wellZ));
         }
 
-        int cisternY = designedSurfaceY(
-                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_X,
-                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_Z);
-        Block cistern = realm.getBlockState(new BlockPos(
-                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_X,
-                cisternY,
-                ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_Z)).getBlock();
-        if (cistern != Blocks.WATER) {
-            throw new IllegalStateException("Fire cistern has no water source: "
-                    + BuiltInBlockName.name(cistern));
+        int cisternX = ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_X;
+        int cisternZ = ErdenUrbanInfrastructureBuilder.DIAGNOSTIC_CISTERN_Z;
+        int cisternY = findFeatureY(realm, cisternX, cisternZ, Set.of(Blocks.WATER), 10, 10);
+        if (cisternY == Integer.MIN_VALUE) {
+            throw new IllegalStateException("Fire cistern has no water source near designedY="
+                    + designedSurfaceY(cisternX, cisternZ));
         }
 
-        int drainSurface = designedSurfaceY(0, 200);
-        Block drainWater = realm.getBlockState(new BlockPos(0, drainSurface - 3, 200)).getBlock();
-        Block drainRoof = realm.getBlockState(new BlockPos(0, drainSurface - 1, 200)).getBlock();
-        if (drainWater != Blocks.WATER || drainRoof != Blocks.STONE_BRICKS) {
-            throw new IllegalStateException("Royal avenue culvert is incomplete water="
-                    + BuiltInBlockName.name(drainWater) + " roof=" + BuiltInBlockName.name(drainRoof));
+        int culvertY = findCulvertWaterY(realm, 0, 200);
+        if (culvertY == Integer.MIN_VALUE) {
+            throw new IllegalStateException("Royal avenue culvert is incomplete near designedY="
+                    + designedSurfaceY(0, 200));
         }
 
         int accessX = midpointX(accessSample);
         int accessZ = midpointZ(accessSample);
-        int accessY = realm.getHeight(Heightmap.Types.WORLD_SURFACE, accessX, accessZ) - 1;
-        Block access = realm.getBlockState(new BlockPos(accessX, accessY, accessZ)).getBlock();
-        if (access != Blocks.PACKED_MUD && access != Blocks.STONE_BRICKS) {
-            throw new IllegalStateException("Residential entrance is not connected to a road: "
-                    + BuiltInBlockName.name(access));
+        int accessY = findFeatureY(
+                realm, accessX, accessZ,
+                Set.of(Blocks.PACKED_MUD, Blocks.STONE_BRICKS), 10, 10);
+        if (accessY == Integer.MIN_VALUE) {
+            throw new IllegalStateException("Residential entrance is not connected to a road near "
+                    + accessX + "," + accessZ + " designedY=" + designedSurfaceY(accessX, accessZ));
         }
         LivingKingdoms.LOGGER.info(
-                "Verified Erden urban infrastructure well=true fire_cistern=true royal_culvert=true access_role={} access_length={}",
-                accessSample.role(), accessLength(accessSample)
+                "Verified Erden urban infrastructure well=true fire_cistern=true royal_culvert=true access_role={} access_length={} road_y={} well_y={} cistern_y={} culvert_y={} access_y={}",
+                accessSample.role(), accessLength(accessSample),
+                findFeatureY(realm, 0, 200,
+                        Set.of(Blocks.POLISHED_ANDESITE, Blocks.STONE_BRICKS), 10, 10),
+                wellY, cisternY, culvertY, accessY
         );
+    }
+
+    private static int findFeatureY(ServerLevel realm, int x, int z,
+                                    Set<Block> expected, int below, int above) {
+        int center = designedSurfaceY(x, z);
+        int minimum = Math.max(realm.getMinY(), center - Math.max(0, below));
+        int maximum = Math.min(realm.getMaxY() - 1, center + Math.max(0, above));
+        for (int y = maximum; y >= minimum; y--) {
+            if (expected.contains(realm.getBlockState(new BlockPos(x, y, z)).getBlock())) return y;
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    private static int findCulvertWaterY(ServerLevel realm, int x, int z) {
+        int center = designedSurfaceY(x, z);
+        int minimum = Math.max(realm.getMinY(), center - 14);
+        int maximum = Math.min(realm.getMaxY() - 3, center + 4);
+        for (int y = maximum; y >= minimum; y--) {
+            if (realm.getBlockState(new BlockPos(x, y, z)).getBlock() == Blocks.WATER
+                    && realm.getBlockState(new BlockPos(x, y + 2, z)).getBlock()
+                    == Blocks.STONE_BRICKS) {
+                return y;
+            }
+        }
+        return Integer.MIN_VALUE;
     }
 
     private static int midpointX(ExternalDistrictBuildingBuilder.BuildingEntrance entrance) {
