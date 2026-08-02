@@ -1,6 +1,7 @@
 package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
+import kr.moonseungjun.livingkingdoms.worldgen.AuthoredBiomeVerifier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -13,7 +14,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * continent around these anchors; the settlement builder only performs local architectural grading.</p>
  */
 public final class RealmSitePlanner {
-    public static final int LAYOUT_REVISION = 10;
+    public static final int LAYOUT_REVISION = 11;
 
     private RealmSitePlanner() {
     }
@@ -51,6 +52,7 @@ public final class RealmSitePlanner {
     public static synchronized void markBuilt(ServerLevel level, String homelandId) {
         RealmSiteLayoutSavedData data = level.getDataStorage().computeIfAbsent(RealmSiteLayoutSavedData.TYPE);
         RealmSiteLayoutSavedData.RealmSite site = data.site(homelandId).orElseThrow();
+        AuthoredBiomeVerifier.verifyCapital(level, homelandId, site);
         RealmLayoutIntegrity.apply(level, homelandId, site);
         data.markBuilt(homelandId, LAYOUT_REVISION);
         LivingKingdoms.LOGGER.info(
