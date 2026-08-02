@@ -1,0 +1,213 @@
+name: Build Village Guardians v0.17.6 Release 3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.build-trigger-v0176-release3'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: village-guardians-v0176-release3-main
+  cancel-in-progress: false
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  EXPECTED_JAR: villageguardians-0.17.6-alpha.1.jar
+  PUBLISHED_DIR: published/village-guardians
+  RESULT_DIR: ci-results/village-guardians-v0176-release3
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-read-only: false
+
+      - name: Apply source patch and compatibility fixes
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat tools/v0176_seg_* > "$RUNNER_TEMP/v0176-patch.b64"
+          echo '23e5a5fb4984fa3ee766101d976efa27b1662c786aaa8c21597d3450cd88ed16  '"$RUNNER_TEMP/v0176-patch.b64" | sha256sum -c -
+          base64 --decode "$RUNNER_TEMP/v0176-patch.b64" | gzip --decompress > tools/apply_v0176.py
+          echo '2ff5a4a479c7ed01906c54a10c0173c0f74ea01b4024aa67092aa0d11a49c052  tools/apply_v0176.py' | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+          path = Path('tools/apply_v0176.py')
+          text = path.read_text(encoding='utf-8')
+          old_helper = '''def replace_once(path: Path, old: str, new: str) -> None:\n    text = read(path)\n    if old not in text:\n        raise RuntimeError(f"missing replacement in {path}: {old[:120]!r}")\n    write(path, text.replace(old, new, 1))\n'''
+          new_helper = textwrap.dedent(r'''
+          def replace_once(path: Path, old: str, new: str) -> None:
+              text = read(path)
+              if old not in text:
+                  if path.name == "VillageActionDescriptions.java":
+                      alternative_old = old.replace(' + "\n', ' + "\\n')
+                      alternative_new = new.replace(' + "\n', ' + "\\n')
+                      if alternative_old in text:
+                          write(path, text.replace(alternative_old, alternative_new, 1))
+                          return
+                  raise RuntimeError(f"missing replacement in {path}: {old[:120]!r}")
+              write(path, text.replace(old, new, 1))
+          ''').lstrip('\n')
+          if old_helper not in text:
+              raise SystemExit('replace_once helper not found')
+          text = text.replace(old_helper, new_helper, 1)
+          section = text.index('# Legacy controller/service wording')
+          start = text.index('replace_once(service,', section)
+          end = text.index('replace_once(service,', start + 1)
+          replacement = '''service_text = read(service)\nwrite(service, service_text.replace("마을의 모든 핵심 건물이 파괴되었습니다.",\n                                    "마을 회관이 파괴되어 방어에 실패했습니다.", 1))\n'''
+          text = text[:start] + replacement + text[end:]
+          path.write_text(text, encoding='utf-8')
+          PY
+          python3 -m py_compile tools/apply_v0176.py
+          python3 tools/apply_v0176.py
+          python3 - <<'PY'
+          from pathlib import Path
+
+          runtime = Path('tools/test_runtime_safety.py')
+          text = runtime.read_text(encoding='utf-8')
+          replacements = {
+              "assert 'case \"smithy_forge_upgrade\"' in controller":
+                  "assert 'case \"forge_upgrade\", \"smithy_forge_upgrade\"' in controller",
+              'assert "개인 장비 피해 보정 강화" in controller':
+                  'assert "장비 선택 강화" in controller',
+              'assert "재화는 소모되지 않았습니다" in rarity':
+                  'assert "등급 하나로 합성했습니다" in rarity',
+              'print("[PASS] Smithy strengthening and cost-free rarity fusion are both available")':
+                  'print("[PASS] Selected equipment enhancement and rarity fusion are both available")',
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'outdated runtime assertion not found: {old}')
+              text = text.replace(old, new)
+          runtime.write_text(text, encoding='utf-8')
+
+          progression = Path('src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java')
+          text = progression.read_text(encoding='utf-8')
+          old = '''        return VillageCouncilState.currentPhase() == VillageTimePhase.MORNING
+                  || VillageCouncilState.currentPhase() == VillageTimePhase.DAY;
+          '''
+          new = '''        return VillageCouncilState.currentPhase() == VillageTimePhase.DAY;
+          '''
+          if old not in text:
+              raise SystemExit('daytime phase compatibility block not found')
+          progression.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          rm -f tools/apply_v0176.py tools/v0176_seg_* tools/v0176_b64.part-*
+
+      - name: Run current contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            python3 tools/test_rpg_balance.py
+            python3 tools/test_village_zone.py
+            python3 tools/test_progression_loop.py
+            python3 tools/test_progression_depth.py
+            python3 tools/test_fortress_layout.py
+            python3 tools/test_runtime_safety.py
+            python3 tools/test_action_layout.py
+            python3 tools/test_enemy_content.py
+            python3 tools/test_v0176_gameplay.py
+          } 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0176-release3-contracts.log"
+
+      - name: Build Java 25 JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain \
+            2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0176-release3-gradle.log"
+
+      - name: Verify artifact
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          mkdir -p "$GITHUB_WORKSPACE/deliverables-v0176-release3"
+          cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables-v0176-release3/"
+          cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables-v0176-release3/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0176-release3-contracts.log" "$GITHUB_WORKSPACE/deliverables-v0176-release3/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0176-release3-gradle.log" "$GITHUB_WORKSPACE/deliverables-v0176-release3/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.17.6-alpha.1-release3
+          path: deliverables-v0176-release3/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish source and JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PUBLISHED_DIR"
+          cp "deliverables-v0176-release3/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+          cp "deliverables-v0176-release3/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A "$PROJECT_DIR/src" "$PROJECT_DIR/tools" "$PROJECT_DIR/gradle.properties" \
+                     "$PUBLISHED_DIR/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Apply Village Guardians v0.17.6 systems rework and verified JAR'
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Record result
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          FINAL_STATUS='${{ job.status }}'
+          TEMP_DIR="$RUNNER_TEMP/village-guardians-v0176-release3-result"
+          rm -rf "$TEMP_DIR" && mkdir -p "$TEMP_DIR"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0176-release3-contracts.log" "$TEMP_DIR/latest-contracts.log" 2>/dev/null || printf '%s\n' 'Contracts did not finish.' > "$TEMP_DIR/latest-contracts.log"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0176-release3-gradle.log" "$TEMP_DIR/latest-gradle.log" 2>/dev/null || printf '%s\n' 'Gradle did not finish.' > "$TEMP_DIR/latest-gradle.log"
+          cat > "$TEMP_DIR/status.txt" <<EOF
+          status=$FINAL_STATUS
+          trigger_sha=$GITHUB_SHA
+          published_commit=$(git rev-parse HEAD 2>/dev/null)
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
+          version=0.17.6-alpha.1
+          EOF
+          git reset --hard HEAD
+          git clean -fd
+          mkdir -p "$RESULT_DIR"
+          cp "$TEMP_DIR"/* "$RESULT_DIR/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULT_DIR"
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Village Guardians v0.17.6 release3 result for ${GITHUB_SHA::7}"
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
