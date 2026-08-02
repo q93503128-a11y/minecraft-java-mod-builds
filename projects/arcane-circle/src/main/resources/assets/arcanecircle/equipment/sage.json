@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "arcanecircle:sage/outer"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "arcanecircle:sage/inner"
+      }
+    ]
+  }
+}

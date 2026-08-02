@@ -380,15 +380,17 @@ public final class SpellCatalog {
     }
 
     public static double damageTierMultiplier(int circle) {
+        // Per-cast hierarchy is deliberately steep. High-circle spells also have longer cast times,
+        // so this prevents rapid 1C spam from eclipsing a completed great ritual.
         return switch (circle) {
-            case 2 -> 1.18;
-            case 3 -> 1.42;
-            case 4 -> 1.75;
-            case 5 -> 2.15;
-            case 6 -> 2.65;
-            case 7 -> 3.25;
-            case 8 -> 4.00;
-            case 9 -> 5.00;
+            case 2 -> 1.55;
+            case 3 -> 2.35;
+            case 4 -> 3.55;
+            case 5 -> 5.40;
+            case 6 -> 8.20;
+            case 7 -> 12.50;
+            case 8 -> 19.00;
+            case 9 -> 29.00;
             default -> 1.00;
         };
     }

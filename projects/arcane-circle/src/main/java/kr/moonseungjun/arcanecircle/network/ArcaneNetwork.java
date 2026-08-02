@@ -2,6 +2,7 @@ package kr.moonseungjun.arcanecircle.network;
 
 import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem.StaffProfile;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
+import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
@@ -21,7 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha7";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha8";
     private static final Set<String> PAGES = Set.of(
             "atlas", "recipes", "staffs", "core", "academy", "quests", "sync");
 
@@ -168,6 +169,8 @@ public final class ArcaneNetwork {
         String snapshot = "circle=" + state.circle()
                 + ";mana=" + (int) state.mana()
                 + ";max=" + stats.maxMana()
+                + ";health=" + ArcaneVitalityService.effectiveHealth(player)
+                + ";health_max=" + ArcaneVitalityService.effectiveMaxHealth(player)
                 + ";regen_milli=" + (int) Math.round(stats.regenPerHalfSecond() * 2000.0)
                 + ";insight=" + state.insight()
                 + ";next=" + state.nextCircleInsight()

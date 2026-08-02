@@ -12,7 +12,7 @@ import net.minecraft.util.context.ContextKey;
 import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.event.RegisterRenderStateModifiersEvent;
+import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent;
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import net.neoforged.neoforge.client.renderstate.AvatarRenderStateModifier;
 

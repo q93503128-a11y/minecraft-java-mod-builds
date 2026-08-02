@@ -11,7 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.equipment.ArmorMaterials;
 import net.minecraft.world.item.equipment.ArmorType;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
@@ -66,40 +65,40 @@ public final class ModItems {
 
     public static final DeferredItem<Item> MAGE_HAT = ITEMS.registerItem("mage_hat",
             properties -> new Item(properties.rarity(Rarity.UNCOMMON)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.HELMET)));
+                    .humanoidArmor(ArcaneArmorMaterials.MAGE, ArmorType.HELMET)));
     public static final DeferredItem<Item> MAGE_ROBE = ITEMS.registerItem("mage_robe",
             properties -> new Item(properties.rarity(Rarity.RARE)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.CHESTPLATE)));
+                    .humanoidArmor(ArcaneArmorMaterials.MAGE, ArmorType.CHESTPLATE)));
     public static final DeferredItem<Item> MAGE_ROBE_HEM = ITEMS.registerItem("mage_robe_hem",
             properties -> new Item(properties.rarity(Rarity.RARE)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.LEGGINGS)));
+                    .humanoidArmor(ArcaneArmorMaterials.MAGE, ArmorType.LEGGINGS)));
     public static final DeferredItem<Item> MAGE_BOOTS = ITEMS.registerItem("mage_boots",
             properties -> new Item(properties.rarity(Rarity.UNCOMMON)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.BOOTS)));
+                    .humanoidArmor(ArcaneArmorMaterials.MAGE, ArmorType.BOOTS)));
     public static final DeferredItem<Item> SAGE_HAT = ITEMS.registerItem("sage_hat",
             properties -> new Item(properties.rarity(Rarity.RARE)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.HELMET)));
+                    .humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.HELMET)));
     public static final DeferredItem<Item> SAGE_ROBE = ITEMS.registerItem("sage_robe",
             properties -> new Item(properties.rarity(Rarity.EPIC)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.CHESTPLATE)));
+                    .humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.CHESTPLATE)));
     public static final DeferredItem<Item> SAGE_ROBE_HEM = ITEMS.registerItem("sage_robe_hem",
             properties -> new Item(properties.rarity(Rarity.EPIC)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.LEGGINGS)));
+                    .humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.LEGGINGS)));
     public static final DeferredItem<Item> SKYWALKER_BOOTS = ITEMS.registerItem("skywalker_boots",
             properties -> new Item(properties.rarity(Rarity.RARE)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.BOOTS)));
+                    .humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.BOOTS)));
     public static final DeferredItem<Item> ARCHMAGE_CROWN = ITEMS.registerItem("archmage_crown",
             properties -> new Item(properties.rarity(Rarity.EPIC)
-                    .humanoidArmor(ArmorMaterials.GOLD, ArmorType.HELMET)));
+                    .humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.HELMET)));
     public static final DeferredItem<Item> ARCHMAGE_ROBE = ITEMS.registerItem("archmage_robe",
             properties -> new Item(properties.rarity(Rarity.EPIC)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.CHESTPLATE)));
+                    .humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.CHESTPLATE)));
     public static final DeferredItem<Item> ARCHMAGE_ROBE_HEM = ITEMS.registerItem("archmage_robe_hem",
             properties -> new Item(properties.rarity(Rarity.EPIC)
-                    .humanoidArmor(ArmorMaterials.LEATHER, ArmorType.LEGGINGS)));
+                    .humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.LEGGINGS)));
     public static final DeferredItem<Item> FROSTSTEP_BOOTS = ITEMS.registerItem("froststep_boots",
             properties -> new Item(properties.rarity(Rarity.EPIC)
-                    .humanoidArmor(ArmorMaterials.DIAMOND, ArmorType.BOOTS)));
+                    .humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.BOOTS)));
 
     public static final DeferredItem<BeginnerGrimoireItem> BEGINNER_GRIMOIRE = ITEMS.registerItem(
             "beginner_grimoire", properties -> new BeginnerGrimoireItem(properties.rarity(Rarity.UNCOMMON)));

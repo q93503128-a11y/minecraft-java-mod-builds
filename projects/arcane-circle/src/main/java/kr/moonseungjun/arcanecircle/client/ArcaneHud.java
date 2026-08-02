@@ -11,7 +11,9 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.List;
 
@@ -39,8 +41,35 @@ public final class ArcaneHud {
         for (int slot = 0; slot < 5; slot++) {
             drawSlot(g, font, startX + slot * (slotSize + gap), y, slotSize, slot);
         }
+        drawHealth(g, font, width, y + slotSize + 5);
         drawFusionQueue(g, font, width, y - 15);
         drawRaisedNotice(g, font, width, y - 42);
+    }
+
+
+    public static void onVanillaLayer(RenderGuiLayerEvent.Pre event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null && ArcaneClientState.ready()
+                && VanillaGuiLayers.PLAYER_HEALTH.equals(event.getName())) {
+            event.setCanceled(true);
+        }
+    }
+
+    private static void drawHealth(GuiGraphicsExtractor g, Font font, int width, int y) {
+        int health = Math.max(0, ArcaneClientState.integer("health", 0));
+        int maximum = Math.max(1, ArcaneClientState.integer("health_max", 100));
+        double ratio = Math.max(0.0, Math.min(1.0, health / (double) maximum));
+        int barW = Math.min(194, Math.max(138, width / 4));
+        int barH = 10;
+        int x = (width - barW) / 2;
+        int fill = (int) Math.round((barW - 4) * ratio);
+        int red = ratio <= 0.22 ? 0xFFF12E3D : ratio <= 0.48 ? 0xFFE34A50 : 0xFFCE3545;
+        g.fill(x - 1, y - 1, x + barW + 1, y + barH + 1, 0xEF02040A);
+        g.fill(x, y, x + barW, y + barH, 0xF0140A10);
+        g.fill(x + 2, y + 2, x + 2 + fill, y + barH - 2, red);
+        g.fill(x + 2, y + 2, x + 2 + fill, y + 3, 0xFFFF7378);
+        tinyText(g, font, "HP " + health + " / " + maximum,
+                width / 2, y + 1, 0xFFFFFFFF, 0.58F, true);
     }
 
     private static void drawMana(GuiGraphicsExtractor g, Font font, int startX, int y) {
@@ -118,7 +147,7 @@ public final class ArcaneHud {
         String chain = queue.stream().map(id -> SpellCatalog.spell(id).map(SpellDefinition::name).orElse(id))
                 .reduce((a, b) -> a + "+" + b).orElse("");
         String suffix = result.isBlank() ? "" : "→" + SpellCatalog.spell(result).map(SpellDefinition::name).orElse(result);
-        tinyText(g, font, compactName("X " + chain + suffix, 34), width / 2, y + 3,
+        tinyText(g, font, compactName(chain + suffix, 34), width / 2, y + 3,
                 result.isBlank() ? 0xFFD4B8F1 : ArcaneClientState.fusionChargingReady() ? 0xFFFFE5A1 : 0xFFFFD889,
                 0.58F, true);
     }
@@ -147,7 +176,7 @@ public final class ArcaneHud {
                 x + 7, lineY + 14, 0xFF8ED6C0);
         g.text(font, Component.literal(compactName(ArcaneClientState.text("staff", "맨손"), 18)),
                 x + 7, lineY + 30, 0xFFFFD58D);
-        g.text(font, Component.literal("C 마도서 · 1~5 시전 · X 융합"), x + 7, y + 85, 0xFF81778F);
+        g.text(font, Component.literal("C 마도서 · 1~5 시전 · 숫자키 조합 융합"), x + 7, y + 85, 0xFF81778F);
     }
 
     private static void tinyText(GuiGraphicsExtractor g, Font font, String text, int x, int y,
