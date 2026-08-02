@@ -12,23 +12,25 @@ import java.util.List;
 
 public final class VillageSkillTreeScreen extends Screen {
     private static final String SEP = "\u001F";
-    private static final int BACKGROUND = 0xFF070B10;
-    private static final int GRID = 0xFF101923;
-    private static final int PANEL = 0xF20C131B;
-    private static final int SURFACE = 0xFF14202A;
-    private static final int BORDER = 0xFF405568;
-    private static final int TEXT = 0xFFF4F7FA;
-    private static final int MUTED = 0xFFA5B3BF;
-    private static final int ACCENT = 0xFF43D6BC;
-    private static final int GOLD = 0xFFF2C25B;
-    private static final int RED = 0xFFE36E76;
-    private static final int BLUE = 0xFF78A7ED;
-    private static final int GREEN = 0xFF55D49B;
-    private static final int PURPLE = 0xFFB38AE8;
+    private static final int BACKGROUND = 0xFF090E13;
+    private static final int GRID = 0xFF141C24;
+    private static final int PANEL = 0xF20D151D;
+    private static final int SURFACE = 0xFF17222B;
+    private static final int SURFACE_HOVER = 0xFF1D2B35;
+    private static final int BORDER = 0xFF364754;
+    private static final int TEXT = 0xFFDCE5EA;
+    private static final int MUTED = 0xFF8998A2;
+    private static final int ACCENT = 0xFF4A9188;
+    private static final int GOLD = 0xFFC3A45D;
+    private static final int RED = 0xFFAA6068;
+    private static final int BLUE = 0xFF5D7FA2;
+    private static final int GREEN = 0xFF5F8E72;
+    private static final int PURPLE = 0xFF7D6C99;
+    private static final int HEADER_HEIGHT = 38;
 
     private static double savedPanX;
     private static double savedPanY;
-    private static double savedZoom = 0.82;
+    private static double savedZoom = 0.74;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
     private final String[] actions;
@@ -60,18 +62,22 @@ public final class VillageSkillTreeScreen extends Screen {
         renderConnections(graphics, viewport);
         renderCore(graphics, viewport);
         renderNodes(graphics, mouseX, mouseY, viewport);
+        renderBubble(graphics, mouseX, mouseY, viewport);
         renderHeader(graphics, mouseX, mouseY);
-        renderDetail(graphics, mouseX, mouseY);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderGrid(GuiGraphicsExtractor graphics, Viewport viewport) {
         graphics.fill(viewport.left(), viewport.top(), viewport.right(), viewport.bottom(), BACKGROUND);
-        int spacing = Math.max(18, (int) Math.round(30 * savedZoom));
+        int spacing = Math.max(16, (int) Math.round(28 * savedZoom));
         int startX = viewport.left() + Math.floorMod((int) Math.round(savedPanX), spacing);
         int startY = viewport.top() + Math.floorMod((int) Math.round(savedPanY), spacing);
-        for (int x = startX; x < viewport.right(); x += spacing) graphics.fill(x, viewport.top(), x + 1, viewport.bottom(), GRID);
-        for (int y = startY; y < viewport.bottom(); y += spacing) graphics.fill(viewport.left(), y, viewport.right(), y + 1, GRID);
+        for (int x = startX; x < viewport.right(); x += spacing) {
+            graphics.fill(x, viewport.top(), x + 1, viewport.bottom(), GRID);
+        }
+        for (int y = startY; y < viewport.bottom(); y += spacing) {
+            graphics.fill(viewport.left(), y, viewport.right(), y + 1, GRID);
+        }
     }
 
     private void renderConnections(GuiGraphicsExtractor graphics, Viewport viewport) {
@@ -80,25 +86,25 @@ public final class VillageSkillTreeScreen extends Screen {
             NodeVisual previous = previous(node);
             double x0 = previous == null ? 0 : previous.worldX();
             double y0 = previous == null ? 0 : previous.worldY();
-            int color = previous == null || "습득".equals(previous.status()) ? branchColor(node.branch()) : 0xFF334250;
-            drawLine(graphics,
-                    screenX(viewport, x0), screenY(viewport, y0),
+            int color = previous == null || "습득".equals(previous.status())
+                    ? branchColor(node.branch()) : 0xFF2C3944;
+            drawLine(graphics, screenX(viewport, x0), screenY(viewport, y0),
                     screenX(viewport, node.worldX()), screenY(viewport, node.worldY()), color);
         }
         graphics.disableScissor();
     }
 
     private void renderCore(GuiGraphicsExtractor graphics, Viewport viewport) {
-        int size = scaledNodeSize() - 8;
+        int size = Math.max(20, scaledNodeSize() - 7);
         int cx = screenX(viewport, 0);
         int cy = screenY(viewport, 0);
         int x = cx - size / 2;
         int y = cy - size / 2;
         graphics.enableScissor(viewport.left(), viewport.top(), viewport.right(), viewport.bottom());
-        graphics.fill(x - 3, y - 3, x + size + 3, y + size + 3, GOLD);
-        graphics.fill(x, y, x + size, y + size, 0xFF202A31);
-        graphics.fill(cx - 3, y + 6, cx + 3, y + size - 6, GOLD);
-        graphics.fill(x + 6, cy - 3, x + size - 6, cy + 3, GOLD);
+        graphics.fill(x - 2, y - 2, x + size + 2, y + size + 2, GOLD);
+        graphics.fill(x, y, x + size, y + size, SURFACE);
+        graphics.fill(cx - 2, y + 5, cx + 2, y + size - 5, GOLD);
+        graphics.fill(x + 5, cy - 2, x + size - 5, cy + 2, GOLD);
         graphics.disableScissor();
     }
 
@@ -111,121 +117,166 @@ public final class VillageSkillTreeScreen extends Screen {
             int cy = screenY(viewport, node.worldY());
             int x = cx - nodeSize / 2;
             int y = cy - nodeSize / 2;
-            if (x + nodeSize < viewport.left() || x > viewport.right() || y + nodeSize < viewport.top() || y > viewport.bottom()) continue;
+            if (x + nodeSize < viewport.left() || x > viewport.right()
+                    || y + nodeSize < viewport.top() || y > viewport.bottom()) continue;
             int color = branchColor(node.branch());
             int border = switch (node.status()) {
                 case "습득" -> color;
                 case "습득 가능" -> GOLD;
                 case "데이터 잠금" -> RED;
-                default -> 0xFF354552;
+                default -> BORDER;
             };
             boolean hovered = inside(mouseX, mouseY, x, y, nodeSize, nodeSize);
             boolean selected = selectedIndex == index;
-            graphics.fill(x - 3, y - 3, x + nodeSize + 3, y + nodeSize + 3, selected ? GOLD : hovered ? border : 0xFF18242E);
+            graphics.fill(x - 2, y - 2, x + nodeSize + 2, y + nodeSize + 2,
+                    selected ? GOLD : hovered ? border : 0xFF121B22);
             graphics.fill(x - 1, y - 1, x + nodeSize + 1, y + nodeSize + 1, border);
-            graphics.fill(x, y, x + nodeSize, y + nodeSize, hovered || selected ? 0xFF1C2A35 : SURFACE);
-            drawNodeIcon(graphics, node.branch(), node.tier(), x + 6, y + 6, nodeSize - 12,
-                    "습득".equals(node.status()) ? color : border);
-            if (savedZoom >= 0.72) {
-                String title = compact(node.title(), savedZoom >= 1.18 ? 16 : 10);
-                graphics.centeredText(font, title, cx, y + nodeSize + 6, hovered || selected ? TEXT : MUTED);
+            graphics.fill(x, y, x + nodeSize, y + nodeSize,
+                    hovered || selected ? SURFACE_HOVER : SURFACE);
+            drawNodeIcon(graphics, node.branch(), node.tier(), x + 5, y + 5,
+                    nodeSize - 10, "습득".equals(node.status()) ? color : border);
+            if (hovered || selected || savedZoom >= 0.88) {
+                graphics.centeredText(font, fit(node.title(), 82), cx, y + nodeSize + 4,
+                        hovered || selected ? TEXT : MUTED);
             }
         }
         graphics.disableScissor();
     }
 
     private void renderHeader(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        graphics.fill(0, 0, width, 48, PANEL);
-        graphics.fill(0, 46, width, 48, BORDER);
-        graphics.text(font, "전술 발전", 15, 11, TEXT, false);
-        graphics.text(font, compact(payload.body(), Math.max(24, Math.min(58, width / 10))), 15, 28, MUTED, false);
-        int closeX = width - 35;
-        int centerX = closeX - 53;
-        int plusX = centerX - 34;
-        int percentX = plusX - 48;
-        int minusX = percentX - 34;
-        drawHeaderButton(graphics, mouseX, mouseY, minusX, 10, 28, "−");
-        graphics.centeredText(font, Math.round(savedZoom * 100) + "%", percentX + 22, 18, MUTED);
-        drawHeaderButton(graphics, mouseX, mouseY, plusX, 10, 28, "+");
-        drawHeaderButton(graphics, mouseX, mouseY, centerX, 10, 46, "중앙");
-        drawHeaderButton(graphics, mouseX, mouseY, closeX, 10, 26, "×");
+        graphics.fill(0, 0, width, HEADER_HEIGHT, PANEL);
+        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, BORDER);
+        int closeX = width - 28;
+        int centerX = closeX - 43;
+        int plusX = centerX - 27;
+        int percentX = plusX - 36;
+        int minusX = percentX - 27;
+        int textRight = Math.max(90, minusX - 10);
+        graphics.text(font, fit(payload.title().isBlank() ? "성장" : payload.title(), textRight - 10),
+                10, 6, TEXT, false);
+        graphics.text(font, fit(payload.body(), textRight - 10), 10, 20, MUTED, false);
+        drawHeaderButton(graphics, mouseX, mouseY, minusX, 7, 22, "−");
+        graphics.centeredText(font, Math.round(savedZoom * 100) + "%", percentX + 16, 13, MUTED);
+        drawHeaderButton(graphics, mouseX, mouseY, plusX, 7, 22, "+");
+        drawHeaderButton(graphics, mouseX, mouseY, centerX, 7, 38, "중앙");
+        drawHeaderButton(graphics, mouseX, mouseY, closeX, 7, 20, "×");
     }
 
-    private void drawHeaderButton(GuiGraphicsExtractor graphics, int mouseX, int mouseY, int x, int y, int w, String label) {
-        boolean hovered = inside(mouseX, mouseY, x, y, w, 25);
-        graphics.fill(x, y, x + w, y + 25, hovered ? 0xFF253642 : 0xFF101923);
-        graphics.centeredText(font, label, x + w / 2, y + 8, hovered ? GOLD : MUTED);
+    private void drawHeaderButton(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
+                                  int x, int y, int w, String label) {
+        boolean hovered = inside(mouseX, mouseY, x, y, w, 20);
+        graphics.fill(x, y, x + w, y + 20, hovered ? SURFACE_HOVER : 0xFF101820);
+        graphics.centeredText(font, fit(label, w - 4), x + w / 2, y + 6,
+                hovered ? TEXT : MUTED);
     }
 
-    private void renderDetail(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        int top = Math.max(132, height - 108);
-        graphics.fill(0, top, width, height, PANEL);
-        graphics.fill(0, top, width, top + 2, BORDER);
-        String title = "노드를 선택하세요";
-        String description = "빈 공간 드래그: 이동 · 마우스 휠 또는 +/−: 확대·축소";
-        String status = "";
-        int color = MUTED;
-        if (selectedIndex >= 0 && selectedIndex < nodes.size()) {
-            NodeVisual node = nodes.get(selectedIndex);
-            title = branchName(node.branch()) + " " + node.tier() + "단계 · " + node.title();
-            description = node.description();
-            status = node.status();
-            color = branchColor(node.branch());
-        }
-        graphics.text(font, compact(title, Math.max(18, width / 10)), 16, top + 12, color, false);
-        if (!status.isBlank()) graphics.text(font, status, 16, top + 29, statusColor(status), false);
-        int buttonWidth = Math.min(126, Math.max(92, width / 5));
-        int buttonX = width - buttonWidth - 16;
-        int buttonY = top + 29;
-        int descriptionRight = buttonX - 12;
-        List<FormattedCharSequence> lines = font.split(Component.literal(description), Math.max(80, descriptionRight - 16));
-        int y = top + 48;
-        for (FormattedCharSequence line : lines) {
-            if (y > height - 10) break;
-            graphics.text(font, line, 16, y, MUTED, false);
+    private void renderBubble(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Viewport viewport) {
+        Bubble bubble = bubble(viewport);
+        if (bubble == null) return;
+        NodeVisual node = bubble.node();
+        int edgeX = bubble.x() > bubble.nodeX() ? bubble.x() : bubble.x() + bubble.width();
+        int edgeY = clamp(bubble.nodeY(), bubble.y() + 12, bubble.y() + bubble.height() - 12);
+        drawLine(graphics, bubble.nodeX(), bubble.nodeY(), edgeX, edgeY, branchColor(node.branch()));
+        graphics.fill(bubble.x() + 3, bubble.y() + 3,
+                bubble.x() + bubble.width() + 3, bubble.y() + bubble.height() + 3, 0x78000000);
+        graphics.fill(bubble.x() - 1, bubble.y() - 1,
+                bubble.x() + bubble.width() + 1, bubble.y() + bubble.height() + 1,
+                branchColor(node.branch()));
+        graphics.fill(bubble.x(), bubble.y(), bubble.x() + bubble.width(),
+                bubble.y() + bubble.height(), PANEL);
+        graphics.text(font, fit(branchName(node.branch()) + " " + node.tier() + "단계 · " + node.title(),
+                        bubble.width() - 16), bubble.x() + 8, bubble.y() + 7, TEXT, false);
+        graphics.text(font, fit(node.status(), bubble.width() - 16), bubble.x() + 8,
+                bubble.y() + 20, statusColor(node.status()), false);
+        int y = bubble.y() + 34;
+        for (int i = 0; i < bubble.lineCount(); i++) {
+            graphics.text(font, bubble.lines().get(i), bubble.x() + 8, y, MUTED, false);
             y += 11;
         }
-        boolean purchasable = selectedIndex >= 0 && "습득 가능".equals(nodes.get(selectedIndex).status());
-        boolean hovered = purchasable && inside(mouseX, mouseY, buttonX, buttonY, buttonWidth, 25);
-        graphics.fill(buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + 26,
-                hovered ? GOLD : purchasable ? color : 0xFF35424D);
-        graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 25,
-                hovered ? 0xFF3C3420 : purchasable ? SURFACE : 0xFF171E25);
-        String label = purchasable ? "습득 · 1P" : selectedIndex < 0 ? "노드 선택 필요" : nodes.get(selectedIndex).status();
-        graphics.centeredText(font, label, buttonX + buttonWidth / 2, buttonY + 8, purchasable ? TEXT : MUTED);
+        if (bubble.purchasable()) {
+            boolean hovered = inside(mouseX, mouseY, bubble.buttonX(), bubble.buttonY(),
+                    bubble.buttonWidth(), bubble.buttonHeight());
+            graphics.fill(bubble.buttonX() - 1, bubble.buttonY() - 1,
+                    bubble.buttonX() + bubble.buttonWidth() + 1,
+                    bubble.buttonY() + bubble.buttonHeight() + 1, hovered ? GOLD : ACCENT);
+            graphics.fill(bubble.buttonX(), bubble.buttonY(), bubble.buttonX() + bubble.buttonWidth(),
+                    bubble.buttonY() + bubble.buttonHeight(), hovered ? 0xFF27332D : SURFACE);
+            graphics.centeredText(font, "습득 · 1P", bubble.buttonX() + bubble.buttonWidth() / 2,
+                    bubble.buttonY() + 5, TEXT);
+        }
+    }
+
+    private Bubble bubble(Viewport viewport) {
+        if (selectedIndex < 0 || selectedIndex >= nodes.size()) return null;
+        NodeVisual node = nodes.get(selectedIndex);
+        int nodeX = screenX(viewport, node.worldX());
+        int nodeY = screenY(viewport, node.worldY());
+        int bubbleWidth = Math.min(246, Math.max(174, viewport.width() / 3));
+        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()), bubbleWidth - 16);
+        int lineCount = Math.min(3, lines.size());
+        boolean purchasable = "습득 가능".equals(node.status());
+        int bubbleHeight = 45 + lineCount * 11 + (purchasable ? 24 : 8);
+        int nodeSize = scaledNodeSize();
+        int x = nodeX + nodeSize / 2 + 9;
+        if (x + bubbleWidth > viewport.right() - 5) {
+            x = nodeX - nodeSize / 2 - bubbleWidth - 9;
+        }
+        x = clamp(x, viewport.left() + 5, Math.max(viewport.left() + 5, viewport.right() - bubbleWidth - 5));
+        int y = clamp(nodeY - 25, viewport.top() + 5,
+                Math.max(viewport.top() + 5, viewport.bottom() - bubbleHeight - 5));
+        int buttonWidth = 68;
+        int buttonHeight = 18;
+        int buttonX = x + bubbleWidth - buttonWidth - 7;
+        int buttonY = y + bubbleHeight - buttonHeight - 6;
+        return new Bubble(x, y, bubbleWidth, bubbleHeight, buttonX, buttonY,
+                buttonWidth, buttonHeight, purchasable, lines, lineCount, node, nodeX, nodeY);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
-        int closeX = width - 35;
-        int centerX = closeX - 53;
-        int plusX = centerX - 34;
-        int percentX = plusX - 48;
-        int minusX = percentX - 34;
-        if (inside(click.x(), click.y(), closeX, 10, 26, 25)) { onClose(); return true; }
-        if (inside(click.x(), click.y(), centerX, 10, 46, 25)) { savedPanX = 0; savedPanY = 0; savedZoom = 0.82; return true; }
-        if (inside(click.x(), click.y(), minusX, 10, 28, 25)) { setZoom(savedZoom - 0.15, width / 2.0, height / 2.0); return true; }
-        if (inside(click.x(), click.y(), plusX, 10, 28, 25)) { setZoom(savedZoom + 0.15, width / 2.0, height / 2.0); return true; }
-
-        int top = Math.max(132, height - 108);
-        int buttonWidth = Math.min(126, Math.max(92, width / 5));
-        int buttonX = width - buttonWidth - 16;
-        if (selectedIndex >= 0 && "습득 가능".equals(nodes.get(selectedIndex).status())
-                && inside(click.x(), click.y(), buttonX, top + 29, buttonWidth, 25)) {
-            ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(nodes.get(selectedIndex).action()));
-            return true;
+        int closeX = width - 28;
+        int centerX = closeX - 43;
+        int plusX = centerX - 27;
+        int percentX = plusX - 36;
+        int minusX = percentX - 27;
+        if (inside(click.x(), click.y(), closeX, 7, 20, 20)) { onClose(); return true; }
+        if (inside(click.x(), click.y(), centerX, 7, 38, 20)) {
+            savedPanX = 0; savedPanY = 0; savedZoom = 0.74; return true;
+        }
+        if (inside(click.x(), click.y(), minusX, 7, 22, 20)) {
+            setZoom(savedZoom - 0.12, width / 2.0, height / 2.0); return true;
+        }
+        if (inside(click.x(), click.y(), plusX, 7, 22, 20)) {
+            setZoom(savedZoom + 0.12, width / 2.0, height / 2.0); return true;
         }
 
         Viewport viewport = viewport();
-        if (!inside(click.x(), click.y(), viewport.left(), viewport.top(), viewport.width(), viewport.height())) return super.mouseClicked(click, doubled);
+        Bubble bubble = bubble(viewport);
+        if (bubble != null) {
+            if (bubble.purchasable() && inside(click.x(), click.y(), bubble.buttonX(), bubble.buttonY(),
+                    bubble.buttonWidth(), bubble.buttonHeight())) {
+                ClientPacketDistributor.sendToServer(
+                        new VillageNetwork.VillageUiActionPayload(bubble.node().action()));
+                return true;
+            }
+            if (inside(click.x(), click.y(), bubble.x(), bubble.y(), bubble.width(), bubble.height())) {
+                return true;
+            }
+        }
+        if (!inside(click.x(), click.y(), viewport.left(), viewport.top(),
+                viewport.width(), viewport.height())) return super.mouseClicked(click, doubled);
         int nodeSize = scaledNodeSize();
         for (int index = 0; index < nodes.size(); index++) {
             NodeVisual node = nodes.get(index);
             int x = screenX(viewport, node.worldX()) - nodeSize / 2;
             int y = screenY(viewport, node.worldY()) - nodeSize / 2;
-            if (inside(click.x(), click.y(), x, y, nodeSize, nodeSize)) { selectedIndex = index; return true; }
+            if (inside(click.x(), click.y(), x, y, nodeSize, nodeSize)) {
+                selectedIndex = selectedIndex == index ? -1 : index;
+                return true;
+            }
         }
+        selectedIndex = -1;
         dragging = true;
         return true;
     }
@@ -250,7 +301,7 @@ public final class VillageSkillTreeScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         Viewport viewport = viewport();
         if (inside(mouseX, mouseY, viewport.left(), viewport.top(), viewport.width(), viewport.height())) {
-            setZoom(savedZoom + vertical * 0.10, mouseX, mouseY);
+            setZoom(savedZoom + vertical * 0.09, mouseX, mouseY);
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
@@ -259,7 +310,7 @@ public final class VillageSkillTreeScreen extends Screen {
     private void setZoom(double requested, double mouseX, double mouseY) {
         Viewport viewport = viewport();
         double old = savedZoom;
-        double next = clamp(requested, 0.55, 1.75);
+        double next = clamp(requested, 0.50, 1.55);
         double centerX = (viewport.left() + viewport.right()) / 2.0;
         double centerY = (viewport.top() + viewport.bottom()) / 2.0;
         double worldX = (mouseX - centerX - savedPanX) / old;
@@ -276,10 +327,11 @@ public final class VillageSkillTreeScreen extends Screen {
             String title = parts.length > 0 ? parts[0] : labels[index];
             String description = parts.length > 1 ? parts[1] : "상세 효과 없음";
             String status = parts.length > 2 ? parts[2] : "잠김";
-            String id = actions[index].startsWith("skill_node:") ? actions[index].substring(11) : actions[index];
+            String id = actions[index].startsWith("skill_node:")
+                    ? actions[index].substring(11) : actions[index];
             Branch branch = branch(id);
             int tier = tier(id);
-            double distance = 92.0;
+            double distance = 86.0;
             double worldX = switch (branch) {
                 case POWER -> tier * distance;
                 case GUARD -> -tier * distance;
@@ -290,13 +342,18 @@ public final class VillageSkillTreeScreen extends Screen {
                 case SUPPORT -> tier * distance;
                 default -> 0;
             };
-            nodes.add(new NodeVisual(actions[index], id, title, description, status, branch, tier, worldX, worldY));
+            nodes.add(new NodeVisual(actions[index], id, title, description, status,
+                    branch, tier, worldX, worldY));
         }
     }
 
     private NodeVisual previous(NodeVisual node) {
         if (node.tier() <= 1) return null;
-        for (NodeVisual candidate : nodes) if (candidate.branch() == node.branch() && candidate.tier() == node.tier() - 1) return candidate;
+        for (NodeVisual candidate : nodes) {
+            if (candidate.branch() == node.branch() && candidate.tier() == node.tier() - 1) {
+                return candidate;
+            }
+        }
         return null;
     }
 
@@ -309,19 +366,26 @@ public final class VillageSkillTreeScreen extends Screen {
 
     private int tier(String id) {
         int split = id.lastIndexOf('_');
-        if (split >= 0) try { return Math.max(1, Integer.parseInt(id.substring(split + 1))); } catch (NumberFormatException ignored) {}
+        if (split >= 0) {
+            try { return Math.max(1, Integer.parseInt(id.substring(split + 1))); }
+            catch (NumberFormatException ignored) { }
+        }
         return 1;
     }
 
     private int screenX(Viewport viewport, double worldX) {
-        return (int) Math.round((viewport.left() + viewport.right()) / 2.0 + savedPanX + worldX * savedZoom);
+        return (int) Math.round((viewport.left() + viewport.right()) / 2.0
+                + savedPanX + worldX * savedZoom);
     }
 
     private int screenY(Viewport viewport, double worldY) {
-        return (int) Math.round((viewport.top() + viewport.bottom()) / 2.0 + savedPanY + worldY * savedZoom);
+        return (int) Math.round((viewport.top() + viewport.bottom()) / 2.0
+                + savedPanY + worldY * savedZoom);
     }
 
-    private int scaledNodeSize() { return (int) Math.round(clamp(44 * savedZoom, 28, 62)); }
+    private int scaledNodeSize() {
+        return (int) Math.round(clamp(38 * savedZoom, 24, 52));
+    }
 
     private void drawLine(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, int color) {
         int dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
@@ -336,24 +400,47 @@ public final class VillageSkillTreeScreen extends Screen {
         }
     }
 
-    private void drawNodeIcon(GuiGraphicsExtractor graphics, Branch branch, int tier, int x, int y, int size, int color) {
+    private void drawNodeIcon(GuiGraphicsExtractor graphics, Branch branch, int tier,
+                              int x, int y, int size, int color) {
         int cx = x + size / 2;
         int cy = y + size / 2;
         switch (branch) {
-            case POWER -> { graphics.fill(cx - 2, y + 2, cx + 2, y + size - 3, color); graphics.fill(cx - 7, y + 3, cx + 7, y + 7, color); }
-            case GUARD -> { graphics.fill(cx - 8, y + 4, cx + 8, cy + 2, color); graphics.fill(cx - 5, cy, cx + 5, y + size - 4, color); }
-            case RANGED -> { graphics.fill(x + 4, cy - 1, x + size - 4, cy + 1, color); graphics.fill(x + size - 8, cy - 5, x + size - 4, cy + 5, color); }
-            case SUPPORT -> { graphics.fill(cx - 3, y + 3, cx + 3, y + size - 3, color); graphics.fill(x + 3, cy - 3, x + size - 3, cy + 3, color); }
+            case POWER -> {
+                graphics.fill(cx - 2, y + 2, cx + 2, y + size - 3, color);
+                graphics.fill(cx - 6, y + 3, cx + 6, y + 6, color);
+            }
+            case GUARD -> {
+                graphics.fill(cx - 7, y + 4, cx + 7, cy + 2, color);
+                graphics.fill(cx - 4, cy, cx + 4, y + size - 4, color);
+            }
+            case RANGED -> {
+                graphics.fill(x + 4, cy - 1, x + size - 4, cy + 1, color);
+                graphics.fill(x + size - 7, cy - 4, x + size - 4, cy + 4, color);
+            }
+            case SUPPORT -> {
+                graphics.fill(cx - 2, y + 3, cx + 2, y + size - 3, color);
+                graphics.fill(x + 3, cy - 2, x + size - 3, cy + 2, color);
+            }
         }
-        if (tier >= 4) graphics.fill(x + 3, y + 3, x + 7, y + 7, GOLD);
+        if (tier >= 5) graphics.fill(x + 3, y + 3, x + 6, y + 6, GOLD);
     }
 
     private int branchColor(Branch branch) {
-        return switch (branch) { case POWER -> RED; case GUARD -> BLUE; case RANGED -> PURPLE; case SUPPORT -> GREEN; };
+        return switch (branch) {
+            case POWER -> RED;
+            case GUARD -> BLUE;
+            case RANGED -> PURPLE;
+            case SUPPORT -> GREEN;
+        };
     }
 
     private int statusColor(String status) {
-        return switch (status) { case "습득" -> ACCENT; case "습득 가능" -> GOLD; case "데이터 잠금" -> RED; default -> MUTED; };
+        return switch (status) {
+            case "습득" -> ACCENT;
+            case "습득 가능" -> GOLD;
+            case "데이터 잠금" -> RED;
+            default -> MUTED;
+        };
     }
 
     private String branchName(Branch branch) {
@@ -365,20 +452,49 @@ public final class VillageSkillTreeScreen extends Screen {
         };
     }
 
-    private Viewport viewport() { return new Viewport(0, 48, width, Math.max(49, height - 108)); }
-
-    private String compact(String value, int max) {
-        String normalized = value.replace('\n', ' ');
-        return normalized.length() <= max ? normalized : normalized.substring(0, Math.max(1, max - 1)) + "…";
+    private Viewport viewport() {
+        return new Viewport(0, HEADER_HEIGHT, width, Math.max(HEADER_HEIGHT + 1, height));
     }
 
-    private static double clamp(double value, double min, double max) { return Math.max(min, Math.min(max, value)); }
-    private static boolean inside(double mx, double my, int x, int y, int w, int h) { return mx >= x && mx < x + w && my >= y && my < y + h; }
+    private String fit(String value, int maxWidth) {
+        String normalized = value == null ? "" : value.replace('\n', ' ');
+        if (maxWidth <= 0 || font.width(normalized) <= maxWidth) return normalized;
+        String suffix = "…";
+        int end = normalized.length();
+        while (end > 1 && font.width(normalized.substring(0, end) + suffix) > maxWidth) end--;
+        return normalized.substring(0, Math.max(1, end)) + suffix;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static boolean inside(double mx, double my, int x, int y, int w, int h) {
+        return mx >= x && mx < x + w && my >= y && my < y + h;
+    }
 
     @Override
-    public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
+    public void onClose() {
+        if (minecraft != null) minecraft.gui.setScreen(null);
+    }
 
     private enum Branch { POWER, GUARD, RANGED, SUPPORT }
-    private record Viewport(int left, int top, int right, int bottom) { int width() { return right - left; } int height() { return bottom - top; } }
-    private record NodeVisual(String action, String id, String title, String description, String status, Branch branch, int tier, double worldX, double worldY) {}
+
+    private record Viewport(int left, int top, int right, int bottom) {
+        int width() { return right - left; }
+        int height() { return bottom - top; }
+    }
+
+    private record NodeVisual(String action, String id, String title, String description,
+                              String status, Branch branch, int tier,
+                              double worldX, double worldY) {}
+
+    private record Bubble(int x, int y, int width, int height,
+                          int buttonX, int buttonY, int buttonWidth, int buttonHeight,
+                          boolean purchasable, List<FormattedCharSequence> lines, int lineCount,
+                          NodeVisual node, int nodeX, int nodeY) {}
 }
