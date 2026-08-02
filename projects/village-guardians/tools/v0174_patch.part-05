@@ -1,0 +1,90 @@
+    skill_tree,
+    '''        int bubbleWidth = Math.min(246, Math.max(174, viewport.width() / 3));
+        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()), bubbleWidth - 16);
+        int lineCount = Math.min(3, lines.size());
+        boolean purchasable = "습득 가능".equals(node.status());
+        int bubbleHeight = 45 + lineCount * 11 + (purchasable ? 24 : 8);
+''',
+    '''        int bubbleWidth = fitPopoverWidth(viewport.width(), 164, 246);
+        boolean purchasable = "습득 가능".equals(node.status());
+        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()),
+                Math.max(40, bubbleWidth - 16));
+        int baseHeight = 45 + (purchasable ? 24 : 8);
+        int lineCount = Math.min(lines.size(), Math.max(0, (viewport.height() - baseHeight - 10) / 11));
+        int bubbleHeight = baseHeight + lineCount * 11;
+''')
+replace_once(
+    skill_tree,
+    '''        int nodeX = screenX(viewport, node.worldX());
+        int nodeY = screenY(viewport, node.worldY());
+        int bubbleWidth = fitPopoverWidth(viewport.width(), 164, 246);
+''',
+    '''        int nodeX = screenX(viewport, node.worldX());
+        int nodeY = screenY(viewport, node.worldY());
+        int nodeHalf = scaledNodeSize() / 2;
+        if (nodeX + nodeHalf < viewport.left() || nodeX - nodeHalf > viewport.right()
+                || nodeY + nodeHalf < viewport.top() || nodeY - nodeHalf > viewport.bottom()) {
+            return null;
+        }
+        int bubbleWidth = fitPopoverWidth(viewport.width(), 164, 246);
+''')
+replace_once(skill_tree, "        int buttonWidth = 68;\n", "        int buttonWidth = Math.max(1, Math.min(68, bubbleWidth - 14));\n")
+replace_once(
+    skill_tree,
+    '''    private int screenX(Viewport viewport, double worldX) {
+''',
+    '''    private static int fitPopoverWidth(int viewportWidth, int preferredMinimum, int preferredMaximum) {
+        int maximum = Math.max(1, viewportWidth - 10);
+        int minimum = Math.min(preferredMinimum, maximum);
+        int preferred = Math.max(minimum, Math.min(maximum, viewportWidth / 3));
+        return Math.min(maximum, Math.min(preferredMaximum, preferred));
+    }
+
+    private int screenX(Viewport viewport, double worldX) {
+''')
+
+# Apply the same clipping rules to role growth, and switch skill cards to vertical popovers
+# when neither side has enough room so the adjacent card is not covered.
+role = JAVA / "VillageRoleProgressScreen.java"
+replace_once(
+    role,
+    '''        int bubbleWidth = Math.min(264, Math.max(188, view.width() / 3));
+        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()), bubbleWidth - 16);
+        int maxLines = Math.max(2, Math.min(7, (view.height() - 90) / 11));
+        int lineCount = Math.min(maxLines, lines.size());
+        boolean purchasable = "습득 가능".equals(node.status());
+        int bubbleHeight = 45 + lineCount * 11 + (purchasable ? 24 : 8);
+''',
+    '''        int bubbleWidth = fitPopoverWidth(view.width(), 176, 264);
+        boolean purchasable = "습득 가능".equals(node.status());
+        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()),
+                Math.max(40, bubbleWidth - 16));
+        int baseHeight = 45 + (purchasable ? 24 : 8);
+        int lineCount = Math.min(lines.size(), Math.max(0, (view.height() - baseHeight - 10) / 11));
+        int bubbleHeight = baseHeight + lineCount * 11;
+''')
+replace_once(
+    role,
+    '''        int nodeX = screenX(view, node.worldX());
+        int nodeY = screenY(view, node.worldY());
+        int bubbleWidth = fitPopoverWidth(view.width(), 176, 264);
+''',
+    '''        int nodeX = screenX(view, node.worldX());
+        int nodeY = screenY(view, node.worldY());
+        int nodeHalf = scaledNodeSize() / 2;
+        if (nodeX + nodeHalf < view.left() || nodeX - nodeHalf > view.right()
+                || nodeY + nodeHalf < view.top() || nodeY - nodeHalf > view.bottom()) {
+            return null;
+        }
+        int bubbleWidth = fitPopoverWidth(view.width(), 176, 264);
+''')
+old_skill_bubble = '''    private SkillBubble skillBubble(Viewport view, SkillGrid grid) {
+        if (selectedSkill < 0 || selectedSkill >= skills.size()) return null;
+        SkillEntry skill = skills.get(selectedSkill);
+        CardBounds card = skillCardBounds(view, grid, selectedSkill);
+        int cardX = card.x() + card.size() / 2;
+        int cardY = card.y() + card.size() / 2;
+        int bubbleWidth = Math.min(270, Math.max(196, view.width() / 3));
+        List<FormattedCharSequence> lines = font.split(Component.literal(skill.description()), bubbleWidth - 16);
+        int maxLines = Math.max(2, Math.min(7, (view.height() - 90) / 11));
+        int lineCount = Math.min(maxLines, lines.size());
