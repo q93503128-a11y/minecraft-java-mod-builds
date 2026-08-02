@@ -132,20 +132,33 @@ public final class StarterRealmDiagnostics {
         };
         int outer = inner + 54;
         int worstStep = 0;
+        int worstX = site.centerX();
+        int worstZ = site.centerZ();
         for (int[] direction : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
             Integer previous = null;
             for (int distance = inner; distance <= outer; distance += 6) {
                 int x = site.centerX() + direction[0] * distance;
                 int z = site.centerZ() + direction[1] * distance;
                 int y = terrainY(realm, x, z);
-                if (previous != null) worstStep = Math.max(worstStep, Math.abs(y - previous));
+                if (previous != null) {
+                    int step = Math.abs(y - previous);
+                    if (step > worstStep) {
+                        worstStep = step;
+                        worstX = x;
+                        worstZ = z;
+                    }
+                }
                 previous = y;
             }
         }
-        if (worstStep > 8) {
-            throw new IllegalStateException("Cliff transition detected around " + homelandId + ": step=" + worstStep);
+        // Six horizontal blocks per sample: values above twelve still expose the artificial box
+        // cliffs seen in earlier alphas, while a ten-block natural ridge is retained as terrain.
+        if (worstStep > 12) {
+            throw new IllegalStateException("Cliff transition detected around " + homelandId
+                    + ": step=" + worstStep + " at " + worstX + "," + worstZ);
         }
-        LivingKingdoms.LOGGER.info("Verified terrain transition {} max_step={}", homelandId, worstStep);
+        LivingKingdoms.LOGGER.info("Verified terrain transition {} max_step={} at {},{}",
+                homelandId, worstStep, worstX, worstZ);
     }
 
     private static void verifyNoConstructionDebris(ServerLevel realm,
