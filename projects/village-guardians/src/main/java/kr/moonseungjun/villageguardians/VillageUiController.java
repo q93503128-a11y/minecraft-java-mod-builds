@@ -234,16 +234,19 @@ public final class VillageUiController {
         if (server == null) return true;
 
         if (action.startsWith("repair:") || action.startsWith("upgrade:")) {
-            if (!requireTownHall(player, "시설 수리와 강화는 마을 회관에서만 가능합니다.")) return true;
             boolean repair = action.startsWith("repair:");
             VillageProgressionSystem.Building building = VillageProgressionSystem.Building.fromId(
                     action.substring(repair ? 7 : 8));
-            if (building != null) {
-                String result = repair ? VillageProgressionSystem.repair(player, building)
-                        : VillageProgressionSystem.upgrade(player, building);
-                player.sendSystemMessage(Component.literal("§6" + result));
-                openDashboard(player);
+            if (building == null) return true;
+            if (!VillageLocationRules.isNearTownHall(player) && !VillageLocationRules.isNear(player, building)) {
+                player.sendSystemMessage(Component.literal(
+                        "§c시설 수리와 강화는 해당 시설 단말기 또는 마을 회관에서만 가능합니다."));
+                return true;
             }
+            String result = repair ? VillageProgressionSystem.repair(player, building)
+                    : VillageProgressionSystem.upgrade(player, building);
+            player.sendSystemMessage(Component.literal("§6" + result));
+            openDashboard(player);
             return true;
         }
         if (action.startsWith("manage:") || action.startsWith("facility:")) {
@@ -259,11 +262,19 @@ public final class VillageUiController {
             return true;
         }
         if (action.startsWith("skill_node:")) {
+            if (!VillageLocationRules.isNearSkillHall(player)) {
+                player.sendSystemMessage(Component.literal("§c전술 발전은 기술 연구소에서만 가능합니다."));
+                return true;
+            }
             player.sendSystemMessage(Component.literal("§b" + VillageSkillTreeSystem.purchase(player, action.substring(11))));
             openSkillTree(player);
             return true;
         }
         if (action.startsWith("role_node:")) {
+            if (!VillageLocationRules.isNearSkillHall(player)) {
+                player.sendSystemMessage(Component.literal("§c직업 성장은 기술 연구소에서만 가능합니다."));
+                return true;
+            }
             String[] parts = action.split(":", 3);
             if (parts.length == 3) VillageRole.parse(parts[1]).ifPresent(role -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageRoleSkillSystem.purchaseNode(player, role, parts[2])));
@@ -272,11 +283,19 @@ public final class VillageUiController {
             return true;
         }
         if (action.startsWith("gear:")) {
+            if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+                player.sendSystemMessage(Component.literal("§c장비 구매는 창고 단말기 근처에서만 가능합니다."));
+                return true;
+            }
             player.sendSystemMessage(Component.literal("§e" + VillageEquipmentShop.purchase(player, action.substring(5))));
             openEquipmentShop(player);
             return true;
         }
         if (action.startsWith("hire_mercenary:")) {
+            if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
+                player.sendSystemMessage(Component.literal("§c용병 고용은 병영 단말기 근처에서만 가능합니다."));
+                return true;
+            }
             VillageMercenarySystem.MercenaryClass kind = VillageMercenarySystem.MercenaryClass.fromId(action.substring(16));
             player.sendSystemMessage(Component.literal("§e" + VillageMercenarySystem.hire(player, kind)));
             openMercenaryCommand(player);
@@ -325,20 +344,36 @@ public final class VillageUiController {
                 }
             }
             case "forge_combine" -> {
-                player.sendSystemMessage(Component.literal("§e" + VillageEquipmentRaritySystem.combineFirstPair(player)));
-                openBuilding(player, VillageProgressionSystem.Building.SMITHY);
+                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {
+                    player.sendSystemMessage(Component.literal("§c장비 합성은 대장간 단말기 근처에서만 가능합니다."));
+                } else {
+                    player.sendSystemMessage(Component.literal("§e" + VillageEquipmentRaritySystem.combineFirstPair(player)));
+                    openBuilding(player, VillageProgressionSystem.Building.SMITHY);
+                }
             }
             case "buy_arrows" -> {
-                player.sendSystemMessage(Component.literal("§e" + VillageProgressionSystem.buyArrows(player)));
-                openEquipmentShop(player);
+                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+                    player.sendSystemMessage(Component.literal("§c화살 구매는 창고 단말기 근처에서만 가능합니다."));
+                } else {
+                    player.sendSystemMessage(Component.literal("§e" + VillageProgressionSystem.buyArrows(player)));
+                    openEquipmentShop(player);
+                }
             }
             case "buy_food" -> {
-                player.sendSystemMessage(Component.literal("§e" + VillageProgressionSystem.buyFood(player)));
-                openEquipmentShop(player);
+                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+                    player.sendSystemMessage(Component.literal("§c식량 구매는 창고 단말기 근처에서만 가능합니다."));
+                } else {
+                    player.sendSystemMessage(Component.literal("§e" + VillageProgressionSystem.buyFood(player)));
+                    openEquipmentShop(player);
+                }
             }
             case "sell_loot" -> {
-                player.sendSystemMessage(Component.literal("§e" + VillageTradingSystem.sellMonsterDrops(player)));
-                openEquipmentShop(player);
+                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+                    player.sendSystemMessage(Component.literal("§c전리품 판매는 창고 단말기 근처에서만 가능합니다."));
+                } else {
+                    player.sendSystemMessage(Component.literal("§e" + VillageTradingSystem.sellMonsterDrops(player)));
+                    openEquipmentShop(player);
+                }
             }
             default -> { return false; }
         }

@@ -68,8 +68,9 @@ public final class VillageFacilityScreen extends Screen {
     private void renderHeader(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Layout layout) {
         int left = layout.left() + 18;
         int closeX = layout.right() - 36;
-        graphics.text(font, plain(payload.title()), left, layout.top() + 10, TEXT, false);
-        graphics.text(font, subtitle(), left, layout.top() + 27, MUTED, false);
+        int textWidth = Math.max(32, closeX - left - 8);
+        graphics.text(font, compact(plain(payload.title()), textWidth), left, layout.top() + 10, TEXT, false);
+        graphics.text(font, compact(subtitle(), textWidth), left, layout.top() + 27, MUTED, false);
         boolean hovered = inside(mouseX, mouseY, closeX, layout.top() + 7, 27, 27);
         graphics.fill(closeX, layout.top() + 7, closeX + 27, layout.top() + 34,
                 hovered ? 0xFFE2AAAA : SURFACE_ALT);
@@ -108,7 +109,7 @@ public final class VillageFacilityScreen extends Screen {
             graphics.fill(x, y, x + cardWidth, y + CARD_HEIGHT, selected ? SELECTED : SURFACE);
             graphics.fill(x, y, x + 4, y + CARD_HEIGHT, selected ? accent() : BORDER);
             String[] parts = labelParts(labels[index]);
-            graphics.text(font, compact(parts[0], Math.max(9, cardWidth / 6)), x + 10, y + 6, TEXT, false);
+            graphics.text(font, compact(parts[0], cardWidth - 19), x + 10, y + 6, TEXT, false);
             List<FormattedCharSequence> lines = font.split(Component.literal(plain(parts[1])), Math.max(60, cardWidth - 19));
             if (!lines.isEmpty()) graphics.text(font, lines.getFirst(), x + 10, y + 18, MUTED, false);
         }
@@ -155,7 +156,7 @@ public final class VillageFacilityScreen extends Screen {
         graphics.fill(buttonLeft, buttonTop, buttonLeft + buttonWidth, buttonTop + ACTION_HEIGHT,
                 hovered ? 0xFFFFE8B5 : SELECTED);
         graphics.centeredText(font,
-                compact(VillageActionDescriptions.executeLabel(actions[selectedIndex]), Math.max(9, buttonWidth / 6)),
+                compact(VillageActionDescriptions.executeLabel(actions[selectedIndex]), buttonWidth - 10),
                 buttonLeft + buttonWidth / 2, buttonTop + 5, TEXT);
     }
 
@@ -304,10 +305,15 @@ public final class VillageFacilityScreen extends Screen {
         graphics.fill(x, y, x + 3, y + thumb, accent());
     }
 
-    private String compact(String value, int max) {
+    private String compact(String value, int maxWidth) {
         String normalized = plain(value).replace('\n', ' ');
-        return normalized.length() <= max ? normalized
-                : normalized.substring(0, Math.max(1, max - 1)) + "…";
+        if (maxWidth <= 0) return "";
+        if (font.width(normalized) <= maxWidth) return normalized;
+        String suffix = "…";
+        if (font.width(suffix) > maxWidth) return "";
+        int end = normalized.length();
+        while (end > 0 && font.width(normalized.substring(0, end) + suffix) > maxWidth) end--;
+        return normalized.substring(0, end) + suffix;
     }
 
     private static String plain(String value) {

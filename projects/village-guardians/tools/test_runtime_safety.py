@@ -54,7 +54,7 @@ def main() -> None:
     assert 'case "status", "wave_intel" -> new VillageStatusScreen(payload)' in client_ui
     assert "listLeft" in facility_ui and "detailLeft" in facility_ui
     assert "selectedIndex = actionCount() > 0 ? 0 : -1" in facility_ui
-    assert "PANEL = 0xFFF1E6CF" in facility_ui
+    assert "PANEL = 0xFFE4D8BF" in facility_ui
     assert "CARD_HEIGHT = 30" in facility_ui
     assert "ACTION_HEIGHT = 20" in facility_ui
     assert "Math.min(108" in facility_ui

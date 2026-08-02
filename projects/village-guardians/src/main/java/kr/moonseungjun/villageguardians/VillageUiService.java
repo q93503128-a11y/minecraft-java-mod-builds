@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 public final class VillageUiService {
     private static final String SEP = "\u001F";
@@ -456,16 +457,16 @@ public final class VillageUiService {
             case "chat_gate" -> broadcastQuick(server, player, "전원 북쪽 성문으로 집결!");
             case "chat_repair" -> broadcastQuick(server, player, "손상 시설 확인 후 현장 단말기에서 수리 바랍니다.");
             case "chat_help" -> broadcastQuick(server, player, "지원 요청! 제 위치로 모여 주세요.");
-            case "claim_bread" -> actAndReopen(player, VillageProgressionSystem.claimDailyBread(player), VillageProgressionSystem.Building.STOREHOUSE);
-            case "buy_arrows" -> actAndReopen(player, VillageProgressionSystem.buyArrows(player), VillageProgressionSystem.Building.STOREHOUSE);
-            case "buy_food" -> actAndReopen(player, VillageProgressionSystem.buyFood(player), VillageProgressionSystem.Building.STOREHOUSE);
-            case "sell_loot" -> actAndReopen(player, VillageTradingSystem.sellMonsterDrops(player), VillageProgressionSystem.Building.STOREHOUSE);
-            case "forge_upgrade" -> actAndReopen(player, VillageProgressionSystem.improveForgeRank(player), VillageProgressionSystem.Building.SMITHY);
-            case "skill_learn" -> actAndReopen(player, VillageProgressionSystem.learnNextSkill(player), VillageProgressionSystem.Building.SKILL_HALL);
+            case "claim_bread" -> actAndReopen(player, () -> VillageProgressionSystem.claimDailyBread(player), VillageProgressionSystem.Building.STOREHOUSE);
+            case "buy_arrows" -> actAndReopen(player, () -> VillageProgressionSystem.buyArrows(player), VillageProgressionSystem.Building.STOREHOUSE);
+            case "buy_food" -> actAndReopen(player, () -> VillageProgressionSystem.buyFood(player), VillageProgressionSystem.Building.STOREHOUSE);
+            case "sell_loot" -> actAndReopen(player, () -> VillageTradingSystem.sellMonsterDrops(player), VillageProgressionSystem.Building.STOREHOUSE);
+            case "forge_upgrade" -> actAndReopen(player, () -> VillageProgressionSystem.improveForgeRank(player), VillageProgressionSystem.Building.SMITHY);
+            case "skill_learn" -> actAndReopen(player, () -> VillageProgressionSystem.learnNextSkill(player), VillageProgressionSystem.Building.SKILL_HALL);
             case "use_skill" -> player.sendSystemMessage(Component.literal("§b" + VillageRpgSystem.useRoleSkill(player, 0)));
-            case "use_infirmary" -> actAndReopen(player, VillageProgressionSystem.useInfirmary(player), VillageProgressionSystem.Building.INFIRMARY);
-            case "train" -> actAndReopen(player, VillageProgressionSystem.train(player), VillageProgressionSystem.Building.BARRACKS);
-            case "hire_mercenary" -> actAndReopen(player, VillageDefenseSystem.hireMercenary(player), VillageProgressionSystem.Building.BARRACKS);
+            case "use_infirmary" -> actAndReopen(player, () -> VillageProgressionSystem.useInfirmary(player), VillageProgressionSystem.Building.INFIRMARY);
+            case "train" -> actAndReopen(player, () -> VillageProgressionSystem.train(player), VillageProgressionSystem.Building.BARRACKS);
+            case "hire_mercenary" -> actAndReopen(player, () -> VillageDefenseSystem.hireMercenary(player), VillageProgressionSystem.Building.BARRACKS);
             case "tower_status" -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageDefenseSystem.status(server.overworld())));
                 openTowerControl(player);
@@ -569,8 +570,14 @@ public final class VillageUiService {
                 VillageDefenseTowerBuilder.build(server.overworld(), center));
     }
 
-    private static void actAndReopen(ServerPlayer player, String result, VillageProgressionSystem.Building building) {
-        player.sendSystemMessage(Component.literal("§e" + result));
+    private static void actAndReopen(ServerPlayer player, Supplier<String> action,
+                                     VillageProgressionSystem.Building building) {
+        if (!VillageLocationRules.isNear(player, building)) {
+            player.sendSystemMessage(Component.literal(
+                    "§c이 기능은 " + building.displayName() + " 단말기 근처에서만 사용할 수 있습니다."));
+            return;
+        }
+        player.sendSystemMessage(Component.literal("§e" + action.get()));
         openBuilding(player, building);
     }
 

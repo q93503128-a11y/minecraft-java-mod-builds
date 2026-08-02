@@ -211,11 +211,18 @@ public final class VillageSkillTreeScreen extends Screen {
         NodeVisual node = nodes.get(selectedIndex);
         int nodeX = screenX(viewport, node.worldX());
         int nodeY = screenY(viewport, node.worldY());
-        int bubbleWidth = Math.min(246, Math.max(174, viewport.width() / 3));
-        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()), bubbleWidth - 16);
-        int lineCount = Math.min(3, lines.size());
+        int nodeHalf = scaledNodeSize() / 2;
+        if (nodeX + nodeHalf < viewport.left() || nodeX - nodeHalf > viewport.right()
+                || nodeY + nodeHalf < viewport.top() || nodeY - nodeHalf > viewport.bottom()) {
+            return null;
+        }
+        int bubbleWidth = fitPopoverWidth(viewport.width(), 164, 246);
         boolean purchasable = "습득 가능".equals(node.status());
-        int bubbleHeight = 45 + lineCount * 11 + (purchasable ? 24 : 8);
+        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()),
+                Math.max(40, bubbleWidth - 16));
+        int baseHeight = 45 + (purchasable ? 24 : 8);
+        int lineCount = Math.min(lines.size(), Math.max(0, (viewport.height() - baseHeight - 10) / 11));
+        int bubbleHeight = baseHeight + lineCount * 11;
         int nodeSize = scaledNodeSize();
         int x = nodeX + nodeSize / 2 + 9;
         if (x + bubbleWidth > viewport.right() - 5) {
@@ -224,7 +231,7 @@ public final class VillageSkillTreeScreen extends Screen {
         x = clamp(x, viewport.left() + 5, Math.max(viewport.left() + 5, viewport.right() - bubbleWidth - 5));
         int y = clamp(nodeY - 25, viewport.top() + 5,
                 Math.max(viewport.top() + 5, viewport.bottom() - bubbleHeight - 5));
-        int buttonWidth = 68;
+        int buttonWidth = Math.max(1, Math.min(68, bubbleWidth - 14));
         int buttonHeight = 18;
         int buttonX = x + bubbleWidth - buttonWidth - 7;
         int buttonY = y + bubbleHeight - buttonHeight - 6;
@@ -371,6 +378,13 @@ public final class VillageSkillTreeScreen extends Screen {
             catch (NumberFormatException ignored) { }
         }
         return 1;
+    }
+
+    private static int fitPopoverWidth(int viewportWidth, int preferredMinimum, int preferredMaximum) {
+        int maximum = Math.max(1, viewportWidth - 10);
+        int minimum = Math.min(preferredMinimum, maximum);
+        int preferred = Math.max(minimum, Math.min(maximum, viewportWidth / 3));
+        return Math.min(maximum, Math.min(preferredMaximum, preferred));
     }
 
     private int screenX(Viewport viewport, double worldX) {

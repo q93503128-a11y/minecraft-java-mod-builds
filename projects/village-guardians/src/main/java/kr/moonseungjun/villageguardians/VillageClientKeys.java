@@ -49,20 +49,34 @@ public final class VillageClientKeys {
 
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        consume(minecraft, ROLE_SKILL_ONE, "use_skill:0");
-        consume(minecraft, ROLE_SKILL_TWO, "use_skill:1");
-        consume(minecraft, QUICK_COMMUNICATION, "open_quick_chat");
-        consume(minecraft, STATUS, "open_status");
-        consume(minecraft, GROWTH, "open_skill_tree");
-        consume(minecraft, ROLE_PROGRESS, "open_role_progress_current");
-        consume(minecraft, CALLER, "open_caller_menu");
+        if (minecraft.player == null || minecraft.getConnection() == null || minecraft.gui.screen() != null) {
+            drain(ROLE_SKILL_ONE);
+            drain(ROLE_SKILL_TWO);
+            drain(QUICK_COMMUNICATION);
+            drain(STATUS);
+            drain(GROWTH);
+            drain(ROLE_PROGRESS);
+            drain(CALLER);
+            return;
+        }
+        consume(ROLE_SKILL_ONE, "use_skill:0");
+        consume(ROLE_SKILL_TWO, "use_skill:1");
+        consume(QUICK_COMMUNICATION, "open_quick_chat");
+        consume(STATUS, "open_status");
+        consume(GROWTH, "open_skill_tree");
+        consume(ROLE_PROGRESS, "open_role_progress_current");
+        consume(CALLER, "open_caller_menu");
     }
 
-    private static void consume(Minecraft minecraft, KeyMapping mapping, String action) {
+    private static void drain(KeyMapping mapping) {
         while (mapping.consumeClick()) {
-            if (minecraft.player != null) {
-                ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
-            }
+            // Discard clicks captured while another screen owns keyboard input.
+        }
+    }
+
+    private static void consume(KeyMapping mapping, String action) {
+        while (mapping.consumeClick()) {
+            ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
         }
     }
 }

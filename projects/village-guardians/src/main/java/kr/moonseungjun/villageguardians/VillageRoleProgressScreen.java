@@ -205,12 +205,18 @@ public final class VillageRoleProgressScreen extends Screen {
         TreeEntry node = nodes.get(selectedNode);
         int nodeX = screenX(view, node.worldX());
         int nodeY = screenY(view, node.worldY());
-        int bubbleWidth = Math.min(264, Math.max(188, view.width() / 3));
-        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()), bubbleWidth - 16);
-        int maxLines = Math.max(2, Math.min(7, (view.height() - 90) / 11));
-        int lineCount = Math.min(maxLines, lines.size());
+        int nodeHalf = scaledNodeSize() / 2;
+        if (nodeX + nodeHalf < view.left() || nodeX - nodeHalf > view.right()
+                || nodeY + nodeHalf < view.top() || nodeY - nodeHalf > view.bottom()) {
+            return null;
+        }
+        int bubbleWidth = fitPopoverWidth(view.width(), 176, 264);
         boolean purchasable = "습득 가능".equals(node.status());
-        int bubbleHeight = 45 + lineCount * 11 + (purchasable ? 24 : 8);
+        List<FormattedCharSequence> lines = font.split(Component.literal(node.description()),
+                Math.max(40, bubbleWidth - 16));
+        int baseHeight = 45 + (purchasable ? 24 : 8);
+        int lineCount = Math.min(lines.size(), Math.max(0, (view.height() - baseHeight - 10) / 11));
+        int bubbleHeight = baseHeight + lineCount * 11;
         int size = scaledNodeSize();
         int x = nodeX + size / 2 + 9;
         if (x + bubbleWidth > view.right() - 5) x = nodeX - size / 2 - bubbleWidth - 9;
@@ -299,29 +305,61 @@ public final class VillageRoleProgressScreen extends Screen {
         if (selectedSkill < 0 || selectedSkill >= skills.size()) return null;
         SkillEntry skill = skills.get(selectedSkill);
         CardBounds card = skillCardBounds(view, grid, selectedSkill);
+        if (card.y() + card.size() < view.top() || card.y() > view.bottom()) return null;
         int cardX = card.x() + card.size() / 2;
         int cardY = card.y() + card.size() / 2;
-        int bubbleWidth = Math.min(270, Math.max(196, view.width() / 3));
-        List<FormattedCharSequence> lines = font.split(Component.literal(skill.description()), bubbleWidth - 16);
-        int maxLines = Math.max(2, Math.min(7, (view.height() - 90) / 11));
-        int lineCount = Math.min(maxLines, lines.size());
+        int maximumWidth = Math.max(1, view.width() - 10);
+        int preferredWidth = Math.min(maximumWidth, Math.min(270, Math.max(180, view.width() / 3)));
+        int rightSpace = view.right() - 5 - (card.x() + card.size() + 9);
+        int leftSpace = card.x() - 9 - (view.left() + 5);
+        boolean placeRight = rightSpace >= leftSpace;
+        int sideSpace = Math.max(rightSpace, leftSpace);
+        boolean horizontalPlacement = sideSpace >= Math.min(160, preferredWidth);
+        int bubbleWidth = horizontalPlacement ? Math.min(preferredWidth, sideSpace) : preferredWidth;
         boolean learned = isLearned(skill);
         boolean unlockable = "습득 가능".equals(skill.status());
-        int bubbleHeight = 45 + lineCount * 11 + ((learned || unlockable) ? 24 : 8);
-        int x = card.x() + card.size() + 9;
-        if (x + bubbleWidth > view.right() - 5) x = card.x() - bubbleWidth - 9;
-        x = clamp(x, view.left() + 5, Math.max(view.left() + 5, view.right() - bubbleWidth - 5));
-        int y = clamp(card.y() + 4, view.top() + 5,
-                Math.max(view.top() + 5, view.bottom() - bubbleHeight - 5));
+        List<FormattedCharSequence> lines = font.split(Component.literal(skill.description()),
+                Math.max(40, bubbleWidth - 16));
+        int baseHeight = 45 + ((learned || unlockable) ? 24 : 8);
+        int lineCount = Math.min(lines.size(), Math.max(0, (view.height() - baseHeight - 10) / 11));
+        int bubbleHeight = baseHeight + lineCount * 11;
+
+        int x;
+        int y;
+        if (horizontalPlacement) {
+            x = placeRight ? card.x() + card.size() + 9 : card.x() - bubbleWidth - 9;
+            y = clamp(card.y() + 4, view.top() + 5,
+                    Math.max(view.top() + 5, view.bottom() - bubbleHeight - 5));
+        } else {
+            x = clamp(cardX - bubbleWidth / 2, view.left() + 5,
+                    Math.max(view.left() + 5, view.right() - bubbleWidth - 5));
+            int below = card.y() + card.size() + 8;
+            int above = card.y() - bubbleHeight - 8;
+            if (below + bubbleHeight <= view.bottom() - 5) y = below;
+            else if (above >= view.top() + 5) y = above;
+            else y = clamp(card.y() + 4, view.top() + 5,
+                        Math.max(view.top() + 5, view.bottom() - bubbleHeight - 5));
+        }
+
         int buttonHeight = 18;
-        int buttonWidth = 66;
-        int unlockWidth = 104;
+        int buttonGap = 6;
+        int buttonWidth = learned
+                ? Math.max(1, Math.min(66, (bubbleWidth - 20 - buttonGap) / 2))
+                : Math.max(1, Math.min(66, bubbleWidth - 14));
+        int unlockWidth = Math.max(1, Math.min(104, bubbleWidth - 14));
         int buttonY = y + bubbleHeight - buttonHeight - 6;
         int secondX = x + bubbleWidth - buttonWidth - 7;
-        int firstX = learned ? secondX - buttonWidth - 6 : x + bubbleWidth - unlockWidth - 7;
+        int firstX = learned ? secondX - buttonWidth - buttonGap : x + bubbleWidth - unlockWidth - 7;
         return new SkillBubble(x, y, bubbleWidth, bubbleHeight, firstX, secondX,
                 buttonY, buttonWidth, unlockWidth, buttonHeight, learned, unlockable,
                 lines, lineCount, skill, cardX, cardY);
+    }
+
+    private static int fitPopoverWidth(int viewportWidth, int preferredMinimum, int preferredMaximum) {
+        int maximum = Math.max(1, viewportWidth - 10);
+        int minimum = Math.min(preferredMinimum, maximum);
+        int preferred = Math.max(minimum, Math.min(maximum, viewportWidth / 3));
+        return Math.min(maximum, Math.min(preferredMaximum, preferred));
     }
 
     private SkillGrid skillGrid(Viewport view) {

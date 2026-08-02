@@ -130,7 +130,7 @@ public final class VillageTownHallScreen extends Screen {
             boolean selected = selectedRole == i;
             int accent = roleColor(role.id());
             card(graphics, x, y, w, selected, hovered, accent);
-            graphics.text(font, compact(role.name(), Math.max(10, w / 6)), x + 11, y + 7, TEXT, false);
+            graphics.text(font, compact(role.name(), w - 22), x + 11, y + 7, TEXT, false);
             graphics.text(font, role.current() ? "현재" : "선택",
                     x + 11, y + 18, role.current() ? TEAL : MUTED, false);
             y += CARD_HEIGHT + CARD_GAP;
@@ -155,11 +155,11 @@ public final class VillageTownHallScreen extends Screen {
             boolean selected = selectedFacility == i;
             int accent = facility.hp() <= 0 ? RED : facility.hp() < facility.maxHp() ? GOLD : TEAL;
             card(graphics, x, y, w, selected, hovered, accent);
-            graphics.text(font, compact(facility.name(), Math.max(10, w / 6)), x + 11, y + 6, TEXT, false);
+            graphics.text(font, compact(facility.name(), w - 22), x + 11, y + 6, TEXT, false);
             String state = tab == Tab.REPAIR
                     ? facility.hp() + "/" + facility.maxHp()
                     : facility.level();
-            graphics.text(font, compact(state, Math.max(9, w / 6)), x + 11, y + 17, MUTED, false);
+            graphics.text(font, compact(state, w - 22), x + 11, y + 17, MUTED, false);
             int barLeft = x + 11;
             int barRight = x + w - 8;
             graphics.fill(barLeft, y + 25, barRight, y + 28, 0xFFC6B79D);
@@ -307,7 +307,7 @@ public final class VillageTownHallScreen extends Screen {
                     bound.y() + ACTION_HEIGHT + 1, hovered ? GOLD : accent);
             graphics.fill(bound.x(), bound.y(), bound.x() + bound.width(), bound.y() + ACTION_HEIGHT,
                     hovered ? 0xFFFFE8B5 : SELECTED);
-            graphics.centeredText(font, compact(button.label(), Math.max(10, bound.width() / 6)),
+            graphics.centeredText(font, compact(button.label(), bound.width() - 10),
                     bound.x() + bound.width() / 2, bound.y() + 5, TEXT);
         }
     }
@@ -481,7 +481,15 @@ public final class VillageTownHallScreen extends Screen {
         int right = layout.right() - 15;
         int top = layout.top() + 64;
         int bottom = layout.bottom() - 13;
-        int listWidth = clamp((right - left) * 24 / 100, 125, 205);
+        int contentWidth = right - left;
+        if (contentWidth < 260) {
+            int availableHeight = Math.max(1, bottom - top);
+            int listHeight = clamp(availableHeight * 36 / 100, 72,
+                    Math.max(72, availableHeight - 96));
+            return new Split(new Pane(left, top, right, top + listHeight),
+                    new Pane(left, top + listHeight + 7, right, bottom));
+        }
+        int listWidth = clamp(contentWidth * 24 / 100, 125, 205);
         return new Split(new Pane(left, top, left + listWidth, bottom),
                 new Pane(left + listWidth + 8, top, right, bottom));
     }
@@ -491,10 +499,15 @@ public final class VillageTownHallScreen extends Screen {
         catch (NumberFormatException ignored) { return 0; }
     }
 
-    private String compact(String value, int max) {
+    private String compact(String value, int maxWidth) {
         String normalized = plain(value).replace('\n', ' ');
-        return normalized.length() <= max ? normalized
-                : normalized.substring(0, Math.max(1, max - 1)) + "…";
+        if (maxWidth <= 0) return "";
+        if (font.width(normalized) <= maxWidth) return normalized;
+        String suffix = "…";
+        if (font.width(suffix) > maxWidth) return "";
+        int end = normalized.length();
+        while (end > 0 && font.width(normalized.substring(0, end) + suffix) > maxWidth) end--;
+        return normalized.substring(0, end) + suffix;
     }
 
     private static String plain(String value) {

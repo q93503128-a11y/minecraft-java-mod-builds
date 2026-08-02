@@ -1,4 +1,4 @@
-test_path.write_text('''from pathlib import Path
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
@@ -53,6 +53,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-''', encoding="utf-8")
-
-print("Applied Village Guardians v0.17.4 UI safety and interaction consistency patch.")
