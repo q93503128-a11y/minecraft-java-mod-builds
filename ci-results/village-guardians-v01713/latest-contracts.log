@@ -37,10 +37,26 @@ defense_xp_multiplier=1.5
 [PASS] Action buttons are capped at 108x20 or 112x20 instead of spanning panels
 [PASS] Growth trees use anchored popovers and reserve the full height for main content
 [PASS] Status text is dark, stripped of legacy white formatting, and fits without scrolling
+[PASS] Eight readable wave traits include deterministic counters and previews
+[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs
+[PASS] Five-day milestone sieges and endless warfront tiers remain scalable
+[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes
+[PASS] Twenty active skills combine real gameplay with dedicated display-actor scenes
+[PASS] CC0 fantasy visual references are documented without untracked binaries
+Village Guardians v0.17.4 UI, location and shortcut contracts passed.
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_enemy_content.py", line 99, in <module>
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 77, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_enemy_content.py", line 83, in main
-    assert token in ability
-           ^^^^^^^^^^^^^^^^
-AssertionError
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 22, in main
+    visuals = read("VillageSkillVisualSystem.java")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 8, in read
+    return (JAVA / name).read_text(encoding="utf-8")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1029, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillVisualSystem.java'
