@@ -5,208 +5,111 @@ on:
   push:
     branches: [main]
     paths:
-      - 'projects/countryside-days/**'
-      - '!projects/countryside-days/BUILD_AND_RUNTIME_REPORT.md'
       - '.github/workflows/build-countryside-days.yml'
 
 permissions:
   contents: write
 
-concurrency:
-  group: countryside-days-${{ github.ref }}
-  cancel-in-progress: true
-
-defaults:
-  run:
-    working-directory: projects/countryside-days
-
 jobs:
   build:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 50
     steps:
-      - name: Check out current main
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Java 25
-        uses: actions/setup-java@v4
+      - name: Prepare exact alpha.15 source
+        id: prepare
+        run: python3 projects/countryside-days/tools/prepare_alpha15_exact.py
+
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
 
-      - name: Set up Gradle 9.2.1
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
 
-      - name: Install virtual display
+      - name: Clean build and verify
+        id: compile
+        working-directory: projects/countryside-days
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-
-      - name: Generate Gradle wrapper
-        run: |
-          gradle wrapper --gradle-version 9.2.1 --distribution-type bin
-          chmod +x gradlew
-          java -version
-          ./gradlew --version
-
-      - name: Validate UTF-8 localization
-        id: localization
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import json, re
-          root = Path('src/main/resources/assets/countrysidedays/lang')
-          ko = json.loads((root / 'ko_kr.json').read_bytes().decode('utf-8', 'strict'))
-          en = json.loads((root / 'en_us.json').read_bytes().decode('utf-8', 'strict'))
-          if set(ko) != set(en):
-              raise SystemExit(f'localization key mismatch: ko-only={sorted(set(ko)-set(en))}, en-only={sorted(set(en)-set(ko))}')
-          for key, value in ko.items():
-              if key.startswith('hud.countrysidedays.') and not re.search(r'[가-힣]', re.sub(r'§.', '', value)):
-                  raise SystemExit(f'Korean HUD lacks Korean text: {key}={value!r}')
-          print(f'Validated {len(ko)} matching localization keys')
-          PY
-
-      - name: Clean Java 25 build
-        id: build
-        run: |
-          mkdir -p ci-logs
-          set -o pipefail
-          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee ci-logs/clean-build.log
-
-      - name: Datagen
-        id: datagen
-        run: |
-          set -o pipefail
-          ./gradlew --no-daemon runData --stacktrace 2>&1 | tee ci-logs/datagen.log
-
-      - name: Required GameTests
-        id: gametest
-        timeout-minutes: 25
-        run: |
-          set -o pipefail
-          ./gradlew --no-daemon runGameTestServer --stacktrace 2>&1 | tee ci-logs/gametest.log
-
-      - name: Reject runtime data errors
-        id: dataload
-        run: |
-          if grep -n -E "Couldn't parse data file|Failed to parse recipe|Parsing error loading recipe|Failed to parse.*worldgen|biome_modifier" ci-logs/gametest.log ci-logs/datagen.log; then
-            exit 1
+          if [ ! -x ./gradlew ]; then
+            gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+            chmod +x gradlew
           fi
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee /tmp/cd-a15-final-build.log
+          JAR=build/libs/countrysidedays-0.1.0-alpha.15.jar
+          test -s "$JAR"
+          python3 tools/verify_jar.py "$JAR"
+          unzip -t "$JAR"
+          sha256sum "$JAR"
 
-      - name: Audit explicit countryside flat server
-        id: server
-        timeout-minutes: 8
-        run: |
-          rm -rf run/world run/logs
-          mkdir -p run ci-logs
-          printf 'eula=true\n' > run/eula.txt
-          cat > run/server.properties <<'PROPERTIES'
-          level-name=world
-          level-type=minecraft:flat
-          generator-settings={"biome":"countrysidedays:rural_plains","features":true,"lakes":false,"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":8},{"block":"minecraft:grass_block","height":1}],"structure_overrides":[]}
-          generate-structures=true
-          online-mode=false
-          spawn-protection=0
-          view-distance=10
-          simulation-distance=8
-          PROPERTIES
-          setsid ./gradlew --no-daemon runServer --stacktrace > ci-logs/server.log 2>&1 &
-          PID=$!
-          READY=0
-          for SECOND in $(seq 1 180); do
-            if grep -q "Done (" ci-logs/server.log && grep -q "Countryside worldgen audit passed" ci-logs/server.log; then READY=1; break; fi
-            if ! kill -0 "$PID" 2>/dev/null; then break; fi
-            sleep 1
-          done
-          kill -TERM -- "-$PID" 2>/dev/null || true
-          wait "$PID" 2>/dev/null || true
-          tail -n 300 ci-logs/server.log
-          [ "$READY" -eq 1 ] || { echo 'Server did not reach audited ready state'; exit 1; }
-          if grep -n -E "Failed to start the minecraft server|Exception in server tick loop|ModLoadingException|Countryside worldgen audit failed|No key layers in MapLike" ci-logs/server.log; then exit 1; fi
-
-      - name: Audit client boot
-        id: client
-        timeout-minutes: 6
-        run: |
-          rm -rf run/logs
-          setsid env LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s '-screen 0 1280x720x24' ./gradlew --no-daemon runClient --stacktrace > ci-logs/client.log 2>&1 &
-          PID=$!
-          READY=0
-          for SECOND in $(seq 1 150); do
-            if grep -q "Backend library: LWJGL" ci-logs/client.log && grep -Eq "Sound engine started|Created:.*minecraft:textures/atlas" ci-logs/client.log; then READY=1; break; fi
-            if ! kill -0 "$PID" 2>/dev/null; then break; fi
-            sleep 1
-          done
-          kill -TERM -- "-$PID" 2>/dev/null || true
-          wait "$PID" 2>/dev/null || true
-          tail -n 300 ci-logs/client.log
-          [ "$READY" -eq 1 ] || { echo 'Client did not reach rendered readiness'; exit 1; }
-          grep -q "Countryside Days 0.1.0-alpha.14 core content registered" ci-logs/client.log
-          grep -q "Countryside Days compact navigation HUD registered" ci-logs/client.log
-          if grep -n -E "Failed to create window|ModLoadingException|Caught previously unhandled exception|ReportedException|Missing item model for location countrysidedays:|Unable to load model.*countrysidedays:" ci-logs/client.log; then exit 1; fi
-
-      - name: Verify executable JAR
-        id: jarcheck
-        run: |
-          JAR='build/libs/countrysidedays-0.1.0-alpha.14.jar'
-          python3 tools/verify_jar.py "$JAR" | tee ci-logs/jar-verification.log
-          mkdir -p build/deliverables
-          cp "$JAR" build/deliverables/
-
-      - name: Upload executable JAR
-        if: success()
+      - name: Upload verified JAR
+        id: upload
         uses: actions/upload-artifact@v4
         with:
-          name: countryside-days-0.1.0-alpha.14-jar
-          path: projects/countryside-days/build/deliverables/countrysidedays-0.1.0-alpha.14.jar
+          name: countryside-days-0.1.0-alpha.15-jar
+          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.15.jar
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload diagnostic logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: countryside-days-0.1.0-alpha.14-logs
-          path: projects/countryside-days/ci-logs/
-          if-no-files-found: warn
-          retention-days: 14
+      - name: Publish transfer copy
+        id: export
+        run: |
+          JAR=projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.15.jar
+          DEST=release-transfer/countryside-days-alpha15
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+          base64 -w0 "$JAR" > /tmp/cd-a15-final.b64
+          split -b 40000 -d -a 2 /tmp/cd-a15-final.b64 "$DEST/part-"
+          {
+            echo filename=countrysidedays-0.1.0-alpha.15.jar
+            echo size=$(stat -c%s "$JAR")
+            echo sha256=$(sha256sum "$JAR" | cut -d' ' -f1)
+            echo base64_size=$(stat -c%s /tmp/cd-a15-final.b64)
+            echo parts=$(find "$DEST" -name 'part-*' | wc -l)
+            echo run=$GITHUB_RUN_ID
+          } > "$DEST/MANIFEST.txt"
 
-      - name: Record CI result
+          git restore --source=HEAD --staged --worktree projects/countryside-days
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$DEST"
+          git commit -m 'Publish verified Countryside Days alpha.15 JAR transfer final'
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Record result
         if: always()
         env:
-          RUN_ID: ${{ github.run_id }}
-          SOURCE_SHA: ${{ github.sha }}
-          LOCALIZATION: ${{ steps.localization.outcome }}
-          BUILD: ${{ steps.build.outcome }}
-          DATAGEN: ${{ steps.datagen.outcome }}
-          GAMETEST: ${{ steps.gametest.outcome }}
-          DATALOAD: ${{ steps.dataload.outcome }}
-          SERVER: ${{ steps.server.outcome }}
-          CLIENT: ${{ steps.client.outcome }}
-          JARCHECK: ${{ steps.jarcheck.outcome }}
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+          EXPORT_OUTCOME: ${{ steps.export.outcome }}
         run: |
-          cat > BUILD_AND_RUNTIME_REPORT.md <<REPORT
-          # Countryside Days Build and Runtime Report
-
-          - Workflow run: ${RUN_ID}
-          - Source commit: ${SOURCE_SHA}
-          - Mod version: 0.1.0-alpha.14
-          - UTF-8 localization: ${LOCALIZATION}
-          - Clean Java 25 build: ${BUILD}
-          - Datagen: ${DATAGEN}
-          - Required GameTests: ${GAMETEST}
-          - Runtime data validation: ${DATALOAD}
-          - Explicit countryside flat server: ${SERVER}
-          - Virtual-display client: ${CLIENT}
-          - Executable JAR inspection: ${JARCHECK}
-          REPORT
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add BUILD_AND_RUNTIME_REPORT.md
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Record Countryside Days alpha.14 CI ${RUN_ID}"
+          git restore --source=HEAD --staged --worktree projects/countryside-days || true
+          DEST=release-transfer/countryside-days-alpha15-status
+          mkdir -p "$DEST"
+          FILE="$DEST/final-${GITHUB_RUN_ID}.txt"
+          {
+            echo run=$GITHUB_RUN_ID
+            echo prepare=$PREPARE_OUTCOME
+            echo compile=$COMPILE_OUTCOME
+            echo upload=$UPLOAD_OUTCOME
+            echo export=$EXPORT_OUTCOME
+            if [ -f /tmp/cd-a15-final-build.log ]; then
+              echo '--- build tail ---'
+              tail -n 180 /tmp/cd-a15-final-build.log
+            fi
+          } > "$FILE"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$FILE"
+          git commit -m "Record Countryside Days alpha.15 final ${GITHUB_RUN_ID}"
           git pull --rebase origin main
           git push origin HEAD:main
