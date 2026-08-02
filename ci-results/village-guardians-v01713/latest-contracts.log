@@ -65,10 +65,11 @@ Village Guardians v0.17.7 contracts passed.
 [PASS] Equipping closes the skill screen so in-game Z/X input is no longer drained
 [PASS] Action-bar HUD shows equipped Z/X skills, readiness and a live cooldown bar
 [PASS] Test role and skill managers use a dedicated compact responsive UI
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01712_role_abilities.py", line 66, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01712_role_abilities.py", line 39, in main
-    assert token in ability, token
-           ^^^^^^^^^^^^^^^^
-AssertionError: SHIELDS
+[PASS] Twenty active skills own real movement, projectile, field and display-actor motions
+[PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events
+[PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness
+[PASS] Default shortcut help matches Z/X/B/H/J/K/U registrations
+[PASS] Saved legacy R/G skill bindings migrate to real Z/X and persist
+[PASS] Garen-style whirlwind owns six visible swords and six rotating arc actors
+[PASS] All twenty skills use bounded item/block display scenes without particles
+[PASS] Temporary glass walls, block-break particles and obsolete visual facade are removed
