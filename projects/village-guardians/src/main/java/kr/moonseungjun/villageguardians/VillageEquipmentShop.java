@@ -52,7 +52,9 @@ public final class VillageEquipmentShop {
                 ? Math.max(VillageEquipmentRaritySystem.projectileMultiplier(player.getMainHandItem()),
                 VillageEquipmentRaritySystem.projectileMultiplier(player.getOffhandItem()))
                 : VillageEquipmentRaritySystem.meleeMultiplier(player.getMainHandItem());
-        return result * rarity;
+        float relic = projectile ? VillageRelicSystem.projectileMultiplier(player)
+                : VillageRelicSystem.meleeMultiplier(player);
+        return result * rarity * relic;
     }
 
     public static float incomingMultiplier(ServerPlayer player) {
@@ -61,12 +63,14 @@ public final class VillageEquipmentShop {
         if (hasEquipped(player, Offer.BASTION_CHEST)) reduction += 0.08f;
         if (hasEquipped(player, Offer.AEGIS_CHEST)) reduction += 0.10f;
         float rarityMultiplier = VillageEquipmentRaritySystem.incomingMultiplier(player);
-        return Math.max(0.62f, (1.0f - reduction) * rarityMultiplier);
+        return Math.max(0.58f, (1.0f - reduction) * rarityMultiplier
+                * VillageRelicSystem.incomingMultiplier(player));
     }
 
     public static float roleSkillMultiplier(ServerPlayer player) {
         float base = hasEquipped(player, Offer.ARCANE_FOCUS) ? 1.18f : 1.0f;
-        return base * VillageEquipmentRaritySystem.skillMultiplier(player);
+        return base * VillageEquipmentRaritySystem.skillMultiplier(player)
+                * VillageRelicSystem.skillMultiplier(player);
     }
 
     private static float bonusFor(ItemStack stack, boolean projectile) {
