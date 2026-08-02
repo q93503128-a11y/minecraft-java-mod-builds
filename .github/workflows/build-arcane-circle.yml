@@ -57,7 +57,7 @@ jobs:
           python3 tools/test_progression_loop.py
           python3 tools/test_progression_depth.py
           python3 tools/test_fortress_layout.py
-          python3 tools/test_runtime_safety.py
+          python3 tools/test_runtime_safety_v0173.py
           python3 tools/test_action_layout.py
           python3 tools/test_enemy_content.py
 
