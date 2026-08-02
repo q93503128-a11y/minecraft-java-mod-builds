@@ -14,18 +14,18 @@ import java.util.regex.Pattern;
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageInventoryPanel {
-    private static final int DESIRED_WIDTH = 126;
-    private static final int MIN_WIDTH = 92;
-    private static final int PANEL_HEIGHT = 126;
-    private static final int BACKGROUND = 0xF70B1118;
-    private static final int SURFACE = 0xFF15202A;
-    private static final int SURFACE_HOVER = 0xFF21313D;
-    private static final int BORDER = 0xFF455B6C;
-    private static final int ACCENT = 0xFF43D6BC;
-    private static final int GOLD = 0xFFF2C25B;
-    private static final int TEXT = 0xFFF4F7FA;
-    private static final int MUTED = 0xFFA5B3BF;
-    private static final Pattern PROGRESS_PATTERN = Pattern.compile(".*?(\\d+).*?(\\d+)\\s*/\\s*(\\d+).*?");
+    private static final int DESIRED_WIDTH = 152;
+    private static final int MIN_WIDTH = 108;
+    private static final int PANEL_HEIGHT = 154;
+    private static final int BACKGROUND = 0xFFF0E5CC;
+    private static final int SURFACE = 0xFFFFF8E8;
+    private static final int SURFACE_HOVER = 0xFFFFE2A8;
+    private static final int BORDER = 0xFF75634C;
+    private static final int ACCENT = 0xFF2E8E80;
+    private static final int GOLD = 0xFFC78B2D;
+    private static final int TEXT = 0xFF241D17;
+    private static final int MUTED = 0xFF6D6256;
+    private static final Pattern PROGRESS_PATTERN = Pattern.compile(".*?(\\d+).*?(\\d+)\\s*/\\s*(\\d+).*");
 
     private static VillageNetwork.PlayerStatusPayload status = new VillageNetwork.PlayerStatusPayload(
             "레벨 동기화 중", "미선택", "주화 확인 중", "마을 확인 중");
@@ -51,42 +51,47 @@ public final class VillageInventoryPanel {
 
         graphics.fill(layout.left() - 1, layout.top() - 1, layout.right() + 1, layout.bottom() + 1, BORDER);
         graphics.fill(layout.left(), layout.top(), layout.right(), layout.bottom(), BACKGROUND);
-        graphics.fill(layout.left(), layout.top(), layout.left() + 3, layout.bottom(), ACCENT);
+        graphics.fill(layout.left(), layout.top(), layout.left() + 4, layout.bottom(), ACCENT);
 
-        graphics.text(minecraft.font, "수호자", layout.left() + 10, layout.top() + 9, TEXT, false);
+        graphics.text(minecraft.font, "수호자", layout.left() + 11, layout.top() + 9, TEXT, false);
         String level = "LV." + progress.level();
         graphics.text(minecraft.font, level,
-                layout.right() - 9 - minecraft.font.width(level), layout.top() + 9, GOLD, false);
+                layout.right() - 10 - minecraft.font.width(level), layout.top() + 9, GOLD, false);
 
-        int barLeft = layout.left() + 10;
-        int barRight = layout.right() - 10;
+        int barLeft = layout.left() + 11;
+        int barRight = layout.right() - 11;
         int barTop = layout.top() + 27;
-        graphics.fill(barLeft, barTop, barRight, barTop + 5, 0xFF03070A);
+        graphics.fill(barLeft, barTop, barRight, barTop + 5, 0xFFC1B39B);
         graphics.fill(barLeft + 1, barTop + 1,
                 barLeft + 1 + Math.round((barRight - barLeft - 2) * progress.ratio()),
                 barTop + 4, ACCENT);
-        graphics.text(minecraft.font,
-                progress.current() + " / " + progress.required() + " XP",
+        graphics.text(minecraft.font, progress.current() + " / " + progress.required() + " XP",
                 barLeft, barTop + 9, MUTED, false);
 
-        drawRow(graphics, minecraft, layout, layout.top() + 49, "역할", compact(status.role(), layout.width() <= 102 ? 8 : 12), ACCENT);
-        drawRow(graphics, minecraft, layout, layout.top() + 65, "주화", economyValue(status.economy()), GOLD);
+        drawRow(graphics, minecraft, layout, layout.top() + 48, "직업", compact(status.role(), 13), ACCENT);
+        drawRow(graphics, minecraft, layout, layout.top() + 64, "재화", economyValue(status.economy()), GOLD);
+        graphics.text(minecraft.font, "C 통신 · R/G 기술", layout.left() + 11, layout.top() + 82, MUTED, false);
 
         int gap = 6;
-        int buttonY = layout.bottom() - 28;
-        int buttonWidth = (layout.width() - 20 - gap) / 2;
+        int buttonWidth = (layout.width() - 22 - gap) / 2;
+        int firstY = layout.top() + 98;
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 10, buttonY, buttonWidth, "상태", ACCENT);
+                layout.left() + 11, firstY, buttonWidth, "상태 I", ACCENT);
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 10 + buttonWidth + gap, buttonY, buttonWidth, "귀환", GOLD);
+                layout.left() + 11 + buttonWidth + gap, firstY, buttonWidth, "개인 P", GOLD);
+        drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
+                layout.left() + 11, firstY + 25, buttonWidth, "직업 O", ACCENT);
+        drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
+                layout.left() + 11 + buttonWidth + gap, firstY + 25, buttonWidth, "호출 V", GOLD);
     }
 
     private static void drawRow(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,
                                 int y, String label, String value, int color) {
-        graphics.fill(layout.left() + 10, y + 2, layout.left() + 13, y + 10, color);
-        graphics.text(minecraft.font, label, layout.left() + 18, y, MUTED, false);
-        int valueX = layout.left() + Math.max(44, layout.width() / 2 - 4);
-        graphics.text(minecraft.font, compact(value, Math.max(7, (layout.right() - valueX) / 6)), valueX, y, TEXT, false);
+        graphics.fill(layout.left() + 11, y + 2, layout.left() + 14, y + 10, color);
+        graphics.text(minecraft.font, label, layout.left() + 19, y, MUTED, false);
+        int valueX = layout.left() + Math.max(50, layout.width() / 2 - 3);
+        graphics.text(minecraft.font, compact(value, Math.max(7, (layout.right() - valueX - 8) / 6)),
+                valueX, y, TEXT, false);
     }
 
     private static void drawButton(GuiGraphicsExtractor graphics, Minecraft minecraft,
@@ -104,14 +109,20 @@ public final class VillageInventoryPanel {
         Minecraft minecraft = Minecraft.getInstance();
         Layout layout = layout(minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
         int gap = 6;
-        int buttonY = layout.bottom() - 28;
-        int buttonWidth = (layout.width() - 20 - gap) / 2;
+        int buttonWidth = (layout.width() - 22 - gap) / 2;
+        int firstY = layout.top() + 98;
         String action = null;
-        if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 10, buttonY, buttonWidth, 19)) {
+        if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 11, firstY, buttonWidth, 19)) {
             action = "open_status";
-        } else if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 10 + buttonWidth + gap,
-                buttonY, buttonWidth, 19)) {
-            action = "return_village";
+        } else if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 11 + buttonWidth + gap,
+                firstY, buttonWidth, 19)) {
+            action = "open_personal_progress";
+        } else if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 11,
+                firstY + 25, buttonWidth, 19)) {
+            action = "open_role_progress_current";
+        } else if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 11 + buttonWidth + gap,
+                firstY + 25, buttonWidth, 19)) {
+            action = "open_caller_menu";
         }
         if (action != null) {
             ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
@@ -127,10 +138,11 @@ public final class VillageInventoryPanel {
         boolean useLeft = leftSpace >= MIN_WIDTH || rightSpace < MIN_WIDTH || leftSpace >= rightSpace;
         int available = useLeft ? leftSpace : rightSpace;
         int width = Math.max(MIN_WIDTH, Math.min(DESIRED_WIDTH, Math.max(MIN_WIDTH, available - 4)));
-        int left = useLeft ? Math.max(2, inventoryLeft - width - 4) : Math.min(screenWidth - width - 2, inventoryRight + 4);
-        int top = Math.max(3, screenHeight / 2 - 83);
+        int left = useLeft ? Math.max(2, inventoryLeft - width - 4)
+                : Math.min(screenWidth - width - 2, inventoryRight + 4);
+        int top = Math.max(3, screenHeight / 2 - PANEL_HEIGHT / 2);
         int bottom = Math.min(screenHeight - 3, top + PANEL_HEIGHT);
-        if (bottom - top < 112) top = Math.max(2, bottom - 112);
+        if (bottom - top < 142) top = Math.max(2, bottom - 142);
         return new Layout(left, top, width, bottom - top);
     }
 
@@ -142,7 +154,7 @@ public final class VillageInventoryPanel {
                 int current = Integer.parseInt(matcher.group(2));
                 int required = Math.max(1, Integer.parseInt(matcher.group(3)));
                 return new Progress(level, current, required);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) { }
         }
         return new Progress(1, 0, 100);
     }
@@ -154,7 +166,8 @@ public final class VillageInventoryPanel {
 
     private static String compact(String value, int max) {
         String normalized = value == null ? "" : value.replace('\n', ' ');
-        return normalized.length() <= max ? normalized : normalized.substring(0, Math.max(1, max - 1)) + "…";
+        return normalized.length() <= max ? normalized
+                : normalized.substring(0, Math.max(1, max - 1)) + "…";
     }
 
     private static boolean inside(double mouseX, double mouseY, int x, int y, int width, int height) {
