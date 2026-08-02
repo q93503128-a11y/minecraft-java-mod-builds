@@ -24,6 +24,7 @@ final class VillageFortressBuildings {
         if (building == VillageProgressionSystem.Building.TOWN_HALL) {
             VillageTownHallAccessFix.apply(level, center);
         }
+        VillageBuildingFacadeFix.apply(level, origin, spec, building);
     }
 
     static void rebuild(ServerLevel level, BlockPos center, VillageProgressionSystem.Building building) {
@@ -115,7 +116,9 @@ final class VillageFortressBuildings {
         return new Bounds(x0, z0, x0 + spec.width() - 1, z0 + spec.depth() - 1, spec.height());
     }
 
-    private static int clamp(int value, int minimum, int maximum) { return Math.max(minimum, Math.min(maximum, value)); }
+    private static int clamp(int value, int minimum, int maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+    }
 
     private static long horizontalDistanceSquared(BlockPos first, BlockPos second) {
         long dx = (long) first.getX() - second.getX();
