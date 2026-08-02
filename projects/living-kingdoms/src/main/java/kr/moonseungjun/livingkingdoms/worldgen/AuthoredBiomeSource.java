@@ -9,65 +9,48 @@ import net.minecraft.world.level.biome.Climate;
 
 import java.util.stream.Stream;
 
-/**
- * Permanent coordinate-authored biome geography for the Living Realm.
- *
- * <p>The world seed may vary decoration details, but it cannot move kingdoms, climate zones,
- * mountain biomes, the western archipelago or the principal river corridors.</p>
- */
+/** Permanent coordinate-authored ecological geography for the active Erden kingdom. */
 public final class AuthoredBiomeSource extends BiomeSource {
     public static final MapCodec<AuthoredBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            Biome.CODEC.fieldOf("ocean").forGetter(source -> source.ocean),
-            Biome.CODEC.fieldOf("beach").forGetter(source -> source.beach),
-            Biome.CODEC.fieldOf("river").forGetter(source -> source.river),
-            Biome.CODEC.fieldOf("plains").forGetter(source -> source.plains),
-            Biome.CODEC.fieldOf("forest").forGetter(source -> source.forest),
-            Biome.CODEC.fieldOf("silvana").forGetter(source -> source.silvana),
-            Biome.CODEC.fieldOf("kardum").forGetter(source -> source.kardum),
-            Biome.CODEC.fieldOf("dragonlands").forGetter(source -> source.dragonlands),
-            Biome.CODEC.fieldOf("steppe").forGetter(source -> source.steppe),
-            Biome.CODEC.fieldOf("sahar").forGetter(source -> source.sahar),
-            Biome.CODEC.fieldOf("ruins").forGetter(source -> source.ruins),
-            Biome.CODEC.fieldOf("archipelago").forGetter(source -> source.archipelago)
+            Biome.CODEC.fieldOf("sea").forGetter(source -> source.sea),
+            Biome.CODEC.fieldOf("coast").forGetter(source -> source.coast),
+            Biome.CODEC.fieldOf("silver_river").forGetter(source -> source.silverRiver),
+            Biome.CODEC.fieldOf("central_lowlands").forGetter(source -> source.centralLowlands),
+            Biome.CODEC.fieldOf("northern_forest").forGetter(source -> source.northernForest),
+            Biome.CODEC.fieldOf("western_hills").forGetter(source -> source.westernHills),
+            Biome.CODEC.fieldOf("eastern_marsh").forGetter(source -> source.easternMarsh),
+            Biome.CODEC.fieldOf("southern_farmland").forGetter(source -> source.southernFarmland),
+            Biome.CODEC.fieldOf("highlands").forGetter(source -> source.highlands)
     ).apply(instance, AuthoredBiomeSource::new));
 
-    private final Holder<Biome> ocean;
-    private final Holder<Biome> beach;
-    private final Holder<Biome> river;
-    private final Holder<Biome> plains;
-    private final Holder<Biome> forest;
-    private final Holder<Biome> silvana;
-    private final Holder<Biome> kardum;
-    private final Holder<Biome> dragonlands;
-    private final Holder<Biome> steppe;
-    private final Holder<Biome> sahar;
-    private final Holder<Biome> ruins;
-    private final Holder<Biome> archipelago;
+    private final Holder<Biome> sea;
+    private final Holder<Biome> coast;
+    private final Holder<Biome> silverRiver;
+    private final Holder<Biome> centralLowlands;
+    private final Holder<Biome> northernForest;
+    private final Holder<Biome> westernHills;
+    private final Holder<Biome> easternMarsh;
+    private final Holder<Biome> southernFarmland;
+    private final Holder<Biome> highlands;
 
-    public AuthoredBiomeSource(Holder<Biome> ocean,
-                               Holder<Biome> beach,
-                               Holder<Biome> river,
-                               Holder<Biome> plains,
-                               Holder<Biome> forest,
-                               Holder<Biome> silvana,
-                               Holder<Biome> kardum,
-                               Holder<Biome> dragonlands,
-                               Holder<Biome> steppe,
-                               Holder<Biome> sahar,
-                               Holder<Biome> ruins,
-                               Holder<Biome> archipelago) {
-        this.ocean = ocean;
-        this.beach = beach;
-        this.river = river;
-        this.plains = plains;
-        this.forest = forest;
-        this.silvana = silvana;
-        this.kardum = kardum;
-        this.dragonlands = dragonlands;
-        this.steppe = steppe;
-        this.sahar = sahar;
-        this.ruins = ruins;
-        this.archipelago = archipelago;
+    public AuthoredBiomeSource(Holder<Biome> sea,
+                               Holder<Biome> coast,
+                               Holder<Biome> silverRiver,
+                               Holder<Biome> centralLowlands,
+                               Holder<Biome> northernForest,
+                               Holder<Biome> westernHills,
+                               Holder<Biome> easternMarsh,
+                               Holder<Biome> southernFarmland,
+                               Holder<Biome> highlands) {
+        this.sea = sea;
+        this.coast = coast;
+        this.silverRiver = silverRiver;
+        this.centralLowlands = centralLowlands;
+        this.northernForest = northernForest;
+        this.westernHills = westernHills;
+        this.easternMarsh = easternMarsh;
+        this.southernFarmland = southernFarmland;
+        this.highlands = highlands;
     }
 
     @Override
@@ -78,8 +61,8 @@ public final class AuthoredBiomeSource extends BiomeSource {
     @Override
     protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.of(
-                ocean, beach, river, plains, forest, silvana,
-                kardum, dragonlands, steppe, sahar, ruins, archipelago
+                sea, coast, silverRiver, centralLowlands, northernForest,
+                westernHills, easternMarsh, southernFarmland, highlands
         ).distinct();
     }
 
@@ -90,71 +73,40 @@ public final class AuthoredBiomeSource extends BiomeSource {
         double z = quartZ * 4.0;
         double surface = AuthoredContinentDensity.surfaceHeight(x, z);
 
-        if (surface < 63.0) return ocean;
-        if (surface < 67.0) return beach;
+        if (surface < 63.0) return sea;
+        if (surface < 67.0) return coast;
 
-        // Capital districts override river and border bands. Their terrain plateaus already bridge or
-        // redirect waterways, so leaving a river biome under a dry market would be inconsistent.
-        if (inside(x, z, 0.0, 0.0, 560.0)) return plains;
-        if (inside(x, z, -2_400.0, -1_200.0, 540.0)) return silvana;
-        if (inside(x, z, 2_200.0, -1_500.0, 560.0)) return kardum;
-        if (inside(x, z, 3_400.0, 300.0, 480.0)) return steppe;
-        if (inside(x, z, 600.0, 2_500.0, 470.0)) return plains;
-        if (inside(x, z, 3_200.0, 2_600.0, 490.0)) return sahar;
-        if (inside(x, z, 3_800.0, -2_800.0, 480.0)) return ruins;
-        if (inside(x, z, 0.0, -4_200.0, 560.0)) return dragonlands;
-        if (inside(x, z, -4_200.0, 1_800.0, 420.0)) return archipelago;
+        // The royal citadel terrace is dry, while Silver River remains a real ecological corridor
+        // through the wider metropolitan region.
+        if (inside(x, z, 0.0, -220.0, 420.0)) return centralLowlands;
+        if (AuthoredContinentDensity.silverRiverStrength(x, z) > 0.45 && surface < 77.0) {
+            return silverRiver;
+        }
 
-        if (riverStrength(x, z) > 0.52 && surface < 77.0) return river;
+        double north = smoothstep(5_500.0, 17_500.0, -z);
+        double west = smoothstep(5_500.0, 19_000.0, -x);
+        double east = smoothstep(6_500.0, 19_000.0, x);
+        double south = smoothstep(5_500.0, 17_000.0, z);
 
-        double silvanaWeight = radial(x, z, -2_400.0, -1_200.0, 1_350.0);
-        if (silvanaWeight > 0.08) return silvana;
+        if (surface > 101.0 || north > 0.72 && surface > 91.0 || west > 0.80 && surface > 96.0) {
+            return highlands;
+        }
+        if (east > 0.35 && Math.abs(z - 1_200.0) < 13_500.0 && surface < 74.0) {
+            return easternMarsh;
+        }
+        if (west > 0.30) return westernHills;
+        if (north > 0.28) return northernForest;
+        if (south > 0.28) return southernFarmland;
 
-        double dragonWeight = radial(x, z, 0.0, -4_200.0, 1_800.0);
-        if (dragonWeight > 0.05 || (z < -3_050.0 && surface > 88.0)) return dragonlands;
-
-        double kardumWeight = radial(x, z, 2_200.0, -1_500.0, 1_500.0);
-        if (kardumWeight > 0.05 || surface > 105.0) return kardum;
-
-        double ruinsWeight = radial(x, z, 3_800.0, -2_800.0, 1_050.0);
-        if (ruinsWeight > 0.08) return ruins;
-
-        double saharWeight = radial(x, z, 3_200.0, 2_600.0, 1_550.0);
-        if (saharWeight > 0.06) return sahar;
-
-        double steppeWeight = radial(x, z, 3_400.0, 300.0, 1_450.0);
-        if (steppeWeight > 0.06) return steppe;
-
-        if (x < -3_050.0 && z > 250.0) return archipelago;
-
-        // Central and Velas lowlands alternate in broad, stable belts instead of noisy biome specks.
-        double belt = stableNoise(x * 0.00115, z * 0.00115, 0xC13FA9A902A6328FL);
-        return belt > -0.04 ? forest : plains;
+        // Stable kilometre-scale belts avoid the speckled appearance of ordinary biome noise.
+        double belt = stableNoise(x * 0.00042, z * 0.00042, 0xC13FA9A902A6328FL);
+        return belt > 0.28 ? northernForest : centralLowlands;
     }
 
     private static boolean inside(double x, double z, double cx, double cz, double radius) {
         double dx = x - cx;
         double dz = z - cz;
         return dx * dx + dz * dz <= radius * radius;
-    }
-
-    private static double riverStrength(double x, double z) {
-        double first = riverBand(x, z, 0.0, 520.0, 680.0, 48.0);
-        double second = riverBand(z, x, -450.0, 760.0, 910.0, 42.0);
-        double third = riverBand(x + z * 0.24, z, 1_350.0, 930.0, 1_250.0, 38.0);
-        return Math.max(first, Math.max(second, third));
-    }
-
-    private static double riverBand(double primary, double secondary, double phase,
-                                    double wavelength, double bendScale, double halfWidth) {
-        double center = phase + Math.sin(secondary / wavelength) * bendScale
-                + Math.sin(secondary / (wavelength * 0.37)) * bendScale * 0.19;
-        double distance = Math.abs(primary - center);
-        return 1.0 - smoothstep(halfWidth, halfWidth * 3.2, distance);
-    }
-
-    private static double radial(double x, double z, double cx, double cz, double radius) {
-        return 1.0 - smoothstep(0.0, radius, Math.hypot(x - cx, z - cz));
     }
 
     private static double stableNoise(double x, double z, long salt) {
