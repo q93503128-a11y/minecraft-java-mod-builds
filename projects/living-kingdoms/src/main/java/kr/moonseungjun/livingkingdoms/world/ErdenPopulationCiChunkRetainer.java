@@ -1,18 +1,30 @@
 package kr.moonseungjun.livingkingdoms.world;
 
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /** Keeps only the first household's test buildings loaded during headless realm diagnostics. */
 public final class ErdenPopulationCiChunkRetainer {
     private static final boolean ENABLED =
             "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
+    private static final Set<Long> RETAINED_CHUNKS = new HashSet<>();
+
+    private static MinecraftServer activeServer;
 
     private ErdenPopulationCiChunkRetainer() {
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
         if (!ENABLED) return;
+        if (activeServer != event.getServer()) {
+            activeServer = event.getServer();
+            RETAINED_CHUNKS.clear();
+        }
         ServerLevel level = event.getServer().getLevel(StarterRealmManager.REALM_KEY);
         if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
         ErdenPopulationSavedData population = level.getDataStorage()
@@ -68,8 +80,12 @@ public final class ErdenPopulationCiChunkRetainer {
              chunkX <= Math.floorDiv(maxX, 16); chunkX++) {
             for (int chunkZ = Math.floorDiv(minZ, 16);
                  chunkZ <= Math.floorDiv(maxZ, 16); chunkZ++) {
-                level.setChunkForced(chunkX, chunkZ, true);
-                level.getChunk(chunkX, chunkZ);
+                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                long key = ChunkPos.asLong(chunkX, chunkZ);
+                if (RETAINED_CHUNKS.add(key)) {
+                    level.setChunkForced(chunkX, chunkZ, true);
+                    level.getChunk(chunkX, chunkZ);
+                }
             }
         }
     }
