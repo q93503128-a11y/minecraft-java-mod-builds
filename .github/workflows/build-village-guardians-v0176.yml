@@ -47,6 +47,26 @@ jobs:
           base64 --decode "$RUNNER_TEMP/v0176-patch.b64" | gzip --decompress > tools/apply_v0176.py
           echo '2ff5a4a479c7ed01906c54a10c0173c0f74ea01b4024aa67092aa0d11a49c052  tools/apply_v0176.py' | sha256sum -c -
           python3 -m py_compile tools/apply_v0176.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/apply_v0176.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    if old not in text:
+              raise RuntimeError(f"missing replacement in {path}: {old[:120]!r}")
+          '''
+          new = '''    if old not in text:
+              if path.name == "VillageUiService.java" and "마을의 모든 핵심 건물이 파괴되었습니다." in old:
+                  updated = text.replace("마을의 모든 핵심 건물이 파괴되었습니다.",
+                                         "마을 회관이 파괴되어 방어에 실패했습니다.", 1)
+                  write(path, updated)
+                  return
+              raise RuntimeError(f"missing replacement in {path}: {old[:120]!r}")
+          '''
+          if old not in text:
+              raise SystemExit('replace_once helper not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          python3 -m py_compile tools/apply_v0176.py
           python3 tools/apply_v0176.py
           rm -f tools/apply_v0176.py tools/v0176_seg_* tools/v0176_b64.part-*
 
