@@ -11,7 +11,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 public final class VillageStarterKit {
     private static final String STARTER_KIT_TAG = "villageguardians_starter_kit_v3";
-    private static final String CALLER_TAG = "villageguardians_public_caller_v6";
+    private static final String CALLER_MIGRATION_TAG = "villageguardians_inventory_caller_v1";
     private static final String CALLER_NAME = "마을 수호단 호출기";
 
     private VillageStarterKit() {}
@@ -32,13 +32,17 @@ public final class VillageStarterKit {
         VillageProgressionSystem.grantDailyBreadOnLogin(player);
     }
 
+    /** Compatibility name retained for old call sites. It now removes obsolete caller items. */
     public static void grantCaller(ServerPlayer player) {
-        boolean migrated = migrateLegacyCaller(player);
-        boolean firstNotice = player.addTag(CALLER_TAG);
-        if (!hasModernCaller(player)) giveOrDrop(player, namedCaller());
-        if (firstNotice || migrated) {
+        boolean removed = removeCallerItems(player);
+        boolean firstNotice = player.addTag(CALLER_MIGRATION_TAG);
+        if (firstNotice) {
             player.sendSystemMessage(Component.literal(
-                    "§6[수호단 조작] §fI 상태 · P 개인 성장 · O 직업 성장 · V 호출기 · C 빠른 통신 · R/G 기술"));
+                    "§6[수호단 조작] §f호출기는 인벤토리 화면의 전용 버튼에서 엽니다. "
+                            + "I 상태 · P 개인 성장 · O 직업 성장 · V 호출기 · C 빠른 통신 · R/G 기술"));
+        } else if (removed) {
+            player.sendSystemMessage(Component.literal(
+                    "§e기존 호출기 아이템을 제거했습니다. 인벤토리 화면의 호출기 버튼을 사용하세요."));
         }
     }
 
@@ -50,51 +54,30 @@ public final class VillageStarterKit {
         if (!isCaller(stack)) return;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
-        VillageUiController.openCaller(player);
+        player.setItemInHand(event.getHand(), ItemStack.EMPTY);
+        player.sendSystemMessage(Component.literal(
+                "§e호출기 아이템은 폐지되었습니다. 인벤토리 화면의 호출기 버튼을 사용하세요."));
     }
 
-    private static ItemStack namedCaller() {
-        ItemStack stack = Items.CLOCK.getDefaultInstance();
-        stack.set(DataComponents.CUSTOM_NAME,
-                Component.literal(CALLER_NAME).withStyle(ChatFormatting.GOLD));
-        return stack;
-    }
-
-    private static boolean migrateLegacyCaller(ServerPlayer player) {
+    private static boolean removeCallerItems(ServerPlayer player) {
         boolean changed = false;
         for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (isLegacyCaller(stack)) {
-                ItemStack replacement = namedCaller();
-                replacement.setCount(stack.getCount());
-                player.getInventory().setItem(slot, replacement);
+            if (isCaller(stack)) {
+                player.getInventory().setItem(slot, ItemStack.EMPTY);
                 changed = true;
             }
-        }
-        if (isLegacyCaller(player.getOffhandItem())) {
-            ItemStack replacement = namedCaller();
-            replacement.setCount(player.getOffhandItem().getCount());
-            player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, replacement);
-            changed = true;
         }
         if (changed) player.getInventory().setChanged();
         return changed;
     }
 
-    private static boolean hasModernCaller(ServerPlayer player) {
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            if (isModernCaller(player.getInventory().getItem(slot))) return true;
-        }
-        return isModernCaller(player.getOffhandItem());
-    }
-
-    private static boolean isCaller(ItemStack stack) { return isModernCaller(stack) || isLegacyCaller(stack); }
-    private static boolean isModernCaller(ItemStack stack) { return stack.getItem() == Items.CLOCK && hasCallerName(stack); }
-    private static boolean isLegacyCaller(ItemStack stack) { return stack.getItem() == Items.GOAT_HORN && hasCallerName(stack); }
-
-    private static boolean hasCallerName(ItemStack stack) {
+    private static boolean isCaller(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        if (stack.getItem() != Items.CLOCK && stack.getItem() != Items.GOAT_HORN) return false;
         Component customName = stack.get(DataComponents.CUSTOM_NAME);
-        return customName != null && CALLER_NAME.equals(ChatFormatting.stripFormatting(customName.getString()));
+        return customName != null
+                && CALLER_NAME.equals(ChatFormatting.stripFormatting(customName.getString()));
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
