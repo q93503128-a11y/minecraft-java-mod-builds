@@ -25,7 +25,7 @@ public final class AuthoredBiomeVerifier {
         BlockPos sample = new BlockPos(site.centerX(), site.baseY() + 2, site.centerZ());
         Holder<Biome> biome = level.getBiome(sample);
         String actual = biome.unwrapKey()
-                .map(key -> key.location().toString())
+                .map(key -> key.identifier().toString())
                 .orElse("<direct-biome>");
         if (!expected.equals(actual)) {
             throw new IllegalStateException(
