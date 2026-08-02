@@ -4,6 +4,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 full = root / "tools/test_magic_contract.py"
 text = full.read_text(encoding="utf-8")
+text = text.replace("build-arcane-circle.yml", "build-arcane-circle-v0121.yml")
 text = text.replace("0.12.0-alpha.1", "0.12.1-alpha.1")
 text = text.replace("ninefold-arcana-12", "ninefold-arcana-12-1")
 text = text.replace(
