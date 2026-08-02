@@ -20,6 +20,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Upload staged alpha.16 patch parts
+        id: patchparts
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-alpha16-patch-parts
+          path: projects/countryside-days/tools/alpha16_patch_*.part
+          if-no-files-found: error
+          retention-days: 2
+
       - name: Prepare exact alpha.16 source
         id: prepare
         run: |
