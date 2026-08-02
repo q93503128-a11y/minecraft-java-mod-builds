@@ -39,10 +39,10 @@ public final class VillageStarterKit {
         if (firstNotice) {
             player.sendSystemMessage(Component.literal(
                     "§6[수호단 조작] §f빠른 통신은 인벤토리 버튼이나 B/U 키로 엽니다. "
-                            + "H 상태 · J 성장 · K 직업 성장 · U 빠른 통신 · B 빠른 통신 · Z/X 기술"));
+                            + "H 상태 · J 성장 · K 직업 성장 · B/U 빠른 통신 · Z/X 기술"));
         } else if (removed) {
             player.sendSystemMessage(Component.literal(
-                    "§e기존 호출기 아이템을 제거했습니다. 인벤토리 화면의 호출기 버튼을 사용하세요."));
+                    "§e기존 호출기 아이템을 제거했습니다. 인벤토리 화면의 빠른 통신 버튼을 사용하세요."));
         }
     }
 
@@ -56,7 +56,7 @@ public final class VillageStarterKit {
         event.setCancellationResult(InteractionResult.SUCCESS);
         player.setItemInHand(event.getHand(), ItemStack.EMPTY);
         player.sendSystemMessage(Component.literal(
-                "§e호출기 아이템은 폐지되었습니다. 인벤토리 화면의 호출기 버튼을 사용하세요."));
+                "§e호출기 아이템은 폐지되었습니다. 인벤토리 화면의 빠른 통신 버튼을 사용하세요."));
     }
 
     private static boolean removeCallerItems(ServerPlayer player) {

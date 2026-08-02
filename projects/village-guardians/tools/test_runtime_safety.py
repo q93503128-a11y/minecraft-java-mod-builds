@@ -127,7 +127,7 @@ def main() -> None:
     assert "giveOrDrop(player, Items.CLOCK" not in starter
     assert "giveOrDrop(player, Items.GOAT_HORN" not in starter
     assert "호출기 아이템은 폐지" in starter
-    assert "인벤토리 화면의 호출기 버튼" in starter
+    assert "인벤토리 화면의 빠른 통신 버튼" in starter
 
     assert "combineSelected" in rarity and "fusionCandidates" in rarity
     assert "재화는 소모되지 않았습니다" in rarity
