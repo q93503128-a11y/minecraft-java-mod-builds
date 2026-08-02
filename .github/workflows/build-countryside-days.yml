@@ -36,12 +36,17 @@ jobs:
           import base64, io, zipfile
           root = Path('.')
           project = root / 'projects/countryside-days'
-          for name in ('alpha14_payload.b64', 'alpha14_patch.b64'):
-              payload = project / 'tools' / name
-              archive = base64.b64decode(payload.read_text('ascii'))
-              with zipfile.ZipFile(io.BytesIO(archive)) as source:
-                  source.extractall(project)
-              payload.unlink()
+          payload = project / 'tools/alpha14_payload.b64'
+          archive = base64.b64decode(payload.read_text('ascii'))
+          with zipfile.ZipFile(io.BytesIO(archive)) as source:
+              source.extractall(root)
+          payload.unlink()
+
+          patch = project / 'tools/alpha14_patch.b64'
+          archive = base64.b64decode(patch.read_text('ascii'))
+          with zipfile.ZipFile(io.BytesIO(archive)) as source:
+              source.extractall(project)
+          patch.unlink()
           PY
 
       - name: Set up Java 25
