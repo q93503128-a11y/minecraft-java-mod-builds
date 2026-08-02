@@ -14,6 +14,8 @@ import java.util.Set;
 
 /** Stores completed upper-floor conversions and deterministic home/work assignments. */
 public final class ErdenUrbanLifeSavedData extends SavedData {
+    public static final int SCHEMA_VERSION = 1;
+
     public record Assignment(
             String citizenId,
             String citizenName,
