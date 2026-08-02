@@ -51,7 +51,6 @@ public final class ClientNetworkHandlers {
                 if (activeOriginScreen != null) activeOriginScreen.handleServerResult(false, payload.message());
                 return;
             }
-
             activeOriginScreen = null;
             activeLoadingScreen = new RealmLoadingScreen(payload.message());
             if (latestBuildProgress != null) activeLoadingScreen.update(latestBuildProgress);
@@ -75,6 +74,8 @@ public final class ClientNetworkHandlers {
 
     private static void handleOpenCodex(OpenCodexPayload payload, IPayloadContext context) {
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.execute(() -> minecraft.gui.setScreen(new RealmCodexScreenV4(payload.page(), payload.snapshot())));
+        minecraft.execute(() -> minecraft.gui.setScreen(
+                new RealmCodexScreenV5(payload.page(), payload.snapshot())
+        ));
     }
 }
