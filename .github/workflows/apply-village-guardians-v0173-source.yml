@@ -1,0 +1,69 @@
+name: Apply Village Guardians v0.17.3 Source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.apply-trigger-v0173'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply source cleanup
+        id: patch
+        working-directory: projects/village-guardians
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/apply_v0173_ui_cleanup.py 2>&1 | tee "$GITHUB_WORKSPACE/v0173-source.log"
+
+      - name: Run source contracts
+        id: contracts
+        working-directory: projects/village-guardians
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/test_progression_depth.py 2>&1 | tee -a "$GITHUB_WORKSPACE/v0173-source.log"
+          python3 tools/test_runtime_safety.py 2>&1 | tee -a "$GITHUB_WORKSPACE/v0173-source.log"
+          python3 tools/test_action_layout.py 2>&1 | tee -a "$GITHUB_WORKSPACE/v0173-source.log"
+
+      - name: Commit applied source
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/village-guardians/src projects/village-guardians/tools projects/village-guardians/gradle.properties
+          if ! git diff --cached --quiet; then
+            git commit -m 'Apply Village Guardians v0.17.3 compact source cleanup'
+            git pull --rebase origin main
+            git push
+          fi
+
+      - name: Record source result
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p ci-results/village-guardians-v0173
+          cp "$GITHUB_WORKSPACE/v0173-source.log" ci-results/village-guardians-v0173/source-apply.log 2>/dev/null || \
+            printf '%s\n' 'Source patch did not start.' > ci-results/village-guardians-v0173/source-apply.log
+          cat > ci-results/village-guardians-v0173/source-status.txt <<EOF
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898266+github-actions[bot]@users.noreply.github.com'
+          git add ci-results/village-guardians-v0173/source-apply.log ci-results/village-guardians-v0173/source-status.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Village Guardians v0.17.3 source result for ${GITHUB_SHA::7}"
+            git pull --rebase origin main
+            git push
+          fi
