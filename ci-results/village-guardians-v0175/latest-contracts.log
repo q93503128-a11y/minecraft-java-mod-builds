@@ -12,10 +12,41 @@ defense_xp_multiplier=1.5
 [PASS] Daily bread scales from 3 to 13
 [PASS] Center-to-north-gate avenue contains no buildings
 [PASS] Max storehouse+barracks doubles raid supplies
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_progression_depth.py", line 70, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_progression_depth.py", line 57, in main
-    assert "ACTION_HEIGHT = 24" in shop_ui
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] Common tactical tree has 28 nodes with functional capstones
+[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration
+[PASS] Emergency barrier, momentum and party recovery are wired into combat
+[PASS] Defense research expands from 9 to 15 upgrades
+[PASS] Skill trees fit overview spacing and the shop uses compact safe actions
+[PASS] Compact buildings stay inside the fortress without overlap
+[PASS] Every facility entrance faces and reaches the central road or plaza
+[PASS] Town hall remains at least twice a normal facility after resizing
+[PASS] Closed gate spans the complete tower opening without side slits
+[PASS] Wall top has a flat three-block center walkway and planned rail openings
+[PASS] Wall stairs connect directly to the landing
+[PASS] Return destination is inside the plaza and clear of the bell and buildings
+[PASS] Compact split menus use narrow selectors, wide details and bounded action buttons
+[PASS] Town hall shows current/next effects and exact repair or upgrade costs
+[PASS] Status strips unreadable legacy white formatting and remains scroll-free
+[PASS] Caller item is removed while inventory and keyboard access remain
+[PASS] Smithy strengthening and cost-free rarity fusion are both available
+[PASS] Building crest migration restores facade blocks instead of carving holes
+[PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired
+[PASS] Facility selectors remain narrow while descriptions receive most of the width
+[PASS] Very narrow screens switch to stacked layout without false width failures
+[PASS] Town hall uses shorter cards and explicit current/next upgrade comparison
+[PASS] Action buttons are capped at 108x20 or 112x20 instead of spanning panels
+[PASS] Growth trees use anchored popovers and reserve the full height for main content
+[PASS] Status text is dark, stripped of legacy white formatting, and fits without scrolling
+[PASS] Eight readable wave traits include deterministic counters and previews
+[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs
+[PASS] Five-day milestone sieges and endless warfront tiers remain scalable
+[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes
+[PASS] Twenty active skills use real motion, aggro and spatial sound instead of particle drawings
+[PASS] CC0 fantasy visual references are documented without untracked binaries
+Village Guardians v0.17.4 UI, location and shortcut contracts passed.
+[PASS] Daily shop inventory rotates and hides future stock
+[PASS] Equipment, armour and supplies use bounded pixel-fit layouts
+[PASS] Caller opens a screen-safe PUBG-style quick communication wheel
+[PASS] Smithy fusion explicitly selects three compatible items
+[PASS] Skill-hall entry opens skills only and defense research titles stay concise
+[PASS] Skills no longer draw particle geometry and infirmary upgrades have real utility
