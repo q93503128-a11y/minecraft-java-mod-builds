@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:shifted_noise",
+  "noise": "minecraft:ridge",
+  "shift_x": 0.0,
+  "shift_y": 0.0,
+  "shift_z": 0.0,
+  "xz_scale": 1.8,
+  "y_scale": 0.34
+}
