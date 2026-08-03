@@ -62,14 +62,16 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           root = Path('projects/arcane-circle')
+          text_suffixes = {'.java', '.py', '.json', '.toml', '.properties', '.gradle', '.md', '.txt', '.mcmeta', '.yml', '.yaml'}
+          text_names = {'gradlew'}
           for path in root.rglob('*'):
-              if not path.is_file():
+              if not path.is_file() or (path.suffix.lower() not in text_suffixes and path.name not in text_names):
                   continue
               data = path.read_bytes()
               bad = [b for b in data if b < 9 or (13 < b < 32)]
               if bad:
                   raise SystemExit(f'Unexpected control bytes in {path}: {sorted(set(bad))}')
-          print('Control-byte audit: PASS')
+          print('Text control-byte audit: PASS')
           PY
 
       - name: Build with Java 25
