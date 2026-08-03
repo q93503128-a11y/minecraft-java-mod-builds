@@ -75,7 +75,20 @@ jobs:
               text = text.replace(old, new, 1)
           gear.write_text(text, encoding='utf-8')
 
-          for path in (mage, gear):
+          mesh = Path('projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.java')
+          text = mesh.read_text(encoding='utf-8')
+          replacements = {
+              'brightness*(i%2==0?1:.72)': 'brightness*(i%2==0?1F:.72F)',
+              'brightness*1.15,alpha': 'brightness*1.15F,alpha',
+              'brightness*(.78+.22*Math.sin(Math.PI*t)),alpha': '(float)(brightness*(.78+.22*Math.sin(Math.PI*t))),alpha',
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'ArcaneWorldMesh repair marker missing: {old}')
+              text = text.replace(old, new, 1)
+          mesh.write_text(text, encoding='utf-8')
+
+          for path in (mage, gear, mesh):
               data = path.read_bytes()
               bad = [b for b in data if b < 9 or (13 < b < 32)]
               if bad:
