@@ -50,7 +50,7 @@ jobs:
           for jar in "${JARS[@]}"; do
             if [ -f "$jar" ]; then
               jar tf "$jar" | grep -E 'net/neoforged/neoforge/client/event/.*Render.*Event|LevelRendererExtension|ILevelRendererExtension' >> "$OUT/neoforge-render-events.txt" || true
-              jar tf "$jar" | grep -E 'RenderLevelStageEvent|RenderType|RenderPipeline|Tesselator|BufferBuilder|MeshData|SubmitNode|VertexConsumer|FeatureRender|AvatarRenderState|LivingEntityRenderState|AvatarRenderer|EntityRendererProvider|EntityRenderersEvent' >> "$OUT/relevant-classes.txt" || true
+              jar tf "$jar" | grep -E 'RenderLevelStageEvent|RenderType|RenderPipeline|Tesselator|BufferBuilder|MeshData|SubmitNode|VertexConsumer|FeatureRender|AvatarRenderState|LivingEntityRenderState|AvatarRenderer|EntityRendererProvider|EntityRenderersEvent|DeferredRegister|SynchedEntityData|EntityDataSerializers' >> "$OUT/relevant-classes.txt" || true
             fi
           done
           sort -u "$OUT/neoforge-render-events.txt" -o "$OUT/neoforge-render-events.txt"
@@ -63,7 +63,8 @@ jobs:
           javap -classpath "$CP" -p net.minecraft.client.renderer.SubmitNodeCollector net.minecraft.client.renderer.SubmitNodeCollector\$CustomGeometryRenderer net.minecraft.client.renderer.OrderedSubmitNodeCollector net.minecraft.client.renderer.SubmitNodeStorage net.minecraft.client.renderer.feature.CustomFeatureRenderer net.minecraft.client.renderer.feature.CustomFeatureRenderer\$Submit > "$OUT/submit-api.txt" 2>&1 || true
           javap -classpath "$CP" -p net.minecraft.client.renderer.entity.state.EntityRenderState net.minecraft.client.renderer.entity.state.LivingEntityRenderState net.minecraft.client.renderer.entity.state.AvatarRenderState net.minecraft.client.renderer.entity.player.AvatarRenderer > "$OUT/avatar-render.txt" 2>&1 || true
           javap -classpath "$CP" -p net.minecraft.client.renderer.entity.EntityRenderer net.minecraft.client.renderer.entity.EntityRendererProvider net.minecraft.client.renderer.entity.EntityRendererProvider\$Context net.neoforged.neoforge.client.event.EntityRenderersEvent net.neoforged.neoforge.client.event.EntityRenderersEvent\$RegisterRenderers > "$OUT/entity-renderer-api.txt" 2>&1 || true
-          javap -classpath "$CP" -p net.neoforged.neoforge.client.extensions.LevelRendererExtension net.neoforged.neoforge.client.extensions.ILevelRendererExtension > "$OUT/level-renderer-extension.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.neoforged.neoforge.registries.DeferredRegister net.neoforged.neoforge.registries.DeferredRegister\$Entities net.neoforged.neoforge.registries.DeferredHolder net.minecraft.world.entity.EntityType net.minecraft.world.entity.EntityType\$Builder net.minecraft.world.entity.MobCategory > "$OUT/entity-registration-api.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.world.entity.Entity net.minecraft.network.syncher.SynchedEntityData net.minecraft.network.syncher.SynchedEntityData\$Builder net.minecraft.network.syncher.EntityDataAccessor net.minecraft.network.syncher.EntityDataSerializers > "$OUT/entity-data-api.txt" 2>&1 || true
           javap -classpath "$CP" -p net.minecraft.client.renderer.LevelRenderer net.minecraft.client.Camera net.minecraft.client.Minecraft > "$OUT/client-render.txt" 2>&1 || true
           javap -classpath "$CP" -p net.minecraft.client.renderer.texture.OverlayTexture net.minecraft.client.renderer.LightTexture net.minecraft.resources.Identifier > "$OUT/render-helpers.txt" 2>&1 || true
       - name: Commit probe output
@@ -72,6 +73,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add ci-results/village-guardians-custom-mesh-api
-          git commit -m 'Record level render event and entity renderer API probe' || exit 0
+          git commit -m 'Record Village Guardians effect entity API probe' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
