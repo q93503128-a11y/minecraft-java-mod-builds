@@ -27,6 +27,8 @@ Exterior construction uses the same bounded incremental world-edit plan as the c
 
 Normal play does not permanently force-load the kingdom. A site and its roads are built when the player loads the relevant chunks. Temporary force-loading exists only for deterministic CI anchors and is released as each cell finishes.
 
+CI anchor preparation is non-blocking. The unique exterior anchor list is prepared without loading chunks, at most one distant chunk is force-requested per server tick, and construction begins only after the chunk load event confirms availability. The server thread must never call synchronous `getChunk` after forcing an exterior CI chunk. This prevents the former 90-chunk single-tick request from tripping the 60-second server watchdog.
+
 ## Licensed architecture and functional additions
 
 Each node uses one of the existing attributed external house, manor or castle-house templates as its architectural anchor. Procedural additions are role-specific rather than generic decoration:
@@ -92,6 +94,7 @@ The same marker must prove:
 - licensed external buildings were used
 - fields, paddocks, mines, mills, docks and roads were generated
 - construction debris remained zero
+- CI requests were staggered and no synchronous exterior `getChunk` path ran
 
 The permanent producer-inventory audit must additionally emit:
 
