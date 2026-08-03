@@ -33,28 +33,34 @@ jobs:
         with:
           gradle-version: '9.2.1'
       - name: Integrate Erden living economy once
+        id: integrate
         shell: bash
         run: |
-          set -euo pipefail
-          if grep -Fq 'ErdenLivingEconomyManager.onServerTick(event);' \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java; then
-            exit 0
-          fi
-          python .github/scripts/patch_erden_living_economy_v2.py
-          git diff --check
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java \
-                  projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
-                  projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md \
-                  .github/workflows/build-living-kingdoms.yml
-          git commit -m 'Connect Erden shop schedules prices and errands'
-          for attempt in 1 2 3 4 5; do
-            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
-            git rebase --abort 2>/dev/null || true
-            if [ "$attempt" -eq 5 ]; then exit 1; fi
-            sleep $((attempt * 2))
-          done
+          set -o pipefail
+          mkdir -p logs
+          {
+            set -euo pipefail
+            if grep -Fq 'ErdenLivingEconomyManager.onServerTick(event);' \
+              projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java; then
+              echo 'Living economy already integrated.'
+              exit 0
+            fi
+            python .github/scripts/patch_erden_living_economy_v2.py
+            git diff --check
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java \
+                    projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
+                    projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md \
+                    .github/workflows/build-living-kingdoms.yml
+            git commit -m 'Connect Erden shop schedules prices and errands'
+            for attempt in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+              git rebase --abort 2>/dev/null || true
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 2))
+            done
+          } 2>&1 | tee logs/erden-living-economy-integration.log
       - name: Compile current Living Kingdoms sources
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -62,13 +68,15 @@ jobs:
           set -o pipefail
           mkdir -p ../../logs
           gradle --no-daemon clean compileJava --stacktrace --console=plain 2>&1 | tee ../../logs/living-kingdoms-fast-compile.log
-      - name: Upload fast compile log
+      - name: Upload fast logs
         id: upload_log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: living-kingdoms-fast-${{ github.run_number }}
-          path: logs/living-kingdoms-fast-compile.log
+          path: |
+            logs/living-kingdoms-fast-compile.log
+            logs/erden-living-economy-integration.log
           if-no-files-found: warn
           retention-days: 14
       - name: Publish fast compile pointer
@@ -76,9 +84,11 @@ jobs:
         shell: bash
         env:
           JOB_STATUS: ${{ job.status }}
+          INTEGRATION_OUTCOME: ${{ steps.integrate.outcome }}
           LOG_ARTIFACT_ID: ${{ steps.upload_log.outputs.artifact-id }}
         run: |
           set -euo pipefail
+          git reset --hard HEAD
           mkdir -p .github/build-pointers
           cat > .github/build-pointers/living-kingdoms-fast.json <<EOF
           {
@@ -86,6 +96,7 @@ jobs:
             "run_number": "$GITHUB_RUN_NUMBER",
             "commit_sha": "$GITHUB_SHA",
             "job_status": "$JOB_STATUS",
+            "integration_outcome": "$INTEGRATION_OUTCOME",
             "log_artifact_id": "$LOG_ARTIFACT_ID"
           }
           EOF
