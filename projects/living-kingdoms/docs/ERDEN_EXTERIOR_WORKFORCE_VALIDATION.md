@@ -35,17 +35,23 @@ attendance snapshot.
 
 ## Streaming and physical residents
 
-Exterior CI construction retains at most three distant chunks simultaneously, ignores incidental
-route chunks outside the authoritative audit set and uses a larger write budget only in CI. Normal
+Exterior CI construction has at most three loading requests in flight, ignores incidental route
+chunks outside the authoritative audit set and uses a larger write budget only in CI. Normal
 player-driven streaming retains the lower runtime budget. Household samples use the same five
-anchor chunks that prove each site's physical construction, avoiding synchronous or unbounded
-chunk loading.
+anchor chunks that prove each site's physical construction.
+
+CI no longer calls `setChunkForced`, because that path synchronously obtains a far chunk before
+returning. Exterior anchors use transient `TicketType.PORTAL` loading tickets through
+`ServerChunkCache.addTicketAndLoadWithRadius`; the builder then waits for `hasChunk` and only starts
+its incremental edit plan after loading completes. Completion releases only local in-flight state,
+leaving no persistent forced chunks in the world save.
 
 The old `ErdenPhysicalEconomyManager` fixed-import implementation has been deleted. Economy
 constants, diagnostic entrances and all active processing now belong to
-`ErdenAuthoritativeEconomyManager`. The population diagnostic retainer requests and forces sample
-chunks without synchronously calling `getChunk`. Repository-wide validation requires zero Java
-references to the deleted manager and zero occurrences of `importWarehouseStock`.
+`ErdenAuthoritativeEconomyManager`. The population diagnostic retainer requests sample chunks
+without synchronously calling `getChunk`. Repository-wide validation requires zero Java references
+to the deleted manager, zero occurrences of `importWarehouseStock`, and no `setChunkForced` call in
+the exterior builder.
 
 ## Required regression markers
 
@@ -60,6 +66,7 @@ level-load exception or realm diagnostic failure:
 The workforce marker must prove attendance, scheduled rest, persistent death accounting and a
 loaded resident sample. The supply marker must prove `workforce_linked=true`,
 `staffed_production=true` and `wharf_labor=true` while retaining fixed-import removal and shipment
-escrow.
+escrow. The exterior request marker must prove `synchronous_get_chunk=false`,
+`forced_chunks=false`, `transient_ticket=portal`, and `max_in_flight=3`.
 
 The permanent workflow is `.github/workflows/audit-living-kingdoms-exterior-workforce.yml`.
