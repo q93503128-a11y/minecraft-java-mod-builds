@@ -1,0 +1,2 @@
+Error: class not found: net.minecraft.client.gui.render.state.GuiRenderState
+Error: class not found: net.minecraft.client.gui.render.state.GuiTextRenderState

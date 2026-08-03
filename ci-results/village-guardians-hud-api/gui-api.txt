@@ -1,3 +1,0 @@
-Error: class not found: net.minecraft.client.gui.LayeredDraw
-Error: class not found: net.minecraft.client.gui.LayeredDraw$Layer
-Error: class not found: net.minecraft.client.gui.GuiGraphics

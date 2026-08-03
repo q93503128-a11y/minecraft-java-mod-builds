@@ -389,3 +389,4 @@ public class net.minecraft.client.Minecraft extends net.minecraft.util.thread.Re
   private com.mojang.authlib.yggdrasil.ProfileResult lambda$new$0();
   static {};
 }
+Error: class not found: net.minecraft.client.Window

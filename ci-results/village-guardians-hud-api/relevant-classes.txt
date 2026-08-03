@@ -2,6 +2,10 @@ net/minecraft/client/gui/GuiGraphicsExtractor$HoveredTextEffects.class
 net/minecraft/client/gui/GuiGraphicsExtractor$RenderingTextCollector.class
 net/minecraft/client/gui/GuiGraphicsExtractor$ScissorStack.class
 net/minecraft/client/gui/GuiGraphicsExtractor.class
+net/minecraft/client/renderer/state/gui/GuiRenderState$Node.class
+net/minecraft/client/renderer/state/gui/GuiRenderState$TraverseRange.class
+net/minecraft/client/renderer/state/gui/GuiRenderState.class
+net/minecraft/client/renderer/state/gui/GuiTextRenderState.class
 net/neoforged/neoforge/client/event/RegisterGuiLayersEvent$Ordering.class
 net/neoforged/neoforge/client/event/RegisterGuiLayersEvent.class
 net/neoforged/neoforge/client/event/RenderGuiLayerEvent$Post.class
