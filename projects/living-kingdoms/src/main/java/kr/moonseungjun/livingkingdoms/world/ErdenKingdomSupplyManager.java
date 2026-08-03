@@ -66,6 +66,7 @@ public final class ErdenKingdomSupplyManager {
         ErdenKingdomSupplySavedData supply = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomSupplySavedData.TYPE);
         long currentDay = Math.floorDiv(level.getGameTime(), 24_000L);
+        ErdenExteriorWorkforceManager.prepareBeforeSupply(level, currentDay);
         if (!supply.hasSupply(SUPPLY_REVISION, EXPECTED_NODES)) {
             initializeSupply(level, economy, supply, currentDay);
         }
@@ -82,12 +83,14 @@ public final class ErdenKingdomSupplyManager {
             ErdenPhysicalEconomySavedData economy) {
         ErdenKingdomSupplySavedData supply = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomSupplySavedData.TYPE);
+        long currentDay = Math.floorDiv(level.getGameTime(), 24_000L);
         return supply.hasSupply(SUPPLY_REVISION, EXPECTED_NODES)
                 && supply.openingConvoys() == EXPECTED_OPENING_CONVOYS
                 && supply.totalProduced() > 0L
                 && supply.totalDispatched() > 0L
                 && supply.totalReceived() > 0L
-                && receivedResourceCount(economy) == EXPECTED_RESOURCES;
+                && receivedResourceCount(economy) == EXPECTED_RESOURCES
+                && ErdenExteriorWorkforceManager.isReady(level, currentDay);
     }
 
     private static void initializeSupply(
@@ -109,7 +112,7 @@ public final class ErdenKingdomSupplyManager {
         dispatchOpeningConvoys(level, economy, supply, currentDay);
         settleArrivals(level, economy, supply);
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden kingdom supply nodes={} producers={} wharves={} opening_convoys={} fixed_daily_imports=false shipment_escrow=true",
+                "Prepared Erden kingdom supply nodes={} producers={} wharves={} opening_convoys={} fixed_daily_imports=false shipment_escrow=true workforce_linked=true",
                 EXPECTED_NODES, EXPECTED_PRODUCERS, EXPECTED_WHARVES,
                 supply.openingConvoys());
     }
@@ -149,27 +152,31 @@ public final class ErdenKingdomSupplyManager {
                 supply.lastProcessedDay() + 1L,
                 currentDay - MAX_CATCH_UP_DAYS + 1L);
         for (long day = firstDay; day <= currentDay; day++) {
-            long produced = produceDay(supply, day);
+            long produced = produceDay(level, supply, day);
             long dispatched = dispatchDay(level, economy, supply, day);
             supply.markProcessedDay(day, produced);
             if (day == currentDay || day % 7L == 0L) {
                 LivingKingdoms.LOGGER.info(
-                        "Processed Erden kingdom supply day={} produced={} dispatched={} in_transit={} blocked={} fixed_daily_imports=false",
+                        "Processed Erden kingdom supply day={} produced={} dispatched={} in_transit={} blocked={} fixed_daily_imports=false staffed_production=true",
                         day, produced, dispatched, inTransitCount(supply), supply.totalBlocked());
             }
         }
     }
 
     private static long produceDay(
+            ServerLevel level,
             ErdenKingdomSupplySavedData supply,
             long day) {
         long produced = 0L;
-        int percentage = productionPercentage(day);
+        int seasonalPercentage = productionPercentage(day);
         for (ErdenKingdomSupplySavedData.NodeState snapshot : supply.nodes()) {
             if (snapshot.role().equals("river_wharf") || snapshot.lastProducedDay() >= day) continue;
             ErdenKingdomSupplySavedData.NodeState node = snapshot;
+            int laborPercentage = ErdenExteriorWorkforceManager.productionPercent(
+                    level, node.id(), day);
             for (OutputRate output : outputsFor(node.role())) {
-                long amount = Math.max(1L, output.dailyAmount * percentage / 100L);
+                long amount = output.dailyAmount * seasonalPercentage * laborPercentage / 10_000L;
+                if (amount <= 0L) continue;
                 node = node.produce(output.resource, amount, day);
                 produced += amount;
             }
@@ -187,7 +194,7 @@ public final class ErdenKingdomSupplyManager {
         for (ErdenKingdomSupplySavedData.NodeState snapshot : supply.nodes()) {
             if (snapshot.role().equals("river_wharf")) continue;
             ErdenKingdomSupplySavedData.NodeState node = snapshot;
-            if (routeBlocked(node, day)) {
+            if (routeBlocked(level, node, day)) {
                 supply.replaceNode(node.markBlocked());
                 supply.recordBlocked();
                 continue;
@@ -275,11 +282,15 @@ public final class ErdenKingdomSupplyManager {
     }
 
     private static Point nearestWharf(int x, int z) {
+        ErdenKingdomSupplyCatalog.SupplyNode wharf = nearestWharfNode(x, z);
+        return wharf == null ? nearestGate(x, z) : new Point(wharf.x, wharf.z);
+    }
+
+    private static ErdenKingdomSupplyCatalog.SupplyNode nearestWharfNode(int x, int z) {
         return NODES.stream()
                 .filter(node -> node.role.equals("river_wharf"))
-                .map(node -> new Point(node.x, node.z))
-                .min(Comparator.comparingLong(point -> manhattan(x, z, point.x, point.z)))
-                .orElseGet(() -> nearestGate(x, z));
+                .min(Comparator.comparingLong(node -> manhattan(x, z, node.x, node.z)))
+                .orElse(null);
     }
 
     private static List<OutputRate> outputsFor(String role) {
@@ -315,8 +326,15 @@ public final class ErdenKingdomSupplyManager {
     }
 
     private static boolean routeBlocked(
+            ServerLevel level,
             ErdenKingdomSupplySavedData.NodeState node,
             long day) {
+        if (!ErdenExteriorWorkforceManager.nodeOperational(level, node.id(), day)) return true;
+        if (node.role().equals("paper_mill")) {
+            ErdenKingdomSupplyCatalog.SupplyNode wharf = nearestWharfNode(node.x(), node.z());
+            if (wharf == null
+                    || !ErdenExteriorWorkforceManager.nodeOperational(level, wharf.id, day)) return true;
+        }
         long seed = (long) node.id().hashCode() * 31L + day * 17L;
         return Math.floorMod(seed, 19L) == 0L;
     }
@@ -362,7 +380,7 @@ public final class ErdenKingdomSupplyManager {
                 || inTransitCount(supply) <= 0) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_KINGDOM_SUPPLY_PASS revision={} nodes={} producers={} wharves={} resources={} opening_convoys={} produced={} dispatched={} received={} blocked={} warehouses_supplied={} active_shipments={} fixed_daily_imports=false shipment_escrow=true local_reserves=true route_modes=wagon,barge",
+                "LK_ERDEN_KINGDOM_SUPPLY_PASS revision={} nodes={} producers={} wharves={} resources={} opening_convoys={} produced={} dispatched={} received={} blocked={} warehouses_supplied={} active_shipments={} fixed_daily_imports=false shipment_escrow=true local_reserves=true route_modes=wagon,barge workforce_linked=true staffed_production=true wharf_labor=true",
                 SUPPLY_REVISION, EXPECTED_NODES, EXPECTED_PRODUCERS, EXPECTED_WHARVES,
                 EXPECTED_RESOURCES, supply.openingConvoys(), supply.totalProduced(),
                 supply.totalDispatched(), supply.totalReceived(), supply.totalBlocked(),

@@ -148,6 +148,7 @@ public final class ErdenKingdomExteriorBuilder {
             }
         }
         CI_REQUIRED.addAll(unique);
+        CI_REQUIRED.addAll(unique);
         CI_REQUESTS.addAll(unique);
         LivingKingdoms.LOGGER.info(
                 "Requested Erden exterior CI anchors nodes={} request_queue={} metre_scale=true streamed=true staggered=true synchronous_get_chunk=false max_in_flight={}",
