@@ -129,7 +129,6 @@ public final class ErdenLivingEconomyManager {
             Map<String, ErdenPhysicalEconomySavedData.SiteState> sites,
             Map<String, ErdenPhysicalEconomySavedData.WalletState> wallets,
             ErdenLivingEconomySavedData previousLivingEconomy) {
-        prepareDay(day, sites);
         List<ErdenLivingEconomySavedData.HouseholdMarketState> outcomes = new ArrayList<>();
         long salesCoins = 0L;
         int fulfilled = 0;
