@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
+TOOLS = ROOT / "tools"
+
+
+def replace_once(path: Path, old: str, new: str, label: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f"{label}: expected 1 marker, found {count}")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+# Keep source comments free of the retired event class name so source contracts
+# distinguish implementation symbols from explanatory prose.
+replace_once(
+    JAVA / "VillageRoleAbilitySystem.java",
+    "        // unlike only changing LivingEntityUseItemEvent.Tick duration.\n",
+    "        // unlike only changing a duration value inside an item-use tick event.\n",
+    "rapid draw comment",
+)
+
+replace_once(
+    TOOLS / "test_runtime_safety.py",
+    '    assert "B 통신 · Z/X 기술" in inventory\n'
+    '    for key in ("GLFW_KEY_Z", "GLFW_KEY_X", "GLFW_KEY_B", "GLFW_KEY_H", "GLFW_KEY_J", "GLFW_KEY_K", "GLFW_KEY_U"):\n'
+    '        assert key in keys\n',
+    '    assert "VillageClientKeys.compactSummary()" in inventory\n'
+    '    for key in ("GLFW_KEY_Z", "GLFW_KEY_X", "GLFW_KEY_B", "GLFW_KEY_H", "GLFW_KEY_J", "GLFW_KEY_K"):\n'
+    '        assert key in keys\n'
+    '    assert "GLFW_KEY_U" not in keys and "CALLER" not in keys\n',
+    "runtime shortcut contract",
+)
+
+replace_once(
+    TOOLS / "test_v01717_range_homing.py",
+    '    assert "LivingEntityUseItemEvent.Tick" in guardians\n'
+    '    assert "handleUseItemTick" in ability\n'
+    '    assert "event.setDuration" in ability\n'
+    '    assert "instanceof BowItem" in ability and "instanceof CrossbowItem" in ability\n'
+    '    assert "event.setCharge(20)" in ability\n'
+    '    print("[PASS] 신속 삼연사가 실제 활·석궁 사용시간과 발사 충전량을 가속합니다")\n',
+    '    assert "LivingEntityUseItemEvent" not in guardians\n'
+    '    assert "handleUseItemTick" not in ability\n'
+    '    assert "tickRapidBow" in ability\n'
+    '    assert "player.releaseUsingItem()" in ability\n'
+    '    assert "event.setCharge(20)" in ability\n'
+    '    print("[PASS] 신속 삼연사가 실제 활 사용을 조기에 종료해 완충 발사를 실행합니다")\n',
+    "v01717 bow contract",
+)
+
+replace_once(
+    TOOLS / "test_v0175_gameplay_ui.py",
+    '    assert \'consume(CALLER, "open_quick_chat")\' in read("VillageClientKeys.java")\n',
+    '    key_source = read("VillageClientKeys.java")\n'
+    '    assert \'consume(QUICK_COMMUNICATION, "open_quick_chat")\' in key_source\n'
+    '    assert "CALLER" not in key_source and "GLFW.GLFW_KEY_U" not in key_source\n',
+    "v0175 caller contract",
+)
+
+role_test = TOOLS / "test_v01712_role_abilities.py"
+text = role_test.read_text(encoding="utf-8")
+text = text.replace(
+    "[PASS] Default shortcut help matches Z/X/B/H/J/K/U registrations",
+    "[PASS] Default shortcuts match Z/X/B/H/J/K with no obsolete U duplicate",
+)
+role_test.write_text(text, encoding="utf-8")
+
+print("Migrated Village Guardians v0.17.18 shortcut and bow contracts")
