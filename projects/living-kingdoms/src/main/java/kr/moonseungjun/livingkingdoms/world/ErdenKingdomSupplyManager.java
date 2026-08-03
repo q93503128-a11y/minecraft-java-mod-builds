@@ -195,7 +195,9 @@ public final class ErdenKingdomSupplyManager {
             ErdenPhysicalEconomySavedData.SiteState warehouse = nearestWarehouse(economy, node);
             if (warehouse == null) continue;
             for (ErdenKingdomSupplySavedData.ResourceStock stock : List.copyOf(node.stocks())) {
-                if (stock.amount() <= 0L) continue;
+                long reserve = localReserve(node.role(), stock.resource());
+                long shippable = Math.max(0L, stock.amount() - reserve);
+                if (shippable <= 0L) continue;
                 int routeMetres = routeMetres(node, warehouse);
                 long departureTick = day * 24_000L + 2_000L;
                 long arrivalTick = departureTick + Math.max(
@@ -204,12 +206,12 @@ public final class ErdenKingdomSupplyManager {
                 ErdenKingdomSupplySavedData.ShipmentState shipment =
                         new ErdenKingdomSupplySavedData.ShipmentState(
                                 supply.nextShipmentId(day),
-                                node.id(), warehouse.id(), stock.resource(), stock.amount(),
+                                node.id(), warehouse.id(), stock.resource(), shippable,
                                 departureTick, arrivalTick,
                                 "in_transit", transportMode(node.role()), routeMetres, false);
-                node = node.addStock(stock.resource(), -stock.amount());
+                node = node.addStock(stock.resource(), -shippable);
                 supply.addShipment(shipment);
-                dispatched += stock.amount();
+                dispatched += shippable;
             }
             supply.replaceNode(node);
         }
@@ -284,6 +286,18 @@ public final class ErdenKingdomSupplyManager {
         return OUTPUTS.stream().filter(output -> output.role.equals(role)).toList();
     }
 
+    private static long localReserve(String role, String resource) {
+        return switch (role + "/" + resource) {
+            case "grain_estate/wheat" -> 12L;
+            case "ranch/leather" -> 8L;
+            case "ranch/hay" -> 6L;
+            case "colliery/coal" -> 8L;
+            case "iron_mine/iron" -> 4L;
+            case "paper_mill/paper" -> 10L;
+            default -> 0L;
+        };
+    }
+
     private static String transportMode(String role) {
         return role.equals("paper_mill") ? "barge" : "wagon";
     }
@@ -348,7 +362,7 @@ public final class ErdenKingdomSupplyManager {
                 || inTransitCount(supply) <= 0) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_KINGDOM_SUPPLY_PASS revision={} nodes={} producers={} wharves={} resources={} opening_convoys={} produced={} dispatched={} received={} blocked={} warehouses_supplied={} active_shipments={} fixed_daily_imports=false shipment_escrow=true route_modes=wagon,barge",
+                "LK_ERDEN_KINGDOM_SUPPLY_PASS revision={} nodes={} producers={} wharves={} resources={} opening_convoys={} produced={} dispatched={} received={} blocked={} warehouses_supplied={} active_shipments={} fixed_daily_imports=false shipment_escrow=true local_reserves=true route_modes=wagon,barge",
                 SUPPLY_REVISION, EXPECTED_NODES, EXPECTED_PRODUCERS, EXPECTED_WHARVES,
                 EXPECTED_RESOURCES, supply.openingConvoys(), supply.totalProduced(),
                 supply.totalDispatched(), supply.totalReceived(), supply.totalBlocked(),

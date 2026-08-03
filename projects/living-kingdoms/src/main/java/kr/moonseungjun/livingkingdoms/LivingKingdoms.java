@@ -11,6 +11,7 @@ import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenAuthoritativeEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorBuilder;
+import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorInventoryManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowAudit;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
@@ -87,7 +88,9 @@ public final class LivingKingdoms {
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
+        ErdenKingdomExteriorInventoryManager.captureBeforeSupply(event);
         ErdenAuthoritativeEconomyManager.onServerTick(event);
+        ErdenKingdomExteriorInventoryManager.materializeAfterSupply(event);
         ErdenLivingEconomyManager.onServerTick(event);
         ErdenTransportManager.onServerTick(event);
         ErdenCargoEscrowManager.onServerTick(event);
@@ -189,6 +192,7 @@ public final class LivingKingdoms {
     }
 
     private void onWorkstationInteraction(PlayerInteractEvent.RightClickBlock event) {
+        ErdenKingdomExteriorInventoryManager.onInteraction(event);
         ErdenAuthoritativeEconomyManager.handleInteraction(event);
         FantasyWorldRules.handleWorkstation(event);
     }

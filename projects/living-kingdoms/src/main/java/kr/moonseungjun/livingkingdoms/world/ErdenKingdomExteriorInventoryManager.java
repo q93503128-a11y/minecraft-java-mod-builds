@@ -50,6 +50,7 @@ public final class ErdenKingdomExteriorInventoryManager {
         if (supply.nodes().isEmpty()) return;
 
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
+            if (!node.producer()) continue;
             if (!containers.isMaterialized(node.id)
                     || !ErdenKingdomExteriorBuilder.anchorBuilt(level, node)) continue;
             Container container = container(level, node);
@@ -78,6 +79,7 @@ public final class ErdenKingdomExteriorInventoryManager {
         if (supply.nodes().isEmpty()) return;
 
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
+            if (!node.producer()) continue;
             if (!ErdenKingdomExteriorBuilder.anchorBuilt(level, node)) continue;
             Container container = container(level, node);
             ErdenKingdomSupplySavedData.NodeState state = nodeState(supply, node.id);
