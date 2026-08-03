@@ -40,50 +40,35 @@ level30 incoming=61.4%
 level30 bonus_health=20
 total_xp_to_level30=94685
 === tools/test_runtime_safety.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety.py", line 186, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety.py", line 53, in main
-    assert 'case "equipment_shop" -> new VillageShopScreen(payload)' in client_ui
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] Compact split menus use narrow selectors, wide details and bounded action buttons
+[PASS] Town hall shows current/next effects and exact repair or upgrade costs
+[PASS] Status strips unreadable legacy white formatting and remains scroll-free
+[PASS] Caller item is removed while inventory and keyboard access remain
+[PASS] Selected equipment enhancement and rarity fusion are both available
+[PASS] Building crest migration restores facade blocks instead of carving holes
+[PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired
 === tools/test_v01710_skill_input.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01710_skill_input.py", line 55, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01710_skill_input.py", line 23, in main
-    assert 'consume(ROLE_SKILL_TWO, "use_skill:1")' in keys
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] Client Z/X mappings are registered by the client event subscriber
+[PASS] Z/X packets route directly to the real role-skill cast system
+[PASS] Role and skill management use separate physical barrels and screens
+[PASS] Equipping closes the skill screen so in-game Z/X input is no longer drained
 === tools/test_v01711_hud_skills.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_hud_skills.py", line 32, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_hud_skills.py", line 23, in main
-    assert 'case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload)' in client
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] Action-bar HUD shows equipped Z/X skills, readiness and a live cooldown bar
+[PASS] Test role and skill managers use a dedicated compact responsive UI
 === tools/test_v01711_skill_hud_ui.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_skill_hud_ui.py", line 61, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_skill_hud_ui.py", line 46, in main
-    assert 'case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload)' in client
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] All 20 active skills have concrete cast logic and custom mesh feedback
+[PASS] Action-bar HUD shows equipped Z/X skills and live cooldown seconds
+[PASS] Test role and skill managers use a dedicated compact responsive UI
 === tools/test_v01712_role_abilities.py ===
 [PASS] Twenty active skills own real movement, projectile, field and procedural-mesh motions
 [PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events
 [PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness
 [PASS] Default shortcuts match Z/X/V/H/J/K with no obsolete U duplicate
 === tools/test_v01713_effects_and_keys.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01713_effects_and_keys.py", line 57, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01713_effects_and_keys.py", line 19, in main
-    assert "VANILLA_RESERVED" in keys and "migrateUnsafeBindings" in keys
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] Unsafe vanilla/conflicting bindings migrate to safe Z/X/V/H/J/K and persist
+[PASS] Garen-style spin rotates the avatar holding one actual weapon
+[PASS] All twenty skills route to bounded custom-mesh scenes without particles
+[PASS] Temporary glass walls, block-break particles and obsolete visual facade are removed
 === tools/test_v01714_custom_mesh_effects.py ===
 [PASS] 회전 검무 rotates the avatar holding its one real weapon without orbiting swords
 [PASS] All skill presentation uses original synchronized entities and procedural vertex meshes
@@ -93,9 +78,9 @@ AssertionError
 Traceback (most recent call last):
   File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 69, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 38, in main
-    assert "20.0, 60" in abilities
-           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 40, in main
+    assert "VillageEquipmentRaritySystem.skillMultiplier(player)" in read("VillageRoleSkillSystem.java")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
 === tools/test_v01716_ranger_activation.py ===
 [PASS] 시험 궁수와 실제 궁수 모두 다음 활 발사에서 네 기술을 소비합니다
@@ -121,23 +106,26 @@ AssertionError
 [PASS] 신속 삼연사 설명이 실제 자동 완충·발사 동작과 일치합니다
 === tools/test_v01719_access_content.py ===
 [PASS] 홍염탄은 소폭 넓어진 여유값과 적별 실제 충돌 상자를 사용합니다
+[PASS] Z/X/V/H/J/K 안전 기본키와 바닐라·중복 키 자동 이관이 연결됩니다
+[PASS] 기술 시험장 진입은 1557 인증을 거치며 구형 시험 액션은 제거됩니다
+[PASS] 다음 밤 웨이브 정찰은 성벽과 병영 양쪽에서 접근할 수 있습니다
+[PASS] 콘텐츠 감사: 장비 24, 적 14, 보스 변이 6, 웨이브 특성 12, 액티브 기술 20
 Traceback (most recent call last):
   File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01719_access_content.py", line 95, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01719_access_content.py", line 48, in main
-    assert "VANILLA_RESERVED" in keys and "migrateUnsafeBindings" in keys
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01719_access_content.py", line 90, in main
+    assert token in audit, token
+           ^^^^^^^^^^^^^^
+AssertionError: 고정 최종 일수는 없으며 무한 진행
 === tools/test_v0174_ui_safety.py ===
 Village Guardians v0.17.4 UI, location and shortcut contracts passed.
 === tools/test_v0175_gameplay_ui.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 81, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 52, in main
-    assert 'case "equipment_fusion" -> new VillageFusionScreen(payload)' in client_ui
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] Daily shop inventory rotates and hides future stock
+[PASS] Equipment, armour and supplies use bounded pixel-fit layouts
+[PASS] Caller opens a screen-safe PUBG-style quick communication wheel
+[PASS] Smithy fusion explicitly selects three compatible items
+[PASS] Skill-hall entry opens skills only and defense research titles stay concise
+[PASS] Skills use non-particle procedural mesh actors and infirmary upgrades have real utility
 === tools/test_v0176_gameplay.py ===
 Village Guardians v0.17.6 gameplay, UI, item and defeat contracts passed.
 === tools/test_v0177_gameplay.py ===
@@ -154,7 +142,7 @@ Village Guardians v0.17.7 contracts passed.
 === tools/test_v0180_content_scaling.py ===
 [PASS] v0.18.0-alpha.1 version is active
 [PASS] 실제 기본키가 Z 기술1·X 기술2·V 빠른 통신·H/J/K 관리로 일치합니다
-[PASS] 이전 Z/X/B 기본값만 Z/X/V로 이관하고 사용자 안전 설정은 보존합니다
+[PASS] 이전 Z/V/B 기본값만 Z/X/V로 이관하고 사용자 안전 설정은 보존합니다
 [PASS] X 단독 기술과 X+숫자 바닐라 툴바 조합이 공존합니다
 [PASS] 모든 UI와 기술 HUD가 실제 변경 키를 토큰으로 해석합니다
 [PASS] 상점 고유 장비가 10종에서 24종으로 확장되었습니다
