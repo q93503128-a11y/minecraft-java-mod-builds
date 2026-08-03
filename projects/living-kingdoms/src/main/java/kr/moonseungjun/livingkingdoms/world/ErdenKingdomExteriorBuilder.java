@@ -516,7 +516,7 @@ public final class ErdenKingdomExteriorBuilder {
             int z) {
         addBoxClipped(plan, chunk, x, y, z, x, y + 9, z, Blocks.STRIPPED_SPRUCE_LOG);
         addBoxClipped(plan, chunk, x, y + 9, z, x + 8, y + 9, z, Blocks.STRIPPED_SPRUCE_LOG);
-        addBoxClipped(plan, chunk, x + 8, y + 5, z, x + 8, y + 8, z, Blocks.CHAIN);
+        addBoxClipped(plan, chunk, x + 8, y + 5, z, x + 8, y + 8, z, Blocks.IRON_CHAIN);
         setIfChunk(plan, chunk, x + 8, y + 4, z, Blocks.BARREL);
     }
 
