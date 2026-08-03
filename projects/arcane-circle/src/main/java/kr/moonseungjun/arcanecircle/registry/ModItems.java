@@ -100,6 +100,40 @@ public final class ModItems {
             properties -> new Item(properties.rarity(Rarity.EPIC)
                     .humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.BOOTS)));
 
+
+    public static final DeferredItem<Item> CINDER_HOOD = ITEMS.registerItem("cinder_hat",
+            properties -> new Item(properties.rarity(Rarity.RARE).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.HELMET)));
+    public static final DeferredItem<Item> CINDER_ROBE = ITEMS.registerItem("cinder_robe",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.CHESTPLATE)));
+    public static final DeferredItem<Item> CINDER_ROBE_HEM = ITEMS.registerItem("cinder_robe_hem",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.LEGGINGS)));
+    public static final DeferredItem<Item> CINDER_BOOTS = ITEMS.registerItem("cinder_boots",
+            properties -> new Item(properties.rarity(Rarity.RARE).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.BOOTS)));
+    public static final DeferredItem<Item> GLACIER_CIRCLET = ITEMS.registerItem("glacier_hat",
+            properties -> new Item(properties.rarity(Rarity.RARE).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.HELMET)));
+    public static final DeferredItem<Item> GLACIER_ROBE = ITEMS.registerItem("glacier_robe",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.CHESTPLATE)));
+    public static final DeferredItem<Item> GLACIER_ROBE_HEM = ITEMS.registerItem("glacier_robe_hem",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.LEGGINGS)));
+    public static final DeferredItem<Item> GLACIER_BOOTS = ITEMS.registerItem("glacier_boots",
+            properties -> new Item(properties.rarity(Rarity.RARE).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.BOOTS)));
+    public static final DeferredItem<Item> TEMPEST_HOOD = ITEMS.registerItem("tempest_hat",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.HELMET)));
+    public static final DeferredItem<Item> TEMPEST_ROBE = ITEMS.registerItem("tempest_robe",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.CHESTPLATE)));
+    public static final DeferredItem<Item> TEMPEST_ROBE_HEM = ITEMS.registerItem("tempest_robe_hem",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.LEGGINGS)));
+    public static final DeferredItem<Item> TEMPEST_BOOTS = ITEMS.registerItem("tempest_boots",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.SAGE, ArmorType.BOOTS)));
+    public static final DeferredItem<Item> RIFT_CROWN = ITEMS.registerItem("rift_hat",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.HELMET)));
+    public static final DeferredItem<Item> RIFT_ROBE = ITEMS.registerItem("rift_robe",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.CHESTPLATE)));
+    public static final DeferredItem<Item> RIFT_ROBE_HEM = ITEMS.registerItem("rift_robe_hem",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.LEGGINGS)));
+    public static final DeferredItem<Item> RIFT_BOOTS = ITEMS.registerItem("rift_boots",
+            properties -> new Item(properties.rarity(Rarity.EPIC).humanoidArmor(ArcaneArmorMaterials.ARCHMAGE, ArmorType.BOOTS)));
+
     public static final DeferredItem<BeginnerGrimoireItem> BEGINNER_GRIMOIRE = ITEMS.registerItem(
             "beginner_grimoire", properties -> new BeginnerGrimoireItem(properties.rarity(Rarity.UNCOMMON)));
     private static final Map<String, DeferredItem<SpellbookItem>> SPELLBOOKS = registerSpellbooks();
@@ -148,6 +182,10 @@ public final class ModItems {
             event.accept(ARCHMAGE_CROWN.get());
             event.accept(ARCHMAGE_ROBE.get());
             event.accept(FROSTSTEP_BOOTS.get());
+            event.accept(CINDER_HOOD.get()); event.accept(CINDER_ROBE.get()); event.accept(CINDER_BOOTS.get());
+            event.accept(GLACIER_CIRCLET.get()); event.accept(GLACIER_ROBE.get()); event.accept(GLACIER_BOOTS.get());
+            event.accept(TEMPEST_HOOD.get()); event.accept(TEMPEST_ROBE.get()); event.accept(TEMPEST_BOOTS.get());
+            event.accept(RIFT_CROWN.get()); event.accept(RIFT_ROBE.get()); event.accept(RIFT_BOOTS.get());
             event.accept(BEGINNER_GRIMOIRE.get());
             for (DeferredItem<SpellbookItem> item : SPELLBOOKS.values()) event.accept(item.get());
         }
@@ -199,6 +237,18 @@ public final class ModItems {
             case "archmage_crown" -> ARCHMAGE_CROWN;
             case "archmage_robe" -> ARCHMAGE_ROBE;
             case "froststep_boots" -> FROSTSTEP_BOOTS;
+            case "cinder_hat" -> CINDER_HOOD;
+            case "cinder_robe" -> CINDER_ROBE;
+            case "cinder_boots" -> CINDER_BOOTS;
+            case "glacier_hat" -> GLACIER_CIRCLET;
+            case "glacier_robe" -> GLACIER_ROBE;
+            case "glacier_boots" -> GLACIER_BOOTS;
+            case "tempest_hat" -> TEMPEST_HOOD;
+            case "tempest_robe" -> TEMPEST_ROBE;
+            case "tempest_boots" -> TEMPEST_BOOTS;
+            case "rift_hat" -> RIFT_CROWN;
+            case "rift_robe" -> RIFT_ROBE;
+            case "rift_boots" -> RIFT_BOOTS;
             default -> MAGE_HAT;
         };
     }

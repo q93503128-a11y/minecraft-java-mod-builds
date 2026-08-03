@@ -9,6 +9,11 @@ import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
 import kr.moonseungjun.arcanecircle.world.ArcaneQuestData;
+import kr.moonseungjun.arcanecircle.world.ArcaneEncounterData;
+import kr.moonseungjun.arcanecircle.world.ArcaneEncounterService;
+import kr.moonseungjun.arcanecircle.world.FactionProfile;
+import kr.moonseungjun.arcanecircle.world.MageSociety;
+import kr.moonseungjun.arcanecircle.world.MagicTradition;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,7 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha9";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha10";
     private static final Set<String> PAGES = Set.of(
             "atlas", "recipes", "staffs", "core", "academy", "quests", "sync");
 
@@ -217,6 +222,8 @@ public final class ArcaneNetwork {
                 + ";quest_reward=" + legacyQuest.reward()
                 + ";quest_desc=" + legacyQuest.description()
                 + ";" + questSnapshot(offered, quests)
+                + ";" + factionSnapshot(player)
+                + ";zones=" + ArcaneEncounterService.zoneSummary(player)
                 + ";spell_count=" + SpellCatalog.spells().size();
         return new GrimoireSnapshotPayload(page, snapshot);
     }
@@ -239,9 +246,39 @@ public final class ArcaneNetwork {
                 .append(';').append(prefix).append("_target=").append(quest.target())
                 .append(';').append(prefix).append("_progress=").append(quest.progress())
                 .append(';').append(prefix).append("_circle=").append(quest.circle())
+                .append(';').append(prefix).append("_difficulty=").append(quest.difficulty())
+                .append(';').append(prefix).append("_difficulty_name=").append(quest.difficultyName())
                 .append(';').append(prefix).append("_reward=").append(quest.reward())
                 .append(';').append(prefix).append("_desc=").append(quest.description())
                 .append(';').append(prefix).append("_affiliation=").append(quest.affiliation().name());
+    }
+
+
+    private static String factionSnapshot(ServerPlayer player) {
+        ArcaneEncounterData data = ArcaneEncounterData.get(((ServerLevel) player.level()).getServer());
+        StringBuilder result = new StringBuilder();
+        boolean first = true;
+        for (FactionProfile.Entry entry : FactionProfile.entries()) {
+            if (!first) result.append(';');
+            first = false;
+            MagicTradition tradition = entry.tradition();
+            ArcaneEncounterData.Champion champion = data.champion(tradition);
+            String prefix = "faction_" + tradition.name().toLowerCase();
+            result.append(prefix).append("_representative=").append(entry.representativeName())
+                    .append(';').append(prefix).append("_representative_circle=").append(entry.representativeCircle())
+                    .append(';').append(prefix).append("_headquarters=").append(entry.headquarters())
+                    .append(';').append(prefix).append("_champion=").append(champion.name())
+                    .append(';').append(prefix).append("_champion_circle=").append(champion.circle())
+                    .append(';').append(prefix).append("_allied=")
+                    .append(FactionProfile.namesFor(tradition, MageSociety.Relation.ALLIED))
+                    .append(';').append(prefix).append("_friendly=")
+                    .append(FactionProfile.namesFor(tradition, MageSociety.Relation.FRIENDLY))
+                    .append(';').append(prefix).append("_neutral=")
+                    .append(FactionProfile.namesFor(tradition, MageSociety.Relation.NEUTRAL))
+                    .append(';').append(prefix).append("_hostile=")
+                    .append(FactionProfile.namesFor(tradition, MageSociety.Relation.HOSTILE));
+        }
+        return result.toString();
     }
 
     private static int permille(double value) {

@@ -75,17 +75,20 @@ public final class CombatGrowthService {
                 if (tier > 0) strongKills++;
             }
 
-            threatPoints = Math.min(1_000_000, threatPoints
+            threatPoints = Math.min(20_000_000, threatPoints
                     + (killed ? threat * 2 : Math.max(1, threat / 5)));
-            long hitValue = Math.max(1L, Math.round(Math.pow(threat, 1.25) * 0.60));
-            long killValue = killed ? Math.max(1L, Math.round(Math.pow(threat, 1.75) * 1.80)) : 0L;
-            combatValue = Math.min(50_000_000L, combatValue + hitValue + killValue);
+            long hitValue = Math.max(1L, Math.round(Math.pow(threat, 1.42) * 0.32));
+            long killValue = killed ? Math.max(1L, Math.round(Math.pow(threat, 2.18) * 0.14)) : 0L;
+            combatValue = Math.min(9_000_000_000L, combatValue + hitValue + killValue);
         }
 
         if (hits == 0 && kills == 0) return Impact.NONE;
-        int damagePoints = Math.min(18, (int) Math.floor(damage / 10.0));
-        int mastery = 1 + hits + kills * 3 + Math.min(36, threatPoints / 8) + damagePoints;
-        int insight = hits + kills * 3 + Math.min(90, threatPoints / 4) + Math.max(0, spellCircle - 1);
+        int damagePoints = Math.min(240, (int) Math.floor(damage / 10.0));
+        int threatMastery = Math.min(18_000, (int) Math.round(Math.pow(Math.max(1, peakThreat), 1.38) / 5.0));
+        int mastery = Math.min(25_000, 1 + hits + kills * 4 + threatMastery + damagePoints);
+        int insight = Math.min(60_000, hits + kills * 4
+                + Math.min(35_000, (int) Math.round(Math.pow(Math.max(1, peakThreat), 1.52) / 4.0))
+                + Math.max(0, spellCircle - 1));
         return new Impact(hits, kills, strongHits, strongKills, (int) Math.round(damage),
                 mastery, insight, threatPoints, peakThreat, combatValue);
     }
@@ -126,7 +129,7 @@ public final class CombatGrowthService {
             case "piglin_brute" -> 14.0;
             default -> 0.0;
         };
-        return Math.max(1, Math.min(250, (int) Math.round(score)));
+        return Math.max(1, Math.min(5000, (int) Math.round(score)));
     }
 
     private static double attribute(Mob mob, Holder<Attribute> attribute) {
@@ -135,6 +138,9 @@ public final class CombatGrowthService {
     }
 
     private static int threatTier(int threat) {
+        if (threat >= 1600) return 9;
+        if (threat >= 900) return 8;
+        if (threat >= 450) return 7;
         if (threat >= 150) return 6;
         if (threat >= 100) return 5;
         if (threat >= 65) return 4;

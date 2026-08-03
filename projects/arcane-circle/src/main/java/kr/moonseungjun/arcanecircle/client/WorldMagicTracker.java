@@ -3,6 +3,7 @@ package kr.moonseungjun.arcanecircle.client;
 import kr.moonseungjun.arcanecircle.ArcaneCircle;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
+import kr.moonseungjun.arcanecircle.magic.SpellMetrics;
 import kr.moonseungjun.arcanecircle.network.WorldMagicPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
@@ -400,21 +401,57 @@ public final class WorldMagicTracker {
             double rangeFactor,
             double powerFactor,
             float width) {
-        double length = Math.min(58.0, Math.max(3.2, range));
+        double length = Math.min(72.0, Math.max(3.2, range));
         double trailRadius = (0.10 + spell.circle() * 0.018) * powerFactor;
         int turns = 2 + spell.circle() / 2;
         int segments = 34 + spell.circle() * 7;
-        mesh.helix(Vec3.ZERO, direction, facing, length, trailRadius,
-                turns, segments, width * 0.58F, true);
-        if (spell.circle() >= 3) {
-            mesh.helix(Vec3.ZERO, direction, facing, length, trailRadius,
-                    -turns, segments, width * 0.42F, true);
-        }
         Vec3 end = direction.scale(length);
         double core = (0.20 + spell.circle() * 0.075) * rangeFactor * powerFactor;
-        mesh.sphere(end, core, spell.circle(), width * 0.74F);
-        mesh.star(facing, end, core * 1.46, core * 0.58,
-                Math.min(9, 4 + spell.circle() / 2), 0.0, width * 0.52F);
+        switch (spell.school()) {
+            case FIRE -> {
+                mesh.cone(Vec3.ZERO, direction, facing, length * 0.92, core * 0.55,
+                        5 + spell.circle(), 2 + spell.circle() / 2, width * 0.42F);
+                mesh.helix(Vec3.ZERO, direction, facing, length, trailRadius,
+                        turns, segments, width * 0.60F, true);
+                mesh.sphere(end, core, spell.circle() + 1, width * 0.78F);
+            }
+            case FROST -> {
+                mesh.line(Vec3.ZERO, end, width * 0.72F);
+                for (int i = 0; i < 6; i++) {
+                    double angle = Math.PI * 2.0 * i / 6.0;
+                    Vec3 side = facing.point(angle, core * 0.72);
+                    mesh.line(end.subtract(direction.scale(core * 1.8)), end.add(side), width * 0.52F);
+                    mesh.line(end.add(side), end.add(direction.scale(core * 0.85)), width * 0.44F);
+                }
+                mesh.polygon(facing, end, core * 1.15, 6, 0.0, width * 0.62F);
+            }
+            case WIND -> {
+                for (int blade = -1; blade <= 1; blade++) {
+                    Vec3 center = end.add(facing.right().scale(blade * core * 0.62));
+                    mesh.arc(facing, center, core * (1.0 + Math.abs(blade) * 0.18),
+                            -Math.PI * 0.72, Math.PI * 1.44, 24 + spell.circle() * 3, width * 0.58F);
+                }
+                mesh.helix(Vec3.ZERO, direction, facing, length, trailRadius * 0.75,
+                        -turns, segments, width * 0.38F, true);
+            }
+            case SPACE -> {
+                mesh.line(Vec3.ZERO, end, width * 0.46F);
+                int gates = Math.min(9, 3 + spell.circle());
+                for (int i = 1; i <= gates; i++) mesh.circle(facing,
+                        direction.scale(length * i / (double) gates), core * (0.45 + i * 0.05),
+                        28 + spell.circle() * 2, width * 0.46F);
+                mesh.sphere(end, core * 0.72, spell.circle(), width * 0.62F);
+            }
+            default -> {
+                mesh.helix(Vec3.ZERO, direction, facing, length, trailRadius,
+                        turns, segments, width * 0.58F, true);
+                if (spell.circle() >= 3) mesh.helix(Vec3.ZERO, direction, facing, length,
+                        trailRadius, -turns, segments, width * 0.42F, true);
+                mesh.sphere(end, core, spell.circle(), width * 0.74F);
+                mesh.star(facing, end, core * 1.46, core * 0.58,
+                        Math.min(9, 4 + spell.circle() / 2), 0.0, width * 0.52F);
+            }
+        }
     }
 
     private static void appendWave(
@@ -426,8 +463,8 @@ public final class WorldMagicTracker {
             double rangeFactor,
             double powerFactor,
             float width) {
-        double length = Math.min(36.0, Math.max(4.5, range * 0.78));
-        double endRadius = (1.15 + spell.circle() * 0.38) * rangeFactor * powerFactor;
+        double length = Math.min(72.0, SpellMetrics.waveLength(range));
+        double endRadius = SpellMetrics.waveEndRadius(spell.id(), range, spell.circle()) * powerFactor;
         mesh.cone(Vec3.ZERO, direction, facing, length, endRadius,
                 5 + spell.circle(), 3 + spell.circle() / 2, width * 0.58F);
         for (int i = 1; i <= Math.min(5, 1 + spell.circle() / 2); i++) {
@@ -445,8 +482,8 @@ public final class WorldMagicTracker {
             double powerFactor,
             float width) {
         ArcaneWorldMesh.Basis ground = ArcaneWorldMesh.Basis.ground();
-        double radius = Math.min(32.0,
-                Math.max(1.8, (range * 0.24 + spell.circle() * 0.52) * rangeFactor));
+        double radius = Math.min(48.0,
+                SpellMetrics.effectRadius(spell.id(), range, spell.circle()));
         int rings = Math.max(2, Math.min(9, spell.circle()));
         for (int i = 1; i <= rings && !mesh.full(); i++) {
             mesh.circle(ground, Vec3.ZERO, radius * i / rings,

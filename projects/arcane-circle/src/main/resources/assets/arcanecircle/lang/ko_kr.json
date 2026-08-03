@@ -113,5 +113,21 @@
   "item.arcanecircle.archmage_crown": "대마도사 관",
   "item.arcanecircle.archmage_robe": "대마도사 예복",
   "item.arcanecircle.archmage_robe_hem": "대마도사 예복 자락",
-  "item.arcanecircle.froststep_boots": "빙결 보행화"
+  "item.arcanecircle.froststep_boots": "빙결 보행화",
+  "item.arcanecircle.cinder_hat": "잿불 전투모",
+  "item.arcanecircle.cinder_robe": "잿불 전투로브",
+  "item.arcanecircle.cinder_robe_hem": "잿불 전투로브 자락",
+  "item.arcanecircle.cinder_boots": "화염답화",
+  "item.arcanecircle.glacier_hat": "빙정 관모",
+  "item.arcanecircle.glacier_robe": "빙정 의복",
+  "item.arcanecircle.glacier_robe_hem": "빙정 의복 자락",
+  "item.arcanecircle.glacier_boots": "설원답화",
+  "item.arcanecircle.tempest_hat": "폭풍 후드",
+  "item.arcanecircle.tempest_robe": "폭풍비단 로브",
+  "item.arcanecircle.tempest_robe_hem": "폭풍비단 로브 자락",
+  "item.arcanecircle.tempest_boots": "천뢰 장화",
+  "item.arcanecircle.rift_hat": "균열 관",
+  "item.arcanecircle.rift_robe": "균열 예복",
+  "item.arcanecircle.rift_robe_hem": "균열 예복 자락",
+  "item.arcanecircle.rift_boots": "성간 보행화"
 }

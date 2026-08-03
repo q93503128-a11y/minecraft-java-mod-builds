@@ -35,6 +35,7 @@ public final class GrimoireScreen extends Screen {
     private static int atlasCircle;
     private static int fusionCircle;
     private static int academyCircle;
+    private static MagicTradition inspectedTradition = MagicTradition.ARCANE;
 
     private final String page;
     private int scroll;
@@ -119,9 +120,18 @@ public final class GrimoireScreen extends Screen {
         MagicTradition[] traditions = traditions();
         for (int i = 0; i < traditions.length; i++) {
             if (inside(event.x(), event.y(), l.tradition(i))) {
-                ClientPacketDistributor.sendToServer(new ChooseTraditionPayload(traditions[i].name()));
-                notice(traditions[i].displayName() + " 소속 등록 요청"); return true;
+                inspectedTradition = traditions[i];
+                academyCircle = 0;
+                scroll = 0;
+                saveScroll();
+                notice(inspectedTradition.displayName() + " 상세 정보");
+                return true;
             }
+        }
+        if (inside(event.x(), event.y(), l.traditionJoin())) {
+            ClientPacketDistributor.sendToServer(new ChooseTraditionPayload(inspectedTradition.name()));
+            notice(inspectedTradition.displayName() + " 소속 등록 요청");
+            return true;
         }
         if (academyCircle == 0) {
             for (int circle = 1; circle <= 9; circle++) {
@@ -376,113 +386,45 @@ public final class GrimoireScreen extends Screen {
         Rect c = l.content();
         long marks = ArcaneClientState.longInteger("marks", 0L);
         MagicTradition current = MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND"));
+        if (inspectedTradition == MagicTradition.UNBOUND) inspectedTradition = MagicTradition.ARCANE;
         g.text(font, Component.literal("아르카나 " + marks), c.x() + 2, c.y() + 4, 0xFFFFD66F);
-        g.text(font, Component.literal(current.displayName()), c.right() - font.width(current.displayName()) - 2, c.y() + 4, 0xFFD9C8ED);
-
+        g.text(font, Component.literal("현재 " + current.displayName()), c.right() - font.width("현재 " + current.displayName()) - 2, c.y() + 4, 0xFFD9C8ED);
         MagicTradition[] traditions = traditions();
         for (int i = 0; i < traditions.length; i++) {
-            Rect r = l.tradition(i);
-            MagicTradition t = traditions[i];
-            boolean selected = current == t;
-            g.fill(r.x(), r.y(), r.right(), r.bottom(), selected ? 0xFF3D3157 : inside(mouseX, mouseY, r) ? 0xFF253249 : 0xFF111827);
-            g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), selected ? 0xFFFFD36B : 0xFF6F5A8E);
-            g.centeredText(font, Component.literal(t.displayName()), r.x() + r.w() / 2, r.y() + 5,
-                    selected ? 0xFFFFE4A7 : 0xFFE9E0F1);
-            Rect info = l.traditionInfo(i);
-            g.fill(info.x(), info.y(), info.right(), info.bottom(), selected ? 0xFF201B31 : 0xFF101827);
-            g.text(font, Component.literal(fit("장점 · " + t.strength(), info.w() - 8)),
-                    info.x() + 4, info.y() + 5, 0xFF80D5A7);
-            g.text(font, Component.literal(fit("단점 · " + t.weakness(), info.w() - 8)),
-                    info.x() + 4, info.y() + 19, 0xFFE18A92);
-            g.text(font, Component.literal(fit(t.description(), info.w() - 8)),
-                    info.x() + 4, info.y() + 33, 0xFF909DB0);
+            Rect r = l.tradition(i); MagicTradition t = traditions[i];
+            boolean inspected = inspectedTradition == t, joined = current == t;
+            g.fill(r.x(), r.y(), r.right(), r.bottom(), inspected ? 0xFF3D3157 : inside(mouseX, mouseY, r) ? 0xFF253249 : 0xFF111827);
+            g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), joined ? 0xFFFFD36B : inspected ? 0xFFB57ADC : 0xFF59687C);
+            g.centeredText(font, Component.literal(t.displayName()), r.x() + r.w()/2, r.y()+5, inspected ? 0xFFFFE4A7 : 0xFFE9E0F1);
         }
-
-        if (academyCircle == 0) {
-            for (int circle = 1; circle <= 9; circle++) {
-                drawCircleCard(g, l.academyCircleCard(circle), circle, mouseX, mouseY, true);
-            }
-            return;
-        }
-
-        Rect back = l.academyBack();
-        button(g, back, "‹ 써클", inside(mouseX, mouseY, back), true);
-        g.text(font, Component.literal(academyCircle + "C 상점"), back.right() + 8, back.y() + 5, 0xFFF1E8FA);
-        Rect viewport = l.academyViewport();
-        g.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
-        List<AcademyOfferCatalog.Offer> offers = AcademyOfferCatalog.forCircle(academyCircle);
-        for (int i = 0; i < offers.size(); i++) {
-            Rect r = l.offerCard(i, scroll);
-            AcademyOfferCatalog.Offer offer = offers.get(i);
-            long price = offer.basePrice();
-            boolean enough = marks >= price;
-            g.fill(r.x(), r.y(), r.right(), r.bottom(), inside(mouseX, mouseY, r) ? 0xFF25344B : 0xFF111927);
-            g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), enough ? 0xFF70C69D : 0xFFB75B68);
-            g.text(font, Component.literal(fit(offer.displayName(), r.w() - 10)), r.x() + 6, r.y() + 6,
-                    enough ? 0xFFF0E8FA : 0xFF988A91);
-            g.text(font, Component.literal(price + " A"), r.x() + 6, r.y() + 21,
-                    enough ? 0xFFFFD66F : 0xFFE0717C);
-        }
-        g.disableScissor();
+        Rect detail = l.traditionDetail();
+        g.fill(detail.x(), detail.y(), detail.right(), detail.bottom(), 0xFF101827);
+        g.fill(detail.x(), detail.y(), detail.x()+3, detail.bottom(), 0xFF8A65B1);
+        String prefix = "faction_" + inspectedTradition.name().toLowerCase();
+        g.text(font, Component.literal(fit(inspectedTradition.description(), detail.w()-122)), detail.x()+8, detail.y()+6, 0xFFD9E0EC);
+        g.text(font, Component.literal(fit("강점 · " + inspectedTradition.strength(), detail.w()-122)), detail.x()+8, detail.y()+20, 0xFF7BD4A4);
+        g.text(font, Component.literal(fit("약점 · " + inspectedTradition.weakness(), detail.w()-122)), detail.x()+8, detail.y()+34, 0xFFE08891);
+        g.text(font, Component.literal(fit("우호 " + ArcaneClientState.text(prefix+"_friendly","없음") + " · 적대 " + ArcaneClientState.text(prefix+"_hostile","없음"), detail.w()-16)), detail.x()+8, detail.y()+49, 0xFFAFC2DB);
+        g.text(font, Component.literal(fit("중립 " + ArcaneClientState.text(prefix+"_neutral","없음"), detail.w()-16)), detail.x()+8, detail.y()+63, 0xFF909EAF);
+        String rep = ArcaneClientState.text(prefix+"_representative","없음");
+        int repCircle = ArcaneClientState.integer(prefix+"_representative_circle",0);
+        String champion = ArcaneClientState.text(prefix+"_champion","공석");
+        int championCircle = ArcaneClientState.integer(prefix+"_champion_circle",0);
+        g.text(font, Component.literal(fit("대표 " + rep + " " + repCircle + "C", 108)), detail.right()-112, detail.y()+8, 0xFFFFD891);
+        g.text(font, Component.literal(fit("최강 " + champion + " " + championCircle + "C", 108)), detail.right()-112, detail.y()+23, 0xFFE9B7FF);
+        g.text(font, Component.literal(fit(ArcaneClientState.text(prefix+"_headquarters",""),108)), detail.right()-112, detail.y()+38, 0xFF9BA8B9);
+        button(g, l.traditionJoin(), current==inspectedTradition?"현재 소속":"소속 등록", inside(mouseX,mouseY,l.traditionJoin()), true);
+        if (academyCircle == 0) { for(int circle=1;circle<=9;circle++) drawCircleCard(g,l.academyCircleCard(circle),circle,mouseX,mouseY,true); return; }
+        Rect back=l.academyBack();button(g,back,"‹ 써클",inside(mouseX,mouseY,back),true);g.text(font,Component.literal(academyCircle+"C 상점"),back.right()+8,back.y()+5,0xFFF1E8FA);
+        Rect viewport=l.academyViewport();g.enableScissor(viewport.x(),viewport.y(),viewport.right(),viewport.bottom());List<AcademyOfferCatalog.Offer> offers=AcademyOfferCatalog.forCircle(academyCircle);
+        for(int i=0;i<offers.size();i++){Rect r=l.offerCard(i,scroll);AcademyOfferCatalog.Offer offer=offers.get(i);long price=offer.basePrice();boolean enough=marks>=price;g.fill(r.x(),r.y(),r.right(),r.bottom(),inside(mouseX,mouseY,r)?0xFF25344B:0xFF111927);g.fill(r.x(),r.y(),r.x()+2,r.bottom(),enough?0xFF70C69D:0xFFB75B68);g.text(font,Component.literal(fit(offer.displayName(),r.w()-10)),r.x()+6,r.y()+6,enough?0xFFF0E8FA:0xFF988A91);g.text(font,Component.literal(price+" A"),r.x()+6,r.y()+21,enough?0xFFFFD66F:0xFFE0717C);}g.disableScissor();
     }
 
     private void quests(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
-        Rect c = l.content();
-        int count = Math.min(3, ArcaneClientState.integer("quest_count", 0));
-        sectionTitle(g, l, "의뢰 게시판", "동시에 최대 3개");
-        String offered = ArcaneClientState.text("quest_offer_id", "");
-        Rect offer = l.questOffer();
-        g.fill(offer.x(), offer.y(), offer.right(), offer.bottom(), 0xFF111A2A);
-        g.fill(offer.x(), offer.y(), offer.x() + 3, offer.bottom(), offered.isBlank() ? 0xFF4E5563 : 0xFFFFC65D);
-        if (offered.isBlank()) {
-            g.text(font, Component.literal("검토 중인 의뢰 없음"), offer.x() + 9, offer.y() + 8, 0xFF8F98A8);
-            g.text(font, Component.literal("마도사 주민과 대화하면 내용을 먼저 확인할 수 있습니다."),
-                    offer.x() + 9, offer.y() + 25, 0xFF9EABC0);
-        } else {
-            int circle = ArcaneClientState.integer("quest_offer_circle", 1);
-            int target = ArcaneClientState.integer("quest_offer_target", 0);
-            long reward = ArcaneClientState.longInteger("quest_offer_reward", 0L);
-            String desc = ArcaneClientState.text("quest_offer_desc", "마도 의뢰");
-            MagicTradition issuer = MagicTradition.parse(
-                    ArcaneClientState.text("quest_offer_affiliation", "UNBOUND"));
-            g.text(font, Component.literal(fit(circle + "써클 제안 · " + desc, offer.w() - 18)),
-                    offer.x() + 9, offer.y() + 7, 0xFFFFE0A0);
-            g.text(font, Component.literal(fit("목표 " + target + " · 보상 " + reward + " A", offer.w() - 18)),
-                    offer.x() + 9, offer.y() + 23, 0xFFFFC967);
-            g.text(font, Component.literal(fit("의뢰처 " + issuer.displayName(), offer.w() - 18)),
-                    offer.x() + 9, offer.y() + 39, 0xFFAEB7C8);
-            button(g, l.questAccept(), "수락", inside(mouseX, mouseY, l.questAccept()), true);
-            button(g, l.questReject(), "거절", inside(mouseX, mouseY, l.questReject()), true);
-        }
-
-        for (int i = 0; i < 3; i++) {
-            Rect card = l.questCard(i);
-            boolean active = i < count && !ArcaneClientState.text("quest_" + i + "_id", "").isBlank();
-            g.fill(card.x(), card.y(), card.right(), card.bottom(), 0xFF101827);
-            g.fill(card.x(), card.y(), card.x() + 3, card.bottom(), active ? 0xFF7560A2 : 0xFF343945);
-            if (!active) {
-                g.text(font, Component.literal((i + 1) + "번 의뢰 슬롯 · 비어 있음"),
-                        card.x() + 9, card.y() + 23, 0xFF666F7D);
-                continue;
-            }
-            int progress = ArcaneClientState.integer("quest_" + i + "_progress", 0);
-            int target = Math.max(1, ArcaneClientState.integer("quest_" + i + "_target", 1));
-            int circle = ArcaneClientState.integer("quest_" + i + "_circle", 1);
-            long reward = ArcaneClientState.longInteger("quest_" + i + "_reward", 0L);
-            String desc = ArcaneClientState.text("quest_" + i + "_desc", "마도 의뢰");
-            boolean complete = progress >= target;
-            int textW = card.w() - 105;
-            g.text(font, Component.literal(fit((i + 1) + ". " + circle + "써클 · " + desc, textW)),
-                    card.x() + 9, card.y() + 7, complete ? 0xFFFFD36B : 0xFFE9E0F1);
-            g.text(font, Component.literal(fit(progress + "/" + target + " · " + reward + " A", textW)),
-                    card.x() + 9, card.y() + 24, complete ? 0xFFFFC65D : 0xFF9FC6E8);
-            g.fill(card.x() + 9, card.y() + 43, card.x() + 9 + Math.max(1, textW - 8), card.y() + 47, 0xFF293244);
-            int fill = (int) Math.round(Math.max(0, textW - 8) * Math.min(1.0, progress / (double) target));
-            g.fill(card.x() + 9, card.y() + 43, card.x() + 9 + fill, card.y() + 47,
-                    complete ? 0xFFFFC65D : 0xFF7569C2);
-            if (complete) button(g, l.questClaim(i), "보상 수령",
-                    inside(mouseX, mouseY, l.questClaim(i)), true);
-        }
+        Rect c=l.content();int count=Math.min(3,ArcaneClientState.integer("quest_count",0));sectionTitle(g,l,"의뢰 게시판","고정 난이도·고정 보상");String offered=ArcaneClientState.text("quest_offer_id","");Rect offer=l.questOffer();g.fill(offer.x(),offer.y(),offer.right(),offer.bottom(),0xFF111A2A);g.fill(offer.x(),offer.y(),offer.x()+3,offer.bottom(),offered.isBlank()?0xFF4E5563:0xFFFFC65D);
+        if(offered.isBlank()){g.text(font,Component.literal("새 제안 없음"),offer.x()+9,offer.y()+8,0xFF8F98A8);g.text(font,Component.literal("마도사 주민과 대화하면 난이도와 보상을 먼저 확인합니다."),offer.x()+9,offer.y()+24,0xFF9EABC0);}else{String difficulty=ArcaneClientState.text("quest_offer_difficulty_name","견습");int target=ArcaneClientState.integer("quest_offer_target",0);long reward=ArcaneClientState.longInteger("quest_offer_reward",0);String desc=ArcaneClientState.text("quest_offer_desc","마도 의뢰");MagicTradition issuer=MagicTradition.parse(ArcaneClientState.text("quest_offer_affiliation","UNBOUND"));g.text(font,Component.literal(fit("["+difficulty+"] "+desc,offer.w()-190)),offer.x()+9,offer.y()+7,0xFFFFE0A0);g.text(font,Component.literal(fit("목표 "+target+" · "+reward+" A · "+issuer.displayName(),offer.w()-190)),offer.x()+9,offer.y()+24,0xFFFFC967);button(g,l.questAccept(),"수락",inside(mouseX,mouseY,l.questAccept()),true);button(g,l.questReject(),"거절",inside(mouseX,mouseY,l.questReject()),true);}
+        int startY=l.questListY();if(count==0){Rect empty=new Rect(c.x(),startY,c.w(),34);g.fill(empty.x(),empty.y(),empty.right(),empty.bottom(),0xFF0F1724);g.fill(empty.x(),empty.y(),empty.x()+3,empty.bottom(),0xFF343945);g.text(font,Component.literal("진행 중인 의뢰 없음 · 최대 3개"),empty.x()+9,empty.y()+12,0xFF697483);return;}
+        for(int i=0;i<count;i++){Rect card=l.questCard(i);int progress=ArcaneClientState.integer("quest_"+i+"_progress",0);int target=Math.max(1,ArcaneClientState.integer("quest_"+i+"_target",1));long reward=ArcaneClientState.longInteger("quest_"+i+"_reward",0);String diff=ArcaneClientState.text("quest_"+i+"_difficulty_name","견습");String desc=ArcaneClientState.text("quest_"+i+"_desc","마도 의뢰");boolean complete=progress>=target;g.fill(card.x(),card.y(),card.right(),card.bottom(),0xFF101827);g.fill(card.x(),card.y(),card.x()+3,card.bottom(),complete?0xFFFFC65D:0xFF7560A2);int textW=card.w()-105;g.text(font,Component.literal(fit((i+1)+". ["+diff+"] "+desc,textW)),card.x()+9,card.y()+6,complete?0xFFFFD36B:0xFFE9E0F1);g.text(font,Component.literal(fit(progress+"/"+target+" · "+reward+" A",textW)),card.x()+9,card.y()+21,complete?0xFFFFC65D:0xFF9FC6E8);g.fill(card.x()+9,card.y()+36,card.x()+9+Math.max(1,textW-8),card.y()+40,0xFF293244);int fill=(int)Math.round(Math.max(0,textW-8)*Math.min(1.0,progress/(double)target));g.fill(card.x()+9,card.y()+36,card.x()+9+fill,card.y()+40,complete?0xFFFFC65D:0xFF7569C2);if(complete)button(g,l.questClaim(i),"보상 수령",inside(mouseX,mouseY,l.questClaim(i)),true);}
     }
 
     private void core(GuiGraphicsExtractor g, Layout l) {
@@ -506,7 +448,8 @@ public final class GrimoireScreen extends Screen {
                 ArcaneClientState.text("gear_boots", "마도화 없음"),
                 "소속 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).displayName(),
                 "강점 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).strength(),
-                "약점 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).weakness()));
+                "약점 " + MagicTradition.parse(ArcaneClientState.text("tradition", "UNBOUND")).weakness(),
+                "위험지대 " + ArcaneClientState.text("zones", "미탐지").replace("|", " · ")));
     }
 
     private void infoPanel(GuiGraphicsExtractor g, int x, int y, int w, String title, List<String> lines) {
@@ -652,20 +595,19 @@ public final class GrimoireScreen extends Screen {
         Rect staffRecipe(){Rect c=content();return new Rect(c.x(),c.bottom()-62,c.w(),60);}
 
         Rect tradition(int i){Rect c=content();int gap=4;int w=(c.w()-gap*3)/4;return new Rect(c.x()+i*(w+gap),c.y()+20,w,20);}
-        Rect traditionInfo(int i){Rect c=content();int gap=4;int w=(c.w()-gap*3)/4;return new Rect(c.x()+i*(w+gap),c.y()+43,w,46);}
-        Rect academyCircleCard(int circle){
-            Rect c=content();int cols=c.w()>=420?9:3,gap=4;int w=(c.w()-gap*(cols-1))/cols;int col=(circle-1)%cols,row=(circle-1)/cols;int h=34;
-            return new Rect(c.x()+col*(w+gap),c.y()+102+row*(h+gap),w,h);
-        }
-        Rect academyBack(){Rect c=content();return new Rect(c.x(),c.y()+99,66,19);}
-        Rect academyViewport(){Rect c=content();return new Rect(c.x(),c.y()+124,c.w(),c.h()-125);}
+        Rect traditionDetail(){Rect c=content();return new Rect(c.x(),c.y()+44,c.w(),78);}
+        Rect traditionJoin(){Rect d=traditionDetail();return new Rect(d.right()-108,d.bottom()-27,100,21);}
+        Rect academyCircleCard(int circle){Rect c=content();int cols=c.w()>=420?9:3,gap=4;int w=(c.w()-gap*(cols-1))/cols;int col=(circle-1)%cols,row=(circle-1)/cols;int h=34;return new Rect(c.x()+col*(w+gap),c.y()+136+row*(h+gap),w,h);}
+        Rect academyBack(){Rect c=content();return new Rect(c.x(),c.y()+133,66,19);}
+        Rect academyViewport(){Rect c=content();return new Rect(c.x(),c.y()+158,c.w(),Math.max(20,c.h()-159));}
         Rect offerCard(int i,int scroll){Rect v=academyViewport();int cols=v.w()>=540?4:2,gap=5;int w=(v.w()-gap*(cols-1))/cols;int row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*43-scroll,w,38);}
         int maxOfferScroll(int count){Rect v=academyViewport();int cols=v.w()>=540?4:2;return Math.max(0,((count+cols-1)/cols)*43-v.h());}
 
-        Rect questOffer(){Rect c=content();return new Rect(c.x(),c.y()+28,c.w(),64);}
-        Rect questAccept(){Rect c=content();return new Rect(c.right()-166,c.y()+96,78,21);}
-        Rect questReject(){Rect c=content();return new Rect(c.right()-82,c.y()+96,78,21);}
-        Rect questCard(int i){Rect c=content();return new Rect(c.x(),c.y()+128+i*66,c.w(),60);}
-        Rect questClaim(int i){Rect r=questCard(i);return new Rect(r.right()-92,r.y()+18,82,23);}
+        Rect questOffer(){Rect c=content();return new Rect(c.x(),c.y()+28,c.w(),48);}
+        Rect questAccept(){Rect r=questOffer();return new Rect(r.right()-166,r.y()+13,78,21);}
+        Rect questReject(){Rect r=questOffer();return new Rect(r.right()-82,r.y()+13,78,21);}
+        int questListY(){return content().y()+84;}
+        Rect questCard(int i){Rect c=content();return new Rect(c.x(),questListY()+i*50,c.w(),44);}
+        Rect questClaim(int i){Rect r=questCard(i);return new Rect(r.right()-92,r.y()+10,82,23);}
     }
 }

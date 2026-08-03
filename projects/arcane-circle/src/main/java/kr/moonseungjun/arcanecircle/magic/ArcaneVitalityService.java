@@ -17,6 +17,9 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
  * grow into the hundreds or tens of thousands.</p>
  */
 public final class ArcaneVitalityService {
+    /** One vanilla health point equals five visible RPG vitality points. */
+    public static final double RPG_POINTS_PER_VANILLA_HEALTH = 5.0;
+
     private ArcaneVitalityService() {}
 
     public static int effectiveMaxHealth(ServerPlayer player) {
@@ -87,6 +90,6 @@ public final class ArcaneVitalityService {
     private static float convertToVanilla(ServerPlayer player, float effectiveAmount) {
         double vanillaMax = Math.max(1.0, player.getMaxHealth());
         double effectiveMax = Math.max(vanillaMax, effectiveMaxHealth(player));
-        return (float) (effectiveAmount * vanillaMax / effectiveMax);
+        return (float) (effectiveAmount * RPG_POINTS_PER_VANILLA_HEALTH * vanillaMax / effectiveMax);
     }
 }

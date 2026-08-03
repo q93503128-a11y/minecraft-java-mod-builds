@@ -5,6 +5,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
+import kr.moonseungjun.arcanecircle.magic.RpgScaleService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellKineticsService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
@@ -12,6 +13,7 @@ import kr.moonseungjun.arcanecircle.network.ArcaneNetwork;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
 import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
 import kr.moonseungjun.arcanecircle.world.ArcaneMageService;
+import kr.moonseungjun.arcanecircle.world.ArcaneEncounterService;
 import kr.moonseungjun.arcanecircle.world.MagicWorldService;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -28,7 +30,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.9";
+    public static final String VERSION = "0.12.1-alpha.10";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -40,7 +42,10 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(RpgScaleService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneVitalityService::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(ArcaneMageService::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(ArcaneEncounterService::onDeath);
         NeoForge.EVENT_BUS.addListener(ArcaneVitalityService::onHeal);
         NeoForge.EVENT_BUS.addListener(ArcaneMageService::onInteract);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
@@ -114,6 +119,7 @@ public final class ArcaneCircle {
         SpellCastingService.tickCharge(player);
         SpellKineticsService.tick(player);
         MagicWorldService.tick(player);
+        ArcaneEncounterService.tick(player);
         if (player.tickCount % 10 == 0) MageGearService.tick(player);
         if (player.tickCount % 20 == 0) ArcaneMageService.tickNear(player);
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());

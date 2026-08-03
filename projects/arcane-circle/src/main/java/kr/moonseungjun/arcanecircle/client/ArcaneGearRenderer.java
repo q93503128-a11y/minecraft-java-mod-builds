@@ -291,6 +291,9 @@ public final class ArcaneGearRenderer {
         if (stack.getItem() == ModItems.ARCHMAGE_CROWN.get()) return 3;
         if (stack.getItem() == ModItems.SAGE_HAT.get()) return 2;
         if (stack.getItem() == ModItems.MAGE_HAT.get()) return 1;
+        if (stack.getItem() == ModItems.CINDER_HOOD.get() || stack.getItem() == ModItems.GLACIER_CIRCLET.get()
+                || stack.getItem() == ModItems.TEMPEST_HOOD.get()) return 2;
+        if (stack.getItem() == ModItems.RIFT_CROWN.get()) return 3;
         return 0;
     }
 
@@ -298,6 +301,9 @@ public final class ArcaneGearRenderer {
         if (stack.getItem() == ModItems.ARCHMAGE_ROBE.get()) return 3;
         if (stack.getItem() == ModItems.SAGE_ROBE.get()) return 2;
         if (stack.getItem() == ModItems.MAGE_ROBE.get()) return 1;
+        if (stack.getItem() == ModItems.CINDER_ROBE.get() || stack.getItem() == ModItems.GLACIER_ROBE.get()
+                || stack.getItem() == ModItems.TEMPEST_ROBE.get()) return 2;
+        if (stack.getItem() == ModItems.RIFT_ROBE.get()) return 3;
         return 0;
     }
 
@@ -305,6 +311,8 @@ public final class ArcaneGearRenderer {
         if (stack.getItem() == ModItems.FROSTSTEP_BOOTS.get()) return 3;
         if (stack.getItem() == ModItems.SKYWALKER_BOOTS.get()) return 2;
         if (stack.getItem() == ModItems.MAGE_BOOTS.get()) return 1;
+        if (stack.getItem() == ModItems.CINDER_BOOTS.get() || stack.getItem() == ModItems.GLACIER_BOOTS.get()) return 2;
+        if (stack.getItem() == ModItems.TEMPEST_BOOTS.get() || stack.getItem() == ModItems.RIFT_BOOTS.get()) return 3;
         return 0;
     }
 
