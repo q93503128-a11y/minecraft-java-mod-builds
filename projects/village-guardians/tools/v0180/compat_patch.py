@@ -88,6 +88,15 @@ path = TOOLS / "test_v01715_skill_combat_visuals.py"
 text = read(path).replace(
     'assert "20.0, 60" in abilities',
     'assert "double radius = 20.0 + specialRank * 2.0" in abilities')
+text = text.replace(
+    'assert "VillageEquipmentRaritySystem.skillMultiplier(player)" in read("VillageRoleSkillSystem.java")',
+    'assert "VillageEquipmentShop.roleSkillMultiplier(player)" in read("VillageRoleSkillSystem.java")')
+write(path, text)
+
+path = TOOLS / "test_v01719_access_content.py"
+text = read(path).replace(
+    '"고정 최종 일수는 없으며 무한 진행"',
+    '"고정 마지막 날은 없으며 무한 진행"')
 write(path, text)
 
 # Correct labels changed mechanically by the historical migration.
