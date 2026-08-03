@@ -166,7 +166,7 @@ public final class MagicPlayerData extends SavedData {
         MageState state = state(player);
         StaffProfile staff = ModItems.equipped(player);
         MageGearService.GearStats gear = MageGearService.stats(player);
-        int maxMana = Math.max(1, state.baseMaxMana() + staff.maxManaBonus() + gear.maxManaBonus());
+        int maxMana = Math.max(1, (int) Math.round((state.baseMaxMana() + staff.maxManaBonus() + gear.maxManaBonus()) * staff.maxManaMultiplier() * gear.maxManaMultiplier()));
         if (state.mana > maxMana) {
             state.mana = maxMana;
             setDirty();
@@ -258,11 +258,13 @@ public final class MagicPlayerData extends SavedData {
         double masteryRange = 1.0 + proficiency * 0.02;
         double masteryPower = 1.0 + proficiency * 0.04;
 
-        int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * circleMana * masteryMana
-                * staff.manaCostMultiplier() * gear.manaCostMultiplier() * facultyMana));
-        double rawCooldown = spell.cooldownTicks() * circleCooldown * masteryCooldown
-                * staff.cooldownMultiplier() * gear.cooldownMultiplier() * facultyCooldown;
-        int cooldown = rawCooldown < 0.75 ? 0 : Math.max(1, (int) Math.round(rawCooldown));
+        double totalCostMultiplier = Math.max(0.18, circleMana * masteryMana
+                * staff.manaCostMultiplier() * gear.manaCostMultiplier() * facultyMana);
+        int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * totalCostMultiplier));
+        double totalCooldownMultiplier = Math.max(0.15, circleCooldown * masteryCooldown
+                * staff.cooldownMultiplier() * gear.cooldownMultiplier() * facultyCooldown);
+        double rawCooldown = spell.cooldownTicks() * totalCooldownMultiplier;
+        int cooldown = spell.cooldownTicks() <= 0 ? 0 : Math.max(2, (int) Math.round(rawCooldown));
         double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier()
                 * gear.rangeMultiplier() * facultyRange;
         double tierPower = SpellCatalog.isDamaging(spell.id())

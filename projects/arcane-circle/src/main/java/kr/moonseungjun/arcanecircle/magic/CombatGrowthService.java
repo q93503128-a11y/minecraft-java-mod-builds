@@ -56,6 +56,8 @@ public final class CombatGrowthService {
         int threatPoints = 0;
         int peakThreat = 0;
         long combatValue = 0L;
+        double hitThreatMastery = 0.0;
+        double killThreatMastery = 0.0;
 
         for (Sample sample : snapshot.samples()) {
             Mob mob = sample.mob();
@@ -77,17 +79,19 @@ public final class CombatGrowthService {
 
             threatPoints = Math.min(20_000_000, threatPoints
                     + (killed ? threat * 2 : Math.max(1, threat / 5)));
-            long hitValue = Math.max(1L, Math.round(Math.pow(threat, 1.42) * 0.32));
-            long killValue = killed ? Math.max(1L, Math.round(Math.pow(threat, 2.18) * 0.14)) : 0L;
-            combatValue = Math.min(9_000_000_000L, combatValue + hitValue + killValue);
+            hitThreatMastery += Math.min(12.0, Math.sqrt(threat) * 0.32);
+            if (killed) killThreatMastery += Math.pow(threat, 1.34) * 0.20;
+            long hitValue = Math.max(1L, Math.round(Math.sqrt(threat) * 0.75));
+            long killValue = killed ? Math.max(1L, Math.round(Math.pow(threat, 1.48) * 0.52)) : 0L;
+            combatValue = Math.min(2_000_000_000L, combatValue + hitValue + killValue);
         }
 
         if (hits == 0 && kills == 0) return Impact.NONE;
-        int damagePoints = Math.min(240, (int) Math.floor(damage / 10.0));
-        int threatMastery = Math.min(18_000, (int) Math.round(Math.pow(Math.max(1, peakThreat), 1.38) / 5.0));
-        int mastery = Math.min(25_000, 1 + hits + kills * 4 + threatMastery + damagePoints);
-        int insight = Math.min(60_000, hits + kills * 4
-                + Math.min(35_000, (int) Math.round(Math.pow(Math.max(1, peakThreat), 1.52) / 4.0))
+        int damagePoints = Math.min(80, (int) Math.floor(damage / 25.0));
+        int hitBonus = Math.min(90, (int) Math.round(hitThreatMastery));
+        int killBonus = Math.min(4_500, (int) Math.round(killThreatMastery));
+        int mastery = Math.min(5_000, 1 + hits + kills * 5 + hitBonus + killBonus + damagePoints);
+        int insight = Math.min(8_000, hits + kills * 6 + hitBonus / 2 + killBonus
                 + Math.max(0, spellCircle - 1));
         return new Impact(hits, kills, strongHits, strongKills, (int) Math.round(damage),
                 mastery, insight, threatPoints, peakThreat, combatValue);

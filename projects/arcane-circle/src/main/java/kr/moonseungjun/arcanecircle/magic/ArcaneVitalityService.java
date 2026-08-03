@@ -39,18 +39,7 @@ public final class ArcaneVitalityService {
         };
 
         MageGearService.GearStats gear = MageGearService.stats(player);
-        double robe = switch (gear.robeTier()) {
-            case 1 -> 1.24;
-            case 2 -> 1.72;
-            case 3 -> 2.65;
-            default -> 1.0;
-        };
-        double hat = switch (gear.hatTier()) {
-            case 2 -> 1.08;
-            case 3 -> 1.18;
-            default -> 1.0;
-        };
-        double boots = gear.bootsTier() >= 3 ? 1.08 : 1.0;
+        double equipmentHealth = (base + gear.healthBonus()) * gear.healthMultiplier();
         MagicTradition tradition = ArcaneWorldData.get(((ServerLevel) player.level()).getServer()).tradition(player);
         double doctrine = switch (tradition) {
             case DIVINE -> 1.18;
@@ -58,7 +47,7 @@ public final class ArcaneVitalityService {
             case OCCULT -> 0.96;
             default -> 1.0;
         };
-        return Math.max(100, (int) Math.round(base * robe * hat * boots * doctrine));
+        return Math.max(100, (int) Math.round(equipmentHealth * doctrine));
     }
 
     public static int effectiveHealth(ServerPlayer player) {

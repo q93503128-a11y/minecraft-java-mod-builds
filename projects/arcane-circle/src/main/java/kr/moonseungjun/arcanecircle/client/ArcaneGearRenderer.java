@@ -5,344 +5,42 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import kr.moonseungjun.arcanecircle.ArcaneCircle;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
 import net.minecraft.client.entity.ClientAvatarEntity;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.context.ContextKey;
 import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import net.neoforged.neoforge.client.renderstate.AvatarRenderStateModifier;
+import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent;
 
-/**
- * Adds a recognisable wizard silhouette on top of the equipment textures: a pointed hat,
- * layered shoulders, a split flared robe and rune-banded boots. It is geometry, not particles,
- * and the tiers differ in both size and ornament count.
- */
+/** Open-faced pointed hats and directional cloth geometry that trails player movement. */
 public final class ArcaneGearRenderer {
-    private static final ContextKey<Integer> HAT_TIER = key("hat_tier");
-    private static final ContextKey<Integer> ROBE_TIER = key("robe_tier");
-    private static final ContextKey<Integer> BOOTS_TIER = key("boots_tier");
+    private static final ContextKey<Integer> HAT=key("hat_tier"),ROBE=key("robe_tier"),BOOTS=key("boots_tier");
+    private static final ContextKey<Float> MOVE_X=key("gear_move_x"),MOVE_Z=key("gear_move_z"),PHASE=key("gear_move_phase");
+    private ArcaneGearRenderer(){}
+    public static void registerStateModifiers(RegisterRenderStateModifiersEvent event){event.registerAvatarEntityModifier(new AvatarRenderStateModifier(){@Override public<T extends Avatar&ClientAvatarEntity>void accept(T avatar,AvatarRenderState state){state.setRenderData(HAT,hatTier(avatar.getItemBySlot(EquipmentSlot.HEAD)));state.setRenderData(ROBE,robeTier(avatar.getItemBySlot(EquipmentSlot.CHEST)));state.setRenderData(BOOTS,bootsTier(avatar.getItemBySlot(EquipmentSlot.FEET)));Vec3 v=avatar.getDeltaMovement();double yaw=Math.toRadians(avatar.getYRot());float localX=(float)(v.x*Math.cos(yaw)+v.z*Math.sin(yaw));float localZ=(float)(-v.x*Math.sin(yaw)+v.z*Math.cos(yaw));float speed=(float)Math.min(.42,Math.sqrt(v.x*v.x+v.z*v.z));state.setRenderData(MOVE_X,localX);state.setRenderData(MOVE_Z,localZ);state.setRenderData(PHASE,(float)Math.sin(avatar.tickCount*.72)*speed);}});}
+    public static void onPlayerRender(RenderPlayerEvent.Post<?> event){int h=event.getRenderState().getRenderDataOrDefault(HAT,0),r=event.getRenderState().getRenderDataOrDefault(ROBE,0),b=event.getRenderState().getRenderDataOrDefault(BOOTS,0);if(h<=0&&r<=0&&b<=0)return;float mx=event.getRenderState().getRenderDataOrDefault(MOVE_X,0F),mz=event.getRenderState().getRenderDataOrDefault(MOVE_Z,0F),phase=event.getRenderState().getRenderDataOrDefault(PHASE,0F);PoseStack stack=event.getPoseStack();stack.pushPose();if(r>0)robe(stack,event,r,mx,mz,phase);if(b>0)boots(stack,event,b);if(h>0)hat(stack,event,h);stack.popPose();}
 
-    private ArcaneGearRenderer() {}
+    private static void hat(PoseStack stack,RenderPlayerEvent.Post<?> event,int tier){int body=body(tier),dark=dark(body),trim=trim(tier);double outer=.50+tier*.045,inner=.345,y=2.105,height=.66+tier*.14;int n=20+tier*4;event.getSubmitNodeCollector().submitCustomGeometry(stack,RenderTypes.debugFilledBox(),(pose,out)->{for(int i=0;i<n;i++){double a=Math.PI*2*i/n,b=Math.PI*2*(i+1)/n;float ax=(float)(Math.cos(a)*outer),az=(float)(Math.sin(a)*outer),bx=(float)(Math.cos(b)*outer),bz=(float)(Math.sin(b)*outer),iax=(float)(Math.cos(a)*inner),iaz=(float)(Math.sin(a)*inner),ibx=(float)(Math.cos(b)*inner),ibz=(float)(Math.sin(b)*inner);quad(out,pose,ax,(float)y,az,bx,(float)y,bz,ibx,(float)(y+.035),ibz,iax,(float)(y+.035),iaz,(i%4==0)?trim:body);double twist=.08*Math.sin(a*1.8+tier);float apexX=(float)(.12+tier*.025),apexZ=(float)(-.03+twist);quad(out,pose,iax,(float)(y+.03),iaz,ibx,(float)(y+.03),ibz,apexX,(float)(y+height),apexZ,apexX,(float)(y+height),apexZ,(i&1)==0?body:dark);}});filledBand(stack,event,inner*.98,inner*1.14,y+.12,18,trim,.035);filledBand(stack,event,outer*.80,outer*.90,y+.02,24,trim,.025);}
 
-    public static void registerStateModifiers(RegisterRenderStateModifiersEvent event) {
-        event.registerAvatarEntityModifier(new AvatarRenderStateModifier() {
-            @Override
-            public <T extends Avatar & ClientAvatarEntity> void accept(T avatar, AvatarRenderState state) {
-                state.setRenderData(HAT_TIER, hatTier(avatar.getItemBySlot(EquipmentSlot.HEAD)));
-                state.setRenderData(ROBE_TIER, robeTier(avatar.getItemBySlot(EquipmentSlot.CHEST)));
-                state.setRenderData(BOOTS_TIER, bootsTier(avatar.getItemBySlot(EquipmentSlot.FEET)));
-            }
-        });
-    }
+    private static void robe(PoseStack stack,RenderPlayerEvent.Post<?> event,int tier,float moveX,float moveZ,float phase){int body=body(tier),dark=dark(body),shadow=dark(dark),trim=trim(tier),lining=tier>=3?0xDF3D1558:tier==2?0xDE123759:0xDC321A3E;float shoulder=.43F+tier*.03F,waist=.31F,hem=.50F+tier*.065F,top=1.48F,chest=1.15F,middle=.86F,bottom=.055F;float speed=Math.min(.34F,(float)Math.sqrt(moveX*moveX+moveZ*moveZ));float lagX=clamp(-moveX*1.65F,-.24F,.24F),lagZ=clamp(-moveZ*1.65F,-.28F,.28F);float flutter=clamp(phase*1.7F,-.13F,.13F),lift=Math.min(.16F,speed*.48F);event.getSubmitNodeCollector().submitCustomGeometry(stack,RenderTypes.debugFilledBox(),(pose,out)->{
+        quad(out,pose,-shoulder,top,-.30F,shoulder,top,-.30F,waist,chest,-.325F,-waist,chest,-.325F,body);quad(out,pose,shoulder,top,.30F,-shoulder,top,.30F,-waist,chest,.325F,waist,chest,.325F,dark);quad(out,pose,-shoulder,top,.30F,-shoulder,top,-.30F,-waist,chest,-.325F,-waist,chest,.325F,shadow);quad(out,pose,shoulder,top,-.30F,shoulder,top,.30F,waist,chest,.325F,waist,chest,-.325F,dark);
+        quad(out,pose,-waist,chest,-.315F,waist,chest,-.315F,waist,middle,-.29F,-waist,middle,-.29F,body);quad(out,pose,waist,chest,.315F,-waist,chest,.315F,-waist,middle,.29F,waist,middle,.29F,dark);quad(out,pose,-waist,chest,.315F,-waist,chest,-.315F,-waist,middle,-.29F,-waist,middle,.29F,shadow);quad(out,pose,waist,chest,-.315F,waist,chest,.315F,waist,middle,.29F,waist,middle,-.29F,dark);
+        float lX=lagX-flutter,rX=lagX+flutter,frontZ=-.40F+lagZ,backZ=.40F+lagZ;float by=bottom+lift;quad(out,pose,-waist,middle,-.29F,-.04F,middle,-.30F,-.08F+lX,by,frontZ,-hem+lX,by,frontZ+.035F,body);quad(out,pose,.04F,middle,-.30F,waist,middle,-.29F,hem+rX,by,frontZ+.035F,.08F+rX,by,frontZ,dark);quad(out,pose,-.04F,middle-.01F,-.305F,.04F,middle-.01F,-.305F,.10F+lagX,by+.018F,frontZ-.012F,-.10F+lagX,by+.018F,frontZ-.012F,lining);quad(out,pose,waist,middle,.29F,-waist,middle,.29F,-hem+lX,by,backZ,hem+rX,by,backZ,body);quad(out,pose,-waist,middle,.28F,-waist,middle,-.28F,-hem+lX,by,frontZ+.03F,-hem+lX,by,backZ,shadow);quad(out,pose,waist,middle,-.28F,waist,middle,.28F,hem+rX,by,backZ,hem+rX,by,frontZ+.03F,dark);
+        float bandY=by+.045F;quad(out,pose,-hem+lX,bandY,frontZ-.008F,hem+rX,bandY,frontZ-.008F,hem+rX,bandY+.035F,frontZ-.010F,-hem+lX,bandY+.035F,frontZ-.010F,trim);
+    });sleeve(stack,event,-1,tier,body,dark,lining);sleeve(stack,event,1,tier,dark,shadow,lining);filledBand(stack,event,.315,.345,.92,18,trim,.028);}
 
-    public static void onPlayerRender(RenderPlayerEvent.Post<?> event) {
-        int hat = event.getRenderState().getRenderDataOrDefault(HAT_TIER, 0);
-        int robe = event.getRenderState().getRenderDataOrDefault(ROBE_TIER, 0);
-        int boots = event.getRenderState().getRenderDataOrDefault(BOOTS_TIER, 0);
-        if (hat <= 0 && robe <= 0 && boots <= 0) return;
-
-        PoseStack stack = event.getPoseStack();
-        stack.pushPose();
-        if (robe > 0) submitRobe(stack, event, robe);
-        if (boots > 0) submitBoots(stack, event, boots);
-        if (hat > 0) submitHat(stack, event, hat);
-        stack.popPose();
-    }
-
-    private static void submitHat(PoseStack stack, RenderPlayerEvent.Post<?> event, int tier) {
-        int body = bodyColor(tier);
-        int trim = trimColor(tier);
-        double brim = 0.48 + tier * 0.055;
-        double inner = 0.24;
-        double y = 2.02;
-        double height = 0.72 + tier * 0.15;
-        int segments = 16 + tier * 4;
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.debugFilledBox(), (pose, out) -> {
-            for (int i = 0; i < segments; i++) {
-                double a = Math.PI * 2.0 * i / segments;
-                double b = Math.PI * 2.0 * (i + 1) / segments;
-                float ax = (float) (Math.cos(a) * brim);
-                float az = (float) (Math.sin(a) * brim);
-                float bx = (float) (Math.cos(b) * brim);
-                float bz = (float) (Math.sin(b) * brim);
-                float iax = (float) (Math.cos(a) * inner);
-                float iaz = (float) (Math.sin(a) * inner);
-                float ibx = (float) (Math.cos(b) * inner);
-                float ibz = (float) (Math.sin(b) * inner);
-                quad(out, pose, ax, (float) y, az, bx, (float) y, bz,
-                        ibx, (float) (y + 0.025), ibz, iax, (float) (y + 0.025), iaz, body);
-
-                double bend = 0.10 * Math.sin(a * 1.5 + tier);
-                float apexX = (float) (0.10 + tier * 0.025);
-                float apexZ = (float) (-0.04 + bend);
-                quad(out, pose,
-                        iax, (float) (y + 0.02), iaz,
-                        ibx, (float) (y + 0.02), ibz,
-                        apexX, (float) (y + height), apexZ,
-                        apexX, (float) (y + height), apexZ,
-                        (i & 1) == 0 ? body : darken(body));
-            }
-        });
-        submitRing(stack, event, 0.30, y + 0.13, 18, trim, 1.1F + tier * 0.18F);
-        if (tier >= 2) submitRing(stack, event, brim * 0.86, y + 0.01, 28, trim, 0.8F);
-        if (tier >= 3) submitStar(stack, event, 0.22, y + height * 0.60, trim, 1.05F);
-    }
-
-    private static void submitRobe(PoseStack stack, RenderPlayerEvent.Post<?> event, int tier) {
-        int body = bodyColor(tier);
-        int dark = darken(body);
-        int shadow = darken(dark);
-        int trim = trimColor(tier);
-        int lining = tier >= 3 ? 0xFF2B113E : tier == 2 ? 0xFF102D52 : 0xFF24142F;
-        float shoulder = 0.43F + tier * 0.035F;
-        float waist = 0.315F;
-        float hem = 0.52F + tier * 0.075F;
-        float top = 1.49F;
-        float chest = 1.15F;
-        float middle = 0.88F;
-        float bottom = 0.055F;
-
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.debugFilledBox(), (pose, out) -> {
-            // Raised double mantle with a dark underside.
-            quad(out, pose, -shoulder, top, -0.30F, shoulder, top, -0.30F,
-                    waist, chest, -0.325F, -waist, chest, -0.325F, body);
-            quad(out, pose, shoulder, top, 0.30F, -shoulder, top, 0.30F,
-                    -waist, chest, 0.325F, waist, chest, 0.325F, body);
-            quad(out, pose, -shoulder, top, 0.30F, -shoulder, top, -0.30F,
-                    -waist, chest, -0.325F, -waist, chest, 0.325F, dark);
-            quad(out, pose, shoulder, top, -0.30F, shoulder, top, 0.30F,
-                    waist, chest, 0.325F, waist, chest, -0.325F, dark);
-            quad(out, pose, -shoulder, top - 0.045F, -0.30F, shoulder, top - 0.045F, -0.30F,
-                    waist, chest - 0.035F, -0.325F, -waist, chest - 0.035F, -0.325F, shadow);
-
-            // Fitted torso shell.
-            quad(out, pose, -waist, chest, -0.315F, waist, chest, -0.315F,
-                    waist, middle, -0.29F, -waist, middle, -0.29F, body);
-            quad(out, pose, waist, chest, 0.315F, -waist, chest, 0.315F,
-                    -waist, middle, 0.29F, waist, middle, 0.29F, dark);
-            quad(out, pose, -waist, chest, 0.315F, -waist, chest, -0.315F,
-                    -waist, middle, -0.29F, -waist, middle, 0.29F, shadow);
-            quad(out, pose, waist, chest, -0.315F, waist, chest, 0.315F,
-                    waist, middle, 0.29F, waist, middle, -0.29F, dark);
-
-            // Six pleated skirt panels. The front split exposes a contrasting lining.
-            float split = 0.055F;
-            quad(out, pose, -waist, middle, -0.29F, -split, middle, -0.30F,
-                    -0.10F, bottom, -0.43F, -hem, bottom, -0.39F, body);
-            quad(out, pose, split, middle, -0.30F, waist, middle, -0.29F,
-                    hem, bottom, -0.39F, 0.10F, bottom, -0.43F, dark);
-            quad(out, pose, -split, middle - 0.015F, -0.305F, split, middle - 0.015F, -0.305F,
-                    0.10F, bottom + 0.02F, -0.435F, -0.10F, bottom + 0.02F, -0.435F, lining);
-            quad(out, pose, waist, middle, 0.29F, -waist, middle, 0.29F,
-                    -hem, bottom, 0.39F, hem, bottom, 0.39F, body);
-            quad(out, pose, -waist, middle, 0.28F, -waist, middle, -0.28F,
-                    -hem, bottom, -0.38F, -hem, bottom, 0.38F, shadow);
-            quad(out, pose, waist, middle, -0.28F, waist, middle, 0.28F,
-                    hem, bottom, 0.38F, hem, bottom, -0.38F, dark);
-            // Rear centre pleat catches light separately.
-            quad(out, pose, -0.12F, middle + 0.01F, 0.302F, 0.12F, middle + 0.01F, 0.302F,
-                    0.19F, bottom + 0.015F, 0.405F, -0.19F, bottom + 0.015F, 0.405F,
-                    tier >= 3 ? trim : body);
-        });
-
-        submitSleeve(stack, event, -1, tier, body, dark, lining);
-        submitSleeve(stack, event, 1, tier, dark, shadow, lining);
-        submitBelt(stack, event, tier, trim);
-        submitRobeRunes(stack, event, tier, trim, hem, bottom);
-        submitRing(stack, event, hem * 0.93, bottom + 0.028, 38, trim, 1.05F + tier * 0.18F);
-        if (tier >= 2) submitRing(stack, event, hem * 0.76, bottom + 0.065, 34, lining, 0.82F);
-        if (tier >= 3) submitStar(stack, event, 0.18, 1.18, trim, 1.25F);
-    }
-
-    private static void submitSleeve(PoseStack stack, RenderPlayerEvent.Post<?> event, int side,
-                                     int tier, int upper, int lower, int lining) {
-        float x0 = side < 0 ? -0.66F - tier * 0.018F : 0.39F;
-        float x1 = side < 0 ? -0.39F : 0.66F + tier * 0.018F;
-        float outer = side < 0 ? x0 : x1;
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.debugFilledBox(), (pose, out) -> {
-            quad(out, pose, x0, 1.38F, -0.27F, x1, 1.38F, -0.27F,
-                    x1, 0.69F, -0.23F, x0, 0.69F, -0.23F, upper);
-            quad(out, pose, x1, 1.38F, 0.27F, x0, 1.38F, 0.27F,
-                    x0, 0.69F, 0.23F, x1, 0.69F, 0.23F, lower);
-            quad(out, pose, outer, 1.38F, 0.27F, outer, 1.38F, -0.27F,
-                    outer, 0.69F, -0.23F, outer, 0.69F, 0.23F, lower);
-            quad(out, pose, x0, 0.69F, -0.23F, x1, 0.69F, -0.23F,
-                    x1, 0.69F, 0.23F, x0, 0.69F, 0.23F, lining);
-        });
-    }
-
-    private static void submitRobeRunes(PoseStack stack, RenderPlayerEvent.Post<?> event,
-                                        int tier, int color, float hem, float bottom) {
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.lines(), (pose, out) -> {
-            float width = 0.88F + tier * 0.20F;
-            line(out, pose, 0.0F, 1.23F, -0.326F, 0.0F, 0.94F, -0.306F, color, width);
-            line(out, pose, -0.12F, 1.10F, -0.327F, 0.0F, 0.98F, -0.316F, color, width);
-            line(out, pose, 0.12F, 1.10F, -0.327F, 0.0F, 0.98F, -0.316F, color, width);
-            int marks = 3 + tier;
-            for (int i = 0; i < marks; i++) {
-                float t = marks <= 1 ? 0.5F : i / (float) (marks - 1);
-                float x = -hem * 0.68F + hem * 1.36F * t;
-                float y = bottom + 0.10F + (i & 1) * 0.035F;
-                line(out, pose, x - 0.035F, y, -0.405F, x, y + 0.055F, -0.412F, color, width * 0.72F);
-                line(out, pose, x, y + 0.055F, -0.412F, x + 0.035F, y, -0.405F, color, width * 0.72F);
-            }
-        });
-    }
-
-    private static void submitBoots(PoseStack stack, RenderPlayerEvent.Post<?> event, int tier) {
-        int body = darken(bodyColor(tier));
-        int trim = trimColor(tier);
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.debugFilledBox(), (pose, out) -> {
-            box(out, pose, -0.29F, 0.02F, -0.19F, -0.03F, 0.36F, 0.22F, body);
-            box(out, pose, 0.03F, 0.02F, -0.19F, 0.29F, 0.36F, 0.22F, body);
-        });
-        submitAnkleBand(stack, event, -0.16, 0.27, trim, tier);
-        submitAnkleBand(stack, event, 0.16, 0.27, trim, tier);
-    }
-
-    private static void submitBelt(PoseStack stack, RenderPlayerEvent.Post<?> event, int tier, int color) {
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.lines(), (pose, out) -> {
-            line(out, pose, -0.34F, 0.93F, -0.285F, 0.34F, 0.93F, -0.285F, color, 1.0F + tier * 0.18F);
-            line(out, pose, 0.34F, 0.93F, -0.285F, 0.34F, 0.93F, 0.285F, color, 1.0F + tier * 0.18F);
-            line(out, pose, 0.34F, 0.93F, 0.285F, -0.34F, 0.93F, 0.285F, color, 1.0F + tier * 0.18F);
-            line(out, pose, -0.34F, 0.93F, 0.285F, -0.34F, 0.93F, -0.285F, color, 1.0F + tier * 0.18F);
-        });
-    }
-
-    private static void submitAnkleBand(PoseStack stack, RenderPlayerEvent.Post<?> event,
-                                        double centerX, double y, int color, int tier) {
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.lines(), (pose, out) -> {
-            int segments = 12;
-            for (int i = 0; i < segments; i++) {
-                double a = Math.PI * 2.0 * i / segments;
-                double b = Math.PI * 2.0 * (i + 1) / segments;
-                line(out, pose,
-                        (float) (centerX + Math.cos(a) * 0.15), (float) y, (float) (Math.sin(a) * 0.19),
-                        (float) (centerX + Math.cos(b) * 0.15), (float) y, (float) (Math.sin(b) * 0.19),
-                        color, 0.82F + tier * 0.16F);
-            }
-        });
-    }
-
-    private static void submitRing(PoseStack stack, RenderPlayerEvent.Post<?> event,
-                                   double radius, double y, int segments, int color, float width) {
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.lines(), (pose, out) -> {
-            for (int i = 0; i < segments; i++) {
-                double a = Math.PI * 2.0 * i / segments;
-                double b = Math.PI * 2.0 * (i + 1) / segments;
-                line(out, pose, (float) (Math.cos(a) * radius), (float) y, (float) (Math.sin(a) * radius),
-                        (float) (Math.cos(b) * radius), (float) y, (float) (Math.sin(b) * radius), color, width);
-            }
-        });
-    }
-
-    private static void submitStar(PoseStack stack, RenderPlayerEvent.Post<?> event,
-                                   double radius, double y, int color, float width) {
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.lines(), (pose, out) -> {
-            int points = 5;
-            for (int i = 0; i < points; i++) {
-                int j = (i + 2) % points;
-                double a = -Math.PI / 2.0 + Math.PI * 2.0 * i / points;
-                double b = -Math.PI / 2.0 + Math.PI * 2.0 * j / points;
-                line(out, pose, (float) (Math.cos(a) * radius), (float) y, (float) (Math.sin(a) * radius),
-                        (float) (Math.cos(b) * radius), (float) y, (float) (Math.sin(b) * radius), color, width);
-            }
-        });
-    }
-
-    private static void box(VertexConsumer out, PoseStack.Pose pose,
-                            float x0, float y0, float z0, float x1, float y1, float z1, int color) {
-        quad(out, pose, x0, y0, z0, x1, y0, z0, x1, y1, z0, x0, y1, z0, color);
-        quad(out, pose, x1, y0, z1, x0, y0, z1, x0, y1, z1, x1, y1, z1, color);
-        quad(out, pose, x0, y0, z1, x0, y0, z0, x0, y1, z0, x0, y1, z1, color);
-        quad(out, pose, x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0, color);
-        quad(out, pose, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1, color);
-    }
-
-    private static void quad(VertexConsumer out, PoseStack.Pose pose,
-                             float ax, float ay, float az, float bx, float by, float bz,
-                             float cx, float cy, float cz, float dx, float dy, float dz, int color) {
-        out.addVertex(pose, ax, ay, az).setColor(color);
-        out.addVertex(pose, bx, by, bz).setColor(color);
-        out.addVertex(pose, cx, cy, cz).setColor(color);
-        out.addVertex(pose, dx, dy, dz).setColor(color);
-    }
-
-    private static void line(VertexConsumer out, PoseStack.Pose pose,
-                             float ax, float ay, float az, float bx, float by, float bz,
-                             int color, float width) {
-        float dx = bx - ax;
-        float dy = by - ay;
-        float dz = bz - az;
-        float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (length < 0.0001F) return;
-        dx /= length;
-        dy /= length;
-        dz /= length;
-        out.addVertex(pose, ax, ay, az).setColor(color).setNormal(pose, dx, dy, dz).setLineWidth(width);
-        out.addVertex(pose, bx, by, bz).setColor(color).setNormal(pose, dx, dy, dz).setLineWidth(width);
-    }
-
-    private static int hatTier(ItemStack stack) {
-        if (stack.getItem() == ModItems.ARCHMAGE_CROWN.get()) return 3;
-        if (stack.getItem() == ModItems.SAGE_HAT.get()) return 2;
-        if (stack.getItem() == ModItems.MAGE_HAT.get()) return 1;
-        if (stack.getItem() == ModItems.CINDER_HOOD.get() || stack.getItem() == ModItems.GLACIER_CIRCLET.get()
-                || stack.getItem() == ModItems.TEMPEST_HOOD.get()) return 2;
-        if (stack.getItem() == ModItems.RIFT_CROWN.get()) return 3;
-        return 0;
-    }
-
-    private static int robeTier(ItemStack stack) {
-        if (stack.getItem() == ModItems.ARCHMAGE_ROBE.get()) return 3;
-        if (stack.getItem() == ModItems.SAGE_ROBE.get()) return 2;
-        if (stack.getItem() == ModItems.MAGE_ROBE.get()) return 1;
-        if (stack.getItem() == ModItems.CINDER_ROBE.get() || stack.getItem() == ModItems.GLACIER_ROBE.get()
-                || stack.getItem() == ModItems.TEMPEST_ROBE.get()) return 2;
-        if (stack.getItem() == ModItems.RIFT_ROBE.get()) return 3;
-        return 0;
-    }
-
-    private static int bootsTier(ItemStack stack) {
-        if (stack.getItem() == ModItems.FROSTSTEP_BOOTS.get()) return 3;
-        if (stack.getItem() == ModItems.SKYWALKER_BOOTS.get()) return 2;
-        if (stack.getItem() == ModItems.MAGE_BOOTS.get()) return 1;
-        if (stack.getItem() == ModItems.CINDER_BOOTS.get() || stack.getItem() == ModItems.GLACIER_BOOTS.get()) return 2;
-        if (stack.getItem() == ModItems.TEMPEST_BOOTS.get() || stack.getItem() == ModItems.RIFT_BOOTS.get()) return 3;
-        return 0;
-    }
-
-    private static int bodyColor(int tier) {
-        return switch (tier) {
-            case 1 -> 0xEA34234D;
-            case 2 -> 0xEE273D72;
-            case 3 -> 0xF02B153F;
-            default -> 0xEA302044;
-        };
-    }
-
-    private static int trimColor(int tier) {
-        return switch (tier) {
-            case 1 -> 0xFFF0B6FF;
-            case 2 -> 0xFF86DFFF;
-            case 3 -> 0xFFFFD56A;
-            default -> 0xFFE8C0FF;
-        };
-    }
-
-    private static int darken(int argb) {
-        int a = argb & 0xFF000000;
-        int r = (int) (((argb >> 16) & 0xFF) * 0.58);
-        int g = (int) (((argb >> 8) & 0xFF) * 0.58);
-        int b = (int) ((argb & 0xFF) * 0.58);
-        return a | (r << 16) | (g << 8) | b;
-    }
-
-    private static ContextKey<Integer> key(String path) {
-        return new ContextKey<>(Identifier.fromNamespaceAndPath(ArcaneCircle.MOD_ID, path));
-    }
+    private static void sleeve(PoseStack stack,RenderPlayerEvent.Post<?> event,int side,int tier,int upper,int lower,int lining){float x0=side<0?-.66F-tier*.016F:.39F,x1=side<0?-.39F:.66F+tier*.016F,outer=side<0?x0:x1;event.getSubmitNodeCollector().submitCustomGeometry(stack,RenderTypes.debugFilledBox(),(pose,out)->{quad(out,pose,x0,1.38F,-.27F,x1,1.38F,-.27F,x1,.69F,-.23F,x0,.69F,-.23F,upper);quad(out,pose,x1,1.38F,.27F,x0,1.38F,.27F,x0,.69F,.23F,x1,.69F,.23F,lower);quad(out,pose,outer,1.38F,.27F,outer,1.38F,-.27F,outer,.69F,-.23F,outer,.69F,.23F,lower);quad(out,pose,x0,.69F,-.23F,x1,.69F,-.23F,x1,.69F,.23F,x0,.69F,.23F,lining);});}
+    private static void boots(PoseStack stack,RenderPlayerEvent.Post<?> event,int tier){int body=dark(body(tier)),trim=trim(tier);event.getSubmitNodeCollector().submitCustomGeometry(stack,RenderTypes.debugFilledBox(),(pose,out)->{box(out,pose,-.29F,.02F,-.19F,-.03F,.36F,.22F,body);box(out,pose,.03F,.02F,-.19F,.29F,.36F,.22F,body);quad(out,pose,-.29F,.27F,-.195F,-.03F,.27F,-.195F,-.03F,.31F,-.195F,-.29F,.31F,-.195F,trim);quad(out,pose,.03F,.27F,-.195F,.29F,.27F,-.195F,.29F,.31F,-.195F,.03F,.31F,-.195F,trim);});}
+    private static void filledBand(PoseStack stack,RenderPlayerEvent.Post<?> event,double inner,double outer,double y,int n,int color,double height){event.getSubmitNodeCollector().submitCustomGeometry(stack,RenderTypes.debugFilledBox(),(pose,out)->{for(int i=0;i<n;i++){double a=Math.PI*2*i/n,b=Math.PI*2*(i+1)/n;quad(out,pose,(float)(Math.cos(a)*outer),(float)y,(float)(Math.sin(a)*outer),(float)(Math.cos(b)*outer),(float)y,(float)(Math.sin(b)*outer),(float)(Math.cos(b)*inner),(float)(y+height),(float)(Math.sin(b)*inner),(float)(Math.cos(a)*inner),(float)(y+height),(float)(Math.sin(a)*inner),color);}});}
+    private static void box(VertexConsumer out,PoseStack.Pose p,float x0,float y0,float z0,float x1,float y1,float z1,int c){quad(out,p,x0,y0,z0,x1,y0,z0,x1,y1,z0,x0,y1,z0,c);quad(out,p,x1,y0,z1,x0,y0,z1,x0,y1,z1,x1,y1,z1,c);quad(out,p,x0,y0,z1,x0,y0,z0,x0,y1,z0,x0,y1,z1,c);quad(out,p,x1,y0,z0,x1,y0,z1,x1,y1,z1,x1,y1,z0,c);quad(out,p,x0,y1,z0,x1,y1,z0,x1,y1,z1,x0,y1,z1,c);}
+    private static void quad(VertexConsumer out,PoseStack.Pose p,float ax,float ay,float az,float bx,float by,float bz,float cx,float cy,float cz,float dx,float dy,float dz,int c){out.addVertex(p,ax,ay,az).setColor(c);out.addVertex(p,bx,by,bz).setColor(c);out.addVertex(p,cx,cy,cz).setColor(c);out.addVertex(p,dx,dy,dz).setColor(c);}
+    private static int hatTier(ItemStack s){if(s.getItem()==ModItems.ARCHMAGE_CROWN.get()||s.getItem()==ModItems.RIFT_CROWN.get())return 3;if(s.getItem()==ModItems.SAGE_HAT.get()||s.getItem()==ModItems.CINDER_HOOD.get()||s.getItem()==ModItems.GLACIER_CIRCLET.get()||s.getItem()==ModItems.TEMPEST_HOOD.get())return 2;if(s.getItem()==ModItems.MAGE_HAT.get())return 1;return 0;}
+    private static int robeTier(ItemStack s){if(s.getItem()==ModItems.ARCHMAGE_ROBE.get()||s.getItem()==ModItems.RIFT_ROBE.get())return 3;if(s.getItem()==ModItems.SAGE_ROBE.get()||s.getItem()==ModItems.CINDER_ROBE.get()||s.getItem()==ModItems.GLACIER_ROBE.get()||s.getItem()==ModItems.TEMPEST_ROBE.get())return 2;if(s.getItem()==ModItems.MAGE_ROBE.get())return 1;return 0;}
+    private static int bootsTier(ItemStack s){if(s.getItem()==ModItems.FROSTSTEP_BOOTS.get()||s.getItem()==ModItems.TEMPEST_BOOTS.get()||s.getItem()==ModItems.RIFT_BOOTS.get())return 3;if(s.getItem()==ModItems.SKYWALKER_BOOTS.get()||s.getItem()==ModItems.CINDER_BOOTS.get()||s.getItem()==ModItems.GLACIER_BOOTS.get())return 2;if(s.getItem()==ModItems.MAGE_BOOTS.get())return 1;return 0;}
+    private static int body(int t){return switch(t){case 1->0xF034234D;case 2->0xF0273D72;case 3->0xF02B153F;default->0xEE302044;};}private static int trim(int t){return switch(t){case 1->0xFFF0B6FF;case 2->0xFF86DFFF;case 3->0xFFFFD56A;default->0xFFE8C0FF;};}private static int dark(int c){int a=c&0xFF000000,r=(int)(((c>>16)&255)*.58),g=(int)(((c>>8)&255)*.58),b=(int)((c&255)*.58);return a|(r<<16)|(g<<8)|b;}private static float clamp(float v,float a,float b){return Math.max(a,Math.min(b,v));}private static<T>ContextKey<T> key(String p){return new ContextKey<>(Identifier.fromNamespaceAndPath(ArcaneCircle.MOD_ID,p));}
 }

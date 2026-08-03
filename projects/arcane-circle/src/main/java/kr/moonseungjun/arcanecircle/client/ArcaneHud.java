@@ -87,15 +87,9 @@ public final class ArcaneHud {
         }
 
         if (goldFill > 0) {
-            int overlap = Math.min(Math.max(2, goldFill / 4), 5);
-            int goldStart = Math.max(0, redFill - overlap);
-            int goldEnd = Math.min(innerW, redFill + goldFill - overlap);
-            if (redFill >= innerW) {
-                goldStart = Math.max(0, innerW - goldFill);
-                goldEnd = innerW;
-            }
-            g.fill(x + 2 + goldStart, y + 2, x + 2 + goldEnd, y + barH - 1, 0xFFE0A512);
-            g.fill(x + 2 + goldStart, y + 2, x + 2 + goldEnd, y + 3, 0xFFFFE16B);
+            int goldEnd = Math.min(innerW, goldFill);
+            g.fill(x + 2, y + 2, x + 2 + goldEnd, y + barH - 1, 0xFFE0A512);
+            g.fill(x + 2, y + 2, x + 2 + goldEnd, y + 3, 0xFFFFE16B);
         }
 
         String label = absorption > 0

@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha10";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha11";
     private static final Set<String> PAGES = Set.of(
             "atlas", "recipes", "staffs", "core", "academy", "quests", "sync");
 
@@ -197,6 +197,7 @@ public final class ArcaneNetwork {
                 + ";staff=" + staff.displayName()
                 + ";staff_summary=" + staff.summary()
                 + ";staff_mana=" + staff.maxManaBonus()
+                + ";staff_mana_pct=" + permille(staff.maxManaMultiplier())
                 + ";staff_cost=" + permille(staff.manaCostMultiplier())
                 + ";staff_power=" + permille(staff.powerMultiplier())
                 + ";staff_range=" + permille(staff.rangeMultiplier())
@@ -206,6 +207,9 @@ public final class ArcaneNetwork {
                 + ";gear_robe=" + MageGearService.robeName(player)
                 + ";gear_boots=" + MageGearService.bootsName(player)
                 + ";gear_mana=" + gear.maxManaBonus()
+                + ";gear_mana_pct=" + permille(gear.maxManaMultiplier())
+                + ";gear_health=" + gear.healthBonus()
+                + ";gear_health_pct=" + permille(gear.healthMultiplier())
                 + ";gear_regen=" + permille(gear.regenMultiplier())
                 + ";marks=" + ArcaneEconomyService.balance(player)
                 + ";tradition=" + kr.moonseungjun.arcanecircle.world.ArcaneWorldData

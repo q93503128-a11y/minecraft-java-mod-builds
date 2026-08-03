@@ -146,10 +146,8 @@ public final class SpellCastingService {
         }
 
         if (charge.requiredTicks <= 0) return;
-        if ((elapsed & 1L) == 0L) {
-            WorldMagicService.charge(player, spell, false, List.of(), cast.range(),
-                    Math.min(1.0, elapsed / (double) Math.max(1, charge.requiredTicks)));
-        }
+        WorldMagicService.charge(player, spell, false, List.of(), cast.range(),
+                Math.min(1.0, elapsed / (double) Math.max(1, charge.requiredTicks)));
     }
 
     public static void cancelCharge(ServerPlayer player, boolean notify) {
@@ -423,10 +421,8 @@ public final class SpellCastingService {
             return;
         }
         long elapsed = now - queue.chargeStartedAt;
-        if ((elapsed & 1L) == 0L) {
-            WorldMagicService.charge(player, result, true, queue.ingredients, cast.range(),
-                    Math.min(1.0, elapsed / (double) Math.max(1, queue.requiredTicks)));
-        }
+        WorldMagicService.charge(player, result, true, queue.ingredients, cast.range(),
+                Math.min(1.0, elapsed / (double) Math.max(1, queue.requiredTicks)));
     }
 
     private static MagicPlayerData data(ServerPlayer player) {
@@ -813,7 +809,7 @@ public final class SpellCastingService {
 
     private static boolean levitation(ServerPlayer player, double power) {
         player.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 34 + (int) Math.round(power * 3.0), 1));
-        player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 220, 0));
+        MageGearService.grantStableDescent(player, 220);
         ServerLevel level = (ServerLevel) player.level();
         WorldMagicService.noParticles();
         return true;
@@ -871,7 +867,7 @@ public final class SpellCastingService {
     private static boolean areaAtAim(ServerPlayer player, double range, double power, ParticleOptions particle,
                                      boolean fire, boolean freeze) {
         Vec3 center = lookTarget(player, range).map(Mob::position).orElse(aimGround(player, range));
-        return areaAt(player, center, Math.max(3.0, range * 0.32), power, particle, fire, freeze);
+        return areaAt(player, center, SpellMetrics.effectRadius("fireball", range, 3), power, particle, fire, freeze);
     }
 
     private static boolean areaAt(ServerPlayer player, Vec3 center, double radius, double power,

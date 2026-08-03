@@ -46,7 +46,7 @@ public final class ExpandedSpellEffects {
             case "invisibility" -> invisibility(player, 420, false);
             case "gust_of_wind" -> linePush(player, range, power);
             case "hold_person" -> hold(player, range, 190, 6, power);
-            case "shatter" -> areaDamage(player, aimGround(player, range), Math.max(3.5, range * 0.28), power,
+            case "shatter" -> areaDamage(player, aimGround(player, range), SpellMetrics.effectRadius("shatter", range, 2), power,
                     ParticleTypes.CRIT, false, false, false);
             case "blur" -> blur(player, power);
             case "levitate" -> levitate(player, power, 260);
@@ -58,7 +58,7 @@ public final class ExpandedSpellEffects {
             case "vampiric_touch" -> drain(player, range, power);
             case "slow" -> hinderingField(player, range, 5.0, 260, 5, ParticleTypes.ENCHANT);
             case "protection_from_energy" -> energyProtection(player, power);
-            case "sleet_storm" -> areaDamage(player, aimGround(player, range), Math.max(5.0, range * 0.34), power,
+            case "sleet_storm" -> areaDamage(player, aimGround(player, range), SpellMetrics.effectRadius("sleet_storm", range, 3), power,
                     ParticleTypes.SNOWFLAKE, false, true, true);
 
             case "wall_of_fire" -> wall(player, range, power, ParticleTypes.FLAME, true, false, false);
@@ -74,7 +74,7 @@ public final class ExpandedSpellEffects {
 
             case "cone_of_cold" -> coneCold(player, range, power);
             case "wall_of_force" -> wall(player, range, power, ParticleTypes.END_ROD, false, false, true);
-            case "cloudkill" -> areaDamage(player, aimGround(player, range), Math.max(6.0, range * 0.34), power,
+            case "cloudkill" -> areaDamage(player, aimGround(player, range), SpellMetrics.effectRadius("cloudkill", range, 5), power,
                     ParticleTypes.WITCH, false, false, true);
             case "telekinesis" -> telekinesis(player, range, power);
             case "flame_strike" -> flameStrike(player, range, power);
@@ -82,7 +82,7 @@ public final class ExpandedSpellEffects {
             case "mass_cure_wounds" -> massHeal(player, range, power);
             case "passwall" -> teleport(player, range, power, 3);
             case "dominate_person" -> dominate(player, range, power);
-            case "insect_plague" -> areaDamage(player, aimGround(player, range), Math.max(6.0, range * 0.32), power,
+            case "insect_plague" -> areaDamage(player, aimGround(player, range), SpellMetrics.effectRadius("insect_plague", range, 5), power,
                     ParticleTypes.CRIT, false, false, true);
 
             case "burning_hands" -> conePush(player, range, power, ParticleTypes.FLAME, true);
@@ -184,8 +184,7 @@ public final class ExpandedSpellEffects {
     }
 
     private static boolean featherFall(ServerPlayer player, int duration) {
-        player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, duration, 0));
-
+        MageGearService.grantStableDescent(player, duration);
         return true;
     }
 
@@ -314,8 +313,7 @@ public final class ExpandedSpellEffects {
 
     private static boolean levitate(ServerPlayer player, double power, int duration) {
         player.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 42 + (int) Math.round(power * 2.0), 1));
-        player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, duration, 0));
-
+        MageGearService.grantStableDescent(player, duration);
         return true;
     }
 
@@ -385,7 +383,7 @@ public final class ExpandedSpellEffects {
     private static boolean storm(ServerPlayer player, double range, double power, ParticleOptions particle,
                                  boolean freeze) {
         Vec3 center = aimGround(player, range);
-        double radius = Math.max(6.0, range * 0.34);
+        double radius = SpellMetrics.effectRadius("cloudkill", range, 5);
         areaDamage(player, center, radius, power, particle, false, freeze, false);
         ServerLevel level = level(player);
         for (int i = 0; i < 72; i++) {
