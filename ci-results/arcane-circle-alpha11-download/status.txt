@@ -1,4 +1,4 @@
-status=failure
-run_id=30788457520
-source_sha=c59e7073181a35ecc2430d8d3dbe9357bfe64e6e
+status=success
+run_id=30788633644
+source_sha=9a96eacf659d6232f87f93f39affc30753c2dd5e
 artifact=arcanecircle-0.12.1-alpha.11
