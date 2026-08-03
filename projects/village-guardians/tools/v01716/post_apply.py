@@ -30,11 +30,13 @@ if text.count(old) != 1:
 MESH.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 # Earlier contracts intentionally follow the current build version. Keep their
-# gameplay assertions while migrating only stale version/wording literals.
+# gameplay assertions while migrating only stale version, wording and requested HUD coordinates.
 for test in sorted((ROOT / "tools").glob("test_*.py")):
     source = test.read_text(encoding="utf-8")
     migrated = source.replace("mod_version=0.17.15-alpha.1", "mod_version=0.17.16-alpha.1")
     migrated = migrated.replace('assert "다음 화살" in abilities', 'assert "다음 활" in abilities')
+    migrated = migrated.replace('assert "graphics.guiHeight() - 82" in overlay',
+                                'assert "graphics.guiHeight() - 92" in overlay')
     if migrated != source:
         test.write_text(migrated, encoding="utf-8")
 
