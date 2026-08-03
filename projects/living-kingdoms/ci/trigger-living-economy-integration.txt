@@ -1,0 +1,1 @@
+Trigger the verified Erden living economy integration after the fast Java 25 compile check.
