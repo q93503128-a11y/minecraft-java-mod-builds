@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import runpy
 import struct
 import sys
 import zlib
@@ -24,6 +25,10 @@ def main() -> None:
     png += chunk(b"IEND", b"")
     target.write_bytes(png)
     print(f"Generated solid procedural mesh material: {target} ({len(png)} bytes)")
+
+    compatibility = Path(__file__).resolve().parent / "v01715/post_apply.py"
+    if compatibility.is_file():
+        runpy.run_path(str(compatibility), run_name="__main__")
 
 
 if __name__ == "__main__":
