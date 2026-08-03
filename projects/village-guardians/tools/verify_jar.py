@@ -30,7 +30,6 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.class",
     "kr/moonseungjun/villageguardians/VillageWarfrontSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectSystem.class",
-    "kr/moonseungjun/villageguardians/VillageSkillEffectSystem$DisplayAccess.class",
     "kr/moonseungjun/villageguardians/VillageGatePrioritySystem.class",
     "kr/moonseungjun/villageguardians/VillageRespawnSystem.class",
     "kr/moonseungjun/villageguardians/VillageRaidLootSystem.class",
@@ -59,6 +58,7 @@ REQUIRED_CLASSES = {
 }
 OBSOLETE_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSkillVisualSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSkillEffectSystem$DisplayAccess.class",
 }
 
 
@@ -138,8 +138,8 @@ def main() -> None:
     print("[PASS] Ten regular enemy roles, four bosses and eight wave traits are present")
     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
     print("[PASS] Twelve persistent tower branches alter attacks and world silhouettes")
-    print("[PASS] Twenty active skills include the non-particle display-actor effect engine")
-    print("[PASS] Obsolete generic skill-visual facade is not bundled")
+    print("[PASS] Twenty active skills use the non-particle custom-mesh effect engine")
+    print("[PASS] Obsolete display and generic visual facades are not bundled")
     print("[PASS] CC0 visual references are documented without untracked binaries")
     print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
