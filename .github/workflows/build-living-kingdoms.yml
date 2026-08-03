@@ -76,7 +76,7 @@ jobs:
             if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log \
               && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/server-smoke.log \
               && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/server-smoke.log \
-              && grep -Fq 'LK_ERDEN_TRANSPORT_PASS revision=1 manifests=' ../../logs/server-smoke.log; then
+              && grep -Fq 'LK_ERDEN_TRANSPORT_PASS revision=2 manifests=' ../../logs/server-smoke.log; then
               passed=1
               break
             fi
@@ -97,15 +97,19 @@ jobs:
           grep -F 'fulfilled_households=77' ../../logs/server-smoke.log
           grep -F 'Reconciled Erden bakery reserves day=' ../../logs/server-smoke.log
           grep -F 'conserved=true' ../../logs/server-smoke.log
+          grep -F 'transport_accounted=true' ../../logs/server-smoke.log
           grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/server-smoke.log
+          grep -F 'authoritative_transport=true' ../../logs/server-smoke.log
           grep -F 'containers=3' ../../logs/server-smoke.log
           grep -F 'Prepared Erden road manifests day=' ../../logs/server-smoke.log
           grep -F 'modeled_travel_ticks=' ../../logs/server-smoke.log
           grep -F 'unloaded_routes=aggregate' ../../logs/server-smoke.log
-          grep -F 'LK_ERDEN_TRANSPORT_PASS revision=1 manifests=' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_TRANSPORT_PASS revision=2 manifests=' ../../logs/server-smoke.log
           grep -F 'route_planning=true' ../../logs/server-smoke.log
           grep -F 'loaded_obstacle_checks=true' ../../logs/server-smoke.log
           grep -F 'persistent_jobs=true' ../../logs/server-smoke.log
+          grep -F 'authoritative_escrow=true' ../../logs/server-smoke.log
+          grep -F 'aggregate_fallback=true' ../../logs/server-smoke.log
           grep -F 'metre_scale=true' ../../logs/server-smoke.log
           grep -F 'structureless_generator=true' ../../logs/server-smoke.log
           grep -F 'vanilla_structures_blocked=true' ../../logs/server-smoke.log
@@ -150,7 +154,7 @@ jobs:
             echo 'Inactive kingdom or legacy repair path ran.' >&2
             exit 1
           fi
-          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|Invalid Erden physical economy|Expected 156 Erden economy sites|Unsupported Erden economy role|Item debris remained around Erden|watchdog' ../../logs/server-smoke.log; then
+          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|Invalid Erden physical economy|Expected 156 Erden economy sites|Unsupported Erden economy role|Item debris remained around Erden|Erden cargo dispatch context was not closed|watchdog' ../../logs/server-smoke.log; then
             exit 1
           fi
 
@@ -200,6 +204,8 @@ jobs:
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationSavedData.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomyManager.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenCargoEscrowManager.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomySavedData.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomyAudit.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenBakeryReserveManager.class' logs/jar-entries.txt
@@ -232,11 +238,13 @@ jobs:
           - Physical worksite inventories, warehouse deliveries, household purchases and wages: PASS
           - Bakery reserve conservation: PASS
           - Persistent road manifests, modeled travel time and loaded-road obstruction checks: PASS
-          - Player-near porter and cargo-cart materialisation with loading, movement, unloading and retry states: PASS
-          - Unloaded capital transport remains aggregate by design
+          - Player-near porter and cargo-cart runtime with loading, movement, unloading and retry states: PACKAGED
+          - Fresh no-player server audit exercises the unloaded aggregate fallback by design
+          - Authoritative cargo escrow on departure and destination credit after unloading: PASS
+          - Failed authoritative cargo is returned to its source ledger: PASS
           - Construction debris: ZERO
           - Graphical UI and atlas input: PASS
-          - Authoritative cargo escrow on departure, custom medieval cart mesh, demographic change and full law simulation: NOT YET COMPLETE
+          - Custom medieval cart mesh, demographic change and full law simulation: NOT YET COMPLETE
           - Public user test build: NOT RELEASED
           EOF
 
