@@ -1,5 +1,6 @@
 package kr.moonseungjun.livingkingdoms.world;
 
+import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
