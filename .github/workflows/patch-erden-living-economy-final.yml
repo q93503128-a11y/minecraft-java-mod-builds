@@ -1,0 +1,92 @@
+name: Finalize Erden living economy integration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/trigger-erden-living-economy-final.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply and publish integration
+        id: integrate
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          {
+            set -euo pipefail
+            if grep -Fq 'ErdenLivingEconomyManager.onServerTick(event);' \
+              projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java; then
+              echo 'Living economy already integrated.'
+              exit 0
+            fi
+            python .github/scripts/patch_erden_living_economy_v2.py
+            git diff --check
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java \
+                    projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
+                    projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md \
+                    .github/workflows/build-living-kingdoms.yml
+            git commit -m 'Connect Erden shop schedules prices and errands'
+            for attempt in 1 2 3 4 5 6 7 8; do
+              if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+              git rebase --abort 2>/dev/null || true
+              if [ "$attempt" -eq 8 ]; then exit 1; fi
+              sleep $((attempt * 2))
+            done
+          } 2>&1 | tee logs/erden-living-economy-final.log
+
+      - name: Upload integration log
+        id: upload_log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: erden-living-economy-final-${{ github.run_number }}
+          path: logs/erden-living-economy-final.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish result pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          INTEGRATION_OUTCOME: ${{ steps.integrate.outcome }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_log.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/erden-living-economy-final.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "integration_outcome": "$INTEGRATION_OUTCOME",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/erden-living-economy-final.json
+          git commit -m "Record final Erden living economy integration $GITHUB_RUN_NUMBER"
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
