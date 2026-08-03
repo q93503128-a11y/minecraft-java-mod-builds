@@ -61,3 +61,18 @@ The fresh-world server audit must emit all of the following before it can pass:
 - `LK_ERDEN_ESCROW_AUDIT_PASS`
 
 The full build additionally checks Java 25 compilation, client startup and UI diagnostics, licensed external assets, JAR contents and cargo/reserve conservation.
+
+## Complete build checkpoint
+
+Build 501 on commit `cccbe35f650dc7d2dc18bb5055656982226a3bc9` passed every substantive verification stage:
+
+- Java 25 clean build
+- licensed UI and structure asset audit
+- fresh Erden world server audit
+- population, physical economy and living economy diagnostics
+- authoritative transport and cargo escrow conservation
+- client startup and graphical UI diagnostics
+- internal alpha.12 JAR packaging and archive inspection
+- build log and internal checkpoint artifact upload
+
+Its workflow conclusion was caused only by a concurrent `main` update during the final pointer-file commit. The validated artifacts were preserved and the pointer was recovered manually. The permanent full-build workflow now recreates the pointer commit from the latest `origin/main` on every retry, so a stale checkout cannot invalidate an otherwise successful build.
