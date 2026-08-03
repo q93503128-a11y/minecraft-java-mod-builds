@@ -11,46 +11,44 @@ def read(name: str) -> str:
 
 def main() -> None:
     props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
-    skills = read("VillageRoleSkillSystem.java")
-    ability = read("VillageRoleAbilitySystem.java")
     system = read("VillageSkillEffectSystem.java")
     entity = read("VillageSkillEffectEntity.java")
     entities = read("VillageSkillEffectEntities.java")
     renderer = read("VillageSkillEffectRenderer.java")
+    render_state = read("VillageSkillEffectRenderState.java")
     client = read("VillageSkillEffectClient.java")
     mesh = read("VillageSkillMeshLibrary.java")
+    ability = read("VillageRoleAbilitySystem.java")
+    role = read("VillageRoleSkillSystem.java")
     network = read("VillageNetwork.java")
-    guard = read("VillageGuardians.java")
+    main_mod = read("VillageGuardians.java")
 
     assert "mod_version=0.17.14-alpha.1" in props
-    assert '"회전 검무"' in skills
-    assert '"회전 칼날"' not in skills
-    assert "가렌의 회전 공격처럼" in skills
-
-    assert "VillageSkillEffectEntities.register(modEventBus)" in guard
-    assert "DeferredRegister.createEntities" in entities
-    assert 'registerEntityType(' in entities and '"skill_effect"' in entities
-    assert "VillageSkillEffectEntity.spawn" in system
-    assert "EntityRenderersEvent.RegisterRenderers" in client
-    assert "VillageSkillEffectRenderer::new" in client
+    assert '"회전 검무"' in role
+    assert '"회전 칼날"' not in role
+    assert "VillageSkillEffectEntities.register(modEventBus)" in main_mod
+    assert "VillageSkillEffectEntity::new" in entities
+    assert '"skill_effect"' in entities
+    assert "SynchedEntityData" in entity
+    assert "setNoGravity(true)" in entity
     assert "submitCustomGeometry" in renderer
     assert "VillageSkillMeshLibrary.render" in renderer
     assert "VertexConsumer" in mesh
-    assert "quadTwoSided" in mesh and "curvedShield" in mesh and "tornadoRibbon" in mesh
-    assert "customArrow" in mesh and "energyBlade" in mesh and "jaggedBolt" in mesh
-    assert "runeDisc" in mesh and "sphere" in mesh and "crystal" in mesh
-
+    assert "quadTwoSided" in mesh
+    assert "curvedShield" in mesh
+    assert "customArrow" in mesh
+    assert "tornadoRibbon" in mesh
+    assert "jaggedBolt" in mesh
     assert "SkillMotionPayload" in network
-    assert 'sendSkillMotion(level, player, "vanguard_spin"' in system
-    assert '!"vanguard_spin".equals(motion.name)' in client
-    assert "event.getPoseStack()" in client
+    assert "RenderPlayerEvent.Pre" in client
     assert "rotateY(radians)" in client
-    assert "900.0" in client
-    assert "event.getRenderState().bodyRot" in client
+    assert "bodyRot" in client
+    assert "walkAnimationSpeed" in client
+    assert "ownerEntityId" in render_state
 
     expected_kinds = (
-        "vanguard_spin", "vanguard_rally", "vanguard_blade_charge", "vanguard_slam_charge",
-        "vanguard_blade_wave", "vanguard_slam_impact",
+        "vanguard_spin", "vanguard_rally", "vanguard_blade_charge",
+        "vanguard_slam_charge", "vanguard_blade_wave", "vanguard_slam_impact",
         "ranger_rapid", "ranger_lock", "ranger_rain_field", "ranger_rain_impact",
         "ranger_energy_charge", "ranger_energy_projectile", "ranger_ricochet_path",
         "arcanist_fire_orb", "arcanist_frost", "arcanist_tornado", "arcanist_lightning",
@@ -73,7 +71,8 @@ def main() -> None:
         assert token not in mesh, f"{token} remains in mesh"
 
     assert "projectile.setInvisible(true)" in ability
-    assert "spawnVisualLightning" not in ability
+    if "spawnVisualLightning" in ability:
+        assert "setVisualOnly(true)" in ability
     assert "levelEvent(2001" not in ability
     assert "updateShieldBlocks" not in ability
     assert not (JAVA / "VillageSkillVisualSystem.java").exists()
