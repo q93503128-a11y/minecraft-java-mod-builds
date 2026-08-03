@@ -1,0 +1,158 @@
+=== tools/test_action_layout.py ===
+[PASS] Facility selectors remain narrow while descriptions receive most of the width
+[PASS] Very narrow screens switch to stacked layout without false width failures
+[PASS] Town hall uses shorter cards and explicit current/next upgrade comparison
+[PASS] Action buttons are capped at 108x20 or 112x20 instead of spanning panels
+[PASS] Growth trees use anchored popovers and reserve the full height for main content
+[PASS] Status text is dark, stripped of legacy white formatting, and fits without scrolling
+=== tools/test_enemy_content.py ===
+[PASS] Eight readable wave traits include deterministic counters and previews
+[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs
+[PASS] Five-day milestone sieges and endless warfront tiers remain scalable
+[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes
+[PASS] Twenty active skills combine real gameplay with dedicated procedural-mesh scenes
+[PASS] CC0 fantasy visual references are documented without untracked binaries
+=== tools/test_fortress_layout.py ===
+[PASS] Compact buildings stay inside the fortress without overlap
+[PASS] Every facility entrance faces and reaches the central road or plaza
+[PASS] Town hall remains at least twice a normal facility after resizing
+[PASS] Closed gate spans the complete tower opening without side slits
+[PASS] Wall top has a flat three-block center walkway and planned rail openings
+[PASS] Wall stairs connect directly to the landing
+[PASS] Return destination is inside the plaza and clear of the bell and buildings
+=== tools/test_progression_depth.py ===
+[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs
+[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration
+[PASS] Emergency barrier, momentum and party recovery are wired into combat
+[PASS] Defense research expands from 9 to 15 upgrades
+[PASS] Skill trees fit overview spacing and the shop uses compact safe actions
+=== tools/test_progression_loop.py ===
+[PASS] Village progression upgrade costs are monotonic
+[PASS] Smithy, personal forge, and wall upgrades improve combat
+[PASS] Daily bread scales from 3 to 13
+[PASS] Center-to-north-gate avenue contains no buildings
+[PASS] Max storehouse+barracks doubles raid supplies
+=== tools/test_rpg_balance.py ===
+PASS: slowed RPG balance contract
+test_xp_3000=level_7_xp_131
+level30 attack=x2.415
+level30 incoming=61.4%
+level30 bonus_health=20
+total_xp_to_level30=94685
+=== tools/test_runtime_safety.py ===
+[PASS] Compact split menus use narrow selectors, wide details and bounded action buttons
+[PASS] Town hall shows current/next effects and exact repair or upgrade costs
+[PASS] Status strips unreadable legacy white formatting and remains scroll-free
+[PASS] Caller item is removed while inventory and keyboard access remain
+[PASS] Selected equipment enhancement and rarity fusion are both available
+[PASS] Building crest migration restores facade blocks instead of carving holes
+[PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired
+=== tools/test_v01710_skill_input.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01710_skill_input.py", line 55, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01710_skill_input.py", line 19, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v01711_hud_skills.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_hud_skills.py", line 32, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_hud_skills.py", line 19, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v01711_skill_hud_ui.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_skill_hud_ui.py", line 61, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_skill_hud_ui.py", line 23, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v01712_role_abilities.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01712_role_abilities.py", line 75, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01712_role_abilities.py", line 23, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v01713_effects_and_keys.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01713_effects_and_keys.py", line 57, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01713_effects_and_keys.py", line 18, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v01714_custom_mesh_effects.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01714_custom_mesh_effects.py", line 87, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01714_custom_mesh_effects.py", line 26, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v01715_skill_combat_visuals.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 69, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 24, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v01716_ranger_activation.py ===
+[PASS] 시험 궁수와 실제 궁수 모두 다음 활 발사에서 네 기술을 소비합니다
+[PASS] 화살비는 위험한 실제 낙하 화살 없이 짧은 메시 장면과 사용자 피해 판정을 사용합니다
+[PASS] 화살비 범위는 지면 레이캐스트에 붙고 남은 화살은 빠르게 사라집니다
+[PASS] 검기는 허리 높이에서 전방으로 가로 이동하며 천붕 강하의 거대 화살표는 제거됩니다
+[PASS] 추적 도탄 준비 표식과 기술 HUD 위치가 플레이 화면에 맞게 조정됩니다
+=== tools/test_v0174_ui_safety.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0174_ui_safety.py", line 55, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0174_ui_safety.py", line 22, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v0175_gameplay_ui.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 79, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0175_gameplay_ui.py", line 27, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v0176_gameplay.py ===
+Village Guardians v0.17.6 gameplay, UI, item and defeat contracts passed.
+=== tools/test_v0177_gameplay.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0177_gameplay.py", line 28, in <module>
+    if __name__ == "__main__": main()
+                               ^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0177_gameplay.py", line 6, in main
+    assert "mod_version=0.17.15-alpha.1" in (ROOT / "gradle.properties").read_text()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v0178_gameplay.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0178_gameplay.py", line 71, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0178_gameplay.py", line 21, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v0179_skill_test_box.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0179_skill_test_box.py", line 45, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0179_skill_test_box.py", line 18, in main
+    assert "mod_version=0.17.15-alpha.1" in props
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_village_zone.py ===
+PASS: expanded village territory contract
+radius=96
+defense_xp_multiplier=1.5
