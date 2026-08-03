@@ -13,6 +13,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: arcane-alpha11-download
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -64,23 +68,31 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Commit verified alpha.11 sources
+      - name: Record run status
+        if: always()
         shell: bash
+        env:
+          RESULT: ${{ job.status }}
         run: |
           set -euo pipefail
-          rm -f projects/arcane-circle/tools/apply_v0121_alpha11_visual_combat.py
+          mkdir -p /tmp/arcane-alpha11-status
+          cat > /tmp/arcane-alpha11-status/status.txt <<STATUS
+          status=$RESULT
+          run_id=$GITHUB_RUN_ID
+          source_sha=$GITHUB_SHA
+          artifact=arcanecircle-0.12.1-alpha.11
+          STATUS
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add projects/arcane-circle
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m 'Build Arcane Circle v0.12.1-alpha.11 visual combat overhaul'
           for attempt in 1 2 3 4 5; do
-            if git pull --rebase origin main && git push origin HEAD:main; then
-              exit 0
-            fi
-            git rebase --abort 2>/dev/null || true
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p ci-results/arcane-circle-alpha11-download
+            cp /tmp/arcane-alpha11-status/status.txt ci-results/arcane-circle-alpha11-download/status.txt
+            git add ci-results/arcane-circle-alpha11-download/status.txt
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "Record Arcane Circle alpha.11 download run $GITHUB_RUN_ID [skip ci]"
+            if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 3))
           done
           exit 1
