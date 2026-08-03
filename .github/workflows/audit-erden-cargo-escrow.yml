@@ -1,0 +1,134 @@
+name: Audit Erden Cargo Escrow
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCargoEscrowAudit.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCargoEscrowManager.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenTransportManager.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenTransportSavedData.java'
+      - '.github/workflows/audit-erden-cargo-escrow.yml'
+
+concurrency:
+  group: erden-cargo-escrow-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+
+jobs:
+  audit:
+    name: Authoritative departure and unloading audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Compile Living Kingdoms
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../../logs
+          gradle --no-daemon compileJava --stacktrace --console=plain \
+            2>&1 | tee ../../logs/erden-escrow-compile.log
+
+      - name: Run fresh-world cargo escrow audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-escrow-audit-world
+          mkdir -p run
+          printf 'level-name=livingkingdoms-escrow-audit-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/erden-escrow-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 900); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/erden-escrow-server.log; then
+              cat ../../logs/erden-escrow-server.log
+              exit 1
+            fi
+            if grep -Fq 'LK_ERDEN_ESCROW_AUDIT_PASS' ../../logs/erden-escrow-server.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/erden-escrow-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/erden-escrow-server.log
+          test "$passed" -eq 1
+          grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/erden-escrow-server.log
+          grep -F 'LK_ERDEN_TRANSPORT_PASS revision=2 manifests=' ../../logs/erden-escrow-server.log
+          grep -F 'LK_ERDEN_ESCROW_AUDIT_DEPARTURE' ../../logs/erden-escrow-server.log
+          grep -F 'source_debited=true' ../../logs/erden-escrow-server.log
+          grep -F 'pending_recorded=true' ../../logs/erden-escrow-server.log
+          grep -F 'LK_ERDEN_ESCROW_AUDIT_PASS' ../../logs/erden-escrow-server.log
+          grep -F 'departure=true' ../../logs/erden-escrow-server.log
+          grep -F 'unloading=true' ../../logs/erden-escrow-server.log
+          grep -F 'destination_credit=true' ../../logs/erden-escrow-server.log
+          grep -F 'cargo_conserved=true' ../../logs/erden-escrow-server.log
+          grep -F 'resource=bread amount=1' ../../logs/erden-escrow-server.log
+          grep -F 'fulfilled_households=77' ../../logs/erden-escrow-server.log
+          grep -F 'reserve_bread=42' ../../logs/erden-escrow-server.log
+          if grep -Eqi 'Erden escrow audit failed|Erden escrow audit sites disappeared|Erden cargo dispatch context was not closed|Exception loading level|watchdog' ../../logs/erden-escrow-server.log; then
+            exit 1
+          fi
+
+      - name: Upload audit logs
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: erden-cargo-escrow-audit-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Publish audit pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/build-pointers
+          printf '{\n  "run_id": "%s",\n  "run_number": "%s",\n  "commit_sha": "%s",\n  "job_status": "%s",\n  "log_artifact_id": "%s"\n}\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_NUMBER" "$GITHUB_SHA" "$JOB_STATUS" "$LOG_ID" \
+            > .github/build-pointers/erden-cargo-escrow.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/erden-cargo-escrow.json
+          git commit -m "Record Erden cargo escrow audit $GITHUB_RUN_NUMBER"
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
