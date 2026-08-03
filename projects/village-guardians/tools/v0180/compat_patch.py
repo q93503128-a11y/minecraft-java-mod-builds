@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import runpy
 
 ROOT = Path(__file__).resolve().parents[2]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
@@ -103,5 +104,8 @@ write(path, text)
 path = TOOLS / "test_v0180_content_scaling.py"
 text = read(path).replace("이전 Z/X/B 기본값", "이전 Z/V/B 기본값")
 write(path, text)
+
+# Run the MC 26.2-compatible impact-time arrow scaling fix last.
+runpy.run_path(str(ROOT / "tools/v0180/arrow_fix.py"), run_name="__main__")
 
 print("Applied v0.18.0 stable UI routing and legacy contract compatibility")
