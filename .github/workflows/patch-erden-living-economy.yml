@@ -1,11 +1,11 @@
 name: Patch Erden living economy
 
-# corrected-anchor trigger 2
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/patch-erden-living-economy.yml'
+      - '.github/trigger-erden-living-economy.txt'
 
 permissions:
   contents: write
