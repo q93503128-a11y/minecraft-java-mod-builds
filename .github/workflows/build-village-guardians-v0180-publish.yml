@@ -1,0 +1,180 @@
+name: Publish Village Guardians v0.18.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.build-trigger-v0180-publish'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: village-guardians-v0180-main
+  cancel-in-progress: false
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  EXPECTED_JAR: villageguardians-0.18.0-alpha.1.jar
+  PUBLISHED_DIR: published/village-guardians
+  RESULT_DIR: ci-results/village-guardians-v0180
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-read-only: false
+
+      - name: Apply final source patches
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/v0180/*.py
+          python3 tools/v0180/core_patch.py
+          python3 tools/v0180/skills_patch.py
+          python3 tools/v0180/post_apply.py
+          python3 tools/v0180/compat_patch.py
+
+      - name: Run all gameplay and regression contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            status=0
+            while IFS= read -r test; do
+              echo "=== $test ==="
+              python3 "$test" || status=1
+            done < <(find tools -maxdepth 1 -type f -name 'test_*.py' | sort)
+            exit "$status"
+          } 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0180-contracts.log"
+
+      - name: Build Java 25 JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain \
+            2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v0180-gradle.log"
+
+      - name: Verify final JAR integrity
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/$EXPECTED_JAR"
+          test -f "build/libs/$EXPECTED_JAR.sha256"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          unzip -t "build/libs/$EXPECTED_JAR" > "$GITHUB_WORKSPACE/village-guardians-v0180-unzip.log"
+
+          : > "$GITHUB_WORKSPACE/village-guardians-v0180-bytecode.log"
+          for class_name in \
+            VillageClientKeys \
+            VillageClientUi \
+            VillageRoleSkillSystem \
+            VillageRoleAbilitySystem \
+            VillageEquipmentShop \
+            VillageRelicSystem \
+            VillageBossAspectSystem \
+            VillageWaveTrait \
+            VillageWaveIntelSystem; do
+            javap -classpath "build/libs/$EXPECTED_JAR" -p \
+              "kr.moonseungjun.villageguardians.$class_name" \
+              >> "$GITHUB_WORKSPACE/village-guardians-v0180-bytecode.log"
+          done
+
+          javap -classpath "build/libs/$EXPECTED_JAR" -verbose \
+            kr.moonseungjun.villageguardians.VillageRoleAbilitySystem \
+            | grep -q 'major version: 69'
+
+          mkdir -p "$GITHUB_WORKSPACE/deliverables-v0180"
+          cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables-v0180/"
+          cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables-v0180/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0180-contracts.log" "$GITHUB_WORKSPACE/deliverables-v0180/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0180-gradle.log" "$GITHUB_WORKSPACE/deliverables-v0180/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0180-bytecode.log" "$GITHUB_WORKSPACE/deliverables-v0180/"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0180-unzip.log" "$GITHUB_WORKSPACE/deliverables-v0180/"
+          cp "CONTENT-AUDIT-v0.18.0.md" "$GITHUB_WORKSPACE/deliverables-v0180/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.18.0-alpha.1
+          path: deliverables-v0180/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish verified source and JAR directly to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$PROJECT_DIR/tools/v0180"
+          rm -f .github/workflows/build-village-guardians-v0180.yml
+          rm -f .github/workflows/build-village-guardians-v0180-retry.yml
+          rm -f .github/workflows/build-village-guardians-v0180-final.yml
+          rm -f .github/workflows/build-village-guardians-v0180-publish.yml
+          mkdir -p "$PUBLISHED_DIR"
+          cp "deliverables-v0180/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+          cp "deliverables-v0180/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A "$PROJECT_DIR" "$PUBLISHED_DIR" .github/workflows ci-results
+          if ! git diff --cached --quiet; then
+            git commit -m 'Apply Village Guardians v0.18.0 content and skill audit'
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Record final result
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          FINAL_STATUS='${{ job.status }}'
+          TEMP_DIR="$RUNNER_TEMP/village-guardians-v0180-result"
+          rm -rf "$TEMP_DIR" && mkdir -p "$TEMP_DIR"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0180-contracts.log" "$TEMP_DIR/latest-contracts.log" 2>/dev/null || printf '%s\n' 'Contracts did not finish.' > "$TEMP_DIR/latest-contracts.log"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0180-gradle.log" "$TEMP_DIR/latest-gradle.log" 2>/dev/null || printf '%s\n' 'Gradle did not finish.' > "$TEMP_DIR/latest-gradle.log"
+          cp "$GITHUB_WORKSPACE/village-guardians-v0180-bytecode.log" "$TEMP_DIR/bytecode.log" 2>/dev/null || true
+          cat > "$TEMP_DIR/status.txt" <<EOF
+          status=$FINAL_STATUS
+          trigger_sha=$GITHUB_SHA
+          published_commit=$(git rev-parse HEAD 2>/dev/null)
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
+          version=0.18.0-alpha.1
+          EOF
+          git reset --hard HEAD
+          git clean -fd
+          mkdir -p "$RESULT_DIR"
+          cp "$TEMP_DIR"/* "$RESULT_DIR/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULT_DIR"
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Village Guardians v0.18.0 result for ${GITHUB_SHA::7}"
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              if [ "$attempt" -eq 5 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
