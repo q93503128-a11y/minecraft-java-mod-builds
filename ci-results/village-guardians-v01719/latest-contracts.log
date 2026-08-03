@@ -1,0 +1,150 @@
+=== tools/test_action_layout.py ===
+[PASS] Facility selectors remain narrow while descriptions receive most of the width
+[PASS] Very narrow screens switch to stacked layout without false width failures
+[PASS] Town hall uses shorter cards and explicit current/next upgrade comparison
+[PASS] Action buttons are capped at 108x20 or 112x20 instead of spanning panels
+[PASS] Growth trees use anchored popovers and reserve the full height for main content
+[PASS] Status text is dark, stripped of legacy white formatting, and fits without scrolling
+=== tools/test_enemy_content.py ===
+[PASS] Eight readable wave traits include deterministic counters and previews
+[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs
+[PASS] Five-day milestone sieges and endless warfront tiers remain scalable
+[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes
+[PASS] Twenty active skills combine real gameplay with dedicated procedural-mesh scenes
+[PASS] CC0 fantasy visual references are documented without untracked binaries
+=== tools/test_fortress_layout.py ===
+[PASS] Compact buildings stay inside the fortress without overlap
+[PASS] Every facility entrance faces and reaches the central road or plaza
+[PASS] Town hall remains at least twice a normal facility after resizing
+[PASS] Closed gate spans the complete tower opening without side slits
+[PASS] Wall top has a flat three-block center walkway and planned rail openings
+[PASS] Wall stairs connect directly to the landing
+[PASS] Return destination is inside the plaza and clear of the bell and buildings
+=== tools/test_progression_depth.py ===
+[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs
+[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration
+[PASS] Emergency barrier, momentum and party recovery are wired into combat
+[PASS] Defense research expands from 9 to 15 upgrades
+[PASS] Skill trees fit overview spacing and the shop uses compact safe actions
+=== tools/test_progression_loop.py ===
+[PASS] Village progression upgrade costs are monotonic
+[PASS] Smithy, personal forge, and wall upgrades improve combat
+[PASS] Daily bread scales from 3 to 13
+[PASS] Center-to-north-gate avenue contains no buildings
+[PASS] Max storehouse+barracks doubles raid supplies
+=== tools/test_rpg_balance.py ===
+PASS: slowed RPG balance contract
+test_xp_3000=level_7_xp_131
+level30 attack=x2.415
+level30 incoming=61.4%
+level30 bonus_health=20
+total_xp_to_level30=94685
+=== tools/test_runtime_safety.py ===
+[PASS] Compact split menus use narrow selectors, wide details and bounded action buttons
+[PASS] Town hall shows current/next effects and exact repair or upgrade costs
+[PASS] Status strips unreadable legacy white formatting and remains scroll-free
+[PASS] Caller item is removed while inventory and keyboard access remain
+[PASS] Selected equipment enhancement and rarity fusion are both available
+[PASS] Building crest migration restores facade blocks instead of carving holes
+[PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired
+=== tools/test_v01710_skill_input.py ===
+[PASS] Client Z/V mappings are registered by the client event subscriber
+[PASS] Z/V packets route directly to the real role-skill cast system
+[PASS] Role and skill management use separate physical barrels and screens
+[PASS] Equipping closes the skill screen so in-game Z/V input is no longer drained
+=== tools/test_v01711_hud_skills.py ===
+[PASS] Action-bar HUD shows equipped Z/V skills, readiness and a live cooldown bar
+[PASS] Test role and skill managers use a dedicated compact responsive UI
+=== tools/test_v01711_skill_hud_ui.py ===
+[PASS] All 20 active skills have concrete cast logic and custom mesh feedback
+[PASS] Action-bar HUD shows equipped Z/V skills and live cooldown seconds
+[PASS] Test role and skill managers use a dedicated compact responsive UI
+=== tools/test_v01712_role_abilities.py ===
+[PASS] Twenty active skills own real movement, projectile, field and procedural-mesh motions
+[PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events
+[PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness
+[PASS] Default shortcuts match Z/V/B/H/J/K with no obsolete U duplicate
+=== tools/test_v01713_effects_and_keys.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01713_effects_and_keys.py", line 57, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01713_effects_and_keys.py", line 19, in main
+    assert "GLFW.GLFW_KEY_R" in keys and "GLFW.GLFW_KEY_G" in keys
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v01714_custom_mesh_effects.py ===
+[PASS] 회전 검무 rotates the avatar holding its one real weapon without orbiting swords
+[PASS] All skill presentation uses original synchronized entities and procedural vertex meshes
+[PASS] Custom arrows, blades, shields, runes, fields and volumes replace vanilla item/block displays
+[PASS] Particle emitters, display actors, temporary blocks and stale visual facades are absent
+=== tools/test_v01715_skill_combat_visuals.py ===
+[PASS] 회전 검무 rotates only the rendered avatar and repeatedly refreshes motion state
+[PASS] 검기 난무 uses clean horizontal blade waves without generic arrowhead decorations
+[PASS] Ranger buffs bind to actual arrow release, expose duration, and own a random rain field
+[PASS] Fire, tornado and giant lightning gameplay ranges use scalable custom damage
+[PASS] All shields face the live look direction, curve outward correctly, and use solid planes
+[PASS] Skill information renders on its own HUD row above the compact status action bar
+=== tools/test_v01716_ranger_activation.py ===
+[PASS] 시험 궁수와 실제 궁수 모두 다음 활 발사에서 네 기술을 소비합니다
+[PASS] 화살비는 위험한 실제 낙하 화살 없이 짧은 메시 장면과 사용자 피해 판정을 사용합니다
+[PASS] 화살비 범위는 지면 레이캐스트에 붙고 남은 화살은 빠르게 사라집니다
+[PASS] 검기는 허리 높이에서 전방으로 가로 이동하며 천붕 강하의 거대 화살표는 제거됩니다
+[PASS] 추적 도탄 준비 표식과 기술 HUD 위치가 플레이 화면에 맞게 조정됩니다
+=== tools/test_v01717_range_homing.py ===
+[PASS] 신속 삼연사가 실제 활 사용을 조기에 종료해 완충 발사를 실행합니다
+[PASS] 추적 도탄은 전방 최적 표적을 잡고 비행 중에도 몸통을 추적합니다
+[PASS] 홍염탄은 적·바닥·벽 충돌에서 폭발하고 투사체와 시각체가 함께 사라집니다
+[PASS] 실제 범위·최대 사거리·절차 메시 범위가 같은 업그레이드 값을 공유합니다
+[PASS] 천뢰 폭격은 정확한 바닥 원 안에서 1.5배 주기로 적 우선 낙뢰를 사용합니다
+[PASS] 수호 돌진 방패는 중복되지 않고 돌진 종료 직후 빠르게 사라집니다
+=== tools/test_v01718_bow_shortcuts.py ===
+[PASS] v0.17.18 version is active
+[PASS] 신속 삼연사는 실제 활 사용을 조기에 끝내고 완충 발사를 보장합니다
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01718_bow_shortcuts.py", line 94, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01718_bow_shortcuts.py", line 40, in main
+    check(
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01718_bow_shortcuts.py", line 14, in check
+    raise AssertionError(label)
+AssertionError: 홍염탄 접촉 판정은 폭발 반경과 분리되어 작은 값만 사용합니다
+=== tools/test_v01719_access_content.py ===
+[PASS] 홍염탄은 소폭 넓어진 여유값과 적별 실제 충돌 상자를 사용합니다
+[PASS] Z/V/B/H/J/K 안전 기본키와 바닐라·중복 키 자동 이관이 연결됩니다
+[PASS] 기술 시험장 진입은 1557 인증을 거치며 구형 시험 액션은 제거됩니다
+[PASS] 다음 밤 웨이브 정찰은 성벽과 병영 양쪽에서 접근할 수 있습니다
+[PASS] 콘텐츠 감사: 장비 10, 적 14, 웨이브 특성 8, 액티브 기술 20, 무한 일수
+[PASS] 실제 수량과 장기 반복 구간이 콘텐츠 감사 문서에 기록됩니다
+=== tools/test_v0174_ui_safety.py ===
+Village Guardians v0.17.4 UI, location and shortcut contracts passed.
+=== tools/test_v0175_gameplay_ui.py ===
+[PASS] Daily shop inventory rotates and hides future stock
+[PASS] Equipment, armour and supplies use bounded pixel-fit layouts
+[PASS] Caller opens a screen-safe PUBG-style quick communication wheel
+[PASS] Smithy fusion explicitly selects three compatible items
+[PASS] Skill-hall entry opens skills only and defense research titles stay concise
+[PASS] Skills use non-particle procedural mesh actors and infirmary upgrades have real utility
+=== tools/test_v0176_gameplay.py ===
+Village Guardians v0.17.6 gameplay, UI, item and defeat contracts passed.
+=== tools/test_v0177_gameplay.py ===
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0177_gameplay.py", line 28, in <module>
+    if __name__ == "__main__": main()
+                               ^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0177_gameplay.py", line 26, in main
+    assert "test_choose:" in ui and "VillageSkillTestSystem.equippedSkill" in role and "targetsNear" in test
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+=== tools/test_v0178_gameplay.py ===
+[PASS] Common growth has five ten-stage branches with functional late capstones
+[PASS] Growth nodes radiate at equal 72-degree intervals in a five-point star layout
+[PASS] Outdoor test arena teleports, restores position and owns reward-free targets
+[PASS] Test skills temporarily equip to Z/V and use the real keyed cast/custom-mesh path
+=== tools/test_v0179_skill_test_box.py ===
+[PASS] Test arena owns separate role and skill management barrels
+[PASS] Test-only job selection leaves permanent role and progression untouched
+[PASS] Skill cards directly assign Z/V and the real keyed cast path reads the test loadout
+=== tools/test_village_zone.py ===
+PASS: expanded village territory contract
+radius=96
+defense_xp_multiplier=1.5
