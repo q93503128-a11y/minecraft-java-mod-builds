@@ -75,13 +75,12 @@ total_xp_to_level30=94685
 [PASS] Custom arrows, blades, shields, runes, fields and volumes replace vanilla item/block displays
 [PASS] Particle emitters, display actors, temporary blocks and stale visual facades are absent
 === tools/test_v01715_skill_combat_visuals.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 69, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 57, in main
-    assert "graphics.guiHeight() - 82" in overlay
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] 회전 검무 rotates only the rendered avatar and repeatedly refreshes motion state
+[PASS] 검기 난무 uses clean horizontal blade waves without generic arrowhead decorations
+[PASS] Ranger buffs bind to actual arrow release, expose duration, and own a random rain field
+[PASS] Fire, tornado and giant lightning gameplay ranges use scalable custom damage
+[PASS] All shields face the live look direction, curve outward correctly, and use solid planes
+[PASS] Skill information renders on its own HUD row above the compact status action bar
 === tools/test_v01716_ranger_activation.py ===
 [PASS] 시험 궁수와 실제 궁수 모두 다음 활 발사에서 네 기술을 소비합니다
 [PASS] 화살비는 위험한 실제 낙하 화살 없이 짧은 메시 장면과 사용자 피해 판정을 사용합니다
