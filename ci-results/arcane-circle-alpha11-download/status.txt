@@ -1,0 +1,4 @@
+status=failure
+run_id=30788139384
+source_sha=7a9c4f5f6ec695faccb33b67a791b6649abef81e
+artifact=arcanecircle-0.12.1-alpha.11
