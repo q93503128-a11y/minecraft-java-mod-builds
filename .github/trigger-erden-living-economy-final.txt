@@ -1,1 +1,1 @@
-Run the final isolated Erden living economy integration and publish a durable result pointer.
+Retry the final Erden living economy runtime and documentation integration without changing workflow files in the bot commit.
