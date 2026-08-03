@@ -22,7 +22,15 @@ jobs:
 
       - name: Prepare exact alpha.18 source
         id: prepare
-        run: python3 projects/countryside-days/tools/prepare_alpha18_exact.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('projects/countryside-days/tools/prepare_alpha18_exact.py')
+          text = path.read_text('utf-8')
+          text = text.replace('TOOLS / "prepare_alpha17_exact.py"', 'TOOLS / "prepare_alpha17_retry.py"')
+          path.write_text(text, 'utf-8')
+          PY
+          python3 projects/countryside-days/tools/prepare_alpha18_exact.py
 
       - uses: actions/setup-java@v4
         with:
