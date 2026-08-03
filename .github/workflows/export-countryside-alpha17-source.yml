@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0
 
       - name: Reconstruct exact alpha.17 source
-        run: python3 projects/countryside-days/tools/prepare_alpha17_exact.py
+        run: python3 projects/countryside-days/tools/prepare_alpha17_retry.py
 
       - name: Archive source
         run: |
