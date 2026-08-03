@@ -1,0 +1,97 @@
+name: Validate Living Kingdoms physical economy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-living-kingdoms-physical-economy.yml'
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LOG_FILE: ${{ github.workspace }}/lk-physical-economy/server.log
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Java 25 clean build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon clean build --stacktrace --console=plain
+      - name: Fresh Erden physical economy test
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-physical-economy-ci
+          mkdir -p run "$(dirname "$LOG_FILE")"
+          printf 'level-name=livingkingdoms-physical-economy-ci\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain > "$LOG_FILE" 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          passed=0
+          for attempt in $(seq 1 720); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' "$LOG_FILE"; then cat "$LOG_FILE"; exit 1; fi
+            if grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$LOG_FILE" \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$LOG_FILE" \
+              && grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' "$LOG_FILE"; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then cat "$LOG_FILE"; exit 1; fi
+            sleep 1
+          done
+          cat "$LOG_FILE"
+          test "$passed" -eq 1
+          grep -F 'Prepared Erden physical economy sites=156 warehouses=15 wallets=77 container_resources=8' "$LOG_FILE"
+          grep -F 'Processed Erden physical economy day=' "$LOG_FILE"
+          grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$LOG_FILE"
+          grep -F 'containers=3' "$LOG_FILE"
+          grep -F 'debris_zero=true' "$LOG_FILE"
+          if grep -Eqi 'Invalid Erden physical economy|Expected 156 Erden economy sites|Unsupported Erden economy role|Exception loading level|watchdog' "$LOG_FILE"; then
+            exit 1
+          fi
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-physical-economy-${{ github.run_number }}
+          path: lk-physical-economy/server.log
+          retention-days: 30
+      - name: Publish pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/build-pointers
+          printf '{\n  "run_id": "%s",\n  "run_number": "%s",\n  "commit_sha": "%s",\n  "job_status": "%s"\n}\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_NUMBER" "$GITHUB_SHA" "$JOB_STATUS" \
+            > .github/build-pointers/living-kingdoms-physical-economy.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/living-kingdoms-physical-economy.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record Erden physical economy validation $GITHUB_RUN_NUMBER"
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
