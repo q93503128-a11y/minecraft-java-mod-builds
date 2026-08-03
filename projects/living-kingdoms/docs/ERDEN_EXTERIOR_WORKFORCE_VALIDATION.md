@@ -39,6 +39,11 @@ player-driven streaming retains the lower runtime budget. Household samples use 
 anchor chunks that prove each site's physical construction, avoiding synchronous or unbounded
 chunk loading.
 
+The old `ErdenPhysicalEconomyManager` fixed-import implementation has been deleted. Economy
+constants, diagnostic entrances and all active processing now belong to
+`ErdenAuthoritativeEconomyManager`. The population diagnostic retainer requests and forces sample
+chunks without synchronously calling `getChunk`.
+
 ## Required regression markers
 
 A fresh-world validation is successful only when it emits all of the following without a watchdog,
