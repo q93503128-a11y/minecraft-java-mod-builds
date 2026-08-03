@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Apply once after the workflow is present on the default branch.
 plan_path = Path("projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java")
 plan = plan_path.read_text(encoding="utf-8")
 old_flags = "    private static final int CONSTRUCTION_UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;"
