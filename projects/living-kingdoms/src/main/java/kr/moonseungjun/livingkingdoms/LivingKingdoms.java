@@ -8,6 +8,7 @@ import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenBakeryReserveManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
 import kr.moonseungjun.livingkingdoms.world.ErdenPhysicalEconomyManager;
@@ -82,6 +83,7 @@ public final class LivingKingdoms {
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
         ErdenPhysicalEconomyManager.onServerTick(event);
+        ErdenBakeryReserveManager.onServerTick(event);
         ErdenDiagnosticDebrisSettler.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
