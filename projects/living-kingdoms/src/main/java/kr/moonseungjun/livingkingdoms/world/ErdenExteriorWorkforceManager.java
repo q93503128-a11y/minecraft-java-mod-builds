@@ -48,7 +48,7 @@ public final class ErdenExteriorWorkforceManager {
     private static final int SPAWN_BUDGET = 3;
     private static final int ROUTINE_INTERVAL = 60;
     private static final int[][] HOME_OFFSETS = {
-            {-18, -12}, {0, -14}, {18, -12}, {-18, 12}, {0, 14}, {18, 12}
+            {0, 0}, {28, 0}, {-28, 0}, {0, 28}, {0, -28}
     };
     private static final List<String> FAMILY_PREFIXES = List.of(
             "아르", "벨", "카르", "델", "에른", "파르", "그렌", "하르", "이르"
@@ -103,8 +103,10 @@ public final class ErdenExteriorWorkforceManager {
     }
 
     public static int productionPercent(ServerLevel level, String nodeId, long day) {
-        prepareBeforeSupply(level, day);
-        return data(level).productionPercent(nodeId, day);
+        ErdenExteriorWorkforceSavedData workforce = data(level);
+        ensurePopulation(workforce);
+        ErdenKingdomSupplyCatalog.SupplyNode node = ErdenKingdomSupplyCatalog.node(nodeId);
+        return node == null ? 0 : laborState(workforce, node, day).productionPercent();
     }
 
     public static boolean nodeOperational(ServerLevel level, String nodeId, long day) {
@@ -256,29 +258,7 @@ public final class ErdenExteriorWorkforceManager {
         for (long day = firstDay; day <= currentDay; day++) {
             List<ErdenExteriorWorkforceSavedData.NodeLabor> states = new ArrayList<>();
             for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
-                int required = requiredWorkers(node.role);
-                int alive = 0;
-                int attended = 0;
-                int absent = 0;
-                int dead = 0;
-                for (ErdenExteriorWorkforceSavedData.Household household : workforce.households()) {
-                    if (!household.nodeId().equals(node.id)) continue;
-                    for (ErdenExteriorWorkforceSavedData.Resident resident : household.residents()) {
-                        if (!resident.worker()) continue;
-                        if (workforce.isDead(resident.id())) {
-                            dead++;
-                            continue;
-                        }
-                        alive++;
-                        if (absentOnDay(resident, node.role, day)) absent++;
-                        else attended++;
-                    }
-                }
-                int percent = required <= 0 ? 100
-                        : Math.clamp(attended * 100 / required, 0, 100);
-                states.add(new ErdenExteriorWorkforceSavedData.NodeLabor(
-                        node.id, day, required, alive, attended, absent, dead,
-                        percent, 0L, 0L));
+                states.add(laborState(workforce, node, day));
             }
             if (workforce.recordDay(day, states)
                     && (previousDay < 0L || day % 7L == 0L || day == currentDay)) {
@@ -288,6 +268,35 @@ public final class ErdenExteriorWorkforceManager {
                         workforce.absentWorkerCount(), workforce.deadWorkerCount());
             }
         }
+    }
+
+    private static ErdenExteriorWorkforceSavedData.NodeLabor laborState(
+            ErdenExteriorWorkforceSavedData workforce,
+            ErdenKingdomSupplyCatalog.SupplyNode node,
+            long day) {
+        int required = requiredWorkers(node.role);
+        int alive = 0;
+        int attended = 0;
+        int absent = 0;
+        int dead = 0;
+        for (ErdenExteriorWorkforceSavedData.Household household : workforce.households()) {
+            if (!household.nodeId().equals(node.id)) continue;
+            for (ErdenExteriorWorkforceSavedData.Resident resident : household.residents()) {
+                if (!resident.worker()) continue;
+                if (workforce.isDead(resident.id())) {
+                    dead++;
+                    continue;
+                }
+                alive++;
+                if (absentOnDay(resident, node.role, day)) absent++;
+                else attended++;
+            }
+        }
+        int percent = required <= 0 ? 100
+                : Math.clamp(attended * 100 / required, 0, 100);
+        return new ErdenExteriorWorkforceSavedData.NodeLabor(
+                node.id, day, required, alive, attended, absent, dead,
+                percent, 0L, 0L);
     }
 
     private static boolean absentOnDay(
