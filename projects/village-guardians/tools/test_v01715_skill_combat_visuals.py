@@ -21,7 +21,7 @@ def main() -> None:
     overlay = read("VillageSkillHudOverlay.java")
     network = read("VillageNetwork.java")
 
-    assert "mod_version=0.17.15-alpha.1" in props
+    assert "mod_version=0.17.16-alpha.1" in props
     assert "sendSkillMotion(level, player, \"vanguard_spin\"" in abilities
     assert "rotateY(radians)" in client
     assert "event.getRenderState().bodyRot = 0.0f" in client
@@ -31,7 +31,7 @@ def main() -> None:
     assert "MEGA_ARROW_READY" in abilities
     assert "RICOCHET_ARROWS" in abilities
     assert "activeSkillHud" in abilities
-    assert "다음 화살" in abilities
+    assert "다음 활" in abilities
     assert "arrowRainField" in effects
     assert "spawnVisualLightning" in abilities
     assert "setVisualOnly(true)" in abilities
@@ -54,7 +54,7 @@ def main() -> None:
     assert "VillageNetwork.sendSkillHud" in hud
     assert "VillageRoleAbilitySystem.activeSkillHud" in hud
     assert "VanillaGuiLayers.OVERLAY_MESSAGE" in overlay
-    assert "graphics.guiHeight() - 82" in overlay
+    assert "graphics.guiHeight() - 92" in overlay
     assert "skillHud" not in hud.split("private static String buildText", 1)[1]
 
     print("[PASS] 회전 검무 rotates only the rendered avatar and repeatedly refreshes motion state")

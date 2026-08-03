@@ -48,7 +48,7 @@ public final class VillageSkillHudOverlay {
         }
         int width = font.width(fitted);
         int x = (graphics.guiWidth() - width) / 2;
-        int y = graphics.guiHeight() - 82;
+        int y = graphics.guiHeight() - 92;
         graphics.fill(x - 5, y - 3, x + width + 5, y + font.lineHeight + 3, 0x78000000);
         graphics.centeredText(font, Component.literal(fitted), graphics.guiWidth() / 2, y, 0xFFFFFFFF);
     }

@@ -121,31 +121,30 @@ public final class VillageSkillMeshLibrary {
 
     private static void renderSlamCharge(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {
-        double height = 3.0 - progress * 1.25;
-        Vec3 root = b.local(0.0, height, 0.15);
-        Vec3 tip = b.local(0.0, 0.35, 0.45);
-        energyBlade(pose, out, root, tip, 0.36 + progress * 0.22,
-                rgba(255, 85, 52, 220));
+        double fade = envelope(progress, 0.08, 0.18);
         for (int i = 0; i < 3; i++) {
-            ring(pose, out, b, 0.45 + i * 0.38 + progress * 0.55,
-                    0.16 + i * 0.18, 0.07, 36,
-                    rgba(255, 96 + i * 28, 70, 125), -age * (0.06 + i * 0.01));
+            ring(pose, out, b, 0.55 + i * 0.46 + progress * 0.42,
+                    0.05 + i * 0.11, 0.075, 42,
+                    rgba(255, 92 + i * 26, 66, (int) ((155 - i * 18) * fade)),
+                    -age * (0.045 + i * 0.012));
         }
-        for (int i = 0; i < 6; i++) {
-            double a = i * TAU / 6.0 + age * 0.04;
-            spike(pose, out, b.local(Math.cos(a) * 1.0, 0.08, Math.sin(a) * 1.0),
-                    b.local(Math.cos(a) * 1.5, 0.75 + progress * 0.45,
-                            Math.sin(a) * 1.5),
-                    0.12, rgba(214, 45, 44, 155));
+        for (int i = 0; i < 8; i++) {
+            double a = i * TAU / 8.0 + age * 0.025;
+            Vec3 start = b.local(Math.cos(a) * 0.58,
+                    2.35 - progress * 1.28, Math.sin(a) * 0.58);
+            Vec3 end = b.local(Math.cos(a) * 1.22,
+                    0.22, Math.sin(a) * 1.22);
+            prism(pose, out, start, end, 0.055,
+                    rgba(238, 67, 54, (int) (150 * fade)));
         }
     }
 
     private static void renderBladeWave(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {
         double fade = 1.0 - progress * 0.70;
-        horizontalSlash(pose, out, b, 3.4, 1.05, 0.20, 0.30,
+        horizontalSlash(pose, out, b, 3.6, 0.0, 0.15, 0.07,
                 rgba(120, 215, 255, (int) (225 * fade)));
-        horizontalSlash(pose, out, b, 2.8, 1.06, 0.09, 0.20,
+        horizontalSlash(pose, out, b, 3.0, 0.01, 0.065, 0.035,
                 rgba(236, 252, 255, (int) (190 * fade)));
     }
 
@@ -191,10 +190,10 @@ public final class VillageSkillMeshLibrary {
     private static void renderRangerFocus(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {
         double fade = envelope(progress, 0.08, 0.20);
-        Vec3 core = b.local(0.0, 1.52, 0.65);
+        Vec3 core = b.local(0.0, 0.0, 0.18);
         sphere(pose, out, core, 0.18 + Math.sin(age * 0.25) * 0.035,
                 8, 12, rgba(255, 211, 88, (int) (210 * fade)));
-        ringVertical(pose, out, b, 0.48, 1.52, 0.035, 44,
+        ringVertical(pose, out, b, 0.48, 0.0, 0.035, 44,
                 rgba(255, 235, 150, (int) (160 * fade)), age * 0.06);
     }
 
@@ -217,12 +216,12 @@ public final class VillageSkillMeshLibrary {
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {
         double fade = envelope(progress, 0.05, 0.18);
         double radius = 0.72 + Math.sin(age * 0.32) * 0.06;
-        ringVertical(pose, out, b, radius, 0.65, 0.045, 56,
+        ringVertical(pose, out, b, radius, 0.0, 0.045, 56,
                 rgba(255, 207, 76, (int) (220 * fade)), -age * 0.05);
-        ringVertical(pose, out, b, radius * 0.45, 0.65, 0.028, 40,
+        ringVertical(pose, out, b, radius * 0.45, 0.0, 0.028, 40,
                 rgba(255, 247, 180, (int) (175 * fade)), age * 0.07);
         for (int i = 0; i < 4; i++) {
-            reticleBracket(pose, out, b, i * Math.PI / 2.0, radius + 0.22, 0.65,
+            reticleBracket(pose, out, b, i * Math.PI / 2.0, radius + 0.22, 0.0,
                     rgba(255, 224, 112, (int) (205 * fade)));
         }
     }
@@ -230,26 +229,27 @@ public final class VillageSkillMeshLibrary {
     private static void renderArrowRainField(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress, Random random) {
         double radius = 8.5;
-        ring(pose, out, b, radius, 0.045, 0.11, 96,
+        ring(pose, out, b, radius, 0.012, 0.11, 96,
                 rgba(88, 188, 255, 170), 0.0);
-        ring(pose, out, b, radius * 0.72, 0.052, 0.045, 72,
+        ring(pose, out, b, radius * 0.72, 0.018, 0.045, 72,
                 rgba(149, 223, 255, 90), -age * 0.008);
-        for (int i = 0; i < 26; i++) {
+        for (int i = 0; i < 18; i++) {
             double a = i * 2.399963229728653 + (i % 3) * 0.17;
-            double r = Math.sqrt((i + 0.5) / 26.0) * radius * 0.92;
-            double cycle = fract(progress * 3.4 + i * 0.137);
-            double y = 11.0 - cycle * 13.0;
+            double r = Math.sqrt((i + 0.5) / 18.0) * radius * 0.92;
+            double cycle = fract(progress * 5.8 + i * 0.173);
+            double y = 8.5 - cycle * 9.5;
             Vec3 p = b.local(Math.cos(a) * r, y, Math.sin(a) * r);
-            customArrow(pose, out, Basis.DOWN, p, 0.95 + (i % 4) * 0.09, 0.07,
-                    rgba(164, 228, 255, (int) (205 * (1.0 - Math.max(0.0, cycle - 0.86) / 0.14))));
+            double fadeOut = 1.0 - Math.max(0.0, cycle - 0.72) / 0.28;
+            customArrow(pose, out, Basis.DOWN, p, 0.82 + (i % 4) * 0.07, 0.06,
+                    rgba(164, 228, 255, (int) (195 * fadeOut)));
         }
     }
 
     private static void renderArrowRainImpact(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress, Random random) {
-        ring(pose, out, b, 0.45 + progress * 2.8, 0.045, 0.10, 56,
+        ring(pose, out, b, 0.45 + progress * 2.8, 0.012, 0.10, 56,
                 rgba(124, 211, 255, (int) (180 * (1.0 - progress))), 0.0);
-        ring(pose, out, b, 0.25 + progress * 1.5, 0.06, 0.045, 40,
+        ring(pose, out, b, 0.25 + progress * 1.5, 0.018, 0.045, 40,
                 rgba(225, 249, 255, (int) (130 * (1.0 - progress))), age * 0.02);
     }
 

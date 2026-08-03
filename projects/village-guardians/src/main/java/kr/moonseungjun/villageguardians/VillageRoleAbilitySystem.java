@@ -46,6 +46,7 @@ public final class VillageRoleAbilitySystem {
     private static final Map<UUID, Long> RAPID_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> RICOCHET_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> RICOCHET_ARROWS = new HashMap<>();
+    private static final Map<UUID, EmpoweredArrowState> ARROW_RAIN_READY = new HashMap<>();
     private static final Map<UUID, EmpoweredArrowState> MEGA_ARROW_READY = new HashMap<>();
     private static final Map<UUID, Long> FORTRESS_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> AEGIS_UNTIL = new HashMap<>();
@@ -65,6 +66,7 @@ public final class VillageRoleAbilitySystem {
         RAPID_UNTIL.clear();
         RICOCHET_UNTIL.clear();
         RICOCHET_ARROWS.clear();
+        ARROW_RAIN_READY.clear();
         MEGA_ARROW_READY.clear();
         FORTRESS_UNTIL.clear();
         AEGIS_UNTIL.clear();
@@ -130,28 +132,28 @@ public final class VillageRoleAbilitySystem {
             }
 
             case RANGER_VOLLEY -> {
-                int rapidDuration = Math.max(200, duration);
-                RAPID_UNTIL.put(player.getUUID(), now + rapidDuration);
-                player.addEffect(new MobEffectInstance(MobEffects.SPEED, rapidDuration, 1, false, false, true));
+                clearRangerReadies(player.getUUID());
+                long until = now + Math.max(240L, duration * 2L);
+                RAPID_UNTIL.put(player.getUUID(), until);
                 player.swing(InteractionHand.MAIN_HAND, true);
                 play(level, player.position(), SoundEvents.CROSSBOW_LOADING_END.value(), 1.0f, 1.35f);
             }
             case RANGER_PIERCE -> {
-                RICOCHET_UNTIL.put(player.getUUID(), now + Math.max(240, duration * 2L));
+                clearRangerReadies(player.getUUID());
+                RICOCHET_UNTIL.put(player.getUUID(), now + Math.max(240L, duration * 2L));
                 player.swing(InteractionHand.MAIN_HAND, true);
                 play(level, player.position(), SoundEvents.CROSSBOW_QUICK_CHARGE_3.value(), 1.0f, 1.2f);
             }
             case RANGER_RICOCHET -> {
-                Vec3 center = aimedGround(level, player, 22.0);
-                int fieldDuration = 60;
-                VillageSkillEffectSystem.arrowRainField(level, player, center, fieldDuration, 8.5);
-                for (int i = 0; i < 10; i++) {
-                    SCHEDULED.add(new ScheduledAction(now + 5L + i * 5L, player.getUUID(), skill,
-                            ActionKind.ARROW_RAIN, power, durationMultiplier, specialRank, center, Vec3.ZERO));
-                }
-                play(level, player.position(), SoundEvents.CROSSBOW_SHOOT, 1.0f, 0.75f);
+                clearRangerReadies(player.getUUID());
+                long until = now + Math.max(260L, duration * 2L);
+                ARROW_RAIN_READY.put(player.getUUID(),
+                        new EmpoweredArrowState(until, power, specialRank));
+                player.swing(InteractionHand.MAIN_HAND, true);
+                play(level, player.position(), SoundEvents.CROSSBOW_LOADING_END.value(), 1.0f, 0.92f);
             }
             case RANGER_FIRE_RAIN -> {
+                clearRangerReadies(player.getUUID());
                 long until = now + Math.max(280L, duration * 2L);
                 MEGA_ARROW_READY.put(player.getUUID(), new EmpoweredArrowState(until, power, specialRank));
                 player.swing(InteractionHand.MAIN_HAND, true);
@@ -256,10 +258,10 @@ public final class VillageRoleAbilitySystem {
                             0.8f + (now % 4) * 0.05f);
                 }
             }
-            if (RICOCHET_UNTIL.getOrDefault(id, 0L) >= now && now % 3L == 0L) {
+            if (RICOCHET_UNTIL.getOrDefault(id, 0L) >= now && now % 4L == 0L) {
                 Vec3 sight = lookDirection(player);
-                VillageSkillEffectSystem.trackingReticle(
-                        level, player, aimPoint(level, player, 42.0), sight);
+                Vec3 readyPoint = player.getEyePosition().add(sight.scale(1.45));
+                VillageSkillEffectSystem.trackingReticle(level, player, readyPoint, sight);
             }
             SlamState slam = SLAMS.get(id);
             if (slam != null && now > slam.startedAt() + 5L
@@ -434,6 +436,7 @@ public final class VillageRoleAbilitySystem {
         RAPID_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         RICOCHET_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         RICOCHET_ARROWS.entrySet().removeIf(entry -> entry.getValue() < now);
+        ARROW_RAIN_READY.entrySet().removeIf(entry -> entry.getValue().until() < now);
         MEGA_ARROW_READY.entrySet().removeIf(entry -> entry.getValue().until() < now);
         FORTRESS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         AEGIS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
@@ -441,8 +444,7 @@ public final class VillageRoleAbilitySystem {
     }
 
     public static void handleArrowLoose(ArrowLooseEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)
-                || VillageCouncilState.roleOf(player.getUUID()).orElse(null) != VillageRole.RANGER) return;
+        if (!(event.getEntity() instanceof ServerPlayer player) || !isRangerContext(player)) return;
         int bonus = 5;
         long now = player.level().getGameTime();
         if (RAPID_UNTIL.getOrDefault(player.getUUID(), 0L) >= now) bonus += 10;
@@ -453,21 +455,26 @@ public final class VillageRoleAbilitySystem {
         if (event.getLevel().isClientSide() || !(event.getLevel() instanceof ServerLevel level)
                 || !(event.getEntity() instanceof AbstractArrow arrow)
                 || !(arrow.getOwner() instanceof ServerPlayer player)
-                || VillageCouncilState.roleOf(player.getUUID()).orElse(null) != VillageRole.RANGER) return;
+                || !isRangerContext(player)) return;
         if (spawningGeneratedArrow) return;
         long now = level.getGameTime();
+        UUID id = player.getUUID();
 
-        EmpoweredArrowState mega = MEGA_ARROW_READY.get(player.getUUID());
+        EmpoweredArrowState mega = MEGA_ARROW_READY.remove(id);
         if (mega != null && mega.until() >= now) {
-            MEGA_ARROW_READY.remove(player.getUUID());
             event.setCanceled(true);
             launchEnergyArrow(level, player, mega.power(), mega.specialRank());
             return;
         }
 
-        boolean tracking = RICOCHET_UNTIL.getOrDefault(player.getUUID(), 0L) >= now;
+        EmpoweredArrowState rain = ARROW_RAIN_READY.remove(id);
+        if (rain != null && rain.until() >= now) {
+            activateArrowRain(level, player, rain.power(), rain.specialRank());
+        }
+
+        Long trackingUntil = RICOCHET_UNTIL.remove(id);
+        boolean tracking = trackingUntil != null && trackingUntil >= now;
         if (tracking) {
-            RICOCHET_UNTIL.remove(player.getUUID());
             RICOCHET_ARROWS.put(arrow.getUUID(), now + 240L);
             aimAssist(level, player, arrow, 0.68);
             play(level, player.position(), SoundEvents.CROSSBOW_SHOOT, 0.85f, 1.3f);
@@ -475,7 +482,8 @@ public final class VillageRoleAbilitySystem {
             aimAssist(level, player, arrow, 0.24);
         }
 
-        if (RAPID_UNTIL.getOrDefault(player.getUUID(), 0L) < now) return;
+        Long rapidUntil = RAPID_UNTIL.remove(id);
+        if (rapidUntil == null || rapidUntil < now) return;
         spawningGeneratedArrow = true;
         try {
             spawnSideArrow(level, player, arrow, -8.0);
@@ -487,7 +495,7 @@ public final class VillageRoleAbilitySystem {
 
     public static void handleIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
-            VillageRole role = VillageCouncilState.roleOf(attacker.getUUID()).orElse(null);
+            VillageRole role = activeRole(attacker);
             if (role == VillageRole.VANGUARD && !(event.getSource().getDirectEntity() instanceof AbstractArrow)) {
                 attacker.heal(Math.min(2.5f, event.getAmount() * 0.055f));
             }
@@ -518,7 +526,7 @@ public final class VillageRoleAbilitySystem {
 
     public static void handleDeath(LivingDeathEvent event) {
         if (!(event.getSource().getEntity() instanceof ServerPlayer killer)
-                || VillageCouncilState.roleOf(killer.getUUID()).orElse(null) != VillageRole.RANGER
+                || !isRangerContext(killer)
                 || !(event.getSource().getDirectEntity() instanceof AbstractArrow)
                 || VillageSkillTestSystem.isTestDummy(event.getEntity())) return;
         killer.getInventory().add(new ItemStack(Items.ARROW));
@@ -535,17 +543,21 @@ public final class VillageRoleAbilitySystem {
         if (player == null) return "";
         long now = player.level().getGameTime();
         List<String> states = new ArrayList<>();
-        appendTimed(states, "§b신속 삼연사", RAPID_UNTIL.getOrDefault(player.getUUID(), 0L), now);
-        if (RICOCHET_UNTIL.getOrDefault(player.getUUID(), 0L) >= now) {
-            states.add("§e추적 도탄 §f다음 화살");
-        }
+        appendReady(states, "§b신속 삼연사", RAPID_UNTIL.getOrDefault(player.getUUID(), 0L), now);
+        appendReady(states, "§e추적 도탄", RICOCHET_UNTIL.getOrDefault(player.getUUID(), 0L), now);
+        EmpoweredArrowState rain = ARROW_RAIN_READY.get(player.getUUID());
+        if (rain != null) appendReady(states, "§9천공 화살비", rain.until(), now);
         EmpoweredArrowState mega = MEGA_ARROW_READY.get(player.getUUID());
-        if (mega != null && mega.until() >= now) {
-            states.add("§a성멸 대궁 §f다음 화살");
-        }
+        if (mega != null) appendReady(states, "§a성멸 대궁", mega.until(), now);
         appendTimed(states, "§9거대 방패 태세", FORTRESS_UNTIL.getOrDefault(player.getUUID(), 0L), now);
         appendTimed(states, "§3대수호 진군", AEGIS_UNTIL.getOrDefault(player.getUUID(), 0L), now);
         return String.join(" §8· ", states);
+    }
+
+    private static void appendReady(List<String> output, String label, long until, long now) {
+        if (until < now) return;
+        output.add(label + " §f다음 활 · "
+                + String.format(java.util.Locale.ROOT, "%.1f초", (until - now) / 20.0));
     }
 
     private static void appendTimed(List<String> output, String label, long until, long now) {
@@ -565,9 +577,10 @@ public final class VillageRoleAbilitySystem {
         player.swing(InteractionHand.MAIN_HAND, true);
         Vec3 direction = horizontalLook(player);
         VillageSkillEffectSystem.bladeWave(level, player, direction);
+        Vec3 origin = player.position().add(0.0, 0.82, 0.0).add(direction.scale(1.0));
         launchMovingAt(level, player, MovingKind.BLADE, ItemStack.EMPTY,
                 1.75, 24, (5.4f + VillageCouncilState.levelOf(player.getUUID()) * 0.30f) * power,
-                1.45, specialRank, player.getEyePosition().add(direction.scale(1.25)), direction);
+                1.45, specialRank, origin, direction);
         play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.0f,
                 0.78f + player.getRandom().nextFloat() * 0.18f);
     }
@@ -589,10 +602,8 @@ public final class VillageRoleAbilitySystem {
             hurt(level, target, damage);
             if (specialRank >= 3) target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 40));
         }
-        for (int i = 0; i < 7; i++) {
-            Vec3 random = randomPointInCircle(level, center, 8.2).add(0.0, 11.0 + level.getRandom().nextDouble() * 3.0, 0.0);
-            spawnFallingArrow(level, player, random);
-        }
+        // Falling arrows are rendered by one short-lived synchronized mesh field.
+        // No persistent Arrow entities are created, preventing stuck arrows and weapon validation crashes.
         play(level, center, SoundEvents.ARROW_SHOOT, 0.8f, 1.45f);
     }
 
@@ -725,19 +736,8 @@ public final class VillageRoleAbilitySystem {
                 damage, radius, specialRank, origin));
     }
 
-    private static void spawnFallingArrow(ServerLevel level, ServerPlayer owner, Vec3 position) {
-        Arrow arrow = new Arrow(level, owner, new ItemStack(Items.ARROW), owner.getMainHandItem());
-        arrow.setPos(position.x, position.y, position.z);
-        arrow.setDeltaMovement(0.0, -2.4, 0.0);
-        arrow.setInvisible(true);
-        arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
-        spawningGeneratedArrow = true;
-        try { level.addFreshEntity(arrow); }
-        finally { spawningGeneratedArrow = false; }
-    }
-
     private static void spawnSideArrow(ServerLevel level, ServerPlayer owner, AbstractArrow source, double degrees) {
-        Arrow arrow = new Arrow(level, owner, new ItemStack(Items.ARROW), owner.getMainHandItem());
+        Arrow arrow = new Arrow(level, owner, new ItemStack(Items.ARROW), new ItemStack(Items.BOW));
         arrow.setPos(source.getX(), source.getY(), source.getZ());
         Vec3 velocity = rotateY(source.getDeltaMovement(), Math.toRadians(degrees));
         arrow.setDeltaMovement(velocity);
@@ -846,7 +846,49 @@ public final class VillageRoleAbilitySystem {
 
     private static Vec3 aimedGround(ServerLevel level, ServerPlayer player, double distance) {
         Vec3 point = aimPoint(level, player, distance);
-        return new Vec3(point.x, player.getY(), point.z);
+        Vec3 start = point.add(0.0, 12.0, 0.0);
+        Vec3 end = point.add(0.0, -48.0, 0.0);
+        var ground = level.clip(new net.minecraft.world.level.ClipContext(
+                start, end,
+                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                player));
+        if (ground.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
+            return new Vec3(point.x, player.getY() + 0.02, point.z);
+        }
+        return ground.getLocation().add(0.0, 0.02, 0.0);
+    }
+
+    private static void activateArrowRain(
+            ServerLevel level, ServerPlayer player, float power, int specialRank) {
+        long now = level.getGameTime();
+        Vec3 center = aimedGround(level, player, 24.0);
+        int fieldDuration = 42;
+        VillageSkillEffectSystem.arrowRainField(level, player, center, fieldDuration, 8.5);
+        for (int i = 0; i < 8; i++) {
+            SCHEDULED.add(new ScheduledAction(now + 2L + i * 4L, player.getUUID(),
+                    VillageRoleSkillSystem.ActiveSkill.RANGER_RICOCHET,
+                    ActionKind.ARROW_RAIN, power, 1.0f, specialRank, center, Vec3.ZERO));
+        }
+        play(level, player.position(), SoundEvents.CROSSBOW_SHOOT, 1.0f, 0.75f);
+    }
+
+    private static void clearRangerReadies(UUID id) {
+        RAPID_UNTIL.remove(id);
+        RICOCHET_UNTIL.remove(id);
+        ARROW_RAIN_READY.remove(id);
+        MEGA_ARROW_READY.remove(id);
+    }
+
+    private static VillageRole activeRole(ServerPlayer player) {
+        if (VillageSkillTestSystem.isEnabled(player)) {
+            return VillageSkillTestSystem.selectedRole(player);
+        }
+        return VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+    }
+
+    private static boolean isRangerContext(ServerPlayer player) {
+        return activeRole(player) == VillageRole.RANGER;
     }
 
     private static Vec3 aimPoint(ServerLevel level, ServerPlayer player, double distance) {

@@ -46,13 +46,13 @@ public final class VillageSkillEffectSystem {
                     player.position(), forward, 44, 0.0f, "");
 
             case RANGER_VOLLEY -> spawn(level, player, "ranger_rapid",
-                    player.position(), forward, Math.max(200, calculatedDuration), 0.0f, "");
+                    player.position(), forward, 30, 0.0f, "");
             case RANGER_PIERCE -> spawn(level, player, "ranger_focus",
                     player.position(), forward, 28, 0.0f, "");
             case RANGER_RICOCHET -> spawn(level, player, "ranger_focus",
-                    player.position(), forward, 20, 0.0f, "");
+                    player.position(), forward, 28, 0.0f, "");
             case RANGER_FIRE_RAIN -> spawn(level, player, "ranger_energy_charge",
-                    player.position(), forward, Math.max(280, calculatedDuration * 2), 0.0f, "");
+                    player.position(), forward, 36, 0.0f, "");
 
             case ARCANIST_FIRE_ORB -> spawn(level, player, "arcanist_fire_orb",
                     player.getEyePosition().add(sight.scale(1.0)), sight, 100, 1.35f, "");
@@ -93,7 +93,7 @@ public final class VillageSkillEffectSystem {
     public static void bladeWave(ServerLevel level, ServerPlayer player, Vec3 direction) {
         Vec3 forward = horizontal(direction);
         spawn(level, player, "vanguard_blade_wave",
-                player.getEyePosition().add(forward.scale(1.25)),
+                player.position().add(0.0, 0.82, 0.0).add(forward.scale(1.0)),
                 forward, 24, 1.75f, "");
     }
 
@@ -115,7 +115,7 @@ public final class VillageSkillEffectSystem {
 
     public static void arrowRainImpact(ServerLevel level, ServerPlayer player, Vec3 center) {
         spawn(level, player, "ranger_rain_impact",
-                center, horizontal(player.getLookAngle()), 24, 0.0f, "");
+                center, horizontal(player.getLookAngle()), 10, 0.0f, "");
     }
 
     public static void shieldCharge(ServerLevel level, ServerPlayer player, Vec3 direction) {
