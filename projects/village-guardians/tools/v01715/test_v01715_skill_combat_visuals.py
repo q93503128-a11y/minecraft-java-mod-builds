@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
 
 
@@ -30,7 +30,7 @@ def main() -> None:
     assert "MEGA_ARROW_READY" in abilities
     assert "RICOCHET_ARROWS" in abilities
     assert "activeSkillHud" in abilities
-    assert "next arrow" not in abilities.lower() or "다음 화살" in abilities
+    assert "다음 화살" in abilities
     assert "arrowRainField" in effects
     assert "spawnVisualLightning" in abilities
     assert "setVisualOnly(true)" in abilities
