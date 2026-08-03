@@ -33,9 +33,22 @@ For the central royal axes (`x = 0` or `z = 0`), the same pass reasserts:
 
 ## Event ordering
 
-Both chunk-load and server-tick handlers use `EventPriority.LOWEST`. The normal capital builder therefore finishes and marks its chunk before normalization runs. The realm diagnostic checks the already normalized road instead of racing the builder.
+Both chunk-load and server-tick handlers use `EventPriority.LOWEST`. The normal capital builder therefore finishes and marks its chunk before normalization runs. The normalizer is also called explicitly immediately before the realm diagnostic, so the diagnostic cannot race the final repair pass.
 
 The normalizer never force-loads additional chunks. It repairs only chunks already loaded by gameplay, world construction or deterministic CI sampling.
+
+## Nonblocking residence verification
+
+The previous residence safety check called `WORLD_SURFACE` through a synchronous distant-chunk lookup after the road audit had already passed. That could stall the server thread for more than 60 seconds even though the residence belonged to the authored capital.
+
+Residence and jail anchor heights now come directly from `AuthoredContinentDensity`. `SafeResidenceLocator` never reads or edits an unloaded chunk. The deterministic realm audit includes the origin residence at `(320, 180)` as a formal streamed-capital sample and waits for that chunk to be built before checking walkability.
+
+The invariant is therefore:
+
+- unloaded residence chunks return the authored preferred coordinate without synchronous loading;
+- safety scanning and floor repair run only after the chunk is loaded;
+- CI cannot enter final residence verification until the residence sample is complete;
+- road, culvert and residence verification remain on the normal server tick path without watchdog stalls.
 
 ## Permanent regression marker
 
@@ -58,4 +71,4 @@ The same run must still emit the full realm diagnostic and:
 
 `Verified Erden urban infrastructure well=true fire_cistern=true royal_culvert=true`
 
-A watchdog timeout, event-subscriber failure or `Royal avenue culvert is incomplete` message is a hard failure.
+A watchdog timeout, event-subscriber failure, synchronous residence chunk load or `Royal avenue culvert is incomplete` message is a hard failure.
