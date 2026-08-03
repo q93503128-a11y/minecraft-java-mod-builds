@@ -10,6 +10,7 @@ import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenAuthoritativeEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
+import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowAudit;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
@@ -81,6 +82,7 @@ public final class LivingKingdoms {
     private void onServerTick(ServerTickEvent.Post event) {
         RealmBuildCoordinator.onServerTick(event);
         ErdenCapitalStreamingBuilder.onServerTick(event);
+        ErdenKingdomExteriorBuilder.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
@@ -97,6 +99,7 @@ public final class LivingKingdoms {
 
     private void onChunkLoad(ChunkEvent.Load event) {
         ErdenCapitalStreamingBuilder.onChunkLoad(event);
+        ErdenKingdomExteriorBuilder.onChunkLoad(event);
     }
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {

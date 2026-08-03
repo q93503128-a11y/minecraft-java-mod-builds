@@ -28,26 +28,8 @@ public final class ErdenKingdomSupplyManager {
     private static final int MIN_TRAVEL_TICKS = 4_000;
     private static final int TICKS_PER_METRE = 6;
 
-    private static final List<NodeTemplate> NODES = List.of(
-            new NodeTemplate("erden_grain_estate_01", -1_650, 1_050, "grain_estate"),
-            new NodeTemplate("erden_grain_estate_02", -550, 1_220, "grain_estate"),
-            new NodeTemplate("erden_grain_estate_03", 550, 1_240, "grain_estate"),
-            new NodeTemplate("erden_grain_estate_04", 1_650, 1_060, "grain_estate"),
-            new NodeTemplate("erden_ranch_01", -1_700, -1_050, "ranch"),
-            new NodeTemplate("erden_ranch_02", -700, -1_180, "ranch"),
-            new NodeTemplate("erden_ranch_03", 400, -1_160, "ranch"),
-            new NodeTemplate("erden_colliery_01", 1_450, -1_250, "colliery"),
-            new NodeTemplate("erden_colliery_02", 1_750, -1_050, "colliery"),
-            new NodeTemplate("erden_colliery_03", 2_050, -850, "colliery"),
-            new NodeTemplate("erden_iron_mine_01", 1_800, -1_450, "iron_mine"),
-            new NodeTemplate("erden_iron_mine_02", 2_200, -1_200, "iron_mine"),
-            new NodeTemplate("erden_paper_mill_01", -1_550, 250, "paper_mill"),
-            new NodeTemplate("erden_paper_mill_02", -1_750, -200, "paper_mill"),
-            new NodeTemplate("erden_paper_mill_03", -1_950, 50, "paper_mill"),
-            new NodeTemplate("erden_west_wharf", -1_220, 250, "river_wharf"),
-            new NodeTemplate("erden_south_wharf", 0, 920, "river_wharf"),
-            new NodeTemplate("erden_east_wharf", 1_220, -250, "river_wharf")
-    );
+    private static final List<ErdenKingdomSupplyCatalog.SupplyNode> NODES =
+            ErdenKingdomSupplyCatalog.nodes();
 
     private static final List<OutputRate> OUTPUTS = List.of(
             new OutputRate("grain_estate", "wheat", 48L, 96L),
@@ -392,8 +374,6 @@ public final class ErdenKingdomSupplyManager {
         return dx * dx + dz * dz;
     }
 
-    private record NodeTemplate(String id, int x, int z, String role) {
-    }
 
     private record OutputRate(String role, String resource, long dailyAmount, long openingStock) {
     }

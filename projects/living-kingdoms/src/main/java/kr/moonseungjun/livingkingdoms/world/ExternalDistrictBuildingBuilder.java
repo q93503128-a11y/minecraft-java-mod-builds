@@ -123,6 +123,37 @@ public final class ExternalDistrictBuildingBuilder {
         }
     }
 
+    /** Places one attributed external building as the architectural anchor of an exterior supply site. */
+    public static void addSupplyBuildingChunk(
+            IncrementalWorldEditPlan plan,
+            ServerLevel level,
+            ChunkPos chunk,
+            int centerX,
+            int centerZ,
+            String nodeId,
+            String role,
+            String buildingStyle,
+            int facingQuarterTurns) {
+        String resource = switch (buildingStyle) {
+            case "manor" -> MANOR;
+            case "castle_house" -> CASTLE_HOUSE;
+            case "church" -> CHURCH;
+            default -> HOUSE;
+        };
+        Rotation rotation = switch (Math.floorMod(facingQuarterTurns, 4)) {
+            case 1 -> Rotation.CLOCKWISE_90;
+            case 2 -> Rotation.CLOCKWISE_180;
+            case 3 -> Rotation.COUNTERCLOCKWISE_90;
+            default -> Rotation.NONE;
+        };
+        Placement placement = new Placement(
+                resource, centerX, centerZ, rotation, "supply_" + role + "_" + nodeId);
+        BuildingTemplate template = template(resource);
+        if (placement.intersects(chunk, template)) {
+            pasteClipped(plan, level, chunk, template, placement);
+        }
+    }
+
     public static int landmarkCount() {
         return LANDMARK_PLACEMENTS.size();
     }
