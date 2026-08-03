@@ -57,6 +57,26 @@ public final class ErdenTransportSavedData extends SavedData {
                 Codec.BOOL.optionalFieldOf("authoritative", false).forGetter(DeliveryJob::authoritative)
         ).apply(instance, DeliveryJob::new));
 
+        public DeliveryJob(
+                String id,
+                String sourceId,
+                String targetId,
+                String resource,
+                long amount,
+                long createdTick,
+                long phaseTick,
+                String status,
+                List<RoutePoint> route,
+                int waypointIndex,
+                int attempts,
+                boolean cart,
+                String porterUuid,
+                String cartUuid,
+                long travelTicks) {
+            this(id, sourceId, targetId, resource, amount, createdTick, phaseTick, status,
+                    route, waypointIndex, attempts, cart, porterUuid, cartUuid, travelTicks, false);
+        }
+
         public DeliveryJob {
             amount = Math.max(1L, amount);
             route = List.copyOf(route);
@@ -74,11 +94,27 @@ public final class ErdenTransportSavedData extends SavedData {
                     attempts, cart, porterUuid, cartUuid, travelTicks, authoritative);
         }
 
+        public DeliveryJob withWaypoint(int nextIndex, long extraTravelTicks) {
+            return new DeliveryJob(
+                    id, sourceId, targetId, resource, amount,
+                    createdTick, phaseTick, status, route, nextIndex,
+                    attempts, cart, porterUuid, cartUuid,
+                    travelTicks + Math.max(0L, extraTravelTicks), authoritative);
+        }
+
         public DeliveryJob withWaypoint(int nextIndex) {
             return new DeliveryJob(
                     id, sourceId, targetId, resource, amount,
                     createdTick, phaseTick, status, route, nextIndex,
                     attempts, cart, porterUuid, cartUuid, travelTicks, authoritative);
+        }
+
+        public DeliveryJob withAttemptAndRoute(
+                int nextAttempts,
+                List<RoutePoint> nextRoute,
+                int nextIndex,
+                long tick) {
+            return withAttemptAndRoute(nextAttempts, nextRoute, nextIndex, tick, travelTicks);
         }
 
         public DeliveryJob withAttemptAndRoute(
@@ -106,7 +142,9 @@ public final class ErdenTransportSavedData extends SavedData {
         }
 
         public boolean terminal() {
-            return status.equals("completed") || status.equals("failed");
+            return status.equals("completed") || status.equals("failed")
+                    || status.equals("settled") || status.equals("returned")
+                    || status.equals("settlement_failed") || status.equals("return_failed");
         }
 
         public long dueTick() {
@@ -239,6 +277,10 @@ public final class ErdenTransportSavedData extends SavedData {
     public void markBlocked() {
         totalBlocked++;
         setDirty();
+    }
+
+    public void markFailed(DeliveryJob replacement) {
+        markFailed(replacement, false);
     }
 
     public void markFailed(DeliveryJob replacement, boolean returned) {
