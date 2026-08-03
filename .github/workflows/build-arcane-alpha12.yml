@@ -54,6 +54,29 @@ jobs:
           patch --dry-run -p0 < /tmp/arcane-alpha12.diff
           patch -p0 < /tmp/arcane-alpha12.diff
 
+      - name: Apply NeoForge 26.2 compatibility repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java')
+          text = source.read_text(encoding='utf-8')
+          old = '    private static boolean hasTag(Mob entity,String tag){return entity.getTags().contains(tag);}'
+          new = '    private static boolean hasTag(Mob entity,String tag){boolean added=entity.addTag(tag);if(added)entity.removeTag(tag);return !added;}'
+          if old not in text:
+              raise SystemExit('ArcaneEncounterService tag repair marker missing')
+          source.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          audit = Path('projects/arcane-circle/tools/test_v0121_alpha12_runtime.py')
+          text = audit.read_text(encoding='utf-8')
+          old = 'require("getTags().contains(tag)" in encounters, "mutating tag-probe hack remains")'
+          new = 'require("boolean added=entity.addTag(tag);if(added)entity.removeTag(tag);return !added" in encounters, "26.2-compatible encounter marker probe missing")'
+          if old not in text:
+              raise SystemExit('Runtime audit tag marker missing')
+          audit.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Run alpha.12 runtime audit
         shell: bash
         run: |
