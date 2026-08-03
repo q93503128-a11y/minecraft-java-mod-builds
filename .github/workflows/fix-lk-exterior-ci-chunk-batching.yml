@@ -1,0 +1,40 @@
+name: Fix Living Kingdoms exterior CI chunk batching
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/fix-lk-exterior-ci-chunk-batching.py'
+      - '.github/workflows/fix-lk-exterior-ci-chunk-batching.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python .github/scripts/fix-lk-exterior-ci-chunk-batching.py
+      - shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          file=projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java
+          git add "$file"
+          git commit -m "Stagger Erden exterior CI chunk loading"
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            git fetch origin main
+            git reset --hard origin/main
+            python .github/scripts/fix-lk-exterior-ci-chunk-batching.py
+            git add "$file"
+            git commit -m "Stagger Erden exterior CI chunk loading"
+            sleep $((attempt * 2))
+          done
+          exit 1
