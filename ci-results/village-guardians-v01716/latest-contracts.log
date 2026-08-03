@@ -78,9 +78,9 @@ total_xp_to_level30=94685
 Traceback (most recent call last):
   File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 69, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 34, in main
-    assert "다음 화살" in abilities
-           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 57, in main
+    assert "graphics.guiHeight() - 82" in overlay
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
 === tools/test_v01716_ranger_activation.py ===
 [PASS] 시험 궁수와 실제 궁수 모두 다음 활 발사에서 네 기술을 소비합니다
