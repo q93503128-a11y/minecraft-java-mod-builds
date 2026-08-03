@@ -42,10 +42,19 @@ jobs:
           }
           EOF
           CP="$(gradle --no-daemon --no-configuration-cache -q -I "$RUNNER_TEMP/cp.gradle" printCompileJavaClasspath | tail -n 1)"
-          MCJAR="${CP%%:*}"
           OUT="$GITHUB_WORKSPACE/ci-results/village-guardians-custom-mesh-api"
           rm -rf "$OUT" && mkdir -p "$OUT"
-          jar tf "$MCJAR" | grep -E 'RenderLevelStageEvent|RenderType|RenderPipeline|Tesselator|BufferBuilder|MeshData|SubmitNode|VertexConsumer|FeatureRender|AvatarRenderState|LivingEntityRenderState|AvatarRenderer' > "$OUT/relevant-classes.txt" || true
+          : > "$OUT/neoforge-render-events.txt"
+          : > "$OUT/relevant-classes.txt"
+          IFS=':' read -ra JARS <<< "$CP"
+          for jar in "${JARS[@]}"; do
+            if [ -f "$jar" ]; then
+              jar tf "$jar" | grep -E 'net/neoforged/neoforge/client/event/.*Render.*Event|LevelRendererExtension|ILevelRendererExtension' >> "$OUT/neoforge-render-events.txt" || true
+              jar tf "$jar" | grep -E 'RenderLevelStageEvent|RenderType|RenderPipeline|Tesselator|BufferBuilder|MeshData|SubmitNode|VertexConsumer|FeatureRender|AvatarRenderState|LivingEntityRenderState|AvatarRenderer|EntityRendererProvider|EntityRenderersEvent' >> "$OUT/relevant-classes.txt" || true
+            fi
+          done
+          sort -u "$OUT/neoforge-render-events.txt" -o "$OUT/neoforge-render-events.txt"
+          sort -u "$OUT/relevant-classes.txt" -o "$OUT/relevant-classes.txt"
           javap -classpath "$CP" -p net.neoforged.neoforge.client.event.RenderLevelStageEvent net.neoforged.neoforge.client.event.RenderLevelStageEvent\$AfterWeather > "$OUT/render-level-stage.txt" 2>&1 || true
           javap -classpath "$CP" -p net.neoforged.neoforge.client.event.RenderPlayerEvent net.neoforged.neoforge.client.event.RenderPlayerEvent\$Pre net.neoforged.neoforge.client.event.RenderPlayerEvent\$Post net.neoforged.neoforge.client.event.RenderLivingEvent > "$OUT/render-player.txt" 2>&1 || true
           javap -classpath "$CP" -p com.mojang.blaze3d.vertex.PoseStack com.mojang.blaze3d.vertex.PoseStack\$Pose com.mojang.blaze3d.vertex.VertexConsumer com.mojang.blaze3d.vertex.Tesselator com.mojang.blaze3d.vertex.BufferBuilder com.mojang.blaze3d.vertex.MeshData > "$OUT/vertex-api.txt" 2>&1 || true
@@ -53,8 +62,9 @@ jobs:
           javap -classpath "$CP" -p net.minecraft.client.renderer.RenderPipelines com.mojang.blaze3d.pipeline.RenderPipeline com.mojang.blaze3d.pipeline.RenderPipeline\$Builder com.mojang.blaze3d.systems.RenderSystem > "$OUT/pipeline-api.txt" 2>&1 || true
           javap -classpath "$CP" -p net.minecraft.client.renderer.SubmitNodeCollector net.minecraft.client.renderer.SubmitNodeCollector\$CustomGeometryRenderer net.minecraft.client.renderer.OrderedSubmitNodeCollector net.minecraft.client.renderer.SubmitNodeStorage net.minecraft.client.renderer.feature.CustomFeatureRenderer net.minecraft.client.renderer.feature.CustomFeatureRenderer\$Submit > "$OUT/submit-api.txt" 2>&1 || true
           javap -classpath "$CP" -p net.minecraft.client.renderer.entity.state.EntityRenderState net.minecraft.client.renderer.entity.state.LivingEntityRenderState net.minecraft.client.renderer.entity.state.AvatarRenderState net.minecraft.client.renderer.entity.player.AvatarRenderer > "$OUT/avatar-render.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.client.renderer.entity.EntityRenderer net.minecraft.client.renderer.entity.EntityRendererProvider net.minecraft.client.renderer.entity.EntityRendererProvider\$Context net.neoforged.neoforge.client.event.EntityRenderersEvent net.neoforged.neoforge.client.event.EntityRenderersEvent\$RegisterRenderers > "$OUT/entity-renderer-api.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.neoforged.neoforge.client.extensions.LevelRendererExtension net.neoforged.neoforge.client.extensions.ILevelRendererExtension > "$OUT/level-renderer-extension.txt" 2>&1 || true
           javap -classpath "$CP" -p net.minecraft.client.renderer.LevelRenderer net.minecraft.client.Camera net.minecraft.client.Minecraft > "$OUT/client-render.txt" 2>&1 || true
-          javap -classpath "$CP" -p net.minecraft.client.player.AbstractClientPlayer net.minecraft.world.entity.LivingEntity net.minecraft.world.entity.player.Player > "$OUT/player-fields.txt" 2>&1 || true
           javap -classpath "$CP" -p net.minecraft.client.renderer.texture.OverlayTexture net.minecraft.client.renderer.LightTexture net.minecraft.resources.Identifier > "$OUT/render-helpers.txt" 2>&1 || true
       - name: Commit probe output
         shell: bash
@@ -62,6 +72,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add ci-results/village-guardians-custom-mesh-api
-          git commit -m 'Record submit callback and avatar render API probe' || exit 0
+          git commit -m 'Record level render event and entity renderer API probe' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
