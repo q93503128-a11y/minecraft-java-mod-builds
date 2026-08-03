@@ -14,6 +14,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent;
 import net.neoforged.neoforge.event.entity.player.ArrowLooseEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -154,6 +155,11 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onArrowLoose(ArrowLooseEvent event) {
         VillageRoleAbilitySystem.handleArrowLoose(event);
+    }
+
+    @SubscribeEvent
+    public void onUseItemTick(LivingEntityUseItemEvent.Tick event) {
+        VillageRoleAbilitySystem.handleUseItemTick(event);
     }
 
     @SubscribeEvent

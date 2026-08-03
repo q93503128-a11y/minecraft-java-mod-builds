@@ -38,28 +38,28 @@ public final class VillageSkillMeshLibrary {
             case "vanguard_blade_charge" -> renderBladeCharge(pose, out, basis, age, progress);
             case "vanguard_slam_charge" -> renderSlamCharge(pose, out, basis, age, progress);
             case "vanguard_blade_wave" -> renderBladeWave(pose, out, basis, age, progress);
-            case "vanguard_slam_impact" -> renderSlamImpact(pose, out, basis, age, progress, random);
+            case "vanguard_slam_impact" -> renderSlamImpact(pose, out, basis, age, progress, random, state.extra);
 
             case "ranger_rapid" -> renderRapidFire(pose, out, basis, age, progress);
             case "ranger_focus" -> renderRangerFocus(pose, out, basis, age, progress);
             case "ranger_lock" -> renderTargetLock(pose, out, basis, age, progress);
-            case "ranger_rain_field" -> renderArrowRainField(pose, out, basis, age, progress, random);
-            case "ranger_rain_impact" -> renderArrowRainImpact(pose, out, basis, age, progress, random);
+            case "ranger_rain_field" -> renderArrowRainField(pose, out, basis, age, progress, random, state.extra);
+            case "ranger_rain_impact" -> renderArrowRainImpact(pose, out, basis, age, progress, random, state.extra);
             case "ranger_energy_charge" -> renderEnergyCharge(pose, out, basis, age, progress);
             case "ranger_energy_projectile" -> renderEnergyProjectile(pose, out, basis, age, progress);
             case "ranger_ricochet_path" -> renderPath(pose, out, state, age, progress, 0x91D7FF, false);
 
             case "arcanist_fire_orb" -> renderFireOrb(pose, out, basis, age, progress);
             case "arcanist_fire_impact" -> renderFireImpact(pose, out, basis, age, progress, state.extra);
-            case "arcanist_frost" -> renderFrostField(pose, out, basis, age, progress);
-            case "arcanist_tornado" -> renderTornado(pose, out, basis, age, progress);
-            case "arcanist_lightning" -> renderLightningField(pose, out, basis, age, progress, random);
+            case "arcanist_frost" -> renderFrostField(pose, out, basis, age, progress, state.extra);
+            case "arcanist_tornado" -> renderTornado(pose, out, basis, age, progress, state.extra);
+            case "arcanist_lightning" -> renderLightningField(pose, out, basis, age, progress, random, state.extra);
 
             case "luminar_heal_cast" -> renderHealCast(pose, out, basis, age, progress);
             case "luminar_heal_link" -> renderPath(pose, out, state, age, progress, 0xFFF2A8, true);
             case "luminar_cleanse_cast" -> renderCleanseCast(pose, out, basis, age, progress);
             case "luminar_cleanse_wave" -> renderCleanseWave(pose, out, state, age, progress);
-            case "luminar_healing_field" -> renderHealingField(pose, out, basis, age, progress);
+            case "luminar_healing_field" -> renderHealingField(pose, out, basis, age, progress, state.extra);
             case "luminar_miracle_cast" -> renderMiracleCast(pose, out, basis, age, progress);
             case "luminar_miracle_wave" -> renderMiracleWave(pose, out, state, age, progress);
 
@@ -149,26 +149,24 @@ public final class VillageSkillMeshLibrary {
     }
 
     private static void renderSlamImpact(
-            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress, Random random) {
-        double radius = 0.8 + progress * 5.5;
-        ring(pose, out, b, radius, 0.06, 0.18 + progress * 0.22, 64,
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, Random random, String extra) {
+        EffectMeta meta = effectMeta(extra, 8.5);
+        double radius = 0.8 + progress * Math.max(0.2, meta.radius() - 0.8);
+        ring(pose, out, b, radius, 0.035, 0.18 + progress * 0.22, 72,
                 rgba(255, 74, 48, (int) (210 * (1.0 - progress))), age * 0.01);
+        if (meta.rank() >= 3) {
+            ring(pose, out, b, radius * 0.72, 0.042, 0.07, 56,
+                    rgba(255, 161, 77, (int) (145 * (1.0 - progress))), -age * 0.014);
+        }
         random.setSeed(random.nextLong() ^ 0x5A17L);
-        for (int i = 0; i < 18; i++) {
-            double a = i * TAU / 18.0 + random.nextDouble() * 0.16;
+        int cracks = 18 + meta.rank() * 2;
+        for (int i = 0; i < cracks; i++) {
+            double a = i * TAU / cracks + random.nextDouble() * 0.16;
             double inner = 0.35 + random.nextDouble() * 0.4;
-            double outer = radius * (0.72 + random.nextDouble() * 0.35);
+            double outer = radius * (0.72 + random.nextDouble() * 0.28);
             groundCrack(pose, out, b, a, inner, outer, 0.05 + random.nextDouble() * 0.06,
                     rgba(255, 103, 48, (int) (190 * (1.0 - progress))));
-        }
-        for (int i = 0; i < 9; i++) {
-            double a = i * TAU / 9.0;
-            double r = radius * (0.55 + 0.18 * Math.sin(i * 2.3));
-            spike(pose, out, b.local(Math.cos(a) * r, 0.02, Math.sin(a) * r),
-                    b.local(Math.cos(a) * r, 0.35 + (1.0 - progress) * 1.6,
-                            Math.sin(a) * r),
-                    0.12 + (1.0 - progress) * 0.14,
-                    rgba(173, 48, 52, (int) (150 * (1.0 - progress))));
         }
     }
 
@@ -227,15 +225,22 @@ public final class VillageSkillMeshLibrary {
     }
 
     private static void renderArrowRainField(
-            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress, Random random) {
-        double radius = 8.5;
-        ring(pose, out, b, radius, 0.012, 0.11, 96,
-                rgba(88, 188, 255, 170), 0.0);
-        ring(pose, out, b, radius * 0.72, 0.018, 0.045, 72,
-                rgba(149, 223, 255, 90), -age * 0.008);
-        for (int i = 0; i < 18; i++) {
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, Random random, String extra) {
+        EffectMeta meta = effectMeta(extra, 8.5);
+        double radius = meta.radius();
+        ring(pose, out, b, radius, 0.012, 0.11, 112,
+                rgba(88, 188, 255, 180), 0.0);
+        ring(pose, out, b, radius * 0.72, 0.018, 0.045, 88,
+                rgba(149, 223, 255, 95), -age * 0.008);
+        if (meta.rank() >= 3) {
+            ring(pose, out, b, radius * 0.42, 0.022, 0.035, 64,
+                    rgba(210, 242, 255, 90), age * 0.012);
+        }
+        int arrows = 18 + meta.rank() * 3;
+        for (int i = 0; i < arrows; i++) {
             double a = i * 2.399963229728653 + (i % 3) * 0.17;
-            double r = Math.sqrt((i + 0.5) / 18.0) * radius * 0.92;
+            double r = Math.sqrt((i + 0.5) / arrows) * radius * 0.92;
             double cycle = fract(progress * 5.8 + i * 0.173);
             double y = 8.5 - cycle * 9.5;
             Vec3 p = b.local(Math.cos(a) * r, y, Math.sin(a) * r);
@@ -246,11 +251,12 @@ public final class VillageSkillMeshLibrary {
     }
 
     private static void renderArrowRainImpact(
-            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress, Random random) {
-        ring(pose, out, b, 0.45 + progress * 2.8, 0.012, 0.10, 56,
-                rgba(124, 211, 255, (int) (180 * (1.0 - progress))), 0.0);
-        ring(pose, out, b, 0.25 + progress * 1.5, 0.018, 0.045, 40,
-                rgba(225, 249, 255, (int) (130 * (1.0 - progress))), age * 0.02);
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, Random random, String extra) {
+        EffectMeta meta = effectMeta(extra, 8.5);
+        double pulse = Math.min(meta.radius(), 0.45 + progress * meta.radius());
+        ring(pose, out, b, pulse, 0.012, 0.08, 72,
+                rgba(124, 211, 255, (int) (145 * (1.0 - progress))), 0.0);
     }
 
     private static void renderEnergyCharge(
@@ -301,14 +307,22 @@ public final class VillageSkillMeshLibrary {
     }
 
     private static void renderFrostField(
-            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {
-        runeDisc(pose, out, b, 5.2, 0.035, age * 0.012,
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, String extra) {
+        EffectMeta meta = effectMeta(extra, 7.5);
+        double radius = meta.radius();
+        runeDisc(pose, out, b, radius, 0.022, age * 0.012,
                 rgba(112, 218, 255, 105));
-        ring(pose, out, b, 4.2, 0.06, 0.09, 72,
-                rgba(189, 246, 255, 155), -age * 0.018);
-        for (int i = 0; i < 12; i++) {
-            double a = i * TAU / 12.0 + (i % 2) * 0.12;
-            double r = 2.1 + (i % 3) * 0.85;
+        ring(pose, out, b, radius, 0.028, 0.10, 96,
+                rgba(189, 246, 255, 165), -age * 0.018);
+        if (meta.rank() >= 3) {
+            ring(pose, out, b, radius * 0.62, 0.034, 0.055, 72,
+                    rgba(220, 251, 255, 105), age * 0.024);
+        }
+        int crystals = 12 + meta.rank() * 2;
+        for (int i = 0; i < crystals; i++) {
+            double a = i * TAU / crystals + (i % 2) * 0.12;
+            double r = radius * (0.28 + 0.58 * ((i % 5) / 4.0));
             double h = 0.7 + (i % 4) * 0.33 + Math.sin(age * 0.12 + i) * 0.12;
             crystal(pose, out, b.local(Math.cos(a) * r, 0.02, Math.sin(a) * r),
                     h, 0.18 + (i % 3) * 0.04,
@@ -317,17 +331,28 @@ public final class VillageSkillMeshLibrary {
     }
 
     private static void renderTornado(
-            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {
-        for (int strand = 0; strand < 8; strand++) {
-            double phase = strand * TAU / 8.0 + age * (0.19 + strand * 0.006);
-            int shade = 118 + (strand % 4) * 22;
-            tornadoRibbon(pose, out, b, phase, 5.8, 46,
-                    rgba(shade, shade + 4, shade + 9, 125 + strand * 8));
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, String extra) {
+        EffectMeta meta = effectMeta(extra, 8.5);
+        double scale = meta.radius() / 8.5;
+        ring(pose, out, b, meta.radius(), 0.018, 0.085, 112,
+                rgba(150, 155, 164, 115), age * 0.012);
+        if (meta.rank() >= 3) {
+            ring(pose, out, b, meta.radius() * 0.68, 0.024, 0.048, 88,
+                    rgba(190, 194, 202, 90), -age * 0.018);
         }
-        for (int i = 0; i < 24; i++) {
+        int strands = 8 + Math.min(4, meta.rank());
+        for (int strand = 0; strand < strands; strand++) {
+            double phase = strand * TAU / strands + age * (0.19 + strand * 0.006);
+            int shade = 118 + (strand % 4) * 22;
+            tornadoRibbon(pose, out, b, phase, 5.8 * Math.min(1.28, scale), 46,
+                    rgba(shade, shade + 4, shade + 9, 125 + Math.min(8, strand) * 8));
+        }
+        int fragments = 24 + meta.rank() * 4;
+        for (int i = 0; i < fragments; i++) {
             double cycle = fract(age * 0.035 + i * 0.117);
             double y = 0.18 + cycle * 5.4;
-            double radius = 0.65 + cycle * 2.7 + (i % 3) * 0.14;
+            double radius = (0.65 + cycle * 2.7 + (i % 3) * 0.14) * Math.min(1.35, scale);
             double angle = age * 0.17 + i * 2.399963229728653;
             Vec3 start = b.local(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
             Vec3 end = start.add(b.local(-Math.sin(angle) * 0.28, 0.10,
@@ -336,24 +361,34 @@ public final class VillageSkillMeshLibrary {
             prism(pose, out, start, end, 0.06 + (i % 3) * 0.018,
                     rgba(shade, shade, shade + 5, 155));
         }
-        ring(pose, out, b, 1.25 + Math.sin(age * 0.18) * 0.18, 0.06, 0.18, 56,
-                rgba(174, 178, 186, 165), age * 0.07);
     }
 
     private static void renderLightningField(
-            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress, Random random) {
-        ring(pose, out, b, 14.0, 0.035, 0.13, 112,
-                rgba(188, 128, 255, 120), -age * 0.012);
-        ring(pose, out, b, 9.0, 0.045, 0.055, 88,
-                rgba(229, 207, 255, 95), age * 0.018);
-        for (int i = 0; i < 8; i++) {
-            double a = i * TAU / 8.0 + Math.sin(age * 0.05 + i) * 0.55;
-            double r = 2.0 + (i % 4) * 3.0;
-            Vec3 end = b.local(Math.cos(a) * r, 0.05, Math.sin(a) * r);
-            Vec3 start = end.add(0.0, 8.5 + (i % 3) * 1.2, 0.0);
-            jaggedBolt(pose, out, start, end, 11, 0.11,
-                    rgba(236, 220, 255, 205), stateSeed(random, i, (int) age / 2));
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, Random random, String extra) {
+        EffectMeta meta = effectMeta(extra, 18.0);
+        double radius = meta.radius();
+        ring(pose, out, b, radius, 0.018, 0.15, 128,
+                rgba(188, 128, 255, 145), -age * 0.012);
+        ring(pose, out, b, radius * 0.55, 0.026, 0.06, 96,
+                rgba(229, 207, 255, 105), age * 0.018);
+        if (meta.rank() >= 3) {
+            ring(pose, out, b, radius * 0.78, 0.032, 0.035, 112,
+                    rgba(218, 183, 255, 85), -age * 0.026);
         }
+        if (meta.rank() >= 5) {
+            for (int i = 0; i < 12; i++) {
+                double a = i * TAU / 12.0;
+                Vec3 start = b.local(Math.cos(a) * radius * 0.90, 0.025,
+                        Math.sin(a) * radius * 0.90);
+                Vec3 end = b.local(Math.cos(a) * radius, 0.028,
+                        Math.sin(a) * radius);
+                prism(pose, out, start, end, 0.035,
+                        rgba(238, 220, 255, 115));
+            }
+        }
+        // Vertical worm-like procedural bolts were removed. Actual visual-only
+        // Minecraft lightning entities now provide every strike column.
     }
 
     private static void renderHealCast(
@@ -394,17 +429,27 @@ public final class VillageSkillMeshLibrary {
     }
 
     private static void renderHealingField(
-            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {
-        runeDisc(pose, out, b, 5.8, 0.03, age * 0.008,
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, String extra) {
+        EffectMeta meta = effectMeta(extra, 7.5);
+        double radius = meta.radius();
+        runeDisc(pose, out, b, radius, 0.018, age * 0.008,
                 rgba(255, 239, 153, 105));
-        for (int i = 0; i < 3; i++) {
-            ring(pose, out, b, 1.7 + i * 1.35, 0.055 + i * 0.02, 0.08, 64,
-                    rgba(255, 248, 188, 125 - i * 18), age * (0.015 + i * 0.006));
+        ring(pose, out, b, radius, 0.024, 0.09, 112,
+                rgba(255, 248, 188, 145), age * 0.015);
+        ring(pose, out, b, radius * 0.62, 0.032, 0.06, 88,
+                rgba(255, 248, 188, 110), -age * 0.018);
+        if (meta.rank() >= 3) {
+            ring(pose, out, b, radius * 0.34, 0.040, 0.045, 64,
+                    rgba(255, 255, 220, 100), age * 0.025);
         }
-        for (int i = 0; i < 8; i++) {
-            double a = i * TAU / 8.0 + age * 0.014;
-            Vec3 root = b.local(Math.cos(a) * 3.6, 0.05, Math.sin(a) * 3.6);
-            verticalBlade(pose, out, b, root, 1.0 + 0.35 * Math.sin(age * 0.13 + i),
+        int pillars = 8 + meta.rank() * 2;
+        for (int i = 0; i < pillars; i++) {
+            double a = i * TAU / pillars + age * 0.014;
+            Vec3 root = b.local(Math.cos(a) * radius * 0.62, 0.05,
+                    Math.sin(a) * radius * 0.62);
+            verticalBlade(pose, out, b, root,
+                    1.0 + 0.35 * Math.sin(age * 0.13 + i),
                     0.055, rgba(255, 255, 215, 115));
         }
     }
@@ -501,6 +546,21 @@ public final class VillageSkillMeshLibrary {
                     healing ? 0.10 : 0.075, color);
         }
     }
+
+    private static EffectMeta effectMeta(String encoded, double fallbackRadius) {
+        double radius = fallbackRadius;
+        int rank = 0;
+        if (encoded != null && !encoded.isBlank()) {
+            String[] parts = encoded.split("\\|", -1);
+            try { if (parts.length > 0) radius = Double.parseDouble(parts[0]); }
+            catch (NumberFormatException ignored) {}
+            try { if (parts.length > 1) rank = Integer.parseInt(parts[1]); }
+            catch (NumberFormatException ignored) {}
+        }
+        return new EffectMeta(Math.max(0.25, radius), Math.max(0, rank));
+    }
+
+    private record EffectMeta(double radius, int rank) {}
 
     private static void renderFallbackRune(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {

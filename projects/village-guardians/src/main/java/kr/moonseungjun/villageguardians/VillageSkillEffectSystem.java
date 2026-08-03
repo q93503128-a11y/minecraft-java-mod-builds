@@ -54,29 +54,23 @@ public final class VillageSkillEffectSystem {
             case RANGER_FIRE_RAIN -> spawn(level, player, "ranger_energy_charge",
                     player.position(), forward, 36, 0.0f, "");
 
-            case ARCANIST_FIRE_ORB -> spawn(level, player, "arcanist_fire_orb",
-                    player.getEyePosition().add(sight.scale(1.0)), sight, 100, 1.35f, "");
-            case ARCANIST_FROST_RING -> spawn(level, player, "arcanist_frost",
-                    player.position().add(forward.scale(18.0)), forward,
-                    Math.max(140, calculatedDuration), 0.0f, "");
-            case ARCANIST_CHAIN -> spawn(level, player, "arcanist_tornado",
-                    player.position().add(forward.scale(3.0)), forward,
-                    Math.max(120, calculatedDuration), 0.24f, "");
-            case ARCANIST_NOVA -> spawn(level, player, "arcanist_lightning",
-                    player.position().add(forward.scale(22.0)), forward,
-                    Math.max(100, calculatedDuration / 2), 0.0f, "");
+            case ARCANIST_FIRE_ORB, ARCANIST_FROST_RING, ARCANIST_CHAIN, ARCANIST_NOVA -> {
+                // Spawned at the real raycast origin/target by VillageRoleAbilitySystem.
+            }
 
             case LUMINAR_HEAL -> spawn(level, player, "luminar_heal_cast",
                     player.position(), forward, 32, 0.0f, "");
             case LUMINAR_CLEANSE -> spawn(level, player, "luminar_cleanse_cast",
                     player.position(), forward, 44, 0.0f, "");
-            case LUMINAR_VEIL -> spawn(level, player, "luminar_healing_field",
-                    player.position(), forward, Math.max(160, calculatedDuration * 2), 0.0f, "");
+            case LUMINAR_VEIL -> {
+                // Radius-aware healing field is spawned by the gameplay system.
+            }
             case LUMINAR_SANCTUARY -> spawn(level, player, "luminar_miracle_cast",
                     player.position(), forward, 72, 0.0f, "");
 
-            case WARDEN_TAUNT -> spawn(level, player, "warden_charge_cast",
-                    player.position(), forward, 32, 0.0f, "");
+            case WARDEN_TAUNT -> {
+                // Short charge shield is spawned with the actual dash.
+            }
             case WARDEN_BASH -> spawn(level, player, "warden_taunt",
                     player.position(), forward, 48, 0.0f, "");
             case WARDEN_FORMATION -> spawn(level, player, "warden_fortress",
@@ -97,9 +91,11 @@ public final class VillageSkillEffectSystem {
                 forward, 24, 1.75f, "");
     }
 
-    public static void slamImpact(ServerLevel level, ServerPlayer player) {
+    public static void slamImpact(
+            ServerLevel level, ServerPlayer player, double radius, int specialRank) {
         spawn(level, player, "vanguard_slam_impact",
-                player.position(), horizontal(player.getLookAngle()), 30, 0.0f, "");
+                player.position(), horizontal(player.getLookAngle()), 30, 0.0f,
+                meta(radius, specialRank));
     }
 
     public static void energyArrow(ServerLevel level, ServerPlayer player, Vec3 direction) {
@@ -113,14 +109,17 @@ public final class VillageSkillEffectSystem {
                 origin, normalized(direction), 55, 2.65f, "");
     }
 
-    public static void arrowRainImpact(ServerLevel level, ServerPlayer player, Vec3 center) {
+    public static void arrowRainImpact(
+            ServerLevel level, ServerPlayer player, Vec3 center,
+            double radius, int specialRank) {
         spawn(level, player, "ranger_rain_impact",
-                center, horizontal(player.getLookAngle()), 10, 0.0f, "");
+                center, horizontal(player.getLookAngle()), 10, 0.0f,
+                meta(radius, specialRank));
     }
 
     public static void shieldCharge(ServerLevel level, ServerPlayer player, Vec3 direction) {
         spawn(level, player, "warden_charge_cast",
-                player.position(), horizontal(direction), 26, 0.0f, "");
+                player.position(), horizontal(direction), 12, 0.0f, "");
     }
 
     public static void trackingReticle(
@@ -129,10 +128,46 @@ public final class VillageSkillEffectSystem {
     }
 
     public static void arrowRainField(
-            ServerLevel level, ServerPlayer player, Vec3 center, int duration, double radius) {
+            ServerLevel level, ServerPlayer player, Vec3 center,
+            int duration, double radius, int specialRank) {
         spawn(level, player, "ranger_rain_field", center, horizontal(player.getLookAngle()),
-                Math.max(20, duration), 0.0f,
-                String.format(Locale.ROOT, "%.2f", Math.max(2.0, radius)));
+                Math.max(20, duration), 0.0f, meta(radius, specialRank));
+    }
+
+
+    public static VillageSkillEffectEntity fireOrb(
+            ServerLevel level, ServerPlayer player, Vec3 origin, Vec3 direction,
+            int duration, float speed, int specialRank) {
+        return spawn(level, player, "arcanist_fire_orb", origin, normalized(direction),
+                duration, speed, meta(0.0, specialRank));
+    }
+
+    public static void frostField(
+            ServerLevel level, ServerPlayer player, Vec3 center,
+            int duration, double radius, int specialRank) {
+        spawn(level, player, "arcanist_frost", center, horizontal(player.getLookAngle()),
+                duration, 0.0f, meta(radius, specialRank));
+    }
+
+    public static void tornadoField(
+            ServerLevel level, ServerPlayer player, Vec3 center, Vec3 direction,
+            int duration, double radius, int specialRank) {
+        spawn(level, player, "arcanist_tornado", center, horizontal(direction),
+                duration, 0.24f, meta(radius, specialRank));
+    }
+
+    public static void lightningField(
+            ServerLevel level, ServerPlayer player, Vec3 center,
+            int duration, double radius, int specialRank) {
+        spawn(level, player, "arcanist_lightning", center, horizontal(player.getLookAngle()),
+                duration, 0.0f, meta(radius, specialRank));
+    }
+
+    public static void healingField(
+            ServerLevel level, ServerPlayer player, Vec3 center,
+            int duration, double radius, int specialRank) {
+        spawn(level, player, "luminar_healing_field", center, horizontal(player.getLookAngle()),
+                duration, 0.0f, meta(radius, specialRank));
     }
 
     public static void fireImpact(
@@ -190,6 +225,11 @@ public final class VillageSkillEffectSystem {
             String extra) {
         return VillageSkillEffectEntity.spawn(
                 level, owner, kind, position, direction, duration, speed, extra);
+    }
+
+    private static String meta(double radius, int specialRank) {
+        return String.format(Locale.ROOT, "%.2f|%d",
+                Math.max(0.0, radius), Math.max(0, specialRank));
     }
 
     private static List<Vec3> positions(List<ServerPlayer> players, Vec3 fallback) {

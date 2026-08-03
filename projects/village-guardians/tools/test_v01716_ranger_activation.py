@@ -21,7 +21,7 @@ def main() -> None:
     hud = read("VillageSkillHudOverlay.java")
     skills = read("VillageRoleSkillSystem.java")
 
-    assert "mod_version=0.17.16-alpha.1" in props
+    assert "mod_version=0.17.17-alpha.1" in props
 
     # All four ranger actives are queued and consumed by a real arrow spawn.
     assert "ARROW_RAIN_READY" in ability
@@ -49,7 +49,7 @@ def main() -> None:
     assert "ground.getLocation().add(0.0, 0.02, 0.0)" in ground
     rain_mesh = block(mesh, "private static void renderArrowRainField", "private static void renderArrowRainImpact")
     assert "radius, 0.012" in rain_mesh
-    assert "i < 18" in rain_mesh
+    assert "int arrows = 18 + meta.rank() * 3" in rain_mesh
     assert "progress * 5.8" in rain_mesh
     assert "ranger_rain_impact" in effects and "10, 0.0f" in effects
 

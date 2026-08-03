@@ -20,7 +20,7 @@ def main() -> None:
     renderer = read("VillageSkillEffectRenderer.java")
     mesh = read("VillageSkillMeshLibrary.java")
 
-    assert "mod_version=0.17.16-alpha.1" in props
+    assert "mod_version=0.17.17-alpha.1" in props
     assert "cooldownRemainingSeconds" in role
     assert "cooldownProgress" in role
     assert "hudSlotText" in role
