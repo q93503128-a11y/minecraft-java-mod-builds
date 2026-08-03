@@ -1,3 +1,0 @@
-run_id=30790489398
-source_sha=e6690b1945ae28206b8645f9e998feef5ebcfe02
-artifact=arcane-circle-source
