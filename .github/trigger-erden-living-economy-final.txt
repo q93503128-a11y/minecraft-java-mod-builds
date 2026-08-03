@@ -1,1 +1,1 @@
-Retry the final Erden living economy runtime and documentation integration without changing workflow files in the bot commit.
+Run the post-integration correction that prevents weekly closure metrics from being counted twice.
