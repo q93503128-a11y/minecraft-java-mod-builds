@@ -14,6 +14,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
 import kr.moonseungjun.livingkingdoms.world.ErdenPhysicalEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenTransportManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanLifeManager;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
@@ -84,6 +85,7 @@ public final class LivingKingdoms {
         ErdenPopulationManager.onServerTick(event);
         ErdenPhysicalEconomyManager.onServerTick(event);
         ErdenBakeryReserveManager.onServerTick(event);
+        ErdenTransportManager.onServerTick(event);
         ErdenDiagnosticDebrisSettler.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
@@ -173,6 +175,7 @@ public final class LivingKingdoms {
     }
 
     private void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        ErdenTransportManager.handleInteraction(event);
         StarterNpcManager.handleInteraction(event);
         ErdenPopulationManager.handleInteraction(event);
     }
