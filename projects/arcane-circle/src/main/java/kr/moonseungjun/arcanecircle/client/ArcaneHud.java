@@ -41,7 +41,7 @@ public final class ArcaneHud {
         for (int slot = 0; slot < 5; slot++) {
             drawSlot(g, font, startX + slot * (slotSize + gap), y, slotSize, slot);
         }
-        drawHealth(g, font, width, y + slotSize + 5);
+        drawHealth(g, font, width, height);
         drawFusionQueue(g, font, width, y - 15);
         drawRaisedNotice(g, font, width, y - 42);
     }
@@ -55,21 +55,53 @@ public final class ArcaneHud {
         }
     }
 
-    private static void drawHealth(GuiGraphicsExtractor g, Font font, int width, int y) {
+    private static void drawHealth(GuiGraphicsExtractor g, Font font, int width, int height) {
         int health = Math.max(0, ArcaneClientState.integer("health", 0));
         int maximum = Math.max(1, ArcaneClientState.integer("health_max", 100));
+        int absorption = Math.max(0, ArcaneClientState.integer("absorption", 0));
         double ratio = Math.max(0.0, Math.min(1.0, health / (double) maximum));
-        int barW = Math.min(194, Math.max(138, width / 4));
-        int barH = 10;
-        int x = (width - barW) / 2;
-        int fill = (int) Math.round((barW - 4) * ratio);
-        int red = ratio <= 0.22 ? 0xFFF12E3D : ratio <= 0.48 ? 0xFFE34A50 : 0xFFCE3545;
-        g.fill(x - 1, y - 1, x + barW + 1, y + barH + 1, 0xEF02040A);
-        g.fill(x, y, x + barW, y + barH, 0xF0140A10);
-        g.fill(x + 2, y + 2, x + 2 + fill, y + barH - 2, red);
-        g.fill(x + 2, y + 2, x + 2 + fill, y + 3, 0xFFFF7378);
-        tinyText(g, font, "HP " + health + " / " + maximum,
-                width / 2, y + 1, 0xFFFFFFFF, 0.58F, true);
+        double absorptionRatio = Math.max(0.0, Math.min(1.0, absorption / (double) maximum));
+
+        // Vanilla hearts occupied the left half above the hotbar. Keep the replacement there.
+        int barW = 81;
+        int barH = 7;
+        int x = width / 2 - 91;
+        int y = height - 39;
+        int innerW = barW - 4;
+        int redFill = (int) Math.round(innerW * ratio);
+        int goldFill = (int) Math.round(innerW * absorptionRatio);
+
+        g.fill(x - 1, y - 1, x + barW + 1, y + barH + 1, 0xF4000000);
+        g.fill(x, y, x + barW, y + barH, 0xF00B0205);
+        g.fill(x + 2, y + 2, x + 2 + redFill, y + barH - 1,
+                ratio <= 0.22 ? 0xFF8E0715 : ratio <= 0.48 ? 0xFFAA0A1D : 0xFFBB0D22);
+        if (redFill > 0) {
+            g.fill(x + 2, y + 2, x + 2 + redFill, y + 3, 0xFFD52A39);
+            int phase = (int) ((System.nanoTime() / 70_000_000L) % 12L);
+            for (int stripe = phase - 12; stripe < redFill; stripe += 12) {
+                int sx = x + 2 + stripe;
+                if (sx >= x + 2 && sx < x + 2 + redFill) {
+                    g.fill(sx, y + 3, Math.min(sx + 2, x + 2 + redFill), y + barH - 1, 0xFFCF1830);
+                }
+            }
+        }
+
+        if (goldFill > 0) {
+            int overlap = Math.min(Math.max(2, goldFill / 4), 5);
+            int goldStart = Math.max(0, redFill - overlap);
+            int goldEnd = Math.min(innerW, redFill + goldFill - overlap);
+            if (redFill >= innerW) {
+                goldStart = Math.max(0, innerW - goldFill);
+                goldEnd = innerW;
+            }
+            g.fill(x + 2 + goldStart, y + 2, x + 2 + goldEnd, y + barH - 1, 0xFFE0A512);
+            g.fill(x + 2 + goldStart, y + 2, x + 2 + goldEnd, y + 3, 0xFFFFE16B);
+        }
+
+        String label = absorption > 0
+                ? health + "/" + maximum + " +" + absorption
+                : health + "/" + maximum;
+        tinyText(g, font, label, x + barW / 2, y - 6, 0xFFF5E9EC, 0.52F, true);
     }
 
     private static void drawMana(GuiGraphicsExtractor g, Font font, int startX, int y) {
@@ -95,6 +127,8 @@ public final class ArcaneHud {
         g.fill(x, y + size - 2, x + size, y + size, color);
         tinyText(g, font, Integer.toString(slot + 1), x + 2, y + 1, 0xFF98A3B7, 0.55F, false);
         if (spell == null) return;
+        String archetype = kr.moonseungjun.arcanecircle.magic.SpellArchetype.mode(spell.id()).badge();
+        tinyText(g, font, archetype, x + size - 3, y + 1, 0xFFC8B7DA, 0.48F, true);
         int iconY = y + 10;
         ArcaneRenderUtil.ring(g, x + size / 2, iconY, Math.max(4, size / 5), remaining > 0 ? 0xFF686A74 : color);
         ArcaneRenderUtil.spellRune(g, x + size / 2, iconY, spell, Math.max(3, size / 7),

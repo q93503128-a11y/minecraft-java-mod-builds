@@ -95,43 +95,102 @@ public final class ArcaneGearRenderer {
     private static void submitRobe(PoseStack stack, RenderPlayerEvent.Post<?> event, int tier) {
         int body = bodyColor(tier);
         int dark = darken(body);
+        int shadow = darken(dark);
         int trim = trimColor(tier);
-        float shoulder = 0.40F + tier * 0.035F;
-        float waist = 0.32F;
-        float hem = 0.48F + tier * 0.075F;
-        float top = 1.48F;
-        float middle = 0.92F;
-        float bottom = 0.08F;
-        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.debugFilledBox(), (pose, out) -> {
-            // Shoulder mantle.
-            quad(out, pose, -shoulder, top, -0.24F, shoulder, top, -0.24F,
-                    waist, 1.22F, -0.31F, -waist, 1.22F, -0.31F, body);
-            quad(out, pose, shoulder, top, 0.24F, -shoulder, top, 0.24F,
-                    -waist, 1.22F, 0.31F, waist, 1.22F, 0.31F, body);
-            quad(out, pose, -shoulder, top, 0.24F, -shoulder, top, -0.24F,
-                    -waist, 1.22F, -0.31F, -waist, 1.22F, 0.31F, dark);
-            quad(out, pose, shoulder, top, -0.24F, shoulder, top, 0.24F,
-                    waist, 1.22F, 0.31F, waist, 1.22F, -0.31F, dark);
+        int lining = tier >= 3 ? 0xFF2B113E : tier == 2 ? 0xFF102D52 : 0xFF24142F;
+        float shoulder = 0.43F + tier * 0.035F;
+        float waist = 0.315F;
+        float hem = 0.52F + tier * 0.075F;
+        float top = 1.49F;
+        float chest = 1.15F;
+        float middle = 0.88F;
+        float bottom = 0.055F;
 
-            // Four flared skirt panels with a visible front split.
-            quad(out, pose, -waist, middle, -0.26F, -0.035F, middle, -0.27F,
-                    -0.07F, bottom, -0.39F, -hem, bottom, -0.37F, body);
-            quad(out, pose, 0.035F, middle, -0.27F, waist, middle, -0.26F,
-                    hem, bottom, -0.37F, 0.07F, bottom, -0.39F, dark);
-            quad(out, pose, waist, middle, 0.26F, -waist, middle, 0.26F,
-                    -hem, bottom, 0.38F, hem, bottom, 0.38F, body);
-            quad(out, pose, -waist, middle, 0.25F, -waist, middle, -0.25F,
-                    -hem, bottom, -0.36F, -hem, bottom, 0.36F, dark);
-            quad(out, pose, waist, middle, -0.25F, waist, middle, 0.25F,
-                    hem, bottom, 0.36F, hem, bottom, -0.36F, body);
+        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.debugFilledBox(), (pose, out) -> {
+            // Raised double mantle with a dark underside.
+            quad(out, pose, -shoulder, top, -0.30F, shoulder, top, -0.30F,
+                    waist, chest, -0.325F, -waist, chest, -0.325F, body);
+            quad(out, pose, shoulder, top, 0.30F, -shoulder, top, 0.30F,
+                    -waist, chest, 0.325F, waist, chest, 0.325F, body);
+            quad(out, pose, -shoulder, top, 0.30F, -shoulder, top, -0.30F,
+                    -waist, chest, -0.325F, -waist, chest, 0.325F, dark);
+            quad(out, pose, shoulder, top, -0.30F, shoulder, top, 0.30F,
+                    waist, chest, 0.325F, waist, chest, -0.325F, dark);
+            quad(out, pose, -shoulder, top - 0.045F, -0.30F, shoulder, top - 0.045F, -0.30F,
+                    waist, chest - 0.035F, -0.325F, -waist, chest - 0.035F, -0.325F, shadow);
+
+            // Fitted torso shell.
+            quad(out, pose, -waist, chest, -0.315F, waist, chest, -0.315F,
+                    waist, middle, -0.29F, -waist, middle, -0.29F, body);
+            quad(out, pose, waist, chest, 0.315F, -waist, chest, 0.315F,
+                    -waist, middle, 0.29F, waist, middle, 0.29F, dark);
+            quad(out, pose, -waist, chest, 0.315F, -waist, chest, -0.315F,
+                    -waist, middle, -0.29F, -waist, middle, 0.29F, shadow);
+            quad(out, pose, waist, chest, -0.315F, waist, chest, 0.315F,
+                    waist, middle, 0.29F, waist, middle, -0.29F, dark);
+
+            // Six pleated skirt panels. The front split exposes a contrasting lining.
+            float split = 0.055F;
+            quad(out, pose, -waist, middle, -0.29F, -split, middle, -0.30F,
+                    -0.10F, bottom, -0.43F, -hem, bottom, -0.39F, body);
+            quad(out, pose, split, middle, -0.30F, waist, middle, -0.29F,
+                    hem, bottom, -0.39F, 0.10F, bottom, -0.43F, dark);
+            quad(out, pose, -split, middle - 0.015F, -0.305F, split, middle - 0.015F, -0.305F,
+                    0.10F, bottom + 0.02F, -0.435F, -0.10F, bottom + 0.02F, -0.435F, lining);
+            quad(out, pose, waist, middle, 0.29F, -waist, middle, 0.29F,
+                    -hem, bottom, 0.39F, hem, bottom, 0.39F, body);
+            quad(out, pose, -waist, middle, 0.28F, -waist, middle, -0.28F,
+                    -hem, bottom, -0.38F, -hem, bottom, 0.38F, shadow);
+            quad(out, pose, waist, middle, -0.28F, waist, middle, 0.28F,
+                    hem, bottom, 0.38F, hem, bottom, -0.38F, dark);
+            // Rear centre pleat catches light separately.
+            quad(out, pose, -0.12F, middle + 0.01F, 0.302F, 0.12F, middle + 0.01F, 0.302F,
+                    0.19F, bottom + 0.015F, 0.405F, -0.19F, bottom + 0.015F, 0.405F,
+                    tier >= 3 ? trim : body);
         });
+
+        submitSleeve(stack, event, -1, tier, body, dark, lining);
+        submitSleeve(stack, event, 1, tier, dark, shadow, lining);
         submitBelt(stack, event, tier, trim);
-        if (tier >= 2) {
-            submitRing(stack, event, hem * 0.92, bottom + 0.035, 30, trim, 0.78F + tier * 0.14F);
-        }
-        if (tier >= 3) {
-            submitStar(stack, event, 0.17, 1.17, trim, 0.92F);
-        }
+        submitRobeRunes(stack, event, tier, trim, hem, bottom);
+        submitRing(stack, event, hem * 0.93, bottom + 0.028, 38, trim, 1.05F + tier * 0.18F);
+        if (tier >= 2) submitRing(stack, event, hem * 0.76, bottom + 0.065, 34, lining, 0.82F);
+        if (tier >= 3) submitStar(stack, event, 0.18, 1.18, trim, 1.25F);
+    }
+
+    private static void submitSleeve(PoseStack stack, RenderPlayerEvent.Post<?> event, int side,
+                                     int tier, int upper, int lower, int lining) {
+        float x0 = side < 0 ? -0.66F - tier * 0.018F : 0.39F;
+        float x1 = side < 0 ? -0.39F : 0.66F + tier * 0.018F;
+        float outer = side < 0 ? x0 : x1;
+        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.debugFilledBox(), (pose, out) -> {
+            quad(out, pose, x0, 1.38F, -0.27F, x1, 1.38F, -0.27F,
+                    x1, 0.69F, -0.23F, x0, 0.69F, -0.23F, upper);
+            quad(out, pose, x1, 1.38F, 0.27F, x0, 1.38F, 0.27F,
+                    x0, 0.69F, 0.23F, x1, 0.69F, 0.23F, lower);
+            quad(out, pose, outer, 1.38F, 0.27F, outer, 1.38F, -0.27F,
+                    outer, 0.69F, -0.23F, outer, 0.69F, 0.23F, lower);
+            quad(out, pose, x0, 0.69F, -0.23F, x1, 0.69F, -0.23F,
+                    x1, 0.69F, 0.23F, x0, 0.69F, 0.23F, lining);
+        });
+    }
+
+    private static void submitRobeRunes(PoseStack stack, RenderPlayerEvent.Post<?> event,
+                                        int tier, int color, float hem, float bottom) {
+        event.getSubmitNodeCollector().submitCustomGeometry(stack, RenderTypes.lines(), (pose, out) -> {
+            float width = 0.88F + tier * 0.20F;
+            line(out, pose, 0.0F, 1.23F, -0.326F, 0.0F, 0.94F, -0.306F, color, width);
+            line(out, pose, -0.12F, 1.10F, -0.327F, 0.0F, 0.98F, -0.316F, color, width);
+            line(out, pose, 0.12F, 1.10F, -0.327F, 0.0F, 0.98F, -0.316F, color, width);
+            int marks = 3 + tier;
+            for (int i = 0; i < marks; i++) {
+                float t = marks <= 1 ? 0.5F : i / (float) (marks - 1);
+                float x = -hem * 0.68F + hem * 1.36F * t;
+                float y = bottom + 0.10F + (i & 1) * 0.035F;
+                line(out, pose, x - 0.035F, y, -0.405F, x, y + 0.055F, -0.412F, color, width * 0.72F);
+                line(out, pose, x, y + 0.055F, -0.412F, x + 0.035F, y, -0.405F, color, width * 0.72F);
+            }
+        });
     }
 
     private static void submitBoots(PoseStack stack, RenderPlayerEvent.Post<?> event, int tier) {

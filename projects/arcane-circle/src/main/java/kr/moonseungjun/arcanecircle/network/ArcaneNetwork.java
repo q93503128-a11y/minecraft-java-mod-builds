@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha8";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha9";
     private static final Set<String> PAGES = Set.of(
             "atlas", "recipes", "staffs", "core", "academy", "quests", "sync");
 
@@ -171,6 +171,7 @@ public final class ArcaneNetwork {
                 + ";max=" + stats.maxMana()
                 + ";health=" + ArcaneVitalityService.effectiveHealth(player)
                 + ";health_max=" + ArcaneVitalityService.effectiveMaxHealth(player)
+                + ";absorption=" + ArcaneVitalityService.effectiveAbsorption(player)
                 + ";regen_milli=" + (int) Math.round(stats.regenPerHalfSecond() * 2000.0)
                 + ";insight=" + state.insight()
                 + ";next=" + state.nextCircleInsight()

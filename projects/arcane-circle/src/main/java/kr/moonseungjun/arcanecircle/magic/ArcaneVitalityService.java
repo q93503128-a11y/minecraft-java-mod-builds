@@ -65,6 +65,12 @@ public final class ArcaneVitalityService {
                 (int) Math.ceil(effectiveMaxHealth(player) * ratio - 0.0001)));
     }
 
+    public static int effectiveAbsorption(ServerPlayer player) {
+        double vanillaMax = Math.max(1.0, player.getMaxHealth());
+        double scaled = player.getAbsorptionAmount() * effectiveMaxHealth(player) / vanillaMax;
+        return Math.max(0, (int) Math.ceil(scaled - 0.0001));
+    }
+
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         // Void/kill-plane style damage must remain capable of killing the player immediately.

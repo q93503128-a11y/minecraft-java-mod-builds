@@ -29,9 +29,11 @@ final class ArcaneWorldMesh {
 
     void submit(PoseStack poseStack, SubmitNodeCollector collector, int argb, float windowScale) {
         if (segments.isEmpty()) return;
-        int glow = withAlpha(argb, Math.max(18, ((argb >>> 24) & 0xFF) / 5));
-        submitPass(poseStack, collector, glow, windowScale * 2.25F);
-        submitPass(poseStack, collector, argb, windowScale);
+        int edge = shade(withAlpha(argb, Math.max(120, (argb >>> 24) & 0xFF)), 0.24);
+        int aura = withAlpha(argb, Math.max(42, ((argb >>> 24) & 0xFF) / 3));
+        submitPass(poseStack, collector, edge, windowScale * 3.55F);
+        submitPass(poseStack, collector, aura, windowScale * 2.55F);
+        submitPass(poseStack, collector, argb, windowScale * 1.42F);
     }
 
     private void submitPass(PoseStack poseStack, SubmitNodeCollector collector, int argb, float scale) {
@@ -40,7 +42,7 @@ final class ArcaneWorldMesh {
                 Vec3 delta = segment.end.subtract(segment.start);
                 if (delta.lengthSqr() < 0.0000001) continue;
                 Vec3 normal = delta.normalize();
-                float width = Math.max(0.55F, segment.width * scale);
+                float width = Math.max(0.88F, segment.width * scale);
                 consumer.addVertex(pose, (float) segment.start.x, (float) segment.start.y, (float) segment.start.z)
                         .setColor(argb)
                         .setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z)
@@ -51,6 +53,16 @@ final class ArcaneWorldMesh {
                         .setLineWidth(width);
             }
         });
+    }
+
+    private static int shade(int argb, double factor) {
+        int alpha = (argb >>> 24) & 0xFF;
+        int red = (int) Math.round(((argb >>> 16) & 0xFF) * factor);
+        int green = (int) Math.round(((argb >>> 8) & 0xFF) * factor);
+        int blue = (int) Math.round((argb & 0xFF) * factor);
+        return (alpha << 24) | (Math.max(0, Math.min(255, red)) << 16)
+                | (Math.max(0, Math.min(255, green)) << 8)
+                | Math.max(0, Math.min(255, blue));
     }
 
     private static int withAlpha(int argb, int alpha) {

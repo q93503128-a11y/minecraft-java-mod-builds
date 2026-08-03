@@ -453,20 +453,26 @@ public final class SpellCastingService {
             return;
         }
 
-        CombatGrowthService.Snapshot combatSnapshot = CombatGrowthService.capture(player, cast.range());
-        WorldMagicService.release(player, cast);
+        CombatGrowthService.Snapshot snapshot = CombatGrowthService.capture(player, cast.range());
         releasePrelude(player, cast);
-        if (!execute(player, spell.id(), cast.range(), cast.power())) {
-            fail(player, "시전 조건이 사라져 주문이 중단되었습니다.");
-            return;
-        }
-        CombatGrowthService.Impact impact = CombatGrowthService.measure(combatSnapshot, spell.circle());
-        long marksEarned = kr.moonseungjun.arcanecircle.world.ArcaneEconomyService
-                .awardCombat(player, impact, spell.circle());
-
+        data.beginCast(player, cast);
         data.startCooldown(player, spell.id(), cast.cooldownTicks());
         if (cast.fusion()) startFusionIngredientCooldowns(player, data, cast.ingredients());
-        MagicPlayerData.CastProgress progress = data.completeCast(player, cast, impact);
+        SpellKineticsService.launch(player, cast, snapshot);
+    }
+
+    static void finishKineticCast(ServerPlayer player, MagicPlayerData.CastPreparation cast,
+                                  CombatGrowthService.Snapshot snapshot, boolean executed) {
+        if (!executed || !player.isAlive()) {
+            ArcaneNoticeService.push(player, Component.literal("§7[시전 종료] 효과가 유효한 대상에 닿지 않았습니다."));
+            return;
+        }
+        MagicPlayerData data = data(player);
+        SpellDefinition spell = cast.spell();
+        CombatGrowthService.Impact impact = CombatGrowthService.measure(snapshot, spell.circle());
+        long marksEarned = kr.moonseungjun.arcanecircle.world.ArcaneEconomyService
+                .awardCombat(player, impact, spell.circle());
+        MagicPlayerData.CastProgress progress = data.completeCastProgress(player, cast, impact);
         ArcaneQuestData.get(((ServerLevel) player.level()).getServer())
                 .recordCast(player, impact, spell.circle(), cast.fusion());
         MagicPlayerData.MageState state = data.state(player);
@@ -477,7 +483,7 @@ public final class SpellCastingService {
             ArcaneNoticeService.push(player, Component.literal("§d" + chain + " §f→ §e" + spell.name()
                     + " §7· 숙련 " + progress.mastery().casts() + "/" + progress.mastery().required()));
         } else {
-            ArcaneNoticeService.push(player, Component.literal("§b" + spell.name() + " §f시전 · 마력 "
+            ArcaneNoticeService.push(player, Component.literal("§b" + spell.name() + " §f완료 · 마력 "
                     + (int) state.mana() + "/" + stats.maxMana() + " · 쿨 "
                     + (cast.cooldownTicks() <= 0 ? "없음" : String.format("%.1f", cast.cooldownTicks() / 20.0) + "초")));
         }
@@ -500,7 +506,6 @@ public final class SpellCastingService {
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
                     SoundSource.PLAYERS, 1.0F, 1.2F);
         }
-
         if (progress.circle().advanced()) {
             player.sendSystemMessage(Component.literal("§d[써클 승급] §f마력핵이 §5" + progress.circle().current()
                     + "써클§f로 확장되었습니다. 해당 써클 주문서를 해독할 수 있습니다."));
@@ -562,7 +567,7 @@ public final class SpellCastingService {
         };
     }
 
-    private static boolean execute(ServerPlayer player, String id, double range, double power) {
+    static boolean executeResolved(ServerPlayer player, String id, double range, double power) {
         if (FusionSpellEffects.supports(id)) return FusionSpellEffects.execute(player, id, range, power);
         return switch (id) {
             case "arcane_dart" -> arcaneDart(player, range, power);

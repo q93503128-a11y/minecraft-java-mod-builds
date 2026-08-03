@@ -298,16 +298,20 @@ public final class MagicPlayerData extends SavedData {
                 List.copyOf(ingredients), staff);
     }
 
-    public CastProgress completeCast(ServerPlayer player, CastPreparation cast,
-                                     CombatGrowthService.Impact impact) {
+    public void beginCast(ServerPlayer player, CastPreparation cast) {
         MageState state = state(player);
-        CombatGrowthService.Impact result = impact == null ? CombatGrowthService.Impact.NONE : impact;
         state.mana = Math.max(0.0, state.mana - cast.manaCost());
         if ("wish".equals(cast.spell().id())) {
             state.mana = effectiveStats(player).maxMana();
             state.cooldowns.entrySet().removeIf(entry -> !"wish".equals(entry.getKey()));
         }
+        setDirty();
+    }
 
+    public CastProgress completeCastProgress(ServerPlayer player, CastPreparation cast,
+                                             CombatGrowthService.Impact impact) {
+        MageState state = state(player);
+        CombatGrowthService.Impact result = impact == null ? CombatGrowthService.Impact.NONE : impact;
         int beforeMastery = state.mastery.getOrDefault(cast.spell().id(), 0);
         int masteryGain = Math.max(1, result.masteryGain());
         int afterMastery = Math.min(100000, beforeMastery + masteryGain);
@@ -329,9 +333,14 @@ public final class MagicPlayerData extends SavedData {
             if (registered) equipIntoFirstEmptySlot(state, resultId);
             mastery = new MasteryProgress(true, registered, resultId, afterMastery, required);
         }
-
         setDirty();
         return new CastProgress(new CircleAdvance(previousCircle, state.circle), mastery);
+    }
+
+    public CastProgress completeCast(ServerPlayer player, CastPreparation cast,
+                                     CombatGrowthService.Impact impact) {
+        beginCast(player, cast);
+        return completeCastProgress(player, cast, impact);
     }
 
     public CooldownStatus cooldownStatus(ServerPlayer player, String spellId) {

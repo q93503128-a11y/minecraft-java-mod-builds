@@ -2,6 +2,7 @@ package kr.moonseungjun.arcanecircle;
 
 import kr.moonseungjun.arcanecircle.client.ArcaneClient;
 import kr.moonseungjun.arcanecircle.client.ArcaneHud;
+import kr.moonseungjun.arcanecircle.client.MageGearTooltip;
 import kr.moonseungjun.arcanecircle.client.ArcaneGearRenderer;
 import kr.moonseungjun.arcanecircle.client.ClientNetworkHandlers;
 import kr.moonseungjun.arcanecircle.client.WorldMagicTracker;
@@ -22,6 +23,7 @@ public final class ArcaneCircleClient {
         NeoForge.EVENT_BUS.addListener(ArcaneHud::onScreenRender);
         NeoForge.EVENT_BUS.addListener(ArcaneHud::onVanillaLayer);
         NeoForge.EVENT_BUS.addListener(ArcaneGearRenderer::onPlayerRender);
+        NeoForge.EVENT_BUS.addListener(MageGearTooltip::onTooltip);
         NeoForge.EVENT_BUS.addListener(WorldMagicTracker::onExtract);
         NeoForge.EVENT_BUS.addListener(WorldMagicTracker::onSubmit);
     }

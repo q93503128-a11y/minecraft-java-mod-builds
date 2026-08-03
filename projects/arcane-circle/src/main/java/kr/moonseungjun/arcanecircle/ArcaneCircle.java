@@ -6,6 +6,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
+import kr.moonseungjun.arcanecircle.magic.SpellKineticsService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.network.ArcaneNetwork;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
@@ -27,7 +28,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.8";
+    public static final String VERSION = "0.12.1-alpha.9";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -92,6 +93,7 @@ public final class ArcaneCircle {
         SpellCastingService.clearSession(event.getEntity().getUUID());
         ArcaneNoticeService.clear(event.getEntity().getUUID());
         MageGearService.clear(event.getEntity().getUUID());
+        SpellKineticsService.clear(event.getEntity().getUUID());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -110,6 +112,7 @@ public final class ArcaneCircle {
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         SpellCastingService.tickCharge(player);
+        SpellKineticsService.tick(player);
         MagicWorldService.tick(player);
         if (player.tickCount % 10 == 0) MageGearService.tick(player);
         if (player.tickCount % 20 == 0) ArcaneMageService.tickNear(player);
@@ -120,6 +123,7 @@ public final class ArcaneCircle {
 
     private void onServerStopped(ServerStoppedEvent event) {
         SpellCastingService.clearAllSessions();
+        SpellKineticsService.clearAll();
         ArcaneNoticeService.clearAll();
     }
 }
