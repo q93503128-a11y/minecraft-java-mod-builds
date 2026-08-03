@@ -49,11 +49,11 @@ total_xp_to_level30=94685
 [PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired
 === tools/test_runtime_safety_v0173.py ===
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety_v0173.py", line 81, in <module>
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety_v0173.py", line 65, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety_v0173.py", line 67, in main
-    assert "combineFirstPair" in read("VillageEquipmentRaritySystem.java")
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety_v0173.py", line 23, in main
+    assert "selectedCard" in role_screen and "cardBounds" in role_screen
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
 === tools/test_v01710_skill_input.py ===
 [PASS] Client Z/X mappings are registered by the client event subscriber
@@ -64,22 +64,9 @@ AssertionError
 [PASS] Action-bar HUD shows equipped Z/X skills, readiness and a live cooldown bar
 [PASS] Test role and skill managers use a dedicated compact responsive UI
 === tools/test_v01711_skill_hud_ui.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_skill_hud_ui.py", line 56, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_skill_hud_ui.py", line 19, in main
-    visuals = read("VillageSkillVisualSystem.java")
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01711_skill_hud_ui.py", line 10, in read
-    return (JAVA / name).read_text(encoding="utf-8")
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/pathlib.py", line 1029, in read_text
-    with self.open(mode='r', encoding=encoding, errors=errors) as f:
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
-    return io.open(self, mode, buffering, encoding, errors, newline)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillVisualSystem.java'
+[PASS] All 20 active skills have concrete cast logic and custom mesh feedback
+[PASS] Action-bar HUD shows equipped Z/X skills and live cooldown seconds
+[PASS] Test role and skill managers use a dedicated compact responsive UI
 === tools/test_v01712_role_abilities.py ===
 [PASS] Twenty active skills own real movement, projectile, field and procedural-mesh motions
 [PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events
