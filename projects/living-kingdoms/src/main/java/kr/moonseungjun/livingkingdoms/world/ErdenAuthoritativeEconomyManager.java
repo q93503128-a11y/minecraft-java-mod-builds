@@ -195,12 +195,12 @@ public final class ErdenAuthoritativeEconomyManager {
                 ? currentDay
                 : Math.max(previousDay + 1L, currentDay - MAX_CATCH_UP_DAYS + 1L);
         for (long day = firstDay; day <= currentDay; day++) {
-            ErdenTransportManager.beginEconomyDay(level, day);
+            ErdenCargoEscrowManager.beginEconomyDay(level, day);
             DayResult result;
             try {
                 result = processDay(population, economy.sites(), economy.wallets());
             } finally {
-                ErdenTransportManager.endEconomyDay();
+                ErdenCargoEscrowManager.endEconomyDay();
             }
             economy.applyDay(
                     day, result.sites, result.wallets,
@@ -573,9 +573,9 @@ public final class ErdenAuthoritativeEconomyManager {
         long moved = Math.min(Math.max(0L, amount), source.stock(resource));
         if (moved <= 0L) return false;
 
-        ErdenTransportManager.DispatchResult dispatch =
-                ErdenTransportManager.dispatchTransfer(source, target, resource, moved);
-        if (dispatch == ErdenTransportManager.DispatchResult.BLOCKED) {
+        ErdenCargoEscrowManager.DispatchResult dispatch =
+                ErdenCargoEscrowManager.dispatchTransfer(source, target, resource, moved);
+        if (dispatch == ErdenCargoEscrowManager.DispatchResult.BLOCKED) {
             source = source.addMetric("blocked_shipments", 1L);
             target = target.addMetric("delivery_delays", 1L);
             sites.put(source.id(), source);
@@ -584,9 +584,9 @@ public final class ErdenAuthoritativeEconomyManager {
         }
 
         source = source.addStock(resource, -moved).addMetric("sent", moved);
-        if (dispatch == ErdenTransportManager.DispatchResult.DEFERRED) {
-            source = source.addMetric(ErdenTransportManager.inTransitMetric(resource), moved);
-            target = target.addMetric(ErdenTransportManager.pendingMetric(resource), moved);
+        if (dispatch == ErdenCargoEscrowManager.DispatchResult.DEFERRED) {
+            source = source.addMetric(ErdenCargoEscrowManager.inTransitMetric(resource), moved);
+            target = target.addMetric(ErdenCargoEscrowManager.pendingMetric(resource), moved);
         } else {
             target = target.addStock(resource, moved).addMetric("received", moved);
         }
@@ -600,7 +600,7 @@ public final class ErdenAuthoritativeEconomyManager {
             ErdenPhysicalEconomySavedData.SiteState site,
             String resource) {
         return site.stock(resource)
-                + Math.max(0L, site.metric(ErdenTransportManager.pendingMetric(resource)));
+                + Math.max(0L, site.metric(ErdenCargoEscrowManager.pendingMetric(resource)));
     }
 
     private static Map<Long, WorkerRef> livingWorkers(ErdenPopulationSavedData population) {
@@ -830,8 +830,8 @@ public final class ErdenAuthoritativeEconomyManager {
         List<String> parts = new ArrayList<>();
         for (ResourceItem resource : PHYSICAL_RESOURCES) {
             String metric = pending
-                    ? ErdenTransportManager.pendingMetric(resource.resource)
-                    : ErdenTransportManager.inTransitMetric(resource.resource);
+                    ? ErdenCargoEscrowManager.pendingMetric(resource.resource)
+                    : ErdenCargoEscrowManager.inTransitMetric(resource.resource);
             long amount = site.metric(metric);
             if (amount > 0L) parts.add(resourceName(resource.resource) + " " + amount);
         }
