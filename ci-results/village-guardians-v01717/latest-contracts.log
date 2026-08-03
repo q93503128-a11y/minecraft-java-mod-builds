@@ -82,13 +82,11 @@ total_xp_to_level30=94685
 [PASS] All shields face the live look direction, curve outward correctly, and use solid planes
 [PASS] Skill information renders on its own HUD row above the compact status action bar
 === tools/test_v01716_ranger_activation.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01716_ranger_activation.py", line 83, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01716_ranger_activation.py", line 52, in main
-    assert "i < 18" in rain_mesh
-           ^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] 시험 궁수와 실제 궁수 모두 다음 활 발사에서 네 기술을 소비합니다
+[PASS] 화살비는 위험한 실제 낙하 화살 없이 짧은 메시 장면과 사용자 피해 판정을 사용합니다
+[PASS] 화살비 범위는 지면 레이캐스트에 붙고 남은 화살은 빠르게 사라집니다
+[PASS] 검기는 허리 높이에서 전방으로 가로 이동하며 천붕 강하의 거대 화살표는 제거됩니다
+[PASS] 추적 도탄 준비 표식과 기술 HUD 위치가 플레이 화면에 맞게 조정됩니다
 === tools/test_v01717_range_homing.py ===
 [PASS] 신속 삼연사가 실제 활·석궁 사용시간과 발사 충전량을 가속합니다
 [PASS] 추적 도탄은 전방 최적 표적을 잡고 비행 중에도 몸통을 추적합니다
