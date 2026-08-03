@@ -1,0 +1,6 @@
+Error: class not found: net.neoforged.neoforge.client.event.RenderLevelStageEvent$AfterEntities
+Error: class not found: net.neoforged.neoforge.client.event.RenderLevelStageEvent$AfterParticles
+Compiled from "RenderLevelStageEvent.java"
+public class net.neoforged.neoforge.client.event.RenderLevelStageEvent$AfterWeather extends net.neoforged.neoforge.client.event.RenderLevelStageEvent {
+  public net.neoforged.neoforge.client.event.RenderLevelStageEvent$AfterWeather(net.minecraft.client.renderer.LevelRenderer, net.minecraft.client.renderer.state.level.LevelRenderState, com.mojang.blaze3d.vertex.PoseStack, org.joml.Matrix4fc, java.lang.Iterable<? extends net.neoforged.neoforge.client.IRenderableSection>);
+}

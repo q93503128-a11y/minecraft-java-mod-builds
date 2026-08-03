@@ -1,0 +1,14 @@
+Compiled from "RenderLevelStageEvent.java"
+public abstract class net.neoforged.neoforge.client.event.RenderLevelStageEvent extends net.neoforged.bus.api.Event {
+  private final net.minecraft.client.renderer.LevelRenderer levelRenderer;
+  private final net.minecraft.client.renderer.state.level.LevelRenderState levelRenderState;
+  private final com.mojang.blaze3d.vertex.PoseStack poseStack;
+  private final org.joml.Matrix4fc modelViewMatrix;
+  private final java.lang.Iterable<? extends net.neoforged.neoforge.client.IRenderableSection> renderableSections;
+  public net.neoforged.neoforge.client.event.RenderLevelStageEvent(net.minecraft.client.renderer.LevelRenderer, net.minecraft.client.renderer.state.level.LevelRenderState, com.mojang.blaze3d.vertex.PoseStack, org.joml.Matrix4fc, java.lang.Iterable<? extends net.neoforged.neoforge.client.IRenderableSection>);
+  public net.minecraft.client.renderer.LevelRenderer getLevelRenderer();
+  public net.minecraft.client.renderer.state.level.LevelRenderState getLevelRenderState();
+  public com.mojang.blaze3d.vertex.PoseStack getPoseStack();
+  public org.joml.Matrix4fc getModelViewMatrix();
+  public java.lang.Iterable<? extends net.neoforged.neoforge.client.IRenderableSection> getRenderableSections();
+}

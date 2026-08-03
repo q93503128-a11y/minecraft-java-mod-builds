@@ -1,0 +1,16 @@
+Compiled from "RenderPlayerEvent.java"
+public abstract class net.neoforged.neoforge.client.event.RenderPlayerEvent<T extends net.minecraft.world.entity.Avatar & net.minecraft.client.entity.ClientAvatarEntity> extends net.neoforged.neoforge.client.event.RenderLivingEvent<T, net.minecraft.client.renderer.entity.state.AvatarRenderState, net.minecraft.client.model.player.PlayerModel> {
+  protected net.neoforged.neoforge.client.event.RenderPlayerEvent(net.minecraft.client.renderer.entity.state.AvatarRenderState, net.minecraft.client.renderer.entity.player.AvatarRenderer<T>, float, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.SubmitNodeCollector);
+  public net.minecraft.client.renderer.entity.player.AvatarRenderer<T> getRenderer();
+  public net.minecraft.client.renderer.entity.LivingEntityRenderer getRenderer();
+}
+Compiled from "RenderPlayerEvent.java"
+public class net.neoforged.neoforge.client.event.RenderPlayerEvent$Pre<T extends net.minecraft.world.entity.Avatar & net.minecraft.client.entity.ClientAvatarEntity> extends net.neoforged.neoforge.client.event.RenderPlayerEvent<T> implements net.neoforged.bus.api.ICancellableEvent {
+  public net.neoforged.neoforge.client.event.RenderPlayerEvent$Pre(net.minecraft.client.renderer.entity.state.AvatarRenderState, net.minecraft.client.renderer.entity.player.AvatarRenderer<T>, float, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.SubmitNodeCollector);
+  public net.minecraft.client.renderer.entity.LivingEntityRenderer getRenderer();
+}
+Compiled from "RenderPlayerEvent.java"
+public class net.neoforged.neoforge.client.event.RenderPlayerEvent$Post<T extends net.minecraft.world.entity.Avatar & net.minecraft.client.entity.ClientAvatarEntity> extends net.neoforged.neoforge.client.event.RenderPlayerEvent<T> {
+  public net.neoforged.neoforge.client.event.RenderPlayerEvent$Post(net.minecraft.client.renderer.entity.state.AvatarRenderState, net.minecraft.client.renderer.entity.player.AvatarRenderer<T>, float, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.SubmitNodeCollector);
+  public net.minecraft.client.renderer.entity.LivingEntityRenderer getRenderer();
+}

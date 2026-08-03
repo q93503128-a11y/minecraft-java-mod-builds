@@ -1,0 +1,2 @@
+Error: class not found: net.minecraft.client.renderer.entity.player.PlayerRenderer
+Error: class not found: net.minecraft.client.renderer.entity.state.PlayerRenderState
