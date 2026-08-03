@@ -7,7 +7,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import java.util.HashSet;
 import java.util.Set;
 
-/** Keeps only the first household's test buildings loaded during headless realm diagnostics. */
+/** Keeps only population and physical-economy sample buildings loaded during headless diagnostics. */
 public final class ErdenPopulationCiChunkRetainer {
     private static final boolean ENABLED =
             "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
@@ -36,6 +36,10 @@ public final class ErdenPopulationCiChunkRetainer {
         retainBuilding(level, sample.homeX(), sample.homeZ());
         for (ErdenPopulationSavedData.Resident resident : sample.residents()) {
             if (resident.worker()) retainBuilding(level, resident.workX(), resident.workZ());
+        }
+        for (ExternalUrbanFabricBuilder.UrbanEntrance entrance
+                : ErdenPhysicalEconomyManager.ciEntrances()) {
+            retainBuilding(level, entrance.x(), entrance.z());
         }
     }
 
@@ -84,10 +88,6 @@ public final class ErdenPopulationCiChunkRetainer {
                 if (!ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ)) {
                     ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
                 }
-
-                // requestChunk releases its own temporary ticket when construction finishes.
-                // Reassert the diagnostic ticket afterwards so the interior, upper floor and
-                // resident materialisation stages all observe the same loaded building.
                 level.setChunkForced(chunkX, chunkZ, true);
                 long key = ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
                 if (RETAINED_CHUNKS.add(key) || !level.hasChunk(chunkX, chunkZ)) {
