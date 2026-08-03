@@ -45,6 +45,8 @@ public final class VillageRoleAbilitySystem {
     private static final Map<UUID, Long> SPIN_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> RAPID_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> RICOCHET_UNTIL = new HashMap<>();
+    private static final Map<UUID, Long> RICOCHET_ARROWS = new HashMap<>();
+    private static final Map<UUID, EmpoweredArrowState> MEGA_ARROW_READY = new HashMap<>();
     private static final Map<UUID, Long> FORTRESS_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> AEGIS_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> CHARGE_UNTIL = new HashMap<>();
@@ -62,6 +64,8 @@ public final class VillageRoleAbilitySystem {
         SPIN_UNTIL.clear();
         RAPID_UNTIL.clear();
         RICOCHET_UNTIL.clear();
+        RICOCHET_ARROWS.clear();
+        MEGA_ARROW_READY.clear();
         FORTRESS_UNTIL.clear();
         AEGIS_UNTIL.clear();
         CHARGE_UNTIL.clear();
@@ -86,11 +90,16 @@ public final class VillageRoleAbilitySystem {
         int playerLevel = VillageCouncilState.levelOf(player.getUUID());
         int duration = Math.max(40, Math.round((120 + playerLevel * 3) * durationMultiplier));
         Vec3 forward = horizontalLook(player);
-        VillageSkillEffectSystem.startCast(level, player, skill, duration, forward);
+        Vec3 sight = lookDirection(player);
+        Vec3 visualDirection = skill == VillageRoleSkillSystem.ActiveSkill.ARCANIST_FIRE_ORB
+                ? sight : forward;
+        VillageSkillEffectSystem.startCast(level, player, skill, duration, visualDirection);
         switch (skill) {
             case VANGUARD_WHIRLWIND -> {
-                SPIN_UNTIL.put(player.getUUID(), now + Math.max(38, duration / 2));
-                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.max(38, duration / 2), 0, false, false, true));
+                int spinDuration = Math.max(48, duration / 2);
+                SPIN_UNTIL.put(player.getUUID(), now + spinDuration);
+                VillageNetwork.sendSkillMotion(level, player, "vanguard_spin", spinDuration + 8);
+                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, spinDuration, 0, false, false, true));
                 play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.2f, 0.72f);
             }
             case VANGUARD_BREAKER -> {
@@ -105,10 +114,10 @@ public final class VillageRoleAbilitySystem {
                 play(level, player.position(), SoundEvents.RAVAGER_ROAR, 0.85f, 1.18f);
             }
             case VANGUARD_CRY -> {
-                CHARGE_UNTIL.put(player.getUUID(), now + 26);
-                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 28, 2, false, false, true));
+                CHARGE_UNTIL.put(player.getUUID(), now + 22);
+                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 26, 2, false, false, true));
                 for (int i = 0; i < 6; i++) {
-                    SCHEDULED.add(new ScheduledAction(now + 5L + i * 4L, player.getUUID(), skill,
+                    SCHEDULED.add(new ScheduledAction(now + 4L + i * 4L, player.getUUID(), skill,
                             ActionKind.BLADE_WAVE, power, durationMultiplier, specialRank, player.position(), forward));
                 }
                 play(level, player.position(), SoundEvents.PLAYER_ATTACK_STRONG, 1.0f, 0.72f);
@@ -121,53 +130,54 @@ public final class VillageRoleAbilitySystem {
             }
 
             case RANGER_VOLLEY -> {
-                RAPID_UNTIL.put(player.getUUID(), now + Math.max(120, duration));
-                player.addEffect(new MobEffectInstance(MobEffects.SPEED, Math.max(120, duration), 1, false, false, true));
+                int rapidDuration = Math.max(200, duration);
+                RAPID_UNTIL.put(player.getUUID(), now + rapidDuration);
+                player.addEffect(new MobEffectInstance(MobEffects.SPEED, rapidDuration, 1, false, false, true));
                 player.swing(InteractionHand.MAIN_HAND, true);
                 play(level, player.position(), SoundEvents.CROSSBOW_LOADING_END.value(), 1.0f, 1.35f);
             }
             case RANGER_PIERCE -> {
-                RICOCHET_UNTIL.put(player.getUUID(), now + Math.max(160, duration));
+                RICOCHET_UNTIL.put(player.getUUID(), now + Math.max(240, duration * 2L));
                 player.swing(InteractionHand.MAIN_HAND, true);
                 play(level, player.position(), SoundEvents.CROSSBOW_QUICK_CHARGE_3.value(), 1.0f, 1.2f);
             }
             case RANGER_RICOCHET -> {
-                Vec3 center = aimedGround(player, 15.0);
-                for (int i = 0; i < 8; i++) {
-                    SCHEDULED.add(new ScheduledAction(now + 8L + i * 5L, player.getUUID(), skill,
+                Vec3 center = aimedGround(level, player, 22.0);
+                int fieldDuration = 60;
+                VillageSkillEffectSystem.arrowRainField(level, player, center, fieldDuration, 8.5);
+                for (int i = 0; i < 10; i++) {
+                    SCHEDULED.add(new ScheduledAction(now + 5L + i * 5L, player.getUUID(), skill,
                             ActionKind.ARROW_RAIN, power, durationMultiplier, specialRank, center, Vec3.ZERO));
                 }
                 play(level, player.position(), SoundEvents.CROSSBOW_SHOOT, 1.0f, 0.75f);
             }
             case RANGER_FIRE_RAIN -> {
-                CHARGE_UNTIL.put(player.getUUID(), now + 36);
-                player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 36, 4, false, false, true));
-                SCHEDULED.add(new ScheduledAction(now + 36, player.getUUID(), skill,
-                        ActionKind.ENERGY_ARROW, power, durationMultiplier, specialRank,
-                        player.position(), forward));
-                play(level, player.position(), SoundEvents.BEACON_POWER_SELECT, 1.2f, 0.55f);
+                long until = now + Math.max(280L, duration * 2L);
+                MEGA_ARROW_READY.put(player.getUUID(), new EmpoweredArrowState(until, power, specialRank));
+                player.swing(InteractionHand.MAIN_HAND, true);
+                play(level, player.position(), SoundEvents.BEACON_POWER_SELECT, 1.2f, 0.62f);
             }
 
             case ARCANIST_FIRE_ORB -> launchMoving(level, player, MovingKind.FIRE_ORB,
-                    new ItemStack(Items.FIRE_CHARGE), 1.15, 72, (11.0f + playerLevel * 0.55f) * power,
-                    3.2, specialRank, forward);
+                    new ItemStack(Items.FIRE_CHARGE), 1.35, 100,
+                    (12.0f + playerLevel * 0.65f) * power, 4.8, specialRank, sight);
             case ARCANIST_FROST_RING -> {
-                Vec3 center = aimedGround(player, 10.0);
+                Vec3 center = aimedGround(level, player, 18.0);
                 AREAS.add(new AreaState(player.getUUID(), AreaKind.FROST, center,
-                        now + Math.max(120, duration), 6.5, power, specialRank, 0));
+                        now + Math.max(140, duration), 7.5, power, specialRank, 0));
                 play(level, center, SoundEvents.GLASS_PLACE, 1.1f, 0.62f);
             }
             case ARCANIST_CHAIN -> {
-                Vec3 center = player.position().add(forward.scale(2.0));
+                Vec3 center = player.position().add(forward.scale(3.0));
                 AREAS.add(new AreaState(player.getUUID(), AreaKind.TORNADO, center,
-                        now + Math.max(100, duration), 5.0, power, specialRank, 0));
+                        now + Math.max(120, duration), 8.5, power, specialRank, 0));
                 play(level, center, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 1.1f, 0.72f);
             }
             case ARCANIST_NOVA -> {
-                Vec3 center = aimedGround(player, 13.0);
+                Vec3 center = aimedGround(level, player, 22.0);
                 AREAS.add(new AreaState(player.getUUID(), AreaKind.LIGHTNING, center,
-                        now + Math.max(80, duration / 2), 9.0, power, specialRank, 0));
-                play(level, center, SoundEvents.LIGHTNING_BOLT_THUNDER, 0.65f, 1.3f);
+                        now + Math.max(100, duration / 2), 18.0, power, specialRank, 0));
+                play(level, center, SoundEvents.LIGHTNING_BOLT_THUNDER, 0.85f, 1.15f);
             }
 
             case LUMINAR_HEAL -> healLowestAlly(player,
@@ -193,14 +203,14 @@ public final class VillageRoleAbilitySystem {
             case WARDEN_BASH -> tauntShout(level, player,
                     (4.0f + playerLevel * 0.25f) * power, duration, specialRank);
             case WARDEN_FORMATION -> {
-                FORTRESS_UNTIL.put(player.getUUID(), now + Math.max(100, duration));
-                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, Math.max(100, duration), 5 + Math.min(3, specialRank), false, false, true));
-                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.max(100, duration), 3, false, false, true));
+                FORTRESS_UNTIL.put(player.getUUID(), now + Math.max(120, duration));
+                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, Math.max(120, duration), 5 + Math.min(3, specialRank), false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.max(120, duration), 3, false, false, true));
                 play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 1.4f, 0.55f);
             }
             case WARDEN_FIELD -> {
-                AEGIS_UNTIL.put(player.getUUID(), now + Math.max(160, duration * 2L));
-                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.max(160, duration * 2), 1, false, false, true));
+                AEGIS_UNTIL.put(player.getUUID(), now + Math.max(180, duration * 2L));
+                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, Math.max(180, duration * 2), 1, false, false, true));
                 play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.0f, 0.7f);
             }
         }
@@ -212,7 +222,7 @@ public final class VillageRoleAbilitySystem {
             for (int i = 0; i < echoes; i++) {
                 SCHEDULED.add(new ScheduledAction(now + 8L + i * 8L, player.getUUID(), skill,
                         ActionKind.ARCANE_ECHO, power * 0.72f, durationMultiplier, specialRank,
-                        player.position(), forward));
+                        player.position(), visualDirection));
             }
         }
     }
@@ -231,17 +241,29 @@ public final class VillageRoleAbilitySystem {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!(player.level() instanceof ServerLevel level) || VillageRespawnSystem.isDowned(player)) continue;
             UUID id = player.getUUID();
-            if (SPIN_UNTIL.getOrDefault(id, 0L) >= now) {
-                player.setYBodyRot((float) ((now * 34.0) % 360.0));
+            long spinUntil = SPIN_UNTIL.getOrDefault(id, 0L);
+            if (spinUntil >= now) {
+                player.setYBodyRot((float) ((now * 38.0) % 360.0));
+                if (now % 6L == 0L) {
+                    VillageNetwork.sendSkillMotion(level, player, "vanguard_spin",
+                            (int) Math.max(8L, spinUntil - now + 8L));
+                }
                 if (now % 3L == 0L) {
                     damageRadius(level, player, player.position(), 4.7, 10,
                             2.4f + VillageCouncilState.levelOf(id) * 0.16f,
                             false, 0.32, 0.05);
-                    play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 0.7f, 0.8f + (now % 4) * 0.05f);
+                    play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 0.7f,
+                            0.8f + (now % 4) * 0.05f);
                 }
             }
+            if (RICOCHET_UNTIL.getOrDefault(id, 0L) >= now && now % 3L == 0L) {
+                Vec3 sight = lookDirection(player);
+                VillageSkillEffectSystem.trackingReticle(
+                        level, player, aimPoint(level, player, 42.0), sight);
+            }
             SlamState slam = SLAMS.get(id);
-            if (slam != null && now > slam.startedAt() + 5L && (player.onGround() || now > slam.startedAt() + 34L)) {
+            if (slam != null && now > slam.startedAt() + 5L
+                    && (player.onGround() || now > slam.startedAt() + 34L)) {
                 groundSlam(level, player, slam.power(), slam.specialRank());
                 SLAMS.remove(id);
             }
@@ -250,9 +272,9 @@ public final class VillageRoleAbilitySystem {
                 player.hurtMarked = true;
                 if (now % 5L == 0L) {
                     pushFront(level, player, 3.6, 16, 0.38, 0.04, 0.0f);
-                    }
+                }
             } else if (AEGIS_UNTIL.getOrDefault(id, 0L) >= now) {
-                if (now % 3L == 0L) pushFront(level, player, 4.6, 20, 0.7, 0.08, 1.2f);
+                if (now % 3L == 0L) pushFront(level, player, 7.0, 30, 0.7, 0.08, 1.2f);
                 if (player.isSprinting() && now - LAST_AEGIS_DASH.getOrDefault(id, -100L) >= 14L) {
                     LAST_AEGIS_DASH.put(id, now);
                     Vec3 forward = horizontalLook(player);
@@ -305,35 +327,39 @@ public final class VillageRoleAbilitySystem {
             if (now % 5L != area.phase() % 5L) continue;
             switch (area.kind()) {
                 case FROST -> {
-                    for (Mob target : targetsNear(level, owner, area.center(), area.radius(), 30)) {
+                    for (Mob target : targetsNear(level, owner, area.center(), area.radius(), 40)) {
                         target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 35, 3, false, false, true));
-                        if (now % 20L == 0L) hurt(level, target, 2.0f * area.power());
+                        if (now % 20L == 0L) hurt(level, target, 2.2f * area.power());
                     }
                     if (now % 20L == 0L) play(level, area.center(), SoundEvents.GLASS_HIT, 0.55f, 0.62f);
                 }
                 case TORNADO -> {
-                    Vec3 next = area.center().add(horizontalLook(owner).scale(0.18));
+                    Vec3 next = area.center().add(horizontalLook(owner).scale(0.24));
                     area.moveTo(next);
-                    for (Mob target : targetsNear(level, owner, next, area.radius(), 24)) {
+                    for (Mob target : targetsNear(level, owner, next, area.radius(), 36)) {
                         Vec3 pull = next.subtract(target.position());
                         Vec3 horizontal = new Vec3(pull.x, 0.0, pull.z);
-                        if (horizontal.lengthSqr() > 0.01) horizontal = horizontal.normalize().scale(0.19);
-                        target.push(horizontal.x, 0.17, horizontal.z);
+                        if (horizontal.lengthSqr() > 0.01) horizontal = horizontal.normalize().scale(0.24);
+                        target.push(horizontal.x, 0.20, horizontal.z);
                         target.hurtMarked = true;
-                        if (now % 15L == 0L) hurt(level, target, 1.6f * area.power());
+                        if (now % 15L == 0L) hurt(level, target, 1.8f * area.power());
                     }
-                    if (now % 15L == 0L) play(level, next, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 0.7f, 0.85f);
+                    if (now % 15L == 0L) play(level, next, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 0.8f, 0.78f);
                 }
                 case LIGHTNING -> {
-                    if (now % 10L == 0L) {
-                        List<Mob> targets = targetsNear(level, owner, area.center(), area.radius(), 32);
-                        Vec3 strike = targets.isEmpty()
-                                ? area.center().add((owner.getRandom().nextDouble() - 0.5) * area.radius(), 0.0,
-                                (owner.getRandom().nextDouble() - 0.5) * area.radius())
-                                : targets.get(owner.getRandom().nextInt(targets.size())).position();
-                        for (Mob target : targets) {
-                            if (target.position().distanceToSqr(strike) <= 7.0) {
-                                hurt(level, target, 5.0f * area.power());
+                    if (now % 5L == 0L) {
+                        float damage = (7.0f + VillageCouncilState.levelOf(owner.getUUID()) * 0.42f)
+                                * area.power();
+                        for (int strikeIndex = 0; strikeIndex < 2; strikeIndex++) {
+                            Vec3 strike = randomPointInCircle(level, area.center(), area.radius());
+                            List<Mob> nearby = targetsNear(level, owner, strike, 4.8, 24);
+                            if (!nearby.isEmpty() && owner.getRandom().nextFloat() < 0.72f) {
+                                strike = nearby.get(owner.getRandom().nextInt(nearby.size())).position();
+                            }
+                            spawnVisualLightning(level, strike);
+                            for (Mob target : targetsNear(level, owner, strike, 4.8, 24)) {
+                                hurt(level, target, damage);
+                                target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 30, 1, false, false, true));
                             }
                         }
                     }
@@ -365,16 +391,18 @@ public final class VillageRoleAbilitySystem {
             Vec3 position = entity == null ? moving.lastPosition() : entity.position();
             moving.lastPosition(position);
             moving.age(moving.age() + 1);
-            List<Mob> hits = targetsNear(level, owner, position, moving.radius(), 24);
-            boolean impact = !hits.isEmpty() || entity == null || moving.age() >= moving.maxAge();
-            if (!impact) continue;
+            List<Mob> hits = targetsNear(level, owner, position, moving.radius(), 36);
+            boolean expired = entity == null || moving.age() >= moving.maxAge();
             switch (moving.kind()) {
                 case FIRE_ORB -> {
-                    for (Mob target : targetsNear(level, owner, position, moving.radius(), 24)) {
+                    if (hits.isEmpty() && !expired) continue;
+                    for (Mob target : targetsNear(level, owner, position, moving.radius(), 36)) {
                         hurt(level, target, moving.damage());
-                        target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 100 + moving.specialRank() * 30));
+                        target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(),
+                                120 + moving.specialRank() * 35));
                     }
-                    play(level, position, SoundEvents.GENERIC_EXPLODE.value(), 1.0f, 1.15f);
+                    VillageSkillEffectSystem.fireImpact(level, owner, position, moving.radius());
+                    play(level, position, SoundEvents.GENERIC_EXPLODE.value(), 1.05f, 1.08f);
                 }
                 case BLADE -> {
                     for (Mob target : hits) {
@@ -383,15 +411,16 @@ public final class VillageRoleAbilitySystem {
                             knockFrom(position, target, 0.5, 0.05);
                         }
                     }
+                    if (!expired) continue;
                 }
                 case ENERGY_ARROW -> {
                     for (Mob target : hits) {
                         if (moving.hit().add(target.getUUID())) {
                             hurt(level, target, moving.damage());
-                            knockFrom(position, target, 1.15, 0.16);
+                            knockFrom(position, target, 1.35, 0.18);
                         }
                     }
-                    if (moving.age() < moving.maxAge() && entity != null) continue;
+                    if (!expired) continue;
                     play(level, position, SoundEvents.GENERIC_EXPLODE.value(), 1.3f, 0.62f);
                 }
             }
@@ -404,6 +433,8 @@ public final class VillageRoleAbilitySystem {
         SPIN_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         RAPID_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         RICOCHET_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
+        RICOCHET_ARROWS.entrySet().removeIf(entry -> entry.getValue() < now);
+        MEGA_ARROW_READY.entrySet().removeIf(entry -> entry.getValue().until() < now);
         FORTRESS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         AEGIS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         CHARGE_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
@@ -423,9 +454,27 @@ public final class VillageRoleAbilitySystem {
                 || !(event.getEntity() instanceof AbstractArrow arrow)
                 || !(arrow.getOwner() instanceof ServerPlayer player)
                 || VillageCouncilState.roleOf(player.getUUID()).orElse(null) != VillageRole.RANGER) return;
-        aimAssist(level, player, arrow);
         if (spawningGeneratedArrow) return;
         long now = level.getGameTime();
+
+        EmpoweredArrowState mega = MEGA_ARROW_READY.get(player.getUUID());
+        if (mega != null && mega.until() >= now) {
+            MEGA_ARROW_READY.remove(player.getUUID());
+            event.setCanceled(true);
+            launchEnergyArrow(level, player, mega.power(), mega.specialRank());
+            return;
+        }
+
+        boolean tracking = RICOCHET_UNTIL.getOrDefault(player.getUUID(), 0L) >= now;
+        if (tracking) {
+            RICOCHET_UNTIL.remove(player.getUUID());
+            RICOCHET_ARROWS.put(arrow.getUUID(), now + 240L);
+            aimAssist(level, player, arrow, 0.68);
+            play(level, player.position(), SoundEvents.CROSSBOW_SHOOT, 0.85f, 1.3f);
+        } else {
+            aimAssist(level, player, arrow, 0.24);
+        }
+
         if (RAPID_UNTIL.getOrDefault(player.getUUID(), 0L) < now) return;
         spawningGeneratedArrow = true;
         try {
@@ -443,20 +492,19 @@ public final class VillageRoleAbilitySystem {
                 attacker.heal(Math.min(2.5f, event.getAmount() * 0.055f));
             }
             if (role == VillageRole.RANGER
-                    && event.getSource().getDirectEntity() instanceof AbstractArrow
+                    && event.getSource().getDirectEntity() instanceof AbstractArrow directArrow
                     && event.getEntity() instanceof Mob primary
-                    && RICOCHET_UNTIL.getOrDefault(attacker.getUUID(), 0L) >= attacker.level().getGameTime()
+                    && RICOCHET_ARROWS.remove(directArrow.getUUID()) != null
                     && attacker.level() instanceof ServerLevel level) {
-                RICOCHET_UNTIL.remove(attacker.getUUID());
-                List<Mob> chain = targetsNear(level, attacker, primary.position(), 10.0, 7);
+                List<Mob> chain = targetsNear(level, attacker, primary.position(), 12.0, 9);
                 chain.remove(primary);
                 chain.sort(Comparator.comparingDouble(primary::distanceToSqr));
-                float damage = Math.max(2.0f, event.getAmount() * 0.68f);
+                float damage = Math.max(2.0f, event.getAmount() * 0.72f);
                 List<Mob> visualChain = new ArrayList<>();
-                for (int i = 0; i < Math.min(5, chain.size()); i++) {
+                for (int i = 0; i < Math.min(6, chain.size()); i++) {
                     Mob target = chain.get(i);
                     visualChain.add(target);
-                    hurt(level, target, damage * (1.0f - i * 0.10f));
+                    hurt(level, target, damage * (1.0f - i * 0.09f));
                     play(level, target.position(), SoundEvents.ARROW_HIT, 0.55f, 1.2f + i * 0.06f);
                 }
                 VillageSkillEffectSystem.ricochet(level, attacker, primary, visualChain);
@@ -483,6 +531,28 @@ public final class VillageRoleAbilitySystem {
         }
     }
 
+    public static String activeSkillHud(ServerPlayer player) {
+        if (player == null) return "";
+        long now = player.level().getGameTime();
+        List<String> states = new ArrayList<>();
+        appendTimed(states, "§b신속 삼연사", RAPID_UNTIL.getOrDefault(player.getUUID(), 0L), now);
+        if (RICOCHET_UNTIL.getOrDefault(player.getUUID(), 0L) >= now) {
+            states.add("§e추적 도탄 §f다음 화살");
+        }
+        EmpoweredArrowState mega = MEGA_ARROW_READY.get(player.getUUID());
+        if (mega != null && mega.until() >= now) {
+            states.add("§a성멸 대궁 §f다음 화살");
+        }
+        appendTimed(states, "§9거대 방패 태세", FORTRESS_UNTIL.getOrDefault(player.getUUID(), 0L), now);
+        appendTimed(states, "§3대수호 진군", AEGIS_UNTIL.getOrDefault(player.getUUID(), 0L), now);
+        return String.join(" §8· ", states);
+    }
+
+    private static void appendTimed(List<String> output, String label, long until, long now) {
+        if (until < now) return;
+        output.add(label + " §f" + String.format(java.util.Locale.ROOT, "%.1f초", (until - now) / 20.0));
+    }
+
     public static boolean isRapidFire(ServerPlayer player) {
         return player != null && RAPID_UNTIL.getOrDefault(player.getUUID(), 0L) >= player.level().getGameTime();
     }
@@ -495,10 +565,11 @@ public final class VillageRoleAbilitySystem {
         player.swing(InteractionHand.MAIN_HAND, true);
         Vec3 direction = horizontalLook(player);
         VillageSkillEffectSystem.bladeWave(level, player, direction);
-        launchMoving(level, player, MovingKind.BLADE, new ItemStack(Items.IRON_SWORD),
-                1.45, 18, (5.2f + VillageCouncilState.levelOf(player.getUUID()) * 0.28f) * power,
-                1.35, specialRank, direction);
-        play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.0f, 0.78f + player.getRandom().nextFloat() * 0.18f);
+        launchMovingAt(level, player, MovingKind.BLADE, ItemStack.EMPTY,
+                1.75, 24, (5.4f + VillageCouncilState.levelOf(player.getUUID()) * 0.30f) * power,
+                1.45, specialRank, player.getEyePosition().add(direction.scale(1.25)), direction);
+        play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.0f,
+                0.78f + player.getRandom().nextFloat() * 0.18f);
     }
 
     private static void groundSlam(ServerLevel level, ServerPlayer player, float power, int specialRank) {
@@ -513,13 +584,14 @@ public final class VillageRoleAbilitySystem {
 
     private static void arrowRain(ServerLevel level, ServerPlayer player, Vec3 center, float power, int specialRank) {
         VillageSkillEffectSystem.arrowRainImpact(level, player, center);
-        List<Mob> targets = targetsNear(level, player, center, 8.5, 36);
-        int count = Math.min(targets.size(), 5 + specialRank);
-        for (int i = 0; i < count; i++) {
-            Mob target = targets.get(i);
-            hurt(level, target, (4.2f + VillageCouncilState.levelOf(player.getUUID()) * 0.22f) * power);
-            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), specialRank >= 3 ? 40 : 0));
-            spawnFallingArrow(level, player, target.position().add(0.0, 10.0, 0.0));
+        float damage = (3.3f + VillageCouncilState.levelOf(player.getUUID()) * 0.18f) * power;
+        for (Mob target : targetsNear(level, player, center, 8.5, 40)) {
+            hurt(level, target, damage);
+            if (specialRank >= 3) target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 40));
+        }
+        for (int i = 0; i < 7; i++) {
+            Vec3 random = randomPointInCircle(level, center, 8.2).add(0.0, 11.0 + level.getRandom().nextDouble() * 3.0, 0.0);
+            spawnFallingArrow(level, player, random);
         }
         play(level, center, SoundEvents.ARROW_SHOOT, 0.8f, 1.45f);
     }
@@ -527,18 +599,13 @@ public final class VillageRoleAbilitySystem {
     private static void launchEnergyArrow(ServerLevel level, ServerPlayer player, float power, int specialRank) {
         player.stopUsingItem();
         player.swing(InteractionHand.MAIN_HAND, true);
-        Vec3 direction = horizontalLook(player);
-        VillageSkillEffectSystem.energyArrow(level, player, direction);
-        float damage = (28.0f + VillageCouncilState.levelOf(player.getUUID()) * 1.15f) * power;
-        launchMoving(level, player, MovingKind.ENERGY_ARROW, new ItemStack(Items.SPECTRAL_ARROW),
-                2.1, 35, damage, 3.6, specialRank, direction);
-        for (double offset : new double[]{-0.28, 0.28}) {
-            Vec3 side = new Vec3(-direction.z, 0.0, direction.x).scale(offset);
-            launchMovingAt(level, player, MovingKind.ENERGY_ARROW, new ItemStack(Items.SPECTRAL_ARROW),
-                    2.05, 30, damage * 0.34f, 2.2, specialRank,
-                    player.getEyePosition().add(side), direction);
-        }
-        play(level, player.position(), SoundEvents.ENDER_DRAGON_SHOOT, 1.35f, 0.72f);
+        Vec3 direction = lookDirection(player);
+        Vec3 origin = player.getEyePosition().add(direction.scale(2.8));
+        VillageSkillEffectSystem.energyArrow(level, player, origin, direction);
+        float damage = (31.0f + VillageCouncilState.levelOf(player.getUUID()) * 1.35f) * power;
+        launchMovingAt(level, player, MovingKind.ENERGY_ARROW, new ItemStack(Items.SPECTRAL_ARROW),
+                2.65, 55, damage, 5.0, specialRank, origin, direction);
+        play(level, player.position(), SoundEvents.ENDER_DRAGON_SHOOT, 1.45f, 0.78f);
     }
 
     private static void shieldCharge(ServerLevel level, ServerPlayer player, float power, int specialRank) {
@@ -557,7 +624,7 @@ public final class VillageRoleAbilitySystem {
     private static void tauntShout(ServerLevel level, ServerPlayer player,
                                    float damage, int duration, int specialRank) {
         player.swing(InteractionHand.OFF_HAND, true);
-        for (Mob target : targetsNear(level, player, player.position(), 10.0, 30)) {
+        for (Mob target : targetsNear(level, player, player.position(), 20.0, 60)) {
             hurt(level, target, damage);
             target.setTarget(player);
             target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, Math.min(100, duration), 1, false, false, true));
@@ -681,20 +748,24 @@ public final class VillageRoleAbilitySystem {
         finally { spawningGeneratedArrow = false; }
     }
 
-    private static void aimAssist(ServerLevel level, ServerPlayer player, AbstractArrow arrow) {
+    private static void aimAssist(
+            ServerLevel level, ServerPlayer player, AbstractArrow arrow, double strength) {
         Vec3 velocity = arrow.getDeltaMovement();
         double speed = velocity.length();
         if (speed < 0.1) return;
         Vec3 direction = velocity.normalize();
-        Mob target = targetsNear(level, player, player.position(), 30.0, 32).stream()
+        Mob target = targetsNear(level, player, player.position(), 44.0, 48).stream()
                 .filter(mob -> {
                     Vec3 to = mob.getEyePosition().subtract(arrow.position());
-                    return to.lengthSqr() > 0.1 && to.normalize().dot(direction) >= 0.78;
+                    return to.lengthSqr() > 0.1 && to.normalize().dot(direction) >= 0.72;
                 })
-                .min(Comparator.comparingDouble(player::distanceToSqr)).orElse(null);
+                .min(Comparator.comparingDouble(mob ->
+                        mob.getEyePosition().distanceToSqr(aimPoint(level, player, 44.0))))
+                .orElse(null);
         if (target == null) return;
         Vec3 assisted = target.getEyePosition().subtract(arrow.position()).normalize();
-        Vec3 blended = direction.scale(0.62).add(assisted.scale(0.38)).normalize();
+        double safe = Math.max(0.0, Math.min(0.82, strength));
+        Vec3 blended = direction.scale(1.0 - safe).add(assisted.scale(safe)).normalize();
         arrow.setDeltaMovement(blended.scale(speed));
         arrow.hurtMarked = true;
     }
@@ -773,9 +844,25 @@ public final class VillageRoleAbilitySystem {
                 .toList();
     }
 
-    private static Vec3 aimedGround(ServerPlayer player, double distance) {
-        Vec3 look = horizontalLook(player);
-        return player.position().add(look.scale(distance));
+    private static Vec3 aimedGround(ServerLevel level, ServerPlayer player, double distance) {
+        Vec3 point = aimPoint(level, player, distance);
+        return new Vec3(point.x, player.getY(), point.z);
+    }
+
+    private static Vec3 aimPoint(ServerLevel level, ServerPlayer player, double distance) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(lookDirection(player).scale(distance));
+        var hit = level.clip(new net.minecraft.world.level.ClipContext(
+                eye, end,
+                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                player));
+        return hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? end : hit.getLocation();
+    }
+
+    private static Vec3 lookDirection(ServerPlayer player) {
+        Vec3 look = player.getLookAngle();
+        return look.lengthSqr() < 0.001 ? new Vec3(0.0, 0.0, 1.0) : look.normalize();
     }
 
     private static Vec3 horizontalLook(ServerPlayer player) {
@@ -789,6 +876,20 @@ public final class VillageRoleAbilitySystem {
         double sin = Math.sin(radians);
         return new Vec3(vector.x * cos - vector.z * sin, vector.y,
                 vector.x * sin + vector.z * cos);
+    }
+
+    private static Vec3 randomPointInCircle(ServerLevel level, Vec3 center, double radius) {
+        double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
+        double distance = Math.sqrt(level.getRandom().nextDouble()) * radius;
+        return center.add(Math.cos(angle) * distance, 0.0, Math.sin(angle) * distance);
+    }
+
+    private static void spawnVisualLightning(ServerLevel level, Vec3 position) {
+        var lightning = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.EVENT);
+        if (lightning == null) return;
+        lightning.setVisualOnly(true);
+        lightning.setPos(position.x, position.y, position.z);
+        level.addFreshEntity(lightning);
     }
 
     private static void play(ServerLevel level, Vec3 position, SoundEvent sound, float volume, float pitch) {
@@ -871,6 +972,8 @@ public final class VillageRoleAbilitySystem {
         int age() { return age; }
         void age(int value) { age = value; }
     }
+
+    private record EmpoweredArrowState(long until, float power, int specialRank) {}
 
     private record SlamState(long startedAt, float power, int specialRank, Vec3 origin) {}
 }

@@ -36,8 +36,8 @@ public final class VillageSkillHudOverlay {
 
     private static void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || minecraft.screen != null
-                || text.isBlank() || System.currentTimeMillis() > expiresAt) {
+        if (minecraft.player == null || text.isBlank()
+                || System.currentTimeMillis() > expiresAt) {
             return;
         }
         Font font = minecraft.font;

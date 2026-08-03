@@ -91,21 +91,35 @@ public final class VillageSkillEffectEntity extends Entity {
         }
         Entity owner = ownerEntity();
         if (followsOwner() && owner != null && owner.isAlive()) {
-            Vec3 offset = switch (kind()) {
-                case "vanguard_slam_charge" -> new Vec3(0.0, 0.2, 0.0);
-                case "ranger_energy_charge", "arcanist_fire_charge" -> direction().scale(0.8).add(0.0, 1.25, 0.0);
-                default -> Vec3.ZERO;
+            if (tracksOwnerLook()) {
+                Vec3 look = owner.getLookAngle();
+                if (kind().startsWith("warden_")) look = new Vec3(look.x, 0.0, look.z);
+                if (look.lengthSqr() > 1.0E-6) setDirection(look.normalize());
+            }
+            Vec3 target = switch (kind()) {
+                case "ranger_energy_charge" -> owner.getEyePosition().add(direction().scale(2.35));
+                case "ranger_focus" -> owner.getEyePosition().add(direction().scale(1.15));
+                case "vanguard_slam_charge" -> owner.position().add(0.0, 0.2, 0.0);
+                default -> owner.position();
             };
-            setPos(owner.position().add(offset));
+            setPos(target);
         } else if (speed() != 0.0f) {
             setPos(position().add(direction().scale(speed())));
         }
     }
 
+    private boolean tracksOwnerLook() {
+        return switch (kind()) {
+            case "ranger_focus", "ranger_energy_charge", "warden_charge_cast",
+                    "warden_fortress", "warden_aegis" -> true;
+            default -> false;
+        };
+    }
+
     private boolean followsOwner() {
         return switch (kind()) {
             case "vanguard_spin", "vanguard_rally", "vanguard_blade_charge",
-                    "vanguard_slam_charge", "ranger_rapid", "ranger_lock",
+                    "vanguard_slam_charge", "ranger_rapid", "ranger_focus",
                     "ranger_energy_charge", "luminar_heal_cast", "luminar_cleanse_cast",
                     "luminar_healing_field", "luminar_miracle_cast",
                     "warden_charge_cast", "warden_taunt", "warden_fortress", "warden_aegis" -> true;

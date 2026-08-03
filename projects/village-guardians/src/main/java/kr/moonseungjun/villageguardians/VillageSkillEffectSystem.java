@@ -31,39 +31,40 @@ public final class VillageSkillEffectSystem {
             Vec3 direction) {
         if (level == null || player == null || skill == null) return;
         Vec3 forward = horizontal(direction);
+        Vec3 sight = normalized(direction);
         switch (skill) {
             case VANGUARD_WHIRLWIND -> {
-                int duration = Math.max(42, calculatedDuration / 2);
+                int duration = Math.max(48, calculatedDuration / 2);
                 spawn(level, player, "vanguard_spin", player.position(), forward, duration, 0.0f, "");
-                VillageNetwork.sendSkillMotion(level, player, "vanguard_spin", duration);
+                VillageNetwork.sendSkillMotion(level, player, "vanguard_spin", duration + 8);
             }
             case VANGUARD_BREAKER -> spawn(level, player, "vanguard_rally",
                     player.position(), forward, 60, 0.0f, "");
             case VANGUARD_CRY -> spawn(level, player, "vanguard_blade_charge",
-                    player.position(), forward, 30, 0.0f, "");
+                    player.position(), forward, 26, 0.0f, "");
             case VANGUARD_STORM -> spawn(level, player, "vanguard_slam_charge",
                     player.position(), forward, 44, 0.0f, "");
 
             case RANGER_VOLLEY -> spawn(level, player, "ranger_rapid",
-                    player.position(), forward, Math.max(80, calculatedDuration), 0.0f, "");
-            case RANGER_PIERCE -> spawn(level, player, "ranger_lock",
-                    player.position(), forward, Math.max(90, calculatedDuration), 0.0f, "");
-            case RANGER_RICOCHET -> spawn(level, player, "ranger_rain_field",
-                    player.position().add(forward.scale(15.0)), forward, 54, 0.0f, "");
+                    player.position(), forward, Math.max(200, calculatedDuration), 0.0f, "");
+            case RANGER_PIERCE -> spawn(level, player, "ranger_focus",
+                    player.position(), forward, 28, 0.0f, "");
+            case RANGER_RICOCHET -> spawn(level, player, "ranger_focus",
+                    player.position(), forward, 20, 0.0f, "");
             case RANGER_FIRE_RAIN -> spawn(level, player, "ranger_energy_charge",
-                    player.position(), forward, 38, 0.0f, "");
+                    player.position(), forward, Math.max(280, calculatedDuration * 2), 0.0f, "");
 
             case ARCANIST_FIRE_ORB -> spawn(level, player, "arcanist_fire_orb",
-                    player.getEyePosition().add(forward.scale(0.8)), forward, 72, 1.15f, "");
+                    player.getEyePosition().add(sight.scale(1.0)), sight, 100, 1.35f, "");
             case ARCANIST_FROST_RING -> spawn(level, player, "arcanist_frost",
-                    player.position().add(forward.scale(10.0)), forward,
-                    Math.max(120, calculatedDuration), 0.0f, "");
+                    player.position().add(forward.scale(18.0)), forward,
+                    Math.max(140, calculatedDuration), 0.0f, "");
             case ARCANIST_CHAIN -> spawn(level, player, "arcanist_tornado",
-                    player.position().add(forward.scale(2.0)), forward,
-                    Math.max(100, calculatedDuration), 0.18f, "");
+                    player.position().add(forward.scale(3.0)), forward,
+                    Math.max(120, calculatedDuration), 0.24f, "");
             case ARCANIST_NOVA -> spawn(level, player, "arcanist_lightning",
-                    player.position().add(forward.scale(13.0)), forward,
-                    Math.max(80, calculatedDuration / 2), 0.0f, "");
+                    player.position().add(forward.scale(22.0)), forward,
+                    Math.max(100, calculatedDuration / 2), 0.0f, "");
 
             case LUMINAR_HEAL -> spawn(level, player, "luminar_heal_cast",
                     player.position(), forward, 32, 0.0f, "");
@@ -79,9 +80,9 @@ public final class VillageSkillEffectSystem {
             case WARDEN_BASH -> spawn(level, player, "warden_taunt",
                     player.position(), forward, 48, 0.0f, "");
             case WARDEN_FORMATION -> spawn(level, player, "warden_fortress",
-                    player.position(), forward, Math.max(100, calculatedDuration), 0.0f, "");
+                    player.position(), forward, Math.max(120, calculatedDuration), 0.0f, "");
             case WARDEN_FIELD -> spawn(level, player, "warden_aegis",
-                    player.position(), forward, Math.max(160, calculatedDuration * 2), 0.0f, "");
+                    player.position(), forward, Math.max(180, calculatedDuration * 2), 0.0f, "");
         }
     }
 
@@ -90,9 +91,10 @@ public final class VillageSkillEffectSystem {
     }
 
     public static void bladeWave(ServerLevel level, ServerPlayer player, Vec3 direction) {
+        Vec3 forward = horizontal(direction);
         spawn(level, player, "vanguard_blade_wave",
-                player.getEyePosition().add(horizontal(direction).scale(0.8)),
-                horizontal(direction), 20, 1.45f, "");
+                player.getEyePosition().add(forward.scale(1.25)),
+                forward, 24, 1.75f, "");
     }
 
     public static void slamImpact(ServerLevel level, ServerPlayer player) {
@@ -101,9 +103,14 @@ public final class VillageSkillEffectSystem {
     }
 
     public static void energyArrow(ServerLevel level, ServerPlayer player, Vec3 direction) {
+        Vec3 sight = normalized(direction);
+        energyArrow(level, player, player.getEyePosition().add(sight.scale(2.8)), sight);
+    }
+
+    public static void energyArrow(
+            ServerLevel level, ServerPlayer player, Vec3 origin, Vec3 direction) {
         spawn(level, player, "ranger_energy_projectile",
-                player.getEyePosition().add(horizontal(direction).scale(0.8)),
-                horizontal(direction), 38, 2.1f, "");
+                origin, normalized(direction), 55, 2.65f, "");
     }
 
     public static void arrowRainImpact(ServerLevel level, ServerPlayer player, Vec3 center) {
@@ -114,6 +121,24 @@ public final class VillageSkillEffectSystem {
     public static void shieldCharge(ServerLevel level, ServerPlayer player, Vec3 direction) {
         spawn(level, player, "warden_charge_cast",
                 player.position(), horizontal(direction), 26, 0.0f, "");
+    }
+
+    public static void trackingReticle(
+            ServerLevel level, ServerPlayer player, Vec3 target, Vec3 direction) {
+        spawn(level, player, "ranger_lock", target, normalized(direction), 7, 0.0f, "");
+    }
+
+    public static void arrowRainField(
+            ServerLevel level, ServerPlayer player, Vec3 center, int duration, double radius) {
+        spawn(level, player, "ranger_rain_field", center, horizontal(player.getLookAngle()),
+                Math.max(20, duration), 0.0f,
+                String.format(Locale.ROOT, "%.2f", Math.max(2.0, radius)));
+    }
+
+    public static void fireImpact(
+            ServerLevel level, ServerPlayer player, Vec3 center, double radius) {
+        spawn(level, player, "arcanist_fire_impact", center, normalized(player.getLookAngle()),
+                24, 0.0f, String.format(Locale.ROOT, "%.2f", Math.max(1.0, radius)));
     }
 
     public static void ricochet(
@@ -186,6 +211,11 @@ public final class VillageSkillEffectSystem {
                     point.x, point.y, point.z));
         }
         return result.toString();
+    }
+
+    private static Vec3 normalized(Vec3 value) {
+        Vec3 source = value == null ? Vec3.ZERO : value;
+        return source.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : source.normalize();
     }
 
     private static Vec3 horizontal(Vec3 value) {

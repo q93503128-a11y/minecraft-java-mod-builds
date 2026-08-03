@@ -31,6 +31,8 @@ public final class VillageClientUi {
                         }));
         event.register(VillageNetwork.SkillMotionPayload.TYPE,
                 (payload, context) -> VillageSkillEffectClient.acceptMotion(payload));
+        event.register(VillageNetwork.SkillHudPayload.TYPE,
+                (payload, context) -> VillageSkillHudOverlay.accept(payload));
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
                 (payload, context) -> VillageInventoryPanel.updateStatus(payload));
     }

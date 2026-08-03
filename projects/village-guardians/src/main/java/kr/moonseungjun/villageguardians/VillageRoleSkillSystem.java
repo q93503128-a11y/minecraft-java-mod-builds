@@ -295,7 +295,8 @@ public final class VillageRoleSkillSystem {
         }
 
         float power = powerMultiplier(player, role)
-                * VillageProgressionSystem.learnedSkillDamageMultiplier(player);
+                * VillageProgressionSystem.learnedSkillDamageMultiplier(player)
+                * VillageEquipmentRaritySystem.skillMultiplier(player);
         float duration = durationMultiplier(player, role);
         int special = specialRank(player, role);
         cast(level, player, skill, power, duration, special);
@@ -593,10 +594,10 @@ public final class VillageRoleSkillSystem {
         VANGUARD_CRY("vanguard_cry", VillageRole.VANGUARD, 2, "검기 난무", 13, 380, 32, "자세를 잡고 검을 연속으로 휘둘러 전방에 여러 개의 실제 검기 투사체를 날립니다."),
         VANGUARD_STORM("vanguard_storm", VillageRole.VANGUARD, 3, "천붕 강하", 21, 680, 42, "공중으로 도약한 뒤 지면을 내려찍어 바닥을 깨뜨리고 넓은 범위에 피해와 강한 충격을 줍니다."),
 
-        RANGER_VOLLEY("ranger_volley", VillageRole.RANGER, 0, "신속 삼연사", 2, 70, 16, "일정 시간 활 충전이 크게 빨라지고 발사한 화살이 세 갈래로 분열합니다."),
-        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "다음 화살의 조준을 강하게 보정하고 첫 적중 뒤 주변 여러 적에게 연쇄 도탄 피해를 줍니다."),
+        RANGER_VOLLEY("ranger_volley", VillageRole.RANGER, 0, "신속 삼연사", 2, 70, 16, "일정 시간 활 충전이 크게 빨라지고 발사한 화살이 세 갈래로 분열합니다. 남은 시간이 기술 HUD에 표시됩니다."),
+        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "조준 표식이 바라보는 위치를 따라다니며, 다음에 실제로 발사한 화살이 추적·연쇄 도탄 화살로 강화됩니다."),
         RANGER_RICOCHET("ranger_ricochet", VillageRole.RANGER, 2, "천공 화살비", 13, 380, 30, "조준한 넓은 지역에 실제 화살이 여러 차례 떨어져 지속 광역 피해를 줍니다."),
-        RANGER_FIRE_RAIN("ranger_fire_rain", VillageRole.RANGER, 3, "성멸 대궁", 21, 680, 40, "잠시 기를 모은 뒤 초대형 에너지 화살을 발사해 전방의 적을 관통하고 초토화합니다."),
+        RANGER_FIRE_RAIN("ranger_fire_rain", VillageRole.RANGER, 3, "성멸 대궁", 21, 680, 40, "다음에 실제로 발사하는 화살을 밝은 초록색 초대형 성멸 화살로 바꾸어 넓은 전방을 관통합니다."),
 
         ARCANIST_FIRE_ORB("arcanist_fire_orb", VillageRole.ARCANIST, 0, "홍염탄", 2, 70, 18, "실제 화염 구체를 전방으로 날려 충돌 지점에서 폭발시키고 적을 불태웁니다."),
         ARCANIST_FROST_RING("arcanist_frost_ring", VillageRole.ARCANIST, 1, "빙결 지대", 7, 190, 24, "조준 위치에 지속되는 냉기 지대를 만들어 범위 안 적을 강하게 둔화하고 조금씩 피해를 줍니다."),

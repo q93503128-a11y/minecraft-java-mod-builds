@@ -35,8 +35,13 @@ public final class VillageSkillEffectClient {
     public static void acceptMotion(VillageNetwork.SkillMotionPayload payload) {
         if (payload == null || payload.entityId() < 0 || payload.durationTicks() <= 0) return;
         long now = System.nanoTime();
-        MOTIONS.put(payload.entityId(),
-                new Motion(payload.motion(), now, now + payload.durationTicks() * 50_000_000L));
+        MOTIONS.compute(payload.entityId(), (id, old) -> {
+            long startedAt = old != null && old.name.equals(payload.motion())
+                    ? old.startedAt : now;
+            return new Motion(payload.motion(), startedAt,
+                    Math.max(old == null ? 0L : old.expiresAt,
+                            now + payload.durationTicks() * 50_000_000L));
+        });
     }
 
     private static void onRenderPlayer(RenderPlayerEvent.Pre<?> event) {
@@ -54,9 +59,10 @@ public final class VillageSkillEffectClient {
         PoseStack stack = event.getPoseStack();
         stack.mulPose(new Quaternionf().rotateY(radians));
 
-        // Keep the avatar's torso and head aligned with the rotating body.
-        event.getRenderState().bodyRot += (float) Math.toDegrees(radians);
+        // Rotate the whole rendered avatar including the held weapon, not the camera.
+        event.getRenderState().bodyRot = 0.0f;
         event.getRenderState().yRot = 0.0f;
+        event.getRenderState().xRot = 0.0f;
         event.getRenderState().walkAnimationSpeed = 0.0f;
     }
 

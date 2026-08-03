@@ -17,6 +17,7 @@ public final class VillageNetwork {
         registrar.playToClient(OpenVillageUiPayload.TYPE, OpenVillageUiPayload.STREAM_CODEC);
         registrar.playToClient(PlayerStatusPayload.TYPE, PlayerStatusPayload.STREAM_CODEC);
         registrar.playToClient(SkillMotionPayload.TYPE, SkillMotionPayload.STREAM_CODEC);
+        registrar.playToClient(SkillHudPayload.TYPE, SkillHudPayload.STREAM_CODEC);
         registrar.playToServer(VillageUiActionPayload.TYPE, VillageUiActionPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof ServerPlayer player
@@ -46,6 +47,11 @@ public final class VillageNetwork {
         for (ServerPlayer viewer : level.players()) {
             PacketDistributor.sendToPlayer(viewer, payload);
         }
+    }
+
+    public static void sendSkillHud(ServerPlayer player, String text) {
+        if (player == null) return;
+        PacketDistributor.sendToPlayer(player, new SkillHudPayload(text == null ? "" : text));
     }
 
     public static void sendPlayerStatus(ServerPlayer player) {
@@ -98,6 +104,18 @@ public final class VillageNetwork {
                         ByteBufCodecs.STRING_UTF8, SkillMotionPayload::motion,
                         ByteBufCodecs.VAR_INT, SkillMotionPayload::durationTicks,
                         SkillMotionPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record SkillHudPayload(String text) implements CustomPacketPayload {
+        public static final Type<SkillHudPayload> TYPE = new Type<>(
+                Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "skill_hud"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, SkillHudPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.STRING_UTF8, SkillHudPayload::text,
+                        SkillHudPayload::new);
 
         @Override
         public Type<? extends CustomPacketPayload> type() { return TYPE; }

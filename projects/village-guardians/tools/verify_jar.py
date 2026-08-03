@@ -31,6 +31,7 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.class",
     "kr/moonseungjun/villageguardians/VillageWarfrontSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSkillHudOverlay.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectEntities.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectEntity.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectRenderState.class",

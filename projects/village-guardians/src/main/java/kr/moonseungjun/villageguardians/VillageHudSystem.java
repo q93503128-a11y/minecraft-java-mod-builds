@@ -32,6 +32,8 @@ public final class VillageHudSystem {
             String text = buildText(player);
             LAST_TEXT.put(player.getUUID(), text);
             player.connection.send(new ClientboundSetActionBarTextPacket(Component.literal(text)));
+            VillageNetwork.sendSkillHud(player, VillageRespawnSystem.isDowned(player)
+                    ? "" : buildSkillText(player));
         }
     }
 
@@ -46,14 +48,18 @@ public final class VillageHudSystem {
         String role = VillageCouncilState.roleOf(player.getUUID())
                 .map(VillageRole::shortName)
                 .orElse("역할 없음");
-        String skillHud = VillageRoleSkillSystem.hudSlotText(player, 0)
-                + " §8· " + VillageRoleSkillSystem.hudSlotText(player, 1);
         return "§6" + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName()
                 + " §8│ §bLv." + progress.level() + " §7" + xp
                 + " §8│ §f" + role
-                + " §8│ " + skillHud
                 + " §8│ §e" + VillageProgressionSystem.coins(player) + "주화"
                 + " §8· §6" + VillageProgressionSystem.supplies() + "보급";
+    }
+
+    private static String buildSkillText(ServerPlayer player) {
+        String base = VillageRoleSkillSystem.hudSlotText(player, 0)
+                + " §8│ " + VillageRoleSkillSystem.hudSlotText(player, 1);
+        String active = VillageRoleAbilitySystem.activeSkillHud(player);
+        return active.isBlank() ? base : base + " §8│ " + active;
     }
 }
