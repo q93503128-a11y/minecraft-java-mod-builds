@@ -10,9 +10,9 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Persistent physical delivery manifests and loaded courier progress for Erden. */
+/** Persistent road manifests, authoritative in-transit cargo and courier progress for Erden. */
 public final class ErdenTransportSavedData extends SavedData {
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
 
     public record RoutePoint(int x, int z) {
         private static final Codec<RoutePoint> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -36,7 +36,8 @@ public final class ErdenTransportSavedData extends SavedData {
             boolean cart,
             String porterUuid,
             String cartUuid,
-            long travelTicks) {
+            long travelTicks,
+            boolean authoritative) {
         private static final Codec<DeliveryJob> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("id").forGetter(DeliveryJob::id),
                 Codec.STRING.fieldOf("source_id").forGetter(DeliveryJob::sourceId),
@@ -52,7 +53,8 @@ public final class ErdenTransportSavedData extends SavedData {
                 Codec.BOOL.optionalFieldOf("cart", false).forGetter(DeliveryJob::cart),
                 Codec.STRING.optionalFieldOf("porter_uuid", "").forGetter(DeliveryJob::porterUuid),
                 Codec.STRING.optionalFieldOf("cart_uuid", "").forGetter(DeliveryJob::cartUuid),
-                Codec.LONG.optionalFieldOf("travel_ticks", 0L).forGetter(DeliveryJob::travelTicks)
+                Codec.LONG.optionalFieldOf("travel_ticks", 0L).forGetter(DeliveryJob::travelTicks),
+                Codec.BOOL.optionalFieldOf("authoritative", false).forGetter(DeliveryJob::authoritative)
         ).apply(instance, DeliveryJob::new));
 
         public DeliveryJob {
@@ -60,7 +62,7 @@ public final class ErdenTransportSavedData extends SavedData {
             route = List.copyOf(route);
             waypointIndex = Math.max(0, waypointIndex);
             attempts = Math.max(0, attempts);
-            travelTicks = Math.max(0L, travelTicks);
+            travelTicks = Math.max(1L, travelTicks);
             porterUuid = porterUuid == null ? "" : porterUuid;
             cartUuid = cartUuid == null ? "" : cartUuid;
         }
@@ -69,33 +71,34 @@ public final class ErdenTransportSavedData extends SavedData {
             return new DeliveryJob(
                     id, sourceId, targetId, resource, amount,
                     createdTick, tick, nextStatus, route, waypointIndex,
-                    attempts, cart, porterUuid, cartUuid, travelTicks);
+                    attempts, cart, porterUuid, cartUuid, travelTicks, authoritative);
         }
 
-        public DeliveryJob withWaypoint(int nextIndex, long extraTravelTicks) {
+        public DeliveryJob withWaypoint(int nextIndex) {
             return new DeliveryJob(
                     id, sourceId, targetId, resource, amount,
                     createdTick, phaseTick, status, route, nextIndex,
-                    attempts, cart, porterUuid, cartUuid,
-                    travelTicks + Math.max(0L, extraTravelTicks));
+                    attempts, cart, porterUuid, cartUuid, travelTicks, authoritative);
         }
 
         public DeliveryJob withAttemptAndRoute(
                 int nextAttempts,
                 List<RoutePoint> nextRoute,
                 int nextIndex,
-                long tick) {
+                long tick,
+                long nextTravelTicks) {
             return new DeliveryJob(
                     id, sourceId, targetId, resource, amount,
                     createdTick, tick, "moving", nextRoute, nextIndex,
-                    nextAttempts, cart, porterUuid, cartUuid, travelTicks);
+                    nextAttempts, cart, porterUuid, cartUuid,
+                    Math.max(travelTicks, nextTravelTicks), authoritative);
         }
 
         public DeliveryJob withEntities(String nextPorterUuid, String nextCartUuid) {
             return new DeliveryJob(
                     id, sourceId, targetId, resource, amount,
                     createdTick, phaseTick, status, route, waypointIndex,
-                    attempts, cart, nextPorterUuid, nextCartUuid, travelTicks);
+                    attempts, cart, nextPorterUuid, nextCartUuid, travelTicks, authoritative);
         }
 
         public DeliveryJob withoutEntities() {
@@ -104,6 +107,10 @@ public final class ErdenTransportSavedData extends SavedData {
 
         public boolean terminal() {
             return status.equals("completed") || status.equals("failed");
+        }
+
+        public long dueTick() {
+            return createdTick + travelTicks;
         }
     }
 
@@ -117,7 +124,9 @@ public final class ErdenTransportSavedData extends SavedData {
             Codec.LONG.optionalFieldOf("total_completed", 0L).forGetter(data -> data.totalCompleted),
             Codec.LONG.optionalFieldOf("total_blocked", 0L).forGetter(data -> data.totalBlocked),
             Codec.LONG.optionalFieldOf("total_failed", 0L).forGetter(data -> data.totalFailed),
-            Codec.LONG.optionalFieldOf("modeled_travel_ticks", 0L).forGetter(data -> data.modeledTravelTicks)
+            Codec.LONG.optionalFieldOf("modeled_travel_ticks", 0L).forGetter(data -> data.modeledTravelTicks),
+            Codec.LONG.optionalFieldOf("total_escrowed", 0L).forGetter(data -> data.totalEscrowed),
+            Codec.LONG.optionalFieldOf("total_returned", 0L).forGetter(data -> data.totalReturned)
     ).apply(instance, ErdenTransportSavedData::new));
 
     public static final SavedDataType<ErdenTransportSavedData> TYPE = new SavedDataType<>(
@@ -136,9 +145,11 @@ public final class ErdenTransportSavedData extends SavedData {
     private long totalBlocked;
     private long totalFailed;
     private long modeledTravelTicks;
+    private long totalEscrowed;
+    private long totalReturned;
 
     public ErdenTransportSavedData() {
-        this(SCHEMA_VERSION, -1L, 1L, List.of(), 0L, 0L, 0L, 0L, 0L, 0L);
+        this(SCHEMA_VERSION, -1L, 1L, List.of(), 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
     }
 
     private ErdenTransportSavedData(
@@ -151,7 +162,9 @@ public final class ErdenTransportSavedData extends SavedData {
             long totalCompleted,
             long totalBlocked,
             long totalFailed,
-            long modeledTravelTicks) {
+            long modeledTravelTicks,
+            long totalEscrowed,
+            long totalReturned) {
         this.schemaVersion = Math.max(1, schemaVersion);
         this.lastManifestDay = lastManifestDay;
         this.nextSequence = Math.max(1L, nextSequence);
@@ -162,39 +175,20 @@ public final class ErdenTransportSavedData extends SavedData {
         this.totalBlocked = Math.max(0L, totalBlocked);
         this.totalFailed = Math.max(0L, totalFailed);
         this.modeledTravelTicks = Math.max(0L, modeledTravelTicks);
+        this.totalEscrowed = Math.max(0L, totalEscrowed);
+        this.totalReturned = Math.max(0L, totalReturned);
     }
 
-    public long lastManifestDay() {
-        return lastManifestDay;
-    }
-
-    public List<DeliveryJob> jobs() {
-        return List.copyOf(jobs);
-    }
-
-    public long totalManifests() {
-        return totalManifests;
-    }
-
-    public long totalPhysicalized() {
-        return totalPhysicalized;
-    }
-
-    public long totalCompleted() {
-        return totalCompleted;
-    }
-
-    public long totalBlocked() {
-        return totalBlocked;
-    }
-
-    public long totalFailed() {
-        return totalFailed;
-    }
-
-    public long modeledTravelTicks() {
-        return modeledTravelTicks;
-    }
+    public long lastManifestDay() { return lastManifestDay; }
+    public List<DeliveryJob> jobs() { return List.copyOf(jobs); }
+    public long totalManifests() { return totalManifests; }
+    public long totalPhysicalized() { return totalPhysicalized; }
+    public long totalCompleted() { return totalCompleted; }
+    public long totalBlocked() { return totalBlocked; }
+    public long totalFailed() { return totalFailed; }
+    public long modeledTravelTicks() { return modeledTravelTicks; }
+    public long totalEscrowed() { return totalEscrowed; }
+    public long totalReturned() { return totalReturned; }
 
     public String nextJobId(long day) {
         String id = "erden_delivery_%d_%06d".formatted(day, nextSequence++);
@@ -202,6 +196,14 @@ public final class ErdenTransportSavedData extends SavedData {
         return id;
     }
 
+    public void recordManifest(long day, long travelTicks) {
+        lastManifestDay = Math.max(lastManifestDay, day);
+        totalManifests++;
+        modeledTravelTicks += Math.max(0L, travelTicks);
+        setDirty();
+    }
+
+    /** Backward-compatible aggregate import for phase-one saves. */
     public void beginManifestDay(long day, long manifestCount, long travelTicks) {
         if (day <= lastManifestDay) return;
         lastManifestDay = day;
@@ -213,6 +215,7 @@ public final class ErdenTransportSavedData extends SavedData {
     public void addJob(DeliveryJob job) {
         jobs.add(job);
         totalPhysicalized++;
+        if (job.authoritative()) totalEscrowed += job.amount();
         setDirty();
     }
 
@@ -238,23 +241,20 @@ public final class ErdenTransportSavedData extends SavedData {
         setDirty();
     }
 
-    public void markFailed(DeliveryJob replacement) {
+    public void markFailed(DeliveryJob replacement, boolean returned) {
         replaceJob(replacement);
         totalFailed++;
+        if (returned && replacement.authoritative()) totalReturned += replacement.amount();
         setDirty();
     }
 
     public void pruneTerminalJobs(long oldestTick) {
-        if (jobs.removeIf(job -> job.terminal() && job.phaseTick() < oldestTick)) {
-            setDirty();
-        }
+        if (jobs.removeIf(job -> job.terminal() && job.phaseTick() < oldestTick)) setDirty();
     }
 
     public int activeJobCount() {
         int count = 0;
-        for (DeliveryJob job : jobs) {
-            if (!job.terminal()) count++;
-        }
+        for (DeliveryJob job : jobs) if (!job.terminal()) count++;
         return count;
     }
 }
