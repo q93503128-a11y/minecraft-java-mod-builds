@@ -41,7 +41,6 @@ public final class ErdenTransportManager {
             Identifier.fromNamespaceAndPath("minecraft", "villager");
     private static final Identifier CART_ID =
             Identifier.fromNamespaceAndPath("minecraft", "chest_minecart");
-    private static final String TRANSPORT_TAG = "livingkingdoms_erden_transport";
     private static final int TICK_INTERVAL = 10;
     private static final int LOADING_TICKS = 60;
     private static final int UNLOADING_TICKS = 60;
@@ -94,8 +93,7 @@ public final class ErdenTransportManager {
         if (event.getHand() != InteractionHand.MAIN_HAND
                 || !(event.getEntity() instanceof ServerPlayer player)
                 || !(player.level() instanceof ServerLevel level)
-                || !level.dimension().equals(StarterRealmManager.REALM_KEY)
-                || !event.getTarget().getTags().contains(TRANSPORT_TAG)) {
+                || !level.dimension().equals(StarterRealmManager.REALM_KEY)) {
             return;
         }
         ErdenTransportSavedData transport = level.getDataStorage()
@@ -548,7 +546,6 @@ public final class ErdenTransportManager {
                 villager.setCustomName(Component.literal("왕도 짐꾼"));
                 villager.setCustomNameVisible(false);
                 villager.setPersistenceRequired();
-                villager.addTag(TRANSPORT_TAG);
                 if (level.addFreshEntity(villager)) {
                     porter = villager;
                     job = job.withEntities(villager.getUUID().toString(), job.cartUuid());
@@ -563,7 +560,6 @@ public final class ErdenTransportManager {
                 created.setPos(spawnPoint.x() + 0.5D, standingY, spawnPoint.z() + 0.5D);
                 created.setCustomName(Component.literal("왕도 화물 수레"));
                 created.setCustomNameVisible(false);
-                created.addTag(TRANSPORT_TAG);
                 if (level.addFreshEntity(created)) {
                     cart = created;
                     job = job.withEntities(job.porterUuid(), created.getUUID().toString());
