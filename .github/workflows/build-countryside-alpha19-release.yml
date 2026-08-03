@@ -1,0 +1,167 @@
+name: Build Countryside Days alpha.19 release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-countryside-alpha19-release.yml'
+      - 'projects/countryside-days/tools/prepare_alpha19_release.py'
+      - 'projects/countryside-days/tools/alpha19_release_*.part'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore alpha.18 and apply alpha.19 release patch
+        id: prepare
+        run: |
+          python3 projects/countryside-days/tools/prepare_alpha17_retry.py
+          python3 projects/countryside-days/tools/prepare_alpha18_release.py
+          python3 projects/countryside-days/tools/prepare_alpha19_release.py
+          grep -q '^mod_version=0.1.0-alpha.19$' projects/countryside-days/gradle.properties
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-disabled: true
+
+      - name: Clean Java 25 build
+        id: compile
+        working-directory: projects/countryside-days
+        run: |
+          if [ ! -x ./gradlew ] || [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+            chmod +x gradlew
+          fi
+          set -o pipefail
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace 2>&1 | tee /tmp/cd-a19-build.log
+
+      - name: Datagen
+        id: datagen
+        working-directory: projects/countryside-days
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --no-configuration-cache runData --stacktrace 2>&1 | tee /tmp/cd-a19-datagen.log
+
+      - name: Required GameTests
+        id: gametest
+        timeout-minutes: 25
+        working-directory: projects/countryside-days
+        run: |
+          rm -rf run/gametestserver/gametestworld
+          mkdir -p run/gametestserver
+          cat > run/gametestserver/server.properties <<'PROPERTIES'
+          level-name=gametestworld
+          level-type=minecraft:flat
+          generator-settings={"biome":"countrysidedays:rural_plains","features":true,"lakes":false,"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":8},{"block":"minecraft:grass_block","height":1}],"structure_overrides":[]}
+          generate-structures=true
+          online-mode=false
+          spawn-protection=0
+          view-distance=8
+          simulation-distance=6
+          PROPERTIES
+          set -o pipefail
+          ./gradlew --no-daemon --no-configuration-cache runGameTestServer --stacktrace 2>&1 | tee /tmp/cd-a19-gametest.log
+
+      - name: Whole-code contracts and executable JAR audit
+        id: verify
+        working-directory: projects/countryside-days
+        run: |
+          JAR=build/libs/countrysidedays-0.1.0-alpha.19.jar
+          test -s "$JAR"
+          grep -Rqs 'openNearbyEstateAccess' src/main/java/kr/countrysidedays/gameplay/RuralGameplayHandler.java
+          grep -Rqs 'replaceVanillaRiverFish' src/main/java/kr/countrysidedays/gameplay/RuralGameplayHandler.java
+          grep -Rqs 'event.getDrops().clear();' src/main/java/kr/countrysidedays/gameplay/RuralGameplayHandler.java
+          grep -Rqs 'restaurantOccupantsNeedExit' src/main/java/kr/countrysidedays/gameplay/RuralNpcManager.java
+          grep -Rqs 'boolean\[\] occupied = occupiedSeats' src/main/java/kr/countrysidedays/gameplay/RuralNpcManager.java
+          grep -Rqs '"fisher", -43, -37, -18, 53' src/main/java/kr/countrysidedays/gameplay/VillageLifeManager.java
+          grep -Rqs 'EquipmentSlot.MAINHAND' src/main/java/kr/countrysidedays/gameplay/VillageLifeManager.java
+          grep -Rqs 'ItemEntityPickupEvent.Pre' src/main/java/kr/countrysidedays/gameplay/RanchLifeManager.java
+          grep -Rqs 'recordAdditionalRanchProducts' src/main/java/kr/countrysidedays/world/CountrysideWorldData.java
+          grep -Rqs 'MAP_REVISION = 19' src/main/java/kr/countrysidedays/world/PublicVillageExpansionBuilder.java
+          ! grep -Rqs 'setGateOpen(level, PlayerEstateLayout.farmGate(origin), workTime && farmerActive)' src/main/java
+          ! grep -Rqs 'moveImmediately' src/main/java/kr/countrysidedays/gameplay
+          python3 - <<'PY'
+          from pathlib import Path
+          main = Path('src/main/java/kr/countrysidedays/CountrysideDays.java').read_text('utf-8')
+          required = [
+              'RuralGameplayHandler::onItemFished',
+              'RuralGameplayHandler::onEntityJoinLevel',
+              'RanchLifeManager::onItemPickup',
+              'VillageLifeManager::onServerTick',
+              'RuralNpcManager::handleInteraction',
+          ]
+          for listener in required:
+              assert main.count(listener) == 1, (listener, main.count(listener))
+          java = '\n'.join(p.read_text('utf-8') for p in Path('src/main/java').rglob('*.java'))
+          assert '0.1.0-alpha.18' not in java
+          assert 'event.getDrops().add(ModItems.RIVER_FISH' in java
+          assert 'TriState.FALSE' in java
+          print('whole-code contracts passed')
+          PY
+          python3 tools/verify_jar.py "$JAR" | tee /tmp/cd-a19-jar.log
+          unzip -t "$JAR"
+          ! unzip -Z1 "$JAR" | grep -q '\.java$'
+          unzip -Z1 "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
+          unzip -Z1 "$JAR" | grep -q 'kr/countrysidedays/CountrysideDays.class'
+          unzip -Z1 "$JAR" | grep -q 'kr/countrysidedays/gameplay/RanchLifeManager.class'
+          unzip -Z1 "$JAR" | grep -q 'kr/countrysidedays/gameplay/RuralNpcManager.class'
+          sha256sum "$JAR" | tee /tmp/cd-a19-sha256.txt
+
+      - name: Upload verified JAR
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: countryside-days-0.1.0-alpha.19-release-jar
+          path: projects/countryside-days/build/libs/countrysidedays-0.1.0-alpha.19.jar
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Record result
+        if: always()
+        env:
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          DATAGEN_OUTCOME: ${{ steps.datagen.outcome }}
+          GAMETEST_OUTCOME: ${{ steps.gametest.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+        run: |
+          git restore --source=HEAD --staged --worktree projects/countryside-days || true
+          DEST=release-transfer/countryside-days-alpha19-release-status
+          mkdir -p "$DEST"
+          FILE="$DEST/${GITHUB_RUN_ID}.txt"
+          {
+            echo run=$GITHUB_RUN_ID
+            echo source=$GITHUB_SHA
+            echo prepare=$PREPARE_OUTCOME
+            echo compile=$COMPILE_OUTCOME
+            echo datagen=$DATAGEN_OUTCOME
+            echo gametest=$GAMETEST_OUTCOME
+            echo verify=$VERIFY_OUTCOME
+            echo upload=$UPLOAD_OUTCOME
+            [ ! -f /tmp/cd-a19-sha256.txt ] || { echo '--- jar ---'; cat /tmp/cd-a19-sha256.txt; }
+            [ ! -f /tmp/cd-a19-build.log ] || { echo '--- build tail ---'; tail -n 320 /tmp/cd-a19-build.log; }
+            [ ! -f /tmp/cd-a19-datagen.log ] || { echo '--- datagen tail ---'; tail -n 160 /tmp/cd-a19-datagen.log; }
+            [ ! -f /tmp/cd-a19-gametest.log ] || { echo '--- gametest tail ---'; tail -n 320 /tmp/cd-a19-gametest.log; }
+          } > "$FILE"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$FILE"
+          git commit -m "Record Countryside Days alpha.19 release ${GITHUB_RUN_ID}"
+          git pull --rebase origin main
+          git push origin HEAD:main
