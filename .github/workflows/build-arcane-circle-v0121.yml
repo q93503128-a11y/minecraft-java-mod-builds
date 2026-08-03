@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Alpha.8 Continuous Magic
+name: Build Arcane Circle v0.12.1 Alpha.9 HUD Gear Kinetics
 
 on:
   workflow_dispatch:
@@ -17,14 +17,14 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.12.1-alpha.8
-  EXPECTED_JAR: arcanecircle-0.12.1-alpha.8.jar
+  MOD_VERSION: 0.12.1-alpha.9
+  EXPECTED_JAR: arcanecircle-0.12.1-alpha.9.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 - continuous circles, mage gear and RPG vitality
+    name: Java 25 - compact vitality, detailed gear and spell kinetics
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -43,14 +43,13 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Install deterministic alpha.8 resources and source patches
+      - name: Install alpha.9 HUD gear and kinetics
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/fix_v0121_alpha8_mappings.py
-          python3 tools/apply_v0121_alpha8_visual_vitality.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
-          python3 tools/test_v0121_alpha8_visual_vitality.py
+          python3 tools/apply_v0121_alpha9_hud_gear_kinetics.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/test_v0121_alpha9_hud_gear_kinetics.py
           git diff --check
 
       - name: Build Java 25 runtime
@@ -61,7 +60,7 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
 
-      - name: Verify alpha.8 JAR and renderer bytecode
+      - name: Verify alpha.9 JAR contracts
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -72,30 +71,44 @@ jobs:
           from pathlib import Path
           import zipfile
 
-          jar = Path('build/libs/arcanecircle-0.12.1-alpha.8.jar')
+          jar = Path('build/libs/arcanecircle-0.12.1-alpha.9.jar')
           with zipfile.ZipFile(jar) as z:
               names = set(z.namelist())
               required = {
                   'kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class',
-                  'kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh$Builder.class',
                   'kr/moonseungjun/arcanecircle/client/ArcaneGearRenderer.class',
-                  'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
-                  'kr/moonseungjun/arcanecircle/client/SignatureGeometry.class',
+                  'kr/moonseungjun/arcanecircle/client/MageGearTooltip.class',
                   'kr/moonseungjun/arcanecircle/magic/ArcaneVitalityService.class',
-                  'kr/moonseungjun/arcanecircle/registry/ArcaneArmorMaterials.class',
-                  'assets/arcanecircle/equipment/mage.json',
-                  'assets/arcanecircle/equipment/sage.json',
-                  'assets/arcanecircle/equipment/archmage.json',
-                  'assets/arcanecircle/textures/entity/equipment/humanoid/mage/outer.png',
-                  'assets/arcanecircle/textures/entity/equipment/humanoid/sage/outer.png',
-                  'assets/arcanecircle/textures/entity/equipment/humanoid/archmage/outer.png',
-                  'assets/arcanecircle/textures/item/mage_hat.png',
+                  'kr/moonseungjun/arcanecircle/magic/SpellArchetype.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellArchetype$Mode.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellKineticsService$PendingCast.class',
+                  'assets/arcanecircle/textures/item/mage_robe.png',
                   'assets/arcanecircle/textures/item/sage_robe.png',
-                  'assets/arcanecircle/textures/item/froststep_boots.png',
+                  'assets/arcanecircle/textures/item/archmage_robe.png',
               }
               missing = required - names
               if missing:
-                  raise SystemExit(f'missing alpha.8 runtime entries: {sorted(missing)}')
+                  raise SystemExit(f'missing alpha.9 runtime entries: {sorted(missing)}')
+
+              hud = z.read('kr/moonseungjun/arcanecircle/client/ArcaneHud.class')
+              for token in (b'absorption', b'System', b'drawHealth'):
+                  if token not in hud:
+                      raise SystemExit(f'compact animated health HUD missing: {token!r}')
+
+              mesh = z.read('kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class')
+              for token in (b'submitPass', b'setLineWidth', b'shade'):
+                  if token not in mesh:
+                      raise SystemExit(f'thick magic mesh missing: {token!r}')
+
+              kinetics = z.read('kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class')
+              for token in (b'PROJECTILE', b'CHANNEL', b'FIELD', b'finishKineticCast'):
+                  if token not in kinetics:
+                      raise SystemExit(f'spell kinetics missing: {token!r}')
+
+              vitality = z.read('kr/moonseungjun/arcanecircle/magic/ArcaneVitalityService.class')
+              if b'effectiveAbsorption' not in vitality:
+                  raise SystemExit('scaled absorption health missing')
 
               for class_name in (
                   'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
@@ -105,21 +118,6 @@ jobs:
                       if forbidden in bytecode:
                           raise SystemExit(f'pixel-box renderer remains in {class_name}: {forbidden!r}')
 
-              mesh = z.read('kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class')
-              for token in (b'submitCustomGeometry', b'setLineWidth', b'submitPass'):
-                  if token not in mesh:
-                      raise SystemExit(f'continuous mesh bytecode missing: {token!r}')
-
-              hud = z.read('kr/moonseungjun/arcanecircle/client/ArcaneHud.class')
-              for token in (b'PLAYER_HEALTH', b'drawHealth', b'health_max'):
-                  if token not in hud:
-                      raise SystemExit(f'RPG health HUD bytecode missing: {token!r}')
-
-              vitality = z.read('kr/moonseungjun/arcanecircle/magic/ArcaneVitalityService.class')
-              for token in (b'effectiveMaxHealth', b'convertToVanilla', b'onIncomingDamage'):
-                  if token not in vitality:
-                      raise SystemExit(f'vitality bytecode missing: {token!r}')
-
               offenders = []
               for name in names:
                   if name.startswith('kr/moonseungjun/arcanecircle/magic/') and name.endswith('.class'):
@@ -127,7 +125,7 @@ jobs:
                           offenders.append(name)
               if offenders:
                   raise SystemExit(f'particle-centered magic bytecode remains: {offenders}')
-          print('Arcane Circle alpha.8 JAR audit: PASS')
+          print('Arcane Circle alpha.9 JAR audit: PASS')
           PY
           mkdir -p ../../deliverables
           cp "build/libs/$EXPECTED_JAR" ../../deliverables/
@@ -135,7 +133,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.12.1-alpha.8
+          name: arcanecircle-0.12.1-alpha.9
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
@@ -149,23 +147,23 @@ jobs:
           touch "$PROJECT_DIR/.gitignore"
           grep -qxF '.gradle/' "$PROJECT_DIR/.gitignore" || printf '%s\n' '.gradle/' >> "$PROJECT_DIR/.gitignore"
           grep -qxF 'build/' "$PROJECT_DIR/.gitignore" || printf '%s\n' 'build/' >> "$PROJECT_DIR/.gitignore"
-          rm -rf /tmp/arcane-alpha8-source
-          mkdir -p /tmp/arcane-alpha8-source
-          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-alpha8-source/
+          rm -rf /tmp/arcane-alpha9-source
+          mkdir -p /tmp/arcane-alpha9-source
+          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-alpha9-source/
           published=0
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
             git reset --hard origin/main
             rm -rf "$PROJECT_DIR"
             mkdir -p "$PROJECT_DIR"
-            rsync -a /tmp/arcane-alpha8-source/ "$PROJECT_DIR/"
+            rsync -a /tmp/arcane-alpha9-source/ "$PROJECT_DIR/"
             mkdir -p "$PUBLISHED_DIR"
             rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
             cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
             git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12.1-alpha.8 continuous magic [skip ci]'
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.9 HUD gear and kinetics [skip ci]'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
@@ -204,7 +202,7 @@ jobs:
             cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "Record Arcane Circle v0.12.1-alpha.8 CI result for ${GITHUB_SHA::7} [skip ci]"
+            git commit -m "Record Arcane Circle v0.12.1-alpha.9 CI result for ${GITHUB_SHA::7} [skip ci]"
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 2))
           done
