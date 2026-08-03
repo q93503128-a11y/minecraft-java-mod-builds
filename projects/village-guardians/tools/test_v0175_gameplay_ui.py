@@ -24,7 +24,7 @@ def main() -> None:
     respawn = read("VillageRespawnSystem.java")
     inventory = read("VillageInventoryPanel.java")
 
-    assert "mod_version=0.17.13-alpha.1" in props
+    assert "mod_version=0.17.14-alpha.1" in props
     assert "currentOffers(int day)" in shop and "rotatingOffers" in shop
     assert 'EQUIPMENT("장비")' in shop and 'ARCANE_FOCUS("arcane_focus"' in shop
     assert "Category.EQUIPMENT, Items.BLAZE_ROD" in shop
@@ -58,8 +58,9 @@ def main() -> None:
     assert "다음 단계 비용: 주화" in controller
 
     assert "ParticleTypes" not in visuals and "sendParticles" not in visuals
-    assert "Display.ItemDisplay" in visuals and "Display.BlockDisplay" in visuals
-    assert "Mode.WHIRLWIND" in visuals and "Mode.FORTRESS" in visuals
+    assert "VillageSkillEffectEntity.spawn" in visuals
+    assert "vanguard_spin" in visuals and "warden_fortress" in visuals
+    assert "Display.ItemDisplay" not in visuals and "Display.BlockDisplay" not in visuals
 
     assert "respawnDelayTicks" in progression
     assert "clearTreatmentEffects" in progression
@@ -71,7 +72,7 @@ def main() -> None:
     print("[PASS] Caller opens a screen-safe PUBG-style quick communication wheel")
     print("[PASS] Smithy fusion explicitly selects three compatible items")
     print("[PASS] Skill-hall entry opens skills only and defense research titles stay concise")
-    print("[PASS] Skills use non-particle display actors and infirmary upgrades have real utility")
+    print("[PASS] Skills use non-particle procedural mesh actors and infirmary upgrades have real utility")
 
 
 if __name__ == "__main__":

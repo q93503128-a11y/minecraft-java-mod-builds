@@ -29,6 +29,7 @@ public final class VillageGuardians {
     private int maintenanceTicks;
 
     public VillageGuardians(IEventBus modEventBus) {
+        VillageSkillEffectEntities.register(modEventBus);
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
         LOGGER.info("Village Guardians command, rarity, relic and defense research systems loaded");

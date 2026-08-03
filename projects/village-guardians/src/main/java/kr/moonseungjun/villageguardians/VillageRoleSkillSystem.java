@@ -588,7 +588,7 @@ public final class VillageRoleSkillSystem {
     }
 
     public enum ActiveSkill {
-        VANGUARD_WHIRLWIND("vanguard_whirlwind", VillageRole.VANGUARD, 0, "회전 칼날", 2, 70, 18, "가렌의 회전 공격처럼 몸을 돌리며 여러 차례 주변 적을 베고 이동할 수 있습니다."),
+        VANGUARD_WHIRLWIND("vanguard_whirlwind", VillageRole.VANGUARD, 0, "회전 검무", 2, 70, 18, "가렌의 회전 공격처럼 몸을 돌리며 여러 차례 주변 적을 베고 이동할 수 있습니다."),
         VANGUARD_BREAKER("vanguard_breaker", VillageRole.VANGUARD, 1, "전투 고양", 7, 190, 24, "검을 치켜들고 함성을 질러 자신과 주변 아군의 공격력·이동 속도를 강화합니다."),
         VANGUARD_CRY("vanguard_cry", VillageRole.VANGUARD, 2, "검기 난무", 13, 380, 32, "자세를 잡고 검을 연속으로 휘둘러 전방에 여러 개의 실제 검기 투사체를 날립니다."),
         VANGUARD_STORM("vanguard_storm", VillageRole.VANGUARD, 3, "천붕 강하", 21, 680, 42, "공중으로 도약한 뒤 지면을 내려찍어 바닥을 깨뜨리고 넓은 범위에 피해와 강한 충격을 줍니다."),

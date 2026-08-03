@@ -14,6 +14,7 @@ REQUIRED_ASSETS = {
     "assets/minecraft/textures/gui/sprites/widget/button_highlighted.png",
     "META-INF/villageguardians/THIRD_PARTY_NOTICES.txt",
     "META-INF/villageguardians/licensed-gui-assets.txt",
+    "assets/villageguardians/textures/effect/skill_mesh.png",
 }
 REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSimpleBuildingBuilder.class",
@@ -30,6 +31,12 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.class",
     "kr/moonseungjun/villageguardians/VillageWarfrontSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSkillEffectEntities.class",
+    "kr/moonseungjun/villageguardians/VillageSkillEffectEntity.class",
+    "kr/moonseungjun/villageguardians/VillageSkillEffectRenderState.class",
+    "kr/moonseungjun/villageguardians/VillageSkillEffectRenderer.class",
+    "kr/moonseungjun/villageguardians/VillageSkillEffectClient.class",
+    "kr/moonseungjun/villageguardians/VillageSkillMeshLibrary.class",
     "kr/moonseungjun/villageguardians/VillageGatePrioritySystem.class",
     "kr/moonseungjun/villageguardians/VillageRespawnSystem.class",
     "kr/moonseungjun/villageguardians/VillageRaidLootSystem.class",

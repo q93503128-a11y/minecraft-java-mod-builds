@@ -15,7 +15,7 @@ def main() -> None:
     ability = read("VillageRoleAbilitySystem.java")
     effects = read("VillageSkillEffectSystem.java")
 
-    assert "mod_version=0.17.13-alpha.1" in props
+    assert "mod_version=0.17.14-alpha.1" in props
     assert "GLFW.GLFW_KEY_R" in keys and "GLFW.GLFW_KEY_G" in keys
     assert "ROLE_SKILL_ONE.setKey" in keys and "GLFW.GLFW_KEY_Z" in keys
     assert "ROLE_SKILL_TWO.setKey" in keys and "GLFW.GLFW_KEY_X" in keys
@@ -31,27 +31,25 @@ def main() -> None:
     assert "Blocks.GLASS.defaultBlockState(), 3" not in ability
 
     for token in (
-        "Display.ItemDisplay", "Display.BlockDisplay", "Transformation",
-        "Mode.WHIRLWIND", "Mode.BUFF", "Mode.BLADE_CHARGE", "Mode.SLAM_CHARGE",
-        "Mode.RAPID_FIRE", "Mode.TARGET_LOCK", "Mode.ARROW_RAIN",
-        "Mode.ENERGY_PROJECTILE", "Mode.FIRE_ORB", "Mode.FROST_FIELD",
-        "Mode.TORNADO", "Mode.LIGHTNING_FIELD", "Mode.HEAL_FIELD",
-        "Mode.HEAL_LINK", "Mode.CLEANSE", "Mode.MIRACLE",
-        "Mode.SHIELD_CHARGE", "Mode.TAUNT", "Mode.FORTRESS", "Mode.AEGIS",
-        "Items.NETHERITE_SWORD", "Items.SPECTRAL_ARROW", "Items.SHIELD",
-        "Blocks.PACKED_ICE", "Blocks.SEA_LANTERN"
+        "VillageSkillEffectEntity.spawn", "vanguard_spin", "vanguard_rally",
+        "ranger_energy_projectile", "arcanist_fire_orb", "arcanist_frost",
+        "arcanist_tornado", "arcanist_lightning", "luminar_healing_field",
+        "warden_fortress", "warden_aegis"
     ):
         assert token in effects, token
-    assert "private static final class DisplayAccess" in effects
-    assert "setTransformationInterpolationDuration" in effects
+    for forbidden in (
+        "Display.ItemDisplay", "Display.BlockDisplay", "Transformation",
+        "Items.", "Blocks.", "DisplayAccess"
+    ):
+        assert forbidden not in effects, forbidden
     assert "ParticleTypes" not in effects
     assert "sendParticles" not in effects
     assert "addParticle" not in effects
     assert not (JAVA / "VillageSkillVisualSystem.java").exists()
 
     print("[PASS] Saved legacy R/G skill bindings migrate to real Z/X and persist")
-    print("[PASS] Garen-style whirlwind owns six visible swords and six rotating arc actors")
-    print("[PASS] All twenty skills use bounded item/block display scenes without particles")
+    print("[PASS] Garen-style spin rotates the avatar holding one actual weapon")
+    print("[PASS] All twenty skills route to bounded custom-mesh scenes without particles")
     print("[PASS] Temporary glass walls, block-break particles and obsolete visual facade are removed")
 
 

@@ -16,6 +16,7 @@ public final class VillageNetwork {
         var registrar = event.registrar("4");
         registrar.playToClient(OpenVillageUiPayload.TYPE, OpenVillageUiPayload.STREAM_CODEC);
         registrar.playToClient(PlayerStatusPayload.TYPE, PlayerStatusPayload.STREAM_CODEC);
+        registrar.playToClient(SkillMotionPayload.TYPE, SkillMotionPayload.STREAM_CODEC);
         registrar.playToServer(VillageUiActionPayload.TYPE, VillageUiActionPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof ServerPlayer player
@@ -32,6 +33,19 @@ public final class VillageNetwork {
 
     public static void open(ServerPlayer player, OpenVillageUiPayload payload) {
         PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    public static void sendSkillMotion(
+            net.minecraft.server.level.ServerLevel level,
+            ServerPlayer owner,
+            String motion,
+            int durationTicks) {
+        if (level == null || owner == null || motion == null || durationTicks <= 0) return;
+        SkillMotionPayload payload = new SkillMotionPayload(
+                owner.getId(), motion, durationTicks);
+        for (ServerPlayer viewer : level.players()) {
+            PacketDistributor.sendToPlayer(viewer, payload);
+        }
     }
 
     public static void sendPlayerStatus(ServerPlayer player) {
@@ -67,6 +81,23 @@ public final class VillageNetwork {
                 ByteBufCodecs.STRING_UTF8, OpenVillageUiPayload::actions,
                 ByteBufCodecs.STRING_UTF8, OpenVillageUiPayload::labels,
                 OpenVillageUiPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record SkillMotionPayload(
+            int entityId,
+            String motion,
+            int durationTicks) implements CustomPacketPayload {
+        public static final Type<SkillMotionPayload> TYPE = new Type<>(
+                Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "skill_motion"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, SkillMotionPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.VAR_INT, SkillMotionPayload::entityId,
+                        ByteBufCodecs.STRING_UTF8, SkillMotionPayload::motion,
+                        ByteBufCodecs.VAR_INT, SkillMotionPayload::durationTicks,
+                        SkillMotionPayload::new);
 
         @Override
         public Type<? extends CustomPacketPayload> type() { return TYPE; }

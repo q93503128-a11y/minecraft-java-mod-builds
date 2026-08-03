@@ -29,6 +29,8 @@ public final class VillageClientUi {
                                     new VillageFacilityScreen(payload);
                             default -> new VillageUiScreen(payload);
                         }));
+        event.register(VillageNetwork.SkillMotionPayload.TYPE,
+                (payload, context) -> VillageSkillEffectClient.acceptMotion(payload));
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
                 (payload, context) -> VillageInventoryPanel.updateStatus(payload));
     }

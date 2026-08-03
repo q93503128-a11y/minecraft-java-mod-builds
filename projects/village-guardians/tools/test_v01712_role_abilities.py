@@ -20,9 +20,9 @@ def main() -> None:
     role = read("VillageRole.java")
     keys = read("VillageClientKeys.java")
 
-    assert "mod_version=0.17.13-alpha.1" in props
+    assert "mod_version=0.17.14-alpha.1" in props
     expected_names = [
-        "회전 칼날", "전투 고양", "검기 난무", "천붕 강하",
+        "회전 검무", "전투 고양", "검기 난무", "천붕 강하",
         "신속 삼연사", "추적 도탄", "천공 화살비", "성멸 대궁",
         "홍염탄", "빙결 지대", "폭풍 회랑", "천뢰 폭격",
         "응급 성광", "전군 정화", "치유 성역", "기적의 대성역",
@@ -33,16 +33,18 @@ def main() -> None:
     for token in [
         "SPIN_UNTIL", "player.swing", "EntityTypes.SNOWBALL", "ArrowLooseEvent", "spawnSideArrow",
         "RICOCHET_UNTIL", "ARROW_RAIN", "ENERGY_ARROW", "AreaKind.FROST",
-        "AreaKind.TORNADO", "spawnVisualLightning", "healLowestAlly", "cleanseAllies",
+        "AreaKind.TORNADO", "healLowestAlly", "cleanseAllies",
         "AreaKind.HEALING", "reviveNow", "LivingKnockBackEvent", "replayingEcho",
         "VillageSkillEffectSystem.startCast"
     ]:
         assert token in ability, token
     for token in [
-        "Display.ItemDisplay", "Display.BlockDisplay", "Mode.WHIRLWIND", "Mode.ARROW_RAIN",
-        "Mode.FROST_FIELD", "Mode.TORNADO", "Mode.HEAL_FIELD", "Mode.FORTRESS", "Mode.AEGIS"
+        "VillageSkillEffectEntity.spawn", "vanguard_spin", "ranger_rain_field",
+        "arcanist_frost", "arcanist_tornado", "luminar_healing_field",
+        "warden_fortress", "warden_aegis"
     ]:
         assert token in effects, token
+    assert "Display.ItemDisplay" not in effects and "Display.BlockDisplay" not in effects
     assert "ParticleTypes" not in ability and "sendParticles" not in ability
     assert "ParticleTypes" not in effects and "sendParticles" not in effects
     assert "VillageRoleAbilitySystem.tick" in guard
@@ -63,7 +65,7 @@ def main() -> None:
     assert "■" in skills and "□" in skills
     assert "VillageSkillVisualSystem.render" not in rpg
 
-    print("[PASS] Twenty active skills own real movement, projectile, field and display-actor motions")
+    print("[PASS] Twenty active skills own real movement, projectile, field and procedural-mesh motions")
     print("[PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events")
     print("[PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness")
     print("[PASS] Default shortcut help matches Z/X/B/H/J/K/U registrations")

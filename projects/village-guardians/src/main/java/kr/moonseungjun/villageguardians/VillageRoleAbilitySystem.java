@@ -13,7 +13,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
@@ -235,7 +234,6 @@ public final class VillageRoleAbilitySystem {
             if (SPIN_UNTIL.getOrDefault(id, 0L) >= now) {
                 player.setYBodyRot((float) ((now * 34.0) % 360.0));
                 if (now % 3L == 0L) {
-                    player.swing(InteractionHand.MAIN_HAND, true);
                     damageRadius(level, player, player.position(), 4.7, 10,
                             2.4f + VillageCouncilState.levelOf(id) * 0.16f,
                             false, 0.32, 0.05);
@@ -333,7 +331,6 @@ public final class VillageRoleAbilitySystem {
                                 ? area.center().add((owner.getRandom().nextDouble() - 0.5) * area.radius(), 0.0,
                                 (owner.getRandom().nextDouble() - 0.5) * area.radius())
                                 : targets.get(owner.getRandom().nextInt(targets.size())).position();
-                        spawnVisualLightning(level, strike);
                         for (Mob target : targets) {
                             if (target.position().distanceToSqr(strike) <= 7.0) {
                                 hurt(level, target, 5.0f * area.power());
@@ -651,7 +648,8 @@ public final class VillageRoleAbilitySystem {
         var projectile = EntityTypes.SNOWBALL.create(level, EntitySpawnReason.EVENT);
         if (projectile == null) return;
         projectile.setOwner(player);
-        projectile.setItem(item);
+        projectile.setItem(ItemStack.EMPTY);
+        projectile.setInvisible(true);
         projectile.setPos(origin.x, origin.y, origin.z);
         projectile.setNoGravity(true);
         projectile.setDeltaMovement(direction.normalize().scale(speed));
@@ -664,6 +662,7 @@ public final class VillageRoleAbilitySystem {
         Arrow arrow = new Arrow(level, owner, new ItemStack(Items.ARROW), owner.getMainHandItem());
         arrow.setPos(position.x, position.y, position.z);
         arrow.setDeltaMovement(0.0, -2.4, 0.0);
+        arrow.setInvisible(true);
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
         spawningGeneratedArrow = true;
         try { level.addFreshEntity(arrow); }
@@ -700,13 +699,6 @@ public final class VillageRoleAbilitySystem {
         arrow.hurtMarked = true;
     }
 
-    private static void spawnVisualLightning(ServerLevel level, Vec3 position) {
-        LightningBolt bolt = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.EVENT);
-        if (bolt == null) return;
-        bolt.setVisualOnly(true);
-        bolt.snapTo(position.x, position.y, position.z);
-        level.addFreshEntity(bolt);
-    }
 
     private static List<Mob> targetsNear(
             ServerLevel level, ServerPlayer owner, Vec3 center, double radius, int limit) {

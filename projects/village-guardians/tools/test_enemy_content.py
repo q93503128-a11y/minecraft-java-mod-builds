@@ -77,17 +77,18 @@ def main() -> None:
     assert "VillageRoleAbilitySystem.cast" in role_skills
     assert role_skills.count("case ") >= 20
     for token in (
-        "SPIN_UNTIL", "EntityTypes.SNOWBALL", "Arrow", "spawnVisualLightning",
+        "SPIN_UNTIL", "EntityTypes.SNOWBALL", "Arrow",
         "healLowestAlly", "reviveNow", "player.swing", "target.push", "SoundEvents",
         "VillageSkillEffectSystem.startCast"
     ):
         assert token in ability
     for token in (
-        "Display.ItemDisplay", "Display.BlockDisplay", "Mode.WHIRLWIND",
-        "Mode.FROST_FIELD", "Mode.TORNADO", "Mode.HEAL_FIELD",
-        "Mode.FORTRESS", "Mode.AEGIS"
+        "VillageSkillEffectEntity.spawn", "vanguard_spin", "ranger_energy_projectile",
+        "arcanist_frost", "arcanist_tornado", "luminar_healing_field",
+        "warden_fortress", "warden_aegis"
     ):
         assert token in effects
+    assert "Display.ItemDisplay" not in effects and "Display.BlockDisplay" not in effects
     assert "ParticleTypes" not in ability and "sendParticles" not in ability
     assert "ParticleTypes" not in effects and "sendParticles" not in effects
 
@@ -99,7 +100,7 @@ def main() -> None:
     print("[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs")
     print("[PASS] Five-day milestone sieges and endless warfront tiers remain scalable")
     print("[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes")
-    print("[PASS] Twenty active skills combine real gameplay with dedicated display-actor scenes")
+    print("[PASS] Twenty active skills combine real gameplay with dedicated procedural-mesh scenes")
     print("[PASS] CC0 fantasy visual references are documented without untracked binaries")
 
 
