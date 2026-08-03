@@ -219,10 +219,11 @@ public final class ErdenAuthoritativeEconomyManager {
             lastFulfilledHouseholds = result.fulfilledHouseholds;
             if (previousDay < 0L || day % 7L == 0L) {
                 LivingKingdoms.LOGGER.info(
-                        "Processed Erden physical economy day={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} wallet_coins={} authoritative_transport=true",
+                        "Processed Erden physical economy day={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} failed_households={} wallet_coins={} authoritative_transport=true",
                         day, result.deliveries, result.crafted,
                         result.sales, result.wages,
-                        result.fulfilledHouseholds, totalWalletCoins(result.wallets));
+                        result.fulfilledHouseholds, result.market.failedHouseholds(),
+                        totalWalletCoins(result.wallets));
             }
             if (result.reserveComplete == expectedBakeryCount()
                     && lastReserveLoggedDay != day) {
@@ -740,6 +741,13 @@ public final class ErdenAuthoritativeEconomyManager {
     private static void verifyCiIfReady(
             ServerLevel level,
             ErdenPhysicalEconomySavedData economy) {
+        ErdenLivingEconomySavedData livingEconomy = level.getDataStorage()
+                .computeIfAbsent(ErdenLivingEconomySavedData.TYPE);
+        long purchaseOutcomes = livingEconomy.outcomes().size();
+        long purchaseSuccesses = livingEconomy.outcomes().stream()
+                .filter(ErdenLivingEconomySavedData.HouseholdMarketState::success)
+                .count();
+        long purchaseFailures = purchaseOutcomes - purchaseSuccesses;
         if (ciPassed
                 || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))
                 || economy.lastProcessedDay() < 0L
@@ -749,7 +757,10 @@ public final class ErdenAuthoritativeEconomyManager {
                 || economy.totalCrafted() <= 0L
                 || economy.totalSales() < EXPECTED_WALLETS * 4L
                 || economy.totalWages() < ErdenPopulationManager.EXPECTED_WORKERS * DAILY_WAGE
-                || lastFulfilledHouseholds != EXPECTED_WALLETS) {
+                || purchaseOutcomes != EXPECTED_WALLETS
+                || purchaseSuccesses <= 0L
+                || purchaseSuccesses != lastFulfilledHouseholds
+                || purchaseFailures < 0L) {
             return;
         }
         int visibleContainers = 0;
@@ -770,11 +781,12 @@ public final class ErdenAuthoritativeEconomyManager {
         if (visibleContainers != 3) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_PHYSICAL_ECONOMY_PASS sites={} warehouses={} wallets={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} wallet_coins={} containers={} authoritative_transport=true",
+                "LK_ERDEN_PHYSICAL_ECONOMY_PASS sites={} warehouses={} wallets={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} purchase_outcomes={} purchase_failures={} wallet_coins={} containers={} authoritative_transport=true",
                 EXPECTED_SITES, EXPECTED_WAREHOUSES, EXPECTED_WALLETS,
                 economy.totalDeliveries(), economy.totalCrafted(),
                 economy.totalSales(), economy.totalWages(),
-                lastFulfilledHouseholds, economy.totalWalletCoins(), visibleContainers);
+                lastFulfilledHouseholds, purchaseOutcomes, purchaseFailures,
+                economy.totalWalletCoins(), visibleContainers);
     }
 
     private static ErdenPhysicalEconomySavedData.SiteState findSite(

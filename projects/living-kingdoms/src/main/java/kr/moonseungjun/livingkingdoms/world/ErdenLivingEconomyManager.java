@@ -480,14 +480,22 @@ public final class ErdenLivingEconomyManager {
         long successCount = living.outcomes().stream()
                 .filter(ErdenLivingEconomySavedData.HouseholdMarketState::success)
                 .count();
-        if (successCount != ErdenPopulationManager.EXPECTED_HOUSEHOLDS) return;
+        long recognizedCount = living.outcomes().stream()
+                .filter(state -> state.status().equals(STATUS_SUCCESS)
+                        || state.status().equals(STATUS_CLOSED)
+                        || state.status().equals(STATUS_STOCKOUT)
+                        || state.status().equals(STATUS_UNAFFORDABLE))
+                .count();
+        long failureCount = living.outcomes().size() - successCount;
+        if (recognizedCount != ErdenPopulationManager.EXPECTED_HOUSEHOLDS
+                || successCount <= 0L || failureCount < 0L) return;
         if (!auditDecisionPaths()) return;
 
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_LIVING_ECONOMY_PASS revision={} households={} shops={} schedules=true holidays={} dynamic_prices=true stockouts_persist=true shopping_routines=true success_path=true closed_path=true stockout_path=true unaffordable_path=true market_spent={}",
+                "LK_ERDEN_LIVING_ECONOMY_PASS revision={} households={} shops={} purchase_successes={} purchase_failures={} schedules=true holidays={} dynamic_prices=true stockouts_persist=true shopping_routines=true success_path=true closed_path=true stockout_path=true unaffordable_path=true market_spent={}",
                 LIVING_ECONOMY_REVISION, ErdenPopulationManager.EXPECTED_HOUSEHOLDS,
-                shops, holidayCoverage.size(), living.totalSpent());
+                shops, successCount, failureCount, holidayCoverage.size(), living.totalSpent());
     }
 
     private static boolean auditDecisionPaths() {
