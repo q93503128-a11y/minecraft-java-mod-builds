@@ -10,6 +10,7 @@ import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
+import kr.moonseungjun.livingkingdoms.world.ErdenPhysicalEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
@@ -80,6 +81,7 @@ public final class LivingKingdoms {
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
+        ErdenPhysicalEconomyManager.onServerTick(event);
         ErdenDiagnosticDebrisSettler.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
@@ -174,6 +176,7 @@ public final class LivingKingdoms {
     }
 
     private void onWorkstationInteraction(PlayerInteractEvent.RightClickBlock event) {
+        ErdenPhysicalEconomyManager.handleInteraction(event);
         FantasyWorldRules.handleWorkstation(event);
     }
 }
