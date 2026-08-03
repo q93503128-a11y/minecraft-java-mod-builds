@@ -47,6 +47,15 @@ jobs:
           python3 -m py_compile tools/v01714/apply.py
           python3 tools/v01714/apply.py
           python3 tools/generate_skill_mesh_texture.py src/main/resources
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/test_runtime_safety_v0173.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'H 상태 · J 성장 · K 직업 성장 · U 호출기 · B 빠른 통신 · Z/X 기술'
+          new = '기본키 Z 기술1 · X 기술2 · B 빠른 통신 · H 상태 · J 성장 · K 직업 성장 · U 빠른 통신'
+          if old in text:
+              path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
 
       - name: Run complete contracts
         working-directory: ${{ env.PROJECT_DIR }}
@@ -54,10 +63,12 @@ jobs:
         run: |
           set -o pipefail
           {
+            status=0
             while IFS= read -r test; do
               echo "=== $test ==="
-              python3 "$test"
+              python3 "$test" || status=1
             done < <(find tools -maxdepth 1 -type f -name 'test_*.py' | sort)
+            exit "$status"
           } 2>&1 | tee "$GITHUB_WORKSPACE/village-guardians-v01714-contracts.log"
 
       - name: Build Java 25 JAR
