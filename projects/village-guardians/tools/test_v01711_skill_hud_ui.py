@@ -16,7 +16,9 @@ def main() -> None:
     hud = read("VillageHudSystem.java")
     client = read("VillageClientUi.java")
     screen = read("VillageSkillTestScreen.java")
-    visuals = read("VillageSkillVisualSystem.java")
+    visuals = read("VillageSkillEffectSystem.java")
+    renderer = read("VillageSkillEffectRenderer.java")
+    mesh = read("VillageSkillMeshLibrary.java")
 
     assert "mod_version=0.17.13-alpha.1" in props
     assert "cooldownRemainingSeconds" in role
@@ -35,8 +37,11 @@ def main() -> None:
     cast_block = role.split("switch (skill)", 1)[1].split("private static List<Mob> damageArea", 1)[0]
     for name in skill_names:
         assert f"case {name}" in cast_block, name
-    for role_name in ("VANGUARD", "RANGER", "ARCANIST", "LUMINAR", "WARDEN"):
-        assert f"case {role_name}" in visuals
+    for role_prefix in ("vanguard_", "ranger_", "arcanist_", "luminar_", "warden_"):
+        assert role_prefix in visuals
+    assert "submitCustomGeometry" in renderer
+    assert "VertexConsumer" in mesh
+    assert "Display.ItemDisplay" not in visuals and "Display.BlockDisplay" not in visuals
 
     assert 'case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload)' in client
     assert "final class VillageSkillTestScreen" in screen
@@ -47,7 +52,7 @@ def main() -> None:
     assert "content.width() >= 520 ? 2 : 1" in screen
     assert "content.width() >= 570 ? 2 : 1" in screen
 
-    print("[PASS] All 20 active skills have concrete cast logic and role feedback")
+    print("[PASS] All 20 active skills have concrete cast logic and custom mesh feedback")
     print("[PASS] Action-bar HUD shows equipped Z/X skills and live cooldown seconds")
     print("[PASS] Test role and skill managers use a dedicated compact responsive UI")
 
