@@ -1,0 +1,40 @@
+name: Add Living Kingdoms residence stream sample
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/add-lk-residence-stream-sample.py'
+      - '.github/workflows/add-lk-residence-stream-sample.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python .github/scripts/add-lk-residence-stream-sample.py
+      - shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          file=projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/StarterRealmDiagnostics.java
+          git add "$file"
+          git commit -m "Wait for Erden residence chunk before diagnostics"
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            git fetch origin main
+            git reset --hard origin/main
+            python .github/scripts/add-lk-residence-stream-sample.py
+            git add "$file"
+            git commit -m "Wait for Erden residence chunk before diagnostics"
+            sleep $((attempt * 2))
+          done
+          exit 1
