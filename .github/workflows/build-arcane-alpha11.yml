@@ -46,6 +46,42 @@ jobs:
       - name: Apply alpha.11 source changes
         run: python3 projects/arcane-circle/tools/apply_v0121_alpha11_visual_combat.py
 
+      - name: Repair generated source syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          mage = Path('projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneMageService.java')
+          text = mage.read_text(encoding='utf-8')
+          broken = '\x01String s=e.getName().getString();int i=s.indexOf("] ");return i>=0?s.substring(i+2):s;}'
+          fixed = '    private static String visibleName(Entity e){String s=e.getName().getString();int i=s.indexOf("] ");return i>=0?s.substring(i+2):s;}'
+          if broken not in text:
+              raise SystemExit('ArcaneMageService control-character marker was not found')
+          mage.write_text(text.replace(broken, fixed), encoding='utf-8')
+
+          gear = Path('projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/client/ArcaneGearRenderer.java')
+          text = gear.read_text(encoding='utf-8')
+          replacements = {
+              'quad(out,pose,x0,.69F,-.23F,x1,.69F,-.23F,x1,.69F,.23F,x0,.69F,.23F,lining);}});}':
+              'quad(out,pose,x0,.69F,-.23F,x1,.69F,-.23F,x1,.69F,.23F,x0,.69F,.23F,lining);});}',
+              'quad(out,pose,.03F,.27F,-.195F,.29F,.27F,-.195F,.29F,.31F,-.195F,.03F,.31F,-.195F,trim);}});}':
+              'quad(out,pose,.03F,.27F,-.195F,.29F,.27F,-.195F,.29F,.31F,-.195F,.03F,.31F,-.195F,trim);});}',
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'ArcaneGearRenderer repair marker missing: {old[:72]}')
+              text = text.replace(old, new, 1)
+          gear.write_text(text, encoding='utf-8')
+
+          for path in (mage, gear):
+              data = path.read_bytes()
+              bad = [b for b in data if b < 9 or (13 < b < 32)]
+              if bad:
+                  raise SystemExit(f'Unexpected control bytes remain in {path}: {sorted(set(bad))}')
+          PY
+
       - name: Build with Java 25
         shell: bash
         working-directory: projects/arcane-circle
