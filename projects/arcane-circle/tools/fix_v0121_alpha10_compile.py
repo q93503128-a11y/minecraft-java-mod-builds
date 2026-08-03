@@ -39,4 +39,25 @@ patch(
     "ArcaneNoticeService.push(player, Component.literal(message), 45);",
 )
 
-print("Arcane Circle alpha.10 initial NeoForge compatibility fixes applied")
+# In 26.2 the command-tag collection uses its explicit mapping name.
+for path in (
+    "src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java",
+    "src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneMageService.java",
+    "src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java",
+):
+    patch(path, ".getTags()", ".getCommandTags()")
+
+# The old shared-spawn accessor was removed in 1.21.9+. Encounter coordinates are
+# intentionally stable world coordinates, so the origin is a deterministic anchor.
+patch(
+    "src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java",
+    "level.getServer().overworld().getSharedSpawnPos()",
+    "BlockPos.ZERO",
+)
+patch(
+    "src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java",
+    "level.getSharedSpawnPos()",
+    "BlockPos.ZERO",
+)
+
+print("Arcane Circle alpha.10 NeoForge 26.2 compatibility fixes applied")
