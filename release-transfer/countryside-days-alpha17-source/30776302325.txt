@@ -1,0 +1,3 @@
+run=30776302325
+source=63f54320e27c7e19eb3878a1a9a8270e9c2ce00d
+bcc1b1c3ad7f494acd0730209153d035aef955e892865b689be6b882367dc495  ../../countryside-days-alpha17-source.zip
