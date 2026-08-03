@@ -49,6 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/apply_v0121_alpha9_hud_gear_kinetics.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/fix_v0121_alpha9_robe_quad.py
           python3 tools/test_v0121_alpha9_hud_gear_kinetics.py
           git diff --check
 
