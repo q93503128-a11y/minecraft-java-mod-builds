@@ -360,7 +360,7 @@ public final class ErdenCargoEscrowManager {
                 || transport.totalManifests() <= 0L
                 || transport.modeledTravelTicks() <= 0L) return;
         List<ExternalUrbanFabricBuilder.UrbanEntrance> samples =
-                ErdenPhysicalEconomyManager.ciEntrances();
+                ErdenAuthoritativeEconomyManager.ciEntrances();
         if (samples.size() < 2) return;
         ErdenPhysicalEconomySavedData.SiteState source =
                 findSite(economy.sites(), samples.get(0).x(), samples.get(0).z());

@@ -40,7 +40,7 @@ public final class ErdenCargoEscrowAudit {
         ErdenTransportSavedData transport = level.getDataStorage()
                 .computeIfAbsent(ErdenTransportSavedData.TYPE);
         if (economy.lastProcessedDay() < 0L
-                || economy.sites().size() != ErdenPhysicalEconomyManager.EXPECTED_SITES) {
+                || economy.sites().size() != ErdenAuthoritativeEconomyManager.EXPECTED_SITES) {
             return;
         }
 

@@ -44,7 +44,7 @@ public final class ErdenBakeryReserveManager {
         ErdenPhysicalEconomySavedData economy = level.getDataStorage()
                 .computeIfAbsent(ErdenPhysicalEconomySavedData.TYPE);
         if (economy.lastProcessedDay() < 0L
-                || economy.sites().size() != ErdenPhysicalEconomyManager.EXPECTED_SITES) {
+                || economy.sites().size() != ErdenAuthoritativeEconomyManager.EXPECTED_SITES) {
             return;
         }
 
@@ -106,7 +106,7 @@ public final class ErdenBakeryReserveManager {
     private static Set<Long> protectedShopSamples() {
         Set<Long> result = new HashSet<>();
         for (ExternalUrbanFabricBuilder.UrbanEntrance entrance
-                : ErdenPhysicalEconomyManager.ciEntrances()) {
+                : ErdenAuthoritativeEconomyManager.ciEntrances()) {
             if (entrance.role().equals("shop")) {
                 result.add(positionKey(entrance.x(), entrance.z()));
             }

@@ -72,7 +72,7 @@ public final class ErdenTransportManager {
         ErdenPopulationSavedData population = level.getDataStorage()
                 .computeIfAbsent(ErdenPopulationSavedData.TYPE);
         if (economy.lastProcessedDay() < 0L
-                || economy.sites().size() != ErdenPhysicalEconomyManager.EXPECTED_SITES
+                || economy.sites().size() != ErdenAuthoritativeEconomyManager.EXPECTED_SITES
                 || population.households().size() != ErdenPopulationManager.EXPECTED_HOUSEHOLDS) {
             return;
         }

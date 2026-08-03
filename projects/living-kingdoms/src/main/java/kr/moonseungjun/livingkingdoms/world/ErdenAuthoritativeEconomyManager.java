@@ -507,7 +507,7 @@ public final class ErdenAuthoritativeEconomyManager {
     private static Set<Long> protectedShopSamples() {
         Set<Long> result = new HashSet<>();
         for (ExternalUrbanFabricBuilder.UrbanEntrance entrance
-                : ErdenPhysicalEconomyManager.ciEntrances()) {
+                : ErdenAuthoritativeEconomyManager.ciEntrances()) {
             if (entrance.role().equals("shop")) {
                 result.add(positionKey(entrance.x(), entrance.z()));
             }
@@ -764,7 +764,7 @@ public final class ErdenAuthoritativeEconomyManager {
         }
         int visibleContainers = 0;
         for (ExternalUrbanFabricBuilder.UrbanEntrance entrance
-                : ErdenPhysicalEconomyManager.ciEntrances()) {
+                : ErdenAuthoritativeEconomyManager.ciEntrances()) {
             ErdenPhysicalEconomySavedData.SiteState site = findSite(
                     economy.sites(), entrance.x(), entrance.z());
             if (site == null || !site.materialized()) return;
