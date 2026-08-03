@@ -48,21 +48,22 @@ jobs:
           IFS=':' read -ra JARS <<< "$CP"
           for jar in "${JARS[@]}"; do
             if [ -f "$jar" ]; then
-              jar tf "$jar" | grep -E 'RegisterGuiLayersEvent|RenderGuiLayerEvent|GuiLayer|LayeredDraw|VanillaGuiLayers|GuiGraphics' >> "$OUT/relevant-classes.txt" || true
+              jar tf "$jar" | grep -E 'RegisterGuiLayersEvent|RenderGuiLayerEvent|GuiLayer|VanillaGuiLayers|GuiGraphicsExtractor|GuiRenderState|GuiTextRenderState' >> "$OUT/relevant-classes.txt" || true
             fi
           done
           sort -u "$OUT/relevant-classes.txt" -o "$OUT/relevant-classes.txt"
           javap -classpath "$CP" -p net.neoforged.neoforge.client.event.RegisterGuiLayersEvent > "$OUT/register-gui-layers.txt" 2>&1 || true
           javap -classpath "$CP" -p net.neoforged.neoforge.client.event.RenderGuiLayerEvent net.neoforged.neoforge.client.event.RenderGuiLayerEvent\$Pre net.neoforged.neoforge.client.event.RenderGuiLayerEvent\$Post > "$OUT/render-gui-layer.txt" 2>&1 || true
           javap -classpath "$CP" -p net.neoforged.neoforge.client.gui.GuiLayer net.neoforged.neoforge.client.gui.VanillaGuiLayers > "$OUT/gui-layer.txt" 2>&1 || true
-          javap -classpath "$CP" -p net.minecraft.client.gui.LayeredDraw net.minecraft.client.gui.LayeredDraw\$Layer net.minecraft.client.gui.GuiGraphics > "$OUT/gui-api.txt" 2>&1 || true
-          javap -classpath "$CP" -p net.minecraft.client.gui.Font net.minecraft.client.Minecraft > "$OUT/font-client.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.client.gui.GuiGraphicsExtractor net.neoforged.neoforge.client.extensions.GuiGraphicsExtractorExtension > "$OUT/gui-extractor.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.client.gui.render.state.GuiRenderState net.minecraft.client.gui.render.state.GuiTextRenderState > "$OUT/gui-render-state.txt" 2>&1 || true
+          javap -classpath "$CP" -p net.minecraft.client.gui.Font net.minecraft.client.Minecraft net.minecraft.client.Window > "$OUT/font-client.txt" 2>&1 || true
       - name: Commit probe output
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add ci-results/village-guardians-hud-api
-          git commit -m 'Record Village Guardians HUD API probe' || exit 0
+          git commit -m 'Record expanded Village Guardians HUD API probe' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
