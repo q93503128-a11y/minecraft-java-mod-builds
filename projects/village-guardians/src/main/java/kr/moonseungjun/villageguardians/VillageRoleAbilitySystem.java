@@ -486,9 +486,9 @@ public final class VillageRoleAbilitySystem {
             }
             moving.lastPosition(position);
             moving.age(moving.age() + 1);
-            double contactRadius = moving.kind() == MovingKind.FIRE_ORB
-                    ? fireOrbContactRadius(moving.specialRank()) : moving.radius();
-            List<Mob> hits = targetsNear(level, owner, position, contactRadius, 40);
+            List<Mob> hits = moving.kind() == MovingKind.FIRE_ORB
+                    ? fireOrbContacts(level, owner, position, moving.specialRank(), 40)
+                    : targetsNear(level, owner, position, moving.radius(), 40);
             boolean expired = entity == null || !entity.isAlive() || blocked || moving.age() >= moving.maxAge();
             switch (moving.kind()) {
                 case FIRE_ORB -> {
@@ -1053,8 +1053,20 @@ public final class VillageRoleAbilitySystem {
         return activeRole(player) == VillageRole.RANGER;
     }
 
-    private static double fireOrbContactRadius(int specialRank) {
-        return Math.min(1.80, 1.40 + Math.max(0, specialRank) * 0.08);
+    private static List<Mob> fireOrbContacts(
+            ServerLevel level, ServerPlayer owner, Vec3 position, int specialRank, int limit) {
+        double padding = fireOrbContactPadding(specialRank);
+        List<Mob> candidates = new ArrayList<>(targetsNear(
+                level, owner, position, padding + 3.5, Math.max(40, limit)));
+        candidates.removeIf(target -> !target.getBoundingBox().inflate(padding).contains(position));
+        if (candidates.size() > Math.max(0, limit)) {
+            return new ArrayList<>(candidates.subList(0, Math.max(0, limit)));
+        }
+        return candidates;
+    }
+
+    private static double fireOrbContactPadding(int specialRank) {
+        return Math.min(1.95, 1.55 + Math.min(5, Math.max(0, specialRank)) * 0.08);
     }
 
     private static double areaRadius(double base, int specialRank) {

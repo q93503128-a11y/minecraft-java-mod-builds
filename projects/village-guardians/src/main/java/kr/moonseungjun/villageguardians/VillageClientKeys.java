@@ -13,18 +13,37 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageClientKeys {
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "controls"));
+
+    // Deliberately avoid every ordinary vanilla gameplay/inventory/social key.
     private static final KeyMapping ROLE_SKILL_ONE = key("role_skill_one", GLFW.GLFW_KEY_Z);
-    private static final KeyMapping ROLE_SKILL_TWO = key("role_skill_two", GLFW.GLFW_KEY_X);
+    private static final KeyMapping ROLE_SKILL_TWO = key("role_skill_two", GLFW.GLFW_KEY_V);
     private static final KeyMapping QUICK_COMMUNICATION = key("quick_communication", GLFW.GLFW_KEY_B);
     private static final KeyMapping STATUS = key("status", GLFW.GLFW_KEY_H);
     private static final KeyMapping GROWTH = key("personal_progress", GLFW.GLFW_KEY_J);
     private static final KeyMapping ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_K);
+
+    private static final Set<Integer> VANILLA_RESERVED = Set.of(
+            GLFW.GLFW_KEY_W, GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_S, GLFW.GLFW_KEY_D,
+            GLFW.GLFW_KEY_SPACE, GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_LEFT_CONTROL,
+            GLFW.GLFW_KEY_E, GLFW.GLFW_KEY_Q, GLFW.GLFW_KEY_F, GLFW.GLFW_KEY_T,
+            GLFW.GLFW_KEY_P, GLFW.GLFW_KEY_L, GLFW.GLFW_KEY_C, GLFW.GLFW_KEY_X,
+            GLFW.GLFW_KEY_SLASH, GLFW.GLFW_KEY_TAB, GLFW.GLFW_KEY_ENTER,
+            GLFW.GLFW_KEY_ESCAPE, GLFW.GLFW_KEY_F1, GLFW.GLFW_KEY_F2,
+            GLFW.GLFW_KEY_F3, GLFW.GLFW_KEY_F4, GLFW.GLFW_KEY_F5, GLFW.GLFW_KEY_F11,
+            GLFW.GLFW_KEY_0, GLFW.GLFW_KEY_1, GLFW.GLFW_KEY_2, GLFW.GLFW_KEY_3,
+            GLFW.GLFW_KEY_4, GLFW.GLFW_KEY_5, GLFW.GLFW_KEY_6, GLFW.GLFW_KEY_7,
+            GLFW.GLFW_KEY_8, GLFW.GLFW_KEY_9);
+
     private static boolean tickListenerRegistered;
-    private static boolean legacySkillBindingsChecked;
+    private static boolean bindingsChecked;
 
     private VillageClientKeys() {}
 
@@ -34,12 +53,7 @@ public final class VillageClientKeys {
 
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-        event.register(ROLE_SKILL_ONE);
-        event.register(ROLE_SKILL_TWO);
-        event.register(QUICK_COMMUNICATION);
-        event.register(STATUS);
-        event.register(GROWTH);
-        event.register(ROLE_PROGRESS);
+        for (KeyMapping mapping : mappings()) event.register(mapping);
         if (!tickListenerRegistered) {
             tickListenerRegistered = true;
             NeoForge.EVENT_BUS.addListener(VillageClientKeys::onClientTick);
@@ -49,15 +63,10 @@ public final class VillageClientKeys {
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player != null && minecraft.getConnection() != null) {
-            migrateLegacySkillBindings(minecraft);
+            migrateUnsafeBindings(minecraft);
         }
         if (minecraft.player == null || minecraft.getConnection() == null || minecraft.gui.screen() != null) {
-            drain(ROLE_SKILL_ONE);
-            drain(ROLE_SKILL_TWO);
-            drain(QUICK_COMMUNICATION);
-            drain(STATUS);
-            drain(GROWTH);
-            drain(ROLE_PROGRESS);
+            for (KeyMapping mapping : mappings()) drain(mapping);
             return;
         }
         consume(ROLE_SKILL_ONE, "use_skill:0");
@@ -80,22 +89,40 @@ public final class VillageClientKeys {
                 + skillOneKeyName() + "/" + skillTwoKeyName() + " 기술";
     }
 
+    private static List<KeyMapping> mappings() {
+        return List.of(ROLE_SKILL_ONE, ROLE_SKILL_TWO, QUICK_COMMUNICATION,
+                STATUS, GROWTH, ROLE_PROGRESS);
+    }
+
     private static String keyName(KeyMapping mapping) {
         return mapping.getTranslatedKeyMessage().getString();
     }
 
-    private static void migrateLegacySkillBindings(Minecraft minecraft) {
-        if (legacySkillBindingsChecked) return;
-        legacySkillBindingsChecked = true;
-        int first = ROLE_SKILL_ONE.getKey().getValue();
-        int second = ROLE_SKILL_TWO.getKey().getValue();
-        boolean oldPair = (first == GLFW.GLFW_KEY_R && second == GLFW.GLFW_KEY_G)
-                || (first == GLFW.GLFW_KEY_G && second == GLFW.GLFW_KEY_R);
-        if (!oldPair) return;
-        ROLE_SKILL_ONE.setKey(InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_Z));
-        ROLE_SKILL_TWO.setKey(InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_X));
+    private static void migrateUnsafeBindings(Minecraft minecraft) {
+        if (bindingsChecked) return;
+        bindingsChecked = true;
+        Set<Integer> used = new HashSet<>();
+        boolean unsafe = false;
+        for (KeyMapping mapping : mappings()) {
+            int value = mapping.getKey().getValue();
+            if (value <= 0 || VANILLA_RESERVED.contains(value) || !used.add(value)) {
+                unsafe = true;
+            }
+        }
+        if (!unsafe) return;
+
+        set(ROLE_SKILL_ONE, GLFW.GLFW_KEY_Z);
+        set(ROLE_SKILL_TWO, GLFW.GLFW_KEY_V);
+        set(QUICK_COMMUNICATION, GLFW.GLFW_KEY_B);
+        set(STATUS, GLFW.GLFW_KEY_H);
+        set(GROWTH, GLFW.GLFW_KEY_J);
+        set(ROLE_PROGRESS, GLFW.GLFW_KEY_K);
         KeyMapping.resetMapping();
         minecraft.options.save();
+    }
+
+    private static void set(KeyMapping mapping, int key) {
+        mapping.setKey(InputConstants.Type.KEYSYM.getOrCreate(key));
     }
 
     private static void drain(KeyMapping mapping) {

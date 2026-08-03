@@ -20,7 +20,7 @@ def main() -> None:
     role = read("VillageRole.java")
     keys = read("VillageClientKeys.java")
 
-    assert "mod_version=0.17.18-alpha.1" in props
+    assert "mod_version=0.17.19-alpha.1" in props
     expected_names = [
         "회전 검무", "전투 고양", "검기 난무", "천붕 강하",
         "신속 삼연사", "추적 도탄", "천공 화살비", "성멸 대궁",
@@ -59,7 +59,7 @@ def main() -> None:
     assert "최대 두 번 반복" in role
     assert "체력이 낮을수록 치유량과 보호막량" in role
     assert "모든 넉백을 무효화" in role
-    assert 'GLFW.GLFW_KEY_Z' in keys and 'GLFW.GLFW_KEY_X' in keys
+    assert 'GLFW.GLFW_KEY_Z' in keys and 'GLFW.GLFW_KEY_V' in keys
     assert 'GLFW.GLFW_KEY_B' in keys and 'GLFW.GLFW_KEY_H' in keys
     assert 'GLFW.GLFW_KEY_J' in keys and 'GLFW.GLFW_KEY_K' in keys
     assert 'GLFW.GLFW_KEY_U' not in keys and 'CALLER' not in keys
@@ -69,7 +69,7 @@ def main() -> None:
     print("[PASS] Twenty active skills own real movement, projectile, field and procedural-mesh motions")
     print("[PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events")
     print("[PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness")
-    print("[PASS] Default shortcuts match Z/X/B/H/J/K with no obsolete U duplicate")
+    print("[PASS] Default shortcuts match Z/V/B/H/J/K with no obsolete U duplicate")
 
 
 if __name__ == "__main__":

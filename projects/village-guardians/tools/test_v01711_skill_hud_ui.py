@@ -20,7 +20,7 @@ def main() -> None:
     renderer = read("VillageSkillEffectRenderer.java")
     mesh = read("VillageSkillMeshLibrary.java")
 
-    assert "mod_version=0.17.18-alpha.1" in props
+    assert "mod_version=0.17.19-alpha.1" in props
     assert "cooldownRemainingSeconds" in role
     assert "cooldownProgress" in role
     assert "hudSlotText" in role
@@ -53,7 +53,7 @@ def main() -> None:
     assert "content.width() >= 570 ? 2 : 1" in screen
 
     print("[PASS] All 20 active skills have concrete cast logic and custom mesh feedback")
-    print("[PASS] Action-bar HUD shows equipped Z/X skills and live cooldown seconds")
+    print("[PASS] Action-bar HUD shows equipped Z/V skills and live cooldown seconds")
     print("[PASS] Test role and skill managers use a dedicated compact responsive UI")
 
 

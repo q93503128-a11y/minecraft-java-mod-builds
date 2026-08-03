@@ -3,7 +3,7 @@ ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
 def read(name): return (JAVA / name).read_text(encoding="utf-8")
 def main():
-    assert "mod_version=0.17.18-alpha.1" in (ROOT / "gradle.properties").read_text()
+    assert "mod_version=0.17.19-alpha.1" in (ROOT / "gradle.properties").read_text()
     rarity, ui = read("VillageEquipmentRaritySystem.java"), read("VillageUiController.java")
     common, data, tree_ui = read("VillageSkillTreeSystem.java"), read("VillageSkillTreeData.java"), read("VillageSkillTreeScreen.java")
     raid, enemy = read("VillageRaidSystem.java"), read("VillageEnemyArchetypeSystem.java")
@@ -23,6 +23,6 @@ def main():
     assert "금 간 전열병 송곳니" in loot and "공포 기사의 암흑 갑편" in loot
     assert "captureNightStartSnapshot" in progression and "retryPlanLocked = true" in progression
     assert "villageDay = fromStart ? 1 : Math.max(1, villageDay)" in council
-    assert "test_choose:" in ui and "VillageSkillTestSystem.equippedSkill" in role and "targetsNear" in test
+    assert "test_choose:" not in ui and "test_equip:" in ui and "VillageSkillTestSystem.equippedSkill" in role and "targetsNear" in test
     print("Village Guardians v0.17.7 contracts passed.")
 if __name__ == "__main__": main()

@@ -50,7 +50,7 @@ public final class VillageWaveIntelSystem {
     }
 
     public static String report() {
-        return "낮 정비 시간에 성벽 정찰 화면에서 웨이브별 편성을 확인하세요.";
+        return "낮 정비 시간에 성벽 또는 병영 단말기에서 웨이브별 편성을 확인하세요.";
     }
 
     public record WavePreview(int wave, int maximumWaves, VillageWaveTrait trait,

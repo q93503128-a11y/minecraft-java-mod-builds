@@ -21,7 +21,7 @@ def main() -> None:
     hud = read("VillageSkillHudOverlay.java")
     skills = read("VillageRoleSkillSystem.java")
 
-    assert "mod_version=0.17.18-alpha.1" in props
+    assert "mod_version=0.17.19-alpha.1" in props
 
     # All four ranger actives are queued and consumed by a real arrow spawn.
     assert "ARROW_RAIN_READY" in ability

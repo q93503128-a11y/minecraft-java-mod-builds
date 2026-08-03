@@ -27,7 +27,7 @@ def main() -> None:
     skills = read("VillageRoleSkillSystem.java")
     lang = (ROOT / "src/main/resources/assets/villageguardians/lang/ko_kr.json").read_text(encoding="utf-8")
 
-    check("v0.17.18 version is active", "mod_version=0.17.18-alpha.1" in props)
+    check("v0.17.19 version is active", "mod_version=0.17.19-alpha.1" in props)
     check(
         "신속 삼연사는 실제 활 사용을 조기에 끝내고 완충 발사를 보장합니다",
         all(token in ability for token in [
@@ -39,9 +39,9 @@ def main() -> None:
     )
     check(
         "홍염탄 접촉 판정은 폭발 반경과 분리되어 작은 값만 사용합니다",
-        "fireOrbContactRadius" in ability
-        and "1.40 + Math.max(0, specialRank) * 0.08" in ability
-        and "contactRadius" in ability
+        "fireOrbContacts" in ability
+        and "fireOrbContactPadding" in ability
+        and "target.getBoundingBox().inflate(padding).contains(position)" in ability
         and "targetsNear(level, owner, position, moving.radius(), 40)" in ability,
     )
     check(

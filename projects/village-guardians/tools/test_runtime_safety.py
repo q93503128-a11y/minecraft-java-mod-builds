@@ -94,7 +94,7 @@ def main() -> None:
     assert '"open_role_progress_current"' in inventory
     assert '"open_quick_chat"' in inventory
     assert "VillageClientKeys.compactSummary()" in inventory
-    for key in ("GLFW_KEY_Z", "GLFW_KEY_X", "GLFW_KEY_B", "GLFW_KEY_H", "GLFW_KEY_J", "GLFW_KEY_K"):
+    for key in ("GLFW_KEY_Z", "GLFW_KEY_V", "GLFW_KEY_B", "GLFW_KEY_H", "GLFW_KEY_J", "GLFW_KEY_K"):
         assert key in keys
     assert "GLFW_KEY_U" not in keys and "CALLER" not in keys
 

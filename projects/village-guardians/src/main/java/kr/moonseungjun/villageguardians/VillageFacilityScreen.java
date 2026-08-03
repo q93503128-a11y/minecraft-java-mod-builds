@@ -84,7 +84,7 @@ public final class VillageFacilityScreen extends Screen {
             case "caller" -> "상태·성장·통신·귀환";
             case "management" -> "회관 전용 시설 관리";
             case "skill_test_role" -> "금색 관리함 · 시험 직업 선택";
-            case "skill_test_skill" -> "청금석 관리함 · Z/X 기술 장착";
+            case "skill_test_skill" -> "청금석 관리함 · Z/V 기술 장착";
             default -> "시설 고유 기능";
         };
     }

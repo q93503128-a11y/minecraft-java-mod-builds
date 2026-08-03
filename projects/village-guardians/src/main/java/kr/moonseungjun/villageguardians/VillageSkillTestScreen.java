@@ -299,7 +299,7 @@ public final class VillageSkillTestScreen extends Screen {
         for (int i = lines.length - 1; i >= 0; i--) {
             if (!lines[i].isBlank()) return lines[i];
         }
-        return roleMode ? "시험 전용 직업 선택" : "Z/X 실제 시전용 기술 장착";
+        return roleMode ? "시험 전용 직업 선택" : "Z/V 실제 시전용 기술 장착";
     }
 
     private Content content(Layout layout) {

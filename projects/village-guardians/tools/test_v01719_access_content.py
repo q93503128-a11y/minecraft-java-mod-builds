@@ -43,7 +43,7 @@ def main() -> None:
         assert token in keys, token
     for token in ["GLFW.GLFW_KEY_E", "GLFW.GLFW_KEY_Q", "GLFW.GLFW_KEY_F",
                   "GLFW.GLFW_KEY_P", "GLFW.GLFW_KEY_L", "GLFW.GLFW_KEY_C",
-                  "GLFW.GLFW_KEY_X"]:
+                  "GLFW.GLFW_KEY_V"]:
         assert token in keys, token
     assert "VANILLA_RESERVED" in keys and "migrateUnsafeBindings" in keys
     assert "!used.add(value)" in keys and "minecraft.options.save()" in keys

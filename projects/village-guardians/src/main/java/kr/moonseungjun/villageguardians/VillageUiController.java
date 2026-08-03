@@ -149,7 +149,7 @@ public final class VillageUiController {
         }
         String summary = "Lv." + VillageCouncilState.levelOf(player.getUUID())
                 + " · 주화 " + VillageProgressionSystem.coins(player)
-                + " · 습득은 연구소 · 습득 후 Z/X 장착 변경";
+                + " · 습득은 연구소 · 습득 후 Z/V 장착 변경";
         send(player, "role_skills", "직업 기술 연구",
                 role.id() + "|" + role.displayName() + "|" + summary, actions, labels);
     }
@@ -269,11 +269,21 @@ public final class VillageUiController {
     }
 
     public static void openSkillTest(ServerPlayer player) {
-        boolean alreadyEnabled = VillageSkillTestSystem.isEnabled(player);
-        String mode = prepareSkillTest(player);
-        if (mode == null) return;
-        if (alreadyEnabled) sendSkillTestSkillManager(player, mode);
-        else sendSkillTestRoleManager(player, mode);
+        if (VillageSkillTestSystem.isEnabled(player)) {
+            sendSkillTestSkillManager(player, "외부 시험장 활성화");
+            return;
+        }
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            openResult(player, "기술 시험", "기술 시험 시작은 기술 연구소 연구대 근처에서만 가능합니다.",
+                    "open_role_skill_research");
+            return;
+        }
+        openSkillTestPassword(player, "기술 시험관 접근 코드를 입력하세요.");
+    }
+
+    private static void openSkillTestPassword(ServerPlayer player, String message) {
+        send(player, "skill_test_password", "기술 시험관 인증", message,
+                List.of(), List.of());
     }
 
     public static void openSkillTestRoleManager(ServerPlayer player) {
@@ -287,20 +297,16 @@ public final class VillageUiController {
     }
 
     private static String prepareSkillTest(ServerPlayer player) {
-        boolean alreadyEnabled = VillageSkillTestSystem.isEnabled(player);
-        if (!alreadyEnabled && !VillageLocationRules.isNearSkillHall(player)) {
-            openResult(player, "기술 시험", "기술 시험 시작은 기술 연구소 연구대 근처에서만 가능합니다.",
-                    "open_role_skill_research");
-            return null;
-        }
-        String mode = alreadyEnabled
-                ? "외부 시험장 활성화"
-                : VillageSkillTestSystem.enable(player);
         if (!VillageSkillTestSystem.isEnabled(player)) {
-            openResult(player, "기술 시험", mode, "open_role_skill_research");
+            if (!VillageLocationRules.isNearSkillHall(player)) {
+                openResult(player, "기술 시험", "기술 시험 시작은 기술 연구소 연구대 근처에서만 가능합니다.",
+                        "open_role_skill_research");
+            } else {
+                openSkillTestPassword(player, "인증 후 시험장 관리 기능을 사용할 수 있습니다.");
+            }
             return null;
         }
-        return mode;
+        return "외부 시험장 활성화";
     }
 
     private static void sendSkillTestRoleManager(ServerPlayer player, String mode) {
@@ -314,7 +320,7 @@ public final class VillageUiController {
                     + "\n시험 전용 직업만 변경하며 실제 직업·성장·저장값은 바뀌지 않습니다.");
         }
         add(actions, labels,
-                "open_skill_test_skills", "스킬 관리함 열기|현재 시험 직업의 Z/X 기술 장착 화면",
+                "open_skill_test_skills", "스킬 관리함 열기|현재 시험 직업의 Z/V 기술 장착 화면",
                 "test_exit", "시험 종료·복귀|시험 데이터를 정리하고 원래 위치로 복귀");
         String body = mode
                 + "\n현재 시험 직업: " + selected.displayName()
@@ -331,8 +337,8 @@ public final class VillageUiController {
             labels.add("Z · " + skill.displayName() + "|" + skill.description()
                     + "\n선택하면 Z 슬롯에 장착되고 창이 자동으로 닫힙니다.");
             actions.add("test_equip:" + skill.id() + ":1");
-            labels.add("X · " + skill.displayName() + "|" + skill.description()
-                    + "\n선택하면 X 슬롯에 장착되고 창이 자동으로 닫힙니다.");
+            labels.add("V · " + skill.displayName() + "|" + skill.description()
+                    + "\n선택하면 V 슬롯에 장착되고 창이 자동으로 닫힙니다.");
         }
         add(actions, labels,
                 "open_skill_test_roles", "직업 관리함 열기|시험할 직업을 변경",
@@ -342,7 +348,7 @@ public final class VillageUiController {
         String body = mode
                 + "\n현재 시험 직업: " + role.displayName()
                 + "\n현재 임시 장착: " + VillageSkillTestSystem.loadoutSummary(player)
-                + "\n기술 선택 후 창이 닫히면 Z/X를 눌러 실제 시전합니다. K로 다시 엽니다.";
+                + "\n기술 선택 후 창이 닫히면 Z/V를 눌러 실제 시전합니다. K로 다시 엽니다.";
         send(player, "skill_test_skill", "시험 스킬 관리함", body, actions, labels);
     }
 
@@ -544,16 +550,30 @@ public final class VillageUiController {
             }
             return true;
         }
+        if (action.startsWith("skill_test_password:")) {
+            String code = action.substring("skill_test_password:".length()).trim();
+            if (!"1557".equals(code)) {
+                openSkillTestPassword(player, "접근 코드가 올바르지 않습니다. 다시 입력하세요.");
+                return true;
+            }
+            if (!VillageLocationRules.isNearSkillHall(player)) {
+                openResult(player, "기술 시험", "기술 연구소 연구대 근처에서만 인증할 수 있습니다.",
+                        "open_role_skill_research");
+                return true;
+            }
+            String mode = VillageSkillTestSystem.enable(player);
+            if (!VillageSkillTestSystem.isEnabled(player)) {
+                openResult(player, "기술 시험", mode, "open_role_skill_research");
+            } else {
+                sendSkillTestRoleManager(player, mode);
+            }
+            return true;
+        }
+
         if (action.startsWith("test_role:")) {
             player.sendSystemMessage(Component.literal("§b"
                     + VillageSkillTestSystem.selectRole(player, action.substring(10))));
             openSkillTestRoleManager(player);
-            return true;
-        }
-        if (action.startsWith("test_choose:")) {
-            player.sendSystemMessage(Component.literal("§b"
-                    + VillageSkillTestSystem.equip(player, action.substring(12), 0)));
-            openSkillTest(player);
             return true;
         }
         if (action.startsWith("test_equip:")) {
@@ -644,11 +664,12 @@ public final class VillageUiController {
                     "open_forge_enhancement", "장비 선택 강화|보유한 등급 장비를 골라 개별 강화",
                     "open_fusion", "장비 3개 합성|같은 종류·같은 등급·같은 강화 단계 세 개를 상위 등급으로 합성");
             case SKILL_HALL -> add(actions, labels,
-                    "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 Z/X 장착만 관리",
+                    "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 Z/V 장착만 관리",
                     "open_defense_research", "마을 방어 연구|용병·포탑·전리품 연구 트리",
-                    "open_skill_test", "외부 기술 시험장|야외 시험장으로 이동해 Z/X에 기술을 임시 장착하고 실제 모션 시험");
+                    "open_skill_test", "외부 기술 시험장|야외 시험장으로 이동해 Z/V에 기술을 임시 장착하고 실제 모션 시험");
             case INFIRMARY -> { }
             case BARRACKS -> add(actions, labels,
+                    "open_wave_intel", "다음 밤 적 정찰|웨이브별 병과·수량·특성·보스 편성 확인",
                     "open_mercenary_command", "용병 고용·성장|병과를 선택해 지속 용병 배치");
             case STOREHOUSE, TOWN_HALL -> { }
         }
@@ -660,7 +681,7 @@ public final class VillageUiController {
             case SMITHY -> "등급 장비를 하나씩 선택해 강화하고, 같은 종류·등급·강화 단계 장비 세 개를 합성합니다.";
             case SKILL_HALL -> "직업 기술과 용병·포탑 방어 연구를 담당합니다.";
             case INFIRMARY -> "낮 동안 마을 안 플레이어의 체력을 항상 완전히 회복하고, 레벨별 전투 버프를 제공합니다.";
-            case BARRACKS -> "용병 고용과 모든 경험치 획득량 증가 패시브를 담당합니다. 현재 XP +"
+            case BARRACKS -> "다음 밤 적 정찰과 용병 고용, 모든 경험치 획득량 증가 패시브를 담당합니다. 현재 XP +"
                     + (VillageProgressionSystem.experienceMultiplierPercent() - 100) + "%";
             case STOREHOUSE -> "장비·식량·화살 구매와 전리품 판매를 담당합니다.";
             case TOWN_HALL -> "직업 배치와 모든 시설 수리·강화·건설을 담당합니다.";

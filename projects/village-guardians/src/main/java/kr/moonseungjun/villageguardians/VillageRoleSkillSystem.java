@@ -205,7 +205,7 @@ public final class VillageRoleSkillSystem {
     public static String loadoutSummary(ServerPlayer player) {
         String first = equippedSkill(player, 0).map(ActiveSkill::displayName).orElse("비어 있음");
         String second = equippedSkill(player, 1).map(ActiveSkill::displayName).orElse("비어 있음");
-        return "Z: " + first + " | X: " + second;
+        return "Z: " + first + " | V: " + second;
     }
 
     public static synchronized int cooldownRemainingSeconds(ServerPlayer player, int slot) {
@@ -278,7 +278,7 @@ public final class VillageRoleSkillSystem {
         ActiveSkill skill = equippedSkill(player, slot).orElse(null);
         if (skill == null) {
             return testing
-                    ? "시험 슬롯 " + (slot == 0 ? "Z" : "X") + "이 비어 있습니다. 시험 관리함에서 기술을 장착하세요."
+                    ? "시험 슬롯 " + (slot == 0 ? "Z" : "V") + "이 비어 있습니다. 시험 관리함에서 기술을 장착하세요."
                     : "기술 슬롯 " + (slot + 1) + "이 비어 있습니다. 직업 성장 화면에서 기술을 장착하세요.";
         }
         if (!(player.level() instanceof ServerLevel level)) {
