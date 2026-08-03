@@ -1,0 +1,39 @@
+name: Fix Living Kingdoms supply catalog type
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/fix-lk-supply-catalog-type.py'
+      - '.github/workflows/fix-lk-supply-catalog-type.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python .github/scripts/fix-lk-supply-catalog-type.py
+      - shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomSupplyManager.java
+          git commit -m "Fix Erden supply catalog loop type"
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            git fetch origin main
+            git reset --hard origin/main
+            python .github/scripts/fix-lk-supply-catalog-type.py
+            git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomSupplyManager.java
+            git commit -m "Fix Erden supply catalog loop type"
+            sleep $((attempt * 2))
+          done
+          exit 1
