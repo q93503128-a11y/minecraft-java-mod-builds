@@ -1,0 +1,145 @@
+name: Audit Living Kingdoms kingdom supply
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/audit-living-kingdoms-kingdom-supply.yml'
+
+concurrency:
+  group: living-kingdoms-kingdom-supply-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Prove fixed warehouse imports are gone
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R "importWarehouseStock" "$PROJECT_DIR/src/main/java"
+          ! grep -R 'addMetric("imports"' "$PROJECT_DIR/src/main/java"
+          grep -F 'ErdenKingdomSupplyManager.prepareBeforeCityEconomy(level, economy);' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java"
+
+      - name: Java 25 compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p ../../logs
+          gradle --no-daemon clean classes --stacktrace --console=plain 2>&1 | tee ../../logs/kingdom-supply-compile.log
+
+      - name: Fresh world kingdom supply audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-supply-ci-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-supply-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/kingdom-supply-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 900); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/kingdom-supply-server.log; then
+              cat ../../logs/kingdom-supply-server.log
+              exit 1
+            fi
+            if grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/kingdom-supply-server.log \
+              && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/kingdom-supply-server.log \
+              && grep -Fq 'kingdom_supply=true' ../../logs/kingdom-supply-server.log \
+              && grep -Fq 'LK_ERDEN_LIVING_ECONOMY_PASS revision=1 households=77 shops=50' ../../logs/kingdom-supply-server.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/kingdom-supply-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/kingdom-supply-server.log
+          test "$passed" -eq 1
+          grep -F 'Prepared Erden kingdom supply nodes=18 producers=15 wharves=3 opening_convoys=18 fixed_daily_imports=false shipment_escrow=true' ../../logs/kingdom-supply-server.log
+          grep -F 'Processed Erden kingdom supply day=' ../../logs/kingdom-supply-server.log
+          grep -F 'fixed_daily_imports=false' ../../logs/kingdom-supply-server.log
+          grep -F 'shipment_escrow=true' ../../logs/kingdom-supply-server.log
+          grep -F 'route_modes=wagon,barge' ../../logs/kingdom-supply-server.log
+          grep -E 'produced=[1-9][0-9]*' ../../logs/kingdom-supply-server.log
+          grep -E 'dispatched=[1-9][0-9]*' ../../logs/kingdom-supply-server.log
+          grep -E 'received=[1-9][0-9]*' ../../logs/kingdom-supply-server.log
+          grep -E 'warehouses_supplied=([4-9]|1[0-5])' ../../logs/kingdom-supply-server.log
+          grep -E 'active_shipments=[1-9][0-9]*' ../../logs/kingdom-supply-server.log
+          grep -F 'purchase_outcomes=77' ../../logs/kingdom-supply-server.log
+          grep -F 'reserve_bread=42' ../../logs/kingdom-supply-server.log
+          grep -F 'authoritative_transport=true kingdom_supply=true' ../../logs/kingdom-supply-server.log
+
+          if grep -Eqi 'fixed warehouse import|Invalid Erden physical economy|kingdom supply.*failed|Exception loading level|watchdog' ../../logs/kingdom-supply-server.log; then
+            exit 1
+          fi
+
+      - name: Upload supply audit logs
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-kingdom-supply-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Record supply audit pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-kingdom-supply.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-kingdom-supply.json
+            git commit -m "Record Living Kingdoms kingdom supply audit $GITHUB_RUN_NUMBER" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
