@@ -24,7 +24,7 @@ def main() -> None:
     respawn = read("VillageRespawnSystem.java")
     inventory = read("VillageInventoryPanel.java")
 
-    assert "mod_version=0.17.17-alpha.1" in props
+    assert "mod_version=0.17.18-alpha.1" in props
     assert "currentOffers(int day)" in shop and "rotatingOffers" in shop
     assert 'EQUIPMENT("장비")' in shop and 'ARCANE_FOCUS("arcane_focus"' in shop
     assert "Category.EQUIPMENT, Items.BLAZE_ROD" in shop
@@ -39,7 +39,9 @@ def main() -> None:
     assert "font.width(normalized)" in quick
     assert "openQuickChat(player);" in controller
     assert "openQuickChat(player);" in service
-    assert 'consume(CALLER, "open_quick_chat")' in read("VillageClientKeys.java")
+    key_source = read("VillageClientKeys.java")
+    assert 'consume(QUICK_COMMUNICATION, "open_quick_chat")' in key_source
+    assert "CALLER" not in key_source and "GLFW.GLFW_KEY_U" not in key_source
     assert 'action = "open_quick_chat"' in inventory
 
     assert "combineSelected" in rarity and "fusionCandidates" in rarity

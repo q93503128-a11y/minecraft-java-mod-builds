@@ -43,8 +43,8 @@ public final class VillageStarterKit {
         boolean firstNotice = player.addTag(CALLER_MIGRATION_TAG);
         if (firstNotice) {
             player.sendSystemMessage(Component.literal(
-                    "§6[수호단 조작] §f빠른 통신은 인벤토리 버튼이나 B/U 키로 엽니다. "
-                            + "기본키 Z 기술1 · X 기술2 · B 빠른 통신 · H 상태 · J 성장 · K 직업 성장 · U 빠른 통신"));
+                    "§6[수호단 조작] §f인벤토리의 상태·성장·직업 성장·통신 버튼을 사용할 수 있습니다. "
+                            + "현재 단축키는 설정 > 조작 > 마을 지키기에서 확인하거나 변경하세요."));
         } else if (removed) {
             player.sendSystemMessage(Component.literal(
                     "§e기존 호출기 아이템을 제거했습니다. 인벤토리 화면의 빠른 통신 버튼을 사용하세요."));

@@ -23,7 +23,6 @@ public final class VillageClientKeys {
     private static final KeyMapping STATUS = key("status", GLFW.GLFW_KEY_H);
     private static final KeyMapping GROWTH = key("personal_progress", GLFW.GLFW_KEY_J);
     private static final KeyMapping ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_K);
-    private static final KeyMapping CALLER = key("caller", GLFW.GLFW_KEY_U);
     private static boolean tickListenerRegistered;
     private static boolean legacySkillBindingsChecked;
 
@@ -41,7 +40,6 @@ public final class VillageClientKeys {
         event.register(STATUS);
         event.register(GROWTH);
         event.register(ROLE_PROGRESS);
-        event.register(CALLER);
         if (!tickListenerRegistered) {
             tickListenerRegistered = true;
             NeoForge.EVENT_BUS.addListener(VillageClientKeys::onClientTick);
@@ -60,7 +58,6 @@ public final class VillageClientKeys {
             drain(STATUS);
             drain(GROWTH);
             drain(ROLE_PROGRESS);
-            drain(CALLER);
             return;
         }
         consume(ROLE_SKILL_ONE, "use_skill:0");
@@ -69,7 +66,22 @@ public final class VillageClientKeys {
         consume(STATUS, "open_status");
         consume(GROWTH, "open_skill_tree");
         consume(ROLE_PROGRESS, "open_role_progress_current");
-        consume(CALLER, "open_quick_chat");
+    }
+
+    public static String skillOneKeyName() { return keyName(ROLE_SKILL_ONE); }
+    public static String skillTwoKeyName() { return keyName(ROLE_SKILL_TWO); }
+    public static String quickCommunicationKeyName() { return keyName(QUICK_COMMUNICATION); }
+    public static String statusKeyName() { return keyName(STATUS); }
+    public static String growthKeyName() { return keyName(GROWTH); }
+    public static String roleProgressKeyName() { return keyName(ROLE_PROGRESS); }
+
+    public static String compactSummary() {
+        return quickCommunicationKeyName() + " 통신 · "
+                + skillOneKeyName() + "/" + skillTwoKeyName() + " 기술";
+    }
+
+    private static String keyName(KeyMapping mapping) {
+        return mapping.getTranslatedKeyMessage().getString();
     }
 
     private static void migrateLegacySkillBindings(Minecraft minecraft) {

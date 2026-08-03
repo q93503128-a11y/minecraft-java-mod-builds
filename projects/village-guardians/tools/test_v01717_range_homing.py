@@ -16,14 +16,14 @@ def main() -> None:
     mesh = text("VillageSkillMeshLibrary.java")
     guardians = text("VillageGuardians.java")
 
-    assert "mod_version=0.17.17-alpha.1" in props
+    assert "mod_version=0.17.18-alpha.1" in props
 
-    assert "LivingEntityUseItemEvent.Tick" in guardians
-    assert "handleUseItemTick" in ability
-    assert "event.setDuration" in ability
-    assert "instanceof BowItem" in ability and "instanceof CrossbowItem" in ability
+    assert "LivingEntityUseItemEvent" not in guardians
+    assert "handleUseItemTick" not in ability
+    assert "tickRapidBow" in ability
+    assert "player.releaseUsingItem()" in ability
     assert "event.setCharge(20)" in ability
-    print("[PASS] 신속 삼연사가 실제 활·석궁 사용시간과 발사 충전량을 가속합니다")
+    print("[PASS] 신속 삼연사가 실제 활 사용을 조기에 종료해 완충 발사를 실행합니다")
 
     assert "TRACKING_ARROWS" in ability
     assert "lockArrowOnTarget" in ability

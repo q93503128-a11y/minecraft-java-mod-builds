@@ -70,20 +70,20 @@ public final class VillageInventoryPanel {
 
         drawRow(graphics, minecraft, layout, layout.top() + 41, "직업", status.role(), ACCENT);
         drawRow(graphics, minecraft, layout, layout.top() + 55, "주화", economyValue(status.economy()), GOLD);
-        graphics.text(minecraft.font, fit(minecraft, "B 통신 · Z/X 기술", layout.width() - 18),
+        graphics.text(minecraft.font, fit(minecraft, VillageClientKeys.compactSummary(), layout.width() - 18),
                 layout.left() + 9, layout.top() + 70, MUTED, false);
 
         int gap = 5;
         int buttonWidth = (layout.width() - 18 - gap) / 2;
         int firstY = layout.top() + 84;
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 9, firstY, buttonWidth, "상태 H", ACCENT);
+                layout.left() + 9, firstY, buttonWidth, VillageClientKeys.statusKeyName() + " 상태", ACCENT);
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 9 + buttonWidth + gap, firstY, buttonWidth, "성장 J", GOLD);
+                layout.left() + 9 + buttonWidth + gap, firstY, buttonWidth, VillageClientKeys.growthKeyName() + " 성장", GOLD);
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 9, firstY + 21, buttonWidth, "직업 K", ACCENT);
+                layout.left() + 9, firstY + 21, buttonWidth, VillageClientKeys.roleProgressKeyName() + " 직업 성장", ACCENT);
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
-                layout.left() + 9 + buttonWidth + gap, firstY + 21, buttonWidth, "통신 U", GOLD);
+                layout.left() + 9 + buttonWidth + gap, firstY + 21, buttonWidth, VillageClientKeys.quickCommunicationKeyName() + " 통신", GOLD);
     }
 
     private static void drawRow(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,

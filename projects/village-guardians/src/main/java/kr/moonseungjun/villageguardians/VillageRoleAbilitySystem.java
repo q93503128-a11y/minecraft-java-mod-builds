@@ -17,14 +17,12 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent;
 import net.neoforged.neoforge.event.entity.player.ArrowLooseEvent;
 
@@ -47,6 +45,7 @@ import java.util.UUID;
 public final class VillageRoleAbilitySystem {
     private static final Map<UUID, Long> SPIN_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> RAPID_UNTIL = new HashMap<>();
+    private static final Map<UUID, Integer> RAPID_DRAW_TICKS = new HashMap<>();
     private static final Map<UUID, Long> RICOCHET_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> RICOCHET_ARROWS = new HashMap<>();
     private static final Map<UUID, TrackingArrowState> TRACKING_ARROWS = new HashMap<>();
@@ -68,6 +67,7 @@ public final class VillageRoleAbilitySystem {
     public static void reset() {
         SPIN_UNTIL.clear();
         RAPID_UNTIL.clear();
+        RAPID_DRAW_TICKS.clear();
         RICOCHET_UNTIL.clear();
         RICOCHET_ARROWS.clear();
         TRACKING_ARROWS.clear();
@@ -261,6 +261,7 @@ public final class VillageRoleAbilitySystem {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!(player.level() instanceof ServerLevel level) || VillageRespawnSystem.isDowned(player)) continue;
             UUID id = player.getUUID();
+            tickRapidBow(player, id, now);
             long spinUntil = SPIN_UNTIL.getOrDefault(id, 0L);
             if (spinUntil >= now) {
                 player.setYBodyRot((float) ((now * 38.0) % 360.0));
@@ -309,6 +310,24 @@ public final class VillageRoleAbilitySystem {
         }
     }
 
+    private static void tickRapidBow(ServerPlayer player, UUID id, long now) {
+        if (RAPID_UNTIL.getOrDefault(id, 0L) < now
+                || !player.isUsingItem()
+                || !(player.getUseItem().getItem() instanceof BowItem)) {
+            RAPID_DRAW_TICKS.remove(id);
+            return;
+        }
+        int usedTicks = RAPID_DRAW_TICKS.merge(id, 1, Integer::sum);
+        int specialRank = VillageRoleSkillSystem.specialRank(player, VillageRole.RANGER);
+        int completeAt = Math.max(5, 9 - Math.min(4, specialRank));
+        if (usedTicks < completeAt) return;
+
+        // ArrowLooseEvent turns this prepared shot into a full-charge shot.
+        // Releasing the real use action also resets the client draw animation,
+        // unlike only changing a duration value inside an item-use tick event.
+        player.releaseUsingItem();
+        RAPID_DRAW_TICKS.remove(id);
+    }
 
     private static void tickTrackingArrows(MinecraftServer server, long now) {
         ServerLevel level = server.overworld();
@@ -467,7 +486,9 @@ public final class VillageRoleAbilitySystem {
             }
             moving.lastPosition(position);
             moving.age(moving.age() + 1);
-            List<Mob> hits = targetsNear(level, owner, position, moving.radius(), 40);
+            double contactRadius = moving.kind() == MovingKind.FIRE_ORB
+                    ? fireOrbContactRadius(moving.specialRank()) : moving.radius();
+            List<Mob> hits = targetsNear(level, owner, position, contactRadius, 40);
             boolean expired = entity == null || !entity.isAlive() || blocked || moving.age() >= moving.maxAge();
             switch (moving.kind()) {
                 case FIRE_ORB -> {
@@ -512,6 +533,7 @@ public final class VillageRoleAbilitySystem {
     private static void cleanupExpired(MinecraftServer server, long now) {
         SPIN_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         RAPID_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
+        RAPID_DRAW_TICKS.keySet().removeIf(id -> RAPID_UNTIL.getOrDefault(id, 0L) < now);
         RICOCHET_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         RICOCHET_ARROWS.entrySet().removeIf(entry -> entry.getValue() < now);
         TRACKING_ARROWS.entrySet().removeIf(entry -> entry.getValue().until() < now);
@@ -520,17 +542,6 @@ public final class VillageRoleAbilitySystem {
         FORTRESS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         AEGIS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         CHARGE_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
-    }
-
-    public static void handleUseItemTick(LivingEntityUseItemEvent.Tick event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !isRangerContext(player)) return;
-        long now = player.level().getGameTime();
-        if (RAPID_UNTIL.getOrDefault(player.getUUID(), 0L) < now) return;
-        ItemStack stack = event.getItem();
-        if (!(stack.getItem() instanceof BowItem) && !(stack.getItem() instanceof CrossbowItem)) return;
-        int special = VillageRoleSkillSystem.specialRank(player, VillageRole.RANGER);
-        int acceleration = 3 + Math.min(2, special / 2);
-        event.setDuration(Math.max(1, event.getDuration() - acceleration));
     }
 
     public static void handleArrowLoose(ArrowLooseEvent event) {
@@ -1040,6 +1051,10 @@ public final class VillageRoleAbilitySystem {
 
     private static boolean isRangerContext(ServerPlayer player) {
         return activeRole(player) == VillageRole.RANGER;
+    }
+
+    private static double fireOrbContactRadius(int specialRank) {
+        return Math.min(1.80, 1.40 + Math.max(0, specialRank) * 0.08);
     }
 
     private static double areaRadius(double base, int specialRank) {

@@ -70,7 +70,7 @@ public final class VillageUiController {
                 + " · 공동 보급품 " + VillageProgressionSystem.supplies() + "\n"
                 + "마을  제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName() + " · " + VillageRaidSystem.status() + "\n"
-                + "기본키 Z 기술1 · X 기술2 · B 빠른 통신 · H 상태 · J 성장 · K 직업 성장 · U 빠른 통신";
+                + "단축키  설정 > 조작 > 마을 지키기에서 현재 지정 키 확인·변경";
         send(player, "status", "수호자 상태", body, List.of(), List.of());
     }
 

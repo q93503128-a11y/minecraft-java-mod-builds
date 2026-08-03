@@ -44,7 +44,8 @@ public final class VillageQuickChatScreen extends Screen {
         int centerLeft = centerX - centerWidth / 2;
         int centerTop = centerY - centerHeight / 2;
 
-        graphics.text(font, fit("B/U 빠른 통신 · 선택 즉시 전송 · ESC 닫기", Math.max(1, width - 20)),
+        graphics.text(font, fit(VillageClientKeys.quickCommunicationKeyName()
+                        + " 빠른 통신 · 선택 즉시 전송 · ESC 닫기", Math.max(1, width - 20)),
                 10, 9, MUTED, false);
         boolean closeHovered = inside(mouseX, mouseY, centerLeft, centerTop, centerWidth, centerHeight);
         graphics.fill(centerLeft - 1, centerTop - 1, centerLeft + centerWidth + 1,
