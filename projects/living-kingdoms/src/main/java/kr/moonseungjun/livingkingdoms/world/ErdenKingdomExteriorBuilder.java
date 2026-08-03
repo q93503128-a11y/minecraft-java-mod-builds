@@ -5,6 +5,7 @@ import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -148,10 +149,9 @@ public final class ErdenKingdomExteriorBuilder {
             }
         }
         CI_REQUIRED.addAll(unique);
-        CI_REQUIRED.addAll(unique);
         CI_REQUESTS.addAll(unique);
         LivingKingdoms.LOGGER.info(
-                "Requested Erden exterior CI anchors nodes={} request_queue={} metre_scale=true streamed=true staggered=true synchronous_get_chunk=false max_in_flight={}",
+                "Requested Erden exterior CI anchors nodes={} request_queue={} metre_scale=true streamed=true staggered=true synchronous_get_chunk=false forced_chunks=false transient_ticket=portal max_in_flight={}",
                 ErdenKingdomSupplyCatalog.nodes().size(), CI_REQUESTS.size(), CI_MAX_IN_FLIGHT);
     }
 
@@ -178,7 +178,8 @@ public final class ErdenKingdomExteriorBuilder {
                 continue;
             }
             if (RETAINED.add(packed)) {
-                level.setChunkForced(chunkX, chunkZ, true);
+                level.getChunkSource().addTicketAndLoadWithRadius(
+                        TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
             }
             CI_LOADING.add(packed);
         }
@@ -733,8 +734,7 @@ public final class ErdenKingdomExteriorBuilder {
 
     private static void release(ServerLevel level, long packed) {
         CI_LOADING.remove(packed);
-        if (!RETAINED.remove(packed)) return;
-        level.setChunkForced(unpackX(packed), unpackZ(packed), false);
+        RETAINED.remove(packed);
     }
 
     private static long pack(int x, int z) {
