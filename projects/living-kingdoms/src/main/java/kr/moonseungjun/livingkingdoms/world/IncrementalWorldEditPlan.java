@@ -15,7 +15,8 @@ import java.util.Map;
 /** Ordered, compact block-state edit plan that can be applied over many server ticks. */
 public final class IncrementalWorldEditPlan {
     private static final ThreadLocal<IncrementalWorldEditPlan> ACTIVE = new ThreadLocal<>();
-    private static final int CONSTRUCTION_UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
+    private static final int CONSTRUCTION_UPDATE_FLAGS =
+            Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
     private final List<Operation> operations = new ArrayList<>();
     private final Map<Long, Integer> originalSurfaceHeights = new HashMap<>();
