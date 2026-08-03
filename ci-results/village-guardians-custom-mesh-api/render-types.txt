@@ -167,4 +167,3 @@ public class net.minecraft.client.renderer.rendertype.RenderTypes {
   private static net.minecraft.client.renderer.rendertype.RenderType lambda$static$0(net.minecraft.resources.Identifier, java.lang.Boolean);
   static {};
 }
-Error: class not found: net.minecraft.client.renderer.rendertype.RenderStateShard

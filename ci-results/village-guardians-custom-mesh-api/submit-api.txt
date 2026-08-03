@@ -2,6 +2,34 @@ Compiled from "SubmitNodeCollector.java"
 public interface net.minecraft.client.renderer.SubmitNodeCollector extends net.minecraft.client.renderer.OrderedSubmitNodeCollector {
   public abstract net.minecraft.client.renderer.OrderedSubmitNodeCollector order(int);
 }
+Compiled from "SubmitNodeCollector.java"
+public interface net.minecraft.client.renderer.SubmitNodeCollector$CustomGeometryRenderer {
+  public abstract void render(com.mojang.blaze3d.vertex.PoseStack$Pose, com.mojang.blaze3d.vertex.VertexConsumer);
+}
+Compiled from "OrderedSubmitNodeCollector.java"
+public interface net.minecraft.client.renderer.OrderedSubmitNodeCollector extends net.neoforged.neoforge.client.extensions.OrderedSubmitNodeCollectorExtension {
+  public abstract void submitShadow(com.mojang.blaze3d.vertex.PoseStack, float, java.util.List<net.minecraft.client.renderer.entity.state.EntityRenderState$ShadowPiece>);
+  public abstract void submitNameTag(com.mojang.blaze3d.vertex.PoseStack, net.minecraft.world.phys.Vec3, int, net.minecraft.network.chat.Component, boolean, int, net.minecraft.client.renderer.state.level.CameraRenderState);
+  public abstract void submitText(com.mojang.blaze3d.vertex.PoseStack, float, float, net.minecraft.util.FormattedCharSequence, boolean, net.minecraft.client.gui.Font$DisplayMode, int, int, int, int);
+  public abstract void submitFlame(com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.entity.state.EntityRenderState, org.joml.Quaternionf);
+  public abstract void submitLeash(com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.entity.state.EntityRenderState$LeashState);
+  public abstract <S> void submitModel(net.minecraft.client.model.Model<? super S>, S, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.rendertype.RenderType, int, int, int, net.minecraft.client.renderer.texture.TextureAtlasSprite, int, net.minecraft.client.renderer.feature.ModelFeatureRenderer$CrumblingOverlay);
+  public default <S> void submitModel(net.minecraft.client.model.Model<? super S>, S, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.rendertype.RenderType, int, int, int, net.minecraft.client.renderer.feature.ModelFeatureRenderer$CrumblingOverlay);
+  public default <S> void submitModel(net.minecraft.client.model.Model<? super S>, S, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.resources.Identifier, int, int, int, net.minecraft.client.renderer.feature.ModelFeatureRenderer$CrumblingOverlay);
+  public default <S> void submitModel(net.minecraft.client.model.Model<S>, S, com.mojang.blaze3d.vertex.PoseStack, int, int, int, net.minecraft.client.resources.model.sprite.SpriteId, net.minecraft.client.resources.model.sprite.SpriteGetter, int, net.minecraft.client.renderer.feature.ModelFeatureRenderer$CrumblingOverlay);
+  public default void submitModelPart(net.minecraft.client.model.geom.ModelPart, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.rendertype.RenderType, int, int, net.minecraft.client.renderer.texture.TextureAtlasSprite);
+  public default void submitModelPart(net.minecraft.client.model.geom.ModelPart, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.rendertype.RenderType, int, int, net.minecraft.client.renderer.texture.TextureAtlasSprite, int, net.minecraft.client.renderer.feature.ModelFeatureRenderer$CrumblingOverlay);
+  public default void submitModelPart(net.minecraft.client.model.geom.ModelPart, com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.rendertype.RenderType, int, int, net.minecraft.client.renderer.texture.TextureAtlasSprite, int, net.minecraft.client.renderer.feature.ModelFeatureRenderer$CrumblingOverlay, int);
+  public abstract void submitMovingBlock(com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.block.MovingBlockRenderState, int);
+  public abstract void submitBlockModel(com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.rendertype.RenderType, java.util.List<net.minecraft.client.renderer.block.dispatch.BlockStateModelPart>, int[], int, int, int);
+  public abstract void submitBreakingBlockModel(com.mojang.blaze3d.vertex.PoseStack, java.util.List<net.minecraft.client.renderer.block.dispatch.BlockStateModelPart>, int);
+  public abstract void submitShapeOutline(com.mojang.blaze3d.vertex.PoseStack, net.minecraft.world.phys.shapes.VoxelShape, net.minecraft.client.renderer.rendertype.RenderType, int, float, boolean);
+  public abstract void submitItem(com.mojang.blaze3d.vertex.PoseStack, net.minecraft.world.item.ItemDisplayContext, int, int, int, int[], java.util.List<net.minecraft.client.resources.model.geometry.BakedQuad>, net.minecraft.client.renderer.item.ItemStackRenderState$FoilType);
+  public abstract void submitCustomGeometry(com.mojang.blaze3d.vertex.PoseStack, net.minecraft.client.renderer.rendertype.RenderType, net.minecraft.client.renderer.SubmitNodeCollector$CustomGeometryRenderer);
+  public abstract void submitQuadParticleGroup(net.minecraft.client.renderer.state.level.QuadParticleRenderState);
+  public abstract void submitGizmoPrimitives(net.minecraft.client.renderer.gizmos.DrawableGizmoPrimitives$Group, net.minecraft.client.renderer.state.level.CameraRenderState, boolean);
+  private static net.minecraft.client.renderer.rendertype.RenderType lambda$submitModelPart$0(net.minecraft.client.renderer.rendertype.RenderType, net.minecraft.resources.Identifier);
+}
 Compiled from "SubmitNodeStorage.java"
 public class net.minecraft.client.renderer.SubmitNodeStorage implements net.minecraft.client.renderer.SubmitNodeCollector,net.neoforged.neoforge.client.extensions.SubmitNodeStorageExtension {
   private final it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap<net.minecraft.client.renderer.SubmitNodeCollection> submitsPerOrder;
@@ -27,19 +55,25 @@ public class net.minecraft.client.renderer.SubmitNodeStorage implements net.mine
   private static boolean lambda$drainPhases$0(java.util.function.Consumer, net.minecraft.client.renderer.SubmitNodeCollection);
   private static net.minecraft.client.renderer.SubmitNodeCollection lambda$order$0(int);
 }
-Compiled from "FeatureRenderDispatcher.java"
-public class net.minecraft.client.renderer.feature.FeatureRenderDispatcher implements java.lang.AutoCloseable {
-  private final net.minecraft.client.resources.model.ModelManager modelManager;
-  private final net.minecraft.client.resources.model.sprite.AtlasManager atlasManager;
-  private final net.minecraft.client.gui.Font font;
-  private final net.minecraft.client.renderer.state.GameRenderState gameRenderState;
-  private final net.minecraft.client.renderer.StagedVertexBuffer stagedVertexBuffer;
-  private final net.minecraft.client.renderer.feature.FeatureRendererMap featureRenderers;
-  private final net.minecraft.client.renderer.feature.FeatureRenderDispatcher$PreparedFrame preparedFrame;
-  public net.minecraft.client.renderer.feature.FeatureRenderDispatcher(net.minecraft.client.renderer.RenderBuffers, net.minecraft.client.resources.model.ModelManager, net.minecraft.client.resources.model.sprite.AtlasManager, net.minecraft.client.gui.Font, net.minecraft.client.renderer.state.GameRenderState);
-  public net.minecraft.client.renderer.feature.FeatureRenderDispatcher$PreparedFrame prepareFrame(net.minecraft.client.renderer.SubmitNodeStorage);
-  private net.minecraft.client.renderer.feature.FeatureRenderDispatcher$PreparedFrame prepareFrameWithContext(net.minecraft.client.renderer.feature.FeatureFrameContext, net.minecraft.client.renderer.SubmitNodeStorage);
-  public void renderAllFeatures(net.minecraft.client.renderer.SubmitNodeStorage);
-  public void close();
-  private static void lambda$prepareFrameWithContext$0(net.minecraft.client.renderer.feature.FeatureRenderDispatcher$PreparedFrame, net.minecraft.client.renderer.feature.phase.FeatureRenderPhase);
+Compiled from "CustomFeatureRenderer.java"
+public class net.minecraft.client.renderer.feature.CustomFeatureRenderer extends net.minecraft.client.renderer.feature.RenderTypeFeatureRenderer<net.minecraft.client.renderer.feature.CustomFeatureRenderer$Submit> {
+  public static final net.minecraft.client.renderer.feature.FeatureRendererType<net.minecraft.client.renderer.feature.CustomFeatureRenderer$Submit> TYPE;
+  public net.minecraft.client.renderer.feature.CustomFeatureRenderer();
+  protected void buildGroup(net.minecraft.client.renderer.feature.FeatureFrameContext, java.util.List<net.minecraft.client.renderer.feature.CustomFeatureRenderer$Submit>);
+  static {};
+}
+Compiled from "CustomFeatureRenderer.java"
+public final class net.minecraft.client.renderer.feature.CustomFeatureRenderer$Submit extends java.lang.Record implements net.minecraft.client.renderer.feature.submit.BatchableSubmit {
+  private final com.mojang.blaze3d.vertex.PoseStack$Pose pose;
+  private final net.minecraft.client.renderer.rendertype.RenderType renderType;
+  private final net.minecraft.client.renderer.SubmitNodeCollector$CustomGeometryRenderer customGeometryRenderer;
+  public net.minecraft.client.renderer.feature.CustomFeatureRenderer$Submit(com.mojang.blaze3d.vertex.PoseStack$Pose, net.minecraft.client.renderer.rendertype.RenderType, net.minecraft.client.renderer.SubmitNodeCollector$CustomGeometryRenderer);
+  public java.lang.Object batchKey();
+  public net.minecraft.client.renderer.feature.FeatureRendererType<net.minecraft.client.renderer.feature.CustomFeatureRenderer$Submit> featureType();
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public com.mojang.blaze3d.vertex.PoseStack$Pose pose();
+  public net.minecraft.client.renderer.rendertype.RenderType renderType();
+  public net.minecraft.client.renderer.SubmitNodeCollector$CustomGeometryRenderer customGeometryRenderer();
 }

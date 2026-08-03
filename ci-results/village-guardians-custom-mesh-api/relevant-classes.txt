@@ -23,6 +23,9 @@ net/minecraft/client/renderer/SubmitNodeCollection.class
 net/minecraft/client/renderer/SubmitNodeCollector$CustomGeometryRenderer.class
 net/minecraft/client/renderer/SubmitNodeCollector.class
 net/minecraft/client/renderer/SubmitNodeStorage.class
+net/minecraft/client/renderer/entity/player/AvatarRenderer.class
+net/minecraft/client/renderer/entity/state/AvatarRenderState.class
+net/minecraft/client/renderer/entity/state/LivingEntityRenderState.class
 net/minecraft/client/renderer/feature/BlockModelFeatureRenderer$Submit.class
 net/minecraft/client/renderer/feature/BlockModelFeatureRenderer.class
 net/minecraft/client/renderer/feature/CustomFeatureRenderer$Submit.class
