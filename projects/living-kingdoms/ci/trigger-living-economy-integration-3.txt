@@ -1,1 +1,0 @@
-Run the fast checker with persistent integration diagnostics and a clean result pointer.
