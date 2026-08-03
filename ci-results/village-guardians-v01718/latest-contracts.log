@@ -100,14 +100,9 @@ total_xp_to_level30=94685
 [PASS] 홍염탄 접촉 판정은 폭발 반경과 분리되어 작은 값만 사용합니다
 [PASS] 폐지된 호출기 U 중복 단축키가 등록·전송·언어 파일에서 제거되었습니다
 [PASS] 클라이언트 화면은 하드코딩된 글자 대신 현재 지정된 키 이름을 표시합니다
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01718_bow_shortcuts.py", line 94, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01718_bow_shortcuts.py", line 66, in main
-    check(
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01718_bow_shortcuts.py", line 14, in check
-    raise AssertionError(label)
-AssertionError: 서버 안내는 알 수 없는 클라이언트 키를 단정하지 않고 조작 설정을 안내합니다
+[PASS] 서버 안내는 알 수 없는 클라이언트 키를 단정하지 않고 조작 설정을 안내합니다
+[PASS] 단축키 기능 의미가 B 통신·H 상태·J 공통 성장·K 현재 직업 성장으로 일치합니다
+[PASS] 신속 삼연사 설명이 실제 자동 완충·발사 동작과 일치합니다
 === tools/test_v0174_ui_safety.py ===
 Village Guardians v0.17.4 UI, location and shortcut contracts passed.
 === tools/test_v0175_gameplay_ui.py ===
