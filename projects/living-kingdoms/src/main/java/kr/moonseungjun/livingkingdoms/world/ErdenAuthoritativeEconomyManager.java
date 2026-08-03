@@ -32,10 +32,10 @@ import java.util.Set;
  * target only when ErdenTransportManager completes unloading or returns failed cargo.
  */
 public final class ErdenAuthoritativeEconomyManager {
-    public static final int ECONOMY_REVISION = ErdenPhysicalEconomyManager.ECONOMY_REVISION;
-    public static final int EXPECTED_SITES = ErdenPhysicalEconomyManager.EXPECTED_SITES;
-    public static final int EXPECTED_WAREHOUSES = ErdenPhysicalEconomyManager.EXPECTED_WAREHOUSES;
-    public static final int EXPECTED_WALLETS = ErdenPhysicalEconomyManager.EXPECTED_WALLETS;
+    public static final int ECONOMY_REVISION = 1;
+    public static final int EXPECTED_SITES = 156;
+    public static final int EXPECTED_WAREHOUSES = 15;
+    public static final int EXPECTED_WALLETS = 77;
 
     private static final int SYNC_INTERVAL = 20;
     private static final int MAX_CATCH_UP_DAYS = 30;
@@ -121,6 +121,19 @@ public final class ErdenAuthoritativeEconomyManager {
                             + " | 누적 임금 " + site.metric("wages_paid")));
             return;
         }
+    }
+
+    public static List<ExternalUrbanFabricBuilder.UrbanEntrance> ciEntrances() {
+        List<ExternalUrbanFabricBuilder.UrbanEntrance> result = new ArrayList<>();
+        for (String role : List.of("warehouse", "bakery", "shop")) {
+            ExternalUrbanFabricBuilder.entrances().stream()
+                    .filter(entrance -> entrance.role().equals(role))
+                    .sorted(Comparator.comparingInt(ExternalUrbanFabricBuilder.UrbanEntrance::z)
+                            .thenComparingInt(ExternalUrbanFabricBuilder.UrbanEntrance::x))
+                    .findFirst()
+                    .ifPresent(result::add);
+        }
+        return List.copyOf(result);
     }
 
     private static void reset(MinecraftServer server) {

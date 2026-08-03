@@ -38,7 +38,7 @@ public final class ErdenPopulationCiChunkRetainer {
             if (resident.worker()) retainBuilding(level, resident.workX(), resident.workZ());
         }
         for (ExternalUrbanFabricBuilder.UrbanEntrance entrance
-                : ErdenPhysicalEconomyManager.ciEntrances()) {
+                : ErdenAuthoritativeEconomyManager.ciEntrances()) {
             retainBuilding(level, entrance.x(), entrance.z());
         }
     }
@@ -88,10 +88,9 @@ public final class ErdenPopulationCiChunkRetainer {
                 if (!ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ)) {
                     ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
                 }
-                level.setChunkForced(chunkX, chunkZ, true);
                 long key = ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
-                if (RETAINED_CHUNKS.add(key) || !level.hasChunk(chunkX, chunkZ)) {
-                    level.getChunk(chunkX, chunkZ);
+                if (RETAINED_CHUNKS.add(key)) {
+                    level.setChunkForced(chunkX, chunkZ, true);
                 }
             }
         }
