@@ -1,2 +1,0 @@
-Error: class not found: net.neoforged.neoforge.client.extensions.LevelRendererExtension
-Error: class not found: net.neoforged.neoforge.client.extensions.ILevelRendererExtension

@@ -81,6 +81,14 @@ net/minecraft/client/renderer/rendertype/PreparedRenderType$Texture.class
 net/minecraft/client/renderer/rendertype/PreparedRenderType.class
 net/minecraft/client/renderer/rendertype/RenderType.class
 net/minecraft/client/renderer/rendertype/RenderTypes.class
+net/minecraft/network/syncher/EntityDataSerializers$1.class
+net/minecraft/network/syncher/EntityDataSerializers$2.class
+net/minecraft/network/syncher/EntityDataSerializers$3.class
+net/minecraft/network/syncher/EntityDataSerializers.class
+net/minecraft/network/syncher/SynchedEntityData$Builder.class
+net/minecraft/network/syncher/SynchedEntityData$DataItem.class
+net/minecraft/network/syncher/SynchedEntityData$DataValue.class
+net/minecraft/network/syncher/SynchedEntityData.class
 net/minecraft/util/datafix/fixes/ObjectiveRenderTypeFix.class
 net/minecraft/world/scores/criteria/ObjectiveCriteria$RenderType.class
 net/neoforged/fml/earlydisplay/render/SimpleBufferBuilder$Element.class
@@ -115,3 +123,9 @@ net/neoforged/neoforge/client/renderstate/AvatarRenderStateModifier.class
 net/neoforged/neoforge/client/submit/ExtendedBlockModelFeatureRenderer$1.class
 net/neoforged/neoforge/client/submit/ExtendedBlockModelFeatureRenderer$Submit.class
 net/neoforged/neoforge/client/submit/ExtendedBlockModelFeatureRenderer.class
+net/neoforged/neoforge/registries/DeferredRegister$Blocks.class
+net/neoforged/neoforge/registries/DeferredRegister$DataComponents.class
+net/neoforged/neoforge/registries/DeferredRegister$Entities.class
+net/neoforged/neoforge/registries/DeferredRegister$Items.class
+net/neoforged/neoforge/registries/DeferredRegister$RegistryHolder.class
+net/neoforged/neoforge/registries/DeferredRegister.class
