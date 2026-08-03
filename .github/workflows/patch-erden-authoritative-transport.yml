@@ -1,0 +1,79 @@
+name: Patch Erden authoritative transport links
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-erden-authoritative-transport.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Link authoritative economy to cargo escrow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms')
+          economy = root / 'world/ErdenAuthoritativeEconomyManager.java'
+          text = economy.read_text()
+          replacements = {
+              'ErdenTransportManager.beginEconomyDay': 'ErdenCargoEscrowManager.beginEconomyDay',
+              'ErdenTransportManager.endEconomyDay': 'ErdenCargoEscrowManager.endEconomyDay',
+              'ErdenTransportManager.DispatchResult': 'ErdenCargoEscrowManager.DispatchResult',
+              'ErdenTransportManager.dispatchTransfer': 'ErdenCargoEscrowManager.dispatchTransfer',
+              'ErdenTransportManager.inTransitMetric': 'ErdenCargoEscrowManager.inTransitMetric',
+              'ErdenTransportManager.pendingMetric': 'ErdenCargoEscrowManager.pendingMetric',
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'missing expected reference: {old}')
+              text = text.replace(old, new)
+          economy.write_text(text)
+
+          living = root / 'LivingKingdoms.java'
+          text = living.read_text()
+          import_line = 'import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowManager;\n'
+          if import_line not in text:
+              anchor = 'import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;\n'
+              if anchor not in text:
+                  raise SystemExit('missing LivingKingdoms import anchor')
+              text = text.replace(anchor, anchor + import_line)
+          tick = '        ErdenTransportManager.onServerTick(event);\n'
+          escrow_tick = tick + '        ErdenCargoEscrowManager.onServerTick(event);\n'
+          if 'ErdenCargoEscrowManager.onServerTick(event);' not in text:
+              if tick not in text:
+                  raise SystemExit('missing transport tick anchor')
+              text = text.replace(tick, escrow_tick)
+          living.write_text(text)
+
+          if 'ErdenTransportManager.beginEconomyDay' in economy.read_text():
+              raise SystemExit('old economy transport references remain')
+          PY
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
+                  projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java
+          git diff --cached --check
+          git commit -m 'Connect Erden economy to cargo escrow settlement'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
