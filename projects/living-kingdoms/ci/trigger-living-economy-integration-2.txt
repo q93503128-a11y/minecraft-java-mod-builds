@@ -1,1 +1,0 @@
-Run the fast checker that now commits and compiles the Erden living economy integration.
