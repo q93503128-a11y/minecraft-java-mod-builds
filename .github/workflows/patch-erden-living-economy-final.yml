@@ -33,13 +33,15 @@ jobs:
               exit 0
             fi
             python .github/scripts/patch_erden_living_economy_v2.py
+            # GitHub App pushes may not update workflow files. The runtime and docs are committed first;
+            # the connector updates the permanent audit workflow separately after compilation succeeds.
+            git checkout -- .github/workflows/build-living-kingdoms.yml
             git diff --check
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java \
                     projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
-                    projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md \
-                    .github/workflows/build-living-kingdoms.yml
+                    projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md
             git commit -m 'Connect Erden shop schedules prices and errands'
             for attempt in 1 2 3 4 5 6 7 8; do
               if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
