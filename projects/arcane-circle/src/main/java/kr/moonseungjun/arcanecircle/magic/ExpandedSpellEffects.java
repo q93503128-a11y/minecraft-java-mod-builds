@@ -730,22 +730,15 @@ public final class ExpandedSpellEffects {
     }
 
     private static void beam(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {
-        Vec3 delta = end.subtract(start);
-        for (int i = 0; i <= points; i++) {
-            Vec3 point = start.add(delta.scale(i / (double) points));
-
-        }
+        // Client WorldMagicTracker owns spell rendering.
     }
 
     private static void ring(ServerLevel level, Vec3 center, double radius, ParticleOptions particle, int points) {
-        for (int i = 0; i < points; i++) {
-            double angle = Math.PI * 2.0 * i / points;
-
-        }
+        // Client WorldMagicTracker owns spell rendering.
     }
 
     private static void burst(ServerLevel level, Vec3 center, ParticleOptions particle, int count, double spread) {
-
+        // Client WorldMagicTracker owns spell rendering.
     }
 
     private static ServerLevel level(ServerPlayer player) { return (ServerLevel) player.level(); }

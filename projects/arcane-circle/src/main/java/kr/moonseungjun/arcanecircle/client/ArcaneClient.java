@@ -76,12 +76,20 @@ public final class ArcaneClient {
         }
 
         boolean[] down = new boolean[SLOT_KEYS.length];
-        for (int slot = 0; slot < SLOT_KEYS.length; slot++) down[slot] = SLOT_KEYS[slot].isDown();
+        boolean[] pressed = new boolean[SLOT_KEYS.length];
+        for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
+            down[slot] = SLOT_KEYS[slot].isDown();
+            boolean clicked = false;
+            while (SLOT_KEYS[slot].consumeClick()) clicked = true;
+            // consumeClick preserves a very short tap even when GLFW reports the key as
+            // already released by the next client tick.
+            pressed[slot] = clicked || (down[slot] && !SLOT_WAS_DOWN[slot]);
+        }
 
         // Process new presses first. This lets a secondary key join the chord even on the
         // same tick that the primary key is released.
         for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
-            if (!down[slot] || SLOT_WAS_DOWN[slot]) continue;
+            if (!pressed[slot]) continue;
             if (primarySlot < 0) {
                 primarySlot = slot;
                 fusionChord = false;
@@ -100,18 +108,15 @@ public final class ArcaneClient {
             }
         }
 
-        boolean primaryReleased = primarySlot >= 0
-                && !down[primarySlot] && SLOT_WAS_DOWN[primarySlot];
+        boolean primaryReleased = primarySlot >= 0 && !down[primarySlot]
+                && (SLOT_WAS_DOWN[primarySlot] || pressed[primarySlot]);
         if (primaryReleased) {
             if (fusionChord) ClientPacketDistributor.sendToServer(new CommitFusionPayload(0));
             else ClientPacketDistributor.sendToServer(new ReleaseCastPayload(primarySlot));
             resetCastChord();
         }
 
-        for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
-            SLOT_WAS_DOWN[slot] = down[slot];
-            while (SLOT_KEYS[slot].consumeClick()) {}
-        }
+        for (int slot = 0; slot < SLOT_KEYS.length; slot++) SLOT_WAS_DOWN[slot] = down[slot];
     }
 
     private static void resetCastChord() {

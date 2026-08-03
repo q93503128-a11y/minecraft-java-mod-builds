@@ -480,20 +480,14 @@ public final class HighCircleSpellEffects {
     }
 
     private static void ring(ServerLevel level, Vec3 center, double radius, ParticleOptions particle, int points) {
-        for (int i = 0; i < points; i++) {
-            double angle = Math.PI * 2.0 * i / points;
-
-        }
+        // Client WorldMagicTracker owns spell rendering.
     }
 
     private static void line(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {
-        for (int i = 0; i <= points; i++) {
-            Vec3 p = start.lerp(end, i / (double) points);
-
-        }
+        // Client WorldMagicTracker owns spell rendering.
     }
 
     private static void burst(ServerLevel level, Vec3 center, ParticleOptions particle, int count, double spread) {
-
+        // Client WorldMagicTracker owns spell rendering.
     }
 }

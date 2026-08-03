@@ -3,7 +3,6 @@ package kr.moonseungjun.arcanecircle.magic;
 import kr.moonseungjun.arcanecircle.world.ArcaneMageService;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
@@ -17,11 +16,16 @@ import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Measures actual combat output and estimates enemy strength from the complete combat profile. */
+/**
+ * Measures real health changes caused during one cast window. Progress is intentionally
+ * logarithmic and tightly capped so one weak mob or a large area spell cannot skip circles.
+ */
 public final class CombatGrowthService {
     private static final List<EquipmentSlot> THREAT_SLOTS = List.of(
             EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
             EquipmentSlot.FEET, EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND);
+    private static final int MAX_MASTERY_PER_CAST = 30;
+    private static final int MAX_INSIGHT_PER_CAST = 8;
 
     private CombatGrowthService() {}
 
@@ -31,16 +35,15 @@ public final class CombatGrowthService {
     }
     public record Impact(int hits, int kills, int strongHits, int strongKills, int damage, int masteryGain,
                          int insightGain, int threatPoints, int peakThreat, long combatValue) {
-        public static final Impact NONE = new Impact(0, 0, 0, 0, 0, 1, 0, 0, 0, 0L);
+        public static final Impact NONE = new Impact(0, 0, 0, 0, 0, 0, 0, 0, 0, 0L);
         public boolean meaningful() { return hits > 0 || kills > 0; }
     }
 
     public static Snapshot capture(ServerPlayer player, double range) {
-        ServerLevel level = (ServerLevel) player.level();
-        double radius = Math.max(12.0, range + 12.0);
-        AABB box = player.getBoundingBox().inflate(radius, Math.max(10.0, radius * 0.55), radius);
+        double radius = Math.min(72.0, Math.max(10.0, range + 7.0));
+        AABB box = player.getBoundingBox().inflate(radius, Math.max(8.0, radius * 0.45), radius);
         List<Sample> samples = new ArrayList<>();
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, box, mob -> validTarget(player, mob))) {
+        for (Mob mob : player.level().getEntitiesOfClass(Mob.class, box, mob -> validTarget(player, mob))) {
             samples.add(new Sample(mob, mob.getHealth(), mob.getMaxHealth(), threatScore(mob)));
         }
         return new Snapshot(List.copyOf(samples));
@@ -56,14 +59,15 @@ public final class CombatGrowthService {
         int threatPoints = 0;
         int peakThreat = 0;
         long combatValue = 0L;
-        double hitThreatMastery = 0.0;
-        double killThreatMastery = 0.0;
+        double masteryScore = 0.0;
+        double insightScore = 0.0;
 
         for (Sample sample : snapshot.samples()) {
             Mob mob = sample.mob();
             float after = mob.isAlive() && !mob.isRemoved() ? Math.max(0.0F, mob.getHealth()) : 0.0F;
             double dealt = Math.max(0.0, sample.health() - after);
-            boolean killed = sample.health() > 0.0F && (!mob.isAlive() || mob.isRemoved() || after <= 0.0F);
+            boolean killed = sample.health() > 0.0F
+                    && (!mob.isAlive() || mob.isRemoved() || after <= 0.0F);
             if (dealt <= 0.001 && !killed) continue;
 
             hits++;
@@ -77,22 +81,27 @@ public final class CombatGrowthService {
                 if (tier > 0) strongKills++;
             }
 
-            threatPoints = Math.min(20_000_000, threatPoints
-                    + (killed ? threat * 2 : Math.max(1, threat / 5)));
-            hitThreatMastery += Math.min(12.0, Math.sqrt(threat) * 0.32);
-            if (killed) killThreatMastery += Math.pow(threat, 1.34) * 0.20;
-            long hitValue = Math.max(1L, Math.round(Math.sqrt(threat) * 0.75));
-            long killValue = killed ? Math.max(1L, Math.round(Math.pow(threat, 1.48) * 0.52)) : 0L;
+            threatPoints = Math.min(2_000_000, threatPoints
+                    + (killed ? threat : Math.max(1, threat / 8)));
+            double threatLog = Math.log1p(threat);
+            masteryScore += 0.65 + Math.min(2.4, threatLog * 0.42)
+                    + Math.min(1.6, Math.sqrt(dealt) * 0.12);
+            if (killed) masteryScore += 0.8 + Math.min(4.0, threatLog * 0.72);
+
+            // Ordinary livestock/zombies give almost no circle insight. Strong enemies and kills do.
+            if (tier > 0) insightScore += 0.20 + tier * 0.18;
+            if (killed) insightScore += tier > 0 ? 0.45 + tier * 0.25 : 0.22;
+
+            long hitValue = Math.max(1L, Math.round(Math.sqrt(threat) * 0.45));
+            long killValue = killed ? Math.max(1L, Math.round(Math.pow(threat, 1.12) * 0.24)) : 0L;
             combatValue = Math.min(2_000_000_000L, combatValue + hitValue + killValue);
         }
 
         if (hits == 0 && kills == 0) return Impact.NONE;
-        int damagePoints = Math.min(80, (int) Math.floor(damage / 25.0));
-        int hitBonus = Math.min(90, (int) Math.round(hitThreatMastery));
-        int killBonus = Math.min(4_500, (int) Math.round(killThreatMastery));
-        int mastery = Math.min(5_000, 1 + hits + kills * 5 + hitBonus + killBonus + damagePoints);
-        int insight = Math.min(8_000, hits + kills * 6 + hitBonus / 2 + killBonus
-                + Math.max(0, spellCircle - 1));
+        int mastery = Math.min(MAX_MASTERY_PER_CAST, Math.max(1, (int) Math.round(masteryScore)));
+        int insight = Math.min(MAX_INSIGHT_PER_CAST, Math.max(0, (int) Math.floor(insightScore)));
+        // A genuine kill still advances a little, but never enough to chain multiple circle-ups.
+        if (kills > 0 && insight == 0) insight = 1;
         return new Impact(hits, kills, strongHits, strongKills, (int) Math.round(damage),
                 mastery, insight, threatPoints, peakThreat, combatValue);
     }

@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -12,46 +13,67 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.List;
 import java.util.Locale;
 
+/** Server-authoritative visual event broadcaster for both players and NPC mages. */
 public final class WorldMagicService {
     private WorldMagicService() {}
 
     public static void charge(ServerPlayer player, SpellDefinition spell, boolean fusion,
                               List<String> ingredients, double range, double progress) {
-        Vec3 direction = player.getLookAngle().normalize();
+        Vec3 direction = safeDirection(player.getLookAngle());
         Vec3 center = anchorCenter(player, spell, range, direction);
-        send(player, encode("charge", player, spell, fusion, ingredients, center, direction,
-                range, spell.power(), Math.max(0.0, Math.min(1.0, progress)), 8));
+        send(player, encode("charge", player, spell, fusion, ingredients.size(), center, direction,
+                range, spell.power(), clamp01(progress), 8));
     }
 
     public static void release(ServerPlayer player, MagicPlayerData.CastPreparation cast) {
         SpellDefinition spell = cast.spell();
-        Vec3 direction = player.getLookAngle().normalize();
+        Vec3 direction = safeDirection(player.getLookAngle());
         Vec3 center = anchorCenter(player, spell, cast.range(), direction);
         int duration = 10 + spell.circle() * 5 + (cast.fusion() ? 8 : 0);
-        send(player, encode("release", player, spell, cast.fusion(), cast.ingredients(), center, direction,
+        send(player, encode("release", player, spell, cast.fusion(), cast.ingredients().size(), center, direction,
                 cast.range(), cast.power(), 1.0, duration));
     }
 
+    public static void charge(LivingEntity caster, LivingEntity target, SpellDefinition spell,
+                              double progress, double range, double power) {
+        if (!(caster.level() instanceof ServerLevel)) return;
+        Vec3 direction = target == null ? safeDirection(caster.getLookAngle())
+                : safeDirection(target.getEyePosition().subtract(caster.getEyePosition()));
+        Vec3 center = caster.getEyePosition().add(direction.scale(1.15 + spell.circle() * 0.035));
+        send(caster, encode("charge", caster, spell, false, 0, center, direction,
+                range, power, clamp01(progress), 8));
+    }
+
+    public static void release(LivingEntity caster, LivingEntity target, SpellDefinition spell,
+                               double range, double power) {
+        if (!(caster.level() instanceof ServerLevel)) return;
+        Vec3 direction = target == null ? safeDirection(caster.getLookAngle())
+                : safeDirection(target.getEyePosition().subtract(caster.getEyePosition()));
+        Vec3 center = caster.getEyePosition().add(direction.scale(1.15 + spell.circle() * 0.035));
+        send(caster, encode("release", caster, spell, false, 0, center, direction,
+                range, power, 1.0, 10 + spell.circle() * 4));
+    }
+
     public static void stop(ServerPlayer player) {
-        send(player, "kind=stop;caster=" + player.getUUID());
+        stop((LivingEntity) player);
     }
 
-    public static void noParticles() {
-        // Deliberate no-op. Core spell visuals are submitted as world geometry on clients.
+    public static void stop(LivingEntity caster) {
+        send(caster, "kind=stop;caster=" + caster.getUUID());
     }
 
-    private static void send(ServerPlayer player, String state) {
-        ServerLevel level = (ServerLevel) player.level();
-        PacketDistributor.sendToPlayersNear(level, null, player.getX(), player.getY(), player.getZ(),
-                128.0, new WorldMagicPayload(state));
+    private static void send(LivingEntity caster, String state) {
+        if (!(caster.level() instanceof ServerLevel level)) return;
+        PacketDistributor.sendToPlayersNear(level, null, caster.getX(), caster.getY(), caster.getZ(),
+                160.0, new WorldMagicPayload(state));
     }
 
-    private static String encode(String kind, ServerPlayer player, SpellDefinition spell, boolean fusion,
-                                 List<String> ingredients, Vec3 center, Vec3 direction, double range,
+    private static String encode(String kind, LivingEntity caster, SpellDefinition spell, boolean fusion,
+                                 int ingredientCount, Vec3 center, Vec3 direction, double range,
                                  double power, double progress, int duration) {
         return String.format(Locale.ROOT,
                 "kind=%s;caster=%s;spell=%s;fusion=%d;ingredients=%d;x=%.5f;y=%.5f;z=%.5f;dx=%.5f;dy=%.5f;dz=%.5f;range=%.4f;power=%.4f;progress=%.4f;duration=%d",
-                kind, player.getUUID(), spell.id(), fusion ? 1 : 0, ingredients.size(),
+                kind, caster.getUUID(), spell.id(), fusion ? 1 : 0, ingredientCount,
                 center.x, center.y, center.z, direction.x, direction.y, direction.z,
                 range, power, progress, duration);
     }
@@ -68,7 +90,7 @@ public final class WorldMagicService {
 
     private static Vec3 aimGround(ServerPlayer player, double range) {
         ServerLevel level = (ServerLevel) player.level();
-        Vec3 look = player.getLookAngle().normalize();
+        Vec3 look = safeDirection(player.getLookAngle());
         Vec3 origin = player.getEyePosition();
         for (int step = (int) Math.max(2, Math.floor(Math.min(range, 28.0))); step >= 2; step--) {
             BlockPos candidate = BlockPos.containing(origin.add(look.scale(step)));
@@ -80,7 +102,16 @@ public final class WorldMagicService {
                 }
             }
         }
-        return player.position().add(new Vec3(look.x, 0.0, look.z).normalize().scale(Math.min(6.0, range)))
-                .add(0.0, 0.055, 0.0);
+        Vec3 flat = new Vec3(look.x, 0.0, look.z);
+        if (flat.lengthSqr() < 1.0E-8) flat = new Vec3(0.0, 0.0, 1.0);
+        return player.position().add(flat.normalize().scale(Math.min(6.0, range))).add(0.0, 0.055, 0.0);
+    }
+
+    private static Vec3 safeDirection(Vec3 value) {
+        return value == null || value.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : value.normalize();
+    }
+
+    private static double clamp01(double value) {
+        return Math.max(0.0, Math.min(1.0, value));
     }
 }

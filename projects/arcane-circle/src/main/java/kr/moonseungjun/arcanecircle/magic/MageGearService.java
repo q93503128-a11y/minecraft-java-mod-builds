@@ -38,10 +38,6 @@ public final class MageGearService {
         if(tier>0){player.addEffect(new MobEffectInstance(MobEffects.SPEED,30,Math.max(0,tier-1),true,false));player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST,30,Math.max(0,tier-1),true,false));}
         if(isFrostBoots(boots))freezeWater(player);
         setFlight(player,isFlightBoots(boots));
-        long now=((ServerLevel)player.level()).getServer().overworld().getGameTime();
-        boolean spellDescent=STABLE_DESCENT_UNTIL.getOrDefault(player.getUUID(),0L)>now;
-        if(STABLE_DESCENT_UNTIL.getOrDefault(player.getUUID(),0L)<=now)STABLE_DESCENT_UNTIL.remove(player.getUUID());
-        if((isGlideBoots(boots)||spellDescent)&&!player.onGround()&&!player.getAbilities().flying&&!player.isShiftKeyDown())stabilizeDescent(player,Math.max(1,tier));
 
         Item hat=player.getItemBySlot(EquipmentSlot.HEAD).getItem();
         if(hat==ModItems.RIFT_CROWN.get())player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,240,0,true,false));
@@ -49,6 +45,22 @@ public final class MageGearService {
         if(chest.getItem()==ModItems.GLACIER_ROBE.get())player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,40,1,true,false));
         if(chest.getItem()==ModItems.TEMPEST_ROBE.get())player.addEffect(new MobEffectInstance(MobEffects.SPEED,40,1,true,false));
         int robeTier=robeTier(chest.getItem());if(robeTier>=2&&expected==player.getItemBySlot(EquipmentSlot.LEGS).getItem())player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,30,robeTier>=3?1:0,true,false));
+    }
+
+    public static void tickMovement(ServerPlayer player){
+        long now=((ServerLevel)player.level()).getServer().overworld().getGameTime();
+        long until=STABLE_DESCENT_UNTIL.getOrDefault(player.getUUID(),0L);
+        boolean spellDescent=until>now;
+        if(!spellDescent&&until>0L)STABLE_DESCENT_UNTIL.remove(player.getUUID());
+        if(player.onGround()||player.getAbilities().flying||player.isShiftKeyDown())return;
+        if(spellDescent){
+            player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING,12,0,true,false));
+            player.fallDistance=0.0F;
+            return;
+        }
+        Item boots=player.getItemBySlot(EquipmentSlot.FEET).getItem();
+        int tier=bootsTier(boots);
+        if(isGlideBoots(boots))stabilizeDescent(player,Math.max(1,tier));
     }
 
     public static void grantStableDescent(ServerPlayer player,int ticks){long now=((ServerLevel)player.level()).getServer().overworld().getGameTime();STABLE_DESCENT_UNTIL.merge(player.getUUID(),now+Math.max(1,ticks),Math::max);}
@@ -79,7 +91,7 @@ public final class MageGearService {
     private static boolean isGlideBoots(Item i){return i==ModItems.SKYWALKER_BOOTS.get()||i==ModItems.FROSTSTEP_BOOTS.get()||i==ModItems.TEMPEST_BOOTS.get()||i==ModItems.RIFT_BOOTS.get();}
     private static boolean isFrostBoots(Item i){return i==ModItems.FROSTSTEP_BOOTS.get()||i==ModItems.GLACIER_BOOTS.get();}
     private static boolean isFlightBoots(Item i){return i==ModItems.RIFT_BOOTS.get();}
-    private static void stabilizeDescent(ServerPlayer p,int tier){Vec3 m=p.getDeltaMovement();double floor=tier>=3?-0.105:tier==2?-0.135:-0.165;if(m.y<floor){p.setDeltaMovement(m.x,floor,m.z);p.hurtMarked=true;}p.fallDistance=0.0F;}
+    private static void stabilizeDescent(ServerPlayer p,int tier){Vec3 m=p.getDeltaMovement();double floor=tier>=3?-0.105:tier==2?-0.135:-0.165;if(m.y<floor){double next=m.y+(floor-m.y)*0.22;p.setDeltaMovement(m.x,next,m.z);if(Math.abs(next-m.y)>.015)p.hurtMarked=true;}p.fallDistance=0.0F;}
     private static void setFlight(ServerPlayer p,boolean enabled){if(enabled){if(!p.getAbilities().mayfly){p.getAbilities().mayfly=true;p.onUpdateAbilities();}FLIGHT_GRANTED.add(p.getUUID());}else if(FLIGHT_GRANTED.remove(p.getUUID())&&!p.isCreative()&&!p.isSpectator()){p.getAbilities().flying=false;p.getAbilities().mayfly=false;p.onUpdateAbilities();}}
     private static void freezeWater(ServerPlayer p){if(!(p.level() instanceof ServerLevel l))return;BlockPos c=p.blockPosition().below();for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++){if(x*x+z*z>6)continue;BlockPos pos=c.offset(x,0,z);if(l.getBlockState(pos).is(Blocks.WATER)&&l.getBlockState(pos.above()).isAir())l.setBlockAndUpdate(pos,Blocks.FROSTED_ICE.defaultBlockState());}}
     private static String name(Item i,String fallback){if(i==ModItems.MAGE_HAT.get())return"비전 모자";if(i==ModItems.SAGE_HAT.get())return"현자의 모자";if(i==ModItems.ARCHMAGE_CROWN.get())return"대마도사 관";if(i==ModItems.MAGE_ROBE.get())return"중층 마도 로브";if(i==ModItems.SAGE_ROBE.get())return"현자의 로브";if(i==ModItems.ARCHMAGE_ROBE.get())return"대마도사 예복";if(i==ModItems.MAGE_BOOTS.get())return"유랑 마도화";if(i==ModItems.SKYWALKER_BOOTS.get())return"천공 마도화";if(i==ModItems.FROSTSTEP_BOOTS.get())return"빙결 보행화";if(i==ModItems.CINDER_HOOD.get())return"잿불 전투모";if(i==ModItems.CINDER_ROBE.get())return"잿불 전투로브";if(i==ModItems.CINDER_BOOTS.get())return"화염답화";if(i==ModItems.GLACIER_CIRCLET.get())return"빙정 관모";if(i==ModItems.GLACIER_ROBE.get())return"빙정 의복";if(i==ModItems.GLACIER_BOOTS.get())return"설원답화";if(i==ModItems.TEMPEST_HOOD.get())return"폭풍 후드";if(i==ModItems.TEMPEST_ROBE.get())return"폭풍비단 로브";if(i==ModItems.TEMPEST_BOOTS.get())return"천뢰 장화";if(i==ModItems.RIFT_CROWN.get())return"균열 관";if(i==ModItems.RIFT_ROBE.get())return"균열 예복";if(i==ModItems.RIFT_BOOTS.get())return"성간 보행화";return fallback;}

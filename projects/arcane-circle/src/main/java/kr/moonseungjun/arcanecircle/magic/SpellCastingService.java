@@ -72,19 +72,23 @@ public final class SpellCastingService {
             return;
         }
 
+        long now = serverClock(player);
         ChargeState existing = CHARGES.get(player.getUUID());
-        if (existing != null && existing.slot == slot && existing.spellId.equals(cast.spell().id())) {
-            return;
+        if (existing != null) {
+            long age = now - existing.startedAt;
+            if (existing.slot == slot && existing.spellId.equals(cast.spell().id()) && age <= 1L) return;
+            CHARGES.remove(player.getUUID());
+            WorldMagicService.stop(player);
         }
 
         clearFusion(player, false);
         int required = requiredCastTicks(player, cast.spell());
         if (required <= 0) {
-            CHARGES.put(player.getUUID(), new ChargeState(slot, cast.spell().id(), serverClock(player), 0));
+            castPrepared(player, data, cast);
             return;
         }
 
-        ChargeState charge = new ChargeState(slot, cast.spell().id(), serverClock(player), required);
+        ChargeState charge = new ChargeState(slot, cast.spell().id(), now, required);
         CHARGES.put(player.getUUID(), charge);
         WorldMagicService.charge(player, cast.spell(), false, List.of(), cast.range(), 0.0);
         ArcaneNoticeService.push(player, Component.literal("§5[회로 전개] §f" + cast.spell().name()
@@ -131,17 +135,20 @@ public final class SpellCastingService {
         long elapsed = now - charge.startedAt;
         if (!player.isAlive() || player.isSpectator() || elapsed > CHARGE_TIMEOUT_TICKS) {
             CHARGES.remove(player.getUUID());
+            WorldMagicService.stop(player);
             return;
         }
         SpellDefinition spell = SpellCatalog.spell(charge.spellId).orElse(null);
         if (spell == null || !data(player).state(player).known().contains(spell.id())) {
             CHARGES.remove(player.getUUID());
+            WorldMagicService.stop(player);
             return;
         }
         MagicPlayerData data = data(player);
         MagicPlayerData.CastPreparation cast = data.prepareSlot(player, charge.slot);
         if (!cast.accepted() || !charge.spellId.equals(cast.spell().id())) {
             CHARGES.remove(player.getUUID());
+            WorldMagicService.stop(player);
             return;
         }
 
@@ -187,20 +194,15 @@ public final class SpellCastingService {
         MagicPlayerData.MageState state = data(player).state(player);
         int circle = Math.max(1, Math.min(9, spell.circle()));
         int[] sameCircleTicks = {0, 10, 18, 30, 50, 84, 140, 230, 380, 620};
-        int[] minimumTicks = {0, 3, 5, 8, 14, 24, 50, 90, 170, 360};
         int circleGap = Math.max(0, state.circle() - circle);
         int masteryTier = SpellCatalog.masteryTier(state.mastery(spell.id()));
         double gapScale = Math.pow(0.78, circleGap);
         double masteryScale = Math.max(0.72, 1.0 - masteryTier * 0.028);
-        int calculated = (int) Math.round(sameCircleTicks[circle] * gapScale * masteryScale);
-        int instantGap = circle <= 2 ? 4 : circle <= 4 ? 5 : 99;
-        if (circleGap >= instantGap || (circleGap >= 3 && masteryTier >= 8)) return 0;
-        int bounded = Math.max(minimumTicks[circle], calculated);
         kr.moonseungjun.arcanecircle.world.MagicTradition chosen =
                 kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer())
                         .tradition(player);
-        int result = (int) Math.round(bounded * chosen.castTimeMultiplier());
-        return result <= 1 ? 0 : result;
+        double raw = sameCircleTicks[circle] * gapScale * masteryScale * chosen.castTimeMultiplier();
+        return raw < 2.0 ? 0 : Math.max(2, (int) Math.round(raw));
     }
 
     public static void queueFusionSlot(ServerPlayer player, int slot) {
@@ -497,16 +499,12 @@ public final class SpellCastingService {
         if (progress.mastery().registered()) {
             player.sendSystemMessage(Component.literal("§6[융합 각인] §f" + spell.name()
                     + "의 완성 회로가 마력핵에 새겨졌습니다. 이제 1~5 슬롯에 장착할 수 있습니다."));
-            horizontalSigil(level, player.position().add(0.0, 0.12, 0.0), spell, 2.4, 2);
-            WorldMagicService.noParticles();
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
                     SoundSource.PLAYERS, 1.0F, 1.2F);
         }
         if (progress.circle().advanced()) {
             player.sendSystemMessage(Component.literal("§d[써클 승급] §f마력핵이 §5" + progress.circle().current()
                     + "써클§f로 확장되었습니다. 해당 써클 주문서를 해독할 수 있습니다."));
-            horizontalSigil(level, player.position().add(0.0, 0.1, 0.0), spell,
-                    2.4 + progress.circle().current() * 0.3, 3);
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
                     SoundSource.PLAYERS, 1.0F, 0.8F);
         }
@@ -539,29 +537,6 @@ public final class SpellCastingService {
         }
     }
 
-    private static void renderAnchoredSigil(ServerLevel level, ServerPlayer player, SpellDefinition spell, double range, double radius, int density) {}
-
-    private static void verticalSigil(ServerLevel level, Vec3 center, Vec3 normal, SpellDefinition spell, double radius, int density) {}
-
-    private static void planeRing(ServerLevel level, Vec3 center, Vec3 right, Vec3 up, double radius, ParticleOptions particle, int points) {}
-
-    private static void planePolygon(ServerLevel level, Vec3 center, Vec3 right, Vec3 up, double radius, int sides, ParticleOptions particle, int pointsPerEdge) {}
-
-    private static void planeLine(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {}
-
-    private static void horizontalSigil(ServerLevel level, Vec3 center, SpellDefinition spell, double radius, int density) {}
-
-    private static ParticleOptions schoolParticle(SpellDefinition spell) {
-        return switch (spell.school()) {
-            case FIRE -> ParticleTypes.FLAME;
-            case FROST -> ParticleTypes.SNOWFLAKE;
-            case WIND -> ParticleTypes.CLOUD;
-            case WARD -> ParticleTypes.END_ROD;
-            case LIFE -> ParticleTypes.HAPPY_VILLAGER;
-            case SPACE -> ParticleTypes.PORTAL;
-            default -> ParticleTypes.ENCHANT;
-        };
-    }
 
     static boolean executeResolved(ServerPlayer player, String id, double range, double power) {
         if (FusionSpellEffects.supports(id)) return FusionSpellEffects.execute(player, id, range, power);
@@ -611,12 +586,9 @@ public final class SpellCastingService {
         Vec3 start = frontOrigin(player, 1.25);
         Vec3 end = target.map(Mob::getEyePosition).orElse(start.add(player.getLookAngle().normalize().scale(range)));
         Vec3 side = new Vec3(-player.getLookAngle().z, 0.0, player.getLookAngle().x).normalize().scale(0.16);
-        particleLine(level, start.add(side), end, ParticleTypes.ENCHANT, 22);
-        particleLine(level, start.subtract(side), end, ParticleTypes.END_ROD, 22);
         target.ifPresent(mob -> {
             ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 50, 0));
-            burst(level, mob.getEyePosition(), ParticleTypes.ENCHANT, 14, 0.32);
         });
         level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
                 SoundSource.PLAYERS, 0.45F, 1.65F);
@@ -633,7 +605,6 @@ public final class SpellCastingService {
                 ArcaneDamage.hurt(level, player, mob, (float) (power * 0.35));
                 mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 60));
             }
-            burst(level, primary.position().add(0.0, 0.7, 0.0), ParticleTypes.FLAME, 24, 0.65);
         });
         level.playSound(null, player.blockPosition(), SoundEvents.FIRECHARGE_USE,
                 SoundSource.PLAYERS, 0.55F, 1.25F);
@@ -647,7 +618,6 @@ public final class SpellCastingService {
         target.ifPresent(mob -> {
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 75, 2));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 150));
-            burst(level, mob.getEyePosition(), ParticleTypes.SNOWFLAKE, 20, 0.42);
         });
         level.playSound(null, player.blockPosition(), SoundEvents.GLASS_BREAK,
                 SoundSource.PLAYERS, 0.38F, 1.75F);
@@ -660,16 +630,13 @@ public final class SpellCastingService {
         Vec3 start = frontOrigin(player, 1.35);
         Optional<Mob> target = lookTarget(player, range);
         Vec3 end = target.map(Mob::getEyePosition).orElse(start.add(player.getLookAngle().normalize().scale(range)));
-        spiralBeam(level, start, end, particle,
-                particle == ParticleTypes.ENCHANT ? ParticleTypes.END_ROD : ParticleTypes.ENCHANT, 34);
         if (target.isPresent()) {
             Mob mob = target.get();
             ArcaneDamage.hurt(level, player, mob, (float) power);
             if (fireTicks > 0) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), fireTicks));
             if (freezeBonus > 0) mob.setTicksFrozen(Math.max(mob.getTicksFrozen(),
                     mob.getTicksRequiredToFreeze() + freezeBonus + (int) Math.round(power * 8.0)));
-            burst(level, mob.getEyePosition(), particle, 20, 0.42);
-        } else burst(level, end, particle, 8, 0.18);
+        }
         return true;
     }
 
@@ -678,16 +645,10 @@ public final class SpellCastingService {
         Optional<Mob> target = lookTarget(player, range);
         if (target.isEmpty()) return bolt(player, range, power * 0.55, ParticleTypes.SNOWFLAKE, 0, 70);
         Mob mob = target.get();
-        spiralBeam(level, frontOrigin(player, 1.35), mob.getEyePosition(), ParticleTypes.SNOWFLAKE,
-                ParticleTypes.END_ROD, 32);
         ArcaneDamage.hurt(level, player, mob, (float) power);
         mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze()
                 + 180 + (int) Math.round(power * 10.0)));
         mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 3));
-        for (double y = 0.15; y < mob.getBbHeight() + 0.3; y += 0.42) {
-            ring(level, mob.position().add(0.0, y, 0.0), Math.max(0.65, mob.getBbWidth() * 0.8),
-                    ParticleTypes.SNOWFLAKE, 20);
-        }
         level.playSound(null, mob.blockPosition(), SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 0.8F, 1.35F);
         return true;
     }
@@ -697,10 +658,6 @@ public final class SpellCastingService {
         double strength = Math.max(1.2, range / 3.4) * Math.max(0.9, Math.sqrt(Math.max(0.1, power)));
         player.push(look.x * strength, Math.max(0.15, look.y * 0.35 + 0.15), look.z * strength);
         ServerLevel level = (ServerLevel) player.level();
-        for (int index = 0; index < 4; index++) {
-            ring(level, player.position().add(0.0, 0.15 + index * 0.18, 0.0), 0.45 + index * 0.17,
-                    ParticleTypes.CLOUD, 18);
-        }
         level.playSound(null, player.blockPosition(), SoundEvents.ENDER_DRAGON_FLAP,
                 SoundSource.PLAYERS, 0.5F, 1.6F);
         return true;
@@ -712,7 +669,6 @@ public final class SpellCastingService {
         player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, amplifier));
         ServerLevel level = (ServerLevel) player.level();
         double radius = 1.25 + tier * 0.55;
-        dome(level, player.position().add(0.0, 0.2, 0.0), radius, ParticleTypes.END_ROD);
         level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
                 SoundSource.PLAYERS, 1.0F, tier > 1 ? 0.72F : 0.95F);
         return true;
@@ -721,7 +677,6 @@ public final class SpellCastingService {
     private static boolean mend(ServerPlayer player, double power) {
         if (player.getHealth() >= player.getMaxHealth()) return false;
         player.heal((float) power);
-        healingVisual((ServerLevel) player.level(), player.position(), 1.0);
         return true;
     }
 
@@ -729,11 +684,6 @@ public final class SpellCastingService {
         int duration = 180 + (int) Math.round(power * 16.0);
         int amplifier = power >= 12.0 ? 1 : 0;
         player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, amplifier));
-        ServerLevel level = (ServerLevel) player.level();
-        for (int layer = 0; layer < 4; layer++) {
-            ring(level, player.position().add(0.0, 0.2 + layer * 0.45, 0.0), 0.62,
-                    ParticleTypes.CRIT, 16);
-        }
         return true;
     }
 
@@ -742,13 +692,10 @@ public final class SpellCastingService {
         List<Mob> targets = chainedTargets(player, range, 3);
         Vec3 from = frontOrigin(player, 1.35);
         if (targets.isEmpty()) {
-            particleLine(level, from, from.add(player.getLookAngle().normalize().scale(range)),
-                    ParticleTypes.ELECTRIC_SPARK, 36);
             return true;
         }
         double scale = 1.0;
         for (Mob mob : targets) {
-            particleLine(level, from, mob.getEyePosition(), ParticleTypes.ELECTRIC_SPARK, 28);
             ArcaneDamage.hurt(level, player, mob, (float) (power * scale));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 35, 1));
             from = mob.getEyePosition();
@@ -761,13 +708,11 @@ public final class SpellCastingService {
         ServerLevel level = (ServerLevel) player.level();
         Vec3 start = frontOrigin(player, 1.35);
         Vec3 end = start.add(player.getLookAngle().normalize().scale(range));
-        spiralBeam(level, start, end, particle, ParticleTypes.END_ROD, 52);
         List<Mob> targets = lineTargets(player, range, 1.25);
         for (int index = 0; index < targets.size(); index++) {
             targets.get(index).hurtServer(level, level.damageSources().playerAttack(player),
                     (float) (power * Math.max(0.55, 1.0 - index * 0.12)));
         }
-        burst(level, end, particle, 18, 0.35);
         return true;
     }
 
@@ -781,11 +726,6 @@ public final class SpellCastingService {
         for (Mob mob : targets) {
             ArcaneDamage.hurt(level, player, mob, (float) power);
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 180));
-        }
-        for (int step = 1; step <= 12; step++) {
-            double distance = range * step / 12.0;
-            Vec3 center = origin.add(look.scale(distance)).add(0.0, 0.25, 0.0);
-            WorldMagicService.noParticles();
         }
         return true;
     }
@@ -801,8 +741,6 @@ public final class SpellCastingService {
         ServerLevel level = (ServerLevel) player.level();
         for (Mob mob : nearbyTargets(player, player.position(), range, 5.0)) {
             mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 300, 0));
-            ring(level, mob.position().add(0.0, mob.getBbHeight() + 0.25, 0.0), 0.42,
-                    ParticleTypes.ENCHANT, 16);
         }
         return true;
     }
@@ -811,7 +749,6 @@ public final class SpellCastingService {
         player.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 34 + (int) Math.round(power * 3.0), 1));
         MageGearService.grantStableDescent(player, 220);
         ServerLevel level = (ServerLevel) player.level();
-        WorldMagicService.noParticles();
         return true;
     }
 
@@ -821,9 +758,7 @@ public final class SpellCastingService {
         if (destinationResult.isEmpty()) return false;
         BlockPos origin = player.blockPosition();
         BlockPos destination = destinationResult.get();
-        WorldMagicService.noParticles();
         player.teleportTo(destination.getX() + 0.5, destination.getY(), destination.getZ() + 0.5);
-        WorldMagicService.noParticles();
         if (tier > 0) {
             int duration = 35 + tier * 35 + (int) Math.round(power * 18.0);
             player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, tier >= 2 ? 2 : 0));
@@ -851,10 +786,6 @@ public final class SpellCastingService {
         Vec3 start = frontOrigin(player, 1.35);
         Vec3 look = player.getLookAngle().normalize();
         Vec3 end = start.add(look.scale(range));
-        for (int blade = -1; blade <= 1; blade++) {
-            Vec3 offset = new Vec3(-look.z, 0.0, look.x).normalize().scale(blade * 0.45);
-            particleLine(level, start.add(offset), end.add(offset), ParticleTypes.CLOUD, 34);
-        }
         List<Mob> targets = lineTargets(player, range, 1.45);
         for (Mob mob : targets) {
             ArcaneDamage.hurt(level, player, mob, (float) power);
@@ -879,11 +810,6 @@ public final class SpellCastingService {
             if (freeze) mob.setTicksFrozen(Math.max(mob.getTicksFrozen(),
                     mob.getTicksRequiredToFreeze() + 180 + (int) Math.round(power * 8.0)));
         }
-        for (int ring = 1; ring <= 4; ring++) {
-            ring(level, center.add(0.0, 0.15 + ring * 0.08, 0.0), radius * ring / 4.0,
-                    particle, 20 + ring * 8);
-        }
-        burst(level, center.add(0.0, 0.8, 0.0), particle, 42, Math.max(0.8, radius * 0.35));
         return true;
     }
 
@@ -894,8 +820,6 @@ public final class SpellCastingService {
         Vec3 from = frontOrigin(player, 1.35);
         double scale = 1.0;
         for (Mob target : targets) {
-            spiralBeam(level, from, target.getEyePosition(), ParticleTypes.ELECTRIC_SPARK,
-                    ParticleTypes.ENCHANT, 24);
             ArcaneDamage.hurt(level, player, target, (float) (power * scale));
             from = target.getEyePosition();
             scale *= 0.82;
@@ -908,16 +832,12 @@ public final class SpellCastingService {
         Optional<Mob> target = lookTarget(player, range);
         Vec3 start = frontOrigin(player, 1.4);
         Vec3 end = target.map(Mob::getEyePosition).orElse(start.add(player.getLookAngle().normalize().scale(range)));
-        spiralBeam(level, start, end, ParticleTypes.ENCHANT, ParticleTypes.END_ROD, 44);
-        spiralBeam(level, start.add(0.0, 0.14, 0.0), end, ParticleTypes.FLAME, ParticleTypes.ENCHANT, 38);
-        spiralBeam(level, start.add(0.0, -0.14, 0.0), end, ParticleTypes.SNOWFLAKE, ParticleTypes.END_ROD, 38);
         if (target.isPresent()) {
             Mob mob = target.get();
             ArcaneDamage.hurt(level, player, mob, (float) (power * 1.45));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 140));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 120));
         }
-        burst(level, end, ParticleTypes.WITCH, 36, 0.6);
         return true;
     }
 
@@ -929,7 +849,6 @@ public final class SpellCastingService {
             mob.push(away.x * 1.6, 0.35, away.z * 1.6);
             ArcaneDamage.hurt(level, player, mob, (float) (power * 0.65));
         }
-        dome(level, player.position().add(0.0, 0.2, 0.0), Math.max(2.5, range * 0.45), ParticleTypes.CLOUD);
         return true;
     }
 
@@ -949,23 +868,12 @@ public final class SpellCastingService {
         }
         player.heal((float) (power * 0.8));
         player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 140, 1));
-        for (int wing = -1; wing <= 1; wing += 2) {
-            for (int step = 0; step < 20; step++) {
-                double t = step / 19.0;
-                double angle = t * Math.PI;
-                Vec3 p = center.add(wing * Math.sin(angle) * range * 0.65,
-                        0.4 + Math.sin(angle) * 2.0, Math.cos(angle) * range * 0.38);
-                WorldMagicService.noParticles();
-            }
-        }
         return true;
     }
 
     private static boolean meteorShard(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
         Vec3 center = aimGround(player, range);
-        Vec3 sky = center.add(0.0, 11.0, 0.0);
-        spiralBeam(level, sky, center.add(0.0, 0.6, 0.0), ParticleTypes.FLAME, ParticleTypes.LARGE_SMOKE, 50);
         areaAt(player, center, 5.0, power * 1.15, ParticleTypes.FLAME, true, false);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
                 SoundSource.PLAYERS, 1.25F, 0.75F);
@@ -981,12 +889,6 @@ public final class SpellCastingService {
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 320));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 260, 4));
         }
-        for (int i = 0; i < 90; i++) {
-            double angle = i * 2.399963229728653;
-            double r = radius * Math.sqrt((i + 1) / 90.0);
-            Vec3 p = center.add(Math.cos(angle) * r, 0.2 + (i % 9) * 0.45, Math.sin(angle) * r);
-            WorldMagicService.noParticles();
-        }
         return true;
     }
 
@@ -994,11 +896,6 @@ public final class SpellCastingService {
         ServerLevel level = (ServerLevel) player.level();
         Vec3 center = aimGround(player, range);
         double radius = 4.5;
-        for (int pillar = 0; pillar < 8; pillar++) {
-            double angle = Math.PI * 2.0 * pillar / 8.0;
-            Vec3 base = center.add(Math.cos(angle) * radius, 0.1, Math.sin(angle) * radius);
-            particleLine(level, base, base.add(0.0, 4.5, 0.0), ParticleTypes.ELECTRIC_SPARK, 20);
-        }
         for (Mob mob : nearbyTargets(player, center, radius, 4.0)) {
             ArcaneDamage.hurt(level, player, mob, (float) (power * 1.1));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 180, 5));
@@ -1015,7 +912,6 @@ public final class SpellCastingService {
         for (LivingEntity ally : allies) {
             ally.heal((float) power);
             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 1));
-            healingVisual(level, ally.position(), 0.8);
         }
         return true;
     }
@@ -1027,11 +923,6 @@ public final class SpellCastingService {
             ArcaneDamage.hurt(level, player, mob, (float) (power * 1.25));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 420));
         }
-        for (int ringIndex = 1; ringIndex <= 7; ringIndex++) {
-            ring(level, center.add(0.0, 0.12 + ringIndex * 0.04, 0.0), ringIndex * 1.15,
-                    ringIndex % 2 == 0 ? ParticleTypes.LAVA : ParticleTypes.FLAME, 24 + ringIndex * 8);
-        }
-        WorldMagicService.noParticles();
         return true;
     }
 
@@ -1043,11 +934,6 @@ public final class SpellCastingService {
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 600));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 360, 6));
         }
-        for (int layer = 0; layer < 6; layer++) {
-            ring(level, center.add(0.0, layer * 0.42, 0.0), 8.0 - layer * 0.8,
-                    ParticleTypes.SNOWFLAKE, 64 - layer * 5);
-        }
-        WorldMagicService.noParticles();
         return true;
     }
 
@@ -1059,12 +945,6 @@ public final class SpellCastingService {
             Vec3 away = mob.position().subtract(center).normalize();
             mob.push(away.x * 2.1, 0.9, away.z * 2.1);
             mob.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 45, 1));
-        }
-        for (int spiral = 0; spiral < 100; spiral++) {
-            double angle = spiral * 0.55;
-            double r = 1.2 + spiral * 0.075;
-            Vec3 p = center.add(Math.cos(angle) * r, 0.2 + (spiral % 12) * 0.32, Math.sin(angle) * r);
-            WorldMagicService.noParticles();
         }
         return true;
     }
@@ -1079,33 +959,18 @@ public final class SpellCastingService {
             ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 520, absorption));
             ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 420, 2));
         }
-        for (int layer = 0; layer < 5; layer++) {
-            dome(level, player.position().add(0.0, 0.2, 0.0), 4.0 + layer * 1.0, ParticleTypes.END_ROD);
-        }
         return true;
     }
 
     private static boolean arcaneAnnihilation(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
-        Vec3 start = frontOrigin(player, 1.5);
-        Vec3 end = start.add(player.getLookAngle().normalize().scale(range));
-        Vec3 right = new Vec3(-player.getLookAngle().z, 0.0, player.getLookAngle().x).normalize();
-        for (int beam = -2; beam <= 2; beam++) {
-            Vec3 offset = right.scale(beam * 0.13);
-            spiralBeam(level, start.add(offset), end.add(offset),
-                    beam % 2 == 0 ? ParticleTypes.END_ROD : ParticleTypes.ENCHANT,
-                    ParticleTypes.WITCH, 72);
-        }
         List<Mob> targets = lineTargets(player, range, 2.2);
         for (int index = 0; index < targets.size(); index++) {
             targets.get(index).hurtServer(level, level.damageSources().playerAttack(player),
                     (float) (power * Math.max(0.65, 1.15 - index * 0.08)));
         }
-        burst(level, end, ParticleTypes.WITCH, 80, 1.4);
         return true;
     }
-
-    private static void healingVisual(ServerLevel level, Vec3 center, double scale) {}
 
     private static Optional<Mob> lookTarget(ServerPlayer player, double range) {
         Vec3 start = player.getEyePosition();
@@ -1222,18 +1087,7 @@ public final class SpellCastingService {
         Vec3 closest = start.add(direction.scale(projection));
         return closest.distanceToSqr(point);
     }
-
-    private static void spiralBeam(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions core, ParticleOptions accent, int points) {}
-
-    private static void particleLine(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle, int points) {}
-
-    private static void ring(ServerLevel level, Vec3 center, double radius, ParticleOptions particle, int points) {}
-
-    private static void dome(ServerLevel level, Vec3 center, double radius, ParticleOptions particle) {}
-
-    private static void burst(ServerLevel level, Vec3 center, ParticleOptions particle, int count, double spread) {}
-
-    private static void fail(ServerPlayer player, String message) {
+private static void fail(ServerPlayer player, String message) {
         ArcaneNoticeService.push(player, Component.literal("§c[마법 실패] §f" + message));
         ((ServerLevel) player.level()).playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_BASS.value(),
                 SoundSource.PLAYERS, 0.35F, 0.7F);

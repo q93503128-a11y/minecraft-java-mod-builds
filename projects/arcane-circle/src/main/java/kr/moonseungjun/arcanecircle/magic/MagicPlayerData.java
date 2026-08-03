@@ -19,10 +19,12 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class MagicPlayerData extends SavedData {
+    private static final int CURRENT_PROGRESSION_VERSION = 2;
     private record MasteryEntry(String spellId, int casts) {
         private static final Codec<MasteryEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("spell").forGetter(MasteryEntry::spellId),
@@ -51,7 +53,8 @@ public final class MagicPlayerData extends SavedData {
             List<MasteryEntry> fusionMastery,
             List<CooldownEntry> cooldowns,
             boolean starterStaffGranted,
-            boolean starterPrimerGranted
+            boolean starterPrimerGranted,
+            int progressionVersion
     ) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
@@ -66,7 +69,8 @@ public final class MagicPlayerData extends SavedData {
                 MasteryEntry.CODEC.listOf().optionalFieldOf("fusion_mastery", List.of()).forGetter(PlayerEntry::fusionMastery),
                 CooldownEntry.CODEC.listOf().optionalFieldOf("cooldowns", List.of()).forGetter(PlayerEntry::cooldowns),
                 Codec.BOOL.optionalFieldOf("starter_staff_granted", false).forGetter(PlayerEntry::starterStaffGranted),
-                Codec.BOOL.optionalFieldOf("starter_primer_granted", false).forGetter(PlayerEntry::starterPrimerGranted)
+                Codec.BOOL.optionalFieldOf("starter_primer_granted", false).forGetter(PlayerEntry::starterPrimerGranted),
+                Codec.INT.optionalFieldOf("progression_version", 1).forGetter(PlayerEntry::progressionVersion)
         ).apply(instance, PlayerEntry::new));
     }
 
@@ -249,8 +253,8 @@ public final class MagicPlayerData extends SavedData {
         double facultyCooldown = chosen.cooldownMultiplier();
         int masteryGap = Math.max(0, state.circle - spell.circle());
         int proficiency = SpellCatalog.masteryTier(state.mastery(spellId));
-        double circleMana = Math.max(0.06, Math.pow(0.72, masteryGap));
-        double circleCooldown = Math.max(0.08, Math.pow(0.62, masteryGap));
+        double circleMana = Math.max(0.10, Math.pow(0.72, masteryGap));
+        double circleCooldown = Math.max(0.10, Math.pow(0.62, masteryGap));
         double circleRange = 1.0 + masteryGap * 0.07;
         double circlePower = 1.0 + masteryGap * 0.04;
         double masteryMana = Math.max(0.80, 1.0 - proficiency * 0.02);
@@ -258,13 +262,17 @@ public final class MagicPlayerData extends SavedData {
         double masteryRange = 1.0 + proficiency * 0.02;
         double masteryPower = 1.0 + proficiency * 0.04;
 
-        double totalCostMultiplier = Math.max(0.18, circleMana * masteryMana
+        // Cost and cooldown reductions may never go below 10% of the spell's base value.
+        double totalCostMultiplier = Math.max(0.10, circleMana * masteryMana
                 * staff.manaCostMultiplier() * gear.manaCostMultiplier() * facultyMana);
-        int manaCost = Math.max(1, (int) Math.ceil(spell.manaCost() * totalCostMultiplier));
-        double totalCooldownMultiplier = Math.max(0.15, circleCooldown * masteryCooldown
+        int manaCost = spell.manaCost() <= 0 ? 0
+                : Math.max(1, (int) Math.ceil(spell.manaCost() * totalCostMultiplier));
+        double totalCooldownMultiplier = Math.max(0.10, circleCooldown * masteryCooldown
                 * staff.cooldownMultiplier() * gear.cooldownMultiplier() * facultyCooldown);
         double rawCooldown = spell.cooldownTicks() * totalCooldownMultiplier;
-        int cooldown = spell.cooldownTicks() <= 0 ? 0 : Math.max(2, (int) Math.round(rawCooldown));
+        // Values below 0.1 seconds are treated as absent; otherwise preserve a 2-tick minimum.
+        int cooldown = spell.cooldownTicks() <= 0 || rawCooldown < 2.0
+                ? 0 : Math.max(2, (int) Math.round(rawCooldown));
         double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier()
                 * gear.rangeMultiplier() * facultyRange;
         double tierPower = SpellCatalog.isDamaging(spell.id())
@@ -315,13 +323,15 @@ public final class MagicPlayerData extends SavedData {
         MageState state = state(player);
         CombatGrowthService.Impact result = impact == null ? CombatGrowthService.Impact.NONE : impact;
         int beforeMastery = state.mastery.getOrDefault(cast.spell().id(), 0);
-        int masteryGain = Math.max(1, result.masteryGain());
+        int masteryGain = result.meaningful() ? Math.max(1, result.masteryGain()) : 0;
         int afterMastery = Math.min(100000, beforeMastery + masteryGain);
-        state.mastery.put(cast.spell().id(), afterMastery);
-        state.insight += Math.max(1, cast.spell().circle() * 2) + Math.max(0, result.insightGain());
+        if (masteryGain > 0) state.mastery.put(cast.spell().id(), afterMastery);
+        // Circle insight comes from meaningful combat, not from merely pressing a spell key.
+        if (result.meaningful()) state.insight = Math.min(1_000_000,
+                state.insight + Math.max(0, result.insightGain()));
 
         int previousCircle = state.circle;
-        while (state.circle < SpellCatalog.IMPLEMENTED_MAX_CIRCLE
+        if (state.circle < SpellCatalog.IMPLEMENTED_MAX_CIRCLE
                 && state.insight >= SpellCatalog.circleInsightThreshold(state.circle + 1)) {
             state.circle++;
         }
@@ -448,12 +458,27 @@ public final class MagicPlayerData extends SavedData {
         private boolean starterPrimerGranted;
 
         private MageState(PlayerEntry entry) {
-            this.circle = Math.max(1, Math.min(SpellCatalog.IMPLEMENTED_MAX_CIRCLE, entry.circle()));
-            this.insight = Math.max(0, entry.insight());
+            int loadedCircle = Math.max(1, Math.min(SpellCatalog.IMPLEMENTED_MAX_CIRCLE, entry.circle()));
+            int loadedInsight = Math.max(0, entry.insight());
             this.known = new LinkedHashSet<>();
             for (String spellId : entry.known()) {
                 if (SpellCatalog.spell(spellId).isPresent()) this.known.add(spellId);
             }
+            if (entry.progressionVersion() < 2) {
+                int highestKnown = this.known.stream().map(SpellCatalog::spell)
+                        .flatMap(Optional::stream).mapToInt(SpellDefinition::circle).max().orElse(1);
+                int plausibleCircle = Math.min(SpellCatalog.IMPLEMENTED_MAX_CIRCLE,
+                        Math.max(1, highestKnown + 1));
+                if (loadedCircle > plausibleCircle) {
+                    loadedCircle = plausibleCircle;
+                    if (loadedCircle < SpellCatalog.IMPLEMENTED_MAX_CIRCLE) {
+                        loadedInsight = Math.min(loadedInsight,
+                                Math.max(0, SpellCatalog.circleInsightThreshold(loadedCircle + 1) - 1));
+                    }
+                }
+            }
+            this.circle = loadedCircle;
+            this.insight = loadedInsight;
             this.slots = normalizedSlots(entry.slots(), entry.focus(), entry.weave());
             for (int index = 0; index < this.slots.size(); index++) {
                 String spellId = this.slots.get(index);
@@ -463,8 +488,10 @@ public final class MagicPlayerData extends SavedData {
             entry.fusionMastery().stream()
                     .sorted(Comparator.comparing(MasteryEntry::spellId))
                     .forEach(value -> {
-                        if (SpellCatalog.isFusionResult(value.spellId()) && value.casts() > 0) {
-                            mastery.put(value.spellId(), Math.min(SpellCatalog.masteryRequired(value.spellId()), value.casts()));
+                        if (SpellCatalog.spell(value.spellId()).isPresent() && value.casts() > 0) {
+                            int maximum = SpellCatalog.isFusionResult(value.spellId())
+                                    ? SpellCatalog.masteryRequired(value.spellId()) : 100_000;
+                            mastery.put(value.spellId(), Math.min(maximum, value.casts()));
                         }
                     });
             for (SpellCatalog.FusionFormula formula : SpellCatalog.fusions()) {
@@ -486,7 +513,7 @@ public final class MagicPlayerData extends SavedData {
         private static MageState fresh() {
             return new MageState(new PlayerEntry("", 1, 100.0, 0,
                     List.of(), SpellCatalog.starterSlots(), 0, "", "",
-                    List.of(), List.of(), false, false));
+                    List.of(), List.of(), false, false, CURRENT_PROGRESSION_VERSION));
         }
 
         private static List<String> normalizedSlots(List<String> source, String oldFocus, String oldWeave) {
@@ -512,7 +539,7 @@ public final class MagicPlayerData extends SavedData {
                     .sorted(Comparator.comparing(CooldownEntry::spellId))
                     .toList();
             return new PlayerEntry(uuid, circle, mana, insight, List.copyOf(known), List.copyOf(slots),
-                    0, "", "", masteryEntries, cooldownEntries, starterStaffGranted, starterPrimerGranted);
+                    0, "", "", masteryEntries, cooldownEntries, starterStaffGranted, starterPrimerGranted, CURRENT_PROGRESSION_VERSION);
         }
 
         public int circle() { return circle; }

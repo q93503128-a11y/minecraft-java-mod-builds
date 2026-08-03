@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha11";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha12";
     private static final Set<String> PAGES = Set.of(
             "atlas", "recipes", "staffs", "core", "academy", "quests", "sync");
 
