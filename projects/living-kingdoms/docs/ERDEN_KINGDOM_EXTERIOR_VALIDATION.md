@@ -15,6 +15,12 @@ This phase establishes the physical geography and worksite shell for:
 
 The economic supply ledger and exterior builder consume the same authoritative node catalog, preventing a simulated producer from drifting away from its visible worksite.
 
+## Catalog integrity
+
+`ErdenKingdomSupplyCatalog` is the sole authority for node ID, metre coordinates, role, site radius, licensed building style and facing. The economy creates saved producer records from this catalog and the exterior builder reads the same entries. A second handwritten coordinate table is not permitted.
+
+The catalog must always contain exactly 18 unique IDs, 15 producing nodes and 3 river wharves. A catalog revision that moves or changes a site must also advance the exterior authored revision so previously built chunks cannot silently preserve obsolete geometry.
+
 ## Streamed construction
 
 Exterior construction uses the same bounded incremental world-edit plan as the capital. Each 16 x 16 metre cell is saved at exterior revision 1 after completion and is not rebuilt until the authored revision changes.
