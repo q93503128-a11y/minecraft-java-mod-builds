@@ -1,5 +1,6 @@
 package kr.moonseungjun.livingkingdoms.world;
 
+import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
@@ -39,7 +40,9 @@ public final class IncrementalWorldEditPlan {
 
     public int originalSurfaceY(ServerLevel level, int x, int z) {
         long key = columnKey(x, z);
-        return originalSurfaceHeights.computeIfAbsent(key, ignored -> RealmSitePlanner.surfaceY(level, x, z));
+        return originalSurfaceHeights.computeIfAbsent(
+                key,
+                ignored -> (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z)));
     }
 
     public int plannedSurfaceY(ServerLevel level, int x, int z) {
