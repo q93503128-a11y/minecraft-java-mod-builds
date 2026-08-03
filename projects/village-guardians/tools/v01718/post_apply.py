@@ -69,4 +69,42 @@ text = text.replace(
 )
 role_test.write_text(text, encoding="utf-8")
 
+# Whole-file cleanup for every obsolete caller-era shortcut phrase.  This is
+# deliberately broader than the source patch above so future nearby wording
+# changes cannot leave B/U or U-only help behind.
+starter_path = JAVA / "VillageStarterKit.java"
+starter = starter_path.read_text(encoding="utf-8")
+starter = starter.replace("B/U 키", "B 키")
+starter = starter.replace("B/U", "B")
+starter = starter.replace(" · U 빠른 통신", "")
+starter = starter.replace(
+    "기본키 Z 기술1 · X 기술2 · B 빠른 통신 · H 상태 · J 성장 · K 직업 성장",
+    "현재 단축키는 설정 > 조작 > 마을 지키기에서 확인하거나 변경하세요.",
+)
+starter_path.write_text(starter, encoding="utf-8")
+
+controller_path = JAVA / "VillageUiController.java"
+controller = controller_path.read_text(encoding="utf-8")
+controller = controller.replace("B/U", "B")
+controller = controller.replace(" · U 빠른 통신", "")
+controller = controller.replace(
+    "기본키 Z 기술1 · X 기술2 · B 빠른 통신 · H 상태 · J 성장 · K 직업 성장",
+    "단축키는 설정 > 조작 > 마을 지키기에서 현재 지정 키를 확인·변경",
+)
+controller_path.write_text(controller, encoding="utf-8")
+
+for path, forbidden in [
+    (starter_path, ("B/U", "기본키 Z", "U 빠른 통신")),
+    (controller_path, ("B/U", "기본키 Z", "U 빠른 통신")),
+]:
+    source = path.read_text(encoding="utf-8")
+    leftovers = [token for token in forbidden if token in source]
+    if leftovers:
+        raise SystemExit(f"obsolete shortcut text remains in {path.name}: {leftovers}")
+
+if "설정 > 조작 > 마을 지키기" not in starter_path.read_text(encoding="utf-8"):
+    raise SystemExit("starter controls-settings guidance missing")
+if "설정 > 조작 > 마을 지키기" not in controller_path.read_text(encoding="utf-8"):
+    raise SystemExit("status controls-settings guidance missing")
+
 print("Migrated Village Guardians v0.17.18 shortcut and bow contracts")
