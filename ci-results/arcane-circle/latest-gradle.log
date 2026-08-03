@@ -10,13 +10,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.35s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.50s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadClient[0m[0m
 [1m*** Started working on [4mdownloadServer[0m[0m
+[1m*** Started working on [4mdownloadClient[0m[0m
  [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.05s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -25,61 +25,46 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.06s
+Total runtime: 1.71s
 
 
 > Task :compileJava
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneMageService.java:89: error: cannot find symbol
-    private static void applyMageStats(Mob mage){MageProfile p=profile(mage);RpgScaleService.ensureBaseline(mage);RpgScaleService.applyExtraHealth(mage,"mage_c"+p.circle(),Math.pow(1.85,p.circle()-1));AttributeInstance attack=mage.getAttribute(Attributes.ATTACK_DAMAGE);if(attack!=null&&!mage.getTags().contains("arcanecircle_mage_attack")){attack.setBaseValue(Math.min(500.0,Math.max(attack.getBaseValue(),2.0)*Math.pow(1.28,p.circle()-1)));mage.addTag("arcanecircle_mage_attack");}if(p.circle()>=5)mage.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,50,Math.min(3,(p.circle()-4)/2),true,false));}
+    private static void applyMageStats(Mob mage){MageProfile p=profile(mage);RpgScaleService.ensureBaseline(mage);RpgScaleService.applyExtraHealth(mage,"mage_c"+p.circle(),Math.pow(1.85,p.circle()-1));AttributeInstance attack=mage.getAttribute(Attributes.ATTACK_DAMAGE);if(attack!=null&&!mage.getCommandTags().contains("arcanecircle_mage_attack")){attack.setBaseValue(Math.min(500.0,Math.max(attack.getBaseValue(),2.0)*Math.pow(1.28,p.circle()-1)));mage.addTag("arcanecircle_mage_attack");}if(p.circle()>=5)mage.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,50,Math.min(3,(p.circle()-4)/2),true,false));}
                                                                                                                                                                                                                                                                                                     ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable mage of type Mob
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:50: error: cannot find symbol
-        BlockPos spawn=level.getSharedSpawnPos();
-                            ^
-  symbol:   method getSharedSpawnPos()
-  location: variable level of type ServerLevel
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:60: error: cannot find symbol
-        for(String tag:Set.copyOf(event.getEntity().getTags())){
+        for(String tag:Set.copyOf(event.getEntity().getCommandTags())){
                                                    ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: class LivingEntity
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:66: error: cannot find symbol
-    public static String zoneSummary(ServerPlayer player){ServerLevel level=(ServerLevel)player.level();ArcaneEncounterData data=ArcaneEncounterData.get(level.getServer());BlockPos s=level.getServer().overworld().getSharedSpawnPos();return ZONES.stream().map(z->z.name+" "+z.tier+"C+ ["+(s.getX()+z.dx)+", "+(s.getZ()+z.dz)+"] "+(data.isBossDefeated(z.id)?"토벌":"활성")).reduce((a,b)->a+"|"+b).orElse("");}
-                                                                                                                                                                                                                    ^
-  symbol:   method getSharedSpawnPos()
-  location: class ServerLevel
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:68: error: cannot find symbol
-    private static void ensureOutposts(ServerLevel level,ServerPlayer player,ArcaneEncounterData data){BlockPos spawn=level.getSharedSpawnPos();int[][] offsets={{180,0},{0,180},{-180,0},{0,-180}};List<FactionProfile.Entry> entries=FactionProfile.entries();for(int i=0;i<entries.size();i++){FactionProfile.Entry f=entries.get(i);BlockPos pos=surface(level,spawn.getX()+offsets[i][0],spawn.getZ()+offsets[i][1]);String buildId="faction_"+f.representativeId();if(player.distanceToSqr(pos.getX(),pos.getY(),pos.getZ())<220*220&&!data.isZoneBuilt(buildId)){buildOutpost(level,pos,f.tradition());data.markZoneBuilt(buildId);}if(player.distanceToSqr(pos.getX(),pos.getY(),pos.getZ())<90*90&&!data.isNamedDead(f.representativeId()))ensureRepresentative(level,pos,f);}}
-                                                                                                                           ^
-  symbol:   method getSharedSpawnPos()
-  location: variable level of type ServerLevel
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:79: error: cannot find symbol
-    private static List<Mob> nearby(ServerLevel level,BlockPos center,double radius,String tag){AABB box=new AABB(center.getX()-radius,center.getY()-48,center.getZ()-radius,center.getX()+radius,center.getY()+96,center.getZ()+radius);return level.getEntitiesOfClass(Mob.class,box,e->e.isAlive()&&e.getTags().contains(tag));}
+    private static List<Mob> nearby(ServerLevel level,BlockPos center,double radius,String tag){AABB box=new AABB(center.getX()-radius,center.getY()-48,center.getZ()-radius,center.getX()+radius,center.getY()+96,center.getZ()+radius);return level.getEntitiesOfClass(Mob.class,box,e->e.isAlive()&&e.getCommandTags().contains(tag));}
                                                                                                                                                                                                                                                                                                         ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable e of type Mob
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:17: error: cannot find symbol
-        if (entity == null || entity instanceof Player || entity.getTags().contains(SCALED_TAG)) return;
+        if (entity == null || entity instanceof Player || entity.getCommandTags().contains(SCALED_TAG)) return;
                                                                 ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable entity of type LivingEntity
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:31: error: cannot find symbol
-        if (entity.getTags().contains(tag)) return;
+        if (entity.getCommandTags().contains(tag)) return;
                   ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable entity of type LivingEntity
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:43: error: cannot find symbol
-        if (target instanceof Player || !target.getTags().contains(SCALED_TAG)) return;
+        if (target instanceof Player || !target.getCommandTags().contains(SCALED_TAG)) return;
                                                ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable target of type LivingEntity
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
-9 errors
+6 errors
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785727454459.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1785727688378.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/reports/problems/problems-report.html
 
@@ -91,51 +76,36 @@ Execution failed for task ':compileJava'.
   Note: Recompile with -Xlint:deprecation for details.
   Note: Some input files use or override a deprecated API.
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneMageService.java:89: error: cannot find symbol
-      private static void applyMageStats(Mob mage){MageProfile p=profile(mage);RpgScaleService.ensureBaseline(mage);RpgScaleService.applyExtraHealth(mage,"mage_c"+p.circle(),Math.pow(1.85,p.circle()-1));AttributeInstance attack=mage.getAttribute(Attributes.ATTACK_DAMAGE);if(attack!=null&&!mage.getTags().contains("arcanecircle_mage_attack")){attack.setBaseValue(Math.min(500.0,Math.max(attack.getBaseValue(),2.0)*Math.pow(1.28,p.circle()-1)));mage.addTag("arcanecircle_mage_attack");}if(p.circle()>=5)mage.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,50,Math.min(3,(p.circle()-4)/2),true,false));}
+      private static void applyMageStats(Mob mage){MageProfile p=profile(mage);RpgScaleService.ensureBaseline(mage);RpgScaleService.applyExtraHealth(mage,"mage_c"+p.circle(),Math.pow(1.85,p.circle()-1));AttributeInstance attack=mage.getAttribute(Attributes.ATTACK_DAMAGE);if(attack!=null&&!mage.getCommandTags().contains("arcanecircle_mage_attack")){attack.setBaseValue(Math.min(500.0,Math.max(attack.getBaseValue(),2.0)*Math.pow(1.28,p.circle()-1)));mage.addTag("arcanecircle_mage_attack");}if(p.circle()>=5)mage.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,50,Math.min(3,(p.circle()-4)/2),true,false));}
                                                                                                                                                                                                                                                                                                       ^
-    symbol:   method getTags()
+    symbol:   method getCommandTags()
     location: variable mage of type Mob
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:50: error: cannot find symbol
-          BlockPos spawn=level.getSharedSpawnPos();
-                              ^
-    symbol:   method getSharedSpawnPos()
-    location: variable level of type ServerLevel
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:60: error: cannot find symbol
-          for(String tag:Set.copyOf(event.getEntity().getTags())){
+          for(String tag:Set.copyOf(event.getEntity().getCommandTags())){
                                                      ^
-    symbol:   method getTags()
+    symbol:   method getCommandTags()
     location: class LivingEntity
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:66: error: cannot find symbol
-      public static String zoneSummary(ServerPlayer player){ServerLevel level=(ServerLevel)player.level();ArcaneEncounterData data=ArcaneEncounterData.get(level.getServer());BlockPos s=level.getServer().overworld().getSharedSpawnPos();return ZONES.stream().map(z->z.name+" "+z.tier+"C+ ["+(s.getX()+z.dx)+", "+(s.getZ()+z.dz)+"] "+(data.isBossDefeated(z.id)?"토벌":"활성")).reduce((a,b)->a+"|"+b).orElse("");}
-                                                                                                                                                                                                                      ^
-    symbol:   method getSharedSpawnPos()
-    location: class ServerLevel
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:68: error: cannot find symbol
-      private static void ensureOutposts(ServerLevel level,ServerPlayer player,ArcaneEncounterData data){BlockPos spawn=level.getSharedSpawnPos();int[][] offsets={{180,0},{0,180},{-180,0},{0,-180}};List<FactionProfile.Entry> entries=FactionProfile.entries();for(int i=0;i<entries.size();i++){FactionProfile.Entry f=entries.get(i);BlockPos pos=surface(level,spawn.getX()+offsets[i][0],spawn.getZ()+offsets[i][1]);String buildId="faction_"+f.representativeId();if(player.distanceToSqr(pos.getX(),pos.getY(),pos.getZ())<220*220&&!data.isZoneBuilt(buildId)){buildOutpost(level,pos,f.tradition());data.markZoneBuilt(buildId);}if(player.distanceToSqr(pos.getX(),pos.getY(),pos.getZ())<90*90&&!data.isNamedDead(f.representativeId()))ensureRepresentative(level,pos,f);}}
-                                                                                                                             ^
-    symbol:   method getSharedSpawnPos()
-    location: variable level of type ServerLevel
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:79: error: cannot find symbol
-      private static List<Mob> nearby(ServerLevel level,BlockPos center,double radius,String tag){AABB box=new AABB(center.getX()-radius,center.getY()-48,center.getZ()-radius,center.getX()+radius,center.getY()+96,center.getZ()+radius);return level.getEntitiesOfClass(Mob.class,box,e->e.isAlive()&&e.getTags().contains(tag));}
+      private static List<Mob> nearby(ServerLevel level,BlockPos center,double radius,String tag){AABB box=new AABB(center.getX()-radius,center.getY()-48,center.getZ()-radius,center.getX()+radius,center.getY()+96,center.getZ()+radius);return level.getEntitiesOfClass(Mob.class,box,e->e.isAlive()&&e.getCommandTags().contains(tag));}
                                                                                                                                                                                                                                                                                                           ^
-    symbol:   method getTags()
+    symbol:   method getCommandTags()
     location: variable e of type Mob
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:17: error: cannot find symbol
-          if (entity == null || entity instanceof Player || entity.getTags().contains(SCALED_TAG)) return;
+          if (entity == null || entity instanceof Player || entity.getCommandTags().contains(SCALED_TAG)) return;
                                                                   ^
-    symbol:   method getTags()
+    symbol:   method getCommandTags()
     location: variable entity of type LivingEntity
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:31: error: cannot find symbol
-          if (entity.getTags().contains(tag)) return;
+          if (entity.getCommandTags().contains(tag)) return;
                     ^
-    symbol:   method getTags()
+    symbol:   method getCommandTags()
     location: variable entity of type LivingEntity
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:43: error: cannot find symbol
-          if (target instanceof Player || !target.getTags().contains(SCALED_TAG)) return;
+          if (target instanceof Player || !target.getCommandTags().contains(SCALED_TAG)) return;
                                                  ^
-    symbol:   method getTags()
+    symbol:   method getCommandTags()
     location: variable target of type LivingEntity
-  9 errors
+  6 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -180,51 +150,36 @@ Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Com
 Note: Recompile with -Xlint:deprecation for details.
 Note: Some input files use or override a deprecated API.
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneMageService.java:89: error: cannot find symbol
-    private static void applyMageStats(Mob mage){MageProfile p=profile(mage);RpgScaleService.ensureBaseline(mage);RpgScaleService.applyExtraHealth(mage,"mage_c"+p.circle(),Math.pow(1.85,p.circle()-1));AttributeInstance attack=mage.getAttribute(Attributes.ATTACK_DAMAGE);if(attack!=null&&!mage.getTags().contains("arcanecircle_mage_attack")){attack.setBaseValue(Math.min(500.0,Math.max(attack.getBaseValue(),2.0)*Math.pow(1.28,p.circle()-1)));mage.addTag("arcanecircle_mage_attack");}if(p.circle()>=5)mage.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,50,Math.min(3,(p.circle()-4)/2),true,false));}
+    private static void applyMageStats(Mob mage){MageProfile p=profile(mage);RpgScaleService.ensureBaseline(mage);RpgScaleService.applyExtraHealth(mage,"mage_c"+p.circle(),Math.pow(1.85,p.circle()-1));AttributeInstance attack=mage.getAttribute(Attributes.ATTACK_DAMAGE);if(attack!=null&&!mage.getCommandTags().contains("arcanecircle_mage_attack")){attack.setBaseValue(Math.min(500.0,Math.max(attack.getBaseValue(),2.0)*Math.pow(1.28,p.circle()-1)));mage.addTag("arcanecircle_mage_attack");}if(p.circle()>=5)mage.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,50,Math.min(3,(p.circle()-4)/2),true,false));}
                                                                                                                                                                                                                                                                                                     ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable mage of type Mob
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:50: error: cannot find symbol
-        BlockPos spawn=level.getSharedSpawnPos();
-                            ^
-  symbol:   method getSharedSpawnPos()
-  location: variable level of type ServerLevel
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:60: error: cannot find symbol
-        for(String tag:Set.copyOf(event.getEntity().getTags())){
+        for(String tag:Set.copyOf(event.getEntity().getCommandTags())){
                                                    ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: class LivingEntity
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:66: error: cannot find symbol
-    public static String zoneSummary(ServerPlayer player){ServerLevel level=(ServerLevel)player.level();ArcaneEncounterData data=ArcaneEncounterData.get(level.getServer());BlockPos s=level.getServer().overworld().getSharedSpawnPos();return ZONES.stream().map(z->z.name+" "+z.tier+"C+ ["+(s.getX()+z.dx)+", "+(s.getZ()+z.dz)+"] "+(data.isBossDefeated(z.id)?"토벌":"활성")).reduce((a,b)->a+"|"+b).orElse("");}
-                                                                                                                                                                                                                    ^
-  symbol:   method getSharedSpawnPos()
-  location: class ServerLevel
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:68: error: cannot find symbol
-    private static void ensureOutposts(ServerLevel level,ServerPlayer player,ArcaneEncounterData data){BlockPos spawn=level.getSharedSpawnPos();int[][] offsets={{180,0},{0,180},{-180,0},{0,-180}};List<FactionProfile.Entry> entries=FactionProfile.entries();for(int i=0;i<entries.size();i++){FactionProfile.Entry f=entries.get(i);BlockPos pos=surface(level,spawn.getX()+offsets[i][0],spawn.getZ()+offsets[i][1]);String buildId="faction_"+f.representativeId();if(player.distanceToSqr(pos.getX(),pos.getY(),pos.getZ())<220*220&&!data.isZoneBuilt(buildId)){buildOutpost(level,pos,f.tradition());data.markZoneBuilt(buildId);}if(player.distanceToSqr(pos.getX(),pos.getY(),pos.getZ())<90*90&&!data.isNamedDead(f.representativeId()))ensureRepresentative(level,pos,f);}}
-                                                                                                                           ^
-  symbol:   method getSharedSpawnPos()
-  location: variable level of type ServerLevel
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.java:79: error: cannot find symbol
-    private static List<Mob> nearby(ServerLevel level,BlockPos center,double radius,String tag){AABB box=new AABB(center.getX()-radius,center.getY()-48,center.getZ()-radius,center.getX()+radius,center.getY()+96,center.getZ()+radius);return level.getEntitiesOfClass(Mob.class,box,e->e.isAlive()&&e.getTags().contains(tag));}
+    private static List<Mob> nearby(ServerLevel level,BlockPos center,double radius,String tag){AABB box=new AABB(center.getX()-radius,center.getY()-48,center.getZ()-radius,center.getX()+radius,center.getY()+96,center.getZ()+radius);return level.getEntitiesOfClass(Mob.class,box,e->e.isAlive()&&e.getCommandTags().contains(tag));}
                                                                                                                                                                                                                                                                                                         ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable e of type Mob
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:17: error: cannot find symbol
-        if (entity == null || entity instanceof Player || entity.getTags().contains(SCALED_TAG)) return;
+        if (entity == null || entity instanceof Player || entity.getCommandTags().contains(SCALED_TAG)) return;
                                                                 ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable entity of type LivingEntity
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:31: error: cannot find symbol
-        if (entity.getTags().contains(tag)) return;
+        if (entity.getCommandTags().contains(tag)) return;
                   ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable entity of type LivingEntity
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/RpgScaleService.java:43: error: cannot find symbol
-        if (target instanceof Player || !target.getTags().contains(SCALED_TAG)) return;
+        if (target instanceof Player || !target.getCommandTags().contains(SCALED_TAG)) return;
                                                ^
-  symbol:   method getTags()
+  symbol:   method getCommandTags()
   location: variable target of type LivingEntity
-9 errors
+6 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -353,5 +308,5 @@ Note: Some input files use or override a deprecated API.
 	... 30 more
 
 
-BUILD FAILED in 21s
+BUILD FAILED in 19s
 3 actionable tasks: 2 executed, 1 up-to-date
