@@ -28,4 +28,13 @@ new = '''    private static void renderRangerFocus(
 if text.count(old) != 1:
     raise SystemExit(f"ranger focus marker count={text.count(old)}")
 MESH.write_text(text.replace(old, new, 1), encoding="utf-8")
-print("Placed ranger ready focus directly in front of the player")
+
+# Earlier contracts intentionally follow the current build version. Keep their
+# gameplay assertions while migrating only the stale version literal.
+for test in sorted((ROOT / "tools").glob("test_*.py")):
+    source = test.read_text(encoding="utf-8")
+    migrated = source.replace("mod_version=0.17.15-alpha.1", "mod_version=0.17.16-alpha.1")
+    if migrated != source:
+        test.write_text(migrated, encoding="utf-8")
+
+print("Placed ranger ready focus directly in front and migrated contracts to v0.17.16")
