@@ -184,7 +184,7 @@ public final class ErdenExteriorWorkforceManager {
                     Shift shift = shiftFor(node.role, assignedWorkers);
                     String id = node.id + "_worker_%02d".formatted(assignedWorkers + 1);
                     String name = familyName + " " + GIVEN_NAMES.get(
-                            Math.floorMod(globalWorker, GIVEN_NAMES.size()));
+                            Math.floorMod(globalHousehold * 3 + adultSlot, GIVEN_NAMES.size()));
                     residents.add(new ErdenExteriorWorkforceSavedData.Resident(
                             id, name,
                             adultSlot == 0 ? "adult_head" : "adult_partner",
@@ -197,7 +197,7 @@ public final class ErdenExteriorWorkforceManager {
                 }
                 String dependentId = node.id + "_dependent_%02d".formatted(localHousehold + 1);
                 String dependentName = familyName + " " + GIVEN_NAMES.get(
-                        Math.floorMod(globalWorker + globalDependent + 5, GIVEN_NAMES.size()));
+                        Math.floorMod(globalHousehold * 3 + 2, GIVEN_NAMES.size()));
                 residents.add(new ErdenExteriorWorkforceSavedData.Resident(
                         dependentId, dependentName,
                         (globalHousehold & 1) == 0 ? "child" : "elder",
