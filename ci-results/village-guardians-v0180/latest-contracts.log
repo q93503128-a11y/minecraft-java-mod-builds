@@ -75,13 +75,12 @@ total_xp_to_level30=94685
 [PASS] Custom arrows, blades, shields, runes, fields and volumes replace vanilla item/block displays
 [PASS] Particle emitters, display actors, temporary blocks and stale visual facades are absent
 === tools/test_v01715_skill_combat_visuals.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 69, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 40, in main
-    assert "VillageEquipmentRaritySystem.skillMultiplier(player)" in read("VillageRoleSkillSystem.java")
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] 회전 검무 rotates only the rendered avatar and repeatedly refreshes motion state
+[PASS] 검기 난무 uses clean horizontal blade waves without generic arrowhead decorations
+[PASS] Ranger buffs bind to actual arrow release, expose duration, and own a random rain field
+[PASS] Fire, tornado and giant lightning gameplay ranges use scalable custom damage
+[PASS] All shields face the live look direction, curve outward correctly, and use solid planes
+[PASS] Skill information renders on its own HUD row above the compact status action bar
 === tools/test_v01716_ranger_activation.py ===
 [PASS] 시험 궁수와 실제 궁수 모두 다음 활 발사에서 네 기술을 소비합니다
 [PASS] 화살비는 위험한 실제 낙하 화살 없이 짧은 메시 장면과 사용자 피해 판정을 사용합니다
@@ -110,13 +109,7 @@ AssertionError
 [PASS] 기술 시험장 진입은 1557 인증을 거치며 구형 시험 액션은 제거됩니다
 [PASS] 다음 밤 웨이브 정찰은 성벽과 병영 양쪽에서 접근할 수 있습니다
 [PASS] 콘텐츠 감사: 장비 24, 적 14, 보스 변이 6, 웨이브 특성 12, 액티브 기술 20
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01719_access_content.py", line 95, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01719_access_content.py", line 90, in main
-    assert token in audit, token
-           ^^^^^^^^^^^^^^
-AssertionError: 고정 최종 일수는 없으며 무한 진행
+[PASS] 실제 수량과 장기 반복 구간이 콘텐츠 감사 문서에 기록됩니다
 === tools/test_v0174_ui_safety.py ===
 Village Guardians v0.17.4 UI, location and shortcut contracts passed.
 === tools/test_v0175_gameplay_ui.py ===
