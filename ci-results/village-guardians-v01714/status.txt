@@ -1,8 +1,8 @@
-status=failure
-trigger_sha=acb25eaaf6eb4d38d4104de6e74c4a85a86960bd
-published_commit=acb25eaaf6eb4d38d4104de6e74c4a85a86960bd
-run_id=30777847989
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/30777847989
+status=success
+trigger_sha=8b29251b0874137f5b5aa693fc06dfd8609c2ede
+published_commit=d3cceb8d9254b1b91f16b86dd1ddb4d82d6af7aa
+run_id=30777962921
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/30777962921
 java=25
 gradle=9.2.1
 version=0.17.14-alpha.1
