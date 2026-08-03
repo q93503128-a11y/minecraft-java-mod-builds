@@ -74,7 +74,9 @@ jobs:
               exit 1
             fi
             if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log \
-              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/server-smoke.log; then
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_TRANSPORT_PASS revision=1 manifests=' ../../logs/server-smoke.log; then
               passed=1
               break
             fi
@@ -90,6 +92,20 @@ jobs:
           grep -F 'Prepared Erden household population households=77 residents=231 workers=154 dependents=77 owned_homes=77 assigned_workplaces=154 vacancies=2 shifts=early,late,night' ../../logs/server-smoke.log
           grep -F 'Processed Erden household economy day=' ../../logs/server-smoke.log
           grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3 ledger=true shortages=0 shifts=true ownership=true' ../../logs/server-smoke.log
+          grep -F 'Prepared Erden physical economy sites=156 warehouses=15 wallets=77 container_resources=8' ../../logs/server-smoke.log
+          grep -F 'Processed Erden physical economy day=' ../../logs/server-smoke.log
+          grep -F 'fulfilled_households=77' ../../logs/server-smoke.log
+          grep -F 'Reconciled Erden bakery reserves day=' ../../logs/server-smoke.log
+          grep -F 'conserved=true' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/server-smoke.log
+          grep -F 'containers=3' ../../logs/server-smoke.log
+          grep -F 'Prepared Erden road manifests day=' ../../logs/server-smoke.log
+          grep -F 'modeled_travel_ticks=' ../../logs/server-smoke.log
+          grep -F 'unloaded_routes=aggregate' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_TRANSPORT_PASS revision=1 manifests=' ../../logs/server-smoke.log
+          grep -F 'route_planning=true' ../../logs/server-smoke.log
+          grep -F 'loaded_obstacle_checks=true' ../../logs/server-smoke.log
+          grep -F 'persistent_jobs=true' ../../logs/server-smoke.log
           grep -F 'metre_scale=true' ../../logs/server-smoke.log
           grep -F 'structureless_generator=true' ../../logs/server-smoke.log
           grep -F 'vanilla_structures_blocked=true' ../../logs/server-smoke.log
@@ -134,7 +150,7 @@ jobs:
             echo 'Inactive kingdom or legacy repair path ran.' >&2
             exit 1
           fi
-          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|Item debris remained around Erden|watchdog' ../../logs/server-smoke.log; then
+          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|Invalid Erden physical economy|Expected 156 Erden economy sites|Unsupported Erden economy role|Item debris remained around Erden|watchdog' ../../logs/server-smoke.log; then
             exit 1
           fi
 
@@ -183,6 +199,12 @@ jobs:
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenUrbanInfrastructureBuilder.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationSavedData.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomyManager.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomySavedData.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomyAudit.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenBakeryReserveManager.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenTransportManager.class' logs/jar-entries.txt
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenTransportSavedData.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPopulationCiChunkRetainer.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenDiagnosticDebrisSettler.class' logs/jar-entries.txt
           grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/StructurelessNoiseChunkGenerator.class' logs/jar-entries.txt
@@ -206,10 +228,15 @@ jobs:
           - Urban roles: tenements, shops, bakeries, inns, stables, guard posts, bathhouses and warehouses
           - Detected building entrances and terrain-following road access: PASS
           - Royal culverts, road-edge drainage, 12 wells and 8 fire cisterns: PASS
-          - Household population, loaded-area routines and aggregate civic ledger: PASS
+          - Household population and loaded-area routines: PASS
+          - Physical worksite inventories, warehouse deliveries, household purchases and wages: PASS
+          - Bakery reserve conservation: PASS
+          - Persistent road manifests, modeled travel time and loaded-road obstruction checks: PASS
+          - Player-near porter and cargo-cart materialisation with loading, movement, unloading and retry states: PASS
+          - Unloaded capital transport remains aggregate by design
           - Construction debris: ZERO
           - Graphical UI and atlas input: PASS
-          - Physical inventory economy, demographic change and law simulation: NOT YET COMPLETE
+          - Authoritative cargo escrow on departure, custom medieval cart mesh, demographic change and full law simulation: NOT YET COMPLETE
           - Public user test build: NOT RELEASED
           EOF
 
