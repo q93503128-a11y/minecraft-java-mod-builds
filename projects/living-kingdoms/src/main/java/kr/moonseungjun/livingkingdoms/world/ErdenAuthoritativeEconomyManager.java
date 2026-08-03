@@ -111,6 +111,8 @@ public final class ErdenAuthoritativeEconomyManager {
                             + " | 재고 " + compactStocks(site)
                             + " | 입고 대기 " + compactPending(site)
                             + " | 출고 중 " + compactInTransit(site)
+                            + " | 영업 " + ErdenLivingEconomyManager.siteStatus(site, level.getGameTime())
+                            + " | 가격 " + ErdenLivingEconomyManager.priceText(site)
                             + " | 현금 " + site.metric("coins")
                             + " | 수령 " + site.metric("received")
                             + " / 출고 " + site.metric("sent")
@@ -188,6 +190,8 @@ public final class ErdenAuthoritativeEconomyManager {
             ServerLevel level,
             ErdenPopulationSavedData population,
             ErdenPhysicalEconomySavedData economy) {
+        ErdenLivingEconomySavedData livingEconomy = level.getDataStorage()
+                .computeIfAbsent(ErdenLivingEconomySavedData.TYPE);
         long currentDay = Math.floorDiv(level.getGameTime(), 24_000L);
         long previousDay = economy.lastProcessedDay();
         if (previousDay >= currentDay) return;
@@ -198,7 +202,7 @@ public final class ErdenAuthoritativeEconomyManager {
             ErdenCargoEscrowManager.beginEconomyDay(level, day);
             DayResult result;
             try {
-                result = processDay(population, economy.sites(), economy.wallets());
+                result = processDay(day, population, economy.sites(), economy.wallets(), livingEconomy);
             } finally {
                 ErdenCargoEscrowManager.endEconomyDay();
             }
@@ -206,6 +210,12 @@ public final class ErdenAuthoritativeEconomyManager {
                     day, result.sites, result.wallets,
                     result.deliveries, result.crafted,
                     result.sales, result.wages);
+            livingEconomy.applyDay(
+                    ErdenLivingEconomyManager.LIVING_ECONOMY_REVISION,
+                    day, result.market.states(),
+                    result.market.fulfilledHouseholds(), result.market.failedHouseholds(),
+                    result.market.closedFailures(), result.market.stockoutFailures(),
+                    result.market.unaffordableFailures(), result.market.salesCoins());
             lastFulfilledHouseholds = result.fulfilledHouseholds;
             if (previousDay < 0L || day % 7L == 0L) {
                 LivingKingdoms.LOGGER.info(
@@ -226,9 +236,11 @@ public final class ErdenAuthoritativeEconomyManager {
     }
 
     private static DayResult processDay(
+            long day,
             ErdenPopulationSavedData population,
             List<ErdenPhysicalEconomySavedData.SiteState> existingSites,
-            List<ErdenPhysicalEconomySavedData.WalletState> existingWallets) {
+            List<ErdenPhysicalEconomySavedData.WalletState> existingWallets,
+            ErdenLivingEconomySavedData livingEconomy) {
         Map<String, ErdenPhysicalEconomySavedData.SiteState> sites = new LinkedHashMap<>();
         for (ErdenPhysicalEconomySavedData.SiteState site : existingSites) sites.put(site.id(), site);
         Map<String, ErdenPhysicalEconomySavedData.WalletState> wallets = new LinkedHashMap<>();
@@ -238,12 +250,17 @@ public final class ErdenAuthoritativeEconomyManager {
         Map<Long, WorkerRef> workers = livingWorkers(population);
         DayCounters counters = new DayCounters();
 
+        ErdenLivingEconomyManager.prepareDay(day, sites);
         importWarehouseStock(sites);
         deliverRawMaterials(sites, workers, counters);
         runProduction(sites, workers, counters);
         distributeBread(sites, counters);
         runServiceSites(sites, workers, counters);
-        sellToHouseholds(population, sites, wallets, counters);
+        ErdenLivingEconomyManager.MarketResult market =
+                ErdenLivingEconomyManager.runDailyMarket(
+                        day, population, sites, wallets, livingEconomy);
+        counters.sales += market.salesCoins();
+        counters.fulfilledHouseholds += market.fulfilledHouseholds();
         reconcileBakeryReserves(sites, counters);
         payWages(population, sites, wallets, counters);
 
@@ -252,7 +269,7 @@ public final class ErdenAuthoritativeEconomyManager {
                 List.copyOf(wallets.values()),
                 counters.deliveries, counters.crafted,
                 counters.sales, counters.wages,
-                counters.fulfilledHouseholds,
+                counters.fulfilledHouseholds, market,
                 counters.reserveTransfers, counters.reserveMoved,
                 counters.reserveComplete, counters.reserveTotal);
     }
@@ -306,6 +323,7 @@ public final class ErdenAuthoritativeEconomyManager {
         for (ErdenPhysicalEconomySavedData.SiteState original : List.copyOf(sites.values())) {
             if (!workers.containsKey(positionKey(original.x(), original.z()))) continue;
             ErdenPhysicalEconomySavedData.SiteState site = sites.get(original.id());
+            if (site.metric("operating_today") <= 0L) continue;
             switch (site.role()) {
                 case "bakery" -> {
                     if (site.stock("wheat") < 6L || site.stock("coal") < 1L) continue;
@@ -376,6 +394,7 @@ public final class ErdenAuthoritativeEconomyManager {
         for (ErdenPhysicalEconomySavedData.SiteState original : List.copyOf(sites.values())) {
             if (!workers.containsKey(positionKey(original.x(), original.z()))) continue;
             ErdenPhysicalEconomySavedData.SiteState site = sites.get(original.id());
+            if (site.metric("operating_today") <= 0L) continue;
             long serviceUnits = 0L;
             long revenue = 0L;
             switch (site.role()) {
@@ -926,6 +945,7 @@ public final class ErdenAuthoritativeEconomyManager {
             long sales,
             long wages,
             int fulfilledHouseholds,
+            ErdenLivingEconomyManager.MarketResult market,
             int reserveTransfers,
             long reserveMoved,
             int reserveComplete,

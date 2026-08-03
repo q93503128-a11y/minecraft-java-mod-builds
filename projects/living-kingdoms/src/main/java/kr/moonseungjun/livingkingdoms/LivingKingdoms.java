@@ -13,6 +13,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowAudit;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
+import kr.moonseungjun.livingkingdoms.world.ErdenLivingEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenTransportManager;
@@ -85,6 +86,7 @@ public final class LivingKingdoms {
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
         ErdenAuthoritativeEconomyManager.onServerTick(event);
+        ErdenLivingEconomyManager.onServerTick(event);
         ErdenTransportManager.onServerTick(event);
         ErdenCargoEscrowManager.onServerTick(event);
         ErdenCargoEscrowAudit.onServerTick(event);
@@ -180,6 +182,7 @@ public final class LivingKingdoms {
         ErdenTransportManager.handleInteraction(event);
         StarterNpcManager.handleInteraction(event);
         ErdenPopulationManager.handleInteraction(event);
+        ErdenLivingEconomyManager.handleInteraction(event);
     }
 
     private void onWorkstationInteraction(PlayerInteractEvent.RightClickBlock event) {
