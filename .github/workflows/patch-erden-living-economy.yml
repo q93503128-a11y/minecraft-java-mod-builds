@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python .github/scripts/patch_erden_living_economy.py
+          python .github/scripts/patch_erden_living_economy_v2.py
           git diff --check
 
       - name: Commit integration
