@@ -70,27 +70,17 @@ total_xp_to_level30=94685
 [PASS] All twenty skills route to bounded custom-mesh scenes without particles
 [PASS] Temporary glass walls, block-break particles and obsolete visual facade are removed
 === tools/test_v01714_custom_mesh_effects.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01714_custom_mesh_effects.py", line 88, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01714_custom_mesh_effects.py", line 76, in main
-    assert "spawnVisualLightning" not in ability
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] 회전 검무 rotates the avatar holding its one real weapon without orbiting swords
+[PASS] All skill presentation uses original synchronized entities and procedural vertex meshes
+[PASS] Custom arrows, blades, shields, runes, fields and volumes replace vanilla item/block displays
+[PASS] Particle emitters, display actors, temporary blocks and stale visual facades are absent
 === tools/test_v01715_skill_combat_visuals.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 68, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py", line 13, in main
-    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/pathlib.py", line 1029, in read_text
-    with self.open(mode='r', encoding=encoding, errors=errors) as f:
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
-    return io.open(self, mode, buffering, encoding, errors, newline)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/gradle.properties'
+[PASS] 회전 검무 rotates only the rendered avatar and repeatedly refreshes motion state
+[PASS] 검기 난무 uses clean horizontal blade waves without generic arrowhead decorations
+[PASS] Ranger buffs bind to actual arrow release, expose duration, and own a random rain field
+[PASS] Fire, tornado and giant lightning gameplay ranges use scalable custom damage
+[PASS] All shields face the live look direction, curve outward correctly, and use solid planes
+[PASS] Skill information renders on its own HUD row above the compact status action bar
 === tools/test_v0174_ui_safety.py ===
 Village Guardians v0.17.4 UI, location and shortcut contracts passed.
 === tools/test_v0175_gameplay_ui.py ===
