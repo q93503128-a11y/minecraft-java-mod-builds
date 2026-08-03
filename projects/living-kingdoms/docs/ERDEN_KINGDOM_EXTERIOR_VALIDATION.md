@@ -40,6 +40,32 @@ Each node uses one of the existing attributed external house, manor or castle-ho
 
 Every node also receives a stone loading yard, barrel and secondary chest. Approach roads use five-metre packed-mud carriageways and connect to the nearest capital gate. Paper mills connect to the nearest wharf.
 
+## Authoritative producer inventories
+
+The 15 producing sites use their loading-yard barrel as the visible form of the saved producer stock. River wharves are transfer sites and are intentionally excluded from production inventory materialization.
+
+The tick order is fixed:
+
+1. Capture player changes from already materialized producer barrels.
+2. Run exterior production and dispatch.
+3. Settle capital-bound cargo through shipment escrow.
+4. Materialize the resulting producer stock back into the barrels.
+5. Run the remaining living economy and transport systems.
+
+An empty newly constructed barrel cannot overwrite saved production. A separate materialization ledger records which producer barrels have received their initial saved stock. After that first write, removing wheat, leather, hay, coal, iron or paper from a barrel reduces the corresponding saved node stock on the next synchronization tick.
+
+Daily dispatch preserves working reserves at the site instead of removing every unit:
+
+- grain estate: 12 wheat
+- ranch: 8 leather and 6 hay
+- colliery: 8 coal
+- iron mine: 4 iron
+- paper mill: 10 paper
+
+Only stock above the reserve enters shipment escrow. Dispatch immediately reduces the producer barrel on the next materialization pass, while the capital warehouse is credited only after arrival.
+
+Right-clicking a producer barrel reports the actual stored stock, cargo currently in transit, cumulative production and route-delay days in Korean.
+
 ## Terrain integration
 
 The central work yard is flattened only inside a bounded role-specific radius. Fields, fences and route surfaces follow authored continent height samples outside the central pad. Construction suppresses block drops and runs the existing streamed-chunk debris cleaner when each cell completes.
@@ -53,7 +79,7 @@ The exterior saved data records:
 - completed five-chunk node anchors
 - cumulative applied writes
 
-The permanent fresh-world audit must emit:
+The permanent fresh-world construction audit must emit:
 
 `LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=1 nodes=18 producers=15 wharves=3`
 
@@ -67,11 +93,16 @@ The same marker must prove:
 - fields, paddocks, mines, mills, docks and roads were generated
 - construction debris remained zero
 
+The permanent producer-inventory audit must additionally emit:
+
+`LK_ERDEN_EXTERIOR_INVENTORY_PASS revision=1 nodes=15 containers=15`
+
+It must prove all six resources are visible, capture and write passes both occurred, player removal is authoritative, dispatch reduces barrels and local reserves remain. The kingdom-supply marker must include `local_reserves=true`.
+
 ## Remaining exterior work
 
 This phase does not yet claim a complete living countryside. The following remain before the kingdom completion test:
 
-- physical producer inventory synchronization with every loading-yard barrel
 - farm, ranch, mine, mill and port workers with shifts and homes
 - ranch livestock and production dependency on animal health
 - visible wagon and barge entities following the stored shipment records
