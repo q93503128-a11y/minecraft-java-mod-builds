@@ -1,0 +1,152 @@
+name: Audit Living Kingdoms exterior workforce
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/audit-living-kingdoms-exterior-workforce.yml'
+
+concurrency:
+  group: living-kingdoms-exterior-workforce-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Prove workforce is authoritative
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'ErdenExteriorWorkforceManager.onServerTick(event);' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
+          grep -F 'ErdenExteriorWorkforceManager.markDeadIfWorker(level, villager);' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
+          grep -F 'ErdenExteriorWorkforceManager.productionPercent(' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomSupplyManager.java"
+          grep -F 'ErdenExteriorWorkforceManager.nodeOperational(' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomSupplyManager.java"
+          grep -F 'CI_MAX_IN_FLIGHT = 3' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java"
+          ! grep -R 'importWarehouseStock' "$PROJECT_DIR/src/main/java"
+
+      - name: Java 25 compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p ../../logs
+          gradle --no-daemon clean classes --stacktrace --console=plain \
+            2>&1 | tee ../../logs/exterior-workforce-compile.log
+
+      - name: Fresh world workforce and supply audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-exterior-workforce-ci-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-exterior-workforce-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/exterior-workforce-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 2100); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/exterior-workforce-server.log; then
+              cat ../../logs/exterior-workforce-server.log
+              exit 1
+            fi
+            if grep -Fq 'LK_ERDEN_EXTERIOR_WORKFORCE_PASS revision=1 nodes=18 households=74 residents=216 workers=142 dependents=74 producer_workers=124 wharf_workers=18' ../../logs/exterior-workforce-server.log \
+              && grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=1 nodes=18 producers=15 wharves=3' ../../logs/exterior-workforce-server.log \
+              && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/exterior-workforce-server.log \
+              && grep -Fq 'LK_ERDEN_LIVING_ECONOMY_PASS revision=1 households=77 shops=50' ../../logs/exterior-workforce-server.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/exterior-workforce-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/exterior-workforce-server.log
+          test "$passed" -eq 1
+          grep -F 'Prepared Erden exterior workforce nodes=18 households=74 residents=216 workers=142 dependents=74 producer_workers=124 wharf_workers=18' ../../logs/exterior-workforce-server.log
+          grep -E 'Processed Erden exterior workforce day=[0-9]+ alive_workers=142 attended=[1-9][0-9]* absent=[1-9][0-9]* dead=0 production_linked=true' ../../logs/exterior-workforce-server.log
+          grep -E 'LK_ERDEN_EXTERIOR_WORKFORCE_PASS .* attended=[1-9][0-9]* absent=[1-9][0-9]* loaded_sample=([2-9]|[1-9][0-9]+)' ../../logs/exterior-workforce-server.log
+          grep -F 'attendance=true scheduled_rest=true death_ledger=true production_linked=true' ../../logs/exterior-workforce-server.log
+          grep -F 'workforce_linked=true staffed_production=true wharf_labor=true' ../../logs/exterior-workforce-server.log
+          grep -F 'fixed_daily_imports=false' ../../logs/exterior-workforce-server.log
+          grep -F 'shipment_escrow=true' ../../logs/exterior-workforce-server.log
+          grep -F 'max_in_flight=3' ../../logs/exterior-workforce-server.log
+          grep -E 'produced=[1-9][0-9]*' ../../logs/exterior-workforce-server.log
+          grep -E 'dispatched=[1-9][0-9]*' ../../logs/exterior-workforce-server.log
+          grep -E 'received=[1-9][0-9]*' ../../logs/exterior-workforce-server.log
+
+          if grep -Eqi 'watchdog|A single server tick took|Invalid Erden exterior workforce|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-workforce-server.log; then
+            exit 1
+          fi
+
+      - name: Upload workforce audit logs
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-exterior-workforce-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Record workforce audit pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-exterior-workforce.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-exterior-workforce.json
+            git commit -m "Record Living Kingdoms exterior workforce audit $GITHUB_RUN_NUMBER" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
