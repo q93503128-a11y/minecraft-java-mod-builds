@@ -26,4 +26,13 @@ if old not in text:
 text = text.replace(old, new, 1)
 overlay.write_text(text, encoding="utf-8")
 
-print("Applied NeoForge 26.2 effect bounds and HUD compatibility fixes")
+abilities = JAVA / "VillageRoleAbilitySystem.java"
+text = abilities.read_text(encoding="utf-8")
+old = "launchMovingAt(level, player, MovingKind.BLADE, new ItemStack(Items.IRON_SWORD),"
+new = "launchMovingAt(level, player, MovingKind.BLADE, ItemStack.EMPTY,"
+if old not in text:
+    raise SystemExit("blade carrier item marker missing")
+text = text.replace(old, new, 1)
+abilities.write_text(text, encoding="utf-8")
+
+print("Applied NeoForge 26.2 effect bounds, HUD and empty carrier compatibility fixes")
