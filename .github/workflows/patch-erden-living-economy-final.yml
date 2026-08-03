@@ -27,22 +27,40 @@ jobs:
           mkdir -p logs
           {
             set -euo pipefail
-            if grep -Fq 'ErdenLivingEconomyManager.onServerTick(event);' \
+            if ! grep -Fq 'ErdenLivingEconomyManager.onServerTick(event);' \
               projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java; then
-              echo 'Living economy already integrated.'
+              python .github/scripts/patch_erden_living_economy_v2.py
+              git checkout -- .github/workflows/build-living-kingdoms.yml
+            fi
+            python - <<'PY'
+          from pathlib import Path
+          path = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenLivingEconomyManager.java')
+          text = path.read_text()
+          anchor = '''            ErdenLivingEconomySavedData previousLivingEconomy) {
+        prepareDay(day, sites);
+        List<ErdenLivingEconomySavedData.HouseholdMarketState> outcomes = new ArrayList<>();
+'''
+          replacement = '''            ErdenLivingEconomySavedData previousLivingEconomy) {
+        List<ErdenLivingEconomySavedData.HouseholdMarketState> outcomes = new ArrayList<>();
+'''
+          if anchor in text:
+              text = text.replace(anchor, replacement, 1)
+              path.write_text(text)
+          elif replacement not in text:
+              raise SystemExit('living market day preparation anchor not found')
+          PY
+            git diff --check
+            if git diff --quiet; then
+              echo 'Living economy integration and day preparation are already current.'
               exit 0
             fi
-            python .github/scripts/patch_erden_living_economy_v2.py
-            # GitHub App pushes may not update workflow files. The runtime and docs are committed first;
-            # the connector updates the permanent audit workflow separately after compilation succeeds.
-            git checkout -- .github/workflows/build-living-kingdoms.yml
-            git diff --check
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java \
+                    projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenLivingEconomyManager.java \
                     projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
                     projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md
-            git commit -m 'Connect Erden shop schedules prices and errands'
+            git commit -m 'Fix Erden living market day preparation'
             for attempt in 1 2 3 4 5 6 7 8; do
               if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
               git rebase --abort 2>/dev/null || true
