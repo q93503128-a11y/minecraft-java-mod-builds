@@ -1,1 +1,1 @@
-Run the simplified correction that removes the duplicate daily market preparation call.
+Replace the obsolete all-households-must-buy invariant with a complete 77-household outcome conservation audit.
