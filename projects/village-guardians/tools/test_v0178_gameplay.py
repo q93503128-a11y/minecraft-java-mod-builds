@@ -18,7 +18,7 @@ def main() -> None:
     visuals = read("VillageSkillEffectSystem.java")
     descriptions = read("VillageActionDescriptions.java")
 
-    assert "mod_version=0.17.19-alpha.1" in props
+    assert "mod_version=0.18.0-alpha.1" in props
     for branch in ("power", "guard", "support", "ranged", "mobility"):
         assert tree.count(f'("{branch}_') == 10
         assert f'{branch.upper()}_10' in tree
@@ -65,7 +65,7 @@ def main() -> None:
     print("[PASS] Common growth has five ten-stage branches with functional late capstones")
     print("[PASS] Growth nodes radiate at equal 72-degree intervals in a five-point star layout")
     print("[PASS] Outdoor test arena teleports, restores position and owns reward-free targets")
-    print("[PASS] Test skills temporarily equip to Z/V and use the real keyed cast/custom-mesh path")
+    print("[PASS] Test skills temporarily equip to Z/X and use the real keyed cast/custom-mesh path")
 
 if __name__ == "__main__":
     main()

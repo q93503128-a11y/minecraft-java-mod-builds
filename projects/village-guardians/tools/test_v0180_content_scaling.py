@@ -135,7 +135,10 @@ def main() -> None:
     )
     check(
         "강화 화살 위력은 본체와 파생 화살에 중복 곱해지지 않습니다",
-        "spawnSideArrow(level, player, arrow, -8.0, 1.0f)" in ability
+        "RAPID_ARROWS" in ability
+        and "event.setAmount(event.getAmount() * rapid.power())" in ability
+        and "event.setAmount(event.getAmount() * ricochet.power())" in ability
+        and "getBaseDamage()" not in ability
         and "event.getAmount() * 0.72f * ricochetPower" not in ability,
     )
     check(

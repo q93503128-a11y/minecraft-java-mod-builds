@@ -272,6 +272,7 @@ public final class VillageRaidSystem {
             applyScaling(mob, day, wave, boss);
             VillageEnemyArchetypeSystem.configure(
                     level, mob, spawned.archetype(), currentTrait, day, wave, boss);
+            if (boss) VillageBossAspectSystem.configure(level, mob, day, wave, index);
             mob.addTag(RAID_ENEMY_TAG);
             VillageWorldSystem.markAllowedGameMob(mob);
             server.getScoreboard().addPlayerToTeam(mob.getScoreboardName(), raidTeam);
@@ -341,6 +342,9 @@ public final class VillageRaidSystem {
             updateEnemyOutline(server, mob);
             VillageEnemyArchetypeSystem.tickAbility(
                     level, server, mob, archetype, currentTrait, abilityTicks);
+            if (VillageEnemyArchetypeSystem.isBoss(archetype)) {
+                VillageBossAspectSystem.tick(level, server, mob, abilityTicks);
+            }
 
             ServerPlayer nearbyPlayer = gatePassable
                     && !VillageEnemyArchetypeSystem.ignoresNearbyPlayersUntilInside(archetype)
@@ -372,7 +376,8 @@ public final class VillageRaidSystem {
                 int day = VillageCouncilState.currentDay();
                 float multiplier = currentTrait.structureDamageMultiplier()
                         * VillageWarfrontSystem.structureDamageMultiplier(day)
-                        * VillageEnemyArchetypeSystem.structureDamageMultiplier(archetype);
+                        * VillageEnemyArchetypeSystem.structureDamageMultiplier(archetype)
+                        * VillageBossAspectSystem.structureMultiplier(mob);
                 int damage = Math.max(1, Math.round((7 + wave * 2 + Math.min(24, day)
                         + (VillageEnemyArchetypeSystem.isBoss(archetype) ? 18 : 0)) * multiplier));
                 VillageProgressionSystem.damageBuilding(server, targetBuilding, damage);
@@ -488,6 +493,7 @@ public final class VillageRaidSystem {
 
     private static void releaseEnemy(MinecraftServer server, UUID uuid, Entity entity) {
         ACTIVE_ARCHETYPES.remove(uuid);
+        VillageBossAspectSystem.forget(uuid);
         VillageWorldSystem.unmarkAllowedGameMob(uuid);
         VillageHealthDisplaySystem.forgetEnemy(uuid);
         if (entity != null) {
@@ -500,6 +506,7 @@ public final class VillageRaidSystem {
     private static void clearState() {
         ACTIVE_ENEMIES.clear();
         ACTIVE_ARCHETYPES.clear();
+        VillageBossAspectSystem.reset();
         active = false;
         wave = 0;
         maxWaves = 0;

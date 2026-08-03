@@ -30,7 +30,8 @@ public final class VillageSkillHudOverlay {
     }
 
     public static void accept(VillageNetwork.SkillHudPayload payload) {
-        text = payload == null || payload.text() == null ? "" : payload.text();
+        text = payload == null || payload.text() == null ? ""
+                : VillageClientKeys.resolveTokens(payload.text());
         expiresAt = System.currentTimeMillis() + 1_500L;
     }
 

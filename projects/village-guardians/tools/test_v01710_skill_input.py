@@ -16,11 +16,11 @@ def main() -> None:
     controller = read("VillageUiController.java")
     screen = read("VillageFacilityScreen.java")
 
-    assert "mod_version=0.17.19-alpha.1" in props
+    assert "mod_version=0.18.0-alpha.1" in props
     assert "@EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)" in keys
     assert "registerKeyMappings(RegisterKeyMappingsEvent event)" in keys
     assert 'consume(ROLE_SKILL_ONE, "use_skill:0")' in keys
-    assert 'consume(ROLE_SKILL_TWO, "use_skill:1")' in keys
+    assert "consumeSkillTwo(minecraft)" in keys and 'VillageUiActionPayload("use_skill:1")' in keys
 
     assert "roleManagementBoxPosition" in test
     assert "skillManagementBoxPosition" in test
@@ -45,10 +45,10 @@ def main() -> None:
     assert 'selectedAction.startsWith("test_equip:")' in screen
     assert "onClose();" in screen
 
-    print("[PASS] Client Z/V mappings are registered by the client event subscriber")
-    print("[PASS] Z/V packets route directly to the real role-skill cast system")
+    print("[PASS] Client Z/X mappings are registered by the client event subscriber")
+    print("[PASS] Z/X packets route directly to the real role-skill cast system")
     print("[PASS] Role and skill management use separate physical barrels and screens")
-    print("[PASS] Equipping closes the skill screen so in-game Z/V input is no longer drained")
+    print("[PASS] Equipping closes the skill screen so in-game Z/X input is no longer drained")
 
 
 if __name__ == "__main__":

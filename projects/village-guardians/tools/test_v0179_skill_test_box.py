@@ -15,7 +15,7 @@ def main() -> None:
     screen = read("VillageFacilityScreen.java")
     guard = read("VillageGuardians.java")
 
-    assert "mod_version=0.17.19-alpha.1" in props
+    assert "mod_version=0.18.0-alpha.1" in props
     assert "TEST_ROLES" in test and "selectedRole" in test and "selectRole" in test
     assert "실제 직업과 성장 데이터는 바뀌지 않습니다" in test
     assert "roleManagementBoxPosition" in test and "skillManagementBoxPosition" in test
@@ -39,7 +39,7 @@ def main() -> None:
 
     print("[PASS] Test arena owns separate role and skill management barrels")
     print("[PASS] Test-only job selection leaves permanent role and progression untouched")
-    print("[PASS] Skill cards directly assign Z/V and the real keyed cast path reads the test loadout")
+    print("[PASS] Skill cards directly assign Z/X and the real keyed cast path reads the test loadout")
 
 if __name__ == "__main__":
     main()

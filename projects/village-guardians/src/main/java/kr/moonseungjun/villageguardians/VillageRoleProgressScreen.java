@@ -82,7 +82,9 @@ public final class VillageRoleProgressScreen extends Screen {
             drawTab(graphics, mouseX, mouseY, 10, 33, 84, "성장 경로", tab == Tab.TREE);
             drawTab(graphics, mouseX, mouseY, 100, 33, 84, "기술 관리", tab == Tab.SKILLS);
         } else {
-            graphics.text(font, fit("기술 습득과 Z/X 장착", Math.max(80, closeX - 18)),
+            graphics.text(font, fit("기술 습득과 " + VillageClientKeys.skillOneKeyName()
+                            + "/" + VillageClientKeys.skillTwoKeyName() + " 장착",
+                    Math.max(80, closeX - 18)),
                     10, 36, ACCENT, false);
         }
 

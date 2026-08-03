@@ -229,6 +229,21 @@ public final class VillageEnemyArchetypeSystem {
             if (day >= 9 && slot % 6 == 0) return Archetype.NECROMANCER;
             return slot % 3 == 0 ? Archetype.HEXER : Archetype.BULWARK;
         }
+        if (trait == VillageWaveTrait.PHALANX) {
+            if (slot % 6 == 0) return Archetype.WAR_CHANTER;
+            return slot % 3 == 0 ? Archetype.SHIELDBREAKER : Archetype.BULWARK;
+        }
+        if (trait == VillageWaveTrait.BLOOD_MOON) {
+            return slot % 5 == 0 ? Archetype.WAR_CHANTER : Archetype.RUSHER;
+        }
+        if (trait == VillageWaveTrait.STORMFRONT) {
+            if (day >= 11 && slot % 5 == 0) return Archetype.TOWER_HUNTER;
+            return slot % 3 == 0 ? Archetype.HEXER : Archetype.MARKSMAN;
+        }
+        if (trait == VillageWaveTrait.RIFTED) {
+            if (slot % 6 == 0) return Archetype.NECROMANCER;
+            return slot % 3 == 0 ? Archetype.HEXER : Archetype.SHIELDBREAKER;
+        }
 
         if (day >= 11 && slot == 0) return Archetype.NECROMANCER;
         if (day >= 9 && slot == 3) return Archetype.TOWER_HUNTER;

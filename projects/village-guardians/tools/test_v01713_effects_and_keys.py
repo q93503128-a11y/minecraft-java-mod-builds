@@ -15,9 +15,9 @@ def main() -> None:
     ability = read("VillageRoleAbilitySystem.java")
     effects = read("VillageSkillEffectSystem.java")
 
-    assert "mod_version=0.17.19-alpha.1" in props
-    assert "VANILLA_RESERVED" in keys and "migrateUnsafeBindings" in keys
-    assert "GLFW.GLFW_KEY_Z" in keys and "GLFW.GLFW_KEY_V" in keys
+    assert "mod_version=0.18.0-alpha.1" in props
+    assert "VANILLA_RESERVED" in keys and "migrateBindings" in keys
+    assert "GLFW.GLFW_KEY_Z" in keys and "GLFW.GLFW_KEY_X" in keys and "GLFW.GLFW_KEY_V" in keys
     assert "!used.add(value)" in keys
     assert "KeyMapping.resetMapping()" in keys and "minecraft.options.save()" in keys
 
@@ -47,7 +47,7 @@ def main() -> None:
     assert "addParticle" not in effects
     assert not (JAVA / "VillageSkillVisualSystem.java").exists()
 
-    print("[PASS] Unsafe vanilla/conflicting bindings migrate to safe Z/V/B/H/J/K and persist")
+    print("[PASS] Unsafe vanilla/conflicting bindings migrate to safe Z/X/V/H/J/K and persist")
     print("[PASS] Garen-style spin rotates the avatar holding one actual weapon")
     print("[PASS] All twenty skills route to bounded custom-mesh scenes without particles")
     print("[PASS] Temporary glass walls, block-break particles and obsolete visual facade are removed")

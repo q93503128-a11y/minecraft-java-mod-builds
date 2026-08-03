@@ -20,7 +20,7 @@ def main() -> None:
     role = read("VillageRole.java")
     keys = read("VillageClientKeys.java")
 
-    assert "mod_version=0.17.19-alpha.1" in props
+    assert "mod_version=0.18.0-alpha.1" in props
     expected_names = [
         "회전 검무", "전투 고양", "검기 난무", "천붕 강하",
         "신속 삼연사", "추적 도탄", "천공 화살비", "성멸 대궁",
@@ -69,7 +69,7 @@ def main() -> None:
     print("[PASS] Twenty active skills own real movement, projectile, field and procedural-mesh motions")
     print("[PASS] Vanguard, ranger, arcanist, luminar and warden passives are wired to combat events")
     print("[PASS] Skill visuals avoid particle geometry and cooldown HUD exposes live readiness")
-    print("[PASS] Default shortcuts match Z/V/B/H/J/K with no obsolete U duplicate")
+    print("[PASS] Default shortcuts match Z/X/V/H/J/K with no obsolete U duplicate")
 
 
 if __name__ == "__main__":

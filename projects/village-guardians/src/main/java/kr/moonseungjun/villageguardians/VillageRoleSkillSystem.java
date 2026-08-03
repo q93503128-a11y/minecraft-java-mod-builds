@@ -205,7 +205,7 @@ public final class VillageRoleSkillSystem {
     public static String loadoutSummary(ServerPlayer player) {
         String first = equippedSkill(player, 0).map(ActiveSkill::displayName).orElse("비어 있음");
         String second = equippedSkill(player, 1).map(ActiveSkill::displayName).orElse("비어 있음");
-        return "Z: " + first + " | V: " + second;
+        return "{SKILL1}: " + first + " | {SKILL2}: " + second;
     }
 
     public static synchronized int cooldownRemainingSeconds(ServerPlayer player, int slot) {
@@ -228,7 +228,7 @@ public final class VillageRoleSkillSystem {
     }
 
     public static String hudSlotText(ServerPlayer player, int slot) {
-        String key = slot == 0 ? "§bZ" : "§dX";
+        String key = slot == 0 ? "§b{SKILL1}" : "§d{SKILL2}";
         ActiveSkill skill = equippedSkill(player, slot).orElse(null);
         if (skill == null) return key + " §8비어 있음";
         int remaining = cooldownRemainingSeconds(player, slot);
@@ -237,6 +237,60 @@ public final class VillageRoleSkillSystem {
         int cooled = Math.max(0, Math.min(5, Math.round((1.0f - progress) * 5.0f)));
         String bar = "§a" + "■".repeat(cooled) + "§8" + "□".repeat(5 - cooled);
         return key + " §f" + skill.displayName() + " §c" + remaining + "초 " + bar;
+    }
+
+    public static ScalingCoverage scalingCoverage(ActiveSkill skill) {
+        if (skill == null) return new ScalingCoverage(false, false, false, "기술 없음");
+        return switch (skill) {
+            case VANGUARD_WHIRLWIND -> new ScalingCoverage(true, true, true,
+                    "위력=틱 피해 · 지속=회전 시간 · 특수=범위/대상/밀치기");
+            case VANGUARD_BREAKER -> new ScalingCoverage(true, true, true,
+                    "위력=공격 증폭 · 지속=버프 시간 · 특수=효과 단계/아군 강화");
+            case VANGUARD_CRY -> new ScalingCoverage(true, true, true,
+                    "위력=검기 피해 · 지속=검기 횟수 · 특수=검기 크기/사거리");
+            case VANGUARD_STORM -> new ScalingCoverage(true, true, true,
+                    "위력=강하 피해 · 지속=균열 약화 시간 · 특수=범위/제어");
+            case RANGER_VOLLEY -> new ScalingCoverage(true, true, true,
+                    "위력=본체/추가 화살 피해 · 지속=준비 시간 · 특수=장전/추가 화살 수");
+            case RANGER_PIERCE -> new ScalingCoverage(true, true, true,
+                    "위력=추적/도탄 피해 · 지속=준비 시간 · 특수=도탄 반경/대상 수");
+            case RANGER_RICOCHET -> new ScalingCoverage(true, true, true,
+                    "위력=화살비 피해 · 지속=준비/장판 시간 · 특수=범위/화상");
+            case RANGER_FIRE_RAIN -> new ScalingCoverage(true, true, true,
+                    "위력=대궁 피해 · 지속=준비 시간 · 특수=크기/관통 범위");
+            case ARCANIST_FIRE_ORB -> new ScalingCoverage(true, true, true,
+                    "위력=폭발 피해 · 지속=비행 사거리 · 특수=폭발 범위/화상");
+            case ARCANIST_FROST_RING -> new ScalingCoverage(true, true, true,
+                    "위력=지속 피해 · 지속=장판 시간 · 특수=범위/사거리");
+            case ARCANIST_CHAIN -> new ScalingCoverage(true, true, true,
+                    "위력=회랑 피해 · 지속=토네이도 시간 · 특수=범위/제어");
+            case ARCANIST_NOVA -> new ScalingCoverage(true, true, true,
+                    "위력=낙뢰 피해 · 지속=폭격 시간 · 특수=범위/낙뢰 대상");
+            case LUMINAR_HEAL -> new ScalingCoverage(true, true, true,
+                    "위력=즉시 회복 · 지속=재생/보호막 시간 · 특수=보호막 강도");
+            case LUMINAR_CLEANSE -> new ScalingCoverage(true, true, true,
+                    "위력=회복량 · 지속=정화 후 보호 시간 · 특수=보호막/정화 범위");
+            case LUMINAR_VEIL -> new ScalingCoverage(true, true, true,
+                    "위력=틱 회복 · 지속=성역 시간 · 특수=범위/보호");
+            case LUMINAR_SANCTUARY -> new ScalingCoverage(true, true, true,
+                    "위력=전체 회복 · 지속=보호막/재생 시간 · 특수=보호막 강도/부활");
+            case WARDEN_TAUNT -> new ScalingCoverage(true, true, true,
+                    "위력=돌진 피해 · 지속=돌진 거리 · 특수=방패 폭/밀치기");
+            case WARDEN_BASH -> new ScalingCoverage(true, true, true,
+                    "위력=함성 피해 · 지속=도발/약화 시간 · 특수=범위/약화 단계");
+            case WARDEN_FORMATION -> new ScalingCoverage(true, true, true,
+                    "위력=보호막/접촉 피해 · 지속=태세 시간 · 특수=방패 범위/밀치기");
+            case WARDEN_FIELD -> new ScalingCoverage(true, true, true,
+                    "위력=보호막/진군 피해 · 지속=진군 시간 · 특수=방패 범위/저항");
+        };
+    }
+
+    public static boolean allSkillBranchesConnected() {
+        return Arrays.stream(ActiveSkill.values()).allMatch(skill -> scalingCoverage(skill).complete());
+    }
+
+    public record ScalingCoverage(boolean power, boolean duration, boolean special, String detail) {
+        public boolean complete() { return power && duration && special; }
     }
 
     public static List<ActiveSkill> skillsFor(VillageRole role) {
@@ -278,7 +332,7 @@ public final class VillageRoleSkillSystem {
         ActiveSkill skill = equippedSkill(player, slot).orElse(null);
         if (skill == null) {
             return testing
-                    ? "시험 슬롯 " + (slot == 0 ? "Z" : "V") + "이 비어 있습니다. 시험 관리함에서 기술을 장착하세요."
+                    ? "시험 기술 슬롯 " + (slot + 1) + "이 비어 있습니다. 시험 관리함에서 기술을 장착하세요."
                     : "기술 슬롯 " + (slot + 1) + "이 비어 있습니다. 직업 성장 화면에서 기술을 장착하세요.";
         }
         if (!(player.level() instanceof ServerLevel level)) {
@@ -296,7 +350,7 @@ public final class VillageRoleSkillSystem {
 
         float power = powerMultiplier(player, role)
                 * VillageProgressionSystem.learnedSkillDamageMultiplier(player)
-                * VillageEquipmentRaritySystem.skillMultiplier(player);
+                * VillageEquipmentShop.roleSkillMultiplier(player);
         float duration = durationMultiplier(player, role);
         int special = specialRank(player, role);
         cast(level, player, skill, power, duration, special);
@@ -316,7 +370,9 @@ public final class VillageRoleSkillSystem {
                         - VillageProgressionSystem.skillCooldownReductionSeconds(player)
                         - VillageSkillTreeSystem.cooldownReductionSeconds(player)
                         - VillageSkillTreeSystem.mobilityCooldownReductionSeconds(player)
-                        - roleTreeCooldownReductionSeconds(player, role));
+                        - roleTreeCooldownReductionSeconds(player, role)
+                        - VillageEquipmentShop.cooldownReductionSeconds(player)
+                        - VillageRelicSystem.cooldownReductionSeconds(player));
     }
 
     public static String useTestSkill(ServerPlayer player, String skillId) {

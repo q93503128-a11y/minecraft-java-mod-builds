@@ -84,8 +84,8 @@ public final class VillageSkillTestSystem {
         player.setDeltaMovement(Vec3.ZERO);
         String targets = spawnTargets(player);
         return "외부 기술 시험장으로 이동했습니다."
-                + "\n금색 바닥 관리함은 직업, 청금석 바닥 관리함은 Z/V 기술을 담당합니다."
-                + "\n기술을 장착하면 창이 닫히며, 그 뒤 Z/V로 실제 시전합니다. K는 기술 관리함을 엽니다. "
+                + "\n금색 바닥 관리함은 직업, 청금석 바닥 관리함은 {SKILL1}/{SKILL2} 기술을 담당합니다."
+                + "\n기술을 장착하면 창이 닫히며, 그 뒤 {SKILL1}/{SKILL2}로 실제 시전합니다. K는 기술 관리함을 엽니다. "
                 + targets;
     }
 
@@ -153,7 +153,7 @@ public final class VillageSkillTestSystem {
                 .map(VillageRoleSkillSystem.ActiveSkill::displayName).orElse("비어 있음");
         String second = equippedSkill(player, 1)
                 .map(VillageRoleSkillSystem.ActiveSkill::displayName).orElse("비어 있음");
-        return "Z: " + first + " | V: " + second;
+        return "{SKILL1}: " + first + " | {SKILL2}: " + second;
     }
 
     public static String spawnTargets(ServerPlayer player) {

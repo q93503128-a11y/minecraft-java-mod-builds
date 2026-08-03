@@ -1,8 +1,5 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
@@ -11,9 +8,11 @@ import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 public final class VillageEquipmentShop {
     private VillageEquipmentShop() {}
@@ -24,12 +23,11 @@ public final class VillageEquipmentShop {
         return Arrays.stream(Offer.values()).filter(offer -> offer.category() == category).toList();
     }
 
-    /** Deterministic daily inventory. Eligible items rotate instead of accumulating forever. */
     public static List<Offer> currentOffers(int day) {
         int safeDay = Math.max(1, day);
         List<Offer> result = new ArrayList<>();
-        result.addAll(rotatingOffers(Category.EQUIPMENT, safeDay, 3));
-        result.addAll(rotatingOffers(Category.ARMOR, safeDay, 2));
+        result.addAll(rotatingOffers(Category.EQUIPMENT, safeDay, 4));
+        result.addAll(rotatingOffers(Category.ARMOR, safeDay, 3));
         return List.copyOf(result);
     }
 
@@ -43,11 +41,9 @@ public final class VillageEquipmentShop {
                 .toList();
         if (eligible.isEmpty()) return List.of();
         int count = Math.min(maximum, eligible.size());
-        int start = Math.floorMod(day - 1 + category.ordinal() * 2, eligible.size());
+        int start = Math.floorMod(day * 3 - 3 + category.ordinal() * 5, eligible.size());
         List<Offer> selected = new ArrayList<>();
-        for (int index = 0; index < count; index++) {
-            selected.add(eligible.get((start + index) % eligible.size()));
-        }
+        for (int index = 0; index < count; index++) selected.add(eligible.get((start + index) % eligible.size()));
         return List.copyOf(selected);
     }
 
@@ -74,46 +70,58 @@ public final class VillageEquipmentShop {
     }
 
     public static float outgoingMultiplier(ServerPlayer player, boolean projectile) {
-        float result = projectile ? bonusFor(player.getMainHandItem(), true) : bonusFor(player.getMainHandItem(), false);
-        if (projectile) result = Math.max(result, bonusFor(player.getOffhandItem(), true));
+        float named = projectile ? bonusFor(player.getMainHandItem(), true) : bonusFor(player.getMainHandItem(), false);
+        if (projectile) named = Math.max(named, bonusFor(player.getOffhandItem(), true));
         float rarity = projectile
                 ? Math.max(VillageEquipmentRaritySystem.projectileMultiplier(player.getMainHandItem()),
                 VillageEquipmentRaritySystem.projectileMultiplier(player.getOffhandItem()))
                 : VillageEquipmentRaritySystem.meleeMultiplier(player.getMainHandItem());
         float relic = projectile ? VillageRelicSystem.projectileMultiplier(player)
                 : VillageRelicSystem.meleeMultiplier(player);
-        return result * rarity * relic;
+        return named * rarity * relic;
     }
 
     public static float incomingMultiplier(ServerPlayer player) {
-        float reduction = 0.0f;
-        if (hasEquipped(player, Offer.WARD_SHIELD)) reduction += 0.05f;
-        if (hasEquipped(player, Offer.BASTION_CHEST)) reduction += 0.08f;
-        if (hasEquipped(player, Offer.AEGIS_CHEST)) reduction += 0.10f;
+        float reduction = equippedOffers(player).stream()
+                .map(Offer::damageReduction)
+                .reduce(0.0f, Float::sum);
         float rarityMultiplier = VillageEquipmentRaritySystem.incomingMultiplier(player);
-        return Math.max(0.58f, (1.0f - reduction) * rarityMultiplier
+        return Math.max(0.52f, (1.0f - Math.min(0.42f, reduction)) * rarityMultiplier
                 * VillageRelicSystem.incomingMultiplier(player));
     }
 
     public static float roleSkillMultiplier(ServerPlayer player) {
-        float base = hasEquipped(player, Offer.ARCANE_FOCUS) ? 1.18f : 1.0f;
-        return base * VillageEquipmentRaritySystem.skillMultiplier(player)
+        float named = 1.0f;
+        for (Offer offer : equippedOffers(player)) named *= offer.skillMultiplier();
+        return named * VillageEquipmentRaritySystem.skillMultiplier(player)
                 * VillageRelicSystem.skillMultiplier(player);
+    }
+
+    public static int cooldownReductionSeconds(ServerPlayer player) {
+        int result = 0;
+        for (Offer offer : equippedOffers(player)) result += offer.cooldownReductionSeconds();
+        return Math.min(4, result);
+    }
+
+    private static Set<Offer> equippedOffers(ServerPlayer player) {
+        EnumSet<Offer> result = EnumSet.noneOf(Offer.class);
+        collect(result, player.getMainHandItem());
+        collect(result, player.getOffhandItem());
+        for (EquipmentSlot slot : new EquipmentSlot[]{
+                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            collect(result, player.getItemBySlot(slot));
+        }
+        return result;
+    }
+
+    private static void collect(Set<Offer> output, ItemStack stack) {
+        for (Offer offer : Offer.values()) if (offer.matches(stack)) output.add(offer);
     }
 
     private static float bonusFor(ItemStack stack, boolean projectile) {
         Offer offer = Arrays.stream(Offer.values()).filter(value -> value.matches(stack)).findFirst().orElse(null);
         if (offer == null) return 1.0f;
         return projectile ? offer.projectileMultiplier() : offer.meleeMultiplier();
-    }
-
-    private static boolean hasEquipped(ServerPlayer player, Offer offer) {
-        if (offer.matches(player.getMainHandItem()) || offer.matches(player.getOffhandItem())) return true;
-        for (EquipmentSlot slot : new EquipmentSlot[]{
-                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-            if (offer.matches(player.getItemBySlot(slot))) return true;
-        }
-        return false;
     }
 
     public enum Category {
@@ -125,25 +133,53 @@ public final class VillageEquipmentShop {
 
     public enum Offer {
         WATCH_SWORD("watch_sword", "파수대 철검", Category.EQUIPMENT, Items.IRON_SWORD, 1, 90,
-                "근접 공격 강화", 1.08f, 1.0f),
+                "근접 피해 +8%", 1.08f, 1.00f, 1.00f, 0.00f, 0),
         HUNTER_BOW("hunter_bow", "성루 사냥활", Category.EQUIPMENT, Items.BOW, 2, 140,
-                "원거리 공격 강화", 1.0f, 1.10f),
+                "원거리 피해 +10%", 1.00f, 1.10f, 1.00f, 0.00f, 0),
         WARD_SHIELD("ward_shield", "수호 문양 방패", Category.ARMOR, Items.SHIELD, 2, 170,
-                "받는 피해 감소", 1.0f, 1.0f),
+                "받는 피해 5% 감소", 1.00f, 1.00f, 1.00f, 0.05f, 0),
+        SENTINEL_AXE("sentinel_axe", "문지기 파쇄도끼", Category.EQUIPMENT, Items.IRON_AXE, 3, 230,
+                "근접 피해 +13%", 1.13f, 1.00f, 1.00f, 0.00f, 0),
+        TWINSTRING_BOW("twinstring_bow", "쌍현 전투궁", Category.EQUIPMENT, Items.BOW, 4, 315,
+                "원거리 피해 +15% · 기술 재사용 -1초", 1.00f, 1.15f, 1.00f, 0.00f, 1),
+        BULWARK_HELM("bulwark_helm", "성루 방벽투구", Category.ARMOR, Items.DIAMOND_HELMET, 4, 350,
+                "받는 피해 6% 감소", 1.00f, 1.00f, 1.00f, 0.06f, 0),
         VETERAN_BLADE("veteran_blade", "노련한 수호검", Category.EQUIPMENT, Items.DIAMOND_SWORD, 4, 330,
-                "근접 공격 크게 강화", 1.17f, 1.0f),
+                "근접 피해 +17%", 1.17f, 1.00f, 1.00f, 0.00f, 0),
         SIEGE_CROSSBOW("siege_crossbow", "공성 파쇄쇠뇌", Category.EQUIPMENT, Items.CROSSBOW, 5, 390,
-                "원거리 공격 크게 강화", 1.0f, 1.20f),
+                "원거리 피해 +20%", 1.00f, 1.20f, 1.00f, 0.00f, 0),
+        WIND_BLADE("wind_blade", "질풍 호위검", Category.EQUIPMENT, Items.DIAMOND_SWORD, 5, 430,
+                "근접 피해 +15% · 기술 효과 +5% · 재사용 -1초", 1.15f, 1.00f, 1.05f, 0.00f, 1),
+        MARCH_BOOTS("march_boots", "진군자의 전투화", Category.ARMOR, Items.DIAMOND_BOOTS, 5, 420,
+                "받는 피해 4% 감소 · 기술 재사용 -1초", 1.00f, 1.00f, 1.00f, 0.04f, 1),
         ARCANE_FOCUS("arcane_focus", "비전 집중봉", Category.EQUIPMENT, Items.BLAZE_ROD, 5, 420,
-                "장착 기술 피해와 치유 강화", 1.0f, 1.0f),
+                "직업 기술 피해·치유 +18%", 1.00f, 1.00f, 1.18f, 0.00f, 0),
         BASTION_CHEST("bastion_chest", "성채 수호 흉갑", Category.ARMOR, Items.DIAMOND_CHESTPLATE, 6, 560,
-                "생존력 강화", 1.0f, 1.0f),
+                "받는 피해 8% 감소", 1.00f, 1.00f, 1.00f, 0.08f, 0),
+        EAGLE_CROSSBOW("eagle_crossbow", "독수리 추격쇠뇌", Category.EQUIPMENT, Items.CROSSBOW, 7, 650,
+                "원거리 피해 +23% · 기술 재사용 -1초", 1.00f, 1.23f, 1.00f, 0.00f, 1),
+        FROST_FOCUS("frost_focus", "서리결정 지휘봉", Category.EQUIPMENT, Items.BLAZE_ROD, 7, 680,
+                "직업 기술 효과 +22% · 재사용 -1초", 1.00f, 1.00f, 1.22f, 0.00f, 1),
+        RUNE_LEGGINGS("rune_leggings", "룬각인 전투각반", Category.ARMOR, Items.DIAMOND_LEGGINGS, 7, 710,
+                "받는 피해 7% 감소 · 기술 효과 +8%", 1.00f, 1.00f, 1.08f, 0.07f, 0),
+        EXECUTIONER_AXE("executioner_axe", "처형대장의 흑도끼", Category.EQUIPMENT, Items.NETHERITE_AXE, 8, 840,
+                "근접 피해 +25%", 1.25f, 1.00f, 1.00f, 0.00f, 0),
+        TITAN_SHIELD("titan_shield", "거신의 성문방패", Category.ARMOR, Items.SHIELD, 8, 820,
+                "받는 피해 11% 감소", 1.00f, 1.00f, 1.00f, 0.11f, 0),
         AEGIS_CHEST("aegis_chest", "최후 방벽 흉갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 9, 900,
-                "후반 생존력 크게 강화", 1.0f, 1.0f),
+                "받는 피해 10% 감소", 1.00f, 1.00f, 1.00f, 0.10f, 0),
         DAWN_BLADE("dawn_blade", "새벽 절단검", Category.EQUIPMENT, Items.NETHERITE_SWORD, 10, 980,
-                "최상급 근접 공격 강화", 1.28f, 1.0f),
+                "근접 피해 +28%", 1.28f, 1.00f, 1.00f, 0.00f, 0),
         STAR_BOW("star_bow", "별빛 장궁", Category.EQUIPMENT, Items.BOW, 10, 980,
-                "최상급 원거리 공격 강화", 1.0f, 1.28f);
+                "원거리 피해 +28%", 1.00f, 1.28f, 1.00f, 0.00f, 0),
+        DAWN_SCEPTER("dawn_scepter", "여명 성광홀", Category.EQUIPMENT, Items.BLAZE_ROD, 11, 1160,
+                "직업 기술 효과 +30% · 재사용 -2초", 1.00f, 1.00f, 1.30f, 0.00f, 2),
+        RIFT_LONGBOW("rift_longbow", "균열 관통장궁", Category.EQUIPMENT, Items.BOW, 12, 1250,
+                "원거리 피해 +33% · 기술 효과 +5%", 1.00f, 1.33f, 1.05f, 0.00f, 0),
+        PHOENIX_CHEST("phoenix_chest", "불사조 수호흉갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 12, 1320,
+                "받는 피해 13% 감소 · 기술 효과 +8%", 1.00f, 1.00f, 1.08f, 0.13f, 0),
+        WAR_CROWN("war_crown", "끝없는 전쟁왕관", Category.ARMOR, Items.NETHERITE_HELMET, 14, 1580,
+                "받는 피해 10% 감소 · 기술 효과 +12% · 재사용 -1초", 1.00f, 1.00f, 1.12f, 0.10f, 1);
 
         private final String id;
         private final String displayName;
@@ -154,9 +190,13 @@ public final class VillageEquipmentShop {
         private final String effect;
         private final float meleeMultiplier;
         private final float projectileMultiplier;
+        private final float skillMultiplier;
+        private final float damageReduction;
+        private final int cooldownReductionSeconds;
 
         Offer(String id, String displayName, Category category, Item item, int requiredDay, int cost,
-              String effect, float meleeMultiplier, float projectileMultiplier) {
+              String effect, float meleeMultiplier, float projectileMultiplier,
+              float skillMultiplier, float damageReduction, int cooldownReductionSeconds) {
             this.id = id;
             this.displayName = displayName;
             this.category = category;
@@ -166,6 +206,9 @@ public final class VillageEquipmentShop {
             this.effect = effect;
             this.meleeMultiplier = meleeMultiplier;
             this.projectileMultiplier = projectileMultiplier;
+            this.skillMultiplier = skillMultiplier;
+            this.damageReduction = damageReduction;
+            this.cooldownReductionSeconds = cooldownReductionSeconds;
         }
 
         public String id() { return id; }
@@ -177,6 +220,9 @@ public final class VillageEquipmentShop {
         public String effect() { return effect; }
         public float meleeMultiplier() { return meleeMultiplier; }
         public float projectileMultiplier() { return projectileMultiplier; }
+        public float skillMultiplier() { return skillMultiplier; }
+        public float damageReduction() { return damageReduction; }
+        public int cooldownReductionSeconds() { return cooldownReductionSeconds; }
 
         public VillageEquipmentRaritySystem.Rarity rarity() {
             if (requiredDay >= 9) return VillageEquipmentRaritySystem.Rarity.LEGENDARY;

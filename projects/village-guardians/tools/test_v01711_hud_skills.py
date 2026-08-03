@@ -16,7 +16,7 @@ def main() -> None:
     client = read("VillageClientUi.java")
     screen = read("VillageSkillTestScreen.java")
 
-    assert "mod_version=0.17.19-alpha.1" in props
+    assert "mod_version=0.18.0-alpha.1" in props
     assert "hudSlotText(player, 0)" in hud and "hudSlotText(player, 1)" in hud
     assert "cooldownRemainingSeconds" in skills and "cooldownProgress" in skills
     assert "§a준비" in skills and "■" in skills and "□" in skills
@@ -24,7 +24,7 @@ def main() -> None:
     assert "Z 장착" in screen and "X 장착" in screen
     assert "roleMode" in screen and "content.width()" in screen
 
-    print("[PASS] Action-bar HUD shows equipped Z/V skills, readiness and a live cooldown bar")
+    print("[PASS] Action-bar HUD shows equipped Z/X skills, readiness and a live cooldown bar")
     print("[PASS] Test role and skill managers use a dedicated compact responsive UI")
 
 

@@ -21,7 +21,7 @@ def main() -> None:
     overlay = read("VillageSkillHudOverlay.java")
     network = read("VillageNetwork.java")
 
-    assert "mod_version=0.17.19-alpha.1" in props
+    assert "mod_version=0.18.0-alpha.1" in props
     assert "sendSkillMotion(level, player, \"vanguard_spin\"" in abilities
     assert "rotateY(radians)" in client
     assert "event.getRenderState().bodyRot = 0.0f" in client
@@ -35,9 +35,9 @@ def main() -> None:
     assert "arrowRainField" in effects
     assert "spawnVisualLightning" in abilities
     assert "setVisualOnly(true)" in abilities
-    assert "20.0, 60" in abilities
+    assert "double radius = 20.0 + specialRank * 2.0" in abilities
     assert "AreaKind.TORNADO" in abilities and "8.5" in abilities
-    assert "VillageEquipmentRaritySystem.skillMultiplier(player)" in read("VillageRoleSkillSystem.java")
+    assert "VillageEquipmentShop.roleSkillMultiplier(player)" in read("VillageRoleSkillSystem.java")
 
     assert ".sized(24.0f, 16.0f)" in entities
     assert "warden_fortress" in entity and "setDirection" in entity

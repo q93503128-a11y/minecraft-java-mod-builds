@@ -27,7 +27,7 @@ def main() -> None:
     skills = read("VillageRoleSkillSystem.java")
     lang = (ROOT / "src/main/resources/assets/villageguardians/lang/ko_kr.json").read_text(encoding="utf-8")
 
-    check("v0.17.19 version is active", "mod_version=0.17.19-alpha.1" in props)
+    check("v0.17.19 version is active", "mod_version=0.18.0-alpha.1" in props)
     check(
         "신속 삼연사는 실제 활 사용을 조기에 끝내고 완충 발사를 보장합니다",
         all(token in ability for token in [
@@ -72,8 +72,8 @@ def main() -> None:
         and "U 빠른 통신" not in controller,
     )
     check(
-        "단축키 기능 의미가 B 통신·H 상태·J 공통 성장·K 현재 직업 성장으로 일치합니다",
-        'QUICK_COMMUNICATION = key("quick_communication", GLFW.GLFW_KEY_B)' in keys
+        "단축키 기능 의미가 V 통신·H 상태·J 공통 성장·K 현재 직업 성장으로 일치합니다",
+        'QUICK_COMMUNICATION = key("quick_communication", GLFW.GLFW_KEY_V)' in keys
         and 'STATUS = key("status", GLFW.GLFW_KEY_H)' in keys
         and 'GROWTH = key("personal_progress", GLFW.GLFW_KEY_J)' in keys
         and 'ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_K)' in keys

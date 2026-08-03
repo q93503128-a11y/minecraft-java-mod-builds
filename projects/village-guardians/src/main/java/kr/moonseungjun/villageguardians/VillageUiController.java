@@ -149,7 +149,7 @@ public final class VillageUiController {
         }
         String summary = "Lv." + VillageCouncilState.levelOf(player.getUUID())
                 + " · 주화 " + VillageProgressionSystem.coins(player)
-                + " · 습득은 연구소 · 습득 후 Z/V 장착 변경";
+                + " · 습득은 연구소 · 습득 후 {SKILL1}/{SKILL2} 장착 변경";
         send(player, "role_skills", "직업 기술 연구",
                 role.id() + "|" + role.displayName() + "|" + summary, actions, labels);
     }
@@ -320,7 +320,7 @@ public final class VillageUiController {
                     + "\n시험 전용 직업만 변경하며 실제 직업·성장·저장값은 바뀌지 않습니다.");
         }
         add(actions, labels,
-                "open_skill_test_skills", "스킬 관리함 열기|현재 시험 직업의 Z/V 기술 장착 화면",
+                "open_skill_test_skills", "스킬 관리함 열기|현재 시험 직업의 {SKILL1}/{SKILL2} 기술 장착 화면",
                 "test_exit", "시험 종료·복귀|시험 데이터를 정리하고 원래 위치로 복귀");
         String body = mode
                 + "\n현재 시험 직업: " + selected.displayName()
@@ -334,11 +334,11 @@ public final class VillageUiController {
         List<String> labels = new ArrayList<>();
         for (VillageRoleSkillSystem.ActiveSkill skill : VillageRoleSkillSystem.skillsFor(role)) {
             actions.add("test_equip:" + skill.id() + ":0");
-            labels.add("Z · " + skill.displayName() + "|" + skill.description()
-                    + "\n선택하면 Z 슬롯에 장착되고 창이 자동으로 닫힙니다.");
+            labels.add("{SKILL1} · " + skill.displayName() + "|" + skill.description()
+                    + "\n선택하면 {SKILL1} 슬롯에 장착되고 창이 자동으로 닫힙니다.");
             actions.add("test_equip:" + skill.id() + ":1");
-            labels.add("V · " + skill.displayName() + "|" + skill.description()
-                    + "\n선택하면 V 슬롯에 장착되고 창이 자동으로 닫힙니다.");
+            labels.add("{SKILL2} · " + skill.displayName() + "|" + skill.description()
+                    + "\n선택하면 {SKILL2} 슬롯에 장착되고 창이 자동으로 닫힙니다.");
         }
         add(actions, labels,
                 "open_skill_test_roles", "직업 관리함 열기|시험할 직업을 변경",
@@ -348,7 +348,7 @@ public final class VillageUiController {
         String body = mode
                 + "\n현재 시험 직업: " + role.displayName()
                 + "\n현재 임시 장착: " + VillageSkillTestSystem.loadoutSummary(player)
-                + "\n기술 선택 후 창이 닫히면 Z/V를 눌러 실제 시전합니다. K로 다시 엽니다.";
+                + "\n기술 선택 후 창이 닫히면 {SKILL1}/{SKILL2}를 눌러 실제 시전합니다. K로 다시 엽니다.";
         send(player, "skill_test_skill", "시험 스킬 관리함", body, actions, labels);
     }
 
@@ -664,9 +664,9 @@ public final class VillageUiController {
                     "open_forge_enhancement", "장비 선택 강화|보유한 등급 장비를 골라 개별 강화",
                     "open_fusion", "장비 3개 합성|같은 종류·같은 등급·같은 강화 단계 세 개를 상위 등급으로 합성");
             case SKILL_HALL -> add(actions, labels,
-                    "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 Z/V 장착만 관리",
+                    "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 {SKILL1}/{SKILL2} 장착만 관리",
                     "open_defense_research", "마을 방어 연구|용병·포탑·전리품 연구 트리",
-                    "open_skill_test", "외부 기술 시험장|야외 시험장으로 이동해 Z/V에 기술을 임시 장착하고 실제 모션 시험");
+                    "open_skill_test", "외부 기술 시험장|야외 시험장으로 이동해 {SKILL1}/{SKILL2}에 기술을 임시 장착하고 실제 모션 시험");
             case INFIRMARY -> { }
             case BARRACKS -> add(actions, labels,
                     "open_wave_intel", "다음 밤 적 정찰|웨이브별 병과·수량·특성·보스 편성 확인",

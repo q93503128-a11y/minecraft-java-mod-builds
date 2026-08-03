@@ -20,8 +20,7 @@ public final class VillageRelicSystem {
 
     public static synchronized void initializeServer(MinecraftServer server) {
         savedData = server.overworld().getDataStorage().computeIfAbsent(VillageRelicData.TYPE);
-        OWNED.clear();
-        PENDING.clear();
+        OWNED.clear(); PENDING.clear();
         savedData.owned().forEach((key, value) -> parseUuid(key, uuid -> OWNED.put(uuid, value)));
         savedData.pending().forEach((key, value) -> parseUuid(key, uuid -> PENDING.put(uuid, value)));
         persist();
@@ -69,14 +68,14 @@ public final class VillageRelicSystem {
         return player != null && relic != null && (OWNED.getOrDefault(player.getUUID(), 0) & relic.bit()) != 0;
     }
 
-    public static synchronized void resetForNewGame() {
-        OWNED.clear(); PENDING.clear(); persist();
-    }
+    public static synchronized void resetForNewGame() { OWNED.clear(); PENDING.clear(); persist(); }
 
     public static float meleeMultiplier(ServerPlayer player) {
         float result = 1.0f;
         if (has(player, Relic.WAR_SIGIL)) result *= 1.08f;
         if (has(player, Relic.EXECUTION_EDGE)) result *= 1.06f;
+        if (has(player, Relic.BLOOD_CHALICE)) result *= 1.05f;
+        if (has(player, Relic.STORM_FEATHER)) result *= 1.03f;
         return result;
     }
 
@@ -84,6 +83,7 @@ public final class VillageRelicSystem {
         float result = 1.0f;
         if (has(player, Relic.HUNTERS_EYE)) result *= 1.11f;
         if (has(player, Relic.WAR_SIGIL)) result *= 1.04f;
+        if (has(player, Relic.STORM_FEATHER)) result *= 1.07f;
         return result;
     }
 
@@ -91,6 +91,8 @@ public final class VillageRelicSystem {
         float result = 1.0f;
         if (has(player, Relic.WARD_STONE)) result *= 0.91f;
         if (has(player, Relic.LAST_LIGHT)) result *= 0.95f;
+        if (has(player, Relic.BASTION_CORE)) result *= 0.94f;
+        if (has(player, Relic.STORM_FEATHER)) result *= 0.98f;
         return result;
     }
 
@@ -98,7 +100,16 @@ public final class VillageRelicSystem {
         float result = 1.0f;
         if (has(player, Relic.ARCANE_HEART)) result *= 1.12f;
         if (has(player, Relic.LAST_LIGHT)) result *= 1.05f;
+        if (has(player, Relic.DAWN_PRISM)) result *= 1.08f;
         return result;
+    }
+
+    public static int cooldownReductionSeconds(ServerPlayer player) {
+        return has(player, Relic.CHRONO_SHARD) ? 2 : 0;
+    }
+
+    public static float vanguardLifeStealBonus(ServerPlayer player) {
+        return has(player, Relic.BLOOD_CHALICE) ? 0.025f : 0.0f;
     }
 
     public static synchronized String summary(ServerPlayer player) {
@@ -151,7 +162,12 @@ public final class VillageRelicSystem {
         WARD_STONE("ward_stone", "수호석", "받는 피해 9% 감소"),
         ARCANE_HEART("arcane_heart", "비전 심장", "직업 기술 피해·치유 +12%"),
         EXECUTION_EDGE("execution_edge", "처형의 칼날", "근접 피해 +6% 및 마무리 전투 강화"),
-        LAST_LIGHT("last_light", "마지막 등불", "받는 피해 5% 감소, 기술 효과 +5%");
+        LAST_LIGHT("last_light", "마지막 등불", "받는 피해 5% 감소, 기술 효과 +5%"),
+        CHRONO_SHARD("chrono_shard", "시간균열 파편", "모든 직업 기술 재사용 대기시간 2초 감소"),
+        BLOOD_CHALICE("blood_chalice", "붉은 성배", "근접 피해 +5%, 선봉검사 흡혈 추가 강화"),
+        BASTION_CORE("bastion_core", "성채의 심핵", "받는 피해 6% 감소"),
+        DAWN_PRISM("dawn_prism", "여명의 프리즘", "직업 기술 피해·치유 +8%"),
+        STORM_FEATHER("storm_feather", "폭풍매의 깃", "원거리 피해 +7%, 근접 피해 +3%, 받는 피해 2% 감소");
 
         private final String id;
         private final String displayName;

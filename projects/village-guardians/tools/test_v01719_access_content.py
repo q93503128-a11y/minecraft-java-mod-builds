@@ -30,7 +30,7 @@ def main() -> None:
     mercenaries = read("VillageMercenarySystem.java")
     towers = read("VillageTowerSpecializationSystem.java")
 
-    assert "mod_version=0.17.19-alpha.1" in props
+    assert "mod_version=0.18.0-alpha.1" in props
 
     assert "fireOrbContacts" in ability
     assert "target.getBoundingBox().inflate(padding).contains(position)" in ability
@@ -45,9 +45,9 @@ def main() -> None:
                   "GLFW.GLFW_KEY_P", "GLFW.GLFW_KEY_L", "GLFW.GLFW_KEY_C",
                   "GLFW.GLFW_KEY_V"]:
         assert token in keys, token
-    assert "VANILLA_RESERVED" in keys and "migrateUnsafeBindings" in keys
+    assert "VANILLA_RESERVED" in keys and "migrateBindings" in keys
     assert "!used.add(value)" in keys and "minecraft.options.save()" in keys
-    print("[PASS] Z/V/B/H/J/K 안전 기본키와 바닐라·중복 키 자동 이관이 연결됩니다")
+    print("[PASS] Z/X/V/H/J/K 안전 기본키와 바닐라·중복 키 자동 이관이 연결됩니다")
 
     assert '"skill_test_password" -> new VillageSkillTestPasswordScreen(payload)' in client_ui
     assert '"1557".equals(code)' in controller
@@ -72,9 +72,9 @@ def main() -> None:
     skill_block = role_skills.split("public enum ActiveSkill", 1)[1]
     active_skills = re.findall(r"^\s{8}([A-Z][A-Z0-9_]+)\(", skill_block, re.M)
 
-    assert len(offers) == 10, offers
+    assert len(offers) == 24, offers
     assert len(archetypes) == 14, archetypes
-    assert len(wave_traits) == 8, wave_traits
+    assert len(wave_traits) == 12, wave_traits
     assert len(active_skills) == 20, active_skills
     assert "Rarity.LEGENDARY" in rarity and "MAX_ENHANCEMENT = 5" in rarity
     assert relics.count("public static final Relic ") == 0 or "WAR_SIGIL" in relics
@@ -82,11 +82,11 @@ def main() -> None:
     assert "BALLISTA" in towers and "ARCANE" in towers
     assert "The campaign never hard-ends" in warfront
     assert "return Math.min(8, 3 + Math.max(0, day - 1) / 2);" in raid
-    print("[PASS] 콘텐츠 감사: 장비 10, 적 14, 웨이브 특성 8, 액티브 기술 20, 무한 일수")
+    print("[PASS] 콘텐츠 감사: 장비 24, 적 14, 보스 변이 6, 웨이브 특성 12, 액티브 기술 20")
 
-    audit = (ROOT / "CONTENT-AUDIT-v0.17.19.md").read_text(encoding="utf-8")
-    for token in ["일반 적 병과 10종", "보스 병과 4종", "웨이브 특성 8종",
-                  "포탑 4종", "용병 4병과", "유물 6종", "고정 최종 일수는 없으며 무한 진행"]:
+    audit = (ROOT / "CONTENT-AUDIT-v0.18.0.md").read_text(encoding="utf-8")
+    for token in ["일반 적 병과 10종", "기본 보스 4종", "웨이브 특성 12종",
+                  "포탑 4종", "용병 4병과", "유물 11종", "고정 마지막 날은 없으며 무한 진행"]:
         assert token in audit, token
     print("[PASS] 실제 수량과 장기 반복 구간이 콘텐츠 감사 문서에 기록됩니다")
 

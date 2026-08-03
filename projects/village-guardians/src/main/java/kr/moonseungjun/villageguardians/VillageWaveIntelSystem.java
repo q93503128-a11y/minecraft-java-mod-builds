@@ -22,17 +22,21 @@ public final class VillageWaveIntelSystem {
             int count = VillageRaidSystem.previewWaveCount(day, wave, players, trait);
             int bosses = VillageRaidSystem.previewBossCount(day, wave, maximum, count);
             Map<VillageEnemyArchetypeSystem.Archetype, Integer> roster = new LinkedHashMap<>();
+            List<String> bossLines = new ArrayList<>();
             for (int index = 0; index < count; index++) {
                 boolean boss = index < bosses;
                 VillageEnemyArchetypeSystem.Archetype archetype =
                         VillageEnemyArchetypeSystem.previewArchetype(day, wave, index, boss, trait);
                 roster.merge(archetype, 1, Integer::sum);
+                if (boss) bossLines.add(archetype.displayName() + " · "
+                        + VillageBossAspectSystem.previewText(day, wave, index));
             }
             List<String> lines = new ArrayList<>();
             roster.forEach((type, amount) -> lines.add(type.displayName() + " ×" + amount
                     + " · " + VillageEnemyArchetypeSystem.combatRole(type)));
             String detail = "예상 총 " + count + "명" + (bosses > 0 ? " · 보스 " + bosses + "명" : "")
                     + "\n특성: " + trait.description() + "\n대응: " + trait.counterHint()
+                    + (bossLines.isEmpty() ? "" : "\n보스 변이:\n- " + String.join("\n- ", bossLines))
                     + "\n병력:\n- " + String.join("\n- ", lines);
             result.add(new WavePreview(wave, maximum, trait, count, bosses, detail));
         }
