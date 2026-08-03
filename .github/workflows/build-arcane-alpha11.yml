@@ -52,7 +52,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon clean build
+          ./gradlew --no-daemon --no-configuration-cache clean build
           jar_file="$(find build/libs -maxdepth 1 -type f -name 'arcanecircle-0.12.1-alpha.11.jar' -print -quit)"
           test -n "$jar_file"
           jar tf "$jar_file" >/dev/null
