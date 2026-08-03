@@ -1,11 +1,15 @@
 name: Validate Living Kingdoms physical economy
-# revision: 3
+# revision: 4
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/validate-living-kingdoms-physical-economy.yml'
+
+concurrency:
+  group: living-kingdoms-physical-economy-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
