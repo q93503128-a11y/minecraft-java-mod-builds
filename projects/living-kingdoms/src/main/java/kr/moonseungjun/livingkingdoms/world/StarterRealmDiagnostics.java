@@ -33,6 +33,7 @@ public final class StarterRealmDiagnostics {
             {12_000, 6_000}, {-12_000, 6_000}, {12_000, -6_000}, {-12_000, -6_000}
     };
     private static final StreamSample[] STREAM_SAMPLES = {
+            new StreamSample("origin_residence", 320, 180, false),
             new StreamSample("royal_avenue", 0, 200, false),
             new StreamSample("north_gate", 0, -900, true),
             new StreamSample("royal_chancery", -390, -520, true),
