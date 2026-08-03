@@ -1,1 +1,1 @@
-Run the post-integration correction that prevents weekly closure metrics from being counted twice.
+Run the simplified correction that removes the duplicate daily market preparation call.
