@@ -1,8 +1,8 @@
 {
-  "run_id": "30782378237",
-  "run_number": "389",
-  "commit_sha": "80798cd3c26c138852993dc4dfa63a643561afcf",
-  "job_status": "cancelled",
-  "integration_outcome": "skipped",
-  "log_artifact_id": ""
+  "run_id": "30783095189",
+  "run_number": "391",
+  "commit_sha": "cd01613a543725c1128f3caadc6455e32323b5af",
+  "job_status": "success",
+  "integration_outcome": "success",
+  "log_artifact_id": "8844327302"
 }
