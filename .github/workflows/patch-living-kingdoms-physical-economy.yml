@@ -1,4 +1,4 @@
-name: Patch Living Kingdoms physical economy
+name: Patch Living Kingdoms physical economy reserve
 
 on:
   push:
@@ -16,58 +16,38 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Patch source
+      - name: Keep bakery stock reserve
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomyManager.java')
           text = path.read_text(encoding='utf-8')
-
-          replacements = [
-          (
-          '''    private static boolean planLogged;\n    private static boolean ciPassed;''',
-          '''    private static boolean planLogged;\n    private static boolean ciPassed;\n    private static int lastFulfilledHouseholds;'''
-          ),
-          (
-          '''        planLogged = false;\n        ciPassed = false;''',
-          '''        planLogged = false;\n        ciPassed = false;\n        lastFulfilledHouseholds = 0;'''
-          ),
-          (
-          '''            economy.applyDay(\n                    day, result.sites, result.wallets,\n                    result.deliveries, result.crafted,\n                    result.sales, result.wages);\n            if (previousDay < 0L || day % 7L == 0L) {''',
-          '''            economy.applyDay(\n                    day, result.sites, result.wallets,\n                    result.deliveries, result.crafted,\n                    result.sales, result.wages);\n            lastFulfilledHouseholds = result.fulfilledHouseholds;\n            if (previousDay < 0L || day % 7L == 0L) {'''
-          ),
-          (
-          '''                            .addStock("bread", 10L)\n                            .addMetric("crafted", 10L);\n                    counters.crafted += 10L;''',
-          '''                            .addStock("bread", 13L)\n                            .addMetric("crafted", 13L);\n                    counters.crafted += 13L;'''
-          ),
-          (
-          '''    private static void distributeBread(\n            Map<String, ErdenPhysicalEconomySavedData.SiteState> sites,\n            DayCounters counters) {\n        List<String> bakeryIds = sites.values().stream()\n                .filter(site -> site.role().equals("bakery"))\n                .map(ErdenPhysicalEconomySavedData.SiteState::id)\n                .toList();\n        for (String bakeryId : bakeryIds) {\n            while (sites.get(bakeryId).stock("bread") > 0L) {\n                ErdenPhysicalEconomySavedData.SiteState bakery = sites.get(bakeryId);\n                ErdenPhysicalEconomySavedData.SiteState target = sites.values().stream()\n                        .filter(site -> (site.role().equals("shop") || site.role().equals("inn"))\n                                && site.stock("bread") < 24L)\n                        .min(Comparator.<ErdenPhysicalEconomySavedData.SiteState>comparingLong(site ->\n                                        distanceSquared(bakery.x(), bakery.z(), site.x(), site.z()))\n                                .thenComparing(ErdenPhysicalEconomySavedData.SiteState::role)\n                                .thenComparing(ErdenPhysicalEconomySavedData.SiteState::id))\n                        .orElse(null);\n                if (target == null) break;\n                long amount = Math.min(\n                        bakery.stock("bread"),\n                        Math.max(0L, 24L - target.stock("bread")));\n                if (amount <= 0L) break;\n                transfer(sites, bakery.id(), target.id(), "bread", amount, counters);\n            }\n        }\n    }''',
-          '''    private static void distributeBread(\n            Map<String, ErdenPhysicalEconomySavedData.SiteState> sites,\n            DayCounters counters) {\n        List<String> bakeryIds = sites.values().stream()\n                .filter(site -> site.role().equals("bakery"))\n                .map(ErdenPhysicalEconomySavedData.SiteState::id)\n                .toList();\n        distributeBreadToRole(sites, bakeryIds, "shop", 4L, counters);\n        distributeBreadToRole(sites, bakeryIds, "inn", 2L, counters);\n        distributeBreadToRole(sites, bakeryIds, "shop", 8L, counters);\n    }\n\n    private static void distributeBreadToRole(\n            Map<String, ErdenPhysicalEconomySavedData.SiteState> sites,\n            List<String> bakeryIds,\n            String role,\n            long targetStock,\n            DayCounters counters) {\n        for (String bakeryId : bakeryIds) {\n            while (sites.get(bakeryId).stock("bread") > 0L) {\n                ErdenPhysicalEconomySavedData.SiteState bakery = sites.get(bakeryId);\n                ErdenPhysicalEconomySavedData.SiteState target = sites.values().stream()\n                        .filter(site -> site.role().equals(role)\n                                && site.stock("bread") < targetStock)\n                        .min(Comparator.<ErdenPhysicalEconomySavedData.SiteState>comparingLong(site ->\n                                        distanceSquared(bakery.x(), bakery.z(), site.x(), site.z()))\n                                .thenComparing(ErdenPhysicalEconomySavedData.SiteState::id))\n                        .orElse(null);\n                if (target == null) break;\n                long amount = Math.min(\n                        bakery.stock("bread"),\n                        Math.max(0L, targetStock - target.stock("bread")));\n                if (amount <= 0L) break;\n                transfer(sites, bakery.id(), target.id(), "bread", amount, counters);\n            }\n        }\n    }'''
-          ),
-          (
-          '''                || economy.totalSales() < EXPECTED_WALLETS * 4L\n                || economy.totalWages() < ErdenPopulationManager.EXPECTED_WORKERS * DAILY_WAGE) {''',
-          '''                || economy.totalSales() < EXPECTED_WALLETS * 4L\n                || economy.totalWages() < ErdenPopulationManager.EXPECTED_WORKERS * DAILY_WAGE\n                || lastFulfilledHouseholds != EXPECTED_WALLETS) {'''
-          ),
-          (
-          '''                "LK_ERDEN_PHYSICAL_ECONOMY_PASS sites={} warehouses={} wallets={} deliveries={} crafted={} sales={} wages={} wallet_coins={} containers={}",\n                EXPECTED_SITES, EXPECTED_WAREHOUSES, EXPECTED_WALLETS,\n                economy.totalDeliveries(), economy.totalCrafted(),\n                economy.totalSales(), economy.totalWages(),\n                economy.totalWalletCoins(), visibleContainers);''',
-          '''                "LK_ERDEN_PHYSICAL_ECONOMY_PASS sites={} warehouses={} wallets={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} wallet_coins={} containers={}",\n                EXPECTED_SITES, EXPECTED_WAREHOUSES, EXPECTED_WALLETS,\n                economy.totalDeliveries(), economy.totalCrafted(),\n                economy.totalSales(), economy.totalWages(),\n                lastFulfilledHouseholds, economy.totalWalletCoins(), visibleContainers);'''
-          )
-          ]
-
-          for old, new in replacements:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'Expected exactly one replacement, found {count}: {old[:80]!r}')
-              text = text.replace(old, new)
-
+          old = '''        for (String bakeryId : bakeryIds) {
+            while (sites.get(bakeryId).stock("bread") > 0L) {
+                ErdenPhysicalEconomySavedData.SiteState bakery = sites.get(bakeryId);'''
+          new = '''        for (String bakeryId : bakeryIds) {
+            while (sites.get(bakeryId).stock("bread") > 2L) {
+                ErdenPhysicalEconomySavedData.SiteState bakery = sites.get(bakeryId);'''
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one bakery loop, found {text.count(old)}')
+          text = text.replace(old, new)
+          old = '''                long amount = Math.min(
+                        bakery.stock("bread"),
+                        Math.max(0L, targetStock - target.stock("bread")));'''
+          new = '''                long amount = Math.min(
+                        Math.max(0L, bakery.stock("bread") - 2L),
+                        Math.max(0L, targetStock - target.stock("bread")));'''
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one bakery transfer amount, found {text.count(old)}')
+          text = text.replace(old, new)
           path.write_text(text, encoding='utf-8')
           PY
           git diff --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomyManager.java
-          git commit -m 'Balance Erden bread delivery and household fulfillment'
+          git commit -m 'Retain bakery stock for physical inventory'
           for attempt in 1 2 3 4 5; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort 2>/dev/null || true
