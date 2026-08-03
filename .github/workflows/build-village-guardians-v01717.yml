@@ -44,7 +44,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile tools/v01717/apply.py
+          python3 -m py_compile tools/v01717/fix_apply.py tools/v01717/apply.py
+          python3 tools/v01717/fix_apply.py
           python3 tools/v01717/apply.py
 
       - name: Run complete contracts
