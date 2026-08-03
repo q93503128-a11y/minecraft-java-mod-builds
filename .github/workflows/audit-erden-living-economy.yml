@@ -9,7 +9,6 @@ on:
       - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java'
       - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenLivingEconomyManager.java'
       - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenLivingEconomySavedData.java'
-      - 'projects/living-kingdoms/ci/trigger-living-economy-full-audit.txt'
       - '.github/workflows/audit-erden-living-economy.yml'
 
 concurrency:
