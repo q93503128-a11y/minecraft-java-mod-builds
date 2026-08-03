@@ -61,6 +61,7 @@ public final class ErdenPhysicalEconomyManager {
     private static MinecraftServer activeServer;
     private static boolean planLogged;
     private static boolean ciPassed;
+    private static int lastFulfilledHouseholds;
 
     private ErdenPhysicalEconomyManager() {
     }
@@ -130,6 +131,7 @@ public final class ErdenPhysicalEconomyManager {
         activeServer = server;
         planLogged = false;
         ciPassed = false;
+        lastFulfilledHouseholds = 0;
     }
 
     private static void ensureEconomy(
@@ -205,6 +207,7 @@ public final class ErdenPhysicalEconomyManager {
                     day, result.sites, result.wallets,
                     result.deliveries, result.crafted,
                     result.sales, result.wages);
+            lastFulfilledHouseholds = result.fulfilledHouseholds;
             if (previousDay < 0L || day % 7L == 0L) {
                 LivingKingdoms.LOGGER.info(
                         "Processed Erden physical economy day={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} wallet_coins={}",
@@ -297,9 +300,9 @@ public final class ErdenPhysicalEconomyManager {
                     if (site.stock("wheat") < 6L || site.stock("coal") < 1L) continue;
                     site = site.addStock("wheat", -6L)
                             .addStock("coal", -1L)
-                            .addStock("bread", 10L)
-                            .addMetric("crafted", 10L);
-                    counters.crafted += 10L;
+                            .addStock("bread", 13L)
+                            .addMetric("crafted", 13L);
+                    counters.crafted += 13L;
                 }
                 case "shop" -> {
                     if (site.stock("leather") < 2L || site.stock("paper") < 2L) continue;
@@ -324,21 +327,31 @@ public final class ErdenPhysicalEconomyManager {
                 .filter(site -> site.role().equals("bakery"))
                 .map(ErdenPhysicalEconomySavedData.SiteState::id)
                 .toList();
+        distributeBreadToRole(sites, bakeryIds, "shop", 4L, counters);
+        distributeBreadToRole(sites, bakeryIds, "inn", 2L, counters);
+        distributeBreadToRole(sites, bakeryIds, "shop", 8L, counters);
+    }
+
+    private static void distributeBreadToRole(
+            Map<String, ErdenPhysicalEconomySavedData.SiteState> sites,
+            List<String> bakeryIds,
+            String role,
+            long targetStock,
+            DayCounters counters) {
         for (String bakeryId : bakeryIds) {
             while (sites.get(bakeryId).stock("bread") > 0L) {
                 ErdenPhysicalEconomySavedData.SiteState bakery = sites.get(bakeryId);
                 ErdenPhysicalEconomySavedData.SiteState target = sites.values().stream()
-                        .filter(site -> (site.role().equals("shop") || site.role().equals("inn"))
-                                && site.stock("bread") < 24L)
+                        .filter(site -> site.role().equals(role)
+                                && site.stock("bread") < targetStock)
                         .min(Comparator.<ErdenPhysicalEconomySavedData.SiteState>comparingLong(site ->
                                         distanceSquared(bakery.x(), bakery.z(), site.x(), site.z()))
-                                .thenComparing(ErdenPhysicalEconomySavedData.SiteState::role)
                                 .thenComparing(ErdenPhysicalEconomySavedData.SiteState::id))
                         .orElse(null);
                 if (target == null) break;
                 long amount = Math.min(
                         bakery.stock("bread"),
-                        Math.max(0L, 24L - target.stock("bread")));
+                        Math.max(0L, targetStock - target.stock("bread")));
                 if (amount <= 0L) break;
                 transfer(sites, bakery.id(), target.id(), "bread", amount, counters);
             }
@@ -625,7 +638,8 @@ public final class ErdenPhysicalEconomyManager {
                 || economy.totalDeliveries() <= 0L
                 || economy.totalCrafted() <= 0L
                 || economy.totalSales() < EXPECTED_WALLETS * 4L
-                || economy.totalWages() < ErdenPopulationManager.EXPECTED_WORKERS * DAILY_WAGE) {
+                || economy.totalWages() < ErdenPopulationManager.EXPECTED_WORKERS * DAILY_WAGE
+                || lastFulfilledHouseholds != EXPECTED_WALLETS) {
             return;
         }
         int visibleContainers = 0;
@@ -645,11 +659,11 @@ public final class ErdenPhysicalEconomyManager {
         if (visibleContainers != 3) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_PHYSICAL_ECONOMY_PASS sites={} warehouses={} wallets={} deliveries={} crafted={} sales={} wages={} wallet_coins={} containers={}",
+                "LK_ERDEN_PHYSICAL_ECONOMY_PASS sites={} warehouses={} wallets={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} wallet_coins={} containers={}",
                 EXPECTED_SITES, EXPECTED_WAREHOUSES, EXPECTED_WALLETS,
                 economy.totalDeliveries(), economy.totalCrafted(),
                 economy.totalSales(), economy.totalWages(),
-                economy.totalWalletCoins(), visibleContainers);
+                lastFulfilledHouseholds, economy.totalWalletCoins(), visibleContainers);
     }
 
     private static ErdenPhysicalEconomySavedData.SiteState findSite(
