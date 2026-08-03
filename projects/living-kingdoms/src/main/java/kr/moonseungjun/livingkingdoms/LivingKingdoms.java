@@ -9,6 +9,7 @@ import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
 import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenAuthoritativeEconomyManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenAuthoredRoadNormalizer;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorInventoryManager;
@@ -96,6 +97,7 @@ public final class LivingKingdoms {
         ErdenCargoEscrowManager.onServerTick(event);
         ErdenCargoEscrowAudit.onServerTick(event);
         ErdenDiagnosticDebrisSettler.onServerTick(event);
+        ErdenAuthoredRoadNormalizer.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
     }
