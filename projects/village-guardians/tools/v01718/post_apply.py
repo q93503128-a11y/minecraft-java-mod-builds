@@ -69,6 +69,17 @@ text = text.replace(
 )
 role_test.write_text(text, encoding="utf-8")
 
+# apply.py intentionally migrates old B/U display phrases, but the same broad
+# replacement also changes the new regression assertion from "B/U not in" to
+# "B not in". Restore the assertion so the valid B shortcut is not rejected.
+v01718_test = TOOLS / "test_v01718_bow_shortcuts.py"
+v01718_source = v01718_test.read_text(encoding="utf-8")
+v01718_source = v01718_source.replace(
+    '        and "B" not in starter\n',
+    '        and "B/U" not in starter\n',
+)
+v01718_test.write_text(v01718_source, encoding="utf-8")
+
 # Whole-file cleanup for every obsolete caller-era shortcut phrase.  This is
 # deliberately broader than the source patch above so future nearby wording
 # changes cannot leave B/U or U-only help behind.
