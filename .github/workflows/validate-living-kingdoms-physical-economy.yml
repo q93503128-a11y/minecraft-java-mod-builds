@@ -48,6 +48,7 @@ jobs:
           for attempt in $(seq 1 720); do
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' "$LOG_FILE"; then cat "$LOG_FILE"; exit 1; fi
             if grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$LOG_FILE" \
+              && grep -Fq 'fulfilled_households=77' "$LOG_FILE" \
               && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$LOG_FILE" \
               && grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' "$LOG_FILE"; then
               passed=1
@@ -60,6 +61,7 @@ jobs:
           test "$passed" -eq 1
           grep -F 'Prepared Erden physical economy sites=156 warehouses=15 wallets=77 container_resources=8' "$LOG_FILE"
           grep -F 'Processed Erden physical economy day=' "$LOG_FILE"
+          grep -F 'fulfilled_households=77' "$LOG_FILE"
           grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$LOG_FILE"
           grep -F 'containers=3' "$LOG_FILE"
           grep -F 'debris_zero=true' "$LOG_FILE"
