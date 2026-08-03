@@ -1,0 +1,14 @@
+Compiled from "RegisterGuiLayersEvent.java"
+public class net.neoforged.neoforge.client.event.RegisterGuiLayersEvent extends net.neoforged.bus.api.Event implements net.neoforged.fml.event.IModBusEvent {
+  private final java.util.List<net.neoforged.neoforge.client.gui.GuiLayerManager$NamedLayer> layers;
+  public net.neoforged.neoforge.client.event.RegisterGuiLayersEvent(java.util.List<net.neoforged.neoforge.client.gui.GuiLayerManager$NamedLayer>);
+  public void registerBelowAll(net.minecraft.resources.Identifier, net.neoforged.neoforge.client.gui.GuiLayer);
+  public void registerBelow(net.minecraft.resources.Identifier, net.minecraft.resources.Identifier, net.neoforged.neoforge.client.gui.GuiLayer);
+  public void registerAbove(net.minecraft.resources.Identifier, net.minecraft.resources.Identifier, net.neoforged.neoforge.client.gui.GuiLayer);
+  public void registerAboveAll(net.minecraft.resources.Identifier, net.neoforged.neoforge.client.gui.GuiLayer);
+  public void replaceLayer(net.minecraft.resources.Identifier, net.neoforged.neoforge.client.gui.GuiLayer);
+  public void wrapLayer(net.minecraft.resources.Identifier, java.util.function.UnaryOperator<net.neoforged.neoforge.client.gui.GuiLayer>);
+  private void register(net.neoforged.neoforge.client.event.RegisterGuiLayersEvent$Ordering, net.minecraft.resources.Identifier, net.minecraft.resources.Identifier, net.neoforged.neoforge.client.gui.GuiLayer);
+  private boolean lambda$register$0(net.minecraft.resources.Identifier, int);
+  private static net.neoforged.neoforge.client.gui.GuiLayer lambda$replaceLayer$0(net.neoforged.neoforge.client.gui.GuiLayer, net.neoforged.neoforge.client.gui.GuiLayer);
+}

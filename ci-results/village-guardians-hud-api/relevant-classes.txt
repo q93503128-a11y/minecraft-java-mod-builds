@@ -1,0 +1,14 @@
+net/minecraft/client/gui/GuiGraphicsExtractor$HoveredTextEffects.class
+net/minecraft/client/gui/GuiGraphicsExtractor$RenderingTextCollector.class
+net/minecraft/client/gui/GuiGraphicsExtractor$ScissorStack.class
+net/minecraft/client/gui/GuiGraphicsExtractor.class
+net/neoforged/neoforge/client/event/RegisterGuiLayersEvent$Ordering.class
+net/neoforged/neoforge/client/event/RegisterGuiLayersEvent.class
+net/neoforged/neoforge/client/event/RenderGuiLayerEvent$Post.class
+net/neoforged/neoforge/client/event/RenderGuiLayerEvent$Pre.class
+net/neoforged/neoforge/client/event/RenderGuiLayerEvent.class
+net/neoforged/neoforge/client/extensions/GuiGraphicsExtractorExtension.class
+net/neoforged/neoforge/client/gui/GuiLayer.class
+net/neoforged/neoforge/client/gui/GuiLayerManager$NamedLayer.class
+net/neoforged/neoforge/client/gui/GuiLayerManager.class
+net/neoforged/neoforge/client/gui/VanillaGuiLayers.class
