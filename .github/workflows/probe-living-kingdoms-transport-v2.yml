@@ -1,0 +1,69 @@
+name: Probe Living Kingdoms transport v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/probe-living-kingdoms-transport-v2.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: living-kingdoms-transport-v2-probe
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Compile transport v2
+        id: compile
+        working-directory: projects/living-kingdoms
+        shell: bash
+        run: |
+          set +e
+          gradle --no-daemon compileJava --stacktrace --console=plain > ../../transport-v2-compile.log 2>&1
+          status=$?
+          cat ../../transport-v2-compile.log
+          if [ "$status" -eq 0 ]; then
+            echo 'result=success' >> "$GITHUB_OUTPUT"
+          else
+            echo 'result=failure' >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: Record probe result
+        shell: bash
+        env:
+          RESULT: ${{ steps.compile.outputs.result }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/build-pointers
+          printf '{\n  "commit_sha": "%s",\n  "result": "%s",\n  "run_id": "%s"\n}\n' \
+            "$GITHUB_SHA" "$RESULT" "$GITHUB_RUN_ID" \
+            > .github/build-pointers/living-kingdoms-transport-v2-probe.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/living-kingdoms-transport-v2-probe.json
+          git commit -m 'Record Living Kingdoms transport v2 compile probe'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          test "$RESULT" = success
