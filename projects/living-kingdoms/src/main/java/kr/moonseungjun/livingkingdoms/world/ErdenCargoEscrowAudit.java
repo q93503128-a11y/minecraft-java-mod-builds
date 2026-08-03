@@ -12,6 +12,8 @@ import java.util.List;
  * the dedicated Living Kingdoms audit environment.
  */
 public final class ErdenCargoEscrowAudit {
+    public static final int AUDIT_REVISION = 1;
+
     private static final long AUDIT_TRAVEL_TICKS = 40L;
     private static final long AUDIT_AMOUNT = 1L;
 
@@ -93,8 +95,8 @@ public final class ErdenCargoEscrowAudit {
                 level.getGameTime(), level.getGameTime(), "aggregate_moving",
                 route, 0, 0, false, "", "", AUDIT_TRAVEL_TICKS, true));
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_ESCROW_AUDIT_DEPARTURE job={} source={} target={} resource=bread amount={} source_debited=true pending_recorded=true",
-                jobId, sourceId, targetId, AUDIT_AMOUNT);
+                "LK_ERDEN_ESCROW_AUDIT_DEPARTURE revision={} job={} source={} target={} resource=bread amount={} source_debited=true pending_recorded=true",
+                AUDIT_REVISION, jobId, sourceId, targetId, AUDIT_AMOUNT);
     }
 
     private static void verifySettlement(
@@ -125,8 +127,8 @@ public final class ErdenCargoEscrowAudit {
         }
         passed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_ESCROW_AUDIT_PASS job={} departure=true unloading=true destination_credit=true cargo_conserved=true resource=bread amount={} source={} target={}",
-                jobId, AUDIT_AMOUNT, sourceId, targetId);
+                "LK_ERDEN_ESCROW_AUDIT_PASS revision={} job={} departure=true unloading=true destination_credit=true cargo_conserved=true resource=bread amount={} source={} target={}",
+                AUDIT_REVISION, jobId, AUDIT_AMOUNT, sourceId, targetId);
     }
 
     private static ErdenPhysicalEconomySavedData.SiteState findSite(
