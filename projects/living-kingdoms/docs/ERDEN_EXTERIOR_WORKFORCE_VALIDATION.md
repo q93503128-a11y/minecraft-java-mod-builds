@@ -13,11 +13,13 @@ attendance ledger with the kingdom supply system.
 - 74 children or elders
 - 124 production-site workers
 - 18 wharf workers
-- unique resident IDs, household homes and node assignments
+- unique resident IDs, display names, household homes and node assignments
 - permanent death records; dead workers are not silently replaced
 
 Loaded villagers are materialised views of the saved residents. Unloaded settlements continue to
-use the same identities and saved death state through aggregate simulation.
+use the same identities and saved death state through aggregate simulation. Each household uses a
+unique family name and three deterministic given-name slots, so loaded entities can be reconciled
+back to exactly one saved resident without name collisions.
 
 ## Attendance and production
 
@@ -42,7 +44,8 @@ chunk loading.
 The old `ErdenPhysicalEconomyManager` fixed-import implementation has been deleted. Economy
 constants, diagnostic entrances and all active processing now belong to
 `ErdenAuthoritativeEconomyManager`. The population diagnostic retainer requests and forces sample
-chunks without synchronously calling `getChunk`.
+chunks without synchronously calling `getChunk`. Repository-wide validation requires zero Java
+references to the deleted manager and zero occurrences of `importWarehouseStock`.
 
 ## Required regression markers
 
