@@ -96,7 +96,7 @@ public final class ErdenKingdomSupplyManager {
             ErdenKingdomSupplySavedData supply,
             long currentDay) {
         List<ErdenKingdomSupplySavedData.NodeState> nodes = new ArrayList<>();
-        for (NodeTemplate template : NODES) {
+        for (ErdenKingdomSupplyCatalog.SupplyNode template : NODES) {
             ErdenKingdomSupplySavedData.NodeState node = new ErdenKingdomSupplySavedData.NodeState(
                     template.id, template.x, template.z, template.role,
                     List.of(), currentDay - 1L, 0L, 0L);
