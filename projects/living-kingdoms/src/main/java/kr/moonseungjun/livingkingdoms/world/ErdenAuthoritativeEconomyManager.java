@@ -86,6 +86,7 @@ public final class ErdenAuthoritativeEconomyManager {
         if (level.getGameTime() % SYNC_INTERVAL == 0L) {
             captureLoadedContainers(level, economy);
         }
+        ErdenKingdomSupplyManager.prepareBeforeCityEconomy(level, economy);
         processDailyEconomy(level, population, economy);
         if (level.getGameTime() % SYNC_INTERVAL == 0L) {
             materializeLoadedContainers(level, economy);
@@ -114,6 +115,7 @@ public final class ErdenAuthoritativeEconomyManager {
                             + " | 영업 " + ErdenLivingEconomyManager.siteStatus(site, level.getGameTime())
                             + " | 가격 " + ErdenLivingEconomyManager.priceText(site)
                             + " | 현금 " + site.metric("coins")
+                            + " | 외곽 입고 " + site.metric("kingdom_supply_received")
                             + " | 수령 " + site.metric("received")
                             + " / 출고 " + site.metric("sent")
                             + " | 누적 임금 " + site.metric("wages_paid")));
@@ -252,7 +254,6 @@ public final class ErdenAuthoritativeEconomyManager {
         DayCounters counters = new DayCounters();
 
         ErdenLivingEconomyManager.prepareDay(day, sites);
-        importWarehouseStock(sites);
         deliverRawMaterials(sites, workers, counters);
         runProduction(sites, workers, counters);
         distributeBread(sites, counters);
@@ -273,22 +274,6 @@ public final class ErdenAuthoritativeEconomyManager {
                 counters.fulfilledHouseholds, market,
                 counters.reserveTransfers, counters.reserveMoved,
                 counters.reserveComplete, counters.reserveTotal);
-    }
-
-    private static void importWarehouseStock(
-            Map<String, ErdenPhysicalEconomySavedData.SiteState> sites) {
-        for (ErdenPhysicalEconomySavedData.SiteState site : List.copyOf(sites.values())) {
-            if (!site.role().equals("warehouse")) continue;
-            ErdenPhysicalEconomySavedData.SiteState updated = site
-                    .addStock("wheat", 96L)
-                    .addStock("coal", 32L)
-                    .addStock("leather", 24L)
-                    .addStock("paper", 32L)
-                    .addStock("iron", 20L)
-                    .addStock("hay", 40L)
-                    .addMetric("imports", 244L);
-            sites.put(updated.id(), updated);
-        }
     }
 
     private static void deliverRawMaterials(
@@ -750,6 +735,7 @@ public final class ErdenAuthoritativeEconomyManager {
         long purchaseFailures = purchaseOutcomes - purchaseSuccesses;
         if (ciPassed
                 || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))
+                || !ErdenKingdomSupplyManager.isReady(level, economy)
                 || economy.lastProcessedDay() < 0L
                 || economy.sites().size() != EXPECTED_SITES
                 || economy.wallets().size() != EXPECTED_WALLETS
@@ -781,7 +767,7 @@ public final class ErdenAuthoritativeEconomyManager {
         if (visibleContainers != 3) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_PHYSICAL_ECONOMY_PASS sites={} warehouses={} wallets={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} purchase_outcomes={} purchase_failures={} wallet_coins={} containers={} authoritative_transport=true",
+                "LK_ERDEN_PHYSICAL_ECONOMY_PASS sites={} warehouses={} wallets={} deliveries={} crafted={} sales={} wages={} fulfilled_households={} purchase_outcomes={} purchase_failures={} wallet_coins={} containers={} authoritative_transport=true kingdom_supply=true",
                 EXPECTED_SITES, EXPECTED_WAREHOUSES, EXPECTED_WALLETS,
                 economy.totalDeliveries(), economy.totalCrafted(),
                 economy.totalSales(), economy.totalWages(),
