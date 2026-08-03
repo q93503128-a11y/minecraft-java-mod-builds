@@ -26,7 +26,9 @@ public final class ErdenKingdomExteriorBuilder {
     public static final int EXTERIOR_REVISION = 1;
 
     private static final int TICK_BUDGET = 2_000;
+    private static final int CI_TICK_BUDGET = 16_000;
     private static final int CI_FORCE_BUDGET = 1;
+    private static final int CI_MAX_IN_FLIGHT = 3;
     private static final int ROAD_HALF_WIDTH = 2;
     private static final int[][] NODE_ANCHOR_OFFSETS = {
             {0, 0}, {28, 0}, {-28, 0}, {0, 28}, {0, -28}
@@ -35,6 +37,7 @@ public final class ErdenKingdomExteriorBuilder {
     private static final ArrayDeque<Long> PENDING = new ArrayDeque<>();
     private static final ArrayDeque<Long> CI_REQUESTS = new ArrayDeque<>();
     private static final Set<Long> CI_LOADING = new HashSet<>();
+    private static final Set<Long> CI_REQUIRED = new HashSet<>();
     private static final Set<Long> QUEUED = new HashSet<>();
     private static final Set<Long> RETAINED = new HashSet<>();
     private static MinecraftServer activeServer;
@@ -51,7 +54,9 @@ public final class ErdenKingdomExteriorBuilder {
                 || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
         ChunkPos chunk = event.getChunk().getPos();
         if (!intersectsExterior(chunk)) return;
-        enqueue(level, pack(chunk.x(), chunk.z()), false);
+        long packed = pack(chunk.x(), chunk.z());
+        if (isCi() && !CI_REQUIRED.contains(packed)) return;
+        enqueue(level, packed, false);
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -80,7 +85,7 @@ public final class ErdenKingdomExteriorBuilder {
             return;
         }
 
-        active.plan.apply(level, TICK_BUDGET);
+        active.plan.apply(level, isCi() ? CI_TICK_BUDGET : TICK_BUDGET);
         if (!active.plan.done()) return;
 
         ChunkPos chunk = new ChunkPos(active.chunkX, active.chunkZ);
@@ -127,6 +132,7 @@ public final class ErdenKingdomExteriorBuilder {
         PENDING.clear();
         CI_REQUESTS.clear();
         CI_LOADING.clear();
+        CI_REQUIRED.clear();
         QUEUED.clear();
         RETAINED.clear();
         active = null;
@@ -141,10 +147,11 @@ public final class ErdenKingdomExteriorBuilder {
                 unique.add(pack((node.x + offset[0]) >> 4, (node.z + offset[1]) >> 4));
             }
         }
+        CI_REQUIRED.addAll(unique);
         CI_REQUESTS.addAll(unique);
         LivingKingdoms.LOGGER.info(
-                "Requested Erden exterior CI anchors nodes={} request_queue={} metre_scale=true streamed=true staggered=true synchronous_get_chunk=false",
-                ErdenKingdomSupplyCatalog.nodes().size(), CI_REQUESTS.size());
+                "Requested Erden exterior CI anchors nodes={} request_queue={} metre_scale=true streamed=true staggered=true synchronous_get_chunk=false max_in_flight={}",
+                ErdenKingdomSupplyCatalog.nodes().size(), CI_REQUESTS.size(), CI_MAX_IN_FLIGHT);
     }
 
     private static void advanceCiAnchors(ServerLevel level) {
@@ -158,7 +165,9 @@ public final class ErdenKingdomExteriorBuilder {
 
         ErdenKingdomExteriorSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomExteriorSavedData.TYPE);
-        for (int forced = 0; forced < CI_FORCE_BUDGET && !CI_REQUESTS.isEmpty(); forced++) {
+        for (int forced = 0; forced < CI_FORCE_BUDGET
+                && !CI_REQUESTS.isEmpty()
+                && RETAINED.size() < CI_MAX_IN_FLIGHT; forced++) {
             long packed = CI_REQUESTS.removeFirst();
             if (!data.needs(packed, EXTERIOR_REVISION)) continue;
             int chunkX = unpackX(packed);
