@@ -53,8 +53,8 @@ jobs:
           else
             cat tools/alpha10_chunks/part* > /tmp/apply_v0121_alpha10_world_scale_factions.py
             printf '%s  %s\n' 'c82962ec1fd605e1906e6e5150edb55ca8707378a03da103ef2f759c9c8ca292' '/tmp/apply_v0121_alpha10_world_scale_factions.py' | sha256sum -c -
-            python3 /tmp/apply_v0121_alpha10_world_scale_factions.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
             cp /tmp/apply_v0121_alpha10_world_scale_factions.py tools/apply_v0121_alpha10_world_scale_factions.py
+            python3 tools/apply_v0121_alpha10_world_scale_factions.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
             rm -rf tools/alpha10_chunks
           fi
           python3 tools/fix_v0121_alpha10_compile.py
