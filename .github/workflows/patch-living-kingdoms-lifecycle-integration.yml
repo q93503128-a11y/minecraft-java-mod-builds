@@ -36,3 +36,5 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+
+# One-shot integration workflow; removed after the Java patch lands.
