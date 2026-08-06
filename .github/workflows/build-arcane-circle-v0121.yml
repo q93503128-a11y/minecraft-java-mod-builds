@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Alpha.10 World Scale
+name: Build Arcane Circle v0.12.1 Alpha.14
 
 on:
   workflow_dispatch:
@@ -17,14 +17,14 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.12.1-alpha.10
-  EXPECTED_JAR: arcanecircle-0.12.1-alpha.10.jar
+  MOD_VERSION: 0.12.1-alpha.14
+  EXPECTED_JAR: arcanecircle-0.12.1-alpha.14.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 - world scale, factions, encounters and equipment
+    name: Java 25 - reduction layers and authored spell forms
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -43,22 +43,14 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Install alpha.10 world scale and faction expansion
+      - name: Apply alpha.14 authored spell-form overhaul
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          if test -f tools/apply_v0121_alpha10_world_scale_factions.py; then
-            python3 tools/apply_v0121_alpha10_world_scale_factions.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
-          else
-            cat tools/alpha10_chunks/part* > /tmp/apply_v0121_alpha10_world_scale_factions.py
-            printf '%s  %s\n' 'c82962ec1fd605e1906e6e5150edb55ca8707378a03da103ef2f759c9c8ca292' '/tmp/apply_v0121_alpha10_world_scale_factions.py' | sha256sum -c -
-            cp /tmp/apply_v0121_alpha10_world_scale_factions.py tools/apply_v0121_alpha10_world_scale_factions.py
-            python3 tools/apply_v0121_alpha10_world_scale_factions.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
-            rm -rf tools/alpha10_chunks
-          fi
-          python3 tools/fix_v0121_alpha10_compile.py
-          python3 tools/test_v0121_alpha10_world_scale_factions.py
+          python3 tools/apply_v0121_alpha14_visual_architecture.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/test_v0121_alpha12_runtime.py
+          python3 tools/test_v0121_alpha14_visual_architecture.py
           git diff --check
 
       - name: Build Java 25 runtime
@@ -69,66 +61,45 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
 
-      - name: Verify alpha.10 JAR contracts
+      - name: Verify alpha.14 JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
           test -f "build/libs/$EXPECTED_JAR"
+          jar tf "build/libs/$EXPECTED_JAR" >/dev/null
+          sha256sum "build/libs/$EXPECTED_JAR" > "build/libs/$EXPECTED_JAR.sha256"
           python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
           python3 - <<'PY'
           from pathlib import Path
           import zipfile
 
-          jar = Path('build/libs/arcanecircle-0.12.1-alpha.10.jar')
+          jar = Path('build/libs/arcanecircle-0.12.1-alpha.14.jar')
           with zipfile.ZipFile(jar) as z:
               names = set(z.namelist())
               required = {
-                  'kr/moonseungjun/arcanecircle/magic/RpgScaleService.class',
-                  'kr/moonseungjun/arcanecircle/magic/SpellMetrics.class',
-                  'kr/moonseungjun/arcanecircle/world/ArcaneEncounterData.class',
-                  'kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.class',
-                  'kr/moonseungjun/arcanecircle/world/FactionProfile.class',
-                  'kr/moonseungjun/arcanecircle/client/MageGearTooltip.class',
-                  'assets/arcanecircle/textures/item/cinder_robe.png',
-                  'assets/arcanecircle/textures/item/glacier_robe.png',
-                  'assets/arcanecircle/textures/item/tempest_robe.png',
-                  'assets/arcanecircle/textures/item/rift_robe.png',
-                  'assets/arcanecircle/textures/item/rift_boots.png',
+                  'kr/moonseungjun/arcanecircle/magic/MagicPlayerData.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellCastingService.class',
+                  'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
+                  'kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class',
               }
               missing = required - names
               if missing:
-                  raise SystemExit(f'missing alpha.10 runtime entries: {sorted(missing)}')
+                  raise SystemExit(f'missing alpha.14 runtime entries: {sorted(missing)}')
 
-              vitality = z.read('kr/moonseungjun/arcanecircle/magic/ArcaneVitalityService.class')
-              if b'RPG_POINTS_PER_VANILLA_HEALTH' not in vitality:
-                  raise SystemExit('20-to-100 vitality conversion missing')
-
-              scale = z.read('kr/moonseungjun/arcanecircle/magic/RpgScaleService.class')
-              for token in (b'arcanecircle_rpg_scaled', b'MAX_HEALTH'):
-                  if token not in scale:
-                      raise SystemExit(f'RPG world scaling missing: {token!r}')
-
-              encounters = z.read('kr/moonseungjun/arcanecircle/world/ArcaneEncounterService.class')
-              for token in ('균열 황야', '빙결 묘역', '별먹는 심연', 'arcanecircle_boss_'):
-                  if token.encode('utf-8') not in encounters:
-                      raise SystemExit(f'encounter content missing: {token}')
-
-              quests = z.read('kr/moonseungjun/arcanecircle/world/ArcaneQuestData.class')
-              for token in ('견습', '전설', '재앙'):
-                  if token.encode('utf-8') not in quests:
-                      raise SystemExit(f'fixed quest difficulty missing: {token}')
-
-              gear = z.read('kr/moonseungjun/arcanecircle/magic/MageGearService.class')
-              for token in (b'RIFT_BOOTS', b'mayfly', b'CINDER_ROBE', b'TEMPEST_ROBE'):
-                  if token not in gear:
-                      raise SystemExit(f'expanded gear runtime missing: {token!r}')
+              magic = z.read('kr/moonseungjun/arcanecircle/magic/MagicPlayerData.class')
+              for token in (b'equipmentCostMultiplier', b'progressionCostMultiplier',
+                            b'equipmentCooldownMultiplier', b'progressionCooldownMultiplier'):
+                  if token not in magic:
+                      raise SystemExit(f'reduction layering contract missing: {token!r}')
 
               renderer = z.read('kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class')
-              for token in (b'effectRadius', b'waveEndRadius'):
+              for token in (b'METEOR_FORMS', b'PORTAL_FORMS', b'PRISON_FORMS',
+                            b'WALL_FORMS', b'buildMeteor', b'buildPortal', b'buildPrison',
+                            b'buildWall', b'buildStorm'):
                   if token not in renderer:
-                      raise SystemExit(f'visual and hit range contract missing: {token!r}')
-          print('Arcane Circle alpha.10 JAR audit: PASS')
+                      raise SystemExit(f'authored visual family missing: {token!r}')
+          print('Arcane Circle alpha.14 JAR audit: PASS')
           PY
           mkdir -p ../../deliverables
           cp "build/libs/$EXPECTED_JAR" ../../deliverables/
@@ -136,12 +107,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.12.1-alpha.10
+          name: arcanecircle-0.12.1-alpha.14
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish Arcane source and JAR only
+      - name: Publish verified source and JAR
         shell: bash
         run: |
           set -euo pipefail
@@ -150,23 +121,23 @@ jobs:
           touch "$PROJECT_DIR/.gitignore"
           grep -qxF '.gradle/' "$PROJECT_DIR/.gitignore" || printf '%s\n' '.gradle/' >> "$PROJECT_DIR/.gitignore"
           grep -qxF 'build/' "$PROJECT_DIR/.gitignore" || printf '%s\n' 'build/' >> "$PROJECT_DIR/.gitignore"
-          rm -rf /tmp/arcane-alpha10-source
-          mkdir -p /tmp/arcane-alpha10-source
-          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-alpha10-source/
+          rm -rf /tmp/arcane-alpha14-source
+          mkdir -p /tmp/arcane-alpha14-source
+          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-alpha14-source/
           published=0
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
             git reset --hard origin/main
             rm -rf "$PROJECT_DIR"
             mkdir -p "$PROJECT_DIR"
-            rsync -a /tmp/arcane-alpha10-source/ "$PROJECT_DIR/"
+            rsync -a /tmp/arcane-alpha14-source/ "$PROJECT_DIR/"
             mkdir -p "$PUBLISHED_DIR"
             rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
             cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
             git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12.1-alpha.10 world scale and faction expansion [skip ci]'
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.14 authored spell forms [skip ci]'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
@@ -205,7 +176,7 @@ jobs:
             cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "Record Arcane Circle v0.12.1-alpha.10 CI result for ${GITHUB_SHA::7} [skip ci]"
+            git commit -m "Record Arcane Circle v0.12.1-alpha.14 CI result for ${GITHUB_SHA::7} [skip ci]"
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 2))
           done
