@@ -18,16 +18,17 @@ jobs:
         with:
           fetch-depth: 0
       - name: Apply storage anchor coverage
-        run: python .github/scripts/patch_living_kingdoms_storage_anchor_coverage.py
-      - name: Commit patch
+        run: |
+          python .github/scripts/patch_living_kingdoms_storage_anchor_coverage.py
+          git restore .github/workflows/audit-living-kingdoms-exterior-workforce.yml
+      - name: Commit source patch
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorTicketReaper.java \
-            .github/workflows/audit-living-kingdoms-exterior-workforce.yml
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorTicketReaper.java
           git diff --cached --quiet && exit 0
           git commit -m 'Cover all exterior storage anchor chunks'
           for attempt in 1 2 3 4 5; do
@@ -38,4 +39,4 @@ jobs:
           done
           exit 1
 
-# This workflow is intentionally one-shot and is removed after the patch lands.
+# One-shot source patch; removed after the source commit lands.
