@@ -16,6 +16,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorInventoryManager
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowAudit;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
+import kr.moonseungjun.livingkingdoms.world.ErdenExteriorTicketReaper;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorWorkforceManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenLivingEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
@@ -86,6 +87,7 @@ public final class LivingKingdoms {
         RealmBuildCoordinator.onServerTick(event);
         ErdenCapitalStreamingBuilder.onServerTick(event);
         ErdenKingdomExteriorBuilder.onServerTick(event);
+        ErdenExteriorTicketReaper.onServerTick(event);
         ErdenExteriorWorkforceManager.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
