@@ -97,6 +97,20 @@ public final class ErdenExteriorLifecycleManager {
         return person == null || (person.aliveOn(day) && !person.retiredOn(day));
     }
 
+    public static boolean controlsRoutine(
+            ServerLevel level,
+            String residentId,
+            long day) {
+        ErdenExteriorWorkforceSavedData workforce = workforce(level);
+        ErdenExteriorLifecycleSavedData lifecycle = lifecycle(level);
+        ensureInitialized(lifecycle, workforce, day);
+        ErdenExteriorLifecycleSavedData.Person person = lifecycle.person(residentId);
+        return person != null
+                && (!person.aliveOn(day)
+                || person.retiredOn(day)
+                || (!person.foundingWorker() && person.assignedWorker()));
+    }
+
     public static LaborContribution additionalLabor(
             ServerLevel level,
             String nodeId,
@@ -147,7 +161,7 @@ public final class ErdenExteriorLifecycleManager {
         long day = Math.floorDiv(level.getGameTime(), 24_000L);
         ErdenExteriorLifecycleSavedData data = lifecycle(level);
         ErdenExteriorLifecycleSavedData.Person person = data.personByName(villager.getName().getString());
-        if (person == null || person.founder()) return;
+        if (person == null) return;
         ErdenExteriorLifecycleSavedData.HouseholdLine line = data.householdLine(person.householdId());
         String standing = line != null && line.stewardId().equals(person.id())
                 ? "가구주"
@@ -522,7 +536,9 @@ public final class ErdenExteriorLifecycleManager {
         if (level.getGameTime() % ROUTINE_INTERVAL != 0L) return;
         Map<String, ErdenExteriorLifecycleSavedData.Person> people = new HashMap<>();
         for (ErdenExteriorLifecycleSavedData.Person person : lifecycle.persons()) {
-            if (!person.foundingWorker()) people.put(person.name(), person);
+            if (!person.foundingWorker() || person.retiredOn(day)) {
+                people.put(person.name(), person);
+            }
         }
         Map<String, ErdenExteriorWorkforceSavedData.Household> households = householdMap(workforce);
         long dayTime = Math.floorMod(level.getGameTime(), 24_000L);

@@ -114,6 +114,7 @@ public final class ErdenExteriorWorkforceManager {
     }
 
     public static void handleInteraction(PlayerInteractEvent.EntityInteract event) {
+        if (event.isCanceled()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)
                 || event.getHand() != InteractionHand.MAIN_HAND
                 || !(event.getTarget() instanceof Villager villager)
@@ -385,6 +386,8 @@ public final class ErdenExteriorWorkforceManager {
                 candidate -> references.containsKey(candidate.getName().getString()))) {
             ResidentRef reference = references.get(villager.getName().getString());
             if (reference == null || workforce.isDead(reference.resident().id())) continue;
+            if (ErdenExteriorLifecycleManager.controlsRoutine(
+                    level, reference.resident().id(), day)) continue;
             boolean working = reference.resident().worker()
                     && !absentOnDay(reference.resident(), reference.household().nodeRole(), day)
                     && inShift(dayTime, reference.resident().shiftStart(), reference.resident().shiftEnd());
