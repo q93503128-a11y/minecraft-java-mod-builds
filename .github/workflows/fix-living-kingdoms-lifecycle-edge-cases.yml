@@ -37,3 +37,5 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+
+# One-shot Java repair; removed after the source commit lands.
