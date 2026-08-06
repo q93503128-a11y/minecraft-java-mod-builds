@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Triggered after the workflow is present on main.
 builder_path = Path("projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java")
 builder = builder_path.read_text(encoding="utf-8")
 
