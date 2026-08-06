@@ -253,8 +253,10 @@ public final class MagicPlayerData extends SavedData {
         double facultyCooldown = chosen.cooldownMultiplier();
         int masteryGap = Math.max(0, state.circle - spell.circle());
         int proficiency = SpellCatalog.masteryTier(state.mastery(spellId));
-        double circleMana = Math.max(0.10, Math.pow(0.72, masteryGap));
-        double circleCooldown = Math.max(0.10, Math.pow(0.62, masteryGap));
+        // Circle gap and mastery are progression layers, not equipment. They remain free to
+        // push old low-circle spells below the equipment floor and eventually to zero cooldown.
+        double circleMana = Math.pow(0.72, masteryGap);
+        double circleCooldown = Math.pow(0.62, masteryGap);
         double circleRange = 1.0 + masteryGap * 0.07;
         double circlePower = 1.0 + masteryGap * 0.04;
         double masteryMana = Math.max(0.80, 1.0 - proficiency * 0.02);
@@ -262,15 +264,21 @@ public final class MagicPlayerData extends SavedData {
         double masteryRange = 1.0 + proficiency * 0.02;
         double masteryPower = 1.0 + proficiency * 0.04;
 
-        // Cost and cooldown reductions may never go below 10% of the spell's base value.
-        double totalCostMultiplier = Math.max(0.10, circleMana * masteryMana
-                * staff.manaCostMultiplier() * gear.manaCostMultiplier() * facultyMana);
+        // Only staff and wearable equipment share the 10% floor. Circle, mastery and
+        // affiliation modifiers are multiplied afterwards as additional progression.
+        double equipmentCostMultiplier = Math.max(0.10,
+                staff.manaCostMultiplier() * gear.manaCostMultiplier());
+        double progressionCostMultiplier = circleMana * masteryMana * facultyMana;
+        double totalCostMultiplier = equipmentCostMultiplier * progressionCostMultiplier;
         int manaCost = spell.manaCost() <= 0 ? 0
                 : Math.max(1, (int) Math.ceil(spell.manaCost() * totalCostMultiplier));
-        double totalCooldownMultiplier = Math.max(0.10, circleCooldown * masteryCooldown
-                * staff.cooldownMultiplier() * gear.cooldownMultiplier() * facultyCooldown);
-        double rawCooldown = spell.cooldownTicks() * totalCooldownMultiplier;
-        // Values below 0.1 seconds are treated as absent; otherwise preserve a 2-tick minimum.
+
+        double equipmentCooldownMultiplier = Math.max(0.10,
+                staff.cooldownMultiplier() * gear.cooldownMultiplier());
+        double progressionCooldownMultiplier = circleCooldown * masteryCooldown * facultyCooldown;
+        double rawCooldown = spell.cooldownTicks()
+                * equipmentCooldownMultiplier * progressionCooldownMultiplier;
+        // A final value below 0.1 seconds is treated as no cooldown.
         int cooldown = spell.cooldownTicks() <= 0 || rawCooldown < 2.0
                 ? 0 : Math.max(2, (int) Math.round(rawCooldown));
         double range = spell.range() * circleRange * masteryRange * staff.rangeMultiplier()
