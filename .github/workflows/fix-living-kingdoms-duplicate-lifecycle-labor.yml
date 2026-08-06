@@ -1,0 +1,36 @@
+name: Fix Living Kingdoms duplicate lifecycle labor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/fix_living_kingdoms_duplicate_lifecycle_labor.py'
+      - '.github/workflows/fix-living-kingdoms-duplicate-lifecycle-labor.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove duplicate lifecycle contribution
+        run: python .github/scripts/fix_living_kingdoms_duplicate_lifecycle_labor.py
+      - name: Commit Java fix
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java
+          git diff --cached --quiet && exit 0
+          git commit -m 'Count lifecycle replacement labor once'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
