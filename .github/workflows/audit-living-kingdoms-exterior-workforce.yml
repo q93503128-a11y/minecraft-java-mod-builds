@@ -41,6 +41,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          grep -F 'ErdenKingdomExteriorBuilder.onServerTick(event);' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
+          grep -F 'ErdenExteriorTicketReaper.onServerTick(event);' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
           grep -F 'ErdenExteriorWorkforceManager.onServerTick(event);' \
             "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
           grep -F 'ErdenExteriorWorkforceManager.markDeadIfWorker(level, villager);' \
@@ -51,6 +55,8 @@ jobs:
             "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomSupplyManager.java"
           grep -F 'CI_MAX_IN_FLIGHT = 3' \
             "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java"
+          grep -F 'removeTicketWithRadius' \
+            "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorTicketReaper.java"
           ! grep -R 'importWarehouseStock' "$PROJECT_DIR/src/main/java"
 
       - name: Java 25 compile
@@ -82,6 +88,7 @@ jobs:
             fi
             if grep -Fq 'LK_ERDEN_EXTERIOR_WORKFORCE_PASS revision=1 nodes=18 households=74 residents=216 workers=142 dependents=74 producer_workers=124 wharf_workers=18' ../../logs/exterior-workforce-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=1 nodes=18 producers=15 wharves=3' ../../logs/exterior-workforce-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=90 released=90 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-workforce-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/exterior-workforce-server.log \
               && grep -Fq 'LK_ERDEN_LIVING_ECONOMY_PASS revision=1 households=77 shops=50' ../../logs/exterior-workforce-server.log; then
               passed=1
@@ -104,6 +111,7 @@ jobs:
           grep -F 'fixed_daily_imports=false' ../../logs/exterior-workforce-server.log
           grep -F 'shipment_escrow=true' ../../logs/exterior-workforce-server.log
           grep -F 'max_in_flight=3' ../../logs/exterior-workforce-server.log
+          grep -F 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=90 released=90 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-workforce-server.log
           grep -E 'produced=[1-9][0-9]*' ../../logs/exterior-workforce-server.log
           grep -E 'dispatched=[1-9][0-9]*' ../../logs/exterior-workforce-server.log
           grep -E 'received=[1-9][0-9]*' ../../logs/exterior-workforce-server.log
