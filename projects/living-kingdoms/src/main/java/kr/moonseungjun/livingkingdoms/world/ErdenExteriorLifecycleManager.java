@@ -361,7 +361,9 @@ public final class ErdenExteriorLifecycleManager {
         for (int lineIndex = 0; lineIndex < resultLines.size(); lineIndex++) {
             ErdenExteriorLifecycleSavedData.HouseholdLine line = resultLines.get(lineIndex);
             ErdenExteriorWorkforceSavedData.Household household = households.get(line.householdId());
-            if (household == null || year - line.lastBirthYear() < 2) continue;
+            if (household == null
+                    || (line.lastBirthYear() != Integer.MIN_VALUE
+                    && year - line.lastBirthYear() < 2)) continue;
             List<ErdenExteriorLifecycleSavedData.Person> members = members(
                     resultPeople, household.id());
             int living = 0;

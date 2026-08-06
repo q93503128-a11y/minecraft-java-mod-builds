@@ -150,7 +150,7 @@ public final class ErdenExteriorWorkforceManager {
         if (reference == null || workforce.isDead(reference.resident().id())) return;
         workforce.markDead(reference.resident().id());
         LivingKingdoms.LOGGER.info(
-                "Erden exterior resident {} of {} died permanently and no replacement labour was created",
+                "Erden exterior resident {} of {} died permanently; lifecycle succession may fill the resulting vacancy",
                 reference.resident().id(), reference.household().nodeId());
     }
 

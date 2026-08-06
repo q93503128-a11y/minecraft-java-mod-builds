@@ -246,7 +246,8 @@ public final class ErdenExteriorLifecycleSavedData extends SavedData {
     public void markDeath(String personId, long day) {
         for (int i = 0; i < persons.size(); i++) {
             Person person = persons.get(i);
-            if (!person.id().equals(personId) || !person.aliveOn(day)) return;
+            if (!person.id().equals(personId)) continue;
+            if (!person.aliveOn(day)) return;
             persons.set(i, person.withDeath(day));
             setDirty();
             return;
