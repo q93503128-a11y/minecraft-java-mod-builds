@@ -37,3 +37,5 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+
+# This workflow is intentionally one-shot and is removed after the patch lands.
