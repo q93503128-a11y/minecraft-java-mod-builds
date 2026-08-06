@@ -36,3 +36,5 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+
+# One-shot routine integration; removed after the source commit lands.
