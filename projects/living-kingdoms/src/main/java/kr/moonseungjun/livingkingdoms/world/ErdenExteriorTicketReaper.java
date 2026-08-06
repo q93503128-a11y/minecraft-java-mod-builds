@@ -90,7 +90,7 @@ public final class ErdenExteriorTicketReaper {
                 && sampleResidentsReady) {
             ticketCiPassed = true;
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_EXTERIOR_TICKETS_PASS revision=2 anchors={} released={} storage_yards_observed={} resident_sample_observed=true explicit_release=true persistent_forced_chunks=false",
+                    "LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors={} released={} explicit_release=true persistent_forced_chunks=false storage_yards_observed={} resident_sample_observed=true validation_revision=2",
                     required.size(), RELEASED.size(), VALIDATED_STORAGE_NODES.size());
         }
 
