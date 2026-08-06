@@ -231,6 +231,10 @@ public final class IncrementalWorldEditPlan {
         if (y < level.getMinY() || y >= level.getMaxY()) return;
         BlockPos pos = new BlockPos(x, y, z);
         if (level.getBlockState(pos).equals(state)) return;
+        // External structures can carry stale pending block-entity NBT after cleanup changed
+        // the corresponding block to air. Remove that pending/ticking entry before replacing
+        // the state so LevelChunk never tries to instantiate (for example) a beehive on air.
+        level.getChunkAt(pos).removeBlockEntity(pos);
         level.setBlock(pos, state, CONSTRUCTION_UPDATE_FLAGS);
     }
 
