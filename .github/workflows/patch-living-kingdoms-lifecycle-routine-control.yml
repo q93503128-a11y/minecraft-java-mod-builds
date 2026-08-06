@@ -1,0 +1,38 @@
+name: Patch Living Kingdoms lifecycle routine control
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/patch_living_kingdoms_lifecycle_routine_control.py'
+      - '.github/workflows/patch-living-kingdoms-lifecycle-routine-control.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply lifecycle routine ownership
+        run: python .github/scripts/patch_living_kingdoms_lifecycle_routine_control.py
+      - name: Commit Java integration
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java
+          git diff --cached --quiet && exit 0
+          git commit -m 'Give lifecycle overlay authority over changed resident routines'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
