@@ -302,12 +302,6 @@ public final class ErdenExteriorWorkforceManager {
         attended += lifecycleLabor.attended();
         absent += lifecycleLabor.absent();
         dead += lifecycleLabor.dead();
-        ErdenExteriorLifecycleManager.LaborContribution lifecycleLabor =
-                ErdenExteriorLifecycleManager.additionalLabor(level, node.id, node.role, day);
-        alive += lifecycleLabor.alive();
-        attended += lifecycleLabor.attended();
-        absent += lifecycleLabor.absent();
-        dead += lifecycleLabor.dead();
         int percent = required <= 0 ? 100
                 : Math.clamp(attended * 100 / required, 0, 100);
         return new ErdenExteriorWorkforceSavedData.NodeLabor(
