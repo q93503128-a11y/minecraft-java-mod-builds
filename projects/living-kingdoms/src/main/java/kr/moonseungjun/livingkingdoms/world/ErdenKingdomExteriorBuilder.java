@@ -30,6 +30,7 @@ public final class ErdenKingdomExteriorBuilder {
     private static final int CI_TICK_BUDGET = 16_000;
     private static final int CI_FORCE_BUDGET = 1;
     private static final int CI_MAX_IN_FLIGHT = 3;
+    public static final int EXPECTED_CI_ANCHORS = 104;
     private static final int ROAD_HALF_WIDTH = 2;
     private static final int[][] NODE_ANCHOR_OFFSETS = {
             {0, 0}, {28, 0}, {-28, 0}, {0, 28}, {0, -28}
@@ -101,6 +102,20 @@ public final class ErdenKingdomExteriorBuilder {
         verifyCi(level);
     }
 
+    public static long storageAnchorChunk(ErdenKingdomSupplyCatalog.SupplyNode node) {
+        int offsetX = switch (node.facingQuarterTurns) {
+            case 1 -> 18;
+            case 3 -> -18;
+            default -> 0;
+        };
+        int offsetZ = switch (node.facingQuarterTurns) {
+            case 0 -> 18;
+            case 2 -> -18;
+            default -> 0;
+        };
+        return pack((node.x + offsetX) >> 4, (node.z + offsetZ) >> 4);
+    }
+
     public static BlockPos storagePosition(
             ServerLevel level,
             ErdenKingdomSupplyCatalog.SupplyNode node) {
@@ -147,6 +162,10 @@ public final class ErdenKingdomExteriorBuilder {
             for (int[] offset : NODE_ANCHOR_OFFSETS) {
                 unique.add(pack((node.x + offset[0]) >> 4, (node.z + offset[1]) >> 4));
             }
+            unique.add(storageAnchorChunk(node));
+        }
+        if (unique.size() != EXPECTED_CI_ANCHORS) {
+            throw new IllegalStateException("Invalid Erden exterior CI anchor count " + unique.size());
         }
         CI_REQUIRED.addAll(unique);
         CI_REQUESTS.addAll(unique);
@@ -699,6 +718,9 @@ public final class ErdenKingdomExteriorBuilder {
                     complete = false;
                     break;
                 }
+            }
+            if (complete && !data.isBuilt(storageAnchorChunk(node), EXTERIOR_REVISION)) {
+                complete = false;
             }
             if (complete) data.markNode(node.id, EXTERIOR_REVISION);
         }

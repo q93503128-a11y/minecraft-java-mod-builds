@@ -177,6 +177,9 @@ public final class ErdenExteriorTicketReaper {
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
             anchors.addAll(anchorsFor(node));
         }
+        if (anchors.size() != ErdenKingdomExteriorBuilder.EXPECTED_CI_ANCHORS) {
+            throw new IllegalStateException("Invalid Erden exterior ticket anchor count " + anchors.size());
+        }
         return anchors;
     }
 
@@ -185,6 +188,7 @@ public final class ErdenExteriorTicketReaper {
         for (int[] offset : NODE_ANCHOR_OFFSETS) {
             anchors.add(pack((node.x + offset[0]) >> 4, (node.z + offset[1]) >> 4));
         }
+        anchors.add(ErdenKingdomExteriorBuilder.storageAnchorChunk(node));
         return anchors;
     }
 
