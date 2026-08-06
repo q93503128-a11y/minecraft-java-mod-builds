@@ -77,7 +77,7 @@ public final class ErdenExteriorWorkforceManager {
         long currentDay = Math.floorDiv(level.getGameTime(), 24_000L);
         ErdenExteriorWorkforceSavedData workforce = data(level);
         ensurePopulation(workforce);
-        processThroughDay(workforce, currentDay);
+        processThroughDay(level, workforce, currentDay);
         logPlanOnce(workforce);
         ensureLoadedResidents(level, workforce);
         runRoutines(level, workforce, currentDay);
@@ -87,7 +87,7 @@ public final class ErdenExteriorWorkforceManager {
     public static void prepareBeforeSupply(ServerLevel level, long currentDay) {
         ErdenExteriorWorkforceSavedData workforce = data(level);
         ensurePopulation(workforce);
-        processThroughDay(workforce, currentDay);
+        processThroughDay(level, workforce, currentDay);
         logPlanOnce(workforce);
     }
 
@@ -106,7 +106,7 @@ public final class ErdenExteriorWorkforceManager {
         ErdenExteriorWorkforceSavedData workforce = data(level);
         ensurePopulation(workforce);
         ErdenKingdomSupplyCatalog.SupplyNode node = ErdenKingdomSupplyCatalog.node(nodeId);
-        return node == null ? 0 : laborState(workforce, node, day).productionPercent();
+        return node == null ? 0 : laborState(level, workforce, node, day).productionPercent();
     }
 
     public static boolean nodeOperational(ServerLevel level, String nodeId, long day) {
@@ -248,6 +248,7 @@ public final class ErdenExteriorWorkforceManager {
     }
 
     private static void processThroughDay(
+            ServerLevel level,
             ErdenExteriorWorkforceSavedData workforce,
             long currentDay) {
         long previousDay = workforce.lastProcessedDay();
@@ -258,7 +259,7 @@ public final class ErdenExteriorWorkforceManager {
         for (long day = firstDay; day <= currentDay; day++) {
             List<ErdenExteriorWorkforceSavedData.NodeLabor> states = new ArrayList<>();
             for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
-                states.add(laborState(workforce, node, day));
+                states.add(laborState(level, workforce, node, day));
             }
             if (workforce.recordDay(day, states)
                     && (previousDay < 0L || day % 7L == 0L || day == currentDay)) {
@@ -271,6 +272,7 @@ public final class ErdenExteriorWorkforceManager {
     }
 
     private static ErdenExteriorWorkforceSavedData.NodeLabor laborState(
+            ServerLevel level,
             ErdenExteriorWorkforceSavedData workforce,
             ErdenKingdomSupplyCatalog.SupplyNode node,
             long day) {
@@ -287,11 +289,19 @@ public final class ErdenExteriorWorkforceManager {
                     dead++;
                     continue;
                 }
+                if (!ErdenExteriorLifecycleManager.foundingWorkerAvailable(
+                        level, resident.id(), day)) continue;
                 alive++;
                 if (absentOnDay(resident, node.role, day)) absent++;
                 else attended++;
             }
         }
+        ErdenExteriorLifecycleManager.LaborContribution lifecycleLabor =
+                ErdenExteriorLifecycleManager.additionalLabor(level, node.id, node.role, day);
+        alive += lifecycleLabor.alive();
+        attended += lifecycleLabor.attended();
+        absent += lifecycleLabor.absent();
+        dead += lifecycleLabor.dead();
         int percent = required <= 0 ? 100
                 : Math.clamp(attended * 100 / required, 0, 100);
         return new ErdenExteriorWorkforceSavedData.NodeLabor(

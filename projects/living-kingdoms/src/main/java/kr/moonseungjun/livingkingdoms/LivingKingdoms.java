@@ -17,6 +17,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowAudit;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorTicketReaper;
+import kr.moonseungjun.livingkingdoms.world.ErdenExteriorLifecycleManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorWorkforceManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenLivingEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
@@ -88,6 +89,7 @@ public final class LivingKingdoms {
         ErdenCapitalStreamingBuilder.onServerTick(event);
         ErdenKingdomExteriorBuilder.onServerTick(event);
         ErdenExteriorTicketReaper.onServerTick(event);
+        ErdenExteriorLifecycleManager.onServerTick(event);
         ErdenExteriorWorkforceManager.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
@@ -178,6 +180,7 @@ public final class LivingKingdoms {
                 && villager.level() instanceof ServerLevel level) {
             ErdenPopulationManager.markDeadIfResident(level, villager);
             ErdenExteriorWorkforceManager.markDeadIfWorker(level, villager);
+            ErdenExteriorLifecycleManager.markDeadIfLifecycleResident(level, villager);
         }
         CrimeManager.handleDeath(event);
     }
@@ -195,6 +198,7 @@ public final class LivingKingdoms {
         ErdenTransportManager.handleInteraction(event);
         StarterNpcManager.handleInteraction(event);
         ErdenPopulationManager.handleInteraction(event);
+        ErdenExteriorLifecycleManager.handleInteraction(event);
         ErdenExteriorWorkforceManager.handleInteraction(event);
         ErdenLivingEconomyManager.handleInteraction(event);
     }
