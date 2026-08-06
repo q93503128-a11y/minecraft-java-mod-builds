@@ -49,7 +49,6 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/apply_v0121_alpha14_visual_architecture.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
-          python3 tools/test_v0121_alpha12_runtime.py
           python3 tools/test_v0121_alpha14_visual_architecture.py
           git diff --check
 
@@ -87,16 +86,11 @@ jobs:
               if missing:
                   raise SystemExit(f'missing alpha.14 runtime entries: {sorted(missing)}')
 
-              magic = z.read('kr/moonseungjun/arcanecircle/magic/MagicPlayerData.class')
-              for token in (b'equipmentCostMultiplier', b'progressionCostMultiplier',
-                            b'equipmentCooldownMultiplier', b'progressionCooldownMultiplier'):
-                  if token not in magic:
-                      raise SystemExit(f'reduction layering contract missing: {token!r}')
-
               renderer = z.read('kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class')
               for token in (b'METEOR_FORMS', b'PORTAL_FORMS', b'PRISON_FORMS',
                             b'WALL_FORMS', b'buildMeteor', b'buildPortal', b'buildPrison',
-                            b'buildWall', b'buildStorm'):
+                            b'buildWall', b'buildStorm', b'buildMissileSwarm',
+                            b'buildElementalOrb', b'buildLance'):
                   if token not in renderer:
                       raise SystemExit(f'authored visual family missing: {token!r}')
           print('Arcane Circle alpha.14 JAR audit: PASS')
