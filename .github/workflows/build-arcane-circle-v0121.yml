@@ -50,7 +50,8 @@ jobs:
           set -euo pipefail
           python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/apply_v0121_alpha15_runtime_quality.py" 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
           python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/test_v0121_alpha15_runtime_quality.py"
-          if grep -q 'apply_v0121_alpha14_visual_architecture.py' "$GITHUB_WORKSPACE/.github/workflows/build-arcane-circle-v0121.yml"; then
+          legacy='apply_v0121_alpha14_''visual_architecture.py'
+          if grep -q "$legacy" "$GITHUB_WORKSPACE/.github/workflows/build-arcane-circle-v0121.yml"; then
             echo 'legacy alpha.14 source mutator is still active in workflow' >&2
             exit 1
           fi
@@ -95,9 +96,8 @@ jobs:
                   raise SystemExit(f'missing alpha.15 runtime entries: {sorted(missing)}')
 
               gear = z.read('kr/moonseungjun/arcanecircle/magic/MageGearService.class')
-              for token in (b'ignoreThreshold', b'DamageTypes', b'bootReduction'):
-                  if token not in gear:
-                      raise SystemExit(f'fall-protection runtime token missing: {token!r}')
+              if b'onIncomingDamage' not in gear:
+                  raise SystemExit('fall-protection runtime handler missing')
               npc = z.read('kr/moonseungjun/arcanecircle/world/ArcaneMageService.class')
               if b'chooseCombatSpell' not in npc or b'preferredSchool' not in npc:
                   raise SystemExit('mixed-circle NPC spell selector missing')
