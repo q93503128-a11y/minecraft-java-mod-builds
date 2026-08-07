@@ -6,12 +6,14 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /** Compact read-only page with dark text and no legacy-format colour leakage. */
 public final class VillageStatusScreen extends Screen {
+    private static final String SEP = "\u001F";
     private static final int OVERLAY = 0x65000000;
     private static final int PANEL = 0xFFF1E6CF;
     private static final int SURFACE = 0xFFFFFAEE;
@@ -24,11 +26,17 @@ public final class VillageStatusScreen extends Screen {
     private static final int RED = 0xFFAA4545;
 
     private final VillageNetwork.OpenVillageUiPayload payload;
+    private final String action;
+    private final String actionLabel;
     private Layout lastLayout;
 
     public VillageStatusScreen(VillageNetwork.OpenVillageUiPayload payload) {
         super(Component.literal(payload.title()));
         this.payload = payload;
+        String[] actions = payload.actions().isBlank() ? new String[0] : payload.actions().split(SEP, -1);
+        String[] labels = payload.labels().isBlank() ? new String[0] : payload.labels().split(SEP, -1);
+        action = actions.length == 0 ? "" : actions[0];
+        actionLabel = labels.length == 0 ? "획득 유물 보기" : labels[0].split("\\|", 2)[0];
     }
 
     @Override
@@ -44,8 +52,9 @@ public final class VillageStatusScreen extends Screen {
         int panelWidth = Math.min(760, Math.max(300, width - 20));
         int bodyWidth = panelWidth - 54;
         List<Row> rows = rows(Math.max(120, bodyWidth));
+        int actionSpace = action.isBlank() ? 0 : 34;
         int contentHeight = contentHeight(rows);
-        int panelHeight = Math.min(height - 12, Math.max(150, 88 + contentHeight));
+        int panelHeight = Math.min(height - 12, Math.max(150, 88 + contentHeight + actionSpace));
         panelWidth = Math.min(width - 12, panelWidth);
         Layout layout = new Layout((width - panelWidth) / 2, (height - panelHeight) / 2, panelWidth, panelHeight);
         lastLayout = layout;
@@ -67,7 +76,7 @@ public final class VillageStatusScreen extends Screen {
         int bodyLeft = layout.left() + 15;
         int bodyTop = layout.top() + 47;
         int bodyRight = layout.right() - 15;
-        int bodyBottom = layout.bottom() - 13;
+        int bodyBottom = layout.bottom() - (action.isBlank() ? 13 : 46);
         graphics.fill(bodyLeft - 1, bodyTop - 1, bodyRight + 1, bodyBottom + 1, BORDER);
         graphics.fill(bodyLeft, bodyTop, bodyRight, bodyBottom, SURFACE);
 
@@ -103,6 +112,19 @@ public final class VillageStatusScreen extends Screen {
                 }
                 if (wrapped.isEmpty()) y += 14;
             }
+        }
+
+        if (!action.isBlank()) {
+            int buttonWidth = Math.min(220, Math.max(138, layout.width() / 3));
+            int buttonX = layout.left() + (layout.width() - buttonWidth) / 2;
+            int buttonY = layout.bottom() - 34;
+            boolean buttonHover = inside(mouseX, mouseY, buttonX, buttonY, buttonWidth, 22);
+            graphics.fill(buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + 23,
+                    buttonHover ? ACCENT : BORDER);
+            graphics.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + 22,
+                    buttonHover ? 0xFFD7F1E9 : SURFACE_ALT);
+            graphics.centeredText(font, fit(actionLabel, buttonWidth - 12), buttonX + buttonWidth / 2,
+                    buttonY + 6, buttonHover ? TEXT : MUTED);
         }
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
@@ -153,12 +175,30 @@ public final class VillageStatusScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-        if (click.button() == 0 && lastLayout != null
-                && inside(click.x(), click.y(), lastLayout.right() - 36, lastLayout.top() + 7, 27, 27)) {
-            onClose();
-            return true;
+        if (click.button() == 0 && lastLayout != null) {
+            if (inside(click.x(), click.y(), lastLayout.right() - 36, lastLayout.top() + 7, 27, 27)) {
+                onClose();
+                return true;
+            }
+            if (!action.isBlank()) {
+                int buttonWidth = Math.min(220, Math.max(138, lastLayout.width() / 3));
+                int buttonX = lastLayout.left() + (lastLayout.width() - buttonWidth) / 2;
+                int buttonY = lastLayout.bottom() - 34;
+                if (inside(click.x(), click.y(), buttonX, buttonY, buttonWidth, 22)) {
+                    ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
+                    return true;
+                }
+            }
         }
         return super.mouseClicked(click, doubled);
+    }
+
+    private String fit(String value, int maximumWidth) {
+        String safe = plain(value);
+        if (font.width(safe) <= maximumWidth) return safe;
+        int end = safe.length();
+        while (end > 0 && font.width(safe.substring(0, end) + "…") > maximumWidth) end--;
+        return safe.substring(0, end) + "…";
     }
 
     private static String plain(String value) {
