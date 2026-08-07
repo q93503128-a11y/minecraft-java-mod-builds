@@ -48,6 +48,8 @@ public final class ErdenExteriorTicketReaper {
 
         ErdenKingdomExteriorSavedData exterior = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomExteriorSavedData.TYPE);
+        ErdenExteriorResidenceSavedData residences = level.getDataStorage()
+                .computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE);
         observePhysicalStorage(level);
 
         List<ErdenKingdomSupplyCatalog.SupplyNode> nodes = ErdenKingdomSupplyCatalog.nodes();
@@ -66,8 +68,15 @@ public final class ErdenExteriorTicketReaper {
         Set<Long> required = requiredAnchors();
         int releasedNow = 0;
         for (long packed : required) {
+            int chunkX = unpackX(packed);
+            int chunkZ = unpackZ(packed);
+            boolean residenceReady = !ErdenExteriorResidenceCatalog.residenceChunk(chunkX, chunkZ)
+                    || residences.chunkBuilt(
+                    chunkX, chunkZ,
+                    ErdenExteriorResidenceBuilder.RESIDENCE_REVISION);
             if (RELEASED.contains(packed)
                     || !exterior.isBuilt(packed, ErdenKingdomExteriorBuilder.EXTERIOR_REVISION)
+                    || !residenceReady
                     || (sampleAnchors.contains(packed) && !releaseSample)) continue;
             level.getChunkSource().removeTicketWithRadius(
                     TicketType.PORTAL,

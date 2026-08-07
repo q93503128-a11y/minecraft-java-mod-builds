@@ -60,6 +60,10 @@ public final class ErdenExteriorResidenceSavedData extends SavedData {
         return residenceRevision == revision && builtHouseholds.contains(householdId);
     }
 
+    public boolean chunkBuilt(int chunkX, int chunkZ, int revision) {
+        return residenceRevision == revision && builtChunks.contains(pack(chunkX, chunkZ));
+    }
+
     public void markChunk(
             int chunkX,
             int chunkZ,
