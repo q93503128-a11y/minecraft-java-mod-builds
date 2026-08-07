@@ -42,6 +42,15 @@ for migrated saves. A residence parcel ticket is retained until its separate con
 the completed unit, even when the older production-site ledger was already complete. Incremental writes
 preserve the known-shape and block-entity cleanup safeguards.
 
+Physical storage yards use the same rule. A storage-anchor ticket cannot be released until the barrel
+at that node's authoritative storage coordinate has actually been observed in the loaded world. The
+exterior completion marker no longer requires all 18 storage chunks to remain loaded simultaneously;
+instead it consumes the authoritative observation result recorded during the bounded ticket lifetime.
+This prevents the previous impossible ordering where early validated chunks were correctly unloaded
+before the last residence finished, which made a later all-loaded scan fail forever. The permanent
+ticket audit still requires all 18 storage yards to have been physically observed before all 104
+transient exterior tickets may be released.
+
 ## Required regression proof
 
 The permanent residence audit must compile with Java 25 and create a fresh realm proving:
@@ -53,5 +62,8 @@ The permanent residence audit must compile with Java 25 and create a fresh realm
 - founding residents and descendants gated on physical home completion;
 - resident spawning and home routines driven by the same authoritative residence catalog;
 - migrated residence chunks retained until the new residence ledger is complete;
+- each storage-anchor chunk retained until its physical storage barrel has been observed;
+- all 18 physical storage yards observed before all 104 transient exterior tickets are released;
+- exterior completion based on persisted construction ledgers plus authoritative physical observations, not simultaneous chunk residency;
 - the existing estate, lifecycle, workforce, 104-chunk exterior, ticket-release and supply-chain proofs;
 - no watchdog, synchronous chunk load, invalid block entity or invalid residence errors.
