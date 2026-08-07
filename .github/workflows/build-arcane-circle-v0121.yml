@@ -48,8 +48,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/apply_v0121_alpha15_runtime_quality_v2.py" 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
-          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/test_v0121_alpha15_runtime_quality_v2.py"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/apply_v0121_alpha15_runtime_quality_v3.py" 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/test_v0121_alpha15_runtime_quality_v3.py"
           legacy='apply_v0121_alpha14_''visual_architecture.py'
           if grep -q "$legacy" "$GITHUB_WORKSPACE/.github/workflows/build-arcane-circle-v0121.yml"; then
             echo 'legacy alpha.14 source mutator is still active in workflow' >&2
