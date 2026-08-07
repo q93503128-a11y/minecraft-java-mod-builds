@@ -4,6 +4,7 @@ import kr.moonseungjun.arcanecircle.ArcaneCircle;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import kr.moonseungjun.arcanecircle.magic.SpellMetrics;
+import kr.moonseungjun.arcanecircle.magic.SpellPresentationProfile;
 import kr.moonseungjun.arcanecircle.network.WorldMagicPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
@@ -34,7 +35,6 @@ public final class WorldMagicTracker {
     private static final int MAX_FRAME = 18000;
     private static final double MAX_DISTANCE_SQR = 192.0 * 192.0;
     private static final long CHARGE_TTL = 2_250_000_000L;
-    private static final double[] GRAND_ARRAY_RADIUS = {0.0, 0.68, 0.82, 0.98, 1.18, 1.45, 1.82, 2.30, 2.92, 3.72};
 
     private static final Set<String> TRUE_BEAMS = Set.of(
             "ray_of_frost", "scorching_ray", "lightning_bolt", "disintegrate",
@@ -86,23 +86,28 @@ public final class WorldMagicTracker {
         Vec3 direction = safeDirection(new Vec3(decimal(values, "dx", 0.0),
                 decimal(values, "dy", 0.0), decimal(values, "dz", 1.0)));
         double range = Math.max(0.1, decimal(values, "range", spell.range()));
+        Vec3 target = new Vec3(decimal(values, "tx", center.x + direction.x * range),
+                decimal(values, "ty", center.y + direction.y * range),
+                decimal(values, "tz", center.z + direction.z * range));
         double power = Math.max(0.1, decimal(values, "power", Math.max(0.1, spell.power())));
         double progress = clamp(decimal(values, "progress", 1.0), 0.0, 1.0);
         int duration = Math.max(3, integer(values, "duration", 10));
+        int impactTicks = Math.max(0, integer(values, "impact", 0));
+        double impactAge = clamp(impactTicks / (double) Math.max(1, duration), 0.04, 0.92);
         long now = System.nanoTime();
 
         if ("charge".equals(kind)) {
             Visual previous = CHARGES.get(caster);
             long started = previous != null && previous.spell.id().equals(spell.id())
                     ? previous.startedAt : now;
-            CHARGES.put(caster, new Visual(caster, spell, fusion, ingredients, center, direction,
-                    range, power, progress, started, now + CHARGE_TTL, false));
+            CHARGES.put(caster, new Visual(caster, spell, fusion, ingredients, center, target, direction,
+                    range, power, progress, started, now + CHARGE_TTL, false, 0.0));
             return;
         }
         if ("release".equals(kind)) {
             while (RELEASES.size() >= MAX_VISUALS) RELEASES.removeFirst();
-            RELEASES.add(new Visual(caster, spell, fusion, ingredients, center, direction,
-                    range, power, 1.0, now, now + duration * 50_000_000L, true));
+            RELEASES.add(new Visual(caster, spell, fusion, ingredients, center, target, direction,
+                    range, power, 1.0, now, now + duration * 50_000_000L, true, impactAge));
             CHARGES.remove(caster);
         }
     }
@@ -147,254 +152,217 @@ public final class WorldMagicTracker {
 
     private static ArcaneWorldMesh buildCharge(Visual visual) {
         SpellDefinition spell = visual.spell;
+        SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(spell);
         ArcaneWorldMesh.Builder mesh = ArcaneWorldMesh.builder(MAX_CHARGE_GEOMETRY);
-        ArcaneWorldMesh.Basis basis = basis(spell, visual.direction);
-        int circle = clampCircle(spell.circle());
+        ArcaneWorldMesh.Basis basis = presentationBasis(profile, visual.direction);
+        int complexity = profile.complexity();
         double p = Math.max(0.04, visual.progress);
         double time = Math.max(0.0, (System.nanoTime() - visual.startedAt) / 1_000_000_000.0);
-        double rangeScale = clamp(Math.pow(Math.max(0.25,
-                visual.range / Math.max(4.0, spell.range())), 0.08), 0.92, 1.12);
-        double outer = GRAND_ARRAY_RADIUS[circle] * rangeScale * (visual.fusion ? 1.16 : 1.0);
-        double rotation = Math.floorMod(spell.id().hashCode(), 360) * Math.PI / 180.0
-                + time * (0.30 + circle * 0.045);
-        double counter = -rotation * (0.72 + circle * 0.018);
-        double pulse = 0.965 + Math.sin(time * (2.4 + circle * 0.12)) * 0.035;
-        outer *= pulse;
+        double outer = profile.radius() * (visual.fusion ? 1.12 : 1.0)
+                * (0.97 + Math.sin(time * 2.2) * 0.03);
+        double rotation = Math.floorMod(spell.id().hashCode(), 360) * Math.PI / 180.0 + time * 0.34;
+        double counter = -rotation * 0.73;
 
-        // A dark translucent plate gives the saturated circuitry enough contrast against bright
-        // terrain. It stays subtle; the emissive-looking edges carry the spectacle.
-        mesh.disc(basis, Vec3.ZERO, outer * (0.94 + p * 0.04), 52 + circle * 7,
-                0.30F, (float) (0.035 + p * 0.075));
-
-        // Circle count remains semantically readable: a 1C spell has one complete circuit and a
-        // 9C spell has nine, but radius and line density grow much faster after 5C.
-        for (int layer = 1; layer <= circle && !mesh.full(); layer++) {
-            double t = layer / (double) circle;
-            double radius = outer * (0.15 + 0.80 * t);
-            double thickness = outer * (0.012 + (layer % 3) * 0.007 + circle * 0.0016);
-            float brightness = (float) (0.90 + 0.30 * t + (layer % 2) * 0.09);
-            float alpha = (float) ((0.20 + 0.30 * p) * (0.76 + 0.24 * t));
-            mesh.band(basis, Vec3.ZERO, Math.max(0.01, radius - thickness), radius,
-                    48 + layer * 6, brightness, alpha);
+        mesh.disc(basis, Vec3.ZERO, outer * 0.96, 52 + complexity * 12,
+                0.20F, (float) (0.045 + p * 0.075));
+        int bands = 1 + complexity;
+        for (int layer = 0; layer < bands && !mesh.full(); layer++) {
+            double t = layer / (double) Math.max(1, bands - 1);
+            double r = outer * (0.20 + t * 0.76);
+            double width = outer * (0.010 + (layer % 3) * 0.006);
+            if ((layer & 1) == 0)
+                mesh.band(basis, Vec3.ZERO, Math.max(0.01, r - width), r,
+                        46 + complexity * 10, 1.18F, (float) (0.28 + p * 0.27));
+            else
+                mesh.brokenBand(basis, Vec3.ZERO, Math.max(0.01, r - width), r,
+                        52 + complexity * 11, 4 + layer % 4, 1.12F, (float) (0.23 + p * 0.24));
         }
+        schoolSeal(mesh, spell, basis, outer * 0.34, rotation, Math.min(1.0, p * 1.28));
+        mesh.runeChords(basis, Vec3.ZERO, outer * 0.51, 7 + complexity * 3,
+                2 + complexity % 4, counter, 0.92F);
+        mesh.runeRing(basis, Vec3.ZERO, outer * 0.79, 8 + complexity * 4,
+                outer * 0.025, spell.id().hashCode(), counter, 0.78F);
 
-        // Outer crown and school seal establish the main silhouette before small runes appear.
-        mesh.brokenBand(basis, Vec3.ZERO, outer * 0.965, outer * 1.015,
-                68 + circle * 7, 5 + circle % 4, 1.24F, (float) (0.28 + p * 0.24));
-        double sealRadius = outer * (0.31 + Math.min(0.10, circle * 0.011));
-        schoolSeal(mesh, spell, basis, sealRadius, rotation, Math.min(1.0, p * 1.22));
-
-        if (circle >= 2) {
-            mesh.runeChords(basis, Vec3.ZERO, outer * 0.49,
-                    6 + circle * 2, 2 + circle % 4, counter,
-                    (float) (0.72 + circle * 0.045));
-        }
-        if (circle >= 3) {
-            int nodes = 3 + circle / 2;
-            for (int i = 0; i < nodes && !mesh.full(); i++) {
-                double angle = rotation * 0.62 + Math.PI * 2.0 * i / nodes;
-                Vec3 node = basis.point(angle, outer * 0.70);
-                double r = outer * (0.035 + circle * 0.0025);
-                mesh.diamond(basis, node, r * 1.55, -angle, 1.30F, 0.48F);
-                mesh.line(node, basis.point(angle, outer * 0.86), 0.84F);
+        switch (profile.sigil()) {
+            case QUAD_ARRAY, WALL_MATRIX -> buildQuadArray(mesh, basis, spell, outer, complexity, rotation, p);
+            case SKY_RITUAL -> buildSkyRitualArray(mesh, basis, spell, outer, complexity,
+                    Math.max(1, profile.satellites()), rotation, p);
+            case FRONT_LANCE -> buildLanceArray(mesh, basis, spell, outer, complexity, rotation, p);
+            case PORTAL_GATE -> buildPortalArray(mesh, basis, spell, outer, complexity, rotation, p);
+            case BODY_HALO -> buildHaloArray(mesh, basis, outer, complexity, rotation, p);
+            case TARGET_SEAL -> buildTargetArray(mesh, basis, spell, outer, complexity, rotation, p);
+            default -> {
+                if (profile.satellites() > 0)
+                    buildOrbitingSubArrays(mesh, basis, spell, outer, profile.satellites(), rotation, p);
             }
         }
-        if (circle >= 4) {
-            mesh.starPlate(basis, Vec3.ZERO, outer * 0.61, outer * 0.39,
-                    4 + circle / 2, counter, 0.72F, (float) (0.10 + p * 0.13));
-            mesh.star(basis, Vec3.ZERO, outer * 0.76, outer * 0.57,
-                    5 + circle / 2, rotation * 0.48, 1.12F);
-        }
-
-        int glyphs = Math.min(28, 5 + circle * 3);
-        int visible = Math.max(1, (int) Math.ceil(glyphs * Math.min(1.0, p * 1.08)));
-        for (int i = 0; i < visible && !mesh.full(); i++) {
-            double angle = counter + Math.PI * 2.0 * i / glyphs;
-            Vec3 glyph = basis.point(angle, outer * (0.79 + (i % 2) * 0.045));
-            double size = outer * (0.022 + (i % 4) * 0.005);
-            if ((i % 4) == 0) mesh.diamond(basis, glyph, size * 1.48, -angle, 1.34F, 0.52F);
-            else if ((i % 4) == 1) mesh.disc(basis, glyph, size, 14, 1.18F, 0.42F);
-            else if ((i % 4) == 2) mesh.polygonPlate(basis, glyph, size * 1.24, 3, angle, 1.24F, 0.44F);
-            else mesh.starPlate(basis, glyph, size * 1.38, size * 0.48, 4, -angle, 1.28F, 0.42F);
-        }
-
-        // 5C is the first visibly "advanced" array: a second counter-rotating script band and
-        // radial circuit spokes appear, rather than only adding another ring.
-        if (circle >= 5) {
-            mesh.brokenBand(basis, Vec3.ZERO, outer * 0.57, outer * 0.615,
-                    72 + circle * 6, 4, 1.12F, (float) (0.23 + p * 0.22));
-            int spokes = 8 + circle * 2;
-            for (int i = 0; i < spokes && !mesh.full(); i++) {
-                double angle = rotation * 0.38 + Math.PI * 2.0 * i / spokes;
-                Vec3 a = basis.point(angle, outer * (0.34 + (i % 3) * 0.035));
-                Vec3 b = basis.point(angle + (i % 2 == 0 ? 0.045 : -0.045), outer * 0.54);
-                mesh.line(a, b, i % 4 == 0 ? 1.34F : 0.72F);
-            }
-        }
-
-        // 6C+ breaks out of the flat plane. Multiple gyroscopic circuits make the jump in mage
-        // tier readable even from the side and prevent high circles from looking like scaled 1C art.
-        if (circle >= 6) {
-            Vec3 normal = basis.normal();
-            ArcaneWorldMesh.Basis tiltA = ArcaneWorldMesh.Basis.fromNormal(
-                    basis.right().add(normal.scale(0.66)), basis.up());
-            ArcaneWorldMesh.Basis tiltB = ArcaneWorldMesh.Basis.fromNormal(
-                    basis.up().add(normal.scale(0.58)), basis.right());
-            mesh.brokenBand(tiltA, Vec3.ZERO, outer * 0.79, outer * 0.86,
-                    72 + circle * 5, 5, 1.24F, (float) (0.24 + p * 0.22));
-            mesh.brokenBand(tiltB, Vec3.ZERO, outer * 0.63, outer * 0.70,
-                    66 + circle * 5, 6, 1.02F, (float) (0.20 + p * 0.19));
-            int orbiters = 4 + circle / 2;
-            for (int i = 0; i < orbiters && !mesh.full(); i++) {
-                double angle = -time * (0.52 + circle * 0.03) + Math.PI * 2.0 * i / orbiters;
-                Vec3 node = tiltA.point(angle, outer * 0.94);
-                mesh.orb(node, outer * 0.035, 16, 1.24F, 0.48F);
-            }
-        }
-
-        if (circle >= 7) {
-            Vec3 normal = basis.normal();
-            ArcaneWorldMesh.Basis crown = ArcaneWorldMesh.Basis.fromNormal(
-                    basis.right().add(basis.up()).add(normal.scale(0.82)), basis.up());
-            mesh.brokenBand(crown, Vec3.ZERO, outer * 1.05, outer * 1.10,
-                    84 + circle * 6, 7, 1.18F, (float) (0.18 + p * 0.20));
-            mesh.star(crown, Vec3.ZERO, outer * 0.47, outer * 0.28,
-                    7, time * 0.62, 1.05F);
-        }
-
-        // 8C receives orbiting sub-arrays rather than just more line density.
-        if (circle >= 8) {
-            int satellites = circle == 9 ? 9 : 6;
-            for (int i = 0; i < satellites && !mesh.full(); i++) {
-                double angle = rotation * 0.34 + Math.PI * 2.0 * i / satellites;
-                Vec3 node = basis.point(angle, outer * 1.18);
-                double sub = outer * (circle == 9 ? 0.105 : 0.090);
-                mesh.disc(basis, node, sub, 22, 0.54F, 0.16F);
-                mesh.band(basis, node, sub * 0.68, sub, 30, 1.34F, 0.50F);
-                mesh.star(basis, node, sub * 0.62, sub * 0.26,
-                        circle == 9 ? 5 : 4, -counter + i, 0.94F);
-            }
-            mesh.orb(Vec3.ZERO, outer * (circle == 9 ? 0.34 : 0.27),
-                    32 + circle * 3, 0.86F, (float) (0.10 + p * 0.12));
-        }
-
-        // 9C grand array: three mutually tilted crowns, nine satellite sigils and a dense central
-        // seal. This is deliberately several times the physical size and geometry budget of 1C.
-        if (circle == 9) {
-            Vec3 normal = basis.normal();
-            ArcaneWorldMesh.Basis axisA = ArcaneWorldMesh.Basis.fromNormal(
-                    basis.right().add(normal.scale(0.92)), basis.up());
-            ArcaneWorldMesh.Basis axisB = ArcaneWorldMesh.Basis.fromNormal(
-                    basis.up().add(normal.scale(0.88)), basis.right());
-            ArcaneWorldMesh.Basis axisC = ArcaneWorldMesh.Basis.fromNormal(
-                    basis.right().subtract(basis.up()).add(normal.scale(0.74)), basis.up());
-            mesh.brokenBand(axisA, Vec3.ZERO, outer * 1.24, outer * 1.30, 104, 8, 1.32F, 0.46F);
-            mesh.brokenBand(axisB, Vec3.ZERO, outer * 1.10, outer * 1.16, 96, 7, 1.18F, 0.40F);
-            mesh.brokenBand(axisC, Vec3.ZERO, outer * 0.91, outer * 0.97, 92, 6, 1.08F, 0.36F);
-            mesh.starPlate(basis, Vec3.ZERO, outer * 0.29, outer * 0.105,
-                    9, -time * 0.86, 1.36F, (float) (0.24 + p * 0.22));
-            for (int i = 0; i < 9 && !mesh.full(); i++) {
-                double angle = time * 0.24 + Math.PI * 2.0 * i / 9.0;
-                Vec3 outerNode = basis.point(angle, outer * 1.38);
-                Vec3 innerNode = basis.point(angle + (i % 2 == 0 ? 0.08 : -0.08), outer * 0.92);
-                mesh.line(innerNode, outerNode, i % 3 == 0 ? 1.62F : 0.92F);
-                mesh.diamond(basis, outerNode, outer * 0.037, angle, 1.42F, 0.56F);
-            }
-        }
-
-        if (visual.fusion && visual.ingredients >= 2) {
-            int count = Math.min(3, visual.ingredients);
-            for (int i = 0; i < count && !mesh.full(); i++) {
-                double angle = -rotation + Math.PI * 2.0 * i / count;
-                Vec3 node = basis.point(angle, outer * 1.48);
-                double radius = outer * (0.10 + count * 0.010);
-                mesh.disc(basis, node, radius, 24, 0.62F, 0.16F);
-                mesh.band(basis, node, radius * 0.64, radius, 34, 1.38F, 0.54F);
-                mesh.star(basis, node, radius * 0.62, radius * 0.24,
-                        3 + i, rotation + i, 1.08F);
-            }
-            mesh.brokenBand(basis, Vec3.ZERO, outer * 1.53, outer * 1.59,
-                    88, 7, 1.30F, 0.42F);
+        if (visual.fusion) {
+            mesh.brokenBand(basis, Vec3.ZERO, outer * 1.08, outer * 1.14,
+                    72 + complexity * 10, 6, 1.30F, 0.46F);
         }
         return mesh.build();
+    }
+
+    private static void buildQuadArray(ArcaneWorldMesh.Builder mesh, ArcaneWorldMesh.Basis basis,
+                                       SpellDefinition spell, double outer, int complexity,
+                                       double rotation, double p) {
+        double d = outer * 0.78;
+        Vec3[] nodes = {basis.right().scale(d).add(basis.up().scale(d)),
+                basis.right().scale(-d).add(basis.up().scale(d)),
+                basis.right().scale(-d).add(basis.up().scale(-d)),
+                basis.right().scale(d).add(basis.up().scale(-d))};
+        for (int i = 0; i < 4 && !mesh.full(); i++) {
+            Vec3 a = nodes[i], b = nodes[(i + 1) % 4];
+            mesh.line(a, b, 1.22F);
+            double sub = outer * 0.27;
+            mesh.band(basis, a, sub * 0.78, sub, 40, 1.28F, (float) (0.34 + p * 0.20));
+            mesh.runeRing(basis, a, sub * 0.61, 8 + complexity * 2, sub * 0.055,
+                    spell.id().hashCode() + i * 17, -rotation + i, 0.72F);
+            schoolSeal(mesh, spell, basis, sub * 0.34, rotation + i, p);
+        }
+    }
+
+    private static void buildSkyRitualArray(ArcaneWorldMesh.Builder mesh, ArcaneWorldMesh.Basis basis,
+                                            SpellDefinition spell, double outer, int complexity,
+                                            int satellites, double rotation, double p) {
+        mesh.brokenBand(basis, Vec3.ZERO, outer * 1.03, outer * 1.085,
+                88 + complexity * 14, 7, 1.34F, (float) (0.35 + p * 0.20));
+        mesh.runeRing(basis, Vec3.ZERO, outer * 0.90, 16 + complexity * 6,
+                outer * 0.020, spell.id().hashCode() ^ 0x5A17, rotation * 0.42, 0.82F);
+        buildOrbitingSubArrays(mesh, basis, spell, outer, satellites, rotation, p);
+        ArcaneWorldMesh.Basis tiltA = ArcaneWorldMesh.Basis.fromNormal(
+                basis.right().add(basis.normal().scale(0.72)), basis.up());
+        ArcaneWorldMesh.Basis tiltB = ArcaneWorldMesh.Basis.fromNormal(
+                basis.up().add(basis.normal().scale(0.64)), basis.right());
+        mesh.brokenBand(tiltA, Vec3.ZERO, outer * 0.56, outer * 0.61,
+                76, 6, 1.16F, 0.34F);
+        if (complexity >= 5)
+            mesh.brokenBand(tiltB, Vec3.ZERO, outer * 0.42, outer * 0.47,
+                    70, 5, 1.10F, 0.30F);
+    }
+
+    private static void buildOrbitingSubArrays(ArcaneWorldMesh.Builder mesh, ArcaneWorldMesh.Basis basis,
+                                               SpellDefinition spell, double outer, int satellites,
+                                               double rotation, double p) {
+        int count = Math.max(1, Math.min(12, satellites));
+        for (int i = 0; i < count && !mesh.full(); i++) {
+            double angle = rotation * 0.36 + Math.PI * 2.0 * i / count;
+            Vec3 node = basis.point(angle, outer * 1.22);
+            double sub = outer * (count <= 4 ? 0.18 : 0.115);
+            mesh.band(basis, node, sub * 0.74, sub, 34, 1.32F, (float) (0.36 + p * 0.18));
+            mesh.runeRing(basis, node, sub * 0.55, 6 + Math.min(8, count), sub * 0.06,
+                    spell.id().hashCode() + i * 31, -rotation + i, 0.68F);
+            mesh.line(basis.point(angle, outer * 0.96), node, i % 3 == 0 ? 1.18F : 0.68F);
+        }
+    }
+
+    private static void buildLanceArray(ArcaneWorldMesh.Builder mesh, ArcaneWorldMesh.Basis basis,
+                                        SpellDefinition spell, double outer, int complexity,
+                                        double rotation, double p) {
+        mesh.star(basis, Vec3.ZERO, outer * 0.82, outer * 0.34,
+                4 + complexity, rotation, 1.34F);
+        for (int i = 0; i < Math.max(2, complexity - 1); i++) {
+            double a = rotation + Math.PI * 2.0 * i / Math.max(2, complexity - 1);
+            mesh.line(basis.point(a, outer * 0.18), basis.point(a, outer * 1.04), 1.06F);
+        }
+        mesh.runeRing(basis, Vec3.ZERO, outer * 0.68, 10 + complexity * 3,
+                outer * 0.025, spell.id().hashCode(), -rotation, 0.80F);
+    }
+
+    private static void buildPortalArray(ArcaneWorldMesh.Builder mesh, ArcaneWorldMesh.Basis basis,
+                                         SpellDefinition spell, double outer, int complexity,
+                                         double rotation, double p) {
+        mesh.band(basis, Vec3.ZERO, outer * 0.77, outer, 72 + complexity * 8,
+                1.32F, (float) (0.38 + p * 0.22));
+        mesh.brokenBand(basis, Vec3.ZERO, outer * 1.08, outer * 1.15,
+                86, 7, 1.18F, 0.38F);
+        mesh.runeRing(basis, Vec3.ZERO, outer * 0.88, 18 + complexity * 5,
+                outer * 0.022, spell.id().hashCode(), rotation, 0.82F);
+    }
+
+    private static void buildHaloArray(ArcaneWorldMesh.Builder mesh, ArcaneWorldMesh.Basis basis,
+                                       double outer, int complexity, double rotation, double p) {
+        ArcaneWorldMesh.Basis tilt = ArcaneWorldMesh.Basis.fromNormal(
+                basis.right().add(basis.normal().scale(0.82)), basis.up());
+        mesh.brokenBand(tilt, Vec3.ZERO, outer * 0.72, outer * 0.80,
+                68 + complexity * 6, 6, 1.18F, 0.34F);
+        mesh.star(basis, Vec3.ZERO, outer * 0.62, outer * 0.26,
+                4 + complexity, -rotation, 1.18F);
+    }
+
+    private static void buildTargetArray(ArcaneWorldMesh.Builder mesh, ArcaneWorldMesh.Basis basis,
+                                         SpellDefinition spell, double outer, int complexity,
+                                         double rotation, double p) {
+        mesh.star(basis, Vec3.ZERO, outer * 0.86, outer * 0.48,
+                5 + complexity, rotation * 0.56, 1.34F);
+        mesh.runeRing(basis, Vec3.ZERO, outer * 0.64, 12 + complexity * 4,
+                outer * 0.026, spell.id().hashCode() ^ 0x77, -rotation, 0.84F);
+        if (complexity >= 5)
+            mesh.brokenBand(basis, Vec3.ZERO, outer * 1.02, outer * 1.10,
+                    82, 6, 1.34F, 0.44F);
     }
 
     private static ArcaneWorldMesh buildRelease(Visual visual, double age) {
         ArcaneWorldMesh.Builder mesh = ArcaneWorldMesh.builder(MAX_RELEASE_GEOMETRY);
         SpellDefinition spell = visual.spell;
+        SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(spell);
         ArcaneWorldMesh.Basis facing = ArcaneWorldMesh.Basis.facing(visual.direction);
-        int circle = clampCircle(spell.circle());
         double powerFactor = clamp(Math.pow(Math.max(0.08,
-                visual.power / Math.max(1.0, spell.power())), 0.18), 0.82, 2.0)
-                * spectacleScale(circle);
-        String id = spell.id();
-
-        // Spell identity decides the body first. Anchor is only a fallback, so a portal, wall,
-        // meteor and prison can no longer collapse into the same generic ground burst.
-        if (METEOR_FORMS.contains(id)) buildMeteor(mesh, visual, age, powerFactor);
-        else if (PORTAL_FORMS.contains(id)) buildPortal(mesh, visual, age, powerFactor);
-        else if (PRISON_FORMS.contains(id)) buildPrison(mesh, visual, age, powerFactor);
-        else if (WALL_FORMS.contains(id)) buildWall(mesh, visual, age, powerFactor);
-        else if (STORM_FORMS.contains(id)) buildStorm(mesh, visual, age, powerFactor);
-        else if (TRUE_BEAMS.contains(id)) buildBeam(mesh, visual, facing, age, powerFactor);
-        else if (WAVES.contains(id)) buildWave(mesh, visual, facing, age, powerFactor);
-        else if ("magic_missile".equals(id)) buildMissileSwarm(mesh, visual, facing, age, powerFactor);
-        else if (ORB_FORMS.contains(id)) buildElementalOrb(mesh, visual, facing, age, powerFactor);
-        else if (LANCE_FORMS.contains(id)) buildLance(mesh, visual, facing, age, powerFactor);
-        else {
-            switch (spell.sigilAnchor()) {
-                case FEET, GROUND_SELF, GROUND_TARGET -> buildField(mesh, visual, age, powerFactor);
-                case BODY -> buildAura(mesh, visual, age, powerFactor);
-                case TARGET -> buildTargetBurst(mesh, visual, age, powerFactor);
-                case FRONT -> buildProjectile(mesh, visual, facing, age, powerFactor);
+                visual.power / Math.max(1.0, spell.power())), 0.18), 0.82, 2.0) * profile.releaseScale();
+        switch (profile.motion()) {
+            case MISSILE_SWARM -> buildMissileSwarm(mesh, visual, facing, age, powerFactor);
+            case HEAVY_ORB -> buildElementalOrb(mesh, visual, facing, age, powerFactor);
+            case DART, BOLT -> buildProjectile(mesh, visual, facing, age, powerFactor);
+            case LANCE -> buildLance(mesh, visual, facing, age, powerFactor);
+            case BEAM -> buildBeam(mesh, visual, facing, age, powerFactor);
+            case WAVE -> buildWave(mesh, visual, facing, age, powerFactor);
+            case SKY_DROP -> buildMeteor(mesh, visual, age, powerFactor);
+            case STORM -> buildStorm(mesh, visual, age, powerFactor);
+            case PORTAL -> buildPortal(mesh, visual, age, powerFactor);
+            case PRISON -> buildPrison(mesh, visual, age, powerFactor);
+            case WALL -> buildWall(mesh, visual, age, powerFactor);
+            case FIELD -> buildField(mesh, visual, age, powerFactor);
+            case AURA -> buildAura(mesh, visual, age, powerFactor);
+            case TARGET_BURST -> buildTargetBurst(mesh, visual, age, powerFactor);
+            case SNAP -> {
+                switch (spell.sigilAnchor()) {
+                    case FEET, GROUND_SELF, GROUND_TARGET -> buildField(mesh, visual, age, powerFactor);
+                    case BODY -> buildAura(mesh, visual, age, powerFactor);
+                    case TARGET -> buildTargetBurst(mesh, visual, age, powerFactor);
+                    case FRONT -> buildProjectile(mesh, visual, facing, age, powerFactor);
+                }
             }
         }
-
-        if (visual.fusion) {
-            double ring = 0.48 + circle * 0.07;
-            mesh.brokenBand(facing, Vec3.ZERO, ring, ring + 0.055,
-                    48, 5, 1.20F, (float) (0.18 * (1.0 - age)));
-        }
-        addReleaseCrown(mesh, visual, age);
         return mesh.build();
     }
 
-    private static void addReleaseCrown(ArcaneWorldMesh.Builder mesh, Visual visual, double age) {
-        int circle = clampCircle(visual.spell.circle());
-        if (circle < 6) return;
-        double fade = clamp((1.0 - age) / 0.36, 0.0, 1.0);
-        if (fade <= 0.0) return;
-        ArcaneWorldMesh.Basis facing = ArcaneWorldMesh.Basis.facing(visual.direction);
-        double base = GRAND_ARRAY_RADIUS[circle] * (0.54 + (circle - 6) * 0.045);
-        double rot = (System.nanoTime() - visual.startedAt) / 1_000_000_000.0 * 0.74;
-        mesh.brokenBand(facing, Vec3.ZERO, base * 0.83, base, 68 + circle * 5,
-                5 + circle % 3, 1.30F, (float) (0.42 * fade));
-        mesh.star(facing, Vec3.ZERO, base * 0.66, base * 0.42,
-                5 + circle / 2, rot, 1.22F);
-        if (circle >= 8) {
-            ArcaneWorldMesh.Basis tilt = ArcaneWorldMesh.Basis.fromNormal(
-                    facing.right().add(visual.direction.scale(0.70)), facing.up());
-            mesh.brokenBand(tilt, Vec3.ZERO, base * 0.72, base * 0.80,
-                    72, 6, 1.14F, (float) (0.32 * fade));
-        }
-        if (circle == 9) {
-            ArcaneWorldMesh.Basis tilt = ArcaneWorldMesh.Basis.fromNormal(
-                    facing.up().add(visual.direction.scale(0.78)), facing.right());
-            mesh.brokenBand(tilt, Vec3.ZERO, base * 0.95, base * 1.03,
-                    84, 7, 1.28F, (float) (0.36 * fade));
-        }
+    private static ArcaneWorldMesh.Basis presentationBasis(SpellPresentationProfile.Profile profile, Vec3 direction) {
+        return switch (profile.sigil()) {
+            case SKY_RITUAL, GROUND_SEAL, QUAD_ARRAY, FEET_RUNE -> ArcaneWorldMesh.Basis.ground();
+            case WALL_MATRIX, PORTAL_GATE, TARGET_SEAL, FRONT_COMPACT, FRONT_LANCE -> ArcaneWorldMesh.Basis.facing(direction);
+            case BODY_HALO -> ArcaneWorldMesh.Basis.ground();
+        };
     }
 
-    private static double spectacleScale(int circle) {
-        return switch (clampCircle(circle)) {
-            case 1, 2, 3 -> 1.0;
-            case 4 -> 1.04;
-            case 5 -> 1.10;
-            case 6 -> 1.18;
-            case 7 -> 1.29;
-            case 8 -> 1.43;
-            case 9 -> 1.62;
-            default -> 1.0;
+    private static Vec3 targetOffset(Visual visual) {
+        Vec3 delta = visual.target.subtract(visual.center);
+        if (delta.lengthSqr() < 1.0E-8) return visual.direction.scale(Math.max(1.0, visual.range));
+        return delta;
+    }
+
+    private static double travelAge(Visual visual, double age) {
+        double impact = visual.impactAge <= 0.0 ? 0.78 : visual.impactAge;
+        return clamp(age / Math.max(0.04, impact), 0.0, 1.0);
+    }
+
+    private static double motionProgress(Visual visual, double age) {
+        double t = travelAge(visual, age);
+        return switch (SpellPresentationProfile.profile(visual.spell).motion()) {
+            case DART, LANCE -> 1.0 - Math.pow(1.0 - t, 2.35);
+            case BOLT -> 1.0 - Math.pow(1.0 - t, 1.72);
+            case HEAVY_ORB -> Math.pow(t, 1.12);
+            case MISSILE_SWARM -> 1.0 - Math.pow(1.0 - t, 1.55);
+            default -> t;
         };
     }
 
@@ -402,15 +370,15 @@ public final class WorldMagicTracker {
                                         ArcaneWorldMesh.Basis facing, double age, double powerFactor) {
         SpellDefinition spell = visual.spell;
         int circle = clampCircle(spell.circle());
-        double travel = Math.min(72.0, Math.max(3.0, visual.range));
-        double eased = 1.0 - Math.pow(1.0 - age, 1.35);
-        Vec3 position = visual.direction.scale(travel * eased);
+        Vec3 path = targetOffset(visual);
+        double eased = motionProgress(visual, age);
+        Vec3 position = path.scale(eased);
         double core = (0.17 + circle * 0.052) * powerFactor;
 
         // Detached echoes communicate speed without turning every projectile into a continuous line.
         int echoes = Math.min(4, 2 + circle / 3);
         for (int i = 1; i <= echoes; i++) {
-            double back = core * (1.1 + i * 1.18) + travel * 0.018 * i;
+            double back = core * (1.1 + i * 1.18) + path.length() * 0.018 * i;
             Vec3 echo = position.subtract(visual.direction.scale(back))
                     .add(facing.point(age * 5.2 + i * 2.17, core * 0.16 * i));
             double radius = core * (0.42 - i * 0.055);
@@ -472,7 +440,7 @@ public final class WorldMagicTracker {
 
         if (age > 0.78) {
             double burst = clamp((age - 0.78) / 0.22, 0.0, 1.0);
-            Vec3 end = visual.direction.scale(travel);
+            Vec3 end = path;
             mesh.orb(end, core * (0.72 + burst * 1.55), 28,
                     1.20F, (float) (0.34 * (1.0 - burst)));
             mesh.brokenBand(facing, end, core * (0.82 + burst * 1.85),
@@ -485,13 +453,15 @@ public final class WorldMagicTracker {
                                           ArcaneWorldMesh.Basis facing, double age, double powerFactor) {
         int circle = clampCircle(visual.spell.circle());
         int count = Math.min(7, 3 + circle / 2);
-        double travel = Math.min(72.0, Math.max(4.0, visual.range));
-        double eased = 1.0 - Math.pow(1.0 - age, 1.45);
+        Vec3 path = targetOffset(visual);
+        double eased = motionProgress(visual, age);
         double body = (0.12 + circle * 0.028) * powerFactor;
         for (int i = 0; i < count && !mesh.full(); i++) {
             double phase = Math.PI * 2.0 * i / count + age * (2.8 + i * 0.08);
             double spread = body * (1.3 + (i % 2) * 0.38) * Math.sin(Math.PI * age);
-            Vec3 position = visual.direction.scale(travel * eased - i * body * 0.55)
+            double stagger = clamp((travelAge(visual, age) - i * 0.055) / Math.max(0.35, 1.0 - i * 0.055), 0.0, 1.0);
+            Vec3 launch = facing.point(Math.PI * 2.0 * i / count, body * 2.6);
+            Vec3 position = launch.scale(1.0 - stagger).add(path.scale(1.0 - Math.pow(1.0 - stagger, 1.55)))
                     .add(facing.point(phase, spread));
             mesh.shard(position, visual.direction, facing, body * 3.4, body * 0.32,
                     1.22F, 0.54F);
@@ -499,7 +469,7 @@ public final class WorldMagicTracker {
         }
         if (age > 0.80) {
             double burst = clamp((age - 0.80) / 0.20, 0.0, 1.0);
-            Vec3 end = visual.direction.scale(travel);
+            Vec3 end = path;
             mesh.starPlate(facing, end, body * (2.2 + burst * 3.8),
                     body * (0.8 + burst), 7, age * 2.0, 1.28F,
                     (float) (0.44 * (1.0 - burst)));
@@ -509,9 +479,9 @@ public final class WorldMagicTracker {
     private static void buildElementalOrb(ArcaneWorldMesh.Builder mesh, Visual visual,
                                           ArcaneWorldMesh.Basis facing, double age, double powerFactor) {
         int circle = clampCircle(visual.spell.circle());
-        double travel = Math.min(72.0, Math.max(4.0, visual.range));
-        double eased = 1.0 - Math.pow(1.0 - age, 1.28);
-        Vec3 position = visual.direction.scale(travel * eased);
+        Vec3 path = targetOffset(visual);
+        double eased = motionProgress(visual, age);
+        Vec3 position = path.scale(eased);
         double radius = (0.26 + circle * 0.075) * powerFactor;
         double pulse = 0.92 + Math.sin(age * Math.PI * 8.0) * 0.08;
         mesh.orb(position, radius * pulse, 30 + circle * 2, 1.18F, 0.52F);
@@ -527,7 +497,7 @@ public final class WorldMagicTracker {
         }
         if (age > 0.72) {
             double burst = clamp((age - 0.72) / 0.28, 0.0, 1.0);
-            Vec3 end = visual.direction.scale(travel);
+            Vec3 end = path;
             mesh.orb(end, radius * (1.0 + burst * 2.8), 34, 1.20F,
                     (float) (0.48 * (1.0 - burst)));
             mesh.band(facing, end, radius * (1.2 + burst * 2.4),
@@ -539,9 +509,9 @@ public final class WorldMagicTracker {
     private static void buildLance(ArcaneWorldMesh.Builder mesh, Visual visual,
                                    ArcaneWorldMesh.Basis facing, double age, double powerFactor) {
         int circle = clampCircle(visual.spell.circle());
-        double travel = Math.min(72.0, Math.max(4.0, visual.range));
-        double eased = 1.0 - Math.pow(1.0 - age, 1.45);
-        Vec3 position = visual.direction.scale(travel * eased);
+        Vec3 path = targetOffset(visual);
+        double eased = motionProgress(visual, age);
+        Vec3 position = path.scale(eased);
         double width = (0.10 + circle * 0.026) * powerFactor;
         double length = width * (6.0 + circle * 0.45);
         mesh.shard(position, visual.direction, facing, length, width, 1.24F, 0.62F);
@@ -555,7 +525,7 @@ public final class WorldMagicTracker {
                 32, 5, 1.18F, 0.32F);
         if (age > 0.82) {
             double burst = clamp((age - 0.82) / 0.18, 0.0, 1.0);
-            Vec3 end = visual.direction.scale(travel);
+            Vec3 end = path;
             mesh.starPlate(facing, end, width * (3.0 + burst * 4.0),
                     width * (1.0 + burst), 5 + circle / 2, age * 2.2,
                     1.24F, (float) (0.46 * (1.0 - burst)));
@@ -564,36 +534,50 @@ public final class WorldMagicTracker {
 
     private static void buildMeteor(ArcaneWorldMesh.Builder mesh, Visual visual,
                                     double age, double powerFactor) {
-        int circle = clampCircle(visual.spell.circle());
-        ArcaneWorldMesh.Basis ground = ArcaneWorldMesh.Basis.ground();
-        int count = "meteor_swarm".equals(visual.spell.id()) ? 4
-                : "fire_storm".equals(visual.spell.id()) ? Math.min(6, 2 + circle / 2) : 1;
-        double radius = (0.50 + circle * 0.15) * powerFactor;
-        double fall = clamp(age / 0.72, 0.0, 1.0);
+        SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(visual.spell);
+        ArcaneWorldMesh.Basis sky = ArcaneWorldMesh.Basis.ground();
+        int count = Math.max(1, profile.satellites());
+        if ("meteor_swarm".equals(visual.spell.id())) count = 4;
+        Vec3 target = targetOffset(visual);
+        double fall = travelAge(visual, age);
+        double body = Math.max(0.55, (0.55 + visual.spell.circle() * 0.10) * powerFactor);
+        double spread = "meteor_swarm".equals(visual.spell.id()) ? 10.0
+                : "fire_storm".equals(visual.spell.id()) ? 6.0 : 0.0;
+
+        // Keep the summoning array visible while the payload exits it.
+        double sealFade = clamp((visual.impactAge + 0.12 - age) / 0.18, 0.0, 1.0);
+        double sealRadius = profile.radius();
+        mesh.brokenBand(sky, Vec3.ZERO, sealRadius * 0.92, sealRadius,
+                112, 7, 1.30F, (float) (0.42 * sealFade));
+        mesh.runeRing(sky, Vec3.ZERO, sealRadius * 0.82, 24 + profile.complexity() * 5,
+                sealRadius * 0.018, visual.spell.id().hashCode(), age * 0.7, 0.84F);
+
         for (int i = 0; i < count && !mesh.full(); i++) {
-            double angle = Math.PI * 2.0 * i / count + 0.45;
-            double spread = count == 1 ? 0.0 : radius * (2.4 + (i % 2) * 0.7);
-            Vec3 target = ground.point(angle, spread);
-            Vec3 meteor = target.add(ground.point(angle + 1.1, radius * (1.5 - fall)))
-                    .add(0.0, (11.0 + circle * 1.2) * (1.0 - fall), 0.0);
-            Vec3 descent = target.subtract(meteor).normalize();
-            ArcaneWorldMesh.Basis bodyBasis = ArcaneWorldMesh.Basis.facing(descent);
-            mesh.orb(meteor, radius * (0.66 + i * 0.05), 28, 1.24F, 0.54F);
-            mesh.shard(meteor.subtract(descent.scale(radius * 0.65)), descent, bodyBasis,
-                    radius * 3.6, radius * 0.58, 1.12F, 0.42F);
+            double angle = Math.PI * 2.0 * i / count + Math.PI / 4.0;
+            Vec3 impact = target.add(sky.point(angle, count == 1 ? 0.0 : spread));
+            Vec3 mouth = sky.point(angle, sealRadius * (count == 1 ? 0.0 : 0.54));
+            double local = clamp((fall - i * 0.035) / Math.max(0.55, 1.0 - i * 0.035), 0.0, 1.0);
+            Vec3 meteor = mouth.scale(1.0 - local).add(impact.scale(local));
+            Vec3 descent = impact.subtract(mouth);
+            Vec3 axis = descent.lengthSqr() < 1.0E-8 ? new Vec3(0.0, -1.0, 0.0) : descent.normalize();
+            ArcaneWorldMesh.Basis bodyBasis = ArcaneWorldMesh.Basis.facing(axis);
+            mesh.orb(meteor, body * (0.72 + i * 0.04), 34, 1.28F, 0.66F);
+            mesh.shard(meteor.subtract(axis.scale(body * 1.2)), axis, bodyBasis,
+                    body * 5.4, body * 0.68, 1.18F, 0.52F);
+            mesh.ribbon(meteor.subtract(axis.scale(body * 4.2)), axis, bodyBasis,
+                    body * 4.4, body * 1.25, 2, 24, 1.08F, 0.34F);
         }
-        if (age >= 0.62) {
-            double impact = clamp((age - 0.62) / 0.38, 0.0, 1.0);
-            double effect = Math.min(48.0,
-                    SpellMetrics.effectRadius(visual.spell.id(), visual.range, circle));
-            double ring = Math.max(radius, effect * impact);
-            mesh.disc(ground, Vec3.ZERO, ring, 64, 0.82F,
-                    (float) (0.15 * (1.0 - impact)));
-            mesh.band(ground, Vec3.ZERO, ring * 0.82, ring, 72, 1.30F,
-                    (float) (0.52 * (1.0 - impact)));
-            mesh.orb(new Vec3(0.0, radius * 0.32, 0.0),
-                    radius * (0.8 + impact * 3.2), 34, 1.22F,
-                    (float) (0.44 * (1.0 - impact)));
+
+        if (age >= visual.impactAge) {
+            double impactAge = clamp((age - visual.impactAge) / Math.max(0.08, 1.0 - visual.impactAge), 0.0, 1.0);
+            double effect = Math.min(64.0, SpellMetrics.effectRadius(visual.spell.id(), visual.range,
+                    clampCircle(visual.spell.circle())));
+            double ring = Math.max(body * 1.6, effect * Math.min(1.0, impactAge * 2.2));
+            mesh.band(sky, target, ring * 0.84, ring, 84, 1.34F,
+                    (float) (0.62 * (1.0 - impactAge)));
+            mesh.orb(target.add(0.0, body * 0.45, 0.0),
+                    body * (1.2 + impactAge * 4.0), 38, 1.30F,
+                    (float) (0.58 * (1.0 - impactAge)));
         }
     }
 
@@ -711,7 +695,7 @@ public final class WorldMagicTracker {
     private static void buildBeam(ArcaneWorldMesh.Builder mesh, Visual visual,
                                   ArcaneWorldMesh.Basis facing, double age, double powerFactor) {
         int circle = clampCircle(visual.spell.circle());
-        double length = Math.min(72.0, Math.max(4.0, visual.range));
+        double length = Math.max(0.6, targetOffset(visual).length());
         double reveal = clamp(age / 0.18, 0.0, 1.0);
         double fade = clamp((1.0 - age) / 0.22, 0.0, 1.0);
         double shown = length * reveal;
@@ -875,13 +859,13 @@ public final class WorldMagicTracker {
         // Fully saturated school palette. Geometry alpha is controlled per face, so the base color
         // itself should never start washed out.
         return switch (spell.school()) {
-            case FIRE -> 0xFFFF2A08;
-            case FROST -> 0xFF18C8FF;
-            case WIND -> 0xFF00F0A8;
-            case WARD -> 0xFF8A35FF;
-            case LIFE -> 0xFF25E85A;
-            case SPACE -> 0xFFD51CFF;
-            default -> 0xFF3E63FF;
+            case FIRE -> 0xFFFF2100;
+            case FROST -> 0xFF00CFFF;
+            case WIND -> 0xFF00FF9C;
+            case WARD -> 0xFF8E22FF;
+            case LIFE -> 0xFF18F044;
+            case SPACE -> 0xFFD000FF;
+            default -> 0xFF3454FF;
         };
     }
 
@@ -924,7 +908,7 @@ public final class WorldMagicTracker {
     }
 
     private record Visual(UUID caster, SpellDefinition spell, boolean fusion, int ingredients,
-                          Vec3 center, Vec3 direction, double range, double power, double progress,
-                          long startedAt, long expiresAt, boolean release) {}
+                          Vec3 center, Vec3 target, Vec3 direction, double range, double power, double progress,
+                          long startedAt, long expiresAt, boolean release, double impactAge) {}
     private record RenderEntry(Vec3 center, ArcaneWorldMesh mesh, int argb) {}
 }

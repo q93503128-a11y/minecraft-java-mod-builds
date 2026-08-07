@@ -12,8 +12,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Separates visual travel from authoritative combat. Projectiles resolve immediately so
- * networking/render duration can never add a hidden one-second damage delay.
+ * Keeps authoritative combat synchronized with authored presentation. Instant spells still
+ * resolve immediately unless their profile has an explicit visible wind-up; projectile and
+ * sky-drop damage lands on the same server tick as the visible impact, never afterward.
  */
 public final class SpellKineticsService {
     private static final Map<UUID, List<PendingCast>> PENDING = new HashMap<>();
@@ -27,11 +28,29 @@ public final class SpellKineticsService {
         int circle = Math.max(1, Math.min(9, cast.spell().circle()));
         WorldMagicService.release(player, cast);
 
-        if (mode == SpellArchetype.Mode.INSTANT || mode == SpellArchetype.Mode.PROJECTILE) {
+        int presentationImpactDelay = SpellPresentationProfile.impactDelayTicks(cast.spell(),
+                SpellCastingService.kineticDistance(player, cast.range()));
+
+        if (mode == SpellArchetype.Mode.INSTANT) {
+            if (presentationImpactDelay > 1) {
+                enqueue(player, new PendingCast(cast, snapshot, clock(player) + presentationImpactDelay,
+                        0, 1, cast.power(), false));
+                return true;
+            }
             boolean executed = SpellCastingService.executeResolved(player, cast.spell().id(),
                     cast.range(), cast.power());
             SpellCastingService.finishKineticCast(player, cast, snapshot, executed);
             return executed;
+        }
+        if (mode == SpellArchetype.Mode.PROJECTILE) {
+            if (presentationImpactDelay <= 1) {
+                boolean executed = SpellCastingService.executeResolved(player, cast.spell().id(), cast.range(), cast.power());
+                SpellCastingService.finishKineticCast(player, cast, snapshot, executed);
+                return executed;
+            }
+            enqueue(player, new PendingCast(cast, snapshot, clock(player) + presentationImpactDelay,
+                    0, 1, cast.power(), false));
+            return true;
         }
 
         int totalPulses;
@@ -55,7 +74,15 @@ public final class SpellKineticsService {
             default -> throw new IllegalStateException("unhandled spell mode " + mode);
         }
 
-        // The first pulse resolves on the cast tick; only subsequent pulses are queued.
+        // Ordinary channels/fields still start on the cast tick. Authored sky rituals and other
+        // explicitly telegraphed spells instead begin their first authoritative pulse exactly when
+        // the visible payload reaches the impact point; later pulses retain the original cadence.
+        if (presentationImpactDelay > 1) {
+            enqueue(player, new PendingCast(cast, snapshot, clock(player) + presentationImpactDelay,
+                    interval, totalPulses, pulsePower, false));
+            return true;
+        }
+
         boolean first = SpellCastingService.executeResolved(player, cast.spell().id(),
                 cast.range(), pulsePower);
         int remaining = totalPulses - 1;
@@ -64,14 +91,18 @@ public final class SpellKineticsService {
             return first;
         }
 
+        enqueue(player, new PendingCast(cast, snapshot, clock(player) + interval, interval,
+                remaining, pulsePower, first));
+        return true;
+    }
+
+    private static void enqueue(ServerPlayer player, PendingCast pending) {
         List<PendingCast> queue = PENDING.computeIfAbsent(player.getUUID(), ignored -> new ArrayList<>());
         while (queue.size() >= MAX_PENDING_PER_PLAYER) {
             PendingCast dropped = queue.removeFirst();
             SpellCastingService.finishKineticCast(player, dropped.cast(), dropped.snapshot(), dropped.anyExecuted());
         }
-        queue.add(new PendingCast(cast, snapshot, clock(player) + interval, interval,
-                remaining, pulsePower, first));
-        return true;
+        queue.add(pending);
     }
 
     public static void tick(ServerPlayer player) {

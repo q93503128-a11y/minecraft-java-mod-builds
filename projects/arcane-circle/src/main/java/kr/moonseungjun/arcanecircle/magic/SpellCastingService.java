@@ -427,6 +427,13 @@ public final class SpellCastingService {
                 Math.min(1.0, elapsed / (double) Math.max(1, queue.requiredTicks)));
     }
 
+    static double kineticDistance(ServerPlayer player, double range) {
+        Vec3 start = frontOrigin(player, 1.0);
+        Optional<Mob> target = lookTarget(player, range);
+        return target.map(mob -> Math.max(0.0, mob.getEyePosition().distanceTo(start)))
+                .orElse(Math.max(1.0, range));
+    }
+
     private static MagicPlayerData data(ServerPlayer player) {
         return MagicPlayerData.get(((ServerLevel) player.level()).getServer());
     }

@@ -1,0 +1,155 @@
+package kr.moonseungjun.arcanecircle.magic;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Visual/kinetic identity of a spell. Circle rank limits how sophisticated a formula may be, but
+ * it does not dictate physical size: a 9C death command can be compact while Meteor Strike owns
+ * the sky. Values are authored per spell where silhouette matters and fall back conservatively.
+ */
+public final class SpellPresentationProfile {
+    public enum SigilStyle {
+        FRONT_COMPACT, FRONT_LANCE, GROUND_SEAL, TARGET_SEAL, BODY_HALO, FEET_RUNE,
+        SKY_RITUAL, QUAD_ARRAY, WALL_MATRIX, PORTAL_GATE
+    }
+    public enum MotionStyle {
+        SNAP, DART, BOLT, HEAVY_ORB, MISSILE_SWARM, LANCE, BEAM, WAVE,
+        FIELD, SKY_DROP, STORM, PORTAL, PRISON, WALL, TARGET_BURST, AURA
+    }
+
+    public record Profile(SigilStyle sigil, MotionStyle motion, double radius, int complexity,
+                          int satellites, double projectileSpeed, double skyHeight,
+                          double releaseScale, int fixedImpactTicks) {
+        public Profile {
+            radius = Math.max(0.35, radius);
+            complexity = Math.max(1, Math.min(6, complexity));
+            satellites = Math.max(0, Math.min(12, satellites));
+            projectileSpeed = Math.max(0.0, projectileSpeed);
+            skyHeight = Math.max(0.0, skyHeight);
+            releaseScale = Math.max(0.45, releaseScale);
+            fixedImpactTicks = Math.max(0, fixedImpactTicks);
+        }
+    }
+
+    private static final Map<String, Profile> AUTHORED = new HashMap<>();
+
+    static {
+        // Low/mid projectile language: deliberately different speeds and launch silhouettes.
+        put("magic_missile", SigilStyle.FRONT_COMPACT, MotionStyle.MISSILE_SWARM, 0.92, 2, 3, 56, 0, 0.90, 0);
+        put("fire_bolt", SigilStyle.FRONT_COMPACT, MotionStyle.BOLT, 0.72, 1, 0, 44, 0, 0.86, 0);
+        put("ray_of_frost", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 0.68, 2, 0, 0, 0, 0.86, 0);
+        put("scorching_ray", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 1.10, 3, 3, 0, 0, 1.00, 0);
+        put("fireball", SigilStyle.FRONT_COMPACT, MotionStyle.HEAVY_ORB, 1.38, 3, 0, 28, 0, 1.15, 0);
+        put("lightning_bolt", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 1.18, 3, 0, 0, 0, 1.10, 0);
+        put("ice_knife", SigilStyle.FRONT_LANCE, MotionStyle.DART, 0.88, 2, 0, 48, 0, 0.92, 0);
+        put("chromatic_orb", SigilStyle.FRONT_COMPACT, MotionStyle.HEAVY_ORB, 1.18, 3, 0, 34, 0, 1.08, 0);
+        put("cone_of_cold", SigilStyle.FRONT_COMPACT, MotionStyle.WAVE, 1.85, 4, 0, 0, 0, 1.18, 0);
+        put("chain_lightning", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 1.45, 4, 4, 0, 0, 1.16, 0);
+
+        // High-circle spells: size follows fiction, not rank.
+        put("flame_strike", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 6.4, 4, 1, 0, 13, 1.45, 10);
+        put("disintegrate", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 1.25, 5, 0, 0, 0, 1.16, 0);
+        put("sunbeam", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 2.10, 4, 1, 0, 0, 1.34, 0);
+        put("freezing_sphere", SigilStyle.FRONT_COMPACT, MotionStyle.HEAVY_ORB, 1.72, 5, 0, 23, 0, 1.42, 0);
+        put("circle_of_death", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 5.2, 5, 0, 0, 0, 1.35, 0);
+        put("delayed_blast_fireball", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 3.4, 5, 4, 0, 0, 1.65, 18);
+        put("finger_of_death", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 2.15, 5, 0, 0, 0, 1.18, 2);
+        put("fire_storm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 10.5, 5, 6, 0, 19, 1.78, 14);
+        put("forcecage", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 3.25, 5, 4, 0, 0, 1.28, 2);
+        put("prismatic_spray", SigilStyle.FRONT_COMPACT, MotionStyle.WAVE, 2.55, 5, 7, 0, 0, 1.44, 0);
+        put("reverse_gravity", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 8.2, 5, 4, 0, 0, 1.48, 4);
+        put("teleport", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 4.2, 5, 2, 0, 0, 1.36, 0);
+        put("antimagic_field", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 6.8, 5, 0, 0, 0, 1.34, 0);
+        put("control_weather", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 16.0, 5, 8, 0, 24, 1.82, 8);
+        put("earthquake", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 11.0, 5, 4, 0, 0, 1.74, 4);
+        put("incendiary_cloud", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 10.0, 5, 5, 0, 10, 1.62, 6);
+        put("sunburst", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 8.5, 5, 1, 0, 12, 1.64, 8);
+
+        // 9C: deliberately non-monotonic physical scale.
+        put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 16.0, 6, 4, 0, 28, 2.45, 28);
+        put("power_word_kill", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 2.35, 6, 0, 0, 0, 1.28, 2);
+        put("prismatic_wall", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 10.5, 6, 4, 0, 0, 2.05, 4);
+        put("shapechange", SigilStyle.BODY_HALO, MotionStyle.AURA, 2.85, 6, 3, 0, 0, 1.44, 0);
+        put("time_stop", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 8.8, 6, 12, 0, 0, 1.72, 3);
+        put("true_polymorph", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 3.6, 6, 4, 0, 0, 1.44, 3);
+        put("weird", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 7.4, 6, 4, 0, 0, 1.62, 3);
+        put("wish", SigilStyle.BODY_HALO, MotionStyle.AURA, 3.1, 6, 6, 0, 0, 1.55, 0);
+        put("gate", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 10.5, 6, 4, 0, 0, 2.20, 0);
+        put("foresight", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.75, 6, 2, 0, 0, 1.20, 0);
+
+        // Fusion identities.
+        put("void_lance", SigilStyle.FRONT_LANCE, MotionStyle.LANCE, 1.45, 6, 2, 72, 0, 1.55, 0);
+        put("winter_domain", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 9.2, 6, 4, 0, 0, 1.65, 2);
+        put("astral_prison", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 4.2, 6, 6, 0, 0, 1.62, 2);
+        put("phoenix_requiem", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 10.8, 6, 6, 0, 14, 1.90, 6);
+        put("world_sunder", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 14.0, 6, 4, 0, 0, 2.25, 5);
+        put("solar_guard", SigilStyle.BODY_HALO, MotionStyle.AURA, 4.4, 5, 6, 0, 0, 1.46, 0);
+        put("teleportation_circle", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 5.0, 4, 4, 0, 0, 1.45, 0);
+        put("thunder_cage", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 2.8, 4, 4, 0, 0, 1.26, 2);
+    }
+
+    private SpellPresentationProfile() {}
+
+    private static void put(String id, SigilStyle sigil, MotionStyle motion, double radius,
+                            int complexity, int satellites, double speed, double skyHeight,
+                            double releaseScale, int impactTicks) {
+        AUTHORED.put(id, new Profile(sigil, motion, radius, complexity, satellites, speed,
+                skyHeight, releaseScale, impactTicks));
+    }
+
+    public static Profile profile(SpellDefinition spell) {
+        Profile explicit = AUTHORED.get(spell.id());
+        if (explicit != null) return explicit;
+        int c = Math.max(1, Math.min(9, spell.circle()));
+        int complexity = Math.max(1, Math.min(6, 1 + c / 2));
+        double radius = 0.58 + c * 0.18;
+        SigilStyle sigil = switch (spell.sigilAnchor()) {
+            case FRONT -> SigilStyle.FRONT_COMPACT;
+            case FEET -> SigilStyle.FEET_RUNE;
+            case GROUND_SELF, GROUND_TARGET -> SigilStyle.GROUND_SEAL;
+            case BODY -> SigilStyle.BODY_HALO;
+            case TARGET -> SigilStyle.TARGET_SEAL;
+        };
+        MotionStyle motion = switch (SpellArchetype.mode(spell.id())) {
+            case PROJECTILE -> MotionStyle.BOLT;
+            case CHANNEL -> MotionStyle.BEAM;
+            case FIELD -> MotionStyle.FIELD;
+            case INSTANT -> switch (spell.sigilAnchor()) {
+                case BODY, FEET -> MotionStyle.AURA;
+                case GROUND_SELF, GROUND_TARGET -> MotionStyle.FIELD;
+                case TARGET -> MotionStyle.TARGET_BURST;
+                case FRONT -> MotionStyle.SNAP;
+            };
+        };
+        double speed = motion == MotionStyle.BOLT ? Math.max(30.0, 48.0 - c * 1.4) : 0.0;
+        return new Profile(sigil, motion, radius, complexity, 0, speed, 0.0,
+                1.0 + Math.max(0, c - 5) * 0.05, 0);
+    }
+
+    public static int impactDelayTicks(SpellDefinition spell, double distance) {
+        Profile profile = profile(spell);
+        if (profile.fixedImpactTicks() > 0) return profile.fixedImpactTicks();
+        if (profile.projectileSpeed() <= 0.0) return 0;
+        double seconds = Math.max(0.0, distance) / profile.projectileSpeed();
+        return Math.max(1, Math.min(34, (int) Math.round(seconds * 20.0)));
+    }
+
+    public static int releaseDurationTicks(SpellDefinition spell, double distance) {
+        Profile profile = profile(spell);
+        int impact = impactDelayTicks(spell, distance);
+        return switch (profile.motion()) {
+            case DART, BOLT, HEAVY_ORB, MISSILE_SWARM, LANCE -> Math.max(6, impact + 7);
+            case SKY_DROP -> Math.max(18, impact + 16);
+            case BEAM -> 12;
+            case WAVE -> 18;
+            case TARGET_BURST -> Math.max(14, impact + 12);
+            case STORM -> 42;
+            case PORTAL -> 34;
+            case PRISON, WALL -> 30;
+            case FIELD -> 34;
+            case AURA -> 28;
+            case SNAP -> 12;
+        };
+    }
+}

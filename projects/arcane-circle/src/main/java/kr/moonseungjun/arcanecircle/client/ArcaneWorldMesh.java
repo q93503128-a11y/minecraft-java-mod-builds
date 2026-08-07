@@ -24,15 +24,15 @@ final class ArcaneWorldMesh {
         if(!segments.isEmpty()){
             // Three edge passes create a saturated halo + readable mid edge + white-hot colored core.
             // This keeps the effect punchy without relying on thousands of vanilla particles.
-            submitLines(poseStack,collector,tone(argb,.64,.24),windowScale*4.10F);
-            submitLines(poseStack,collector,tone(argb,.88,.58),windowScale*2.05F);
-            submitLines(poseStack,collector,tone(argb,1.06,1.0),windowScale*.82F);
+            submitLines(poseStack,collector,tone(argb,.58,.34),windowScale*4.60F);
+            submitLines(poseStack,collector,tone(argb,.82,.76),windowScale*2.20F);
+            submitLines(poseStack,collector,tone(argb,.98,1.0),windowScale*.78F);
         }
     }
     private void submitLines(PoseStack stack,SubmitNodeCollector collector,int color,float scale){collector.submitCustomGeometry(stack,RenderTypes.lines(),(pose,out)->{for(Segment s:segments){Vec3 d=s.end.subtract(s.start);if(d.lengthSqr()<1e-8)continue;Vec3 n=d.normalize();float w=Math.max(.72F,s.width*scale);out.addVertex(pose,(float)s.start.x,(float)s.start.y,(float)s.start.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);out.addVertex(pose,(float)s.end.x,(float)s.end.y,(float)s.end.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);}});}
     private static void vertex(VertexConsumer out,PoseStack.Pose pose,Vec3 v,int color){out.addVertex(pose,(float)v.x,(float)v.y,(float)v.z).setColor(color);}
-    private static final double VIVID_SATURATION=1.72;
-    private static final double FACE_ALPHA_BOOST=1.52;
+    private static final double VIVID_SATURATION=2.05;
+    private static final double FACE_ALPHA_BOOST=1.78;
     private static int tone(int argb,double brightness,double alphaScale){
         int baseA=(argb>>>24)&255,baseR=(argb>>>16)&255,baseG=(argb>>>8)&255,baseB=argb&255;
         // Luma-based saturation keeps the dominant school color strong instead of bleaching it
@@ -69,6 +69,29 @@ final class ArcaneWorldMesh {
         Builder starPlate(Basis basis,Vec3 center,double outer,double inner,int points,double rotation,float brightness,float alpha){List<Vec3> p=starPoints(basis,center,outer,inner,points,rotation);for(int i=0;i<p.size()&&!full();i++)triangle(center,p.get(i),p.get((i+1)%p.size()),brightness,alpha);return this;}
         private static List<Vec3> starPoints(Basis basis,Vec3 center,double outer,double inner,int points,double rotation){int n=Math.max(3,points);List<Vec3> p=new ArrayList<>();for(int i=0;i<n*2;i++)p.add(center.add(basis.point(rotation+Math.PI*i/n,(i&1)==0?outer:inner)));return p;}
         Builder runeChords(Basis basis,Vec3 center,double radius,int count,int skip,double rotation,float width){int n=Math.max(3,count),s=Math.max(1,Math.min(n-1,skip));List<Vec3> p=new ArrayList<>();for(int i=0;i<n;i++)p.add(center.add(basis.point(rotation+Math.PI*2*i/n,radius)));for(int i=0;i<n&&!full();i++)line(p.get(i),p.get((i+s)%n),width*(i%3==0?1.45F:.72F));return this;}
+        Builder runeGlyph(Basis basis,Vec3 center,double size,int seed,double rotation,float width){
+            Vec3 x=basis.point(rotation,size),y=basis.point(rotation+Math.PI/2.0,size);
+            Vec3 nx=x.scale(-1),ny=y.scale(-1);
+            int pattern=Math.floorMod(seed,8);
+            line(center.add(nx),center.add(x),width);
+            if((pattern&1)!=0)line(center.add(ny),center.add(y),width*.82F);
+            if((pattern&2)!=0)line(center.add(nx.scale(.75)).add(ny.scale(.70)),center.add(x.scale(.70)).add(y.scale(.78)),width*.72F);
+            if((pattern&4)!=0)line(center.add(nx.scale(.72)).add(y.scale(.68)),center.add(x.scale(.78)).add(ny.scale(.65)),width*.72F);
+            double cap=size*.55;
+            if(pattern%3==0)diamond(basis,center.add(y.scale(.72)),cap*.48,rotation,1.16F,.42F);
+            else if(pattern%3==1)polygon(basis,center.add(x.scale(.42)),cap*.46,3,rotation+.35,width*.68F);
+            else circle(basis,center.add(ny.scale(.58)),cap*.34,10,width*.62F);
+            return this;
+        }
+        Builder runeRing(Basis basis,Vec3 center,double radius,int count,double size,int seed,double rotation,float width){
+            int n=Math.max(4,count);
+            for(int i=0;i<n&&!full();i++){
+                double a=rotation+Math.PI*2.0*i/n;
+                Vec3 at=center.add(basis.point(a,radius));
+                runeGlyph(basis,at,size,seed+i,a+Math.PI/2.0,width*(i%5==0?1.22F:.76F));
+            }
+            return this;
+        }
         Builder sphere(Vec3 center,double radius,int detail,float width){orb(center,radius,Math.max(16,18+detail*3),.92F,.34F);circle(Basis.ground(),center,radius,24+detail*3,width);circle(Basis.facing(new Vec3(1,0,0)),center,radius,24+detail*3,width*.72F);return this;}
         Builder orb(Vec3 center,double radius,int detail,float brightness,float alpha){disc(Basis.ground(),center,radius,detail,brightness,alpha*.55F);disc(Basis.facing(new Vec3(1,0,0)),center,radius,detail,brightness,alpha);disc(Basis.facing(new Vec3(0,0,1)),center,radius,detail,brightness*.85F,alpha*.75F);return this;}
         Builder shard(Vec3 center,Vec3 axis,Basis basis,double length,double radius,float brightness,float alpha){Vec3 n=axis.lengthSqr()<1e-8?new Vec3(0,0,1):axis.normalize();Vec3 front=center.add(n.scale(length*.55)),back=center.subtract(n.scale(length*.45));int sides=6;for(int i=0;i<sides&&!full();i++){Vec3 a=center.add(basis.point(Math.PI*2*i/sides,radius)),b=center.add(basis.point(Math.PI*2*(i+1)/sides,radius));triangle(front,a,b,brightness,alpha);triangle(back,b,a,brightness*.72F,alpha*.85F);}return this;}
