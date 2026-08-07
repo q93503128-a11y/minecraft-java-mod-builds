@@ -19,14 +19,21 @@ def write(rel: str, text: str) -> None:
 
 
 def run_base() -> None:
+    kinetics = ROOT / "src/main/java/kr/moonseungjun/arcanecircle/magic/SpellKineticsService.java"
+    profile = ROOT / "src/main/java/kr/moonseungjun/arcanecircle/magic/SpellPresentationProfile.java"
+    if kinetics.exists() and profile.exists():
+        kt = kinetics.read_text(encoding="utf-8")
+        pf = profile.read_text(encoding="utf-8")
+        if "presentationImpactDelay" in kt and "SigilStyle.SKY_RITUAL" in pf:
+            return
     subprocess.run([sys.executable, str(BASE)], cwd=ROOT, check=True)
 
 
 def fix_profile_enums() -> None:
     rel = "src/main/java/kr/moonseungjun/arcanecircle/magic/SpellPresentationProfile.java"
     text = read(rel)
-    # The profile table intentionally reads like a design sheet, but Java still needs the nested
-    # enum owner on each constant. Qualify only the two enum columns of authored put(...) rows.
+    if 'put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP' in text:
+        return
     sigils = {
         "FRONT_COMPACT", "FRONT_LANCE", "GROUND_SEAL", "TARGET_SEAL", "BODY_HALO",
         "FEET_RUNE", "SKY_RITUAL", "QUAD_ARRAY", "WALL_MATRIX", "PORTAL_GATE"
@@ -36,7 +43,6 @@ def fix_profile_enums() -> None:
         "WAVE", "FIELD", "SKY_DROP", "STORM", "PORTAL", "PRISON", "WALL",
         "TARGET_BURST", "AURA"
     }
-
     pattern = re.compile(r'put\("([^"]+)", ([A-Z_]+), ([A-Z_]+),')
 
     def repl(match: re.Match[str]) -> str:
@@ -54,6 +60,8 @@ def fix_profile_enums() -> None:
 def synchronize_visible_impacts() -> None:
     rel = "src/main/java/kr/moonseungjun/arcanecircle/magic/SpellKineticsService.java"
     text = read(rel)
+    if "presentationImpactDelay" in text:
+        return
     text = text.replace(
         " * Separates visual travel from authoritative combat. Projectiles resolve immediately so\n"
         " * networking/render duration can never add a hidden one-second damage delay.\n",
