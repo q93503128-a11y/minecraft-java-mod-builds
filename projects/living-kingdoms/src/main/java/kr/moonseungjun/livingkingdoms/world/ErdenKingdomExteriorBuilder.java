@@ -807,11 +807,7 @@ public final class ErdenKingdomExteriorBuilder {
                 ErdenExteriorResidenceBuilder.RESIDENCE_REVISION) <= 0L
                 || !residences.missingHouseholds(
                 ErdenExteriorResidenceBuilder.RESIDENCE_REVISION).isEmpty()) return;
-        for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
-            BlockPos storage = storagePosition(level, node);
-            if (!level.hasChunkAt(storage)
-                    || !level.getBlockState(storage).is(Blocks.BARREL)) return;
-        }
+        if (!ErdenExteriorTicketReaper.storageValidationComplete()) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
                 "LK_ERDEN_KINGDOM_EXTERIOR_PASS revision={} nodes={} producers={} wharves={} anchor_chunks={} writes={} residences={} attached_quarters={} detached_cottages={} residence_chunks={} doors={} beds={} storage={} hearths={} metre_scale=true streamed=true external_buildings=true fields=true paddocks=true mines=true mills=true docks=true roads=true storage_yards=true physical_residences=true access_paths=true debris_zero=true",

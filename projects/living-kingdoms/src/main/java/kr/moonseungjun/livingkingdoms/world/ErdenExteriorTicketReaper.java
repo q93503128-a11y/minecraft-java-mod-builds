@@ -74,9 +74,11 @@ public final class ErdenExteriorTicketReaper {
                     || residences.chunkBuilt(
                     chunkX, chunkZ,
                     ErdenExteriorResidenceBuilder.RESIDENCE_REVISION);
+            boolean storageReady = storageReadyForChunk(packed);
             if (RELEASED.contains(packed)
                     || !exterior.isBuilt(packed, ErdenKingdomExteriorBuilder.EXTERIOR_REVISION)
                     || !residenceReady
+                    || !storageReady
                     || (sampleAnchors.contains(packed) && !releaseSample)) continue;
             level.getChunkSource().removeTicketWithRadius(
                     TicketType.PORTAL,
@@ -135,6 +137,18 @@ public final class ErdenExteriorTicketReaper {
                 VALIDATED_STORAGE_NODES.add(node.id);
             }
         }
+    }
+
+    public static boolean storageValidationComplete() {
+        return VALIDATED_STORAGE_NODES.size() == ErdenKingdomSupplyCatalog.nodes().size();
+    }
+
+    private static boolean storageReadyForChunk(long packed) {
+        for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
+            if (ErdenKingdomExteriorBuilder.storageAnchorChunk(node) == packed
+                    && !VALIDATED_STORAGE_NODES.contains(node.id)) return false;
+        }
+        return true;
     }
 
     private static boolean sampleResidentsReady(
