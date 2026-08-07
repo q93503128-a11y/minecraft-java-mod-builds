@@ -357,9 +357,9 @@ public final class ErdenExteriorResidenceBuilder {
     private static boolean collidesWithStorage(BlockPos position) {
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
             BlockPos storage = ErdenKingdomExteriorBuilder.storagePosition(null, node);
-            if (storage.getX() == position.getX()
-                    && storage.getY() == position.getY()
-                    && storage.getZ() == position.getZ()) return true;
+            if (storage.getY() != position.getY() || storage.getZ() != position.getZ()) continue;
+            int dx = position.getX() - storage.getX();
+            if (dx == 0 || dx == -2 || dx == 2) return true;
         }
         return false;
     }
