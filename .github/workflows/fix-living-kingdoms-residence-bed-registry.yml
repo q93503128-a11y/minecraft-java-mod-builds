@@ -35,4 +35,4 @@ jobs:
           done
           exit 1
 
-# One-shot compatibility repair; remove after Java changes land.
+# One-shot compatibility repair; remove after Java changes land. Triggered explicitly.
