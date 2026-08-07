@@ -72,6 +72,16 @@ Interacting with an exterior resident reports the saved generation, age, househo
 (steward, heir or member) and current work status. Recorded dead descendants are removed when their
 settlement next loads and are never respawned.
 
+## Non-persistent future projection
+
+The CI proof does not advance or rewrite the actual world save. It clones the current people and
+household-line lists in memory, then runs the production methods used by normal gameplay over a
+20-year projection. The projection must create at least one real birth through `processBirths`,
+complete at least one steward succession through `processSuccession`, and assign at least one adult
+dependent or descendant to a forced labour vacancy through `fillVacancies`. Failure of any actual
+transition suppresses the lifecycle pass marker. The projected people and household lines are then
+discarded, leaving the live save on its original day.
+
 ## Required regression proof
 
 A fresh-world validation must emit all of the following without a watchdog, invalid block entity,

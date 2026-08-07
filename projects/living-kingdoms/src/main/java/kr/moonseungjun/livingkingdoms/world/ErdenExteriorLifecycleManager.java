@@ -608,14 +608,157 @@ public final class ErdenExteriorLifecycleManager {
                     && ageYears(person, day) >= MIN_PARENT_AGE
                     && ageYears(person, day) <= MAX_PARENT_AGE).count() >= 2) parentReadyHouseholds++;
         }
+        CiProjection projection = projectFutureLifecycle(lifecycle, workforce);
         if (futureAdults <= 0 || futureRetirements <= 0
-                || successionHouseholds <= 0 || parentReadyHouseholds <= 0) return;
+                || successionHouseholds <= 0 || parentReadyHouseholds <= 0
+                || projection.births() <= 0
+                || projection.successions() <= 0
+                || projection.replacementWorkers() <= 0) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_EXTERIOR_LIFECYCLE_PASS revision={} founders={} households={} future_adults={} scheduled_retirements={} succession_households={} parent_ready_households={} year_days={} adulthood={} retirement={} births=true inheritance=true replacement_labor=true permanent_deaths=true save_overlay=true",
+                "LK_ERDEN_EXTERIOR_LIFECYCLE_PASS revision={} founders={} households={} future_adults={} scheduled_retirements={} succession_households={} parent_ready_households={} year_days={} adulthood={} retirement={} births=true inheritance=true replacement_labor=true permanent_deaths=true save_overlay=true projected_births={} projected_successions={} projected_replacement_workers={} projected_years={} ci_projection_non_persistent=true",
                 LIFECYCLE_REVISION, lifecycle.founderCount(), lifecycle.householdLines().size(),
                 futureAdults, futureRetirements, successionHouseholds, parentReadyHouseholds,
-                DAYS_PER_YEAR, ADULT_AGE, RETIREMENT_AGE);
+                DAYS_PER_YEAR, ADULT_AGE, RETIREMENT_AGE,
+                projection.births(), projection.successions(), projection.replacementWorkers(),
+                projection.years());
+    }
+
+    private static CiProjection projectFutureLifecycle(
+            ErdenExteriorLifecycleSavedData lifecycle,
+            ErdenExteriorWorkforceSavedData workforce) {
+        final int projectedYears = 20;
+        long establishedDay = lifecycle.establishedDay();
+        long projectedDay = establishedDay + (long) projectedYears * DAYS_PER_YEAR;
+        List<ErdenExteriorLifecycleSavedData.Person> people =
+                new ArrayList<>(lifecycle.persons());
+        List<ErdenExteriorLifecycleSavedData.HouseholdLine> lines =
+                new ArrayList<>(lifecycle.householdLines());
+        int nextSequence = lifecycle.nextBirthSequence();
+        int initialPopulation = people.size();
+
+        for (int year = 1; year <= projectedYears; year++) {
+            long birthDay = establishedDay + (long) year * DAYS_PER_YEAR;
+            BirthResult births = processBirths(
+                    people, lines, workforce, birthDay, year, nextSequence);
+            people = births.people();
+            lines = births.lines();
+            nextSequence = births.nextSequence();
+        }
+
+        int projectedBirths = people.size() - initialPopulation;
+        int projectedSuccessions = projectSuccession(people, lines, projectedDay);
+        int projectedReplacementWorkers =
+                projectReplacementLabor(people, workforce, projectedDay);
+        return new CiProjection(
+                projectedBirths,
+                projectedSuccessions,
+                projectedReplacementWorkers,
+                projectedYears);
+    }
+
+    private static int projectSuccession(
+            List<ErdenExteriorLifecycleSavedData.Person> sourcePeople,
+            List<ErdenExteriorLifecycleSavedData.HouseholdLine> sourceLines,
+            long day) {
+        List<ErdenExteriorLifecycleSavedData.Person> people =
+                new ArrayList<>(sourcePeople);
+        List<ErdenExteriorLifecycleSavedData.HouseholdLine> lines =
+                new ArrayList<>(sourceLines);
+        Map<String, ErdenExteriorLifecycleSavedData.Person> byId = new HashMap<>();
+        for (ErdenExteriorLifecycleSavedData.Person person : people) {
+            byId.put(person.id(), person);
+        }
+        int before = successionTotal(lines);
+        for (ErdenExteriorLifecycleSavedData.HouseholdLine line : lines) {
+            ErdenExteriorLifecycleSavedData.Person steward = byId.get(line.stewardId());
+            if (steward == null || !steward.aliveOn(day)
+                    || ageYears(steward, day) < ADULT_AGE) continue;
+            boolean alternateAdult = false;
+            for (ErdenExteriorLifecycleSavedData.Person member : people) {
+                if (member.householdId().equals(line.householdId())
+                        && !member.id().equals(steward.id())
+                        && member.aliveOn(day)
+                        && ageYears(member, day) >= ADULT_AGE) {
+                    alternateAdult = true;
+                    break;
+                }
+            }
+            if (!alternateAdult) continue;
+            replacePerson(people, steward.withDeath(day));
+            List<ErdenExteriorLifecycleSavedData.HouseholdLine> projected =
+                    processSuccession(people, lines, day);
+            return Math.max(0, successionTotal(projected) - before);
+        }
+        return 0;
+    }
+
+    private static int projectReplacementLabor(
+            List<ErdenExteriorLifecycleSavedData.Person> sourcePeople,
+            ErdenExteriorWorkforceSavedData workforce,
+            long day) {
+        for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
+            List<ErdenExteriorLifecycleSavedData.Person> people =
+                    new ArrayList<>(sourcePeople);
+            ErdenExteriorLifecycleSavedData.Person vacancyWorker = null;
+            boolean eligibleReplacement = false;
+            for (ErdenExteriorLifecycleSavedData.Person person : people) {
+                if (!person.nodeId().equals(node.id) || !person.aliveOn(day)) continue;
+                if (vacancyWorker == null
+                        && person.assignedWorker()
+                        && !person.retiredOn(day)
+                        && ageYears(person, day) >= ADULT_AGE) {
+                    vacancyWorker = person;
+                }
+                if (!person.foundingWorker()
+                        && !person.assignedWorker()
+                        && ageYears(person, day) >= ADULT_AGE
+                        && ageYears(person, day) < RETIREMENT_AGE) {
+                    eligibleReplacement = true;
+                }
+            }
+            if (vacancyWorker == null || !eligibleReplacement) continue;
+            int before = replacementWorkerCount(people, node.id);
+            replacePerson(people, vacancyWorker.withDeath(day));
+            List<ErdenExteriorLifecycleSavedData.Person> projected =
+                    fillVacancies(people, workforce, day);
+            int after = replacementWorkerCount(projected, node.id);
+            if (after > before) return after - before;
+        }
+        return 0;
+    }
+
+    private static int replacementWorkerCount(
+            List<ErdenExteriorLifecycleSavedData.Person> people,
+            String nodeId) {
+        int count = 0;
+        for (ErdenExteriorLifecycleSavedData.Person person : people) {
+            if (person.nodeId().equals(nodeId)
+                    && !person.foundingWorker()
+                    && person.assignedWorker()) count++;
+        }
+        return count;
+    }
+
+    private static int successionTotal(
+            List<ErdenExteriorLifecycleSavedData.HouseholdLine> lines) {
+        int total = 0;
+        for (ErdenExteriorLifecycleSavedData.HouseholdLine line : lines) {
+            total += line.successionCount();
+        }
+        return total;
+    }
+
+    private static void replacePerson(
+            List<ErdenExteriorLifecycleSavedData.Person> people,
+            ErdenExteriorLifecycleSavedData.Person replacement) {
+        for (int i = 0; i < people.size(); i++) {
+            if (!people.get(i).id().equals(replacement.id())) continue;
+            people.set(i, replacement);
+            return;
+        }
+        throw new IllegalStateException(
+                "Missing Erden lifecycle projection person " + replacement.id());
     }
 
     private static int founderAge(ErdenExteriorWorkforceSavedData.Resident resident) {
@@ -768,6 +911,13 @@ public final class ErdenExteriorLifecycleManager {
     }
 
     private record Shift(int start, int end) {
+    }
+
+    private record CiProjection(
+            int births,
+            int successions,
+            int replacementWorkers,
+            int years) {
     }
 
     private record BirthResult(
