@@ -2,9 +2,9 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredBiomeVerifier;
+import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 /** Owns the fixed geography of the active Erden kingdom slice. */
 public final class RealmSitePlanner {
@@ -86,8 +86,9 @@ public final class RealmSitePlanner {
     }
 
     public static int surfaceY(ServerLevel level, int x, int z) {
-        level.getChunk(x >> 4, z >> 4);
-        return level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
+        // World-edit planning must never synchronously promote or load a chunk from the server tick.
+        // Erden terrain is authored deterministically, so unloaded planning samples use that source of truth.
+        return (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z));
     }
 
     public static int[] nominalCenter(String homelandId) {

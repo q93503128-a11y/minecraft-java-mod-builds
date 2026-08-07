@@ -316,7 +316,7 @@ public final class ExternalDistrictBuildingBuilder {
         if (placed.isEmpty()) return;
 
         for (VerticalSpan span : spans.values()) {
-            int surfaceY = RealmSitePlanner.surfaceY(level, span.x, span.z);
+            int surfaceY = plan.plannedSurfaceY(level, span.x, span.z);
             plan.addFill(span.x, span.minY, span.z,
                     span.x, Math.max(surfaceY, span.maxY + 2), span.z, Blocks.AIR);
             if (surfaceY < span.minY - 1) {
