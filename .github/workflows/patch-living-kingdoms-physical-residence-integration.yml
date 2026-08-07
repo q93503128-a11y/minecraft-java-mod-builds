@@ -38,4 +38,4 @@ jobs:
           done
           exit 1
 
-# One-shot integration; remove after Java changes land.
+# One-shot integration; remove after Java changes land. Triggered explicitly.
