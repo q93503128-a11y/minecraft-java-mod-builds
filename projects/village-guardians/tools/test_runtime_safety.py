@@ -52,6 +52,7 @@ def main() -> None:
     assert 'case "building", "management", "funding", "tower_control", "tower_detail", "caller", "relic_choice"' in client_ui
     assert 'case "equipment_shop" -> new VillageShopScreen(payload)' in client_ui
     assert 'case "status" -> new VillageStatusScreen(payload)' in client_ui
+    assert 'case "relic_collection" -> new VillageRelicScreen(payload)' in client_ui
     assert 'case "wave_intel", "skill_test", "game_over" -> new VillageFacilityScreen(payload)' in client_ui
     assert "listLeft" in facility_ui and "detailLeft" in facility_ui
     assert "selectedIndex = actionCount() > 0 ? 0 : -1" in facility_ui
@@ -79,7 +80,8 @@ def main() -> None:
     assert "ChatFormatting.stripFormatting" in status_ui
     assert "TEXT = 0xFF211A14" in status_ui
     assert "lastLayout" in status_ui
-    assert "ClientPacketDistributor" not in status_ui
+    assert "ClientPacketDistributor" in status_ui
+    assert "buttonWidth = Math.min(220" in status_ui
 
     assert 'EQUIPMENT("장비")' in shop_ui
     assert 'ARMOR("방어구")' in shop_ui
@@ -152,6 +154,7 @@ def main() -> None:
 
     assert "offerToParty" in relic
     assert "relic_select:" in relic
+    assert "openCollection" in relic
     assert "pending" in read("VillageRelicData.java")
     assert "previews(ServerPlayer player)" in wave and "WavePreview" in wave and "previewArchetype" in wave
 
@@ -175,7 +178,7 @@ def main() -> None:
 
     print("[PASS] Compact split menus use narrow selectors, wide details and bounded action buttons")
     print("[PASS] Town hall shows current/next effects and exact repair or upgrade costs")
-    print("[PASS] Status strips unreadable legacy white formatting and remains scroll-free")
+    print("[PASS] Status stays scroll-free and owns one bounded relic-collection action")
     print("[PASS] Caller item is removed while inventory and keyboard access remain")
     print("[PASS] Selected equipment enhancement and rarity fusion are both available")
     print("[PASS] Building crest migration restores facade blocks instead of carving holes")
