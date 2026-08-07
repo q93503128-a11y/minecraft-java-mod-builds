@@ -37,3 +37,5 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+
+# One-shot projection integration; remove after the Java patch lands.
