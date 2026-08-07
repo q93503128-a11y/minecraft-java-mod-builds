@@ -55,7 +55,10 @@ public final class ErdenKingdomExteriorBuilder {
                 || !level.dimension().equals(StarterRealmManager.REALM_KEY)
                 || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
         ChunkPos chunk = event.getChunk().getPos();
-        if (!intersectsExterior(chunk)) return;
+        boolean exteriorChunk = intersectsExterior(chunk);
+        boolean residenceChunk = ErdenExteriorResidenceCatalog.residenceChunk(
+                chunk.x(), chunk.z());
+        if (!exteriorChunk && !residenceChunk) return;
         long packed = pack(chunk.x(), chunk.z());
         if (isCi() && !CI_REQUIRED.contains(packed)) return;
         enqueue(level, packed, false);
@@ -94,8 +97,26 @@ public final class ErdenKingdomExteriorBuilder {
         ConstructionDebrisCleaner.cleanStreamedChunkCompletion(level, chunk);
         ErdenKingdomExteriorSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomExteriorSavedData.TYPE);
-        data.markChunk(active.packed, EXTERIOR_REVISION, active.plan.appliedWrites());
-        markCompletedNodeAnchors(data);
+        if (active.buildExterior) {
+            data.markChunk(active.packed, EXTERIOR_REVISION, active.plan.appliedWrites());
+            markCompletedNodeAnchors(data);
+        }
+        if (active.buildResidences) {
+            List<ErdenExteriorResidenceCatalog.ResidencePlot> plots =
+                    ErdenExteriorResidenceCatalog.forChunk(active.chunkX, active.chunkZ);
+            for (ErdenExteriorResidenceCatalog.ResidencePlot plot : plots) {
+                if (!ErdenExteriorResidenceBuilder.validateLoadedResidence(level, plot)) {
+                    throw new IllegalStateException(
+                            "Invalid Erden exterior residence " + plot.householdId());
+                }
+            }
+            ErdenExteriorResidenceSavedData residences = level.getDataStorage()
+                    .computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE);
+            residences.markChunk(
+                    active.chunkX, active.chunkZ,
+                    ErdenExteriorResidenceBuilder.RESIDENCE_REVISION,
+                    plots, active.plan.appliedWrites());
+        }
         QUEUED.remove(active.packed);
         release(level, active.packed);
         active = null;
@@ -143,6 +164,13 @@ public final class ErdenKingdomExteriorBuilder {
         return data.nodeComplete(node.id, EXTERIOR_REVISION);
     }
 
+    public static boolean residenceBuilt(ServerLevel level, String householdId) {
+        return level.getDataStorage().computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE)
+                .householdBuilt(
+                        householdId,
+                        ErdenExteriorResidenceBuilder.RESIDENCE_REVISION);
+    }
+
     private static void reset(MinecraftServer server) {
         activeServer = server;
         PENDING.clear();
@@ -185,13 +213,18 @@ public final class ErdenKingdomExteriorBuilder {
 
         ErdenKingdomExteriorSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomExteriorSavedData.TYPE);
+        ErdenExteriorResidenceSavedData residences = level.getDataStorage()
+                .computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE);
         for (int forced = 0; forced < CI_FORCE_BUDGET
                 && !CI_REQUESTS.isEmpty()
                 && RETAINED.size() < CI_MAX_IN_FLIGHT; forced++) {
             long packed = CI_REQUESTS.removeFirst();
-            if (!data.needs(packed, EXTERIOR_REVISION)) continue;
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
+            if (!data.needs(packed, EXTERIOR_REVISION)
+                    && !residences.needsChunk(
+                    chunkX, chunkZ,
+                    ErdenExteriorResidenceBuilder.RESIDENCE_REVISION)) continue;
             if (level.hasChunk(chunkX, chunkZ)) {
                 enqueue(level, packed, true);
                 continue;
@@ -207,7 +240,14 @@ public final class ErdenKingdomExteriorBuilder {
     private static void enqueue(ServerLevel level, long packed, boolean priority) {
         ErdenKingdomExteriorSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomExteriorSavedData.TYPE);
-        if (!data.needs(packed, EXTERIOR_REVISION)) {
+        ErdenExteriorResidenceSavedData residences = level.getDataStorage()
+                .computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE);
+        int chunkX = unpackX(packed);
+        int chunkZ = unpackZ(packed);
+        if (!data.needs(packed, EXTERIOR_REVISION)
+                && !residences.needsChunk(
+                chunkX, chunkZ,
+                ErdenExteriorResidenceBuilder.RESIDENCE_REVISION)) {
             release(level, packed);
             return;
         }
@@ -222,33 +262,48 @@ public final class ErdenKingdomExteriorBuilder {
     private static void startNext(ServerLevel level) {
         ErdenKingdomExteriorSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomExteriorSavedData.TYPE);
+        ErdenExteriorResidenceSavedData residences = level.getDataStorage()
+                .computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE);
         while (!PENDING.isEmpty()) {
             long packed = PENDING.removeFirst();
-            if (!data.needs(packed, EXTERIOR_REVISION)) {
+            int chunkX = unpackX(packed);
+            int chunkZ = unpackZ(packed);
+            boolean buildExterior = data.needs(packed, EXTERIOR_REVISION);
+            boolean buildResidences = residences.needsChunk(
+                    chunkX, chunkZ,
+                    ErdenExteriorResidenceBuilder.RESIDENCE_REVISION);
+            if (!buildExterior && !buildResidences) {
                 QUEUED.remove(packed);
                 release(level, packed);
                 continue;
             }
-            int chunkX = unpackX(packed);
-            int chunkZ = unpackZ(packed);
             if (!level.hasChunk(chunkX, chunkZ)) {
                 QUEUED.remove(packed);
                 release(level, packed);
                 continue;
             }
             ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
-            IncrementalWorldEditPlan plan = createChunkPlan(level, chunk);
-            active = new ActiveChunk(packed, chunkX, chunkZ, plan);
+            IncrementalWorldEditPlan plan = createChunkPlan(
+                    level, chunk, buildExterior, buildResidences);
+            active = new ActiveChunk(
+                    packed, chunkX, chunkZ,
+                    buildExterior, buildResidences, plan);
             LivingKingdoms.LOGGER.debug(
-                    "Prepared Erden exterior chunk {},{} writes={} operations={}",
-                    chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount());
+                    "Prepared Erden exterior chunk {},{} writes={} operations={} exterior={} residences={}",
+                    chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount(),
+                    buildExterior, buildResidences);
             return;
         }
     }
 
-    private static IncrementalWorldEditPlan createChunkPlan(ServerLevel level, ChunkPos chunk) {
+    private static IncrementalWorldEditPlan createChunkPlan(
+            ServerLevel level,
+            ChunkPos chunk,
+            boolean buildExterior,
+            boolean buildResidences) {
         IncrementalWorldEditPlan plan = new IncrementalWorldEditPlan();
-        for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
+        if (buildExterior) {
+            for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
             addApproachRoad(plan, level, chunk, node);
             if (!intersectsSite(chunk, node)) continue;
             addSiteTerrain(plan, level, chunk, node);
@@ -265,7 +320,14 @@ public final class ErdenKingdomExteriorBuilder {
                 case "river_wharf" -> addWharf(plan, level, chunk, node);
                 default -> throw new IllegalStateException("Unknown Erden supply role " + node.role);
             }
-            addStorageYard(plan, chunk, node);
+                addStorageYard(plan, chunk, node);
+            }
+        }
+        if (buildResidences) {
+            for (ErdenExteriorResidenceCatalog.ResidencePlot plot :
+                    ErdenExteriorResidenceCatalog.forChunk(chunk.x(), chunk.z())) {
+                ErdenExteriorResidenceBuilder.addChunk(plan, level, chunk, plot);
+            }
         }
         return plan;
     }
@@ -730,9 +792,21 @@ public final class ErdenKingdomExteriorBuilder {
         if (ciPassed || !isCi()) return;
         ErdenKingdomExteriorSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomExteriorSavedData.TYPE);
+        ErdenExteriorResidenceSavedData residences = level.getDataStorage()
+                .computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE);
         if (data.completedNodeCount(EXTERIOR_REVISION) != ErdenKingdomSupplyCatalog.nodes().size()
                 || data.builtChunkCount(EXTERIOR_REVISION) < 70
-                || data.totalWrites(EXTERIOR_REVISION) <= 0L) return;
+                || data.totalWrites(EXTERIOR_REVISION) <= 0L
+                || residences.builtChunkCount(
+                ErdenExteriorResidenceBuilder.RESIDENCE_REVISION)
+                != ErdenExteriorResidenceCatalog.EXPECTED_RESIDENCES
+                || residences.builtHouseholdCount(
+                ErdenExteriorResidenceBuilder.RESIDENCE_REVISION)
+                != ErdenExteriorResidenceCatalog.EXPECTED_RESIDENCES
+                || residences.totalWrites(
+                ErdenExteriorResidenceBuilder.RESIDENCE_REVISION) <= 0L
+                || !residences.missingHouseholds(
+                ErdenExteriorResidenceBuilder.RESIDENCE_REVISION).isEmpty()) return;
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
             BlockPos storage = storagePosition(level, node);
             if (!level.hasChunkAt(storage)
@@ -740,10 +814,19 @@ public final class ErdenKingdomExteriorBuilder {
         }
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_KINGDOM_EXTERIOR_PASS revision={} nodes={} producers={} wharves={} anchor_chunks={} writes={} metre_scale=true streamed=true external_buildings=true fields=true paddocks=true mines=true mills=true docks=true roads=true storage_yards=true debris_zero=true",
+                "LK_ERDEN_KINGDOM_EXTERIOR_PASS revision={} nodes={} producers={} wharves={} anchor_chunks={} writes={} residences={} attached_quarters={} detached_cottages={} residence_chunks={} doors={} beds={} storage={} hearths={} metre_scale=true streamed=true external_buildings=true fields=true paddocks=true mines=true mills=true docks=true roads=true storage_yards=true physical_residences=true access_paths=true debris_zero=true",
                 EXTERIOR_REVISION, ErdenKingdomSupplyCatalog.nodes().size(),
                 ErdenKingdomSupplyCatalog.producerCount(), ErdenKingdomSupplyCatalog.wharfCount(),
-                data.builtChunkCount(EXTERIOR_REVISION), data.totalWrites(EXTERIOR_REVISION));
+                data.builtChunkCount(EXTERIOR_REVISION), data.totalWrites(EXTERIOR_REVISION),
+                ErdenExteriorResidenceCatalog.EXPECTED_RESIDENCES,
+                ErdenExteriorResidenceCatalog.EXPECTED_ATTACHED_QUARTERS,
+                ErdenExteriorResidenceCatalog.EXPECTED_DETACHED_COTTAGES,
+                residences.builtChunkCount(ErdenExteriorResidenceBuilder.RESIDENCE_REVISION),
+                ErdenExteriorResidenceCatalog.EXPECTED_RESIDENCES,
+                ErdenExteriorResidenceCatalog.EXPECTED_RESIDENCES
+                        * ErdenExteriorResidenceBuilder.BEDS_PER_RESIDENCE,
+                ErdenExteriorResidenceCatalog.EXPECTED_RESIDENCES,
+                ErdenExteriorResidenceCatalog.EXPECTED_RESIDENCES);
     }
 
     private static int baseY(ErdenKingdomSupplyCatalog.SupplyNode node) {
@@ -782,6 +865,8 @@ public final class ErdenKingdomExteriorBuilder {
             long packed,
             int chunkX,
             int chunkZ,
+            boolean buildExterior,
+            boolean buildResidences,
             IncrementalWorldEditPlan plan) {
     }
 }

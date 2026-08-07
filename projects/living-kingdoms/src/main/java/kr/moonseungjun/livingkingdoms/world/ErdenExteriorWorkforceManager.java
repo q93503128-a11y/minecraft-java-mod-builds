@@ -174,11 +174,14 @@ public final class ErdenExteriorWorkforceManager {
 
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
             int requiredWorkers = requiredWorkers(node.role);
-            int householdCount = (requiredWorkers + 1) / 2;
+            List<ErdenExteriorResidenceCatalog.ResidencePlot> residencePlots =
+                    ErdenExteriorResidenceCatalog.forNode(node.id);
+            int householdCount = residencePlots.size();
             int assignedWorkers = 0;
             for (int localHousehold = 0; localHousehold < householdCount; localHousehold++) {
-                int[] offset = HOME_OFFSETS[localHousehold];
-                String householdId = "erden_exterior_household_%03d".formatted(globalHousehold + 1);
+                ErdenExteriorResidenceCatalog.ResidencePlot residence =
+                        residencePlots.get(localHousehold);
+                String householdId = residence.householdId();
                 String familyName = familyName(globalHousehold);
                 List<ErdenExteriorWorkforceSavedData.Resident> residents = new ArrayList<>();
                 for (int adultSlot = 0; adultSlot < 2 && assignedWorkers < requiredWorkers; adultSlot++) {
@@ -206,7 +209,7 @@ public final class ErdenExteriorWorkforceManager {
                 globalDependent++;
                 households.add(new ErdenExteriorWorkforceSavedData.Household(
                         householdId, familyName, node.id, node.role,
-                        node.x + offset[0], node.z + offset[1], residents));
+                        residence.parcelX(), residence.parcelZ(), residents));
                 globalHousehold++;
             }
         }
@@ -343,6 +346,7 @@ public final class ErdenExteriorWorkforceManager {
             ErdenKingdomSupplyCatalog.SupplyNode node = ErdenKingdomSupplyCatalog.node(household.nodeId());
             if (node == null
                     || !ErdenKingdomExteriorBuilder.anchorBuilt(level, node)
+                    || !ErdenKingdomExteriorBuilder.residenceBuilt(level, household.id())
                     || !level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)) continue;
             for (ErdenExteriorWorkforceSavedData.Resident resident : household.residents()) {
                 if (spawned >= SPAWN_BUDGET) break;
@@ -361,10 +365,11 @@ public final class ErdenExteriorWorkforceManager {
         if (villagerType == null) return false;
         Entity created = villagerType.create(level, EntitySpawnReason.COMMAND);
         if (!(created instanceof Villager villager)) return false;
-        int x = household.homeX() + resident.bedSlot() - 1;
-        int z = household.homeZ() + 2 + resident.bedSlot();
-        int preferredY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z)) + 2;
-        int standingY = safeStandingY(level, x, preferredY, z);
+        BlockPos spawn = ErdenExteriorResidenceBuilder.residentSpawnPosition(
+                household.id(), resident.bedSlot());
+        int x = spawn.getX();
+        int z = spawn.getZ();
+        int standingY = safeStandingY(level, x, spawn.getY(), z);
         villager.setPos(x + 0.5D, standingY, z + 0.5D);
         villager.setCustomName(Component.literal(resident.name()));
         villager.setCustomNameVisible(false);
@@ -405,11 +410,16 @@ public final class ErdenExteriorWorkforceManager {
         ErdenKingdomSupplyCatalog.SupplyNode node =
                 ErdenKingdomSupplyCatalog.node(reference.household().nodeId());
         if (node == null) return null;
-        int x = workplace ? node.x : reference.household().homeX();
-        int z = workplace ? node.z : reference.household().homeZ();
+        BlockPos destination = workplace
+                ? new BlockPos(
+                node.x,
+                (int) Math.round(AuthoredContinentDensity.surfaceHeight(node.x, node.z)) + 2,
+                node.z)
+                : ErdenExteriorResidenceBuilder.homeTarget(reference.household().id());
+        int x = destination.getX();
+        int z = destination.getZ();
         if (!level.hasChunk(x >> 4, z >> 4)) return null;
-        int preferredY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z)) + 2;
-        return new Target(x, safeStandingY(level, x, preferredY, z), z);
+        return new Target(x, safeStandingY(level, x, destination.getY(), z), z);
     }
 
     private static void verifyCi(

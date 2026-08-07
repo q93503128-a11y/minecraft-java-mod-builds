@@ -497,6 +497,7 @@ public final class ErdenExteriorLifecycleManager {
             if (person.founder() || !person.aliveOn(day) || existing.contains(person.name())) continue;
             ErdenExteriorWorkforceSavedData.Household household = households.get(person.householdId());
             if (household == null
+                    || !ErdenKingdomExteriorBuilder.residenceBuilt(level, household.id())
                     || !level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)) continue;
             ErdenKingdomSupplyCatalog.SupplyNode node = ErdenKingdomSupplyCatalog.node(person.nodeId());
             if (node == null || !ErdenKingdomExteriorBuilder.anchorBuilt(level, node)) continue;
@@ -515,10 +516,14 @@ public final class ErdenExteriorLifecycleManager {
         Entity created = villagerType.create(level, EntitySpawnReason.COMMAND);
         if (!(created instanceof Villager villager)) return false;
         int slot = Math.floorMod(person.id().hashCode(), 4);
-        int x = household.homeX() + slot - 1;
-        int z = household.homeZ() + 4 + (slot & 1);
-        int preferredY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z)) + 2;
-        villager.setPos(x + 0.5D, safeStandingY(level, x, preferredY, z), z + 0.5D);
+        BlockPos spawn = ErdenExteriorResidenceBuilder.residentSpawnPosition(
+                household.id(), slot);
+        int x = spawn.getX();
+        int z = spawn.getZ();
+        villager.setPos(
+                x + 0.5D,
+                safeStandingY(level, x, spawn.getY(), z),
+                z + 0.5D);
         villager.setCustomName(Component.literal(person.name()));
         villager.setCustomNameVisible(false);
         villager.setPersistenceRequired();
@@ -570,11 +575,16 @@ public final class ErdenExteriorLifecycleManager {
                     && ageYears(person, day) >= ADULT_AGE
                     && !absentOnDay(person.id(), person.restDay(), node.role, day)
                     && inShift(dayTime, person.shiftStart(), person.shiftEnd());
-            int x = working ? node.x : household.homeX();
-            int z = working ? node.z : household.homeZ();
+            BlockPos destination = working
+                    ? new BlockPos(
+                    node.x,
+                    (int) Math.round(AuthoredContinentDensity.surfaceHeight(node.x, node.z)) + 2,
+                    node.z)
+                    : ErdenExteriorResidenceBuilder.homeTarget(household.id());
+            int x = destination.getX();
+            int z = destination.getZ();
             if (!level.hasChunk(x >> 4, z >> 4)) continue;
-            int preferredY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z)) + 2;
-            int y = safeStandingY(level, x, preferredY, z);
+            int y = safeStandingY(level, x, destination.getY(), z);
             villager.setPersistenceRequired();
             if (villager.distanceToSqr(x + 0.5D, y, z + 0.5D) > 4.0D) {
                 villager.getNavigation().moveTo(x + 0.5D, y, z + 0.5D, 0.56D);
