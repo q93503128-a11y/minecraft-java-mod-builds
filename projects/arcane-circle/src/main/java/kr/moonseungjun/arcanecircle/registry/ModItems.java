@@ -3,6 +3,7 @@ package kr.moonseungjun.arcanecircle.registry;
 import kr.moonseungjun.arcanecircle.ArcaneCircle;
 import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem;
 import kr.moonseungjun.arcanecircle.item.ArcaneStaffItem.StaffProfile;
+import kr.moonseungjun.arcanecircle.item.ArcaneTestKitItem;
 import kr.moonseungjun.arcanecircle.item.BeginnerGrimoireItem;
 import kr.moonseungjun.arcanecircle.item.SpellbookItem;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
@@ -136,6 +137,8 @@ public final class ModItems {
 
     public static final DeferredItem<BeginnerGrimoireItem> BEGINNER_GRIMOIRE = ITEMS.registerItem(
             "beginner_grimoire", properties -> new BeginnerGrimoireItem(properties.rarity(Rarity.UNCOMMON)));
+    public static final DeferredItem<ArcaneTestKitItem> ARCANE_TEST_KIT = ITEMS.registerItem(
+            "arcane_test_kit", properties -> new ArcaneTestKitItem(properties.rarity(Rarity.EPIC)));
     private static final Map<String, DeferredItem<SpellbookItem>> SPELLBOOKS = registerSpellbooks();
 
     private static final List<StaffProfile> PROFILES = List.of(
@@ -187,6 +190,7 @@ public final class ModItems {
             event.accept(TEMPEST_HOOD.get()); event.accept(TEMPEST_ROBE.get()); event.accept(TEMPEST_BOOTS.get());
             event.accept(RIFT_CROWN.get()); event.accept(RIFT_ROBE.get()); event.accept(RIFT_BOOTS.get());
             event.accept(BEGINNER_GRIMOIRE.get());
+            event.accept(ARCANE_TEST_KIT.get());
             for (DeferredItem<SpellbookItem> item : SPELLBOOKS.values()) event.accept(item.get());
         }
     }

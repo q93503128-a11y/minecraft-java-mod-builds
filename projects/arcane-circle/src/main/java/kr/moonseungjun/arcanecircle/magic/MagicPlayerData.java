@@ -166,6 +166,27 @@ public final class MagicPlayerData extends SavedData {
         }
     }
 
+    /** Creative test expansion; it only raises/adds progression and never deletes learned state. */
+    public int enableCreativeTestProfile(ServerPlayer player) {
+        MageState state=state(player);
+        state.circle=SpellCatalog.IMPLEMENTED_MAX_CIRCLE;
+        state.insight=1_000_000;
+        int unlocked=0;
+        for(SpellDefinition spell:SpellCatalog.spells().values()){
+            if(state.known.add(spell.id()))unlocked++;
+            state.mastery.put(spell.id(),Math.max(100_000,
+                    SpellCatalog.isFusionResult(spell.id())?SpellCatalog.masteryRequired(spell.id()):0));
+        }
+        List<SpellDefinition> top=SpellCatalog.spells().values().stream()
+                .sorted(Comparator.comparingInt(SpellDefinition::circle).reversed()
+                        .thenComparing(SpellDefinition::id)).limit(5).toList();
+        for(int i=0;i<state.slots.size();i++)state.slots.set(i,i<top.size()?top.get(i).id():"");
+        state.cooldowns.clear();
+        state.mana=effectiveStats(player).maxMana();
+        setDirty();
+        return unlocked;
+    }
+
     public EffectiveStats effectiveStats(ServerPlayer player) {
         MageState state = state(player);
         StaffProfile staff = ModItems.equipped(player);

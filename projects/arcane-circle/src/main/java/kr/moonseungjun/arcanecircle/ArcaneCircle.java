@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.12";
+    public static final String VERSION = "0.12.1-alpha.15";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -43,6 +43,7 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(RpgScaleService::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(MageGearService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneVitalityService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneMageService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneEncounterService::onDeath);

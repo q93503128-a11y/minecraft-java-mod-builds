@@ -189,10 +189,11 @@ public final class ArcaneMageService {
     private static void startCast(ServerLevel level, Mob caster, LivingEntity target,
                                   MageProfile profile, long now, boolean hostile) {
         if (target == null || !target.isAlive()) return;
-        SpellDefinition visual = visualSpell(profile);
-        int required = Math.max(8, 12 + profile.circle() * 2);
+        SpellDefinition visual = chooseCombatSpell(caster, profile);
+        int required = Math.max(8, 8 + visual.circle() * 3);
         double range = Math.min(36.0, Math.max(8.0, Math.sqrt(caster.distanceToSqr(target)) + 2.0));
-        double power = spellDamage(profile, hostile ? 1.08F : 1.0F);
+        double power = spellDamage(profile, hostile ? 1.08F : 1.0F)
+                * (0.76 + visual.circle() * 0.055);
         CASTS.put(caster.getUUID(), new NpcCast(target.getUUID(), visual.id(), now,
                 required, range, power, hostile));
         caster.setTarget(target);
@@ -216,7 +217,7 @@ public final class ArcaneMageService {
         }
         caster.setTarget(target);
         caster.getLookControl().setLookAt(target, 35.0F, 35.0F);
-        SpellDefinition spell = SpellCatalog.spell(cast.spellId()).orElseGet(() -> visualSpell(profile));
+        SpellDefinition spell = SpellCatalog.spell(cast.spellId()).orElseGet(() -> chooseCombatSpell(caster, profile));
         long elapsed = now - cast.startedAt();
         double progress = Math.min(1.0, elapsed / (double) Math.max(1, cast.requiredTicks()));
         WorldMagicService.charge(caster, target, spell, progress, cast.range(), cast.power());
@@ -290,16 +291,34 @@ public final class ArcaneMageService {
         AGGRO_UNTIL.put(caster.getUUID(), now + RETALIATION_TICKS);
     }
 
-    private static SpellDefinition visualSpell(MageProfile profile) {
-        String id = switch (profile.affiliation()) {
-            case ARCANE -> profile.circle() >= 3 ? "lightning_bolt" : "magic_missile";
-            case DIVINE -> profile.circle() >= 6 ? "sunbeam" : "magic_missile";
-            case OCCULT -> profile.circle() >= 4 ? "void_lance" : "chromatic_orb";
-            case PRIMAL -> profile.circle() >= 3 ? "fireball" : "fire_bolt";
-            default -> "magic_missile";
+    /** High-circle mages favor high magic but deliberately retain mid/low-circle choices. */
+    private static SpellDefinition chooseCombatSpell(Mob caster, MageProfile profile) {
+        int circle=Math.max(1,Math.min(9,profile.circle()));
+        List<SpellDefinition> all=SpellCatalog.spells().values().stream()
+                .filter(spell->spell.circle()<=circle)
+                .filter(spell->SpellCatalog.isDamaging(spell.id())).toList();
+        if(all.isEmpty())return SpellCatalog.spell("magic_missile").orElseThrow();
+        int roll=caster.getRandom().nextInt(100),minCircle,maxCircle;
+        if(circle>=6&&roll<55){minCircle=Math.max(1,circle-1);maxCircle=circle;}
+        else if(circle>=4&&roll<85){minCircle=Math.max(2,circle-4);maxCircle=Math.max(minCircle,circle-2);}
+        else{minCircle=1;maxCircle=Math.max(1,circle/2);}
+        List<SpellDefinition> band=all.stream()
+                .filter(spell->spell.circle()>=minCircle&&spell.circle()<=maxCircle).toList();
+        if(band.isEmpty())band=all;
+        List<SpellDefinition> themed=band.stream()
+                .filter(spell->preferredSchool(profile.affiliation(),spell.school())).toList();
+        List<SpellDefinition> candidates=themed.isEmpty()?band:themed;
+        return candidates.get(caster.getRandom().nextInt(candidates.size()));
+    }
+
+    private static boolean preferredSchool(MagicTradition affiliation, SpellDefinition.School school) {
+        return switch(affiliation){
+            case ARCANE -> school==SpellDefinition.School.ARCANE||school==SpellDefinition.School.SPACE||school==SpellDefinition.School.WARD;
+            case DIVINE -> school==SpellDefinition.School.LIFE||school==SpellDefinition.School.WARD||school==SpellDefinition.School.ARCANE;
+            case OCCULT -> school==SpellDefinition.School.SPACE||school==SpellDefinition.School.ARCANE||school==SpellDefinition.School.FROST;
+            case PRIMAL -> school==SpellDefinition.School.FIRE||school==SpellDefinition.School.FROST||school==SpellDefinition.School.WIND;
+            default -> true;
         };
-        return SpellCatalog.spell(id)
-                .orElseGet(() -> SpellCatalog.spell("magic_missile").orElseThrow());
     }
 
     private static MageProfile profile(Entity entity) {
