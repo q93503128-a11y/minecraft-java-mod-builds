@@ -2,6 +2,8 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -25,6 +27,9 @@ public final class ErdenExteriorResidenceBuilder {
     public static final int WIDTH = 9;
     public static final int DEPTH = 9;
     public static final int BEDS_PER_RESIDENCE = 3;
+
+    private static final Identifier BED_ID =
+            Identifier.fromNamespaceAndPath("minecraft", "red_bed");
 
     private ErdenExteriorResidenceBuilder() {
     }
@@ -81,7 +86,7 @@ public final class ErdenExteriorResidenceBuilder {
                 || !level.getBlockState(door).is(Blocks.SPRUCE_DOOR)
                 || !level.getBlockState(doorUpper).is(Blocks.SPRUCE_DOOR)) return false;
         for (BlockPos bed : bedFootPositions(plot)) {
-            if (!level.getBlockState(bed).is(Blocks.RED_BED)) return false;
+            if (!level.getBlockState(bed).is(bedBlock())) return false;
         }
         if (!level.getBlockState(storagePosition(plot)).is(Blocks.BARREL)
                 || !level.getBlockState(hearthPosition(plot)).is(Blocks.FURNACE)
@@ -230,7 +235,7 @@ public final class ErdenExteriorResidenceBuilder {
             IncrementalWorldEditPlan plan,
             Footprint footprint,
             int baseY) {
-        BlockState foot = Blocks.RED_BED.defaultBlockState()
+        BlockState foot = bedBlock().defaultBlockState()
                 .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
                 .setValue(BlockStateProperties.BED_PART, BedPart.FOOT);
         BlockState head = foot.setValue(BlockStateProperties.BED_PART, BedPart.HEAD);
@@ -318,6 +323,12 @@ public final class ErdenExteriorResidenceBuilder {
         int baseY = (int) Math.round(
                 AuthoredContinentDensity.surfaceHeight(centerX, centerZ));
         return new Footprint(plot, chunkX, chunkZ, minX, minZ, baseY, doorFacing);
+    }
+
+    private static Block bedBlock() {
+        return BuiltInRegistries.BLOCK.getOptional(BED_ID)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Missing registered Erden residence bed " + BED_ID));
     }
 
     private static void addSet(
