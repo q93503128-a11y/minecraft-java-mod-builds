@@ -248,7 +248,8 @@ public final class ErdenExteriorResidenceBuilder {
         addSet(plan, storagePosition(plot), Blocks.BARREL);
         addSet(plan, hearthPosition(plot), Blocks.FURNACE);
         addSet(plan, workPosition(plot), Blocks.CRAFTING_TABLE);
-        addSet(plan, lightPosition(plot), Blocks.LANTERN);
+        addSet(plan, lightPosition(plot), Blocks.LANTERN.defaultBlockState()
+                .setValue(BlockStateProperties.HANGING, true));
         plan.addSet(footprint.minX() + 5, baseY + 2,
                 footprint.minZ() + 6, Blocks.OAK_FENCE);
         plan.addSet(footprint.minX() + 5, baseY + 3,
@@ -262,7 +263,7 @@ public final class ErdenExteriorResidenceBuilder {
         BlockPos door = doorPosition(plot);
         Direction outward = footprint.doorFacing();
         for (int distance = 1; distance <= 5; distance++) {
-            BlockPos position = door.relative(outward, distance).below(2);
+            BlockPos position = door.relative(outward, distance).below();
             if ((position.getX() >> 4) != footprint.chunkX()
                     || (position.getZ() >> 4) != footprint.chunkZ()) break;
             addSet(plan, position, Blocks.DIRT_PATH);
@@ -280,7 +281,7 @@ public final class ErdenExteriorResidenceBuilder {
             ErdenExteriorResidenceCatalog.ResidencePlot plot) {
         Footprint footprint = footprint(plot);
         BlockPos door = doorPosition(plot);
-        BlockPos first = door.relative(footprint.doorFacing()).below(2);
+        BlockPos first = door.relative(footprint.doorFacing()).below();
         if ((first.getX() >> 4) == footprint.chunkX()
                 && (first.getZ() >> 4) == footprint.chunkZ()) return first;
         return door.relative(footprint.doorFacing()).below();
