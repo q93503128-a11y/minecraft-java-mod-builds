@@ -82,16 +82,29 @@ public final class ErdenExteriorResidenceBuilder {
         Footprint footprint = footprint(plot);
         BlockPos door = doorPosition(plot);
         BlockPos doorUpper = door.above();
-        if (!level.hasChunkAt(door)
-                || !level.getBlockState(door).is(Blocks.SPRUCE_DOOR)
-                || !level.getBlockState(doorUpper).is(Blocks.SPRUCE_DOOR)) return false;
-        for (BlockPos bed : bedFootPositions(plot)) {
-            if (!level.getBlockState(bed).is(bedBlock())) return false;
+        if (!level.hasChunkAt(door)) return false;
+        BlockState lowerDoor = level.getBlockState(door);
+        BlockState upperDoor = level.getBlockState(doorUpper);
+        if (!lowerDoor.is(Blocks.SPRUCE_DOOR)
+                || lowerDoor.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF)
+                != DoubleBlockHalf.LOWER
+                || !upperDoor.is(Blocks.SPRUCE_DOOR)
+                || upperDoor.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF)
+                != DoubleBlockHalf.UPPER) return false;
+        for (BlockPos footPosition : bedFootPositions(plot)) {
+            BlockState foot = level.getBlockState(footPosition);
+            BlockState head = level.getBlockState(footPosition.east());
+            if (!foot.is(bedBlock())
+                    || foot.getValue(BlockStateProperties.BED_PART) != BedPart.FOOT
+                    || !head.is(bedBlock())
+                    || head.getValue(BlockStateProperties.BED_PART) != BedPart.HEAD) return false;
         }
+        BlockState lantern = level.getBlockState(lightPosition(plot));
         if (!level.getBlockState(storagePosition(plot)).is(Blocks.BARREL)
                 || !level.getBlockState(hearthPosition(plot)).is(Blocks.FURNACE)
                 || !level.getBlockState(workPosition(plot)).is(Blocks.CRAFTING_TABLE)
-                || !level.getBlockState(lightPosition(plot)).is(Blocks.LANTERN)) return false;
+                || !lantern.is(Blocks.LANTERN)
+                || !lantern.getValue(BlockStateProperties.HANGING)) return false;
         BlockPos path = accessPathSample(plot);
         return level.getBlockState(path).is(Blocks.DIRT_PATH)
                 || level.getBlockState(path).is(Blocks.COBBLESTONE);

@@ -17,6 +17,7 @@ public final class IncrementalWorldEditPlan {
     private static final ThreadLocal<IncrementalWorldEditPlan> ACTIVE = new ThreadLocal<>();
     private static final int CONSTRUCTION_UPDATE_FLAGS =
             Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
+    private static final long MAX_APPLY_NANOS = 40_000_000L;
 
     private final List<Operation> operations = new ArrayList<>();
     private final Map<Long, Integer> originalSurfaceHeights = new HashMap<>();
@@ -111,9 +112,12 @@ public final class IncrementalWorldEditPlan {
     public int apply(ServerLevel level, int budget) {
         flushPendingTerrainColumn();
         int used = 0;
+        long deadline = System.nanoTime() + MAX_APPLY_NANOS;
         while (operationIndex < operations.size() && used < budget) {
+            if (used > 0 && System.nanoTime() >= deadline) break;
             Operation operation = operations.get(operationIndex);
-            int consumed = operation.apply(level, budget - used);
+            int consumed = operation.apply(level, budget - used, deadline);
+            if (consumed <= 0) break;
             used += consumed;
             appliedWrites += consumed;
             if (operation.done()) operationIndex++;
@@ -176,7 +180,7 @@ public final class IncrementalWorldEditPlan {
     }
 
     private interface Operation {
-        int apply(ServerLevel level, int budget);
+        int apply(ServerLevel level, int budget, long deadline);
         boolean done();
     }
 
@@ -187,8 +191,8 @@ public final class IncrementalWorldEditPlan {
         private SetOperation(int x, int y, int z, BlockState state) {
             this.x = x; this.y = y; this.z = z; this.state = state;
         }
-        @Override public int apply(ServerLevel level, int budget) {
-            if (done || budget <= 0) return 0;
+        @Override public int apply(ServerLevel level, int budget, long deadline) {
+            if (done || budget <= 0 || System.nanoTime() >= deadline) return 0;
             write(level, x, y, z, state);
             done = true;
             return 1;
@@ -207,9 +211,10 @@ public final class IncrementalWorldEditPlan {
             this.maxX = maxX; this.maxY = maxY; this.maxZ = maxZ;
             this.state = state; this.x = minX; this.y = minY; this.z = minZ;
         }
-        @Override public int apply(ServerLevel level, int budget) {
+        @Override public int apply(ServerLevel level, int budget, long deadline) {
             int used = 0;
-            while (!done && used < budget) {
+            while (!done && used < budget
+                    && (used == 0 || System.nanoTime() < deadline)) {
                 write(level, x, y, z, state);
                 used++;
                 advance();
