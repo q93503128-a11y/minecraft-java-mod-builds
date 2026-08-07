@@ -51,6 +51,12 @@ before the last residence finished, which made a later all-loaded scan fail fore
 ticket audit still requires all 18 storage yards to have been physically observed before all 104
 transient exterior tickets may be released.
 
+Capital authored-road normalization follows the same cross-chunk safety rule as streamed construction.
+Its direct block writes use client updates, known-shape suppression and drop suppression together, so a
+road or culvert cell at a chunk edge cannot trigger neighbor-shape resolution that synchronously loads an
+unloaded adjacent chunk. This rule is enforced by the permanent authored-road audit after a watchdog
+proved that ordinary neighbor updates could otherwise block the server thread for a full minute.
+
 ## Required regression proof
 
 The permanent residence audit must compile with Java 25 and create a fresh realm proving:
@@ -65,5 +71,6 @@ The permanent residence audit must compile with Java 25 and create a fresh realm
 - each storage-anchor chunk retained until its physical storage barrel has been observed;
 - all 18 physical storage yards observed before all 104 transient exterior tickets are released;
 - exterior completion based on persisted construction ledgers plus authoritative physical observations, not simultaneous chunk residency;
+- authored road and culvert repair without synchronous cross-chunk neighbor loads;
 - the existing estate, lifecycle, workforce, 104-chunk exterior, ticket-release and supply-chain proofs;
 - no watchdog, synchronous chunk load, invalid block entity or invalid residence errors.
