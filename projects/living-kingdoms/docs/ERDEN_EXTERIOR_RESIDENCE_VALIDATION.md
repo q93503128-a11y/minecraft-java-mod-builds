@@ -25,8 +25,8 @@ entry is an explicit construction error rather than a silent fallback.
 Physical construction is tracked in the separate `erden_exterior_residences` ledger. The existing
 exterior production revision is not raised. On an old world, already completed farms, ranches, mines,
 mills, wharves and storage yards remain complete; only missing residence parcel chunks are scheduled.
-A residence is marked complete only after its door, beds, storage, hearth, work surface, light and
-access path are observed in the loaded chunk.
+A residence is marked complete only after its door, complete bed foot/head pairs, storage, hearth,
+work surface, hanging light and every planned access-path cell are observed in the loaded chunk.
 
 The residence catalog reproduces the existing 74 household IDs and parcel coordinates exactly. The
 workforce initializer now consumes that catalog instead of maintaining a second coordinate table.
@@ -46,10 +46,18 @@ Physical storage yards use the same rule. A storage-anchor ticket cannot be rele
 at that node's authoritative storage coordinate has actually been observed in the loaded world. The
 exterior completion marker no longer requires all 18 storage chunks to remain loaded simultaneously;
 instead it consumes the authoritative observation result recorded during the bounded ticket lifetime.
-This prevents the previous impossible ordering where early validated chunks were correctly unloaded
-before the last residence finished, which made a later all-loaded scan fail forever. The permanent
-ticket audit still requires all 18 storage yards to have been physically observed before all 104
-transient exterior tickets may be released.
+The permanent ticket audit still requires all 18 storage yards to have been physically observed before
+all 104 transient exterior tickets may be released.
+
+A coordinate audit also found that straight household access paths could physically cross storage-yard
+fixtures. The concrete failure was `erden_paper_mill_01`: household 55's second path cell and the node's
+barrel both occupied `(-1532, 76, 250)`, explaining the historical 17/18 storage observation result.
+The same geometry scan found straight-path conflicts with storage chests or hay at three additional
+settlements. Access paths are therefore storage-aware: a straight route is used only when every cell is
+clear of the authoritative barrel, hay and chest line; otherwise the path bends one metre to a free side
+inside the same parcel chunk and continues toward the work site. The physical residence validator checks
+every resulting path cell and rejects any route that still occupies a storage fixture. Household parcel
+coordinates and storage coordinates remain unchanged, preserving existing saves and supply ownership.
 
 Capital authored-road normalization follows the same cross-chunk safety rule as streamed construction.
 Its direct block writes use client updates, known-shape suppression and drop suppression together, so a
@@ -64,7 +72,7 @@ The permanent residence audit must compile with Java 25 and create a fresh realm
 - exactly 74 residence parcels, 18 attached quarters and 56 detached cottages;
 - exactly 74 completed residence chunks and household IDs;
 - 74 valid doors, 222 valid bed foot/head pairs, and 74 barrels, furnaces, crafting tables and hanging lanterns;
-- level access paths without recessed one-block trenches;
+- complete level access paths without recessed trenches or storage-fixture overlap;
 - founding residents and descendants gated on physical home completion;
 - resident spawning and home routines driven by the same authoritative residence catalog;
 - migrated residence chunks retained until the new residence ledger is complete;
@@ -73,4 +81,4 @@ The permanent residence audit must compile with Java 25 and create a fresh realm
 - exterior completion based on persisted construction ledgers plus authoritative physical observations, not simultaneous chunk residency;
 - authored road and culvert repair without synchronous cross-chunk neighbor loads;
 - the existing estate, lifecycle, workforce, 104-chunk exterior, ticket-release and supply-chain proofs;
-- no watchdog, synchronous chunk load, invalid block entity or invalid residence errors.
+- no watchdog, synchronous chunk load, invalid block entity, invalid residence or storage-path collision errors.
