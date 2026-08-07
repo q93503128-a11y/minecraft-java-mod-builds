@@ -35,7 +35,7 @@ public final class ErdenExteriorResidenceBuilder {
             ChunkPos chunk,
             ErdenExteriorResidenceCatalog.ResidencePlot plot) {
         Footprint footprint = footprint(plot);
-        if (footprint.chunkX() != chunk.x || footprint.chunkZ() != chunk.z) return;
+        if (footprint.chunkX() != (chunk.getMinBlockX() >> 4) || footprint.chunkZ() != (chunk.getMinBlockZ() >> 4)) return;
 
         Block wall = wallFor(plot.nodeRole());
         Block floor = floorFor(plot.nodeRole());
@@ -81,7 +81,7 @@ public final class ErdenExteriorResidenceBuilder {
                 || !level.getBlockState(door).is(Blocks.SPRUCE_DOOR)
                 || !level.getBlockState(doorUpper).is(Blocks.SPRUCE_DOOR)) return false;
         for (BlockPos bed : bedFootPositions(plot)) {
-            if (!level.getBlockState(bed).is(Blocks.WHITE_BED)) return false;
+            if (!level.getBlockState(bed).is(Blocks.RED_BED)) return false;
         }
         if (!level.getBlockState(storagePosition(plot)).is(Blocks.BARREL)
                 || !level.getBlockState(hearthPosition(plot)).is(Blocks.FURNACE)
@@ -207,8 +207,8 @@ public final class ErdenExteriorResidenceBuilder {
                 .setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
         BlockState upperState = lowerState
                 .setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
-        plan.addSet(lower, lowerState);
-        plan.addSet(lower.above(), upperState);
+        addSet(plan, lower, lowerState);
+        addSet(plan, lower.above(), upperState);
     }
 
     private static void addRoof(
@@ -230,13 +230,13 @@ public final class ErdenExteriorResidenceBuilder {
             IncrementalWorldEditPlan plan,
             Footprint footprint,
             int baseY) {
-        BlockState foot = Blocks.WHITE_BED.defaultBlockState()
+        BlockState foot = Blocks.RED_BED.defaultBlockState()
                 .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
                 .setValue(BlockStateProperties.BED_PART, BedPart.FOOT);
         BlockState head = foot.setValue(BlockStateProperties.BED_PART, BedPart.HEAD);
         for (BlockPos footPos : bedFootPositions(footprint.plot())) {
-            plan.addSet(footPos, foot);
-            plan.addSet(footPos.east(), head);
+            addSet(plan, footPos, foot);
+            addSet(plan, footPos.east(), head);
         }
     }
 
@@ -245,10 +245,10 @@ public final class ErdenExteriorResidenceBuilder {
             Footprint footprint,
             int baseY) {
         ErdenExteriorResidenceCatalog.ResidencePlot plot = footprint.plot();
-        plan.addSet(storagePosition(plot), Blocks.BARREL);
-        plan.addSet(hearthPosition(plot), Blocks.FURNACE);
-        plan.addSet(workPosition(plot), Blocks.CRAFTING_TABLE);
-        plan.addSet(lightPosition(plot), Blocks.LANTERN);
+        addSet(plan, storagePosition(plot), Blocks.BARREL);
+        addSet(plan, hearthPosition(plot), Blocks.FURNACE);
+        addSet(plan, workPosition(plot), Blocks.CRAFTING_TABLE);
+        addSet(plan, lightPosition(plot), Blocks.LANTERN);
         plan.addSet(footprint.minX() + 5, baseY + 2,
                 footprint.minZ() + 6, Blocks.OAK_FENCE);
         plan.addSet(footprint.minX() + 5, baseY + 3,
@@ -265,14 +265,14 @@ public final class ErdenExteriorResidenceBuilder {
             BlockPos position = door.relative(outward, distance).below(2);
             if ((position.getX() >> 4) != footprint.chunkX()
                     || (position.getZ() >> 4) != footprint.chunkZ()) break;
-            plan.addSet(position, Blocks.DIRT_PATH);
+            addSet(plan, position, Blocks.DIRT_PATH);
             plan.addFill(position.getX(), position.getY() + 1, position.getZ(),
                     position.getX(), position.getY() + 3, position.getZ(), Blocks.AIR);
         }
         BlockPos step = door.relative(outward).below();
         if ((step.getX() >> 4) == footprint.chunkX()
                 && (step.getZ() >> 4) == footprint.chunkZ()) {
-            plan.addSet(step, Blocks.COBBLESTONE);
+            addSet(plan, step, Blocks.COBBLESTONE);
         }
     }
 
@@ -317,6 +317,20 @@ public final class ErdenExteriorResidenceBuilder {
         int baseY = (int) Math.round(
                 AuthoredContinentDensity.surfaceHeight(centerX, centerZ));
         return new Footprint(plot, chunkX, chunkZ, minX, minZ, baseY, doorFacing);
+    }
+
+    private static void addSet(
+            IncrementalWorldEditPlan plan,
+            BlockPos position,
+            Block block) {
+        plan.addSet(position.getX(), position.getY(), position.getZ(), block);
+    }
+
+    private static void addSet(
+            IncrementalWorldEditPlan plan,
+            BlockPos position,
+            BlockState state) {
+        plan.addSet(position.getX(), position.getY(), position.getZ(), state);
     }
 
     private static Block wallFor(String role) {
