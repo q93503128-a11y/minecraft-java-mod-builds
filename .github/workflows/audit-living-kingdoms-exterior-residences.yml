@@ -115,9 +115,11 @@ jobs:
           pid=$!
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
 
+          failure_pattern='watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior residence|Missing registered Erden residence bed|Missing Erden exterior residence|Invalid Erden exterior estate|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Exception loading level|EventBusSubscriber.*failed|Exception caught during firing event'
           passed=0
           for attempt in $(seq 1 2400); do
-            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/exterior-residences-server.log; then
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/exterior-residences-server.log \
+              || grep -Eqi "$failure_pattern" ../../logs/exterior-residences-server.log; then
               cat ../../logs/exterior-residences-server.log
               exit 1
             fi
@@ -146,10 +148,7 @@ jobs:
           grep -F 'workforce_linked=true staffed_production=true wharf_labor=true' ../../logs/exterior-residences-server.log
           grep -F 'fixed_daily_imports=false' ../../logs/exterior-residences-server.log
           grep -F 'shipment_escrow=true' ../../logs/exterior-residences-server.log
-
-          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior residence|Missing registered Erden residence bed|Missing Erden exterior residence|Invalid Erden exterior estate|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-residences-server.log; then
-            exit 1
-          fi
+          ! grep -Eqi "$failure_pattern" ../../logs/exterior-residences-server.log
 
       - name: Upload residence audit logs
         id: upload_logs
