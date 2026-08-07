@@ -83,6 +83,7 @@ jobs:
                   'kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class',
                   'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
                   'kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class',
+                  'kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh$Builder.class',
                   'kr/moonseungjun/arcanecircle/item/ArcaneTestKitItem.class',
               }
               missing = required - names
@@ -99,10 +100,10 @@ jobs:
               if b'buildSkyRitualArray' not in tracker or b'buildQuadArray' not in tracker or b'targetOffset' not in tracker:
                   raise SystemExit('authored sigil / target-relative VFX missing')
               kinetics = z.read('kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class')
-              if b'presentationImpactDelay' not in kinetics:
+              if b'impactDelayTicks' not in kinetics or b'kineticDistance' not in kinetics:
                   raise SystemExit('presentation/server impact synchronization missing')
-              mesh = z.read('kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class')
-              if b'runeGlyph' not in mesh or b'runeRing' not in mesh:
+              mesh_builder = z.read('kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh$Builder.class')
+              if b'runeGlyph' not in mesh_builder or b'runeRing' not in mesh_builder:
                   raise SystemExit('procedural rune geometry missing')
           print('Arcane Circle alpha.17 JAR audit: PASS')
           PY
