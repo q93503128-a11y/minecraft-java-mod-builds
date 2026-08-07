@@ -61,8 +61,12 @@ public final class VillageRpgSystem {
             value *= VillageSkillTreeSystem.movingDamageMultiplier(attacker);
             value *= projectile ? VillageSkillTreeSystem.projectileDamageMultiplier(attacker) : 1.0f;
             value *= VillageEquipmentShop.outgoingMultiplier(attacker, projectile);
+            value *= projectile
+                    ? VillageRelicSystem.projectileMultiplier(attacker)
+                    : VillageRelicSystem.meleeMultiplier(attacker);
             if (event.getEntity() instanceof Monster monster) {
                 value *= VillageSkillTreeSystem.executionMultiplier(attacker, monster.getHealth(), monster.getMaxHealth());
+                value *= VillageRelicSystem.executionMultiplier(attacker, monster.getHealth(), monster.getMaxHealth());
                 if (projectile) {
                     value *= VillageSkillTreeSystem.projectileExecutionMultiplier(
                             attacker, monster.getHealth(), monster.getMaxHealth());
@@ -77,6 +81,7 @@ public final class VillageRpgSystem {
             value *= VillageSkillTreeSystem.lowHealthIncomingMultiplier(defender);
             value *= VillageSkillTreeSystem.sprintIncomingMultiplier(defender);
             value *= VillageEquipmentShop.incomingMultiplier(defender);
+            value *= VillageRelicSystem.incomingMultiplier(defender);
             if (VillageCouncilState.isInsideVillage(defender)) value *= VillageProgressionSystem.wallDamageMultiplier();
             event.setAmount(event.getAmount() * value);
         }
