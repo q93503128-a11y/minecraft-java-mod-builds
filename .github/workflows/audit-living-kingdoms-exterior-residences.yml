@@ -1,0 +1,188 @@
+name: Audit Living Kingdoms exterior residences
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/audit-living-kingdoms-exterior-residences.yml'
+
+concurrency:
+  group: living-kingdoms-exterior-residences-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Prove residence authority, migration and resident integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          catalog="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceCatalog.java"
+          saved="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceSavedData.java"
+          residence="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceBuilder.java"
+          exterior="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java"
+          reaper="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorTicketReaper.java"
+          workforce="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java"
+          lifecycle="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java"
+
+          grep -F 'EXPECTED_RESIDENCES = ErdenExteriorWorkforceManager.EXPECTED_HOUSEHOLDS' "$catalog"
+          grep -F 'EXPECTED_ATTACHED_QUARTERS = ErdenKingdomSupplyCatalog.nodes().size()' "$catalog"
+          grep -F 'EXPECTED_DETACHED_COTTAGES' "$catalog"
+          grep -F 'if (plots.size() != EXPECTED_RESIDENCES' "$catalog"
+          grep -F 'unique_chunks=' "$catalog"
+          grep -F 'erden_exterior_residences' "$saved"
+          grep -F 'public boolean chunkBuilt(int chunkX, int chunkZ, int revision)' "$saved"
+          grep -F 'public static final int RESIDENCE_REVISION = 1;' "$residence"
+          grep -F 'public static final int BEDS_PER_RESIDENCE = 3;' "$residence"
+          grep -F 'Blocks.SPRUCE_DOOR' "$residence"
+          grep -F 'Blocks.RED_BED' "$residence"
+          grep -F 'Blocks.BARREL' "$residence"
+          grep -F 'Blocks.FURNACE' "$residence"
+          grep -F 'Blocks.CRAFTING_TABLE' "$residence"
+          grep -F 'BlockStateProperties.HANGING, true' "$residence"
+          grep -F 'door.relative(outward, distance).below()' "$residence"
+          ! grep -F '.below(2)' "$residence"
+          grep -F 'validateLoadedResidence' "$residence"
+          grep -F 'residentSpawnPosition' "$residence"
+          grep -F 'homeTarget' "$residence"
+
+          grep -F 'boolean buildExterior' "$exterior"
+          grep -F 'boolean buildResidences' "$exterior"
+          grep -F 'public static boolean residenceBuilt' "$exterior"
+          grep -F 'ErdenExteriorResidenceBuilder.validateLoadedResidence' "$exterior"
+          grep -F 'physical_residences=true access_paths=true' "$exterior"
+          grep -F 'residences.chunkBuilt(' "$reaper"
+          grep -F 'boolean residenceReady' "$reaper"
+          grep -F 'ErdenExteriorResidenceCatalog.forNode(node.id)' "$workforce"
+          grep -F 'ErdenKingdomExteriorBuilder.residenceBuilt(level, household.id())' "$workforce"
+          grep -F 'ErdenExteriorResidenceBuilder.residentSpawnPosition' "$workforce"
+          grep -F 'ErdenExteriorResidenceBuilder.homeTarget' "$workforce"
+          grep -F 'ErdenKingdomExteriorBuilder.residenceBuilt(level, household.id())' "$lifecycle"
+          grep -F 'ErdenExteriorResidenceBuilder.residentSpawnPosition' "$lifecycle"
+          grep -F 'ErdenExteriorResidenceBuilder.homeTarget' "$lifecycle"
+
+          ! grep -F 'setChunkForced' "$exterior"
+          ! grep -E '(^|[^A-Za-z])getChunk\(' "$exterior"
+          ! grep -R -E 'fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release' \
+            .github/scripts .github/workflows \
+            --exclude='audit-living-kingdoms-exterior-residences.yml' 2>/dev/null
+
+      - name: Java 25 compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p ../../logs
+          gradle --no-daemon clean classes --stacktrace --console=plain \
+            2>&1 | tee ../../logs/exterior-residences-compile.log
+
+      - name: Fresh world physical residence, estate and supply audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-exterior-residences-ci-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-exterior-residences-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/exterior-residences-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 2400); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/exterior-residences-server.log; then
+              cat ../../logs/exterior-residences-server.log
+              exit 1
+            fi
+            if grep -Eq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS .*residences=74 attached_quarters=18 detached_cottages=56 residence_chunks=74 doors=74 beds=222 storage=74 hearths=74 .*physical_residences=true access_paths=true' ../../logs/exterior-residences-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_ESTATES_PASS revision=1 estates=74' ../../logs/exterior-residences-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS revision=1 founders=216 households=74' ../../logs/exterior-residences-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_WORKFORCE_PASS revision=1 nodes=18 households=74 residents=216 workers=142' ../../logs/exterior-residences-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=104 released=104 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-residences-server.log \
+              && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/exterior-residences-server.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/exterior-residences-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/exterior-residences-server.log
+          test "$passed" -eq 1
+          grep -E 'LK_ERDEN_KINGDOM_EXTERIOR_PASS .*residences=74 attached_quarters=18 detached_cottages=56 residence_chunks=74 doors=74 beds=222 storage=74 hearths=74 .*physical_residences=true access_paths=true' ../../logs/exterior-residences-server.log
+          grep -E 'LK_ERDEN_EXTERIOR_ESTATES_PASS revision=1 estates=74 occupied=[1-9][0-9]* .*linked_stewards=74 linked_homes=74' ../../logs/exterior-residences-server.log
+          grep -E 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS .*projected_births=[1-9][0-9]* projected_successions=[1-9][0-9]* projected_replacement_workers=[1-9][0-9]* projected_years=20 ci_projection_non_persistent=true' ../../logs/exterior-residences-server.log
+          grep -F 'storage_yards_observed=18 resident_sample_observed=true validation_revision=2' ../../logs/exterior-residences-server.log
+          grep -F 'workforce_linked=true staffed_production=true wharf_labor=true' ../../logs/exterior-residences-server.log
+          grep -F 'fixed_daily_imports=false' ../../logs/exterior-residences-server.log
+          grep -F 'shipment_escrow=true' ../../logs/exterior-residences-server.log
+
+          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior residence|Missing Erden exterior residence|Invalid Erden exterior estate|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-residences-server.log; then
+            exit 1
+          fi
+
+      - name: Upload residence audit logs
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-exterior-residences-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Record residence audit pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-exterior-residences.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-exterior-residences.json
+            git commit -m "Record Living Kingdoms exterior residence audit $GITHUB_RUN_NUMBER" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
