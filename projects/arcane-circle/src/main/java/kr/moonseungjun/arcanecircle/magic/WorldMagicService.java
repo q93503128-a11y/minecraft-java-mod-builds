@@ -80,31 +80,73 @@ public final class WorldMagicService {
 
     private static Vec3 anchorCenter(ServerPlayer player, SpellDefinition spell, double range, Vec3 look) {
         return switch (spell.sigilAnchor()) {
-            case FRONT -> player.getEyePosition().add(look.scale(1.55 + spell.circle() * 0.035));
+            case FRONT -> visibleFrontAnchor(player, spell, look);
             case FEET, GROUND_SELF -> player.position().add(0.0, 0.055, 0.0);
             case BODY -> player.position().add(0.0, 1.0, 0.0);
             case GROUND_TARGET -> aimGround(player, Math.max(4.0, range));
-            case TARGET -> player.getEyePosition().add(look.scale(Math.min(Math.max(3.0, range * 0.72), 18.0)));
+            case TARGET -> visiblePoint(player, look, Math.min(Math.max(3.0, range * 0.72), 18.0));
         };
+    }
+
+    /**
+     * Keeps a front-facing charge sigil on the caster side of nearby collision geometry. The old
+     * fixed 1.6-1.9 block offset could put the entire plate behind a wall when casting indoors.
+     */
+    private static Vec3 visibleFrontAnchor(ServerPlayer player, SpellDefinition spell, Vec3 look) {
+        double desired = 1.02 + Math.min(0.58, spell.circle() * 0.065);
+        return visiblePoint(player, look, desired);
+    }
+
+    private static Vec3 visiblePoint(ServerPlayer player, Vec3 look, double desiredDistance) {
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 origin = player.getEyePosition();
+        Vec3 direction = safeDirection(look);
+        double minDistance = 0.48;
+        Vec3 lastVisible = origin.add(direction.scale(minDistance));
+        double max = Math.max(minDistance, desiredDistance);
+        for (double distance = minDistance; distance <= max + 1.0E-6; distance += 0.07) {
+            Vec3 point = origin.add(direction.scale(distance));
+            BlockPos pos = BlockPos.containing(point);
+            BlockState state = level.getBlockState(pos);
+            if (!state.getCollisionShape(level, pos).isEmpty()) break;
+            lastVisible = point;
+        }
+        return lastVisible;
     }
 
     private static Vec3 aimGround(ServerPlayer player, double range) {
         ServerLevel level = (ServerLevel) player.level();
         Vec3 look = safeDirection(player.getLookAngle());
         Vec3 origin = player.getEyePosition();
-        for (int step = (int) Math.max(2, Math.floor(Math.min(range, 28.0))); step >= 2; step--) {
-            BlockPos candidate = BlockPos.containing(origin.add(look.scale(step)));
+        Vec3 bestVisibleFloor = null;
+        double max = Math.min(Math.max(2.0, range), 28.0);
+
+        // March from the caster outward and stop at the first collision. This prevents a target
+        // glyph from being selected on a floor hidden behind a wall or closed door.
+        for (double distance = 0.70; distance <= max; distance += 0.32) {
+            Vec3 sample = origin.add(look.scale(distance));
+            BlockPos samplePos = BlockPos.containing(sample);
+            BlockState sampleState = level.getBlockState(samplePos);
+            if (!sampleState.getCollisionShape(level, samplePos).isEmpty()) {
+                if (sampleState.isFaceSturdy(level, samplePos, Direction.UP)) {
+                    bestVisibleFloor = Vec3.atCenterOf(samplePos.above()).add(0.0, -0.48, 0.0);
+                }
+                break;
+            }
             for (int down = 0; down <= 10; down++) {
-                BlockPos floor = candidate.below(down);
+                BlockPos floor = samplePos.below(down);
                 BlockState state = level.getBlockState(floor);
                 if (state.isFaceSturdy(level, floor, Direction.UP)) {
-                    return Vec3.atCenterOf(floor.above()).add(0.0, -0.48, 0.0);
+                    bestVisibleFloor = Vec3.atCenterOf(floor.above()).add(0.0, -0.48, 0.0);
+                    break;
                 }
             }
         }
+        if (bestVisibleFloor != null) return bestVisibleFloor;
+
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
         if (flat.lengthSqr() < 1.0E-8) flat = new Vec3(0.0, 0.0, 1.0);
-        return player.position().add(flat.normalize().scale(Math.min(6.0, range))).add(0.0, 0.055, 0.0);
+        return player.position().add(flat.normalize().scale(Math.min(3.0, range))).add(0.0, 0.055, 0.0);
     }
 
     private static Vec3 safeDirection(Vec3 value) {

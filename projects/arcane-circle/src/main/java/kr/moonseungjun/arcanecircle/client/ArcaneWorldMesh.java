@@ -22,21 +22,26 @@ final class ArcaneWorldMesh {
             for(Face face:faces){int color=tone(argb,face.brightness,face.alpha);vertex(out,pose,face.a,color);vertex(out,pose,face.b,color);vertex(out,pose,face.c,color);vertex(out,pose,face.d,color);}
         });
         if(!segments.isEmpty()){
-            submitLines(poseStack,collector,tone(argb,.58,.72),windowScale*2.10F);
-            submitLines(poseStack,collector,tone(argb,1.02,1.0),windowScale*.92F);
+            // Three edge passes create a saturated halo + readable mid edge + white-hot colored core.
+            // This keeps the effect punchy without relying on thousands of vanilla particles.
+            submitLines(poseStack,collector,tone(argb,.64,.24),windowScale*4.10F);
+            submitLines(poseStack,collector,tone(argb,.88,.58),windowScale*2.05F);
+            submitLines(poseStack,collector,tone(argb,1.06,1.0),windowScale*.82F);
         }
     }
     private void submitLines(PoseStack stack,SubmitNodeCollector collector,int color,float scale){collector.submitCustomGeometry(stack,RenderTypes.lines(),(pose,out)->{for(Segment s:segments){Vec3 d=s.end.subtract(s.start);if(d.lengthSqr()<1e-8)continue;Vec3 n=d.normalize();float w=Math.max(.72F,s.width*scale);out.addVertex(pose,(float)s.start.x,(float)s.start.y,(float)s.start.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);out.addVertex(pose,(float)s.end.x,(float)s.end.y,(float)s.end.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);}});}
     private static void vertex(VertexConsumer out,PoseStack.Pose pose,Vec3 v,int color){out.addVertex(pose,(float)v.x,(float)v.y,(float)v.z).setColor(color);}
-    private static final double SATURATION_BOOST=1.28;
-    private static final double ALPHA_BOOST=1.32;
+    private static final double VIVID_SATURATION=1.72;
+    private static final double FACE_ALPHA_BOOST=1.52;
     private static int tone(int argb,double brightness,double alphaScale){
         int baseA=(argb>>>24)&255,baseR=(argb>>>16)&255,baseG=(argb>>>8)&255,baseB=argb&255;
-        double average=(baseR+baseG+baseB)/3.0;
-        int a=(int)Math.round(baseA*Math.min(1.0,alphaScale*ALPHA_BOOST));
-        int r=(int)Math.round((average+(baseR-average)*SATURATION_BOOST)*brightness);
-        int g=(int)Math.round((average+(baseG-average)*SATURATION_BOOST)*brightness);
-        int b=(int)Math.round((average+(baseB-average)*SATURATION_BOOST)*brightness);
+        // Luma-based saturation keeps the dominant school color strong instead of bleaching it
+        // toward pastel white when brightness is raised.
+        double luma=baseR*.2126+baseG*.7152+baseB*.0722;
+        int a=(int)Math.round(baseA*Math.min(1.0,alphaScale*FACE_ALPHA_BOOST));
+        int r=(int)Math.round((luma+(baseR-luma)*VIVID_SATURATION)*brightness);
+        int g=(int)Math.round((luma+(baseG-luma)*VIVID_SATURATION)*brightness);
+        int b=(int)Math.round((luma+(baseB-luma)*VIVID_SATURATION)*brightness);
         return(clamp(a)<<24)|(clamp(r)<<16)|(clamp(g)<<8)|clamp(b);
     }
     private static int clamp(int v){return Math.max(0,Math.min(255,v));}
