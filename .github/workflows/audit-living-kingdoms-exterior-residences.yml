@@ -58,8 +58,11 @@ jobs:
           grep -F 'public boolean chunkBuilt(int chunkX, int chunkZ, int revision)' "$saved"
           grep -F 'public static final int RESIDENCE_REVISION = 1;' "$residence"
           grep -F 'public static final int BEDS_PER_RESIDENCE = 3;' "$residence"
+          grep -F 'Identifier.fromNamespaceAndPath("minecraft", "red_bed")' "$residence"
+          grep -F 'BuiltInRegistries.BLOCK.getOptional(BED_ID)' "$residence"
+          grep -F 'private static Block bedBlock()' "$residence"
+          ! grep -E 'Blocks\.(WHITE|RED)_BED' "$residence"
           grep -F 'Blocks.SPRUCE_DOOR' "$residence"
-          grep -F 'Blocks.RED_BED' "$residence"
           grep -F 'Blocks.BARREL' "$residence"
           grep -F 'Blocks.FURNACE' "$residence"
           grep -F 'Blocks.CRAFTING_TABLE' "$residence"
@@ -87,7 +90,7 @@ jobs:
 
           ! grep -F 'setChunkForced' "$exterior"
           ! grep -E '(^|[^A-Za-z])getChunk\(' "$exterior"
-          ! grep -R -E 'fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release' \
+          ! grep -R -E 'fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release|fix_living_kingdoms_residence_bed_registry' \
             .github/scripts .github/workflows \
             --exclude='audit-living-kingdoms-exterior-residences.yml' 2>/dev/null
 
@@ -144,7 +147,7 @@ jobs:
           grep -F 'fixed_daily_imports=false' ../../logs/exterior-residences-server.log
           grep -F 'shipment_escrow=true' ../../logs/exterior-residences-server.log
 
-          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior residence|Missing Erden exterior residence|Invalid Erden exterior estate|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-residences-server.log; then
+          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior residence|Missing registered Erden residence bed|Missing Erden exterior residence|Invalid Erden exterior estate|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-residences-server.log; then
             exit 1
           fi
 
