@@ -289,9 +289,9 @@ public final class ErdenKingdomExteriorBuilder {
                     packed, chunkX, chunkZ,
                     buildExterior, buildResidences, plan);
             LivingKingdoms.LOGGER.debug(
-                    "Prepared Erden exterior chunk {},{} writes={} operations={} exterior={} residences={}",
+                    "Prepared Erden exterior chunk {},{} writes={} operations={} exterior={} residences={} clipped_out_of_chunk_writes={}",
                     chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount(),
-                    buildExterior, buildResidences);
+                    buildExterior, buildResidences, plan.suppressedOutOfBoundsWrites());
             return;
         }
     }
@@ -301,7 +301,7 @@ public final class ErdenKingdomExteriorBuilder {
             ChunkPos chunk,
             boolean buildExterior,
             boolean buildResidences) {
-        IncrementalWorldEditPlan plan = new IncrementalWorldEditPlan();
+        IncrementalWorldEditPlan plan = new IncrementalWorldEditPlan(chunk);
         if (buildExterior) {
             for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
             addApproachRoad(plan, level, chunk, node);
