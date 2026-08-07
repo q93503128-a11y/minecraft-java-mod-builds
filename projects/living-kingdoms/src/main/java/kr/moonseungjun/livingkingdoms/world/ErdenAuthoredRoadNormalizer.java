@@ -25,7 +25,9 @@ import java.util.Set;
  */
 @EventBusSubscriber(modid = LivingKingdoms.MOD_ID)
 public final class ErdenAuthoredRoadNormalizer {
-    private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
+    private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS
+            | Block.UPDATE_KNOWN_SHAPE
+            | Block.UPDATE_SUPPRESS_DROPS;
     private static final int REPAIRS_PER_TICK = 2;
     private static final int MAX_CLEAR_HEIGHT = 32;
     private static final int DIAGNOSTIC_X = 0;
