@@ -22,6 +22,7 @@ public final class VillageClientUi {
                                 case "role_progress", "role_skills" -> new VillageRoleProgressScreen(payload);
                                 case "quick_chat" -> new VillageQuickChatScreen(payload);
                                 case "status" -> new VillageStatusScreen(payload);
+                                case "relic_collection" -> new VillageRelicScreen(payload);
                                 case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload);
                                 case "skill_test_password" -> new VillageSkillTestPasswordScreen(payload);
                                 case "wave_intel", "skill_test", "game_over" -> new VillageFacilityScreen(payload);
