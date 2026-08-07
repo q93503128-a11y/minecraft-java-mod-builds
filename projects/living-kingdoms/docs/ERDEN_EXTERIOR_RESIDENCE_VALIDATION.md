@@ -15,6 +15,11 @@ Each nine-by-nine-metre residence contains:
 - a weatherproof foundation, enclosed floor, windows, framed walls, roof and chimney;
 - a safe interior spawn position and a shared interior home target used by resident routines.
 
+Minecraft 26.2 no longer exposes a color-specific bed through the `Blocks` constants used by earlier
+mappings. The residence builder resolves the stable `minecraft:red_bed` identifier through the built-in
+block registry and then applies the normal direction and bed-part state properties. A missing registry
+entry is an explicit construction error rather than a silent fallback.
+
 ## Save compatibility
 
 Physical construction is tracked in the separate `erden_exterior_residences` ledger. The existing
@@ -33,7 +38,9 @@ spawn inside that same unit and navigate back to its interior home target outsid
 Residence operations share the existing bounded exterior streaming queue and transient portal tickets.
 Every nine-by-nine footprint is clamped inside one sixteen-by-sixteen parcel chunk. Existing production
 geometry is written only when its own ledger requires it, while the residence plan can run independently
-for migrated saves. Incremental writes preserve the known-shape and block-entity cleanup safeguards.
+for migrated saves. A residence parcel ticket is retained until its separate construction ledger records
+the completed unit, even when the older production-site ledger was already complete. Incremental writes
+preserve the known-shape and block-entity cleanup safeguards.
 
 ## Required regression proof
 
@@ -45,5 +52,6 @@ The permanent residence audit must compile with Java 25 and create a fresh realm
 - level access paths without recessed one-block trenches;
 - founding residents and descendants gated on physical home completion;
 - resident spawning and home routines driven by the same authoritative residence catalog;
+- migrated residence chunks retained until the new residence ledger is complete;
 - the existing estate, lifecycle, workforce, 104-chunk exterior, ticket-release and supply-chain proofs;
 - no watchdog, synchronous chunk load, invalid block entity or invalid residence errors.
