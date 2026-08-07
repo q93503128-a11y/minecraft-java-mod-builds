@@ -350,7 +350,8 @@ public final class VillageRoleSkillSystem {
 
         float power = powerMultiplier(player, role)
                 * VillageProgressionSystem.learnedSkillDamageMultiplier(player)
-                * VillageEquipmentShop.roleSkillMultiplier(player);
+                * VillageEquipmentShop.roleSkillMultiplier(player)
+                * VillageRelicSystem.skillMultiplier(player);
         float duration = durationMultiplier(player, role);
         int special = specialRank(player, role);
         cast(level, player, skill, power, duration, special);
@@ -382,7 +383,8 @@ public final class VillageRoleSkillSystem {
         if (skill == null || skill.role() != role) return "현재 시험 직업의 기술만 시험할 수 있습니다.";
         if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 시험할 수 없습니다.";
         cast(level, player, skill, powerMultiplier(player, role)
-                * VillageProgressionSystem.learnedSkillDamageMultiplier(player),
+                * VillageProgressionSystem.learnedSkillDamageMultiplier(player)
+                * VillageRelicSystem.skillMultiplier(player),
                 durationMultiplier(player, role), specialRank(player, role));
         return skill.displayName() + " 시험 시전 완료 · 비용과 재사용 대기시간 없음";
     }

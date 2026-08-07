@@ -71,7 +71,14 @@ public final class VillageUiController {
                 + "마을  제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName() + " · " + VillageRaidSystem.status() + "\n"
                 + "단축키  설정 > 조작 > 마을 지키기에서 현재 지정 키 확인·변경";
-        send(player, "status", "수호자 상태", body, List.of(), List.of());
+        String relicLabel = "획득 유물 보기|보유 " + VillageRelicSystem.ownedCount(player)
+                + " / " + VillageRelicSystem.Relic.values().length + " · 누적 효과 확인";
+        send(player, "status", "수호자 상태", body,
+                List.of("open_relic_collection"), List.of(relicLabel));
+    }
+
+    public static void openRelicCollection(ServerPlayer player) {
+        VillageRelicSystem.openCollection(player);
     }
 
     public static void openPersonalProgress(ServerPlayer player) {
@@ -588,7 +595,9 @@ public final class VillageUiController {
             return true;
         }
         if (action.startsWith("relic_select:")) {
-            player.sendSystemMessage(Component.literal("§d" + VillageRelicSystem.select(player, action.substring(13))));
+            String result = VillageRelicSystem.select(player, action.substring(13));
+            player.sendSystemMessage(Component.literal("§d" + result));
+            VillageRelicSystem.openCollection(player);
             return true;
         }
 
@@ -596,6 +605,7 @@ public final class VillageUiController {
             case "open_dashboard", "open_mayor" -> openDashboard(player);
             case "open_manual", "open_caller_menu" -> openCaller(player);
             case "open_status" -> openStatus(player);
+            case "open_relic_collection" -> openRelicCollection(player);
             case "open_personal_progress" -> openPersonalProgress(player);
             case "open_skill_tree" -> openSkillTree(player);
             case "open_role_progress_current" -> {

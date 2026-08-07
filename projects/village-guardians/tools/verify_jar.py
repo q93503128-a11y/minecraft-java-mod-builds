@@ -56,6 +56,7 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageUiScreen.class",
     "kr/moonseungjun/villageguardians/VillageFacilityScreen.class",
     "kr/moonseungjun/villageguardians/VillageStatusScreen.class",
+    "kr/moonseungjun/villageguardians/VillageRelicScreen.class",
     "kr/moonseungjun/villageguardians/VillageQuickChatScreen.class",
     "kr/moonseungjun/villageguardians/VillageActionDescriptions.class",
     "kr/moonseungjun/villageguardians/VillageStarterKit.class",

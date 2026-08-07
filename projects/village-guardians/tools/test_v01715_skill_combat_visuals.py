@@ -21,7 +21,7 @@ def main() -> None:
     overlay = read("VillageSkillHudOverlay.java")
     network = read("VillageNetwork.java")
 
-    assert "mod_version=0.18.0-alpha.1" in props
+    assert "mod_version=0.18.1-alpha.1" in props
     assert "sendSkillMotion(level, player, \"vanguard_spin\"" in abilities
     assert "rotateY(radians)" in client
     assert "event.getRenderState().bodyRot = 0.0f" in client
