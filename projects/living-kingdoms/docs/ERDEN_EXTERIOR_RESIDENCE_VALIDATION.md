@@ -65,6 +65,15 @@ road or culvert cell at a chunk edge cannot trigger neighbor-shape resolution th
 unloaded adjacent chunk. This rule is enforced by the permanent authored-road audit after a watchdog
 proved that ordinary neighbor updates could otherwise block the server thread for a full minute.
 
+Exterior external-building planning is also nonblocking. A second watchdog showed the server thread
+waiting inside `RealmSitePlanner.surfaceY()` while an exterior schematic fragment requested a chunk at
+full status during plan creation. External building foundations now read `IncrementalWorldEditPlan`'s
+planned surface height: it starts from the deterministic authored continent and automatically reuses any
+same-plan site flattening already scheduled for that column. `RealmSitePlanner.surfaceY()` itself is now
+an authored-terrain lookup with no `getChunk` or `getHeight` call, so construction planning cannot promote
+or synchronously load an unloaded chunk through that helper. The permanent exterior audit enforces all
+three source invariants before it starts its fresh-world runtime test.
+
 ## Required regression proof
 
 The permanent residence audit must compile with Java 25 and create a fresh realm proving:
@@ -80,5 +89,6 @@ The permanent residence audit must compile with Java 25 and create a fresh realm
 - all 18 physical storage yards observed before all 104 transient exterior tickets are released;
 - exterior completion based on persisted construction ledgers plus authoritative physical observations, not simultaneous chunk residency;
 - authored road and culvert repair without synchronous cross-chunk neighbor loads;
+- external schematic planning without synchronous surface chunk loads;
 - the existing estate, lifecycle, workforce, 104-chunk exterior, ticket-release and supply-chain proofs;
 - no watchdog, synchronous chunk load, invalid block entity, invalid residence or storage-path collision errors.
