@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'projects/arcane-circle/**'
+      - '.github/scripts/arcane-circle/**'
       - '.github/workflows/build-arcane-circle-v0121.yml'
 
 permissions:
@@ -48,8 +49,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/apply_v0121_alpha17_spell_presentation.py" 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
-          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/test_v0121_alpha17_spell_presentation.py"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/apply_v0121_alpha17_spell_presentation_v2.py" 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/test_v0121_alpha17_spell_presentation_v2.py"
           git diff --check
 
       - name: Build Java 25 runtime
@@ -98,8 +99,8 @@ jobs:
               if b'buildSkyRitualArray' not in tracker or b'buildQuadArray' not in tracker or b'targetOffset' not in tracker:
                   raise SystemExit('authored sigil / target-relative VFX missing')
               kinetics = z.read('kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class')
-              if b'projectileImpactDelay' not in kinetics:
-                  raise SystemExit('projectile timing synchronization missing')
+              if b'presentationImpactDelay' not in kinetics:
+                  raise SystemExit('presentation/server impact synchronization missing')
               mesh = z.read('kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class')
               if b'runeGlyph' not in mesh or b'runeRing' not in mesh:
                   raise SystemExit('procedural rune geometry missing')
