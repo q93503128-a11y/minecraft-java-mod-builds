@@ -40,13 +40,13 @@ level30 incoming=61.4%
 level30 bonus_health=20
 total_xp_to_level30=94685
 === tools/test_runtime_safety.py ===
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety.py", line 186, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_runtime_safety.py", line 82, in main
-    assert "ClientPacketDistributor" not in status_ui
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+[PASS] Compact split menus use narrow selectors, wide details and bounded action buttons
+[PASS] Town hall shows current/next effects and exact repair or upgrade costs
+[PASS] Status stays scroll-free and owns one bounded relic-collection action
+[PASS] Caller item is removed while inventory and keyboard access remain
+[PASS] Selected equipment enhancement and rarity fusion are both available
+[PASS] Building crest migration restores facade blocks instead of carving holes
+[PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired
 === tools/test_v01710_skill_input.py ===
 [PASS] Client Z/X mappings are registered by the client event subscriber
 [PASS] Z/X packets route directly to the real role-skill cast system
