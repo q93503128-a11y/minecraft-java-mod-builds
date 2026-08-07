@@ -42,6 +42,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          external="src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalDistrictBuildingBuilder.java"
+          planner="src/main/java/kr/moonseungjun/livingkingdoms/world/RealmSitePlanner.java"
+          grep -F 'plan.plannedSurfaceY(level, span.x, span.z)' "$external"
+          ! grep -F 'RealmSitePlanner.surfaceY(level, span.x, span.z)' "$external"
+          ! grep -F 'level.getChunk(' "$planner"
+          ! grep -F 'level.getHeight(' "$planner"
+          grep -F 'AuthoredContinentDensity.surfaceHeight(x, z)' "$planner"
           mkdir -p ../../logs
           gradle --no-daemon clean classes --stacktrace --console=plain \
             2>&1 | tee ../../logs/kingdom-exterior-compile.log
