@@ -18,6 +18,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenDiagnosticDebrisSettler;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorTicketReaper;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorLifecycleManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenExteriorEstateManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorWorkforceManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenLivingEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
@@ -91,6 +92,7 @@ public final class LivingKingdoms {
         ErdenExteriorTicketReaper.onServerTick(event);
         ErdenExteriorLifecycleManager.onServerTick(event);
         ErdenExteriorWorkforceManager.onServerTick(event);
+        ErdenExteriorEstateManager.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);

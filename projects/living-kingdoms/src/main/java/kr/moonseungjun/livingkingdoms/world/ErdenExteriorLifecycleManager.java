@@ -169,9 +169,10 @@ public final class ErdenExteriorLifecycleManager {
         String work = person.assignedWorker()
                 ? roleName(person.workRole()) + " 근로자"
                 : ageYears(person, day) < ADULT_AGE ? "성장 중인 아이" : "현재 결원을 기다리는 성인";
+        String estate = ErdenExteriorEstateManager.describeHousehold(level, person.householdId());
         player.sendSystemMessage(Component.literal(
                 "§6[" + person.name() + "] §f" + person.generation() + "세대 " + standing
-                        + ", " + ageYears(person, day) + "세, " + work + "입니다."));
+                        + ", " + ageYears(person, day) + "세, " + work + "입니다. " + estate));
         event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
     }
@@ -265,11 +266,12 @@ public final class ErdenExteriorLifecycleManager {
                 : Math.max(lifecycle.lastProcessedDay() + 1L,
                 currentDay - MAX_CATCH_UP_DAYS + 1L);
         for (long day = first; day <= currentDay; day++) {
-            processDay(lifecycle, workforce, day);
+            processDay(level, lifecycle, workforce, day);
         }
     }
 
     private static void processDay(
+            ServerLevel level,
             ErdenExteriorLifecycleSavedData lifecycle,
             ErdenExteriorWorkforceSavedData workforce,
             long day) {
@@ -306,7 +308,7 @@ public final class ErdenExteriorLifecycleManager {
         if (day > lifecycle.establishedDay()
                 && Math.floorMod(day - lifecycle.establishedDay(), DAYS_PER_YEAR) == 0L) {
             BirthResult births = processBirths(
-                    people, lines, workforce, day, year, nextSequence);
+                    level, people, lines, workforce, day, year, nextSequence);
             people = births.people();
             lines = births.lines();
             nextSequence = births.nextSequence();
@@ -365,6 +367,17 @@ public final class ErdenExteriorLifecycleManager {
             long day,
             int year,
             int nextSequence) {
+        return processBirths(null, people, lines, workforce, day, year, nextSequence);
+    }
+
+    private static BirthResult processBirths(
+            ServerLevel level,
+            List<ErdenExteriorLifecycleSavedData.Person> people,
+            List<ErdenExteriorLifecycleSavedData.HouseholdLine> lines,
+            ErdenExteriorWorkforceSavedData workforce,
+            long day,
+            int year,
+            int nextSequence) {
         List<ErdenExteriorLifecycleSavedData.Person> resultPeople = new ArrayList<>(people);
         List<ErdenExteriorLifecycleSavedData.HouseholdLine> resultLines = new ArrayList<>(lines);
         Map<String, ErdenExteriorWorkforceSavedData.Household> households = new LinkedHashMap<>();
@@ -378,6 +391,8 @@ public final class ErdenExteriorLifecycleManager {
             if (household == null
                     || (line.lastBirthYear() != Integer.MIN_VALUE
                     && year - line.lastBirthYear() < 2)) continue;
+            if (level != null
+                    && !ErdenExteriorEstateManager.birthAllowed(level, household.id())) continue;
             List<ErdenExteriorLifecycleSavedData.Person> members = members(
                     resultPeople, household.id());
             int living = 0;
