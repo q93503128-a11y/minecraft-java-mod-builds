@@ -42,6 +42,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          normalizer="src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoredRoadNormalizer.java"
+          grep -F 'Block.UPDATE_CLIENTS' "$normalizer"
+          grep -F 'Block.UPDATE_KNOWN_SHAPE' "$normalizer"
+          grep -F 'Block.UPDATE_SUPPRESS_DROPS' "$normalizer"
           mkdir -p ../../logs
           gradle --no-daemon clean classes --stacktrace --console=plain \
             2>&1 | tee ../../logs/authored-roads-compile.log
