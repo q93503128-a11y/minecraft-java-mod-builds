@@ -44,11 +44,18 @@ jobs:
           set -euo pipefail
           external="src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalDistrictBuildingBuilder.java"
           planner="src/main/java/kr/moonseungjun/livingkingdoms/world/RealmSitePlanner.java"
+          incremental="src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
+          exterior="src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java"
           grep -F 'plan.plannedSurfaceY(level, span.x, span.z)' "$external"
           ! grep -F 'RealmSitePlanner.surfaceY(level, span.x, span.z)' "$external"
           ! grep -F 'level.getChunk(' "$planner"
           ! grep -F 'level.getHeight(' "$planner"
           grep -F 'AuthoredContinentDensity.surfaceHeight(x, z)' "$planner"
+          grep -F 'new IncrementalWorldEditPlan(chunk)' "$exterior"
+          grep -F 'if (!insideScope(x, z)) {' "$incremental"
+          grep -F 'if (!level.hasChunk(chunkX, chunkZ)) return false;' "$incremental"
+          grep -F 'private static boolean write(ServerLevel level' "$incremental"
+          grep -F 'Block.UPDATE_KNOWN_SHAPE' "$incremental"
           mkdir -p ../../logs
           gradle --no-daemon clean classes --stacktrace --console=plain \
             2>&1 | tee ../../logs/kingdom-exterior-compile.log
@@ -108,7 +115,7 @@ jobs:
           grep -F 'purchase_outcomes=77' ../../logs/kingdom-exterior-server.log
           grep -F 'reserve_bread=42' ../../logs/kingdom-exterior-server.log
 
-          if grep -Eqi 'Unknown Erden supply role|Requested chunk is outside|Exception loading level|watchdog|Item debris remained' ../../logs/kingdom-exterior-server.log; then
+          if grep -Eqi 'Unknown Erden supply role|Requested chunk is outside|Exception loading level|watchdog|A single server tick took|Item debris remained' ../../logs/kingdom-exterior-server.log; then
             exit 1
           fi
 
