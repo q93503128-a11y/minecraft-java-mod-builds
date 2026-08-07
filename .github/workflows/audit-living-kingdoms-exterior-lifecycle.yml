@@ -58,6 +58,8 @@ jobs:
           grep -F 'productionPercent() < 65' "$manager"
           grep -F 'processSuccession' "$manager"
           grep -F 'fillVacancies' "$manager"
+          grep -F 'projectFutureLifecycle' "$manager"
+          grep -F 'ci_projection_non_persistent=true' "$manager"
           grep -F 'public static boolean controlsRoutine(' "$manager"
           grep -F 'event.isCanceled()' "$workforce"
           grep -F 'ErdenExteriorLifecycleManager.controlsRoutine(' "$workforce"
@@ -113,12 +115,13 @@ jobs:
           grep -F 'Prepared Erden exterior lifecycle revision=1 founders=216 households=74 year_days=112 adult_age=18 retirement_age=58 births_economy_gated=true succession=true save_overlay=true' ../../logs/exterior-lifecycle-server.log
           grep -E 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS .*future_adults=[1-9][0-9]* .*scheduled_retirements=[1-9][0-9]* .*succession_households=[1-9][0-9]* .*parent_ready_households=[1-9][0-9]*' ../../logs/exterior-lifecycle-server.log
           grep -F 'year_days=112 adulthood=18 retirement=58 births=true inheritance=true replacement_labor=true permanent_deaths=true save_overlay=true' ../../logs/exterior-lifecycle-server.log
+          grep -E 'projected_births=[1-9][0-9]* projected_successions=[1-9][0-9]* projected_replacement_workers=[1-9][0-9]* projected_years=20 ci_projection_non_persistent=true' ../../logs/exterior-lifecycle-server.log
           grep -F 'storage_yards_observed=18 resident_sample_observed=true validation_revision=2' ../../logs/exterior-lifecycle-server.log
           grep -F 'workforce_linked=true staffed_production=true wharf_labor=true' ../../logs/exterior-lifecycle-server.log
           grep -F 'fixed_daily_imports=false' ../../logs/exterior-lifecycle-server.log
           grep -F 'shipment_escrow=true' ../../logs/exterior-lifecycle-server.log
 
-          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-lifecycle-server.log; then
+          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Missing Erden lifecycle projection person|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-lifecycle-server.log; then
             exit 1
           fi
 
