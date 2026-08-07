@@ -48,6 +48,7 @@ jobs:
           reaper="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorTicketReaper.java"
           workforce="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java"
           lifecycle="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java"
+          edits="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
 
           grep -F 'EXPECTED_RESIDENCES = ErdenExteriorWorkforceManager.EXPECTED_HOUSEHOLDS' "$catalog"
           grep -F 'EXPECTED_ATTACHED_QUARTERS = ErdenKingdomSupplyCatalog.nodes().size()' "$catalog"
@@ -62,16 +63,29 @@ jobs:
           grep -F 'BuiltInRegistries.BLOCK.getOptional(BED_ID)' "$residence"
           grep -F 'private static Block bedBlock()' "$residence"
           ! grep -E 'Blocks\.(WHITE|RED)_BED' "$residence"
+          grep -F 'BlockState lowerDoor = level.getBlockState(door);' "$residence"
+          grep -F 'DoubleBlockHalf.LOWER' "$residence"
+          grep -F 'DoubleBlockHalf.UPPER' "$residence"
+          grep -F 'BlockState head = level.getBlockState(footPosition.east());' "$residence"
+          grep -F 'BedPart.FOOT' "$residence"
+          grep -F 'BedPart.HEAD' "$residence"
+          grep -F 'BlockStateProperties.HANGING' "$residence"
           grep -F 'Blocks.SPRUCE_DOOR' "$residence"
           grep -F 'Blocks.BARREL' "$residence"
           grep -F 'Blocks.FURNACE' "$residence"
           grep -F 'Blocks.CRAFTING_TABLE' "$residence"
-          grep -F 'BlockStateProperties.HANGING, true' "$residence"
           grep -F 'door.relative(outward, distance).below()' "$residence"
           ! grep -F '.below(2)' "$residence"
           grep -F 'validateLoadedResidence' "$residence"
           grep -F 'residentSpawnPosition' "$residence"
           grep -F 'homeTarget' "$residence"
+
+          grep -F 'MAX_APPLY_NANOS = 40_000_000L' "$edits"
+          grep -F 'long deadline = System.nanoTime() + MAX_APPLY_NANOS;' "$edits"
+          grep -F 'operation.apply(level, budget - used, deadline)' "$edits"
+          grep -F 'System.nanoTime() < deadline' "$edits"
+          grep -F 'Block.UPDATE_KNOWN_SHAPE' "$edits"
+          grep -F 'removeBlockEntity(pos)' "$edits"
 
           grep -F 'boolean buildExterior' "$exterior"
           grep -F 'boolean buildResidences' "$exterior"
@@ -90,7 +104,7 @@ jobs:
 
           ! grep -F 'setChunkForced' "$exterior"
           ! grep -E '(^|[^A-Za-z])getChunk\(' "$exterior"
-          ! grep -R -E 'fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release|fix_living_kingdoms_residence_bed_registry' \
+          ! grep -R -E 'fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release|fix_living_kingdoms_residence_bed_registry|patch_living_kingdoms_time_sliced_residence_writes' \
             .github/scripts .github/workflows \
             --exclude='audit-living-kingdoms-exterior-residences.yml' 2>/dev/null
 
