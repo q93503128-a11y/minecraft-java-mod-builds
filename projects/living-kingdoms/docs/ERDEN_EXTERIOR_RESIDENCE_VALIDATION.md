@@ -1,105 +1,99 @@
 # Erden Exterior Residence Validation
 
-## Physical scope
+## Current physical model
 
-Erden's exterior workforce now owns 74 real residence units at the original authoritative household
-parcels. One Minecraft block is one metre. The first household at each of the 18 supply nodes uses
-attached worker quarters inside a corner of the central production complex; the remaining 56
-households use detached cottages. No household ID or saved parcel coordinate changes.
+Erden has 74 persistent exterior households. Their household IDs and saved logical estate coordinates remain unchanged, but their generated physical homes are now a separate concern.
 
-Each nine-by-nine-metre residence contains:
+One Minecraft block is one metre. Every household receives one 9 x 9 metre home with:
 
-- one two-block spruce door and a level exterior access path;
-- three complete red beds, for 222 bed fixtures across the exterior settlements;
+- one complete two-block spruce door;
+- three complete red beds, 222 beds across 74 households;
 - one household barrel, furnace, crafting table and hanging lantern;
-- a weatherproof foundation, enclosed floor, windows, framed walls, roof and chimney;
-- a safe interior spawn position and a shared interior home target used by resident routines.
+- foundation, enclosed floor, windows, framed walls, roof and chimney;
+- a level access path;
+- an interior spawn position and home target shared by founding residents and descendants.
 
-Minecraft 26.2 no longer exposes a color-specific bed through the `Blocks` constants used by earlier
-mappings. The residence builder resolves the stable `minecraft:red_bed` identifier through the built-in
-block registry and then applies the normal direction and bed-part state properties. A missing registry
-entry is an explicit construction error rather than a silent fallback.
+Minecraft 26.2 does not expose the color-specific bed through the old `Blocks.RED_BED` style constant. The builder resolves `minecraft:red_bed` from the built-in block registry and validates both FOOT and HEAD halves.
 
-## Save compatibility
+## Why residence v2 exists
 
-Physical construction is tracked in the separate `erden_exterior_residences` ledger. The existing
-exterior production revision is not raised. On an old world, already completed farms, ranches, mines,
-mills, wharves and storage yards remain complete; only missing residence parcel chunks are scheduled.
-A residence is marked complete only after its door, complete bed foot/head pairs, storage, hearth,
-work surface, hanging light and every planned access-path cell are observed in the loaded chunk.
+Residence v1 reused the workforce ledger's logical parcel coordinates as literal building coordinates. Those parcels sit at the supply-node center or only 28 metres away. The licensed supply structures are much larger than that, and an exact reconstruction audit proved that the first 18 v1 homes physically cut through all 18 central production buildings. The low-level overlap alone affected all 81 columns of every 9 x 9 footprint.
 
-The residence catalog reproduces the existing 74 household IDs and parcel coordinates exactly. The
-workforce initializer now consumes that catalog instead of maintaining a second coordinate table.
-Founding residents and descendants wait until their saved household's physical residence is complete,
-spawn inside that same unit and navigate back to its interior home target outside working hours.
+The permanent overlap audit then expanded the check to all 74 households. Physical residence coordinates are therefore no longer derived directly from the saved parcel coordinate.
 
-## Streaming and safety
+## Save-compatible coordinate split
 
-Residence operations share the existing bounded exterior streaming queue and transient portal tickets.
-Every nine-by-nine footprint is clamped inside one sixteen-by-sixteen parcel chunk. Existing production
-geometry is written only when its own ledger requires it, while the residence plan can run independently
-for migrated saves. A residence parcel ticket is retained until its separate construction ledger records
-the completed unit, even when the older production-site ledger was already complete. Incremental writes
-preserve the known-shape and block-entity cleanup safeguards.
+`ErdenExteriorResidenceCatalog` keeps two coordinate concepts:
 
-Physical storage yards use the same rule. A storage-anchor ticket cannot be released until the barrel
-at that node's authoritative storage coordinate has actually been observed in the loaded world. The
-exterior completion marker no longer requires all 18 storage chunks to remain loaded simultaneously;
-instead it consumes the authoritative observation result recorded during the bounded ticket lifetime.
-The permanent ticket audit still requires all 18 storage yards to have been physically observed before
-all 104 transient exterior tickets may be released.
+- `parcelX` / `parcelZ`: the original logical household estate coordinates used by the workforce, inheritance and property ledgers;
+- `physicalX` / `physicalZ`: the actual generated home anchor used by construction, spawning and home routines.
 
-A coordinate audit also found that straight household access paths could physically cross storage-yard
-fixtures. The concrete failure was `erden_paper_mill_01`: household 55's second path cell and the node's
-barrel both occupied `(-1532, 76, 250)`, explaining the historical 17/18 storage observation result.
-The same geometry scan found straight-path conflicts with storage chests or hay at three additional
-settlements. Access paths are therefore storage-aware: a straight route is used only when every cell is
-clear of the authoritative barrel, hay and chest line; otherwise the path bends one metre to a free side
-inside the same parcel chunk and continues toward the work site. The physical residence validator checks
-every resulting path cell and rejects any route that still occupies a storage fixture. Household parcel
-coordinates and storage coordinates remain unchanged, preserving existing saves and supply ownership.
+No household ID is renumbered and no saved estate coordinate is rewritten.
 
-Capital authored-road normalization follows the same cross-chunk safety rule as streamed construction.
-Its direct block writes use client updates, known-shape suppression and drop suppression together, so a
-road or culvert cell at a chunk edge cannot trigger neighbor-shape resolution that synchronously loads an
-unloaded adjacent chunk. This rule is enforced by the permanent authored-road audit after a watchdog
-proved that ordinary neighbor updates could otherwise block the server thread for a full minute.
+The physical homes form small worker hamlets outside each supply site. The hamlet baseline is 96 metres beyond the production node, with household side offsets of 0, -24, +24, -48 and +48 metres. For ordinary producers and wharves the baseline points away from the kingdom centre. Paper-mill hamlets are placed perpendicular to the mill-to-wharf freight leg so the homes do not occupy the cart road.
 
-Exterior external-building planning is also nonblocking. A second watchdog showed the server thread
-waiting inside `RealmSitePlanner.surfaceY()` while an exterior schematic fragment requested a chunk at
-full status during plan creation. External building foundations now read `IncrementalWorldEditPlan`'s
-planned surface height: it starts from the deterministic authored continent and automatically reuses any
-same-plan site flattening already scheduled for that column. `RealmSitePlanner.surfaceY()` itself is now
-an authored-terrain lookup with no `getChunk` or `getHeight` call, so construction planning cannot promote
-or synchronously load an unloaded chunk through that helper.
+The final permanent geometry audit proves:
 
-A third watchdog exposed the final lower-level hole: an incremental write could call `getBlockState()`
-on a coordinate outside the currently retained exterior chunk, which caused `ServerChunkCache.getChunk()`
-to block the server thread. Exterior plans are now explicitly constructed with their `ChunkPos`. Set
-operations outside that 16-by-16 X/Z scope are rejected at planning time and fill operations are clipped
-to the scope; adjacent structure pieces are generated by that adjacent chunk's own plan. The common write
-path also checks `level.hasChunk()` before any block-state read. If a required chunk is temporarily absent,
-the operation remains pending instead of being marked complete or synchronously loading the chunk. Thus
-this safeguard neither creates silent holes nor permits blocking chunk promotion. The permanent exterior
-audit enforces the bound-plan constructor, scope guard, loaded-chunk precondition and known-shape update
-flags before starting its fresh-world runtime proof.
+- 74 households;
+- 74 distinct physical residence chunks;
+- zero overlap with the real Schemcraft production structures after the same filtering and rotation rules used by the game;
+- zero overlap with authored fields, paddocks, mine works, paper-mill works and wharf works;
+- zero overlap with the supply freight roads;
+- zero overlap between homes;
+- minimum home-centre distance from its production node of about 95 metres after in-chunk footprint clamping.
 
-## Required regression proof
+## Migration and repair
 
-The permanent residence audit must compile with Java 25 and create a fresh realm proving:
+`ErdenExteriorResidenceBuilder.RESIDENCE_REVISION` is 2. The separate `erden_exterior_residences` ledger therefore schedules the new physical homes even when a world already contains residence v1 data.
 
-- exactly 74 residence parcels, 18 attached quarters and 56 detached cottages;
-- exactly 74 completed residence chunks and household IDs;
-- 74 valid doors, 222 valid bed foot/head pairs, and 74 barrels, furnaces, crafting tables and hanging lanterns;
-- complete level access paths without recessed trenches or storage-fixture overlap;
-- founding residents and descendants gated on physical home completion;
-- resident spawning and home routines driven by the same authoritative residence catalog;
-- migrated residence chunks retained until the new residence ledger is complete;
-- each storage-anchor chunk retained until its physical storage barrel has been observed;
-- all 18 physical storage yards observed before all 104 transient exterior tickets are released;
-- exterior completion based on persisted construction ledgers plus authoritative physical observations, not simultaneous chunk residency;
-- authored road and culvert repair without synchronous cross-chunk neighbor loads;
-- external schematic planning without synchronous surface chunk loads;
-- chunk-scoped incremental writes with no synchronous block-state read of an unloaded chunk;
-- the existing estate, lifecycle, workforce, 104-chunk exterior, ticket-release and supply-chain proofs;
-- no watchdog, synchronous chunk load, invalid block entity, invalid residence or storage-path collision errors.
+`ErdenKingdomExteriorBuilder.EXTERIOR_REVISION` is also 2. This is intentional. Residence v1 could overwrite parts of a licensed production building or nearby authored site geometry. Rebuilding the existing exterior anchor chunks once under revision 2 restores the authoritative production structure and worksite at the old v1 locations, while the residence ledger constructs the replacement home in the new hamlet chunk.
+
+This repair does not recreate the whole world blindly. Exterior production chunks and residence chunks maintain separate completion conditions. A residence-only hamlet chunk is never marked as a completed production chunk.
+
+## Streaming and ticket ownership
+
+The exterior CI set is the union of:
+
+- the 104 existing producer, storage and site anchor chunks; and
+- 74 unique physical residence chunks.
+
+The expected union is therefore 178 transient chunks.
+
+At most three exterior chunks are retained in flight. They use transient `TicketType.PORTAL` tickets, not permanent forced chunks and not synchronous `level.getChunk(...)` calls.
+
+Ticket release is conditional:
+
+- an exterior anchor may release only after exterior revision 2 is physically complete;
+- a residence chunk may release only after residence revision 2 is physically validated and recorded;
+- a storage anchor may release only after its authoritative barrel has actually been observed;
+- the CI resident sample retains its site and physical home chunks until the household has materialized and been observed.
+
+The common incremental write path keeps `Block.UPDATE_KNOWN_SHAPE`, refuses synchronous access to unloaded chunks and clips chunk-bounded plans to their 16 x 16 metre scope.
+
+## Resident and lifecycle integration
+
+The workforce initializer consumes the same residence catalog that construction uses. Founding residents and later descendants:
+
+1. retain their original household and logical estate identity;
+2. wait for their physical residence to finish construction;
+3. spawn at the residence builder's interior spawn position;
+4. use the same household ID to return to the residence builder's home target outside work hours.
+
+Property succession therefore transfers the same household estate record while the physical home remains attached to that household ID.
+
+## Permanent regression gates
+
+A residence change is not accepted from compilation alone. The permanent audits require:
+
+- Java 25 compilation;
+- residence revision 2 and exterior revision 2;
+- 74 completed physical homes and 222 complete bed pairs;
+- all household fixtures and access paths physically observed;
+- 178 transient exterior/residence tickets released with no permanent forced chunks;
+- 18 storage yards observed;
+- workforce, lifecycle, estate, inventory and kingdom-supply markers still succeeding;
+- the 20-year non-persistent lifecycle projection still producing births, succession and replacement labour;
+- the 74-home geometry gate reporting structure=0, worksite=0, road=0 and home=0 collisions;
+- no watchdog, synchronous chunk load, invalid block entity or invalid residence errors.
+
+The historical `attached_quarters=18` counter remains in the runtime marker only for continuity with earlier audit/report consumers. Those 18 first-household homes are no longer generated inside the production building; physically they are part of the same collision-free worker-hamlet system as the other households.
