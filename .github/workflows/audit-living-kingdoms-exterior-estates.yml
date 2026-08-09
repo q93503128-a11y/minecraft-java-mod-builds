@@ -23,12 +23,12 @@ env:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
@@ -45,6 +45,9 @@ jobs:
           estate="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorEstateManager.java"
           saved="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorEstateSavedData.java"
           lifecycle="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java"
+          exterior="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java"
+          residence="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceBuilder.java"
+          catalog="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceCatalog.java"
 
           grep -F 'import kr.moonseungjun.livingkingdoms.world.ErdenExteriorEstateManager;' "$main"
           grep -F 'ErdenExteriorEstateManager.onServerTick(event);' "$main"
@@ -64,6 +67,12 @@ jobs:
           grep -F 'ErdenExteriorEstateManager.describeHousehold(level, person.householdId())' "$lifecycle"
           grep -F 'return processBirths(null, people, lines, workforce, day, year, nextSequence);' "$lifecycle"
           grep -F 'ci_projection_non_persistent=true' "$lifecycle"
+          grep -F 'EXTERIOR_REVISION = 2' "$exterior"
+          grep -F 'EXPECTED_CI_ANCHORS = 178' "$exterior"
+          grep -F 'RESIDENCE_REVISION = 2' "$residence"
+          grep -F 'HAMLET_DISTANCE = 96' "$catalog"
+          grep -F 'int parcelX' "$catalog"
+          grep -F 'int physicalX' "$catalog"
 
           ! grep -R 'patch_living_kingdoms_exterior_estates_integration' .github/scripts .github/workflows \
             --exclude='audit-living-kingdoms-exterior-estates.yml' 2>/dev/null
@@ -90,7 +99,7 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
 
           passed=0
-          for attempt in $(seq 1 2400); do
+          for attempt in $(seq 1 2700); do
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/exterior-estates-server.log; then
               cat ../../logs/exterior-estates-server.log
               exit 1
@@ -98,8 +107,8 @@ jobs:
             if grep -Fq 'LK_ERDEN_EXTERIOR_ESTATES_PASS revision=1 estates=74' ../../logs/exterior-estates-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS revision=1 founders=216 households=74' ../../logs/exterior-estates-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_WORKFORCE_PASS revision=1 nodes=18 households=74 residents=216 workers=142' ../../logs/exterior-estates-server.log \
-              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=104 released=104 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-estates-server.log \
-              && grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=1 nodes=18 producers=15 wharves=3' ../../logs/exterior-estates-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-estates-server.log \
+              && grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 nodes=18 producers=15 wharves=3' ../../logs/exterior-estates-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/exterior-estates-server.log; then
               passed=1
               break
@@ -118,11 +127,12 @@ jobs:
           grep -F 'ownership_persistent=true inheritance_preserves_home=true inheritance_preserves_reserve=true succession_linked=true vacancy_tracking=true overcrowding_tracking=true' ../../logs/exterior-estates-server.log
           grep -E 'projected_births=[1-9][0-9]* projected_successions=[1-9][0-9]* projected_replacement_workers=[1-9][0-9]* projected_years=20 ci_projection_non_persistent=true' ../../logs/exterior-estates-server.log
           grep -F 'storage_yards_observed=18 resident_sample_observed=true validation_revision=2' ../../logs/exterior-estates-server.log
+          grep -F 'request_queue=178' ../../logs/exterior-estates-server.log
           grep -F 'workforce_linked=true staffed_production=true wharf_labor=true' ../../logs/exterior-estates-server.log
           grep -F 'fixed_daily_imports=false' ../../logs/exterior-estates-server.log
           grep -F 'shipment_escrow=true' ../../logs/exterior-estates-server.log
 
-          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior estate|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Missing Erden lifecycle projection person|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-estates-server.log; then
+          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior residence|Invalid Erden exterior estate|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Missing Erden lifecycle projection person|Invalid Erden exterior CI anchor count|Invalid Erden exterior ticket anchor count|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-estates-server.log; then
             exit 1
           fi
 
