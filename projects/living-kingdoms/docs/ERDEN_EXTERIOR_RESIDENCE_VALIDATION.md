@@ -59,7 +59,17 @@ The exterior CI set is the union of:
 
 The expected union is therefore 178 transient chunks.
 
-At most three exterior chunks are retained in flight. They use transient `TicketType.PORTAL` tickets, not permanent forced chunks and not synchronous `level.getChunk(...)` calls.
+At most two exterior chunks are retained in flight. They use transient `TicketType.PORTAL` tickets, not permanent forced chunks and not synchronous `level.getChunk(...)` calls.
+
+The CI construction stress path is intentionally bounded rather than being allowed to consume almost the entire server tick:
+
+- normal exterior write budget: 2,000 writes per tick;
+- CI exterior write budget: 4,000 writes per tick;
+- maximum incremental-plan CPU slice: 12 ms per server tick;
+- CI retained remote chunks: at most two;
+- founding-resident materialisation: at most two new villagers per spawn pass.
+
+This does not reduce content, residence count, supply sites or validation coverage. It only spreads the same work over more ticks.
 
 Ticket release is conditional:
 
@@ -83,7 +93,7 @@ Property succession therefore transfers the same household estate record while t
 
 ## Physical-home chunk and commute safety
 
-The first residence-v2 fresh-world audit exposed a second migration bug. The spawn code correctly calculated the new physical home position but still tested whether the old logical `homeX/homeZ` parcel chunk was loaded. Once a physical-home ticket had been released, that mismatch could allow `safeStandingY` to read blocks from an unloaded physical chunk on the server thread. The audit then reached roughly 130 of 178 released exterior tickets before the watchdog reported a 60-second server tick.
+The first residence-v2 fresh-world audit exposed a migration bug. The spawn code correctly calculated the new physical home position but still tested whether the old logical `homeX/homeZ` parcel chunk was loaded. Once a physical-home ticket had been released, that mismatch could allow `safeStandingY` to read blocks from an unloaded physical chunk on the server thread.
 
 The corrected resident contract is now shared by founding residents and lifecycle descendants:
 
@@ -96,6 +106,14 @@ The corrected resident contract is now shared by founding residents and lifecycl
 - founding dependents remain controlled by the founding workforce manager rather than receiving duplicate lifecycle routine commands.
 
 When the route is not fully loaded, the saved workforce/lifecycle state still determines attendance and production. The server does not force chunks merely to animate a worker walking through an unseen area.
+
+## Watchdog pressure regression and sample observation
+
+Residence-v2 stress runs originally reached roughly 130 of 178 transient exterior/residence tickets and then occasionally crossed Minecraft's 60-second watchdog threshold. Per-chunk request/start/complete tracing proved that no single 9 x 9 residence plan was stuck: the warned tick could end with that residence completing and the next chunk beginning normally.
+
+A dedicated stress diagnostic then completed the full exterior while measuring about 54.6 seconds of accumulated server lag under the old CI pressure. After bounding the same workload to 4,000 writes per tick, a 12 ms plan slice and two retained chunks, the same diagnostic completed exterior revision 2 without an `A single server tick took` watchdog event. Its largest observed backlog fell to about 31.0 seconds. Normal gameplay is less aggressive again because its exterior write budget remains 2,000 and it does not proactively retain the entire 178-chunk CI set.
+
+A separate v2 validation bug was also found in the resident sample observer. It still searched only the old node-centred ±96 metre AABB even though the physical home starts around 96 metres away and its interior spawn may lie a few blocks farther out. The sample residents could therefore exist while the audit reported `resident_sample_validated=false`, preventing the final sample tickets from releasing. The observer now resolves the sample household's actual `residentSpawnPosition(...)`, requires that physical chunk to be loaded and counts residents only inside a tight ±16 metre AABB around the real home.
 
 ## Permanent regression gates
 
@@ -111,7 +129,9 @@ A residence change is not accepted from compilation alone. The permanent audits 
 - the 20-year non-persistent lifecycle projection still producing births, succession and replacement labour;
 - the 74-home geometry gate reporting structure=0, worksite=0, road=0 and home=0 collisions;
 - resident materialisation gated on physical-home chunks rather than logical estate chunks;
+- resident sample observation centred on the real physical home;
 - no long-distance navigation request across unloaded intermediate chunks;
+- CI write pressure bounded to 4,000 writes, 12 ms and two retained chunks;
 - no watchdog, synchronous chunk load, invalid block entity or invalid residence errors.
 
 The historical `attached_quarters=18` counter remains in the runtime marker only for continuity with earlier audit/report consumers. Those 18 first-household homes are no longer generated inside the production building; physically they are part of the same collision-free worker-hamlet system as the other households.
