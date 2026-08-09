@@ -49,4 +49,4 @@ jobs:
           done
           exit 1
 
-# One-shot tuning runner; remove after the Java commit lands.
+# One-shot tuning runner; remove after the Java commit lands. Triggered explicitly.
