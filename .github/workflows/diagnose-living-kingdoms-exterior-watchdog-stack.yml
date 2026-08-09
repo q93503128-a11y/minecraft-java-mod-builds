@@ -40,12 +40,12 @@ jobs:
           gradle --no-daemon runServer --stacktrace --console=plain \
             > ../../logs/exterior-watchdog-server.log 2>&1 &
           pid=$!
-          for attempt in $(seq 1 420); do
+          for attempt in $(seq 1 480); do
             if grep -Fq 'A single server tick took' ../../logs/exterior-watchdog-server.log; then
               sleep 8
               break
             fi
-            if grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2' ../../logs/exterior-watchdog-server.log; then
+            if grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-watchdog-server.log; then
               break
             fi
             if ! kill -0 "$pid" 2>/dev/null; then
@@ -56,7 +56,9 @@ jobs:
           kill "$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
           echo '--- server watchdog tail ---'
-          tail -n 250 ../../logs/exterior-watchdog-server.log || true
+          tail -n 320 ../../logs/exterior-watchdog-server.log || true
+          echo '--- full release marker ---'
+          grep -F 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-watchdog-server.log || true
           echo '--- crash report files ---'
           find run/crash-reports -maxdepth 1 -type f -print 2>/dev/null || true
           if compgen -G 'run/crash-reports/*.txt' > /dev/null; then
@@ -73,4 +75,4 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-# Re-run after bounding CI writes to 4,000/tick, plan slices to 12 ms and in-flight chunks to two.
+# Re-run after the physical-home sample observer moved to the actual residence chunk.
