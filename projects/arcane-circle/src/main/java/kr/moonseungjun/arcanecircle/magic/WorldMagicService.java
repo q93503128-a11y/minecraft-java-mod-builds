@@ -48,8 +48,10 @@ public final class WorldMagicService {
         if (!(caster.level() instanceof ServerLevel)) return;
         Vec3 direction = targetEntity == null ? safeDirection(caster.getLookAngle())
                 : safeDirection(targetEntity.getEyePosition().subtract(caster.getEyePosition()));
+        SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(spell);
         Vec3 target = targetEntity == null ? caster.getEyePosition().add(direction.scale(Math.max(3.0, range)))
-                : targetEntity.position();
+                : profile.motion() == SpellPresentationProfile.MotionStyle.PRISON
+                ? targetEntity.position() : targetEntity.getEyePosition();
         Vec3 center = presentationCenter(caster, spell, target, direction);
         send(caster, encode("charge", caster, spell, false, 0, center, target, direction,
                 range, power, clamp01(progress), 8, 0));
@@ -60,8 +62,10 @@ public final class WorldMagicService {
         if (!(caster.level() instanceof ServerLevel)) return;
         Vec3 direction = targetEntity == null ? safeDirection(caster.getLookAngle())
                 : safeDirection(targetEntity.getEyePosition().subtract(caster.getEyePosition()));
+        SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(spell);
         Vec3 target = targetEntity == null ? caster.getEyePosition().add(direction.scale(Math.max(3.0, range)))
-                : targetEntity.position();
+                : profile.motion() == SpellPresentationProfile.MotionStyle.PRISON
+                ? targetEntity.position() : targetEntity.getEyePosition();
         Vec3 center = presentationCenter(caster, spell, target, direction);
         double distance = target.distanceTo(center);
         int impact = SpellPresentationProfile.impactDelayTicks(spell, Math.max(0.0, distance));
@@ -93,7 +97,8 @@ public final class WorldMagicService {
         SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(spell);
         return switch (profile.sigil()) {
             case SKY_RITUAL -> target.add(0.0, profile.skyHeight(), 0.0);
-            case TARGET_SEAL -> target.add(0.0, 1.05, 0.0);
+            case TARGET_SEAL -> profile.motion() == SpellPresentationProfile.MotionStyle.PRISON
+                    ? target.add(0.0, 0.055, 0.0) : target;
             case GROUND_SEAL, QUAD_ARRAY -> target.add(0.0, 0.055, 0.0);
             case WALL_MATRIX -> target.add(0.0, Math.max(1.2, profile.radius() * 0.34), 0.0);
             case PORTAL_GATE -> target.add(0.0, Math.max(1.1, profile.radius() * 0.52), 0.0);
@@ -109,7 +114,11 @@ public final class WorldMagicService {
         Optional<Mob> target = aimedMob(player, range);
         return switch (spell.sigilAnchor()) {
             case GROUND_TARGET -> target.map(mob -> groundUnder(player, mob.position())).orElseGet(() -> aimGround(player, Math.max(4.0, range)));
-            case TARGET -> target.<Vec3>map(Mob::getEyePosition).orElseGet(() -> visiblePoint(player, look, Math.min(Math.max(3.0, range), 72.0)));
+            case TARGET -> SpellPresentationProfile.profile(spell).motion() == SpellPresentationProfile.MotionStyle.PRISON
+                    ? target.map(mob -> groundUnder(player, mob.position()))
+                    .orElseGet(() -> aimGround(player, Math.max(4.0, range)))
+                    : target.<Vec3>map(Mob::getEyePosition)
+                    .orElseGet(() -> visiblePoint(player, look, Math.min(Math.max(3.0, range), 72.0)));
             case FRONT -> target.<Vec3>map(Mob::getEyePosition).orElseGet(() -> visiblePoint(player, look, Math.min(Math.max(3.0, range), 72.0)));
             case FEET, GROUND_SELF -> player.position().add(0.0, 0.055, 0.0);
             case BODY -> player.position().add(0.0, 1.0, 0.0);
