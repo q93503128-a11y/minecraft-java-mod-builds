@@ -47,6 +47,8 @@ public final class ErdenExteriorLifecycleManager {
     private static final int SPAWN_INTERVAL = 40;
     private static final int SPAWN_BUDGET = 2;
     private static final int ROUTINE_INTERVAL = 80;
+    private static final int NAVIGATION_BUDGET = 4;
+    private static final int ROUTE_LOAD_SAMPLE = 8;
     private static final Identifier VILLAGER_ID =
             Identifier.fromNamespaceAndPath("minecraft", "villager");
     private static final List<String> DESCENDANT_NAMES = List.of(
@@ -496,9 +498,13 @@ public final class ErdenExteriorLifecycleManager {
             if (spawned >= SPAWN_BUDGET) break;
             if (person.founder() || !person.aliveOn(day) || existing.contains(person.name())) continue;
             ErdenExteriorWorkforceSavedData.Household household = households.get(person.householdId());
+            BlockPos physicalHome = household == null
+                    ? BlockPos.ZERO
+                    : ErdenExteriorResidenceBuilder.residentSpawnPosition(household.id(), 0);
             if (household == null
+                    || physicalHome.equals(BlockPos.ZERO)
                     || !ErdenKingdomExteriorBuilder.residenceBuilt(level, household.id())
-                    || !level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)) continue;
+                    || !level.hasChunk(physicalHome.getX() >> 4, physicalHome.getZ() >> 4)) continue;
             ErdenKingdomSupplyCatalog.SupplyNode node = ErdenKingdomSupplyCatalog.node(person.nodeId());
             if (node == null || !ErdenKingdomExteriorBuilder.anchorBuilt(level, node)) continue;
             if (spawnDescendant(level, household, person, day)) spawned++;
@@ -520,6 +526,7 @@ public final class ErdenExteriorLifecycleManager {
                 household.id(), slot);
         int x = spawn.getX();
         int z = spawn.getZ();
+        if (spawn.equals(BlockPos.ZERO) || !level.hasChunk(x >> 4, z >> 4)) return false;
         villager.setPos(
                 x + 0.5D,
                 safeStandingY(level, x, spawn.getY(), z),
@@ -556,12 +563,13 @@ public final class ErdenExteriorLifecycleManager {
         if (level.getGameTime() % ROUTINE_INTERVAL != 0L) return;
         Map<String, ErdenExteriorLifecycleSavedData.Person> people = new HashMap<>();
         for (ErdenExteriorLifecycleSavedData.Person person : lifecycle.persons()) {
-            if (!person.foundingWorker() || person.retiredOn(day)) {
+            if (!person.founder() || person.retiredOn(day)) {
                 people.put(person.name(), person);
             }
         }
         Map<String, ErdenExteriorWorkforceSavedData.Household> households = householdMap(workforce);
         long dayTime = Math.floorMod(level.getGameTime(), 24_000L);
+        int navigationBudget = NAVIGATION_BUDGET;
         for (Villager villager : level.getEntitiesOfClass(
                 Villager.class, exteriorBounds(level),
                 candidate -> people.containsKey(candidate.getName().getString()))) {
@@ -586,7 +594,11 @@ public final class ErdenExteriorLifecycleManager {
             if (!level.hasChunk(x >> 4, z >> 4)) continue;
             int y = safeStandingY(level, x, destination.getY(), z);
             villager.setPersistenceRequired();
-            if (villager.distanceToSqr(x + 0.5D, y, z + 0.5D) > 4.0D) {
+            BlockPos targetPos = new BlockPos(x, y, z);
+            if (navigationBudget > 0
+                    && villager.distanceToSqr(x + 0.5D, y, z + 0.5D) > 4.0D
+                    && routeLoaded(level, villager.blockPosition(), targetPos)) {
+                navigationBudget--;
                 villager.getNavigation().moveTo(x + 0.5D, y, z + 0.5D, 0.56D);
             }
         }
@@ -906,6 +918,19 @@ public final class ErdenExteriorLifecycleManager {
             maxZ = Math.max(maxZ, node.z + 160);
         }
         return new AABB(minX, level.getMinY(), minZ, maxX, level.getMaxY(), maxZ);
+    }
+
+    private static boolean routeLoaded(ServerLevel level, BlockPos from, BlockPos to) {
+        int dx = to.getX() - from.getX();
+        int dz = to.getZ() - from.getZ();
+        int distance = Math.max(Math.abs(dx), Math.abs(dz));
+        int steps = Math.max(1, (distance + ROUTE_LOAD_SAMPLE - 1) / ROUTE_LOAD_SAMPLE);
+        for (int step = 0; step <= steps; step++) {
+            int x = from.getX() + Math.floorDiv(dx * step, steps);
+            int z = from.getZ() + Math.floorDiv(dz * step, steps);
+            if (!level.hasChunk(x >> 4, z >> 4)) return false;
+        }
+        return true;
     }
 
     private static int safeStandingY(ServerLevel level, int x, int preferredY, int z) {

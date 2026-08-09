@@ -47,6 +47,8 @@ public final class ErdenExteriorWorkforceManager {
     private static final int SPAWN_INTERVAL = 20;
     private static final int SPAWN_BUDGET = 3;
     private static final int ROUTINE_INTERVAL = 60;
+    private static final int NAVIGATION_BUDGET = 6;
+    private static final int ROUTE_LOAD_SAMPLE = 8;
     private static final int[][] HOME_OFFSETS = {
             {0, 0}, {28, 0}, {-28, 0}, {0, 28}, {0, -28}
     };
@@ -344,10 +346,13 @@ public final class ErdenExteriorWorkforceManager {
         for (ErdenExteriorWorkforceSavedData.Household household : workforce.households()) {
             if (spawned >= SPAWN_BUDGET) break;
             ErdenKingdomSupplyCatalog.SupplyNode node = ErdenKingdomSupplyCatalog.node(household.nodeId());
+            BlockPos physicalHome = ErdenExteriorResidenceBuilder.residentSpawnPosition(
+                    household.id(), 0);
             if (node == null
+                    || physicalHome.equals(BlockPos.ZERO)
                     || !ErdenKingdomExteriorBuilder.anchorBuilt(level, node)
                     || !ErdenKingdomExteriorBuilder.residenceBuilt(level, household.id())
-                    || !level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)) continue;
+                    || !level.hasChunk(physicalHome.getX() >> 4, physicalHome.getZ() >> 4)) continue;
             for (ErdenExteriorWorkforceSavedData.Resident resident : household.residents()) {
                 if (spawned >= SPAWN_BUDGET) break;
                 if (workforce.isDead(resident.id()) || existing.containsKey(resident.name())) continue;
@@ -369,6 +374,7 @@ public final class ErdenExteriorWorkforceManager {
                 household.id(), resident.bedSlot());
         int x = spawn.getX();
         int z = spawn.getZ();
+        if (spawn.equals(BlockPos.ZERO) || !level.hasChunk(x >> 4, z >> 4)) return false;
         int standingY = safeStandingY(level, x, spawn.getY(), z);
         villager.setPos(x + 0.5D, standingY, z + 0.5D);
         villager.setCustomName(Component.literal(resident.name()));
@@ -386,6 +392,7 @@ public final class ErdenExteriorWorkforceManager {
         Map<String, ResidentRef> references = references(workforce);
         if (references.isEmpty()) return;
         long dayTime = Math.floorMod(level.getGameTime(), 24_000L);
+        int navigationBudget = NAVIGATION_BUDGET;
         for (Villager villager : level.getEntitiesOfClass(
                 Villager.class, exteriorBounds(level),
                 candidate -> references.containsKey(candidate.getName().getString()))) {
@@ -399,7 +406,11 @@ public final class ErdenExteriorWorkforceManager {
             Target target = target(level, reference, working);
             if (target == null) continue;
             villager.setPersistenceRequired();
-            if (villager.distanceToSqr(target.x() + 0.5D, target.y(), target.z() + 0.5D) > 4.0D) {
+            BlockPos targetPos = new BlockPos(target.x(), target.y(), target.z());
+            if (navigationBudget > 0
+                    && villager.distanceToSqr(target.x() + 0.5D, target.y(), target.z() + 0.5D) > 4.0D
+                    && routeLoaded(level, villager.blockPosition(), targetPos)) {
+                navigationBudget--;
                 villager.getNavigation().moveTo(
                         target.x() + 0.5D, target.y(), target.z() + 0.5D, 0.58D);
             }
@@ -501,6 +512,19 @@ public final class ErdenExteriorWorkforceManager {
             maxZ = Math.max(maxZ, node.z + 160);
         }
         return new AABB(minX, level.getMinY(), minZ, maxX, level.getMaxY(), maxZ);
+    }
+
+    private static boolean routeLoaded(ServerLevel level, BlockPos from, BlockPos to) {
+        int dx = to.getX() - from.getX();
+        int dz = to.getZ() - from.getZ();
+        int distance = Math.max(Math.abs(dx), Math.abs(dz));
+        int steps = Math.max(1, (distance + ROUTE_LOAD_SAMPLE - 1) / ROUTE_LOAD_SAMPLE);
+        for (int step = 0; step <= steps; step++) {
+            int x = from.getX() + Math.floorDiv(dx * step, steps);
+            int z = from.getZ() + Math.floorDiv(dz * step, steps);
+            if (!level.hasChunk(x >> 4, z >> 4)) return false;
+        }
+        return true;
     }
 
     private static int safeStandingY(ServerLevel level, int x, int preferredY, int z) {
