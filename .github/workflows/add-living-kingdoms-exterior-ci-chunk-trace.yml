@@ -46,4 +46,4 @@ jobs:
           done
           exit 1
 
-# CI-only logging instrumentation; keep source trace until watchdog root cause is closed.
+# CI-only logging instrumentation; keep source trace until watchdog root cause is closed. Triggered explicitly.
