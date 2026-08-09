@@ -45,7 +45,7 @@ public final class ErdenExteriorWorkforceManager {
             Identifier.fromNamespaceAndPath("minecraft", "villager");
     private static final int MAX_CATCH_UP_DAYS = 30;
     private static final int SPAWN_INTERVAL = 20;
-    private static final int SPAWN_BUDGET = 3;
+    private static final int SPAWN_BUDGET = 2;
     private static final int ROUTINE_INTERVAL = 60;
     private static final int NAVIGATION_BUDGET = 6;
     private static final int ROUTE_LOAD_SAMPLE = 8;

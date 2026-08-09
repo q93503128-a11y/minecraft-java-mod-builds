@@ -21,7 +21,7 @@ public final class IncrementalWorldEditPlan {
     private static final ThreadLocal<IncrementalWorldEditPlan> ACTIVE = new ThreadLocal<>();
     private static final int CONSTRUCTION_UPDATE_FLAGS =
             Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
-    private static final long MAX_APPLY_NANOS = 40_000_000L;
+    private static final long MAX_APPLY_NANOS = 12_000_000L;
 
     private final boolean chunkBounded;
     private final int boundMinX;

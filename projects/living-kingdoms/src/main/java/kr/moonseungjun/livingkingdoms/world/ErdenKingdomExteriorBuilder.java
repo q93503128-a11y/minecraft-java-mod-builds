@@ -27,9 +27,9 @@ public final class ErdenKingdomExteriorBuilder {
     public static final int EXTERIOR_REVISION = 2;
 
     private static final int TICK_BUDGET = 2_000;
-    private static final int CI_TICK_BUDGET = 16_000;
+    private static final int CI_TICK_BUDGET = 4_000;
     private static final int CI_FORCE_BUDGET = 1;
-    private static final int CI_MAX_IN_FLIGHT = 3;
+    private static final int CI_MAX_IN_FLIGHT = 2;
     public static final int EXPECTED_CI_ANCHORS = 178;
     private static final int ROAD_HALF_WIDTH = 2;
     private static final int[][] NODE_ANCHOR_OFFSETS = {
