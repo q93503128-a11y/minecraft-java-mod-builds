@@ -23,13 +23,32 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
+      - name: Guard nonblocking construction invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          edits="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
+          capital="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalStreamingBuilder.java"
+
+          grep -F 'if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);' "$edits"
+          grep -F 'addTicketAndLoadWithRadius(' "$edits"
+          grep -F 'removeTicketWithRadius(' "$edits"
+          grep -F 'releaseRetainedConstructionChunks(level)' "$edits"
+          grep -F 'Block.UPDATE_KNOWN_SHAPE' "$edits"
+          ! grep -F 'setChunkForced' "$edits"
+
+          grep -F 'new IncrementalWorldEditPlan(chunk)' "$capital"
+          grep -F 'addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0)' "$capital"
+          grep -F 'removeTicketWithRadius(' "$capital"
+          ! grep -F 'setChunkForced' "$capital"
+          ! grep -E '(^|[^A-Za-z])level\.getChunk\(' "$capital"
       - name: Compile current Living Kingdoms sources
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
