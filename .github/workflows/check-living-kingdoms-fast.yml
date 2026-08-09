@@ -30,12 +30,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Guard nonblocking construction invariants
+      - name: Guard nonblocking construction and resident invariants
         shell: bash
         run: |
           set -euo pipefail
           edits="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
           capital="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalStreamingBuilder.java"
+          workforce="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java"
+          lifecycle="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java"
 
           grep -F 'if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);' "$edits"
           grep -F 'addTicketAndLoadWithRadius(' "$edits"
@@ -49,6 +51,19 @@ jobs:
           grep -F 'removeTicketWithRadius(' "$capital"
           ! grep -F 'setChunkForced' "$capital"
           ! grep -E '(^|[^A-Za-z])level\.getChunk\(' "$capital"
+
+          grep -F 'NAVIGATION_BUDGET = 6' "$workforce"
+          grep -F 'BlockPos physicalHome = ErdenExteriorResidenceBuilder.residentSpawnPosition(' "$workforce"
+          grep -F '!level.hasChunk(physicalHome.getX() >> 4, physicalHome.getZ() >> 4)' "$workforce"
+          grep -F 'routeLoaded(level, villager.blockPosition(), targetPos)' "$workforce"
+          ! grep -F 'level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)' "$workforce"
+
+          grep -F 'NAVIGATION_BUDGET = 4' "$lifecycle"
+          grep -F 'BlockPos physicalHome = household == null' "$lifecycle"
+          grep -F '!level.hasChunk(physicalHome.getX() >> 4, physicalHome.getZ() >> 4)' "$lifecycle"
+          grep -F 'if (!person.founder() || person.retiredOn(day))' "$lifecycle"
+          grep -F 'routeLoaded(level, villager.blockPosition(), targetPos)' "$lifecycle"
+          ! grep -F 'level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)' "$lifecycle"
       - name: Compile current Living Kingdoms sources
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
