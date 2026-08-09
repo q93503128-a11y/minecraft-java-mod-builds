@@ -46,12 +46,19 @@ jobs:
           planner="src/main/java/kr/moonseungjun/livingkingdoms/world/RealmSitePlanner.java"
           incremental="src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
           exterior="src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java"
+          catalog="src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceCatalog.java"
+          residence="src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceBuilder.java"
           grep -F 'plan.plannedSurfaceY(level, span.x, span.z)' "$external"
           ! grep -F 'RealmSitePlanner.surfaceY(level, span.x, span.z)' "$external"
           ! grep -F 'level.getChunk(' "$planner"
           ! grep -F 'level.getHeight(' "$planner"
           grep -F 'AuthoredContinentDensity.surfaceHeight(x, z)' "$planner"
+          grep -F 'public static final int EXTERIOR_REVISION = 2;' "$exterior"
+          grep -F 'EXPECTED_CI_ANCHORS = 178' "$exterior"
+          grep -F 'plot.physicalChunk()' "$exterior"
           grep -F 'new IncrementalWorldEditPlan(chunk)' "$exterior"
+          grep -F 'HAMLET_DISTANCE = 96' "$catalog"
+          grep -F 'public static final int RESIDENCE_REVISION = 2;' "$residence"
           grep -F 'if (!insideScope(x, z)) {' "$incremental"
           grep -F 'if (!level.hasChunk(chunkX, chunkZ)) {' "$incremental"
           grep -F 'if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);' "$incremental"
@@ -80,12 +87,13 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
 
           passed=0
-          for attempt in $(seq 1 1500); do
+          for attempt in $(seq 1 1800); do
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/kingdom-exterior-server.log; then
               cat ../../logs/kingdom-exterior-server.log
               exit 1
             fi
-            if grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=1 nodes=18 producers=15 wharves=3' ../../logs/kingdom-exterior-server.log \
+            if grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 nodes=18 producers=15 wharves=3' ../../logs/kingdom-exterior-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/kingdom-exterior-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/kingdom-exterior-server.log \
               && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/kingdom-exterior-server.log; then
               passed=1
@@ -100,7 +108,7 @@ jobs:
 
           cat ../../logs/kingdom-exterior-server.log
           test "$passed" -eq 1
-          grep -F 'Requested Erden exterior CI anchors nodes=18' ../../logs/kingdom-exterior-server.log
+          grep -F 'Requested Erden exterior CI anchors nodes=18 request_queue=178' ../../logs/kingdom-exterior-server.log
           grep -F 'metre_scale=true streamed=true' ../../logs/kingdom-exterior-server.log
           grep -F 'external_buildings=true' ../../logs/kingdom-exterior-server.log
           grep -F 'fields=true' ../../logs/kingdom-exterior-server.log
@@ -110,8 +118,9 @@ jobs:
           grep -F 'docks=true' ../../logs/kingdom-exterior-server.log
           grep -F 'roads=true' ../../logs/kingdom-exterior-server.log
           grep -F 'storage_yards=true' ../../logs/kingdom-exterior-server.log
+          grep -F 'physical_residences=true' ../../logs/kingdom-exterior-server.log
           grep -F 'debris_zero=true' ../../logs/kingdom-exterior-server.log
-          marker="$(grep -F 'LK_ERDEN_KINGDOM_EXTERIOR_PASS' ../../logs/kingdom-exterior-server.log | tail -1)"
+          marker="$(grep -F 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2' ../../logs/kingdom-exterior-server.log | tail -1)"
           anchor_chunks="$(sed -E 's/.*anchor_chunks=([0-9]+).*/\1/' <<<"$marker")"
           writes="$(sed -E 's/.*writes=([0-9]+).*/\1/' <<<"$marker")"
           test "$anchor_chunks" -ge 70
@@ -120,7 +129,7 @@ jobs:
           grep -F 'purchase_outcomes=77' ../../logs/kingdom-exterior-server.log
           grep -F 'reserve_bread=42' ../../logs/kingdom-exterior-server.log
 
-          if grep -Eqi 'Unknown Erden supply role|Requested chunk is outside|Exception loading level|watchdog|A single server tick took|Item debris remained' ../../logs/kingdom-exterior-server.log; then
+          if grep -Eqi 'Unknown Erden supply role|Requested chunk is outside|Invalid Erden exterior residence|Exception loading level|watchdog|A single server tick took|Item debris remained' ../../logs/kingdom-exterior-server.log; then
             exit 1
           fi
 
