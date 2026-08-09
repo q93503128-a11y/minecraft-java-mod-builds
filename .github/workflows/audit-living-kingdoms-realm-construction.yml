@@ -1,0 +1,151 @@
+name: Audit Living Kingdoms realm construction progress
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/audit-living-kingdoms-realm-construction.yml'
+
+concurrency:
+  group: living-kingdoms-realm-construction-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Prove nonblocking chunk ownership invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          edits="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
+          capital="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalStreamingBuilder.java"
+          coordinator="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/RealmBuildCoordinator.java"
+
+          grep -F 'if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);' "$edits"
+          grep -F 'addTicketAndLoadWithRadius(' "$edits"
+          grep -F 'removeTicketWithRadius(' "$edits"
+          grep -F 'releaseRetainedConstructionChunks(level)' "$edits"
+          grep -F 'Block.UPDATE_KNOWN_SHAPE' "$edits"
+          ! grep -F 'setChunkForced' "$edits"
+
+          grep -F 'new IncrementalWorldEditPlan(chunk)' "$capital"
+          grep -F 'addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0)' "$capital"
+          grep -F 'removeTicketWithRadius(' "$capital"
+          ! grep -F 'setChunkForced' "$capital"
+          ! grep -E '(^|[^A-Za-z])level\.getChunk\(' "$capital"
+
+          grep -F 'GenerationTask task = new GenerationTask' "$coordinator"
+          grep -F 'int used = plan.apply(job.realm, remaining);' "$coordinator"
+
+      - name: Java 25 compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p ../../logs
+          gradle --no-daemon clean classes --stacktrace --console=plain \
+            2>&1 | tee ../../logs/realm-construction-compile.log
+
+      - name: Fresh world must escape zero-write construction stall
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-realm-construction-ci-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-realm-construction-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/realm-construction-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          prepared=0
+          progressed=0
+          for attempt in $(seq 1 600); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/realm-construction-server.log \
+              || grep -Eqi 'watchdog|A single server tick took|Failed incremental homeland construction|Exception caught during firing event' ../../logs/realm-construction-server.log; then
+              cat ../../logs/realm-construction-server.log
+              exit 1
+            fi
+            if grep -Fq 'Prepared incremental homeland plan erden_kingdom' ../../logs/realm-construction-server.log; then
+              prepared=1
+            fi
+            if grep -Eq 'Realm construction erden_kingdom progress ([1-9][0-9]*|100)% \([1-9][0-9]*/[1-9][0-9]*\)' ../../logs/realm-construction-server.log \
+              || grep -Fq 'Completed active Erden site' ../../logs/realm-construction-server.log; then
+              progressed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/realm-construction-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/realm-construction-server.log
+          test "$prepared" -eq 1
+          test "$progressed" -eq 1
+          grep -F 'Prepared incremental homeland plan erden_kingdom' ../../logs/realm-construction-server.log
+          grep -E 'Realm construction erden_kingdom progress ([1-9][0-9]*|100)%|Completed active Erden site' ../../logs/realm-construction-server.log
+          ! grep -Eqi 'watchdog|A single server tick took|Failed incremental homeland construction' ../../logs/realm-construction-server.log
+
+      - name: Upload realm construction audit logs
+        if: always()
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-realm-construction-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Record realm construction audit pointer
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-realm-construction.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-realm-construction.json
+            git commit -m "Record Living Kingdoms realm construction audit $GITHUB_RUN_NUMBER" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
