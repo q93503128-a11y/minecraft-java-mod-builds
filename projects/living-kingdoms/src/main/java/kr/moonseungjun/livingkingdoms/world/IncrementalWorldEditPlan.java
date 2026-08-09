@@ -3,6 +3,7 @@ package kr.moonseungjun.livingkingdoms.world;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -10,8 +11,10 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Ordered, compact block-state edit plan that can be applied over many server ticks. */
 public final class IncrementalWorldEditPlan {
@@ -27,6 +30,7 @@ public final class IncrementalWorldEditPlan {
     private final int boundMaxZ;
 
     private final List<Operation> operations = new ArrayList<>();
+    private final Set<Long> retainedConstructionChunks = new HashSet<>();
     private final Map<Long, Integer> originalSurfaceHeights = new HashMap<>();
     private final Map<Long, Integer> plannedSurfaceHeights = new HashMap<>();
     private PendingTerrainColumn pendingTerrainColumn;
@@ -155,17 +159,23 @@ public final class IncrementalWorldEditPlan {
         flushPendingTerrainColumn();
         int used = 0;
         long deadline = System.nanoTime() + MAX_APPLY_NANOS;
-        while (operationIndex < operations.size() && used < budget) {
-            if (used > 0 && System.nanoTime() >= deadline) break;
-            Operation operation = operations.get(operationIndex);
-            int consumed = operation.apply(level, budget - used, deadline);
-            if (consumed <= 0) break;
-            used += consumed;
-            appliedWrites += consumed;
-            if (operation.done()) operationIndex++;
-            else break;
+        try {
+            while (operationIndex < operations.size() && used < budget) {
+                if (used > 0 && System.nanoTime() >= deadline) break;
+                Operation operation = operations.get(operationIndex);
+                int consumed = operation.apply(this, level, budget - used, deadline);
+                if (consumed <= 0) break;
+                used += consumed;
+                appliedWrites += consumed;
+                if (operation.done()) operationIndex++;
+                else break;
+            }
+            if (operationIndex >= operations.size()) releaseRetainedConstructionChunks(level);
+            return used;
+        } catch (RuntimeException | Error failure) {
+            releaseRetainedConstructionChunks(level);
+            throw failure;
         }
-        return used;
     }
 
     public boolean done() {
@@ -227,7 +237,7 @@ public final class IncrementalWorldEditPlan {
     }
 
     private interface Operation {
-        int apply(ServerLevel level, int budget, long deadline);
+        int apply(IncrementalWorldEditPlan owner, ServerLevel level, int budget, long deadline);
         boolean done();
     }
 
@@ -238,9 +248,9 @@ public final class IncrementalWorldEditPlan {
         private SetOperation(int x, int y, int z, BlockState state) {
             this.x = x; this.y = y; this.z = z; this.state = state;
         }
-        @Override public int apply(ServerLevel level, int budget, long deadline) {
+        @Override public int apply(IncrementalWorldEditPlan owner, ServerLevel level, int budget, long deadline) {
             if (done || budget <= 0 || System.nanoTime() >= deadline) return 0;
-            if (!write(level, x, y, z, state)) return 0;
+            if (!owner.write(level, x, y, z, state)) return 0;
             done = true;
             return 1;
         }
@@ -258,11 +268,11 @@ public final class IncrementalWorldEditPlan {
             this.maxX = maxX; this.maxY = maxY; this.maxZ = maxZ;
             this.state = state; this.x = minX; this.y = minY; this.z = minZ;
         }
-        @Override public int apply(ServerLevel level, int budget, long deadline) {
+        @Override public int apply(IncrementalWorldEditPlan owner, ServerLevel level, int budget, long deadline) {
             int used = 0;
             while (!done && used < budget
                     && (used == 0 || System.nanoTime() < deadline)) {
-                if (!write(level, x, y, z, state)) break;
+                if (!owner.write(level, x, y, z, state)) break;
                 used++;
                 advance();
             }
@@ -279,11 +289,14 @@ public final class IncrementalWorldEditPlan {
         @Override public boolean done() { return done; }
     }
 
-    private static boolean write(ServerLevel level, int x, int y, int z, BlockState state) {
+    private boolean write(ServerLevel level, int x, int y, int z, BlockState state) {
         if (y < level.getMinY() || y >= level.getMaxY()) return true;
         int chunkX = x >> 4;
         int chunkZ = z >> 4;
-        if (!level.hasChunk(chunkX, chunkZ)) return false;
+        if (!level.hasChunk(chunkX, chunkZ)) {
+            if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);
+            return false;
+        }
         BlockPos pos = new BlockPos(x, y, z);
         if (level.getBlockState(pos).equals(state)) return true;
         // External structures can carry stale pending block-entity NBT after cleanup changed
@@ -292,6 +305,24 @@ public final class IncrementalWorldEditPlan {
         level.getChunkAt(pos).removeBlockEntity(pos);
         level.setBlock(pos, state, CONSTRUCTION_UPDATE_FLAGS);
         return true;
+    }
+
+    private void retainConstructionChunk(ServerLevel level, int chunkX, int chunkZ) {
+        long packed = columnKey(chunkX, chunkZ);
+        if (!retainedConstructionChunks.add(packed)) return;
+        level.getChunkSource().addTicketAndLoadWithRadius(
+                TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
+    }
+
+    private void releaseRetainedConstructionChunks(ServerLevel level) {
+        if (retainedConstructionChunks.isEmpty()) return;
+        for (long packed : Set.copyOf(retainedConstructionChunks)) {
+            level.getChunkSource().removeTicketWithRadius(
+                    TicketType.PORTAL,
+                    new ChunkPos((int) (packed >> 32), (int) packed),
+                    0);
+        }
+        retainedConstructionChunks.clear();
     }
 
     private record PendingTerrainColumn(long key, int surfaceY,
