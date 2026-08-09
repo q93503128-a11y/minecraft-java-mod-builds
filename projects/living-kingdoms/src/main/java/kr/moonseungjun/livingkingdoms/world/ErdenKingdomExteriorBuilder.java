@@ -117,6 +117,12 @@ public final class ErdenKingdomExteriorBuilder {
                     ErdenExteriorResidenceBuilder.RESIDENCE_REVISION,
                     plots, active.plan.appliedWrites());
         }
+        if (isCi()) {
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_EXTERIOR_CHUNK_COMPLETE chunk={},{} applied_writes={} exterior={} residences={}",
+                    active.chunkX, active.chunkZ, active.plan.appliedWrites(),
+                    active.buildExterior, active.buildResidences);
+        }
         QUEUED.remove(active.packed);
         release(level, active.packed);
         active = null;
@@ -236,6 +242,12 @@ public final class ErdenKingdomExteriorBuilder {
                 continue;
             }
             if (RETAINED.add(packed)) {
+                LivingKingdoms.LOGGER.info(
+                        "LK_ERDEN_EXTERIOR_CHUNK_REQUEST chunk={},{} exterior_needed={} residence_needed={} retained={} queue_remaining={}",
+                        chunkX, chunkZ, exteriorNeeded,
+                        residences.needsChunk(chunkX, chunkZ,
+                                ErdenExteriorResidenceBuilder.RESIDENCE_REVISION),
+                        RETAINED.size(), CI_REQUESTS.size());
                 level.getChunkSource().addTicketAndLoadWithRadius(
                         TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
             }
@@ -297,6 +309,14 @@ public final class ErdenKingdomExteriorBuilder {
             active = new ActiveChunk(
                     packed, chunkX, chunkZ,
                     buildExterior, buildResidences, plan);
+            if (isCi()) {
+                LivingKingdoms.LOGGER.info(
+                        "LK_ERDEN_EXTERIOR_CHUNK_START chunk={},{} writes={} operations={} exterior={} residences={} plots={} clipped={}",
+                        chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount(),
+                        buildExterior, buildResidences,
+                        ErdenExteriorResidenceCatalog.forChunk(chunkX, chunkZ).size(),
+                        plan.suppressedOutOfBoundsWrites());
+            }
             LivingKingdoms.LOGGER.debug(
                     "Prepared Erden exterior chunk {},{} writes={} operations={} exterior={} residences={} clipped_out_of_chunk_writes={}",
                     chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount(),
