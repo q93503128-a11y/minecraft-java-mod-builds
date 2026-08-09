@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
@@ -144,7 +144,7 @@ jobs:
           grep -F 'vanilla_structures_blocked=true' ../../logs/server-smoke.log
           grep -F 'cleaned_citadel_part=true' ../../logs/server-smoke.log
           grep -F 'streamed_capital=true' ../../logs/server-smoke.log
-          grep -F 'streamed_samples=9' ../../logs/server-smoke.log
+          grep -F 'streamed_samples=10' ../../logs/server-smoke.log
           grep -F 'district_landmarks=16' ../../logs/server-smoke.log
           grep -F 'residential_blocks=24' ../../logs/server-smoke.log
           grep -F 'building_entrances=' ../../logs/server-smoke.log
@@ -231,10 +231,15 @@ jobs:
           for class in \
             ErdenCapitalStreamingBuilder ExternalDistrictBuildingBuilder ExternalUrbanFabricBuilder \
             ErdenUrbanInfrastructureBuilder ErdenPopulationManager ErdenPopulationSavedData \
-            ErdenPhysicalEconomyManager ErdenAuthoritativeEconomyManager ErdenPhysicalEconomySavedData \
+            ErdenAuthoritativeEconomyManager ErdenPhysicalEconomySavedData \
             ErdenLivingEconomyManager ErdenLivingEconomySavedData ErdenCargoEscrowManager \
             ErdenCargoEscrowAudit ErdenTransportManager ErdenTransportSavedData \
-            ErdenBakeryReserveManager ErdenPopulationCiChunkRetainer ErdenDiagnosticDebrisSettler; do
+            ErdenBakeryReserveManager ErdenPopulationCiChunkRetainer ErdenDiagnosticDebrisSettler \
+            ErdenKingdomExteriorBuilder ErdenKingdomSupplyManager ErdenKingdomSupplySavedData \
+            ErdenExteriorWorkforceManager ErdenExteriorWorkforceSavedData \
+            ErdenExteriorLifecycleManager ErdenExteriorLifecycleSavedData \
+            ErdenExteriorEstateManager ErdenExteriorEstateSavedData \
+            ErdenExteriorResidenceCatalog ErdenExteriorResidenceBuilder ErdenExteriorResidenceSavedData; do
             grep -Fx "kr/moonseungjun/livingkingdoms/world/${class}.class" logs/jar-entries.txt
           done
           grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/StructurelessNoiseChunkGenerator.class' logs/jar-entries.txt
@@ -255,6 +260,8 @@ jobs:
           - Streamed 2.4 x 1.8 km capital and external structure audit: PASS
           - Household population, ownership and routines: PASS
           - Physical worksite inventory and authoritative cargo settlement: PASS
+          - Exterior workforce, lifecycle, property and residence systems packaged: PASS
+          - Kingdom producer and wharf supply chain packaged: PASS
           - Shop hours, seven-day holidays and stock-based prices: PASS
           - Household purchase outcomes preserved for all 77 households: PASS
           - Success, closure, stockout and affordability paths: PASS
