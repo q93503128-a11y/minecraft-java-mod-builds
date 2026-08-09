@@ -72,3 +72,5 @@ jobs:
             projects/living-kingdoms/run/crash-reports/**
           if-no-files-found: warn
           retention-days: 7
+
+# Triggered explicitly to capture the server-thread watchdog stack.
