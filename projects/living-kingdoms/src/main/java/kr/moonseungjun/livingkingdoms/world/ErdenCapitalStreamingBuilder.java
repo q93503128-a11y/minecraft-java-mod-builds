@@ -4,6 +4,7 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -73,7 +74,7 @@ public final class ErdenCapitalStreamingBuilder {
 
     /**
      * Requests deterministic completion of one capital cell even when no player is keeping it loaded.
-     * The temporary force-load is removed as soon as that cell is marked complete.
+     * The transient chunk ticket is removed as soon as that cell is marked complete.
      */
     public static void requestChunk(ServerLevel level, int chunkX, int chunkZ) {
         ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
@@ -85,9 +86,10 @@ public final class ErdenCapitalStreamingBuilder {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
         if (!data.needs(packed, CAPITAL_REVISION)) return;
-        if (RETAINED_REQUESTS.add(packed)) level.setChunkForced(chunkX, chunkZ, true);
-        level.getChunk(chunkX, chunkZ);
-        enqueue(level, packed, true);
+        if (RETAINED_REQUESTS.add(packed)) {
+            level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
+        }
+        if (level.hasChunk(chunkX, chunkZ)) enqueue(level, packed, true);
     }
 
     public static boolean isChunkBuilt(ServerLevel level, int chunkX, int chunkZ) {
@@ -237,7 +239,8 @@ public final class ErdenCapitalStreamingBuilder {
 
     private static void releaseRetained(ServerLevel level, long packed) {
         if (!RETAINED_REQUESTS.remove(packed)) return;
-        level.setChunkForced(unpackX(packed), unpackZ(packed), false);
+        level.getChunkSource().removeTicketWithRadius(
+                TicketType.PORTAL, new ChunkPos(unpackX(packed), unpackZ(packed)), 0);
     }
 
     private static void clearQueue() {
@@ -245,7 +248,10 @@ public final class ErdenCapitalStreamingBuilder {
             ServerLevel previous = queuedServer.getLevel(StarterRealmManager.REALM_KEY);
             if (previous != null) {
                 for (long packed : Set.copyOf(RETAINED_REQUESTS)) {
-                    previous.setChunkForced(unpackX(packed), unpackZ(packed), false);
+                    previous.getChunkSource().removeTicketWithRadius(
+                            TicketType.PORTAL,
+                            new ChunkPos(unpackX(packed), unpackZ(packed)),
+                            0);
                 }
             }
         }
