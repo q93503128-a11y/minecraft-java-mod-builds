@@ -1,12 +1,20 @@
-name: Audit Living Kingdoms exterior residence overlap
+name: Audit Living Kingdoms exterior residence hamlets
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceCatalog.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceBuilder.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomSupplyCatalog.java'
       - '.github/scripts/audit_living_kingdoms_exterior_residence_overlap.py'
+      - '.github/scripts/audit_living_kingdoms_exterior_residence_hamlets.py'
       - '.github/workflows/audit-living-kingdoms-exterior-residence-overlap.yml'
+
+concurrency:
+  group: living-kingdoms-exterior-residence-hamlets-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -17,18 +25,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Calculate exact structure overlap
-        run: python .github/scripts/audit_living_kingdoms_exterior_residence_overlap.py
-      - name: Upload overlap report
+      - name: Prove all 74 physical worker homes avoid structures, worksites and freight roads
+        run: python .github/scripts/audit_living_kingdoms_exterior_residence_hamlets.py
+      - name: Upload hamlet collision report
         id: upload
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: living-kingdoms-exterior-residence-overlap-${{ github.run_number }}
-          path: logs/exterior-residence-overlap.json
+          name: living-kingdoms-exterior-residence-hamlets-${{ github.run_number }}
+          path: logs/exterior-residence-hamlets.json
           if-no-files-found: warn
           retention-days: 30
-      - name: Record overlap audit pointer
+      - name: Record hamlet collision audit pointer
         if: always()
         env:
           JOB_STATUS: ${{ job.status }}
@@ -52,11 +60,8 @@ jobs:
           }
           EOF
             git add .github/build-pointers/living-kingdoms-exterior-residence-overlap.json
-            git commit -m "Record Living Kingdoms residence overlap audit $GITHUB_RUN_NUMBER" || exit 0
+            git commit -m "Record Living Kingdoms residence hamlet audit $GITHUB_RUN_NUMBER" || exit 0
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 2))
           done
           exit 1
-
-# Diagnostic-only workflow. A non-zero overlap is reported, not treated as CI failure,
-# so the result can drive a deliberate save-compatible residence layout revision.
