@@ -171,9 +171,13 @@ public final class ErdenExteriorTicketReaper {
             if (!workforce.isDead(resident.id())) names.add(resident.name());
         }
         if (names.isEmpty()) return false;
+        BlockPos physicalHome = ErdenExteriorResidenceBuilder.residentSpawnPosition(
+                sample.id(), 0);
+        if (physicalHome.equals(BlockPos.ZERO)
+                || !level.hasChunk(physicalHome.getX() >> 4, physicalHome.getZ() >> 4)) return false;
         AABB bounds = new AABB(
-                sampleNode.x - 96, level.getMinY(), sampleNode.z - 96,
-                sampleNode.x + 96, level.getMaxY(), sampleNode.z + 96);
+                physicalHome.getX() - 16, level.getMinY(), physicalHome.getZ() - 16,
+                physicalHome.getX() + 16, level.getMaxY(), physicalHome.getZ() + 16);
         int loaded = level.getEntitiesOfClass(
                 Villager.class, bounds,
                 villager -> names.contains(villager.getName().getString())).size();
@@ -193,9 +197,13 @@ public final class ErdenExteriorTicketReaper {
         for (ErdenExteriorWorkforceSavedData.Resident resident : sample.residents()) {
             if (!workforce.isDead(resident.id())) names.add(resident.name());
         }
+        BlockPos physicalHome = ErdenExteriorResidenceBuilder.residentSpawnPosition(
+                sample.id(), 0);
+        if (physicalHome.equals(BlockPos.ZERO)
+                || !level.hasChunk(physicalHome.getX() >> 4, physicalHome.getZ() >> 4)) return 0;
         AABB bounds = new AABB(
-                sampleNode.x - 96, level.getMinY(), sampleNode.z - 96,
-                sampleNode.x + 96, level.getMaxY(), sampleNode.z + 96);
+                physicalHome.getX() - 16, level.getMinY(), physicalHome.getZ() - 16,
+                physicalHome.getX() + 16, level.getMaxY(), physicalHome.getZ() + 16);
         return level.getEntitiesOfClass(
                 Villager.class, bounds,
                 villager -> names.contains(villager.getName().getString())).size();
