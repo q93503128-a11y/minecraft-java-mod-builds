@@ -146,7 +146,7 @@ public final class ErdenCapitalStreamingBuilder {
     }
 
     private static IncrementalWorldEditPlan createChunkPlan(ServerLevel level, ChunkPos chunk) {
-        IncrementalWorldEditPlan plan = new IncrementalWorldEditPlan();
+        IncrementalWorldEditPlan plan = new IncrementalWorldEditPlan(chunk);
         addRoadNetwork(plan, level, chunk);
         ExternalRealmBuilder.addCapitalWallChunk(plan, level, chunk);
         ExternalDistrictBuildingBuilder.addChunk(plan, level, chunk);
