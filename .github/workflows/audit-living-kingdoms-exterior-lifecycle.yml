@@ -23,12 +23,12 @@ env:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
@@ -46,6 +46,9 @@ jobs:
           workforce="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java"
           main="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
           edits="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
+          exterior="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java"
+          residence="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceBuilder.java"
+          catalog="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceCatalog.java"
 
           grep -F 'ErdenExteriorLifecycleManager.onServerTick(event);' "$main"
           grep -F 'ErdenExteriorLifecycleManager.markDeadIfLifecycleResident(level, villager);' "$main"
@@ -65,6 +68,10 @@ jobs:
           grep -F 'ErdenExteriorLifecycleManager.controlsRoutine(' "$workforce"
           grep -F 'ErdenExteriorLifecycleManager.foundingWorkerAvailable(' "$workforce"
           test "$(grep -c 'additionalLabor(level, node.id, node.role, day)' "$workforce")" -eq 1
+          grep -F 'EXTERIOR_REVISION = 2' "$exterior"
+          grep -F 'EXPECTED_CI_ANCHORS = 178' "$exterior"
+          grep -F 'RESIDENCE_REVISION = 2' "$residence"
+          grep -F 'HAMLET_DISTANCE = 96' "$catalog"
           grep -F 'removeBlockEntity(pos)' "$edits"
           ! grep -R 'importWarehouseStock' "$PROJECT_DIR/src/main/java"
 
@@ -90,15 +97,15 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
 
           passed=0
-          for attempt in $(seq 1 2400); do
+          for attempt in $(seq 1 2700); do
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/exterior-lifecycle-server.log; then
               cat ../../logs/exterior-lifecycle-server.log
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS revision=1 founders=216 households=74' ../../logs/exterior-lifecycle-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_WORKFORCE_PASS revision=1 nodes=18 households=74 residents=216 workers=142' ../../logs/exterior-lifecycle-server.log \
-              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=104 released=104 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-lifecycle-server.log \
-              && grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=1 nodes=18 producers=15 wharves=3' ../../logs/exterior-lifecycle-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-lifecycle-server.log \
+              && grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 nodes=18 producers=15 wharves=3' ../../logs/exterior-lifecycle-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/exterior-lifecycle-server.log; then
               passed=1
               break
@@ -117,11 +124,12 @@ jobs:
           grep -F 'year_days=112 adulthood=18 retirement=58 births=true inheritance=true replacement_labor=true permanent_deaths=true save_overlay=true' ../../logs/exterior-lifecycle-server.log
           grep -E 'projected_births=[1-9][0-9]* projected_successions=[1-9][0-9]* projected_replacement_workers=[1-9][0-9]* projected_years=20 ci_projection_non_persistent=true' ../../logs/exterior-lifecycle-server.log
           grep -F 'storage_yards_observed=18 resident_sample_observed=true validation_revision=2' ../../logs/exterior-lifecycle-server.log
+          grep -F 'request_queue=178' ../../logs/exterior-lifecycle-server.log
           grep -F 'workforce_linked=true staffed_production=true wharf_labor=true' ../../logs/exterior-lifecycle-server.log
           grep -F 'fixed_daily_imports=false' ../../logs/exterior-lifecycle-server.log
           grep -F 'shipment_escrow=true' ../../logs/exterior-lifecycle-server.log
 
-          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Missing Erden lifecycle projection person|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-lifecycle-server.log; then
+          if grep -Eqi 'watchdog|A single server tick took|Invalid block entity|Failed to create block entity|Invalid Erden exterior residence|Invalid Erden exterior lifecycle|Duplicate Erden lifecycle|Missing Erden lifecycle projection person|Invalid Erden exterior CI anchor count|Invalid Erden exterior ticket anchor count|Exception loading level|EventBusSubscriber.*failed' ../../logs/exterior-lifecycle-server.log; then
             exit 1
           fi
 
