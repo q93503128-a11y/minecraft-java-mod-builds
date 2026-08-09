@@ -18,13 +18,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Metre-scale physical homes for the 74 exterior household parcels. Every unit has a real door,
- * three beds, storage, a hearth/work surface, lighting and a short access path. Attached quarters
- * deliberately occupy a corner of the node's central production building; detached parcels receive
- * a compact cottage wholly contained in their authoritative parcel chunk.
+ * Metre-scale physical homes for the 74 exterior households. Logical estate parcels remain stable,
+ * while physical homes occupy collision-free worker hamlets outside production geometry. Every unit has
+ * a real door, three beds, storage, a hearth/work surface, lighting and a short access path.
  */
 public final class ErdenExteriorResidenceBuilder {
-    public static final int RESIDENCE_REVISION = 1;
+    public static final int RESIDENCE_REVISION = 2;
     public static final int WIDTH = 9;
     public static final int DEPTH = 9;
     public static final int BEDS_PER_RESIDENCE = 3;
@@ -366,18 +365,12 @@ public final class ErdenExteriorResidenceBuilder {
 
     private static Footprint footprint(
             ErdenExteriorResidenceCatalog.ResidencePlot plot) {
-        int chunkX = plot.parcelX() >> 4;
-        int chunkZ = plot.parcelZ() >> 4;
+        int chunkX = plot.physicalX() >> 4;
+        int chunkZ = plot.physicalZ() >> 4;
         int chunkMinX = chunkX << 4;
         int chunkMinZ = chunkZ << 4;
-        int desiredX = plot.parcelX() - WIDTH / 2;
-        int desiredZ = plot.parcelZ() - DEPTH / 2;
-        if (plot.attachedQuarters()) {
-            int localX = Math.floorMod(plot.parcelX(), 16);
-            int localZ = Math.floorMod(plot.parcelZ(), 16);
-            desiredX = localX < 8 ? chunkMinX + 6 : chunkMinX + 1;
-            desiredZ = localZ < 8 ? chunkMinZ + 6 : chunkMinZ + 1;
-        }
+        int desiredX = plot.physicalX() - WIDTH / 2;
+        int desiredZ = plot.physicalZ() - DEPTH / 2;
         int minX = Math.clamp(desiredX, chunkMinX + 1, chunkMinX + 6);
         int minZ = Math.clamp(desiredZ, chunkMinZ + 1, chunkMinZ + 6);
         int centerX = minX + WIDTH / 2;

@@ -8,18 +8,20 @@ import java.util.Map;
 
 /**
  * One authoritative catalog shared by exterior construction, resident spawning and estate audits.
- * Parcel coordinates preserve the original workforce save contract; the first household at each
- * node occupies attached worker quarters while the remaining households use detached cottages.
+ * Parcel coordinates preserve the original workforce/save contract. Physical coordinates are a
+ * separate generated-world concern so worker homes never carve through licensed production buildings.
  */
 public final class ErdenExteriorResidenceCatalog {
     public static final int EXPECTED_RESIDENCES = ErdenExteriorWorkforceManager.EXPECTED_HOUSEHOLDS;
     public static final int EXPECTED_ATTACHED_QUARTERS = ErdenKingdomSupplyCatalog.nodes().size();
     public static final int EXPECTED_DETACHED_COTTAGES =
             EXPECTED_RESIDENCES - EXPECTED_ATTACHED_QUARTERS;
+    public static final int HAMLET_DISTANCE = 96;
 
     private static final int[][] PARCEL_OFFSETS = {
             {0, 0}, {28, 0}, {-28, 0}, {0, 28}, {0, -28}
     };
+    private static final int[] HAMLET_SIDE_OFFSETS = {0, -24, 24, -48, 48};
 
     public record ResidencePlot(
             String householdId,
@@ -27,10 +29,16 @@ public final class ErdenExteriorResidenceCatalog {
             String nodeRole,
             int parcelX,
             int parcelZ,
+            int physicalX,
+            int physicalZ,
             int localIndex,
             boolean attachedQuarters) {
         public long parcelChunk() {
             return pack(parcelX >> 4, parcelZ >> 4);
+        }
+
+        public long physicalChunk() {
+            return pack(physicalX >> 4, physicalZ >> 4);
         }
     }
 
@@ -53,12 +61,14 @@ public final class ErdenExteriorResidenceCatalog {
                         "Too many Erden exterior households for node " + node.id);
             }
             for (int localIndex = 0; localIndex < households; localIndex++) {
-                int[] offset = PARCEL_OFFSETS[localIndex];
+                int[] parcelOffset = PARCEL_OFFSETS[localIndex];
+                Point physical = physicalAnchor(node, localIndex);
                 String householdId = "erden_exterior_household_%03d"
                         .formatted(globalHousehold + 1);
                 ResidencePlot plot = new ResidencePlot(
                         householdId, node.id, node.role,
-                        node.x + offset[0], node.z + offset[1],
+                        node.x + parcelOffset[0], node.z + parcelOffset[1],
+                        physical.x(), physical.z(),
                         localIndex, localIndex == 0);
                 if (byHousehold.put(householdId, plot) != null) {
                     throw new IllegalStateException(
@@ -66,7 +76,7 @@ public final class ErdenExteriorResidenceCatalog {
                 }
                 plots.add(plot);
                 byNode.computeIfAbsent(node.id, ignored -> new ArrayList<>()).add(plot);
-                byChunk.computeIfAbsent(plot.parcelChunk(), ignored -> new ArrayList<>()).add(plot);
+                byChunk.computeIfAbsent(plot.physicalChunk(), ignored -> new ArrayList<>()).add(plot);
                 if (plot.attachedQuarters()) attached++;
                 globalHousehold++;
             }
@@ -77,7 +87,7 @@ public final class ErdenExteriorResidenceCatalog {
             throw new IllegalStateException(
                     "Invalid Erden exterior residence catalog plots=" + plots.size()
                             + " attached=" + attached
-                            + " unique_chunks=" + byChunk.size());
+                            + " unique_physical_chunks=" + byChunk.size());
         }
         PLOTS = List.copyOf(plots);
         BY_HOUSEHOLD = Collections.unmodifiableMap(byHousehold);
@@ -129,7 +139,31 @@ public final class ErdenExteriorResidenceCatalog {
         };
     }
 
+    private static Point physicalAnchor(
+            ErdenKingdomSupplyCatalog.SupplyNode node,
+            int localIndex) {
+        int outwardX;
+        int outwardZ;
+        if (Math.abs(node.x) >= Math.abs(node.z)) {
+            outwardX = Integer.signum(node.x);
+            outwardZ = 0;
+        } else {
+            outwardX = 0;
+            outwardZ = Integer.signum(node.z);
+        }
+        if (outwardX == 0 && outwardZ == 0) outwardZ = 1;
+        int sideX = -outwardZ;
+        int sideZ = outwardX;
+        int side = HAMLET_SIDE_OFFSETS[localIndex];
+        return new Point(
+                node.x + outwardX * HAMLET_DISTANCE + sideX * side,
+                node.z + outwardZ * HAMLET_DISTANCE + sideZ * side);
+    }
+
     private static long pack(int x, int z) {
         return ((long) x << 32) ^ (z & 0xffffffffL);
+    }
+
+    private record Point(int x, int z) {
     }
 }

@@ -54,7 +54,11 @@ public final class ErdenExteriorTicketReaper {
 
         List<ErdenKingdomSupplyCatalog.SupplyNode> nodes = ErdenKingdomSupplyCatalog.nodes();
         ErdenKingdomSupplyCatalog.SupplyNode sampleNode = nodes.getFirst();
-        Set<Long> sampleAnchors = anchorsFor(sampleNode);
+        Set<Long> sampleAnchors = new LinkedHashSet<>(anchorsFor(sampleNode));
+        for (ErdenExteriorResidenceCatalog.ResidencePlot plot :
+                ErdenExteriorResidenceCatalog.forNode(sampleNode.id)) {
+            sampleAnchors.add(plot.physicalChunk());
+        }
         boolean sampleResidentsReady = sampleResidentsReady(level, sampleNode);
         if (sampleResidentsReady && sampleReadySince < 0L) {
             sampleReadySince = level.getGameTime();
@@ -74,9 +78,11 @@ public final class ErdenExteriorTicketReaper {
                     || residences.chunkBuilt(
                     chunkX, chunkZ,
                     ErdenExteriorResidenceBuilder.RESIDENCE_REVISION);
+            boolean exteriorReady = !isExteriorAnchor(packed)
+                    || exterior.isBuilt(packed, ErdenKingdomExteriorBuilder.EXTERIOR_REVISION);
             boolean storageReady = storageReadyForChunk(packed);
             if (RELEASED.contains(packed)
-                    || !exterior.isBuilt(packed, ErdenKingdomExteriorBuilder.EXTERIOR_REVISION)
+                    || !exteriorReady
                     || !residenceReady
                     || !storageReady
                     || (sampleAnchors.contains(packed) && !releaseSample)) continue;
@@ -200,6 +206,10 @@ public final class ErdenExteriorTicketReaper {
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
             anchors.addAll(anchorsFor(node));
         }
+        for (ErdenExteriorResidenceCatalog.ResidencePlot plot :
+                ErdenExteriorResidenceCatalog.plots()) {
+            anchors.add(plot.physicalChunk());
+        }
         if (anchors.size() != ErdenKingdomExteriorBuilder.EXPECTED_CI_ANCHORS) {
             throw new IllegalStateException("Invalid Erden exterior ticket anchor count " + anchors.size());
         }
@@ -213,6 +223,13 @@ public final class ErdenExteriorTicketReaper {
         }
         anchors.add(ErdenKingdomExteriorBuilder.storageAnchorChunk(node));
         return anchors;
+    }
+
+    private static boolean isExteriorAnchor(long packed) {
+        for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
+            if (anchorsFor(node).contains(packed)) return true;
+        }
+        return false;
     }
 
     private static boolean isCi() {

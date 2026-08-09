@@ -24,13 +24,13 @@ import java.util.Set;
  * All geometry uses one Minecraft block as one metre and is retained per 16 x 16 metre cell.
  */
 public final class ErdenKingdomExteriorBuilder {
-    public static final int EXTERIOR_REVISION = 1;
+    public static final int EXTERIOR_REVISION = 2;
 
     private static final int TICK_BUDGET = 2_000;
     private static final int CI_TICK_BUDGET = 16_000;
     private static final int CI_FORCE_BUDGET = 1;
     private static final int CI_MAX_IN_FLIGHT = 3;
-    public static final int EXPECTED_CI_ANCHORS = 104;
+    public static final int EXPECTED_CI_ANCHORS = 178;
     private static final int ROAD_HALF_WIDTH = 2;
     private static final int[][] NODE_ANCHOR_OFFSETS = {
             {0, 0}, {28, 0}, {-28, 0}, {0, 28}, {0, -28}
@@ -192,6 +192,10 @@ public final class ErdenKingdomExteriorBuilder {
             }
             unique.add(storageAnchorChunk(node));
         }
+        for (ErdenExteriorResidenceCatalog.ResidencePlot plot :
+                ErdenExteriorResidenceCatalog.plots()) {
+            unique.add(plot.physicalChunk());
+        }
         if (unique.size() != EXPECTED_CI_ANCHORS) {
             throw new IllegalStateException("Invalid Erden exterior CI anchor count " + unique.size());
         }
@@ -221,7 +225,9 @@ public final class ErdenKingdomExteriorBuilder {
             long packed = CI_REQUESTS.removeFirst();
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
-            if (!data.needs(packed, EXTERIOR_REVISION)
+            boolean exteriorNeeded = isCiExteriorAnchor(packed)
+                    && data.needs(packed, EXTERIOR_REVISION);
+            if (!exteriorNeeded
                     && !residences.needsChunk(
                     chunkX, chunkZ,
                     ErdenExteriorResidenceBuilder.RESIDENCE_REVISION)) continue;
@@ -244,7 +250,9 @@ public final class ErdenKingdomExteriorBuilder {
                 .computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE);
         int chunkX = unpackX(packed);
         int chunkZ = unpackZ(packed);
-        if (!data.needs(packed, EXTERIOR_REVISION)
+        boolean exteriorNeeded = (!isCi() || isCiExteriorAnchor(packed))
+                && data.needs(packed, EXTERIOR_REVISION);
+        if (!exteriorNeeded
                 && !residences.needsChunk(
                 chunkX, chunkZ,
                 ErdenExteriorResidenceBuilder.RESIDENCE_REVISION)) {
@@ -268,7 +276,8 @@ public final class ErdenKingdomExteriorBuilder {
             long packed = PENDING.removeFirst();
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
-            boolean buildExterior = data.needs(packed, EXTERIOR_REVISION);
+            boolean buildExterior = (!isCi() || isCiExteriorAnchor(packed))
+                    && data.needs(packed, EXTERIOR_REVISION);
             boolean buildResidences = residences.needsChunk(
                     chunkX, chunkZ,
                     ErdenExteriorResidenceBuilder.RESIDENCE_REVISION);
@@ -827,6 +836,18 @@ public final class ErdenKingdomExteriorBuilder {
 
     private static int baseY(ErdenKingdomSupplyCatalog.SupplyNode node) {
         return (int) Math.round(AuthoredContinentDensity.surfaceHeight(node.x, node.z));
+    }
+
+    private static boolean isCiExteriorAnchor(long packed) {
+        for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
+            for (int[] offset : NODE_ANCHOR_OFFSETS) {
+                if (pack((node.x + offset[0]) >> 4, (node.z + offset[1]) >> 4) == packed) {
+                    return true;
+                }
+            }
+            if (storageAnchorChunk(node) == packed) return true;
+        }
+        return false;
     }
 
     private static boolean isCi() {
