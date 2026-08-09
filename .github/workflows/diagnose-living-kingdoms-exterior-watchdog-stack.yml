@@ -73,4 +73,4 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-# Triggered explicitly to capture the server-thread watchdog stack.
+# Re-run after bounding CI writes to 4,000/tick, plan slices to 12 ms and in-flight chunks to two.
