@@ -42,6 +42,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          grep -F 'public static final int EXTERIOR_REVISION = 2;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java
+          grep -F 'public static final int RESIDENCE_REVISION = 2;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceBuilder.java
           mkdir -p ../../logs
           gradle --no-daemon clean classes --stacktrace --console=plain \
             2>&1 | tee ../../logs/exterior-inventory-compile.log
@@ -61,12 +63,12 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
 
           passed=0
-          for attempt in $(seq 1 1800); do
+          for attempt in $(seq 1 2100); do
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/exterior-inventory-server.log; then
               cat ../../logs/exterior-inventory-server.log
               exit 1
             fi
-            if grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=1 nodes=18 producers=15 wharves=3' ../../logs/exterior-inventory-server.log \
+            if grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 nodes=18 producers=15 wharves=3' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_INVENTORY_PASS revision=1 nodes=15 containers=15' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/exterior-inventory-server.log; then
@@ -82,12 +84,14 @@ jobs:
 
           cat ../../logs/exterior-inventory-server.log
           test "$passed" -eq 1
+          grep -F 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-inventory-server.log
           grep -F 'player_removal_authoritative=true' ../../logs/exterior-inventory-server.log
           grep -F 'dispatch_reduces_barrels=true' ../../logs/exterior-inventory-server.log
           grep -F 'local_reserves=true' ../../logs/exterior-inventory-server.log
           grep -F 'fixed_daily_imports=false' ../../logs/exterior-inventory-server.log
           grep -F 'shipment_escrow=true' ../../logs/exterior-inventory-server.log
           grep -F 'storage_yards=true' ../../logs/exterior-inventory-server.log
+          grep -F 'physical_residences=true' ../../logs/exterior-inventory-server.log
           grep -F 'purchase_outcomes=77' ../../logs/exterior-inventory-server.log
           grep -F 'reserve_bread=42' ../../logs/exterior-inventory-server.log
           inventory_marker="$(grep -F 'LK_ERDEN_EXTERIOR_INVENTORY_PASS' ../../logs/exterior-inventory-server.log | tail -1)"
@@ -98,7 +102,7 @@ jobs:
           test "$writes" -gt 0
           test "$visible_resources" -ge 6
 
-          if grep -Eqi 'Unsupported exterior resource|Unknown Erden supply role|Exception loading level|watchdog|Item debris remained' ../../logs/exterior-inventory-server.log; then
+          if grep -Eqi 'Unsupported exterior resource|Unknown Erden supply role|Invalid Erden exterior residence|Exception loading level|watchdog|Item debris remained' ../../logs/exterior-inventory-server.log; then
             exit 1
           fi
 
