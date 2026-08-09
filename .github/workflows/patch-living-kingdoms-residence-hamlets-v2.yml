@@ -55,4 +55,4 @@ jobs:
           done
           exit 1
 
-# One-shot migration runner; remove after Java changes land.
+# One-shot migration runner; remove after Java changes land. Triggered explicitly.
