@@ -1,0 +1,38 @@
+name: Fix Living Kingdoms capital chunk bounded plan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/fix_living_kingdoms_capital_chunk_bounded_plan.py'
+      - '.github/workflows/fix-living-kingdoms-capital-chunk-bounded-plan.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Bind capital cell writes to loaded chunk
+        run: python .github/scripts/fix_living_kingdoms_capital_chunk_bounded_plan.py
+      - name: Commit Java repair
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalStreamingBuilder.java
+          git diff --cached --quiet && exit 0
+          git commit -m 'Bind streamed capital plans to their loaded chunk'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+# One-shot repair; remove after the Java commit lands.
