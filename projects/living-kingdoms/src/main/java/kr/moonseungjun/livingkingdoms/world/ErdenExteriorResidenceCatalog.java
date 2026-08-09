@@ -144,7 +144,13 @@ public final class ErdenExteriorResidenceCatalog {
             int localIndex) {
         int outwardX;
         int outwardZ;
-        if (Math.abs(node.x) >= Math.abs(node.z)) {
+        if (node.role.equals("paper_mill")) {
+            // Paper deliveries start with a horizontal leg toward a wharf. Put the worker hamlet
+            // perpendicular to that freight leg so homes and their short access paths stay clear.
+            outwardX = 0;
+            outwardZ = Integer.signum(node.z);
+            if (outwardZ == 0) outwardZ = 1;
+        } else if (Math.abs(node.x) >= Math.abs(node.z)) {
             outwardX = Integer.signum(node.x);
             outwardZ = 0;
         } else {
