@@ -48,4 +48,4 @@ jobs:
           done
           exit 1
 
-# One-shot repair; remove after the Java commit lands.
+# One-shot repair; remove after the Java commit lands. Triggered explicitly.
