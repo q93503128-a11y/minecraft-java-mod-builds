@@ -84,7 +84,7 @@ jobs:
           grep -F 'residentSpawnPosition' "$residence"
           grep -F 'homeTarget' "$residence"
 
-          grep -F 'MAX_APPLY_NANOS = 40_000_000L' "$edits"
+          grep -F 'MAX_APPLY_NANOS = 12_000_000L' "$edits"
           grep -F 'long deadline = System.nanoTime() + MAX_APPLY_NANOS;' "$edits"
           grep -F 'operation.apply(this, level, budget - used, deadline)' "$edits"
           grep -F 'if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);' "$edits"
@@ -97,6 +97,8 @@ jobs:
           ! grep -F 'setChunkForced' "$edits"
 
           grep -F 'public static final int EXTERIOR_REVISION = 2;' "$exterior"
+          grep -F 'CI_TICK_BUDGET = 4_000' "$exterior"
+          grep -F 'CI_MAX_IN_FLIGHT = 2' "$exterior"
           grep -F 'EXPECTED_CI_ANCHORS = 178' "$exterior"
           grep -F 'plot.physicalChunk()' "$exterior"
           grep -F 'boolean buildExterior' "$exterior"
@@ -104,6 +106,7 @@ jobs:
           grep -F 'public static boolean residenceBuilt' "$exterior"
           grep -F 'ErdenExteriorResidenceBuilder.validateLoadedResidence' "$exterior"
           grep -F 'physical_residences=true access_paths=true' "$exterior"
+          grep -F 'SPAWN_BUDGET = 2' "$workforce"
           grep -F 'residences.chunkBuilt(' "$reaper"
           grep -F 'boolean residenceReady' "$reaper"
           grep -F 'boolean exteriorReady' "$reaper"
@@ -118,7 +121,7 @@ jobs:
 
           ! grep -F 'setChunkForced' "$exterior"
           ! grep -E '(^|[^A-Za-z])getChunk\(' "$exterior"
-          ! grep -R -E 'patch_living_kingdoms_residence_hamlets_v2|fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release|fix_living_kingdoms_residence_bed_registry|patch_living_kingdoms_time_sliced_residence_writes' \
+          ! grep -R -E 'patch_living_kingdoms_residence_hamlets_v2|fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release|fix_living_kingdoms_residence_bed_registry|patch_living_kingdoms_time_sliced_residence_writes|tune_living_kingdoms_exterior_streaming_pressure' \
             .github/scripts .github/workflows \
             --exclude='audit-living-kingdoms-exterior-residences.yml' 2>/dev/null
 
