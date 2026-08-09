@@ -51,13 +51,17 @@ jobs:
           edits="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
 
           grep -F 'EXPECTED_RESIDENCES = ErdenExteriorWorkforceManager.EXPECTED_HOUSEHOLDS' "$catalog"
-          grep -F 'EXPECTED_ATTACHED_QUARTERS = ErdenKingdomSupplyCatalog.nodes().size()' "$catalog"
-          grep -F 'EXPECTED_DETACHED_COTTAGES' "$catalog"
-          grep -F 'if (plots.size() != EXPECTED_RESIDENCES' "$catalog"
-          grep -F 'unique_chunks=' "$catalog"
+          grep -F 'HAMLET_DISTANCE = 96' "$catalog"
+          grep -F 'int parcelX' "$catalog"
+          grep -F 'int physicalX' "$catalog"
+          grep -F 'public long physicalChunk()' "$catalog"
+          grep -F 'unique_physical_chunks=' "$catalog"
+          grep -F 'node.role.equals("paper_mill")' "$catalog"
           grep -F 'erden_exterior_residences' "$saved"
           grep -F 'public boolean chunkBuilt(int chunkX, int chunkZ, int revision)' "$saved"
-          grep -F 'public static final int RESIDENCE_REVISION = 1;' "$residence"
+          grep -F 'public static final int RESIDENCE_REVISION = 2;' "$residence"
+          grep -F 'plot.physicalX() >> 4' "$residence"
+          grep -F 'plot.physicalZ() >> 4' "$residence"
           grep -F 'public static final int BEDS_PER_RESIDENCE = 3;' "$residence"
           grep -F 'Identifier.fromNamespaceAndPath("minecraft", "red_bed")' "$residence"
           grep -F 'BuiltInRegistries.BLOCK.getOptional(BED_ID)' "$residence"
@@ -92,6 +96,9 @@ jobs:
           grep -F 'removeBlockEntity(pos)' "$edits"
           ! grep -F 'setChunkForced' "$edits"
 
+          grep -F 'public static final int EXTERIOR_REVISION = 2;' "$exterior"
+          grep -F 'EXPECTED_CI_ANCHORS = 178' "$exterior"
+          grep -F 'plot.physicalChunk()' "$exterior"
           grep -F 'boolean buildExterior' "$exterior"
           grep -F 'boolean buildResidences' "$exterior"
           grep -F 'public static boolean residenceBuilt' "$exterior"
@@ -99,6 +106,8 @@ jobs:
           grep -F 'physical_residences=true access_paths=true' "$exterior"
           grep -F 'residences.chunkBuilt(' "$reaper"
           grep -F 'boolean residenceReady' "$reaper"
+          grep -F 'boolean exteriorReady' "$reaper"
+          grep -F 'plot.physicalChunk()' "$reaper"
           grep -F 'ErdenExteriorResidenceCatalog.forNode(node.id)' "$workforce"
           grep -F 'ErdenKingdomExteriorBuilder.residenceBuilt(level, household.id())' "$workforce"
           grep -F 'ErdenExteriorResidenceBuilder.residentSpawnPosition' "$workforce"
@@ -109,7 +118,7 @@ jobs:
 
           ! grep -F 'setChunkForced' "$exterior"
           ! grep -E '(^|[^A-Za-z])getChunk\(' "$exterior"
-          ! grep -R -E 'fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release|fix_living_kingdoms_residence_bed_registry|patch_living_kingdoms_time_sliced_residence_writes' \
+          ! grep -R -E 'patch_living_kingdoms_residence_hamlets_v2|fix_living_kingdoms_residence_builder_api|patch_living_kingdoms_physical_residence_integration|fix_living_kingdoms_residence_path_lantern|fix_living_kingdoms_residence_ticket_release|fix_living_kingdoms_residence_bed_registry|patch_living_kingdoms_time_sliced_residence_writes' \
             .github/scripts .github/workflows \
             --exclude='audit-living-kingdoms-exterior-residences.yml' 2>/dev/null
 
@@ -142,11 +151,11 @@ jobs:
               cat ../../logs/exterior-residences-server.log
               exit 1
             fi
-            if grep -Eq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS .*residences=74 attached_quarters=18 detached_cottages=56 residence_chunks=74 doors=74 beds=222 storage=74 hearths=74 .*physical_residences=true access_paths=true' ../../logs/exterior-residences-server.log \
+            if grep -Eq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 .*residences=74 attached_quarters=18 detached_cottages=56 residence_chunks=74 doors=74 beds=222 storage=74 hearths=74 .*physical_residences=true access_paths=true' ../../logs/exterior-residences-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_ESTATES_PASS revision=1 estates=74' ../../logs/exterior-residences-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS revision=1 founders=216 households=74' ../../logs/exterior-residences-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_WORKFORCE_PASS revision=1 nodes=18 households=74 residents=216 workers=142' ../../logs/exterior-residences-server.log \
-              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=104 released=104 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-residences-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-residences-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/exterior-residences-server.log; then
               passed=1
               break
@@ -160,7 +169,7 @@ jobs:
 
           cat ../../logs/exterior-residences-server.log
           test "$passed" -eq 1
-          grep -E 'LK_ERDEN_KINGDOM_EXTERIOR_PASS .*residences=74 attached_quarters=18 detached_cottages=56 residence_chunks=74 doors=74 beds=222 storage=74 hearths=74 .*physical_residences=true access_paths=true' ../../logs/exterior-residences-server.log
+          grep -E 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 .*residences=74 attached_quarters=18 detached_cottages=56 residence_chunks=74 doors=74 beds=222 storage=74 hearths=74 .*physical_residences=true access_paths=true' ../../logs/exterior-residences-server.log
           grep -E 'LK_ERDEN_EXTERIOR_ESTATES_PASS revision=1 estates=74 occupied=[1-9][0-9]* .*linked_stewards=74 linked_homes=74' ../../logs/exterior-residences-server.log
           grep -E 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS .*projected_births=[1-9][0-9]* projected_successions=[1-9][0-9]* projected_replacement_workers=[1-9][0-9]* projected_years=20 ci_projection_non_persistent=true' ../../logs/exterior-residences-server.log
           grep -F 'storage_yards_observed=18 resident_sample_observed=true validation_revision=2' ../../logs/exterior-residences-server.log
