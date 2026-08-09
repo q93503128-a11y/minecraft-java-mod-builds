@@ -1,0 +1,32 @@
+name: Audit Living Kingdoms exterior residence overlap
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/audit_living_kingdoms_exterior_residence_overlap.py'
+      - '.github/workflows/audit-living-kingdoms-exterior-residence-overlap.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Calculate exact structure overlap
+        run: python .github/scripts/audit_living_kingdoms_exterior_residence_overlap.py
+      - name: Upload overlap report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-exterior-residence-overlap-${{ github.run_number }}
+          path: logs/exterior-residence-overlap.json
+          if-no-files-found: warn
+          retention-days: 30
+
+# Diagnostic-only workflow. A non-zero overlap is reported, not treated as CI failure,
+# so the result can drive a deliberate save-compatible residence layout revision.
