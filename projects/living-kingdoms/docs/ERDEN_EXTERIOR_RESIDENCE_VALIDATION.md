@@ -81,6 +81,22 @@ The workforce initializer consumes the same residence catalog that construction 
 
 Property succession therefore transfers the same household estate record while the physical home remains attached to that household ID.
 
+## Physical-home chunk and commute safety
+
+The first residence-v2 fresh-world audit exposed a second migration bug. The spawn code correctly calculated the new physical home position but still tested whether the old logical `homeX/homeZ` parcel chunk was loaded. Once a physical-home ticket had been released, that mismatch could allow `safeStandingY` to read blocks from an unloaded physical chunk on the server thread. The audit then reached roughly 130 of 178 released exterior tickets before the watchdog reported a 60-second server tick.
+
+The corrected resident contract is now shared by founding residents and lifecycle descendants:
+
+- resident materialisation is gated by the chunk containing `residentSpawnPosition(...)`, never the logical estate parcel chunk;
+- spawn functions defensively refuse to read or place an entity when the physical home chunk is not loaded;
+- physical commuting remains a loaded-world view of the aggregate workforce simulation;
+- a commute path is submitted to Minecraft navigation only when sampled chunks along the resident-to-target corridor are already loaded;
+- founding-worker routine navigation is capped at six new path requests per routine pass;
+- lifecycle/descendant routine navigation is capped at four new path requests per routine pass;
+- founding dependents remain controlled by the founding workforce manager rather than receiving duplicate lifecycle routine commands.
+
+When the route is not fully loaded, the saved workforce/lifecycle state still determines attendance and production. The server does not force chunks merely to animate a worker walking through an unseen area.
+
 ## Permanent regression gates
 
 A residence change is not accepted from compilation alone. The permanent audits require:
@@ -94,6 +110,8 @@ A residence change is not accepted from compilation alone. The permanent audits 
 - workforce, lifecycle, estate, inventory and kingdom-supply markers still succeeding;
 - the 20-year non-persistent lifecycle projection still producing births, succession and replacement labour;
 - the 74-home geometry gate reporting structure=0, worksite=0, road=0 and home=0 collisions;
+- resident materialisation gated on physical-home chunks rather than logical estate chunks;
+- no long-distance navigation request across unloaded intermediate chunks;
 - no watchdog, synchronous chunk load, invalid block entity or invalid residence errors.
 
 The historical `attached_quarters=18` counter remains in the runtime marker only for continuity with earlier audit/report consumers. Those 18 first-household homes are no longer generated inside the production building; physically they are part of the same collision-free worker-hamlet system as the other households.
