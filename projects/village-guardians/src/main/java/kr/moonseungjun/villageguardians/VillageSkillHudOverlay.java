@@ -12,7 +12,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-/** Low-profile combat skill HUD. It deliberately avoids a permanent rectangular toast. */
+/** Low-profile combat skill HUD. It never renders over menus or the vanilla hotbar zone. */
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageSkillHudOverlay {
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(
@@ -28,10 +28,7 @@ public final class VillageSkillHudOverlay {
 
     @SubscribeEvent
     public static void registerLayer(RegisterGuiLayersEvent event) {
-        event.registerAbove(
-                VanillaGuiLayers.OVERLAY_MESSAGE,
-                LAYER_ID,
-                VillageSkillHudOverlay::render);
+        event.registerAbove(VanillaGuiLayers.OVERLAY_MESSAGE, LAYER_ID, VillageSkillHudOverlay::render);
     }
 
     public static void accept(VillageNetwork.SkillHudPayload payload) {
@@ -42,26 +39,25 @@ public final class VillageSkillHudOverlay {
 
     private static void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || text.isBlank()
+        if (minecraft.player == null || minecraft.screen != null || text.isBlank()
                 || System.currentTimeMillis() > expiresAt) return;
 
         Font font = minecraft.font;
         String[] sections = text.split(" §8│ ", -1);
         int primaryCount = Math.min(2, sections.length);
         int centerX = graphics.guiWidth() / 2;
-        int y = graphics.guiHeight() - 67;
-        int gap = 18;
-        int itemWidth = Math.min(138, Math.max(92, (graphics.guiWidth() - 70) / 3));
+        int y = Math.max(54, graphics.guiHeight() - 98);
+        int gap = 16;
+        int itemWidth = Math.min(128, Math.max(84, (graphics.guiWidth() - 78) / 3));
         int totalWidth = primaryCount * itemWidth + Math.max(0, primaryCount - 1) * gap;
         int startX = centerX - totalWidth / 2;
 
         for (int index = 0; index < primaryCount; index++) {
             int left = startX + index * (itemWidth + gap);
-            int cx = left + itemWidth / 2;
             String value = fit(font, plain(sections[index]), itemWidth - 18);
             int diamondX = left + 6;
-            VillageQuickChatScreen.drawDiamond(graphics, diamondX, y + 5, 5, 0xDD18323A);
-            VillageQuickChatScreen.drawDiamondOutline(graphics, diamondX, y + 5, 5, ACCENT);
+            VillageQuickChatSafeScreen.drawDiamond(graphics, diamondX, y + 5, 5, 0xDD18323A);
+            VillageQuickChatSafeScreen.drawDiamondOutline(graphics, diamondX, y + 5, 5, ACCENT);
             graphics.text(font, value, left + 16, y, TEXT, true);
             graphics.fill(left + 15, y + 12, left + itemWidth, y + 13, LINE);
             graphics.fill(left + 15, y + 12, left + 35, y + 14, ACCENT);
