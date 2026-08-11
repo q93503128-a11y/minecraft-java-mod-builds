@@ -32,6 +32,7 @@ public final class ErdenCitadelInteriorManager {
     private static final int PROCESS_INTERVAL = 20;
     private static final int PROCESS_BUDGET = 1;
     private static final int SEARCH_RADIUS = 16;
+    private static final int FIXTURE_SEARCH_RADIUS = 3;
     private static final int MAX_ROOM_HEIGHT = 14;
     private static final int MAX_WALL_DISTANCE = 14;
     private static final int MIN_ZONE_FIXTURES = 4;
@@ -241,7 +242,7 @@ public final class ErdenCitadelInteriorManager {
             Fixture fixture) {
         int preferredX = anchor.x + fixture.dx;
         int preferredZ = anchor.z + fixture.dz;
-        for (int radius = 0; radius <= 2; radius++) {
+        for (int radius = 0; radius <= FIXTURE_SEARCH_RADIUS; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
@@ -258,7 +259,7 @@ public final class ErdenCitadelInteriorManager {
                     if (current == fixture.block) return true;
                     if (!level.getBlockState(feet).isAir()) continue;
                     if (!hasCeiling(level, x, anchor.floorY, z)
-                            || enclosingWallCount(level, x, anchor.floorY + 1, z) < 3) continue;
+                            || enclosingWallCount(level, x, anchor.floorY + 1, z) < 2) continue;
                     level.setBlock(feet, fixture.block.defaultBlockState(), UPDATE_FLAGS);
                     return true;
                 }
@@ -454,9 +455,9 @@ public final class ErdenCitadelInteriorManager {
 
     private static List<Fixture> civic(Block a, Block b, Block c, Block d, Block e, Block f) {
         return List.of(
-                new Fixture(-3, -2, a), new Fixture(3, -2, b),
-                new Fixture(-4, 2, c), new Fixture(4, 2, d),
-                new Fixture(-3, 5, e), new Fixture(3, 5, f));
+                new Fixture(-2, -1, a), new Fixture(2, -1, b),
+                new Fixture(-2, 1, c), new Fixture(2, 1, d),
+                new Fixture(-2, 3, e), new Fixture(2, 3, f));
     }
 
     private record Zone(String id, int offsetX, int offsetZ, List<Fixture> fixtures) {
