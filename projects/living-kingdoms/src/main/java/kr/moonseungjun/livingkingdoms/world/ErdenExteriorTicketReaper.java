@@ -66,7 +66,12 @@ public final class ErdenExteriorTicketReaper {
                     "Observed Erden exterior resident sample node={} residents={} grace_ticks={}",
                     sampleNode.id, sampleResidentCount(level, sampleNode), SAMPLE_RELEASE_GRACE_TICKS);
         }
-        boolean releaseSample = sampleReadySince >= 0L
+        // The sample is intentionally observed while its transient ticket is still retained. Once
+        // the grace period expires that ticket may be removed and the sample chunk may unload, so a
+        // later live entity query is no longer a valid indicator of whether validation happened.
+        // sampleReadySince is the sticky proof that the authoritative loaded observation succeeded.
+        boolean residentSampleObserved = sampleReadySince >= 0L;
+        boolean releaseSample = residentSampleObserved
                 && level.getGameTime() - sampleReadySince >= SAMPLE_RELEASE_GRACE_TICKS;
 
         Set<Long> required = requiredAnchors();
@@ -98,13 +103,13 @@ public final class ErdenExteriorTicketReaper {
             LivingKingdoms.LOGGER.info(
                     "Released Erden exterior transient tickets progress={}/{} released_now={} storage_validated={}/{} resident_sample_validated={} persistent_forced_chunks=false",
                     RELEASED.size(), required.size(), releasedNow,
-                    VALIDATED_STORAGE_NODES.size(), nodes.size(), sampleResidentsReady);
+                    VALIDATED_STORAGE_NODES.size(), nodes.size(), residentSampleObserved);
         }
 
         if (!ticketCiPassed
                 && RELEASED.size() == required.size()
                 && VALIDATED_STORAGE_NODES.size() == nodes.size()
-                && sampleResidentsReady) {
+                && residentSampleObserved) {
             ticketCiPassed = true;
             LivingKingdoms.LOGGER.info(
                     "LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors={} released={} explicit_release=true persistent_forced_chunks=false storage_yards_observed={} resident_sample_observed=true validation_revision=2",
