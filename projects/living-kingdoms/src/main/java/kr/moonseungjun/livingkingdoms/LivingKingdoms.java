@@ -26,6 +26,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenTransportManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanMicroInfillManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenUrbanUpperFloorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanLifeManager;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
@@ -95,6 +96,7 @@ public final class LivingKingdoms {
         ErdenExteriorWorkforceManager.onServerTick(event);
         ErdenExteriorEstateManager.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
+        ErdenUrbanUpperFloorBuilder.onServerTick(event);
         ErdenUrbanMicroInfillManager.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
