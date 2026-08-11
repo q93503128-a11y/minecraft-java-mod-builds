@@ -40,8 +40,11 @@ def main() -> None:
     assert 'case "wave_intel" -> new VillageWaveIntelDossierScreen(payload)' in client
     assert 'case "relic_choice" -> new VillageRelicChoiceConfirmScreen(payload)' in client
 
+    # Town hall list clicks only select. The three explicit bottom actions own facility use/repair/upgrade.
     assert "VillageConfirmScreen" in town
-    assert "FacilityCard" in town and "VillageUiActionPayload(facilities.get(i).action())" in town
+    assert "FacilityCard" in town and "functionAction(f)" in town
+    assert '"repair:" + f.id()' in town and '"upgrade:" + f.id()' in town
+    assert 'FACILITIES("시설 관리")' in town and 'ROLES("직업 배치")' in town
 
     for tab in ("ALL(\"전체\"", "EQUIPMENT(\"장비\"", "ARMOR(\"방어구\"",
                 "CONSUMABLE(\"소모품\"", "SALE(\"판매\""):
@@ -66,7 +69,7 @@ def main() -> None:
     assert '"facility_info".equals(actions[i])' in relic
     assert "VillageConfirmScreen" in relic and "영구 적용" in relic
 
-    print("[PASS] Facility cards route to real building functions")
+    print("[PASS] Facility cards route to explicit function/repair/upgrade controls")
     print("[PASS] Bulk junk sale cannot sweep named combat supplies")
     print("[PASS] Shop categories and detail-first action policy are wired")
     print("[PASS] Next-wave briefing exposes bestiary dossiers and relic rewards require confirmation")
