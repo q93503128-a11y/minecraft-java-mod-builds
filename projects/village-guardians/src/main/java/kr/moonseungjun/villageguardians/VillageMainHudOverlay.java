@@ -41,7 +41,7 @@ public final class VillageMainHudOverlay {
 
     private static void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.screen != null || text.isBlank()) return;
+        if (minecraft.player == null || minecraft.gui.screen() != null || text.isBlank()) return;
         if (System.currentTimeMillis() - lastUpdate > 3_000L) return;
 
         Font font = minecraft.font;
@@ -55,19 +55,19 @@ public final class VillageMainHudOverlay {
         String first = fit(font, join(day, level, "  ·  "), maxWidth - 24);
         String second = fit(font, join(role, economy, "  ·  "), maxWidth - 24);
         int contentWidth = Math.max(font.width(first), font.width(second));
-        int width = Math.min(maxWidth, Math.max(154, contentWidth + 28));
+        int panelWidth = Math.min(maxWidth, Math.max(154, contentWidth + 28));
         int left = 10;
         int top = 10;
         int bottom = top + 35;
 
-        graphics.fill(left, top, left + width, bottom, BACK);
+        graphics.fill(left, top, left + panelWidth, bottom, BACK);
         graphics.fill(left, top, left + 3, bottom, CYAN);
-        graphics.fill(left + 3, bottom - 1, left + width, bottom, EDGE);
-        VillageQuickChatScreen.drawDiamond(graphics, left + 12, top + 11, 4, 0xE018323A);
-        VillageQuickChatScreen.drawDiamondOutline(graphics, left + 12, top + 11, 4, CYAN);
+        graphics.fill(left + 3, bottom - 1, left + panelWidth, bottom, EDGE);
+        VillageQuickChatSafeScreen.drawDiamond(graphics, left + 12, top + 11, 4, 0xE018323A);
+        VillageQuickChatSafeScreen.drawDiamondOutline(graphics, left + 12, top + 11, 4, CYAN);
         graphics.text(font, first, left + 22, top + 5, TEXT, true);
         graphics.text(font, second, left + 22, top + 19, MUTED, true);
-        int accent = Math.min(width - 8, Math.max(34, width * 38 / 100));
+        int accent = Math.min(panelWidth - 8, Math.max(34, panelWidth * 38 / 100));
         graphics.fill(left + 4, bottom - 2, left + accent, bottom, GOLD);
     }
 
