@@ -11,7 +11,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Compact signal wheel that always stays inside the shared safe viewport. */
+/** Compact signal wheel with dedicated, non-overlapping label and description zones. */
 public final class VillageQuickChatSafeScreen extends Screen {
     private static final String SEP = "\u001F";
     private static final int OVERLAY = 0x26000000;
@@ -38,52 +38,73 @@ public final class VillageQuickChatSafeScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
-        int cx = safe.centerX();
-        int radius = VillageUiSafeArea.clamp(Math.min(safe.width(), safe.height()) / 5, 52, 76);
-        int cy = VillageUiSafeArea.clamp(safe.centerY() - 8,
-                safe.top() + radius + 46, safe.bottom() - radius - 48);
+        Layout layout = layout(safe);
+        int hoveredIndex = -1;
 
-        graphics.centeredText(font, "V  수호단 통신", cx, safe.top() + 8, TEXT);
-        graphics.centeredText(font, "신호를 선택하면 즉시 전송됩니다", cx, safe.top() + 24, MUTED);
-        drawDiamond(graphics, cx, cy, 18, 0xB90A151B);
-        drawDiamondOutline(graphics, cx, cy, 18, ACCENT);
-        graphics.centeredText(font, "V", cx, cy - 4, ACCENT);
+        graphics.centeredText(font, "V  수호단 통신", layout.cx(), safe.top() + 5, TEXT);
+        graphics.centeredText(font, "신호를 선택하면 즉시 전송됩니다", layout.cx(), safe.top() + 20, MUTED);
+        graphics.fill(safe.left() + 18, safe.top() + 34, safe.right() - 18, safe.top() + 35, 0x705A747D);
+
+        drawDiamond(graphics, layout.cx(), layout.cy(), 14, 0xB90A151B);
+        drawDiamondOutline(graphics, layout.cx(), layout.cy(), 14, ACCENT);
+        graphics.centeredText(font, "V", layout.cx(), layout.cy() - 4, ACCENT);
 
         for (int i = 0; i < entries.size(); i++) {
-            Point point = pointFor(i, entries.size(), cx, cy, radius);
+            Point point = pointFor(i, entries.size(), layout);
             Entry entry = entries.get(i);
-            boolean hovered = inside(mouseX, mouseY, point.x() - 31, point.y() - 31, 62, 62);
-            drawDiamond(graphics, point.x(), point.y(), 29, hovered ? NODE_HOVER : NODE);
-            drawDiamondOutline(graphics, point.x(), point.y(), 29, hovered ? GOLD : ACCENT);
+            boolean hovered = insideDiamond(mouseX, mouseY, point.x(), point.y(), layout.nodeRadius() + 4);
+            if (hovered) hoveredIndex = i;
+            drawDiamond(graphics, point.x(), point.y(), layout.nodeRadius(), hovered ? NODE_HOVER : NODE);
+            drawDiamondOutline(graphics, point.x(), point.y(), layout.nodeRadius(), hovered ? GOLD : ACCENT);
             graphics.centeredText(font, Integer.toString(i + 1), point.x(), point.y() - 5,
                     hovered ? GOLD : TEXT);
-            String label = fit(font, entry.title(), 126);
-            int labelY = point.y() + (point.y() < cy ? -45 : 36);
-            if (Math.abs(point.y() - cy) < 10) labelY = point.y() - 5;
-            int labelX = point.x();
-            if (point.x() < cx - 20) labelX = point.x() - 69;
-            else if (point.x() > cx + 20) labelX = point.x() + 69;
-            graphics.centeredText(font, label, labelX, labelY, hovered ? GOLD : TEXT);
-            if (hovered && !entry.description().isBlank()) {
-                graphics.centeredText(font, fit(font, entry.description(), Math.max(120, safe.width() - 80)),
-                        cx, safe.bottom() - 31, MUTED);
-            }
+            drawSignalLabel(graphics, safe, layout, point, i, entry.title(), hovered);
         }
-        graphics.centeredText(font, "ESC 닫기", cx, safe.bottom() - 13, MUTED);
+
+        int infoTop = safe.bottom() - 29;
+        graphics.fill(safe.left() + 12, infoTop - 5, safe.right() - 12, infoTop - 4, 0x665A747D);
+        if (hoveredIndex >= 0 && !entries.get(hoveredIndex).description().isBlank()) {
+            String description = fit(font, entries.get(hoveredIndex).description(), Math.max(80, safe.width() - 105));
+            graphics.centeredText(font, description, safe.centerX(), infoTop, MUTED);
+        } else {
+            graphics.centeredText(font, "신호 위에 커서를 올리면 상세 내용을 확인할 수 있습니다.",
+                    safe.centerX(), infoTop, MUTED);
+        }
+        graphics.text(font, "ESC 닫기", safe.left() + 5, safe.bottom() - 11, MUTED, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void drawSignalLabel(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe, Layout layout,
+                                 Point point, int index, String value, boolean hovered) {
+        int color = hovered ? GOLD : TEXT;
+        int maxSide = Math.max(55, Math.min(150, safe.width() / 3));
+        String label = fit(font, value, maxSide);
+        int direction = index & 3;
+        if (direction == 0) {
+            int y = Math.max(safe.top() + 39, point.y() - layout.nodeRadius() - 15);
+            graphics.centeredText(font, label, point.x(), y, color);
+        } else if (direction == 1) {
+            int x = Math.min(safe.right() - font.width(label) - 4,
+                    point.x() + layout.nodeRadius() + 12);
+            graphics.text(font, label, x, point.y() - 4, color, false);
+        } else if (direction == 2) {
+            int y = Math.min(safe.bottom() - 48, point.y() + layout.nodeRadius() + 7);
+            graphics.centeredText(font, label, point.x(), y, color);
+        } else {
+            int right = Math.max(safe.left() + font.width(label) + 4,
+                    point.x() - layout.nodeRadius() - 12);
+            graphics.text(font, label, right - font.width(label), point.y() - 4, color, false);
+        }
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
         VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
-        int cx = safe.centerX();
-        int radius = VillageUiSafeArea.clamp(Math.min(safe.width(), safe.height()) / 5, 52, 76);
-        int cy = VillageUiSafeArea.clamp(safe.centerY() - 8,
-                safe.top() + radius + 46, safe.bottom() - radius - 48);
+        Layout layout = layout(safe);
         for (int i = 0; i < entries.size(); i++) {
-            Point point = pointFor(i, entries.size(), cx, cy, radius);
-            if (inside(click.x(), click.y(), point.x() - 31, point.y() - 31, 62, 62)) {
+            Point point = pointFor(i, entries.size(), layout);
+            if (insideDiamond(click.x(), click.y(), point.x(), point.y(), layout.nodeRadius() + 5)) {
                 ClientPacketDistributor.sendToServer(
                         new VillageNetwork.VillageUiActionPayload(entries.get(i).action()));
                 onClose();
@@ -91,6 +112,17 @@ public final class VillageQuickChatSafeScreen extends Screen {
             }
         }
         return super.mouseClicked(click, doubled);
+    }
+
+    private Layout layout(VillageUiSafeArea.Rect safe) {
+        int nodeRadius = VillageUiSafeArea.clamp(Math.min(safe.width(), safe.height()) / 9, 21, 27);
+        int contentTop = safe.top() + 49;
+        int contentBottom = safe.bottom() - 49;
+        int cy = (contentTop + contentBottom) / 2;
+        int radiusX = VillageUiSafeArea.clamp(safe.width() / 4, 74, 126);
+        int verticalRoom = Math.max(34, (contentBottom - contentTop) / 2 - nodeRadius - 5);
+        int radiusY = VillageUiSafeArea.clamp(verticalRoom, 34, 68);
+        return new Layout(safe.centerX(), cy, radiusX, radiusY, nodeRadius);
     }
 
     private void parse(VillageNetwork.OpenVillageUiPayload payload) {
@@ -104,13 +136,13 @@ public final class VillageQuickChatSafeScreen extends Screen {
         }
     }
 
-    private static Point pointFor(int index, int count, int cx, int cy, int radius) {
-        if (count <= 1) return new Point(cx, cy - radius);
+    private static Point pointFor(int index, int count, Layout layout) {
+        if (count <= 1) return new Point(layout.cx(), layout.cy() - layout.radiusY());
         return switch (index & 3) {
-            case 0 -> new Point(cx, cy - radius);
-            case 1 -> new Point(cx + radius, cy);
-            case 2 -> new Point(cx, cy + radius);
-            default -> new Point(cx - radius, cy);
+            case 0 -> new Point(layout.cx(), layout.cy() - layout.radiusY());
+            case 1 -> new Point(layout.cx() + layout.radiusX(), layout.cy());
+            case 2 -> new Point(layout.cx(), layout.cy() + layout.radiusY());
+            default -> new Point(layout.cx() - layout.radiusX(), layout.cy());
         };
     }
 
@@ -128,8 +160,8 @@ public final class VillageQuickChatSafeScreen extends Screen {
         return value.substring(0, end) + suffix;
     }
 
-    private static boolean inside(double mx, double my, int x, int y, int w, int h) {
-        return mx >= x && mx < x + w && my >= y && my < y + h;
+    private static boolean insideDiamond(double x, double y, int cx, int cy, int radius) {
+        return Math.abs(x - cx) + Math.abs(y - cy) <= radius;
     }
 
     public static void drawDiamond(GuiGraphicsExtractor graphics, int cx, int cy, int radius, int color) {
@@ -151,4 +183,5 @@ public final class VillageQuickChatSafeScreen extends Screen {
 
     private record Entry(String action, String title, String description) {}
     private record Point(int x, int y) {}
+    private record Layout(int cx, int cy, int radiusX, int radiusY, int nodeRadius) {}
 }
