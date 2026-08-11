@@ -15,6 +15,7 @@ import java.util.Map;
 
 public final class VillageTradingSystem {
     private static final int MAIN_INVENTORY_SLOTS = 36;
+    private static final String SALE_ONLY_PREFIX = "[판매용]";
     private static final Map<Item, Integer> LEGACY_PRICES = new LinkedHashMap<>();
     private static final Map<String, Integer> NAMED_PRICES = new LinkedHashMap<>();
 
@@ -34,6 +35,7 @@ public final class VillageTradingSystem {
         NAMED_PRICES.put("[판매용] 폭파병 화약 주머니", 7);
         NAMED_PRICES.put("[판매용] 뒤틀린 지휘핵", 18);
         NAMED_PRICES.put("[판매용] 전쟁 주술봉 파편", 22);
+        // Useful supplies keep a manual resale value, but must never be swept by the bulk junk action.
         NAMED_PRICES.put("수호 화살", 1);
         NAMED_PRICES.put("전투 건량", 3);
         NAMED_PRICES.put("마을 배급빵", 2);
@@ -91,8 +93,8 @@ public final class VillageTradingSystem {
     private static boolean isSaleOnlyLoot(ItemStack stack) {
         if (VillageRaidLootSystem.saleValue(stack) > 0) return true;
         String name = plainName(stack);
-        return NAMED_PRICES.containsKey(name)
-                || (stack.get(DataComponents.CUSTOM_NAME) == null && LEGACY_PRICES.containsKey(stack.getItem()));
+        if (!name.isBlank()) return name.startsWith(SALE_ONLY_PREFIX);
+        return stack.get(DataComponents.CUSTOM_NAME) == null && LEGACY_PRICES.containsKey(stack.getItem());
     }
 
     private static int unitValue(ItemStack stack) {
