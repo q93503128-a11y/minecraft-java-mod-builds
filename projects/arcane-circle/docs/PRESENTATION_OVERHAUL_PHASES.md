@@ -77,9 +77,11 @@ Authored 4C identities:
 
 Phase 2A intentionally does not claim that every 4C effect is physically larger than 3C. Scale follows the spell: battlefield walls and storms occupy large world space, while body wards and target curses remain compact but structurally more sophisticated.
 
-### Phase 2B — 5C
+### Phase 2B — 5C (alpha.23)
 
-Next target after alpha.22 runtime review.
+Status: implemented. All ten normal 5C spells and all three 5C fusion formulae now route through `FifthCircleVisualIdentity` before the generic renderer.
+
+Alpha.23 also fixes the range-stat presentation/gameplay split. `Steam Burst` no longer has the legacy 11-block hit cap; wave length/end radius, low-circle fields and wall width now use shared `SpellMetrics`, and authored release geometry receives the effective post-equipment range. Casting-device size itself remains spell-authored rather than scaling blindly with range.
 
 Priorities include Wall of Force, Cloudkill, Hold Monster, Passwall, Insect Plague, Telekinesis, Cone of Cold, Flame Strike, Dominate Person, Mass Cure Wounds, Chain Lightning, Arcane Hand and Teleportation Circle. They require new wall, toxic-volume, target restraint, true passage, swarm-volume, force-manipulation, cone, sky-drop, domination, mass-life, branching-beam and spatial-circle languages rather than 4C reskins.
 

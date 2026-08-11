@@ -109,6 +109,21 @@ public final class SpellPresentationProfile {
         put("teleportation_circle", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 5.0, 4, 4, 0, 0, 1.45, 0);
         put("thunder_cage", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 2.8, 4, 4, 0, 0, 1.26, 2);
 
+        // alpha.23 phase 2B: canonical authored profiles for every 5C formula.
+        put("cloudkill", SigilStyle.GROUND_SEAL, MotionStyle.STORM, 7.20, 5, 5, 0, 0, 1.42, 3);
+        put("wall_of_force", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 6.80, 5, 7, 0, 0, 1.54, 2);
+        put("hold_monster", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 2.10, 5, 6, 0, 0, 1.30, 2);
+        put("passwall", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 3.40, 5, 2, 0, 0, 1.24, 0);
+        put("insect_plague", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 8.00, 5, 8, 0, 8, 1.44, 4);
+        put("telekinesis", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 1.95, 5, 5, 0, 0, 1.22, 2);
+        put("cone_of_cold", SigilStyle.FRONT_COMPACT, MotionStyle.WAVE, 1.90, 5, 6, 0, 0, 1.22, 0);
+        put("flame_strike", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 6.60, 5, 1, 0, 13, 1.48, 10);
+        put("dominate_person", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 1.85, 5, 5, 0, 0, 1.18, 2);
+        put("mass_cure_wounds", SigilStyle.BODY_HALO, MotionStyle.AURA, 3.60, 5, 8, 0, 0, 1.34, 0);
+        put("chain_lightning", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 1.55, 5, 4, 0, 0, 1.20, 0);
+        put("arcane_hand", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 2.35, 5, 5, 0, 0, 1.28, 2);
+        put("teleportation_circle", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 5.20, 5, 6, 0, 0, 1.48, 0);
+
         // alpha.21 phase 1: canonical authored profiles for every 1C-3C formula.
         // Rank does not define size; each value follows the spell fiction and its launch device.
         put("magic_missile", SigilStyle.FRONT_COMPACT, MotionStyle.MISSILE_SWARM, 0.96, 2, 3, 62, 0, 0.92, 0);

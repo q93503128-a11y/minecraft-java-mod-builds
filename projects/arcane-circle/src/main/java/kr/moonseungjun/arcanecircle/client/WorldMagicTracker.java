@@ -185,6 +185,11 @@ public final class WorldMagicTracker {
                     visual.direction, targetOffset(visual), mesh);
             return mesh.build();
         }
+        if (FifthCircleVisualIdentity.owns(spell)) {
+            FifthCircleVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
+                    visual.direction, targetOffset(visual), visual.range, mesh);
+            return mesh.build();
+        }
 
         // There is deliberately no universal disc/ring prelude here. Each placement grammar earns
         // its own silhouette so a portal, target curse and sky ritual cannot read as the same circle.
@@ -417,11 +422,20 @@ public final class WorldMagicTracker {
         if (LowCircleVisualIdentity.owns(spell)) {
             LowCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), age,
                     motionProgress(visual, age), powerFactor, mesh);
+            RangeReactivePresentation.appendRelease(spell, visual.direction, targetOffset(visual),
+                    visual.range, age, powerFactor, mesh);
             return mesh.build();
         }
         if (MidCircleVisualIdentity.owns(spell)) {
             MidCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), age,
                     motionProgress(visual, age), powerFactor, mesh);
+            RangeReactivePresentation.appendRelease(spell, visual.direction, targetOffset(visual),
+                    visual.range, age, powerFactor, mesh);
+            return mesh.build();
+        }
+        if (FifthCircleVisualIdentity.owns(spell)) {
+            FifthCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), visual.range,
+                    age, motionProgress(visual, age), powerFactor, mesh);
             return mesh.build();
         }
         switch (profile.motion()) {
@@ -816,8 +830,7 @@ public final class WorldMagicTracker {
         int circle = clampCircle(visual.spell.circle());
         ArcaneWorldMesh.Basis facing = ArcaneWorldMesh.Basis.facing(visual.direction);
         Vec3 right = facing.right();
-        double width = Math.min(40.0, Math.max(4.0,
-                SpellMetrics.effectRadius(visual.spell.id(), visual.range, circle) * 2.0));
+        double width = Math.min(72.0, SpellMetrics.wallWidth(visual.spell.id(), visual.range, circle));
         double height = (1.7 + circle * 0.34) * powerFactor;
         double appear = clamp(age / 0.24, 0.0, 1.0);
         double fade = clamp((1.0 - age) / 0.18, 0.0, 1.0);

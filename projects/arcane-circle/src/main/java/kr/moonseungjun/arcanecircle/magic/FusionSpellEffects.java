@@ -44,19 +44,16 @@ public final class FusionSpellEffects {
     }
 
     private static boolean steamBurst(ServerPlayer player, double range, double power) {
-        ServerLevel level = (ServerLevel) player.level();
-        Vec3 look = horizontal(player.getLookAngle());
-        for (Mob mob : hostiles(player, Math.min(11.0, range))) {
-            Vec3 delta = mob.position().subtract(player.position());
-            if (horizontal(delta).dot(look) < 0.25) continue;
-            ArcaneDamage.hurt(level, player, mob, (float) power);
-            mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 75, 2));
-            mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 45));
-            Vec3 push = horizontal(delta).scale(0.35);
-            mob.push(push.x, 0.12, push.z);
-        }
-        sound(level, player, SoundEvents.FIRE_EXTINGUISH, 0.9F, 0.85F);
-        return true;
+        ServerLevel level = (ServerLevel) player.level(); Vec3 origin = player.position(); Vec3 look = horizontal(player.getLookAngle());
+        double length = SpellMetrics.waveLength(range); double endRadius = SpellMetrics.waveEndRadius("steam_burst", range, 2);
+        for (Mob mob : hostiles(player, length + endRadius + 1.0)) {
+            Vec3 delta = mob.position().subtract(origin); Vec3 flat = new Vec3(delta.x, 0.0, delta.z); double forward = flat.dot(look);
+            if (forward < 0.0 || forward > length) continue; double lateralSq = Math.max(0.0, flat.lengthSqr() - forward * forward);
+            double t = length <= 0.0001 ? 1.0 : forward / length; double allowed = endRadius * (0.16 + 0.84 * t) + Math.max(0.35, mob.getBbWidth() * 0.5);
+            if (lateralSq > allowed * allowed) continue; ArcaneDamage.hurt(level, player, mob, (float) power);
+            mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 75, 2)); mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 45));
+            Vec3 push = horizontal(delta).scale(0.35); mob.push(push.x, 0.12, push.z);
+        } sound(level, player, SoundEvents.FIRE_EXTINGUISH, 0.9F, 0.85F); return true;
     }
 
     private static boolean frostStep(ServerPlayer player, double range, double power) {

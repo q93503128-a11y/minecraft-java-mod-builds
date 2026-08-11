@@ -34,9 +34,9 @@ public final class ExpandedSpellEffects {
             case "shield" -> ward(player, power, 170, 1);
             case "feather_fall" -> featherFall(player, 120);
             case "light" -> light(player);
-            case "grease" -> hinderingField(player, range, 4.0, 180, 4, ParticleTypes.WITCH);
+            case "grease" -> hinderingField(player, range, SpellMetrics.effectRadius("grease", range, 1), 180, 4, ParticleTypes.WITCH);
             case "sleep" -> sleep(player, range);
-            case "thunderwave" -> conePush(player, range, power, ParticleTypes.CLOUD, false);
+            case "thunderwave" -> conePush(player, "thunderwave", range, power, ParticleTypes.CLOUD, false);
             case "mage_armor" -> armor(player, power, 720, 1);
 
             case "scorching_ray" -> multiRay(player, range, power, ParticleTypes.FLAME, true);
@@ -56,13 +56,13 @@ public final class ExpandedSpellEffects {
             case "haste" -> haste(player);
             case "dispel_magic" -> dispel(player, range, power);
             case "vampiric_touch" -> drain(player, range, power);
-            case "slow" -> hinderingField(player, range, 5.0, 260, 5, ParticleTypes.ENCHANT);
+            case "slow" -> hinderingField(player, range, SpellMetrics.effectRadius("slow", range, 3), 260, 5, ParticleTypes.ENCHANT);
             case "protection_from_energy" -> energyProtection(player, power);
             case "sleet_storm" -> areaDamage(player, aimGround(player, range), SpellMetrics.effectRadius("sleet_storm", range, 3), power,
                     ParticleTypes.SNOWFLAKE, false, true, true);
 
-            case "wall_of_fire" -> wall(player, range, power, ParticleTypes.FLAME, true, false, false);
-            case "ice_storm" -> storm(player, range, power, ParticleTypes.SNOWFLAKE, true);
+            case "wall_of_fire" -> wall(player, "wall_of_fire", range, power, ParticleTypes.FLAME, true, false, false);
+            case "ice_storm" -> storm(player, "ice_storm", range, power, ParticleTypes.SNOWFLAKE, true);
             case "greater_invisibility" -> invisibility(player, 780, true);
             case "resilient_sphere" -> sphere(player, power);
             case "dimension_door" -> teleport(player, range, power, 2);
@@ -73,7 +73,7 @@ public final class ExpandedSpellEffects {
             case "phantasmal_killer" -> phantasmalKiller(player, range, power);
 
             case "cone_of_cold" -> coneCold(player, range, power);
-            case "wall_of_force" -> wall(player, range, power, ParticleTypes.END_ROD, false, false, true);
+            case "wall_of_force" -> wall(player, "wall_of_force", range, power, ParticleTypes.END_ROD, false, false, true);
             case "cloudkill" -> areaDamage(player, aimGround(player, range), SpellMetrics.effectRadius("cloudkill", range, 5), power,
                     ParticleTypes.WITCH, false, false, true);
             case "telekinesis" -> telekinesis(player, range, power);
@@ -85,13 +85,13 @@ public final class ExpandedSpellEffects {
             case "insect_plague" -> areaDamage(player, aimGround(player, range), SpellMetrics.effectRadius("insect_plague", range, 5), power,
                     ParticleTypes.CRIT, false, false, true);
 
-            case "burning_hands" -> conePush(player, range, power, ParticleTypes.FLAME, true);
+            case "burning_hands" -> conePush(player, "burning_hands", range, power, ParticleTypes.FLAME, true);
             case "ice_knife" -> iceKnife(player, range, power);
             case "chromatic_orb" -> chromaticOrb(player, range, power);
-            case "wind_wall" -> wall(player, range, power, ParticleTypes.CLOUD, false, true, false);
+            case "wind_wall" -> wall(player, "wind_wall", range, power, ParticleTypes.CLOUD, false, true, false);
             case "counterspell" -> dispel(player, range, power * 1.2);
             case "fire_shield" -> fireShield(player, power);
-            case "wall_of_ice" -> wall(player, range, power, ParticleTypes.SNOWFLAKE, false, false, false);
+            case "wall_of_ice" -> wall(player, "wall_of_ice", range, power, ParticleTypes.SNOWFLAKE, false, false, false);
             case "chain_lightning" -> chainLightning(player, range, power);
             case "arcane_hand" -> telekinesis(player, range, power * 1.25);
             case "teleportation_circle" -> teleport(player, range, power, 4);
@@ -212,38 +212,32 @@ public final class ExpandedSpellEffects {
 
     private static boolean sleep(ServerPlayer player, double range) {
         Vec3 center = aimGround(player, range);
-        for (Mob mob : nearby(player, center, 4.5, 3.0)) {
+        double radius = SpellMetrics.effectRadius("sleep", range, 1);
+        for (Mob mob : nearby(player, center, radius, Math.max(3.0, radius * 0.65))) {
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 170, 8));
             mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 170, 4));
             mob.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 120, 0));
         }
-        burst(level(player), center.add(0.0, 1.0, 0.0), ParticleTypes.ENCHANT, 55, 2.2);
+        burst(level(player), center.add(0.0, 1.0, 0.0), ParticleTypes.ENCHANT, 55, Math.max(2.2, radius * 0.48));
         return true;
     }
 
-    private static boolean conePush(ServerPlayer player, double range, double power, ParticleOptions particle,
+    private static boolean conePush(ServerPlayer player, String id, double range, double power, ParticleOptions particle,
                                     boolean fire) {
         ServerLevel level = level(player);
-        Vec3 origin = player.position();
-        Vec3 look = horizontalLook(player);
-        for (Mob mob : nearby(player, origin, range, 4.5)) {
-            Vec3 direction = horizontalDirection(origin, mob.position());
-            if (direction.dot(look) < 0.42) continue;
-            ArcaneDamage.hurt(level, player, mob, (float) power);
-            mob.push(direction.x * 1.55, 0.34, direction.z * 1.55);
-            if (fire) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 180));
-        }
-        for (int step = 1; step <= 12; step++) {
-            double distance = range * step / 12.0;
-            Vec3 center = origin.add(look.scale(distance)).add(0.0, 0.65, 0.0);
-
-        }
-        return true;
+        Vec3 origin = player.position(); Vec3 look = horizontalLook(player);
+        double length = SpellMetrics.waveLength(range); double endRadius = SpellMetrics.waveEndRadius(id, range, id.equals("burning_hands") ? 2 : 1);
+        for (Mob mob : nearby(player, origin.add(look.scale(length * 0.5)), length * 0.55 + endRadius, Math.max(4.5, endRadius))) {
+            if (!insideWave(origin, look, mob.position(), length, endRadius)) continue;
+            Vec3 direction = horizontalDirection(origin, mob.position()); ArcaneDamage.hurt(level, player, mob, (float) power);
+            mob.push(direction.x * 1.55, 0.34, direction.z * 1.55); if (fire) mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 180));
+        } return true;
     }
 
     private static boolean web(ServerPlayer player, double range) {
         Vec3 center = aimGround(player, range);
-        for (Mob mob : nearby(player, center, 5.0, 3.2)) {
+        double radius = SpellMetrics.effectRadius("web", range, 2);
+        for (Mob mob : nearby(player, center, radius, Math.max(3.2, radius * 0.64))) {
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 300, 7));
             mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 220, 2));
         }
@@ -251,9 +245,9 @@ public final class ExpandedSpellEffects {
         for (int spoke = 0; spoke < 12; spoke++) {
             double angle = Math.PI * 2.0 * spoke / 12.0;
             beam(level, center.add(0.0, 0.1, 0.0),
-                    center.add(Math.cos(angle) * 5.0, 0.1, Math.sin(angle) * 5.0), ParticleTypes.END_ROD, 18);
+                    center.add(Math.cos(angle) * radius, 0.1, Math.sin(angle) * radius), ParticleTypes.END_ROD, 18);
         }
-        for (int i = 1; i <= 4; i++) ring(level, center.add(0.0, 0.1, 0.0), i * 1.2, ParticleTypes.END_ROD, 30);
+        for (int i = 1; i <= 4; i++) ring(level, center.add(0.0, 0.1, 0.0), radius * i / 4.0, ParticleTypes.END_ROD, 30);
         return true;
     }
 
@@ -384,10 +378,10 @@ public final class ExpandedSpellEffects {
         return true;
     }
 
-    private static boolean storm(ServerPlayer player, double range, double power, ParticleOptions particle,
+    private static boolean storm(ServerPlayer player, String id, double range, double power, ParticleOptions particle,
                                  boolean freeze) {
         Vec3 center = aimGround(player, range);
-        double radius = SpellMetrics.effectRadius("cloudkill", range, 5);
+        double radius = SpellMetrics.effectRadius(id, range, 4);
         areaDamage(player, center, radius, power, particle, false, freeze, false);
         ServerLevel level = level(player);
         for (int i = 0; i < 72; i++) {
@@ -408,7 +402,8 @@ public final class ExpandedSpellEffects {
 
     private static boolean confusion(ServerPlayer player, double range) {
         Vec3 center = aimGround(player, range);
-        for (Mob mob : nearby(player, center, 5.8, 4.0)) {
+        double radius = SpellMetrics.effectRadius("confusion", range, 4);
+        for (Mob mob : nearby(player, center, radius, Math.max(4.0, radius * 0.7))) {
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 280, 3));
             mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 280, 4));
             mob.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 180, 0));
@@ -439,22 +434,13 @@ public final class ExpandedSpellEffects {
     }
 
     private static boolean coneCold(ServerPlayer player, double range, double power) {
-        ServerLevel level = level(player);
-        Vec3 origin = player.position();
-        Vec3 look = horizontalLook(player);
-        for (Mob mob : nearby(player, origin, range, 5.5)) {
-            Vec3 direction = horizontalDirection(origin, mob.position());
-            if (direction.dot(look) < 0.45) continue;
-            ArcaneDamage.hurt(level, player, mob, (float) power);
-            mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 560));
+        ServerLevel level = level(player); Vec3 origin = player.position(); Vec3 look = horizontalLook(player);
+        double length = SpellMetrics.waveLength(range); double endRadius = SpellMetrics.waveEndRadius("cone_of_cold", range, 5);
+        for (Mob mob : nearby(player, origin.add(look.scale(length * 0.5)), length * 0.55 + endRadius, Math.max(5.5, endRadius))) {
+            if (!insideWave(origin, look, mob.position(), length, endRadius)) continue;
+            ArcaneDamage.hurt(level, player, mob, (float) power); mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 560));
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 320, 5));
-        }
-        for (int step = 1; step <= 15; step++) {
-            double distance = range * step / 15.0;
-            Vec3 center = origin.add(look.scale(distance)).add(0.0, 0.75, 0.0);
-
-        }
-        return true;
+        } return true;
     }
 
     private static boolean telekinesis(ServerPlayer player, double range, double power) {
@@ -512,7 +498,7 @@ public final class ExpandedSpellEffects {
         Optional<Mob> target = lookTarget(player, range);
         Vec3 center = target.map(Mob::position).orElse(aimGround(player, range));
         missile(player, range, power * 0.65, ParticleTypes.SNOWFLAKE, 0, 160);
-        return areaDamage(player, center, 3.2, power * 0.65, ParticleTypes.SNOWFLAKE, false, true, false);
+        return areaDamage(player, center, SpellMetrics.effectRadius("ice_knife", range, 2), power * 0.65, ParticleTypes.SNOWFLAKE, false, true, false);
     }
 
     private static boolean chromaticOrb(ServerPlayer player, double range, double power) {
@@ -553,12 +539,13 @@ public final class ExpandedSpellEffects {
         return true;
     }
 
-    private static boolean wall(ServerPlayer player, double range, double power, ParticleOptions particle,
+    private static boolean wall(ServerPlayer player, String id, double range, double power, ParticleOptions particle,
                                 boolean fire, boolean push, boolean force) {
         ServerLevel level = level(player);
         Vec3 center = aimGround(player, range);
         Vec3 right = right(player);
-        double halfWidth = Math.max(4.5, Math.min(10.0, range * 0.36));
+        int circle = id.equals("wall_of_force") ? 5 : id.equals("wind_wall") ? 3 : 4;
+        double halfWidth = SpellMetrics.wallWidth(id, range, circle) * 0.5;
         int segments = Math.max(15, (int) Math.round(halfWidth * 3.0));
         for (int step = -segments; step <= segments; step++) {
             Vec3 base = center.add(right.scale(step * halfWidth / segments));
@@ -722,6 +709,13 @@ public final class ExpandedSpellEffects {
         Vec3 look = player.getLookAngle().normalize();
         Vec3 candidate = new Vec3(-look.z, 0.0, look.x);
         return candidate.lengthSqr() < 0.0001 ? new Vec3(1.0, 0.0, 0.0) : candidate.normalize();
+    }
+
+    private static boolean insideWave(Vec3 origin, Vec3 look, Vec3 point, double length, double endRadius) {
+        Vec3 delta = point.subtract(origin); Vec3 flat = new Vec3(delta.x, 0.0, delta.z); double forward = flat.dot(look);
+        if (forward < 0.0 || forward > length) return false; double lateralSq = Math.max(0.0, flat.lengthSqr() - forward * forward);
+        double t = length <= 0.0001 ? 1.0 : forward / length; double allowed = endRadius * (0.16 + 0.84 * t) + 0.65;
+        return lateralSq <= allowed * allowed;
     }
 
     private static double projection(Vec3 start, Vec3 direction, Vec3 point) {
