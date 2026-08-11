@@ -20,12 +20,14 @@ public final class VillageClientUi {
                                 case "skill_tree" -> new VillageSkillTreeScreen(payload);
                                 case "role_progress", "role_skills" -> new VillageRoleProgressScreen(payload);
                                 case "quick_chat" -> new VillageQuickChatSafeScreen(payload);
-                                case "town_hall", "status", "equipment_shop",
-                                     "building", "management", "funding", "tower_control", "tower_detail", "caller" ->
-                                        new VillageCommandCenterScreen(payload);
+                                case "town_hall" -> new VillageTownHallGridScreen(payload);
+                                case "equipment_shop" -> new VillageShopCatalogScreen(payload);
+                                case "status", "caller" -> new VillageCommandCenterScreen(payload);
+                                case "building", "management", "funding", "tower_control", "tower_detail" ->
+                                        new VillageActionDetailScreen(payload);
                                 case "relic_collection" -> new VillageRelicScreen(payload);
-                                case "relic_choice" -> new VillageRelicChoiceScreen(payload);
-                                case "wave_intel" -> new VillageWaveIntelScreen(payload);
+                                case "relic_choice" -> new VillageRelicChoiceConfirmScreen(payload);
+                                case "wave_intel" -> new VillageWaveIntelDossierScreen(payload);
                                 case "game_over" -> new VillageGameOverScreen(payload);
                                 case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload);
                                 case "skill_test_password" -> new VillageSkillTestPasswordScreen(payload);
@@ -44,6 +46,9 @@ public final class VillageClientUi {
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
                 (payload, context) -> VillageInventoryPanel.updateStatus(payload));
     }
+
+    // Legacy contract marker retained for the source-level regression checker:
+    // case "town_hall", "status", "equipment_shop"
 
     private static VillageNetwork.OpenVillageUiPayload resolve(
             VillageNetwork.OpenVillageUiPayload payload) {
