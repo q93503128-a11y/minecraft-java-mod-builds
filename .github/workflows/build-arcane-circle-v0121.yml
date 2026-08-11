@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Alpha.22
+name: Build Arcane Circle v0.12.1 Alpha.23
 
 on:
   workflow_dispatch:
@@ -17,14 +17,14 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.12.1-alpha.22
-  EXPECTED_JAR: arcanecircle-0.12.1-alpha.22.jar
+  MOD_VERSION: 0.12.1-alpha.23
+  EXPECTED_JAR: arcanecircle-0.12.1-alpha.23.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 - alpha.22 presentation phase 2A committed source
+    name: Java 25 - alpha.23 presentation phase 2B range-sync committed source
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -40,12 +40,12 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Audit committed alpha.22 source without mutation
+      - name: Audit committed alpha.23 source without mutation
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_v0121_alpha22_presentation_phase2a.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-audit.log"
+          python3 tools/test_v0121_alpha23_presentation_phase2b.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-audit.log"
           git diff --check
           git diff --exit-code
 
@@ -57,7 +57,7 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
 
-      - name: Verify alpha.22 JAR
+      - name: Verify alpha.23 JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -68,38 +68,49 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import zipfile
-          jar=Path('build/libs/arcanecircle-0.12.1-alpha.22.jar')
+          jar=Path('build/libs/arcanecircle-0.12.1-alpha.23.jar')
           with zipfile.ZipFile(jar) as z:
               names=set(z.namelist())
               required={
                   'kr/moonseungjun/arcanecircle/client/LowCircleVisualIdentity.class',
                   'kr/moonseungjun/arcanecircle/client/MidCircleVisualIdentity.class',
+                  'kr/moonseungjun/arcanecircle/client/FifthCircleVisualIdentity.class',
+                  'kr/moonseungjun/arcanecircle/client/RangeReactivePresentation.class',
                   'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
                   'kr/moonseungjun/arcanecircle/client/SpellVisualSignature.class',
                   'kr/moonseungjun/arcanecircle/client/SignatureGeometry.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellMetrics.class',
                   'kr/moonseungjun/arcanecircle/magic/SpellPresentationProfile.class',
                   'kr/moonseungjun/arcanecircle/magic/SpellCastingService.class',
+                  'kr/moonseungjun/arcanecircle/magic/FusionSpellEffects.class',
+                  'kr/moonseungjun/arcanecircle/magic/ExpandedSpellEffects.class',
                   'kr/moonseungjun/arcanecircle/magic/MageGearService.class',
                   'kr/moonseungjun/arcanecircle/client/GrimoireScreen.class',
                   'kr/moonseungjun/arcanecircle/item/ArcaneTestKitItem.class',
               }
               missing=required-names
-              if missing: raise SystemExit(f'missing alpha.22 runtime entries: {sorted(missing)}')
+              if missing: raise SystemExit(f'missing alpha.23 runtime entries: {sorted(missing)}')
               low=z.read('kr/moonseungjun/arcanecircle/client/LowCircleVisualIdentity.class')
               for token in (b'missileRack',b'fireIgniter',b'frostAperture',b'webSeal',b'fireballReactor',b'lightningRail',b'chromaticCrown',b'windWallRelease'):
                   if token not in low: raise SystemExit(f'phase1 authored identity regression: {token!r}')
               mid=z.read('kr/moonseungjun/arcanecircle/client/MidCircleVisualIdentity.class')
               for token in (b'fireWallInstallation',b'iceStormCanopy',b'dimensionDoorCorridor',b'resilientSphereClosure',b'thunderCagePylons',b'phantasmalMask',b'iceWallButtress'):
-                  if token not in mid: raise SystemExit(f'phase2A authored identity missing: {token!r}')
+                  if token not in mid: raise SystemExit(f'phase2A authored identity regression: {token!r}')
+              fifth=z.read('kr/moonseungjun/arcanecircle/client/FifthCircleVisualIdentity.class')
+              for token in (b'cloudkillCollectors',b'forceWallAnchors',b'holdMonsterBraces',b'passwallFrames',b'insectPlagueBeacons',b'chainLightningRouter',b'arcaneHandAssembly',b'teleportCircleAddress'):
+                  if token not in fifth: raise SystemExit(f'phase2B authored identity missing: {token!r}')
+              rangefx=z.read('kr/moonseungjun/arcanecircle/client/RangeReactivePresentation.class')
+              for token in (b'steamBurstEnvelope',b'waveLength',b'waveEndRadius',b'wallWidth'):
+                  if token not in rangefx: raise SystemExit(f'range-reactive presentation missing: {token!r}')
               tracker=z.read('kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class')
-              for token in (b'LowCircleVisualIdentity',b'MidCircleVisualIdentity'):
+              for token in (b'LowCircleVisualIdentity',b'MidCircleVisualIdentity',b'FifthCircleVisualIdentity',b'RangeReactivePresentation'):
                   if token not in tracker: raise SystemExit(f'presentation director is not wired: {token!r}')
               casting=z.read('kr/moonseungjun/arcanecircle/magic/SpellCastingService.class')
               for token in (b'READY_HOLD_TIMEOUT_TICKS',b'chargeTimeoutTicks'):
                   if token not in casting: raise SystemExit(f'held-cast regression: {token!r}')
               gear=z.read('kr/moonseungjun/arcanecircle/magic/MageGearService.class')
               if b'syncAtomicRobe' not in gear: raise SystemExit('atomic robe regression')
-          print('Arcane Circle alpha.22 committed-source JAR audit: PASS')
+          print('Arcane Circle alpha.23 committed-source JAR audit: PASS')
           PY
           mkdir -p ../../deliverables
           cp "build/libs/$EXPECTED_JAR" ../../deliverables/
@@ -107,7 +118,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.12.1-alpha.22
+          name: arcanecircle-0.12.1-alpha.23
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
@@ -128,7 +139,7 @@ jobs:
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
             git add -A "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12.1-alpha.22 verified JAR [skip ci]'
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.23 verified JAR [skip ci]'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
@@ -151,7 +162,7 @@ jobs:
           gradle=9.2.1
           version=$MOD_VERSION
           source_mutation=disabled
-          presentation_phase=2A-4C
+          presentation_phase=2B-5C-range-sync
           STATUS
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -163,7 +174,7 @@ jobs:
             cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "Record Arcane Circle v0.12.1-alpha.22 CI result for ${GITHUB_SHA::7} [skip ci]"
+            git commit -m "Record Arcane Circle v0.12.1-alpha.23 CI result for ${GITHUB_SHA::7} [skip ci]"
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 2))
           done
