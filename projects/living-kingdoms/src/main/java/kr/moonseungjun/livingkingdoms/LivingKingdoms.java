@@ -11,6 +11,7 @@ import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenAuthoritativeEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenAuthoredRoadNormalizer;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
+import kr.moonseungjun.livingkingdoms.world.ErdenCitadelInteriorManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorInventoryManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowAudit;
@@ -96,6 +97,7 @@ public final class LivingKingdoms {
         ErdenExteriorWorkforceManager.onServerTick(event);
         ErdenExteriorEstateManager.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
+        ErdenCitadelInteriorManager.onServerTick(event);
         ErdenLandmarkInteriorManager.onServerTick(event);
         ErdenUrbanMicroInfillManager.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
