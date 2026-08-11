@@ -36,8 +36,7 @@ public final class VillageGameOverScreen extends Screen {
         }
     }
 
-    @Override
-    public boolean isPauseScreen() { return false; }
+    @Override public boolean isPauseScreen() { return false; }
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -48,26 +47,29 @@ public final class VillageGameOverScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        int cx = width / 2;
-        int top = Math.max(18, height / 10);
-        graphics.centeredText(font, "—  방어선 붕괴  —", cx, top, RED);
-        graphics.centeredText(font, plain(title.getString()), cx, top + 20, TEXT);
-        graphics.fill(Math.max(28, cx - 160), top + 38, Math.min(width - 28, cx + 160), top + 40, RED);
+        Layout layout = layout();
+        VillageUiSafeArea.Rect safe = layout.safe();
+        int cx = safe.centerX();
+        graphics.centeredText(font, "—  방어선 붕괴  —", cx, layout.top(), RED);
+        graphics.centeredText(font, plain(title.getString()), cx, layout.top() + 20, TEXT);
+        graphics.fill(Math.max(safe.left() + 8, cx - 160), layout.top() + 38,
+                Math.min(safe.right() - 8, cx + 160), layout.top() + 40, RED);
 
-        List<FormattedCharSequence> lines = font.split(Component.literal(body), Math.max(120, Math.min(660, width - 54)));
-        int y = top + 55;
-        for (int index = 0; index < Math.min(8, lines.size()); index++) {
+        List<FormattedCharSequence> lines = font.split(Component.literal(body),
+                Math.max(120, Math.min(660, safe.width() - 28)));
+        int y = layout.top() + 55;
+        int maxBodyLines = Math.max(2, Math.min(8, (layout.optionTop() - 22 - y) / 12));
+        for (int index = 0; index < Math.min(maxBodyLines, lines.size()); index++) {
             int lineWidth = font.width(lines.get(index));
             graphics.text(font, lines.get(index), cx - lineWidth / 2, y, index == 0 ? TEXT : MUTED, false);
             y += 12;
         }
 
-        int optionTop = Math.max(y + 25, height - 112);
         for (int index = 0; index < options.size(); index++) {
-            Bounds b = optionBounds(index, options.size(), optionTop);
-            boolean hovered = inside(mouseX, mouseY, b);
-            drawOption(graphics, b, options.get(index), hovered, index);
+            Bounds b = optionBounds(index, options.size(), layout);
+            drawOption(graphics, b, options.get(index), inside(mouseX, mouseY, b), index);
         }
+        graphics.text(font, "ESC 닫기", safe.left() + 4, safe.bottom() - 11, MUTED, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -89,12 +91,9 @@ public final class VillageGameOverScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
-        int top = Math.max(18, height / 10);
-        List<FormattedCharSequence> lines = font.split(Component.literal(body), Math.max(120, Math.min(660, width - 54)));
-        int y = top + 55 + Math.min(8, lines.size()) * 12;
-        int optionTop = Math.max(y + 25, height - 112);
+        Layout layout = layout();
         for (int index = 0; index < options.size(); index++) {
-            Bounds b = optionBounds(index, options.size(), optionTop);
+            Bounds b = optionBounds(index, options.size(), layout);
             if (!inside(click.x(), click.y(), b)) continue;
             String action = actions[index];
             Option option = options.get(index);
@@ -109,13 +108,22 @@ public final class VillageGameOverScreen extends Screen {
         return super.mouseClicked(click, doubled);
     }
 
-    private Bounds optionBounds(int index, int count, int top) {
+    private Layout layout() {
+        VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
+        int top = safe.top() + 6;
+        int optionTop = Math.max(top + 128, safe.bottom() - 69);
+        optionTop = Math.min(safe.bottom() - 59, optionTop);
+        return new Layout(safe, top, optionTop);
+    }
+
+    private Bounds optionBounds(int index, int count, Layout layout) {
+        VillageUiSafeArea.Rect safe = layout.safe();
         int gap = 10;
-        int usable = Math.max(160, width - 36 - gap * Math.max(0, count - 1));
+        int usable = Math.max(150, safe.width() - 20 - gap * Math.max(0, count - 1));
         int w = Math.min(330, usable / Math.max(1, count));
         int total = count * w + Math.max(0, count - 1) * gap;
-        int x = (width - total) / 2 + index * (w + gap);
-        return new Bounds(x, top, w, 48);
+        int x = safe.centerX() - total / 2 + index * (w + gap);
+        return new Bounds(x, layout.optionTop(), w, 48);
     }
 
     private String fit(String value, int maxWidth) {
@@ -136,4 +144,5 @@ public final class VillageGameOverScreen extends Screen {
 
     private record Option(String title, String description) {}
     private record Bounds(int x, int y, int width, int height) {}
+    private record Layout(VillageUiSafeArea.Rect safe, int top, int optionTop) {}
 }
