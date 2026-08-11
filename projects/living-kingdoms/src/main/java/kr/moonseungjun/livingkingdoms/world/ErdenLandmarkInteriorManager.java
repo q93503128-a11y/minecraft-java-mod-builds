@@ -5,6 +5,8 @@ import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
@@ -25,6 +27,7 @@ public final class ErdenLandmarkInteriorManager {
     private static final int PROCESS_BUDGET = 1;
     private static final int MIN_FUNCTIONAL_FIXTURES = 4;
     private static final int SEARCH_RADIUS = 2;
+    private static final int CI_SAMPLE_TICKET_RADIUS = 2;
 
     private static final Map<String, List<Fixture>> FIXTURES = Map.ofEntries(
             Map.entry("royal_chancery", civic(Blocks.LECTERN, Blocks.BOOKSHELF, Blocks.CARTOGRAPHY_TABLE, Blocks.BARREL, Blocks.CHEST, Blocks.BOOKSHELF)),
@@ -50,6 +53,8 @@ public final class ErdenLandmarkInteriorManager {
     private static boolean completionLogged;
     private static boolean ciChunksRequested;
     private static boolean ciSamplePassed;
+    private static boolean ciSampleTicketHeld;
+    private static ChunkPos ciSampleTicketCenter;
 
     private ErdenLandmarkInteriorManager() {
     }
@@ -95,11 +100,20 @@ public final class ErdenLandmarkInteriorManager {
     }
 
     private static void reset(MinecraftServer server) {
+        if (activeServer != null && ciSampleTicketHeld && ciSampleTicketCenter != null) {
+            ServerLevel oldLevel = activeServer.getLevel(StarterRealmManager.REALM_KEY);
+            if (oldLevel != null) {
+                oldLevel.getChunkSource().removeTicketWithRadius(
+                        TicketType.PORTAL, ciSampleTicketCenter, CI_SAMPLE_TICKET_RADIUS);
+            }
+        }
         activeServer = server;
         diagnosticsLogged = false;
         completionLogged = false;
         ciChunksRequested = false;
         ciSamplePassed = false;
+        ciSampleTicketHeld = false;
+        ciSampleTicketCenter = null;
     }
 
     private static List<ExternalDistrictBuildingBuilder.BuildingEntrance> landmarkEntrances() {
@@ -216,8 +230,13 @@ public final class ErdenLandmarkInteriorManager {
             List<ExternalDistrictBuildingBuilder.BuildingEntrance> landmarks) {
         if (ciChunksRequested
                 || landmarks.isEmpty()
-                || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+                || !ciMode()) return;
         ExternalDistrictBuildingBuilder.BuildingEntrance sample = landmarks.getFirst();
+        ciSampleTicketCenter = new ChunkPos(sample.x() >> 4, sample.z() >> 4);
+        level.getChunkSource().addTicketAndLoadWithRadius(
+                TicketType.PORTAL, ciSampleTicketCenter, CI_SAMPLE_TICKET_RADIUS);
+        ciSampleTicketHeld = true;
+
         Frame frame = frame(sample);
         for (int lateral : new int[]{-7, 0, 7}) {
             for (int forward : new int[]{0, 8, 16}) {
@@ -233,6 +252,10 @@ public final class ErdenLandmarkInteriorManager {
             }
         }
         ciChunksRequested = true;
+        LivingKingdoms.LOGGER.info(
+                "Retained Erden landmark CI sample role={} chunk={},{} radius={} transient_ticket=portal synchronous_get_chunk=false",
+                sample.role(), ciSampleTicketCenter.x(), ciSampleTicketCenter.z(),
+                CI_SAMPLE_TICKET_RADIUS);
     }
 
     private static void verifyCiSampleIfNeeded(
@@ -240,15 +263,29 @@ public final class ErdenLandmarkInteriorManager {
             List<ExternalDistrictBuildingBuilder.BuildingEntrance> landmarks,
             ExternalDistrictBuildingBuilder.BuildingEntrance entrance,
             int fixtures) {
-        if (ciSamplePassed
-                || landmarks.isEmpty()
-                || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+        if (ciSamplePassed || landmarks.isEmpty() || !ciMode()) return;
         ExternalDistrictBuildingBuilder.BuildingEntrance sample = landmarks.getFirst();
         if (entrance.x() != sample.x() || entrance.z() != sample.z()) return;
         ciSamplePassed = true;
         LivingKingdoms.LOGGER.info(
                 "LK_ERDEN_LANDMARK_INTERIOR_PASS role={} entrance={},{} fixtures={} facade_replaced=false loaded_only=true",
                 entrance.role(), entrance.x(), entrance.z(), fixtures);
+        releaseCiSampleTicket(level);
+    }
+
+    private static void releaseCiSampleTicket(ServerLevel level) {
+        if (!ciSampleTicketHeld || ciSampleTicketCenter == null) return;
+        level.getChunkSource().removeTicketWithRadius(
+                TicketType.PORTAL, ciSampleTicketCenter, CI_SAMPLE_TICKET_RADIUS);
+        LivingKingdoms.LOGGER.info(
+                "Released Erden landmark CI sample ticket chunk={},{} radius={} transient_ticket=portal",
+                ciSampleTicketCenter.x(), ciSampleTicketCenter.z(), CI_SAMPLE_TICKET_RADIUS);
+        ciSampleTicketHeld = false;
+        ciSampleTicketCenter = null;
+    }
+
+    private static boolean ciMode() {
+        return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
     }
 
     private static Frame frame(ExternalDistrictBuildingBuilder.BuildingEntrance entrance) {
