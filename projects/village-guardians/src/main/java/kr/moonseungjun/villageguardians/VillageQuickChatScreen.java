@@ -6,16 +6,16 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
+/** Fast communication wheel that stays visually embedded in the world instead of opening a panel. */
 public final class VillageQuickChatScreen extends Screen {
     private static final String SEP = "\u001F";
-    private static final int OVERLAY = 0x72000000;
-    private static final int PANEL = 0xE60A1118;
-    private static final int CARD = 0xF01A2B36;
-    private static final int CARD_HOVER = 0xF02B4656;
-    private static final int BORDER = 0xFF5A7284;
-    private static final int TEXT = 0xFFFFFFFF;
-    private static final int MUTED = 0xFFC3D0D9;
-    private static final int ACCENT = 0xFF45D8C0;
+    private static final int OVERLAY = 0x34000000;
+    private static final int INK = 0xFFF3F7F8;
+    private static final int MUTED = 0xFFB2C0C8;
+    private static final int ACCENT = 0xFF55E3C5;
+    private static final int ACCENT_SOFT = 0xAA2E8878;
+    private static final int TRACK = 0x885E7886;
+    private static final int CORE = 0xD20B141B;
 
     private final String[] actions;
     private final String[] labels;
@@ -39,39 +39,41 @@ public final class VillageQuickChatScreen extends Screen {
         int count = Math.min(actions.length, labels.length);
         int centerX = width / 2;
         int centerY = height / 2;
-        int centerWidth = 56;
-        int centerHeight = 18;
-        int centerLeft = centerX - centerWidth / 2;
-        int centerTop = centerY - centerHeight / 2;
 
-        graphics.text(font, fit(VillageClientKeys.quickCommunicationKeyName()
-                        + " 빠른 통신 · 선택 즉시 전송 · ESC 닫기", Math.max(1, width - 20)),
-                10, 9, MUTED, false);
-        boolean closeHovered = inside(mouseX, mouseY, centerLeft, centerTop, centerWidth, centerHeight);
-        graphics.fill(centerLeft - 1, centerTop - 1, centerLeft + centerWidth + 1,
-                centerTop + centerHeight + 1, closeHovered ? ACCENT : BORDER);
-        graphics.fill(centerLeft, centerTop, centerLeft + centerWidth, centerTop + centerHeight,
-                closeHovered ? CARD_HOVER : PANEL);
-        graphics.centeredText(font, "닫기", centerX, centerTop + 5, closeHovered ? TEXT : MUTED);
+        graphics.centeredText(font, VillageClientKeys.quickCommunicationKeyName() + "  수호단 통신",
+                centerX, Math.max(9, centerY - Math.min(116, height / 3) - 38), MUTED);
 
+        drawDiamond(graphics, centerX, centerY, 18, 0xDD18252E);
+        drawDiamondOutline(graphics, centerX, centerY, 18, TRACK);
+        drawDiamond(graphics, centerX, centerY, 7, CORE);
+        graphics.centeredText(font, "×", centerX, centerY - 4, MUTED);
+
+        int hoveredIndex = -1;
         for (int index = 0; index < count; index++) {
-            OptionBounds bounds = optionBounds(index, count, centerX, centerY);
-            int edgeX = clamp(centerX, bounds.x(), bounds.x() + bounds.width());
-            int edgeY = clamp(centerY, bounds.y(), bounds.y() + bounds.height());
-            drawLine(graphics, centerX, centerY, edgeX, edgeY, 0xAA5A7284);
-            boolean hovered = inside(mouseX, mouseY, bounds.x(), bounds.y(), bounds.width(), bounds.height());
-            graphics.fill(bounds.x() - 1, bounds.y() - 1,
-                    bounds.x() + bounds.width() + 1, bounds.y() + bounds.height() + 1,
-                    hovered ? ACCENT : BORDER);
-            graphics.fill(bounds.x(), bounds.y(), bounds.x() + bounds.width(), bounds.y() + bounds.height(),
-                    hovered ? CARD_HOVER : CARD);
-            graphics.fill(bounds.x(), bounds.y(), bounds.x() + 4, bounds.y() + bounds.height(), ACCENT);
+            Node node = node(index, count, centerX, centerY);
+            boolean hovered = insideDiamond(mouseX, mouseY, node.x(), node.y(), 26);
+            if (hovered) hoveredIndex = index;
+            drawLine(graphics, centerX, centerY, node.x(), node.y(), hovered ? ACCENT_SOFT : TRACK);
+            drawDiamond(graphics, node.x(), node.y(), hovered ? 25 : 20,
+                    hovered ? 0xE3295A55 : 0xD4132028);
+            drawDiamondOutline(graphics, node.x(), node.y(), hovered ? 25 : 20,
+                    hovered ? ACCENT : 0xCC6E8794);
+            drawDiamond(graphics, node.x(), node.y(), hovered ? 7 : 5, hovered ? ACCENT : 0xFF7E939E);
+
             String[] parts = labelParts(labels[index]);
-            graphics.centeredText(font, fit(parts[0], bounds.width() - 18),
-                    bounds.x() + bounds.width() / 2, bounds.y() + 8, TEXT);
-            graphics.centeredText(font, fit(parts[1], bounds.width() - 18),
-                    bounds.x() + bounds.width() / 2, bounds.y() + 23, MUTED);
+            int textY = node.y() + (node.y() < centerY ? -39 : 31);
+            if (Math.abs(node.y() - centerY) < 28) textY = node.y() - 5;
+            int textX = node.x();
+            String title = fit(parts[0], Math.min(146, Math.max(70, width / 4)));
+            graphics.centeredText(font, title, textX, textY, hovered ? INK : 0xFFD9E2E6);
         }
+
+        String guide = hoveredIndex >= 0
+                ? labelParts(labels[hoveredIndex])[1]
+                : "신호를 선택하면 즉시 전송 · 중앙 클릭 또는 ESC 닫기";
+        graphics.centeredText(font, fit(guide, Math.max(80, width - 40)), centerX,
+                Math.min(height - 18, centerY + Math.min(116, height / 3) + 38),
+                hoveredIndex >= 0 ? ACCENT : MUTED);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -80,18 +82,14 @@ public final class VillageQuickChatScreen extends Screen {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
         int centerX = width / 2;
         int centerY = height / 2;
-        int centerWidth = 56;
-        int centerHeight = 18;
-        int centerLeft = centerX - centerWidth / 2;
-        int centerTop = centerY - centerHeight / 2;
-        if (inside(click.x(), click.y(), centerLeft, centerTop, centerWidth, centerHeight)) {
+        if (insideDiamond(click.x(), click.y(), centerX, centerY, 22)) {
             onClose();
             return true;
         }
         int count = Math.min(actions.length, labels.length);
         for (int index = 0; index < count; index++) {
-            OptionBounds bounds = optionBounds(index, count, centerX, centerY);
-            if (inside(click.x(), click.y(), bounds.x(), bounds.y(), bounds.width(), bounds.height())) {
+            Node node = node(index, count, centerX, centerY);
+            if (insideDiamond(click.x(), click.y(), node.x(), node.y(), 30)) {
                 ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(actions[index]));
                 onClose();
                 return true;
@@ -100,27 +98,14 @@ public final class VillageQuickChatScreen extends Screen {
         return super.mouseClicked(click, doubled);
     }
 
-    private OptionBounds optionBounds(int index, int count, int centerX, int centerY) {
-        int cardWidth = clamp(width / 4, 104, 172);
-        int cardHeight = 40;
-        if (count <= 4 && width >= 300 && height >= 230) {
-            double radiusX = Math.min(190.0, Math.max(92.0, (width - cardWidth - 24) / 2.7));
-            double radiusY = Math.min(126.0, Math.max(70.0, (height - cardHeight - 72) / 2.7));
-            double angle = -Math.PI / 2.0 + index * Math.PI * 2.0 / Math.max(1, count);
-            int x = (int) Math.round(centerX + Math.cos(angle) * radiusX - cardWidth / 2.0);
-            int y = (int) Math.round(centerY + Math.sin(angle) * radiusY - cardHeight / 2.0);
-            return new OptionBounds(clamp(x, 6, Math.max(6, width - cardWidth - 6)),
-                    clamp(y, 28, Math.max(28, height - cardHeight - 6)), cardWidth, cardHeight);
-        }
-        int columns = width >= 250 ? 2 : 1;
-        int gap = 6;
-        int rows = Math.max(1, (count + columns - 1) / columns);
-        int totalWidth = columns * cardWidth + (columns - 1) * gap;
-        int x = Math.max(6, (width - totalWidth) / 2 + (index % columns) * (cardWidth + gap));
-        int totalHeight = rows * cardHeight + (rows - 1) * gap;
-        int y = Math.max(30, (height - totalHeight) / 2 + (index / columns) * (cardHeight + gap));
-        return new OptionBounds(clamp(x, 6, Math.max(6, width - cardWidth - 6)),
-                clamp(y, 28, Math.max(28, height - cardHeight - 6)), cardWidth, cardHeight);
+    private Node node(int index, int count, int centerX, int centerY) {
+        double angle = -Math.PI / 2.0 + index * Math.PI * 2.0 / Math.max(1, count);
+        double radiusX = Math.min(168.0, Math.max(76.0, width * 0.24));
+        double radiusY = Math.min(112.0, Math.max(62.0, height * 0.25));
+        int x = (int) Math.round(centerX + Math.cos(angle) * radiusX);
+        int y = (int) Math.round(centerY + Math.sin(angle) * radiusY);
+        return new Node(clamp(x, 34, Math.max(34, width - 34)),
+                clamp(y, 44, Math.max(44, height - 44)));
     }
 
     private String[] labelParts(String label) {
@@ -139,7 +124,23 @@ public final class VillageQuickChatScreen extends Screen {
         return normalized.substring(0, end) + suffix;
     }
 
-    private void drawLine(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, int color) {
+    static void drawDiamond(GuiGraphicsExtractor graphics, int cx, int cy, int radius, int color) {
+        for (int dy = -radius; dy <= radius; dy++) {
+            int half = radius - Math.abs(dy);
+            graphics.fill(cx - half, cy + dy, cx + half + 1, cy + dy + 1, color);
+        }
+    }
+
+    static void drawDiamondOutline(GuiGraphicsExtractor graphics, int cx, int cy, int radius, int color) {
+        for (int i = 0; i < radius; i++) {
+            graphics.fill(cx - i - 1, cy - radius + i, cx - i, cy - radius + i + 1, color);
+            graphics.fill(cx + i, cy - radius + i, cx + i + 1, cy - radius + i + 1, color);
+            graphics.fill(cx - i - 1, cy + radius - i, cx - i, cy + radius - i + 1, color);
+            graphics.fill(cx + i, cy + radius - i, cx + i + 1, cy + radius - i + 1, color);
+        }
+    }
+
+    static void drawLine(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, int color) {
         int dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
         int dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
         int err = dx + dy;
@@ -152,16 +153,16 @@ public final class VillageQuickChatScreen extends Screen {
         }
     }
 
-    private static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
+    private static boolean insideDiamond(double mx, double my, int cx, int cy, int radius) {
+        return Math.abs(mx - cx) + Math.abs(my - cy) <= radius;
     }
 
-    private static boolean inside(double mx, double my, int x, int y, int w, int h) {
-        return mx >= x && mx < x + w && my >= y && my < y + h;
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     @Override
     public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
 
-    private record OptionBounds(int x, int y, int width, int height) {}
+    private record Node(int x, int y) {}
 }
