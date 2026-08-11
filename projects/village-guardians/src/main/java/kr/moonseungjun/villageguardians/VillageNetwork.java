@@ -13,11 +13,12 @@ public final class VillageNetwork {
     private VillageNetwork() {}
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("4");
+        var registrar = event.registrar("5");
         registrar.playToClient(OpenVillageUiPayload.TYPE, OpenVillageUiPayload.STREAM_CODEC);
         registrar.playToClient(PlayerStatusPayload.TYPE, PlayerStatusPayload.STREAM_CODEC);
         registrar.playToClient(SkillMotionPayload.TYPE, SkillMotionPayload.STREAM_CODEC);
         registrar.playToClient(SkillHudPayload.TYPE, SkillHudPayload.STREAM_CODEC);
+        registrar.playToClient(MainHudPayload.TYPE, MainHudPayload.STREAM_CODEC);
         registrar.playToServer(VillageUiActionPayload.TYPE, VillageUiActionPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof ServerPlayer player
@@ -42,8 +43,7 @@ public final class VillageNetwork {
             String motion,
             int durationTicks) {
         if (level == null || owner == null || motion == null || durationTicks <= 0) return;
-        SkillMotionPayload payload = new SkillMotionPayload(
-                owner.getId(), motion, durationTicks);
+        SkillMotionPayload payload = new SkillMotionPayload(owner.getId(), motion, durationTicks);
         for (ServerPlayer viewer : level.players()) {
             PacketDistributor.sendToPlayer(viewer, payload);
         }
@@ -52,6 +52,11 @@ public final class VillageNetwork {
     public static void sendSkillHud(ServerPlayer player, String text) {
         if (player == null) return;
         PacketDistributor.sendToPlayer(player, new SkillHudPayload(text == null ? "" : text));
+    }
+
+    public static void sendMainHud(ServerPlayer player, String text) {
+        if (player == null) return;
+        PacketDistributor.sendToPlayer(player, new MainHudPayload(text == null ? "" : text));
     }
 
     public static void sendPlayerStatus(ServerPlayer player) {
@@ -98,12 +103,11 @@ public final class VillageNetwork {
             int durationTicks) implements CustomPacketPayload {
         public static final Type<SkillMotionPayload> TYPE = new Type<>(
                 Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "skill_motion"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, SkillMotionPayload> STREAM_CODEC =
-                StreamCodec.composite(
-                        ByteBufCodecs.VAR_INT, SkillMotionPayload::entityId,
-                        ByteBufCodecs.STRING_UTF8, SkillMotionPayload::motion,
-                        ByteBufCodecs.VAR_INT, SkillMotionPayload::durationTicks,
-                        SkillMotionPayload::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, SkillMotionPayload> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, SkillMotionPayload::entityId,
+                ByteBufCodecs.STRING_UTF8, SkillMotionPayload::motion,
+                ByteBufCodecs.VAR_INT, SkillMotionPayload::durationTicks,
+                SkillMotionPayload::new);
 
         @Override
         public Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -112,10 +116,20 @@ public final class VillageNetwork {
     public record SkillHudPayload(String text) implements CustomPacketPayload {
         public static final Type<SkillHudPayload> TYPE = new Type<>(
                 Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "skill_hud"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, SkillHudPayload> STREAM_CODEC =
-                StreamCodec.composite(
-                        ByteBufCodecs.STRING_UTF8, SkillHudPayload::text,
-                        SkillHudPayload::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, SkillHudPayload> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, SkillHudPayload::text,
+                SkillHudPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record MainHudPayload(String text) implements CustomPacketPayload {
+        public static final Type<MainHudPayload> TYPE = new Type<>(
+                Identifier.fromNamespaceAndPath(VillageGuardians.MOD_ID, "main_hud"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, MainHudPayload> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, MainHudPayload::text,
+                MainHudPayload::new);
 
         @Override
         public Type<? extends CustomPacketPayload> type() { return TYPE; }
