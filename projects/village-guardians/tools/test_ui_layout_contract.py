@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression checks for modal visibility at common Minecraft GUI-scaled viewport sizes."""
+"""Regression checks for hotbar-safe Village Guardians modal viewports."""
 
 from pathlib import Path
 
@@ -14,54 +14,53 @@ def clamp(value: int, low: int, high: int) -> int:
 def safe_rect(width: int, height: int) -> tuple[int, int, int, int]:
     side = clamp(width // 52, 7, 16)
     top = clamp(height // 80, 6, 12)
-    bottom_padding = clamp(height // 70, 7, 14)
+    bottom_padding = clamp(height // 11, 38, 56)
     return side, top, width - side, height - bottom_padding
 
 
-def town_facility_geometry(width: int, height: int) -> tuple[int, int, int]:
+def centered_panel(width: int, height: int, max_width: int, max_height: int) -> tuple[int, int, int, int]:
     left, top, right, bottom = safe_rect(width, height)
     safe_width = right - left
     safe_height = bottom - top
-    # One-line compact header on short viewports, matching VillageCommandCenterScreen.
-    header_bottom = top + 19 + 11 + 5
-    role_title = header_bottom + 3
-    role_top = role_title + 12
-    role_height = 34 if safe_height < 245 else 42
-    facility_title = role_top + role_height + 7
-    facility_top = facility_title + 12
-    facility_bottom = bottom - 15
-    columns = 4 if safe_width >= 350 else 3
-    rows = (7 + columns - 1) // columns
-    available = max(rows * 30, facility_bottom - facility_top)
-    row_height = max(30, min(70, available // rows))
-    return columns, rows, row_height
+    panel_width = min(max_width, max(280, safe_width - 24))
+    panel_height = min(max_height, max(210, safe_height - 16))
+    panel_width = min(panel_width, safe_width)
+    panel_height = min(panel_height, safe_height)
+    x = left + safe_width // 2 - panel_width // 2
+    y = top + safe_height // 2 - panel_height // 2
+    return x, y, x + panel_width, y + panel_height
 
 
 def main() -> None:
     safe_source = (JAVA / "VillageUiSafeArea.java").read_text(encoding="utf-8")
-    command_source = (JAVA / "VillageCommandCenterScreen.java").read_text(encoding="utf-8")
+    town = (JAVA / "VillageTownHallGridScreen.java").read_text(encoding="utf-8")
+    action = (JAVA / "VillageActionDetailScreen.java").read_text(encoding="utf-8")
+    victory = (JAVA / "VillageVictoryScreen.java").read_text(encoding="utf-8")
     quick_source = (JAVA / "VillageQuickChatSafeScreen.java").read_text(encoding="utf-8")
     suppressor = (JAVA / "VillageUiHudSuppressor.java").read_text(encoding="utf-8")
 
     for width, height in ((420, 224), (560, 299), (840, 448), (1680, 896)):
         left, top, right, bottom = safe_rect(width, height)
         assert left >= 0 and top >= 0 and right <= width and bottom <= height
-        assert bottom - top >= int(height * 0.90), (width, height, top, bottom)
-        columns, rows, row_height = town_facility_geometry(width, height)
-        if right - left >= 350:
-            assert columns == 4
-            assert rows == 2
-        assert row_height >= 30
+        reserve = height - bottom
+        assert 38 <= reserve <= 56, (width, height, reserve)
+        assert bottom > top + 100, (width, height, top, bottom)
 
-    assert "bottomReserve" not in safe_source
-    assert "townFacilityColumns" in command_source
-    assert "count <= 8" in command_source
+        for max_width, max_height in ((820, 430), (760, 360)):
+            x0, y0, x1, y1 = centered_panel(width, height, max_width, max_height)
+            assert x0 >= left and y0 >= top
+            assert x1 <= right and y1 <= bottom
+
+    assert "height / 11" in safe_source and "38, 56" in safe_source
+    assert "panelWidth = Math.min(820" in town and "panelHeight = Math.min(430" in town
+    assert "panelWidth = Math.min(760" in action and "panelHeight = Math.min(360" in action
+    assert "VillageUiSafeArea.screen" in victory
     assert "drawSignalLabel" in quick_source
     assert "VanillaGuiLayers.CHAT" in suppressor and "VanillaGuiLayers.HOTBAR" in suppressor
 
-    print("[PASS] Modal safe area retains at least 90% of GUI-scaled viewport height")
-    print("[PASS] Seven town facilities use two rows at normal desktop GUI widths")
-    print("[PASS] Quick-chat text zones and vanilla HUD suppression remain wired")
+    print("[PASS] Modal safe area reserves 38-56 GUI pixels for the vanilla hotbar")
+    print("[PASS] Town hall and facility-detail panels remain fully inside the safe viewport")
+    print("[PASS] Victory and quick-chat dedicated layouts remain wired")
 
 
 if __name__ == "__main__":
