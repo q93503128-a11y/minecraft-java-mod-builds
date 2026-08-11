@@ -57,7 +57,7 @@ public final class ErdenEntranceThresholdManager {
             int doorY = findLowestDoorY(level, entry.x, entry.z);
             if (doorY == Integer.MIN_VALUE) continue;
             Approach approach = approach(entry, doorY);
-            if (!chunksReady(level, approach)) continue;
+            if (!preflight(level, entry, doorY, approach)) continue;
             if (!normalize(level, entry, doorY, approach)) continue;
 
             data.markComplete(key, THRESHOLD_REVISION);
@@ -168,8 +168,39 @@ public final class ErdenEntranceThresholdManager {
         return new Approach(Math.max(1, steps), Math.max(1, totalSteps), doorFloor, endFloor);
     }
 
-    private static boolean chunksReady(ServerLevel level, Approach approach) {
-        return true;
+    /**
+     * Validates the complete graded segment before the first write. In particular the two cells
+     * immediately outside the door must already have body clearance; this prevents the threshold
+     * repair from deleting an authored awning, arch or facade detail just to make the audit pass.
+     */
+    private static boolean preflight(
+            ServerLevel level,
+            Entry entry,
+            int doorY,
+            Approach approach) {
+        if (!walkable(level, entry.x, doorY, entry.z)) return false;
+        int previousFloor = approach.doorFloor;
+        for (int step = 1; step <= approach.steps; step++) {
+            Point center = pathPoint(entry, step, approach.totalSteps);
+            if (!level.hasChunk(center.x >> 4, center.z >> 4)
+                    || !ErdenCapitalStreamingBuilder.isChunkBuilt(
+                    level, center.x >> 4, center.z >> 4)) {
+                return false;
+            }
+            float progress = step / (float) approach.steps;
+            int targetFloor = Math.round(
+                    approach.doorFloor
+                            + (approach.endFloor - approach.doorFloor) * progress);
+            if (Math.abs(targetFloor - previousFloor) > 1) return false;
+            if (step <= 2) {
+                BlockPos feet = new BlockPos(center.x, targetFloor + 1, center.z);
+                if (!bodyPassable(level, feet) || !bodyPassable(level, feet.above())) {
+                    return false;
+                }
+            }
+            previousFloor = targetFloor;
+        }
+        return Math.abs(previousFloor - approach.endFloor) <= 1;
     }
 
     private static boolean normalize(
@@ -185,11 +216,6 @@ public final class ErdenEntranceThresholdManager {
 
         for (int step = 1; step <= approach.steps; step++) {
             Point center = pathPoint(entry, step, approach.totalSteps);
-            if (!level.hasChunk(center.x >> 4, center.z >> 4)
-                    || !ErdenCapitalStreamingBuilder.isChunkBuilt(
-                    level, center.x >> 4, center.z >> 4)) {
-                return false;
-            }
             float progress = step / (float) approach.steps;
             int targetFloor = Math.round(
                     approach.doorFloor
@@ -200,7 +226,11 @@ public final class ErdenEntranceThresholdManager {
             for (int width = -halfWidth; width <= halfWidth; width++) {
                 int x = eastWest ? center.x : center.x + width;
                 int z = eastWest ? center.z + width : center.z;
-                if (!level.hasChunk(x >> 4, z >> 4)) return false;
+                if (!level.hasChunk(x >> 4, z >> 4)
+                        || !ErdenCapitalStreamingBuilder.isChunkBuilt(
+                        level, x >> 4, z >> 4)) {
+                    return false;
+                }
                 int naturalFloor = designedFloor(x, z);
                 if (targetFloor >= naturalFloor) {
                     for (int y = naturalFloor; y <= targetFloor; y++) {
@@ -209,9 +239,11 @@ public final class ErdenEntranceThresholdManager {
                 } else {
                     set(level, x, targetFloor, z, material);
                 }
-                int clearTop = Math.max(targetFloor + 3, naturalFloor + 2);
-                for (int y = targetFloor + 1; y <= clearTop; y++) {
-                    set(level, x, y, z, Blocks.AIR);
+                if (step > 2) {
+                    int clearTop = Math.max(targetFloor + 3, naturalFloor + 2);
+                    for (int y = targetFloor + 1; y <= clearTop; y++) {
+                        set(level, x, y, z, Blocks.AIR);
+                    }
                 }
             }
             if (!walkable(level, center.x, targetFloor + 1, center.z)) return false;
