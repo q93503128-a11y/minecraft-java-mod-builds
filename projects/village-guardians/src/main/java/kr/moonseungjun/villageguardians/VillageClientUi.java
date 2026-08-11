@@ -28,6 +28,7 @@ public final class VillageClientUi {
                                 case "relic_collection" -> new VillageRelicScreen(payload);
                                 case "relic_choice" -> new VillageRelicChoiceConfirmScreen(payload);
                                 case "wave_intel" -> new VillageWaveIntelDossierScreen(payload);
+                                case "victory" -> new VillageVictoryScreen(payload);
                                 case "game_over" -> new VillageGameOverScreen(payload);
                                 case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload);
                                 case "skill_test_password" -> new VillageSkillTestPasswordScreen(payload);
