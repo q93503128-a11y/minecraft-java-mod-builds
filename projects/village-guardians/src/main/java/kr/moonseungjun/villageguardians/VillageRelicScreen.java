@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Relic collection presented as a reliquary of sigils instead of a scrolling card list. */
+/** Relic collection presented as a reliquary of sigils inside the shared safe viewport. */
 public final class VillageRelicScreen extends Screen {
     private static final String SEP = "\u001F";
     private static final int OVERLAY = 0x56000000;
@@ -34,8 +34,7 @@ public final class VillageRelicScreen extends Screen {
         }
     }
 
-    @Override
-    public boolean isPauseScreen() { return false; }
+    @Override public boolean isPauseScreen() { return false; }
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -44,14 +43,15 @@ public final class VillageRelicScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        int centerX = width / 2;
-        int titleY = Math.max(12, height / 14);
+        VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
+        int centerX = safe.centerX();
+        int titleY = safe.top() + 4;
         graphics.centeredText(font, plain(payload.title()), centerX, titleY, GOLD);
-        graphics.centeredText(font, fit(summaryLine(), Math.max(100, width - 40)), centerX, titleY + 16, MUTED);
-        graphics.fill(Math.max(16, centerX - 160), titleY + 30,
-                Math.min(width - 16, centerX + 160), titleY + 31, 0x88A77B35);
+        graphics.centeredText(font, fit(summaryLine(), Math.max(100, safe.width() - 30)), centerX, titleY + 16, MUTED);
+        graphics.fill(Math.max(safe.left() + 6, centerX - 160), titleY + 30,
+                Math.min(safe.right() - 6, centerX + 160), titleY + 31, 0x88A77B35);
 
-        Grid grid = grid(titleY + 43);
+        Grid grid = grid(safe, titleY + 43);
         int rows = relics.isEmpty() ? 0 : (relics.size() + grid.columns() - 1) / grid.columns();
         int contentHeight = rows * grid.cell();
         int maximum = Math.max(0, contentHeight - grid.height());
@@ -67,35 +67,36 @@ public final class VillageRelicScreen extends Screen {
             boolean hovered = insideDiamond(mouseX, mouseY, cx, cy, 25);
             boolean active = index == selected;
             int outer = relic.owned() ? (active || hovered ? GOLD : TEAL) : LOCKED;
-            VillageQuickChatScreen.drawDiamond(graphics, cx, cy, active ? 24 : 21, SHADOW);
-            VillageQuickChatScreen.drawDiamondOutline(graphics, cx, cy, active ? 24 : 21, outer);
-            VillageQuickChatScreen.drawDiamond(graphics, cx, cy, 13,
+            VillageQuickChatSafeScreen.drawDiamond(graphics, cx, cy, active ? 24 : 21, SHADOW);
+            VillageQuickChatSafeScreen.drawDiamondOutline(graphics, cx, cy, active ? 24 : 21, outer);
+            VillageQuickChatSafeScreen.drawDiamond(graphics, cx, cy, 13,
                     relic.owned() ? 0xDD20363A : 0xDD2B2D30);
             String rune = relic.owned() && !relic.name().isBlank() ? relic.name().substring(0, 1) : "?";
             graphics.centeredText(font, rune, cx, cy - 4, relic.owned() ? TEXT : MUTED);
-            String name = relic.owned() ? relic.name() : "미획득";
-            graphics.centeredText(font, fit(name, grid.cell() - 8), cx, cy + 29,
-                    relic.owned() ? (active ? GOLD : TEXT) : MUTED);
+            graphics.centeredText(font, fit(relic.owned() ? relic.name() : "미획득", grid.cell() - 8),
+                    cx, cy + 29, relic.owned() ? (active ? GOLD : TEXT) : MUTED);
         }
         graphics.disableScissor();
 
-        if (!relics.isEmpty()) renderSelected(graphics, relics.get(clamp(selected, 0, relics.size() - 1)), grid.bottom() + 8);
-        graphics.text(font, "ESC  닫기", 10, height - 16, MUTED, false);
+        if (!relics.isEmpty()) renderSelected(graphics,
+                relics.get(clamp(selected, 0, relics.size() - 1)), grid.bottom() + 7, safe);
+        graphics.text(font, "ESC 닫기", safe.left() + 4, safe.bottom() - 11, MUTED, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
-    private void renderSelected(GuiGraphicsExtractor graphics, Relic relic, int top) {
-        int centerX = width / 2;
-        int available = Math.max(100, width - 44);
+    private void renderSelected(GuiGraphicsExtractor graphics, Relic relic, int top, VillageUiSafeArea.Rect safe) {
+        int centerX = safe.centerX();
         graphics.centeredText(font, relic.owned() ? relic.name() : "미획득 유물", centerX, top,
                 relic.owned() ? GOLD : MUTED);
         String description = relic.owned() ? relic.description() : "보스를 처치하고 제시된 유물 중 하나를 선택하면 공개됩니다.";
         List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.literal(description),
-                Math.min(560, available));
+                Math.min(560, Math.max(100, safe.width() - 30)));
         int y = top + 14;
-        for (int index = 0; index < Math.min(3, lines.size()); index++) {
+        int maxLines = Math.max(1, Math.min(3, (safe.bottom() - 25 - y) / 11));
+        for (int index = 0; index < Math.min(maxLines, lines.size()); index++) {
             int lineWidth = font.width(lines.get(index));
-            graphics.text(font, lines.get(index), centerX - lineWidth / 2, y, relic.owned() ? TEXT : MUTED, false);
+            graphics.text(font, lines.get(index), centerX - lineWidth / 2, y,
+                    relic.owned() ? TEXT : MUTED, false);
             y += 11;
         }
     }
@@ -103,7 +104,8 @@ public final class VillageRelicScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
-        Grid grid = grid(Math.max(12, height / 14) + 43);
+        VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
+        Grid grid = grid(safe, safe.top() + 47);
         for (int index = 0; index < relics.size(); index++) {
             int row = index / grid.columns();
             int column = index % grid.columns();
@@ -123,13 +125,13 @@ public final class VillageRelicScreen extends Screen {
         return true;
     }
 
-    private Grid grid(int top) {
-        int cell = width < 430 ? 62 : 72;
-        int columns = clamp((width - 36) / cell, 3, 7);
+    private Grid grid(VillageUiSafeArea.Rect safe, int top) {
+        int cell = safe.width() < 430 ? 62 : 72;
+        int columns = clamp((safe.width() - 20) / cell, 3, 7);
         int gridWidth = columns * cell;
-        int left = (width - gridWidth) / 2;
-        int detailReserve = 78;
-        int bottom = Math.max(top + 72, height - detailReserve);
+        int left = safe.centerX() - gridWidth / 2;
+        int detailReserve = 66;
+        int bottom = Math.max(top + 56, safe.bottom() - detailReserve);
         return new Grid(left, top, left + gridWidth, bottom, columns, cell);
     }
 
@@ -169,8 +171,7 @@ public final class VillageRelicScreen extends Screen {
         return Math.max(min, Math.min(max, value));
     }
 
-    @Override
-    public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
+    @Override public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
 
     private record Relic(String id, boolean owned, String name, String description) {}
     private record Grid(int left, int top, int right, int bottom, int columns, int cell) {
