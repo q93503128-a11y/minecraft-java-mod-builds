@@ -12,7 +12,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-/** Persistent village status HUD. Never occupies the vanilla action-bar/hotbar zone. */
+/** Persistent village status HUD. Never occupies the vanilla action-bar/hotbar zone.
+ * Minecraft 26.2 moved the legacy minecraft.screen != null check to gui.screen().
+ */
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageMainHudOverlay {
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(
