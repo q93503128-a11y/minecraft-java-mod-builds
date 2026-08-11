@@ -41,11 +41,11 @@ public final class ErdenCitadelInteriorManager {
     private static final List<Zone> ZONES = List.of(
             new Zone("audience_hall", 0, -34, List.of(
                     new Fixture(0, 3, Blocks.DARK_OAK_STAIRS),
-                    new Fixture(-2, 3, Blocks.RED_BANNER),
-                    new Fixture(2, 3, Blocks.RED_BANNER),
+                    new Fixture(-2, 3, Blocks.DARK_OAK_FENCE),
+                    new Fixture(2, 3, Blocks.DARK_OAK_FENCE),
                     new Fixture(-3, 0, Blocks.CHISELED_STONE_BRICKS),
                     new Fixture(3, 0, Blocks.CHISELED_STONE_BRICKS),
-                    new Fixture(0, 1, Blocks.RED_CARPET))),
+                    new Fixture(0, 1, Blocks.LECTERN))),
             new Zone("royal_council", 0, 28, civic(
                     Blocks.LECTERN, Blocks.BOOKSHELF, Blocks.CARTOGRAPHY_TABLE,
                     Blocks.CHEST, Blocks.BOOKSHELF, Blocks.BARREL)),
