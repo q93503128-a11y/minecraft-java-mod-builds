@@ -8,12 +8,28 @@ for path in sorted(TOOLS.glob("test_*.py")):
     updated = text.replace("mod_version=0.18.1-alpha.1", "mod_version=0.18.2-alpha.1")
     updated = updated.replace("v0.18.0-alpha.1 version is active", "v0.18.2-alpha.1 version is active")
     updated = updated.replace("v0.18.2 version is active", "v0.18.2-alpha.1 version is active")
+
     if path.name == "test_runtime_safety.py":
         old = '    assert "VillageRelicSystem" in shop\n'
         new = '    assert "VillageRelicSystem" not in shop\n'
         if old not in updated:
             raise RuntimeError("test_runtime_safety.py no longer contains the legacy relic-shop assertion")
         updated = updated.replace(old, new, 1)
+
+    if path.name == "test_v0177_gameplay.py":
+        old = '    assert "entity != null && !entity.isAlive()" in raid\n'
+        new = '    assert "if (entity == null)" in raid and "shouldDiscardStaleRaidEnemy" in raid\n'
+        if old not in updated:
+            raise RuntimeError("test_v0177_gameplay.py no longer contains the legacy missing-entity assertion")
+        updated = updated.replace(old, new, 1)
+
+    if path.name == "test_v0181_relics.py":
+        old = '    assert "Math.min(4, summary.size())" in screen\n'
+        new = '    assert "Math.min(7, summary.size())" in screen\n'
+        if old not in updated:
+            raise RuntimeError("test_v0181_relics.py no longer contains the legacy four-line summary assertion")
+        updated = updated.replace(old, new, 1)
+
     if updated != text:
         path.write_text(updated, encoding="utf-8")
 
