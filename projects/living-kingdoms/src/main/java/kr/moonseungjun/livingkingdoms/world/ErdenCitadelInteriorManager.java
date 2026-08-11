@@ -94,12 +94,14 @@ public final class ErdenCitadelInteriorManager {
         ErdenCitadelInteriorSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCitadelInteriorSavedData.TYPE);
         int processed = 0;
+        int processBudget = ciMode() ? ZONES.size() : PROCESS_BUDGET;
         for (Zone zone : ZONES) {
-            if (processed >= PROCESS_BUDGET) break;
+            if (processed >= processBudget) break;
             if (data.isComplete(zone.id, INTERIOR_REVISION)) continue;
             try {
                 ZoneResult result = tryFurnishZone(level, site, zone);
-                if (result == null || result.fixtures < MIN_ZONE_FIXTURES) {
+                int required = requiredFixtures(zone);
+                if (result == null || result.fixtures < required) {
                     logFailedScanIfUseful(level, site, zone, result);
                     continue;
                 }
@@ -108,8 +110,9 @@ public final class ErdenCitadelInteriorManager {
                 FAILED_SCANS.remove(zone.id);
                 processed++;
                 LivingKingdoms.LOGGER.info(
-                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} enclosed=true facade_replaced=false",
-                        zone.id, result.anchor.x, result.anchor.floorY + 1, result.anchor.z, result.fixtures);
+                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} required={} enclosed=true facade_replaced=false",
+                        zone.id, result.anchor.x, result.anchor.floorY + 1, result.anchor.z,
+                        result.fixtures, required);
             } catch (Throwable throwable) {
                 LivingKingdoms.LOGGER.error("Unable to furnish Erden citadel zone={}", zone.id, throwable);
             }
@@ -119,10 +122,17 @@ public final class ErdenCitadelInteriorManager {
         if (!completionLogged && completed == ZONES.size()) {
             completionLogged = true;
             LivingKingdoms.LOGGER.info(
-                    "Completed Erden functional citadel zones={} minimum_fixtures={} non_destructive=true revision={}",
+                    "Completed Erden functional citadel zones={} standard_minimum_fixtures={} guard_minimum_fixtures=3 non_destructive=true revision={}",
                     completed, MIN_ZONE_FIXTURES, INTERIOR_REVISION);
         }
         verifyCiIfReady(level, site, completed);
+    }
+
+    private static int requiredFixtures(Zone zone) {
+        // The verified guard-command room is deliberately compact. Its first three fixtures are
+        // the role-defining target, anvil and grindstone; storage is optional rather than a reason
+        // to reject an otherwise complete command room.
+        return "guard_command".equals(zone.id) ? 3 : MIN_ZONE_FIXTURES;
     }
 
     private static void reset(MinecraftServer server) {
@@ -321,9 +331,9 @@ public final class ErdenCitadelInteriorManager {
             }
         }
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_CITADEL_ZONE_WAIT zone={} attempts={} loaded_probe_columns={} anchor_found={} fixtures={}",
+                "LK_ERDEN_CITADEL_ZONE_WAIT zone={} attempts={} loaded_probe_columns={} anchor_found={} fixtures={} required={}",
                 zone.id, attempts, loadedColumns, result != null,
-                result == null ? 0 : result.fixtures);
+                result == null ? 0 : result.fixtures, requiredFixtures(zone));
     }
 
     private static void verifyCiIfReady(
