@@ -1,10 +1,10 @@
 package kr.moonseungjun.villageguardians;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -12,10 +12,15 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+/** Low-profile combat skill HUD. It deliberately avoids a permanent rectangular toast. */
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageSkillHudOverlay {
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(
             VillageGuardians.MOD_ID, "skill_status_hud");
+    private static final int TEXT = 0xFFF4F7F8;
+    private static final int MUTED = 0xFF9DAAB1;
+    private static final int ACCENT = 0xFF52D9C2;
+    private static final int LINE = 0xAA426775;
     private static String text = "";
     private static long expiresAt;
 
@@ -38,19 +43,57 @@ public final class VillageSkillHudOverlay {
     private static void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || text.isBlank()
-                || System.currentTimeMillis() > expiresAt) {
-            return;
-        }
+                || System.currentTimeMillis() > expiresAt) return;
+
         Font font = minecraft.font;
-        int maximumWidth = Math.max(80, graphics.guiWidth() - 24);
-        String fitted = font.plainSubstrByWidth(text, maximumWidth - 14);
-        if (fitted.length() < text.length()) {
-            fitted = font.plainSubstrByWidth(fitted, maximumWidth - 22) + "…";
+        String[] sections = text.split(" §8│ ", -1);
+        int primaryCount = Math.min(2, sections.length);
+        int centerX = graphics.guiWidth() / 2;
+        int y = graphics.guiHeight() - 67;
+        int gap = 18;
+        int itemWidth = Math.min(138, Math.max(92, (graphics.guiWidth() - 70) / 3));
+        int totalWidth = primaryCount * itemWidth + Math.max(0, primaryCount - 1) * gap;
+        int startX = centerX - totalWidth / 2;
+
+        for (int index = 0; index < primaryCount; index++) {
+            int left = startX + index * (itemWidth + gap);
+            int cx = left + itemWidth / 2;
+            String value = fit(font, plain(sections[index]), itemWidth - 18);
+            int diamondX = left + 6;
+            VillageQuickChatScreen.drawDiamond(graphics, diamondX, y + 5, 5, 0xDD18323A);
+            VillageQuickChatScreen.drawDiamondOutline(graphics, diamondX, y + 5, 5, ACCENT);
+            graphics.text(font, value, left + 16, y, TEXT, true);
+            graphics.fill(left + 15, y + 12, left + itemWidth, y + 13, LINE);
+            graphics.fill(left + 15, y + 12, left + 35, y + 14, ACCENT);
         }
-        int width = font.width(fitted);
-        int x = (graphics.guiWidth() - width) / 2;
-        int y = graphics.guiHeight() - 92;
-        graphics.fill(x - 5, y - 3, x + width + 5, y + font.lineHeight + 3, 0x78000000);
-        graphics.centeredText(font, Component.literal(fitted), graphics.guiWidth() / 2, y, 0xFFFFFFFF);
+
+        if (sections.length > 2) {
+            StringBuilder active = new StringBuilder();
+            for (int index = 2; index < sections.length; index++) {
+                if (!active.isEmpty()) active.append(" · ");
+                active.append(plain(sections[index]));
+            }
+            String fitted = fit(font, active.toString(), Math.max(80, graphics.guiWidth() - 60));
+            graphics.centeredText(font, fitted, centerX, y - 17, ACCENT);
+        }
+
+        if (primaryCount == 0) {
+            graphics.centeredText(font, fit(font, plain(text), Math.max(80, graphics.guiWidth() - 40)),
+                    centerX, y, MUTED);
+        }
+    }
+
+    private static String plain(String value) {
+        String stripped = ChatFormatting.stripFormatting(value == null ? "" : value);
+        return stripped == null ? "" : stripped;
+    }
+
+    private static String fit(Font font, String value, int maximumWidth) {
+        if (maximumWidth <= 0) return "";
+        if (font.width(value) <= maximumWidth) return value;
+        String suffix = "…";
+        int end = value.length();
+        while (end > 0 && font.width(value.substring(0, end) + suffix) > maximumWidth) end--;
+        return value.substring(0, end) + suffix;
     }
 }
