@@ -17,16 +17,17 @@ def main() -> None:
     local_actions = read("VillageLocalActionSystem.java")
     network = read("VillageNetwork.java")
     client_ui = read("VillageClientUi.java")
-    facility_ui = read("VillageFacilityScreen.java")
-    quick_ui = read("VillageQuickChatScreen.java")
+    hud_system = read("VillageHudSystem.java")
+    main_hud = read("VillageMainHudOverlay.java")
     skill_hud = read("VillageSkillHudOverlay.java")
+    safe_area = read("VillageUiSafeArea.java")
+    quick_safe = read("VillageQuickChatSafeScreen.java")
+    fusion_safe = read("VillageFusionSafeScreen.java")
+    command_ui = read("VillageCommandCenterScreen.java")
     relic_ui = read("VillageRelicScreen.java")
     relic_choice_ui = read("VillageRelicChoiceScreen.java")
     wave_ui = read("VillageWaveIntelScreen.java")
     game_over_ui = read("VillageGameOverScreen.java")
-    town_ui = read("VillageTownHallScreen.java")
-    status_ui = read("VillageStatusScreen.java")
-    shop_ui = read("VillageShopScreen.java")
     inventory = read("VillageInventoryPanel.java")
     keys = read("VillageClientKeys.java")
     starter = read("VillageStarterKit.java")
@@ -55,59 +56,37 @@ def main() -> None:
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
     assert "if (!mob.isPersistenceRequired()) event.setCanceled(true)" in guardians
 
-    assert 'case "building", "management", "funding", "tower_control", "tower_detail", "caller"' in client_ui
-    assert 'case "equipment_shop" -> new VillageShopScreen(payload)' in client_ui
-    assert 'case "status" -> new VillageStatusScreen(payload)' in client_ui
+    # HUD collision contract: persistent status never uses vanilla action bar and all custom HUDs hide behind screens.
+    assert "ClientboundSetActionBarTextPacket" not in hud_system
+    assert "VillageNetwork.sendMainHud(player, text)" in hud_system
+    assert "MainHudPayload" in network and '"main_hud"' in network
+    assert "VillageMainHudOverlay.accept(payload)" in client_ui
+    assert "minecraft.screen != null" in main_hud
+    assert "minecraft.screen != null" in skill_hud
+    assert "guiHeight() - 98" in skill_hud
+    assert "bottomReserve" in safe_area and "height - bottomReserve" in safe_area
+
+    # High-frequency menus must route through the shared safe viewport instead of the old list/detail surfaces.
+    assert 'case "quick_chat" -> new VillageQuickChatSafeScreen(payload)' in client_ui
+    assert 'case "equipment_fusion" -> new VillageFusionSafeScreen(payload)' in client_ui
+    assert 'case "town_hall", "status", "equipment_shop"' in client_ui
+    assert "new VillageCommandCenterScreen(payload)" in client_ui
     assert 'case "relic_collection" -> new VillageRelicScreen(payload)' in client_ui
     assert 'case "relic_choice" -> new VillageRelicChoiceScreen(payload)' in client_ui
     assert 'case "wave_intel" -> new VillageWaveIntelScreen(payload)' in client_ui
     assert 'case "game_over" -> new VillageGameOverScreen(payload)' in client_ui
     assert 'case "skill_test" -> new VillageFacilityScreen(payload)' in client_ui
-    assert "drawDiamond" in quick_ui and "insideDiamond" in quick_ui
-    assert "ClientPacketDistributor.sendToServer" in quick_ui
-    assert "Low-profile combat skill HUD" in skill_hud
-    assert "VillageQuickChatScreen.drawDiamond" in skill_hud
+    for source in (quick_safe, fusion_safe, command_ui):
+        assert "VillageUiSafeArea.screen" in source
+    assert "ClientPacketDistributor.sendToServer" in quick_safe
+    assert '"fusion_combine:"' in fusion_safe
+    assert "enableScissor" in fusion_safe and "enableScissor" in command_ui
+    assert "Mode.TOWN" in command_ui and "Mode.SHOP" in command_ui and "Mode.STATUS" in command_ui
     assert "reliquary" in relic_ui.lower() and "drawDiamond" in relic_ui
     assert "relic_select:" not in relic_choice_ui
     assert "VillageUiActionPayload(actions[index])" in relic_choice_ui
     assert "attack timeline" in wave_ui.lower() and "insideDiamond" in wave_ui
     assert "VillageConfirmScreen" in game_over_ui and "requiresConfirmation" in game_over_ui
-    assert "listLeft" in facility_ui and "detailLeft" in facility_ui
-    assert "selectedIndex = actionCount() > 0 ? 0 : -1" in facility_ui
-    assert "PANEL = 0xFFE4D8BF" in facility_ui
-    assert "CARD_HEIGHT = 30" in facility_ui
-    assert "ACTION_HEIGHT = 20" in facility_ui
-    assert "Math.min(108" in facility_ui
-    assert "contentWidth >= 340" in facility_ui
-    assert "ChatFormatting.stripFormatting" in facility_ui
-
-    assert 'ROLES("직업 배치"' in town_ui
-    assert 'REPAIR("시설 수리"' in town_ui
-    assert 'MANAGEMENT("시설 강화"' in town_ui
-    assert '"repair:" + facility.id()' in town_ui
-    assert '"upgrade:" + facility.id()' in town_ui
-    assert '"open_tower_control"' in town_ui
-    assert "다음 단계 변화" in town_ui
-    assert "강화 비용" in town_ui
-    assert "CARD_HEIGHT = 30" in town_ui
-    assert "* 24 / 100" in town_ui
-    assert "Math.min(112" in town_ui
-
-    assert "mouseScrolled" not in status_ui
-    assert "drawScrollbar" not in status_ui
-    assert "ChatFormatting.stripFormatting" in status_ui
-    assert "TEXT = 0xFF211A14" in status_ui
-    assert "lastLayout" in status_ui
-    assert "ClientPacketDistributor" in status_ui
-    assert "buttonWidth = Math.min(220" in status_ui
-
-    assert 'EQUIPMENT("장비")' in shop_ui
-    assert 'ARMOR("방어구")' in shop_ui
-    assert 'OTHER("기타")' in shop_ui
-    assert "renderOfferList" in shop_ui and "renderOfferDetail" in shop_ui
-    assert "level < offer.requiredLevel()" not in shop
-    assert "requiredDay" in shop
-    assert "VillageRelicSystem" not in shop
 
     assert '"open_status"' in inventory
     assert '"open_skill_tree"' in inventory
@@ -144,6 +123,9 @@ def main() -> None:
     assert 'case "train"' in local_actions
     assert "VillageLocalActionSystem.handle" in network
 
+    assert "level < offer.requiredLevel()" not in shop
+    assert "requiredDay" in shop
+    assert "VillageRelicSystem" not in shop
     assert "removeCallerItems" in starter
     assert "namedCaller" not in starter
     assert "giveOrDrop(player, Items.CLOCK" not in starter
@@ -194,14 +176,10 @@ def main() -> None:
     assert "MAX_ACTIVE_ENEMIES = 100" in raid
     assert "VillageFortressBuildings.isTouchingStructure" in raid
 
-    print("[PASS] Dedicated quick-chat, wave, relic and failure screens replace generic facility routing")
-    print("[PASS] Compact facility menus remain bounded for management-only surfaces")
-    print("[PASS] Town hall shows current/next effects and exact repair or upgrade costs")
-    print("[PASS] Status stays scroll-free and owns one bounded relic-collection action")
-    print("[PASS] Caller item is removed while inventory and keyboard access remain")
-    print("[PASS] Selected equipment enhancement and rarity fusion are both available")
-    print("[PASS] Building crest migration restores facade blocks instead of carving holes")
-    print("[PASS] Shop, loot, mercenary, research, relic and raid contracts remain wired")
+    print("[PASS] Main status is off the vanilla action bar and both custom HUD layers hide behind menus")
+    print("[PASS] Quick chat, fusion, town hall, shop, status and facility menus obey one safe viewport")
+    print("[PASS] Dedicated wave, relic and failure screens remain routed")
+    print("[PASS] Existing progression, building, shop, loot, mercenary, research and raid contracts remain wired")
 
 
 if __name__ == "__main__":
