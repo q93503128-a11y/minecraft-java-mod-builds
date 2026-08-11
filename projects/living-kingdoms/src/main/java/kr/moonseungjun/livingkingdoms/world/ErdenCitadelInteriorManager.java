@@ -1,0 +1,404 @@
+package kr.moonseungjun.livingkingdoms.world;
+
+import kr.moonseungjun.livingkingdoms.LivingKingdoms;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Layers government functions into the imported 124 x 80 x 124 Erden citadel without carving or
+ * replacing the attributed architecture. A room is accepted only when it already has a floor,
+ * headroom, a nearby ceiling and enclosing walls. Fixtures are placed only into empty supported
+ * cells, so doors, facade, roof and authored decoration remain authoritative.
+ */
+public final class ErdenCitadelInteriorManager {
+    public static final int INTERIOR_REVISION = 1;
+
+    private static final int PROCESS_INTERVAL = 20;
+    private static final int PROCESS_BUDGET = 1;
+    private static final int SEARCH_RADIUS = 16;
+    private static final int MAX_ROOM_HEIGHT = 14;
+    private static final int MAX_WALL_DISTANCE = 14;
+    private static final int MIN_ZONE_FIXTURES = 4;
+    private static final int CITADEL_HALF_SIZE = 62;
+    private static final int MAX_WALK_NODES = 24_000;
+    private static final int UPDATE_FLAGS =
+            Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
+
+    private static final List<Zone> ZONES = List.of(
+            new Zone("audience_hall", 0, -34, List.of(
+                    new Fixture(0, 3, Blocks.DARK_OAK_STAIRS),
+                    new Fixture(-2, 3, Blocks.RED_BANNER),
+                    new Fixture(2, 3, Blocks.RED_BANNER),
+                    new Fixture(-3, 0, Blocks.CHISELED_STONE_BRICKS),
+                    new Fixture(3, 0, Blocks.CHISELED_STONE_BRICKS),
+                    new Fixture(0, 1, Blocks.RED_CARPET))),
+            new Zone("royal_council", 0, 28, civic(
+                    Blocks.LECTERN, Blocks.BOOKSHELF, Blocks.CARTOGRAPHY_TABLE,
+                    Blocks.CHEST, Blocks.BOOKSHELF, Blocks.BARREL)),
+            new Zone("royal_chancery", -32, -6, civic(
+                    Blocks.LECTERN, Blocks.CARTOGRAPHY_TABLE, Blocks.BOOKSHELF,
+                    Blocks.BARREL, Blocks.CHEST, Blocks.BOOKSHELF)),
+            new Zone("royal_archives", 32, -6, civic(
+                    Blocks.BOOKSHELF, Blocks.BOOKSHELF, Blocks.CHEST,
+                    Blocks.LECTERN, Blocks.BARREL, Blocks.BOOKSHELF)),
+            new Zone("guard_command", -38, 32, civic(
+                    Blocks.TARGET, Blocks.ANVIL, Blocks.GRINDSTONE,
+                    Blocks.BARREL, Blocks.CHEST, Blocks.IRON_BARS)),
+            new Zone("service_quarter", 38, 32, civic(
+                    Blocks.CRAFTING_TABLE, Blocks.SMOKER, Blocks.FURNACE,
+                    Blocks.BARREL, Blocks.CAULDRON, Blocks.CHEST))
+    );
+
+    private static MinecraftServer activeServer;
+    private static boolean preparedLogged;
+    private static boolean completionLogged;
+    private static boolean ciPassLogged;
+    private static final Map<String, ZoneResult> SESSION_RESULTS = new HashMap<>();
+
+    private ErdenCitadelInteriorManager() {
+    }
+
+    public static void onServerTick(ServerTickEvent.Post event) {
+        MinecraftServer server = event.getServer();
+        if (activeServer != server) reset(server);
+        ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);
+        if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
+        if (level.getGameTime() % PROCESS_INTERVAL != 0L) return;
+
+        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, "erden_kingdom");
+        if (site == null || !site.built()) return;
+        logPreparedOnce(site);
+
+        ErdenCitadelInteriorSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCitadelInteriorSavedData.TYPE);
+        int processed = 0;
+        for (Zone zone : ZONES) {
+            if (processed >= PROCESS_BUDGET) break;
+            if (data.isComplete(zone.id, INTERIOR_REVISION)) continue;
+            try {
+                ZoneResult result = tryFurnishZone(level, site, zone);
+                if (result == null || result.fixtures < MIN_ZONE_FIXTURES) continue;
+                data.markComplete(zone.id, INTERIOR_REVISION);
+                SESSION_RESULTS.put(zone.id, result);
+                processed++;
+                LivingKingdoms.LOGGER.info(
+                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} enclosed=true facade_replaced=false",
+                        zone.id, result.anchor.x, result.anchor.floorY + 1, result.anchor.z, result.fixtures);
+            } catch (Throwable throwable) {
+                LivingKingdoms.LOGGER.error("Unable to furnish Erden citadel zone={}", zone.id, throwable);
+            }
+        }
+
+        int completed = data.completedCount(INTERIOR_REVISION);
+        if (!completionLogged && completed == ZONES.size()) {
+            completionLogged = true;
+            LivingKingdoms.LOGGER.info(
+                    "Completed Erden functional citadel zones={} minimum_fixtures={} non_destructive=true revision={}",
+                    completed, MIN_ZONE_FIXTURES, INTERIOR_REVISION);
+        }
+        verifyCiIfReady(level, site, completed);
+    }
+
+    private static void reset(MinecraftServer server) {
+        activeServer = server;
+        preparedLogged = false;
+        completionLogged = false;
+        ciPassLogged = false;
+        SESSION_RESULTS.clear();
+    }
+
+    private static void logPreparedOnce(RealmSiteLayoutSavedData.RealmSite site) {
+        if (preparedLogged) return;
+        preparedLogged = true;
+        LivingKingdoms.LOGGER.info(
+                "Prepared Erden citadel functional zoning zones={} centre={},{} imported_architecture_preserved=true",
+                ZONES.size(), site.centerX(), site.centerZ());
+    }
+
+    private static ZoneResult tryFurnishZone(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            Zone zone) {
+        Anchor anchor = findInteriorAnchor(
+                level,
+                site,
+                site.centerX() + zone.offsetX,
+                site.centerZ() + zone.offsetZ);
+        if (anchor == null) return null;
+
+        int fixtures = 0;
+        for (Fixture fixture : zone.fixtures) {
+            if (ensureFixture(level, site, anchor, fixture)) fixtures++;
+        }
+        return new ZoneResult(anchor, fixtures);
+    }
+
+    private static Anchor findInteriorAnchor(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            int preferredX,
+            int preferredZ) {
+        int minY = Math.max(level.getMinY() + 1, site.baseY() - 2);
+        int maxY = Math.min(level.getMaxY() - 16, site.baseY() + 44);
+        for (int radius = 0; radius <= SEARCH_RADIUS; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                Anchor top = findVerticalAnchor(level, site, preferredX + dx, preferredZ - radius, minY, maxY);
+                if (top != null) return top;
+                if (radius > 0) {
+                    Anchor bottom = findVerticalAnchor(level, site, preferredX + dx, preferredZ + radius, minY, maxY);
+                    if (bottom != null) return bottom;
+                }
+            }
+            for (int dz = -radius + 1; dz < radius; dz++) {
+                Anchor left = findVerticalAnchor(level, site, preferredX - radius, preferredZ + dz, minY, maxY);
+                if (left != null) return left;
+                if (radius > 0) {
+                    Anchor right = findVerticalAnchor(level, site, preferredX + radius, preferredZ + dz, minY, maxY);
+                    if (right != null) return right;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Anchor findVerticalAnchor(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            int x,
+            int z,
+            int minY,
+            int maxY) {
+        if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) return null;
+        for (int floorY = minY; floorY <= maxY; floorY++) {
+            if (isEnclosedWalkableFloor(level, x, floorY, z)) return new Anchor(x, floorY, z);
+        }
+        return null;
+    }
+
+    private static boolean ensureFixture(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            Anchor anchor,
+            Fixture fixture) {
+        int preferredX = anchor.x + fixture.dx;
+        int preferredZ = anchor.z + fixture.dz;
+        for (int radius = 0; radius <= 2; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    int x = preferredX + dx;
+                    int z = preferredZ + dz;
+                    if (x == anchor.x && z == anchor.z) continue;
+                    if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) continue;
+                    BlockPos floor = new BlockPos(x, anchor.floorY, z);
+                    BlockPos feet = floor.above();
+                    BlockPos head = feet.above();
+                    if (level.getBlockState(floor).isAir() || !level.getFluidState(floor).isEmpty()) continue;
+                    if (!level.getBlockState(head).isAir()) continue;
+                    Block current = level.getBlockState(feet).getBlock();
+                    if (current == fixture.block) return true;
+                    if (!level.getBlockState(feet).isAir()) continue;
+                    if (!hasCeiling(level, x, anchor.floorY, z)
+                            || enclosingWallCount(level, x, anchor.floorY + 1, z) < 3) continue;
+                    level.setBlock(feet, fixture.block.defaultBlockState(), UPDATE_FLAGS);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isEnclosedWalkableFloor(ServerLevel level, int x, int floorY, int z) {
+        if (!columnLoaded(level, x, z)) return false;
+        BlockPos floor = new BlockPos(x, floorY, z);
+        if (level.getBlockState(floor).isAir() || !level.getFluidState(floor).isEmpty()) return false;
+        if (!level.getBlockState(floor.above()).isAir()
+                || !level.getBlockState(floor.above(2)).isAir()) return false;
+        return hasCeiling(level, x, floorY, z)
+                && enclosingWallCount(level, x, floorY + 1, z) >= 3;
+    }
+
+    private static boolean hasCeiling(ServerLevel level, int x, int floorY, int z) {
+        if (!columnLoaded(level, x, z)) return false;
+        for (int y = floorY + 3; y <= floorY + MAX_ROOM_HEIGHT; y++) {
+            BlockPos pos = new BlockPos(x, y, z);
+            if (!level.getBlockState(pos).isAir() && level.getFluidState(pos).isEmpty()) return true;
+        }
+        return false;
+    }
+
+    private static int enclosingWallCount(ServerLevel level, int x, int y, int z) {
+        int count = 0;
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            for (int distance = 1; distance <= MAX_WALL_DISTANCE; distance++) {
+                int checkX = x + direction.getStepX() * distance;
+                int checkZ = z + direction.getStepZ() * distance;
+                if (!columnLoaded(level, checkX, checkZ)) break;
+                BlockPos pos = new BlockPos(checkX, y, checkZ);
+                if (!level.getBlockState(pos).isAir() && level.getFluidState(pos).isEmpty()) {
+                    count++;
+                    break;
+                }
+            }
+        }
+        return count;
+    }
+
+    private static void verifyCiIfReady(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            int completed) {
+        if (ciPassLogged
+                || completed != ZONES.size()
+                || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+        if (SESSION_RESULTS.size() != ZONES.size()) return;
+
+        ZoneResult audience = SESSION_RESULTS.get("audience_hall");
+        if (audience == null) return;
+        Traversal traversal = verifyAudienceTraversal(level, site, audience.anchor);
+        if (!traversal.reachable) return;
+
+        int fixtureCount = SESSION_RESULTS.values().stream().mapToInt(result -> result.fixtures).sum();
+        ciPassLogged = true;
+        LivingKingdoms.LOGGER.info(
+                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true public_doors={} walk_nodes={} enclosed=true facade_replaced=false loaded_only=true",
+                ZONES.size(), fixtureCount, traversal.publicDoors, traversal.visitedNodes);
+    }
+
+    private static Traversal verifyAudienceTraversal(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            Anchor audience) {
+        List<WalkNode> starts = new ArrayList<>();
+        int publicDoors = 0;
+        int minY = Math.max(level.getMinY() + 1, site.baseY() - 2);
+        int maxY = Math.min(level.getMaxY() - 2, site.baseY() + 36);
+        int minX = site.centerX() - CITADEL_HALF_SIZE;
+        int maxX = site.centerX() + CITADEL_HALF_SIZE - 1;
+        int minZ = site.centerZ() - CITADEL_HALF_SIZE;
+        int maxZ = site.centerZ() + CITADEL_HALF_SIZE - 1;
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                boolean outerBand = x <= minX + 14 || x >= maxX - 14
+                        || z <= minZ + 14 || z >= maxZ - 14;
+                if (!outerBand || !columnLoaded(level, x, z)) continue;
+                for (int y = minY; y <= maxY; y++) {
+                    BlockPos doorPos = new BlockPos(x, y, z);
+                    if (!(level.getBlockState(doorPos).getBlock() instanceof DoorBlock)) continue;
+                    publicDoors++;
+                    for (Direction direction : Direction.Plane.HORIZONTAL) {
+                        int sx = x + direction.getStepX();
+                        int sz = z + direction.getStepZ();
+                        for (int sy = y - 1; sy <= y + 1; sy++) {
+                            if (isWalkableFeet(level, site, sx, sy, sz)) {
+                                starts.add(new WalkNode(sx, sy, sz));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (starts.isEmpty()) return new Traversal(false, publicDoors, 0);
+
+        WalkNode target = new WalkNode(audience.x, audience.floorY + 1, audience.z);
+        ArrayDeque<WalkNode> queue = new ArrayDeque<>(starts);
+        Set<Long> visited = new HashSet<>();
+        for (WalkNode start : starts) visited.add(walkKey(start));
+        int visitedNodes = 0;
+        while (!queue.isEmpty() && visitedNodes < MAX_WALK_NODES) {
+            WalkNode node = queue.removeFirst();
+            visitedNodes++;
+            if (node.equals(target)) return new Traversal(true, publicDoors, visitedNodes);
+            for (Direction direction : Direction.Plane.HORIZONTAL) {
+                int nx = node.x + direction.getStepX();
+                int nz = node.z + direction.getStepZ();
+                for (int ny = node.y - 1; ny <= node.y + 1; ny++) {
+                    if (!isWalkableFeet(level, site, nx, ny, nz)) continue;
+                    WalkNode next = new WalkNode(nx, ny, nz);
+                    long key = walkKey(next);
+                    if (visited.add(key)) queue.addLast(next);
+                }
+            }
+        }
+        return new Traversal(false, publicDoors, visitedNodes);
+    }
+
+    private static boolean isWalkableFeet(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            int x,
+            int feetY,
+            int z) {
+        if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) return false;
+        if (feetY <= level.getMinY() || feetY + 1 >= level.getMaxY()) return false;
+        BlockPos feet = new BlockPos(x, feetY, z);
+        BlockPos head = feet.above();
+        BlockPos floor = feet.below();
+        return level.getBlockState(feet).isAir()
+                && level.getBlockState(head).isAir()
+                && !level.getBlockState(floor).isAir()
+                && level.getFluidState(feet).isEmpty()
+                && level.getFluidState(floor).isEmpty();
+    }
+
+    private static boolean insideCitadel(
+            RealmSiteLayoutSavedData.RealmSite site,
+            int x,
+            int z) {
+        return x >= site.centerX() - CITADEL_HALF_SIZE
+                && x < site.centerX() + CITADEL_HALF_SIZE
+                && z >= site.centerZ() - CITADEL_HALF_SIZE
+                && z < site.centerZ() + CITADEL_HALF_SIZE;
+    }
+
+    private static boolean columnLoaded(ServerLevel level, int x, int z) {
+        return level.hasChunk(x >> 4, z >> 4);
+    }
+
+    private static long walkKey(WalkNode node) {
+        long x = node.x & 0x3ffffffL;
+        long z = node.z & 0x3ffffffL;
+        long y = node.y & 0xfffL;
+        return (x << 38) | (z << 12) | y;
+    }
+
+    private static List<Fixture> civic(Block a, Block b, Block c, Block d, Block e, Block f) {
+        return List.of(
+                new Fixture(-3, -2, a), new Fixture(3, -2, b),
+                new Fixture(-4, 2, c), new Fixture(4, 2, d),
+                new Fixture(-3, 5, e), new Fixture(3, 5, f));
+    }
+
+    private record Zone(String id, int offsetX, int offsetZ, List<Fixture> fixtures) {
+    }
+
+    private record Fixture(int dx, int dz, Block block) {
+    }
+
+    private record Anchor(int x, int floorY, int z) {
+    }
+
+    private record ZoneResult(Anchor anchor, int fixtures) {
+    }
+
+    private record WalkNode(int x, int y, int z) {
+    }
+
+    private record Traversal(boolean reachable, int publicDoors, int visitedNodes) {
+    }
+}
