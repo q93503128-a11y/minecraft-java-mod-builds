@@ -518,14 +518,14 @@ public final class MagicPlayerData extends SavedData {
                     .sorted(Comparator.comparing(MasteryEntry::spellId))
                     .forEach(value -> {
                         if (SpellCatalog.spell(value.spellId()).isPresent() && value.casts() > 0) {
-                            int maximum = SpellCatalog.isFusionResult(value.spellId())
-                                    ? SpellCatalog.masteryRequired(value.spellId()) : 100_000;
+                            int maximum = 100_000;
                             mastery.put(value.spellId(), Math.min(maximum, value.casts()));
                         }
                     });
             for (SpellCatalog.FusionFormula formula : SpellCatalog.fusions()) {
                 int required = SpellCatalog.masteryRequired(formula.result());
-                if (known.contains(formula.result())) mastery.put(formula.result(), required);
+                if (known.contains(formula.result()))
+                    mastery.put(formula.result(), Math.max(mastery.getOrDefault(formula.result(), 0), required));
                 if (mastery.getOrDefault(formula.result(), 0) >= required) known.add(formula.result());
             }
             this.cooldowns = new LinkedHashMap<>();
@@ -598,7 +598,8 @@ public final class MagicPlayerData extends SavedData {
             };
         }
         public int nextCircleInsight() {
-            return circle >= 5 ? 0 : SpellCatalog.circleInsightThreshold(circle + 1);
+            return circle >= SpellCatalog.IMPLEMENTED_MAX_CIRCLE
+                    ? 0 : SpellCatalog.circleInsightThreshold(circle + 1);
         }
     }
 }

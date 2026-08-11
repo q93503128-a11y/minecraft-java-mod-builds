@@ -28,8 +28,6 @@ public final class MagicWorldService {
     }
 
     public static void tick(ServerPlayer player) {
-        player.getFoodData().setFoodLevel(20);
-        player.getFoodData().setSaturation(20.0F);
         if (player.tickCount % 80 == 0) awakenNearbyEnemies(player);
     }
 

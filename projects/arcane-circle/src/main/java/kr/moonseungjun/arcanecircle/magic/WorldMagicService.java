@@ -118,8 +118,8 @@ public final class WorldMagicService {
                     ? target.map(mob -> groundUnder(player, mob.position()))
                     .orElseGet(() -> aimGround(player, Math.max(4.0, range)))
                     : target.<Vec3>map(Mob::getEyePosition)
-                    .orElseGet(() -> visiblePoint(player, look, Math.min(Math.max(3.0, range), 72.0)));
-            case FRONT -> target.<Vec3>map(Mob::getEyePosition).orElseGet(() -> visiblePoint(player, look, Math.min(Math.max(3.0, range), 72.0)));
+                    .orElseGet(() -> visiblePoint(player, look, Math.max(3.0, range)));
+            case FRONT -> target.<Vec3>map(Mob::getEyePosition).orElseGet(() -> visiblePoint(player, look, Math.max(3.0, range)));
             case FEET, GROUND_SELF -> player.position().add(0.0, 0.055, 0.0);
             case BODY -> player.position().add(0.0, 1.0, 0.0);
         };
@@ -128,7 +128,7 @@ public final class WorldMagicService {
     private static Optional<Mob> aimedMob(ServerPlayer player, double range) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = safeDirection(player.getLookAngle());
-        double max = Math.min(80.0, Math.max(2.0, range));
+        double max = Math.max(2.0, range);
         AABB box = player.getBoundingBox().expandTowards(look.scale(max)).inflate(2.4);
         return player.level().getEntitiesOfClass(Mob.class, box, mob -> mob.isAlive()
                         && !player.isAlliedTo(mob)
@@ -181,7 +181,7 @@ public final class WorldMagicService {
         Vec3 look = safeDirection(player.getLookAngle());
         Vec3 origin = player.getEyePosition();
         Vec3 bestVisibleFloor = null;
-        double max = Math.min(Math.max(2.0, range), 72.0);
+        double max = Math.max(2.0, range);
         for (double distance = 0.70; distance <= max; distance += 0.32) {
             Vec3 sample = origin.add(look.scale(distance));
             BlockPos samplePos = BlockPos.containing(sample);
@@ -204,6 +204,13 @@ public final class WorldMagicService {
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
         if (flat.lengthSqr() < 1.0E-8) flat = new Vec3(0.0, 0.0, 1.0);
         return player.position().add(flat.normalize().scale(Math.min(3.0, range))).add(0.0, 0.055, 0.0);
+    }
+
+    public static double kineticDistance(ServerPlayer player, SpellDefinition spell, double range) {
+        Vec3 direction = safeDirection(player.getLookAngle());
+        Vec3 target = targetPoint(player, spell, range, direction);
+        Vec3 center = presentationCenter(player, spell, target, direction);
+        return kineticDistanceForVisual(player, spell, range, center, target);
     }
 
     private static double kineticDistanceForVisual(ServerPlayer player, SpellDefinition spell, double range,

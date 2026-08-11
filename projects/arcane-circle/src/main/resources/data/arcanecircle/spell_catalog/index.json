@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.10",
+  "version": "0.12.1-alpha.19",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -17,10 +17,10 @@
   "world_max_circle": 9,
   "economy": "single persistent Arcana wallet",
   "survival_replacement": [
-    "full hunger",
-    "keep inventory",
-    "immediate respawn",
-    "academy respawn"
+    "vanilla hunger",
+    "vanilla survival respawn",
+    "magic progression",
+    "arcana economy"
   ],
   "academy": [
     "central rotunda",

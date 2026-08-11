@@ -99,6 +99,10 @@ public final class ExpandedSpellEffects {
         };
     }
 
+    public static boolean safeTeleport(ServerPlayer player, double range, double power, int tier) {
+        return teleport(player, Math.max(2.0, range), power, Math.max(0, tier));
+    }
+
     private static boolean missile(ServerPlayer player, double range, double power, ParticleOptions particle,
                                    int fireTicks, int freezeTicks) {
         ServerLevel level = level(player);

@@ -29,7 +29,7 @@ public final class SpellKineticsService {
         WorldMagicService.release(player, cast);
 
         int presentationImpactDelay = SpellPresentationProfile.impactDelayTicks(cast.spell(),
-                SpellCastingService.kineticDistance(player, cast.range()));
+                SpellCastingService.kineticDistance(player, cast.spell(), cast.range()));
 
         if (mode == SpellArchetype.Mode.INSTANT) {
             if (presentationImpactDelay > 1) {

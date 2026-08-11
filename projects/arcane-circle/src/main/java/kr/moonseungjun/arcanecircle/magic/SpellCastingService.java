@@ -75,8 +75,6 @@ public final class SpellCastingService {
         long now = serverClock(player);
         ChargeState existing = CHARGES.get(player.getUUID());
         if (existing != null) {
-            long age = now - existing.startedAt;
-            if (existing.slot == slot && existing.spellId.equals(cast.spell().id()) && age <= 1L) return;
             CHARGES.remove(player.getUUID());
             WorldMagicService.stop(player);
         }
@@ -163,10 +161,6 @@ public final class SpellCastingService {
         if (notify && removed != null) {
             ArcaneNoticeService.push(player, Component.literal("§7[시전 취소] 전개한 마법진을 해제했습니다."));
         }
-    }
-
-    public static boolean shouldBlockHotbarSwitch(ServerPlayer player) {
-        return CHARGES.containsKey(player.getUUID());
     }
 
     public static String chargingSpell(ServerPlayer player) {
@@ -427,11 +421,8 @@ public final class SpellCastingService {
                 Math.min(1.0, elapsed / (double) Math.max(1, queue.requiredTicks)));
     }
 
-    static double kineticDistance(ServerPlayer player, double range) {
-        Vec3 start = frontOrigin(player, 1.0);
-        Optional<Mob> target = lookTarget(player, range);
-        return target.map(mob -> Math.max(0.0, mob.getEyePosition().distanceTo(start)))
-                .orElse(Math.max(1.0, range));
+    static double kineticDistance(ServerPlayer player, SpellDefinition spell, double range) {
+        return WorldMagicService.kineticDistance(player, spell, range);
     }
 
     private static MagicPlayerData data(ServerPlayer player) {

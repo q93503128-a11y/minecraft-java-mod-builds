@@ -108,8 +108,11 @@ public final class ArcaneMageService {
         AGGRO_UNTIL.put(mageId, now + RETALIATION_TICKS);
         FORCED_CAST.add(mageId);
         LAST_CAST.put(mageId, Long.MIN_VALUE / 4L);
-        NpcCast interrupted = CASTS.remove(mageId);
-        if (interrupted != null) WorldMagicService.stop(mage);
+        NpcCast interrupted = CASTS.get(mageId);
+        if (interrupted != null && !interrupted.released()) {
+            CASTS.remove(mageId);
+            WorldMagicService.stop(mage);
+        }
     }
 
     public static void registerNamedMage(Mob entity, int circle, MagicTradition affiliation,
@@ -195,7 +198,7 @@ public final class ArcaneMageService {
         double power = spellDamage(profile, hostile ? 1.08F : 1.0F)
                 * (0.76 + visual.circle() * 0.055);
         CASTS.put(caster.getUUID(), new NpcCast(target.getUUID(), visual.id(), now,
-                required, range, power, hostile));
+                required, range, power, hostile, false, -1L));
         caster.setTarget(target);
         caster.getLookControl().setLookAt(target, 30.0F, 30.0F);
         WorldMagicService.charge(caster, target, visual, 0.0, range, power);
@@ -212,32 +215,38 @@ public final class ArcaneMageService {
         LivingEntity target = rawTarget instanceof LivingEntity living ? living : fallbackTarget;
         if (target == null || !target.isAlive() || caster.distanceToSqr(target) > 48.0 * 48.0) {
             CASTS.remove(caster.getUUID());
-            WorldMagicService.stop(caster);
+            if (!cast.released()) WorldMagicService.stop(caster);
             return false;
         }
         caster.setTarget(target);
         caster.getLookControl().setLookAt(target, 35.0F, 35.0F);
         SpellDefinition spell = SpellCatalog.spell(cast.spellId()).orElseGet(() -> chooseCombatSpell(caster, profile));
+        if (cast.released()) {
+            if (now < cast.impactAt()) return true;
+            finishNpcImpact(level, caster, target, spell, cast, profile, now);
+            return true;
+        }
         long elapsed = now - cast.startedAt();
         double progress = Math.min(1.0, elapsed / (double) Math.max(1, cast.requiredTicks()));
         WorldMagicService.charge(caster, target, spell, progress, cast.range(), cast.power());
         if (elapsed < cast.requiredTicks()) return true;
+        WorldMagicService.release(caster, target, spell, cast.range(), cast.power());
+        int impactDelay = NpcSpellResolver.impactDelay(caster, target, spell);
+        if (impactDelay > 1) {
+            CASTS.put(caster.getUUID(), new NpcCast(cast.targetId(), cast.spellId(), cast.startedAt(), cast.requiredTicks(), cast.range(), cast.power(), cast.hostile(), true, now + impactDelay));
+            return true;
+        }
+        finishNpcImpact(level, caster, target, spell, cast, profile, now);
+        return true;
+    }
 
+    private static void finishNpcImpact(ServerLevel level, Mob caster, LivingEntity target, SpellDefinition spell, NpcCast cast, MageProfile profile, long now) {
         CASTS.remove(caster.getUUID());
         LAST_CAST.put(caster.getUUID(), now);
-        WorldMagicService.release(caster, target, spell, cast.range(), cast.power());
-        ArcaneDamage.hurt(level, caster, target, (float) cast.power());
-        if (target instanceof Mob mob) mob.setTarget(caster);
-        applyControl(caster, target, profile);
-        level.playSound(null, caster.blockPosition(), SoundEvents.EVOKER_CAST_SPELL,
-                cast.hostile() ? SoundSource.HOSTILE : SoundSource.NEUTRAL,
-                0.78F, 1.25F - profile.circle() * 0.03F);
-        // Deliberately keep retaliation memory: one hit starts a sustained combat state.
-        if (RETALIATION_TARGET.containsKey(caster.getUUID())) {
-            AGGRO_UNTIL.put(caster.getUUID(), Math.max(AGGRO_UNTIL.getOrDefault(caster.getUUID(), 0L),
-                    now + RETALIATION_TICKS / 2L));
-        }
-        return true;
+        boolean executed = NpcSpellResolver.execute(level, caster, target, spell, cast.range(), cast.power());
+        if (executed) { if (target instanceof Mob mob) mob.setTarget(caster); applyControl(caster, target, profile); }
+        level.playSound(null, caster.blockPosition(), SoundEvents.EVOKER_CAST_SPELL, cast.hostile() ? SoundSource.HOSTILE : SoundSource.NEUTRAL, 0.78F, 1.25F - profile.circle() * 0.03F);
+        if (RETALIATION_TARGET.containsKey(caster.getUUID())) AGGRO_UNTIL.put(caster.getUUID(), Math.max(AGGRO_UNTIL.getOrDefault(caster.getUUID(), 0L), now + RETALIATION_TICKS / 2L));
     }
 
     private static LivingEntity findResidentTarget(ServerLevel level, Villager caster,
@@ -567,5 +576,5 @@ public final class ArcaneMageService {
 
     private record MageProfile(int circle, MagicTradition affiliation, MageSociety.Role role) {}
     private record NpcCast(UUID targetId, String spellId, long startedAt, int requiredTicks,
-                           double range, double power, boolean hostile) {}
+                           double range, double power, boolean hostile, boolean released, long impactAt) {}
 }

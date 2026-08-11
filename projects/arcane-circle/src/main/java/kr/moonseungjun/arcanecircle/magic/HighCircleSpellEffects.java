@@ -44,16 +44,16 @@ public final class HighCircleSpellEffects {
             case "finger_of_death" -> deathRay(player, range, power);
             case "fire_storm" -> multiBlast(player, range, power, ParticleTypes.FLAME, 6, 5.0);
             case "forcecage" -> forceCage(player, range, power);
-            case "plane_shift" -> academyReturn(player, "차원 이동");
+            case "plane_shift" -> ExpandedSpellEffects.safeTeleport(player, Math.max(range, 36.0), power, 4);
             case "prismatic_spray" -> prismaticSpray(player, range, power);
             case "reverse_gravity" -> reverseGravity(player, range, power);
             case "simulacrum" -> simulacrum(player, power);
-            case "teleport" -> longTeleport(player, range);
+            case "teleport" -> ExpandedSpellEffects.safeTeleport(player, range, power, 4);
 
             case "antimagic_field" -> antimagic(player, range);
             case "clone" -> cloneWard(player, power);
             case "control_weather" -> weatherStorm(player, range, power);
-            case "demiplane" -> academyReturn(player, "반차원");
+            case "demiplane" -> ExpandedSpellEffects.safeTeleport(player, Math.max(range, 48.0), power, 5);
             case "dominate_monster" -> massControl(player, range, 700, 6, 0.12);
             case "earthquake" -> quake(player, range * 0.65, power, ParticleTypes.CAMPFIRE_COSY_SMOKE, true);
             case "feeblemind" -> curseTarget(player, range, power, 700, false);
@@ -69,7 +69,7 @@ public final class HighCircleSpellEffects {
             case "true_polymorph" -> truePolymorph(player, range, power);
             case "weird" -> weird(player, range, power);
             case "wish" -> wish(player);
-            case "gate" -> academyReturn(player, "게이트");
+            case "gate" -> ExpandedSpellEffects.safeTeleport(player, Math.max(range, 64.0), power, 6);
             case "foresight" -> foresight(player, power);
             default -> ExpandedSpellEffects.execute(player, id, range, power);
         };
@@ -237,12 +237,6 @@ public final class HighCircleSpellEffects {
         return true;
     }
 
-    private static boolean academyReturn(ServerPlayer player, String name) {
-        MagicWorldService.teleportToAcademy(player);
-        player.sendSystemMessage(Component.literal("§5[" + name + "] §f천구 마법학원 귀환 회로에 도착했습니다."));
-        return true;
-    }
-
     private static boolean prismaticSpray(ServerPlayer player, double range, double power) {
         ServerLevel level = level(player);
         Vec3 start = player.getEyePosition().add(player.getLookAngle().normalize().scale(1.6));
@@ -279,14 +273,6 @@ public final class HighCircleSpellEffects {
         player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 1200, 2));
         player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 1200, 2));
         burst(level(player), player.position().add(0, 1, 0), ParticleTypes.SNOWFLAKE, 140, 1.2);
-        return true;
-    }
-
-    private static boolean longTeleport(ServerPlayer player, double range) {
-        Vec3 direction = player.getLookAngle().normalize();
-        Vec3 destination = player.position().add(direction.scale(Math.max(12.0, range)));
-        player.teleportTo(destination.x, Math.max(player.level().getMinY() + 4, destination.y), destination.z);
-        burst(level(player), destination, ParticleTypes.REVERSE_PORTAL, 140, 1.2);
         return true;
     }
 
@@ -371,15 +357,7 @@ public final class HighCircleSpellEffects {
     private static boolean prismaticWall(ServerPlayer player, double range, double power) {
         Vec3 center = aim(player, range);
         Vec3 right = player.getLookAngle().cross(new Vec3(0, 1, 0)).normalize();
-        List<ParticleOptions> particles = List.of(ParticleTypes.FLAME, ParticleTypes.SNOWFLAKE,
-                ParticleTypes.ELECTRIC_SPARK, ParticleTypes.WITCH, ParticleTypes.END_ROD);
         double half = Math.max(12.0, range * 0.25);
-        for (int layer = 0; layer < particles.size(); layer++) {
-            for (int i = -24; i <= 24; i++) {
-                Vec3 p = center.add(right.scale(i / 24.0 * half)).add(0, layer * 1.1, 0);
-
-            }
-        }
         for (Mob mob : enemies(player, center, half + 3.0)) {
             mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 500, 7));
