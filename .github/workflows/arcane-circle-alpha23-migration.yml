@@ -1,0 +1,63 @@
+name: Arcane Circle alpha.23 source migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/arcane-circle-alpha23-migration.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arcane-circle-alpha23-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply alpha.23 authored source once
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch deterministic source payloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          fetch_blob() {
+            local sha="$1" out="$2"
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$REPO/git/blobs/$sha" \
+              | python3 -c 'import sys,json,base64; sys.stdout.write(base64.b64decode(json.load(sys.stdin)["content"]).decode())' > "$out"
+          }
+          fetch_blob 053e19dd01b56c7223f2f7a1a46aef86b4dacfd8 /tmp/migrate.z64
+          fetch_blob 0fe9223a0831573ae7420ec2991db1d730b34019 /tmp/fifth.z64
+          fetch_blob 61b87f9d865d1e716242a7a04d77be37661e59f6 /tmp/range.z64
+          fetch_blob 497934b5fd6e107d83b92c37aefd5a4ce3b9f1f5 /tmp/metrics.z64
+          fetch_blob 73a877abda9a05ca42e9c91315c79d535fc3aa20 /tmp/test.z64
+          python3 - <<'PY'
+          import base64,zlib
+          from pathlib import Path
+          Path('/tmp/arcane23-migrate.py').write_bytes(zlib.decompress(base64.b64decode(Path('/tmp/migrate.z64').read_text())))
+          PY
+          export FIFTH_Z64="$(cat /tmp/fifth.z64)"
+          export RANGE_Z64="$(cat /tmp/range.z64)"
+          export METRICS_Z64="$(cat /tmp/metrics.z64)"
+          export TEST_Z64="$(cat /tmp/test.z64)"
+          python3 /tmp/arcane23-migrate.py
+          python3 projects/arcane-circle/tools/test_v0121_alpha23_presentation_phase2b.py
+          git diff --check
+      - name: Commit canonical alpha.23 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Arcane Circle alpha.23 range fixes and phase 2B authored 5C presentation'
+          git push origin HEAD:main
