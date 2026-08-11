@@ -21,6 +21,7 @@ def main() -> None:
     main_hud = read("VillageMainHudOverlay.java")
     skill_hud = read("VillageSkillHudOverlay.java")
     safe_area = read("VillageUiSafeArea.java")
+    hud_suppressor = read("VillageUiHudSuppressor.java")
     quick_safe = read("VillageQuickChatSafeScreen.java")
     fusion_safe = read("VillageFusionSafeScreen.java")
     command_ui = read("VillageCommandCenterScreen.java")
@@ -56,17 +57,23 @@ def main() -> None:
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
     assert "if (!mob.isPersistenceRequired()) event.setCanceled(true)" in guardians
 
-    # HUD collision contract: persistent status never uses vanilla action bar and all custom HUDs hide behind screens.
+    # HUD collision contract: persistent status never uses vanilla action bar and modal screens own the full viewport.
     assert "ClientboundSetActionBarTextPacket" not in hud_system
     assert "VillageNetwork.sendMainHud(player, text)" in hud_system
     assert "MainHudPayload" in network and '"main_hud"' in network
     assert "VillageMainHudOverlay.accept(payload)" in client_ui
-    assert "minecraft.screen != null" in main_hud
-    assert "minecraft.screen != null" in skill_hud
+    assert "minecraft.gui.screen() != null" in main_hud
+    assert "minecraft.gui.screen() != null" in skill_hud
     assert "guiHeight() - 98" in skill_hud
-    assert "bottomReserve" in safe_area and "height - bottomReserve" in safe_area
+    assert "bottomReserve" not in safe_area
+    assert "bottomPadding" in safe_area and "height - bottomPadding" in safe_area
+    assert "RenderGuiLayerEvent.Pre" in hud_suppressor
+    for layer in ("HOTBAR", "PLAYER_HEALTH", "FOOD_LEVEL", "OVERLAY_MESSAGE", "TITLE", "CHAT"):
+        assert f"VanillaGuiLayers.{layer}" in hud_suppressor
+    assert "event.setCanceled(true)" in hud_suppressor
+    assert "Minecraft.getInstance().gui.screen()" in hud_suppressor
 
-    # High-frequency menus must route through the shared safe viewport instead of the old list/detail surfaces.
+    # High-frequency menus route through responsive full-view surfaces.
     assert 'case "quick_chat" -> new VillageQuickChatSafeScreen(payload)' in client_ui
     assert 'case "equipment_fusion" -> new VillageFusionSafeScreen(payload)' in client_ui
     assert 'case "town_hall", "status", "equipment_shop"' in client_ui
@@ -76,12 +83,20 @@ def main() -> None:
     assert 'case "wave_intel" -> new VillageWaveIntelScreen(payload)' in client_ui
     assert 'case "game_over" -> new VillageGameOverScreen(payload)' in client_ui
     assert 'case "skill_test" -> new VillageFacilityScreen(payload)' in client_ui
-    for source in (quick_safe, fusion_safe, command_ui):
+    for source in (quick_safe, fusion_safe, command_ui, relic_ui):
         assert "VillageUiSafeArea.screen" in source
+    assert "drawSignalLabel" in quick_safe
+    assert "safe.bottom() - 29" in quick_safe
     assert "ClientPacketDistributor.sendToServer" in quick_safe
     assert '"fusion_combine:"' in fusion_safe
     assert "enableScissor" in fusion_safe and "enableScissor" in command_ui
     assert "Mode.TOWN" in command_ui and "Mode.SHOP" in command_ui and "Mode.STATUS" in command_ui
+    assert "townFacilityColumns" in command_ui
+    assert "facilityGrid" in command_ui
+    assert "count <= 8" in command_ui
+    assert "현재 시설은 자동 효과형입니다." in command_ui
+    assert "gridHit(facilities, layout.facilityGrid(), mx, my, 0)" in command_ui
+    assert "rowHeight" in relic_ui and "cellWidth" in relic_ui
     assert "reliquary" in relic_ui.lower() and "drawDiamond" in relic_ui
     assert "relic_select:" not in relic_choice_ui
     assert "VillageUiActionPayload(actions[index])" in relic_choice_ui
@@ -176,9 +191,10 @@ def main() -> None:
     assert "MAX_ACTIVE_ENEMIES = 100" in raid
     assert "VillageFortressBuildings.isTouchingStructure" in raid
 
-    print("[PASS] Main status is off the vanilla action bar and both custom HUD layers hide behind menus")
-    print("[PASS] Quick chat, fusion, town hall, shop, status and facility menus obey one safe viewport")
-    print("[PASS] Dedicated wave, relic and failure screens remain routed")
+    print("[PASS] Modal screens suppress vanilla HUD/chat/title and use nearly the full viewport")
+    print("[PASS] Town hall keeps its seven facilities in a responsive non-scrolling command grid")
+    print("[PASS] Small building menus expand their action cards; only genuinely long lists scroll")
+    print("[PASS] Quick chat and relic collection reserve independent text zones")
     print("[PASS] Existing progression, building, shop, loot, mercenary, research and raid contracts remain wired")
 
 
