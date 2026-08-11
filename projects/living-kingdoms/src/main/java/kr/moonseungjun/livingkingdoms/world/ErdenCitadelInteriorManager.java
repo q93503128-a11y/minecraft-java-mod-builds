@@ -37,7 +37,7 @@ public final class ErdenCitadelInteriorManager {
     private static final int MAX_WALL_DISTANCE = 14;
     private static final int MIN_ZONE_FIXTURES = 4;
     private static final int CITADEL_HALF_SIZE = 62;
-    private static final int MAX_WALK_NODES = 24_000;
+    private static final int MAX_WALK_NODES = 160_000;
     private static final int CI_CHUNK_RADIUS = 4;
     private static final int UPDATE_FLAGS =
             Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
@@ -338,16 +338,17 @@ public final class ErdenCitadelInteriorManager {
         Traversal traversal = verifyAudienceTraversal(level, site, audience.anchor);
         if (!traversal.reachable) {
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_CITADEL_TRAVERSAL_WAIT public_doors={} walk_nodes={} audience_reachable=false",
-                    traversal.publicDoors, traversal.visitedNodes);
+                    "LK_ERDEN_CITADEL_TRAVERSAL_WAIT door_blocks={} perimeter_starts={} walk_nodes={} audience_reachable=false",
+                    traversal.doorBlocks, traversal.perimeterStarts, traversal.visitedNodes);
             return;
         }
 
         int fixtureCount = SESSION_RESULTS.values().stream().mapToInt(result -> result.fixtures).sum();
         ciPassLogged = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true public_doors={} walk_nodes={} enclosed=true facade_replaced=false loaded_only=true",
-                ZONES.size(), fixtureCount, traversal.publicDoors, traversal.visitedNodes);
+                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true door_blocks={} perimeter_starts={} walk_nodes={} enclosed=true facade_replaced=false loaded_only=true",
+                ZONES.size(), fixtureCount, traversal.doorBlocks, traversal.perimeterStarts,
+                traversal.visitedNodes);
         releaseCiTicket(level);
     }
 
@@ -356,7 +357,7 @@ public final class ErdenCitadelInteriorManager {
             RealmSiteLayoutSavedData.RealmSite site,
             Anchor audience) {
         List<WalkNode> starts = new ArrayList<>();
-        int publicDoors = 0;
+        int doorBlocks = 0;
         int minY = Math.max(level.getMinY() + 1, site.baseY() - 2);
         int maxY = Math.min(level.getMaxY() - 2, site.baseY() + 36);
         int minX = site.centerX() - CITADEL_HALF_SIZE;
@@ -366,26 +367,24 @@ public final class ErdenCitadelInteriorManager {
 
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                boolean outerBand = x <= minX + 14 || x >= maxX - 14
-                        || z <= minZ + 14 || z >= maxZ - 14;
-                if (!outerBand || !columnLoaded(level, x, z)) continue;
+                if (!columnLoaded(level, x, z)) continue;
                 for (int y = minY; y <= maxY; y++) {
-                    BlockPos doorPos = new BlockPos(x, y, z);
-                    if (!(level.getBlockState(doorPos).getBlock() instanceof DoorBlock)) continue;
-                    publicDoors++;
-                    for (Direction direction : Direction.Plane.HORIZONTAL) {
-                        int sx = x + direction.getStepX();
-                        int sz = z + direction.getStepZ();
-                        for (int sy = y - 1; sy <= y + 1; sy++) {
-                            if (isWalkableFeet(level, site, sx, sy, sz)) {
-                                starts.add(new WalkNode(sx, sy, sz));
-                            }
-                        }
+                    if (level.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof DoorBlock) {
+                        doorBlocks++;
                     }
                 }
             }
         }
-        if (starts.isEmpty()) return new Traversal(false, publicDoors, 0);
+
+        for (int x = minX; x <= maxX; x++) {
+            addPerimeterStarts(level, site, starts, x, minZ, minY, maxY);
+            addPerimeterStarts(level, site, starts, x, maxZ, minY, maxY);
+        }
+        for (int z = minZ + 1; z < maxZ; z++) {
+            addPerimeterStarts(level, site, starts, minX, z, minY, maxY);
+            addPerimeterStarts(level, site, starts, maxX, z, minY, maxY);
+        }
+        if (starts.isEmpty()) return new Traversal(false, doorBlocks, 0, 0);
 
         WalkNode target = new WalkNode(audience.x, audience.floorY + 1, audience.z);
         ArrayDeque<WalkNode> queue = new ArrayDeque<>(starts);
@@ -395,7 +394,7 @@ public final class ErdenCitadelInteriorManager {
         while (!queue.isEmpty() && visitedNodes < MAX_WALK_NODES) {
             WalkNode node = queue.removeFirst();
             visitedNodes++;
-            if (node.equals(target)) return new Traversal(true, publicDoors, visitedNodes);
+            if (node.equals(target)) return new Traversal(true, doorBlocks, starts.size(), visitedNodes);
             for (Direction direction : Direction.Plane.HORIZONTAL) {
                 int nx = node.x + direction.getStepX();
                 int nz = node.z + direction.getStepZ();
@@ -407,7 +406,23 @@ public final class ErdenCitadelInteriorManager {
                 }
             }
         }
-        return new Traversal(false, publicDoors, visitedNodes);
+        return new Traversal(false, doorBlocks, starts.size(), visitedNodes);
+    }
+
+    private static void addPerimeterStarts(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            List<WalkNode> starts,
+            int x,
+            int z,
+            int minY,
+            int maxY) {
+        if (!columnLoaded(level, x, z)) return;
+        for (int y = minY; y <= maxY; y++) {
+            if (isWalkableFeet(level, site, x, y, z)) {
+                starts.add(new WalkNode(x, y, z));
+            }
+        }
     }
 
     private static boolean isWalkableFeet(
@@ -421,11 +436,17 @@ public final class ErdenCitadelInteriorManager {
         BlockPos feet = new BlockPos(x, feetY, z);
         BlockPos head = feet.above();
         BlockPos floor = feet.below();
-        return level.getBlockState(feet).isAir()
-                && level.getBlockState(head).isAir()
+        return bodyPassable(level, feet)
+                && bodyPassable(level, head)
                 && !level.getBlockState(floor).isAir()
                 && level.getFluidState(feet).isEmpty()
+                && level.getFluidState(head).isEmpty()
                 && level.getFluidState(floor).isEmpty();
+    }
+
+    private static boolean bodyPassable(ServerLevel level, BlockPos pos) {
+        return level.getBlockState(pos).isAir()
+                || level.getBlockState(pos).getBlock() instanceof DoorBlock;
     }
 
     private static boolean insideCitadel(
@@ -475,6 +496,6 @@ public final class ErdenCitadelInteriorManager {
     private record WalkNode(int x, int y, int z) {
     }
 
-    private record Traversal(boolean reachable, int publicDoors, int visitedNodes) {
+    private record Traversal(boolean reachable, int doorBlocks, int perimeterStarts, int visitedNodes) {
     }
 }
