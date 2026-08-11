@@ -10,7 +10,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Boss relic reward: three monumental choices, not a generic facility list. */
+/** Boss relic reward: three monumental choices, constrained to the shared safe viewport. */
 public final class VillageRelicChoiceScreen extends Screen {
     private static final String SEP = "\u001F";
     private static final int OVERLAY = 0x76040A0C;
@@ -36,8 +36,7 @@ public final class VillageRelicChoiceScreen extends Screen {
         }
     }
 
-    @Override
-    public boolean isPauseScreen() { return false; }
+    @Override public boolean isPauseScreen() { return false; }
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -46,20 +45,21 @@ public final class VillageRelicChoiceScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        int cx = width / 2;
-        int top = Math.max(15, height / 12);
+        VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
+        int cx = safe.centerX();
+        int top = safe.top() + 4;
         graphics.centeredText(font, "✦  " + title.getString() + "  ✦", cx, top, GOLD);
-        graphics.centeredText(font, fit(body.replace('\n', ' '), Math.max(120, width - 50)), cx, top + 18, MUTED);
-        graphics.fill(Math.max(30, cx - 170), top + 34, Math.min(width - 30, cx + 170), top + 35, 0x88A77A32);
+        graphics.centeredText(font, fit(body.replace('\n', ' '), Math.max(120, safe.width() - 30)), cx, top + 18, MUTED);
+        graphics.fill(Math.max(safe.left() + 8, cx - 170), top + 34,
+                Math.min(safe.right() - 8, cx + 170), top + 35, 0x88A77A32);
 
-        Layout layout = layout(top + 49);
+        Layout layout = layout(safe, top + 49);
         for (int index = 0; index < choices.size(); index++) {
-            Bounds b = bounds(index, choices.size(), layout);
-            boolean hovered = inside(mouseX, mouseY, b);
-            drawRelicCard(graphics, b, choices.get(index), hovered, index);
+            Bounds b = bounds(index, layout);
+            drawRelicCard(graphics, b, choices.get(index), inside(mouseX, mouseY, b), index);
         }
         graphics.centeredText(font, "하나를 선택하면 즉시 영구 적용됩니다.", cx,
-                Math.min(height - 18, layout.bottom() + 14), MUTED);
+                Math.min(safe.bottom() - 12, layout.bottom() + 12), MUTED);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -79,36 +79,36 @@ public final class VillageRelicChoiceScreen extends Screen {
                     b.x() + b.width() - inset, b.y() + b.height() - cap + i + 1,
                     hovered ? GOLD : FRAME);
         }
-
-        int inner = 2;
-        graphics.fill(b.x() + inner, b.y() + cap + 1,
-                b.x() + b.width() - inner, b.y() + b.height() - cap - 1,
+        graphics.fill(b.x() + 2, b.y() + cap + 1,
+                b.x() + b.width() - 2, b.y() + b.height() - cap - 1,
                 hovered ? HOVER : FACE);
-        VillageQuickChatScreen.drawDiamond(graphics, center, b.y() + 42, hovered ? 22 : 18, 0xE5162023);
-        VillageQuickChatScreen.drawDiamondOutline(graphics, center, b.y() + 42, hovered ? 22 : 18,
+        int runeY = b.y() + Math.min(42, Math.max(28, b.height() / 4));
+        VillageQuickChatSafeScreen.drawDiamond(graphics, center, runeY, hovered ? 20 : 17, 0xE5162023);
+        VillageQuickChatSafeScreen.drawDiamondOutline(graphics, center, runeY, hovered ? 20 : 17,
                 hovered ? GOLD : 0xFFAE8950);
-        graphics.centeredText(font, Integer.toString(index + 1), center, b.y() + 38, hovered ? GOLD : MUTED);
+        graphics.centeredText(font, Integer.toString(index + 1), center, runeY - 4, hovered ? GOLD : MUTED);
 
-        graphics.centeredText(font, fit(choice.name(), b.width() - 20), center, b.y() + 78,
+        int nameY = runeY + 32;
+        graphics.centeredText(font, fit(choice.name(), b.width() - 20), center, nameY,
                 hovered ? GOLD : TEXT);
-        List<FormattedCharSequence> lines = font.split(Component.literal(choice.description()),
-                Math.max(50, b.width() - 24));
-        int y = b.y() + 98;
-        for (int line = 0; line < Math.min(5, lines.size()); line++) {
+        List<FormattedCharSequence> lines = font.split(Component.literal(choice.description()), Math.max(50, b.width() - 24));
+        int y = nameY + 18;
+        int maxLines = Math.max(1, Math.min(5, (b.y() + b.height() - 28 - y) / 11));
+        for (int line = 0; line < Math.min(maxLines, lines.size()); line++) {
             int lineWidth = font.width(lines.get(line));
             graphics.text(font, lines.get(line), center - lineWidth / 2, y, MUTED, false);
-            y += 12;
+            y += 11;
         }
-        if (hovered) graphics.centeredText(font, "선택", center, b.y() + b.height() - 34, GOLD);
+        if (hovered) graphics.centeredText(font, "선택", center, b.y() + b.height() - 22, GOLD);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
-        int top = Math.max(15, height / 12);
-        Layout layout = layout(top + 49);
+        VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
+        Layout layout = layout(safe, safe.top() + 53);
         for (int index = 0; index < choices.size(); index++) {
-            if (inside(click.x(), click.y(), bounds(index, choices.size(), layout))) {
+            if (inside(click.x(), click.y(), bounds(index, layout))) {
                 ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(actions[index]));
                 onClose();
                 return true;
@@ -117,19 +117,19 @@ public final class VillageRelicChoiceScreen extends Screen {
         return super.mouseClicked(click, doubled);
     }
 
-    private Layout layout(int top) {
+    private Layout layout(VillageUiSafeArea.Rect safe, int top) {
         int count = Math.max(1, choices.size());
-        int gap = width < 500 ? 7 : 14;
-        int maxCard = width < 500 ? 150 : 190;
-        int usable = Math.max(180, width - 26 - gap * (count - 1));
+        int gap = safe.width() < 500 ? 7 : 14;
+        int maxCard = safe.width() < 500 ? 150 : 190;
+        int usable = Math.max(150, safe.width() - 18 - gap * (count - 1));
         int cardWidth = Math.min(maxCard, usable / count);
         int total = cardWidth * count + gap * (count - 1);
-        int cardHeight = clamp(height - top - 48, 150, 260);
-        return new Layout((width - total) / 2, top, cardWidth, cardHeight, gap,
-                top + cardHeight);
+        int availableHeight = Math.max(120, safe.bottom() - top - 29);
+        int cardHeight = Math.min(238, availableHeight);
+        return new Layout(safe.centerX() - total / 2, top, cardWidth, cardHeight, gap, top + cardHeight);
     }
 
-    private Bounds bounds(int index, int count, Layout layout) {
+    private Bounds bounds(int index, Layout layout) {
         return new Bounds(layout.left() + index * (layout.cardWidth() + layout.gap()), layout.top(),
                 layout.cardWidth(), layout.cardHeight());
     }
@@ -146,12 +146,7 @@ public final class VillageRelicChoiceScreen extends Screen {
         return x >= b.x() && x < b.x() + b.width() && y >= b.y() && y < b.y() + b.height();
     }
 
-    private static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
-    }
-
-    @Override
-    public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
+    @Override public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
 
     private record Choice(String name, String description) {}
     private record Bounds(int x, int y, int width, int height) {}
