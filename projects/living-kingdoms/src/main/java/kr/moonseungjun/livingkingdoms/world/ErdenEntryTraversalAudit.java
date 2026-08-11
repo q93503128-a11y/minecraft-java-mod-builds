@@ -404,8 +404,10 @@ public final class ErdenEntryTraversalAudit {
     }
 
     private static boolean bodyPassable(ServerLevel level, BlockPos pos) {
-        return level.getBlockState(pos).isAir()
-                || level.getBlockState(pos).getBlock() instanceof DoorBlock;
+        var state = level.getBlockState(pos);
+        return state.isAir()
+                || state.getBlock() instanceof DoorBlock
+                || state.getCollisionShape(level, pos).isEmpty();
     }
 
     private static Vector inward(Entry entry) {
