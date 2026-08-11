@@ -2,6 +2,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ROOT / "tools"
+SRC = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
+
+# Minecraft 26.2 renamed the scoreboard-tag read accessor from getTags() to entityTags().
+raid = SRC / "VillageRaidSystem.java"
+raid_text = raid.read_text(encoding="utf-8")
+if "getTags().contains(RAID_ENEMY_TAG)" in raid_text:
+    raid_text = raid_text.replace("getTags().contains(RAID_ENEMY_TAG)", "entityTags().contains(RAID_ENEMY_TAG)")
+    raid.write_text(raid_text, encoding="utf-8")
+if "getTags().contains(RAID_ENEMY_TAG)" in raid.read_text(encoding="utf-8"):
+    raise RuntimeError("VillageRaidSystem still uses removed Entity#getTags() API")
+if raid.read_text(encoding="utf-8").count("entityTags().contains(RAID_ENEMY_TAG)") < 2:
+    raise RuntimeError("VillageRaidSystem raid persistence marker is not checked through Entity#entityTags()")
 
 for path in sorted(TOOLS.glob("test_*.py")):
     text = path.read_text(encoding="utf-8")
@@ -18,7 +30,7 @@ for path in sorted(TOOLS.glob("test_*.py")):
 
     if path.name == "test_v0177_gameplay.py":
         old = '    assert "entity != null && !entity.isAlive()" in raid\n'
-        new = '    assert "if (entity == null)" in raid and "shouldDiscardStaleRaidEnemy" in raid\n'
+        new = '    assert "if (entity == null)" in raid and "shouldDiscardStaleRaidEnemy" in raid and "entityTags()" in raid\n'
         if old not in updated:
             raise RuntimeError("test_v0177_gameplay.py no longer contains the legacy missing-entity assertion")
         updated = updated.replace(old, new, 1)
@@ -33,4 +45,4 @@ for path in sorted(TOOLS.glob("test_*.py")):
     if updated != text:
         path.write_text(updated, encoding="utf-8")
 
-print("Updated legacy Village Guardians tests for v0.18.2 contracts.")
+print("Updated Minecraft 26.2 API usage and legacy Village Guardians tests for v0.18.2 contracts.")
