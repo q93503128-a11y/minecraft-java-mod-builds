@@ -20,6 +20,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenExteriorTicketReaper;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorLifecycleManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorEstateManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenExteriorWorkforceManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenLandmarkInteriorManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenLivingEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
@@ -95,6 +96,7 @@ public final class LivingKingdoms {
         ErdenExteriorWorkforceManager.onServerTick(event);
         ErdenExteriorEstateManager.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
+        ErdenLandmarkInteriorManager.onServerTick(event);
         ErdenUrbanMicroInfillManager.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
