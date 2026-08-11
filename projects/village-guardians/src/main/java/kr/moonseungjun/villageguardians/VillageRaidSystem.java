@@ -11,6 +11,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.TeamColor;
@@ -52,6 +53,7 @@ public final class VillageRaidSystem {
     private VillageRaidSystem() {}
 
     public static void resetTransientState(MinecraftServer server) {
+        discardTaggedRaidEnemies(server);
         clearState();
         ensureRaidTeam(server);
         if (VillageCouncilState.currentPhase() == VillageTimePhase.NIGHT
@@ -456,7 +458,10 @@ public final class VillageRaidSystem {
         while (iterator.hasNext()) {
             UUID uuid = iterator.next();
             Entity entity = server.overworld().getEntity(uuid);
-            if (entity != null && !entity.isAlive()) {
+            if (entity == null) {
+                releaseEnemy(server, uuid, null);
+                iterator.remove();
+            } else if (!entity.isAlive()) {
                 releaseEnemy(server, uuid, entity);
                 iterator.remove();
             }
@@ -481,6 +486,27 @@ public final class VillageRaidSystem {
         VillageProgressionSystem.healRaidParty(server, true);
         VillageCouncilState.completeRaid(server);
         VillageUiService.openRepairSummaryForAll(server);
+    }
+
+    public static boolean shouldDiscardStaleRaidEnemy(Mob mob) {
+        return mob != null
+                && mob.entityTags().contains(RAID_ENEMY_TAG)
+                && !ACTIVE_ENEMIES.contains(mob.getUUID())
+                && !VillageWorldSystem.isAllowedGameMob(mob);
+    }
+
+    private static void discardTaggedRaidEnemies(MinecraftServer server) {
+        if (server == null) return;
+        ServerLevel level = server.overworld();
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (center == null) return;
+        double radius = VillageWorldSystem.BATTLEFIELD_RADIUS + 160.0;
+        AABB area = new AABB(center).inflate(radius, 128.0, radius);
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, area,
+                entity -> entity.entityTags().contains(RAID_ENEMY_TAG))) {
+            releaseEnemy(server, mob.getUUID(), mob);
+            mob.discard();
+        }
     }
 
     private static void discardEnemies(MinecraftServer server) {

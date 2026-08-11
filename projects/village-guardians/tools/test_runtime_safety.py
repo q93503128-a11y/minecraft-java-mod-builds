@@ -89,7 +89,7 @@ def main() -> None:
     assert "renderOfferList" in shop_ui and "renderOfferDetail" in shop_ui
     assert "level < offer.requiredLevel()" not in shop
     assert "requiredDay" in shop
-    assert "VillageRelicSystem" in shop
+    assert "VillageRelicSystem" not in shop
 
     assert '"open_status"' in inventory
     assert '"open_skill_tree"' in inventory

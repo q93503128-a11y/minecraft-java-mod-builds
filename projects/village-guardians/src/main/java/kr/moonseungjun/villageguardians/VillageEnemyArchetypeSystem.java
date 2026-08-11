@@ -126,7 +126,7 @@ public final class VillageEnemyArchetypeSystem {
         int cadence = trait == VillageWaveTrait.HEXED ? 120 : 160;
         switch (archetype) {
             case HEXER -> {
-                if (globalTicks % cadence != 0) return;
+                if (!abilityReady(mob, globalTicks, cadence)) return;
                 for (ServerPlayer player : nearbyPlayers(server, mob, 9.0)) {
                     player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 90, 0));
                     player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 70, 0));
@@ -134,7 +134,7 @@ public final class VillageEnemyArchetypeSystem {
                 spawnAura(level, mob, archetype, 18);
             }
             case WAR_CHANTER -> {
-                if (globalTicks % 140 != 0) return;
+                if (!abilityReady(mob, globalTicks, 140)) return;
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 9.0, 12, mob.getUUID())) {
                     ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 120, 0));
                     ally.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 0));
@@ -142,7 +142,7 @@ public final class VillageEnemyArchetypeSystem {
                 spawnAura(level, mob, archetype, 18);
             }
             case NECROMANCER -> {
-                if (globalTicks % 180 != 0) return;
+                if (!abilityReady(mob, globalTicks, 180)) return;
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 10.0, 10, mob.getUUID())) {
                     ally.heal(5.0f + VillageCouncilState.currentDay() * 0.18f);
                     ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 0));
@@ -150,19 +150,19 @@ public final class VillageEnemyArchetypeSystem {
                 spawnAura(level, mob, archetype, 24);
             }
             case TOWER_HUNTER -> {
-                if (globalTicks % 180 != 0) return;
+                if (!abilityReady(mob, globalTicks, 180)) return;
                 VillageTowerSpecializationSystem.disableRandomInstalledTower(20 * 7);
                 spawnAura(level, mob, archetype, 20);
                 server.getPlayerList().broadcastSystemMessage(
                         Component.literal("§5[탑 교란] §f탑 사냥꾼이 방어탑 하나를 7초간 정지시켰습니다."), false);
             }
             case SIEGE_BEAST -> {
-                if (globalTicks % 100 != 0) return;
+                if (!abilityReady(mob, globalTicks, 100)) return;
                 damageAndDebuffPlayers(level, server, mob, 9.5, 4.0f, MobEffects.SLOWNESS);
                 spawnAura(level, mob, archetype, 28);
             }
             case IRON_WARLORD -> {
-                if (globalTicks % 120 != 0) return;
+                if (!abilityReady(mob, globalTicks, 120)) return;
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 12.0, 18, mob.getUUID())) {
                     ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 140, 1));
                     ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 140, 0));
@@ -170,7 +170,7 @@ public final class VillageEnemyArchetypeSystem {
                 spawnAura(level, mob, archetype, 26);
             }
             case PLAGUE_ARCHON -> {
-                if (globalTicks % 110 != 0) return;
+                if (!abilityReady(mob, globalTicks, 110)) return;
                 damageAndDebuffPlayers(level, server, mob, 11.0, 3.5f, MobEffects.POISON);
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 11.0, 14, mob.getUUID())) {
                     ally.heal(7.0f);
@@ -178,7 +178,7 @@ public final class VillageEnemyArchetypeSystem {
                 spawnAura(level, mob, archetype, 30);
             }
             case DREAD_KNIGHT -> {
-                if (globalTicks % 90 != 0) return;
+                if (!abilityReady(mob, globalTicks, 90)) return;
                 float drained = 0.0f;
                 for (ServerPlayer player : nearbyPlayers(server, mob, 10.0)) {
                     player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0));
@@ -410,6 +410,12 @@ public final class VillageEnemyArchetypeSystem {
                 .toList();
     }
 
+    private static boolean abilityReady(Mob mob, int globalTicks, int cadence) {
+        int safeCadence = Math.max(1, cadence);
+        int phase = Math.floorMod(mob.getUUID().hashCode(), safeCadence);
+        return Math.floorMod(globalTicks + phase, safeCadence) == 0;
+    }
+
     private static void damageAndDebuffPlayers(
             ServerLevel level,
             MinecraftServer server,
@@ -419,8 +425,8 @@ public final class VillageEnemyArchetypeSystem {
             net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect) {
         for (ServerPlayer player : nearbyPlayers(server, mob, radius)) {
             player.addEffect(new MobEffectInstance(effect, 90, 1));
-            player.hurtServer(level, level.damageSources().magic(),
-                    damage + VillageCouncilState.currentDay() * 0.22f);
+            float endlessBonus = Math.min(7.0f, VillageCouncilState.currentDay() * 0.22f);
+            player.hurtServer(level, level.damageSources().magic(), damage + endlessBonus);
         }
     }
 

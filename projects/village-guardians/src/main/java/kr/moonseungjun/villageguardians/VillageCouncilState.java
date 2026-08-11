@@ -146,6 +146,10 @@ public final class VillageCouncilState {
         return "시간 진행 투표를 열었습니다.";
     }
 
+    public static synchronized void onPlayerListChanged(MinecraftServer server) {
+        if (server != null && activeProposal != null) evaluateProposal(server);
+    }
+
     public static synchronized String vote(ServerPlayer player, boolean yes) {
         MinecraftServer server = player.level().getServer();
         if (server == null) return "서버 상태를 확인할 수 없습니다.";

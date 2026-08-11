@@ -597,7 +597,8 @@ public final class VillageUiController {
         if (action.startsWith("relic_select:")) {
             String result = VillageRelicSystem.select(player, action.substring(13));
             player.sendSystemMessage(Component.literal("§d" + result));
-            VillageRelicSystem.openCollection(player);
+            if (VillageRelicSystem.hasPendingChoice(player)) VillageRelicSystem.openChoice(player);
+            else VillageRelicSystem.openCollection(player);
             return true;
         }
 

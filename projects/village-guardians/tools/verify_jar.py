@@ -144,7 +144,7 @@ def main() -> None:
     print("[PASS] Read-only status UI contains no generic action selector")
     print("[PASS] Facility repair and upgrade are available at local terminals and town hall")
     print("[PASS] Roof signatures migrate to front-facing facade marks")
-    print("[PASS] Ten regular enemy roles, four bosses and eight wave traits are present")
+    print("[PASS] Ten regular enemy roles, four bosses and twelve wave traits are present")
     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
     print("[PASS] Twelve persistent tower branches alter attacks and world silhouettes")
     print("[PASS] Twenty active skills use the non-particle custom-mesh effect engine")

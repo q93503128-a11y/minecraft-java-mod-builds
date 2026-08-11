@@ -19,7 +19,7 @@ def main() -> None:
     status = read("VillageStatusScreen.java")
     screen = read("VillageRelicScreen.java")
 
-    assert "mod_version=0.18.1-alpha.1" in props
+    assert "mod_version=0.18.2-alpha.1" in props
 
     for token in [
         "result *= 1.15f", "result *= 1.18f", "result *= 0.86f",
@@ -52,7 +52,7 @@ def main() -> None:
     assert "columns = contentRight - contentLeft >= 610 ? 2 : 1" in screen
     assert "enableScissor" in screen and "mouseScrolled" in screen
     assert "CARD_HEIGHT = 68" in screen and "fit(" in screen
-    assert "Math.min(4, summary.size())" in screen
+    assert "Math.min(7, summary.size())" in screen
     assert "actionSpace = action.isBlank() ? 0 : 34" in status
     assert "buttonWidth = Math.min(220" in status
     print("[PASS] 유물 UI는 좁은 화면 1열·넓은 화면 2열·스크롤·텍스트 제한으로 넘침을 방지합니다")

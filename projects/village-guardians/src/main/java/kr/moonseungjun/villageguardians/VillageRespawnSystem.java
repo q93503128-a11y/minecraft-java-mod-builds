@@ -9,7 +9,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,26 +37,19 @@ public final class VillageRespawnSystem {
         }
     }
 
-    public static boolean handleIncomingDamage(LivingIncomingDamageEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return false;
-        }
+    public static boolean handleFinalDamage(LivingDamageEvent.Pre event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return false;
         if (isDowned(player)) {
-            event.setAmount(0.0f);
+            event.setNewDamage(0.0f);
             return true;
         }
-
         float effectiveHealth = player.getHealth() + Math.max(0.0f, player.getAbsorptionAmount());
-        if (event.getAmount() < effectiveHealth) {
-            return false;
-        }
+        if (event.getNewDamage() < effectiveHealth) return false;
 
         MinecraftServer server = player.level().getServer();
-        if (server == null) {
-            return false;
-        }
+        if (server == null) return false;
 
-        event.setAmount(0.0f);
+        event.setNewDamage(0.0f);
         player.setAbsorptionAmount(0.0f);
         player.setHealth(1.0f);
         player.setRemainingFireTicks(0);

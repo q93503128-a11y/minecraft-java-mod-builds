@@ -90,6 +90,11 @@ public final class VillageSkillEffectEntity extends Entity {
             return;
         }
         Entity owner = ownerEntity();
+        if ("arcanist_tornado".equals(kind()) && owner != null && owner.isAlive()) {
+            Vec3 look = owner.getLookAngle();
+            Vec3 horizontal = new Vec3(look.x, 0.0, look.z);
+            if (horizontal.lengthSqr() > 1.0E-6) setDirection(horizontal.normalize());
+        }
         if (followsOwner() && owner != null && owner.isAlive()) {
             if (tracksOwnerLook()) {
                 Vec3 look = owner.getLookAngle();
@@ -121,7 +126,7 @@ public final class VillageSkillEffectEntity extends Entity {
             case "vanguard_spin", "vanguard_rally", "vanguard_blade_charge",
                     "vanguard_slam_charge", "ranger_rapid", "ranger_focus",
                     "ranger_energy_charge", "luminar_heal_cast", "luminar_cleanse_cast",
-                    "luminar_healing_field", "luminar_miracle_cast",
+                    "luminar_miracle_cast",
                     "warden_charge_cast", "warden_taunt", "warden_fortress", "warden_aegis" -> true;
             default -> false;
         };

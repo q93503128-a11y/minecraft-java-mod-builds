@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public final class VillageRelicSystem {
     private static final String SEP = "\u001F";
+    private static final String OFFER_SEP = ";";
     private static final Map<UUID, Integer> OWNED = new LinkedHashMap<>();
     private static final Map<UUID, String> PENDING = new LinkedHashMap<>();
     private static VillageRelicData savedData;
@@ -32,10 +33,12 @@ public final class VillageRelicSystem {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             List<Relic> choices = choicesFor(player, day);
             if (choices.isEmpty()) continue;
-            PENDING.put(player.getUUID(), choices.stream().map(Relic::id)
-                    .reduce((first, second) -> first + "," + second).orElse(""));
+            String encoded = choices.stream().map(Relic::id)
+                    .reduce((first, second) -> first + "," + second).orElse("");
+            String previous = PENDING.getOrDefault(player.getUUID(), "");
+            PENDING.put(player.getUUID(), previous.isBlank() ? encoded : previous + OFFER_SEP + encoded);
             persist();
-            openChoice(player);
+            if (previous.isBlank()) openChoice(player);
         }
     }
 
@@ -76,9 +79,13 @@ public final class VillageRelicSystem {
         if (!choices.contains(relic)) return "현재 제시된 유물이 아닙니다.";
         int mask = OWNED.getOrDefault(player.getUUID(), 0);
         OWNED.put(player.getUUID(), sanitizeMask(mask | relic.bit()));
-        PENDING.remove(player.getUUID());
+        consumePendingOffer(player.getUUID());
         persist();
         return relic.displayName() + " 획득 · " + relic.description();
+    }
+
+    public static synchronized boolean hasPendingChoice(ServerPlayer player) {
+        return player != null && !pendingChoices(player).isEmpty();
     }
 
     public static synchronized boolean has(ServerPlayer player, Relic relic) {
@@ -175,10 +182,14 @@ public final class VillageRelicSystem {
     private static List<Relic> choicesFor(ServerPlayer player, int day) {
         List<Relic> available = new ArrayList<>();
         int mask = OWNED.getOrDefault(player.getUUID(), 0);
-        for (Relic relic : Relic.values()) if ((mask & relic.bit()) == 0) available.add(relic);
+        java.util.Set<Relic> reserved = pendingRelics(player.getUUID());
+        for (Relic relic : Relic.values()) {
+            if ((mask & relic.bit()) == 0 && !reserved.contains(relic)) available.add(relic);
+        }
         if (available.isEmpty()) return List.of();
         List<Relic> result = new ArrayList<>();
-        int seed = player.getUUID().hashCode() * 31 + day * 17 + Integer.bitCount(mask) * 13;
+        int seed = player.getUUID().hashCode() * 31 + day * 17
+                + Integer.bitCount(mask) * 13 + reserved.size() * 19;
         while (!available.isEmpty() && result.size() < 3) {
             int index = Math.floorMod(seed + result.size() * 37, available.size());
             result.add(available.remove(index));
@@ -187,13 +198,43 @@ public final class VillageRelicSystem {
     }
 
     private static List<Relic> pendingChoices(ServerPlayer player) {
+        if (player == null) return List.of();
         String raw = PENDING.getOrDefault(player.getUUID(), "");
+        if (raw.isBlank()) return List.of();
+        String first = raw.split(OFFER_SEP, 2)[0];
         List<Relic> result = new ArrayList<>();
-        for (String id : raw.split(",")) {
+        for (String id : first.split(",")) {
             Relic relic = Relic.fromId(id);
             if (relic != null) result.add(relic);
         }
         return result;
+    }
+
+    private static java.util.Set<Relic> pendingRelics(UUID playerId) {
+        java.util.Set<Relic> result = java.util.EnumSet.noneOf(Relic.class);
+        String raw = PENDING.getOrDefault(playerId, "");
+        if (raw.isBlank()) return result;
+        for (String offer : raw.split(OFFER_SEP)) {
+            for (String id : offer.split(",")) {
+                Relic relic = Relic.fromId(id);
+                if (relic != null) result.add(relic);
+            }
+        }
+        return result;
+    }
+
+    private static void consumePendingOffer(UUID playerId) {
+        String raw = PENDING.getOrDefault(playerId, "");
+        if (raw.isBlank()) {
+            PENDING.remove(playerId);
+            return;
+        }
+        int separator = raw.indexOf(OFFER_SEP);
+        if (separator < 0 || separator + OFFER_SEP.length() >= raw.length()) {
+            PENDING.remove(playerId);
+        } else {
+            PENDING.put(playerId, raw.substring(separator + OFFER_SEP.length()));
+        }
     }
 
     private static int sanitizeMask(int value) {

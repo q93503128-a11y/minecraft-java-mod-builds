@@ -61,6 +61,20 @@ public final class VillageSkillTestSystem {
         return player != null && ENABLED.contains(player.getUUID());
     }
 
+    public static boolean recoverStrandedAfterRestart(ServerPlayer player) {
+        if (player == null || isEnabled(player) || !(player.level() instanceof ServerLevel)) return false;
+        BlockPos arena = arenaCenter();
+        if (arena == null) return false;
+        BlockPos pos = player.blockPosition();
+        if (Math.abs(pos.getX() - arena.getX()) > ARENA_RADIUS + 4
+                || Math.abs(pos.getZ() - arena.getZ()) > ARENA_RADIUS + 4
+                || Math.abs(pos.getY() - arena.getY()) > 18) return false;
+        String result = VillageWorldSystem.returnToVillage(player);
+        player.sendSystemMessage(Component.literal(
+                "§e[시험장 복구] §f서버 재시작으로 종료된 시험 모드를 감지해 마을로 복귀했습니다. " + result));
+        return true;
+    }
+
     public static String enable(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 시험장을 열 수 없습니다.";
         if (VillageCouncilState.currentPhase() != VillageTimePhase.DAY || VillageRaidSystem.isRaidLocked()) {

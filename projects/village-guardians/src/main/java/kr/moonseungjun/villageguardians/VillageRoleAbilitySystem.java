@@ -479,7 +479,7 @@ public final class VillageRoleAbilitySystem {
                     if (now % 20L == 0L) play(level, area.center(), SoundEvents.GLASS_HIT, 0.55f, 0.62f);
                 }
                 case TORNADO -> {
-                    Vec3 next = area.center().add(horizontalLook(owner).scale(0.24));
+                    Vec3 next = area.center().add(horizontalLook(owner).scale(1.20));
                     area.moveTo(next);
                     for (Mob target : targetsNear(level, owner, next, area.radius(), 48)) {
                         Vec3 pull = next.subtract(target.position());

@@ -29,6 +29,7 @@ public final class VillageMercenarySystem {
     private static final Map<UUID, Integer> LEVELS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> KILLS = new LinkedHashMap<>();
     private static VillageMercenaryData savedData;
+    private static VillageMercenarySnapshotData snapshotData;
     private static final List<MercenarySnapshot> NIGHT_SNAPSHOT = new ArrayList<>();
     private static int tickCounter;
 
@@ -36,6 +37,7 @@ public final class VillageMercenarySystem {
 
     public static synchronized void initializeServer(MinecraftServer server) {
         savedData = server.overworld().getDataStorage().computeIfAbsent(VillageMercenaryData.TYPE);
+        snapshotData = server.overworld().getDataStorage().computeIfAbsent(VillageMercenarySnapshotData.TYPE);
         CLASSES.clear();
         LEVELS.clear();
         KILLS.clear();
@@ -49,7 +51,7 @@ public final class VillageMercenarySystem {
                 uuid -> KILLS.put(uuid, Math.max(0, value))));
         sanitize();
         persist();
-        NIGHT_SNAPSHOT.clear();
+        loadNightSnapshot();
         tickCounter = 0;
     }
 
@@ -112,6 +114,7 @@ public final class VillageMercenarySystem {
         NIGHT_SNAPSHOT.clear();
         CLASSES.forEach((uuid, kind) -> NIGHT_SNAPSHOT.add(new MercenarySnapshot(
                 kind, LEVELS.getOrDefault(uuid, 1), KILLS.getOrDefault(uuid, 0))));
+        persistNightSnapshot();
     }
     public static synchronized void restoreNightSnapshot(MinecraftServer server) {
         discardCurrent(server); CLASSES.clear(); LEVELS.clear(); KILLS.clear();
@@ -134,7 +137,7 @@ public final class VillageMercenarySystem {
     }
     public static synchronized void resetForNewGame(MinecraftServer server) {
         discardCurrent(server); CLASSES.clear(); LEVELS.clear(); KILLS.clear(); NIGHT_SNAPSHOT.clear();
-        tickCounter = 0; persist();
+        tickCounter = 0; persist(); persistNightSnapshot();
     }
     private static void discardCurrent(MinecraftServer server) {
         for (UUID uuid : new java.util.HashSet<>(CLASSES.keySet())) {
@@ -280,6 +283,36 @@ public final class VillageMercenarySystem {
         MercenaryClass kind = mercenaryClass(mob);
         mob.setCustomName(Component.literal(kind.displayName() + " Lv." + rank(mob)));
         mob.setCustomNameVisible(true);
+    }
+
+    private static void loadNightSnapshot() {
+        NIGHT_SNAPSHOT.clear();
+        if (snapshotData == null) return;
+        snapshotData.entries().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    String[] parts = entry.getValue().split("\\|", 3);
+                    if (parts.length != 3) return;
+                    MercenaryClass kind = MercenaryClass.fromId(parts[0]);
+                    if (kind == null) return;
+                    try {
+                        int level = Math.max(1, Math.min(5, Integer.parseInt(parts[1])));
+                        int kills = Math.max(0, Integer.parseInt(parts[2]));
+                        NIGHT_SNAPSHOT.add(new MercenarySnapshot(kind, level, kills));
+                    } catch (NumberFormatException ignored) {
+                    }
+                });
+    }
+
+    private static void persistNightSnapshot() {
+        if (snapshotData == null) return;
+        Map<String, String> encoded = new LinkedHashMap<>();
+        for (int index = 0; index < NIGHT_SNAPSHOT.size(); index++) {
+            MercenarySnapshot snapshot = NIGHT_SNAPSHOT.get(index);
+            encoded.put(String.format(Locale.ROOT, "%04d", index),
+                    snapshot.kind().id() + "|" + snapshot.level() + "|" + snapshot.kills());
+        }
+        snapshotData.replace(encoded);
     }
 
     private record MercenarySnapshot(MercenaryClass kind, int level, int kills) {}

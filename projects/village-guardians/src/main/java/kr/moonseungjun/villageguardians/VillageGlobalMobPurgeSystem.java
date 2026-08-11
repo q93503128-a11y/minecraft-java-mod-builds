@@ -15,7 +15,8 @@ public final class VillageGlobalMobPurgeSystem {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
         ServerLevel level = server.overworld();
-        AABB loadedBattleWorld = new AABB(center).inflate(2048, 256, 2048);
+        double radius = VillageWorldSystem.BATTLEFIELD_RADIUS + 96.0;
+        AABB loadedBattleWorld = new AABB(center).inflate(radius, 128, radius);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, loadedBattleWorld)) {
             if (VillageWorldSystem.isAllowedGameMob(mob)) continue;
             if (VillageMercenarySystem.recognize(mob)) continue;

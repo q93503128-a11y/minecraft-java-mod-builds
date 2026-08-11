@@ -23,6 +23,12 @@ public final class VillageLocalActionSystem {
                         "open_dashboard");
                 return true;
             }
+            case "hire_mercenary" -> {
+                VillageUiController.openResult(player, "용병 고용",
+                        "구형 단일 용병 호출은 제거되었습니다. 병영에서 현재 4개 병과 중 하나를 선택하세요.",
+                        "open_mercenary_command");
+                return true;
+            }
             default -> { return false; }
         }
     }

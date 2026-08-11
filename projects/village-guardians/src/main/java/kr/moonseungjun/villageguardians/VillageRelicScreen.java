@@ -60,7 +60,7 @@ public final class VillageRelicScreen extends Screen {
 
         List<FormattedCharSequence> summary = font.split(Component.literal(plain(payload.body())),
                 Math.max(120, layout.width() - 48));
-        int summaryLines = Math.min(4, summary.size());
+        int summaryLines = Math.min(7, summary.size());
         int y = layout.top() + 30;
         for (int index = 0; index < summaryLines; index++) {
             graphics.text(font, summary.get(index), layout.left() + 18, y, index == 0 ? GOLD : MUTED, false);
@@ -144,7 +144,7 @@ public final class VillageRelicScreen extends Screen {
     }
 
     private Layout layout() {
-        int panelWidth = Math.min(820, Math.max(300, width - 16));
+        int panelWidth = Math.max(120, Math.min(820, width - 16));
         int panelHeight = Math.min(height - 12, Math.max(230, height - 22));
         return new Layout((width - panelWidth) / 2, (height - panelHeight) / 2, panelWidth, panelHeight);
     }

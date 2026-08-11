@@ -89,13 +89,16 @@ public final class VillageTradingSystem {
     }
 
     private static boolean isSaleOnlyLoot(ItemStack stack) {
+        if (VillageRaidLootSystem.saleValue(stack) > 0) return true;
         String name = plainName(stack);
-        return name.startsWith("[판매용] ")
+        return NAMED_PRICES.containsKey(name)
                 || (stack.get(DataComponents.CUSTOM_NAME) == null && LEGACY_PRICES.containsKey(stack.getItem()));
     }
 
     private static int unitValue(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return 0;
+        int raidValue = VillageRaidLootSystem.saleValue(stack);
+        if (raidValue > 0) return raidValue;
         String name = plainName(stack);
         Integer named = NAMED_PRICES.get(name);
         if (named != null) return named;

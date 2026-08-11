@@ -366,7 +366,8 @@ public final class VillageRoleSkillSystem {
 
     private static int effectiveCooldownSeconds(
             ServerPlayer player, VillageRole role, ActiveSkill skill) {
-        return Math.max(7,
+        int minimum = Math.max(2, Math.round(skill.baseCooldownSeconds() * 0.20f));
+        return Math.max(minimum,
                 skill.baseCooldownSeconds()
                         - VillageProgressionSystem.skillCooldownReductionSeconds(player)
                         - VillageSkillTreeSystem.cooldownReductionSeconds(player)

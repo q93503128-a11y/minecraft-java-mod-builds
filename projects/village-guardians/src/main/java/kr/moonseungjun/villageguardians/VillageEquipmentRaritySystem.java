@@ -217,6 +217,12 @@ public final class VillageEquipmentRaritySystem {
 
     public static Rarity rarityOf(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
+        String stamped = VillageEquipmentIdentity.rarity(stack);
+        if (!stamped.isBlank()) {
+            try { return Rarity.valueOf(stamped); }
+            catch (IllegalArgumentException ignored) { return null; }
+        }
+        if (!VillageEquipmentIdentity.canReadLegacyName(stack)) return null;
         Component name = stack.get(DataComponents.CUSTOM_NAME);
         if (name == null) return null;
         String plain = ChatFormatting.stripFormatting(name.getString());
@@ -228,6 +234,9 @@ public final class VillageEquipmentRaritySystem {
 
     public static int enhancementLevel(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return 0;
+        int stamped = VillageEquipmentIdentity.enhancement(stack);
+        if (stamped >= 0) return stamped;
+        if (!VillageEquipmentIdentity.canReadLegacyName(stack)) return 0;
         Component name = stack.get(DataComponents.CUSTOM_NAME);
         if (name == null) return 0;
         String plain = ChatFormatting.stripFormatting(name.getString());
@@ -268,6 +277,7 @@ public final class VillageEquipmentRaritySystem {
         stack.set(DataComponents.CUSTOM_NAME,
                 Component.literal("[" + rarity.displayName() + "] " + name + suffix)
                         .withStyle(rarity.formatting()));
+        VillageEquipmentIdentity.stampRarity(stack, rarity.name(), enhancement);
     }
 
     private static Rarity rollRarity(int day, boolean boss, RandomSource random) {

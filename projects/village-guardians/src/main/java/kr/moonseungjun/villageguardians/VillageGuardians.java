@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
@@ -11,6 +12,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -74,12 +76,19 @@ public final class VillageGuardians {
             var server = player.level().getServer();
             if (server != null) VillageCouncilState.enforceFrozenTime(server);
             VillageWorldSystem.ensureFortifiedVillage(player);
+            VillageSkillTestSystem.recoverStrandedAfterRestart(player);
             VillageStarterKit.grantOnLogin(player);
             VillageRpgSystem.refreshPlayerPassive(player);
             VillageRespawnSystem.onLogin(player);
             VillageRelicSystem.openChoice(player);
             if (VillageProgressionSystem.isGameOver() && server != null) VillageUiService.openGameOverForAll(server);
         }
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        var server = event.getEntity().level().getServer();
+        if (server != null) VillageCouncilState.onPlayerListChanged(server);
     }
 
     @SubscribeEvent
@@ -119,7 +128,16 @@ public final class VillageGuardians {
         if (VillageMercenarySystem.recognize(mob)) return;
         if (VillageSkillTestSystem.recognize(mob)) return;
         if (VillageDefenseSystem.recognizeDefenseMob(mob)) return;
+        if (VillageRaidSystem.shouldDiscardStaleRaidEnemy(mob)) {
+            event.setCanceled(true);
+            mob.discard();
+            return;
+        }
         if (VillageWorldSystem.isAllowedGameMob(mob)) return;
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (center == null) return;
+        double radius = VillageWorldSystem.BATTLEFIELD_RADIUS + 96.0;
+        if (mob.blockPosition().distSqr(center) > radius * radius) return;
         if (!mob.isPersistenceRequired()) event.setCanceled(true);
     }
 
@@ -128,7 +146,11 @@ public final class VillageGuardians {
         VillageWorldSystem.recordCombat(event);
         VillageRpgSystem.handleIncomingDamage(event);
         VillageRoleAbilitySystem.handleIncomingDamage(event);
-        VillageRespawnSystem.handleIncomingDamage(event);
+    }
+
+    @SubscribeEvent
+    public void onFinalDamage(LivingDamageEvent.Pre event) {
+        VillageRespawnSystem.handleFinalDamage(event);
     }
 
     @SubscribeEvent

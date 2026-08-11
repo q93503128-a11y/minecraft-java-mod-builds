@@ -18,26 +18,37 @@ public final class VillageRaidLootSystem {
     private static final Map<VillageEnemyArchetypeSystem.Archetype, SaleLoot> SALE_LOOT =
             new EnumMap<>(VillageEnemyArchetypeSystem.Archetype.class);
     static {
-        put(VillageEnemyArchetypeSystem.Archetype.GRUNT, Items.BONE, "금 간 전열병 송곳니", ChatFormatting.GRAY);
-        put(VillageEnemyArchetypeSystem.Archetype.RUSHER, Items.FLINT, "척후병의 닳은 단검 조각", ChatFormatting.GRAY);
-        put(VillageEnemyArchetypeSystem.Archetype.BULWARK, Items.IRON_NUGGET, "찌그러진 방패 고리", ChatFormatting.WHITE);
-        put(VillageEnemyArchetypeSystem.Archetype.SAPPER, Items.GUNPOWDER, "폭파병 화약 주머니", ChatFormatting.GOLD);
-        put(VillageEnemyArchetypeSystem.Archetype.MARKSMAN, Items.FEATHER, "사수의 찢긴 깃", ChatFormatting.WHITE);
-        put(VillageEnemyArchetypeSystem.Archetype.SHIELDBREAKER, Items.IRON_NUGGET, "파쇄병 도끼날 파편", ChatFormatting.DARK_GRAY);
-        put(VillageEnemyArchetypeSystem.Archetype.HEXER, Items.SPIDER_EYE, "응고된 저주 마력낭", ChatFormatting.DARK_PURPLE);
-        put(VillageEnemyArchetypeSystem.Archetype.WAR_CHANTER, Items.GOAT_HORN, "전쟁 고수의 갈라진 뿔", ChatFormatting.GOLD);
-        put(VillageEnemyArchetypeSystem.Archetype.NECROMANCER, Items.COAL, "사령술사의 검은 뼛가루", ChatFormatting.DARK_PURPLE);
-        put(VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER, Items.AMETHYST_SHARD, "탑 사냥꾼의 조준 렌즈", ChatFormatting.AQUA);
-        put(VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST, Items.HEAVY_CORE, "공성 야수의 파쇄핵", ChatFormatting.LIGHT_PURPLE);
-        put(VillageEnemyArchetypeSystem.Archetype.IRON_WARLORD, Items.NETHERITE_SCRAP, "철의 전쟁군주 휘장", ChatFormatting.GOLD);
-        put(VillageEnemyArchetypeSystem.Archetype.PLAGUE_ARCHON, Items.ENDER_PEARL, "역병 대주교의 뒤틀린 심장", ChatFormatting.DARK_PURPLE);
-        put(VillageEnemyArchetypeSystem.Archetype.DREAD_KNIGHT, Items.ECHO_SHARD, "공포 기사의 암흑 갑편", ChatFormatting.DARK_AQUA);
+        put(VillageEnemyArchetypeSystem.Archetype.GRUNT, Items.BONE, "금 간 전열병 송곳니", ChatFormatting.GRAY, 3);
+        put(VillageEnemyArchetypeSystem.Archetype.RUSHER, Items.FLINT, "척후병의 닳은 단검 조각", ChatFormatting.GRAY, 4);
+        put(VillageEnemyArchetypeSystem.Archetype.BULWARK, Items.IRON_NUGGET, "찌그러진 방패 고리", ChatFormatting.WHITE, 6);
+        put(VillageEnemyArchetypeSystem.Archetype.SAPPER, Items.GUNPOWDER, "폭파병 화약 주머니", ChatFormatting.GOLD, 7);
+        put(VillageEnemyArchetypeSystem.Archetype.MARKSMAN, Items.FEATHER, "사수의 찢긴 깃", ChatFormatting.WHITE, 6);
+        put(VillageEnemyArchetypeSystem.Archetype.SHIELDBREAKER, Items.IRON_NUGGET, "파쇄병 도끼날 파편", ChatFormatting.DARK_GRAY, 8);
+        put(VillageEnemyArchetypeSystem.Archetype.HEXER, Items.SPIDER_EYE, "응고된 저주 마력낭", ChatFormatting.DARK_PURPLE, 9);
+        put(VillageEnemyArchetypeSystem.Archetype.WAR_CHANTER, Items.GOAT_HORN, "전쟁 고수의 갈라진 뿔", ChatFormatting.GOLD, 10);
+        put(VillageEnemyArchetypeSystem.Archetype.NECROMANCER, Items.COAL, "사령술사의 검은 뼛가루", ChatFormatting.DARK_PURPLE, 12);
+        put(VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER, Items.AMETHYST_SHARD, "탑 사냥꾼의 조준 렌즈", ChatFormatting.AQUA, 14);
+        put(VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST, Items.HEAVY_CORE, "공성 야수의 파쇄핵", ChatFormatting.LIGHT_PURPLE, 28);
+        put(VillageEnemyArchetypeSystem.Archetype.IRON_WARLORD, Items.NETHERITE_SCRAP, "철의 전쟁군주 휘장", ChatFormatting.GOLD, 34);
+        put(VillageEnemyArchetypeSystem.Archetype.PLAGUE_ARCHON, Items.ENDER_PEARL, "역병 대주교의 뒤틀린 심장", ChatFormatting.DARK_PURPLE, 38);
+        put(VillageEnemyArchetypeSystem.Archetype.DREAD_KNIGHT, Items.ECHO_SHARD, "공포 기사의 암흑 갑편", ChatFormatting.DARK_AQUA, 42);
     }
 
     private VillageRaidLootSystem() {}
     private static void put(VillageEnemyArchetypeSystem.Archetype type, Item item,
-                            String name, ChatFormatting color) {
-        SALE_LOOT.put(type, new SaleLoot(item, name, color));
+                            String name, ChatFormatting color, int value) {
+        SALE_LOOT.put(type, new SaleLoot(item, name, color, Math.max(1, value)));
+    }
+
+    public static int saleValue(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return 0;
+        Component custom = stack.get(DataComponents.CUSTOM_NAME);
+        if (custom == null) return 0;
+        String plain = ChatFormatting.stripFormatting(custom.getString());
+        for (SaleLoot loot : SALE_LOOT.values()) {
+            if (("[판매용] " + loot.name()).equals(plain)) return loot.value();
+        }
+        return 0;
     }
 
     public static void handleDrops(LivingDropsEvent event) {
@@ -80,5 +91,5 @@ public final class VillageRaidLootSystem {
     private static void give(ServerPlayer player, ItemStack stack) {
         if (!player.addItem(stack)) player.drop(stack, false);
     }
-    private record SaleLoot(Item item, String name, ChatFormatting color) {}
+    private record SaleLoot(Item item, String name, ChatFormatting color, int value) {}
 }

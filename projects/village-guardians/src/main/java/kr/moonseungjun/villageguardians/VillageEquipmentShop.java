@@ -76,9 +76,7 @@ public final class VillageEquipmentShop {
                 ? Math.max(VillageEquipmentRaritySystem.projectileMultiplier(player.getMainHandItem()),
                 VillageEquipmentRaritySystem.projectileMultiplier(player.getOffhandItem()))
                 : VillageEquipmentRaritySystem.meleeMultiplier(player.getMainHandItem());
-        float relic = projectile ? VillageRelicSystem.projectileMultiplier(player)
-                : VillageRelicSystem.meleeMultiplier(player);
-        return named * rarity * relic;
+        return named * rarity;
     }
 
     public static float incomingMultiplier(ServerPlayer player) {
@@ -86,15 +84,13 @@ public final class VillageEquipmentShop {
                 .map(Offer::damageReduction)
                 .reduce(0.0f, Float::sum);
         float rarityMultiplier = VillageEquipmentRaritySystem.incomingMultiplier(player);
-        return Math.max(0.52f, (1.0f - Math.min(0.42f, reduction)) * rarityMultiplier
-                * VillageRelicSystem.incomingMultiplier(player));
+        return Math.max(0.52f, (1.0f - Math.min(0.42f, reduction)) * rarityMultiplier);
     }
 
     public static float roleSkillMultiplier(ServerPlayer player) {
         float named = 1.0f;
         for (Offer offer : equippedOffers(player)) named *= offer.skillMultiplier();
-        return named * VillageEquipmentRaritySystem.skillMultiplier(player)
-                * VillageRelicSystem.skillMultiplier(player);
+        return named * VillageEquipmentRaritySystem.skillMultiplier(player);
     }
 
     public static int cooldownReductionSeconds(ServerPlayer player) {
@@ -233,11 +229,16 @@ public final class VillageEquipmentShop {
         }
 
         public ItemStack createStack() {
-            return VillageEquipmentRaritySystem.createNamed(item, rarity(), displayName);
+            ItemStack stack = VillageEquipmentRaritySystem.createNamed(item, rarity(), displayName);
+            VillageEquipmentIdentity.stampOffer(stack, id);
+            return stack;
         }
 
         public boolean matches(ItemStack stack) {
-            return !stack.isEmpty() && stack.getItem() == item
+            if (stack == null || stack.isEmpty() || stack.getItem() != item) return false;
+            String stampedOffer = VillageEquipmentIdentity.offer(stack);
+            if (!stampedOffer.isBlank()) return id.equals(stampedOffer);
+            return VillageEquipmentIdentity.canReadLegacyName(stack)
                     && displayName.equals(VillageEquipmentRaritySystem.baseDisplayName(stack));
         }
 

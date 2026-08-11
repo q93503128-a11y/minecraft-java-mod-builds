@@ -1,0 +1,1097 @@
+diff --git a/projects/village-guardians/.gitignore b/projects/village-guardians/.gitignore
+index 066a6139..89b28587 100644
+--- a/projects/village-guardians/.gitignore
++++ b/projects/village-guardians/.gitignore
+@@ -6,3 +6,5 @@ run-data/
+ .idea/
+ *.iml
+ *.log
++tools/__pycache__/
++*.pyc
+diff --git a/projects/village-guardians/gradle.properties b/projects/village-guardians/gradle.properties
+index a455d8fa..c6aefb7e 100644
+--- a/projects/village-guardians/gradle.properties
++++ b/projects/village-guardians/gradle.properties
+@@ -11,5 +11,5 @@ neo_version=26.2.0.37-beta
+ mod_id=villageguardians
+ mod_name=Village Guardians
+ mod_license=All Rights Reserved for code; bundled assets have separate licenses in THIRD_PARTY_NOTICES
+-mod_version=0.18.1-alpha.1
++mod_version=0.18.2-alpha.1
+ mod_group_id=kr.moonseungjun.villageguardians
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java
+index c3021451..c0444406 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageCouncilState.java
+@@ -146,6 +146,10 @@ public final class VillageCouncilState {
+         return "시간 진행 투표를 열었습니다.";
+     }
+ 
++    public static synchronized void onPlayerListChanged(MinecraftServer server) {
++        if (server != null && activeProposal != null) evaluateProposal(server);
++    }
++
+     public static synchronized String vote(ServerPlayer player, boolean yes) {
+         MinecraftServer server = player.level().getServer();
+         if (server == null) return "서버 상태를 확인할 수 없습니다.";
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.java
+index cd5e7c31..d1687cb1 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.java
+@@ -126,7 +126,7 @@ public final class VillageEnemyArchetypeSystem {
+         int cadence = trait == VillageWaveTrait.HEXED ? 120 : 160;
+         switch (archetype) {
+             case HEXER -> {
+-                if (globalTicks % cadence != 0) return;
++                if (!abilityReady(mob, globalTicks, cadence)) return;
+                 for (ServerPlayer player : nearbyPlayers(server, mob, 9.0)) {
+                     player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 90, 0));
+                     player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 70, 0));
+@@ -134,7 +134,7 @@ public final class VillageEnemyArchetypeSystem {
+                 spawnAura(level, mob, archetype, 18);
+             }
+             case WAR_CHANTER -> {
+-                if (globalTicks % 140 != 0) return;
++                if (!abilityReady(mob, globalTicks, 140)) return;
+                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 9.0, 12, mob.getUUID())) {
+                     ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 120, 0));
+                     ally.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 0));
+@@ -142,7 +142,7 @@ public final class VillageEnemyArchetypeSystem {
+                 spawnAura(level, mob, archetype, 18);
+             }
+             case NECROMANCER -> {
+-                if (globalTicks % 180 != 0) return;
++                if (!abilityReady(mob, globalTicks, 180)) return;
+                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 10.0, 10, mob.getUUID())) {
+                     ally.heal(5.0f + VillageCouncilState.currentDay() * 0.18f);
+                     ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 0));
+@@ -150,19 +150,19 @@ public final class VillageEnemyArchetypeSystem {
+                 spawnAura(level, mob, archetype, 24);
+             }
+             case TOWER_HUNTER -> {
+-                if (globalTicks % 180 != 0) return;
++                if (!abilityReady(mob, globalTicks, 180)) return;
+                 VillageTowerSpecializationSystem.disableRandomInstalledTower(20 * 7);
+                 spawnAura(level, mob, archetype, 20);
+                 server.getPlayerList().broadcastSystemMessage(
+                         Component.literal("§5[탑 교란] §f탑 사냥꾼이 방어탑 하나를 7초간 정지시켰습니다."), false);
+             }
+             case SIEGE_BEAST -> {
+-                if (globalTicks % 100 != 0) return;
++                if (!abilityReady(mob, globalTicks, 100)) return;
+                 damageAndDebuffPlayers(level, server, mob, 9.5, 4.0f, MobEffects.SLOWNESS);
+                 spawnAura(level, mob, archetype, 28);
+             }
+             case IRON_WARLORD -> {
+-                if (globalTicks % 120 != 0) return;
++                if (!abilityReady(mob, globalTicks, 120)) return;
+                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 12.0, 18, mob.getUUID())) {
+                     ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 140, 1));
+                     ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 140, 0));
+@@ -170,7 +170,7 @@ public final class VillageEnemyArchetypeSystem {
+                 spawnAura(level, mob, archetype, 26);
+             }
+             case PLAGUE_ARCHON -> {
+-                if (globalTicks % 110 != 0) return;
++                if (!abilityReady(mob, globalTicks, 110)) return;
+                 damageAndDebuffPlayers(level, server, mob, 11.0, 3.5f, MobEffects.POISON);
+                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 11.0, 14, mob.getUUID())) {
+                     ally.heal(7.0f);
+@@ -178,7 +178,7 @@ public final class VillageEnemyArchetypeSystem {
+                 spawnAura(level, mob, archetype, 30);
+             }
+             case DREAD_KNIGHT -> {
+-                if (globalTicks % 90 != 0) return;
++                if (!abilityReady(mob, globalTicks, 90)) return;
+                 float drained = 0.0f;
+                 for (ServerPlayer player : nearbyPlayers(server, mob, 10.0)) {
+                     player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0));
+@@ -410,6 +410,12 @@ public final class VillageEnemyArchetypeSystem {
+                 .toList();
+     }
+ 
++    private static boolean abilityReady(Mob mob, int globalTicks, int cadence) {
++        int safeCadence = Math.max(1, cadence);
++        int phase = Math.floorMod(mob.getUUID().hashCode(), safeCadence);
++        return Math.floorMod(globalTicks + phase, safeCadence) == 0;
++    }
++
+     private static void damageAndDebuffPlayers(
+             ServerLevel level,
+             MinecraftServer server,
+@@ -419,8 +425,8 @@ public final class VillageEnemyArchetypeSystem {
+             net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect) {
+         for (ServerPlayer player : nearbyPlayers(server, mob, radius)) {
+             player.addEffect(new MobEffectInstance(effect, 90, 1));
+-            player.hurtServer(level, level.damageSources().magic(),
+-                    damage + VillageCouncilState.currentDay() * 0.22f);
++            float endlessBonus = Math.min(7.0f, VillageCouncilState.currentDay() * 0.22f);
++            player.hurtServer(level, level.damageSources().magic(), damage + endlessBonus);
+         }
+     }
+ 
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentRaritySystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentRaritySystem.java
+index 73322a4b..18f104d1 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentRaritySystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentRaritySystem.java
+@@ -217,6 +217,12 @@ public final class VillageEquipmentRaritySystem {
+ 
+     public static Rarity rarityOf(ItemStack stack) {
+         if (stack == null || stack.isEmpty()) return null;
++        String stamped = VillageEquipmentIdentity.rarity(stack);
++        if (!stamped.isBlank()) {
++            try { return Rarity.valueOf(stamped); }
++            catch (IllegalArgumentException ignored) { return null; }
++        }
++        if (!VillageEquipmentIdentity.canReadLegacyName(stack)) return null;
+         Component name = stack.get(DataComponents.CUSTOM_NAME);
+         if (name == null) return null;
+         String plain = ChatFormatting.stripFormatting(name.getString());
+@@ -228,6 +234,9 @@ public final class VillageEquipmentRaritySystem {
+ 
+     public static int enhancementLevel(ItemStack stack) {
+         if (stack == null || stack.isEmpty()) return 0;
++        int stamped = VillageEquipmentIdentity.enhancement(stack);
++        if (stamped >= 0) return stamped;
++        if (!VillageEquipmentIdentity.canReadLegacyName(stack)) return 0;
+         Component name = stack.get(DataComponents.CUSTOM_NAME);
+         if (name == null) return 0;
+         String plain = ChatFormatting.stripFormatting(name.getString());
+@@ -268,6 +277,7 @@ public final class VillageEquipmentRaritySystem {
+         stack.set(DataComponents.CUSTOM_NAME,
+                 Component.literal("[" + rarity.displayName() + "] " + name + suffix)
+                         .withStyle(rarity.formatting()));
++        VillageEquipmentIdentity.stampRarity(stack, rarity.name(), enhancement);
+     }
+ 
+     private static Rarity rollRarity(int day, boolean boss, RandomSource random) {
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentShop.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentShop.java
+index d6b64b3e..32c4986a 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentShop.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentShop.java
+@@ -76,9 +76,7 @@ public final class VillageEquipmentShop {
+                 ? Math.max(VillageEquipmentRaritySystem.projectileMultiplier(player.getMainHandItem()),
+                 VillageEquipmentRaritySystem.projectileMultiplier(player.getOffhandItem()))
+                 : VillageEquipmentRaritySystem.meleeMultiplier(player.getMainHandItem());
+-        float relic = projectile ? VillageRelicSystem.projectileMultiplier(player)
+-                : VillageRelicSystem.meleeMultiplier(player);
+-        return named * rarity * relic;
++        return named * rarity;
+     }
+ 
+     public static float incomingMultiplier(ServerPlayer player) {
+@@ -86,15 +84,13 @@ public final class VillageEquipmentShop {
+                 .map(Offer::damageReduction)
+                 .reduce(0.0f, Float::sum);
+         float rarityMultiplier = VillageEquipmentRaritySystem.incomingMultiplier(player);
+-        return Math.max(0.52f, (1.0f - Math.min(0.42f, reduction)) * rarityMultiplier
+-                * VillageRelicSystem.incomingMultiplier(player));
++        return Math.max(0.52f, (1.0f - Math.min(0.42f, reduction)) * rarityMultiplier);
+     }
+ 
+     public static float roleSkillMultiplier(ServerPlayer player) {
+         float named = 1.0f;
+         for (Offer offer : equippedOffers(player)) named *= offer.skillMultiplier();
+-        return named * VillageEquipmentRaritySystem.skillMultiplier(player)
+-                * VillageRelicSystem.skillMultiplier(player);
++        return named * VillageEquipmentRaritySystem.skillMultiplier(player);
+     }
+ 
+     public static int cooldownReductionSeconds(ServerPlayer player) {
+@@ -233,11 +229,16 @@ public final class VillageEquipmentShop {
+         }
+ 
+         public ItemStack createStack() {
+-            return VillageEquipmentRaritySystem.createNamed(item, rarity(), displayName);
++            ItemStack stack = VillageEquipmentRaritySystem.createNamed(item, rarity(), displayName);
++            VillageEquipmentIdentity.stampOffer(stack, id);
++            return stack;
+         }
+ 
+         public boolean matches(ItemStack stack) {
+-            return !stack.isEmpty() && stack.getItem() == item
++            if (stack == null || stack.isEmpty() || stack.getItem() != item) return false;
++            String stampedOffer = VillageEquipmentIdentity.offer(stack);
++            if (!stampedOffer.isBlank()) return id.equals(stampedOffer);
++            return VillageEquipmentIdentity.canReadLegacyName(stack)
+                     && displayName.equals(VillageEquipmentRaritySystem.baseDisplayName(stack));
+         }
+ 
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGlobalMobPurgeSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGlobalMobPurgeSystem.java
+index c394a538..c34d5556 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGlobalMobPurgeSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGlobalMobPurgeSystem.java
+@@ -15,7 +15,8 @@ public final class VillageGlobalMobPurgeSystem {
+         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+         if (center == null) return;
+         ServerLevel level = server.overworld();
+-        AABB loadedBattleWorld = new AABB(center).inflate(2048, 256, 2048);
++        double radius = VillageWorldSystem.BATTLEFIELD_RADIUS + 96.0;
++        AABB loadedBattleWorld = new AABB(center).inflate(radius, 128, radius);
+         for (Mob mob : level.getEntitiesOfClass(Mob.class, loadedBattleWorld)) {
+             if (VillageWorldSystem.isAllowedGameMob(mob)) continue;
+             if (VillageMercenarySystem.recognize(mob)) continue;
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGuardians.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGuardians.java
+index 0c26e4ea..3f429f6f 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGuardians.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageGuardians.java
+@@ -1,6 +1,7 @@
+ package kr.moonseungjun.villageguardians;
+ 
+ import com.mojang.logging.LogUtils;
++import net.minecraft.core.BlockPos;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.world.entity.Mob;
+@@ -11,6 +12,7 @@ import net.neoforged.fml.common.Mod;
+ import net.neoforged.neoforge.common.NeoForge;
+ import net.neoforged.neoforge.event.RegisterCommandsEvent;
+ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
++import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+@@ -74,6 +76,7 @@ public final class VillageGuardians {
+             var server = player.level().getServer();
+             if (server != null) VillageCouncilState.enforceFrozenTime(server);
+             VillageWorldSystem.ensureFortifiedVillage(player);
++            VillageSkillTestSystem.recoverStrandedAfterRestart(player);
+             VillageStarterKit.grantOnLogin(player);
+             VillageRpgSystem.refreshPlayerPassive(player);
+             VillageRespawnSystem.onLogin(player);
+@@ -82,6 +85,12 @@ public final class VillageGuardians {
+         }
+     }
+ 
++    @SubscribeEvent
++    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
++        var server = event.getEntity().level().getServer();
++        if (server != null) VillageCouncilState.onPlayerListChanged(server);
++    }
++
+     @SubscribeEvent
+     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+         if (event.getEntity() instanceof ServerPlayer player) {
+@@ -119,7 +128,16 @@ public final class VillageGuardians {
+         if (VillageMercenarySystem.recognize(mob)) return;
+         if (VillageSkillTestSystem.recognize(mob)) return;
+         if (VillageDefenseSystem.recognizeDefenseMob(mob)) return;
++        if (VillageRaidSystem.shouldDiscardStaleRaidEnemy(mob)) {
++            event.setCanceled(true);
++            mob.discard();
++            return;
++        }
+         if (VillageWorldSystem.isAllowedGameMob(mob)) return;
++        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
++        if (center == null) return;
++        double radius = VillageWorldSystem.BATTLEFIELD_RADIUS + 96.0;
++        if (mob.blockPosition().distSqr(center) > radius * radius) return;
+         if (!mob.isPersistenceRequired()) event.setCanceled(true);
+     }
+ 
+@@ -128,7 +146,11 @@ public final class VillageGuardians {
+         VillageWorldSystem.recordCombat(event);
+         VillageRpgSystem.handleIncomingDamage(event);
+         VillageRoleAbilitySystem.handleIncomingDamage(event);
+-        VillageRespawnSystem.handleIncomingDamage(event);
++    }
++
++    @SubscribeEvent
++    public void onFinalDamage(LivingDamageEvent.Pre event) {
++        VillageRespawnSystem.handleFinalDamage(event);
+     }
+ 
+     @SubscribeEvent
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageLocalActionSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageLocalActionSystem.java
+index e53df269..18d86f11 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageLocalActionSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageLocalActionSystem.java
+@@ -23,6 +23,12 @@ public final class VillageLocalActionSystem {
+                         "open_dashboard");
+                 return true;
+             }
++            case "hire_mercenary" -> {
++                VillageUiController.openResult(player, "용병 고용",
++                        "구형 단일 용병 호출은 제거되었습니다. 병영에서 현재 4개 병과 중 하나를 선택하세요.",
++                        "open_mercenary_command");
++                return true;
++            }
+             default -> { return false; }
+         }
+     }
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageMercenarySystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageMercenarySystem.java
+index 4a15ab11..795968ff 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageMercenarySystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageMercenarySystem.java
+@@ -29,6 +29,7 @@ public final class VillageMercenarySystem {
+     private static final Map<UUID, Integer> LEVELS = new LinkedHashMap<>();
+     private static final Map<UUID, Integer> KILLS = new LinkedHashMap<>();
+     private static VillageMercenaryData savedData;
++    private static VillageMercenarySnapshotData snapshotData;
+     private static final List<MercenarySnapshot> NIGHT_SNAPSHOT = new ArrayList<>();
+     private static int tickCounter;
+ 
+@@ -36,6 +37,7 @@ public final class VillageMercenarySystem {
+ 
+     public static synchronized void initializeServer(MinecraftServer server) {
+         savedData = server.overworld().getDataStorage().computeIfAbsent(VillageMercenaryData.TYPE);
++        snapshotData = server.overworld().getDataStorage().computeIfAbsent(VillageMercenarySnapshotData.TYPE);
+         CLASSES.clear();
+         LEVELS.clear();
+         KILLS.clear();
+@@ -49,7 +51,7 @@ public final class VillageMercenarySystem {
+                 uuid -> KILLS.put(uuid, Math.max(0, value))));
+         sanitize();
+         persist();
+-        NIGHT_SNAPSHOT.clear();
++        loadNightSnapshot();
+         tickCounter = 0;
+     }
+ 
+@@ -112,6 +114,7 @@ public final class VillageMercenarySystem {
+         NIGHT_SNAPSHOT.clear();
+         CLASSES.forEach((uuid, kind) -> NIGHT_SNAPSHOT.add(new MercenarySnapshot(
+                 kind, LEVELS.getOrDefault(uuid, 1), KILLS.getOrDefault(uuid, 0))));
++        persistNightSnapshot();
+     }
+     public static synchronized void restoreNightSnapshot(MinecraftServer server) {
+         discardCurrent(server); CLASSES.clear(); LEVELS.clear(); KILLS.clear();
+@@ -134,7 +137,7 @@ public final class VillageMercenarySystem {
+     }
+     public static synchronized void resetForNewGame(MinecraftServer server) {
+         discardCurrent(server); CLASSES.clear(); LEVELS.clear(); KILLS.clear(); NIGHT_SNAPSHOT.clear();
+-        tickCounter = 0; persist();
++        tickCounter = 0; persist(); persistNightSnapshot();
+     }
+     private static void discardCurrent(MinecraftServer server) {
+         for (UUID uuid : new java.util.HashSet<>(CLASSES.keySet())) {
+@@ -282,6 +285,36 @@ public final class VillageMercenarySystem {
+         mob.setCustomNameVisible(true);
+     }
+ 
++    private static void loadNightSnapshot() {
++        NIGHT_SNAPSHOT.clear();
++        if (snapshotData == null) return;
++        snapshotData.entries().entrySet().stream()
++                .sorted(Map.Entry.comparingByKey())
++                .forEach(entry -> {
++                    String[] parts = entry.getValue().split("\\|", 3);
++                    if (parts.length != 3) return;
++                    MercenaryClass kind = MercenaryClass.fromId(parts[0]);
++                    if (kind == null) return;
++                    try {
++                        int level = Math.max(1, Math.min(5, Integer.parseInt(parts[1])));
++                        int kills = Math.max(0, Integer.parseInt(parts[2]));
++                        NIGHT_SNAPSHOT.add(new MercenarySnapshot(kind, level, kills));
++                    } catch (NumberFormatException ignored) {
++                    }
++                });
++    }
++
++    private static void persistNightSnapshot() {
++        if (snapshotData == null) return;
++        Map<String, String> encoded = new LinkedHashMap<>();
++        for (int index = 0; index < NIGHT_SNAPSHOT.size(); index++) {
++            MercenarySnapshot snapshot = NIGHT_SNAPSHOT.get(index);
++            encoded.put(String.format(Locale.ROOT, "%04d", index),
++                    snapshot.kind().id() + "|" + snapshot.level() + "|" + snapshot.kills());
++        }
++        snapshotData.replace(encoded);
++    }
++
+     private record MercenarySnapshot(MercenaryClass kind, int level, int kills) {}
+ 
+     private static BlockPos safeSpawn(ServerLevel level, BlockPos origin) {
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidLootSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidLootSystem.java
+index 4a20478b..35d9e7f2 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidLootSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidLootSystem.java
+@@ -18,26 +18,37 @@ public final class VillageRaidLootSystem {
+     private static final Map<VillageEnemyArchetypeSystem.Archetype, SaleLoot> SALE_LOOT =
+             new EnumMap<>(VillageEnemyArchetypeSystem.Archetype.class);
+     static {
+-        put(VillageEnemyArchetypeSystem.Archetype.GRUNT, Items.BONE, "금 간 전열병 송곳니", ChatFormatting.GRAY);
+-        put(VillageEnemyArchetypeSystem.Archetype.RUSHER, Items.FLINT, "척후병의 닳은 단검 조각", ChatFormatting.GRAY);
+-        put(VillageEnemyArchetypeSystem.Archetype.BULWARK, Items.IRON_NUGGET, "찌그러진 방패 고리", ChatFormatting.WHITE);
+-        put(VillageEnemyArchetypeSystem.Archetype.SAPPER, Items.GUNPOWDER, "폭파병 화약 주머니", ChatFormatting.GOLD);
+-        put(VillageEnemyArchetypeSystem.Archetype.MARKSMAN, Items.FEATHER, "사수의 찢긴 깃", ChatFormatting.WHITE);
+-        put(VillageEnemyArchetypeSystem.Archetype.SHIELDBREAKER, Items.IRON_NUGGET, "파쇄병 도끼날 파편", ChatFormatting.DARK_GRAY);
+-        put(VillageEnemyArchetypeSystem.Archetype.HEXER, Items.SPIDER_EYE, "응고된 저주 마력낭", ChatFormatting.DARK_PURPLE);
+-        put(VillageEnemyArchetypeSystem.Archetype.WAR_CHANTER, Items.GOAT_HORN, "전쟁 고수의 갈라진 뿔", ChatFormatting.GOLD);
+-        put(VillageEnemyArchetypeSystem.Archetype.NECROMANCER, Items.COAL, "사령술사의 검은 뼛가루", ChatFormatting.DARK_PURPLE);
+-        put(VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER, Items.AMETHYST_SHARD, "탑 사냥꾼의 조준 렌즈", ChatFormatting.AQUA);
+-        put(VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST, Items.HEAVY_CORE, "공성 야수의 파쇄핵", ChatFormatting.LIGHT_PURPLE);
+-        put(VillageEnemyArchetypeSystem.Archetype.IRON_WARLORD, Items.NETHERITE_SCRAP, "철의 전쟁군주 휘장", ChatFormatting.GOLD);
+-        put(VillageEnemyArchetypeSystem.Archetype.PLAGUE_ARCHON, Items.ENDER_PEARL, "역병 대주교의 뒤틀린 심장", ChatFormatting.DARK_PURPLE);
+-        put(VillageEnemyArchetypeSystem.Archetype.DREAD_KNIGHT, Items.ECHO_SHARD, "공포 기사의 암흑 갑편", ChatFormatting.DARK_AQUA);
++        put(VillageEnemyArchetypeSystem.Archetype.GRUNT, Items.BONE, "금 간 전열병 송곳니", ChatFormatting.GRAY, 3);
++        put(VillageEnemyArchetypeSystem.Archetype.RUSHER, Items.FLINT, "척후병의 닳은 단검 조각", ChatFormatting.GRAY, 4);
++        put(VillageEnemyArchetypeSystem.Archetype.BULWARK, Items.IRON_NUGGET, "찌그러진 방패 고리", ChatFormatting.WHITE, 6);
++        put(VillageEnemyArchetypeSystem.Archetype.SAPPER, Items.GUNPOWDER, "폭파병 화약 주머니", ChatFormatting.GOLD, 7);
++        put(VillageEnemyArchetypeSystem.Archetype.MARKSMAN, Items.FEATHER, "사수의 찢긴 깃", ChatFormatting.WHITE, 6);
++        put(VillageEnemyArchetypeSystem.Archetype.SHIELDBREAKER, Items.IRON_NUGGET, "파쇄병 도끼날 파편", ChatFormatting.DARK_GRAY, 8);
++        put(VillageEnemyArchetypeSystem.Archetype.HEXER, Items.SPIDER_EYE, "응고된 저주 마력낭", ChatFormatting.DARK_PURPLE, 9);
++        put(VillageEnemyArchetypeSystem.Archetype.WAR_CHANTER, Items.GOAT_HORN, "전쟁 고수의 갈라진 뿔", ChatFormatting.GOLD, 10);
++        put(VillageEnemyArchetypeSystem.Archetype.NECROMANCER, Items.COAL, "사령술사의 검은 뼛가루", ChatFormatting.DARK_PURPLE, 12);
++        put(VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER, Items.AMETHYST_SHARD, "탑 사냥꾼의 조준 렌즈", ChatFormatting.AQUA, 14);
++        put(VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST, Items.HEAVY_CORE, "공성 야수의 파쇄핵", ChatFormatting.LIGHT_PURPLE, 28);
++        put(VillageEnemyArchetypeSystem.Archetype.IRON_WARLORD, Items.NETHERITE_SCRAP, "철의 전쟁군주 휘장", ChatFormatting.GOLD, 34);
++        put(VillageEnemyArchetypeSystem.Archetype.PLAGUE_ARCHON, Items.ENDER_PEARL, "역병 대주교의 뒤틀린 심장", ChatFormatting.DARK_PURPLE, 38);
++        put(VillageEnemyArchetypeSystem.Archetype.DREAD_KNIGHT, Items.ECHO_SHARD, "공포 기사의 암흑 갑편", ChatFormatting.DARK_AQUA, 42);
+     }
+ 
+     private VillageRaidLootSystem() {}
+     private static void put(VillageEnemyArchetypeSystem.Archetype type, Item item,
+-                            String name, ChatFormatting color) {
+-        SALE_LOOT.put(type, new SaleLoot(item, name, color));
++                            String name, ChatFormatting color, int value) {
++        SALE_LOOT.put(type, new SaleLoot(item, name, color, Math.max(1, value)));
++    }
++
++    public static int saleValue(ItemStack stack) {
++        if (stack == null || stack.isEmpty()) return 0;
++        Component custom = stack.get(DataComponents.CUSTOM_NAME);
++        if (custom == null) return 0;
++        String plain = ChatFormatting.stripFormatting(custom.getString());
++        for (SaleLoot loot : SALE_LOOT.values()) {
++            if (("[판매용] " + loot.name()).equals(plain)) return loot.value();
++        }
++        return 0;
+     }
+ 
+     public static void handleDrops(LivingDropsEvent event) {
+@@ -80,5 +91,5 @@ public final class VillageRaidLootSystem {
+     private static void give(ServerPlayer player, ItemStack stack) {
+         if (!player.addItem(stack)) player.drop(stack, false);
+     }
+-    private record SaleLoot(Item item, String name, ChatFormatting color) {}
++    private record SaleLoot(Item item, String name, ChatFormatting color, int value) {}
+ }
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java
+index b811b816..13f8327b 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java
+@@ -11,6 +11,7 @@ import net.minecraft.world.effect.MobEffects;
+ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.entity.EntitySpawnReason;
+ import net.minecraft.world.entity.Mob;
++import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.Vec3;
+ import net.minecraft.world.scores.PlayerTeam;
+ import net.minecraft.world.scores.TeamColor;
+@@ -52,6 +53,7 @@ public final class VillageRaidSystem {
+     private VillageRaidSystem() {}
+ 
+     public static void resetTransientState(MinecraftServer server) {
++        discardTaggedRaidEnemies(server);
+         clearState();
+         ensureRaidTeam(server);
+         if (VillageCouncilState.currentPhase() == VillageTimePhase.NIGHT
+@@ -456,7 +458,10 @@ public final class VillageRaidSystem {
+         while (iterator.hasNext()) {
+             UUID uuid = iterator.next();
+             Entity entity = server.overworld().getEntity(uuid);
+-            if (entity != null && !entity.isAlive()) {
++            if (entity == null) {
++                releaseEnemy(server, uuid, null);
++                iterator.remove();
++            } else if (!entity.isAlive()) {
+                 releaseEnemy(server, uuid, entity);
+                 iterator.remove();
+             }
+@@ -483,6 +488,27 @@ public final class VillageRaidSystem {
+         VillageUiService.openRepairSummaryForAll(server);
+     }
+ 
++    public static boolean shouldDiscardStaleRaidEnemy(Mob mob) {
++        return mob != null
++                && mob.entityTags().contains(RAID_ENEMY_TAG)
++                && !ACTIVE_ENEMIES.contains(mob.getUUID())
++                && !VillageWorldSystem.isAllowedGameMob(mob);
++    }
++
++    private static void discardTaggedRaidEnemies(MinecraftServer server) {
++        if (server == null) return;
++        ServerLevel level = server.overworld();
++        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
++        if (center == null) return;
++        double radius = VillageWorldSystem.BATTLEFIELD_RADIUS + 160.0;
++        AABB area = new AABB(center).inflate(radius, 128.0, radius);
++        for (Mob mob : level.getEntitiesOfClass(Mob.class, area,
++                entity -> entity.entityTags().contains(RAID_ENEMY_TAG))) {
++            releaseEnemy(server, mob.getUUID(), mob);
++            mob.discard();
++        }
++    }
++
+     private static void discardEnemies(MinecraftServer server) {
+         for (UUID id : new HashSet<>(ACTIVE_ENEMIES)) {
+             Entity entity = server.overworld().getEntity(id);
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRelicScreen.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRelicScreen.java
+index 7c0b5771..aa04d628 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRelicScreen.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRelicScreen.java
+@@ -60,7 +60,7 @@ public final class VillageRelicScreen extends Screen {
+ 
+         List<FormattedCharSequence> summary = font.split(Component.literal(plain(payload.body())),
+                 Math.max(120, layout.width() - 48));
+-        int summaryLines = Math.min(4, summary.size());
++        int summaryLines = Math.min(7, summary.size());
+         int y = layout.top() + 30;
+         for (int index = 0; index < summaryLines; index++) {
+             graphics.text(font, summary.get(index), layout.left() + 18, y, index == 0 ? GOLD : MUTED, false);
+@@ -144,7 +144,7 @@ public final class VillageRelicScreen extends Screen {
+     }
+ 
+     private Layout layout() {
+-        int panelWidth = Math.min(820, Math.max(300, width - 16));
++        int panelWidth = Math.max(120, Math.min(820, width - 16));
+         int panelHeight = Math.min(height - 12, Math.max(230, height - 22));
+         return new Layout((width - panelWidth) / 2, (height - panelHeight) / 2, panelWidth, panelHeight);
+     }
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRelicSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRelicSystem.java
+index 106b8bbb..e9ded0a4 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRelicSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRelicSystem.java
+@@ -12,6 +12,7 @@ import java.util.UUID;
+ 
+ public final class VillageRelicSystem {
+     private static final String SEP = "\u001F";
++    private static final String OFFER_SEP = ";";
+     private static final Map<UUID, Integer> OWNED = new LinkedHashMap<>();
+     private static final Map<UUID, String> PENDING = new LinkedHashMap<>();
+     private static VillageRelicData savedData;
+@@ -32,10 +33,12 @@ public final class VillageRelicSystem {
+         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+             List<Relic> choices = choicesFor(player, day);
+             if (choices.isEmpty()) continue;
+-            PENDING.put(player.getUUID(), choices.stream().map(Relic::id)
+-                    .reduce((first, second) -> first + "," + second).orElse(""));
++            String encoded = choices.stream().map(Relic::id)
++                    .reduce((first, second) -> first + "," + second).orElse("");
++            String previous = PENDING.getOrDefault(player.getUUID(), "");
++            PENDING.put(player.getUUID(), previous.isBlank() ? encoded : previous + OFFER_SEP + encoded);
+             persist();
+-            openChoice(player);
++            if (previous.isBlank()) openChoice(player);
+         }
+     }
+ 
+@@ -76,11 +79,15 @@ public final class VillageRelicSystem {
+         if (!choices.contains(relic)) return "현재 제시된 유물이 아닙니다.";
+         int mask = OWNED.getOrDefault(player.getUUID(), 0);
+         OWNED.put(player.getUUID(), sanitizeMask(mask | relic.bit()));
+-        PENDING.remove(player.getUUID());
++        consumePendingOffer(player.getUUID());
+         persist();
+         return relic.displayName() + " 획득 · " + relic.description();
+     }
+ 
++    public static synchronized boolean hasPendingChoice(ServerPlayer player) {
++        return player != null && !pendingChoices(player).isEmpty();
++    }
++
+     public static synchronized boolean has(ServerPlayer player, Relic relic) {
+         return player != null && relic != null
+                 && (OWNED.getOrDefault(player.getUUID(), 0) & relic.bit()) != 0;
+@@ -175,10 +182,14 @@ public final class VillageRelicSystem {
+     private static List<Relic> choicesFor(ServerPlayer player, int day) {
+         List<Relic> available = new ArrayList<>();
+         int mask = OWNED.getOrDefault(player.getUUID(), 0);
+-        for (Relic relic : Relic.values()) if ((mask & relic.bit()) == 0) available.add(relic);
++        java.util.Set<Relic> reserved = pendingRelics(player.getUUID());
++        for (Relic relic : Relic.values()) {
++            if ((mask & relic.bit()) == 0 && !reserved.contains(relic)) available.add(relic);
++        }
+         if (available.isEmpty()) return List.of();
+         List<Relic> result = new ArrayList<>();
+-        int seed = player.getUUID().hashCode() * 31 + day * 17 + Integer.bitCount(mask) * 13;
++        int seed = player.getUUID().hashCode() * 31 + day * 17
++                + Integer.bitCount(mask) * 13 + reserved.size() * 19;
+         while (!available.isEmpty() && result.size() < 3) {
+             int index = Math.floorMod(seed + result.size() * 37, available.size());
+             result.add(available.remove(index));
+@@ -187,15 +198,45 @@ public final class VillageRelicSystem {
+     }
+ 
+     private static List<Relic> pendingChoices(ServerPlayer player) {
++        if (player == null) return List.of();
+         String raw = PENDING.getOrDefault(player.getUUID(), "");
++        if (raw.isBlank()) return List.of();
++        String first = raw.split(OFFER_SEP, 2)[0];
+         List<Relic> result = new ArrayList<>();
+-        for (String id : raw.split(",")) {
++        for (String id : first.split(",")) {
+             Relic relic = Relic.fromId(id);
+             if (relic != null) result.add(relic);
+         }
+         return result;
+     }
+ 
++    private static java.util.Set<Relic> pendingRelics(UUID playerId) {
++        java.util.Set<Relic> result = java.util.EnumSet.noneOf(Relic.class);
++        String raw = PENDING.getOrDefault(playerId, "");
++        if (raw.isBlank()) return result;
++        for (String offer : raw.split(OFFER_SEP)) {
++            for (String id : offer.split(",")) {
++                Relic relic = Relic.fromId(id);
++                if (relic != null) result.add(relic);
++            }
++        }
++        return result;
++    }
++
++    private static void consumePendingOffer(UUID playerId) {
++        String raw = PENDING.getOrDefault(playerId, "");
++        if (raw.isBlank()) {
++            PENDING.remove(playerId);
++            return;
++        }
++        int separator = raw.indexOf(OFFER_SEP);
++        if (separator < 0 || separator + OFFER_SEP.length() >= raw.length()) {
++            PENDING.remove(playerId);
++        } else {
++            PENDING.put(playerId, raw.substring(separator + OFFER_SEP.length()));
++        }
++    }
++
+     private static int sanitizeMask(int value) {
+         int validBits = (1 << Relic.values().length) - 1;
+         return value & validBits;
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRespawnSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRespawnSystem.java
+index c92d61e5..42f2f8c4 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRespawnSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRespawnSystem.java
+@@ -9,7 +9,7 @@ import net.minecraft.world.effect.MobEffectInstance;
+ import net.minecraft.world.effect.MobEffects;
+ import net.minecraft.world.level.GameType;
+ import net.minecraft.world.phys.Vec3;
+-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
++import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+ 
+ import java.util.HashMap;
+ import java.util.Iterator;
+@@ -37,26 +37,19 @@ public final class VillageRespawnSystem {
+         }
+     }
+ 
+-    public static boolean handleIncomingDamage(LivingIncomingDamageEvent event) {
+-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+-            return false;
+-        }
++    public static boolean handleFinalDamage(LivingDamageEvent.Pre event) {
++        if (!(event.getEntity() instanceof ServerPlayer player)) return false;
+         if (isDowned(player)) {
+-            event.setAmount(0.0f);
++            event.setNewDamage(0.0f);
+             return true;
+         }
+-
+         float effectiveHealth = player.getHealth() + Math.max(0.0f, player.getAbsorptionAmount());
+-        if (event.getAmount() < effectiveHealth) {
+-            return false;
+-        }
++        if (event.getNewDamage() < effectiveHealth) return false;
+ 
+         MinecraftServer server = player.level().getServer();
+-        if (server == null) {
+-            return false;
+-        }
++        if (server == null) return false;
+ 
+-        event.setAmount(0.0f);
++        event.setNewDamage(0.0f);
+         player.setAbsorptionAmount(0.0f);
+         player.setHealth(1.0f);
+         player.setRemainingFireTicks(0);
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRoleAbilitySystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRoleAbilitySystem.java
+index 6df92192..64ace5ab 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRoleAbilitySystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRoleAbilitySystem.java
+@@ -479,7 +479,7 @@ public final class VillageRoleAbilitySystem {
+                     if (now % 20L == 0L) play(level, area.center(), SoundEvents.GLASS_HIT, 0.55f, 0.62f);
+                 }
+                 case TORNADO -> {
+-                    Vec3 next = area.center().add(horizontalLook(owner).scale(0.24));
++                    Vec3 next = area.center().add(horizontalLook(owner).scale(1.20));
+                     area.moveTo(next);
+                     for (Mob target : targetsNear(level, owner, next, area.radius(), 48)) {
+                         Vec3 pull = next.subtract(target.position());
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRoleSkillSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRoleSkillSystem.java
+index 24b404e8..c7b77db1 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRoleSkillSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRoleSkillSystem.java
+@@ -366,7 +366,8 @@ public final class VillageRoleSkillSystem {
+ 
+     private static int effectiveCooldownSeconds(
+             ServerPlayer player, VillageRole role, ActiveSkill skill) {
+-        return Math.max(7,
++        int minimum = Math.max(2, Math.round(skill.baseCooldownSeconds() * 0.20f));
++        return Math.max(minimum,
+                 skill.baseCooldownSeconds()
+                         - VillageProgressionSystem.skillCooldownReductionSeconds(player)
+                         - VillageSkillTreeSystem.cooldownReductionSeconds(player)
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillEffectEntity.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillEffectEntity.java
+index f5b9868b..ee84d594 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillEffectEntity.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillEffectEntity.java
+@@ -90,6 +90,11 @@ public final class VillageSkillEffectEntity extends Entity {
+             return;
+         }
+         Entity owner = ownerEntity();
++        if ("arcanist_tornado".equals(kind()) && owner != null && owner.isAlive()) {
++            Vec3 look = owner.getLookAngle();
++            Vec3 horizontal = new Vec3(look.x, 0.0, look.z);
++            if (horizontal.lengthSqr() > 1.0E-6) setDirection(horizontal.normalize());
++        }
+         if (followsOwner() && owner != null && owner.isAlive()) {
+             if (tracksOwnerLook()) {
+                 Vec3 look = owner.getLookAngle();
+@@ -121,7 +126,7 @@ public final class VillageSkillEffectEntity extends Entity {
+             case "vanguard_spin", "vanguard_rally", "vanguard_blade_charge",
+                     "vanguard_slam_charge", "ranger_rapid", "ranger_focus",
+                     "ranger_energy_charge", "luminar_heal_cast", "luminar_cleanse_cast",
+-                    "luminar_healing_field", "luminar_miracle_cast",
++                    "luminar_miracle_cast",
+                     "warden_charge_cast", "warden_taunt", "warden_fortress", "warden_aegis" -> true;
+             default -> false;
+         };
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillTestSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillTestSystem.java
+index ef5c0130..771cf0f1 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillTestSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageSkillTestSystem.java
+@@ -61,6 +61,20 @@ public final class VillageSkillTestSystem {
+         return player != null && ENABLED.contains(player.getUUID());
+     }
+ 
++    public static boolean recoverStrandedAfterRestart(ServerPlayer player) {
++        if (player == null || isEnabled(player) || !(player.level() instanceof ServerLevel)) return false;
++        BlockPos arena = arenaCenter();
++        if (arena == null) return false;
++        BlockPos pos = player.blockPosition();
++        if (Math.abs(pos.getX() - arena.getX()) > ARENA_RADIUS + 4
++                || Math.abs(pos.getZ() - arena.getZ()) > ARENA_RADIUS + 4
++                || Math.abs(pos.getY() - arena.getY()) > 18) return false;
++        String result = VillageWorldSystem.returnToVillage(player);
++        player.sendSystemMessage(Component.literal(
++                "§e[시험장 복구] §f서버 재시작으로 종료된 시험 모드를 감지해 마을로 복귀했습니다. " + result));
++        return true;
++    }
++
+     public static String enable(ServerPlayer player) {
+         if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 시험장을 열 수 없습니다.";
+         if (VillageCouncilState.currentPhase() != VillageTimePhase.DAY || VillageRaidSystem.isRaidLocked()) {
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageTradingSystem.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageTradingSystem.java
+index 16145a24..a752226b 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageTradingSystem.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageTradingSystem.java
+@@ -89,13 +89,16 @@ public final class VillageTradingSystem {
+     }
+ 
+     private static boolean isSaleOnlyLoot(ItemStack stack) {
++        if (VillageRaidLootSystem.saleValue(stack) > 0) return true;
+         String name = plainName(stack);
+-        return name.startsWith("[판매용] ")
++        return NAMED_PRICES.containsKey(name)
+                 || (stack.get(DataComponents.CUSTOM_NAME) == null && LEGACY_PRICES.containsKey(stack.getItem()));
+     }
+ 
+     private static int unitValue(ItemStack stack) {
+         if (stack == null || stack.isEmpty()) return 0;
++        int raidValue = VillageRaidLootSystem.saleValue(stack);
++        if (raidValue > 0) return raidValue;
+         String name = plainName(stack);
+         Integer named = NAMED_PRICES.get(name);
+         if (named != null) return named;
+diff --git a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java
+index f86863a7..bbd560b3 100644
+--- a/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java
++++ b/projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java
+@@ -597,7 +597,8 @@ public final class VillageUiController {
+         if (action.startsWith("relic_select:")) {
+             String result = VillageRelicSystem.select(player, action.substring(13));
+             player.sendSystemMessage(Component.literal("§d" + result));
+-            VillageRelicSystem.openCollection(player);
++            if (VillageRelicSystem.hasPendingChoice(player)) VillageRelicSystem.openChoice(player);
++            else VillageRelicSystem.openCollection(player);
+             return true;
+         }
+ 
+diff --git a/projects/village-guardians/tools/test_runtime_safety.py b/projects/village-guardians/tools/test_runtime_safety.py
+index 992d9e07..920addf8 100644
+--- a/projects/village-guardians/tools/test_runtime_safety.py
++++ b/projects/village-guardians/tools/test_runtime_safety.py
+@@ -89,7 +89,7 @@ def main() -> None:
+     assert "renderOfferList" in shop_ui and "renderOfferDetail" in shop_ui
+     assert "level < offer.requiredLevel()" not in shop
+     assert "requiredDay" in shop
+-    assert "VillageRelicSystem" in shop
++    assert "VillageRelicSystem" not in shop
+ 
+     assert '"open_status"' in inventory
+     assert '"open_skill_tree"' in inventory
+diff --git a/projects/village-guardians/tools/test_v01710_skill_input.py b/projects/village-guardians/tools/test_v01710_skill_input.py
+index 954e814f..8c980cc7 100644
+--- a/projects/village-guardians/tools/test_v01710_skill_input.py
++++ b/projects/village-guardians/tools/test_v01710_skill_input.py
+@@ -16,7 +16,7 @@ def main() -> None:
+     controller = read("VillageUiController.java")
+     screen = read("VillageFacilityScreen.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert "@EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)" in keys
+     assert "registerKeyMappings(RegisterKeyMappingsEvent event)" in keys
+     assert 'consume(ROLE_SKILL_ONE, "use_skill:0")' in keys
+diff --git a/projects/village-guardians/tools/test_v01711_hud_skills.py b/projects/village-guardians/tools/test_v01711_hud_skills.py
+index 88eecc0b..86afff31 100644
+--- a/projects/village-guardians/tools/test_v01711_hud_skills.py
++++ b/projects/village-guardians/tools/test_v01711_hud_skills.py
+@@ -16,7 +16,7 @@ def main() -> None:
+     client = read("VillageClientUi.java")
+     screen = read("VillageSkillTestScreen.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert "hudSlotText(player, 0)" in hud and "hudSlotText(player, 1)" in hud
+     assert "cooldownRemainingSeconds" in skills and "cooldownProgress" in skills
+     assert "§a준비" in skills and "■" in skills and "□" in skills
+diff --git a/projects/village-guardians/tools/test_v01711_skill_hud_ui.py b/projects/village-guardians/tools/test_v01711_skill_hud_ui.py
+index 71ce123c..e6b36073 100644
+--- a/projects/village-guardians/tools/test_v01711_skill_hud_ui.py
++++ b/projects/village-guardians/tools/test_v01711_skill_hud_ui.py
+@@ -20,7 +20,7 @@ def main() -> None:
+     renderer = read("VillageSkillEffectRenderer.java")
+     mesh = read("VillageSkillMeshLibrary.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert "cooldownRemainingSeconds" in role
+     assert "cooldownProgress" in role
+     assert "hudSlotText" in role
+diff --git a/projects/village-guardians/tools/test_v01712_role_abilities.py b/projects/village-guardians/tools/test_v01712_role_abilities.py
+index 4e36f189..62cebf37 100644
+--- a/projects/village-guardians/tools/test_v01712_role_abilities.py
++++ b/projects/village-guardians/tools/test_v01712_role_abilities.py
+@@ -20,7 +20,7 @@ def main() -> None:
+     role = read("VillageRole.java")
+     keys = read("VillageClientKeys.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     expected_names = [
+         "회전 검무", "전투 고양", "검기 난무", "천붕 강하",
+         "신속 삼연사", "추적 도탄", "천공 화살비", "성멸 대궁",
+diff --git a/projects/village-guardians/tools/test_v01713_effects_and_keys.py b/projects/village-guardians/tools/test_v01713_effects_and_keys.py
+index 2f1673fd..458551dd 100644
+--- a/projects/village-guardians/tools/test_v01713_effects_and_keys.py
++++ b/projects/village-guardians/tools/test_v01713_effects_and_keys.py
+@@ -15,7 +15,7 @@ def main() -> None:
+     ability = read("VillageRoleAbilitySystem.java")
+     effects = read("VillageSkillEffectSystem.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert "VANILLA_RESERVED" in keys and "migrateBindings" in keys
+     assert "GLFW.GLFW_KEY_Z" in keys and "GLFW.GLFW_KEY_X" in keys and "GLFW.GLFW_KEY_V" in keys
+     assert "!used.add(value)" in keys
+diff --git a/projects/village-guardians/tools/test_v01714_custom_mesh_effects.py b/projects/village-guardians/tools/test_v01714_custom_mesh_effects.py
+index 600d5acf..e767cf98 100644
+--- a/projects/village-guardians/tools/test_v01714_custom_mesh_effects.py
++++ b/projects/village-guardians/tools/test_v01714_custom_mesh_effects.py
+@@ -23,7 +23,7 @@ def main() -> None:
+     network = read("VillageNetwork.java")
+     main_mod = read("VillageGuardians.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert '"회전 검무"' in role
+     assert '"회전 칼날"' not in role
+     assert "VillageSkillEffectEntities.register(modEventBus)" in main_mod
+diff --git a/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py b/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py
+index ed72c8f6..18566ea9 100644
+--- a/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py
++++ b/projects/village-guardians/tools/test_v01715_skill_combat_visuals.py
+@@ -21,7 +21,7 @@ def main() -> None:
+     overlay = read("VillageSkillHudOverlay.java")
+     network = read("VillageNetwork.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert "sendSkillMotion(level, player, \"vanguard_spin\"" in abilities
+     assert "rotateY(radians)" in client
+     assert "event.getRenderState().bodyRot = 0.0f" in client
+diff --git a/projects/village-guardians/tools/test_v01716_ranger_activation.py b/projects/village-guardians/tools/test_v01716_ranger_activation.py
+index 0fa6f73f..ad618542 100644
+--- a/projects/village-guardians/tools/test_v01716_ranger_activation.py
++++ b/projects/village-guardians/tools/test_v01716_ranger_activation.py
+@@ -21,7 +21,7 @@ def main() -> None:
+     hud = read("VillageSkillHudOverlay.java")
+     skills = read("VillageRoleSkillSystem.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+ 
+     # All four ranger actives are queued and consumed by a real arrow spawn.
+     assert "ARROW_RAIN_READY" in ability
+diff --git a/projects/village-guardians/tools/test_v01717_range_homing.py b/projects/village-guardians/tools/test_v01717_range_homing.py
+index 9f479114..85b73062 100644
+--- a/projects/village-guardians/tools/test_v01717_range_homing.py
++++ b/projects/village-guardians/tools/test_v01717_range_homing.py
+@@ -16,7 +16,7 @@ def main() -> None:
+     mesh = text("VillageSkillMeshLibrary.java")
+     guardians = text("VillageGuardians.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+ 
+     assert "LivingEntityUseItemEvent" not in guardians
+     assert "handleUseItemTick" not in ability
+diff --git a/projects/village-guardians/tools/test_v01718_bow_shortcuts.py b/projects/village-guardians/tools/test_v01718_bow_shortcuts.py
+index 26a33c3f..9bff51ef 100644
+--- a/projects/village-guardians/tools/test_v01718_bow_shortcuts.py
++++ b/projects/village-guardians/tools/test_v01718_bow_shortcuts.py
+@@ -27,7 +27,7 @@ def main() -> None:
+     skills = read("VillageRoleSkillSystem.java")
+     lang = (ROOT / "src/main/resources/assets/villageguardians/lang/ko_kr.json").read_text(encoding="utf-8")
+ 
+-    check("v0.17.19 version is active", "mod_version=0.18.1-alpha.1" in props)
++    check("v0.18.2-alpha.1 version is active", "mod_version=0.18.2-alpha.1" in props)
+     check(
+         "신속 삼연사는 실제 활 사용을 조기에 끝내고 완충 발사를 보장합니다",
+         all(token in ability for token in [
+diff --git a/projects/village-guardians/tools/test_v01719_access_content.py b/projects/village-guardians/tools/test_v01719_access_content.py
+index e8597bf2..daa2f788 100644
+--- a/projects/village-guardians/tools/test_v01719_access_content.py
++++ b/projects/village-guardians/tools/test_v01719_access_content.py
+@@ -30,7 +30,7 @@ def main() -> None:
+     mercenaries = read("VillageMercenarySystem.java")
+     towers = read("VillageTowerSpecializationSystem.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+ 
+     assert "fireOrbContacts" in ability
+     assert "target.getBoundingBox().inflate(padding).contains(position)" in ability
+diff --git a/projects/village-guardians/tools/test_v0174_ui_safety.py b/projects/village-guardians/tools/test_v0174_ui_safety.py
+index 6a7b0271..fb3ccdcf 100644
+--- a/projects/village-guardians/tools/test_v0174_ui_safety.py
++++ b/projects/village-guardians/tools/test_v0174_ui_safety.py
+@@ -19,7 +19,7 @@ def main() -> None:
+     common_tree = read("VillageSkillTreeScreen.java")
+     role_tree = read("VillageRoleProgressScreen.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert "minecraft.gui.screen() != null" in keys
+     assert "private static void drain(KeyMapping mapping)" in keys
+     assert "minecraft.getConnection() == null" in keys
+diff --git a/projects/village-guardians/tools/test_v0175_gameplay_ui.py b/projects/village-guardians/tools/test_v0175_gameplay_ui.py
+index 82859d2b..5900395f 100644
+--- a/projects/village-guardians/tools/test_v0175_gameplay_ui.py
++++ b/projects/village-guardians/tools/test_v0175_gameplay_ui.py
+@@ -24,7 +24,7 @@ def main() -> None:
+     respawn = read("VillageRespawnSystem.java")
+     inventory = read("VillageInventoryPanel.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert "currentOffers(int day)" in shop and "rotatingOffers" in shop
+     assert 'EQUIPMENT("장비")' in shop and 'ARCANE_FOCUS("arcane_focus"' in shop
+     assert "Category.EQUIPMENT, Items.BLAZE_ROD" in shop
+diff --git a/projects/village-guardians/tools/test_v0177_gameplay.py b/projects/village-guardians/tools/test_v0177_gameplay.py
+index 66ac4bfa..5d509ee2 100644
+--- a/projects/village-guardians/tools/test_v0177_gameplay.py
++++ b/projects/village-guardians/tools/test_v0177_gameplay.py
+@@ -3,7 +3,7 @@ ROOT = Path(__file__).resolve().parents[1]
+ JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
+ def read(name): return (JAVA / name).read_text(encoding="utf-8")
+ def main():
+-    assert "mod_version=0.18.1-alpha.1" in (ROOT / "gradle.properties").read_text()
++    assert "mod_version=0.18.2-alpha.1" in (ROOT / "gradle.properties").read_text()
+     rarity, ui = read("VillageEquipmentRaritySystem.java"), read("VillageUiController.java")
+     common, data, tree_ui = read("VillageSkillTreeSystem.java"), read("VillageSkillTreeData.java"), read("VillageSkillTreeScreen.java")
+     raid, enemy = read("VillageRaidSystem.java"), read("VillageEnemyArchetypeSystem.java")
+@@ -16,7 +16,7 @@ def main():
+     assert "Codec.LONG" in data and "spent_points_v2" in data
+     assert 'node.pointCost() + "P"' in tree_ui
+     assert "isEnemyIgnoredElevation" in read("VillageLocationRules.java")
+-    assert "entity != null && !entity.isAlive()" in raid
++    assert "if (entity == null)" in raid and "shouldDiscardStaleRaidEnemy" in raid and "entityTags()" in raid
+     assert "if (VillageProgressionSystem.isGameOver()) return;" in raid
+     assert "setPersistenceRequired" in enemy
+     assert "List<WavePreview>" in intel and "previewArchetype" in intel
+diff --git a/projects/village-guardians/tools/test_v0178_gameplay.py b/projects/village-guardians/tools/test_v0178_gameplay.py
+index 56e91812..c658c5d5 100644
+--- a/projects/village-guardians/tools/test_v0178_gameplay.py
++++ b/projects/village-guardians/tools/test_v0178_gameplay.py
+@@ -18,7 +18,7 @@ def main() -> None:
+     visuals = read("VillageSkillEffectSystem.java")
+     descriptions = read("VillageActionDescriptions.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     for branch in ("power", "guard", "support", "ranged", "mobility"):
+         assert tree.count(f'("{branch}_') == 10
+         assert f'{branch.upper()}_10' in tree
+diff --git a/projects/village-guardians/tools/test_v0179_skill_test_box.py b/projects/village-guardians/tools/test_v0179_skill_test_box.py
+index 0067bc33..bad77279 100644
+--- a/projects/village-guardians/tools/test_v0179_skill_test_box.py
++++ b/projects/village-guardians/tools/test_v0179_skill_test_box.py
+@@ -15,7 +15,7 @@ def main() -> None:
+     screen = read("VillageFacilityScreen.java")
+     guard = read("VillageGuardians.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+     assert "TEST_ROLES" in test and "selectedRole" in test and "selectRole" in test
+     assert "실제 직업과 성장 데이터는 바뀌지 않습니다" in test
+     assert "roleManagementBoxPosition" in test and "skillManagementBoxPosition" in test
+diff --git a/projects/village-guardians/tools/test_v0180_content_scaling.py b/projects/village-guardians/tools/test_v0180_content_scaling.py
+index e9910d11..f5de9d7a 100644
+--- a/projects/village-guardians/tools/test_v0180_content_scaling.py
++++ b/projects/village-guardians/tools/test_v0180_content_scaling.py
+@@ -37,7 +37,7 @@ def main() -> None:
+     enemies = read("VillageEnemyArchetypeSystem.java")
+     audit = (ROOT / "CONTENT-AUDIT-v0.18.0.md").read_text(encoding="utf-8")
+ 
+-    check("v0.18.0-alpha.1 version is active", "mod_version=0.18.1-alpha.1" in props)
++    check("v0.18.2-alpha.1 version is active", "mod_version=0.18.2-alpha.1" in props)
+ 
+     check(
+         "실제 기본키가 Z 기술1·X 기술2·V 빠른 통신·H/J/K 관리로 일치합니다",
+diff --git a/projects/village-guardians/tools/test_v0181_relics.py b/projects/village-guardians/tools/test_v0181_relics.py
+index a95f56dc..f661d59a 100644
+--- a/projects/village-guardians/tools/test_v0181_relics.py
++++ b/projects/village-guardians/tools/test_v0181_relics.py
+@@ -19,7 +19,7 @@ def main() -> None:
+     status = read("VillageStatusScreen.java")
+     screen = read("VillageRelicScreen.java")
+ 
+-    assert "mod_version=0.18.1-alpha.1" in props
++    assert "mod_version=0.18.2-alpha.1" in props
+ 
+     for token in [
+         "result *= 1.15f", "result *= 1.18f", "result *= 0.86f",
+@@ -52,7 +52,7 @@ def main() -> None:
+     assert "columns = contentRight - contentLeft >= 610 ? 2 : 1" in screen
+     assert "enableScissor" in screen and "mouseScrolled" in screen
+     assert "CARD_HEIGHT = 68" in screen and "fit(" in screen
+-    assert "Math.min(4, summary.size())" in screen
++    assert "Math.min(7, summary.size())" in screen
+     assert "actionSpace = action.isBlank() ? 0 : 34" in status
+     assert "buttonWidth = Math.min(220" in status
+     print("[PASS] 유물 UI는 좁은 화면 1열·넓은 화면 2열·스크롤·텍스트 제한으로 넘침을 방지합니다")
+diff --git a/projects/village-guardians/tools/verify_jar.py b/projects/village-guardians/tools/verify_jar.py
+index 75e48be5..2d30ca70 100644
+--- a/projects/village-guardians/tools/verify_jar.py
++++ b/projects/village-guardians/tools/verify_jar.py
+@@ -144,7 +144,7 @@ def main() -> None:
+     print("[PASS] Read-only status UI contains no generic action selector")
+     print("[PASS] Facility repair and upgrade are available at local terminals and town hall")
+     print("[PASS] Roof signatures migrate to front-facing facade marks")
+-    print("[PASS] Ten regular enemy roles, four bosses and eight wave traits are present")
++    print("[PASS] Ten regular enemy roles, four bosses and twelve wave traits are present")
+     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
+     print("[PASS] Twelve persistent tower branches alter attacks and world silhouettes")
+     print("[PASS] Twenty active skills use the non-particle custom-mesh effect engine")

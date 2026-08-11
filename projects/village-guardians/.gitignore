@@ -6,3 +6,5 @@ run-data/
 .idea/
 *.iml
 *.log
+tools/__pycache__/
+*.pyc
