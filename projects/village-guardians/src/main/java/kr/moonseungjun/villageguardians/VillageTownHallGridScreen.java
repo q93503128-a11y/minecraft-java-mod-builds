@@ -12,27 +12,43 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Wide town-hall dashboard: navigation is one click, permanent role changes require confirmation. */
+/**
+ * Compact command-table town hall. Nothing executes from the list itself: the left rail selects,
+ * the right dossier explains, and the bottom actions expose facility use, repair and upgrade separately.
+ */
 public final class VillageTownHallGridScreen extends Screen {
     private static final String SEP = "\u001F";
-    private static final int OVERLAY = 0x70070A0D;
-    private static final int TEXT = 0xFFF1F4F5;
-    private static final int MUTED = 0xFFAAB5BA;
-    private static final int CYAN = 0xFF52D9C2;
-    private static final int GOLD = 0xFFFFC65C;
-    private static final int RED = 0xFFE06E64;
-    private static final int SURFACE = 0xD1131B1F;
-    private static final int SURFACE_HOVER = 0xE51D2A30;
-    private static final int LINE = 0xA34B6873;
+    private static final int OVERLAY = 0x7805090C;
+    private static final int PANEL = 0xF00B1217;
+    private static final int PANEL_2 = 0xE9142027;
+    private static final int PANEL_3 = 0xE91B2A32;
+    private static final int LINE = 0xB04F6873;
+    private static final int TEXT = 0xFFF3F5F5;
+    private static final int MUTED = 0xFFA8B4B9;
+    private static final int CYAN = 0xFF50D9C1;
+    private static final int GOLD = 0xFFF2C35D;
+    private static final int RED = 0xFFE56A64;
+    private static final int GREEN = 0xFF76D39A;
+    private static final int BLUE = 0xFF7AA9E8;
 
     private final String body;
     private final List<RoleCard> roles = new ArrayList<>();
     private final List<FacilityCard> facilities = new ArrayList<>();
+    private Tab tab = Tab.FACILITIES;
+    private int selectedRole;
+    private int selectedFacility;
+    private int listScroll;
 
     public VillageTownHallGridScreen(VillageNetwork.OpenVillageUiPayload payload) {
         super(Component.literal(payload.title()));
         body = plain(payload.body());
         parse(payload);
+        for (int i = 0; i < roles.size(); i++) {
+            if (roles.get(i).current()) {
+                selectedRole = i;
+                break;
+            }
+        }
     }
 
     @Override public boolean isPauseScreen() { return false; }
@@ -45,127 +61,297 @@ public final class VillageTownHallGridScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         Layout layout = layout();
-        VillageUiSafeArea.Rect safe = layout.safe();
-        graphics.text(font, "지휘 회관", safe.left() + 7, safe.top() + 4, GOLD, false);
-        List<FormattedCharSequence> summary = font.split(Component.literal(body), Math.max(80, safe.width() - 18));
-        if (!summary.isEmpty()) graphics.text(font, summary.getFirst(), safe.left() + 7, safe.top() + 20, MUTED, false);
-        graphics.fill(safe.left() + 7, safe.top() + 35, safe.right() - 7, safe.top() + 36, LINE);
-
-        graphics.text(font, "직업 배치", safe.left() + 7, layout.roleTitleY(), CYAN, false);
-        for (int i = 0; i < roles.size(); i++) {
-            Cell c = roleCell(layout, i);
-            RoleCard role = roles.get(i);
-            boolean hovered = inside(mouseX, mouseY, c.x(), c.y(), c.w(), c.h());
-            graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + c.h(), hovered ? SURFACE_HOVER : SURFACE);
-            graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + 2, role.current() ? GOLD : CYAN);
-            VillageQuickChatSafeScreen.drawDiamond(graphics, c.x() + 13, c.y() + 16, 6, 0xCC203036);
-            VillageQuickChatSafeScreen.drawDiamondOutline(graphics, c.x() + 13, c.y() + 16, 6,
-                    role.current() ? GOLD : CYAN);
-            graphics.text(font, fit(font, role.name(), c.w() - 34), c.x() + 27, c.y() + 8,
-                    role.current() ? GOLD : TEXT, false);
-            graphics.text(font, role.current() ? "현재 직업" : "선택 후 확인", c.x() + 8, c.y() + c.h() - 14,
-                    role.current() ? GOLD : CYAN, false);
-        }
-
-        graphics.text(font, "시설 지휘", safe.left() + 7, layout.facilityTitleY(), CYAN, false);
-        for (int i = 0; i < facilities.size(); i++) {
-            Cell c = facilityCell(layout, i);
-            FacilityCard facility = facilities.get(i);
-            boolean hovered = inside(mouseX, mouseY, c.x(), c.y(), c.w(), c.h());
-            graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + c.h(), hovered ? SURFACE_HOVER : SURFACE);
-            graphics.fill(c.x(), c.y(), c.x() + 4, c.y() + c.h(), hovered ? GOLD : CYAN);
-            graphics.text(font, fit(font, facility.name(), c.w() - 18), c.x() + 11, c.y() + 6,
-                    hovered ? GOLD : TEXT, false);
-            graphics.text(font, fit(font, facility.meta(), c.w() - 18), c.x() + 11, c.y() + 20, CYAN, false);
-            if (c.h() >= 53) {
-                graphics.text(font, fit(font, facility.effect(), c.w() - 18), c.x() + 11, c.y() + 35, MUTED, false);
-            }
-            if (facility.maximum() > 0) {
-                int left = c.x() + 11;
-                int right = c.x() + c.w() - 10;
-                int barY = c.y() + c.h() - 9;
-                int fill = left + (right - left) * Math.max(0, Math.min(facility.current(), facility.maximum()))
-                        / Math.max(1, facility.maximum());
-                graphics.fill(left, barY, right, barY + 3, 0xFF39464B);
-                graphics.fill(left, barY, fill, barY + 3,
-                        facility.current() * 3 < facility.maximum() ? RED : CYAN);
-            }
-        }
-        graphics.text(font, "시설 카드를 누르면 해당 기능 화면으로 이동합니다.  ·  ESC 닫기",
-                safe.left() + 4, safe.bottom() - 11, MUTED, false);
+        drawFrame(graphics, layout);
+        drawHeader(graphics, layout, mouseX, mouseY);
+        drawTabs(graphics, layout, mouseX, mouseY);
+        drawList(graphics, layout.list(), mouseX, mouseY);
+        drawDetail(graphics, layout.detail(), mouseX, mouseY);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void drawFrame(GuiGraphicsExtractor graphics, Layout layout) {
+        graphics.fill(layout.left() - 2, layout.top() - 2, layout.right() + 2, layout.bottom() + 2, LINE);
+        graphics.fill(layout.left(), layout.top(), layout.right(), layout.bottom(), PANEL);
+        graphics.fill(layout.left(), layout.top(), layout.left() + 4, layout.bottom(), tab == Tab.ROLES ? CYAN : GOLD);
+    }
+
+    private void drawHeader(GuiGraphicsExtractor graphics, Layout layout, int mouseX, int mouseY) {
+        int x = layout.left() + 17;
+        int closeX = layout.right() - 34;
+        graphics.text(font, "지휘 회관", x, layout.top() + 10, GOLD, false);
+        graphics.text(font, fit(font, body, Math.max(80, closeX - x - 10)), x, layout.top() + 27, MUTED, false);
+        boolean close = inside(mouseX, mouseY, closeX, layout.top() + 8, 24, 24);
+        graphics.fill(closeX, layout.top() + 8, closeX + 24, layout.top() + 32, close ? 0xFF71353A : PANEL_3);
+        graphics.centeredText(font, "×", closeX + 12, layout.top() + 15, close ? TEXT : MUTED);
+        graphics.fill(layout.left() + 14, layout.top() + 43, layout.right() - 14, layout.top() + 44, LINE);
+    }
+
+    private void drawTabs(GuiGraphicsExtractor graphics, Layout layout, int mouseX, int mouseY) {
+        int x = layout.left() + 14;
+        int y = layout.top() + 50;
+        int gap = 5;
+        int w = Math.min(144, Math.max(82, (layout.width() - 33) / 2));
+        drawTab(graphics, x, y, w, Tab.FACILITIES, mouseX, mouseY);
+        drawTab(graphics, x + w + gap, y, w, Tab.ROLES, mouseX, mouseY);
+    }
+
+    private void drawTab(GuiGraphicsExtractor graphics, int x, int y, int w, Tab value, int mouseX, int mouseY) {
+        boolean active = tab == value;
+        boolean hover = inside(mouseX, mouseY, x, y, w, 20);
+        int accent = value == Tab.FACILITIES ? GOLD : CYAN;
+        graphics.fill(x, y, x + w, y + 20, active ? PANEL_3 : hover ? PANEL_2 : PANEL);
+        graphics.fill(x, y + 18, x + w, y + 20, active ? accent : LINE);
+        graphics.centeredText(font, value.label(), x + w / 2, y + 6, active ? TEXT : MUTED);
+    }
+
+    private void drawList(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
+        graphics.fill(pane.left(), pane.top(), pane.right(), pane.bottom(), PANEL_2);
+        int count = tab == Tab.FACILITIES ? facilities.size() : roles.size();
+        int rowHeight = 37;
+        int gap = 3;
+        int content = count <= 0 ? 0 : count * rowHeight + Math.max(0, count - 1) * gap;
+        int maxScroll = Math.max(0, content - Math.max(1, pane.height() - 12));
+        listScroll = clamp(listScroll, 0, maxScroll);
+        graphics.enableScissor(pane.left() + 1, pane.top() + 1, pane.right() - 1, pane.bottom() - 1);
+        int y = pane.top() + 6 - listScroll;
+        for (int i = 0; i < count; i++) {
+            int x = pane.left() + 6;
+            int w = pane.width() - 14;
+            boolean hover = inside(mouseX, mouseY, x, y, w, rowHeight);
+            boolean selected = tab == Tab.FACILITIES ? selectedFacility == i : selectedRole == i;
+            graphics.fill(x, y, x + w, y + rowHeight, selected ? PANEL_3 : hover ? 0xE522333B : 0xD9111B21);
+            int accent;
+            String title;
+            String sub;
+            if (tab == Tab.FACILITIES) {
+                FacilityCard f = facilities.get(i);
+                accent = facilityColor(f);
+                title = f.name();
+                sub = f.current() <= 0 ? "파괴됨" : f.meta() + " · " + f.current() + "/" + f.maximum();
+            } else {
+                RoleCard r = roles.get(i);
+                accent = r.current() ? GOLD : CYAN;
+                title = r.name();
+                sub = r.current() ? "현재 배치" : "배치 가능";
+            }
+            graphics.fill(x, y, x + 3, y + rowHeight, accent);
+            graphics.text(font, fit(font, title, w - 18), x + 10, y + 7, selected ? TEXT : MUTED, false);
+            graphics.text(font, fit(font, sub, w - 18), x + 10, y + 22, accent, false);
+            y += rowHeight + gap;
+        }
+        graphics.disableScissor();
+        if (maxScroll > 0) {
+            int track = pane.height() - 12;
+            int thumb = Math.max(14, track * Math.max(1, pane.height() - 12) / Math.max(1, content));
+            int sy = pane.top() + 6 + (track - thumb) * listScroll / maxScroll;
+            graphics.fill(pane.right() - 4, pane.top() + 6, pane.right() - 2, pane.bottom() - 6, 0x55607178);
+            graphics.fill(pane.right() - 4, sy, pane.right() - 2, sy + thumb, tab == Tab.FACILITIES ? GOLD : CYAN);
+        }
+    }
+
+    private void drawDetail(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
+        graphics.fill(pane.left(), pane.top(), pane.right(), pane.bottom(), 0xD90D171D);
+        if (tab == Tab.FACILITIES) drawFacilityDetail(graphics, pane, mouseX, mouseY);
+        else drawRoleDetail(graphics, pane, mouseX, mouseY);
+    }
+
+    private void drawRoleDetail(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
+        if (roles.isEmpty()) return;
+        RoleCard role = roles.get(clamp(selectedRole, 0, roles.size() - 1));
+        int x = pane.left() + 16;
+        int right = pane.right() - 16;
+        int y = pane.top() + 14;
+        graphics.text(font, role.name(), x, y, role.current() ? GOLD : CYAN, false);
+        graphics.text(font, role.current() ? "현재 직업" : "배치 변경 후보", x, y + 16, role.current() ? GOLD : MUTED, false);
+        y += 38;
+        y = section(graphics, "역할", role.overview(), x, right, y, TEXT);
+        y = section(graphics, "상시 효과", role.passive(), x, right, y, CYAN);
+        y = section(graphics, "전투 방식", role.active(), x, right, y, GOLD);
+        section(graphics, "추천 위치", role.recommended(), x, right, y, BLUE);
+        if (!role.current()) {
+            Button b = roleButton(pane);
+            drawButton(graphics, b, "이 직업으로 배치", true, CYAN, mouseX, mouseY);
+        }
+    }
+
+    private void drawFacilityDetail(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
+        if (facilities.isEmpty()) return;
+        FacilityCard f = facilities.get(clamp(selectedFacility, 0, facilities.size() - 1));
+        int accent = facilityColor(f);
+        int x = pane.left() + 16;
+        int right = pane.right() - 16;
+        int y = pane.top() + 13;
+        graphics.text(font, f.name(), x, y, accent, false);
+        graphics.text(font, f.meta(), x, y + 16, MUTED, false);
+
+        int barTop = y + 34;
+        graphics.fill(x, barTop, right, barTop + 5, 0xFF334047);
+        int fill = f.maximum() <= 0 ? 0 : Math.round((right - x) * clamp(f.current(), 0, f.maximum()) / (float) f.maximum());
+        graphics.fill(x, barTop, x + Math.max(0, fill), barTop + 5, accent);
+        graphics.text(font, "내구도 " + f.current() + " / " + f.maximum(), x, barTop + 10, TEXT, false);
+        y = barTop + 30;
+
+        if (f.current() <= 0) {
+            y = section(graphics, "시설 상태", "파괴됨 · 기능 정지", x, right, y, RED);
+            section(graphics, "복구", "회관에서 완전 수리하면 건물과 기능이 즉시 복구됩니다.", x, right, y, GOLD);
+        } else {
+            y = section(graphics, "현재 효과", f.effect(), x, right, y, CYAN);
+            if (!f.nextEffect().isBlank() && f.upgradeCost() > 0) {
+                y = section(graphics, "다음 단계", f.nextEffect(), x, right, y, GREEN);
+                section(graphics, "강화 비용", "공동 보급품 " + f.upgradeCost(), x, right, y, GOLD);
+            }
+        }
+
+        List<ButtonSpec> specs = facilityButtons(pane, f);
+        for (ButtonSpec spec : specs) {
+            drawButton(graphics, spec.bounds(), spec.label(), spec.enabled(), spec.accent(), mouseX, mouseY);
+        }
+    }
+
+    private int section(GuiGraphicsExtractor graphics, String title, String value,
+                        int left, int right, int y, int color) {
+        if (value == null || value.isBlank()) return y;
+        graphics.text(font, title, left, y, color, false);
+        int lineY = y + 13;
+        List<FormattedCharSequence> lines = font.split(Component.literal(value), Math.max(70, right - left));
+        for (int i = 0; i < Math.min(3, lines.size()); i++) {
+            graphics.text(font, lines.get(i), left, lineY, MUTED, false);
+            lineY += 11;
+        }
+        return lineY + 8;
+    }
+
+    private List<ButtonSpec> facilityButtons(Pane pane, FacilityCard f) {
+        List<ButtonSpec> result = new ArrayList<>();
+        int gap = 6;
+        int count = 3;
+        int available = pane.width() - 28 - gap * (count - 1);
+        int w = Math.max(48, available / count);
+        int y = pane.bottom() - 34;
+        int x = pane.left() + 14;
+        boolean usable = f.current() > 0;
+        String functionLabel = f.id().equals("town_hall") ? "보급 조달"
+                : f.id().equals("walls") ? "방어망 관리" : "시설 기능";
+        result.add(new ButtonSpec(new Button(x, y, w, 23), functionLabel, usable, CYAN, functionAction(f)));
+        x += w + gap;
+        boolean repair = f.current() < f.maximum() && f.repairCost() > 0;
+        result.add(new ButtonSpec(new Button(x, y, w, 23),
+                repair ? "수리 · " + f.repairCost() : "수리 불필요", repair, GOLD, "repair:" + f.id()));
+        x += w + gap;
+        boolean upgrade = usable && f.upgradeCost() > 0 && !f.nextEffect().isBlank();
+        result.add(new ButtonSpec(new Button(x, y, w, 23),
+                upgrade ? "강화 · " + f.upgradeCost() : "강화 완료", upgrade, GREEN, "upgrade:" + f.id()));
+        return result;
+    }
+
+    private String functionAction(FacilityCard f) {
+        if (f.id().equals("town_hall")) return "open_funding";
+        if (f.id().equals("walls")) return "open_tower_control";
+        return f.action();
+    }
+
+    private Button roleButton(Pane pane) {
+        int w = Math.min(178, Math.max(112, pane.width() / 3));
+        return new Button(pane.right() - w - 14, pane.bottom() - 34, w, 23);
+    }
+
+    private void drawButton(GuiGraphicsExtractor graphics, Button b, String label, boolean enabled,
+                            int accent, int mouseX, int mouseY) {
+        boolean hover = enabled && inside(mouseX, mouseY, b.x(), b.y(), b.w(), b.h());
+        int edge = enabled ? (hover ? TEXT : accent) : 0xFF536068;
+        graphics.fill(b.x() - 1, b.y() - 1, b.x() + b.w() + 1, b.y() + b.h() + 1, edge);
+        graphics.fill(b.x(), b.y(), b.x() + b.w(), b.y() + b.h(), hover ? PANEL_3 : PANEL_2);
+        graphics.centeredText(font, fit(font, label, b.w() - 8), b.x() + b.w() / 2, b.y() + 7,
+                enabled ? TEXT : MUTED);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
         Layout layout = layout();
-        for (int i = 0; i < roles.size(); i++) {
-            Cell c = roleCell(layout, i);
-            if (!inside(click.x(), click.y(), c.x(), c.y(), c.w(), c.h())) continue;
-            RoleCard role = roles.get(i);
-            if (role.current()) return true;
-            String detail = role.overview()
-                    + "\n상시 효과: " + role.passive()
-                    + "\n전투 방식: " + role.active()
-                    + "\n추천 위치: " + role.recommended();
-            if (minecraft != null) {
-                minecraft.gui.setScreen(new VillageConfirmScreen(this, role.action(), role.name() + " 배치", detail));
-            }
+        if (inside(click.x(), click.y(), layout.right() - 34, layout.top() + 8, 24, 24)) {
+            onClose();
             return true;
         }
-        for (int i = 0; i < facilities.size(); i++) {
-            Cell c = facilityCell(layout, i);
-            if (!inside(click.x(), click.y(), c.x(), c.y(), c.w(), c.h())) continue;
-            ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(facilities.get(i).action()));
-            return true;
+        int tabX = layout.left() + 14;
+        int tabW = Math.min(144, Math.max(82, (layout.width() - 33) / 2));
+        if (inside(click.x(), click.y(), tabX, layout.top() + 50, tabW, 20)) {
+            tab = Tab.FACILITIES; listScroll = 0; return true;
+        }
+        if (inside(click.x(), click.y(), tabX + tabW + 5, layout.top() + 50, tabW, 20)) {
+            tab = Tab.ROLES; listScroll = 0; return true;
+        }
+
+        Pane list = layout.list();
+        int count = tab == Tab.FACILITIES ? facilities.size() : roles.size();
+        int y = list.top() + 6 - listScroll;
+        for (int i = 0; i < count; i++) {
+            if (inside(click.x(), click.y(), list.left() + 6, y, list.width() - 14, 37)) {
+                if (tab == Tab.FACILITIES) selectedFacility = i;
+                else selectedRole = i;
+                return true;
+            }
+            y += 40;
+        }
+
+        if (tab == Tab.ROLES && !roles.isEmpty()) {
+            RoleCard role = roles.get(clamp(selectedRole, 0, roles.size() - 1));
+            Button b = roleButton(layout.detail());
+            if (!role.current() && inside(click.x(), click.y(), b.x(), b.y(), b.w(), b.h())) {
+                String detail = role.overview() + "\n상시 효과: " + role.passive()
+                        + "\n전투 방식: " + role.active() + "\n추천 위치: " + role.recommended();
+                if (minecraft != null) minecraft.gui.setScreen(
+                        new VillageConfirmScreen(this, role.action(), role.name() + " 배치", detail));
+                return true;
+            }
+        }
+
+        if (tab == Tab.FACILITIES && !facilities.isEmpty()) {
+            FacilityCard facility = facilities.get(clamp(selectedFacility, 0, facilities.size() - 1));
+            for (ButtonSpec spec : facilityButtons(layout.detail(), facility)) {
+                if (!spec.enabled() || !inside(click.x(), click.y(), spec.bounds().x(), spec.bounds().y(),
+                        spec.bounds().w(), spec.bounds().h())) continue;
+                if (VillageActionDescriptions.requiresConfirmation(spec.action()) && minecraft != null) {
+                    minecraft.gui.setScreen(new VillageConfirmScreen(this, spec.action(), facility.name(),
+                            VillageActionDescriptions.describe(spec.action(), facility.name())));
+                } else {
+                    ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(spec.action()));
+                }
+                return true;
+            }
         }
         return super.mouseClicked(click, doubled);
     }
 
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+        Pane list = layout().list();
+        if (inside(mouseX, mouseY, list.left(), list.top(), list.width(), list.height())) {
+            listScroll = Math.max(0, listScroll - (int) Math.round(vertical * 31));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
+    }
+
     private Layout layout() {
         VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
-        int roleTitleY = safe.top() + 43;
-        int roleTop = roleTitleY + 13;
-        int roleHeight = safe.height() < 260 ? 39 : 51;
-        int roleGap = 5;
-        int roleCount = Math.max(1, roles.size());
-        int roleWidth = Math.max(52, (safe.width() - 14 - roleGap * (roleCount - 1)) / roleCount);
-        roleWidth = Math.min(150, roleWidth);
-        int roleTotal = roleCount * roleWidth + roleGap * Math.max(0, roleCount - 1);
-        int roleLeft = safe.centerX() - roleTotal / 2;
-
-        int facilityTitleY = roleTop + roleHeight + 9;
-        int facilityTop = facilityTitleY + 14;
-        int facilityBottom = safe.bottom() - 18;
-        int columns = facilityColumns(safe.width(), facilities.size());
-        int rows = Math.max(1, rows(facilities.size(), columns));
-        int gap = 6;
-        int cellWidth = Math.max(60, (safe.width() - 14 - gap * (columns - 1)) / columns);
-        int available = Math.max(1, facilityBottom - facilityTop);
-        int rowHeight = Math.max(35, Math.min(96, (available - gap * (rows - 1)) / rows));
-        return new Layout(safe, roleTitleY, roleLeft, roleTop, roleWidth, roleHeight, roleGap,
-                facilityTitleY, facilityTop, columns, cellWidth, rowHeight, gap);
-    }
-
-    private int facilityColumns(int availableWidth, int count) {
-        if (count <= 0) return 1;
-        if (count <= 4) return count;
-        if (availableWidth >= 520) return 4;
-        return 3;
-    }
-
-    private Cell roleCell(Layout layout, int index) {
-        return new Cell(layout.roleLeft() + index * (layout.roleWidth() + layout.roleGap()),
-                layout.roleTop(), layout.roleWidth(), layout.roleHeight());
-    }
-
-    private Cell facilityCell(Layout layout, int index) {
-        int row = index / layout.facilityColumns();
-        int col = index % layout.facilityColumns();
-        int x = layout.safe().left() + 7 + col * (layout.facilityWidth() + layout.facilityGap());
-        int y = layout.facilityTop() + row * (layout.facilityHeight() + layout.facilityGap());
-        return new Cell(x, y, layout.facilityWidth(), layout.facilityHeight());
+        int maxWidth = Math.max(300, safe.width() - 12);
+        int maxHeight = Math.max(220, safe.height() - 4);
+        int panelWidth = Math.min(820, maxWidth);
+        int panelHeight = Math.min(430, maxHeight);
+        panelWidth = Math.min(panelWidth, safe.width());
+        panelHeight = Math.min(panelHeight, safe.height());
+        int left = safe.centerX() - panelWidth / 2;
+        int top = safe.top() + Math.max(0, (safe.height() - panelHeight) / 2);
+        int right = left + panelWidth;
+        int bottom = top + panelHeight;
+        int contentTop = top + 76;
+        int contentBottom = bottom - 11;
+        int gap = 8;
+        int listWidth = clamp(panelWidth * 27 / 100, 126, 205);
+        Pane list = new Pane(left + 14, contentTop, left + 14 + listWidth, contentBottom);
+        Pane detail = new Pane(list.right() + gap, contentTop, right - 14, contentBottom);
+        return new Layout(left, top, right, bottom, list, detail);
     }
 
     private void parse(VillageNetwork.OpenVillageUiPayload payload) {
@@ -178,14 +364,18 @@ public final class VillageTownHallGridScreen extends Screen {
                 roles.add(new RoleCard(actions[i], plain(p[2]), plain(p[3]), plain(p[4]), plain(p[5]),
                         plain(p[6]), "current".equals(p[7])));
             } else if (p.length >= 7 && "facility".equals(p[0])) {
-                facilities.add(new FacilityCard(actions[i], plain(p[2]), plain(p[3]), plain(p[6]),
-                        parseInt(p[4]), parseInt(p[5])));
+                facilities.add(new FacilityCard(actions[i], plain(p[1]), plain(p[2]), plain(p[3]),
+                        parseInt(p[4]), parseInt(p[5]), plain(p[6]), p.length > 7 ? plain(p[7]) : "",
+                        p.length > 8 ? parseInt(p[8]) : 0, p.length > 9 ? parseInt(p[9]) : 0));
             }
         }
     }
 
-    private static int rows(int count, int columns) {
-        return count <= 0 ? 1 : (count + columns - 1) / columns;
+    private static int facilityColor(FacilityCard f) {
+        if (f.current() <= 0) return RED;
+        if (f.maximum() > 0 && f.current() * 3 < f.maximum()) return RED;
+        if (f.maximum() > 0 && f.current() < f.maximum()) return GOLD;
+        return CYAN;
     }
 
     private static int parseInt(String value) {
@@ -207,18 +397,32 @@ public final class VillageTownHallGridScreen extends Screen {
         return normalized.substring(0, end) + "…";
     }
 
+    private static int clamp(int value, int min, int max) { return Math.max(min, Math.min(max, value)); }
     private static boolean inside(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
     @Override public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
 
+    private enum Tab {
+        FACILITIES("시설 관리"), ROLES("직업 배치");
+        private final String label;
+        Tab(String label) { this.label = label; }
+        String label() { return label; }
+    }
+
     private record RoleCard(String action, String name, String overview, String passive,
                             String active, String recommended, boolean current) {}
-    private record FacilityCard(String action, String name, String meta, String effect,
-                                int current, int maximum) {}
-    private record Cell(int x, int y, int w, int h) {}
-    private record Layout(VillageUiSafeArea.Rect safe, int roleTitleY, int roleLeft, int roleTop,
-                          int roleWidth, int roleHeight, int roleGap, int facilityTitleY, int facilityTop,
-                          int facilityColumns, int facilityWidth, int facilityHeight, int facilityGap) {}
+    private record FacilityCard(String action, String id, String name, String meta,
+                                int current, int maximum, String effect, String nextEffect,
+                                int upgradeCost, int repairCost) {}
+    private record Button(int x, int y, int w, int h) {}
+    private record ButtonSpec(Button bounds, String label, boolean enabled, int accent, String action) {}
+    private record Pane(int left, int top, int right, int bottom) {
+        int width() { return Math.max(1, right - left); }
+        int height() { return Math.max(1, bottom - top); }
+    }
+    private record Layout(int left, int top, int right, int bottom, Pane list, Pane detail) {
+        int width() { return right - left; }
+    }
 }
