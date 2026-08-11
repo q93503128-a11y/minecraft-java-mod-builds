@@ -142,8 +142,6 @@ public final class ErdenEntryTraversalAudit {
             }
         }
 
-        // Spatial order lets successive entries reuse already-built chunks while the active batch
-        // remains small. This keeps the exhaustive proof practical without retaining the capital.
         entries.sort(Comparator.comparingInt((Entry entry) -> entry.z)
                 .thenComparingInt(entry -> entry.x));
         PENDING.addAll(entries);
@@ -233,7 +231,7 @@ public final class ErdenEntryTraversalAudit {
             }
 
             Verification verification = verify(level, active.entry);
-            if (!verification.pass) {
+            if (!verification.ok) {
                 active.verifyRetries++;
                 active.lastFailure = verification.detail;
                 if (active.verifyRetries >= MAX_VERIFY_RETRIES) {
@@ -499,7 +497,7 @@ public final class ErdenEntryTraversalAudit {
     private record SearchResult(boolean reached, int visited) {
     }
 
-    private record Verification(boolean pass, String reason, String detail) {
+    private record Verification(boolean ok, String reason, String detail) {
         static Verification pass() {
             return new Verification(true, "none", "ok");
         }
