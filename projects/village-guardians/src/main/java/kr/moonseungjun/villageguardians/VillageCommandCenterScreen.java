@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
@@ -13,8 +14,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Shared safe renderer for the high-frequency non-tree menus.
- * Each mode keeps its own visual grammar while sharing one collision-free viewport contract.
+ * Responsive command surfaces for town, shop, status and local building interaction.
+ * Short menus expand to use the available screen instead of being forced into a tiny scroll viewport.
  */
 public final class VillageCommandCenterScreen extends Screen {
     private static final String SEP = "\u001F";
@@ -62,54 +63,71 @@ public final class VillageCommandCenterScreen extends Screen {
     }
 
     private void renderTown(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe, int mouseX, int mouseY) {
-        header(graphics, safe, "지휘 회관", body, GOLD);
-        int top = safe.top() + 48;
-        int bottom = safe.bottom() - 19;
         List<Entry> roles = entries.stream().filter(e -> "role".equals(e.kind())).toList();
         List<Entry> facilities = entries.stream().filter(e -> "facility".equals(e.kind())).toList();
+        TownLayout layout = townLayout(safe, roles.size(), facilities.size());
+        drawHeader(graphics, safe, layout.header(), "지휘 회관", GOLD);
 
-        graphics.text(font, "직업 배치", safe.left() + 8, top, CYAN, false);
-        int roleTop = top + 15;
-        int roleCount = Math.max(1, roles.size());
-        int roleGap = 6;
-        int roleWidth = Math.max(58, (safe.width() - 16 - roleGap * (roleCount - 1)) / roleCount);
-        roleWidth = Math.min(132, roleWidth);
-        int total = roleCount * roleWidth + Math.max(0, roleCount - 1) * roleGap;
-        int roleLeft = safe.centerX() - total / 2;
+        graphics.text(font, "직업 배치", safe.left() + 7, layout.roleTitleY(), CYAN, false);
         for (int i = 0; i < roles.size(); i++) {
-            Entry entry = roles.get(i);
-            int x = roleLeft + i * (roleWidth + roleGap);
-            int h = 54;
-            boolean hover = inside(mouseX, mouseY, x, roleTop, roleWidth, h);
-            graphics.fill(x, roleTop, x + roleWidth, roleTop + h, hover ? SURFACE_2 : SURFACE);
-            graphics.fill(x, roleTop, x + roleWidth, roleTop + 2, entry.current() ? GOLD : CYAN);
-            VillageQuickChatSafeScreen.drawDiamond(graphics, x + 13, roleTop + 15, 6, 0xCC203036);
-            VillageQuickChatSafeScreen.drawDiamondOutline(graphics, x + 13, roleTop + 15, 6,
-                    entry.current() ? GOLD : CYAN);
-            graphics.text(font, fit(font, entry.title(), roleWidth - 30), x + 25, roleTop + 7,
-                    entry.current() ? GOLD : TEXT, false);
-            graphics.text(font, fit(font, entry.sub(), roleWidth - 12), x + 7, roleTop + 26, MUTED, false);
-            graphics.text(font, entry.current() ? "현재" : "배치", x + 7, roleTop + 39,
-                    entry.current() ? GOLD : CYAN, false);
+            Cell c = roleCell(layout, i);
+            Entry e = roles.get(i);
+            boolean hovered = inside(mouseX, mouseY, c.x(), c.y(), c.w(), c.h());
+            graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + c.h(), hovered ? SURFACE_2 : SURFACE);
+            graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + 2, e.current() ? GOLD : CYAN);
+            VillageQuickChatSafeScreen.drawDiamond(graphics, c.x() + 11, c.y() + 13, 5, 0xCC203036);
+            VillageQuickChatSafeScreen.drawDiamondOutline(graphics, c.x() + 11, c.y() + 13, 5,
+                    e.current() ? GOLD : CYAN);
+            graphics.text(font, fit(font, e.title(), c.w() - 28), c.x() + 22, c.y() + 7,
+                    e.current() ? GOLD : TEXT, false);
+            String state = e.current() ? "현재 직업" : "배치";
+            graphics.text(font, state, c.x() + 7, c.y() + c.h() - 13,
+                    e.current() ? GOLD : CYAN, false);
         }
 
-        int facilityTitle = roleTop + 67;
-        graphics.text(font, "시설 지휘", safe.left() + 8, facilityTitle, CYAN, false);
-        Grid grid = grid(safe.left() + 8, facilityTitle + 15, safe.right() - 8, bottom,
-                facilities.size(), 3, 4, 56);
-        drawFacilityCards(graphics, facilities, grid, mouseX, mouseY, true);
+        graphics.text(font, "시설 지휘", safe.left() + 7, layout.facilityTitleY(), CYAN, false);
+        drawTownFacilities(graphics, facilities, layout.facilityGrid(), mouseX, mouseY);
         footer(graphics, safe);
     }
 
+    private void drawTownFacilities(GuiGraphicsExtractor graphics, List<Entry> facilities, Grid grid,
+                                    int mouseX, int mouseY) {
+        graphics.enableScissor(grid.left(), grid.top(), grid.right(), grid.bottom());
+        for (int i = 0; i < facilities.size(); i++) {
+            Entry e = facilities.get(i);
+            Cell c = cell(grid, i, 0);
+            boolean hovered = inside(mouseX, mouseY, c.x(), c.y(), c.w(), c.h());
+            graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + c.h(), hovered ? SURFACE_2 : SURFACE);
+            graphics.fill(c.x(), c.y(), c.x() + 3, c.y() + c.h(), hovered ? GOLD : CYAN);
+            graphics.text(font, fit(font, e.title(), c.w() - 15), c.x() + 9, c.y() + 5,
+                    hovered ? GOLD : TEXT, false);
+            graphics.text(font, fit(font, e.meta(), c.w() - 15), c.x() + 9, c.y() + 17, CYAN, false);
+            int barY = c.y() + c.h() - 8;
+            if (!e.sub().isBlank() && c.h() >= 48) {
+                graphics.text(font, fit(font, e.sub(), c.w() - 15), c.x() + 9, c.y() + 29, MUTED, false);
+            }
+            if (e.maximum() > 0) {
+                int left = c.x() + 9;
+                int right = c.x() + c.w() - 9;
+                int fill = left + (right - left) * Math.max(0, Math.min(e.currentValue(), e.maximum()))
+                        / Math.max(1, e.maximum());
+                graphics.fill(left, barY, right, barY + 3, 0xFF39464B);
+                graphics.fill(left, barY, fill, barY + 3,
+                        e.currentValue() * 3 < e.maximum() ? RED : CYAN);
+            }
+        }
+        graphics.disableScissor();
+    }
+
     private void renderShop(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe, int mouseX, int mouseY) {
-        header(graphics, safe, "오늘의 진열대", body, GOLD);
-        int top = safe.top() + 49;
-        int bottom = safe.bottom() - 20;
-        Grid grid = grid(safe.left() + 8, top, safe.right() - 8, bottom, entries.size(), 3, 5, 56);
+        Header header = headerLayout(safe, body, 2);
+        drawHeader(graphics, safe, header, "오늘의 진열대", GOLD);
+        Grid grid = shopGrid(safe, header.bottom(), entries.size());
         int rows = rows(entries.size(), grid.columns());
         int content = rows * grid.rowHeight();
         int maximum = Math.max(0, content - grid.height());
         scroll = VillageUiSafeArea.clamp(scroll, 0, maximum);
+
         graphics.enableScissor(grid.left(), grid.top(), grid.right(), grid.bottom());
         for (int i = 0; i < entries.size(); i++) {
             Entry e = entries.get(i);
@@ -119,9 +137,15 @@ public final class VillageCommandCenterScreen extends Screen {
             int accent = rarityColor(e.title());
             graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + c.h(), hover ? SURFACE_2 : SURFACE);
             graphics.fill(c.x(), c.y(), c.x() + 3, c.y() + c.h(), accent);
-            graphics.text(font, fit(font, e.title(), c.w() - 13), c.x() + 9, c.y() + 6, TEXT, false);
-            graphics.text(font, fit(font, e.meta(), c.w() - 13), c.x() + 9, c.y() + 20, GOLD, false);
-            graphics.text(font, fit(font, e.sub(), c.w() - 13), c.x() + 9, c.y() + 34, MUTED, false);
+            graphics.text(font, fit(font, e.title(), c.w() - 14), c.x() + 9, c.y() + 6, TEXT, false);
+            graphics.text(font, fit(font, e.meta(), c.w() - 14), c.x() + 9, c.y() + 19, GOLD, false);
+            List<FormattedCharSequence> detail = font.split(Component.literal(e.sub()), Math.max(40, c.w() - 16));
+            int y = c.y() + 33;
+            int maxLines = Math.max(1, Math.min(2, (c.h() - 49) / 11 + 1));
+            for (int line = 0; line < Math.min(maxLines, detail.size()); line++) {
+                graphics.text(font, detail.get(line), c.x() + 9, y, MUTED, false);
+                y += 11;
+            }
             String state = e.available() ? "구매" : fit(font, e.state(), Math.max(30, c.w() / 2));
             graphics.text(font, state, c.x() + c.w() - font.width(state) - 7, c.y() + c.h() - 13,
                     e.available() ? CYAN : RED, false);
@@ -132,14 +156,16 @@ public final class VillageCommandCenterScreen extends Screen {
     }
 
     private void renderStatus(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe, int mouseX, int mouseY) {
-        header(graphics, safe, "수호자 기록", "현재 전투·성장·마을 상태", CYAN);
+        Header header = headerLayout(safe, "현재 전투·성장·마을 상태", 1);
+        drawHeader(graphics, safe, header, "수호자 기록", CYAN);
         String[] lines = body.split("\\n", -1);
-        int top = safe.top() + 52;
-        int available = Math.max(80, safe.bottom() - top - 48);
-        int rowHeight = Math.max(30, Math.min(48, available / Math.max(1, lines.length)));
+        int top = header.bottom() + 5;
+        int bottom = safe.bottom() - 36;
+        int available = Math.max(50, bottom - top);
+        int rowHeight = Math.max(26, Math.min(48, available / Math.max(1, lines.length)));
         for (int i = 0; i < lines.length; i++) {
             int y = top + i * rowHeight;
-            if (y + rowHeight > safe.bottom() - 39) break;
+            if (y + rowHeight > bottom + 1) break;
             String line = lines[i].trim();
             String title = line;
             String detail = "";
@@ -148,41 +174,50 @@ public final class VillageCommandCenterScreen extends Screen {
                 title = line.substring(0, split).trim();
                 detail = line.substring(split).trim();
             }
-            graphics.fill(safe.left() + 10, y, safe.right() - 10, y + rowHeight - 5,
+            graphics.fill(safe.left() + 8, y, safe.right() - 8, y + rowHeight - 4,
                     (i & 1) == 0 ? SURFACE : 0xB90F171B);
-            graphics.fill(safe.left() + 10, y, safe.left() + 13, y + rowHeight - 5,
+            graphics.fill(safe.left() + 8, y, safe.left() + 11, y + rowHeight - 4,
                     i == 0 ? GOLD : CYAN);
-            graphics.text(font, fit(font, title, 85), safe.left() + 21, y + 7,
+            graphics.text(font, fit(font, title, 82), safe.left() + 19, y + 7,
                     i == 0 ? GOLD : CYAN, false);
-            graphics.text(font, fit(font, detail, safe.width() - 128), safe.left() + 106, y + 7,
+            graphics.text(font, fit(font, detail, safe.width() - 122), safe.left() + 101, y + 7,
                     TEXT, false);
         }
-        int buttonY = safe.bottom() - 33;
-        int x = safe.right() - 10;
+        int buttonY = safe.bottom() - 29;
+        int x = safe.right() - 8;
         for (int i = entries.size() - 1; i >= 0; i--) {
             Entry e = entries.get(i);
             int w = Math.min(170, Math.max(88, font.width(e.title()) + 24));
             x -= w;
-            boolean hover = inside(mouseX, mouseY, x, buttonY, w, 22);
-            graphics.fill(x, buttonY, x + w, buttonY + 22, hover ? SURFACE_2 : SURFACE);
-            graphics.fill(x, buttonY + 20, x + w, buttonY + 22, hover ? GOLD : CYAN);
-            graphics.centeredText(font, fit(font, e.title(), w - 10), x + w / 2, buttonY + 7,
+            boolean hover = inside(mouseX, mouseY, x, buttonY, w, 20);
+            graphics.fill(x, buttonY, x + w, buttonY + 20, hover ? SURFACE_2 : SURFACE);
+            graphics.fill(x, buttonY + 18, x + w, buttonY + 20, hover ? GOLD : CYAN);
+            graphics.centeredText(font, fit(font, e.title(), w - 10), x + w / 2, buttonY + 6,
                     hover ? GOLD : TEXT);
-            x -= 7;
+            x -= 6;
         }
-        footerLeft(graphics, safe);
+        footer(graphics, safe);
     }
 
     private void renderFacility(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe, int mouseX, int mouseY) {
-        header(graphics, safe, heading.isBlank() ? "시설 단말" : heading, body, CYAN);
-        int top = safe.top() + 62;
-        int bottom = safe.bottom() - 20;
+        Header header = headerLayout(safe, body, safe.height() < 245 ? 2 : 3);
+        drawHeader(graphics, safe, header, heading.isBlank() ? "시설 단말" : heading, CYAN);
         List<Entry> usable = entries.stream().filter(e -> !"facility_info".equals(e.action())).toList();
-        Grid grid = grid(safe.left() + 12, top, safe.right() - 12, bottom, usable.size(), 2, 4, 58);
+        Grid grid = facilityGrid(safe, header.bottom(), usable.size());
         int rows = rows(usable.size(), grid.columns());
         int content = rows * grid.rowHeight();
         int maximum = Math.max(0, content - grid.height());
         scroll = VillageUiSafeArea.clamp(scroll, 0, maximum);
+
+        if (usable.isEmpty()) {
+            int cy = grid.top() + grid.height() / 2;
+            graphics.centeredText(font, "현재 시설은 자동 효과형입니다.", safe.centerX(), cy - 7, CYAN);
+            graphics.centeredText(font, "별도 조작 없이 시설 레벨과 내구도에 따라 효과가 적용됩니다.",
+                    safe.centerX(), cy + 9, MUTED);
+            footer(graphics, safe);
+            return;
+        }
+
         graphics.enableScissor(grid.left(), grid.top(), grid.right(), grid.bottom());
         for (int i = 0; i < usable.size(); i++) {
             Entry e = usable.get(i);
@@ -190,50 +225,26 @@ public final class VillageCommandCenterScreen extends Screen {
             if (!visible(c, grid)) continue;
             boolean hover = inside(mouseX, mouseY, c.x(), c.y(), c.w(), c.h());
             graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + c.h(), hover ? SURFACE_2 : SURFACE);
+            graphics.fill(c.x(), c.y(), c.x() + 3, c.y() + c.h(), hover ? GOLD : CYAN);
             VillageQuickChatSafeScreen.drawDiamond(graphics, c.x() + 16, c.y() + 17, 6, 0xCC203036);
             VillageQuickChatSafeScreen.drawDiamondOutline(graphics, c.x() + 16, c.y() + 17, 6,
                     hover ? GOLD : CYAN);
-            graphics.text(font, fit(font, e.title(), c.w() - 40), c.x() + 31, c.y() + 8,
+            graphics.text(font, fit(font, e.title(), c.w() - 42), c.x() + 31, c.y() + 8,
                     hover ? GOLD : TEXT, false);
-            graphics.text(font, fit(font, e.sub(), c.w() - 19), c.x() + 10, c.y() + 30, MUTED, false);
-            graphics.fill(c.x() + 10, c.y() + c.h() - 7, c.x() + (hover ? c.w() - 10 : Math.min(c.w() - 10, 45)),
+            List<FormattedCharSequence> detail = font.split(Component.literal(e.sub()), Math.max(42, c.w() - 20));
+            int y = c.y() + 29;
+            int maxLines = Math.max(1, Math.min(4, (c.h() - 43) / 11));
+            for (int line = 0; line < Math.min(maxLines, detail.size()); line++) {
+                graphics.text(font, detail.get(line), c.x() + 10, y, MUTED, false);
+                y += 11;
+            }
+            graphics.fill(c.x() + 10, c.y() + c.h() - 7,
+                    c.x() + (hover ? c.w() - 10 : Math.min(c.w() - 10, 54)),
                     c.y() + c.h() - 5, hover ? GOLD : CYAN);
         }
         graphics.disableScissor();
         scrollbar(graphics, grid, scroll, maximum, content);
         footer(graphics, safe);
-    }
-
-    private void drawFacilityCards(GuiGraphicsExtractor graphics, List<Entry> list, Grid grid,
-                                   int mouseX, int mouseY, boolean showDurability) {
-        int rows = rows(list.size(), grid.columns());
-        int content = rows * grid.rowHeight();
-        int maximum = Math.max(0, content - grid.height());
-        scroll = VillageUiSafeArea.clamp(scroll, 0, maximum);
-        graphics.enableScissor(grid.left(), grid.top(), grid.right(), grid.bottom());
-        for (int i = 0; i < list.size(); i++) {
-            Entry e = list.get(i);
-            Cell c = cell(grid, i, scroll);
-            if (!visible(c, grid)) continue;
-            boolean hover = inside(mouseX, mouseY, c.x(), c.y(), c.w(), c.h());
-            graphics.fill(c.x(), c.y(), c.x() + c.w(), c.y() + c.h(), hover ? SURFACE_2 : SURFACE);
-            graphics.text(font, fit(font, e.title(), c.w() - 15), c.x() + 8, c.y() + 7,
-                    hover ? GOLD : TEXT, false);
-            graphics.text(font, fit(font, e.meta(), c.w() - 15), c.x() + 8, c.y() + 21, CYAN, false);
-            if (showDurability && e.maximum() > 0) {
-                int barLeft = c.x() + 8;
-                int barRight = c.x() + c.w() - 8;
-                int fill = barLeft + (barRight - barLeft) * Math.max(0, Math.min(e.currentValue(), e.maximum()))
-                        / Math.max(1, e.maximum());
-                graphics.fill(barLeft, c.y() + c.h() - 12, barRight, c.y() + c.h() - 9, 0xFF39464B);
-                graphics.fill(barLeft, c.y() + c.h() - 12, fill, c.y() + c.h() - 9,
-                        e.currentValue() * 3 < e.maximum() ? RED : CYAN);
-                graphics.text(font, e.currentValue() + "/" + e.maximum(), barLeft,
-                        c.y() + c.h() - 25, MUTED, false);
-            }
-        }
-        graphics.disableScissor();
-        scrollbar(graphics, grid, scroll, maximum, content);
     }
 
     @Override
@@ -242,13 +253,15 @@ public final class VillageCommandCenterScreen extends Screen {
         VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
         Entry target = switch (mode()) {
             case TOWN -> townHit(safe, click.x(), click.y());
-            case SHOP -> gridHit(entries, grid(safe.left() + 8, safe.top() + 49,
-                    safe.right() - 8, safe.bottom() - 20, entries.size(), 3, 5, 56), click.x(), click.y());
+            case SHOP -> {
+                Header header = headerLayout(safe, body, 2);
+                yield gridHit(entries, shopGrid(safe, header.bottom(), entries.size()), click.x(), click.y());
+            }
             case STATUS -> statusHit(safe, click.x(), click.y());
             case FACILITY -> {
+                Header header = headerLayout(safe, body, safe.height() < 245 ? 2 : 3);
                 List<Entry> usable = entries.stream().filter(e -> !"facility_info".equals(e.action())).toList();
-                yield gridHit(usable, grid(safe.left() + 12, safe.top() + 62,
-                        safe.right() - 12, safe.bottom() - 20, usable.size(), 2, 4, 58), click.x(), click.y());
+                yield gridHit(usable, facilityGrid(safe, header.bottom(), usable.size()), click.x(), click.y());
             }
         };
         if (target != null && !target.action().isBlank() && !"facility_info".equals(target.action())) {
@@ -260,64 +273,145 @@ public final class VillageCommandCenterScreen extends Screen {
 
     private Entry townHit(VillageUiSafeArea.Rect safe, double mx, double my) {
         List<Entry> roles = entries.stream().filter(e -> "role".equals(e.kind())).toList();
-        int top = safe.top() + 48;
-        int roleTop = top + 15;
-        int count = Math.max(1, roles.size());
-        int gap = 6;
-        int roleWidth = Math.min(132, Math.max(58, (safe.width() - 16 - gap * (count - 1)) / count));
-        int total = count * roleWidth + Math.max(0, count - 1) * gap;
-        int left = safe.centerX() - total / 2;
-        for (int i = 0; i < roles.size(); i++) {
-            int x = left + i * (roleWidth + gap);
-            if (inside(mx, my, x, roleTop, roleWidth, 54)) return roles.get(i);
-        }
         List<Entry> facilities = entries.stream().filter(e -> "facility".equals(e.kind())).toList();
-        int facilityTitle = roleTop + 67;
-        return gridHit(facilities, grid(safe.left() + 8, facilityTitle + 15, safe.right() - 8,
-                safe.bottom() - 19, facilities.size(), 3, 4, 56), mx, my);
+        TownLayout layout = townLayout(safe, roles.size(), facilities.size());
+        for (int i = 0; i < roles.size(); i++) {
+            Cell c = roleCell(layout, i);
+            if (inside(mx, my, c.x(), c.y(), c.w(), c.h())) return roles.get(i);
+        }
+        return gridHit(facilities, layout.facilityGrid(), mx, my, 0);
     }
 
     private Entry statusHit(VillageUiSafeArea.Rect safe, double mx, double my) {
-        int buttonY = safe.bottom() - 33;
-        int x = safe.right() - 10;
+        int buttonY = safe.bottom() - 29;
+        int x = safe.right() - 8;
         for (int i = entries.size() - 1; i >= 0; i--) {
             Entry e = entries.get(i);
             int w = Math.min(170, Math.max(88, font.width(e.title()) + 24));
             x -= w;
-            if (inside(mx, my, x, buttonY, w, 22)) return e;
-            x -= 7;
+            if (inside(mx, my, x, buttonY, w, 20)) return e;
+            x -= 6;
         }
         return null;
     }
 
     private Entry gridHit(List<Entry> list, Grid grid, double mx, double my) {
+        return gridHit(list, grid, mx, my, scroll);
+    }
+
+    private Entry gridHit(List<Entry> list, Grid grid, double mx, double my, int scrollValue) {
         for (int i = 0; i < list.size(); i++) {
-            Cell c = cell(grid, i, scroll);
-            if (inside(mx, my, c.x(), c.y(), c.w(), c.h()) && c.y() < grid.bottom() && c.y() + c.h() > grid.top()) {
-                return list.get(i);
-            }
+            Cell c = cell(grid, i, scrollValue);
+            if (inside(mx, my, c.x(), c.y(), c.w(), c.h())
+                    && c.y() < grid.bottom() && c.y() + c.h() > grid.top()) return list.get(i);
         }
         return null;
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
-        scroll = Math.max(0, scroll - (int) Math.round(vertical * 34));
+        if (mode() == Mode.TOWN || mode() == Mode.STATUS) return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
+        scroll = Math.max(0, scroll - (int) Math.round(vertical * 38));
         return true;
     }
 
-    private void header(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe,
-                        String title, String subtitle, int accent) {
-        graphics.text(font, fit(font, title, safe.width() - 35), safe.left() + 8, safe.top() + 6, accent, false);
-        graphics.text(font, fit(font, subtitle.replace('\n', ' '), safe.width() - 35),
-                safe.left() + 8, safe.top() + 23, MUTED, false);
-        graphics.fill(safe.left() + 8, safe.top() + 39, safe.right() - 8, safe.top() + 40, LINE);
+    private TownLayout townLayout(VillageUiSafeArea.Rect safe, int roleCount, int facilityCount) {
+        Header header = headerLayout(safe, body, safe.height() < 245 ? 1 : 2);
+        int roleTitleY = header.bottom() + 3;
+        int roleTop = roleTitleY + 12;
+        int roleHeight = safe.height() < 245 ? 34 : 42;
+        int count = Math.max(1, roleCount);
+        int roleGap = 4;
+        int roleWidth = Math.max(52, (safe.width() - 14 - roleGap * (count - 1)) / count);
+        roleWidth = Math.min(132, roleWidth);
+        int roleTotal = roleWidth * count + roleGap * (count - 1);
+        int roleLeft = safe.centerX() - roleTotal / 2;
+        int facilityTitleY = roleTop + roleHeight + 7;
+        int facilityTop = facilityTitleY + 12;
+        int facilityBottom = safe.bottom() - 15;
+        int facilityColumns = townFacilityColumns(safe.width(), facilityCount);
+        int facilityRows = Math.max(1, rows(facilityCount, facilityColumns));
+        int available = Math.max(facilityRows * 30, facilityBottom - facilityTop);
+        int rowHeight = Math.max(30, Math.min(70, available / facilityRows));
+        Grid facilityGrid = exactGrid(safe.left() + 7, facilityTop, safe.right() - 7,
+                facilityBottom, facilityColumns, rowHeight, 5);
+        return new TownLayout(header, roleTitleY, roleLeft, roleTop, roleWidth, roleHeight, roleGap,
+                facilityTitleY, facilityGrid);
+    }
+
+    private int townFacilityColumns(int availableWidth, int count) {
+        if (count <= 4) return Math.max(1, count);
+        if (availableWidth >= 350) return 4;
+        return 3;
+    }
+
+    private Cell roleCell(TownLayout layout, int index) {
+        return new Cell(layout.roleLeft() + index * (layout.roleWidth() + layout.roleGap()),
+                layout.roleTop(), layout.roleWidth(), layout.roleHeight());
+    }
+
+    private Grid shopGrid(VillageUiSafeArea.Rect safe, int headerBottom, int count) {
+        int top = headerBottom + 5;
+        int bottom = safe.bottom() - 15;
+        int columns = safe.width() >= 390 ? 4 : 3;
+        if (count > 0) columns = Math.min(columns, count);
+        columns = Math.max(1, columns);
+        int visibleRows = Math.max(1, rows(Math.min(count, columns * 3), columns));
+        int available = Math.max(44, bottom - top);
+        int rowHeight = count <= columns * 3
+                ? Math.max(48, Math.min(82, available / Math.max(1, rows(count, columns))))
+                : 68;
+        return exactGrid(safe.left() + 7, top, safe.right() - 7, bottom, columns, rowHeight, 5);
+    }
+
+    private Grid facilityGrid(VillageUiSafeArea.Rect safe, int headerBottom, int count) {
+        int top = headerBottom + 6;
+        int bottom = safe.bottom() - 15;
+        int columns;
+        if (count <= 1) columns = 1;
+        else if (count <= 4) columns = safe.width() >= 280 ? 2 : 1;
+        else if (count <= 8) columns = safe.width() >= 380 ? 3 : 2;
+        else columns = safe.width() >= 520 ? 4 : 3;
+        columns = Math.max(1, Math.min(columns, Math.max(1, count)));
+        int totalRows = Math.max(1, rows(count, columns));
+        int available = Math.max(42, bottom - top);
+        int rowHeight = count <= 8
+                ? Math.max(42, Math.min(96, available / totalRows))
+                : 70;
+        return exactGrid(safe.left() + 9, top, safe.right() - 9, bottom, columns, rowHeight, 6);
+    }
+
+    private Grid exactGrid(int left, int top, int right, int bottom, int columns, int rowHeight, int gap) {
+        int width = Math.max(1, right - left);
+        int cols = Math.max(1, columns);
+        int cellWidth = Math.max(42, (width - gap * (cols - 1)) / cols);
+        return new Grid(left, top, right, Math.max(top + 1, bottom), cols, cellWidth,
+                Math.max(28, rowHeight), gap);
+    }
+
+    private Header headerLayout(VillageUiSafeArea.Rect safe, String subtitle, int maxLines) {
+        int textWidth = Math.max(80, safe.width() - 30);
+        List<FormattedCharSequence> lines = font.split(Component.literal(subtitle == null ? "" : subtitle), textWidth);
+        int count = Math.max(0, Math.min(Math.max(0, maxLines), lines.size()));
+        int bodyTop = safe.top() + 19;
+        int dividerY = bodyTop + Math.max(1, count) * 11 + 3;
+        return new Header(bodyTop, dividerY + 2, lines, count, dividerY);
+    }
+
+    private void drawHeader(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe, Header header,
+                            String title, int accent) {
+        graphics.text(font, fit(font, title, safe.width() - 30), safe.left() + 7, safe.top() + 4, accent, false);
+        int y = header.bodyTop();
+        for (int i = 0; i < header.lineCount(); i++) {
+            graphics.text(font, header.lines().get(i), safe.left() + 7, y, MUTED, false);
+            y += 11;
+        }
+        graphics.fill(safe.left() + 7, header.dividerY(), safe.right() - 7, header.dividerY() + 1, LINE);
     }
 
     private void footer(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe) {
-        graphics.text(font, "ESC 닫기", safe.left() + 4, safe.bottom() - 11, MUTED, false);
+        graphics.text(font, "ESC 닫기", safe.left() + 4, safe.bottom() - 10, MUTED, false);
     }
-    private void footerLeft(GuiGraphicsExtractor graphics, VillageUiSafeArea.Rect safe) { footer(graphics, safe); }
 
     private void scrollbar(GuiGraphicsExtractor graphics, Grid grid, int value, int maximum, int content) {
         if (maximum <= 0 || content <= grid.height()) return;
@@ -325,15 +419,6 @@ public final class VillageCommandCenterScreen extends Screen {
         int y = grid.top() + (grid.height() - thumb) * value / maximum;
         graphics.fill(grid.right() - 2, grid.top(), grid.right(), grid.bottom(), 0x555C686D);
         graphics.fill(grid.right() - 2, y, grid.right(), y + thumb, CYAN);
-    }
-
-    private Grid grid(int left, int top, int right, int bottom, int count, int minCols, int maxCols, int rowHeight) {
-        int width = Math.max(1, right - left);
-        int columns = VillageUiSafeArea.clamp(width / 170, minCols, maxCols);
-        if (count > 0) columns = Math.min(columns, Math.max(1, count));
-        int gap = 6;
-        int cellWidth = Math.max(64, (width - gap * (columns - 1)) / columns);
-        return new Grid(left, top, right, Math.max(top + 28, bottom), columns, cellWidth, rowHeight, gap);
     }
 
     private static int rows(int count, int columns) {
@@ -345,7 +430,7 @@ public final class VillageCommandCenterScreen extends Screen {
         int col = index % grid.columns();
         int x = grid.left() + col * (grid.cellWidth() + grid.gap());
         int y = grid.top() + row * grid.rowHeight() - scroll;
-        return new Cell(x, y, grid.cellWidth(), grid.rowHeight() - 5);
+        return new Cell(x, y, grid.cellWidth(), Math.max(24, grid.rowHeight() - 4));
     }
 
     private static boolean visible(Cell c, Grid grid) {
@@ -427,6 +512,9 @@ public final class VillageCommandCenterScreen extends Screen {
     private enum Mode { TOWN, SHOP, STATUS, FACILITY }
     private record Entry(String action, String kind, String title, String sub, String meta, String state,
                          boolean current, boolean available, int currentValue, int maximum) {}
+    private record Header(int bodyTop, int bottom, List<FormattedCharSequence> lines, int lineCount, int dividerY) {}
+    private record TownLayout(Header header, int roleTitleY, int roleLeft, int roleTop, int roleWidth,
+                              int roleHeight, int roleGap, int facilityTitleY, Grid facilityGrid) {}
     private record Grid(int left, int top, int right, int bottom, int columns,
                         int cellWidth, int rowHeight, int gap) {
         int height() { return bottom - top; }
