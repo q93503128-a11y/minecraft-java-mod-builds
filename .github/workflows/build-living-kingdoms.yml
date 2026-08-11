@@ -75,6 +75,8 @@ jobs:
               exit 1
             fi
             if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' ../../logs/server-smoke.log \
               && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/server-smoke.log \
               && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/server-smoke.log \
               && grep -Fq 'purchase_outcomes=77' ../../logs/server-smoke.log \
@@ -94,6 +96,13 @@ jobs:
           test "$passed" -eq 1
 
           grep -F 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' ../../logs/server-smoke.log
+          grep -F 'audience_reachable=true' ../../logs/server-smoke.log
+          grep -F 'enclosed=true' ../../logs/server-smoke.log
+          grep -F 'facade_replaced=false' ../../logs/server-smoke.log
+          grep -F 'loaded_only=true' ../../logs/server-smoke.log
+          grep -F 'Released Erden citadel CI zoning ticket' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' ../../logs/server-smoke.log
           grep -F 'Prepared Erden household population households=77 residents=231 workers=154 dependents=77 owned_homes=77 assigned_workplaces=154 vacancies=2 shifts=early,late,night' ../../logs/server-smoke.log
           grep -F 'Processed Erden household economy day=' ../../logs/server-smoke.log
           grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3 ledger=true shortages=0 shifts=true ownership=true' ../../logs/server-smoke.log
@@ -183,7 +192,7 @@ jobs:
             echo 'Inactive kingdom or legacy repair path ran.' >&2
             exit 1
           fi
-          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|Invalid Erden physical economy|Expected 156 Erden economy sites|Unsupported Erden economy role|Item debris remained around Erden|Erden cargo dispatch context was not closed|Erden escrow audit failed|living economy.*failed|watchdog' ../../logs/server-smoke.log; then
+          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Unable to furnish Erden citadel|Unable to furnish Erden landmark|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|Invalid Erden physical economy|Expected 156 Erden economy sites|Unsupported Erden economy role|Item debris remained around Erden|Erden cargo dispatch context was not closed|Erden escrow audit failed|living economy.*failed|watchdog' ../../logs/server-smoke.log; then
             exit 1
           fi
 
@@ -230,7 +239,11 @@ jobs:
 
           for class in \
             ErdenCapitalStreamingBuilder ExternalDistrictBuildingBuilder ExternalUrbanFabricBuilder \
-            ErdenUrbanInfrastructureBuilder ErdenPopulationManager ErdenPopulationSavedData \
+            ErdenUrbanInfrastructureBuilder ErdenUrbanInteriorBuilder ErdenUrbanLifeManager \
+            ErdenUrbanMicroInfillManager ErdenUrbanMicroInfillSavedData \
+            ErdenCitadelInteriorManager ErdenCitadelInteriorSavedData \
+            ErdenLandmarkInteriorManager ErdenLandmarkInteriorSavedData \
+            ErdenPopulationManager ErdenPopulationSavedData \
             ErdenAuthoritativeEconomyManager ErdenPhysicalEconomySavedData \
             ErdenLivingEconomyManager ErdenLivingEconomySavedData ErdenCargoEscrowManager \
             ErdenCargoEscrowAudit ErdenTransportManager ErdenTransportSavedData \
@@ -258,6 +271,8 @@ jobs:
           - Fresh Erden world server test: PASS
           - Client startup and graphical UI diagnostics: PASS
           - Streamed 2.4 x 1.8 km capital and external structure audit: PASS
+          - Citadel government zones and audience-hall traversal: PASS
+          - District landmark functional interiors: PASS
           - Household population, ownership and routines: PASS
           - Physical worksite inventory and authoritative cargo settlement: PASS
           - Exterior workforce, lifecycle, property and residence systems packaged: PASS
