@@ -1,0 +1,142 @@
+name: Audit Living Kingdoms entry traversal
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/audit-living-kingdoms-entry-traversal.yml'
+
+concurrency:
+  group: living-kingdoms-entry-traversal-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+  LIVING_KINGDOMS_CI_ENTRY_TRAVERSAL: '1'
+
+jobs:
+  audit:
+    name: All 273 capital entrances
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Compile exhaustive traversal auditor
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../../logs
+          auditor='src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenEntryTraversalAudit.java'
+          grep -F 'EXPECTED_URBAN = 233' "$auditor"
+          grep -F 'EXPECTED_DISTRICT = 40' "$auditor"
+          grep -F 'synchronous_get_chunk=false' "$auditor"
+          grep -F 'removeTicketWithRadius' "$auditor"
+          gradle --no-daemon clean classes --stacktrace --console=plain \
+            2>&1 | tee ../../logs/entry-traversal-compile.log
+
+      - name: Fresh world all-entry traversal audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-entry-traversal-ci-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-entry-traversal-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/entry-traversal-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 3000); do
+            if grep -Fq 'LK_ERDEN_ENTRY_TRAVERSAL_FAIL' ../../logs/entry-traversal-server.log \
+              || grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/entry-traversal-server.log; then
+              cat ../../logs/entry-traversal-server.log
+              exit 1
+            fi
+            if grep -Fq 'LK_ERDEN_ENTRY_TRAVERSAL_PASS urban=233 district=40 total=273' \
+                ../../logs/entry-traversal-server.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/entry-traversal-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/entry-traversal-server.log
+          test "$passed" -eq 1
+          grep -F 'Prepared exhaustive Erden entry traversal audit urban=233 district=40 total=273' ../../logs/entry-traversal-server.log
+          grep -F 'LK_ERDEN_ENTRY_TRAVERSAL_PASS urban=233 district=40 total=273' ../../logs/entry-traversal-server.log
+          grep -F 'road_to_door=true' ../../logs/entry-traversal-server.log
+          grep -F 'door_to_interior=true' ../../logs/entry-traversal-server.log
+          grep -F 'actual_doors=true' ../../logs/entry-traversal-server.log
+          grep -F 'exact_runtime_paths=true' ../../logs/entry-traversal-server.log
+          grep -F 'tickets_released=true' ../../logs/entry-traversal-server.log
+          grep -F 'synchronous_get_chunk=false' ../../logs/entry-traversal-server.log
+          grep -F 'Erden entry traversal audit progress 273/273 urban=233 district=40' ../../logs/entry-traversal-server.log
+
+          if grep -Eqi 'watchdog|A single server tick took|Exception loading level|EventBusSubscriber.*failed|LK_ERDEN_ENTRY_TRAVERSAL_FAIL' ../../logs/entry-traversal-server.log; then
+            exit 1
+          fi
+
+      - name: Upload entry traversal logs
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-entry-traversal-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Record entry traversal audit pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-entry-traversal.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-entry-traversal.json
+            git commit -m "Record Living Kingdoms entry traversal audit $GITHUB_RUN_NUMBER" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
