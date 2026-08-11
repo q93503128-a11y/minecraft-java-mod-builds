@@ -151,6 +151,23 @@ public final class SpellPresentationProfile {
         put("counterspell", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 1.45, 3, 0, 0, 0, 1.08, 1);
         put("steam_burst", SigilStyle.FRONT_COMPACT, MotionStyle.WAVE, 1.32, 2, 2, 0, 0, 1.04, 0);
         put("frost_step", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 1.88, 3, 6, 0, 0, 1.08, 0);
+
+        // alpha.22 phase 2A: all 4C normal/fusion formulas get authored scale and duration semantics.
+        // The MidCircleVisualIdentity director owns their geometry; these profiles define only the
+        // spell-specific staging footprint and lifetime, never a rank-wide circle template.
+        put("wall_of_fire", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 6.00, 4, 9, 0, 0, 1.46, 2);
+        put("ice_storm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 7.20, 4, 7, 0, 11, 1.48, 8);
+        put("greater_invisibility", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.55, 4, 6, 0, 0, 1.02, 0);
+        put("resilient_sphere", SigilStyle.BODY_HALO, MotionStyle.AURA, 2.45, 4, 4, 0, 0, 1.30, 0);
+        put("dimension_door", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 2.90, 4, 7, 0, 0, 1.22, 0);
+        put("stoneskin", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.75, 4, 5, 0, 0, 1.08, 0);
+        put("confusion", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 3.10, 4, 5, 0, 0, 1.16, 2);
+        put("blight", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 1.85, 4, 7, 0, 0, 1.18, 2);
+        put("freedom_of_movement", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.90, 4, 5, 0, 0, 1.08, 0);
+        put("phantasmal_killer", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 2.20, 4, 4, 0, 0, 1.22, 2);
+        put("fire_shield", SigilStyle.BODY_HALO, MotionStyle.AURA, 2.35, 4, 8, 0, 0, 1.30, 0);
+        put("wall_of_ice", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 6.30, 4, 8, 0, 0, 1.42, 2);
+        put("thunder_cage", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 3.00, 4, 4, 0, 0, 1.30, 2);
     }
 
     private SpellPresentationProfile() {}

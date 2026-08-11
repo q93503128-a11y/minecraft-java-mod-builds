@@ -180,6 +180,11 @@ public final class WorldMagicTracker {
             LowCircleVisualIdentity.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
             return mesh.build();
         }
+        if (MidCircleVisualIdentity.owns(spell)) {
+            MidCircleVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
+                    visual.direction, targetOffset(visual), mesh);
+            return mesh.build();
+        }
 
         // There is deliberately no universal disc/ring prelude here. Each placement grammar earns
         // its own silhouette so a portal, target curse and sky ritual cannot read as the same circle.
@@ -411,6 +416,11 @@ public final class WorldMagicTracker {
                 visual.power / Math.max(1.0, spell.power())), 0.18), 0.82, 2.0) * profile.releaseScale();
         if (LowCircleVisualIdentity.owns(spell)) {
             LowCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), age,
+                    motionProgress(visual, age), powerFactor, mesh);
+            return mesh.build();
+        }
+        if (MidCircleVisualIdentity.owns(spell)) {
+            MidCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), age,
                     motionProgress(visual, age), powerFactor, mesh);
             return mesh.build();
         }

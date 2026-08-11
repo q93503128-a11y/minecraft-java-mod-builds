@@ -24,7 +24,7 @@ The overhaul is informed by publicly viewable Minecraft magic work such as Mahou
 
 ## Phase 1 — 1C-3C quality baseline (alpha.21)
 
-Status: implemented.
+Status: implemented and protected as the regression baseline.
 
 Every normal spell and fusion result in circles 1-3 has an authored `SpellPresentationProfile` and is routed through `LowCircleVisualIdentity` instead of the generic school/fingerprint fallback. The baseline covers 37 formulae.
 
@@ -49,21 +49,47 @@ Representative presentation identities include:
 
 Alpha.20 held-cast behaviour, atomic robe behaviour and responsive Grimoire UI are regression requirements for every later phase.
 
-## Phase 2 — 4C-6C
+## Phase 2 — 4C-6C battlefield manipulation
 
-Next target.
+Phase 2 is deliberately split by circle so each formula receives an authored sequence rather than a scaled copy of Phase 1.
 
-Do not merely port the low-circle director to more spell IDs. Establish distinct mid-tier battlefield languages for:
+### Phase 2A — 4C authored battlefield presentation (alpha.22)
 
-- persistent walls and zones;
-- large elemental storms;
-- strong single-target control;
-- advanced mobility/space folding;
-- sustained beams and heavy projectiles;
-- defensive domes and layered wards;
-- transformation/debuff magic.
+Status: implemented.
 
-4C-6C should feel like the point where a mage starts manipulating the surrounding space, not only emitting an attack from the hands.
+All ten normal 4C spells and all three 4C fusion results are routed through `MidCircleVisualIdentity` before the generic school/fingerprint renderer. The director currently owns circle 4 only; 5C and 6C remain outside it until their dedicated passes.
+
+Authored 4C identities:
+
+- Wall of Fire: target-space foundation anchors assemble left-to-right, pylons rise, then segmented flame panels ignite into a persistent wall silhouette.
+- Wall of Ice: target-space crystalline buttresses rise first, followed by alternating jagged ice plates and fractured residue. It does not reuse the fire-wall body.
+- Ice Storm: a ground footprint and a separate high canopy lock together; independent hail cells descend through the full vertical volume and leave a spreading frost fracture.
+- Greater Invisibility: incomplete contour shutters and body slices erase themselves progressively instead of using an attack sigil.
+- Resilient Sphere: orthogonal and tilted ribs close around the caster into a defensive shell, followed by a sealed pulse.
+- Dimension Door: a near aperture and target aperture are built separately and connected by visible depth rails and corridor slices. Release sends a spatial pulse through the passage.
+- Stoneskin: body-height polygon plates assemble from the feet upward and settle as a layered stone shell.
+- Confusion: mismatched compass/star frames occupy different heights and tilted planes around the target, deliberately refusing one stable axis.
+- Blight: root/vein branches grow inward around the target and contract into a withering heart before leaving a drained residue ring.
+- Freedom of Movement: shackle-like rings open into widening gaps while vertical escape rails climb through the body space.
+- Phantasmal Killer: an asymmetric target-space mask with mismatched eyes, temples and jaw closes on the victim and fractures after release.
+- Fire Shield: a body-centred defensive bastion closes from segmented plates and ember crests rather than reusing an offensive fire circle.
+- Thunder Cage: four target-space pylons install first, then horizontal restraint rails and diagonal lightning arcs complete the prison.
+
+Phase 2A intentionally does not claim that every 4C effect is physically larger than 3C. Scale follows the spell: battlefield walls and storms occupy large world space, while body wards and target curses remain compact but structurally more sophisticated.
+
+### Phase 2B — 5C
+
+Next target after alpha.22 runtime review.
+
+Priorities include Wall of Force, Cloudkill, Hold Monster, Passwall, Insect Plague, Telekinesis, Cone of Cold, Flame Strike, Dominate Person, Mass Cure Wounds, Chain Lightning, Arcane Hand and Teleportation Circle. They require new wall, toxic-volume, target restraint, true passage, swarm-volume, force-manipulation, cone, sky-drop, domination, mass-life, branching-beam and spatial-circle languages rather than 4C reskins.
+
+### Phase 2C — 6C
+
+Follows Phase 2B.
+
+Priorities include Disintegrate, Sunbeam, Freezing Sphere, Globe of Invulnerability, Flesh to Stone, Eyebite, Move Earth, Mass Suggestion, True Seeing, Circle of Death and Solar Guard. Beam/lance/heavy-orb kinetics and defense/transformation silhouettes must be authored separately.
+
+4C-6C as a whole should feel like the point where a mage starts manipulating the surrounding space, not only emitting an attack from the hands.
 
 ## Phase 3 — 7C-9C
 
@@ -93,7 +119,10 @@ Robe sets should also be separated by silhouette, not only colour: cinder combat
 - No build-time Python source rewriting in the final canonical CI.
 - Java 25 clean build is required.
 - JAR structure and version are audited.
+- Phase 1's 37 authored identities must continue to route through `LowCircleVisualIdentity` before all later directors.
+- Phase 2A's 13 circle-4 identities must route through `MidCircleVisualIdentity` before the generic renderer.
 - Visible projectile/meteor impact and server damage timing must remain synchronized.
 - Zero cast time still means completed sigil held until key release; reaching 100% never auto-fires.
 - UI content must remain reachable at small logical resolutions / large GUI scale.
+- The robe remains one logical outfit even if rendering uses multiple pieces.
 - Save compatibility must be preserved unless explicitly documented otherwise.
