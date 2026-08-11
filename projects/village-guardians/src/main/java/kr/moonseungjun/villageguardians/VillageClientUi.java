@@ -23,13 +23,16 @@ public final class VillageClientUi {
                                 case "quick_chat" -> new VillageQuickChatScreen(payload);
                                 case "status" -> new VillageStatusScreen(payload);
                                 case "relic_collection" -> new VillageRelicScreen(payload);
+                                case "relic_choice" -> new VillageRelicChoiceScreen(payload);
+                                case "wave_intel" -> new VillageWaveIntelScreen(payload);
+                                case "game_over" -> new VillageGameOverScreen(payload);
                                 case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload);
                                 case "skill_test_password" -> new VillageSkillTestPasswordScreen(payload);
-                                case "wave_intel", "skill_test", "game_over" -> new VillageFacilityScreen(payload);
+                                case "skill_test" -> new VillageFacilityScreen(payload);
                                 case "equipment_shop" -> new VillageShopScreen(payload);
                                 case "equipment_fusion" -> new VillageFusionScreen(payload);
                                 case "result" -> new VillageResultScreen(payload);
-                                case "building", "management", "funding", "tower_control", "tower_detail", "caller", "relic_choice" ->
+                                case "building", "management", "funding", "tower_control", "tower_detail", "caller" ->
                                         new VillageFacilityScreen(payload);
                                 default -> new VillageUiScreen(payload);
                             });
