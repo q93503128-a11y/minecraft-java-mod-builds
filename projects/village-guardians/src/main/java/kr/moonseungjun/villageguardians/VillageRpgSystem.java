@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.Items;
@@ -83,6 +84,11 @@ public final class VillageRpgSystem {
             value *= VillageEquipmentShop.incomingMultiplier(defender);
             value *= VillageRelicSystem.incomingMultiplier(defender);
             if (VillageCouncilState.isInsideVillage(defender)) value *= VillageProgressionSystem.wallDamageMultiplier();
+
+            Entity sourceEntity = event.getSource().getEntity();
+            if (VillageRaidSystem.isRaidEnemy(sourceEntity)) {
+                value *= VillageDifficultyTuning.playerDamageMultiplier(VillageCouncilState.currentDay());
+            }
             event.setAmount(event.getAmount() * value);
         }
         VillagePersonalCombatSystem.handleIncomingDamage(event);
