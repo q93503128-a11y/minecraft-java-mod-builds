@@ -4,6 +4,8 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.BedBlock;
@@ -53,8 +55,7 @@ public final class ErdenUrbanUpperFloorBuilder {
         ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);
         if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
 
-        List<ExternalUrbanFabricBuilder.UrbanEntrance> entrances =
-                ExternalUrbanFabricBuilder.entrances();
+        List<ExternalUrbanFabricBuilder.UrbanEntrance> entrances = ExternalUrbanFabricBuilder.entrances();
         logDiagnosticsOnce(entrances);
 
         ErdenUrbanInteriorSavedData interiors = level.getDataStorage()
@@ -99,8 +100,7 @@ public final class ErdenUrbanUpperFloorBuilder {
         ciSamplePassed = false;
     }
 
-    private static void logDiagnosticsOnce(
-            List<ExternalUrbanFabricBuilder.UrbanEntrance> entrances) {
+    private static void logDiagnosticsOnce(List<ExternalUrbanFabricBuilder.UrbanEntrance> entrances) {
         if (diagnosticsLogged) return;
         int supported = 0;
         for (ExternalUrbanFabricBuilder.UrbanEntrance entrance : entrances) {
@@ -159,9 +159,7 @@ public final class ErdenUrbanUpperFloorBuilder {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int y = minimum; y <= maximum; y++) {
             cursor.set(x, y, z);
-            if (level.getBlockState(cursor).getBlock() instanceof DoorBlock) {
-                lowest = Math.min(lowest, y);
-            }
+            if (level.getBlockState(cursor).getBlock() instanceof DoorBlock) lowest = Math.min(lowest, y);
         }
         return lowest == Integer.MAX_VALUE ? Integer.MIN_VALUE : lowest;
     }
@@ -199,8 +197,7 @@ public final class ErdenUrbanUpperFloorBuilder {
                 Point point = upper.point(lateral, depth);
                 set(level, point.x, upper.floorY, point.z, floor.defaultBlockState());
                 for (int yOffset = 1; yOffset <= UPPER_CLEAR_HEIGHT; yOffset++) {
-                    set(level, point.x, upper.floorY + yOffset, point.z,
-                            Blocks.AIR.defaultBlockState());
+                    set(level, point.x, upper.floorY + yOffset, point.z, Blocks.AIR.defaultBlockState());
                 }
             }
         }
@@ -218,11 +215,7 @@ public final class ErdenUrbanUpperFloorBuilder {
         return ((entrance.x() * 31 + entrance.z()) & 1) == 0 ? -2 : 2;
     }
 
-    private static void buildStaircase(
-            ServerLevel level,
-            Room ground,
-            Room upper,
-            int stairSide) {
+    private static void buildStaircase(ServerLevel level, Room ground, Room upper, int stairSide) {
         BlockState stair = Blocks.SPRUCE_STAIRS.defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, ground.inwardDirection);
         for (int step = 0; step < STAIR_STEPS; step++) {
@@ -233,9 +226,6 @@ public final class ErdenUrbanUpperFloorBuilder {
             set(level, point.x, y + 1, point.z, Blocks.AIR.defaultBlockState());
             set(level, point.x, y + 2, point.z, Blocks.AIR.defaultBlockState());
         }
-
-        // Keep the landing open without cutting the facade. The last stair occupies the upper-floor
-        // elevation; two holes beneath it provide the required head clearance for the climb.
         for (int depth = 4; depth <= 5; depth++) {
             Point opening = upper.point(stairSide, depth);
             set(level, opening.x, upper.floorY, opening.z, Blocks.AIR.defaultBlockState());
@@ -245,8 +235,8 @@ public final class ErdenUrbanUpperFloorBuilder {
     private static void furnishUpperFloor(ServerLevel level, Room room) {
         switch (room.role) {
             case "tenement" -> {
-                placeBed(level, room, -2, 7, (BedBlock) Blocks.WHITE_BED);
-                placeBed(level, room, 2, 7, (BedBlock) Blocks.LIGHT_GRAY_BED);
+                placeBed(level, room, -2, 7, bed("white_bed"));
+                placeBed(level, room, 2, 7, bed("light_gray_bed"));
                 place(level, room, -3, 3, 1, Blocks.BARREL);
                 place(level, room, 3, 3, 1, Blocks.BOOKSHELF);
             }
@@ -263,8 +253,8 @@ public final class ErdenUrbanUpperFloorBuilder {
                 place(level, room, 3, 8, 1, Blocks.BARREL);
             }
             case "inn" -> {
-                placeBed(level, room, -2, 7, (BedBlock) Blocks.RED_BED);
-                placeBed(level, room, 2, 7, (BedBlock) Blocks.BLUE_BED);
+                placeBed(level, room, -2, 7, bed("red_bed"));
+                placeBed(level, room, 2, 7, bed("blue_bed"));
                 place(level, room, -3, 3, 1, Blocks.BARREL);
                 place(level, room, 3, 3, 1, Blocks.CHEST);
             }
@@ -275,8 +265,8 @@ public final class ErdenUrbanUpperFloorBuilder {
                 place(level, room, 3, 8, 1, Blocks.HAY_BLOCK);
             }
             case "guard_post" -> {
-                placeBed(level, room, -2, 7, (BedBlock) Blocks.GRAY_BED);
-                placeBed(level, room, 2, 7, (BedBlock) Blocks.GRAY_BED);
+                placeBed(level, room, -2, 7, bed("gray_bed"));
+                placeBed(level, room, 2, 7, bed("gray_bed"));
                 place(level, room, -3, 3, 1, Blocks.BARREL);
                 place(level, room, 3, 3, 1, Blocks.TARGET);
             }
@@ -287,24 +277,27 @@ public final class ErdenUrbanUpperFloorBuilder {
                 place(level, room, 3, 8, 1, Blocks.CHEST);
             }
             case "warehouse" -> {
-                for (int depth = 3; depth <= 9; depth += 2) {
+                for (int depth = 3; depth <= DEPTH; depth += 2) {
                     place(level, room, -3, depth, 1, Blocks.BARREL);
                     place(level, room, 3, depth, 1, Blocks.BARREL);
                 }
-                place(level, room, -2, 9, 1, Blocks.CHEST);
-                place(level, room, 2, 9, 1, Blocks.CHEST);
+                place(level, room, -2, DEPTH, 1, Blocks.CHEST);
+                place(level, room, 2, DEPTH, 1, Blocks.CHEST);
             }
-            default -> throw new IllegalStateException(
-                    "Unhandled Erden upper-floor role " + room.role);
+            default -> throw new IllegalStateException("Unhandled Erden upper-floor role " + room.role);
         }
     }
 
-    private static void placeBed(
-            ServerLevel level,
-            Room room,
-            int lateral,
-            int depth,
-            BedBlock bed) {
+    private static BedBlock bed(String path) {
+        Block block = BuiltInRegistries.BLOCK.getValue(
+                Identifier.fromNamespaceAndPath("minecraft", path));
+        if (!(block instanceof BedBlock bed)) {
+            throw new IllegalStateException("Missing Minecraft bed block minecraft:" + path);
+        }
+        return bed;
+    }
+
+    private static void placeBed(ServerLevel level, Room room, int lateral, int depth, BedBlock bed) {
         Point footPoint = room.point(lateral, depth);
         Point headPoint = room.point(lateral, depth + 1);
         BlockState foot = bed.defaultBlockState()
@@ -317,16 +310,9 @@ public final class ErdenUrbanUpperFloorBuilder {
         set(level, headPoint.x, room.floorY + 1, headPoint.z, head);
     }
 
-    private static void place(
-            ServerLevel level,
-            Room room,
-            int lateral,
-            int depth,
-            int yOffset,
-            Block block) {
+    private static void place(ServerLevel level, Room room, int lateral, int depth, int yOffset, Block block) {
         Point point = room.point(lateral, depth);
-        set(level, point.x, room.floorY + yOffset, point.z,
-                block.defaultBlockState());
+        set(level, point.x, room.floorY + yOffset, point.z, block.defaultBlockState());
     }
 
     private static void verifyVerticalRoom(
@@ -339,34 +325,27 @@ public final class ErdenUrbanUpperFloorBuilder {
                 .getBlock() instanceof DoorBlock)) {
             throw new IllegalStateException("Upper-floor pass removed its entrance door");
         }
-
         for (int depth = 1; depth <= 3; depth++) {
             Point aisle = upper.point(0, depth);
-            if (!level.getBlockState(new BlockPos(
-                    aisle.x, upper.floorY + 1, aisle.z)).isAir()) {
+            if (!level.getBlockState(new BlockPos(aisle.x, upper.floorY + 1, aisle.z)).isAir()) {
                 throw new IllegalStateException(
-                        "Upper-floor aisle is obstructed role=" + upper.role
-                                + " depth=" + depth);
+                        "Upper-floor aisle is obstructed role=" + upper.role + " depth=" + depth);
             }
         }
-
         int stairs = 0;
         for (int step = 0; step < STAIR_STEPS; step++) {
             Point point = ground.point(stairSide, 2 + step);
-            if (level.getBlockState(new BlockPos(
-                    point.x, ground.floorY + 1 + step, point.z)).getBlock()
+            if (level.getBlockState(new BlockPos(point.x, ground.floorY + 1 + step, point.z)).getBlock()
                     == Blocks.SPRUCE_STAIRS) {
                 stairs++;
             }
         }
         if (stairs != STAIR_STEPS) {
             throw new IllegalStateException(
-                    "Upper-floor stair connection incomplete role=" + upper.role
-                            + " stairs=" + stairs);
+                    "Upper-floor stair connection incomplete role=" + upper.role + " stairs=" + stairs);
         }
         if (!containsRoleFixture(level, upper)) {
-            throw new IllegalStateException(
-                    "Upper-floor interior has no role fixture role=" + upper.role);
+            throw new IllegalStateException("Upper-floor interior has no role fixture role=" + upper.role);
         }
     }
 
@@ -399,10 +378,8 @@ public final class ErdenUrbanUpperFloorBuilder {
             ServerLevel level,
             ExternalUrbanFabricBuilder.UrbanEntrance entrance,
             BuildResult result) {
-        if (ciSamplePassed
-                || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
-        ExternalUrbanFabricBuilder.UrbanEntrance sample =
-                ExternalUrbanFabricBuilder.diagnosticEntrance();
+        if (ciSamplePassed || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+        ExternalUrbanFabricBuilder.UrbanEntrance sample = ExternalUrbanFabricBuilder.diagnosticEntrance();
         if (entrance.x() != sample.x() || entrance.z() != sample.z()) return;
         ciSamplePassed = true;
         LivingKingdoms.LOGGER.info(
@@ -410,18 +387,11 @@ public final class ErdenUrbanUpperFloorBuilder {
                 entrance.role(), entrance.x(), entrance.z(), result, STAIR_STEPS);
     }
 
-    private static void set(
-            ServerLevel level,
-            int x,
-            int y,
-            int z,
-            BlockState state) {
+    private static void set(ServerLevel level, int x, int y, int z, BlockState state) {
         level.setBlockAndUpdate(new BlockPos(x, y, z), state);
     }
 
-    private static Room room(
-            ExternalUrbanFabricBuilder.UrbanEntrance entrance,
-            int floorY) {
+    private static Room room(ExternalUrbanFabricBuilder.UrbanEntrance entrance, int floorY) {
         int deltaX = entrance.roadX() - entrance.x();
         int deltaZ = entrance.roadZ() - entrance.z();
         int inwardX;
@@ -444,8 +414,7 @@ public final class ErdenUrbanUpperFloorBuilder {
                 inwardDirection);
     }
 
-    private static long entranceKey(
-            ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+    private static long entranceKey(ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
         return ((long) entrance.x() << 32) ^ (entrance.z() & 0xffffffffL);
     }
 
