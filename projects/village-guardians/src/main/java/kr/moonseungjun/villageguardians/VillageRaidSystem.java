@@ -35,7 +35,7 @@ public final class VillageRaidSystem {
     private static final int BETWEEN_WAVE_TICKS = 120;
     private static final int FORCED_NEXT_WAVE_TICKS = 20 * 60;
     private static final int MAX_ACTIVE_ENEMIES = 100;
-    private static final int STRUCTURE_ATTACK_INTERVAL = 18;
+    private static final int STRUCTURE_ATTACK_INTERVAL = 30;
     private static final double PLAYER_PRIORITY_RANGE = 16.0;
     private static final String RAID_TEAM_NAME = "vg_raid";
     private static final String RAID_ENEMY_TAG = "villageguardians_raid_enemy";
@@ -220,9 +220,9 @@ public final class VillageRaidSystem {
     }
 
     public static int previewWaveCount(int day, int previewWave, int players, VillageWaveTrait trait) {
-        int base = 4 + previewWave * 2 + Math.max(1, players) * 2 + Math.min(30, day * 2)
-                + VillageWarfrontSystem.countBonus(day);
-        return trait.adjustedCount(base);
+        int soloBase = 4 + previewWave * 2 + Math.min(30, day * 2) + VillageWarfrontSystem.countBonus(day);
+        int soloCount = trait.adjustedCount(soloBase);
+        return VillageDifficultyTuning.scaleEnemyCount(soloCount, Math.max(1, players));
     }
 
     public static int previewBossCount(int day, int previewWave, int maximumWaves, int count) {
@@ -379,7 +379,9 @@ public final class VillageRaidSystem {
                 float multiplier = currentTrait.structureDamageMultiplier()
                         * VillageWarfrontSystem.structureDamageMultiplier(day)
                         * VillageEnemyArchetypeSystem.structureDamageMultiplier(archetype)
-                        * VillageBossAspectSystem.structureMultiplier(mob);
+                        * VillageBossAspectSystem.structureMultiplier(mob)
+                        * VillageDifficultyTuning.earlyStructureMultiplier(day)
+                        * VillageDifficultyTuning.defenderStateStructureMultiplier(server);
                 int damage = Math.max(1, Math.round((7 + wave * 2 + Math.min(24, day)
                         + (VillageEnemyArchetypeSystem.isBoss(archetype) ? 18 : 0)) * multiplier));
                 VillageProgressionSystem.damageBuilding(server, targetBuilding, damage);
