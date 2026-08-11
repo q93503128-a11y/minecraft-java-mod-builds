@@ -108,6 +108,49 @@ public final class SpellPresentationProfile {
         put("solar_guard", SigilStyle.BODY_HALO, MotionStyle.AURA, 4.4, 5, 6, 0, 0, 1.46, 0);
         put("teleportation_circle", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 5.0, 4, 4, 0, 0, 1.45, 0);
         put("thunder_cage", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 2.8, 4, 4, 0, 0, 1.26, 2);
+
+        // alpha.21 phase 1: canonical authored profiles for every 1C-3C formula.
+        // Rank does not define size; each value follows the spell fiction and its launch device.
+        put("magic_missile", SigilStyle.FRONT_COMPACT, MotionStyle.MISSILE_SWARM, 0.96, 2, 3, 62, 0, 0.92, 0);
+        put("fire_bolt", SigilStyle.FRONT_LANCE, MotionStyle.BOLT, 0.68, 1, 0, 50, 0, 0.88, 0);
+        put("ray_of_frost", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 0.76, 2, 0, 0, 0, 0.90, 0);
+        put("shield", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.12, 2, 0, 0, 0, 1.02, 0);
+        put("feather_fall", SigilStyle.FEET_RUNE, MotionStyle.AURA, 1.18, 2, 0, 0, 0, 0.96, 0);
+        put("light", SigilStyle.BODY_HALO, MotionStyle.AURA, 0.78, 1, 0, 0, 0, 0.84, 0);
+        put("grease", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 2.45, 2, 4, 0, 0, 1.04, 1);
+        put("sleep", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 2.85, 2, 3, 0, 0, 1.08, 1);
+        put("thunderwave", SigilStyle.FRONT_COMPACT, MotionStyle.WAVE, 1.48, 2, 4, 0, 0, 1.06, 0);
+        put("mage_armor", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.34, 2, 2, 0, 0, 1.08, 0);
+
+        put("scorching_ray", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 1.08, 3, 3, 0, 0, 1.02, 0);
+        put("misty_step", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 1.62, 2, 1, 0, 0, 0.94, 0);
+        put("web", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 3.20, 3, 0, 0, 0, 1.10, 1);
+        put("mirror_image", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.65, 3, 3, 0, 0, 1.04, 0);
+        put("invisibility", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.10, 2, 0, 0, 0, 0.96, 0);
+        put("gust_of_wind", SigilStyle.FRONT_LANCE, MotionStyle.WAVE, 1.18, 3, 2, 0, 0, 1.02, 0);
+        put("hold_person", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 1.42, 3, 4, 0, 0, 1.10, 2);
+        put("shatter", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 1.88, 3, 7, 0, 0, 1.12, 4);
+        put("blur", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.18, 2, 3, 0, 0, 0.98, 0);
+        put("levitate", SigilStyle.FEET_RUNE, MotionStyle.AURA, 1.34, 3, 3, 0, 0, 1.00, 0);
+
+        put("fireball", SigilStyle.FRONT_COMPACT, MotionStyle.HEAVY_ORB, 1.46, 3, 0, 27, 0, 1.18, 0);
+        put("lightning_bolt", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 1.22, 3, 0, 0, 0, 1.12, 0);
+        put("fly", SigilStyle.FEET_RUNE, MotionStyle.AURA, 1.58, 3, 2, 0, 0, 1.08, 0);
+        put("haste", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.36, 3, 0, 0, 0, 1.04, 0);
+        put("dispel_magic", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 1.38, 3, 0, 0, 0, 1.02, 2);
+        put("vampiric_touch", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 1.46, 3, 2, 0, 0, 1.08, 2);
+        put("slow", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 3.65, 3, 0, 0, 0, 1.14, 2);
+        put("protection_from_energy", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.68, 3, 4, 0, 0, 1.12, 0);
+        put("sleet_storm", SigilStyle.GROUND_SEAL, MotionStyle.STORM, 6.20, 4, 4, 0, 0, 1.30, 4);
+        put("blink", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 1.70, 3, 2, 0, 0, 1.02, 0);
+
+        put("burning_hands", SigilStyle.FRONT_COMPACT, MotionStyle.WAVE, 1.18, 2, 5, 0, 0, 0.96, 0);
+        put("ice_knife", SigilStyle.FRONT_LANCE, MotionStyle.DART, 0.92, 2, 0, 54, 0, 0.94, 0);
+        put("chromatic_orb", SigilStyle.FRONT_COMPACT, MotionStyle.HEAVY_ORB, 1.22, 3, 7, 36, 0, 1.10, 0);
+        put("wind_wall", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 4.60, 3, 5, 0, 0, 1.18, 2);
+        put("counterspell", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 1.45, 3, 0, 0, 0, 1.08, 1);
+        put("steam_burst", SigilStyle.FRONT_COMPACT, MotionStyle.WAVE, 1.32, 2, 2, 0, 0, 1.04, 0);
+        put("frost_step", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 1.88, 3, 6, 0, 0, 1.08, 0);
     }
 
     private SpellPresentationProfile() {}

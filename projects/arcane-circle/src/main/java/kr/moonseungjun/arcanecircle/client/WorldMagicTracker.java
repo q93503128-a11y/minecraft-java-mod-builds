@@ -176,6 +176,11 @@ public final class WorldMagicTracker {
         double formula = sigilPhase(p, 0.36, 0.82);
         double release = sigilPhase(p, 0.68, 1.00);
 
+        if (LowCircleVisualIdentity.owns(spell)) {
+            LowCircleVisualIdentity.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
+            return mesh.build();
+        }
+
         // There is deliberately no universal disc/ring prelude here. Each placement grammar earns
         // its own silhouette so a portal, target curse and sky ritual cannot read as the same circle.
         switch (profile.sigil()) {
@@ -404,6 +409,11 @@ public final class WorldMagicTracker {
         ArcaneWorldMesh.Basis facing = ArcaneWorldMesh.Basis.facing(visual.direction);
         double powerFactor = clamp(Math.pow(Math.max(0.08,
                 visual.power / Math.max(1.0, spell.power())), 0.18), 0.82, 2.0) * profile.releaseScale();
+        if (LowCircleVisualIdentity.owns(spell)) {
+            LowCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), age,
+                    motionProgress(visual, age), powerFactor, mesh);
+            return mesh.build();
+        }
         switch (profile.motion()) {
             case MISSILE_SWARM -> buildMissileSwarm(mesh, visual, facing, age, powerFactor);
             case HEAVY_ORB -> buildElementalOrb(mesh, visual, facing, age, powerFactor);
