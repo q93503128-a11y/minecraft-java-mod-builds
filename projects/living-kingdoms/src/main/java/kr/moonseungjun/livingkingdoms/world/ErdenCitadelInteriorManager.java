@@ -5,6 +5,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
@@ -35,6 +37,7 @@ public final class ErdenCitadelInteriorManager {
     private static final int MIN_ZONE_FIXTURES = 4;
     private static final int CITADEL_HALF_SIZE = 62;
     private static final int MAX_WALK_NODES = 24_000;
+    private static final int CI_CHUNK_RADIUS = 4;
     private static final int UPDATE_FLAGS =
             Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
@@ -67,7 +70,10 @@ public final class ErdenCitadelInteriorManager {
     private static boolean preparedLogged;
     private static boolean completionLogged;
     private static boolean ciPassLogged;
+    private static boolean ciTicketHeld;
+    private static ChunkPos ciTicketCenter;
     private static final Map<String, ZoneResult> SESSION_RESULTS = new HashMap<>();
+    private static final Map<String, Integer> FAILED_SCANS = new HashMap<>();
 
     private ErdenCitadelInteriorManager() {
     }
@@ -81,6 +87,7 @@ public final class ErdenCitadelInteriorManager {
 
         RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, "erden_kingdom");
         if (site == null || !site.built()) return;
+        retainCitadelForCi(level, site);
         logPreparedOnce(site);
 
         ErdenCitadelInteriorSavedData data = level.getDataStorage()
@@ -91,9 +98,13 @@ public final class ErdenCitadelInteriorManager {
             if (data.isComplete(zone.id, INTERIOR_REVISION)) continue;
             try {
                 ZoneResult result = tryFurnishZone(level, site, zone);
-                if (result == null || result.fixtures < MIN_ZONE_FIXTURES) continue;
+                if (result == null || result.fixtures < MIN_ZONE_FIXTURES) {
+                    logFailedScanIfUseful(level, site, zone, result);
+                    continue;
+                }
                 data.markComplete(zone.id, INTERIOR_REVISION);
                 SESSION_RESULTS.put(zone.id, result);
+                FAILED_SCANS.remove(zone.id);
                 processed++;
                 LivingKingdoms.LOGGER.info(
                         "Completed Erden citadel zone={} anchor={},{},{} fixtures={} enclosed=true facade_replaced=false",
@@ -114,11 +125,45 @@ public final class ErdenCitadelInteriorManager {
     }
 
     private static void reset(MinecraftServer server) {
+        if (activeServer != null && ciTicketHeld && ciTicketCenter != null) {
+            ServerLevel oldLevel = activeServer.getLevel(StarterRealmManager.REALM_KEY);
+            if (oldLevel != null) {
+                oldLevel.getChunkSource().removeTicketWithRadius(
+                        TicketType.PORTAL, ciTicketCenter, CI_CHUNK_RADIUS);
+            }
+        }
         activeServer = server;
         preparedLogged = false;
         completionLogged = false;
         ciPassLogged = false;
+        ciTicketHeld = false;
+        ciTicketCenter = null;
         SESSION_RESULTS.clear();
+        FAILED_SCANS.clear();
+    }
+
+    private static void retainCitadelForCi(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site) {
+        if (ciTicketHeld || !ciMode()) return;
+        ciTicketCenter = new ChunkPos(site.centerX() >> 4, site.centerZ() >> 4);
+        level.getChunkSource().addTicketAndLoadWithRadius(
+                TicketType.PORTAL, ciTicketCenter, CI_CHUNK_RADIUS);
+        ciTicketHeld = true;
+        LivingKingdoms.LOGGER.info(
+                "Retained Erden citadel for CI zoning audit centre_chunk={},{} radius={} transient_ticket=portal forced_chunks=false synchronous_get_chunk=false",
+                ciTicketCenter.x(), ciTicketCenter.z(), CI_CHUNK_RADIUS);
+    }
+
+    private static void releaseCiTicket(ServerLevel level) {
+        if (!ciTicketHeld || ciTicketCenter == null) return;
+        level.getChunkSource().removeTicketWithRadius(
+                TicketType.PORTAL, ciTicketCenter, CI_CHUNK_RADIUS);
+        LivingKingdoms.LOGGER.info(
+                "Released Erden citadel CI zoning ticket centre_chunk={},{} radius={} transient_ticket=portal",
+                ciTicketCenter.x(), ciTicketCenter.z(), CI_CHUNK_RADIUS);
+        ciTicketHeld = false;
+        ciTicketCenter = null;
     }
 
     private static void logPreparedOnce(RealmSiteLayoutSavedData.RealmSite site) {
@@ -258,25 +303,51 @@ public final class ErdenCitadelInteriorManager {
         return count;
     }
 
+    private static void logFailedScanIfUseful(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            Zone zone,
+            ZoneResult result) {
+        if (!ciMode()) return;
+        int attempts = FAILED_SCANS.merge(zone.id, 1, Integer::sum);
+        if (attempts != 5 && attempts % 20 != 0) return;
+        int preferredX = site.centerX() + zone.offsetX;
+        int preferredZ = site.centerZ() + zone.offsetZ;
+        int loadedColumns = 0;
+        for (int dx = -SEARCH_RADIUS; dx <= SEARCH_RADIUS; dx += 8) {
+            for (int dz = -SEARCH_RADIUS; dz <= SEARCH_RADIUS; dz += 8) {
+                if (columnLoaded(level, preferredX + dx, preferredZ + dz)) loadedColumns++;
+            }
+        }
+        LivingKingdoms.LOGGER.info(
+                "LK_ERDEN_CITADEL_ZONE_WAIT zone={} attempts={} loaded_probe_columns={} anchor_found={} fixtures={}",
+                zone.id, attempts, loadedColumns, result != null,
+                result == null ? 0 : result.fixtures);
+    }
+
     private static void verifyCiIfReady(
             ServerLevel level,
             RealmSiteLayoutSavedData.RealmSite site,
             int completed) {
-        if (ciPassLogged
-                || completed != ZONES.size()
-                || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+        if (ciPassLogged || completed != ZONES.size() || !ciMode()) return;
         if (SESSION_RESULTS.size() != ZONES.size()) return;
 
         ZoneResult audience = SESSION_RESULTS.get("audience_hall");
         if (audience == null) return;
         Traversal traversal = verifyAudienceTraversal(level, site, audience.anchor);
-        if (!traversal.reachable) return;
+        if (!traversal.reachable) {
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_CITADEL_TRAVERSAL_WAIT public_doors={} walk_nodes={} audience_reachable=false",
+                    traversal.publicDoors, traversal.visitedNodes);
+            return;
+        }
 
         int fixtureCount = SESSION_RESULTS.values().stream().mapToInt(result -> result.fixtures).sum();
         ciPassLogged = true;
         LivingKingdoms.LOGGER.info(
                 "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true public_doors={} walk_nodes={} enclosed=true facade_replaced=false loaded_only=true",
                 ZONES.size(), fixtureCount, traversal.publicDoors, traversal.visitedNodes);
+        releaseCiTicket(level);
     }
 
     private static Traversal verifyAudienceTraversal(
@@ -368,6 +439,10 @@ public final class ErdenCitadelInteriorManager {
 
     private static boolean columnLoaded(ServerLevel level, int x, int z) {
         return level.hasChunk(x >> 4, z >> 4);
+    }
+
+    private static boolean ciMode() {
+        return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
     }
 
     private static long walkKey(WalkNode node) {
