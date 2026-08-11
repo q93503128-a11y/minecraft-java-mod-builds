@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Alpha.20
+name: Build Arcane Circle v0.12.1 Alpha.21 Migration
 
 on:
   workflow_dispatch:
@@ -17,14 +17,14 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.12.1-alpha.20
-  EXPECTED_JAR: arcanecircle-0.12.1-alpha.20.jar
+  MOD_VERSION: 0.12.1-alpha.21
+  EXPECTED_JAR: arcanecircle-0.12.1-alpha.21.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 - alpha.20 committed source validation
+    name: Java 25 - presentation overhaul phase 1 migration
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -40,14 +40,16 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Audit committed alpha.20 source without mutation
+      - name: Apply one-time alpha.21 presentation migration
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_v0121_alpha20_polish.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-audit.log"
+          python3 tools/apply_v0121_alpha21_presentation_phase1.py
+          python3 tools/test_v0121_alpha21_presentation_phase1.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-audit.log"
           git diff --check
-          git diff --exit-code
+          git diff --binary > /tmp/arcane-alpha21-source.patch
+          test -s /tmp/arcane-alpha21-source.patch
 
       - name: Build Java 25 runtime
         working-directory: ${{ env.PROJECT_DIR }}
@@ -57,7 +59,7 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
 
-      - name: Verify alpha.20 JAR
+      - name: Verify alpha.21 JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -68,30 +70,25 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import zipfile
-          jar=Path('build/libs/arcanecircle-0.12.1-alpha.20.jar')
+          jar=Path('build/libs/arcanecircle-0.12.1-alpha.21.jar')
           with zipfile.ZipFile(jar) as z:
               names=set(z.namelist())
               required={
+                  'kr/moonseungjun/arcanecircle/client/LowCircleVisualIdentity.class',
+                  'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellPresentationProfile.class',
                   'kr/moonseungjun/arcanecircle/magic/SpellCastingService.class',
                   'kr/moonseungjun/arcanecircle/magic/MageGearService.class',
                   'kr/moonseungjun/arcanecircle/client/GrimoireScreen.class',
-                  'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
-                  'kr/moonseungjun/arcanecircle/client/SpellVisualSignature.class',
-                  'kr/moonseungjun/arcanecircle/client/SignatureGeometry.class',
-                  'kr/moonseungjun/arcanecircle/item/ArcaneTestKitItem.class',
               }
               missing=required-names
-              if missing: raise SystemExit(f'missing alpha.20 runtime entries: {sorted(missing)}')
-              casting=z.read('kr/moonseungjun/arcanecircle/magic/SpellCastingService.class')
-              for token in (b'READY_HOLD_TIMEOUT_TICKS',b'chargeTimeoutTicks'):
-                  if token not in casting: raise SystemExit(f'hold-release contract missing: {token!r}')
-              gear=z.read('kr/moonseungjun/arcanecircle/magic/MageGearService.class')
-              for token in (b'LINKED_ROBES',b'syncAtomicRobe',b'replaceLooseHemWithRobe'):
-                  if token not in gear: raise SystemExit(f'atomic robe contract missing: {token!r}')
-              sig=z.read('kr/moonseungjun/arcanecircle/client/SpellVisualSignature.class')
-              for token in (b'fingerprint',b'prismaticAccent',b'time_stop',b'wish',b'meteor_swarm'):
-                  if token not in sig: raise SystemExit(f'spell signature missing: {token!r}')
-          print('Arcane Circle alpha.20 JAR audit: PASS')
+              if missing: raise SystemExit(f'missing alpha.21 entries: {sorted(missing)}')
+              low=z.read('kr/moonseungjun/arcanecircle/client/LowCircleVisualIdentity.class')
+              for token in (b'missileRack',b'fireballReactor',b'lightningRail',b'chromaticCrown',b'windWallRelease'):
+                  if token not in low: raise SystemExit(f'low-circle identity missing: {token!r}')
+              tracker=z.read('kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class')
+              if b'LowCircleVisualIdentity' not in tracker: raise SystemExit('low-circle director not wired')
+          print('Arcane Circle alpha.21 JAR presentation audit: PASS')
           PY
           mkdir -p ../../deliverables
           cp "build/libs/$EXPECTED_JAR" ../../deliverables/
@@ -99,12 +96,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.12.1-alpha.20
+          name: arcanecircle-0.12.1-alpha.21
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish verified JAR only
+      - name: Publish migrated source and verified JAR once
         shell: bash
         run: |
           set -euo pipefail
@@ -114,13 +111,18 @@ jobs:
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
             git reset --hard origin/main
+            if ! git apply --3way /tmp/arcane-alpha21-source.patch; then
+              git reset --hard origin/main
+              sleep $((attempt * 2))
+              continue
+            fi
             mkdir -p "$PUBLISHED_DIR"
             rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
             cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
-            git add -A "$PUBLISHED_DIR"
+            git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12.1-alpha.20 verified JAR [skip ci]'
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.21 presentation phase 1 [skip ci]'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
@@ -142,7 +144,8 @@ jobs:
           java=25
           gradle=9.2.1
           version=$MOD_VERSION
-          source_mutation=disabled
+          source_mutation=one_time_migration
+          presentation_phase=1
           STATUS
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -154,7 +157,7 @@ jobs:
             cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "Record Arcane Circle v0.12.1-alpha.20 CI result for ${GITHUB_SHA::7} [skip ci]"
+            git commit -m "Record Arcane Circle v0.12.1-alpha.21 migration CI for ${GITHUB_SHA::7} [skip ci]"
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 2))
           done
