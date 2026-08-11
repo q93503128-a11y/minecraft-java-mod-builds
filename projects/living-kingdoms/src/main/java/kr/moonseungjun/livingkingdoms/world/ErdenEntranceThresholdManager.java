@@ -280,8 +280,10 @@ public final class ErdenEntranceThresholdManager {
     }
 
     private static boolean bodyPassable(ServerLevel level, BlockPos pos) {
-        return level.getBlockState(pos).isAir()
-                || level.getBlockState(pos).getBlock() instanceof DoorBlock;
+        var state = level.getBlockState(pos);
+        return state.isAir()
+                || state.getBlock() instanceof DoorBlock
+                || state.getCollisionShape(level, pos).isEmpty();
     }
 
     private static void set(ServerLevel level, int x, int y, int z, Block block) {
