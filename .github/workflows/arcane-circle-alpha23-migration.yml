@@ -39,7 +39,7 @@ jobs:
           fetch_blob 0fe9223a0831573ae7420ec2991db1d730b34019 /tmp/fifth.z64
           fetch_blob 61b87f9d865d1e716242a7a04d77be37661e59f6 /tmp/range.z64
           fetch_blob 497934b5fd6e107d83b92c37aefd5a4ce3b9f1f5 /tmp/metrics.z64
-          fetch_blob 73a877abda9a05ca42e9c91315c79d535fc3aa20 /tmp/test.z64
+          fetch_blob 4d9f11e7ce12ce9763d1b7e838a243f27d128e15 /tmp/test.z64
           python3 - <<'PY'
           import base64,zlib
           from pathlib import Path
