@@ -1,7 +1,5 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -23,15 +21,13 @@ public final class VillageHudSystem {
 
     public static void tick(MinecraftServer server) {
         ticks++;
-        if (ticks < REFRESH_TICKS) {
-            return;
-        }
+        if (ticks < REFRESH_TICKS) return;
         ticks = 0;
         LAST_TEXT.keySet().removeIf(uuid -> server.getPlayerList().getPlayer(uuid) == null);
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             String text = buildText(player);
             LAST_TEXT.put(player.getUUID(), text);
-            player.connection.send(new ClientboundSetActionBarTextPacket(Component.literal(text)));
+            VillageNetwork.sendMainHud(player, text);
             VillageNetwork.sendSkillHud(player, VillageRespawnSystem.isDowned(player)
                     ? "" : buildSkillText(player));
         }
