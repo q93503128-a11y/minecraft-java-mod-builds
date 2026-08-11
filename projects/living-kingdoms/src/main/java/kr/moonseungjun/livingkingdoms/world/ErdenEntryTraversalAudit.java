@@ -222,11 +222,18 @@ public final class ErdenEntryTraversalAudit {
             active.ageTicks++;
             if (active.ageTicks > MAX_ENTRY_AGE_TICKS) {
                 fail(level, active.entry, "chunk_or_interior_timeout",
-                        "age_ticks=" + active.ageTicks + " chunks=" + active.chunks.size());
+                        "age_ticks=" + active.ageTicks + " chunks=" + active.chunks.size()
+                                + " last_failure=" + active.lastFailure);
                 return;
             }
             if (!chunksReady(level, active.chunks)) continue;
+            if (!ErdenEntranceThresholdManager.isComplete(
+                    level, active.entry.x, active.entry.z)) {
+                active.lastFailure = "threshold_not_normalized";
+                continue;
+            }
             if (active.entry.kind == EntryKind.URBAN && !urbanInteriorReady(level, active.entry)) {
+                active.lastFailure = "urban_interior_not_ready";
                 continue;
             }
 
