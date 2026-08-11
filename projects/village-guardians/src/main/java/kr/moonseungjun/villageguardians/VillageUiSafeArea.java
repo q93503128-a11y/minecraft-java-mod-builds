@@ -2,8 +2,8 @@ package kr.moonseungjun.villageguardians;
 
 /**
  * Shared placement contract for translucent in-world screens.
- * Vanilla HUD layers are suppressed while Village Guardians modal screens are open,
- * so this rectangle only needs small edge margins instead of a permanent hotbar reserve.
+ * The vanilla hotbar can remain visible behind modal Village Guardians screens depending on the active HUD path,
+ * so every large screen keeps a real bottom reserve instead of assuming the HUD has been suppressed.
  */
 public final class VillageUiSafeArea {
     private VillageUiSafeArea() {}
@@ -11,7 +11,7 @@ public final class VillageUiSafeArea {
     public static Rect screen(int width, int height) {
         int side = clamp(width / 52, 7, 16);
         int topPadding = clamp(height / 80, 6, 12);
-        int bottomPadding = clamp(height / 70, 7, 14);
+        int bottomPadding = clamp(height / 11, 38, 56);
         int bottom = Math.max(topPadding + 1, height - bottomPadding);
         return new Rect(side, topPadding,
                 Math.max(side + 1, width - side),
