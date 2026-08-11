@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Alpha.20 Migration
+name: Build Arcane Circle v0.12.1 Alpha.20
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   build:
-    name: Java 25 - hold release, atomic robe, responsive UI, spell identity
+    name: Java 25 - alpha.20 committed source validation
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -40,16 +40,14 @@ jobs:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Apply one-time alpha.20 polish migration
+      - name: Audit committed alpha.20 source without mutation
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/apply_v0121_alpha20_runtime.py
-          python3 tools/apply_v0121_alpha20_ui.py
-          python3 tools/apply_v0121_alpha20_visual.py
           python3 tools/test_v0121_alpha20_polish.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-audit.log"
           git diff --check
+          git diff --exit-code
 
       - name: Build Java 25 runtime
         working-directory: ${{ env.PROJECT_DIR }}
@@ -106,29 +104,23 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish migrated source and verified JAR once
+      - name: Publish verified JAR only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          rm -rf /tmp/arcane-alpha20-source
-          mkdir -p /tmp/arcane-alpha20-source
-          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-alpha20-source/
           published=0
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
             git reset --hard origin/main
-            rm -rf "$PROJECT_DIR"
-            mkdir -p "$PROJECT_DIR"
-            rsync -a /tmp/arcane-alpha20-source/ "$PROJECT_DIR/"
             mkdir -p "$PUBLISHED_DIR"
             rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
             cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
-            git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
+            git add -A "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12.1-alpha.20 pre-play polish [skip ci]'
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.20 verified JAR [skip ci]'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
@@ -150,7 +142,7 @@ jobs:
           java=25
           gradle=9.2.1
           version=$MOD_VERSION
-          source_mutation=one_time_alpha20
+          source_mutation=disabled
           STATUS
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -162,7 +154,7 @@ jobs:
             cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "Record Arcane Circle v0.12.1-alpha.20 migration result for ${GITHUB_SHA::7} [skip ci]"
+            git commit -m "Record Arcane Circle v0.12.1-alpha.20 CI result for ${GITHUB_SHA::7} [skip ci]"
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 2))
           done
