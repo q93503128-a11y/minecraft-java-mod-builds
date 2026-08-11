@@ -30,9 +30,9 @@ public final class WorldMagicTracker {
     private static final Map<UUID, Visual> CHARGES = new HashMap<>();
     private static final List<Visual> RELEASES = new ArrayList<>();
     private static final int MAX_CHARGE_GEOMETRY = 3200;
-    private static final int MAX_RELEASE_GEOMETRY = 2200;
+    private static final int MAX_RELEASE_GEOMETRY = 3600;
     private static final int MAX_VISUALS = 14;
-    private static final int MAX_FRAME = 18000;
+    private static final int MAX_FRAME = 26000;
     private static final double MAX_DISTANCE_SQR = 192.0 * 192.0;
     private static final long CHARGE_TTL = 2_250_000_000L;
 
@@ -126,6 +126,15 @@ public final class WorldMagicTracker {
             double age = clamp((now - visual.startedAt) / (double) Math.max(1L,
                     visual.expiresAt - visual.startedAt), 0.0, 1.0);
             entries.add(new RenderEntry(visual.center, buildRelease(visual, age), color(visual.spell)));
+            if (SpellVisualSignature.isPrismatic(visual.spell)) {
+                Vec3 targetOffset = targetOffset(visual);
+                for (int layer = 0; layer < 7; layer++) {
+                    ArcaneWorldMesh accent = SpellVisualSignature.prismaticAccent(
+                            visual.spell, visual.direction, targetOffset, visual.range, age, layer);
+                    entries.add(new RenderEntry(visual.center, accent,
+                            SpellVisualSignature.prismaticColor(layer)));
+                }
+            }
         }
         event.getRenderState().setRenderData(DATA_KEY, List.copyOf(entries));
     }
@@ -259,6 +268,7 @@ public final class WorldMagicTracker {
             }
         }
 
+        SpellVisualSignature.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
         if (visual.fusion && release > 0.02) {
             mesh.brokenBand(basis, Vec3.ZERO, outer * 1.08, outer * 1.14,
                     72 + complexity * 10, 6, 1.30F, (float) (0.24 + release * 0.24));
@@ -418,6 +428,8 @@ public final class WorldMagicTracker {
                 }
             }
         }
+        SpellVisualSignature.appendRelease(spell, visual.direction, targetOffset(visual),
+                visual.range, visual.power, age, powerFactor, mesh);
         return mesh.build();
     }
 
@@ -985,16 +997,29 @@ public final class WorldMagicTracker {
     }
 
     private static int color(SpellDefinition spell) {
-        // Fully saturated school palette. Geometry alpha is controlled per face, so the base color
-        // itself should never start washed out.
-        return switch (spell.school()) {
-            case FIRE -> 0xFFFF2100;
-            case FROST -> 0xFF00CFFF;
-            case WIND -> 0xFF00FF9C;
-            case WARD -> 0xFF8E22FF;
-            case LIFE -> 0xFF18F044;
-            case SPACE -> 0xFFD000FF;
-            default -> 0xFF3454FF;
+        return switch (spell.id()) {
+            case "disintegrate" -> 0xFF66FF19;
+            case "sunbeam", "sunburst", "foresight", "true_seeing", "solar_guard" -> 0xFFFFE34F;
+            case "flame_strike" -> 0xFFFF6A18;
+            case "circle_of_death", "finger_of_death", "power_word_kill", "eyebite" -> 0xFFFF174D;
+            case "weird", "phantasmal_killer", "feeblemind" -> 0xFFFF22C8;
+            case "flesh_to_stone" -> 0xFFD2DAE8;
+            case "move_earth", "earthquake" -> 0xFFFFA52E;
+            case "time_stop" -> 0xFF55E8FF;
+            case "wish" -> 0xFFF0A0FF;
+            case "prismatic_spray", "prismatic_wall" -> 0xFFFFFFFF;
+            case "control_weather", "reverse_gravity" -> 0xFF24D8FF;
+            case "clone", "simulacrum" -> 0xFF9AF4FF;
+            case "shapechange", "true_polymorph" -> 0xFF20FFB4;
+            default -> switch (spell.school()) {
+                case FIRE -> 0xFFFF2100;
+                case FROST -> 0xFF00CFFF;
+                case WIND -> 0xFF00FF9C;
+                case WARD -> 0xFF8E22FF;
+                case LIFE -> 0xFF18F044;
+                case SPACE -> 0xFFD000FF;
+                default -> 0xFF3454FF;
+            };
         };
     }
 

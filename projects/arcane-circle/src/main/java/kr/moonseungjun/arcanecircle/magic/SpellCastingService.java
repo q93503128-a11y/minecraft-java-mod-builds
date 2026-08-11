@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 public final class SpellCastingService {
     private static final long QUEUE_TIMEOUT_TICKS = 2400L;
     private static final long CHARGE_TIMEOUT_TICKS = 1600L;
+    private static final long READY_HOLD_TIMEOUT_TICKS = 12000L;
 
     private static final class FusionQueueState {
         private final List<String> ingredients = new ArrayList<>();
@@ -81,16 +82,15 @@ public final class SpellCastingService {
 
         clearFusion(player, false);
         int required = requiredCastTicks(player, cast.spell());
-        if (required <= 0) {
-            castPrepared(player, data, cast);
-            return;
-        }
-
         ChargeState charge = new ChargeState(slot, cast.spell().id(), now, required);
         CHARGES.put(player.getUUID(), charge);
-        WorldMagicService.charge(player, cast.spell(), false, List.of(), cast.range(), 0.0);
-        ArcaneNoticeService.push(player, Component.literal("§5[회로 전개] §f" + cast.spell().name()
-                + " §7· " + String.format("%.1f", required / 20.0) + "초"));
+        WorldMagicService.charge(player, cast.spell(), false, List.of(), cast.range(),
+                required <= 0 ? 1.0 : 0.0);
+        String timing = required <= 0
+                ? "완성 · 키를 놓으면 발동"
+                : String.format("%.1f초 전개 · 완성 후 키를 놓으면 발동", required / 20.0);
+        ArcaneNoticeService.push(player, Component.literal("§5[회로 전개] §f"
+                + cast.spell().name() + " §7· " + timing));
         ServerLevel level = (ServerLevel) player.level();
         level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
                 SoundSource.PLAYERS, 0.45F, 1.18F);
@@ -102,7 +102,7 @@ public final class SpellCastingService {
         long elapsed = serverClock(player) - charge.startedAt;
         CHARGES.remove(player.getUUID());
         WorldMagicService.stop(player);
-        if (elapsed > CHARGE_TIMEOUT_TICKS) {
+        if (elapsed > chargeTimeoutTicks(charge)) {
             ArcaneNoticeService.push(player, Component.literal("§7[시전 취소] 유지 한계를 넘어 마법진이 해제되었습니다."));
             return;
         }
@@ -131,7 +131,7 @@ public final class SpellCastingService {
         if (charge == null) return;
         long now = serverClock(player);
         long elapsed = now - charge.startedAt;
-        if (!player.isAlive() || player.isSpectator() || elapsed > CHARGE_TIMEOUT_TICKS) {
+        if (!player.isAlive() || player.isSpectator() || elapsed > chargeTimeoutTicks(charge)) {
             CHARGES.remove(player.getUUID());
             WorldMagicService.stop(player);
             return;
@@ -150,9 +150,14 @@ public final class SpellCastingService {
             return;
         }
 
-        if (charge.requiredTicks <= 0) return;
-        WorldMagicService.charge(player, spell, false, List.of(), cast.range(),
-                Math.min(1.0, elapsed / (double) Math.max(1, charge.requiredTicks)));
+        double progress = charge.requiredTicks <= 0 ? 1.0
+                : Math.min(1.0, elapsed / (double) Math.max(1, charge.requiredTicks));
+        WorldMagicService.charge(player, spell, false, List.of(), cast.range(), progress);
+    }
+
+    private static long chargeTimeoutTicks(ChargeState charge) {
+        return Math.max(CHARGE_TIMEOUT_TICKS,
+                (long) Math.max(0, charge.requiredTicks) + READY_HOLD_TIMEOUT_TICKS);
     }
 
     public static void cancelCharge(ServerPlayer player, boolean notify) {

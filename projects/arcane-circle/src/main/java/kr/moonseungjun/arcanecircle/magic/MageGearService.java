@@ -26,14 +26,12 @@ public final class MageGearService {
     private static final Set<UUID> ROBE_SLOT_WARNED=new HashSet<>();
     private static final Set<UUID> FLIGHT_GRANTED=new HashSet<>();
     private static final Map<UUID,Long> STABLE_DESCENT_UNTIL=new HashMap<>();
+    private static final Map<UUID,Item> LINKED_ROBES=new HashMap<>();
     private MageGearService(){}
 
     public static void tick(ServerPlayer player){
-        ItemStack chest=player.getItemBySlot(EquipmentSlot.CHEST),legs=player.getItemBySlot(EquipmentSlot.LEGS);Item expected=hemFor(chest.getItem());
-        if(expected!=null&&legs.isEmpty()){player.setItemSlot(EquipmentSlot.LEGS,new ItemStack(expected));ROBE_SLOT_WARNED.remove(player.getUUID());}
-        else if(expected==null&&isHem(legs.getItem())){player.setItemSlot(EquipmentSlot.LEGS,ItemStack.EMPTY);ROBE_SLOT_WARNED.remove(player.getUUID());}
-        else if(expected!=null&&isHem(legs.getItem())&&legs.getItem()!=expected){player.setItemSlot(EquipmentSlot.LEGS,new ItemStack(expected));ROBE_SLOT_WARNED.remove(player.getUUID());}
-        else if(expected!=null&&!legs.isEmpty()&&!isHem(legs.getItem())&&ROBE_SLOT_WARNED.add(player.getUUID()))ArcaneNoticeService.push(player,Component.literal("§c[로브 비활성] §f전투 로브는 몸·바지 두 슬롯을 사용합니다."),100);
+        syncAtomicRobe(player);
+        ItemStack chest=player.getItemBySlot(EquipmentSlot.CHEST);
 
         Item boots=player.getItemBySlot(EquipmentSlot.FEET).getItem();int tier=bootsTier(boots);
         if(tier>0){player.addEffect(new MobEffectInstance(MobEffects.SPEED,30,Math.max(0,tier-1),true,false));player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST,30,Math.max(0,tier-1),true,false));}
@@ -45,7 +43,101 @@ public final class MageGearService {
         if(hat==ModItems.CINDER_HOOD.get()||chest.getItem()==ModItems.CINDER_ROBE.get())player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE,40,0,true,false));
         if(chest.getItem()==ModItems.GLACIER_ROBE.get())player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,40,1,true,false));
         if(chest.getItem()==ModItems.TEMPEST_ROBE.get())player.addEffect(new MobEffectInstance(MobEffects.SPEED,40,1,true,false));
-        int robeTier=robeTier(chest.getItem());if(robeTier>=2&&expected==player.getItemBySlot(EquipmentSlot.LEGS).getItem())player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,30,robeTier>=3?1:0,true,false));
+        int robeTier=robeTier(chest.getItem());if(robeTier>=2&&hemFor(chest.getItem())==player.getItemBySlot(EquipmentSlot.LEGS).getItem())player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,30,robeTier>=3?1:0,true,false));
+    }
+
+    private static void syncAtomicRobe(ServerPlayer player){
+        UUID id=player.getUUID();
+        ItemStack chest=player.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack legs=player.getItemBySlot(EquipmentSlot.LEGS);
+        Item expected=hemFor(chest.getItem());
+        Item linked=LINKED_ROBES.get(id);
+
+        if(expected==null){
+            LINKED_ROBES.remove(id);
+            if(isHem(legs.getItem()))player.setItemSlot(EquipmentSlot.LEGS,ItemStack.EMPTY);
+            purgeLooseHems(player);
+            ROBE_SLOT_WARNED.remove(id);
+            return;
+        }
+
+        boolean sameLinked=linked==chest.getItem();
+        boolean lowerMissing=legs.isEmpty()||legs.getItem()!=expected;
+        boolean removedHemIsLoose=hasLooseHem(player,expected);
+
+        if(sameLinked&&lowerMissing){
+            ItemStack robe=chest.copy();
+            player.setItemSlot(EquipmentSlot.CHEST,ItemStack.EMPTY);
+            if(isHem(legs.getItem()))player.setItemSlot(EquipmentSlot.LEGS,ItemStack.EMPTY);
+            replaceLooseHemWithRobe(player,expected,robe);
+            LINKED_ROBES.remove(id);
+            purgeLooseHems(player);
+            ROBE_SLOT_WARNED.remove(id);
+            return;
+        }
+
+        if(!sameLinked){
+            if(legs.isEmpty()&&removedHemIsLoose){
+                ItemStack robe=chest.copy();
+                player.setItemSlot(EquipmentSlot.CHEST,ItemStack.EMPTY);
+                replaceLooseHemWithRobe(player,expected,robe);
+                LINKED_ROBES.remove(id);
+                purgeLooseHems(player);
+                return;
+            }
+            if(legs.isEmpty()||isHem(legs.getItem())){
+                player.setItemSlot(EquipmentSlot.LEGS,new ItemStack(expected));
+                LINKED_ROBES.put(id,chest.getItem());
+                ROBE_SLOT_WARNED.remove(id);
+            }else{
+                ItemStack robe=chest.copy();
+                player.setItemSlot(EquipmentSlot.CHEST,ItemStack.EMPTY);
+                giveOrDrop(player,robe);
+                LINKED_ROBES.remove(id);
+                if(ROBE_SLOT_WARNED.add(id))ArcaneNoticeService.push(player,
+                        Component.literal("§c[로브 장착 취소] §f로브는 한 벌 장비입니다. 바지 슬롯을 비우고 다시 장착하세요."),100);
+            }
+        }
+        purgeLooseHems(player);
+    }
+
+    private static boolean hasLooseHem(ServerPlayer player,Item hem){
+        ItemStack carried=player.containerMenu.getCarried();
+        if(!carried.isEmpty()&&carried.getItem()==hem)return true;
+        int limit=Math.min(36,player.getInventory().getContainerSize());
+        for(int slot=0;slot<limit;slot++)if(player.getInventory().getItem(slot).getItem()==hem)return true;
+        return false;
+    }
+
+    private static void replaceLooseHemWithRobe(ServerPlayer player,Item hem,ItemStack robe){
+        ItemStack carried=player.containerMenu.getCarried();
+        if(!carried.isEmpty()&&carried.getItem()==hem){
+            player.containerMenu.setCarried(robe);
+            return;
+        }
+        int limit=Math.min(36,player.getInventory().getContainerSize());
+        for(int slot=0;slot<limit;slot++){
+            ItemStack stack=player.getInventory().getItem(slot);
+            if(stack.getItem()!=hem)continue;
+            player.getInventory().setItem(slot,robe);
+            return;
+        }
+        giveOrDrop(player,robe);
+    }
+
+    private static void purgeLooseHems(ServerPlayer player){
+        ItemStack carried=player.containerMenu.getCarried();
+        if(!carried.isEmpty()&&isHem(carried.getItem()))player.containerMenu.setCarried(ItemStack.EMPTY);
+        int limit=Math.min(36,player.getInventory().getContainerSize());
+        for(int slot=0;slot<limit;slot++){
+            ItemStack stack=player.getInventory().getItem(slot);
+            if(isHem(stack.getItem()))player.getInventory().setItem(slot,ItemStack.EMPTY);
+        }
+    }
+
+    private static void giveOrDrop(ServerPlayer player,ItemStack stack){
+        if(stack.isEmpty())return;
+        if(!player.getInventory().add(stack))player.drop(stack,false);
     }
 
     /** Spell-driven feather fall remains explicit; armor no longer edits airborne velocity. */
@@ -86,7 +178,7 @@ public final class MageGearService {
         return new GearStats(h.tier,r.tier,b.tier,h.manaFlat+r.manaFlat+b.manaFlat,h.manaPercent*r.manaPercent*b.manaPercent,h.healthFlat+r.healthFlat+b.healthFlat,h.healthPercent*r.healthPercent*b.healthPercent,h.regen*r.regen*b.regen,h.cost*r.cost*b.cost,h.power*r.power*b.power,h.range*r.range*b.range,h.cooldown*r.cooldown*b.cooldown);
     }
     public static String hatName(Player p){return name(p.getItemBySlot(EquipmentSlot.HEAD).getItem(),"모자 없음");}
-    public static String robeName(Player p){Item c=p.getItemBySlot(EquipmentSlot.CHEST).getItem();if(hemFor(c)==null)return"로브 없음";return name(c,"로브 없음")+(hemFor(c)==p.getItemBySlot(EquipmentSlot.LEGS).getItem()?"":" · 바지 슬롯 필요");}
+    public static String robeName(Player p){Item c=p.getItemBySlot(EquipmentSlot.CHEST).getItem();return hemFor(c)==null?"로브 없음":name(c,"로브 없음");}
     public static String bootsName(Player p){return name(p.getItemBySlot(EquipmentSlot.FEET).getItem(),"마도화 없음");}
 
     private static Piece piece(Item i){
@@ -109,7 +201,7 @@ public final class MageGearService {
     private static void setFlight(ServerPlayer p,boolean enabled){if(enabled){if(!p.getAbilities().mayfly){p.getAbilities().mayfly=true;p.onUpdateAbilities();}FLIGHT_GRANTED.add(p.getUUID());}else if(FLIGHT_GRANTED.remove(p.getUUID())&&!p.isCreative()&&!p.isSpectator()){p.getAbilities().flying=false;p.getAbilities().mayfly=false;p.onUpdateAbilities();}}
     private static void freezeWater(ServerPlayer p){if(!(p.level() instanceof ServerLevel l))return;BlockPos c=p.blockPosition().below();for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++){if(x*x+z*z>6)continue;BlockPos pos=c.offset(x,0,z);if(l.getBlockState(pos).is(Blocks.WATER)&&l.getBlockState(pos.above()).isAir())l.setBlockAndUpdate(pos,Blocks.FROSTED_ICE.defaultBlockState());}}
     private static String name(Item i,String fallback){if(i==ModItems.MAGE_HAT.get())return"비전 모자";if(i==ModItems.SAGE_HAT.get())return"현자의 모자";if(i==ModItems.ARCHMAGE_CROWN.get())return"대마도사 관";if(i==ModItems.MAGE_ROBE.get())return"중층 마도 로브";if(i==ModItems.SAGE_ROBE.get())return"현자의 로브";if(i==ModItems.ARCHMAGE_ROBE.get())return"대마도사 예복";if(i==ModItems.MAGE_BOOTS.get())return"유랑 마도화";if(i==ModItems.SKYWALKER_BOOTS.get())return"천공 마도화";if(i==ModItems.FROSTSTEP_BOOTS.get())return"빙결 보행화";if(i==ModItems.CINDER_HOOD.get())return"잿불 전투모";if(i==ModItems.CINDER_ROBE.get())return"잿불 전투로브";if(i==ModItems.CINDER_BOOTS.get())return"화염답화";if(i==ModItems.GLACIER_CIRCLET.get())return"빙정 관모";if(i==ModItems.GLACIER_ROBE.get())return"빙정 의복";if(i==ModItems.GLACIER_BOOTS.get())return"설원답화";if(i==ModItems.TEMPEST_HOOD.get())return"폭풍 후드";if(i==ModItems.TEMPEST_ROBE.get())return"폭풍비단 로브";if(i==ModItems.TEMPEST_BOOTS.get())return"천뢰 장화";if(i==ModItems.RIFT_CROWN.get())return"균열 관";if(i==ModItems.RIFT_ROBE.get())return"균열 예복";if(i==ModItems.RIFT_BOOTS.get())return"성간 보행화";return fallback;}
-    public static void clear(UUID id){ROBE_SLOT_WARNED.remove(id);FLIGHT_GRANTED.remove(id);STABLE_DESCENT_UNTIL.remove(id);}
+    public static void clear(UUID id){ROBE_SLOT_WARNED.remove(id);FLIGHT_GRANTED.remove(id);STABLE_DESCENT_UNTIL.remove(id);LINKED_ROBES.remove(id);}
     private record Piece(int tier,int manaFlat,double manaPercent,int healthFlat,double healthPercent,double regen,double cost,double power,double range,double cooldown){private static final Piece NONE=new Piece(0,0,1,0,1,1,1,1,1,1);}
     public record GearStats(int hatTier,int robeTier,int bootsTier,int maxManaBonus,double maxManaMultiplier,int healthBonus,double healthMultiplier,double regenMultiplier,double manaCostMultiplier,double powerMultiplier,double rangeMultiplier,double cooldownMultiplier){public boolean hat(){return hatTier>0;}public boolean robe(){return robeTier>0;}public boolean boots(){return bootsTier>0;}}
 }
