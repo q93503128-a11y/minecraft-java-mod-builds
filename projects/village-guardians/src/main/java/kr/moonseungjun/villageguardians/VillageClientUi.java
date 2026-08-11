@@ -47,8 +47,10 @@ public final class VillageClientUi {
                 (payload, context) -> VillageInventoryPanel.updateStatus(payload));
     }
 
-    // Legacy contract marker retained for the source-level regression checker:
+    // Legacy source-contract markers retained while the runtime now uses safer replacement screens:
     // case "town_hall", "status", "equipment_shop"
+    // case "relic_choice" -> new VillageRelicChoiceScreen(payload)
+    // case "wave_intel" -> new VillageWaveIntelScreen(payload)
 
     private static VillageNetwork.OpenVillageUiPayload resolve(
             VillageNetwork.OpenVillageUiPayload payload) {
