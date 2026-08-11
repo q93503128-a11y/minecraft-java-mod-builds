@@ -18,10 +18,11 @@ public final class VillageClientUi {
                     Minecraft.getInstance().gui.setScreen(
                             switch (payload.screenId()) {
                                 case "skill_tree" -> new VillageSkillTreeScreen(payload);
-                                case "town_hall" -> new VillageTownHallScreen(payload);
                                 case "role_progress", "role_skills" -> new VillageRoleProgressScreen(payload);
-                                case "quick_chat" -> new VillageQuickChatScreen(payload);
-                                case "status" -> new VillageStatusScreen(payload);
+                                case "quick_chat" -> new VillageQuickChatSafeScreen(payload);
+                                case "town_hall", "status", "equipment_shop",
+                                     "building", "management", "funding", "tower_control", "tower_detail", "caller" ->
+                                        new VillageCommandCenterScreen(payload);
                                 case "relic_collection" -> new VillageRelicScreen(payload);
                                 case "relic_choice" -> new VillageRelicChoiceScreen(payload);
                                 case "wave_intel" -> new VillageWaveIntelScreen(payload);
@@ -29,11 +30,8 @@ public final class VillageClientUi {
                                 case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload);
                                 case "skill_test_password" -> new VillageSkillTestPasswordScreen(payload);
                                 case "skill_test" -> new VillageFacilityScreen(payload);
-                                case "equipment_shop" -> new VillageShopScreen(payload);
-                                case "equipment_fusion" -> new VillageFusionScreen(payload);
+                                case "equipment_fusion" -> new VillageFusionSafeScreen(payload);
                                 case "result" -> new VillageResultScreen(payload);
-                                case "building", "management", "funding", "tower_control", "tower_detail", "caller" ->
-                                        new VillageFacilityScreen(payload);
                                 default -> new VillageUiScreen(payload);
                             });
                 });
@@ -41,6 +39,8 @@ public final class VillageClientUi {
                 (payload, context) -> VillageSkillEffectClient.acceptMotion(payload));
         event.register(VillageNetwork.SkillHudPayload.TYPE,
                 (payload, context) -> VillageSkillHudOverlay.accept(payload));
+        event.register(VillageNetwork.MainHudPayload.TYPE,
+                (payload, context) -> VillageMainHudOverlay.accept(payload));
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
                 (payload, context) -> VillageInventoryPanel.updateStatus(payload));
     }
