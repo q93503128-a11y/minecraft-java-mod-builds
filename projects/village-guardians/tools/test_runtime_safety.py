@@ -18,6 +18,12 @@ def main() -> None:
     network = read("VillageNetwork.java")
     client_ui = read("VillageClientUi.java")
     facility_ui = read("VillageFacilityScreen.java")
+    quick_ui = read("VillageQuickChatScreen.java")
+    skill_hud = read("VillageSkillHudOverlay.java")
+    relic_ui = read("VillageRelicScreen.java")
+    relic_choice_ui = read("VillageRelicChoiceScreen.java")
+    wave_ui = read("VillageWaveIntelScreen.java")
+    game_over_ui = read("VillageGameOverScreen.java")
     town_ui = read("VillageTownHallScreen.java")
     status_ui = read("VillageStatusScreen.java")
     shop_ui = read("VillageShopScreen.java")
@@ -49,11 +55,23 @@ def main() -> None:
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
     assert "if (!mob.isPersistenceRequired()) event.setCanceled(true)" in guardians
 
-    assert 'case "building", "management", "funding", "tower_control", "tower_detail", "caller", "relic_choice"' in client_ui
+    assert 'case "building", "management", "funding", "tower_control", "tower_detail", "caller"' in client_ui
     assert 'case "equipment_shop" -> new VillageShopScreen(payload)' in client_ui
     assert 'case "status" -> new VillageStatusScreen(payload)' in client_ui
     assert 'case "relic_collection" -> new VillageRelicScreen(payload)' in client_ui
-    assert 'case "wave_intel", "skill_test", "game_over" -> new VillageFacilityScreen(payload)' in client_ui
+    assert 'case "relic_choice" -> new VillageRelicChoiceScreen(payload)' in client_ui
+    assert 'case "wave_intel" -> new VillageWaveIntelScreen(payload)' in client_ui
+    assert 'case "game_over" -> new VillageGameOverScreen(payload)' in client_ui
+    assert 'case "skill_test" -> new VillageFacilityScreen(payload)' in client_ui
+    assert "drawDiamond" in quick_ui and "insideDiamond" in quick_ui
+    assert "ClientPacketDistributor.sendToServer" in quick_ui
+    assert "Low-profile combat skill HUD" in skill_hud
+    assert "VillageQuickChatScreen.drawDiamond" in skill_hud
+    assert "reliquary" in relic_ui.lower() and "drawDiamond" in relic_ui
+    assert "relic_select:" not in relic_choice_ui
+    assert "VillageUiActionPayload(actions[index])" in relic_choice_ui
+    assert "attack timeline" in wave_ui.lower() and "insideDiamond" in wave_ui
+    assert "VillageConfirmScreen" in game_over_ui and "requiresConfirmation" in game_over_ui
     assert "listLeft" in facility_ui and "detailLeft" in facility_ui
     assert "selectedIndex = actionCount() > 0 ? 0 : -1" in facility_ui
     assert "PANEL = 0xFFE4D8BF" in facility_ui
@@ -176,7 +194,8 @@ def main() -> None:
     assert "MAX_ACTIVE_ENEMIES = 100" in raid
     assert "VillageFortressBuildings.isTouchingStructure" in raid
 
-    print("[PASS] Compact split menus use narrow selectors, wide details and bounded action buttons")
+    print("[PASS] Dedicated quick-chat, wave, relic and failure screens replace generic facility routing")
+    print("[PASS] Compact facility menus remain bounded for management-only surfaces")
     print("[PASS] Town hall shows current/next effects and exact repair or upgrade costs")
     print("[PASS] Status stays scroll-free and owns one bounded relic-collection action")
     print("[PASS] Caller item is removed while inventory and keyboard access remain")
