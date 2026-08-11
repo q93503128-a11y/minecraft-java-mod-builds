@@ -1,4 +1,4 @@
-name: Build Arcane Circle v0.12.1 Alpha.18
+name: Build Arcane Circle v0.12.1 Alpha.19 Migration
 
 on:
   workflow_dispatch:
@@ -6,7 +6,6 @@ on:
     branches: [main]
     paths:
       - 'projects/arcane-circle/**'
-      - '.github/scripts/arcane-circle/**'
       - '.github/workflows/build-arcane-circle-v0121.yml'
 
 permissions:
@@ -18,41 +17,36 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.12.1-alpha.18
-  EXPECTED_JAR: arcanecircle-0.12.1-alpha.18.jar
+  MOD_VERSION: 0.12.1-alpha.19
+  EXPECTED_JAR: arcanecircle-0.12.1-alpha.19.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 - staged sigils, placement-aware spell choreography
+    name: Java 25 - runtime integrity migration and build
     runs-on: ubuntu-latest
     timeout-minutes: 90
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
-
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
           cache-read-only: false
-
-      - name: Rebuild and audit alpha.18 visual polish
+      - name: Apply one-time alpha.19 stability migration
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/apply_v0121_alpha18_visual_polish_v2.py" 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
-          python3 "$GITHUB_WORKSPACE/.github/scripts/arcane-circle/test_v0121_alpha18_visual_polish.py"
+          python3 tools/apply_v0121_alpha19_stability.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
+          python3 tools/test_v0121_alpha19_runtime.py
           git diff --check
-
       - name: Build Java 25 runtime
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -60,97 +54,75 @@ jobs:
           chmod +x gradlew
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
-
-      - name: Verify alpha.18 JAR
+      - name: Verify alpha.19 JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
           test -f "build/libs/$EXPECTED_JAR"
           jar tf "build/libs/$EXPECTED_JAR" >/dev/null
-          sha256sum "build/libs/$EXPECTED_JAR" > "build/libs/$EXPECTED_JAR.sha256"
           python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
           python3 - <<'PY'
           from pathlib import Path
           import zipfile
-
-          jar = Path('build/libs/arcanecircle-0.12.1-alpha.18.jar')
+          jar=Path('build/libs/arcanecircle-0.12.1-alpha.19.jar')
           with zipfile.ZipFile(jar) as z:
-              names = set(z.namelist())
-              required = {
-                  'kr/moonseungjun/arcanecircle/magic/SpellPresentationProfile.class',
-                  'kr/moonseungjun/arcanecircle/magic/WorldMagicService.class',
+              names=set(z.namelist())
+              required={
+                  'kr/moonseungjun/arcanecircle/magic/SpellArchetype.class',
                   'kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class',
-                  'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
-                  'kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class',
-                  'kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh$Builder.class',
+                  'kr/moonseungjun/arcanecircle/magic/WorldMagicService.class',
+                  'kr/moonseungjun/arcanecircle/world/ArcaneMageService.class',
+                  'kr/moonseungjun/arcanecircle/world/NpcSpellResolver.class',
+                  'kr/moonseungjun/arcanecircle/magic/MagicPlayerData.class',
+                  'kr/moonseungjun/arcanecircle/magic/HighCircleSpellEffects.class',
                   'kr/moonseungjun/arcanecircle/item/ArcaneTestKitItem.class',
               }
-              missing = required - names
-              if missing:
-                  raise SystemExit(f'missing alpha.18 runtime entries: {sorted(missing)}')
-
-              profile = z.read('kr/moonseungjun/arcanecircle/magic/SpellPresentationProfile.class')
-              for token in (b'wall_of_fire', b'hold_person', b'maze', b'meteor_swarm', b'power_word_kill'):
-                  if token not in profile:
-                      raise SystemExit(f'authored alpha.18 profile missing: {token!r}')
-              service = z.read('kr/moonseungjun/arcanecircle/magic/WorldMagicService.class')
-              if b'presentationCenter' not in service or b'targetPoint' not in service or b'PRISON' not in service:
-                  raise SystemExit('placement-aware target anchoring missing')
-              tracker = z.read('kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class')
-              for token in (b'sigilPhase', b'buildSkyRitualArray', b'buildMeteor', b'buildPortal', b'buildPrison', b'buildWall', b'buildBeam'):
-                  if token not in tracker:
-                      raise SystemExit(f'alpha.18 choreography method missing: {token!r}')
-              kinetics = z.read('kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class')
-              if b'impactDelayTicks' not in kinetics or b'kineticDistance' not in kinetics:
-                  raise SystemExit('presentation/server impact synchronization missing')
-              mesh_builder = z.read('kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh$Builder.class')
-              if b'runeGlyph' not in mesh_builder or b'runeRing' not in mesh_builder:
-                  raise SystemExit('procedural rune geometry missing')
-          print('Arcane Circle alpha.18 JAR audit: PASS')
+              missing=required-names
+              if missing: raise SystemExit(f'missing alpha.19 runtime entries: {sorted(missing)}')
+              npc=z.read('kr/moonseungjun/arcanecircle/world/NpcSpellResolver.class')
+              for token in (b'impactDelay',b'SpellMetrics',b'SpellPresentationProfile'):
+                  if token not in npc: raise SystemExit(f'NPC resolver missing: {token!r}')
+              world=z.read('kr/moonseungjun/arcanecircle/magic/WorldMagicService.class')
+              if b'kineticDistance' not in world: raise SystemExit('shared kinetic distance missing')
+          print('Arcane Circle alpha.19 JAR runtime audit: PASS')
           PY
           mkdir -p ../../deliverables
           cp "build/libs/$EXPECTED_JAR" ../../deliverables/
           cp "build/libs/$EXPECTED_JAR.sha256" ../../deliverables/
-
       - uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.12.1-alpha.18
+          name: arcanecircle-0.12.1-alpha.19
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
-
-      - name: Publish verified source and JAR
+      - name: Publish migrated source and verified JAR once
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          touch "$PROJECT_DIR/.gitignore"
-          grep -qxF '.gradle/' "$PROJECT_DIR/.gitignore" || printf '%s\n' '.gradle/' >> "$PROJECT_DIR/.gitignore"
-          grep -qxF 'build/' "$PROJECT_DIR/.gitignore" || printf '%s\n' 'build/' >> "$PROJECT_DIR/.gitignore"
-          rm -rf /tmp/arcane-alpha18-source
-          mkdir -p /tmp/arcane-alpha18-source
-          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-alpha18-source/
+          rm -rf /tmp/arcane-alpha19-source
+          mkdir -p /tmp/arcane-alpha19-source
+          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-alpha19-source/
           published=0
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
             git reset --hard origin/main
             rm -rf "$PROJECT_DIR"
             mkdir -p "$PROJECT_DIR"
-            rsync -a /tmp/arcane-alpha18-source/ "$PROJECT_DIR/"
+            rsync -a /tmp/arcane-alpha19-source/ "$PROJECT_DIR/"
             mkdir -p "$PUBLISHED_DIR"
             rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
             cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
             git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12.1-alpha.18 visual choreography polish [skip ci]'
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.19 runtime stability fixes [skip ci]'
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
           test "$published" -eq 1
-
       - name: Record result
         if: always()
         shell: bash
@@ -158,13 +130,7 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/arcane-result
           mkdir -p /tmp/arcane-result
-          if test -f "$GITHUB_WORKSPACE/arcane-circle-gradle.log"; then
-            cp "$GITHUB_WORKSPACE/arcane-circle-gradle.log" /tmp/arcane-result/latest-gradle.log
-          elif test -f "$GITHUB_WORKSPACE/arcane-circle-migration.log"; then
-            cp "$GITHUB_WORKSPACE/arcane-circle-migration.log" /tmp/arcane-result/latest-gradle.log
-          else
-            printf '%s\n' 'No diagnostic log.' > /tmp/arcane-result/latest-gradle.log
-          fi
+          if test -f "$GITHUB_WORKSPACE/arcane-circle-gradle.log"; then cp "$GITHUB_WORKSPACE/arcane-circle-gradle.log" /tmp/arcane-result/latest-gradle.log; elif test -f "$GITHUB_WORKSPACE/arcane-circle-migration.log"; then cp "$GITHUB_WORKSPACE/arcane-circle-migration.log" /tmp/arcane-result/latest-gradle.log; else printf '%s\n' 'No diagnostic log.' > /tmp/arcane-result/latest-gradle.log; fi
           cat > /tmp/arcane-result/status.txt <<STATUS
           status=${{ job.status }}
           source_sha=$GITHUB_SHA
@@ -184,7 +150,7 @@ jobs:
             cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "Record Arcane Circle v0.12.1-alpha.18 CI result for ${GITHUB_SHA::7} [skip ci]"
+            git commit -m "Record Arcane Circle v0.12.1-alpha.19 CI result for ${GITHUB_SHA::7} [skip ci]"
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 2))
           done
