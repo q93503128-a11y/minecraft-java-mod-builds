@@ -26,216 +26,35 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Purge obsolete Arcane Circle history tooling
-        shell: bash
+      - name: Materialize clean current tree
+        run: python3 .github/scripts/arcane_circle_purge_current.py
+
+      - name: Audit clean current tree
+        working-directory: projects/arcane-circle
         run: |
-          set -euo pipefail
-          client="$PROJECT_DIR/src/main/java/kr/moonseungjun/arcanecircle/client"
-
-          # Ensure retired presentation source cannot survive as dormant code.
-          rm -f "$client"/CodexVisualLanguage.java "$client"/ArcaneSigilDetailGrammar.java
-          rm -f "$client"/LowCircleVisualIdentity.java "$client"/MidCircleVisualIdentity.java
-          rm -f "$client"/FifthCircleVisualIdentity.java "$client"/SixthCircleVisualIdentity.java
-          rm -f "$client"/ArchmageVisualIdentity.java "$client"/RangeReactivePresentation.java
-          rm -f "$client"/SpellVisualSignature.java "$client"/CastingSilhouetteRenderer.java
-          rm -f "$client"/RobeRegaliaRenderer.java
-
-          # Preserve the current validators, then remove every old apply/fix/versioned validator.
-          cp "$PROJECT_DIR/tools/test_v0121_alpha26_visual_rewrite.py" /tmp/test_current_source.py
-          cp "$PROJECT_DIR/tools/verify_jar.py" /tmp/verify_jar.py
-          rm -rf "$PROJECT_DIR/tools"
-          mkdir -p "$PROJECT_DIR/tools"
-          mv /tmp/test_current_source.py "$PROJECT_DIR/tools/test_current_source.py"
-          mv /tmp/verify_jar.py "$PROJECT_DIR/tools/verify_jar.py"
-          sed -i 's/0\.12\.1-alpha\.26/0.12.1-alpha.27/g; s/alpha\.26 ground-up visual rewrite/current-source/g' "$PROJECT_DIR/tools/test_current_source.py"
-          cat >> "$PROJECT_DIR/tools/test_current_source.py" <<'PY'
-
-# Repository hygiene: old Arcane patch/migration/build machinery is not live source.
-repo=root.parents[1]
-tools=root/'tools'
-assert {p.name for p in tools.iterdir() if p.is_file()} == {'test_current_source.py','verify_jar.py'}
-assert not [p for p in tools.iterdir() if p.is_dir()], 'legacy tool directories remain'
-scripts=repo/'.github/scripts'
-if scripts.exists():
-    assert not (scripts/'arcane-circle').exists(), 'legacy arcane script directory remains'
-    assert not list(scripts.glob('*arcane*')), 'legacy arcane patch fragments remain'
-workflows=repo/'.github/workflows'
-arcane=sorted(p.name for p in workflows.glob('*arcane*.yml'))
-assert arcane == ['build-arcane-circle.yml'], f'legacy Arcane workflows remain: {arcane}'
-for obsolete in ['AUDIT_REPORT_V0.5.md','BUILD_AND_RUNTIME_REPORT.md','MAGIC_WORLD_PATCH.md','docs/ALPHA10_WORLD_COMBAT.md','docs/PRESENTATION_OVERHAUL_PHASES.md']:
-    assert not (root/obsolete).exists(), f'obsolete project document remains: {obsolete}'
-print('legacy_arcane_tooling=absent')
-print('arcane_workflows=1')
-PY
-          chmod +x "$PROJECT_DIR/tools/"*.py
-
-          # Old migration payloads belong only to Git history.
-          rm -rf .github/scripts/arcane-circle
-          find .github/scripts -maxdepth 1 -type f -iname '*arcane*' -delete || true
-
-          # Remove stale reports and phase plans; current canon is patched in place.
-          rm -f "$PROJECT_DIR/AUDIT_REPORT_V0.5.md" "$PROJECT_DIR/BUILD_AND_RUNTIME_REPORT.md" "$PROJECT_DIR/MAGIC_WORLD_PATCH.md"
-          rm -f "$PROJECT_DIR/docs/ALPHA10_WORLD_COMBAT.md" "$PROJECT_DIR/docs/PRESENTATION_OVERHAUL_PHASES.md"
-
-          cat > "$PROJECT_DIR/README.md" <<'MD'
-# Arcane Circle: Ninefold Arcana
-
-Minecraft Java 26.2 + NeoForge 26.2.0.38-beta + Java 25 기반 1~9써클 마법 RPG 모드다. 현재 버전은 `gradle.properties`의 `mod_version`을 단일 기준으로 사용한다.
-
-## 현재 콘텐츠
-- 직접 주문 90개, 융합 주문 19개, 1~9써클 전체 구현
-- 주문서 학습, 숙련, 마력·쿨타임·시전시간 성장
-- 소속·마법사 NPC·마법 세계·아카데미·경제·의뢰
-- 지팡이/로브 장비와 테스트 키트
-- 서버 권위 시전·판정과 클라이언트 월드 연출 동기화
-
-## 조작
-- `C`: 구중 마도서
-- `1`~`5` 누르기: 장착 주문 전개/유지
-- `1`~`5` 놓기: 준비된 주문 발동
-- `X` + `1`~`5`: 최대 3개 주문을 융합 대기열에 추가
-- `X` 놓기: 완성된 융합 주문 발동
-
-시전시간이 0초인 주문도 누르는 순간 자동 발사하지 않고 ready-hold 후 release에서 발동한다.
-
-## 현재 presentation
-- `GrimoireScreen`: 기능 인덱스 + 1~9써클 인장 + 주문 브라우저 + 선택 주문 상세 + 장착 스트립
-- `ArcaneHud`: 네모 슬롯 바가 아닌 주문 인장형 전투 HUD
-- `SpellCinematicDirector`: 주문의 실제 공간 사건을 기준으로 한 월드 연출
-- `ArcaneRegaliaRenderer`: 복장별 독립 실루엣
-- `ArcaneCastingPerformance`: snap/aim/heavy/ground/ward/portal/ritual 시전 자세
-
-모든 주문에 같은 범용 마법진을 덧씌우지 않는다. 높은 써클이라는 이유만으로 항상 더 큰 원을 그리지 않으며, 주문의 역할·위치·고도·평면·체적·이동·충돌·잔류가 디자인의 시작점이다.
-
-## 빌드와 검사
-```bash
-chmod +x gradlew
-python3 tools/test_current_source.py
-./gradlew --no-daemon --no-configuration-cache clean build
-python3 tools/verify_jar.py "build/libs/arcanecircle-$(sed -n 's/^mod_version=//p' gradle.properties).jar"
-```
-
-Arcane 전용 정식 CI는 `.github/workflows/build-arcane-circle.yml` 하나만 유지한다. 과거 버전용 apply/fix/migration 스크립트와 presentation 구현은 active tree에 보존하지 않는다.
-MD
-
-          cat > "$PROJECT_DIR/PROJECT.md" <<'MD'
-# Arcane Circle: Ninefold Arcana — Project Contract
-
-- Slug: `arcane-circle`
-- Mod ID / namespace: `arcanecircle`
-- Version source: `gradle.properties -> mod_version`
-- Minecraft: 26.2
-- NeoForge: 26.2.0.38-beta
-- Java: 25
-- Gradle: 9.2.1
-- Direct spells: 90
-- Fusion spells: 19
-- Implemented circles: 1~9
-- Canonical CI: `.github/workflows/build-arcane-circle.yml`
-- Canonical source audit: `tools/test_current_source.py`
-- Canonical JAR audit: `tools/verify_jar.py`
-
-## Runtime contract
-게임 데이터·마력·숙련·시전·네트워크·판정은 서버 권위다. 0초 시전도 ready-hold 후 release 발동을 유지하고, 실제 효과 타이밍과 보이는 도달/충돌 타이밍을 동기화한다.
-
-## Presentation contract
-현재 정본은 `GrimoireScreen`, `ArcaneHud`, `SpellCinematicDirector`, `ArcaneRegaliaRenderer`, `ArcaneCastingPerformance`다. 구형 presentation 클래스나 범용 마법진 장식층, 버전별 migration/apply/fix 스크립트는 active tree에 두지 않는다.
-MD
-
-          cat > "$PROJECT_DIR/CHANGELOG.md" <<'MD'
-# Changelog
-
-## Current 0.12.1 alpha line
-- 과거 카드형 마도서와 네모 주문 핫바 presentation을 폐기했다.
-- 공통 마법진 장식층과 써클별 범용 VisualIdentity 체계를 제거했다.
-- `SpellCinematicDirector`가 주문의 실제 공간 사건을 기준으로 연출한다.
-- 복장과 시전 동작을 `ArcaneRegaliaRenderer` / `ArcaneCastingPerformance`로 분리했다.
-- 구형 presentation 클래스, 과거 전용 CI, 버전별 apply/fix/migration 도구를 active tree에서 제거했다.
-- 1~9써클, 직접 주문 90개, 융합 주문 19개, ready-hold/release, 서버 권위 판정, `presentationImpactDelay`, `syncAtomicRobe` 계약은 유지한다.
-
-과거 세부 변경 이력은 Git history가 보존한다.
-MD
-
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          p=Path('projects/arcane-circle/docs/MAGIC_WORLD_CANON.md')
-          s=p.read_text(encoding='utf-8')
-          section='''## 3. Presentation 절대 규칙\n\n높은 써클 = 무조건 더 큰 원이라는 규칙은 없다. 설계는 주문이 세계에서 실제로 어떤 사건인지 정의하는 것부터 시작한다. 위치·방향·고도·평면·체적을 정하고, 준비 과정의 조립, release 이후 이동·전파·충돌·잔류를 설계한 다음 마지막에 써클에 맞는 복잡도와 체급을 조정한다.\n\n현재 사건 형태는 `NEEDLE / ORB / VOLLEY / RAY / CONE / FIELD / WALL / GATE / PRISON / SKY / WEATHER / AURA / MARK / SHIFT / TRANSFORM / CLOCK / TERRAIN / DOMAIN`이다. 모든 주문 위에 동일한 범용 마법진을 덧씌우지 않는다. Power Word Kill은 9써클이어도 작고 정밀할 수 있고 Meteor Swarm은 하늘 전체를 사용하는 대규모 사건이어야 한다. 보이는 범위와 게임플레이 판정 범위는 가능한 한 공유하며, 고위 마법을 단순 파티클 덩어리로 대체하지 않는다.\n\n'''
-          s=re.sub(r'## 3\. 마법진 시각 규칙.*?(?=## 4\. 소속 체계)',section,s,flags=re.S)
-          s=re.sub(r'## 8\. 구현 우선순위.*$', '## 8. 구현 원칙\n\n게임플레이 결과는 서버 권위다. 클라이언트 presentation은 판정의 원인이 아니라 결과를 정확히 보여주는 계층이다. UI·연출·복장은 교체 가능해야 하며 게임 데이터와 네트워크 계약에 불필요하게 결합하지 않는다.\n', s, flags=re.S)
-          p.write_text(s,encoding='utf-8')
-          PY
-
-          # Replace all historical Arcane workflows with one canonical filename.
-          cp .github/workflows/build-arcane-circle-v0121.yml /tmp/build-arcane-circle.yml
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('/tmp/build-arcane-circle.yml')
-          s=p.read_text(encoding='utf-8')
-          s=s.replace('name: Build Arcane Circle v0.12.1 Alpha.26','name: Build Arcane Circle')
-          s=s.replace(".github/workflows/build-arcane-circle-v0121.yml",".github/workflows/build-arcane-circle.yml")
-          s=s.replace('arcane-circle-v0121-main','arcane-circle-main')
-          s=s.replace('0.12.1-alpha.26','0.12.1-alpha.27')
-          s=s.replace('test_v0121_alpha26_visual_rewrite.py','test_current_source.py')
-          s=s.replace('Java 25 - alpha.26 ground-up UI VFX regalia','Java 25 - current Arcane Circle')
-          s=s.replace('Audit committed alpha.26 source without mutation','Audit current source without mutation')
-          s=s.replace('Verify alpha.26 JAR and retired stack absence','Verify current JAR and retired stack absence')
-          s=s.replace('Arcane Circle alpha.26 committed-source JAR audit','Arcane Circle current committed-source JAR audit')
-          s=s.replace('presentation_phase=alpha26-ground-up-ui-vfx-regalia','presentation_phase=current-cinematic-ui-vfx-regalia\n          legacy_arcane_tooling=absent\n          repository_cleanup=complete')
-          p.write_text(s,encoding='utf-8')
-          PY
-          find .github/workflows -maxdepth 1 -type f -iname '*arcane*.yml' -delete
-          mv /tmp/build-arcane-circle.yml .github/workflows/build-arcane-circle.yml
-
-          # Version bump: content and mechanics are unchanged.
-          sed -i 's/^mod_version=.*/mod_version=0.12.1-alpha.27/' "$PROJECT_DIR/gradle.properties"
-          sed -i 's/public static final String VERSION = "[^"]*";/public static final String VERSION = "0.12.1-alpha.27";/' "$PROJECT_DIR/src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java"
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          p=Path('projects/arcane-circle/src/main/resources/data/arcanecircle/spell_catalog/index.json')
-          d=json.loads(p.read_text(encoding='utf-8'))
-          d['version']='0.12.1-alpha.27'
-          p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          PY
-
-          echo 'Arcane tools:'
-          find "$PROJECT_DIR/tools" -maxdepth 1 -type f -printf '  %f\n' | sort
-          echo 'Arcane workflows:'
-          find .github/workflows -maxdepth 1 -type f -iname '*arcane*.yml' -printf '  %f\n' | sort
-          echo 'Arcane script leftovers:'
-          find .github/scripts -maxdepth 2 -iname '*arcane*' -print || true
-
-      - name: Audit purged source tree
-        working-directory: ${{ env.PROJECT_DIR }}
-        shell: bash
-        run: |
-          set -euo pipefail
           python3 tools/test_current_source.py
           git diff --check
 
-      - name: Java 25 clean build after purge
-        working-directory: ${{ env.PROJECT_DIR }}
-        shell: bash
+      - name: Java 25 clean build
+        working-directory: projects/arcane-circle
         run: |
-          set -euo pipefail
           chmod +x gradlew
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
           test -f "build/libs/arcanecircle-$TARGET_VERSION.jar"
           python3 tools/verify_jar.py "build/libs/arcanecircle-$TARGET_VERSION.jar"
 
       - name: Commit verified purge to main
-        shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
