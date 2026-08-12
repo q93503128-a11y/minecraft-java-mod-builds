@@ -30,6 +30,8 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageWaveTrait.class",
     "kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.class",
     "kr/moonseungjun/villageguardians/VillageWarfrontSystem.class",
+    "kr/moonseungjun/villageguardians/VillageDifficultyTuning.class",
+    "kr/moonseungjun/villageguardians/VillageRaidDebrisDropGuard.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillHudOverlay.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectEntities.class",
@@ -51,13 +53,22 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageRoleSkillSystem.class",
     "kr/moonseungjun/villageguardians/VillageRoleProgressScreen.class",
     "kr/moonseungjun/villageguardians/VillageEquipmentShop.class",
-    "kr/moonseungjun/villageguardians/VillageTownHallScreen.class",
+    "kr/moonseungjun/villageguardians/VillageEquipmentTooltipClient.class",
     "kr/moonseungjun/villageguardians/VillageInventoryPanel.class",
-    "kr/moonseungjun/villageguardians/VillageUiScreen.class",
-    "kr/moonseungjun/villageguardians/VillageFacilityScreen.class",
-    "kr/moonseungjun/villageguardians/VillageStatusScreen.class",
+    "kr/moonseungjun/villageguardians/VillageTownHallGridScreen.class",
+    "kr/moonseungjun/villageguardians/VillageShopCatalogScreen.class",
+    "kr/moonseungjun/villageguardians/VillageCommandCenterScreen.class",
+    "kr/moonseungjun/villageguardians/VillageActionDetailScreen.class",
+    "kr/moonseungjun/villageguardians/VillageQuickChatSafeScreen.class",
+    "kr/moonseungjun/villageguardians/VillageFusionSafeScreen.class",
     "kr/moonseungjun/villageguardians/VillageRelicScreen.class",
-    "kr/moonseungjun/villageguardians/VillageQuickChatScreen.class",
+    "kr/moonseungjun/villageguardians/VillageRelicChoiceConfirmScreen.class",
+    "kr/moonseungjun/villageguardians/VillageWaveIntelDossierScreen.class",
+    "kr/moonseungjun/villageguardians/VillageVictoryScreen.class",
+    "kr/moonseungjun/villageguardians/VillageGameOverScreen.class",
+    "kr/moonseungjun/villageguardians/VillageResultScreen.class",
+    "kr/moonseungjun/villageguardians/VillageSkillTestScreen.class",
+    "kr/moonseungjun/villageguardians/VillageSkillTestPasswordScreen.class",
     "kr/moonseungjun/villageguardians/VillageActionDescriptions.class",
     "kr/moonseungjun/villageguardians/VillageStarterKit.class",
     "kr/moonseungjun/villageguardians/VillageClientKeys.class",
@@ -68,6 +79,8 @@ REQUIRED_CLASSES = {
 OBSOLETE_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSkillVisualSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectSystem$DisplayAccess.class",
+    "kr/moonseungjun/villageguardians/VillageTownHallScreen.class",
+    "kr/moonseungjun/villageguardians/VillageShopScreen.class",
 }
 
 
@@ -140,9 +153,10 @@ def main() -> None:
     checksum_path.write_text(f"{digest}  {jar_path.name}\n", encoding="utf-8")
 
     print(f"[PASS] Valid Village Guardians JAR: {jar_path}")
-    print("[PASS] Dedicated facility UI prioritizes descriptions and keeps controls compact")
-    print("[PASS] Read-only status UI contains no generic action selector")
-    print("[PASS] Facility repair and upgrade are available at local terminals and town hall")
+    print("[PASS] Current town hall, shop, action, result and tactical UI classes are bundled")
+    print("[PASS] Deleted legacy town hall/shop classes are absent")
+    print("[PASS] Facility repair and upgrade remain reachable from the town hall")
+    print("[PASS] Early difficulty tuning, downed-state risk and raid debris suppression are bundled")
     print("[PASS] Roof signatures migrate to front-facing facade marks")
     print("[PASS] Ten regular enemy roles, four bosses and twelve wave traits are present")
     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
