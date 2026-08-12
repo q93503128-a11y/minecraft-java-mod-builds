@@ -152,6 +152,10 @@ public final class ErdenUrbanInfrastructureBuilder {
         boolean eastWest = Math.abs(deltaX) >= Math.abs(deltaZ);
         Block material = entrance.residential() ? Blocks.PACKED_MUD : Blocks.STONE_BRICKS;
         for (int step = 0; step <= steps; step++) {
+            // The threshold reconciler owns the doorway itself and the first two metres of authored
+            // porch. Never pave those cells from terrain height: some imported doors begin at the
+            // template's minimum Y, so a step-0 surface write can literally replace the door block.
+            if (step <= 2) continue;
             int centerX = entrance.x() + Math.round(deltaX * (step / (float) steps));
             int centerZ = entrance.z() + Math.round(deltaZ * (step / (float) steps));
             for (int width = -1; width <= 1; width++) {
@@ -160,7 +164,7 @@ public final class ErdenUrbanInfrastructureBuilder {
                 if (!contains(chunk, x, z)) continue;
                 int surfaceY = RealmSitePlanner.surfaceY(level, x, z);
                 plan.addSet(x, surfaceY, z, material);
-                if (step > 3) plan.addFill(x, surfaceY + 1, z, x, surfaceY + 3, z, Blocks.AIR);
+                plan.addFill(x, surfaceY + 1, z, x, surfaceY + 3, z, Blocks.AIR);
             }
         }
     }
