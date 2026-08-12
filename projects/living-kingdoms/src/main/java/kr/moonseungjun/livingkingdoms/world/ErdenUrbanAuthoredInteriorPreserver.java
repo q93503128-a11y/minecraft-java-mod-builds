@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,7 +28,7 @@ import java.util.Set;
  * and trim. Before conversion this manager snapshots architectural blocks inside that same envelope.
  * Once both functional floors are complete it restores only cells outside the guaranteed central
  * aisle and synthetic stair lane. Generated fixtures always win, and the operation rolls itself back
- * if the ground-floor aisle is no longer walkable. No extra chunks are loaded.</p>
+ * if the ground-floor aisle or the usable interior core is disconnected. No extra chunks are loaded.</p>
  */
 public final class ErdenUrbanAuthoredInteriorPreserver {
     public static final int PRESERVE_REVISION = 1;
@@ -39,10 +40,14 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
     private static final int RESTORE_BUDGET = 1;
     private static final int UPDATE_FLAGS =
             Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
+    private static final int[][] NEIGHBORS = {
+            {1, 0}, {-1, 0}, {0, 1}, {0, -1}
+    };
 
     private static MinecraftServer activeServer;
     private static final Map<Long, Snapshot> SNAPSHOTS = new HashMap<>();
     private static final Set<Long> RESTORED = new HashSet<>();
+    private static int rollbackCount;
     private static boolean completionLogged;
 
     private ErdenUrbanAuthoredInteriorPreserver() {
@@ -101,7 +106,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
             restoredThisTick++;
             if (diagnosticMode()) {
                 LivingKingdoms.LOGGER.debug(
-                        "Restored Erden authored interior structure role={} entrance={},{} cells={} safe_aisle_preserved=true synthetic_stair_preserved=true fixtures_preserved=true",
+                        "Restored Erden authored interior structure role={} entrance={},{} cells={} safe_aisle_preserved=true usable_core_connected=true synthetic_stair_preserved=true fixtures_preserved=true",
                         entrance.role(), entrance.x(), entrance.z(), restored);
             }
         }
@@ -109,8 +114,9 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
         if (!completionLogged && RESTORED.size() == ExternalUrbanFabricBuilder.plotCount()) {
             completionLogged = true;
             LivingKingdoms.LOGGER.info(
-                    "Completed Erden authored interior preservation buildings={} source_structure_restored=true safe_aisles=true generated_fixtures=true rollback_guard=true loaded_only=true revision={}",
-                    RESTORED.size(), PRESERVE_REVISION);
+                    "Completed Erden authored interior preservation buildings={} accepted_buildings={} rolled_back_buildings={} source_structure_restored=true safe_aisles=true usable_core_connected=true generated_fixtures=true rollback_guard=true loaded_only=true revision={}",
+                    RESTORED.size(), RESTORED.size() - rollbackCount, rollbackCount,
+                    PRESERVE_REVISION);
         }
     }
 
@@ -118,10 +124,15 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
         return RESTORED.size();
     }
 
+    public static int rollbackCount() {
+        return rollbackCount;
+    }
+
     private static void reset(MinecraftServer server) {
         activeServer = server;
         SNAPSHOTS.clear();
         RESTORED.clear();
+        rollbackCount = 0;
         completionLogged = false;
     }
 
@@ -165,17 +176,82 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
             level.setBlock(pos, cell.state, UPDATE_FLAGS);
         }
 
-        if (!groundAisleWalkable(level, snapshot)) {
-            for (int index = changed.size() - 1; index >= 0; index--) {
-                ChangedCell cell = changed.get(index);
-                level.setBlock(cell.pos, cell.previous, UPDATE_FLAGS);
-            }
+        String unsafe = restorationSafetyFailure(level, snapshot);
+        if (unsafe != null) {
+            rollback(level, changed);
+            rollbackCount++;
             LivingKingdoms.LOGGER.warn(
-                    "Rolled back Erden authored interior restoration entrance={},{} attempted_cells={} reason=ground_aisle_blocked",
-                    snapshot.entranceX, snapshot.entranceZ, changed.size());
+                    "Rolled back Erden authored interior restoration entrance={},{} attempted_cells={} reason={}",
+                    snapshot.entranceX, snapshot.entranceZ, changed.size(), unsafe);
             return 0;
         }
         return changed.size();
+    }
+
+    private static void rollback(ServerLevel level, List<ChangedCell> changed) {
+        for (int index = changed.size() - 1; index >= 0; index--) {
+            ChangedCell cell = changed.get(index);
+            level.setBlock(cell.pos, cell.previous, UPDATE_FLAGS);
+        }
+    }
+
+    private static String restorationSafetyFailure(ServerLevel level, Snapshot snapshot) {
+        if (!groundAisleWalkable(level, snapshot)) return "ground_aisle_blocked";
+        if (!usableCoreConnected(level, snapshot)) return "usable_core_disconnected";
+        return null;
+    }
+
+    /**
+     * Preserve authored rooms only when the first walkable cell in the same 5 m interior core used
+     * by normal navigation remains reachable from the real door. This prevents a visually plausible
+     * restored partition from turning a walkable-looking side room into a sealed pocket.
+     */
+    private static boolean usableCoreConnected(ServerLevel level, Snapshot snapshot) {
+        Node target = firstUsableCoreTarget(level, snapshot);
+        if (target == null) return false;
+        Node start = new Node(snapshot.entranceX, snapshot.doorY, snapshot.entranceZ);
+        if (!walkable(level, start.x, start.y, start.z)) return false;
+
+        int minY = Math.max(level.getMinY() + 1, snapshot.doorY - 4);
+        int maxY = Math.min(level.getMaxY() - 2, snapshot.doorY + 12);
+        ArrayDeque<Node> pending = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+        pending.add(start);
+        visited.add(nodeKey(start.x, start.y, start.z));
+        while (!pending.isEmpty()) {
+            Node current = pending.removeFirst();
+            if (current.equals(target)) return true;
+            for (int[] offset : NEIGHBORS) {
+                int x = current.x + offset[0];
+                int z = current.z + offset[1];
+                if (x < snapshot.bounds.minX || x > snapshot.bounds.maxX
+                        || z < snapshot.bounds.minZ || z > snapshot.bounds.maxZ) continue;
+                for (int y = current.y - 1; y <= current.y + 1; y++) {
+                    if (y < minY || y > maxY || !walkable(level, x, y, z)) continue;
+                    long key = nodeKey(x, y, z);
+                    if (visited.add(key)) pending.addLast(new Node(x, y, z));
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Node firstUsableCoreTarget(ServerLevel level, Snapshot snapshot) {
+        Vector right = new Vector(-snapshot.inward.z, snapshot.inward.x);
+        for (int depth = 2; depth <= 8; depth++) {
+            for (int lateral = -2; lateral <= 2; lateral++) {
+                int x = snapshot.entranceX + snapshot.inward.x * depth + right.x * lateral;
+                int z = snapshot.entranceZ + snapshot.inward.z * depth + right.z * lateral;
+                if (!level.hasChunk(x >> 4, z >> 4)) continue;
+                for (int delta = 0; delta <= 4; delta++) {
+                    for (int sign : delta == 0 ? new int[]{1} : new int[]{1, -1}) {
+                        int feetY = snapshot.doorY + delta * sign;
+                        if (walkable(level, x, feetY, z)) return new Node(x, feetY, z);
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -351,6 +427,13 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
         return ((long) x << 32) ^ (z & 0xffffffffL);
     }
 
+    private static long nodeKey(int x, int y, int z) {
+        long a = ((long) x & 0x1fffffL) << 43;
+        long b = ((long) y & 0x3fffffL) << 21;
+        long c = (long) z & 0x1fffffL;
+        return a ^ b ^ c;
+    }
+
     private record Snapshot(
             int entranceX,
             int entranceZ,
@@ -370,5 +453,8 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
     }
 
     private record Vector(int x, int z) {
+    }
+
+    private record Node(int x, int y, int z) {
     }
 }
