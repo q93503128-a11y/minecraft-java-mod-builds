@@ -37,6 +37,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenUrbanMicroInfillManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanLifeManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanPlacedTopologyCatalog;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanSourceTopologyCatalog;
+import kr.moonseungjun.livingkingdoms.world.ErdenUrbanTopologyCorrelationAudit;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
@@ -108,6 +109,7 @@ public final class LivingKingdoms {
         ErdenExteriorEstateManager.onServerTick(event);
         ErdenUrbanAuthoredInteriorPreserver.captureBeforeConversion(event);
         ErdenUrbanAuthoredInteriorSurvey.onServerTick(event);
+        ErdenUrbanTopologyCorrelationAudit.onServerTick(event);
         ErdenUrbanInteriorBuilder.onServerTick(event);
         ErdenCitadelInteriorManager.onServerTick(event);
         ErdenLandmarkInteriorManager.onServerTick(event);
