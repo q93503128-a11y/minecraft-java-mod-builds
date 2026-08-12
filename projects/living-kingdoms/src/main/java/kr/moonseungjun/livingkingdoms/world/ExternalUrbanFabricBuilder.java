@@ -2,12 +2,14 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -27,7 +29,7 @@ import java.util.Set;
 /**
  * Fills the gaps between large capital anchors with entrance-centred facade fragments cut from
  * attributed external buildings. The result is streamed per chunk, keeps the original block states,
- * and connects every retained entrance to a planned street through the actual facade front.
+ * and connects every retained entrance to a planned street through the actual walkable facade exit.
  */
 public final class ExternalUrbanFabricBuilder {
     private static final String MANOR =
@@ -40,6 +42,7 @@ public final class ExternalUrbanFabricBuilder {
     private static final int MIN_COMPONENT_BLOCKS = 24;
     private static final int MAX_ROAD_SEARCH = 72;
     private static final int ACCESS_HALF_WIDTH = 1;
+    private static final int SOURCE_EXIT_PROBE = 4;
     private static final Map<String, SourceTemplate> TEMPLATE_CACHE = new HashMap<>();
     private static final Map<String, String> LEGACY_BLOCK_IDS = Map.of(
             "minecraft:chain", "minecraft:iron_chain",
@@ -265,17 +268,16 @@ public final class ExternalUrbanFabricBuilder {
             int entranceX = minX + entranceOffset.x;
             int entranceZ = minZ + entranceOffset.z;
 
-            // Keep the legacy nearest-road score so building position/rotation and all 233 role
-            // assignments remain byte-for-byte deterministic. Only the retained access target is
-            // corrected to the facade edge that actually contains this entrance.
+            // Preserve the legacy nearest-road score so the chosen rotations and the fixed 233
+            // functional plots remain deterministic. The retained road target, however, follows
+            // the side of the imported doorway that the source structure itself proves walkable.
             RoadTarget nearest = nearestRoad(
                     entranceX, entranceZ, minX, minZ, maxX, maxZ);
             if (nearest == null) continue;
             int distance = Math.abs(nearest.x - entranceX) + Math.abs(nearest.z - entranceZ);
             int score = distance * 10 + Math.floorMod(hash + offset * 17, 9);
             if (score < bestScore) {
-                FrontSide front = nearestSide(
-                        entranceX - minX, entranceZ - minZ, width, length);
+                FrontSide front = rotateFrontSide(fragment.exteriorSide, rotation);
                 RoadTarget frontRoad = nearestRoadOnSide(
                         entranceX, entranceZ, minX, minZ, maxX, maxZ, front);
                 RoadTarget retained = frontRoad == null ? nearest : frontRoad;
@@ -585,9 +587,147 @@ public final class ExternalUrbanFabricBuilder {
 
         int entranceX = clamp(entrance.x - minX, 1, Math.max(1, fragmentWidth - 2));
         int entranceZ = clamp(entrance.z - minZ, 1, Math.max(1, fragmentLength - 2));
+        int entranceY = lowestDoorY(selected, entranceX, entrance.y, entranceZ);
+        FrontSide exteriorSide = sourceExteriorSide(
+                selected, entranceX, entranceY, entranceZ,
+                fragmentWidth, fragmentLength, side, entrance.state);
         return new FacadeFragment(
                 fragmentWidth, height, fragmentLength,
-                List.copyOf(selected.values()), entranceX, entranceZ);
+                List.copyOf(selected.values()), entranceX, entranceZ, exteriorSide);
+    }
+
+    private static int lowestDoorY(
+            Map<Long, BuildingBlock> blocks, int x, int candidateY, int z) {
+        int result = candidateY;
+        for (int y = candidateY; y >= Math.max(0, candidateY - 2); y--) {
+            BuildingBlock block = blocks.get(localKey(x, y, z));
+            if (block != null && block.state.getBlock() instanceof DoorBlock) result = y;
+        }
+        return result;
+    }
+
+    /**
+     * Imported structures frequently contain doors whose nearest crop edge is not the side one can
+     * actually leave through. Probe the two sides of the door plane using the source blocks and
+     * retain the side that has a real supported, body-clear run. This is decided before rotation,
+     * so every repeated urban placement inherits the same authored doorway semantics.
+     */
+    private static FrontSide sourceExteriorSide(
+            Map<Long, BuildingBlock> blocks,
+            int x, int doorY, int z,
+            int width, int length,
+            FrontSide fallback,
+            BlockState doorState) {
+        if (!(doorState.getBlock() instanceof DoorBlock)
+                || !doorState.hasProperty(DoorBlock.FACING)) {
+            return fallback;
+        }
+        Direction facing = doorState.getValue(DoorBlock.FACING);
+        FrontSide first = frontSide(facing);
+        FrontSide second = frontSide(facing.getOpposite());
+        int firstRun = sourceClearRun(blocks, x, doorY, z, first);
+        int secondRun = sourceClearRun(blocks, x, doorY, z, second);
+        if (firstRun != secondRun) return firstRun > secondRun ? first : second;
+
+        int firstEdge = edgeDistance(x, z, width, length, first);
+        int secondEdge = edgeDistance(x, z, width, length, second);
+        if (firstEdge != secondEdge) return firstEdge < secondEdge ? first : second;
+        if (fallback == first || fallback == second) return fallback;
+        return first;
+    }
+
+    private static int sourceClearRun(
+            Map<Long, BuildingBlock> blocks,
+            int x, int doorY, int z,
+            FrontSide side) {
+        int stepX = side == FrontSide.EAST ? 1 : side == FrontSide.WEST ? -1 : 0;
+        int stepZ = side == FrontSide.SOUTH ? 1 : side == FrontSide.NORTH ? -1 : 0;
+        int feetY = doorY;
+        int clear = 0;
+        for (int depth = 1; depth <= SOURCE_EXIT_PROBE; depth++) {
+            int resolved = sourceWalkableFeetY(
+                    blocks, x + stepX * depth, z + stepZ * depth, feetY);
+            if (resolved == Integer.MIN_VALUE || Math.abs(resolved - feetY) > 1) break;
+            feetY = resolved;
+            clear++;
+        }
+        return clear;
+    }
+
+    private static int sourceWalkableFeetY(
+            Map<Long, BuildingBlock> blocks,
+            int x, int z, int preferredFeetY) {
+        int[] offsets = {0, 1, -1};
+        for (int offset : offsets) {
+            int feetY = preferredFeetY + offset;
+            if (sourceWalkable(blocks, x, feetY, z)) return feetY;
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    private static boolean sourceWalkable(
+            Map<Long, BuildingBlock> blocks, int x, int feetY, int z) {
+        if (!sourceBodyPassable(blocks.get(localKey(x, feetY, z)))
+                || !sourceBodyPassable(blocks.get(localKey(x, feetY + 1, z)))) {
+            return false;
+        }
+        BuildingBlock floor = blocks.get(localKey(x, feetY - 1, z));
+        return floor != null && !floor.state.isAir();
+    }
+
+    private static boolean sourceBodyPassable(BuildingBlock block) {
+        if (block == null || block.state.isAir()) return true;
+        if (block.state.getBlock() instanceof DoorBlock) return true;
+        String id = BuiltInRegistries.BLOCK.getKey(block.state.getBlock()).toString();
+        return id.contains("torch")
+                || id.contains("button")
+                || id.contains("pressure_plate")
+                || id.endsWith("_sign")
+                || id.endsWith("_wall_sign");
+    }
+
+    private static int edgeDistance(
+            int x, int z, int width, int length, FrontSide side) {
+        return switch (side) {
+            case NORTH -> z;
+            case SOUTH -> length - 1 - z;
+            case WEST -> x;
+            case EAST -> width - 1 - x;
+        };
+    }
+
+    private static FrontSide frontSide(Direction direction) {
+        return switch (direction) {
+            case NORTH -> FrontSide.NORTH;
+            case SOUTH -> FrontSide.SOUTH;
+            case WEST -> FrontSide.WEST;
+            case EAST -> FrontSide.EAST;
+            default -> throw new IllegalArgumentException("Non-horizontal doorway direction " + direction);
+        };
+    }
+
+    private static FrontSide rotateFrontSide(FrontSide side, Rotation rotation) {
+        return switch (rotation) {
+            case NONE -> side;
+            case CLOCKWISE_90 -> switch (side) {
+                case NORTH -> FrontSide.EAST;
+                case EAST -> FrontSide.SOUTH;
+                case SOUTH -> FrontSide.WEST;
+                case WEST -> FrontSide.NORTH;
+            };
+            case CLOCKWISE_180 -> switch (side) {
+                case NORTH -> FrontSide.SOUTH;
+                case SOUTH -> FrontSide.NORTH;
+                case WEST -> FrontSide.EAST;
+                case EAST -> FrontSide.WEST;
+            };
+            case COUNTERCLOCKWISE_90 -> switch (side) {
+                case NORTH -> FrontSide.WEST;
+                case WEST -> FrontSide.SOUTH;
+                case SOUTH -> FrontSide.EAST;
+                case EAST -> FrontSide.NORTH;
+            };
+        };
     }
 
     private static void sealFace(
@@ -676,13 +816,6 @@ public final class ExternalUrbanFabricBuilder {
         return FrontSide.EAST;
     }
 
-    /**
-     * Looks for a road only beyond the facade edge containing the retained entrance. This prevents
-     * a geographically closer street behind the building from making the access path cut through
-     * the imported structure. The caller falls back to the legacy nearest road only when the
-     * authored road network genuinely has no road on that facade side within the normal search
-     * radius, preserving the deterministic 233-placement inventory.
-     */
     private static RoadTarget nearestRoadOnSide(
             int x, int z,
             int buildingMinX, int buildingMinZ,
@@ -969,7 +1102,8 @@ public final class ExternalUrbanFabricBuilder {
     private record FacadeFragment(
             int width, int height, int length,
             List<BuildingBlock> blocks,
-            int entranceX, int entranceZ) {
+            int entranceX, int entranceZ,
+            FrontSide exteriorSide) {
     }
 
     private record UrbanPlacement(
