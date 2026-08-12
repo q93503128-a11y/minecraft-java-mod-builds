@@ -145,6 +145,69 @@ public final class ExternalUrbanFabricBuilder {
                 .orElseGet(() -> entrances().getFirst());
     }
 
+    /**
+     * Read-only placement metadata for source-native interior classification. This is derived from
+     * the exact retained placement objects that construction uses, so diagnostics do not have to
+     * reproduce the placement algorithm and cannot silently drift from the fixed 233 functional lots.
+     */
+    public static List<UrbanBuildingPlacement> buildingPlacementsForDiagnostics() {
+        List<UrbanBuildingPlacement> result = new ArrayList<>();
+        for (UrbanPlacement placement : placements()) {
+            int width = placement.rotatedWidth();
+            int length = placement.rotatedLength();
+            int minX = placement.centerX - width / 2;
+            int minZ = placement.centerZ - length / 2;
+            int maxX = minX + width - 1;
+            int maxZ = minZ + length - 1;
+            int baseY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(
+                    placement.centerX, placement.centerZ));
+            result.add(new UrbanBuildingPlacement(
+                    placement.role.id,
+                    placement.resource,
+                    fragmentKey(placement.resource, placement.fragment),
+                    placement.rotation,
+                    placement.entrance,
+                    minX, maxX, minZ, maxZ,
+                    baseY, placement.fragment.height,
+                    width, length));
+        }
+        return List.copyOf(result);
+    }
+
+    /** Returns each retained cropped fragment once; block states are immutable and source-only. */
+    public static Map<String, UrbanFragmentSnapshot> fragmentSnapshotsForDiagnostics() {
+        Map<String, UrbanFragmentSnapshot> result = new LinkedHashMap<>();
+        for (String resource : List.of(HOUSE, CASTLE_HOUSE, MANOR)) {
+            SourceTemplate source = template(resource);
+            for (int index = 0; index < source.fragments.size(); index++) {
+                FacadeFragment fragment = source.fragments.get(index);
+                List<UrbanSourceBlock> blocks = fragment.blocks.stream()
+                        .map(block -> new UrbanSourceBlock(
+                                block.x, block.y, block.z, block.state))
+                        .toList();
+                result.put(fragmentKey(resource, index), new UrbanFragmentSnapshot(
+                        fragmentKey(resource, index), resource,
+                        fragment.width, fragment.height, fragment.length,
+                        fragment.entranceX, fragment.entranceZ,
+                        fragment.exteriorSide.name(), List.copyOf(blocks)));
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static String fragmentKey(String resource, FacadeFragment fragment) {
+        SourceTemplate source = template(resource);
+        for (int index = 0; index < source.fragments.size(); index++) {
+            if (source.fragments.get(index) == fragment) return fragmentKey(resource, index);
+        }
+        throw new IllegalStateException("Placed Erden facade fragment is not retained by its source: "
+                + resource);
+    }
+
+    private static String fragmentKey(String resource, int index) {
+        return resource + "#" + index;
+    }
+
     private static List<UrbanPlacement> placements() {
         List<UrbanPlacement> result = cachedPlacements;
         if (result != null) return result;
@@ -1137,6 +1200,37 @@ public final class ExternalUrbanFabricBuilder {
 
     public record UrbanEntrance(
             String role, int x, int z, int roadX, int roadZ) {
+    }
+
+    public record UrbanBuildingPlacement(
+            String role,
+            String resource,
+            String fragmentKey,
+            Rotation rotation,
+            UrbanEntrance entrance,
+            int minX,
+            int maxX,
+            int minZ,
+            int maxZ,
+            int baseY,
+            int height,
+            int width,
+            int length) {
+    }
+
+    public record UrbanFragmentSnapshot(
+            String fragmentKey,
+            String resource,
+            int width,
+            int height,
+            int length,
+            int entranceX,
+            int entranceZ,
+            String exteriorSide,
+            List<UrbanSourceBlock> blocks) {
+    }
+
+    public record UrbanSourceBlock(int x, int y, int z, BlockState state) {
     }
 
     private record Exclusion(
