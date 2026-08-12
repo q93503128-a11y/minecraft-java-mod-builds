@@ -21,20 +21,20 @@ import java.util.Set;
  * player feet space; feet and head must already be source air. Horizontal moves and one-block rises
  * or drops are allowed only while moving to an adjacent horizontal cell, matching a staircase rather
  * than permitting vertical ladders. Support may be authored later underneath the route, but source
- * facade/roof/interior blocks remain immutable. Interior route cells must remain under authored
- * structure. Exterior cells are permitted only in a compact switchback court immediately outside the
- * retained entrance plane (six metres deep and ten metres to either side of the door). Crop-face
- * blocks may count as air only when {@link ErdenUrbanSyntheticSealProvenance} has independently
- * matched the fragment back to the immutable raw schematic, proven that exact raw cell was AIR, and
- * proven the current seal block belongs to the approved generated-conversion clear palette.</p>
+ * facade/roof/interior blocks remain immutable. A route may use a three-metre perimeter ring outside
+ * the cropped fragment so an exterior switchback can run along a side or rear wall and re-enter only
+ * through a crop-face cell independently proven by {@link ErdenUrbanSyntheticSealProvenance} to have
+ * been AIR in the immutable raw schematic. The ring is deliberately narrow; it cannot cross the plot
+ * or become a free-floating arbitrary route.</p>
  */
 public final class ErdenUrbanSourceAirRoutePlanner {
-    public static final int PLANNER_REVISION = 5;
+    public static final int PLANNER_REVISION = 6;
 
     private static final int MAX_ROUTE_NODES = 32_000;
     private static final int MIN_HEADROOM = 2;
     private static final int MAX_EXTERIOR_DEPTH = 6;
     private static final int MAX_EXTERIOR_LATERAL = 10;
+    private static final int MAX_PERIMETER_OFFSET = 3;
 
     private static final Map<String, RoutePlan> PLANS = new LinkedHashMap<>();
     private static boolean bootstrapped;
@@ -62,11 +62,12 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             RoutePlan plan = plan(snapshot, opportunity);
             PLANS.put(snapshot.fragmentKey(), plan);
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_SOURCE_AIR_ROUTE fragment={} recommendation={} route_classification={} target_mode={} ground_y={} target_y={} path_nodes={} rise={} turns={} explored_nodes={} clearable_source_air_seals={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 exterior_switchback_bounded=true synthetic_seal_provenance=true",
+                    "LK_ERDEN_SOURCE_AIR_ROUTE fragment={} recommendation={} route_classification={} target_mode={} ground_y={} target_y={} path_nodes={} rise={} turns={} explored_nodes={} clearable_source_air_seals={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 perimeter_ring={} synthetic_seal_provenance=true",
                     snapshot.fragmentKey(), opportunity.recommendation(), plan.classification(),
                     plan.targetMode(), opportunity.groundFeetY(), plan.targetFeetY(),
                     plan.path().size(), plan.rise(), plan.turns(), plan.exploredNodes(),
-                    ErdenUrbanSyntheticSealProvenance.clearableSealCount(snapshot.fragmentKey()));
+                    ErdenUrbanSyntheticSealProvenance.clearableSealCount(snapshot.fragmentKey()),
+                    MAX_PERIMETER_OFFSET);
         }
 
         Map<RouteClassification, Integer> placementCounts = new LinkedHashMap<>();
@@ -87,8 +88,8 @@ public final class ErdenUrbanSourceAirRoutePlanner {
 
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden zero-cut source-air route plans fragments={} buildings={} classifications={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true exterior_switchback_bounded=true synthetic_seal_provenance=true revision={}",
-                PLANS.size(), mapped, placementCounts, PLANNER_REVISION);
+                "Prepared Erden zero-cut source-air route plans fragments={} buildings={} classifications={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true perimeter_ring={} synthetic_seal_provenance=true revision={}",
+                PLANS.size(), mapped, placementCounts, MAX_PERIMETER_OFFSET, PLANNER_REVISION);
     }
 
     public static RoutePlan plan(String fragmentKey) {
@@ -126,9 +127,9 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             explored += candidate.exploredNodes();
             if (candidate.classification() == RouteClassification.ZERO_CUT_ROUTE) {
                 LivingKingdoms.LOGGER.info(
-                        "LK_ERDEN_SOURCE_AIR_ROUTE_TARGET_SELECTED fragment={} target_y={} target_cells={} candidate_count={} explored_before_success={} source_blocks_cut=0 source_only=true synthetic_seal_provenance=true",
+                        "LK_ERDEN_SOURCE_AIR_ROUTE_TARGET_SELECTED fragment={} target_y={} target_cells={} candidate_count={} explored_before_success={} source_blocks_cut=0 source_only=true perimeter_ring={} synthetic_seal_provenance=true",
                         snapshot.fragmentKey(), target.feetY(), targetCellCount(target),
-                        targets.size(), explored);
+                        targets.size(), explored, MAX_PERIMETER_OFFSET);
                 return new RoutePlan(
                         candidate.classification(), candidate.targetMode(), candidate.targetFeetY(),
                         candidate.path(), candidate.rise(), candidate.turns(), explored);
@@ -302,8 +303,10 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
             Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
             int x, int feetY, int z) {
-        if (x < 0 || x >= snapshot.width() || z < 0 || z >= snapshot.length()) return false;
         if (feetY <= 0 || feetY + MIN_HEADROOM - 1 >= snapshot.height()) return false;
+        if (!insideFragment(snapshot, x, z)) {
+            return perimeterRing(snapshot, x, z);
+        }
         for (int dy = 0; dy < MIN_HEADROOM; dy++) {
             int y = feetY + dy;
             ExternalUrbanFabricBuilder.UrbanSourceBlock block = blocks.get(blockKey(x, y, z));
@@ -320,12 +323,32 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
             Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
             int x, int feetY, int z) {
+        if (!insideFragment(snapshot, x, z)) {
+            return perimeterRing(snapshot, x, z);
+        }
         if (interiorSide(snapshot, x, z)) {
             return routeColumnCovered(snapshot, blocks, x, feetY, z);
         }
         int depth = exteriorDepth(snapshot, x, z);
         return depth > 0 && depth <= MAX_EXTERIOR_DEPTH
                 && exteriorLateralDistance(snapshot, x, z) <= MAX_EXTERIOR_LATERAL;
+    }
+
+    private static boolean insideFragment(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot, int x, int z) {
+        return x >= 0 && x < snapshot.width() && z >= 0 && z < snapshot.length();
+    }
+
+    private static boolean perimeterRing(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot, int x, int z) {
+        int dx = x < 0 ? -x : x >= snapshot.width() ? x - snapshot.width() + 1 : 0;
+        int dz = z < 0 ? -z : z >= snapshot.length() ? z - snapshot.length() + 1 : 0;
+        int offset = Math.max(dx, dz);
+        return offset >= 1 && offset <= MAX_PERIMETER_OFFSET
+                && x >= -MAX_PERIMETER_OFFSET
+                && x < snapshot.width() + MAX_PERIMETER_OFFSET
+                && z >= -MAX_PERIMETER_OFFSET
+                && z < snapshot.length() + MAX_PERIMETER_OFFSET;
     }
 
     private static int exteriorDepth(
