@@ -49,12 +49,16 @@ public final class ErdenCapitalStreamingBuilder {
         if (queuedServer != null && queuedServer != server) clearQueue();
         queuedServer = server;
 
+        // A PORTAL ticket can emit ChunkEvent.Load slightly before hasChunk() becomes observable to
+        // this tick loop. Keep every retained request authoritative until its SavedData revision is
+        // complete, and re-enqueue loaded requests if an event/tick ordering window was missed.
+        requeueRetainedLoaded(level);
+
         if (active == null) startNext(level);
         if (active == null) return;
         if (!level.hasChunk(active.chunkX(), active.chunkZ())) {
-            QUEUED.remove(active.chunkPos());
-            releaseRetained(level, active.chunkPos());
-            active = null;
+            // The retained request owns a transient ticket, so a temporary visibility gap is not a
+            // cancellation. Never discard the request merely because the chunk is between stages.
             return;
         }
 
@@ -102,6 +106,23 @@ public final class ErdenCapitalStreamingBuilder {
                 .builtCount(CAPITAL_REVISION);
     }
 
+    private static void requeueRetainedLoaded(ServerLevel level) {
+        ErdenCapitalChunkSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
+        for (long packed : Set.copyOf(RETAINED_REQUESTS)) {
+            if (!data.needs(packed, CAPITAL_REVISION)) {
+                QUEUED.remove(packed);
+                PENDING.remove(packed);
+                releaseRetained(level, packed);
+                continue;
+            }
+            if (QUEUED.contains(packed)) continue;
+            int chunkX = unpackX(packed);
+            int chunkZ = unpackZ(packed);
+            if (level.hasChunk(chunkX, chunkZ)) enqueue(level, packed, true);
+        }
+    }
+
     private static void enqueue(ServerLevel level, long chunkPos, boolean visibleFirst) {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
@@ -130,9 +151,10 @@ public final class ErdenCapitalStreamingBuilder {
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
             if (!level.hasChunk(chunkX, chunkZ)) {
-                QUEUED.remove(packed);
-                releaseRetained(level, packed);
-                continue;
+                // ChunkEvent.Load may precede the tick at which hasChunk becomes true. Preserve both
+                // the queue membership and transient ticket, then retry on a later server tick.
+                PENDING.addLast(packed);
+                return;
             }
             ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
             IncrementalWorldEditPlan plan = createChunkPlan(level, chunk);
