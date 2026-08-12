@@ -90,7 +90,7 @@ public final class VillageTownHallGridScreen extends Screen {
         int x = layout.left() + 14;
         int y = layout.top() + 50;
         int gap = 5;
-        int w = Math.min(144, Math.max(82, (layout.width() - 33) / 2));
+        int w = Math.min(144, Math.max(60, (layout.width() - 33) / 2));
         drawTab(graphics, x, y, w, Tab.FACILITIES, mouseX, mouseY);
         drawTab(graphics, x + w + gap, y, w, Tab.ROLES, mouseX, mouseY);
     }
@@ -161,28 +161,36 @@ public final class VillageTownHallGridScreen extends Screen {
         int x = pane.left() + 16;
         int right = pane.right() - 16;
         int y = pane.top() + 14;
-        graphics.text(font, role.name(), x, y, role.current() ? GOLD : CYAN, false);
+        graphics.text(font, fit(font, role.name(), Math.max(40, right - x)), x, y, role.current() ? GOLD : CYAN, false);
         graphics.text(font, role.current() ? "현재 직업" : "배치 변경 후보", x, y + 16, role.current() ? GOLD : MUTED, false);
         y += 38;
+        Button action = roleButton(pane);
+        int clipBottom = role.current() ? pane.bottom() - 8 : action.y() - 6;
+        graphics.enableScissor(pane.left() + 1, pane.top() + 1, pane.right() - 1, Math.max(pane.top() + 2, clipBottom));
         y = section(graphics, "역할", role.overview(), x, right, y, TEXT);
         y = section(graphics, "상시 효과", role.passive(), x, right, y, CYAN);
         y = section(graphics, "전투 방식", role.active(), x, right, y, GOLD);
         section(graphics, "추천 위치", role.recommended(), x, right, y, BLUE);
+        graphics.disableScissor();
         if (!role.current()) {
-            Button b = roleButton(pane);
-            drawButton(graphics, b, "이 직업으로 배치", true, CYAN, mouseX, mouseY);
+            drawButton(graphics, action, "이 직업으로 배치", true, CYAN, mouseX, mouseY);
         }
     }
 
     private void drawFacilityDetail(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
         if (facilities.isEmpty()) return;
         FacilityCard f = facilities.get(clamp(selectedFacility, 0, facilities.size() - 1));
+        List<ButtonSpec> specs = facilityButtons(pane, f);
+        int actionTop = specs.stream().mapToInt(spec -> spec.bounds().y()).min().orElse(pane.bottom()) - 6;
         int accent = facilityColor(f);
         int x = pane.left() + 16;
         int right = pane.right() - 16;
         int y = pane.top() + 13;
-        graphics.text(font, f.name(), x, y, accent, false);
-        graphics.text(font, f.meta(), x, y + 16, MUTED, false);
+
+        graphics.enableScissor(pane.left() + 1, pane.top() + 1, pane.right() - 1,
+                Math.max(pane.top() + 2, actionTop));
+        graphics.text(font, fit(font, f.name(), Math.max(40, right - x)), x, y, accent, false);
+        graphics.text(font, fit(font, f.meta(), Math.max(40, right - x)), x, y + 16, MUTED, false);
 
         int barTop = y + 34;
         graphics.fill(x, barTop, right, barTop + 5, 0xFF334047);
@@ -201,8 +209,8 @@ public final class VillageTownHallGridScreen extends Screen {
                 section(graphics, "강화 비용", "공동 보급품 " + f.upgradeCost(), x, right, y, GOLD);
             }
         }
+        graphics.disableScissor();
 
-        List<ButtonSpec> specs = facilityButtons(pane, f);
         for (ButtonSpec spec : specs) {
             drawButton(graphics, spec.bounds(), spec.label(), spec.enabled(), spec.accent(), mouseX, mouseY);
         }
@@ -223,24 +231,41 @@ public final class VillageTownHallGridScreen extends Screen {
 
     private List<ButtonSpec> facilityButtons(Pane pane, FacilityCard f) {
         List<ButtonSpec> result = new ArrayList<>();
-        int gap = 6;
-        int count = 3;
-        int available = pane.width() - 28 - gap * (count - 1);
-        int w = Math.max(48, available / count);
-        int y = pane.bottom() - 34;
-        int x = pane.left() + 14;
         boolean usable = f.current() > 0;
+        boolean repair = f.current() < f.maximum() && f.repairCost() > 0;
+        boolean upgrade = usable && f.upgradeCost() > 0 && !f.nextEffect().isBlank();
         String functionLabel = f.id().equals("town_hall") ? "보급 조달"
                 : f.id().equals("walls") ? "방어망 관리" : "시설 기능";
-        result.add(new ButtonSpec(new Button(x, y, w, 23), functionLabel, usable, CYAN, functionAction(f)));
-        x += w + gap;
-        boolean repair = f.current() < f.maximum() && f.repairCost() > 0;
-        result.add(new ButtonSpec(new Button(x, y, w, 23),
-                repair ? "수리 · " + f.repairCost() : "수리 불필요", repair, GOLD, "repair:" + f.id()));
-        x += w + gap;
-        boolean upgrade = usable && f.upgradeCost() > 0 && !f.nextEffect().isBlank();
-        result.add(new ButtonSpec(new Button(x, y, w, 23),
-                upgrade ? "강화 · " + f.upgradeCost() : "강화 완료", upgrade, GREEN, "upgrade:" + f.id()));
+        String repairLabel = repair ? "수리 · " + f.repairCost() : "수리 불필요";
+        String upgradeLabel = upgrade ? "강화 · " + f.upgradeCost() : "강화 완료";
+
+        int gap = 5;
+        int left = pane.left() + 14;
+        int innerWidth = Math.max(1, pane.width() - 28);
+        if (pane.width() < 230) {
+            int h = 20;
+            int y = pane.bottom() - 12 - (h * 3 + gap * 2);
+            result.add(new ButtonSpec(new Button(left, y, innerWidth, h), functionLabel, usable, CYAN, functionAction(f)));
+            y += h + gap;
+            result.add(new ButtonSpec(new Button(left, y, innerWidth, h), repairLabel, repair, GOLD, "repair:" + f.id()));
+            y += h + gap;
+            result.add(new ButtonSpec(new Button(left, y, innerWidth, h), upgradeLabel, upgrade, GREEN, "upgrade:" + f.id()));
+            return result;
+        }
+
+        int available = Math.max(3, innerWidth - gap * 2);
+        int baseWidth = Math.max(1, available / 3);
+        int remainder = Math.max(0, available - baseWidth * 3);
+        int y = pane.bottom() - 34;
+        int x = left;
+        int firstWidth = baseWidth + (remainder > 0 ? 1 : 0);
+        int secondWidth = baseWidth + (remainder > 1 ? 1 : 0);
+        int thirdWidth = baseWidth;
+        result.add(new ButtonSpec(new Button(x, y, firstWidth, 23), functionLabel, usable, CYAN, functionAction(f)));
+        x += firstWidth + gap;
+        result.add(new ButtonSpec(new Button(x, y, secondWidth, 23), repairLabel, repair, GOLD, "repair:" + f.id()));
+        x += secondWidth + gap;
+        result.add(new ButtonSpec(new Button(x, y, thirdWidth, 23), upgradeLabel, upgrade, GREEN, "upgrade:" + f.id()));
         return result;
     }
 
@@ -251,7 +276,8 @@ public final class VillageTownHallGridScreen extends Screen {
     }
 
     private Button roleButton(Pane pane) {
-        int w = Math.min(178, Math.max(112, pane.width() / 3));
+        int w = Math.min(178, Math.max(76, pane.width() / 3));
+        w = Math.min(w, Math.max(1, pane.width() - 28));
         return new Button(pane.right() - w - 14, pane.bottom() - 34, w, 23);
     }
 
@@ -274,7 +300,7 @@ public final class VillageTownHallGridScreen extends Screen {
             return true;
         }
         int tabX = layout.left() + 14;
-        int tabW = Math.min(144, Math.max(82, (layout.width() - 33) / 2));
+        int tabW = Math.min(144, Math.max(60, (layout.width() - 33) / 2));
         if (inside(click.x(), click.y(), tabX, layout.top() + 50, tabW, 20)) {
             tab = Tab.FACILITIES; listScroll = 0; return true;
         }
@@ -348,7 +374,9 @@ public final class VillageTownHallGridScreen extends Screen {
         int contentTop = top + 76;
         int contentBottom = bottom - 11;
         int gap = 8;
-        int listWidth = clamp(panelWidth * 27 / 100, 126, 205);
+        int contentWidth = Math.max(1, panelWidth - 28 - gap);
+        int listWidth = clamp(panelWidth * 27 / 100, 110, 205);
+        listWidth = Math.min(listWidth, Math.max(90, contentWidth - 120));
         Pane list = new Pane(left + 14, contentTop, left + 14 + listWidth, contentBottom);
         Pane detail = new Pane(list.right() + gap, contentTop, right - 14, contentBottom);
         return new Layout(left, top, right, bottom, list, detail);
