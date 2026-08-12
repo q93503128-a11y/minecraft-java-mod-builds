@@ -25,6 +25,13 @@ public final class ErdenCapitalStreamingBuilder {
 
     private static final int STREAM_MARGIN = 48;
     private static final int TICK_BUDGET = 2_400;
+
+    // Explicit player/diagnostic requests must not compete with thousands of incidental capital
+    // ChunkEvent.Load callbacks. Keep a stable FIFO for requested cells and a separate background
+    // queue. Repeated requestChunk calls never move an already-requested cell, preventing newer
+    // traversal probes from indefinitely starving an older multi-chunk route.
+    private static final ArrayDeque<Long> PRIORITY_PENDING = new ArrayDeque<>();
+    private static final Set<Long> PRIORITY_QUEUED = new HashSet<>();
     private static final ArrayDeque<Long> PENDING = new ArrayDeque<>();
     private static final Set<Long> QUEUED = new HashSet<>();
     private static final Set<Long> RETAINED_REQUESTS = new HashSet<>();
@@ -39,7 +46,9 @@ public final class ErdenCapitalStreamingBuilder {
                 || !level.dimension().equals(StarterRealmManager.REALM_KEY)) return;
         ChunkPos chunk = event.getChunk().getPos();
         if (!intersectsCapital(chunk)) return;
-        enqueue(level, pack(chunk.x(), chunk.z()), false);
+        long packed = pack(chunk.x(), chunk.z());
+        if (RETAINED_REQUESTS.contains(packed)) enqueuePriority(level, packed);
+        else enqueueBackground(level, packed);
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -50,16 +59,14 @@ public final class ErdenCapitalStreamingBuilder {
         queuedServer = server;
 
         // A PORTAL ticket can emit ChunkEvent.Load slightly before hasChunk() becomes observable to
-        // this tick loop. Keep every retained request authoritative until its SavedData revision is
-        // complete, and keep explicit requests ahead of incidental background chunk loads.
-        requeueRetainedLoaded(level);
+        // this tick loop. Retained requests remain authoritative until SavedData says the exact
+        // revision is complete, and they always live in the FIFO priority queue rather than being
+        // repeatedly moved to the front by every request tick.
+        requeueRetained(level);
 
         if (active == null) startNext(level);
         if (active == null) return;
         if (!level.hasChunk(active.chunkX(), active.chunkZ())) {
-            // startNext retains every active capital cell. A brief visibility gap can still happen
-            // while the ticket is promoting the chunk, so wait without discarding the half-applied
-            // deterministic plan.
             return;
         }
 
@@ -100,7 +107,7 @@ public final class ErdenCapitalStreamingBuilder {
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
         if (!data.needs(packed, CAPITAL_REVISION)) return;
         retain(level, packed, chunk);
-        if (level.hasChunk(chunkX, chunkZ)) enqueue(level, packed, true);
+        enqueuePriority(level, packed);
     }
 
     public static boolean isChunkBuilt(ServerLevel level, int chunkX, int chunkZ) {
@@ -131,65 +138,78 @@ public final class ErdenCapitalStreamingBuilder {
                 + "{loaded=" + level.hasChunk(chunkX, chunkZ)
                 + ",built=" + isChunkBuilt(level, chunkX, chunkZ)
                 + ",queued=" + QUEUED.contains(packed)
-                + ",pending=" + PENDING.contains(packed)
+                + ",priority=" + PRIORITY_QUEUED.contains(packed)
+                + ",pending=" + (PRIORITY_PENDING.contains(packed) || PENDING.contains(packed))
                 + ",retained=" + RETAINED_REQUESTS.contains(packed)
                 + ",active_here=" + activeHere
-                + ",pending_size=" + PENDING.size()
+                + ",priority_pending_size=" + PRIORITY_PENDING.size()
+                + ",background_pending_size=" + PENDING.size()
                 + ",queued_size=" + QUEUED.size()
                 + ",retained_size=" + RETAINED_REQUESTS.size()
                 + ",active=" + activeState + "}";
     }
 
-    private static void requeueRetainedLoaded(ServerLevel level) {
+    private static void requeueRetained(ServerLevel level) {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
         for (long packed : Set.copyOf(RETAINED_REQUESTS)) {
             if (!data.needs(packed, CAPITAL_REVISION)) {
-                QUEUED.remove(packed);
-                PENDING.remove(packed);
+                removeQueued(packed);
                 releaseRetained(level, packed);
                 continue;
             }
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
             if (!level.hasChunk(chunkX, chunkZ)) {
-                // PORTAL tickets are keyless in this runtime. Another subsystem releasing the same
-                // ticket type can therefore drop the physical lease while this builder still owns
-                // the logical retained request. Reassert only retained, unfinished cells; adding an
-                // already-present ticket is idempotent and keeps construction ownership bounded.
                 level.getChunkSource().addTicketAndLoadWithRadius(
                         TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
-                continue;
             }
-
-            // ChunkEvent.Load adds ordinary work at the tail. Explicitly retained requests are
-            // latency-sensitive (player-visible construction and diagnostics), so promote an
-            // already-queued pending cell instead of leaving it behind the whole background
-            // stream. enqueue(..., true) safely leaves the currently active cell untouched.
-            enqueue(level, packed, true);
+            if (active == null || active.chunkPos() != packed) {
+                enqueuePriority(level, packed);
+            }
         }
     }
 
-    private static void enqueue(ServerLevel level, long chunkPos, boolean visibleFirst) {
+    private static void enqueuePriority(ServerLevel level, long chunkPos) {
+        ErdenCapitalChunkSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
+        if (!data.needs(chunkPos, CAPITAL_REVISION)) {
+            removeQueued(chunkPos);
+            releaseRetained(level, chunkPos);
+            return;
+        }
+        if (active != null && active.chunkPos() == chunkPos) return;
+        if (PRIORITY_QUEUED.contains(chunkPos)) return;
+
+        // A ChunkEvent.Load may have queued this cell as background before requestChunk acquired its
+        // logical lease. Move it once into the explicit FIFO without changing the relative order of
+        // any already-requested cells.
+        PENDING.remove(chunkPos);
+        PRIORITY_PENDING.addLast(chunkPos);
+        PRIORITY_QUEUED.add(chunkPos);
+        QUEUED.add(chunkPos);
+    }
+
+    private static void enqueueBackground(ServerLevel level, long chunkPos) {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
         if (!data.needs(chunkPos, CAPITAL_REVISION)) {
             releaseRetained(level, chunkPos);
             return;
         }
-        if (QUEUED.add(chunkPos)) {
-            if (visibleFirst) PENDING.addFirst(chunkPos);
-            else PENDING.addLast(chunkPos);
-        } else if (visibleFirst && PENDING.remove(chunkPos)) {
-            PENDING.addFirst(chunkPos);
-        }
+        if (active != null && active.chunkPos() == chunkPos) return;
+        if (PRIORITY_QUEUED.contains(chunkPos)) return;
+        if (QUEUED.add(chunkPos)) PENDING.addLast(chunkPos);
     }
 
     private static void startNext(ServerLevel level) {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
-        while (!PENDING.isEmpty()) {
-            long packed = PENDING.removeFirst();
+        while (!PRIORITY_PENDING.isEmpty() || !PENDING.isEmpty()) {
+            boolean priority = !PRIORITY_PENDING.isEmpty();
+            long packed = priority ? PRIORITY_PENDING.removeFirst() : PENDING.removeFirst();
+            if (priority) PRIORITY_QUEUED.remove(packed);
+
             if (!data.needs(packed, CAPITAL_REVISION)) {
                 QUEUED.remove(packed);
                 releaseRetained(level, packed);
@@ -198,27 +218,33 @@ public final class ErdenCapitalStreamingBuilder {
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
             if (!level.hasChunk(chunkX, chunkZ)) {
-                // ChunkEvent.Load may precede the tick at which hasChunk becomes true. Preserve both
-                // the queue membership and transient ticket, then retry on a later server tick.
-                PENDING.addLast(packed);
+                if (priority) {
+                    PRIORITY_PENDING.addFirst(packed);
+                    PRIORITY_QUEUED.add(packed);
+                    retain(level, packed, new ChunkPos(chunkX, chunkZ));
+                } else {
+                    PENDING.addLast(packed);
+                }
                 return;
             }
             ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
-
-            // A background ChunkEvent.Load used to enter the queue without owning a ticket. If the
-            // player moved away after we selected that cell, an unfinished active plan could sit at
-            // the head forever and starve every explicitly retained request behind it. Retaining
-            // only the single active cell bounds the ticket cost while guaranteeing forward progress.
             retain(level, packed, chunk);
 
             IncrementalWorldEditPlan plan = createChunkPlan(level, chunk);
             active = new ActiveChunk(packed, chunkX, chunkZ, plan);
             LivingKingdoms.LOGGER.debug(
-                    "Prepared streamed Erden capital chunk {},{} writes={} operations={} retained_active=true",
-                    chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount()
+                    "Prepared streamed Erden capital chunk {},{} writes={} operations={} retained_active=true priority={}",
+                    chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount(), priority
             );
             return;
         }
+    }
+
+    private static void removeQueued(long packed) {
+        PRIORITY_PENDING.remove(packed);
+        PRIORITY_QUEUED.remove(packed);
+        PENDING.remove(packed);
+        QUEUED.remove(packed);
     }
 
     private static IncrementalWorldEditPlan createChunkPlan(ServerLevel level, ChunkPos chunk) {
@@ -315,8 +341,6 @@ public final class ErdenCapitalStreamingBuilder {
 
     private static void retain(ServerLevel level, long packed, ChunkPos chunk) {
         RETAINED_REQUESTS.add(packed);
-        // Reassert the physical lease even when the logical set already contains this chunk. A
-        // keyless PORTAL remove from a different owner may have erased the shared physical ticket.
         level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
     }
 
@@ -338,6 +362,8 @@ public final class ErdenCapitalStreamingBuilder {
                 }
             }
         }
+        PRIORITY_PENDING.clear();
+        PRIORITY_QUEUED.clear();
         PENDING.clear();
         QUEUED.clear();
         RETAINED_REQUESTS.clear();
