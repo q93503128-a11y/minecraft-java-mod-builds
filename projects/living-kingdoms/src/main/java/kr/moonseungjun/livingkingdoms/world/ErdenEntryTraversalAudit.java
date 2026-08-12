@@ -286,6 +286,17 @@ public final class ErdenEntryTraversalAudit {
             int chunkZ = unpackZ(packed);
             boolean loaded = level.hasChunk(chunkX, chunkZ);
             boolean built = ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ);
+
+            // The streamer and this audit historically used the same keyless PORTAL ticket. When a
+            // streamed build finished, its remove call could therefore also remove the physical
+            // ticket this audit still logically owned. Reassert only completed-but-unloaded cells;
+            // the streamer no longer needs a construction ticket for those cells, so ownership is
+            // unambiguous from this point until releaseChunk removes the audit lease.
+            if (!loaded && built && TICKET_REFS.containsKey(packed)) {
+                level.getChunkSource().addTicketAndLoadWithRadius(
+                        TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
+            }
+
             if (!loaded || !built) allReady = false;
             if (summary.length() > 0) summary.append(';');
             summary.append(ErdenCapitalStreamingBuilder.diagnosticChunkState(level, chunkX, chunkZ));
