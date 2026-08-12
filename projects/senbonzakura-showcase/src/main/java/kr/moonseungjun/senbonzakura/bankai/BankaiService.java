@@ -20,10 +20,10 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class BankaiService {
-    public static final int DURATION_TICKS = 200;
+    public static final int DURATION_TICKS = 260;
     public static final int COOLDOWN_TICKS = 600;
-    public static final double ATTACK_RADIUS = 13.0;
-    public static final double SAFE_RADIUS = 2.25;
+    public static final double ATTACK_RADIUS = 14.5;
+    public static final double SAFE_RADIUS = 2.45;
 
     private static final Map<UUID, ActiveBankai> ACTIVE = new HashMap<>();
     private static final Map<UUID, Long> READY_AT = new HashMap<>();
@@ -34,10 +34,8 @@ public final class BankaiService {
         UUID id = player.getUUID();
         ServerLevel level = (ServerLevel) player.level();
         long now = level.getGameTime();
-        if (ACTIVE.containsKey(id)) {
-            player.sendSystemMessage(Component.literal("§d[천본앵] §f이미 만해가 전개 중입니다."));
-            return false;
-        }
+        if (ACTIVE.containsKey(id)) return false;
+
         long ready = READY_AT.getOrDefault(id, 0L);
         if (now < ready) {
             long seconds = Math.max(1L, (ready - now + 19L) / 20L);
@@ -47,14 +45,12 @@ public final class BankaiService {
 
         Vec3 facing = horizontalLook(player);
         Vec3 origin = groundAnchor(level, player);
-        ActiveBankai active = new ActiveBankai(id, origin, facing, now);
-        ACTIVE.put(id, active);
+        ACTIVE.put(id, new ActiveBankai(id, origin, facing, now));
         READY_AT.put(id, now + COOLDOWN_TICKS);
 
         BankaiNetwork.broadcastStart(id, origin, facing, DURATION_TICKS);
-        player.sendSystemMessage(Component.literal("§f卍解 — §d千本桜景厳"));
         level.playSound(null, player.blockPosition(), SoundEvents.END_PORTAL_SPAWN,
-                SoundSource.PLAYERS, 1.15F, 0.72F);
+                SoundSource.PLAYERS, 0.55F, 0.56F);
         return true;
     }
 
@@ -68,22 +64,38 @@ public final class BankaiService {
             return;
         }
 
-        if (age == 28) {
-            level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE,
-                    SoundSource.PLAYERS, 1.8F, 0.62F);
-        }
-        if (age == 54) {
-            level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
-                    SoundSource.PLAYERS, 1.2F, 0.78F);
+        if (age < 108) {
+            Vec3 motion = player.getDeltaMovement();
+            player.setDeltaMovement(0.0, motion.y, 0.0);
         }
 
-        if (age >= 62 && age <= 174 && age % 5 == 0) {
-            slashWave(level, player, 2.25F, 14);
+        if (age == 24) {
+            level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE,
+                    SoundSource.PLAYERS, 0.82F, 0.62F);
         }
-        if (age == 178) {
-            slashWave(level, player, 7.0F, 28);
+        if (age == 72) {
+            level.playSound(null, player.blockPosition(), SoundEvents.END_PORTAL_SPAWN,
+                    SoundSource.PLAYERS, 0.72F, 0.42F);
+        }
+        if (age == 108) {
+            level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE,
+                    SoundSource.PLAYERS, 1.35F, 1.18F);
+        }
+
+        if (age == 150) {
+            slashWave(level, player, 7.5F, 36);
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
-                    SoundSource.PLAYERS, 1.6F, 0.55F);
+                    SoundSource.PLAYERS, 1.35F, 0.74F);
+        }
+        if (age == 180) {
+            slashWave(level, player, 7.5F, 36);
+            level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
+                    SoundSource.PLAYERS, 1.35F, 0.66F);
+        }
+        if (age == 212) {
+            slashWave(level, player, 10.0F, 42);
+            level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
+                    SoundSource.PLAYERS, 1.55F, 0.58F);
         }
     }
 
@@ -100,7 +112,7 @@ public final class BankaiService {
 
     private static void slashWave(ServerLevel level, ServerPlayer player, float damage, int limit) {
         Vec3 center = player.position();
-        AABB area = new AABB(center, center).inflate(ATTACK_RADIUS, 7.0, ATTACK_RADIUS);
+        AABB area = new AABB(center, center).inflate(ATTACK_RADIUS, 8.0, ATTACK_RADIUS);
         List<Mob> targets = level.getEntitiesOfClass(Mob.class, area, mob -> validTarget(player, mob)).stream()
                 .filter(mob -> horizontalDistanceSqr(center, mob.position()) >= SAFE_RADIUS * SAFE_RADIUS)
                 .sorted(Comparator.comparingDouble(player::distanceToSqr))

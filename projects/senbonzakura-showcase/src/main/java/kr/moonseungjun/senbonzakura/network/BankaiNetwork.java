@@ -14,7 +14,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 public final class BankaiNetwork {
-    public static final String PROTOCOL_VERSION = "senbonzakura-showcase-v2";
+    public static final String PROTOCOL_VERSION = "senbonzakura-showcase-v3";
 
     private BankaiNetwork() {}
 
