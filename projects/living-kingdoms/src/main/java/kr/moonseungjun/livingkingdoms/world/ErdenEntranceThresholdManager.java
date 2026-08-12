@@ -270,8 +270,6 @@ public final class ErdenEntranceThresholdManager {
         int previousFloor = approach.doorFloor;
         Point previousPoint = new Point(entry.x, entry.z);
 
-        // Preserve real porch blocks. A slab or a full-block doorstep can legitimately raise the
-        // player's feet by one block; the pathfinder already models that as a one-step transition.
         int previousFeetY = doorY;
         for (int step = 1; step <= approach.porchSteps; step++) {
             Point center = approach.points.get(step - 1);
@@ -295,8 +293,7 @@ public final class ErdenEntranceThresholdManager {
                 int x = eastWest ? center.x : center.x + width;
                 int z = eastWest ? center.z + width : center.z;
                 if (!level.hasChunk(x >> 4, z >> 4)
-                        || !ErdenCapitalStreamingBuilder.isChunkBuilt(
-                        level, x >> 4, z >> 4)) {
+                        || !ErdenCapitalStreamingBuilder.isChunkBuilt(level, x >> 4, z >> 4)) {
                     return false;
                 }
                 int naturalFloor = designedFloor(x, z);
@@ -338,25 +335,13 @@ public final class ErdenEntranceThresholdManager {
             Point center = route.points.get(step - 1);
             if (!routeChunkReady(level, center)) return doorY - 1;
             int feetY = findWalkableFeetY(level, center.x, center.z, previousFeetY);
-            if (feetY == Integer.MIN_VALUE || Math.abs(feetY - previousFeetY) > 1) {
-                return doorY - 1;
-            }
+            if (feetY == Integer.MIN_VALUE || Math.abs(feetY - previousFeetY) > 1) return doorY - 1;
             previousFeetY = feetY;
         }
         return previousFeetY - 1;
     }
 
-    /**
-     * Finds a discrete navigation height for ordinary blocks, lower slabs and stairs without
-     * pretending those partial blocks are empty. A partial/full doorstep occupying the current
-     * feet cell is represented by the air cell immediately above it, which remains a conservative
-     * one-block transition in the exhaustive BFS audit.
-     */
-    private static int findWalkableFeetY(
-            ServerLevel level,
-            int x,
-            int z,
-            int preferredFeetY) {
+    private static int findWalkableFeetY(ServerLevel level, int x, int z, int preferredFeetY) {
         int[] offsets = {0, 1, -1};
         for (int offset : offsets) {
             int feetY = preferredFeetY + offset;
@@ -369,16 +354,12 @@ public final class ErdenEntranceThresholdManager {
         int deltaX = entry.roadX - entry.x;
         int deltaZ = entry.roadZ - entry.z;
         int directSteps = Math.max(Math.abs(deltaX), Math.abs(deltaZ));
-        if (directSteps <= 0) {
-            return new Route(List.of(new Point(entry.x, entry.z)), 0);
-        }
+        if (directSteps <= 0) return new Route(List.of(new Point(entry.x, entry.z)), 0);
 
         int porchSteps = Math.min(PORCH_STEPS, directSteps);
         List<Point> points = new ArrayList<>(directSteps + PORCH_STEPS);
         for (int step = 1; step <= porchSteps; step++) {
-            points.add(new Point(
-                    entry.x + outward.x * step,
-                    entry.z + outward.z * step));
+            points.add(new Point(entry.x + outward.x * step, entry.z + outward.z * step));
         }
 
         Point porch = points.getLast();
@@ -395,7 +376,11 @@ public final class ErdenEntranceThresholdManager {
         return new Route(List.copyOf(points), porchSteps);
     }
 
-    /** Uses the actual closed-door normal, choosing the side of that plane nearest the road. */
+    /**
+     * Uses the actual door normal. A geometrically walkable authored porch is stronger evidence of
+     * the exterior side than a road that happens to be two blocks closer behind a wall; road
+     * distance is therefore only a tie-breaker after probing both door-normal directions.
+     */
     private static Vector outward(ServerLevel level, Entry entry, int doorY) {
         BlockPos doorPos = new BlockPos(entry.x, doorY, entry.z);
         var state = level.getBlockState(doorPos);
@@ -403,14 +388,12 @@ public final class ErdenEntranceThresholdManager {
             Direction facing = state.getValue(DoorBlock.FACING);
             Vector first = new Vector(facing.getStepX(), facing.getStepZ());
             Vector second = new Vector(-first.x, -first.z);
-            int firstDistance = distanceToRoad(entry, first);
-            int secondDistance = distanceToRoad(entry, second);
-            if (firstDistance != secondDistance) {
-                return firstDistance < secondDistance ? first : second;
-            }
             int firstClear = clearRun(level, entry, doorY, first);
             int secondClear = clearRun(level, entry, doorY, second);
             if (firstClear != secondClear) return firstClear > secondClear ? first : second;
+            int firstDistance = distanceToRoad(entry, first);
+            int secondDistance = distanceToRoad(entry, second);
+            if (firstDistance != secondDistance) return firstDistance < secondDistance ? first : second;
         }
         return roadDominantOutward(entry);
     }
@@ -439,16 +422,13 @@ public final class ErdenEntranceThresholdManager {
     private static Vector roadDominantOutward(Entry entry) {
         int deltaX = entry.roadX - entry.x;
         int deltaZ = entry.roadZ - entry.z;
-        if (Math.abs(deltaX) >= Math.abs(deltaZ)) {
-            return new Vector(deltaX >= 0 ? 1 : -1, 0);
-        }
+        if (Math.abs(deltaX) >= Math.abs(deltaZ)) return new Vector(deltaX >= 0 ? 1 : -1, 0);
         return new Vector(0, deltaZ >= 0 ? 1 : -1);
     }
 
     private static boolean routeChunkReady(ServerLevel level, Point point) {
         return level.hasChunk(point.x >> 4, point.z >> 4)
-                && ErdenCapitalStreamingBuilder.isChunkBuilt(
-                level, point.x >> 4, point.z >> 4);
+                && ErdenCapitalStreamingBuilder.isChunkBuilt(level, point.x >> 4, point.z >> 4);
     }
 
     private static int designedFloor(int x, int z) {
