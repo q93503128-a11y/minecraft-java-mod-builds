@@ -23,11 +23,13 @@ import java.util.Set;
  * than permitting vertical ladders. Support may be authored later underneath the route, but source
  * facade/roof/interior blocks remain immutable. Interior route cells must remain under authored
  * structure. Exterior cells are permitted only in a compact switchback court immediately outside the
- * retained entrance plane (six metres deep and ten metres to either side of the door). This gives an
- * exterior stair enough run to gain height without opening arbitrary air routes across the plot.</p>
+ * retained entrance plane (six metres deep and ten metres to either side of the door). Crop-face
+ * blocks may count as air only when {@link ErdenUrbanSyntheticSealProvenance} has independently
+ * matched the fragment back to the immutable raw schematic, proven that exact raw cell was AIR, and
+ * proven the current seal block belongs to the approved generated-conversion clear palette.</p>
  */
 public final class ErdenUrbanSourceAirRoutePlanner {
-    public static final int PLANNER_REVISION = 4;
+    public static final int PLANNER_REVISION = 5;
 
     private static final int MAX_ROUTE_NODES = 32_000;
     private static final int MIN_HEADROOM = 2;
@@ -43,6 +45,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
     public static synchronized void bootstrap() {
         if (bootstrapped) return;
         PLANS.clear();
+        ErdenUrbanSyntheticSealProvenance.bootstrap();
 
         Map<String, ExternalUrbanFabricBuilder.UrbanFragmentSnapshot> snapshots =
                 ExternalUrbanFabricBuilder.fragmentSnapshotsForDiagnostics();
@@ -59,10 +62,11 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             RoutePlan plan = plan(snapshot, opportunity);
             PLANS.put(snapshot.fragmentKey(), plan);
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_SOURCE_AIR_ROUTE fragment={} recommendation={} route_classification={} target_mode={} ground_y={} target_y={} path_nodes={} rise={} turns={} explored_nodes={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 exterior_switchback_bounded=true",
+                    "LK_ERDEN_SOURCE_AIR_ROUTE fragment={} recommendation={} route_classification={} target_mode={} ground_y={} target_y={} path_nodes={} rise={} turns={} explored_nodes={} clearable_source_air_seals={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 exterior_switchback_bounded=true synthetic_seal_provenance=true",
                     snapshot.fragmentKey(), opportunity.recommendation(), plan.classification(),
                     plan.targetMode(), opportunity.groundFeetY(), plan.targetFeetY(),
-                    plan.path().size(), plan.rise(), plan.turns(), plan.exploredNodes());
+                    plan.path().size(), plan.rise(), plan.turns(), plan.exploredNodes(),
+                    ErdenUrbanSyntheticSealProvenance.clearableSealCount(snapshot.fragmentKey()));
         }
 
         Map<RouteClassification, Integer> placementCounts = new LinkedHashMap<>();
@@ -83,7 +87,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
 
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden zero-cut source-air route plans fragments={} buildings={} classifications={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true exterior_switchback_bounded=true revision={}",
+                "Prepared Erden zero-cut source-air route plans fragments={} buildings={} classifications={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true exterior_switchback_bounded=true synthetic_seal_provenance=true revision={}",
                 PLANS.size(), mapped, placementCounts, PLANNER_REVISION);
     }
 
@@ -122,7 +126,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             explored += candidate.exploredNodes();
             if (candidate.classification() == RouteClassification.ZERO_CUT_ROUTE) {
                 LivingKingdoms.LOGGER.info(
-                        "LK_ERDEN_SOURCE_AIR_ROUTE_TARGET_SELECTED fragment={} target_y={} target_cells={} candidate_count={} explored_before_success={} source_blocks_cut=0 source_only=true",
+                        "LK_ERDEN_SOURCE_AIR_ROUTE_TARGET_SELECTED fragment={} target_y={} target_cells={} candidate_count={} explored_before_success={} source_blocks_cut=0 source_only=true synthetic_seal_provenance=true",
                         snapshot.fragmentKey(), target.feetY(), targetCellCount(target),
                         targets.size(), explored);
                 return new RoutePlan(
@@ -301,9 +305,13 @@ public final class ErdenUrbanSourceAirRoutePlanner {
         if (x < 0 || x >= snapshot.width() || z < 0 || z >= snapshot.length()) return false;
         if (feetY <= 0 || feetY + MIN_HEADROOM - 1 >= snapshot.height()) return false;
         for (int dy = 0; dy < MIN_HEADROOM; dy++) {
-            ExternalUrbanFabricBuilder.UrbanSourceBlock block =
-                    blocks.get(blockKey(x, feetY + dy, z));
-            if (block != null && !block.state().isAir()) return false;
+            int y = feetY + dy;
+            ExternalUrbanFabricBuilder.UrbanSourceBlock block = blocks.get(blockKey(x, y, z));
+            if (block != null && !block.state().isAir()
+                    && !ErdenUrbanSyntheticSealProvenance.isClearableSourceAirSeal(
+                    snapshot.fragmentKey(), x, y, z)) {
+                return false;
+            }
         }
         return true;
     }
