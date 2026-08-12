@@ -19,13 +19,14 @@ import java.util.Set;
 
 /**
  * Reconciles each imported door's real vertical position with its terrain-following access path.
- * External schematics can place a door two or three metres above their natural lot surface; the
- * old x/z-only path reached the facade but could leave an unclimbable vertical threshold. The
- * repaired route first leaves the facade on the real door normal that points toward the street and
- * only then bends toward the road, preventing diagonal paths from clipping building corners.
+ *
+ * <p>The first three metres are treated as authored porch geometry. Slabs, stairs and full-block
+ * doorstep rises are preserved and followed at their actual walkable height. Only after that porch
+ * has been left does the manager grade and clear the terrain route toward the street. This keeps
+ * imported facade details intact while still guaranteeing a climbable road connection.</p>
  */
 public final class ErdenEntranceThresholdManager {
-    public static final int THRESHOLD_REVISION = 3;
+    public static final int THRESHOLD_REVISION = 4;
 
     private static final int EXPECTED_ENTRANCES = 273;
     private static final int PROCESS_INTERVAL = 5;
@@ -75,11 +76,11 @@ public final class ErdenEntranceThresholdManager {
             processed++;
             if (diagnosticMode()) {
                 LivingKingdoms.LOGGER.debug(
-                        "Normalized Erden entrance threshold kind={} role={} entrance={},{} road={},{} door_y={} outward={},{} approach_steps={} porch_steps={} floor_delta={}",
+                        "Normalized Erden entrance threshold kind={} role={} entrance={},{} road={},{} door_y={} outward={},{} approach_steps={} porch_steps={} porch_end_floor={} end_floor={}",
                         entry.kind, entry.role, entry.x, entry.z, entry.roadX, entry.roadZ,
                         doorY, approach.outward.x, approach.outward.z,
                         approach.steps, approach.porchSteps,
-                        approach.endFloor - (doorY - 1));
+                        approach.porchEndFloor, approach.endFloor);
             }
         }
 
@@ -87,7 +88,7 @@ public final class ErdenEntranceThresholdManager {
         if (!completionLogged && complete == entries.size()) {
             completionLogged = true;
             LivingKingdoms.LOGGER.info(
-                    "Completed Erden entrance threshold normalization entrances={} graded_landings=true actual_door_normals=true real_door_heights=true loaded_only=true revision={}",
+                    "Completed Erden entrance threshold normalization entrances={} graded_landings=true authored_porches_preserved=true actual_door_normals=true real_door_heights=true loaded_only=true revision={}",
                     complete, THRESHOLD_REVISION);
         }
     }
@@ -135,7 +136,7 @@ public final class ErdenEntranceThresholdManager {
                 result = List.copyOf(built);
                 cachedEntries = result;
                 LivingKingdoms.LOGGER.info(
-                        "Prepared Erden entrance threshold reconciler entrances={} terrain_matched=true actual_door_normals=true",
+                        "Prepared Erden entrance threshold reconciler entrances={} terrain_matched=true authored_porches_preserved=true actual_door_normals=true",
                         result.size());
             }
             return result;
@@ -169,25 +170,41 @@ public final class ErdenEntranceThresholdManager {
         Vector outward = outward(level, entry, doorY);
         Route route = route(entry, outward);
         int totalSteps = route.points.size();
-        int steps = Math.min(totalSteps, BASE_APPROACH_STEPS);
-        Point end = route.points.get(steps - 1);
-        int endFloor = designedFloor(end.x, end.z);
-        int doorFloor = doorY - 1;
-        int required = Math.min(MAX_APPROACH_STEPS, Math.abs(endFloor - doorFloor) + 2);
-        if (required > steps && required <= totalSteps) {
-            steps = required;
-            end = route.points.get(steps - 1);
-            endFloor = designedFloor(end.x, end.z);
+        int porchEndFloor = resolvePorchEndFloor(level, route, doorY);
+        int steps = Math.max(1, Math.min(totalSteps, BASE_APPROACH_STEPS));
+        int endFloor = porchEndFloor;
+
+        for (int pass = 0; pass < 3; pass++) {
+            Point end = route.points.get(steps - 1);
+            endFloor = steps <= route.porchSteps
+                    ? porchEndFloor
+                    : designedFloor(end.x, end.z);
+            int required = Math.min(
+                    MAX_APPROACH_STEPS,
+                    route.porchSteps + Math.abs(endFloor - porchEndFloor) + 2);
+            int nextSteps = Math.min(totalSteps, Math.max(steps, required));
+            if (nextSteps == steps) break;
+            steps = nextSteps;
         }
+
+        Point end = route.points.get(steps - 1);
+        endFloor = steps <= route.porchSteps
+                ? porchEndFloor
+                : designedFloor(end.x, end.z);
         return new Approach(
                 route.points,
-                Math.max(1, steps),
-                route.porchSteps,
-                doorFloor,
+                steps,
+                Math.min(route.porchSteps, steps),
+                doorY - 1,
+                porchEndFloor,
                 endFloor,
                 outward);
     }
 
+    /**
+     * Proves the authored doorway and porch without changing it, then verifies that the remaining
+     * generated grade can change by no more than one block per horizontal step.
+     */
     private static PreflightResult preflight(
             ServerLevel level,
             Entry entry,
@@ -197,92 +214,51 @@ public final class ErdenEntranceThresholdManager {
             return new PreflightResult(false, "door_not_walkable", 0,
                     new Point(entry.x, entry.z), doorY - 1);
         }
-        int previousFloor = approach.doorFloor;
-        for (int step = 1; step <= approach.steps; step++) {
+
+        int previousFeetY = doorY;
+        for (int step = 1; step <= approach.porchSteps; step++) {
             Point center = approach.points.get(step - 1);
-            if (!level.hasChunk(center.x >> 4, center.z >> 4)
-                    || !ErdenCapitalStreamingBuilder.isChunkBuilt(
-                    level, center.x >> 4, center.z >> 4)) {
-                return new PreflightResult(false, "route_chunk_not_ready", step, center, previousFloor);
+            if (!routeChunkReady(level, center)) {
+                return new PreflightResult(false, "route_chunk_not_ready", step, center,
+                        previousFeetY - 1);
             }
-            float progress = step / (float) approach.steps;
-            int targetFloor = Math.round(
-                    approach.doorFloor
-                            + (approach.endFloor - approach.doorFloor) * progress);
+            int feetY = findWalkableFeetY(level, center.x, center.z, previousFeetY);
+            if (feetY == Integer.MIN_VALUE) {
+                return new PreflightResult(false, "porch_not_walkable", step, center,
+                        previousFeetY - 1);
+            }
+            if (Math.abs(feetY - previousFeetY) > 1) {
+                return new PreflightResult(false, "porch_step_too_high", step, center,
+                        feetY - 1);
+            }
+            previousFeetY = feetY;
+        }
+
+        int previousFloor = previousFeetY - 1;
+        if (previousFloor != approach.porchEndFloor) {
+            return new PreflightResult(false, "porch_floor_changed", approach.porchSteps,
+                    approach.points.get(Math.max(0, approach.porchSteps - 1)), previousFloor);
+        }
+
+        for (int step = approach.porchSteps + 1; step <= approach.steps; step++) {
+            Point center = approach.points.get(step - 1);
+            if (!routeChunkReady(level, center)) {
+                return new PreflightResult(false, "route_chunk_not_ready", step, center,
+                        previousFloor);
+            }
+            int targetFloor = gradedFloor(approach, step);
             if (Math.abs(targetFloor - previousFloor) > 1) {
                 return new PreflightResult(false, "grade_too_steep", step, center, targetFloor);
             }
-            if (step <= approach.porchSteps) {
-                BlockPos feet = new BlockPos(center.x, targetFloor + 1, center.z);
-                if (!bodyPassable(level, feet) || !bodyPassable(level, feet.above())) {
-                    return new PreflightResult(false, "porch_body_blocked", step, center, targetFloor);
-                }
-            }
             previousFloor = targetFloor;
         }
+
         if (Math.abs(previousFloor - approach.endFloor) > 1) {
             return new PreflightResult(false, "grade_end_mismatch", approach.steps,
                     approach.points.get(approach.steps - 1), previousFloor);
         }
-        return new PreflightResult(true, "ok", 0, new Point(entry.x, entry.z), approach.doorFloor);
-    }
-
-    private static void reportPreflightStall(
-            ServerLevel level,
-            Entry entry,
-            int doorY,
-            Approach approach,
-            PreflightResult result) {
-        if (!diagnosticMode() || "route_chunk_not_ready".equals(result.reason)) return;
-        long entryKey = key(entry.x, entry.z);
-        if (!REPORTED_PREFLIGHT_STALLS.add(entryKey)) return;
-
-        BlockPos pointFeet = new BlockPos(result.point.x, result.targetFloor + 1, result.point.z);
-        BlockPos doorPos = new BlockPos(entry.x, doorY, entry.z);
-        var doorState = level.getBlockState(doorPos);
-        String facing = doorState.getBlock() instanceof DoorBlock && doorState.hasProperty(DoorBlock.FACING)
-                ? doorState.getValue(DoorBlock.FACING).getName()
-                : "unknown";
-        LivingKingdoms.LOGGER.warn(
-                "LK_ERDEN_THRESHOLD_PREFLIGHT_STALL kind={} role={} entrance={},{} road={},{} door_y={} door_floor={} designed_floor={} door_facing={} selected_outward={},{} reason={} step={} point={},{} target_floor={} feet_block={} head_block={} floor_block={} east={} west={} south={} north={}",
-                entry.kind, entry.role, entry.x, entry.z, entry.roadX, entry.roadZ,
-                doorY, approach.doorFloor, designedFloor(entry.x, entry.z), facing,
-                approach.outward.x, approach.outward.z, result.reason, result.step,
-                result.point.x, result.point.z, result.targetFloor,
-                blockId(level, pointFeet), blockId(level, pointFeet.above()),
-                blockId(level, pointFeet.below()),
-                probeDirection(level, entry, doorY, new Vector(1, 0)),
-                probeDirection(level, entry, doorY, new Vector(-1, 0)),
-                probeDirection(level, entry, doorY, new Vector(0, 1)),
-                probeDirection(level, entry, doorY, new Vector(0, -1)));
-    }
-
-    private static String probeDirection(
-            ServerLevel level,
-            Entry entry,
-            int doorY,
-            Vector direction) {
-        StringBuilder result = new StringBuilder();
-        for (int depth = 1; depth <= PORCH_STEPS; depth++) {
-            if (depth > 1) result.append('|');
-            int x = entry.x + direction.x * depth;
-            int z = entry.z + direction.z * depth;
-            if (!level.hasChunk(x >> 4, z >> 4)) {
-                result.append(depth).append(":unloaded");
-                continue;
-            }
-            BlockPos feet = new BlockPos(x, doorY, z);
-            result.append(depth).append(':')
-                    .append(blockId(level, feet)).append('/')
-                    .append(blockId(level, feet.above())).append('/')
-                    .append(bodyPassable(level, feet) && bodyPassable(level, feet.above()) ? "clear" : "blocked");
-        }
-        result.append("@road=").append(distanceToRoad(entry, direction));
-        return result.toString();
-    }
-
-    private static String blockId(ServerLevel level, BlockPos pos) {
-        return BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock()).toString();
+        return new PreflightResult(true, "ok", 0,
+                new Point(entry.x, entry.z), approach.doorFloor);
     }
 
     private static boolean normalize(
@@ -294,19 +270,28 @@ public final class ErdenEntranceThresholdManager {
         int previousFloor = approach.doorFloor;
         Point previousPoint = new Point(entry.x, entry.z);
 
-        for (int step = 1; step <= approach.steps; step++) {
+        // Preserve real porch blocks. A slab or a full-block doorstep can legitimately raise the
+        // player's feet by one block; the pathfinder already models that as a one-step transition.
+        int previousFeetY = doorY;
+        for (int step = 1; step <= approach.porchSteps; step++) {
             Point center = approach.points.get(step - 1);
-            float progress = step / (float) approach.steps;
-            int targetFloor = Math.round(
-                    approach.doorFloor
-                            + (approach.endFloor - approach.doorFloor) * progress);
+            int feetY = findWalkableFeetY(level, center.x, center.z, previousFeetY);
+            if (feetY == Integer.MIN_VALUE || Math.abs(feetY - previousFeetY) > 1) return false;
+            previousFeetY = feetY;
+            previousFloor = feetY - 1;
+            previousPoint = center;
+        }
+        if (previousFloor != approach.porchEndFloor) return false;
+
+        for (int step = approach.porchSteps + 1; step <= approach.steps; step++) {
+            Point center = approach.points.get(step - 1);
+            int targetFloor = gradedFloor(approach, step);
             if (Math.abs(targetFloor - previousFloor) > 1) return false;
 
             int movementX = center.x - previousPoint.x;
             int movementZ = center.z - previousPoint.z;
             boolean eastWest = Math.abs(movementX) >= Math.abs(movementZ);
-            int halfWidth = step <= approach.porchSteps ? 0 : 1;
-            for (int width = -halfWidth; width <= halfWidth; width++) {
+            for (int width = -1; width <= 1; width++) {
                 int x = eastWest ? center.x : center.x + width;
                 int z = eastWest ? center.z + width : center.z;
                 if (!level.hasChunk(x >> 4, z >> 4)
@@ -322,11 +307,9 @@ public final class ErdenEntranceThresholdManager {
                 } else {
                     set(level, x, targetFloor, z, material);
                 }
-                if (step > approach.porchSteps) {
-                    int clearTop = Math.max(targetFloor + 3, naturalFloor + 2);
-                    for (int y = targetFloor + 1; y <= clearTop; y++) {
-                        set(level, x, y, z, Blocks.AIR);
-                    }
+                int clearTop = Math.max(targetFloor + 3, naturalFloor + 2);
+                for (int y = targetFloor + 1; y <= clearTop; y++) {
+                    set(level, x, y, z, Blocks.AIR);
                 }
             }
             if (!walkable(level, center.x, targetFloor + 1, center.z)) return false;
@@ -336,6 +319,50 @@ public final class ErdenEntranceThresholdManager {
 
         if (Math.abs(previousFloor - approach.endFloor) > 1) return false;
         return walkable(level, entry.x, doorY, entry.z);
+    }
+
+    private static int gradedFloor(Approach approach, int step) {
+        if (step <= approach.porchSteps || approach.steps <= approach.porchSteps) {
+            return approach.porchEndFloor;
+        }
+        int gradeSteps = approach.steps - approach.porchSteps;
+        float progress = (step - approach.porchSteps) / (float) gradeSteps;
+        return Math.round(
+                approach.porchEndFloor
+                        + (approach.endFloor - approach.porchEndFloor) * progress);
+    }
+
+    private static int resolvePorchEndFloor(ServerLevel level, Route route, int doorY) {
+        int previousFeetY = doorY;
+        for (int step = 1; step <= route.porchSteps; step++) {
+            Point center = route.points.get(step - 1);
+            if (!routeChunkReady(level, center)) return doorY - 1;
+            int feetY = findWalkableFeetY(level, center.x, center.z, previousFeetY);
+            if (feetY == Integer.MIN_VALUE || Math.abs(feetY - previousFeetY) > 1) {
+                return doorY - 1;
+            }
+            previousFeetY = feetY;
+        }
+        return previousFeetY - 1;
+    }
+
+    /**
+     * Finds a discrete navigation height for ordinary blocks, lower slabs and stairs without
+     * pretending those partial blocks are empty. A partial/full doorstep occupying the current
+     * feet cell is represented by the air cell immediately above it, which remains a conservative
+     * one-block transition in the exhaustive BFS audit.
+     */
+    private static int findWalkableFeetY(
+            ServerLevel level,
+            int x,
+            int z,
+            int preferredFeetY) {
+        int[] offsets = {0, 1, -1};
+        for (int offset : offsets) {
+            int feetY = preferredFeetY + offset;
+            if (walkable(level, x, feetY, z)) return feetY;
+        }
+        return Integer.MIN_VALUE;
     }
 
     private static Route route(Entry entry, Vector outward) {
@@ -396,12 +423,14 @@ public final class ErdenEntranceThresholdManager {
 
     private static int clearRun(ServerLevel level, Entry entry, int doorY, Vector direction) {
         int clear = 0;
+        int previousFeetY = doorY;
         for (int depth = 1; depth <= PORCH_STEPS; depth++) {
             int x = entry.x + direction.x * depth;
             int z = entry.z + direction.z * depth;
             if (!level.hasChunk(x >> 4, z >> 4)) break;
-            BlockPos feet = new BlockPos(x, doorY, z);
-            if (!bodyPassable(level, feet) || !bodyPassable(level, feet.above())) break;
+            int feetY = findWalkableFeetY(level, x, z, previousFeetY);
+            if (feetY == Integer.MIN_VALUE || Math.abs(feetY - previousFeetY) > 1) break;
+            previousFeetY = feetY;
             clear++;
         }
         return clear;
@@ -414,6 +443,12 @@ public final class ErdenEntranceThresholdManager {
             return new Vector(deltaX >= 0 ? 1 : -1, 0);
         }
         return new Vector(0, deltaZ >= 0 ? 1 : -1);
+    }
+
+    private static boolean routeChunkReady(ServerLevel level, Point point) {
+        return level.hasChunk(point.x >> 4, point.z >> 4)
+                && ErdenCapitalStreamingBuilder.isChunkBuilt(
+                level, point.x >> 4, point.z >> 4);
     }
 
     private static int designedFloor(int x, int z) {
@@ -448,6 +483,68 @@ public final class ErdenEntranceThresholdManager {
         level.setBlock(pos, block.defaultBlockState(), UPDATE_FLAGS);
     }
 
+    private static void reportPreflightStall(
+            ServerLevel level,
+            Entry entry,
+            int doorY,
+            Approach approach,
+            PreflightResult result) {
+        if (!diagnosticMode() || "route_chunk_not_ready".equals(result.reason)) return;
+        long entryKey = key(entry.x, entry.z);
+        if (!REPORTED_PREFLIGHT_STALLS.add(entryKey)) return;
+
+        BlockPos pointFeet = new BlockPos(result.point.x, result.targetFloor + 1, result.point.z);
+        BlockPos doorPos = new BlockPos(entry.x, doorY, entry.z);
+        var doorState = level.getBlockState(doorPos);
+        String facing = doorState.getBlock() instanceof DoorBlock && doorState.hasProperty(DoorBlock.FACING)
+                ? doorState.getValue(DoorBlock.FACING).getName()
+                : "unknown";
+        LivingKingdoms.LOGGER.warn(
+                "LK_ERDEN_THRESHOLD_PREFLIGHT_STALL kind={} role={} entrance={},{} road={},{} door_y={} door_floor={} porch_end_floor={} designed_floor={} door_facing={} selected_outward={},{} reason={} step={} point={},{} target_floor={} feet_block={} head_block={} floor_block={} east={} west={} south={} north={}",
+                entry.kind, entry.role, entry.x, entry.z, entry.roadX, entry.roadZ,
+                doorY, approach.doorFloor, approach.porchEndFloor,
+                designedFloor(entry.x, entry.z), facing,
+                approach.outward.x, approach.outward.z, result.reason, result.step,
+                result.point.x, result.point.z, result.targetFloor,
+                blockId(level, pointFeet), blockId(level, pointFeet.above()),
+                blockId(level, pointFeet.below()),
+                probeDirection(level, entry, doorY, new Vector(1, 0)),
+                probeDirection(level, entry, doorY, new Vector(-1, 0)),
+                probeDirection(level, entry, doorY, new Vector(0, 1)),
+                probeDirection(level, entry, doorY, new Vector(0, -1)));
+    }
+
+    private static String probeDirection(
+            ServerLevel level,
+            Entry entry,
+            int doorY,
+            Vector direction) {
+        StringBuilder result = new StringBuilder();
+        int previousFeetY = doorY;
+        for (int depth = 1; depth <= PORCH_STEPS; depth++) {
+            if (depth > 1) result.append('|');
+            int x = entry.x + direction.x * depth;
+            int z = entry.z + direction.z * depth;
+            if (!level.hasChunk(x >> 4, z >> 4)) {
+                result.append(depth).append(":unloaded");
+                continue;
+            }
+            int resolvedFeet = findWalkableFeetY(level, x, z, previousFeetY);
+            BlockPos rawFeet = new BlockPos(x, previousFeetY, z);
+            result.append(depth).append(':')
+                    .append(blockId(level, rawFeet)).append('/')
+                    .append(blockId(level, rawFeet.above())).append('/')
+                    .append(resolvedFeet == Integer.MIN_VALUE ? "blocked" : "feet=" + resolvedFeet);
+            if (resolvedFeet != Integer.MIN_VALUE) previousFeetY = resolvedFeet;
+        }
+        result.append("@road=").append(distanceToRoad(entry, direction));
+        return result.toString();
+    }
+
+    private static String blockId(ServerLevel level, BlockPos pos) {
+        return BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock()).toString();
+    }
+
     private static boolean diagnosticMode() {
         return "1".equals(System.getenv("LIVING_KINGDOMS_CI_ENTRY_TRAVERSAL"));
     }
@@ -480,6 +577,7 @@ public final class ErdenEntranceThresholdManager {
             int steps,
             int porchSteps,
             int doorFloor,
+            int porchEndFloor,
             int endFloor,
             Vector outward) {
     }
