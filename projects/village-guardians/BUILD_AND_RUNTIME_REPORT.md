@@ -2,17 +2,17 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.9-alpha.1`
+- Current source version: `0.18.10-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.9-alpha.1.jar`
-- Final acceptance Actions run: `31561823343`
-- Final acceptance head: `d3a45e1358e181aa51656c28128148edfaf441cf`
-- Final JAR SHA-256: `46cae2f08d801bf5599052fcc5335dcaea8e31b0312c223a070efb701b6cc385`
-- Final JAR size: `898210` bytes
+- Target JAR: `villageguardians-0.18.10-alpha.1.jar`
+- Final acceptance Actions run: `31564184543`
+- Final acceptance head: `067b910f149f52f4425725bd0a0fd70177daff37`
+- Final JAR SHA-256: `6e24aa279b5f2fb29c91224ed404a8b084acfa843796a68c5099fd46f0e45209`
+- Final JAR size: `902784` bytes
 
 ## 기준점과 회귀 기준
 
@@ -141,12 +141,32 @@ HP 비율에 따라 정상 → 균열 → 대파 → 돌파 상태로 월드 외
 
 같은 날 재도전은 야간 시작 스냅샷을 복원한다. 처음부터 재시작은 0.18.9 공성 SavedData를 초기화한다. 이후 `VillageWorldSystem.forceRebuild`가 기본 요새를 먼저 재건한 뒤 복원된 Segment 손상 외형과 포탑 상태를 다시 월드에 투영한다.
 
+## 0.18.10 추적 도탄 수정
+
+0.18.9의 공성 확장 상태를 유지한 채 궁수 `추적 도탄`의 실제 동작과 보상 귀속을 재설계했다.
+
+- 최초 타깃 선정은 정규화된 전방 조준 원뿔을 사용한다.
+- 발사 직후 실제 화살 벡터와 목표 벡터를 보간해 순간 90도 급회전을 줄였다.
+- 이동 예측 유도는 현재 속도와 대상 속도를 사용하며 특수 숙련에 따라 회전 보간 강도가 증가한다.
+- 기존 표적 사망/소멸 시 비행 방향 전방 52블록 내 새 적을 재포착한다.
+- 재포착 후보는 화살 위치에서 대상 몸통까지 실제 블록 충돌이 없는 경우만 허용한다.
+- 첫 적중 후 주변 일괄 피해를 제거하고 이전 적 → 가장 가까운 LOS 적 순서의 nearest-neighbour 연쇄로 변경했다.
+- 도탄 대상 UUID를 방문 집합으로 관리해 같은 연쇄에서 중복 타격하지 않는다.
+- 도탄은 2틱 간격으로 순차 발생하며 기본 4회, 특수 숙련으로 최대 8회다.
+- 연쇄 피해는 이전의 선형 감소 대신 단계당 0.86배 감쇠로 변경해 음수/과도한 후반 감쇠를 방지한다.
+- 2차 도탄은 플레이어 공격 소스로 귀속해 처치 XP·주화·처치 기반 성장과 연결한다.
+- `PRE_SCALED_RICOCHET_DAMAGE` 가드로 이미 계산된 1차 화살 장비/직업/유물 배율의 이중 적용과 일반 전투기술 도탄 재귀를 차단한다.
+- 사용자 설명도 재포착·순차 도탄 동작과 일치하도록 갱신했다.
+
+전용 `test_v01810_ranger_ricochet.py`는 조준 원뿔, 부드러운 유도, 재포착, 블록 LOS, 중복 방지, 4~8회 도탄 상한, 피해 감쇠, 플레이어 귀속, 이중 배율/재귀 차단을 검증한다.
+
 ## 검증 결과
 
 | 단계 | 상태 | 비고 |
 |---|---|---|
 | 0.18.8 기준 JAR 검사 | PASS | 버전/Manifest/NeoForge/MC 범위/SHA-256 확인 |
 | 기존 RPG/영역/성장/요새/런타임 안전 계약 | PASS | 최종 run에서 재실행 |
+| 0.18.10 추적 도탄 계약 | PASS | 조준·유도·재포착·LOS·순차 도탄·보상 귀속·이중배율 차단 |
 | 0.18.8 위험/상점/UI 회귀 계약 | PASS | 초반 난이도, +30% 멀티, 사망 리스크, 생산 라우팅 유지 |
 | 7개 Segment 계약 | PASS | 독립 HP, 5블록 국소 돌파, no-drop 복구 |
 | 경로/다전선 변수 검사 | PASS | 날짜 단계, 측·후방 전선, safe terrain-height spawn, breach route |
@@ -159,9 +179,9 @@ HP 비율에 따라 정상 → 균열 → 대파 → 돌파 상태로 월드 외
 | 세트 해제/재장착 | PASS | 매번 장착 상태 계산, 중복 누적 없음 |
 | 인벤토리 Safe Area | PASS | 256~1920 모델, compact/hide 정책 검증 |
 | 구조물/성벽 파괴 드롭 회귀 | PASS | no-drop 블록 투영 + 기존 debris guard 유지 |
-| Java 25 NeoForge clean build | PASS | Actions run `31561823343` |
+| Java 25 NeoForge clean build | PASS | Actions run `31564184543` |
 | JAR verifier | PASS | `tools/verify_jar.py` |
-| Actions artifact upload | PASS | artifact `villageguardians-0.18.9-alpha.1` |
+| Actions artifact upload | PASS | artifact `villageguardians-0.18.10-alpha.1` |
 | 다운로드 후 ZIP/JAR 재검사 | PASS | `unzip -t`, TOML/Manifest 버전, artifact SHA 대조 |
 | Windows + Modrinth 실제 플레이 | NOT RUN HERE | 이 실행 환경에는 Windows Modrinth 클라이언트가 없어 사용자 인스턴스에서 인게임 연출/AI 최종 체감 확인 필요 |
 
@@ -173,20 +193,24 @@ HP 비율에 따라 정상 → 균열 → 대파 → 돌파 상태로 월드 외
 4. 측/후방 스폰 원점이 요새 평탄화 반경 밖이라 자연 지형에 묻힐 가능성 발견 → ±24Y safe spawn 탐색 추가.
 5. 실패 재도전에서 신규 Segment/포탑 파손 상태가 누적될 가능성 발견 → 야간 시작 공성 스냅샷 및 forceRebuild 재투영 추가.
 6. 오래된 고정 성루 UI action이 남아 있을 수 있음 → 새 공성 지휘 UI로 production redirect 추가.
+7. 추적 도탄이 실제 순차 도탄이 아니라 첫 적중 시 주변 적에게 즉시 피해를 뿌리던 구조 확인 → nearest-neighbour 시간차 도탄으로 교체.
+8. 추적 대상 사망 시 유도가 즉시 종료되고 매 틱 방향을 강제 스냅하던 구조 확인 → 재포착 + 예측 보간 유도로 교체.
+9. 2차 도탄을 플레이어 귀속으로 단순 전환하면 RPG 공격 배율이 두 번 적용될 위험 확인 → pre-scaled damage guard 추가.
+10. 비행 중 재포착이 벽 너머 적을 선택할 가능성 확인 → 화살 기준 block LOS 검사 추가.
 
 ## 최종 산출물
 
-GitHub Actions run `31561823343`은 Java 25 / NeoForge 26.2 환경에서 deterministic contract tests → clean build → JAR verifier → artifact upload까지 모두 성공했다.
+GitHub Actions run `31564184543`은 Java 25 / NeoForge 26.2 환경에서 deterministic contract tests → clean build → JAR verifier → artifact upload까지 모두 성공했다.
 
 다운로드한 최종 JAR 내부는 다음을 다시 확인했다.
 
 ```text
-META-INF/neoforge.mods.toml: version="0.18.9-alpha.1"
-META-INF/MANIFEST.MF: Specification-Version: 0.18.9-alpha.1
-META-INF/MANIFEST.MF: Implementation-Version: 0.18.9-alpha.1
+META-INF/neoforge.mods.toml: version="0.18.10-alpha.1"
+META-INF/MANIFEST.MF: Specification-Version: 0.18.10-alpha.1
+META-INF/MANIFEST.MF: Implementation-Version: 0.18.10-alpha.1
 JAR compressed-data test: no errors
-size: 898210 bytes
-SHA-256: 46cae2f08d801bf5599052fcc5335dcaea8e31b0312c223a070efb701b6cc385
+size: 902784 bytes
+SHA-256: 6e24aa279b5f2fb29c91224ed404a8b084acfa843796a68c5099fd46f0e45209
 ```
 
 ## 남은 실제 플레이 테스트 포인트
@@ -202,5 +226,6 @@ SHA-256: 46cae2f08d801bf5599052fcc5335dcaea8e31b0312c223a070efb701b6cc385
 - 처음부터 재시작에서 공성 SavedData가 초기화되는지
 - GUI 배율 변경 시 인벤토리 세트 패널과 회관/포탑 화면의 실제 글꼴 렌더링
 - 정예 5종과 보스 3구조의 체감 가독성/난이도
+- 추적 도탄이 실제 전방 타깃을 자연스럽게 추적하고, 표적 사망 후 새 적을 재포착하며, 벽을 통과하지 않고 순차 도탄하는지
 
 이 단계에서 발견되는 문제는 다음 alpha에서 실제 플레이 피드백 기준으로 보정한다.
