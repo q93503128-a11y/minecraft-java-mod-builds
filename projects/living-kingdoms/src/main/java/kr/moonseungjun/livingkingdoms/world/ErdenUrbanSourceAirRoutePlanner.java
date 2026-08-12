@@ -22,16 +22,17 @@ import java.util.Set;
  * or drops are allowed only while moving to an adjacent horizontal cell, matching a staircase rather
  * than permitting vertical ladders. Support may be authored later underneath the route, but source
  * facade/roof/interior blocks remain immutable. Interior route cells must remain under authored
- * structure. Exterior cells are permitted only when they stay in a narrow band outside the retained
- * entrance plane and are physically attached to authored source structure, allowing wall-hugging
- * exterior stairs without opening arbitrary air routes across the plot.</p>
+ * structure. Exterior cells are permitted only in a compact switchback court immediately outside the
+ * retained entrance plane (six metres deep and ten metres to either side of the door). This gives an
+ * exterior stair enough run to gain height without opening arbitrary air routes across the plot.</p>
  */
 public final class ErdenUrbanSourceAirRoutePlanner {
-    public static final int PLANNER_REVISION = 3;
+    public static final int PLANNER_REVISION = 4;
 
     private static final int MAX_ROUTE_NODES = 32_000;
     private static final int MIN_HEADROOM = 2;
     private static final int MAX_EXTERIOR_DEPTH = 6;
+    private static final int MAX_EXTERIOR_LATERAL = 10;
 
     private static final Map<String, RoutePlan> PLANS = new LinkedHashMap<>();
     private static boolean bootstrapped;
@@ -58,7 +59,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             RoutePlan plan = plan(snapshot, opportunity);
             PLANS.put(snapshot.fragmentKey(), plan);
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_SOURCE_AIR_ROUTE fragment={} recommendation={} route_classification={} target_mode={} ground_y={} target_y={} path_nodes={} rise={} turns={} explored_nodes={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 exterior_source_attached=true",
+                    "LK_ERDEN_SOURCE_AIR_ROUTE fragment={} recommendation={} route_classification={} target_mode={} ground_y={} target_y={} path_nodes={} rise={} turns={} explored_nodes={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 exterior_switchback_bounded=true",
                     snapshot.fragmentKey(), opportunity.recommendation(), plan.classification(),
                     plan.targetMode(), opportunity.groundFeetY(), plan.targetFeetY(),
                     plan.path().size(), plan.rise(), plan.turns(), plan.exploredNodes());
@@ -82,7 +83,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
 
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden zero-cut source-air route plans fragments={} buildings={} classifications={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true exterior_source_attached=true revision={}",
+                "Prepared Erden zero-cut source-air route plans fragments={} buildings={} classifications={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true exterior_switchback_bounded=true revision={}",
                 PLANS.size(), mapped, placementCounts, PLANNER_REVISION);
     }
 
@@ -316,7 +317,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
         }
         int depth = exteriorDepth(snapshot, x, z);
         return depth > 0 && depth <= MAX_EXTERIOR_DEPTH
-                && sourceAttached(blocks, x, feetY, z);
+                && exteriorLateralDistance(snapshot, x, z) <= MAX_EXTERIOR_LATERAL;
     }
 
     private static int exteriorDepth(
@@ -330,19 +331,13 @@ public final class ErdenUrbanSourceAirRoutePlanner {
         };
     }
 
-    private static boolean sourceAttached(
-            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
-            int x, int feetY, int z) {
-        for (int[] direction : DIRECTIONS) {
-            int adjacentX = x + direction[0];
-            int adjacentZ = z + direction[1];
-            for (int dy = -1; dy <= 2; dy++) {
-                ExternalUrbanFabricBuilder.UrbanSourceBlock adjacent =
-                        blocks.get(blockKey(adjacentX, feetY + dy, adjacentZ));
-                if (attachmentBlock(adjacent)) return true;
-            }
-        }
-        return attachmentBlock(blocks.get(blockKey(x, feetY - 1, z)));
+    private static int exteriorLateralDistance(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot, int x, int z) {
+        return switch (snapshot.exteriorSide()) {
+            case "NORTH", "SOUTH" -> Math.abs(x - snapshot.entranceX());
+            case "WEST", "EAST" -> Math.abs(z - snapshot.entranceZ());
+            default -> Integer.MAX_VALUE;
+        };
     }
 
     private static boolean routeColumnCovered(
@@ -354,17 +349,6 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             if (structuralBarrier(block)) return true;
         }
         return false;
-    }
-
-    private static boolean attachmentBlock(ExternalUrbanFabricBuilder.UrbanSourceBlock block) {
-        if (block == null || block.state().isAir()) return false;
-        String id = block.state().getBlock().toString();
-        return !(id.contains("water") || id.contains("lava")
-                || id.contains("torch") || id.contains("button") || id.contains("pressure_plate")
-                || id.contains("carpet") || id.contains("lantern") || id.contains("chain")
-                || id.contains("sign") || id.contains("leaves") || id.contains("sapling")
-                || id.contains("grass") || id.contains("flower") || id.contains("fern")
-                || id.contains("vine"));
     }
 
     private static boolean structuralBarrier(ExternalUrbanFabricBuilder.UrbanSourceBlock block) {
