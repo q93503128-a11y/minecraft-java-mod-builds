@@ -17,7 +17,7 @@ public final class BankaiKeyHandler {
     public static final KeyMapping BANKAI = new KeyMapping(
             "key.senbonzakura.bankai",
             KeyConflictContext.IN_GAME,
-            KeyModifier.SHIFT,
+            KeyModifier.NONE,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_B,
             KeyMapping.Category.MISC);
