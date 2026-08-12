@@ -1,0 +1,67 @@
+name: Finalize Village Guardians v0.18.11 Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.docs-trigger-v01811'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update canonical docs
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin main
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('projects/village-guardians')
+          readme = root / 'README.md'
+          s = readme.read_text(encoding='utf-8')
+          s = s.replace('- 현재 소스 버전 `0.18.10-alpha.1`', '- 현재 소스 버전 `0.18.11-alpha.1`', 1)
+          s = s.replace('- 목표 JAR `villageguardians-0.18.10-alpha.1.jar`', '- 목표 JAR `villageguardians-0.18.11-alpha.1.jar`', 1)
+          s = s.replace('- 단단한 바닥·2블록 높이 공간 미확보', '- 단단한 바닥·3블록 높이 공간 미확보', 1)
+          marker = '## 장비·무기·세트\n'
+          section = '''## 0.18.11 용병·포탑 안정화\n\n실제 테스트 전 방어 자산의 판정·AI·성장 계약을 한 번 더 강화했다.\n\n- 포탑과 궁수 용병은 블록 충돌 LOS를 검사해 성벽·건물 너머 목표를 획득하거나 피해를 주지 않는다.\n- 포탑 사냥꾼은 36블록에서 포탑을 탐색·접근할 수 있지만 실제 포탑 HP 피해는 약 7.5블록 안에서만 발생한다. 공병은 6블록, 보스 압박은 8블록으로 거리 제곱 판정을 명시했다.\n- 철갑 관통포는 방패병·파쇄병·공성 야수·철갑 지휘관 같은 중장갑 병과에 실제 추가 피해를 주며 저항 효과를 가진 목표에도 보정이 적용된다.\n- 포탑 설치/외형/잔해/철거가 같은 3블록 높이 footprint를 사용하며, 고레벨 포탑은 기단도 달라진다.\n- 용병 처치 경험은 주변 용병 전체가 아니라 실제 마지막 피해를 준 용병 1기에게만 들어간다.\n- 수호병은 근거리 적의 시선을 끌고 억제하며, 공격병은 가시 목표를 적극 압박하고, 궁수는 LOS 원거리 지원, 의무병은 회복에 집중한다.\n- 궁수·의무병의 바닐라 철골렘 근접 추격을 억제했고, 성벽 배치 경로 생성이 실패하면 성 내부 안전 거점으로 fallback한다.\n- Java 25 + Gradle 9.2.1 + NeoForge 26.2 실제 clean build와 JAR 검증을 통과했다. 최종 acceptance run은 `31583212244`다.\n\n'''
+          if '## 0.18.11 용병·포탑 안정화' not in s:
+              if marker not in s: raise SystemExit('README marker missing')
+              s = s.replace(marker, section + marker, 1)
+          readme.write_text(s, encoding='utf-8')
+
+          report = root / 'BUILD_AND_RUNTIME_REPORT.md'
+          r = report.read_text(encoding='utf-8')
+          replacements = {
+              '- Current source version: `0.18.10-alpha.1`': '- Current source version: `0.18.11-alpha.1`',
+              '- Target JAR: `villageguardians-0.18.10-alpha.1.jar`': '- Target JAR: `villageguardians-0.18.11-alpha.1.jar`',
+              '- Final acceptance Actions run: `31564184543`': '- Final acceptance Actions run: `31583212244`',
+              '- Final acceptance head: `067b910f149f52f4425725bd0a0fd70177daff37`': '- Final acceptance head: `c9971ef5acd00f30d84d683b12de0914d869c567`',
+              '- Final JAR SHA-256: `6e24aa279b5f2fb29c91224ed404a8b084acfa843796a68c5099fd46f0e45209`': '- Final JAR SHA-256: `fc0b411c5c4400a44434f7d7205f1de94ceacce484c8917f0f64425a42def4b7`',
+              '- Final JAR size: `902784` bytes': '- Final JAR size: `906456` bytes',
+          }
+          for old, new in replacements.items():
+              if old not in r: raise SystemExit(f'report header missing: {old}')
+              r = r.replace(old, new, 1)
+          r = r.replace('단단한 바닥, 2블록 높이 공간', '단단한 바닥, 3블록 높이 공간')
+          marker2 = '## 기준점과 회귀 기준\n'
+          section2 = '''## 0.18.11 용병·포탑 안정화\n\n- 공용 `VillageDefenseLineOfSight` 블록 충돌 raycast를 추가해 포탑과 궁수 용병의 벽 관통 획득/피해를 차단했다.\n- 포탑 사냥꾼은 36블록 탐색 반경과 약 7.5블록 실제 타격 반경을 분리했다. 공병 6블록, 보스 8블록 압박도 `distanceToSqr` 기준을 명시했다.\n- 철갑 관통포는 중장갑 공성 병과에 최대 `1.55x`, 저항 목표에 별도 보정을 적용해 이름뿐이던 역할을 실제 전투 특성으로 만들었다.\n- 포탑은 설치 검증부터 활성 외형, 잔해, 철거까지 일관된 3블록 높이 footprint를 사용한다.\n- 용병 경험치는 적 사망 위치 48블록 내 전체 공유 방식에서 실제 killer mercenary 1기 귀속 방식으로 교체했다.\n- 수호/공격/궁수/의무 4병과 모두 별도 전장 행동을 갖고, 궁수·의무의 근접 AI 이탈을 차단했다. 성벽 랠리 경로 실패 시 내부 거점 fallback을 적용한다.\n- 신규 `tools/test_v01811_defense_polish.py`와 기존 0.18.8/0.18.9/0.18.10 계약을 포함한 acceptance를 수행했다.\n- 1차 Java 컴파일에서 Minecraft 26.2의 구리 블록 컬렉션 타입 차이를 발견했고 단일 concrete block으로 교정한 뒤 2차 clean build가 성공했다.\n- 최종 Actions run `31583212244`: Java 25 설정 PASS, 전체 deterministic contracts PASS, NeoForge clean build PASS, JAR verifier PASS, artifact upload PASS.\n- 최종 JAR SHA-256 `fc0b411c5c4400a44434f7d7205f1de94ceacce484c8917f0f64425a42def4b7`, 크기 `906456` bytes.\n\n'''
+          if '## 0.18.11 용병·포탑 안정화' not in r:
+              if marker2 not in r: raise SystemExit('report marker missing')
+              r = r.replace(marker2, section2 + marker2, 1)
+          report.write_text(r, encoding='utf-8')
+          PY
+          git add projects/village-guardians/README.md projects/village-guardians/BUILD_AND_RUNTIME_REPORT.md
+          git commit -m 'docs(village): finalize v0.18.11 defense polish'
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          exit 1
