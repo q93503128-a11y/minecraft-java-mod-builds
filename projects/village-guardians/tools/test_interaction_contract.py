@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Interaction contracts for facility routing, shop safety and next-wave dossiers."""
+"""Interaction contracts for current facility routing, shop safety and tactical dossiers."""
 
 from pathlib import Path
 
@@ -21,6 +21,7 @@ def main() -> None:
     wave = read("VillageWaveIntelDossierScreen.java")
     bestiary = read("VillageEnemyBestiary.java")
     relic = read("VillageRelicChoiceConfirmScreen.java")
+    tooltip = read("VillageEquipmentTooltipClient.java")
 
     assert 'action.startsWith("facility:")' in local
     assert "VillageUiController.openBuilding(player, building)" in local
@@ -36,11 +37,16 @@ def main() -> None:
 
     assert 'case "town_hall" -> new VillageTownHallGridScreen(payload)' in client
     assert 'case "equipment_shop" -> new VillageShopCatalogScreen(payload)' in client
-    assert "new VillageActionDetailScreen(payload)" in client
     assert 'case "wave_intel" -> new VillageWaveIntelDossierScreen(payload)' in client
     assert 'case "relic_choice" -> new VillageRelicChoiceConfirmScreen(payload)' in client
+    assert '"tower_detail", "skill_test" ->' in client
+    assert "default -> new VillageActionDetailScreen(payload)" in client
+    for legacy in ("VillageTownHallScreen", "VillageShopScreen", "VillageQuickChatScreen",
+                   "VillageFusionScreen", "VillageRelicChoiceScreen", "VillageWaveIntelScreen",
+                   "VillageStatusScreen", "VillageUiScreen", "VillageFacilityScreen"):
+        assert legacy not in client
 
-    # Town hall list clicks only select. The three explicit bottom actions own facility use/repair/upgrade.
+    # Town hall list clicks only select. Explicit bottom controls own function/repair/upgrade.
     assert "VillageConfirmScreen" in town
     assert "FacilityCard" in town and "functionAction(f)" in town
     assert '"repair:" + f.id()' in town and '"upgrade:" + f.id()' in town
@@ -69,10 +75,16 @@ def main() -> None:
     assert '"facility_info".equals(actions[i])' in relic
     assert "VillageConfirmScreen" in relic and "영구 적용" in relic
 
+    # Client tooltip must not read unsynchronised server-side smithy state.
+    assert "enhancementEffectSummary(stack, enhancement)" in tooltip
+    assert "maximumEnhancement()" not in tooltip
+    assert "대장간에서 확인" in tooltip
+
     print("[PASS] Facility cards route to explicit function/repair/upgrade controls")
+    print("[PASS] Unknown and legacy menu payloads use the current detail-first surface")
     print("[PASS] Bulk junk sale cannot sweep named combat supplies")
-    print("[PASS] Shop categories and detail-first action policy are wired")
-    print("[PASS] Next-wave briefing exposes bestiary dossiers and relic rewards require confirmation")
+    print("[PASS] Shop/bestiary/relic interaction safeguards remain wired")
+    print("[PASS] Equipment tooltip uses item-local stats without unsynchronised smithy state")
 
 
 if __name__ == "__main__":
