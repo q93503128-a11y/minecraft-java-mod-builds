@@ -32,9 +32,22 @@ public final class VillageWaveIntelSystem {
                         + VillageBossAspectSystem.previewText(day, wave, index));
             }
             List<String> lines = new ArrayList<>();
-            roster.forEach((type, amount) -> lines.add(type.displayName() + " ×" + amount
-                    + " · " + VillageEnemyArchetypeSystem.combatRole(type)));
+            List<String> siege = new ArrayList<>();
+            roster.forEach((type, amount) -> {
+                lines.add(type.displayName() + " ×" + amount + " · " + VillageEnemyArchetypeSystem.combatRole(type));
+                if (VillageEnemyArchetypeSystem.structureDamageMultiplier(type) >= 1.20f
+                        || VillageEnemyArchetypeSystem.prefersTower(type)) {
+                    siege.add(type.displayName() + " ×" + amount);
+                }
+            });
+            String direction = VillageAttackPlanSystem.scoutLine(day, wave, count);
+            String elite = VillageEnemyEliteSystem.scoutSummary(day, count);
+            String bossDoctrine = bosses <= 0 ? "없음" : VillageSiegeBossSystem.previewBossMechanic(day);
             String detail = "예상 총 " + count + "명" + (bosses > 0 ? " · 보스 " + bosses + "명" : "")
+                    + "\n" + direction
+                    + "\n공성 병과: " + (siege.isEmpty() ? "뚜렷한 전담 병과 없음" : String.join(" · ", siege))
+                    + "\n정예: " + elite
+                    + "\n보스 전투 구조: " + bossDoctrine
                     + "\n특성: " + trait.description() + "\n대응: " + trait.counterHint()
                     + (bossLines.isEmpty() ? "" : "\n보스 변이:\n- " + String.join("\n- ", bossLines))
                     + "\n병력:\n- " + String.join("\n- ", lines);
@@ -50,11 +63,12 @@ public final class VillageWaveIntelSystem {
         }
         int players = VillageProgressionSystem.previewRaidPlayerCount(player.level().getServer());
         return "제 " + VillageCouncilState.currentDay() + "일 밤 예정 편성 · 기준 수호자 "
-                + players + "명\n웨이브 특성·병과·수량은 확정되며 재도전해도 동일합니다.";
+                + players + "명\n주공·별동대·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."
+                + " 추가 수호자 1명당 적 수는 약 +30%이며 공격 방향 자체는 인원수로 늘어나지 않습니다.";
     }
 
     public static String report() {
-        return "낮 정비 시간에 성벽 또는 병영 단말기에서 웨이브별 편성을 확인하세요.";
+        return "낮 정비 시간에 성벽 또는 병영 단말기에서 주공·별동대와 웨이브별 편성을 확인하세요.";
     }
 
     public record WavePreview(int wave, int maximumWaves, VillageWaveTrait trait,

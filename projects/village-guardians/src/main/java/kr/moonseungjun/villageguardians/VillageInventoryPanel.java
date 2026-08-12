@@ -14,9 +14,9 @@ import java.util.regex.Pattern;
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageInventoryPanel {
-    private static final int DESIRED_WIDTH = 136;
-    private static final int MIN_WIDTH = 100;
-    private static final int PANEL_HEIGHT = 132;
+    private static final int DESIRED_WIDTH = 142;
+    private static final int MIN_WIDTH = 104;
+    private static final int PANEL_HEIGHT = 148;
     private static final int BACKGROUND = 0xFFE5DAC2;
     private static final int SURFACE = 0xFFF2EBD9;
     private static final int SURFACE_HOVER = 0xFFE2D1A9;
@@ -73,9 +73,19 @@ public final class VillageInventoryPanel {
         graphics.text(minecraft.font, fit(minecraft, VillageClientKeys.compactSummary(), layout.width() - 18),
                 layout.left() + 9, layout.top() + 70, MUTED, false);
 
+        var player = minecraft.player;
+        int wall = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
+                VillageEquipmentSetSystem.EquipmentSet.WALL_GUARDIAN);
+        int hunter = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
+                VillageEquipmentSetSystem.EquipmentSet.NIGHT_HUNTER);
+        graphics.text(minecraft.font, fit(minecraft, setLine("성벽 수호자", wall), layout.width() - 18),
+                layout.left() + 9, layout.top() + 82, wall >= 2 ? GOLD : MUTED, false);
+        graphics.text(minecraft.font, fit(minecraft, setLine("밤사냥꾼", hunter), layout.width() - 18),
+                layout.left() + 9, layout.top() + 93, hunter >= 2 ? ACCENT : MUTED, false);
+
         int gap = 5;
         int buttonWidth = (layout.width() - 18 - gap) / 2;
-        int firstY = layout.top() + 84;
+        int firstY = layout.top() + 108;
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
                 layout.left() + 9, firstY, buttonWidth, VillageClientKeys.statusKeyName() + " 상태", ACCENT);
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
@@ -84,6 +94,10 @@ public final class VillageInventoryPanel {
                 layout.left() + 9, firstY + 21, buttonWidth, VillageClientKeys.roleProgressKeyName() + " 직업 성장", ACCENT);
         drawButton(graphics, minecraft, event.getMouseX(), event.getMouseY(),
                 layout.left() + 9 + buttonWidth + gap, firstY + 21, buttonWidth, VillageClientKeys.quickCommunicationKeyName() + " 통신", GOLD);
+    }
+
+    private static String setLine(String name, int count) {
+        return name + " " + count + "/3  " + (count >= 2 ? "◆2" : "◇2") + " " + (count >= 3 ? "◆3" : "◇3");
     }
 
     private static void drawRow(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,
@@ -112,7 +126,7 @@ public final class VillageInventoryPanel {
         Layout layout = layout(minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
         int gap = 5;
         int buttonWidth = (layout.width() - 18 - gap) / 2;
-        int firstY = layout.top() + 84;
+        int firstY = layout.top() + 108;
         String action = null;
         if (inside(event.getMouseX(), event.getMouseY(), layout.left() + 9, firstY, buttonWidth, 16)) {
             action = "open_status";
@@ -144,7 +158,7 @@ public final class VillageInventoryPanel {
                 : Math.min(screenWidth - width - 2, inventoryRight + 4);
         int top = Math.max(3, screenHeight / 2 - PANEL_HEIGHT / 2);
         int bottom = Math.min(screenHeight - 3, top + PANEL_HEIGHT);
-        if (bottom - top < 122) top = Math.max(2, bottom - 122);
+        if (bottom - top < 146) top = Math.max(2, bottom - 146);
         return new Layout(left, top, width, bottom - top);
     }
 

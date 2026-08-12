@@ -34,7 +34,7 @@ public final class VillageGuardians {
         VillageSkillEffectEntities.register(modEventBus);
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians command, rarity, relic and defense research systems loaded");
+        LOGGER.info("Village Guardians siege phase 2, RPG, relic and defense systems loaded");
     }
 
     @SubscribeEvent
@@ -48,6 +48,8 @@ public final class VillageGuardians {
         VillageRelicSystem.initializeServer(event.getServer());
         VillageMercenarySystem.initializeServer(event.getServer());
         VillageSkillTestSystem.initializeServer(event.getServer());
+        VillageSiegePersistence.initializeServer(event.getServer());
+        VillagePlacedTurretSystem.initializeServer(event.getServer());
         VillageRoleAbilitySystem.reset();
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
@@ -58,6 +60,10 @@ public final class VillageGuardians {
         VillageStructureHud.reset();
         VillageHudSystem.reset();
         VillageHealthDisplaySystem.reset();
+        VillageAttackPlanSystem.reset();
+        VillageEnemyEliteSystem.reset();
+        VillageSiegeBossSystem.reset();
+        VillageMercenaryDeploymentSystem.reset();
         VillageRaidSystem.resetTransientState(event.getServer());
         maintenanceTicks = 0;
     }
@@ -76,6 +82,7 @@ public final class VillageGuardians {
             var server = player.level().getServer();
             if (server != null) VillageCouncilState.enforceFrozenTime(server);
             VillageWorldSystem.ensureFortifiedVillage(player);
+            if (player.level() instanceof ServerLevel level) VillageSiegeSegmentSystem.restoreAllVisuals(level);
             VillageSkillTestSystem.recoverStrandedAfterRestart(player);
             VillageStarterKit.grantOnLogin(player);
             VillageRpgSystem.refreshPlayerPassive(player);
@@ -104,6 +111,7 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (VillageSkillTestSystem.handleManagementBox(event)) return;
+        if (VillagePlacedTurretSystem.handlePlacementClick(event)) return;
         if (VillageWorldSystem.handleCentralBellInteraction(event)) return;
         if (VillageWorldSystem.handleGateInteraction(event)) return;
         if (VillageDoorSystem.handle(event)) return;
@@ -133,6 +141,7 @@ public final class VillageGuardians {
             mob.discard();
             return;
         }
+        if (VillageRaidSystem.isRaidEnemy(mob)) VillageAttackPlanSystem.onRaidEnemyJoin(level, mob);
         if (VillageWorldSystem.isAllowedGameMob(mob)) return;
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
@@ -178,7 +187,6 @@ public final class VillageGuardians {
         VillageRoleAbilitySystem.handleArrowLoose(event);
     }
 
-
     @SubscribeEvent
     public void onKnockback(LivingKnockBackEvent event) {
         VillageRoleAbilitySystem.handleKnockback(event);
@@ -188,10 +196,14 @@ public final class VillageGuardians {
     public void onServerTick(ServerTickEvent.Post event) {
         VillageRoleAbilitySystem.tick(event.getServer());
         VillageRaidSystem.tick(event.getServer());
+        VillageAttackPlanSystem.tick(event.getServer());
+        VillageEnemyEliteSystem.tick(event.getServer());
+        VillageSiegeBossSystem.tick(event.getServer());
+        VillagePlacedTurretSystem.tick(event.getServer());
         VillageGatePrioritySystem.tick(event.getServer());
-        VillageDefenseSystem.tick(event.getServer());
-        VillageTowerResearchBonusSystem.tick(event.getServer());
+        // v0.18.9: legacy fixed corner firing is retired; visible towers remain fortress architecture.
         VillageMercenarySystem.tick(event.getServer());
+        VillageMercenaryDeploymentSystem.tick(event.getServer());
         VillageRespawnSystem.tick(event.getServer());
         VillageStructureHud.tick(event.getServer());
         VillageHudSystem.tick(event.getServer());

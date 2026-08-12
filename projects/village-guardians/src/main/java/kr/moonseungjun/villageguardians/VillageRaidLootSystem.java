@@ -77,7 +77,7 @@ public final class VillageRaidLootSystem {
         float equipmentChance = boss ? 1.0f : 0.045f
                 + VillageDefenseResearchSystem.equipmentDropBonus();
         if (random.nextFloat() < equipmentChance) {
-            give(killer, VillageEquipmentRaritySystem.createRaidDrop(
+            give(killer, VillageExpandedEquipmentSystem.createRaidDrop(
                     VillageCouncilState.currentDay(), boss, type, random));
         }
     }

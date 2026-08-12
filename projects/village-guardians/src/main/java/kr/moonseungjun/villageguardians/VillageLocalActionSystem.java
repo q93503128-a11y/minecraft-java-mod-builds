@@ -18,10 +18,86 @@ public final class VillageLocalActionSystem {
                     action.substring("facility:".length()));
             if (building == null) {
                 player.sendSystemMessage(Component.literal("§c알 수 없는 시설입니다."));
+            } else if (building == VillageProgressionSystem.Building.WALLS) {
+                VillageSiegeCommandUi.open(player);
             } else {
                 VillageUiController.openBuilding(player, building);
             }
             return true;
+        }
+
+        if (action.equals("siege_command")) { VillageSiegeCommandUi.open(player); return true; }
+        if (action.equals("siege_turret_catalog")) { VillageSiegeCommandUi.openTurretCatalog(player); return true; }
+        if (action.equals("siege_turret_repair_all")) {
+            player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.repairAll(player)));
+            VillageSiegeCommandUi.open(player); return true;
+        }
+        if (action.equals("siege_turret_cancel")) {
+            player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.cancelPlacement(player)));
+            VillageSiegeCommandUi.openTurretCatalog(player); return true;
+        }
+        if (action.startsWith("siege_segment_open:")) {
+            VillageSiegeCommandUi.openSegment(player, VillageSiegeSegmentSystem.Segment.fromId(action.substring(19)));
+            return true;
+        }
+        if (action.startsWith("siege_segment_repair:")) {
+            VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.Segment.fromId(action.substring(21));
+            player.sendSystemMessage(Component.literal("§b" + VillageSiegeSegmentSystem.repair(player, segment)));
+            VillageSiegeCommandUi.openSegment(player, segment); return true;
+        }
+        if (action.startsWith("siege_segment_upgrade:")) {
+            VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.Segment.fromId(action.substring(22));
+            player.sendSystemMessage(Component.literal("§b" + VillageSiegeSegmentSystem.upgrade(player, segment)));
+            VillageSiegeCommandUi.openSegment(player, segment); return true;
+        }
+        if (action.startsWith("siege_turret_select:")) {
+            VillagePlacedTurretSystem.TurretType type = VillagePlacedTurretSystem.TurretType.fromId(action.substring(20));
+            player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.selectPlacement(player, type)));
+            return true;
+        }
+        if (action.startsWith("siege_turret_open:")) {
+            VillageSiegeCommandUi.openTurret(player, parseInt(action.substring(18), -1)); return true;
+        }
+        if (action.startsWith("siege_turret_repair:")) {
+            int id = parseInt(action.substring(20), -1);
+            player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.repair(player, id)));
+            VillageSiegeCommandUi.openTurret(player, id); return true;
+        }
+        if (action.startsWith("siege_turret_upgrade:")) {
+            int id = parseInt(action.substring(21), -1);
+            player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.upgrade(player, id)));
+            VillageSiegeCommandUi.openTurret(player, id); return true;
+        }
+        if (action.startsWith("siege_turret_dismantle:")) {
+            int id = parseInt(action.substring(23), -1);
+            player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.dismantle(player, id)));
+            VillageSiegeCommandUi.openTurretCatalog(player); return true;
+        }
+
+        if (action.equals("open_mercenary_command")) {
+            VillageMercenaryDeploymentSystem.openCommand(player); return true;
+        }
+        if (action.startsWith("merc_class:")) {
+            VillageMercenaryDeploymentSystem.openClass(player,
+                    VillageMercenarySystem.MercenaryClass.fromId(action.substring(11))); return true;
+        }
+        if (action.startsWith("merc_hire:")) {
+            VillageMercenarySystem.MercenaryClass kind = VillageMercenarySystem.MercenaryClass.fromId(action.substring(10));
+            if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
+                player.sendSystemMessage(Component.literal("§c용병 고용은 병영 단말기 근처에서만 가능합니다."));
+            } else {
+                player.sendSystemMessage(Component.literal("§b" + VillageMercenarySystem.hire(player, kind)));
+            }
+            VillageMercenaryDeploymentSystem.openClass(player, kind); return true;
+        }
+        if (action.startsWith("merc_deploy:")) {
+            String[] parts = action.split(":", 3);
+            VillageMercenarySystem.MercenaryClass kind = parts.length >= 2
+                    ? VillageMercenarySystem.MercenaryClass.fromId(parts[1]) : null;
+            VillageMercenaryDeploymentSystem.Deployment zone = parts.length >= 3
+                    ? VillageMercenaryDeploymentSystem.Deployment.fromId(parts[2]) : null;
+            player.sendSystemMessage(Component.literal("§b" + VillageMercenaryDeploymentSystem.setDeployment(player, kind, zone)));
+            VillageMercenaryDeploymentSystem.openClass(player, kind); return true;
         }
 
         switch (action) {
@@ -57,12 +133,15 @@ public final class VillageLocalActionSystem {
                 return true;
             }
             case "hire_mercenary" -> {
-                VillageUiController.openResult(player, "용병 고용",
-                        "구형 단일 용병 호출은 제거되었습니다. 병영에서 현재 4개 병과 중 하나를 선택하세요.",
-                        "open_mercenary_command");
+                VillageMercenaryDeploymentSystem.openCommand(player);
                 return true;
             }
             default -> { return false; }
         }
+    }
+
+    private static int parseInt(String value, int fallback) {
+        try { return Integer.parseInt(value); }
+        catch (NumberFormatException ignored) { return fallback; }
     }
 }
