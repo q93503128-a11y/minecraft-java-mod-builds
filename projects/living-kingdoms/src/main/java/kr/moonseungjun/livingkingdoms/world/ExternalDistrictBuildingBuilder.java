@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -81,7 +82,6 @@ public final class ExternalDistrictBuildingBuilder {
             new Placement(HOUSE, -980, 250, Rotation.COUNTERCLOCKWISE_90, "south_river_warehouse")
     );
 
-    /** Large furnished external homes act as block anchors; alleys and civic services fill their gaps. */
     private static final List<Placement> RESIDENTIAL_PLACEMENTS = List.of(
             new Placement(HOUSE, -1020, -720, Rotation.CLOCKWISE_90, "residential_north_01"),
             new Placement(CASTLE_HOUSE, -820, -720, Rotation.NONE, "residential_north_02"),
@@ -89,21 +89,18 @@ public final class ExternalDistrictBuildingBuilder {
             new Placement(HOUSE, 180, -720, Rotation.NONE, "residential_north_04"),
             new Placement(CASTLE_HOUSE, 820, -720, Rotation.CLOCKWISE_180, "residential_north_05"),
             new Placement(HOUSE, 1020, -720, Rotation.COUNTERCLOCKWISE_90, "residential_north_06"),
-
             new Placement(HOUSE, -1020, -180, Rotation.CLOCKWISE_90, "residential_middle_north_01"),
             new Placement(MANOR, -780, -180, Rotation.NONE, "residential_middle_north_02"),
             new Placement(HOUSE, -360, -180, Rotation.CLOCKWISE_180, "residential_middle_north_03"),
             new Placement(HOUSE, 360, -180, Rotation.NONE, "residential_middle_north_04"),
             new Placement(MANOR, 780, -180, Rotation.CLOCKWISE_180, "residential_middle_north_05"),
             new Placement(HOUSE, 1020, -180, Rotation.COUNTERCLOCKWISE_90, "residential_middle_north_06"),
-
             new Placement(HOUSE, -1020, 180, Rotation.CLOCKWISE_90, "residential_middle_south_01"),
             new Placement(MANOR, -780, 180, Rotation.CLOCKWISE_180, "residential_middle_south_02"),
             new Placement(HOUSE, -360, 180, Rotation.NONE, "residential_middle_south_03"),
             new Placement(HOUSE, 360, 180, Rotation.CLOCKWISE_180, "residential_middle_south_04"),
             new Placement(MANOR, 780, 180, Rotation.NONE, "residential_middle_south_05"),
             new Placement(HOUSE, 1020, 180, Rotation.COUNTERCLOCKWISE_90, "residential_middle_south_06"),
-
             new Placement(HOUSE, -1020, 720, Rotation.CLOCKWISE_90, "residential_south_01"),
             new Placement(CASTLE_HOUSE, -820, 720, Rotation.CLOCKWISE_180, "residential_south_02"),
             new Placement(HOUSE, -180, 720, Rotation.NONE, "residential_south_03"),
@@ -126,7 +123,6 @@ public final class ExternalDistrictBuildingBuilder {
         }
     }
 
-    /** Places one attributed external building as the architectural anchor of an exterior supply site. */
     public static void addSupplyBuildingChunk(
             IncrementalWorldEditPlan plan,
             ServerLevel level,
@@ -175,8 +171,7 @@ public final class ExternalDistrictBuildingBuilder {
                 cachedEntrances = result;
                 LivingKingdoms.LOGGER.info(
                         "Prepared Erden building access anchors entrances={} landmarks={} residential_blocks={} exterior_doors=true",
-                        result.size(), landmarkCount(), residentialBlockCount()
-                );
+                        result.size(), landmarkCount(), residentialBlockCount());
             }
             return result;
         }
@@ -250,32 +245,22 @@ public final class ExternalDistrictBuildingBuilder {
                     block.x - minX,
                     block.y - minY,
                     block.z - minZ,
-                    block.state
-            ));
+                    block.state));
         }
         int templateWidth = maxX - minX + 1;
         int templateHeight = maxY - minY + 1;
         int templateLength = maxZ - minZ + 1;
-        List<DoorCandidate> entrances = findEntranceBlocks(
-                blocks, templateWidth, templateLength);
+        List<DoorCandidate> entrances = findEntranceBlocks(blocks, templateWidth, templateLength);
         BuildingTemplate template = new BuildingTemplate(
                 templateWidth, templateHeight, templateLength,
-                List.copyOf(blocks), entrances
-        );
+                List.copyOf(blocks), entrances);
         LivingKingdoms.LOGGER.info(
                 "Prepared external district building resource={} blocks={} dimensions={}x{}x{} entrances={} discarded={}",
                 resource, blocks.size(), template.width, template.height, template.length,
-                entrances.size(), candidates.cardinality() - retained.cardinality()
-        );
+                entrances.size(), candidates.cardinality() - retained.cardinality());
         return template;
     }
 
-    /**
-     * Selects real exterior doors rather than merely choosing any low door near a bounding edge.
-     * Imported mansions can contain interior doors within a few blocks of the facade; those used to
-     * look attractive to the nearest-road heuristic even when the supposed outside side was solid
-     * masonry. A candidate now has to prove a body-clear corridor all the way through a nearby edge.
-     */
     private static List<DoorCandidate> findEntranceBlocks(
             List<BuildingBlock> blocks, int width, int length) {
         Map<Long, BuildingBlock> lowestDoorByColumn = new LinkedHashMap<>();
@@ -304,9 +289,6 @@ public final class ExternalDistrictBuildingBuilder {
             return lowExterior.isEmpty() ? List.copyOf(exterior) : List.copyOf(lowExterior);
         }
 
-        // Safety fallback for an unusual source whose decorative shell does not leave a measurable
-        // open edge corridor. Keep the old low/near-edge behaviour rather than dropping a fixed
-        // district placement and breaking the 40-entry invariant.
         List<BuildingBlock> doors = new ArrayList<>(lowestDoorByColumn.values());
         int lowest = doors.stream().mapToInt(BuildingBlock::y).min().orElse(0);
         List<BuildingBlock> lowDoors = doors.stream()
@@ -322,14 +304,24 @@ public final class ExternalDistrictBuildingBuilder {
                 .toList();
     }
 
+    /**
+     * A Minecraft door is traversed along its facing axis, never laterally. Consider only those two
+     * normals and choose the one that reaches a nearby structural edge through body-clear cells.
+     * This rejects internal corridor doors that merely happen to sit close to the building bounds.
+     */
     private static FrontSide exteriorSide(
             Map<Long, BuildingBlock> index,
             BuildingBlock door,
             int width,
             int length) {
+        if (!(door.state.getBlock() instanceof DoorBlock)
+                || !door.state.hasProperty(DoorBlock.FACING)) return null;
+        Direction facing = door.state.getValue(DoorBlock.FACING);
+        FrontSide first = frontSide(facing);
+        FrontSide second = frontSide(facing.getOpposite());
         FrontSide best = null;
         int bestDistance = Integer.MAX_VALUE;
-        for (FrontSide side : FrontSide.values()) {
+        for (FrontSide side : new FrontSide[]{first, second}) {
             int distance = edgeDistance(door.x, door.z, width, length, side);
             if (distance > MAX_EXTERIOR_EDGE_DISTANCE || distance > bestDistance) continue;
             if (!bodyClearThroughEdge(index, door.x, door.y, door.z, side, distance)) continue;
@@ -350,10 +342,8 @@ public final class ExternalDistrictBuildingBuilder {
         int stepZ = side == FrontSide.SOUTH ? 1 : side == FrontSide.NORTH ? -1 : 0;
         int probe = Math.max(1, edgeDistance + 1);
         for (int depth = 1; depth <= probe; depth++) {
-            BuildingBlock feet = index.get(localKey(
-                    x + stepX * depth, doorY, z + stepZ * depth));
-            BuildingBlock head = index.get(localKey(
-                    x + stepX * depth, doorY + 1, z + stepZ * depth));
+            BuildingBlock feet = index.get(localKey(x + stepX * depth, doorY, z + stepZ * depth));
+            BuildingBlock head = index.get(localKey(x + stepX * depth, doorY + 1, z + stepZ * depth));
             if (!sourceBodyPassable(feet) || !sourceBodyPassable(head)) return false;
         }
         return true;
@@ -393,8 +383,7 @@ public final class ExternalDistrictBuildingBuilder {
             int z = originZ + offset.z;
             if (x < minChunkX || x > maxChunkX || z < minChunkZ || z > maxChunkZ) continue;
             int y = baseY + block.y;
-            long key = columnKey(x, z);
-            spans.merge(key, new VerticalSpan(x, z, y, y), VerticalSpan::merge);
+            spans.merge(columnKey(x, z), new VerticalSpan(x, z, y, y), VerticalSpan::merge);
             placed.add(new PlacedBlock(x, y, z, block.state.rotate(placement.rotation)));
         }
         if (placed.isEmpty()) return;
@@ -409,9 +398,7 @@ public final class ExternalDistrictBuildingBuilder {
             }
             plan.addSet(span.x, span.minY - 1, span.z, Blocks.STONE_BRICKS);
         }
-        for (PlacedBlock block : placed) {
-            plan.addSet(block.x, block.y, block.z, block.state);
-        }
+        for (PlacedBlock block : placed) plan.addSet(block.x, block.y, block.z, block.state);
     }
 
     private static List<BuildingEntrance> computeEntrances() {
@@ -434,8 +421,7 @@ public final class ExternalDistrictBuildingBuilder {
                         new RotatedOffset(template.width / 2, 0),
                         new RotatedOffset(template.width / 2, template.length - 1),
                         new RotatedOffset(0, template.length / 2),
-                        new RotatedOffset(template.width - 1, template.length / 2)
-                )
+                        new RotatedOffset(template.width - 1, template.length / 2))
                 : List.of();
 
         BuildingEntrance best = null;
@@ -476,19 +462,13 @@ public final class ExternalDistrictBuildingBuilder {
     }
 
     private static BuildingEntrance entranceForPoint(
-            Placement placement,
-            int x,
-            int z,
-            int buildingMinX,
-            int buildingMinZ,
-            int buildingWidth,
-            int buildingLength,
+            Placement placement, int x, int z,
+            int buildingMinX, int buildingMinZ,
+            int buildingWidth, int buildingLength,
             FrontSide exteriorSide) {
         int buildingMaxX = buildingMinX + buildingWidth - 1;
         int buildingMaxZ = buildingMinZ + buildingLength - 1;
-        RoadTarget road = exteriorSide == null
-                ? null
-                : nearestRoadOnSide(
+        RoadTarget road = exteriorSide == null ? null : nearestRoadOnSide(
                 x, z, buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, exteriorSide);
         if (road == null) {
             road = nearestRoad(x, z, buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
@@ -496,36 +476,28 @@ public final class ExternalDistrictBuildingBuilder {
         if (road == null) return null;
         return new BuildingEntrance(
                 placement.role, x, z, road.x, road.z,
-                placement.role.startsWith("residential_")
-        );
+                placement.role.startsWith("residential_"));
     }
 
     private static RoadTarget nearestRoadOnSide(
-            int x,
-            int z,
-            int buildingMinX,
-            int buildingMinZ,
-            int buildingMaxX,
-            int buildingMaxZ,
+            int x, int z,
+            int buildingMinX, int buildingMinZ,
+            int buildingMaxX, int buildingMaxZ,
             FrontSide side) {
         for (int radius = 1; radius <= MAX_ROAD_SEARCH; radius++) {
             for (int offset = -radius; offset <= radius; offset++) {
-                RoadTarget top = roadTargetOnSide(
-                        x + offset, z - radius,
+                RoadTarget top = roadTargetOnSide(x + offset, z - radius,
                         buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, side);
                 if (top != null) return top;
-                RoadTarget bottom = roadTargetOnSide(
-                        x + offset, z + radius,
+                RoadTarget bottom = roadTargetOnSide(x + offset, z + radius,
                         buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, side);
                 if (bottom != null) return bottom;
             }
             for (int offset = -radius + 1; offset < radius; offset++) {
-                RoadTarget left = roadTargetOnSide(
-                        x - radius, z + offset,
+                RoadTarget left = roadTargetOnSide(x - radius, z + offset,
                         buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, side);
                 if (left != null) return left;
-                RoadTarget right = roadTargetOnSide(
-                        x + radius, z + offset,
+                RoadTarget right = roadTargetOnSide(x + radius, z + offset,
                         buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, side);
                 if (right != null) return right;
             }
@@ -534,12 +506,9 @@ public final class ExternalDistrictBuildingBuilder {
     }
 
     private static RoadTarget roadTargetOnSide(
-            int x,
-            int z,
-            int buildingMinX,
-            int buildingMinZ,
-            int buildingMaxX,
-            int buildingMaxZ,
+            int x, int z,
+            int buildingMinX, int buildingMinZ,
+            int buildingMaxX, int buildingMaxZ,
             FrontSide side) {
         boolean beyondFacade = switch (side) {
             case NORTH -> z < buildingMinZ - 1;
@@ -597,13 +566,22 @@ public final class ExternalDistrictBuildingBuilder {
         return FrontSide.EAST;
     }
 
-    private static int edgeDistance(
-            int x, int z, int width, int length, FrontSide side) {
+    private static int edgeDistance(int x, int z, int width, int length, FrontSide side) {
         return switch (side) {
             case NORTH -> z;
             case SOUTH -> length - 1 - z;
             case WEST -> x;
             case EAST -> width - 1 - x;
+        };
+    }
+
+    private static FrontSide frontSide(Direction direction) {
+        return switch (direction) {
+            case NORTH -> FrontSide.NORTH;
+            case SOUTH -> FrontSide.SOUTH;
+            case WEST -> FrontSide.WEST;
+            case EAST -> FrontSide.EAST;
+            default -> throw new IllegalArgumentException("Non-horizontal door direction " + direction);
         };
     }
 
