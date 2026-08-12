@@ -230,7 +230,7 @@ public final class ErdenEntryPathReconciler {
         return List.copyOf(points);
     }
 
-    /** Mirrors the threshold manager so both passes agree on which side of the real door is outside. */
+    /** Mirrors the threshold manager: walkable authored geometry wins before road proximity. */
     private static Vector outward(ServerLevel level, Entry entry, int doorY) {
         BlockPos doorPos = new BlockPos(entry.x, doorY, entry.z);
         var state = level.getBlockState(doorPos);
@@ -238,12 +238,12 @@ public final class ErdenEntryPathReconciler {
             Direction facing = state.getValue(DoorBlock.FACING);
             Vector first = new Vector(facing.getStepX(), facing.getStepZ());
             Vector second = new Vector(-first.x, -first.z);
-            int firstDistance = distanceToRoad(entry, first);
-            int secondDistance = distanceToRoad(entry, second);
-            if (firstDistance != secondDistance) return firstDistance < secondDistance ? first : second;
             int firstClear = clearRun(level, entry, doorY, first);
             int secondClear = clearRun(level, entry, doorY, second);
             if (firstClear != secondClear) return firstClear > secondClear ? first : second;
+            int firstDistance = distanceToRoad(entry, first);
+            int secondDistance = distanceToRoad(entry, second);
+            if (firstDistance != secondDistance) return firstDistance < secondDistance ? first : second;
         }
         return roadDominantOutward(entry);
     }
