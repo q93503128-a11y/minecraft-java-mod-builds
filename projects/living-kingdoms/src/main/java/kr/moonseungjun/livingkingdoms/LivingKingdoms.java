@@ -32,6 +32,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenTransportManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredInteriorPreserver;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredInteriorSurvey;
+import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredUpperRouteManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanMicroInfillManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanLifeManager;
@@ -101,6 +102,7 @@ public final class LivingKingdoms {
         ErdenUrbanSourceShellPlanner.bootstrap();
         ErdenUrbanUpperRoomOpportunityCatalog.bootstrap();
         ErdenUrbanSourceAirRoutePlanner.bootstrap();
+        ErdenUrbanAuthoredUpperRouteManager.bootstrap();
         OriginProfileManager.initialize(event.getServer());
         StarterRealmDiagnostics.runIfRequested(event.getServer());
     }
@@ -122,6 +124,7 @@ public final class LivingKingdoms {
         ErdenUrbanMicroInfillManager.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenUrbanAuthoredInteriorPreserver.restoreAfterConversion(event);
+        ErdenUrbanAuthoredUpperRouteManager.onServerTick(event);
         ErdenEntranceDoorRepairManager.onServerTick(event);
         ErdenEntranceThresholdManager.onServerTick(event);
         ErdenEntryPathReconciler.onServerTick(event);
