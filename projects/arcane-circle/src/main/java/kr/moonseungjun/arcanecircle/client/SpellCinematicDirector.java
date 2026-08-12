@@ -248,7 +248,7 @@ final class SpellCinematicDirector {
             case "magic_missile" -> sig(Form.VOLLEY,.82,2,5,.18,0,3.2);
             case "fire_bolt","ray_of_frost","ice_knife","void_lance","finger_of_death","disintegrate" -> sig(Form.NEEDLE,id.equals("void_lance")?1.35:1.0,3,1,.1,0,4.0);
             case "scorching_ray","lightning_bolt","sunbeam","chain_lightning","prismatic_spray" -> sig(Form.RAY,1.05,4,id.equals("chain_lightning")?6:1,.2,0,5.2);
-            case "fireball","chromatic_orb","freezing_sphere","delayed_blast_fireball","solar_guard" -> sig(Form.ORB,id.equals("delayed_blast_fireball")?1.45:1.0,4,1,.2,0,2.7);
+            case "fireball","chromatic_orb","freezing_sphere" -> sig(Form.ORB,id.equals("delayed_blast_fireball")?1.45:1.0,4,1,.2,0,2.7);
             case "burning_hands","thunderwave","gust_of_wind","shatter","cone_of_cold","steam_burst" -> sig(Form.CONE,1.0,3,1,.45,0,3.5);
             case "grease","sleep","web","slow","confusion","sleet_storm","ice_storm","cloudkill","insect_plague","antimagic_field","incendiary_cloud" -> sig(Form.FIELD,1.0,4,1,.4,0,2.1);
             case "winter_domain","circle_of_death","sunburst" -> sig(Form.DOMAIN,1.35,6,1,.5,0,1.8);
@@ -259,7 +259,7 @@ final class SpellCinematicDirector {
             case "flame_strike","fire_storm","meteor_swarm","delayed_blast_fireball" -> sig(Form.SKY,id.equals("meteor_swarm")?2.3:1.2,6,id.equals("meteor_swarm")?4:id.equals("fire_storm")?6:1,id.equals("meteor_swarm")?10:3,id.equals("meteor_swarm")?28:14,1.9);
             case "control_weather" -> sig(Form.WEATHER,2.1,7,8,8,18,1.2);
             case "mage_armor","shield","mirror_image","blur","invisibility","greater_invisibility","stoneskin","freedom_of_movement","true_seeing","globe_of_invulnerability","fire_shield","solar_guard","foresight","haste","protection_from_energy" -> sig(Form.AURA,1.0,4,1,.2,0,2.8);
-            case "power_word_kill","eyebite","phantasmal_killer","feeblemind","dominate_person","dominate_monster","mass_suggestion","hold_person","hold_monster","vampiric_touch" -> sig(Form.MARK,id.equals("power_word_kill")?.72:1.0,5,1,.1,0,3.0);
+            case "power_word_kill","eyebite","phantasmal_killer","feeblemind","dominate_person","dominate_monster","mass_suggestion","vampiric_touch" -> sig(Form.MARK,id.equals("power_word_kill")?.72:1.0,5,1,.1,0,3.0);
             case "shapechange","true_polymorph","flesh_to_stone","clone","simulacrum" -> sig(Form.TRANSFORM,1.1,5,1,.2,0,2.0);
             case "time_stop","wish" -> sig(Form.CLOCK,id.equals("wish")?.82:1.3,7,1,.2,0,1.4);
             case "move_earth","earthquake","world_sunder","reverse_gravity" -> sig(Form.TERRAIN,id.equals("world_sunder")?2.0:1.25,6,1,.7,0,1.6);
