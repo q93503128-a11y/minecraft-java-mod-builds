@@ -32,6 +32,9 @@ def main() -> None:
     assert "entry.setValue(new TrackingArrowState(target.getUUID(), state.until()))" in ability
     assert "double turnStrength = Math.min(0.76, 0.46 + specialRank * 0.05)" in ability
     assert "current.scale(1.0 - turnStrength)" in ability
+    assert "current.scale(0.38).add(desired.scale(0.62))" in ability
+    assert "hasClearFlightPath(level, owner, origin, target)" in ability
+    assert "ClipContext.Block.COLLIDER" in ability
     assert "arrow.setNoGravity(false)" in ability
     assert "predicted.subtract(arrow.position())" in ability
 

@@ -1035,9 +1035,15 @@ public final class VillageRoleAbilitySystem {
         Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
         Vec3 delta = body.subtract(arrow.position());
         if (delta.lengthSqr() < 1.0E-5) return null;
-        double speed = Math.max(2.4, arrow.getDeltaMovement().length());
+        Vec3 velocity = arrow.getDeltaMovement();
+        double speed = Math.max(2.0, Math.min(3.6, velocity.length()));
+        Vec3 current = velocity.lengthSqr() < 1.0E-5
+                ? lookDirection(player) : velocity.normalize();
+        Vec3 desired = delta.normalize();
+        Vec3 blended = current.scale(0.38).add(desired.scale(0.62));
+        if (blended.lengthSqr() < 1.0E-5) blended = desired;
         arrow.setNoGravity(true);
-        arrow.setDeltaMovement(delta.normalize().scale(speed));
+        arrow.setDeltaMovement(blended.normalize().scale(speed));
         arrow.hurtMarked = true;
         return target;
     }
@@ -1091,6 +1097,7 @@ public final class VillageRoleAbilitySystem {
                 ? lookDirection(owner) : velocity.normalize();
         Vec3 origin = arrow.position();
         return targetsNear(level, owner, origin, range, 64).stream()
+                .filter(target -> hasClearFlightPath(level, owner, origin, target))
                 .filter(target -> {
                     Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
                     Vec3 to = body.subtract(origin);
@@ -1103,6 +1110,17 @@ public final class VillageRoleAbilitySystem {
                     return to.lengthSqr() * (1.15 - Math.max(0.0, alignment));
                 }))
                 .orElse(null);
+    }
+
+    private static boolean hasClearFlightPath(
+            ServerLevel level, ServerPlayer owner, Vec3 origin, Mob target) {
+        Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
+        var hit = level.clip(new net.minecraft.world.level.ClipContext(
+                origin, body,
+                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                owner));
+        return hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS;
     }
 
     private static void aimAssist(
