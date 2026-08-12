@@ -152,7 +152,6 @@ public final class ErdenUrbanSourceAirRoutePlanner {
                     int z = current.z() + direction[1];
                     if (y < minimumY || y > maximumY) continue;
                     if (!routeBodyClear(snapshot, blocks, x, y, z)) continue;
-                    if (!routeColumnCovered(snapshot, blocks, x, y, z)) continue;
                     Node next = new Node(x, y, z);
                     long nextKey = nodeKey(x, y, z);
                     if (!visited.add(nextKey)) continue;
@@ -252,42 +251,6 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             if (block != null && !block.state().isAir()) return false;
         }
         return true;
-    }
-
-    /**
-     * A new stair may pass through authored source air that is not a four-wall room at every
-     * intermediate height (for example an open stair hall, balcony edge or vaulted transition),
-     * but it must stay beneath the immutable source roof. Together with the fragment bounds,
-     * entrance-facing interior half-plane and source-air body checks this keeps the route attached
-     * to the imported building while allowing a genuine zero-cut connection to an upper room.
-     */
-    private static boolean routeColumnCovered(
-            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
-            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
-            int x, int feetY, int z) {
-        return roofAbove(snapshot, blocks, x, feetY + MIN_HEADROOM, z);
-    }
-
-    private static boolean roofAbove(
-            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
-            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
-            int x, int startY, int z) {
-        for (int y = startY; y < snapshot.height(); y++) {
-            ExternalUrbanFabricBuilder.UrbanSourceBlock block = blocks.get(blockKey(x, y, z));
-            if (structuralBarrier(block)) return true;
-        }
-        return false;
-    }
-
-    private static boolean structuralBarrier(ExternalUrbanFabricBuilder.UrbanSourceBlock block) {
-        if (block == null || block.state().isAir()) return false;
-        if (block.state().getBlock() instanceof DoorBlock) return false;
-        String id = block.state().getBlock().toString();
-        return !(id.contains("torch") || id.contains("button") || id.contains("pressure_plate")
-                || id.contains("carpet") || id.contains("lantern") || id.contains("chain")
-                || id.contains("sign") || id.contains("leaves") || id.contains("sapling")
-                || id.contains("grass") || id.contains("flower") || id.contains("fern")
-                || id.contains("vine"));
     }
 
     private static List<Node> reconstruct(
