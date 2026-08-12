@@ -23,7 +23,7 @@ def main() -> None:
     action = read("VillageActionDetailScreen.java")
     result = read("VillageResultScreen.java")
     tooltip = read("VillageEquipmentTooltipClient.java")
-    world = read("VillageWorldSystem.java")
+    debris = read("VillageRaidDebrisDropGuard.java")
 
     # Death remains consequential: no all-downed structure-damage discount.
     defender_method = tuning.split("defenderStateStructureMultiplier", 1)[1].split("scaleEnemyCount", 1)[0]
@@ -54,16 +54,18 @@ def main() -> None:
     assert "panelWidth < 390 && panelHeight >= 250" in action
     assert "VillageUiSafeArea.screen" in result and "PANEL = 0xF00B1217" in result
 
-    # Tooltips are item-local on the client, while structure destruction still cleans loose block drops.
+    # Tooltips are item-local on the client and raid structure block-item debris is canceled at spawn.
     assert "maximumEnhancement()" not in tooltip
     assert "enhancementEffectSummary(stack, enhancement)" in tooltip
-    assert "removeLooseDebris" in world
-    assert "cleanupRaidStructureDrops" in world
+    assert "ItemEntity itemEntity" in debris and "instanceof BlockItem" in debris
+    assert "VillageRaidSystem.isActive()" in debris
+    assert "VillageWorldSystem.isInsideVillageArea" in debris
+    assert "event.setCanceled(true)" in debris and "itemEntity.discard()" in debris
 
     print("[PASS] Downed players receive no hidden structure-damage protection")
     print("[PASS] Early difficulty curve and +30% multiplayer enemy scaling remain intact")
     print("[PASS] Legacy screens are unreachable and narrow-screen overflow guards remain wired")
-    print("[PASS] Equipment tooltip avoids client/server smithy desync and debris cleanup remains active")
+    print("[PASS] Equipment tooltip avoids client/server smithy desync and raid debris suppression remains active")
 
 
 if __name__ == "__main__":
