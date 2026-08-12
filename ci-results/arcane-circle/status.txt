@@ -1,9 +1,10 @@
 status=success
-source_sha=015cf5cb4e7107686322a771bc4ed74b82bab0b3
-run_id=31559172926
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/31559172926
+source_sha=c6e78d05e720cca43c941b47a88fc23198986cef
+run_id=31565002330
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/31565002330
 java=25
 gradle=9.2.1
-version=0.12.1-alpha.25
+version=0.12.1-alpha.26
 source_mutation=disabled
-presentation_phase=complete-1C-9C-codex-sigil-robe-v2
+presentation_phase=alpha26-ground-up-ui-vfx-regalia
+retired_visual_stack=absent
