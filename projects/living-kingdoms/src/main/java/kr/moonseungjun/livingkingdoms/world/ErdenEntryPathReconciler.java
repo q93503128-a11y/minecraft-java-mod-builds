@@ -165,6 +165,7 @@ public final class ErdenEntryPathReconciler {
                 for (int width = -1; width <= 1; width++) {
                     int x = eastWest ? center.x : center.x + width;
                     int z = eastWest ? center.z + width : center.z;
+                    if (authoredThresholdColumn(entry, route, x, z)) continue;
                     if (!chunkReady(level, x, z)) return Result.WAITING;
                     normalizeColumn(level, x, z, targetFloor, material);
                 }
@@ -193,6 +194,8 @@ public final class ErdenEntryPathReconciler {
 
     private static boolean verify(
             ServerLevel level, Entry entry, int doorY, List<Point> route) {
+        BlockPos door = new BlockPos(entry.x, doorY, entry.z);
+        if (!(level.getBlockState(door).getBlock() instanceof DoorBlock)) return false;
         int previousFeetY = doorY;
         for (Point point : route) {
             int feetY = findWalkableFeetY(level, point.x, point.z, previousFeetY);
@@ -201,6 +204,18 @@ public final class ErdenEntryPathReconciler {
         }
         return pointNear(entry.roadX, entry.roadZ, route.getLast())
                 && walkable(level, entry.x, doorY, entry.z);
+    }
+
+    /** Never let a later diagonal grade sweep back through the real door or its proved porch. */
+    private static boolean authoredThresholdColumn(
+            Entry entry, List<Point> route, int x, int z) {
+        if (x == entry.x && z == entry.z) return true;
+        int limit = Math.min(PORCH_STEPS, route.size());
+        for (int index = 0; index < limit; index++) {
+            Point point = route.get(index);
+            if (point.x == x && point.z == z) return true;
+        }
+        return false;
     }
 
     private static List<Point> route(Entry entry, Vector outward) {
