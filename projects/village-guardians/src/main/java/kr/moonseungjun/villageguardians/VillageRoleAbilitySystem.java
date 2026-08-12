@@ -54,6 +54,8 @@ public final class VillageRoleAbilitySystem {
     private static final Map<UUID, SkillScale> RICOCHET_SCALE = new HashMap<>();
     private static final Map<UUID, EmpoweredArrowState> RICOCHET_ARROWS = new HashMap<>();
     private static final Map<UUID, TrackingArrowState> TRACKING_ARROWS = new HashMap<>();
+    private static final List<RicochetHop> RICOCHET_HOPS = new ArrayList<>();
+    private static final Set<RicochetDamageKey> PRE_SCALED_RICOCHET_DAMAGE = new HashSet<>();
     private static final Map<UUID, EmpoweredArrowState> ARROW_RAIN_READY = new HashMap<>();
     private static final Map<UUID, EmpoweredArrowState> MEGA_ARROW_READY = new HashMap<>();
     private static final Map<UUID, Long> FORTRESS_UNTIL = new HashMap<>();
@@ -83,6 +85,8 @@ public final class VillageRoleAbilitySystem {
         RICOCHET_SCALE.clear();
         RICOCHET_ARROWS.clear();
         TRACKING_ARROWS.clear();
+        RICOCHET_HOPS.clear();
+        PRE_SCALED_RICOCHET_DAMAGE.clear();
         ARROW_RAIN_READY.clear();
         MEGA_ARROW_READY.clear();
         FORTRESS_UNTIL.clear();
@@ -283,6 +287,7 @@ public final class VillageRoleAbilitySystem {
         long now = server.overworld().getGameTime();
         tickPlayers(server, now);
         tickTrackingArrows(server, now);
+        tickRicochetHops(server, now);
         tickScheduled(server, now);
         tickAreas(server, now);
         tickMoving(server, now);
@@ -381,25 +386,69 @@ public final class VillageRoleAbilitySystem {
             Map.Entry<UUID, TrackingArrowState> entry = iterator.next();
             TrackingArrowState state = entry.getValue();
             Entity arrowEntity = level.getEntity(entry.getKey());
-            Entity targetEntity = level.getEntity(state.target());
             if (now > state.until()
                     || !(arrowEntity instanceof AbstractArrow arrow)
-                    || !(targetEntity instanceof Mob target)
-                    || !arrow.isAlive() || !target.isAlive()) {
+                    || !arrow.isAlive()
+                    || !(arrow.getOwner() instanceof ServerPlayer owner)
+                    || !isRangerContext(owner)) {
                 iterator.remove();
                 continue;
             }
+
+            Entity lockedEntity = level.getEntity(state.target());
+            Mob target = lockedEntity instanceof Mob locked && locked.isAlive() ? locked : null;
+            if (target == null) {
+                target = bestFlightTarget(level, owner, arrow, 52.0);
+                if (target == null) {
+                    arrow.setNoGravity(false);
+                    iterator.remove();
+                    continue;
+                }
+                entry.setValue(new TrackingArrowState(target.getUUID(), state.until()));
+            }
+
             Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
             Vec3 delta = body.subtract(arrow.position());
             if (delta.lengthSqr() < 0.05) continue;
-            double speed = Math.max(2.4, arrow.getDeltaMovement().length());
-            double leadTicks = Math.min(7.0, Math.sqrt(delta.lengthSqr()) / speed);
-            Vec3 predicted = body.add(target.getDeltaMovement().scale(leadTicks * 0.62));
+            double currentSpeed = arrow.getDeltaMovement().length();
+            double speed = Math.max(2.0, Math.min(3.6, currentSpeed));
+            double leadTicks = Math.min(7.0, Math.sqrt(delta.lengthSqr()) / Math.max(0.1, speed));
+            Vec3 predicted = body.add(target.getDeltaMovement().scale(leadTicks * 0.58));
             Vec3 guided = predicted.subtract(arrow.position());
             if (guided.lengthSqr() < 1.0E-5) continue;
+
+            EmpoweredArrowState empowered = RICOCHET_ARROWS.get(entry.getKey());
+            int specialRank = empowered == null ? 0 : empowered.specialRank();
+            double turnStrength = Math.min(0.76, 0.46 + specialRank * 0.05);
+            Vec3 current = arrow.getDeltaMovement().lengthSqr() < 1.0E-5
+                    ? guided.normalize() : arrow.getDeltaMovement().normalize();
+            Vec3 blended = current.scale(1.0 - turnStrength)
+                    .add(guided.normalize().scale(turnStrength));
+            if (blended.lengthSqr() < 1.0E-5) blended = guided.normalize();
+
             arrow.setNoGravity(true);
-            arrow.setDeltaMovement(guided.normalize().scale(speed));
+            arrow.setDeltaMovement(blended.normalize().scale(speed));
             arrow.hurtMarked = true;
+            if (now % 3L == 0L) {
+                VillageSkillEffectSystem.trackingReticle(
+                        level, owner, body, body.subtract(arrow.position()));
+            }
+        }
+    }
+
+    private static void tickRicochetHops(MinecraftServer server, long now) {
+        Iterator<RicochetHop> iterator = RICOCHET_HOPS.iterator();
+        while (iterator.hasNext()) {
+            RicochetHop hop = iterator.next();
+            if (hop.executeAt() > now) continue;
+            iterator.remove();
+            ServerPlayer owner = server.getPlayerList().getPlayer(hop.owner());
+            if (owner == null || !(owner.level() instanceof ServerLevel level)) continue;
+            Entity entity = level.getEntity(hop.target());
+            if (!(entity instanceof Mob target) || !target.isAlive()) continue;
+            hurtByPlayer(level, owner, target, hop.damage());
+            play(level, target.position(), SoundEvents.ARROW_HIT, 0.62f,
+                    1.18f + Math.min(0.34f, hop.hopIndex() * 0.055f));
         }
     }
 
@@ -691,20 +740,8 @@ public final class VillageRoleAbilitySystem {
                 TRACKING_ARROWS.remove(directArrow.getUUID());
                 if (ricochet != null) event.setAmount(event.getAmount() * ricochet.power());
                 int ricochetRank = ricochet == null ? 0 : ricochet.specialRank();
-                List<Mob> chain = targetsNear(level, attacker, primary.position(),
-                        areaRadius(12.0, ricochetRank), 12 + ricochetRank * 2);
-                chain.remove(primary);
-                chain.sort(Comparator.comparingDouble(primary::distanceToSqr));
                 float damage = Math.max(2.0f, event.getAmount() * 0.72f);
-                List<Mob> visualChain = new ArrayList<>();
-                int maximumChain = 6 + Math.min(5, ricochetRank);
-                for (int i = 0; i < Math.min(maximumChain, chain.size()); i++) {
-                    Mob target = chain.get(i);
-                    visualChain.add(target);
-                    hurt(level, target, damage * (1.0f - i * 0.09f));
-                    play(level, target.position(), SoundEvents.ARROW_HIT, 0.55f, 1.2f + i * 0.06f);
-                }
-                VillageSkillEffectSystem.ricochet(level, attacker, primary, visualChain);
+                queueRicochet(level, attacker, primary, damage, ricochetRank);
             }
         }
         if (event.getEntity() instanceof ServerPlayer defender && activeRole(defender) == VillageRole.WARDEN) {
@@ -1005,6 +1042,69 @@ public final class VillageRoleAbilitySystem {
         return target;
     }
 
+    private static void queueRicochet(
+            ServerLevel level, ServerPlayer owner, Mob primary, float baseDamage, int specialRank) {
+        double bounceRadius = areaRadius(10.5, specialRank);
+        int maximumChain = 4 + Math.min(4, Math.max(0, specialRank));
+        List<Mob> chain = buildRicochetChain(
+                level, owner, primary, bounceRadius, maximumChain);
+        if (chain.isEmpty()) return;
+
+        VillageSkillEffectSystem.ricochet(level, owner, primary, chain);
+        long now = level.getGameTime();
+        for (int i = 0; i < chain.size(); i++) {
+            Mob target = chain.get(i);
+            float falloff = (float) Math.pow(0.86, i);
+            RICOCHET_HOPS.add(new RicochetHop(
+                    now + 2L + i * 2L,
+                    owner.getUUID(), target.getUUID(),
+                    Math.max(1.5f, baseDamage * falloff), i));
+        }
+    }
+
+    private static List<Mob> buildRicochetChain(
+            ServerLevel level, ServerPlayer owner, Mob primary,
+            double bounceRadius, int maximumChain) {
+        List<Mob> result = new ArrayList<>();
+        Set<UUID> visited = new HashSet<>();
+        visited.add(primary.getUUID());
+        Mob cursor = primary;
+        for (int hop = 0; hop < maximumChain; hop++) {
+            Mob from = cursor;
+            Mob next = targetsNear(level, owner, from.position(), bounceRadius, 36).stream()
+                    .filter(target -> !visited.contains(target.getUUID()))
+                    .filter(from::hasLineOfSight)
+                    .min(Comparator.comparingDouble(from::distanceToSqr))
+                    .orElse(null);
+            if (next == null) break;
+            result.add(next);
+            visited.add(next.getUUID());
+            cursor = next;
+        }
+        return result;
+    }
+
+    private static Mob bestFlightTarget(
+            ServerLevel level, ServerPlayer owner, AbstractArrow arrow, double range) {
+        Vec3 velocity = arrow.getDeltaMovement();
+        Vec3 forward = velocity.lengthSqr() < 1.0E-5
+                ? lookDirection(owner) : velocity.normalize();
+        Vec3 origin = arrow.position();
+        return targetsNear(level, owner, origin, range, 64).stream()
+                .filter(target -> {
+                    Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
+                    Vec3 to = body.subtract(origin);
+                    return to.lengthSqr() > 1.0E-5 && to.normalize().dot(forward) >= 0.30;
+                })
+                .min(Comparator.comparingDouble(target -> {
+                    Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
+                    Vec3 to = body.subtract(origin);
+                    double alignment = to.normalize().dot(forward);
+                    return to.lengthSqr() * (1.15 - Math.max(0.0, alignment));
+                }))
+                .orElse(null);
+    }
+
     private static void aimAssist(
             ServerLevel level, ServerPlayer player, AbstractArrow arrow, double strength) {
         Vec3 velocity = arrow.getDeltaMovement();
@@ -1027,7 +1127,8 @@ public final class VillageRoleAbilitySystem {
                 .filter(player::hasLineOfSight)
                 .filter(target -> {
                     Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
-                    return body.subtract(origin).dot(look) > 0.20;
+                    Vec3 to = body.subtract(origin);
+                    return to.lengthSqr() > 1.0E-5 && to.normalize().dot(look) >= 0.62;
                 })
                 .min(Comparator.comparingDouble(target -> {
                     Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
@@ -1035,7 +1136,7 @@ public final class VillageRoleAbilitySystem {
                     double forward = Math.max(0.0, to.dot(look));
                     Vec3 closest = origin.add(look.scale(forward));
                     double miss = body.distanceToSqr(closest);
-                    return miss * 5.0 + to.lengthSqr() * 0.012;
+                    return miss * 6.5 + to.lengthSqr() * 0.010;
                 }))
                 .orElse(null);
     }
@@ -1092,6 +1193,23 @@ public final class VillageRoleAbilitySystem {
 
     private static void hurt(ServerLevel level, Mob target, float damage) {
         target.hurtServer(level, level.damageSources().magic(), Math.max(0.1f, damage));
+    }
+
+    public static boolean isPreScaledRicochetDamage(ServerPlayer owner, Entity target) {
+        return owner != null && target != null
+                && PRE_SCALED_RICOCHET_DAMAGE.contains(
+                        new RicochetDamageKey(owner.getUUID(), target.getUUID()));
+    }
+
+    private static void hurtByPlayer(
+            ServerLevel level, ServerPlayer owner, Mob target, float damage) {
+        RicochetDamageKey key = new RicochetDamageKey(owner.getUUID(), target.getUUID());
+        PRE_SCALED_RICOCHET_DAMAGE.add(key);
+        try {
+            target.hurtServer(level, level.damageSources().playerAttack(owner), Math.max(0.1f, damage));
+        } finally {
+            PRE_SCALED_RICOCHET_DAMAGE.remove(key);
+        }
     }
 
     private static List<ServerPlayer> allies(ServerPlayer player, double radius) {
@@ -1315,6 +1433,10 @@ public final class VillageRoleAbilitySystem {
         int age() { return age; }
         void age(int value) { age = value; }
     }
+
+    private record RicochetDamageKey(UUID owner, UUID target) {}
+
+    private record RicochetHop(long executeAt, UUID owner, UUID target, float damage, int hopIndex) {}
 
     private record TrackingArrowState(UUID target, long until) {}
 

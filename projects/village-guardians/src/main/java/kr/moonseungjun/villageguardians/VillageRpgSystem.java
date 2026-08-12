@@ -51,7 +51,10 @@ public final class VillageRpgSystem {
     }
 
     public static void handleIncomingDamage(LivingIncomingDamageEvent event) {
-        if (event.getSource().getEntity() instanceof ServerPlayer attacker
+        boolean preScaledRicochet = event.getSource().getEntity() instanceof ServerPlayer ricochetOwner
+                && VillageRoleAbilitySystem.isPreScaledRicochetDamage(ricochetOwner, event.getEntity());
+        if (!preScaledRicochet
+                && event.getSource().getEntity() instanceof ServerPlayer attacker
                 && !(event.getEntity() instanceof ServerPlayer)) {
             boolean projectile = event.getSource().getDirectEntity() instanceof AbstractArrow;
             float value = outgoingDamageMultiplier(VillageCouncilState.levelOf(attacker.getUUID()));
@@ -95,7 +98,7 @@ public final class VillageRpgSystem {
             event.setAmount(event.getAmount() * value);
         }
         VillagePersonalCombatSystem.handleIncomingDamage(event);
-        VillageCombatTechniqueSystem.handleIncomingDamage(event);
+        if (!preScaledRicochet) VillageCombatTechniqueSystem.handleIncomingDamage(event);
     }
 
     public static void handleDeath(LivingDeathEvent event) {

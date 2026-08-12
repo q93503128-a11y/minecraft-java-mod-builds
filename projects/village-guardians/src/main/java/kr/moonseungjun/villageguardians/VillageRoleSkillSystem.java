@@ -654,7 +654,7 @@ public final class VillageRoleSkillSystem {
         VANGUARD_STORM("vanguard_storm", VillageRole.VANGUARD, 3, "천붕 강하", 21, 680, 42, "공중으로 도약한 뒤 지면을 내려찍어 바닥을 깨뜨리고 넓은 범위에 피해와 강한 충격을 줍니다."),
 
         RANGER_VOLLEY("ranger_volley", VillageRole.RANGER, 0, "신속 삼연사", 2, 70, 16, "기술 사용 후 다음 활은 빠르게 자동 완충·발사되며, 다음 실제 활·석궁 발사 한 번이 세 갈래 화살로 강화됩니다."),
-        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "기술 사용 후 다음 실제 활·석궁 발사를 대기하며, 플레이어 바로 앞의 표식과 함께 그 한 발이 추적·연쇄 도탄 화살로 강화됩니다."),
+        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "기술 사용 후 다음 실제 활·석궁 한 발이 전방 표적을 추적합니다. 표적이 사라지면 비행 경로 전방의 새 적을 재포착하고, 적중 후에는 가까운 적을 중복 없이 순차 도탄합니다."),
         RANGER_RICOCHET("ranger_ricochet", VillageRole.RANGER, 2, "천공 화살비", 13, 380, 30, "기술 사용 후 다음 실제 활·석궁 발사 시 조준한 바닥에 짧고 강한 화살비가 펼쳐져 지속 광역 피해를 줍니다."),
         RANGER_FIRE_RAIN("ranger_fire_rain", VillageRole.RANGER, 3, "성멸 대궁", 21, 680, 40, "기술 사용 후 다음 실제 활·석궁 발사를 밝은 초록색 초대형 성멸 화살로 바꾸어 넓은 전방을 관통합니다."),
 
