@@ -106,6 +106,27 @@ public final class ErdenCapitalStreamingBuilder {
                 .builtCount(CAPITAL_REVISION);
     }
 
+    /** Package-private CI/runtime diagnostic; it never loads a chunk or mutates queue state. */
+    static String diagnosticChunkState(ServerLevel level, int chunkX, int chunkZ) {
+        long packed = pack(chunkX, chunkZ);
+        boolean activeHere = active != null && active.chunkPos() == packed;
+        String activeState = active == null
+                ? "none"
+                : active.chunkX() + "," + active.chunkZ()
+                        + ":done=" + active.plan().done();
+        return chunkX + "," + chunkZ
+                + "{loaded=" + level.hasChunk(chunkX, chunkZ)
+                + ",built=" + isChunkBuilt(level, chunkX, chunkZ)
+                + ",queued=" + QUEUED.contains(packed)
+                + ",pending=" + PENDING.contains(packed)
+                + ",retained=" + RETAINED_REQUESTS.contains(packed)
+                + ",active_here=" + activeHere
+                + ",pending_size=" + PENDING.size()
+                + ",queued_size=" + QUEUED.size()
+                + ",retained_size=" + RETAINED_REQUESTS.size()
+                + ",active=" + activeState + "}";
+    }
+
     private static void requeueRetainedLoaded(ServerLevel level) {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
