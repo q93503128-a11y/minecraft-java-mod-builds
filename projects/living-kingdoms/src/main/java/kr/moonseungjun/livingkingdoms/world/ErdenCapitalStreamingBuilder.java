@@ -57,12 +57,21 @@ public final class ErdenCapitalStreamingBuilder {
         if (active == null) startNext(level);
         if (active == null) return;
         if (!level.hasChunk(active.chunkX(), active.chunkZ())) {
-            // The retained request owns a transient ticket, so a temporary visibility gap is not a
-            // cancellation. Never discard the request merely because the chunk is between stages.
+            // startNext retains every active capital cell. A brief visibility gap can still happen
+            // while the ticket is promoting the chunk, so wait without discarding the half-applied
+            // deterministic plan.
             return;
         }
 
-        active.plan().apply(level, TICK_BUDGET);
+        try {
+            active.plan().apply(level, TICK_BUDGET);
+        } catch (RuntimeException | Error failure) {
+            long failedChunk = active.chunkPos();
+            QUEUED.remove(failedChunk);
+            releaseRetained(level, failedChunk);
+            active = null;
+            throw failure;
+        }
         if (!active.plan().done()) return;
 
         ChunkPos completedChunk = new ChunkPos(active.chunkX(), active.chunkZ());
@@ -90,9 +99,7 @@ public final class ErdenCapitalStreamingBuilder {
         ErdenCapitalChunkSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenCapitalChunkSavedData.TYPE);
         if (!data.needs(packed, CAPITAL_REVISION)) return;
-        if (RETAINED_REQUESTS.add(packed)) {
-            level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
-        }
+        retain(level, packed, chunk);
         if (level.hasChunk(chunkX, chunkZ)) enqueue(level, packed, true);
     }
 
@@ -113,7 +120,13 @@ public final class ErdenCapitalStreamingBuilder {
         String activeState = active == null
                 ? "none"
                 : active.chunkX() + "," + active.chunkZ()
-                        + ":done=" + active.plan().done();
+                        + ":done=" + active.plan().done()
+                        + ":progress=" + active.plan().progress()
+                        + ":applied=" + active.plan().appliedWrites()
+                        + ":estimated=" + active.plan().estimatedWrites()
+                        + ":operations=" + active.plan().operationCount()
+                        + ":loaded=" + level.hasChunk(active.chunkX(), active.chunkZ())
+                        + ":retained=" + RETAINED_REQUESTS.contains(active.chunkPos());
         return chunkX + "," + chunkZ
                 + "{loaded=" + level.hasChunk(chunkX, chunkZ)
                 + ",built=" + isChunkBuilt(level, chunkX, chunkZ)
@@ -183,10 +196,17 @@ public final class ErdenCapitalStreamingBuilder {
                 return;
             }
             ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
+
+            // A background ChunkEvent.Load used to enter the queue without owning a ticket. If the
+            // player moved away after we selected that cell, an unfinished active plan could sit at
+            // the head forever and starve every explicitly retained request behind it. Retaining
+            // only the single active cell bounds the ticket cost while guaranteeing forward progress.
+            retain(level, packed, chunk);
+
             IncrementalWorldEditPlan plan = createChunkPlan(level, chunk);
             active = new ActiveChunk(packed, chunkX, chunkZ, plan);
             LivingKingdoms.LOGGER.debug(
-                    "Prepared streamed Erden capital chunk {},{} writes={} operations={}",
+                    "Prepared streamed Erden capital chunk {},{} writes={} operations={} retained_active=true",
                     chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount()
             );
             return;
@@ -283,6 +303,11 @@ public final class ErdenCapitalStreamingBuilder {
 
     private static int unpackZ(long packed) {
         return (int) packed;
+    }
+
+    private static void retain(ServerLevel level, long packed, ChunkPos chunk) {
+        if (!RETAINED_REQUESTS.add(packed)) return;
+        level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
     }
 
     private static void releaseRetained(ServerLevel level, long packed) {
