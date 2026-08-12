@@ -35,6 +35,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredInteriorSurvey;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanMicroInfillManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanLifeManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenUrbanPlacedTopologyCatalog;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanSourceTopologyCatalog;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
@@ -92,6 +93,7 @@ public final class LivingKingdoms {
 
     private void onServerStarting(ServerStartingEvent event) {
         ErdenUrbanSourceTopologyCatalog.bootstrap();
+        ErdenUrbanPlacedTopologyCatalog.bootstrap();
         OriginProfileManager.initialize(event.getServer());
         StarterRealmDiagnostics.runIfRequested(event.getServer());
     }
