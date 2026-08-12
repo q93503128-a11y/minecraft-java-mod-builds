@@ -4,6 +4,7 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
@@ -12,7 +13,9 @@ import net.minecraft.world.level.block.DoorBlock;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Reconciles each imported door's real vertical position with its terrain-following access path.
@@ -36,6 +39,7 @@ public final class ErdenEntranceThresholdManager {
     private static MinecraftServer activeServer;
     private static List<Entry> cachedEntries;
     private static boolean completionLogged;
+    private static final Set<Long> REPORTED_PREFLIGHT_STALLS = new HashSet<>();
 
     private ErdenEntranceThresholdManager() {
     }
@@ -60,7 +64,11 @@ public final class ErdenEntranceThresholdManager {
             int doorY = findLowestDoorY(level, entry.x, entry.z);
             if (doorY == Integer.MIN_VALUE) continue;
             Approach approach = approach(level, entry, doorY);
-            if (!preflight(level, entry, doorY, approach)) continue;
+            PreflightResult preflight = preflight(level, entry, doorY, approach);
+            if (!preflight.ok) {
+                reportPreflightStall(level, entry, doorY, approach, preflight);
+                continue;
+            }
             if (!normalize(level, entry, doorY, approach)) continue;
 
             data.markComplete(key, THRESHOLD_REVISION);
@@ -97,6 +105,7 @@ public final class ErdenEntranceThresholdManager {
     private static void reset(MinecraftServer server) {
         activeServer = server;
         completionLogged = false;
+        REPORTED_PREFLIGHT_STALLS.clear();
     }
 
     private static List<Entry> entries() {
@@ -179,40 +188,101 @@ public final class ErdenEntranceThresholdManager {
                 outward);
     }
 
-    /**
-     * Validates the whole doorway-normal run before the first write. We never erase a facade just
-     * to make a path pass: every cell from the real door through the short porch must already have
-     * player body clearance. Beyond that authored exterior run, the terrain path may be graded and
-     * cleared because it is deliberately outside the building envelope.
-     */
-    private static boolean preflight(
+    private static PreflightResult preflight(
             ServerLevel level,
             Entry entry,
             int doorY,
             Approach approach) {
-        if (!walkable(level, entry.x, doorY, entry.z)) return false;
+        if (!walkable(level, entry.x, doorY, entry.z)) {
+            return new PreflightResult(false, "door_not_walkable", 0,
+                    new Point(entry.x, entry.z), doorY - 1);
+        }
         int previousFloor = approach.doorFloor;
         for (int step = 1; step <= approach.steps; step++) {
             Point center = approach.points.get(step - 1);
             if (!level.hasChunk(center.x >> 4, center.z >> 4)
                     || !ErdenCapitalStreamingBuilder.isChunkBuilt(
                     level, center.x >> 4, center.z >> 4)) {
-                return false;
+                return new PreflightResult(false, "route_chunk_not_ready", step, center, previousFloor);
             }
             float progress = step / (float) approach.steps;
             int targetFloor = Math.round(
                     approach.doorFloor
                             + (approach.endFloor - approach.doorFloor) * progress);
-            if (Math.abs(targetFloor - previousFloor) > 1) return false;
+            if (Math.abs(targetFloor - previousFloor) > 1) {
+                return new PreflightResult(false, "grade_too_steep", step, center, targetFloor);
+            }
             if (step <= approach.porchSteps) {
                 BlockPos feet = new BlockPos(center.x, targetFloor + 1, center.z);
                 if (!bodyPassable(level, feet) || !bodyPassable(level, feet.above())) {
-                    return false;
+                    return new PreflightResult(false, "porch_body_blocked", step, center, targetFloor);
                 }
             }
             previousFloor = targetFloor;
         }
-        return Math.abs(previousFloor - approach.endFloor) <= 1;
+        if (Math.abs(previousFloor - approach.endFloor) > 1) {
+            return new PreflightResult(false, "grade_end_mismatch", approach.steps,
+                    approach.points.get(approach.steps - 1), previousFloor);
+        }
+        return new PreflightResult(true, "ok", 0, new Point(entry.x, entry.z), approach.doorFloor);
+    }
+
+    private static void reportPreflightStall(
+            ServerLevel level,
+            Entry entry,
+            int doorY,
+            Approach approach,
+            PreflightResult result) {
+        if (!diagnosticMode() || "route_chunk_not_ready".equals(result.reason)) return;
+        long entryKey = key(entry.x, entry.z);
+        if (!REPORTED_PREFLIGHT_STALLS.add(entryKey)) return;
+
+        BlockPos pointFeet = new BlockPos(result.point.x, result.targetFloor + 1, result.point.z);
+        BlockPos doorPos = new BlockPos(entry.x, doorY, entry.z);
+        var doorState = level.getBlockState(doorPos);
+        String facing = doorState.getBlock() instanceof DoorBlock && doorState.hasProperty(DoorBlock.FACING)
+                ? doorState.getValue(DoorBlock.FACING).getName()
+                : "unknown";
+        LivingKingdoms.LOGGER.warn(
+                "LK_ERDEN_THRESHOLD_PREFLIGHT_STALL kind={} role={} entrance={},{} road={},{} door_y={} door_floor={} designed_floor={} door_facing={} selected_outward={},{} reason={} step={} point={},{} target_floor={} feet_block={} head_block={} floor_block={} east={} west={} south={} north={}",
+                entry.kind, entry.role, entry.x, entry.z, entry.roadX, entry.roadZ,
+                doorY, approach.doorFloor, designedFloor(entry.x, entry.z), facing,
+                approach.outward.x, approach.outward.z, result.reason, result.step,
+                result.point.x, result.point.z, result.targetFloor,
+                blockId(level, pointFeet), blockId(level, pointFeet.above()),
+                blockId(level, pointFeet.below()),
+                probeDirection(level, entry, doorY, new Vector(1, 0)),
+                probeDirection(level, entry, doorY, new Vector(-1, 0)),
+                probeDirection(level, entry, doorY, new Vector(0, 1)),
+                probeDirection(level, entry, doorY, new Vector(0, -1)));
+    }
+
+    private static String probeDirection(
+            ServerLevel level,
+            Entry entry,
+            int doorY,
+            Vector direction) {
+        StringBuilder result = new StringBuilder();
+        for (int depth = 1; depth <= PORCH_STEPS; depth++) {
+            if (depth > 1) result.append('|');
+            int x = entry.x + direction.x * depth;
+            int z = entry.z + direction.z * depth;
+            if (!level.hasChunk(x >> 4, z >> 4)) {
+                result.append(depth).append(":unloaded");
+                continue;
+            }
+            BlockPos feet = new BlockPos(x, doorY, z);
+            result.append(depth).append(':')
+                    .append(blockId(level, feet)).append('/')
+                    .append(blockId(level, feet.above())).append('/')
+                    .append(bodyPassable(level, feet) && bodyPassable(level, feet.above()) ? "clear" : "blocked");
+        }
+        result.append("@road=").append(distanceToRoad(entry, direction));
+        return result.toString();
+    }
+
+    private static String blockId(ServerLevel level, BlockPos pos) {
+        return BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock()).toString();
     }
 
     private static boolean normalize(
@@ -412,5 +482,13 @@ public final class ErdenEntranceThresholdManager {
             int doorFloor,
             int endFloor,
             Vector outward) {
+    }
+
+    private record PreflightResult(
+            boolean ok,
+            String reason,
+            int step,
+            Point point,
+            int targetFloor) {
     }
 }
