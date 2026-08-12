@@ -152,7 +152,8 @@ public final class ErdenUrbanSourceAirRoutePlanner {
                     int z = current.z() + direction[1];
                     if (y < minimumY || y > maximumY) continue;
                     if (!routeBodyClear(snapshot, blocks, x, y, z)) continue;
-                    if (!insideProtectedShell(snapshot, blocks, x, y, z)) continue;
+                    if (!routeColumnProtected(
+                            snapshot, blocks, ground, targetCells, x, y, z)) continue;
                     Node next = new Node(x, y, z);
                     long nextKey = nodeKey(x, y, z);
                     if (!visited.add(nextKey)) continue;
@@ -252,6 +253,24 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             if (block != null && !block.state().isAir()) return false;
         }
         return true;
+    }
+
+    /**
+     * Keeps the zero-cut search inside source-proven interior columns without requiring four walls
+     * at every intermediate stair height. A vaulted stairwell can be open at an intermediate Y even
+     * though its X/Z column is part of the entrance-reachable ground room or the verified upper room.
+     * Requiring a roof above every candidate still rejects exposed exterior air.
+     */
+    private static boolean routeColumnProtected(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
+            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
+            Set<Long> groundCells,
+            Set<Long> targetCells,
+            int x, int feetY, int z) {
+        if (!roofAbove(snapshot, blocks, x, feetY + MIN_HEADROOM, z)) return false;
+        long column = cellKey(x, z);
+        if (groundCells.contains(column) || targetCells.contains(column)) return true;
+        return insideProtectedShell(snapshot, blocks, x, feetY, z);
     }
 
     private static boolean insideProtectedShell(
