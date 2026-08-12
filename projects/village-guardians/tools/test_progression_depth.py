@@ -20,12 +20,12 @@ def main() -> None:
     controller = read("VillageUiController.java")
     common_ui = read("VillageSkillTreeScreen.java")
     role_ui = read("VillageRoleProgressScreen.java")
-    shop_ui = read("VillageShopScreen.java")
+    shop_ui = read("VillageShopCatalogScreen.java")
 
-    assert common.count('("power_') == 10
-    assert common.count('("guard_') == 10
-    assert common.count('("support_') == 10
-    assert common.count('("ranged_') == 10
+    assert common.count('(\"power_') == 10
+    assert common.count('(\"guard_') == 10
+    assert common.count('(\"support_') == 10
+    assert common.count('(\"ranged_') == 10
     assert "Math.max(0, level - 1)" in common
     assert common.count('(\"mobility_') == 10
     assert "pointCost()" in common
@@ -56,16 +56,22 @@ def main() -> None:
     assert "Bubble" in common_ui
     assert "TreeBubble" in role_ui and "SkillBubble" in role_ui
     assert "renderTreeFooter" not in role_ui and "renderSkillFooter" not in role_ui
-    assert "ACTION_HEIGHT = 20" in shop_ui
-    assert "contentWidth < 330" in shop_ui
+
+    # Current production shop is the categorized detail-first catalog, not the retired parchment list.
+    for category in ('ALL("전체"', 'EQUIPMENT("장비"', 'ARMOR("방어구"',
+                     'CONSUMABLE("소모품"', 'SALE("판매"'):
+        assert category in shop_ui
+    assert "VillageUiSafeArea.screen" in shop_ui
+    assert "VillageConfirmScreen" in shop_ui
     assert "ChatFormatting.stripFormatting" in shop_ui
-    assert "§l" not in shop_ui and "§6" not in shop_ui
+    assert 'action.equals("buy_arrows")' in shop_ui and 'action.equals("buy_food")' in shop_ui
+    assert 'action.equals("open_item_sell")' in shop_ui and 'action.equals("sell_loot")' in shop_ui
 
     print("[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs")
     print("[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration")
     print("[PASS] Emergency barrier, momentum and party recovery are wired into combat")
     print("[PASS] Defense research expands from 9 to 15 upgrades")
-    print("[PASS] Skill trees fit overview spacing and the shop uses compact safe actions")
+    print("[PASS] Skill trees fit overview spacing and the current categorized shop uses safe detail-first actions")
 
 
 if __name__ == "__main__":
