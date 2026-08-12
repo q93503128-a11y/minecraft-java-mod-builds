@@ -61,10 +61,8 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
             if (processed >= PROCESS_BUDGET) break;
             long key = key(entrance.x(), entrance.z());
             if (PROFILES.containsKey(key)) continue;
-
-            // On an old save the fixed converter has already erased part of the source topology.
-            // Do not pretend that altered geometry is an authored baseline.
             if (converted.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;
+            if (!level.hasChunk(entrance.x() >> 4, entrance.z() >> 4)) continue;
             Profile profile = survey(level, entrance);
             if (profile == null) continue;
             PROFILES.put(key, profile);
@@ -174,9 +172,7 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
 
         int verticalSpan = maxFeetY - minFeetY;
         boolean groundCandidate = reachable >= 18 && maxDepth >= 4 && authoredBlocks >= 20;
-        boolean multilevelCandidate = groundCandidate
-                && verticalSpan >= 3
-                && stairs >= 2;
+        boolean multilevelCandidate = groundCandidate && verticalSpan >= 3 && stairs >= 2;
         return new Profile(
                 entrance.role(), reachable, verticalSpan, maxDepth,
                 stairs, doors, fixtures, authoredBlocks,
@@ -249,6 +245,7 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
     }
 
     private static int findLowestDoorY(ServerLevel level, int x, int z) {
+        if (!level.hasChunk(x >> 4, z >> 4)) return Integer.MIN_VALUE;
         int designed = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z));
         int minimum = Math.max(level.getMinY(), designed - 8);
         int maximum = Math.min(level.getMaxY() - 1, designed + 64);
@@ -265,6 +262,7 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
 
     private static int findWalkableFeetY(
             ServerLevel level, int x, int z, int preferredFeetY) {
+        if (!level.hasChunk(x >> 4, z >> 4)) return Integer.MIN_VALUE;
         int[] offsets = {0, 1, -1};
         for (int offset : offsets) {
             int feetY = preferredFeetY + offset;
@@ -275,6 +273,7 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
 
     private static boolean walkable(ServerLevel level, int x, int feetY, int z) {
         if (feetY <= level.getMinY() || feetY + 1 >= level.getMaxY()) return false;
+        if (!level.hasChunk(x >> 4, z >> 4)) return false;
         BlockPos feet = new BlockPos(x, feetY, z);
         BlockPos head = feet.above();
         BlockPos floor = feet.below();
@@ -287,6 +286,7 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
     }
 
     private static boolean bodyPassable(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) return false;
         BlockState state = level.getBlockState(pos);
         return state.isAir()
                 || state.getBlock() instanceof DoorBlock
@@ -334,7 +334,7 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
                 || id.equals("minecraft:lava")) {
             return false;
         }
-        if (id.endsWith("_leaves") || id.endsWith("_log") || id.endsWith("_wood")
+        if (id.endsWith("_leaves")
                 || id.contains("grass") || id.contains("flower") || id.contains("fern")
                 || id.contains("sapling") || id.contains("vine")) {
             return false;
