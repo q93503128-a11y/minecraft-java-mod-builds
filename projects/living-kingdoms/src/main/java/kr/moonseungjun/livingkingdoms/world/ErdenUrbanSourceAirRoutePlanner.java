@@ -152,8 +152,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
                     int z = current.z() + direction[1];
                     if (y < minimumY || y > maximumY) continue;
                     if (!routeBodyClear(snapshot, blocks, x, y, z)) continue;
-                    if (!routeColumnProtected(
-                            snapshot, blocks, ground, targetCells, x, y, z)) continue;
+                    if (!routeColumnCovered(snapshot, blocks, x, y, z)) continue;
                     Node next = new Node(x, y, z);
                     long nextKey = nodeKey(x, y, z);
                     if (!visited.add(nextKey)) continue;
@@ -256,35 +255,17 @@ public final class ErdenUrbanSourceAirRoutePlanner {
     }
 
     /**
-     * Keeps the zero-cut search inside source-proven interior columns without requiring four walls
-     * at every intermediate stair height. A vaulted stairwell can be open at an intermediate Y even
-     * though its X/Z column is part of the entrance-reachable ground room or the verified upper room.
-     * Requiring a roof above every candidate still rejects exposed exterior air.
+     * A new stair may pass through authored source air that is not a four-wall room at every
+     * intermediate height (for example an open stair hall, balcony edge or vaulted transition),
+     * but it must stay beneath the immutable source roof. Together with the fragment bounds,
+     * entrance-facing interior half-plane and source-air body checks this keeps the route attached
+     * to the imported building while allowing a genuine zero-cut connection to an upper room.
      */
-    private static boolean routeColumnProtected(
-            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
-            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
-            Set<Long> groundCells,
-            Set<Long> targetCells,
-            int x, int feetY, int z) {
-        if (!roofAbove(snapshot, blocks, x, feetY + MIN_HEADROOM, z)) return false;
-        long column = cellKey(x, z);
-        if (groundCells.contains(column) || targetCells.contains(column)) return true;
-        return insideProtectedShell(snapshot, blocks, x, feetY, z);
-    }
-
-    private static boolean insideProtectedShell(
+    private static boolean routeColumnCovered(
             ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
             Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
             int x, int feetY, int z) {
-        if (!roofAbove(snapshot, blocks, x, feetY + MIN_HEADROOM, z)) return false;
-        int boundedDirections = 0;
-        for (int[] direction : DIRECTIONS) {
-            if (barrierOnRay(snapshot, blocks, x, feetY, z, direction[0], direction[1])) {
-                boundedDirections++;
-            }
-        }
-        return boundedDirections == DIRECTIONS.length;
+        return roofAbove(snapshot, blocks, x, feetY + MIN_HEADROOM, z);
     }
 
     private static boolean roofAbove(
@@ -294,22 +275,6 @@ public final class ErdenUrbanSourceAirRoutePlanner {
         for (int y = startY; y < snapshot.height(); y++) {
             ExternalUrbanFabricBuilder.UrbanSourceBlock block = blocks.get(blockKey(x, y, z));
             if (structuralBarrier(block)) return true;
-        }
-        return false;
-    }
-
-    private static boolean barrierOnRay(
-            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
-            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
-            int x, int feetY, int z, int stepX, int stepZ) {
-        int limit = Math.max(snapshot.width(), snapshot.length());
-        for (int distance = 1; distance <= limit; distance++) {
-            int px = x + stepX * distance;
-            int pz = z + stepZ * distance;
-            if (px < 0 || px >= snapshot.width() || pz < 0 || pz >= snapshot.length()) return false;
-            ExternalUrbanFabricBuilder.UrbanSourceBlock feet = blocks.get(blockKey(px, feetY, pz));
-            ExternalUrbanFabricBuilder.UrbanSourceBlock head = blocks.get(blockKey(px, feetY + 1, pz));
-            if (structuralBarrier(feet) && structuralBarrier(head)) return true;
         }
         return false;
     }
