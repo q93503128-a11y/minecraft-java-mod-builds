@@ -73,6 +73,8 @@ public final class VillageWorldSystem {
             } else {
                 removeLooseDebris(level, center);
             }
+            VillageSiegeSegmentSystem.restoreAllVisuals(level);
+            VillagePlacedTurretSystem.initializeServer(server);
             purgeUnauthorizedVillageMobs(server);
             player.sendSystemMessage(Component.literal(
                     "§a[마을 준비 완료] §f건물 지붕이 복구되고 정면 문양과 방어탑이 적용됐습니다."));
@@ -86,10 +88,16 @@ public final class VillageWorldSystem {
         if (center == null || generationInProgress) return;
         generationInProgress = true;
         try {
-            buildAll(server.overworld(), center);
+            ServerLevel level = server.overworld();
+            buildAll(level, center);
             for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
-                if (!VillageProgressionSystem.isOperational(building)) destroyStructure(server.overworld(), building);
+                if (!VillageProgressionSystem.isOperational(building)) destroyStructure(level, building);
             }
+            // A retry/new-game rebuild first restores the base fortress, then projects the authoritative
+            // phase-2 segment damage and placed turret state back into the world. This prevents a failed
+            // night's visual/turret damage from leaking into a same-day retry.
+            VillageSiegeSegmentSystem.restoreAllVisuals(level);
+            VillagePlacedTurretSystem.initializeServer(server);
             purgeUnauthorizedVillageMobs(server);
         } finally {
             generationInProgress = false;
