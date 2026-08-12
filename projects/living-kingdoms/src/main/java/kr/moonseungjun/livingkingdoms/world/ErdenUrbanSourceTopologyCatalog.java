@@ -185,7 +185,7 @@ public final class ErdenUrbanSourceTopologyCatalog {
     }
 
     private static boolean supportsBody(String id) {
-        if (isAir(id) || isFluid(id) || decorativePlant(id)) return false;
+        if (isAir(id) || isFluid(id) || isDoor(id) || decorativePlant(id)) return false;
         if (id.contains("torch") || id.contains("button") || id.contains("pressure_plate")) return false;
         return true;
     }
