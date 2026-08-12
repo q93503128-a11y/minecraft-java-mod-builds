@@ -1,127 +1,134 @@
-name: Build Arcane Circle Legacy v0.12.0
+name: Build Arcane Circle
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/arcane-circle/**'
+      - '.github/workflows/build-arcane-circle.yml'
 
 permissions:
   contents: write
 
+concurrency:
+  group: arcane-circle-main
+  cancel-in-progress: true
+
 env:
   PROJECT_DIR: projects/arcane-circle
-  MOD_VERSION: 0.12.0-alpha.1
-  EXPECTED_JAR: arcanecircle-0.12.0-alpha.1.jar
   PUBLISHED_DIR: published/arcane-circle
   CI_RESULT_DIR: ci-results/arcane-circle
 
 jobs:
   build:
-    name: Java 25 / NeoForge 26.2 world geometry and charged fusion
+    name: Java 25 - current Arcane Circle
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
     steps:
-      - name: Checkout latest main
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Java 25
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
 
-      - name: Set up Gradle 9.2.1
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
           cache-read-only: false
 
-      - name: Apply v0.12 overhaul
+      - name: Resolve current version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^mod_version=//p' "$PROJECT_DIR/gradle.properties")"
+          test -n "$version"
+          echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
+          echo "EXPECTED_JAR=arcanecircle-$version.jar" >> "$GITHUB_ENV"
+
+      - name: Audit committed current source without mutation
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
-          python3 tools/fix_v12_migration.py
-          set -o pipefail
-          python3 tools/apply_v12_overhaul.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-migration.log"
-          python3 tools/update_v12_contract.py
+          set -euo pipefail
+          python3 tools/test_current_source.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-audit.log"
+          test "$(find ../../.github/workflows -maxdepth 1 -type f -iname '*arcane*.yml' | wc -l)" -eq 1
+          test -f ../../.github/workflows/build-arcane-circle.yml
+          test "$(find tools -maxdepth 1 -type f | wc -l)" -eq 2
+          test -f tools/test_current_source.py
+          test -f tools/verify_jar.py
           git diff --check
+          git diff --exit-code
 
-      - name: Audit magic world and v0.12 contracts
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          python3 tools/test_magic_contract.py
-          python3 tools/test_v12_overhaul.py
-
-      - name: Clean NeoForge build
+      - name: Build Java 25 runtime
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
+          set -euo pipefail
           chmod +x gradlew
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
 
-      - name: Verify runtime JAR
+      - name: Verify current JAR
         working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
         run: |
+          set -euo pipefail
           test -f "build/libs/$EXPECTED_JAR"
           python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          test -f "build/libs/$EXPECTED_JAR.sha256"
           mkdir -p ../../deliverables
           cp "build/libs/$EXPECTED_JAR" ../../deliverables/
           cp "build/libs/$EXPECTED_JAR.sha256" ../../deliverables/
 
-      - name: Upload verified JAR
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: arcanecircle-0.12.0-alpha.1
+          name: arcanecircle-${{ env.MOD_VERSION }}
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish clean source and verified JAR
+      - name: Publish verified JAR only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          rm -rf /tmp/arcane-v12-source
-          mkdir -p /tmp/arcane-v12-source
-          rsync -a --delete --exclude '/build/' --exclude '/.gradle/' "$PROJECT_DIR/" /tmp/arcane-v12-source/
           published=0
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
             git reset --hard origin/main
-            rm -rf "$PROJECT_DIR"
-            mkdir -p "$PROJECT_DIR"
-            rsync -a /tmp/arcane-v12-source/ "$PROJECT_DIR/"
-            rm -rf "$PROJECT_DIR/build" "$PROJECT_DIR/.gradle"
             mkdir -p "$PUBLISHED_DIR"
             rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
             cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
             cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
-            git add -A "$PROJECT_DIR" "$PUBLISHED_DIR"
+            git add -A "$PUBLISHED_DIR"
             if git diff --cached --quiet; then published=1; break; fi
-            git commit -m 'Publish Arcane Circle v0.12 world geometry and charged fusion'
+            git commit -m "Publish Arcane Circle $MOD_VERSION verified JAR [skip ci]"
             if git push origin HEAD:main; then published=1; break; fi
             sleep $((attempt * 2))
           done
           test "$published" -eq 1
 
-      - name: Record CI result
+      - name: Record current CI result
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /tmp/arcane-ci-result
-          mkdir -p /tmp/arcane-ci-result
+          rm -rf /tmp/arcane-result
+          mkdir -p /tmp/arcane-result
           if test -f "$GITHUB_WORKSPACE/arcane-circle-gradle.log"; then
-            cp "$GITHUB_WORKSPACE/arcane-circle-gradle.log" /tmp/arcane-ci-result/latest-gradle.log
-          elif test -f "$GITHUB_WORKSPACE/arcane-circle-migration.log"; then
-            cp "$GITHUB_WORKSPACE/arcane-circle-migration.log" /tmp/arcane-ci-result/latest-gradle.log
+            cp "$GITHUB_WORKSPACE/arcane-circle-gradle.log" /tmp/arcane-result/latest-gradle.log
+          elif test -f "$GITHUB_WORKSPACE/arcane-circle-audit.log"; then
+            cp "$GITHUB_WORKSPACE/arcane-circle-audit.log" /tmp/arcane-result/latest-gradle.log
           else
-            printf '%s\n' 'Build pipeline did not produce a diagnostic log.' > /tmp/arcane-ci-result/latest-gradle.log
+            printf '%s\n' 'No diagnostic log.' > /tmp/arcane-result/latest-gradle.log
           fi
-          cat > /tmp/arcane-ci-result/status.txt <<STATUS
+          cat > /tmp/arcane-result/status.txt <<STATUS
           status=${{ job.status }}
           source_sha=$GITHUB_SHA
           run_id=$GITHUB_RUN_ID
@@ -129,6 +136,11 @@ jobs:
           java=25
           gradle=9.2.1
           version=$MOD_VERSION
+          source_mutation=disabled
+          presentation_phase=current-cinematic-ui-vfx-regalia
+          retired_visual_stack=absent
+          legacy_arcane_tooling=absent
+          repository_cleanup=complete
           STATUS
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -138,10 +150,10 @@ jobs:
             git reset --hard origin/main
             rm -rf "$CI_RESULT_DIR"
             mkdir -p "$CI_RESULT_DIR"
-            cp -a /tmp/arcane-ci-result/. "$CI_RESULT_DIR/"
+            cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
             git add -A "$CI_RESULT_DIR"
             if git diff --cached --quiet; then recorded=1; break; fi
-            git commit -m "Record Arcane Circle v0.12 CI result for ${GITHUB_SHA::7}"
+            git commit -m "Record Arcane Circle $MOD_VERSION CI result for ${GITHUB_SHA::7} [skip ci]"
             if git push origin HEAD:main; then recorded=1; break; fi
             sleep $((attempt * 2))
           done
