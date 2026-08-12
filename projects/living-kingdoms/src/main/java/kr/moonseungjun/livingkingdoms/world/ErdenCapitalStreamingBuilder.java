@@ -152,13 +152,21 @@ public final class ErdenCapitalStreamingBuilder {
             }
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
-            if (level.hasChunk(chunkX, chunkZ)) {
-                // ChunkEvent.Load adds ordinary work at the tail. Explicitly retained requests are
-                // latency-sensitive (player-visible construction and diagnostics), so promote an
-                // already-queued pending cell instead of leaving it behind the whole background
-                // stream. enqueue(..., true) safely leaves the currently active cell untouched.
-                enqueue(level, packed, true);
+            if (!level.hasChunk(chunkX, chunkZ)) {
+                // PORTAL tickets are keyless in this runtime. Another subsystem releasing the same
+                // ticket type can therefore drop the physical lease while this builder still owns
+                // the logical retained request. Reassert only retained, unfinished cells; adding an
+                // already-present ticket is idempotent and keeps construction ownership bounded.
+                level.getChunkSource().addTicketAndLoadWithRadius(
+                        TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
+                continue;
             }
+
+            // ChunkEvent.Load adds ordinary work at the tail. Explicitly retained requests are
+            // latency-sensitive (player-visible construction and diagnostics), so promote an
+            // already-queued pending cell instead of leaving it behind the whole background
+            // stream. enqueue(..., true) safely leaves the currently active cell untouched.
+            enqueue(level, packed, true);
         }
     }
 
@@ -306,7 +314,9 @@ public final class ErdenCapitalStreamingBuilder {
     }
 
     private static void retain(ServerLevel level, long packed, ChunkPos chunk) {
-        if (!RETAINED_REQUESTS.add(packed)) return;
+        RETAINED_REQUESTS.add(packed);
+        // Reassert the physical lease even when the logical set already contains this chunk. A
+        // keyless PORTAL remove from a different owner may have erased the shared physical ticket.
         level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
     }
 
