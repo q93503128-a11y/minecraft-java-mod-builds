@@ -39,7 +39,7 @@ def safe_rect(width: int, height: int) -> tuple[int, int, int, int]:
 
 
 def town_geometry(width: int, height: int) -> tuple[int, int, int]:
-    safe_left, safe_top, safe_right, safe_bottom = safe_rect(width, height)
+    safe_left, _, safe_right, _ = safe_rect(width, height)
     safe_width = safe_right - safe_left
     panel_width = min(820, max(300, safe_width - 12))
     panel_width = min(panel_width, safe_width)
@@ -83,6 +83,25 @@ def action_geometry(width: int, height: int) -> tuple[int, int, bool]:
     return panel_width, detail_width, False
 
 
+def shop_geometry(width: int, height: int) -> tuple[int, int, int, bool]:
+    safe_left, safe_top, safe_right, safe_bottom = safe_rect(width, height)
+    safe_width = safe_right - safe_left
+    top = safe_top + 72
+    bottom = safe_bottom - 18
+    content_height = max(1, bottom - top)
+    inner_width = max(1, safe_width - 14)
+    gap = 8
+    stacked = safe_width < 390 and content_height >= 190
+    if stacked:
+        list_height = clamp(content_height * 42 // 100, 78, max(78, content_height - 104))
+        detail_height = content_height - list_height - gap
+        return inner_width, inner_width, detail_height, True
+    list_width = clamp(inner_width * 38 // 100, 105, 360)
+    list_width = min(list_width, max(86, inner_width - gap - 120))
+    detail_width = inner_width - gap - list_width
+    return inner_width, list_width, detail_width, False
+
+
 def main() -> None:
     # Retired classes may remain temporarily as inert migration history, but production routing must never open them.
     for retired in RETIRED_CLASSES:
@@ -112,8 +131,17 @@ def main() -> None:
         else:
             assert action_detail >= 112, (width, height, action_detail)
 
+        _, shop_list, shop_detail, shop_stacked = shop_geometry(width, height)
+        if shop_stacked:
+            assert shop_detail >= 104, (width, height, shop_detail)
+        else:
+            assert shop_list >= 86, (width, height, shop_list)
+            assert shop_detail >= 120, (width, height, shop_detail)
+
     assert "panelWidth < 390 && panelHeight >= 250" in ACTION
     assert "pane.width() - 28" in ACTION
+    assert "safe.width() < 390 && contentHeight >= 190" in SHOP
+    assert "actionTop" in SHOP and "actionButton(pane)" in SHOP
     for tab in ("ALL(\"전체\"", "EQUIPMENT(\"장비\"", "ARMOR(\"방어구\"",
                 "CONSUMABLE(\"소모품\"", "SALE(\"판매\""):
         assert tab in SHOP
@@ -131,6 +159,7 @@ def main() -> None:
     print("[PASS] Retired screens cannot re-enter production client routing")
     print("[PASS] Town-hall function/repair/upgrade buttons stay inside narrow detail panes")
     print("[PASS] Short narrow action screens choose side-by-side layout instead of crushed vertical panes")
+    print("[PASS] Shop detail/list panes stay valid on short GUI heights and narrow widths")
     print("[PASS] Result modal and active shop/command surfaces use current safe-area UI language")
     print("[PASS] Growth trees retain anchored popovers without legacy footer panels")
 
