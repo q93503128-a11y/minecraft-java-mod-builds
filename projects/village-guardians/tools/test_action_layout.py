@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the active compact UI layouts and reject retired screen regressions."""
+"""Verify the active compact UI layouts and reject retired runtime screen regressions."""
 
 from pathlib import Path
 
@@ -10,19 +10,20 @@ ACTION = (JAVA / "VillageActionDetailScreen.java").read_text(encoding="utf-8")
 SHOP = (JAVA / "VillageShopCatalogScreen.java").read_text(encoding="utf-8")
 COMMAND = (JAVA / "VillageCommandCenterScreen.java").read_text(encoding="utf-8")
 RESULT = (JAVA / "VillageResultScreen.java").read_text(encoding="utf-8")
+CLIENT = (JAVA / "VillageClientUi.java").read_text(encoding="utf-8")
 COMMON_TREE = (JAVA / "VillageSkillTreeScreen.java").read_text(encoding="utf-8")
 ROLE_TREE = (JAVA / "VillageRoleProgressScreen.java").read_text(encoding="utf-8")
 
-RETIRED = (
-    "VillageTownHallScreen.java",
-    "VillageShopScreen.java",
-    "VillageQuickChatScreen.java",
-    "VillageFusionScreen.java",
-    "VillageRelicChoiceScreen.java",
-    "VillageWaveIntelScreen.java",
-    "VillageStatusScreen.java",
-    "VillageUiScreen.java",
-    "VillageFacilityScreen.java",
+RETIRED_CLASSES = (
+    "VillageTownHallScreen",
+    "VillageShopScreen",
+    "VillageQuickChatScreen",
+    "VillageFusionScreen",
+    "VillageRelicChoiceScreen",
+    "VillageWaveIntelScreen",
+    "VillageStatusScreen",
+    "VillageUiScreen",
+    "VillageFacilityScreen",
 )
 
 
@@ -83,8 +84,11 @@ def action_geometry(width: int, height: int) -> tuple[int, int, bool]:
 
 
 def main() -> None:
-    for retired in RETIRED:
-        assert not (JAVA / retired).exists(), f"retired UI source returned: {retired}"
+    # Retired classes may remain temporarily as inert migration history, but production routing must never open them.
+    for retired in RETIRED_CLASSES:
+        assert retired not in CLIENT, f"retired UI routed again: {retired}"
+    assert not (JAVA / "VillageTownHallScreen.java").exists()
+    assert not (JAVA / "VillageShopScreen.java").exists()
 
     assert 'FACILITIES("시설 관리")' in TOWN and 'ROLES("직업 배치")' in TOWN
     assert '"repair:" + f.id()' in TOWN and '"upgrade:" + f.id()' in TOWN
@@ -108,6 +112,8 @@ def main() -> None:
         else:
             assert action_detail >= 112, (width, height, action_detail)
 
+    assert "panelWidth < 390 && panelHeight >= 250" in ACTION
+    assert "pane.width() - 28" in ACTION
     for tab in ("ALL(\"전체\"", "EQUIPMENT(\"장비\"", "ARMOR(\"방어구\"",
                 "CONSUMABLE(\"소모품\"", "SALE(\"판매\""):
         assert tab in SHOP
@@ -122,7 +128,7 @@ def main() -> None:
     assert "renderSkillFooter" not in ROLE_TREE
     assert "TreeBubble" in ROLE_TREE and "SkillBubble" in ROLE_TREE and "SkillGrid" in ROLE_TREE
 
-    print("[PASS] Retired parchment/generic screens are absent from production sources")
+    print("[PASS] Retired screens cannot re-enter production client routing")
     print("[PASS] Town-hall function/repair/upgrade buttons stay inside narrow detail panes")
     print("[PASS] Short narrow action screens choose side-by-side layout instead of crushed vertical panes")
     print("[PASS] Result modal and active shop/command surfaces use current safe-area UI language")
