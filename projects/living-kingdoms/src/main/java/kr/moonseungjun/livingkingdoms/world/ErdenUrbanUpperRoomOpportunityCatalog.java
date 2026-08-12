@@ -26,13 +26,13 @@ import java.util.Set;
  * blindly.</p>
  */
 public final class ErdenUrbanUpperRoomOpportunityCatalog {
-    public static final int CATALOG_REVISION = 2;
+    public static final int CATALOG_REVISION = 3;
 
     private static final int EDGE_MARGIN = 2;
     private static final int MIN_UPPER_RISE = 4;
     private static final int MAX_UPPER_RISE = 16;
     private static final int MIN_REGION_CELLS = 12;
-    private static final int MIN_USABLE_CELLS = 24;
+    private static final int MIN_USABLE_CELLS = 12;
     private static final int MAX_WALL_RAY = 18;
     private static final int MAX_ROOF_RAY = 20;
 
