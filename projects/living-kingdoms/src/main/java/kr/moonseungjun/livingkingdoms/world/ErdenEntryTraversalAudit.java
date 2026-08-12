@@ -35,6 +35,7 @@ public final class ErdenEntryTraversalAudit {
     private static final int BOUNDS_MARGIN = 4;
     private static final int INTERIOR_DEPTH = 6;
     private static final int MAX_ENTRY_AGE_TICKS = 2_400;
+    private static final int CHUNK_WAIT_REPORT_INTERVAL = 600;
     private static final int MAX_VERIFY_RETRIES = 120;
     private static final int MAX_BFS_NODES = 35_000;
 
@@ -223,10 +224,24 @@ public final class ErdenEntryTraversalAudit {
             if (active.ageTicks > MAX_ENTRY_AGE_TICKS) {
                 fail(level, active.entry, "chunk_or_interior_timeout",
                         "age_ticks=" + active.ageTicks + " chunks=" + active.chunks.size()
-                                + " last_failure=" + active.lastFailure);
+                                + " last_failure=" + active.lastFailure
+                                + " chunk_states=" + chunkStateSummary(level, active.chunks));
                 return;
             }
-            if (!chunksReady(level, active.chunks)) continue;
+
+            String chunkWait = chunkWaitSummary(level, active.chunks);
+            if (chunkWait != null) {
+                active.lastFailure = "chunks_not_ready";
+                if (active.ageTicks % CHUNK_WAIT_REPORT_INTERVAL == 0) {
+                    LivingKingdoms.LOGGER.warn(
+                            "LK_ERDEN_ENTRY_CHUNK_WAIT kind={} role={} entrance={},{} road={},{} age_ticks={} states={}",
+                            active.entry.kind.id, active.entry.role,
+                            active.entry.x, active.entry.z,
+                            active.entry.roadX, active.entry.roadZ,
+                            active.ageTicks, chunkWait);
+                }
+                continue;
+            }
             if (!ErdenEntranceThresholdManager.isComplete(
                     level, active.entry.x, active.entry.z)) {
                 active.lastFailure = "threshold_not_normalized";
@@ -263,16 +278,29 @@ public final class ErdenEntryTraversalAudit {
         }
     }
 
-    private static boolean chunksReady(ServerLevel level, Set<Long> chunks) {
+    private static String chunkWaitSummary(ServerLevel level, Set<Long> chunks) {
+        boolean allReady = true;
+        StringBuilder summary = new StringBuilder();
         for (long packed : chunks) {
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
-            if (!level.hasChunk(chunkX, chunkZ)
-                    || !ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ)) {
-                return false;
-            }
+            boolean loaded = level.hasChunk(chunkX, chunkZ);
+            boolean built = ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ);
+            if (!loaded || !built) allReady = false;
+            if (summary.length() > 0) summary.append(';');
+            summary.append(ErdenCapitalStreamingBuilder.diagnosticChunkState(level, chunkX, chunkZ));
         }
-        return true;
+        return allReady ? null : summary.toString();
+    }
+
+    private static String chunkStateSummary(ServerLevel level, Set<Long> chunks) {
+        StringBuilder summary = new StringBuilder();
+        for (long packed : chunks) {
+            if (summary.length() > 0) summary.append(';');
+            summary.append(ErdenCapitalStreamingBuilder.diagnosticChunkState(
+                    level, unpackX(packed), unpackZ(packed)));
+        }
+        return summary.toString();
     }
 
     private static boolean urbanInteriorReady(ServerLevel level, Entry entry) {
