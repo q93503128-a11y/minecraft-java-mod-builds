@@ -17,6 +17,13 @@ required = {
     "kr/moonseungjun/arcanecircle/network/WorldMagicPayload.class",
     "kr/moonseungjun/arcanecircle/magic/WorldMagicService.class",
     "kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class",
+    "kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class",
+    "kr/moonseungjun/arcanecircle/client/GrimoireScreen.class",
+    "kr/moonseungjun/arcanecircle/client/ArcaneHud.class",
+    "kr/moonseungjun/arcanecircle/client/ArcaneRegaliaRenderer.class",
+    "kr/moonseungjun/arcanecircle/client/ArcaneCastingPerformance.class",
+    "kr/moonseungjun/arcanecircle/client/ArcaneGearRenderer.class",
+    "kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class",
     "kr/moonseungjun/arcanecircle/magic/SpellCatalog.class",
     "kr/moonseungjun/arcanecircle/magic/SpellSigilService.class",
     "kr/moonseungjun/arcanecircle/magic/HighCircleSpellEffects.class",
@@ -50,7 +57,16 @@ with zipfile.ZipFile(jar) as archive:
     ]
     if forbidden:
         raise SystemExit(f"forbidden survival/development entries: {forbidden[:8]}")
+    retired = ['CodexVisualLanguage', 'ArcaneSigilDetailGrammar', 'LowCircleVisualIdentity', 'MidCircleVisualIdentity', 'FifthCircleVisualIdentity', 'SixthCircleVisualIdentity', 'ArchmageVisualIdentity', 'RangeReactivePresentation', 'SpellVisualSignature', 'CastingSilhouetteRenderer', 'RobeRegaliaRenderer']
+    leaked = [n for n in names if any(n.endswith('/'+c+'.class') or ('/'+c+'$') in n for c in retired)]
+    if leaked:
+        raise SystemExit(f"retired presentation bytecode leaked: {sorted(leaked)}")
     index = json.loads(archive.read("data/arcanecircle/spell_catalog/index.json"))
+    version = index.get("version")
+    if not isinstance(version, str) or not version:
+        raise SystemExit("catalog version missing")
+    if jar.name != f"arcanecircle-{version}.jar":
+        raise SystemExit(f"JAR/version mismatch: {jar.name} vs {version}")
     if index.get("implemented_circles") != list(range(1, 10)) or index.get("direct_spells") != 90:
         raise SystemExit("JAR catalogue is not the full 1-9 circle world")
     notice = archive.read("META-INF/THIRD_PARTY_NOTICES.md").decode("utf-8")

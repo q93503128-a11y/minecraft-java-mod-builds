@@ -16,9 +16,9 @@ def text(path): return path.read_text(encoding='utf-8')
 gradle=text(root/'gradle.properties')
 main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.26' in gradle
-assert 'VERSION = "0.12.1-alpha.26"' in main
-assert '"version": "0.12.1-alpha.26"' in index
+assert 'mod_version=0.12.1-alpha.27' in gradle
+assert 'VERSION = "0.12.1-alpha.27"' in main
+assert '"version": "0.12.1-alpha.27"' in index
 
 tracker=text(client/'WorldMagicTracker.java')
 assert 'SpellCinematicDirector.charge' in tracker and 'SpellCinematicDirector.release' in tracker
@@ -65,7 +65,31 @@ assert 'READY_HOLD_TIMEOUT_TICKS' in casting_service and 'chargeTimeoutTicks' in
 mage_gear=text(magic/'MageGearService.java')
 assert 'syncAtomicRobe' in mage_gear
 
-print('Arcane Circle alpha.26 ground-up visual rewrite audit: PASS')
+print('Arcane Circle current-source audit: PASS')
 print('retired_visual_stack=absent')
 print('gameplay_content=preserved')
 print('source_mutation=disabled')
+
+
+# Active-tree hygiene. Git history is the archive; current source contains no version-migration machinery.
+repo=root.parents[1]
+retired_tokens=[n.removesuffix('.java') for n in retired]
+for path in (root/'src').rglob('*.java'):
+    body=text(path)
+    for token in retired_tokens:
+        assert token not in body, f'retired design reference remains: {token} in {path.relative_to(root)}'
+
+tools_dir=root/'tools'
+assert {p.name for p in tools_dir.iterdir() if p.is_file()} == {'test_current_source.py','verify_jar.py'}
+assert not [p for p in tools_dir.iterdir() if p.is_dir()], 'legacy tool directories remain'
+
+scripts_dir=repo/'.github/scripts'
+if scripts_dir.exists():
+    assert not (scripts_dir/'arcane-circle').exists(), 'legacy Arcane migration directory remains'
+    assert not list(scripts_dir.glob('*arcane*')), 'legacy Arcane patch/migration script remains'
+
+for obsolete in ['AUDIT_REPORT_V0.5.md','BUILD_AND_RUNTIME_REPORT.md','MAGIC_WORLD_PATCH.md',
+                 'docs/ALPHA10_WORLD_COMBAT.md','docs/PRESENTATION_OVERHAUL_PHASES.md']:
+    assert not (root/obsolete).exists(), f'obsolete project document remains: {obsolete}'
+
+print('legacy_arcane_tooling=absent')

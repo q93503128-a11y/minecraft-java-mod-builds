@@ -5,7 +5,7 @@ import kr.moonseungjun.arcanecircle.magic.SpellMetrics;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Ground-up presentation director for alpha.26.
+ * Current ground-up presentation director.
  *
  * The visual is authored from the physical event of the spell (projectile, gate, weather,
  * execution mark, fault, etc.) rather than from a universal magic-circle template.  No external

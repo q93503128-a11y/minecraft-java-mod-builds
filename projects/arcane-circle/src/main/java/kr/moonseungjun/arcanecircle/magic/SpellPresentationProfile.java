@@ -109,7 +109,6 @@ public final class SpellPresentationProfile {
         put("teleportation_circle", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 5.0, 4, 4, 0, 0, 1.45, 0);
         put("thunder_cage", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 2.8, 4, 4, 0, 0, 1.26, 2);
 
-        // alpha.23 phase 2B: canonical authored profiles for every 5C formula.
         put("cloudkill", SigilStyle.GROUND_SEAL, MotionStyle.STORM, 7.20, 5, 5, 0, 0, 1.42, 3);
         put("wall_of_force", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 6.80, 5, 7, 0, 0, 1.54, 2);
         put("hold_monster", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 2.10, 5, 6, 0, 0, 1.30, 2);
@@ -124,7 +123,6 @@ public final class SpellPresentationProfile {
         put("arcane_hand", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 2.35, 5, 5, 0, 0, 1.28, 2);
         put("teleportation_circle", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 5.20, 5, 6, 0, 0, 1.48, 0);
 
-        // alpha.21 phase 1: canonical authored profiles for every 1C-3C formula.
         // Rank does not define size; each value follows the spell fiction and its launch device.
         put("magic_missile", SigilStyle.FRONT_COMPACT, MotionStyle.MISSILE_SWARM, 0.96, 2, 3, 62, 0, 0.92, 0);
         put("fire_bolt", SigilStyle.FRONT_LANCE, MotionStyle.BOLT, 0.68, 1, 0, 50, 0, 0.88, 0);
@@ -167,8 +165,7 @@ public final class SpellPresentationProfile {
         put("steam_burst", SigilStyle.FRONT_COMPACT, MotionStyle.WAVE, 1.32, 2, 2, 0, 0, 1.04, 0);
         put("frost_step", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 1.88, 3, 6, 0, 0, 1.08, 0);
 
-        // alpha.22 phase 2A: all 4C normal/fusion formulas get authored scale and duration semantics.
-        // The MidCircleVisualIdentity director owns their geometry; these profiles define only the
+        // The current cinematic director owns their geometry; these profiles define only the
         // spell-specific staging footprint and lifetime, never a rank-wide circle template.
         put("wall_of_fire", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 6.00, 4, 9, 0, 0, 1.46, 2);
         put("ice_storm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 7.20, 4, 7, 0, 11, 1.48, 8);
