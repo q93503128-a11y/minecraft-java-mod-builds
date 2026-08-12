@@ -133,17 +133,20 @@ public final class VillageShopCatalogScreen extends Screen {
         graphics.text(font, fit(font, card.name(), pane.width() - 30), left, y, card.category().accent(), false);
         y += 20;
         if (!card.cost().isBlank()) {
-            graphics.text(font, card.cost(), left, y, GOLD, false);
+            graphics.text(font, fit(font, card.cost(), Math.max(40, right - left)), left, y, GOLD, false);
             y += 17;
         }
-        graphics.text(font, card.status(), left, y, card.available() ? CYAN : RED, false);
+        graphics.text(font, fit(font, card.status(), Math.max(40, right - left)), left, y,
+                card.available() ? CYAN : RED, false);
         y += 20;
         graphics.fill(left, y, right, y + 1, LINE);
         y += 12;
 
+        int actionTop = pane.bottom() - 43;
+        graphics.enableScissor(pane.left() + 1, pane.top() + 1, pane.right() - 1, Math.max(pane.top() + 2, actionTop));
         List<FormattedCharSequence> detail = font.split(Component.literal(card.effect()), Math.max(70, right - left));
         for (FormattedCharSequence line : detail) {
-            if (y > pane.bottom() - 58) break;
+            if (y > actionTop - 8) break;
             graphics.text(font, line, left, y, TEXT, false);
             y += 12;
         }
@@ -151,19 +154,21 @@ public final class VillageShopCatalogScreen extends Screen {
         List<FormattedCharSequence> guideLines = font.split(Component.literal(guidance), Math.max(70, right - left));
         y += 8;
         for (FormattedCharSequence line : guideLines) {
-            if (y > pane.bottom() - 58) break;
+            if (y > actionTop - 8) break;
             graphics.text(font, line, left, y, MUTED, false);
             y += 11;
         }
+        graphics.disableScissor();
 
-        int bw = Math.min(150, Math.max(92, pane.width() / 3));
-        int bx = pane.right() - bw - 14;
-        int by = pane.bottom() - 36;
+        Button button = actionButton(pane);
         boolean enabled = card.available();
-        boolean hover = enabled && inside(mouseX, mouseY, bx, by, bw, 24);
-        graphics.fill(bx, by, bx + bw, by + 24, enabled ? (hover ? SURFACE_2 : SURFACE) : 0x8820272A);
-        graphics.fill(bx, by + 22, bx + bw, by + 24, enabled ? (hover ? GOLD : CYAN) : LINE);
-        graphics.centeredText(font, actionLabel(card), bx + bw / 2, by + 8, enabled ? TEXT : MUTED);
+        boolean hover = enabled && inside(mouseX, mouseY, button.x(), button.y(), button.w(), button.h());
+        graphics.fill(button.x(), button.y(), button.x() + button.w(), button.y() + button.h(),
+                enabled ? (hover ? SURFACE_2 : SURFACE) : 0x8820272A);
+        graphics.fill(button.x(), button.y() + button.h() - 2, button.x() + button.w(), button.y() + button.h(),
+                enabled ? (hover ? GOLD : CYAN) : LINE);
+        graphics.centeredText(font, fit(font, actionLabel(card), button.w() - 8),
+                button.x() + button.w() / 2, button.y() + 8, enabled ? TEXT : MUTED);
     }
 
     private String guidance(OfferCard card) {
@@ -217,10 +222,8 @@ public final class VillageShopCatalogScreen extends Screen {
 
         if (selected >= 0 && selected < offers.size() && category.accepts(offers.get(selected).category())) {
             OfferCard card = offers.get(selected);
-            int bw = Math.min(150, Math.max(92, layout.detail().width() / 3));
-            int bx = layout.detail().right() - bw - 14;
-            int by = layout.detail().bottom() - 36;
-            if (card.available() && inside(click.x(), click.y(), bx, by, bw, 24)) {
+            Button button = actionButton(layout.detail());
+            if (card.available() && inside(click.x(), click.y(), button.x(), button.y(), button.w(), button.h())) {
                 execute(card);
                 return true;
             }
@@ -254,21 +257,31 @@ public final class VillageShopCatalogScreen extends Screen {
         }
     }
 
+    private Button actionButton(Pane pane) {
+        int width = Math.min(150, Math.max(82, pane.width() / 3));
+        width = Math.min(width, Math.max(1, pane.width() - 28));
+        return new Button(pane.right() - width - 14, pane.bottom() - 36, width, 24);
+    }
+
     private Layout layout() {
         VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
         int top = safe.top() + 72;
         int bottom = safe.bottom() - 18;
         int gap = 8;
-        int leftWidth = VillageUiSafeArea.clamp(safe.width() * 38 / 100, 150, 360);
-        if (safe.width() < 390) leftWidth = safe.width();
+        int contentHeight = Math.max(1, bottom - top);
+        int innerWidth = Math.max(1, safe.width() - 14);
         Pane list;
         Pane detail;
-        if (safe.width() < 390) {
-            int split = top + Math.max(72, (bottom - top) * 46 / 100);
-            list = new Pane(safe.left() + 7, top, safe.right() - 7, split);
-            detail = new Pane(safe.left() + 7, split + gap, safe.right() - 7, bottom);
+        boolean stacked = safe.width() < 390 && contentHeight >= 190;
+        if (stacked) {
+            int listHeight = VillageUiSafeArea.clamp(contentHeight * 42 / 100, 78,
+                    Math.max(78, contentHeight - 104));
+            list = new Pane(safe.left() + 7, top, safe.right() - 7, top + listHeight);
+            detail = new Pane(safe.left() + 7, list.bottom() + gap, safe.right() - 7, bottom);
         } else {
-            list = new Pane(safe.left() + 7, top, safe.left() + 7 + leftWidth, bottom);
+            int listWidth = VillageUiSafeArea.clamp(innerWidth * 38 / 100, 105, 360);
+            listWidth = Math.min(listWidth, Math.max(86, innerWidth - gap - 120));
+            list = new Pane(safe.left() + 7, top, safe.left() + 7 + listWidth, bottom);
             detail = new Pane(list.right() + gap, top, safe.right() - 7, bottom);
         }
         return new Layout(safe, list, detail);
@@ -347,9 +360,10 @@ public final class VillageShopCatalogScreen extends Screen {
 
     private record OfferCard(String action, Category category, String name, String cost,
                              String effect, String status, boolean available) {}
+    private record Button(int x, int y, int w, int h) {}
     private record Pane(int left, int top, int right, int bottom) {
-        int width() { return right - left; }
-        int height() { return bottom - top; }
+        int width() { return Math.max(1, right - left); }
+        int height() { return Math.max(1, bottom - top); }
     }
     private record Layout(VillageUiSafeArea.Rect safe, Pane list, Pane detail) {}
 }
