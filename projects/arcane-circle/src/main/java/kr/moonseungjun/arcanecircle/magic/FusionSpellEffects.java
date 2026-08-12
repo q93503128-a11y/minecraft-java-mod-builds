@@ -101,7 +101,7 @@ public final class FusionSpellEffects {
         ServerLevel level = (ServerLevel) player.level();
         Vec3 start = player.getEyePosition();
         Vec3 direction = player.getLookAngle().normalize();
-        double length = Math.min(42.0, Math.max(8.0, range));
+        double length = Math.max(8.0, range);
         Vec3 end = start.add(direction.scale(length));
         for (Mob mob : level.getEntitiesOfClass(Mob.class, new AABB(start, end).inflate(1.5),
                 value -> value.isAlive() && value instanceof Enemy)) {
@@ -119,7 +119,7 @@ public final class FusionSpellEffects {
 
     private static boolean winterDomain(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
-        double radius = Math.min(18.0, Math.max(6.0, range * 0.45));
+        double radius = Math.max(6.0, range * 0.45);
         for (Mob mob : hostiles(player, radius)) {
             ArcaneDamage.hurt(level, player, mob, (float) (power * 0.72));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 260));
@@ -149,7 +149,7 @@ public final class FusionSpellEffects {
         player.heal((float) Math.max(8.0, power * 0.35));
         player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 180, 2));
         player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 360, 0));
-        double radius = Math.min(20.0, Math.max(8.0, range * 0.42));
+        double radius = Math.max(8.0, range * 0.42);
         for (ServerPlayer ally : level.getEntitiesOfClass(ServerPlayer.class, player.getBoundingBox().inflate(radius),
                 value -> value.isAlive() && !value.isSpectator())) {
             ally.heal((float) Math.max(4.0, power * 0.16));
@@ -165,7 +165,7 @@ public final class FusionSpellEffects {
 
     private static boolean worldSunder(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
-        double radius = Math.min(28.0, Math.max(12.0, range * 0.38));
+        double radius = Math.max(12.0, range * 0.38);
         for (Mob mob : hostiles(player, radius)) {
             double distanceScale = Math.max(0.35, 1.0 - Math.sqrt(player.distanceToSqr(mob)) / radius);
             ArcaneDamage.hurt(level, player, mob, (float) (power * distanceScale));
@@ -185,7 +185,7 @@ public final class FusionSpellEffects {
     private static Optional<Mob> sightTarget(ServerPlayer player, double range) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
-        double distance = Math.min(42.0, Math.max(5.0, range));
+        double distance = Math.max(5.0, range);
         return hostiles(player, distance).stream()
                 .filter(mob -> {
                     Vec3 delta = mob.getEyePosition().subtract(eye);

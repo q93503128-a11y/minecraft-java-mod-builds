@@ -29,10 +29,10 @@ public final class WorldMagicTracker {
             Identifier.fromNamespaceAndPath(ArcaneCircle.MOD_ID, "world_magic_mesh_v2"));
     private static final Map<UUID, Visual> CHARGES = new HashMap<>();
     private static final List<Visual> RELEASES = new ArrayList<>();
-    private static final int MAX_CHARGE_GEOMETRY = 3200;
-    private static final int MAX_RELEASE_GEOMETRY = 3600;
+    private static final int MAX_CHARGE_GEOMETRY = 5200;
+    private static final int MAX_RELEASE_GEOMETRY = 7200;
     private static final int MAX_VISUALS = 14;
-    private static final int MAX_FRAME = 26000;
+    private static final int MAX_FRAME = 46000;
     private static final double MAX_DISTANCE_SQR = 192.0 * 192.0;
     private static final long CHARGE_TTL = 2_250_000_000L;
 
@@ -60,6 +60,37 @@ public final class WorldMagicTracker {
             "delayed_blast_fireball", "solar_guard");
     private static final Set<String> LANCE_FORMS = Set.of(
             "fire_bolt", "void_lance", "finger_of_death", "arcane_hand");
+
+    record CasterPoseSnapshot(int family, float progress, boolean release) {}
+
+    static CasterPoseSnapshot castingPose(UUID caster) {
+        Visual charge = CHARGES.get(caster);
+        if (charge != null) return new CasterPoseSnapshot(castingFamily(charge.spell),
+                (float) clamp(charge.progress, 0.0, 1.0), false);
+        long now = System.nanoTime();
+        for (int i = RELEASES.size() - 1; i >= 0; i--) {
+            Visual visual = RELEASES.get(i);
+            if (!visual.caster.equals(caster)) continue;
+            float age = (float) clamp((now - visual.startedAt) /
+                    (double) Math.max(1L, visual.expiresAt - visual.startedAt), 0.0, 1.0);
+            return new CasterPoseSnapshot(castingFamily(visual.spell), age, true);
+        }
+        return new CasterPoseSnapshot(0, 0F, false);
+    }
+
+    private static int castingFamily(SpellDefinition spell) {
+        SpellPresentationProfile.Profile p = SpellPresentationProfile.profile(spell);
+        return switch (p.motion()) {
+            case PORTAL -> CastingSilhouetteRenderer.PORTAL;
+            case SKY_DROP, STORM -> CastingSilhouetteRenderer.RITUAL;
+            case WALL, FIELD -> CastingSilhouetteRenderer.GROUND;
+            case AURA, PRISON -> CastingSilhouetteRenderer.WARD;
+            case HEAVY_ORB -> CastingSilhouetteRenderer.HEAVY;
+            case BEAM, LANCE, DART, BOLT, MISSILE_SWARM -> CastingSilhouetteRenderer.AIM;
+            case WAVE, TARGET_BURST, SNAP -> spell.circle() >= 7
+                    ? CastingSilhouetteRenderer.RITUAL : CastingSilhouetteRenderer.SNAP;
+        };
+    }
 
     private WorldMagicTracker() {}
 
@@ -187,6 +218,16 @@ public final class WorldMagicTracker {
         }
         if (FifthCircleVisualIdentity.owns(spell)) {
             FifthCircleVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
+                    visual.direction, targetOffset(visual), visual.range, mesh);
+            return mesh.build();
+        }
+        if (SixthCircleVisualIdentity.owns(spell)) {
+            SixthCircleVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
+                    visual.direction, targetOffset(visual), visual.range, mesh);
+            return mesh.build();
+        }
+        if (ArchmageVisualIdentity.owns(spell)) {
+            ArchmageVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
                     visual.direction, targetOffset(visual), visual.range, mesh);
             return mesh.build();
         }
@@ -435,6 +476,16 @@ public final class WorldMagicTracker {
         }
         if (FifthCircleVisualIdentity.owns(spell)) {
             FifthCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), visual.range,
+                    age, motionProgress(visual, age), powerFactor, mesh);
+            return mesh.build();
+        }
+        if (SixthCircleVisualIdentity.owns(spell)) {
+            SixthCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), visual.range,
+                    age, motionProgress(visual, age), powerFactor, mesh);
+            return mesh.build();
+        }
+        if (ArchmageVisualIdentity.owns(spell)) {
+            ArchmageVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), visual.range,
                     age, motionProgress(visual, age), powerFactor, mesh);
             return mesh.build();
         }
