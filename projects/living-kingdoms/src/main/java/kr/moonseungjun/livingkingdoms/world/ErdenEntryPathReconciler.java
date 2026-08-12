@@ -368,10 +368,13 @@ public final class ErdenEntryPathReconciler {
         return (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z));
     }
 
+    /** Generated grading may cut terrain and clutter, but never another authored doorway. */
     private static void set(ServerLevel level, int x, int y, int z, Block block) {
         if (y < level.getMinY() || y >= level.getMaxY()) return;
         BlockPos pos = new BlockPos(x, y, z);
-        if (level.getBlockState(pos).is(block)) return;
+        var existing = level.getBlockState(pos);
+        if (existing.getBlock() instanceof DoorBlock) return;
+        if (existing.is(block)) return;
         level.setBlock(pos, block.defaultBlockState(), UPDATE_FLAGS);
     }
 
