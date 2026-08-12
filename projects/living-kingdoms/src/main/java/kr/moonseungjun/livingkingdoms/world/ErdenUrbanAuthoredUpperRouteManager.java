@@ -15,10 +15,8 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,11 +26,11 @@ import java.util.Set;
  * already-supported upper rooms in the imported structures.
  *
  * <p>The source planner proves that every route body cell is air in the immutable fragment. This
- * manager rotates those local coordinates with the exact placement rotation, authors only stair or
- * support blocks into cells that were source air, and never cuts a source wall, roof, floor or
- * fixture. The route is prepared before the legacy synthetic upper-floor fallback runs. Once the
- * authored-interior preservation pass has restored any source floor temporarily cleared by the
- * ground-floor converter, the route is verified and promoted to complete.</p>
+ * manager rotates those local coordinates with the exact placement rotation and authors only stair
+ * or support blocks into cells that were source air. It is intentionally run after the authored
+ * interior preservation pass: retained source floors, walls and fixtures have already been restored,
+ * while only a tightly bounded palette of generated conversion blocks may be reconciled inside cells
+ * that the immutable source proves were air. No authored wall, roof, floor or fixture is cut.</p>
  */
 public final class ErdenUrbanAuthoredUpperRouteManager {
     public static final int ROUTE_REVISION = 1;
@@ -118,8 +116,6 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
                 .computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE);
         ErdenUrbanInteriorSavedData ground = level.getDataStorage()
                 .computeIfAbsent(ErdenUrbanInteriorSavedData.TYPE);
-        ErdenUrbanLifeSavedData life = level.getDataStorage()
-                .computeIfAbsent(ErdenUrbanLifeSavedData.TYPE);
 
         int processed = 0;
         for (PlacementRoute route : ROUTES.values()) {
@@ -131,9 +127,10 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
 
             boolean prepared = routes.isPrepared(key, ROUTE_REVISION);
             if (!prepared) {
-                boolean legacyUpperAlreadyBuilt = life.isUpperFloorComplete(
-                        key, ErdenUrbanLifeManager.UPPER_FLOOR_REVISION);
-                if (!prepare(level, route, !legacyUpperAlreadyBuilt)) continue;
+                // The preservation pass has already restored every retained source block. Clearing is
+                // therefore restricted to the known generated conversion palette, and only at cells
+                // that immutable source topology proved were air.
+                if (!prepare(level, route, true)) continue;
                 routes.markPrepared(key, ROUTE_REVISION);
                 prepared = true;
                 LivingKingdoms.LOGGER.debug(
@@ -152,7 +149,7 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
         if (!completionLogged && complete == ROUTES.size()) {
             completionLogged = true;
             LivingKingdoms.LOGGER.info(
-                    "Completed Erden authored upper routes buildings={} door_to_ground=true stairs=true existing_upper_rooms=true source_blocks_cut=0 synthetic_upper_floor_avoided=true revision={}",
+                    "Completed Erden authored upper routes buildings={} door_to_ground=true stairs=true existing_upper_rooms=true source_blocks_cut=0 synthetic_route_cells_reconciled=true revision={}",
                     complete, ROUTE_REVISION);
         }
         verifyCiIfReady(level, routes);
