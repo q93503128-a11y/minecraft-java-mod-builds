@@ -2,6 +2,7 @@ package kr.moonseungjun.villageguardians;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -15,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,7 +25,6 @@ public final class VillageAttackPlanSystem {
     private static final Map<Integer, Integer> JOIN_INDEX = new HashMap<>();
     private static int attackTicks;
     private static int warningTicks;
-    private static int warningDay = -1;
     private static VillageTimePhase lastPhase;
 
     private VillageAttackPlanSystem() {}
@@ -35,12 +34,12 @@ public final class VillageAttackPlanSystem {
         JOIN_INDEX.clear();
         attackTicks = 0;
         warningTicks = 0;
-        warningDay = -1;
         lastPhase = null;
     }
 
     public static void onRaidEnemyJoin(ServerLevel level, Mob mob) {
-        if (level == null || mob == null || !VillageRaidSystem.isRaidEnemy(mob)) return;
+        if (level == null || mob == null || !VillageRaidSystem.isRaidEnemy(mob)
+                || ACTIVE_FRONTS.containsKey(mob.getUUID())) return;
         int day = VillageCouncilState.currentDay();
         int wave = parseWave(mob);
         int key = day * 100 + wave;
@@ -51,7 +50,7 @@ public final class VillageAttackPlanSystem {
         Condition condition = condition(day, wave);
         applyCondition(mob, condition);
         if (front != Front.NORTH) {
-            BlockPos spawn = spawnOrigin(front, index);
+            BlockPos spawn = safeSpawn(level, spawnOrigin(front, index));
             mob.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
         }
     }
@@ -62,7 +61,6 @@ public final class VillageAttackPlanSystem {
         int day = VillageCouncilState.currentDay();
         if (phase == VillageTimePhase.NIGHT && lastPhase != VillageTimePhase.NIGHT) {
             warningTicks = 240;
-            warningDay = day;
             broadcastNightWarning(server, day);
         }
         lastPhase = phase;
@@ -209,10 +207,11 @@ public final class VillageAttackPlanSystem {
         int count = VillageRaidSystem.previewWaveCount(day, 1, players, trait);
         Map<Front, Boolean> used = new HashMap<>();
         for (int i = 0; i < count; i++) used.put(frontForIndex(day, 1, i), true);
+        AttackPlan plan = preview(day, 1, count);
         for (Front front : used.keySet()) {
-            BlockPos pos = spawnOrigin(front, 0);
+            BlockPos pos = safeSpawn(level, spawnOrigin(front, 0));
             level.sendParticles(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5,
-                    front == preview(day, 1, count).main() ? 28 : 14, 2.2, 1.0, 2.2, 0.04);
+                    front == plan.main() ? 28 : 14, 2.2, 1.0, 2.2, 0.04);
             level.sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 0.4, pos.getZ() + 0.5,
                     8, 1.4, 0.25, 1.4, 0.02);
         }
@@ -231,6 +230,20 @@ public final class VillageAttackPlanSystem {
             case SOUTH_WEST -> center.offset(-36 + spread, 0, d);
             case SOUTH_EAST -> center.offset(36 + spread, 0, d);
         };
+    }
+
+    private static BlockPos safeSpawn(ServerLevel level, BlockPos desired) {
+        if (level == null || desired == null) return desired;
+        for (int dy = 24; dy >= -24; dy--) {
+            BlockPos feet = desired.offset(0, dy, 0);
+            BlockPos floor = feet.below();
+            if (level.getBlockState(feet).isAir()
+                    && level.getBlockState(feet.above()).isAir()
+                    && level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)) {
+                return feet;
+            }
+        }
+        return desired;
     }
 
     private static boolean insideFortress(BlockPos center, BlockPos pos) {
