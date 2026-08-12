@@ -2,17 +2,30 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.10-alpha.1`
+- Current source version: `0.18.11-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.10-alpha.1.jar`
-- Final acceptance Actions run: `31564184543`
-- Final acceptance head: `067b910f149f52f4425725bd0a0fd70177daff37`
-- Final JAR SHA-256: `6e24aa279b5f2fb29c91224ed404a8b084acfa843796a68c5099fd46f0e45209`
-- Final JAR size: `902784` bytes
+- Target JAR: `villageguardians-0.18.11-alpha.1.jar`
+- Final acceptance Actions run: `31583212244`
+- Final acceptance head: `c9971ef5acd00f30d84d683b12de0914d869c567`
+- Final JAR SHA-256: `fc0b411c5c4400a44434f7d7205f1de94ceacce484c8917f0f64425a42def4b7`
+- Final JAR size: `906456` bytes
+
+## 0.18.11 용병·포탑 안정화
+
+- 공용 `VillageDefenseLineOfSight` 블록 충돌 raycast를 추가해 포탑과 궁수 용병의 벽 관통 획득/피해를 차단했다.
+- 포탑 사냥꾼은 36블록 탐색 반경과 약 7.5블록 실제 타격 반경을 분리했다. 공병 6블록, 보스 8블록 압박도 `distanceToSqr` 기준을 명시했다.
+- 철갑 관통포는 중장갑 공성 병과에 최대 `1.55x`, 저항 목표에 별도 보정을 적용해 이름뿐이던 역할을 실제 전투 특성으로 만들었다.
+- 포탑은 설치 검증부터 활성 외형, 잔해, 철거까지 일관된 3블록 높이 footprint를 사용한다.
+- 용병 경험치는 적 사망 위치 48블록 내 전체 공유 방식에서 실제 killer mercenary 1기 귀속 방식으로 교체했다.
+- 수호/공격/궁수/의무 4병과 모두 별도 전장 행동을 갖고, 궁수·의무의 근접 AI 이탈을 차단했다. 성벽 랠리 경로 실패 시 내부 거점 fallback을 적용한다.
+- 신규 `tools/test_v01811_defense_polish.py`와 기존 0.18.8/0.18.9/0.18.10 계약을 포함한 acceptance를 수행했다.
+- 1차 Java 컴파일에서 Minecraft 26.2의 구리 블록 컬렉션 타입 차이를 발견했고 단일 concrete block으로 교정한 뒤 2차 clean build가 성공했다.
+- 최종 Actions run `31583212244`: Java 25 설정 PASS, 전체 deterministic contracts PASS, NeoForge clean build PASS, JAR verifier PASS, artifact upload PASS.
+- 최종 JAR SHA-256 `fc0b411c5c4400a44434f7d7205f1de94ceacce484c8917f0f64425a42def4b7`, 크기 `906456` bytes.
 
 ## 기준점과 회귀 기준
 
@@ -94,7 +107,7 @@ HP 비율에 따라 정상 → 균열 → 대파 → 돌파 상태로 월드 외
 
 설치 과정은 계열 선택 → 바닥 우클릭 유효성 미리보기 → 같은 위치 재클릭 확정이다.
 
-서버 설치 검증은 방어구역, 주 통행로, 북문 전면 도배, 건물 출입구/운영 공간, 포탑간 최소 8블록, 단단한 바닥, 2블록 높이 공간, 전체 설치 한도를 검사한다.
+서버 설치 검증은 방어구역, 주 통행로, 북문 전면 도배, 건물 출입구/운영 공간, 포탑간 최소 8블록, 단단한 바닥, 3블록 높이 공간, 전체 설치 한도를 검사한다.
 
 각 포탑은 영구 ID, 위치, 레벨, 현재/최대 HP, 공격력, 공격 주기, 사거리, 계열 역할, 가동 상태를 가진다. 포탑 사냥꾼/폭파병/보스가 포탑을 공격하며 HP 0은 아이템 드롭 없는 잔해 상태가 된다. 회관에서 개별 수리/강화/철거와 손상 포탑 일괄 수리를 제공한다.
 
