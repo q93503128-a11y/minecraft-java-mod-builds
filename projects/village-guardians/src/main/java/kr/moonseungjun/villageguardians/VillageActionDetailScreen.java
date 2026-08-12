@@ -229,7 +229,8 @@ public final class VillageActionDetailScreen extends Screen {
     }
 
     private Button actionButton(Pane pane) {
-        int w = Math.min(148, Math.max(94, pane.width() / 3));
+        int w = Math.min(148, Math.max(76, pane.width() / 3));
+        w = Math.min(w, Math.max(1, pane.width() - 28));
         return new Button(pane.right() - w - 14, pane.bottom() - 34, w, 23);
     }
 
@@ -254,14 +255,16 @@ public final class VillageActionDetailScreen extends Screen {
         int contentBottom = bottom - 11;
         int gap = 7;
 
-        if (panelWidth < 390) {
-            int available = Math.max(1, contentBottom - contentTop);
-            int listHeight = VillageUiSafeArea.clamp(available * 38 / 100, 72, Math.max(72, available - 94));
+        int availableHeight = Math.max(1, contentBottom - contentTop);
+        if (panelWidth < 390 && panelHeight >= 250 && availableHeight >= 170) {
+            int listHeight = VillageUiSafeArea.clamp(availableHeight * 38 / 100, 72,
+                    Math.max(72, availableHeight - 94));
             Pane list = new Pane(left + 13, contentTop, right - 13, contentTop + listHeight);
             Pane detail = new Pane(left + 13, list.bottom() + gap, right - 13, contentBottom);
             return new Layout(left, top, right, bottom, list, detail);
         }
-        int listWidth = VillageUiSafeArea.clamp(panelWidth * 30 / 100, 130, 220);
+        int listWidth = VillageUiSafeArea.clamp(panelWidth * 30 / 100, 105, 220);
+        listWidth = Math.min(listWidth, Math.max(86, panelWidth - 26 - gap - 112));
         Pane list = new Pane(left + 13, contentTop, left + 13 + listWidth, contentBottom);
         Pane detail = new Pane(list.right() + gap, contentTop, right - 13, contentBottom);
         return new Layout(left, top, right, bottom, list, detail);
