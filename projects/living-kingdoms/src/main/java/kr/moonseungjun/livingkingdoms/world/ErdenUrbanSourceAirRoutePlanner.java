@@ -24,7 +24,7 @@ import java.util.Set;
  * facade/roof/interior blocks remain immutable.</p>
  */
 public final class ErdenUrbanSourceAirRoutePlanner {
-    public static final int PLANNER_REVISION = 1;
+    public static final int PLANNER_REVISION = 2;
 
     private static final int EDGE_MARGIN = 1;
     private static final int MAX_ROUTE_NODES = 32_000;
@@ -96,8 +96,8 @@ public final class ErdenUrbanSourceAirRoutePlanner {
     private static RoutePlan plan(
             ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
             ErdenUrbanUpperRoomOpportunityCatalog.OpportunityProfile opportunity) {
-        Target target = target(opportunity);
-        if (target == null || opportunity.groundFeetY() == Integer.MIN_VALUE) {
+        List<Target> targets = targets(opportunity);
+        if (targets.isEmpty() || opportunity.groundFeetY() == Integer.MIN_VALUE) {
             return RoutePlan.none(RouteClassification.NO_TARGET);
         }
 
@@ -111,6 +111,34 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             return RoutePlan.none(RouteClassification.NO_GROUND_ROUTE);
         }
 
+        int explored = 0;
+        for (Target target : targets) {
+            RoutePlan candidate = planTarget(
+                    snapshot, blocks, ground, opportunity.groundFeetY(), target);
+            explored += candidate.exploredNodes();
+            if (candidate.classification() == RouteClassification.ZERO_CUT_ROUTE) {
+                LivingKingdoms.LOGGER.info(
+                        "LK_ERDEN_SOURCE_AIR_ROUTE_TARGET_SELECTED fragment={} target_y={} target_cells={} candidate_count={} explored_before_success={} source_blocks_cut=0 source_only=true",
+                        snapshot.fragmentKey(), target.feetY(), targetCellCount(target),
+                        targets.size(), explored);
+                return new RoutePlan(
+                        candidate.classification(), candidate.targetMode(), candidate.targetFeetY(),
+                        candidate.path(), candidate.rise(), candidate.turns(), explored);
+            }
+        }
+
+        Target preferred = targets.get(0);
+        return new RoutePlan(
+                RouteClassification.NO_ZERO_CUT_ROUTE, preferred.mode(), preferred.feetY(),
+                List.of(), preferred.feetY() - opportunity.groundFeetY(), 0, explored);
+    }
+
+    private static RoutePlan planTarget(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
+            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
+            Set<Long> ground,
+            int groundFeetY,
+            Target target) {
         Set<Long> targetCells = new HashSet<>();
         for (ErdenUrbanUpperRoomOpportunityCatalog.Region region : target.regions()) {
             targetCells.addAll(region.cells());
@@ -126,7 +154,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
         for (long cell : ground) {
             int x = cellX(cell);
             int z = cellZ(cell);
-            Node seed = new Node(x, opportunity.groundFeetY(), z);
+            Node seed = new Node(x, groundFeetY, z);
             long key = nodeKey(seed.x(), seed.y(), seed.z());
             if (visited.add(key)) {
                 pending.addLast(seed);
@@ -136,7 +164,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
         }
 
         Node found = null;
-        int minimumY = Math.max(1, opportunity.groundFeetY() - 1);
+        int minimumY = Math.max(1, groundFeetY - 1);
         int maximumY = Math.min(snapshot.height() - MIN_HEADROOM - 1, target.feetY() + 2);
         while (!pending.isEmpty() && visited.size() <= MAX_ROUTE_NODES) {
             Node current = pending.removeFirst();
@@ -152,6 +180,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
                     int z = current.z() + direction[1];
                     if (y < minimumY || y > maximumY) continue;
                     if (!routeBodyClear(snapshot, blocks, x, y, z)) continue;
+                    if (!routeColumnCovered(snapshot, blocks, x, y, z)) continue;
                     Node next = new Node(x, y, z);
                     long nextKey = nodeKey(x, y, z);
                     if (!visited.add(nextKey)) continue;
@@ -166,26 +195,33 @@ public final class ErdenUrbanSourceAirRoutePlanner {
         if (found == null) {
             return new RoutePlan(
                     RouteClassification.NO_ZERO_CUT_ROUTE, target.mode(), target.feetY(),
-                    List.of(), target.feetY() - opportunity.groundFeetY(), 0, visited.size());
+                    List.of(), target.feetY() - groundFeetY, 0, visited.size());
         }
 
         List<Node> path = reconstruct(found, previous, nodes);
         int turns = countTurns(path);
         return new RoutePlan(
                 RouteClassification.ZERO_CUT_ROUTE, target.mode(), target.feetY(),
-                List.copyOf(path), target.feetY() - opportunity.groundFeetY(), turns, visited.size());
+                List.copyOf(path), target.feetY() - groundFeetY, turns, visited.size());
     }
 
-    private static Target target(ErdenUrbanUpperRoomOpportunityCatalog.OpportunityProfile profile) {
+    private static List<Target> targets(
+            ErdenUrbanUpperRoomOpportunityCatalog.OpportunityProfile profile) {
         return switch (profile.recommendation()) {
-            case ROUTE_TO_EXISTING_ROOM -> new Target(
-                    ErdenUrbanUpperRoomOpportunityCatalog.FloorMode.EXISTING_SOURCE_FLOOR,
-                    profile.existingFloor().feetY(), profile.existingFloor().regions());
-            case AUTHOR_NEW_FLOOR_IN_VOID -> new Target(
+            case ROUTE_TO_EXISTING_ROOM -> profile.existingFloors().stream()
+                    .map(level -> new Target(
+                            ErdenUrbanUpperRoomOpportunityCatalog.FloorMode.EXISTING_SOURCE_FLOOR,
+                            level.feetY(), level.regions()))
+                    .toList();
+            case AUTHOR_NEW_FLOOR_IN_VOID -> List.of(new Target(
                     ErdenUrbanUpperRoomOpportunityCatalog.FloorMode.NEW_AUTHORED_FLOOR,
-                    profile.newFloorVoid().feetY(), profile.newFloorVoid().regions());
-            case NO_SAFE_ROOM -> null;
+                    profile.newFloorVoid().feetY(), profile.newFloorVoid().regions()));
+            case NO_SAFE_ROOM -> List.of();
         };
+    }
+
+    private static int targetCellCount(Target target) {
+        return target.regions().stream().mapToInt(region -> region.cells().size()).sum();
     }
 
     private static Set<Long> reachableGround(
@@ -251,6 +287,28 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             if (block != null && !block.state().isAir()) return false;
         }
         return true;
+    }
+
+    private static boolean routeColumnCovered(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
+            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
+            int x, int feetY, int z) {
+        for (int y = feetY + MIN_HEADROOM; y < snapshot.height(); y++) {
+            ExternalUrbanFabricBuilder.UrbanSourceBlock block = blocks.get(blockKey(x, y, z));
+            if (structuralBarrier(block)) return true;
+        }
+        return false;
+    }
+
+    private static boolean structuralBarrier(ExternalUrbanFabricBuilder.UrbanSourceBlock block) {
+        if (block == null || block.state().isAir()) return false;
+        if (block.state().getBlock() instanceof DoorBlock) return false;
+        String id = block.state().getBlock().toString();
+        return !(id.contains("torch") || id.contains("button") || id.contains("pressure_plate")
+                || id.contains("carpet") || id.contains("lantern") || id.contains("chain")
+                || id.contains("sign") || id.contains("leaves") || id.contains("sapling")
+                || id.contains("grass") || id.contains("flower") || id.contains("fern")
+                || id.contains("vine"));
     }
 
     private static List<Node> reconstruct(
