@@ -85,13 +85,17 @@ Alpha.23 also fixes the range-stat presentation/gameplay split. `Steam Burst` no
 
 Priorities include Wall of Force, Cloudkill, Hold Monster, Passwall, Insect Plague, Telekinesis, Cone of Cold, Flame Strike, Dominate Person, Mass Cure Wounds, Chain Lightning, Arcane Hand and Teleportation Circle. They require new wall, toxic-volume, target restraint, true passage, swarm-volume, force-manipulation, cone, sky-drop, domination, mass-life, branching-beam and spatial-circle languages rather than 4C reskins.
 
-### Phase 2C — 6C (alpha.24)\n\nStatus: implemented. All ten normal 6C spells plus Solar Guard use `SixthCircleVisualIdentity`, with beam, transformation, ward, target and battlefield footprints authored separately.
+### Phase 2C — 6C (alpha.24)
+
+Status: implemented. All ten normal 6C spells plus Solar Guard use `SixthCircleVisualIdentity`, with beam, transformation, ward, target and battlefield footprints authored separately.
 
 Priorities include Disintegrate, Sunbeam, Freezing Sphere, Globe of Invulnerability, Flesh to Stone, Eyebite, Move Earth, Mass Suggestion, True Seeing, Circle of Death and Solar Guard. Beam/lance/heavy-orb kinetics and defense/transformation silhouettes must be authored separately.
 
 4C-6C as a whole should feel like the point where a mage starts manipulating the surrounding space, not only emitting an attack from the hands.
 
-## Phase 3 — 7C-9C (alpha.24)\n\nStatus: implemented. Every normal and fusion formula from 7C through 9C routes through `ArchmageVisualIdentity`; none of these formulas depend on the generic fallback for their primary presentation.
+## Phase 3 — 7C-9C (alpha.24)
+
+Status: implemented. Every normal and fusion formula from 7C through 9C routes through `ArchmageVisualIdentity`; none of these formulas depend on the generic fallback for their primary presentation.
 
 Each major late spell should be reviewed as a bespoke sequence. Priority examples:
 
@@ -104,7 +108,9 @@ Each major late spell should be reviewed as a bespoke sequence. Priority example
 - Prismatic Wall/Spray: layered colour must be structural, not only a tint.
 - World Sunder / Earthquake: ground fracture should visibly propagate through terrain space.
 
-## Phase 4 — caster motion and clothing presentation (alpha.24)\n\nStatus: implemented as a client-only custom silhouette layer without compromising input timing or server authority. `WorldMagicTracker` exposes charge/release presentation state to the gear renderer; seven casting families reposition mod-owned sleeves and casting cloth while each robe family gains a distinct overlay silhouette.
+## Phase 4 — caster motion and clothing presentation (alpha.24)
+
+Status: implemented as a client-only custom silhouette layer without compromising input timing or server authority. `WorldMagicTracker` exposes charge/release presentation state to the gear renderer; seven casting families reposition mod-owned sleeves and casting cloth while each robe family gains a distinct overlay silhouette.
 
 Desired casting families include compact snap casts, aimed lance/beam stance, heavy two-hand release, ground invocation, ward brace, portal split, ritual channel and recoil/recovery. Do not make every spell use one arm swing.
 
@@ -122,7 +128,6 @@ Robe sets should also be separated by silhouette, not only colour: cinder combat
 - UI content must remain reachable at small logical resolutions / large GUI scale.
 - The robe remains one logical outfit even if rendering uses multiple pieces.
 - Save compatibility must be preserved unless explicitly documented otherwise.
-
 
 ## Alpha.24 integrated completion audit
 
