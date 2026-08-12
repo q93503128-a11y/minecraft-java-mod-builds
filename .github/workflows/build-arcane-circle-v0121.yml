@@ -63,6 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f "build/libs/$EXPECTED_JAR"
+          (cd build/libs && sha256sum "$EXPECTED_JAR" > "$EXPECTED_JAR.sha256")
           test -f "build/libs/$EXPECTED_JAR.sha256"
           jar tf "build/libs/$EXPECTED_JAR" >/dev/null
           python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
