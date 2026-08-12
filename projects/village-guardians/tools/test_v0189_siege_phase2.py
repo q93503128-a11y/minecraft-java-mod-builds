@@ -93,6 +93,9 @@ def main() -> None:
     intel = read("VillageWaveIntelSystem.java")
     tuning = read("VillageDifficultyTuning.java")
     debris = read("VillageRaidDebrisDropGuard.java")
+    persistence = read("VillageSiegePersistence.java")
+    council = read("VillageCouncilState.java")
+    world = read("VillageWorldSystem.java")
 
     assert "mod_version=0.18.9-alpha.1" in props
 
@@ -114,6 +117,8 @@ def main() -> None:
     assert "주공:" in plan and "별동대:" in plan and "전장 상황:" in plan
     assert "renderWarnings" in plan and "ParticleTypes.SMOKE" in plan
     assert "VillageSiegeSegmentSystem.damage" in plan and "insideApproach" in plan
+    assert "safeSpawn(level, spawnOrigin" in plan
+    assert "for (int dy = 24; dy >= -24; dy--)" in plan and "Direction.UP" in plan
     assert set(front(3, 1, i) for i in range(24)) == {"NORTH"}
     assert {"NORTH", "NORTH_WEST", "NORTH_EAST"} & set(front(6, wave, i) for wave in (1, 2) for i in range(20))
     assert "WEST" in {front(13, 1, i) for i in range(20)} and "EAST" in {front(13, 1, i) for i in range(20)}
@@ -142,6 +147,16 @@ def main() -> None:
     assert "VillageDefenseSystem.tick" not in guardians
     assert "VillagePlacedTurretSystem.tick" in guardians
     assert "VillageTowerResearchBonusSystem.tick" in guardians
+
+    # Failed-night retry/new-game state must not leak segment/turret damage.
+    assert "captureNightSnapshot" in persistence and "restoreNightSnapshot" in persistence
+    assert "resetForNewGame" in persistence and "$night_" in persistence
+    assert "VillageSiegePersistence.captureNightSnapshot()" in council
+    assert "VillageSiegePersistence.restoreNightSnapshot()" in council
+    assert "VillageSiegePersistence.resetForNewGame()" in council
+    force_rebuild = world.split("public static synchronized void forceRebuild", 1)[1].split("public static boolean handleCentralBellInteraction", 1)[0]
+    assert "VillageSiegeSegmentSystem.restoreAllVisuals(level)" in force_rebuild
+    assert "VillagePlacedTurretSystem.initializeServer(server)" in force_rebuild
 
     # Mercenary RTS scope stays intentionally coarse: three rally zones and class restrictions.
     for token in ("GATE_FRONT", "INNER", "WALL"):
@@ -188,20 +203,26 @@ def main() -> None:
         else:
             assert left >= inv_right + 4
     assert panel_layout(320, 240) is not None and panel_layout(320, 240)[4]
-    assert panel_layout(256, 240) is None  # safer to hide than overlap when no readable side area exists
+    assert panel_layout(256, 240) is None
 
     # Existing no-debris and production-safe UI contracts remain wired.
     assert "VillageRaidSystem.isActive()" in debris and "event.setCanceled(true)" in debris
     assert "facility:walls" not in local
     assert "building == VillageProgressionSystem.Building.WALLS" in local
+    for obsolete in ("open_tower_control", "tower_status", "tower_open:", "tower_branch:", "tower_upgrade:"):
+        assert obsolete in local
+    legacy_guard = local.split("Compatibility guard:", 1)[1].split("if (action.equals(\"siege_command\")", 1)[0]
+    assert "VillageSiegeCommandUi.open(player)" in legacy_guard
 
     print("[PASS] Seven segment HP pools project localized 5-block no-drop wall breaches")
-    print("[PASS] Day-driven scoutable multi-front routing and world warnings are variable-checked")
+    print("[PASS] Day-driven scoutable multi-front routing uses safe terrain-height spawn resolution")
     print("[PASS] 1/2/3/4-player enemy scaling remains 100/130/160/190%")
     print("[PASS] Ten deployable destructible turrets use split placement/management views")
+    print("[PASS] Failed-night retry/new-game restores authoritative segment/turret snapshots and visuals")
     print("[PASS] Mercenary rally doctrine, five elite roles and three boss structures are wired")
     print("[PASS] Weapon families and 2/3-piece sets affect runtime combat and re-equip without stacking")
     print("[PASS] Inventory side panel stays outside vanilla inventory or safely hides at impossible widths")
+    print("[PASS] Legacy fixed-tower production routes redirect to phase-2 siege command")
     print("[PASS] v0.18.8 early-solo, full-death-risk and debris contracts remain")
 
 if __name__ == "__main__":
