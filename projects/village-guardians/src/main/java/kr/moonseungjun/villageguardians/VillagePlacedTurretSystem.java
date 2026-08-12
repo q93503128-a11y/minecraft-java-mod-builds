@@ -8,7 +8,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
@@ -77,7 +76,6 @@ public final class VillagePlacedTurretSystem {
         PendingPlacement pending = PENDING.get(player.getUUID());
         if (pending == null) return false;
         event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
         BlockPos candidate = event.getPos().above();
         String invalid = invalidReason(level, candidate, -1);
         if (invalid != null) {
@@ -371,7 +369,7 @@ public final class VillagePlacedTurretSystem {
         PIERCER("piercer", "철갑 관통포", 24, 34, 62, 290, 190, Blocks.TARGET, "중장갑 대응"),
         FLAME("flame", "화염 투사기", 16, 30, 44, 270, 180, Blocks.CAMPFIRE, "지속 화상"),
         FROST("frost", "서리 억제기", 11, 28, 48, 270, 180, Blocks.PACKED_ICE, "감속 제어"),
-        CHAIN("chain", "연쇄 전격탑", 13, 36, 50, 260, 210, Blocks.LIGHTNING_ROD, "다중 연쇄"),
+        CHAIN("chain", "연쇄 전격탑", 13, 36, 50, 260, 210, Blocks.END_ROD, "다중 연쇄"),
         BOMBARD("bombard", "광역 투석포", 32, 70, 55, 340, 250, Blocks.BLAST_FURNACE, "광역 포격"),
         NULLIFIER("nullifier", "마법 억제탑", 9, 40, 50, 280, 220, Blocks.AMETHYST_BLOCK, "강화 효과 제거"),
         ANTI_AIR("anti_air", "대공 발사대", 19, 24, 72, 260, 220, Blocks.IRON_BARS, "고고도 우선 사격"),
