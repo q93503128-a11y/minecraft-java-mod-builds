@@ -6,7 +6,6 @@ import kr.moonseungjun.senbonzakura.registry.ModItems;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
@@ -36,10 +35,8 @@ public final class BankaiKeyHandler {
 
             boolean holding = player.getMainHandItem().getItem() == ModItems.SENBONZAKURA.get()
                     || player.getOffhandItem().getItem() == ModItems.SENBONZAKURA.get();
-            if (!holding) {
-                player.displayClientMessage(Component.literal("§d[천본앵] §f참백도 · 천본앵을 손에 들어야 합니다."), true);
-                continue;
-            }
+            if (!holding) continue;
+
             ClientPacketDistributor.sendToServer(new BankaiVisualPayload("action=request"));
         }
     }
