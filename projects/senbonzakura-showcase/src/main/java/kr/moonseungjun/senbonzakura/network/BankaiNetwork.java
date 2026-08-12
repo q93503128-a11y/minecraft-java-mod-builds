@@ -1,21 +1,40 @@
 package kr.moonseungjun.senbonzakura.network;
 
+import kr.moonseungjun.senbonzakura.bankai.BankaiService;
+import kr.moonseungjun.senbonzakura.registry.ModItems;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.Locale;
 import java.util.UUID;
 
 public final class BankaiNetwork {
-    public static final String PROTOCOL_VERSION = "senbonzakura-showcase-v1";
+    public static final String PROTOCOL_VERSION = "senbonzakura-showcase-v2";
 
     private BankaiNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
-        registrar.playToClient(BankaiVisualPayload.TYPE, BankaiVisualPayload.STREAM_CODEC);
+        registrar.playBidirectional(BankaiVisualPayload.TYPE, BankaiVisualPayload.STREAM_CODEC,
+                BankaiNetwork::handleServerPayload);
+    }
+
+    private static void handleServerPayload(BankaiVisualPayload payload, IPayloadContext context) {
+        if (!"action=request".equals(payload.state())) return;
+        if (!(context.player() instanceof ServerPlayer player)) return;
+
+        boolean holding = player.getMainHandItem().getItem() == ModItems.SENBONZAKURA.get()
+                || player.getOffhandItem().getItem() == ModItems.SENBONZAKURA.get();
+        if (!holding) {
+            player.sendSystemMessage(Component.literal("§d[천본앵] §f참백도 · 천본앵을 손에 들어야 합니다."));
+            return;
+        }
+        BankaiService.activate(player);
     }
 
     public static void broadcastStart(UUID caster, Vec3 origin, Vec3 facing, int durationTicks) {

@@ -73,7 +73,7 @@ public final class BankaiService {
                     SoundSource.PLAYERS, 1.8F, 0.62F);
         }
         if (age == 54) {
-            level.playSound(null, player.blockPosition(), SoundEvents.BREEZE_WIND_BURST,
+            level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
                     SoundSource.PLAYERS, 1.2F, 0.78F);
         }
 

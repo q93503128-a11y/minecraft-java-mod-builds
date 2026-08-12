@@ -136,7 +136,7 @@ final class BladeMesh {
             quad(b2, b3, q3, q2, faceColor);
             triangle(q1, q2, tipTop, faceColor);
             triangle(q4, tipBottom, q3, faceColor);
-            triangle(q1, tipTop, tipBottom, q4, faceColor);
+            quad(q1, tipTop, tipBottom, q4, faceColor);
             triangle(q2, q3, tipBottom, faceColor);
 
             edge(base.add(s), shoulder.add(s), edgeColor, 0.78F);

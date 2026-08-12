@@ -1,5 +1,6 @@
 package kr.moonseungjun.senbonzakura;
 
+import kr.moonseungjun.senbonzakura.client.BankaiKeyHandler;
 import kr.moonseungjun.senbonzakura.client.BankaiWorldRenderer;
 import kr.moonseungjun.senbonzakura.client.ClientBankaiNetwork;
 import net.neoforged.api.distmarker.Dist;
@@ -11,6 +12,8 @@ import net.neoforged.neoforge.common.NeoForge;
 public final class SenbonzakuraShowcaseClient {
     public SenbonzakuraShowcaseClient(IEventBus modEventBus) {
         modEventBus.addListener(ClientBankaiNetwork::register);
+        modEventBus.addListener(BankaiKeyHandler::register);
+        NeoForge.EVENT_BUS.addListener(BankaiKeyHandler::onClientTick);
         NeoForge.EVENT_BUS.addListener(BankaiWorldRenderer::onExtract);
         NeoForge.EVENT_BUS.addListener(BankaiWorldRenderer::onSubmit);
     }
