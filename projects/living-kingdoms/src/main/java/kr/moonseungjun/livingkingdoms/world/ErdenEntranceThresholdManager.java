@@ -16,15 +16,17 @@ import java.util.List;
 /**
  * Reconciles each imported door's real vertical position with its terrain-following access path.
  * External schematics can place a door two or three metres above their natural lot surface; the
- * old x/z-only path reached the facade but could leave an unclimbable vertical threshold. This
- * manager adds a short, graded landing only after the relevant streamed chunks are loaded.
+ * old x/z-only path reached the facade but could leave an unclimbable vertical threshold. The
+ * repaired route first leaves the facade on the same cardinal axis used by the functional interior
+ * and only then bends toward the street, preventing diagonal paths from clipping building corners.
  */
 public final class ErdenEntranceThresholdManager {
-    public static final int THRESHOLD_REVISION = 1;
+    public static final int THRESHOLD_REVISION = 2;
 
     private static final int EXPECTED_ENTRANCES = 273;
     private static final int PROCESS_INTERVAL = 5;
     private static final int PROCESS_BUDGET = 6;
+    private static final int PORCH_STEPS = 3;
     private static final int BASE_APPROACH_STEPS = 8;
     private static final int MAX_APPROACH_STEPS = 16;
     private static final int UPDATE_FLAGS =
@@ -64,9 +66,10 @@ public final class ErdenEntranceThresholdManager {
             processed++;
             if (diagnosticMode()) {
                 LivingKingdoms.LOGGER.debug(
-                        "Normalized Erden entrance threshold kind={} role={} entrance={},{} road={},{} door_y={} approach_steps={} floor_delta={}",
+                        "Normalized Erden entrance threshold kind={} role={} entrance={},{} road={},{} door_y={} approach_steps={} porch_steps={} floor_delta={}",
                         entry.kind, entry.role, entry.x, entry.z, entry.roadX, entry.roadZ,
-                        doorY, approach.steps, approach.endFloor - (doorY - 1));
+                        doorY, approach.steps, approach.porchSteps,
+                        approach.endFloor - (doorY - 1));
             }
         }
 
@@ -74,7 +77,7 @@ public final class ErdenEntranceThresholdManager {
         if (!completionLogged && complete == entries.size()) {
             completionLogged = true;
             LivingKingdoms.LOGGER.info(
-                    "Completed Erden entrance threshold normalization entrances={} graded_landings=true real_door_heights=true loaded_only=true revision={}",
+                    "Completed Erden entrance threshold normalization entrances={} graded_landings=true cardinal_porches=true real_door_heights=true loaded_only=true revision={}",
                     complete, THRESHOLD_REVISION);
         }
     }
@@ -121,7 +124,7 @@ public final class ErdenEntranceThresholdManager {
                 result = List.copyOf(built);
                 cachedEntries = result;
                 LivingKingdoms.LOGGER.info(
-                        "Prepared Erden entrance threshold reconciler entrances={} terrain_matched=true",
+                        "Prepared Erden entrance threshold reconciler entrances={} terrain_matched=true cardinal_porches=true",
                         result.size());
             }
             return result;
@@ -152,26 +155,31 @@ public final class ErdenEntranceThresholdManager {
     }
 
     private static Approach approach(Entry entry, int doorY) {
-        int deltaX = entry.roadX - entry.x;
-        int deltaZ = entry.roadZ - entry.z;
-        int totalSteps = Math.max(Math.abs(deltaX), Math.abs(deltaZ));
+        Route route = route(entry);
+        int totalSteps = route.points.size();
         int steps = Math.min(totalSteps, BASE_APPROACH_STEPS);
-        Point end = pathPoint(entry, steps, totalSteps);
+        Point end = route.points.get(steps - 1);
         int endFloor = designedFloor(end.x, end.z);
         int doorFloor = doorY - 1;
         int required = Math.min(MAX_APPROACH_STEPS, Math.abs(endFloor - doorFloor) + 2);
         if (required > steps && required <= totalSteps) {
             steps = required;
-            end = pathPoint(entry, steps, totalSteps);
+            end = route.points.get(steps - 1);
             endFloor = designedFloor(end.x, end.z);
         }
-        return new Approach(Math.max(1, steps), Math.max(1, totalSteps), doorFloor, endFloor);
+        return new Approach(
+                route.points,
+                Math.max(1, steps),
+                route.porchSteps,
+                doorFloor,
+                endFloor);
     }
 
     /**
-     * Validates the complete graded segment before the first write. In particular the two cells
-     * immediately outside the door must already have body clearance; this prevents the threshold
-     * repair from deleting an authored awning, arch or facade detail just to make the audit pass.
+     * Validates the whole cardinal doorway run before the first write. We never erase a facade just
+     * to make a path pass: every cell from the real door through the short porch must already have
+     * player body clearance. Beyond that authored exterior run, the terrain path may be graded and
+     * cleared because it is deliberately outside the building envelope.
      */
     private static boolean preflight(
             ServerLevel level,
@@ -181,7 +189,7 @@ public final class ErdenEntranceThresholdManager {
         if (!walkable(level, entry.x, doorY, entry.z)) return false;
         int previousFloor = approach.doorFloor;
         for (int step = 1; step <= approach.steps; step++) {
-            Point center = pathPoint(entry, step, approach.totalSteps);
+            Point center = approach.points.get(step - 1);
             if (!level.hasChunk(center.x >> 4, center.z >> 4)
                     || !ErdenCapitalStreamingBuilder.isChunkBuilt(
                     level, center.x >> 4, center.z >> 4)) {
@@ -192,7 +200,7 @@ public final class ErdenEntranceThresholdManager {
                     approach.doorFloor
                             + (approach.endFloor - approach.doorFloor) * progress);
             if (Math.abs(targetFloor - previousFloor) > 1) return false;
-            if (step <= 2) {
+            if (step <= approach.porchSteps) {
                 BlockPos feet = new BlockPos(center.x, targetFloor + 1, center.z);
                 if (!bodyPassable(level, feet) || !bodyPassable(level, feet.above())) {
                     return false;
@@ -208,21 +216,22 @@ public final class ErdenEntranceThresholdManager {
             Entry entry,
             int doorY,
             Approach approach) {
-        int deltaX = entry.roadX - entry.x;
-        int deltaZ = entry.roadZ - entry.z;
-        boolean eastWest = Math.abs(deltaX) >= Math.abs(deltaZ);
         Block material = entry.urbanOrResidential ? Blocks.PACKED_MUD : Blocks.STONE_BRICKS;
         int previousFloor = approach.doorFloor;
+        Point previousPoint = new Point(entry.x, entry.z);
 
         for (int step = 1; step <= approach.steps; step++) {
-            Point center = pathPoint(entry, step, approach.totalSteps);
+            Point center = approach.points.get(step - 1);
             float progress = step / (float) approach.steps;
             int targetFloor = Math.round(
                     approach.doorFloor
                             + (approach.endFloor - approach.doorFloor) * progress);
             if (Math.abs(targetFloor - previousFloor) > 1) return false;
 
-            int halfWidth = step <= 2 ? 0 : 1;
+            int movementX = center.x - previousPoint.x;
+            int movementZ = center.z - previousPoint.z;
+            boolean eastWest = Math.abs(movementX) >= Math.abs(movementZ);
+            int halfWidth = step <= approach.porchSteps ? 0 : 1;
             for (int width = -halfWidth; width <= halfWidth; width++) {
                 int x = eastWest ? center.x : center.x + width;
                 int z = eastWest ? center.z + width : center.z;
@@ -239,7 +248,7 @@ public final class ErdenEntranceThresholdManager {
                 } else {
                     set(level, x, targetFloor, z, material);
                 }
-                if (step > 2) {
+                if (step > approach.porchSteps) {
                     int clearTop = Math.max(targetFloor + 3, naturalFloor + 2);
                     for (int y = targetFloor + 1; y <= clearTop; y++) {
                         set(level, x, y, z, Blocks.AIR);
@@ -248,17 +257,52 @@ public final class ErdenEntranceThresholdManager {
             }
             if (!walkable(level, center.x, targetFloor + 1, center.z)) return false;
             previousFloor = targetFloor;
+            previousPoint = center;
         }
 
         if (Math.abs(previousFloor - approach.endFloor) > 1) return false;
         return walkable(level, entry.x, doorY, entry.z);
     }
 
-    private static Point pathPoint(Entry entry, int step, int totalSteps) {
-        float progress = step / (float) Math.max(1, totalSteps);
-        return new Point(
-                entry.x + Math.round((entry.roadX - entry.x) * progress),
-                entry.z + Math.round((entry.roadZ - entry.z) * progress));
+    private static Route route(Entry entry) {
+        int deltaX = entry.roadX - entry.x;
+        int deltaZ = entry.roadZ - entry.z;
+        int directSteps = Math.max(Math.abs(deltaX), Math.abs(deltaZ));
+        if (directSteps <= 0) {
+            return new Route(List.of(new Point(entry.x, entry.z)), 0);
+        }
+
+        Vector outward = outward(entry);
+        int porchSteps = Math.min(PORCH_STEPS, directSteps);
+        List<Point> points = new ArrayList<>(directSteps + PORCH_STEPS);
+        for (int step = 1; step <= porchSteps; step++) {
+            points.add(new Point(
+                    entry.x + outward.x * step,
+                    entry.z + outward.z * step));
+        }
+
+        Point porch = points.getLast();
+        int secondDeltaX = entry.roadX - porch.x;
+        int secondDeltaZ = entry.roadZ - porch.z;
+        int secondSteps = Math.max(Math.abs(secondDeltaX), Math.abs(secondDeltaZ));
+        for (int step = 1; step <= secondSteps; step++) {
+            float progress = step / (float) secondSteps;
+            Point point = new Point(
+                    porch.x + Math.round(secondDeltaX * progress),
+                    porch.z + Math.round(secondDeltaZ * progress));
+            if (!point.equals(points.getLast())) points.add(point);
+        }
+        return new Route(List.copyOf(points), porchSteps);
+    }
+
+    /** Matches the exterior axis implied by the same road vector used by the urban interior. */
+    private static Vector outward(Entry entry) {
+        int deltaX = entry.roadX - entry.x;
+        int deltaZ = entry.roadZ - entry.z;
+        if (Math.abs(deltaX) >= Math.abs(deltaZ)) {
+            return new Vector(deltaX >= 0 ? 1 : -1, 0);
+        }
+        return new Vector(0, deltaZ >= 0 ? 1 : -1);
     }
 
     private static int designedFloor(int x, int z) {
@@ -314,9 +358,16 @@ public final class ErdenEntranceThresholdManager {
     private record Point(int x, int z) {
     }
 
+    private record Vector(int x, int z) {
+    }
+
+    private record Route(List<Point> points, int porchSteps) {
+    }
+
     private record Approach(
+            List<Point> points,
             int steps,
-            int totalSteps,
+            int porchSteps,
             int doorFloor,
             int endFloor) {
     }
