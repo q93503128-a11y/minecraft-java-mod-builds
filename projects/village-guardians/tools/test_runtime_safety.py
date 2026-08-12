@@ -25,9 +25,12 @@ def main() -> None:
     quick_safe = read("VillageQuickChatSafeScreen.java")
     fusion_safe = read("VillageFusionSafeScreen.java")
     command_ui = read("VillageCommandCenterScreen.java")
+    town_ui = read("VillageTownHallGridScreen.java")
+    shop_ui = read("VillageShopCatalogScreen.java")
+    action_ui = read("VillageActionDetailScreen.java")
     relic_ui = read("VillageRelicScreen.java")
-    relic_choice_ui = read("VillageRelicChoiceScreen.java")
-    wave_ui = read("VillageWaveIntelScreen.java")
+    relic_choice_ui = read("VillageRelicChoiceConfirmScreen.java")
+    wave_ui = read("VillageWaveIntelDossierScreen.java")
     game_over_ui = read("VillageGameOverScreen.java")
     inventory = read("VillageInventoryPanel.java")
     keys = read("VillageClientKeys.java")
@@ -57,7 +60,7 @@ def main() -> None:
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
     assert "if (!mob.isPersistenceRequired()) event.setCanceled(true)" in guardians
 
-    # HUD collision contract: persistent status never uses vanilla action bar and modal screens own the full viewport.
+    # HUD collision contract: persistent status never uses vanilla action bar and modal screens own a hotbar-safe viewport.
     assert "ClientboundSetActionBarTextPacket" not in hud_system
     assert "VillageNetwork.sendMainHud(player, text)" in hud_system
     assert "MainHudPayload" in network and '"main_hud"' in network
@@ -73,34 +76,40 @@ def main() -> None:
     assert "event.setCanceled(true)" in hud_suppressor
     assert "Minecraft.getInstance().gui.screen()" in hud_suppressor
 
-    # High-frequency menus route through responsive full-view surfaces.
+    # Production routing must use current responsive surfaces, never retired parchment/generic screens.
     assert 'case "quick_chat" -> new VillageQuickChatSafeScreen(payload)' in client_ui
     assert 'case "equipment_fusion" -> new VillageFusionSafeScreen(payload)' in client_ui
-    assert 'case "town_hall", "status", "equipment_shop"' in client_ui
-    assert "new VillageCommandCenterScreen(payload)" in client_ui
+    assert 'case "town_hall" -> new VillageTownHallGridScreen(payload)' in client_ui
+    assert 'case "equipment_shop" -> new VillageShopCatalogScreen(payload)' in client_ui
+    assert 'case "status", "caller" -> new VillageCommandCenterScreen(payload)' in client_ui
+    assert '"building", "management", "funding", "tower_control", "tower_detail", "skill_test" ->' in client_ui
     assert 'case "relic_collection" -> new VillageRelicScreen(payload)' in client_ui
-    assert 'case "relic_choice" -> new VillageRelicChoiceScreen(payload)' in client_ui
-    assert 'case "wave_intel" -> new VillageWaveIntelScreen(payload)' in client_ui
+    assert 'case "relic_choice" -> new VillageRelicChoiceConfirmScreen(payload)' in client_ui
+    assert 'case "wave_intel" -> new VillageWaveIntelDossierScreen(payload)' in client_ui
     assert 'case "game_over" -> new VillageGameOverScreen(payload)' in client_ui
-    assert 'case "skill_test" -> new VillageFacilityScreen(payload)' in client_ui
-    for source in (quick_safe, fusion_safe, command_ui, relic_ui):
+    assert "default -> new VillageActionDetailScreen(payload)" in client_ui
+    for legacy in ("VillageTownHallScreen", "VillageShopScreen", "VillageQuickChatScreen",
+                   "VillageFacilityScreen", "VillageUiScreen", "VillageRelicChoiceScreen",
+                   "VillageWaveIntelScreen", "VillageStatusScreen"):
+        assert legacy not in client_ui
+
+    for source in (quick_safe, fusion_safe, command_ui, town_ui, shop_ui, action_ui,
+                   relic_ui, relic_choice_ui, wave_ui):
         assert "VillageUiSafeArea.screen" in source
     assert "drawSignalLabel" in quick_safe
     assert "safe.bottom() - 29" in quick_safe
     assert "ClientPacketDistributor.sendToServer" in quick_safe
     assert '"fusion_combine:"' in fusion_safe
     assert "enableScissor" in fusion_safe and "enableScissor" in command_ui
-    assert "Mode.TOWN" in command_ui and "Mode.SHOP" in command_ui and "Mode.STATUS" in command_ui
-    assert "townFacilityColumns" in command_ui
-    assert "facilityGrid" in command_ui
-    assert "count <= 8" in command_ui
-    assert "현재 시설은 자동 효과형입니다." in command_ui
-    assert "gridHit(facilities, layout.facilityGrid(), mx, my, 0)" in command_ui
+    assert 'FACILITIES("시설 관리")' in town_ui and 'ROLES("직업 배치")' in town_ui
+    assert '"repair:" + f.id()' in town_ui and '"upgrade:" + f.id()' in town_ui
+    assert 'ALL("전체"' in shop_ui and 'SALE("판매"' in shop_ui
+    assert "VillageConfirmScreen" in shop_ui
+    assert '"facility_info".equals(rawActions[i])' in action_ui
     assert "rowHeight" in relic_ui and "cellWidth" in relic_ui
     assert "reliquary" in relic_ui.lower() and "drawDiamond" in relic_ui
-    assert "relic_select:" not in relic_choice_ui
-    assert "VillageUiActionPayload(actions[index])" in relic_choice_ui
-    assert "attack timeline" in wave_ui.lower() and "insideDiamond" in wave_ui
+    assert "VillageConfirmScreen" in relic_choice_ui and "영구 적용" in relic_choice_ui
+    assert "VillageEnemyBestiary.find" in wave_ui and "drawDossier" in wave_ui
     assert "VillageConfirmScreen" in game_over_ui and "requiresConfirmation" in game_over_ui
 
     assert '"open_status"' in inventory
@@ -159,8 +168,8 @@ def main() -> None:
 
     for branch in ("MERCENARY", "TOWER", "LOGISTICS"):
         assert branch in research
-    for role in ("BASTION", "STRIKER", "RANGER", "MEDIC"):
-        assert role in mercenary
+    for role_name in ("BASTION", "STRIKER", "RANGER", "MEDIC"):
+        assert role_name in mercenary
     assert "VillageMercenaryData.TYPE" in mercenary
     assert "getTags()" not in mercenary
     assert "setPersistenceRequired" in mercenary
@@ -191,10 +200,10 @@ def main() -> None:
     assert "MAX_ACTIVE_ENEMIES = 100" in raid
     assert "VillageFortressBuildings.isTouchingStructure" in raid
 
-    print("[PASS] Modal screens suppress vanilla HUD/chat/title and use nearly the full viewport")
-    print("[PASS] Town hall keeps its seven facilities in a responsive non-scrolling command grid")
-    print("[PASS] Small building menus expand their action cards; only genuinely long lists scroll")
-    print("[PASS] Quick chat and relic collection reserve independent text zones")
+    print("[PASS] Modal screens suppress vanilla HUD/chat/title and stay inside the hotbar-safe viewport")
+    print("[PASS] Production routing uses current town/shop/action/relic/wave surfaces only")
+    print("[PASS] Town hall exposes explicit facility function, repair and upgrade controls")
+    print("[PASS] Quick chat, fusion, relic and tactical dossier safeguards remain wired")
     print("[PASS] Existing progression, building, shop, loot, mercenary, research and raid contracts remain wired")
 
 
