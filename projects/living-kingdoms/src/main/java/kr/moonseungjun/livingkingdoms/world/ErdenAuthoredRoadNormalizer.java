@@ -101,6 +101,11 @@ public final class ErdenAuthoredRoadNormalizer {
                         ErdenCapitalStreamingBuilder.roadClassAt(x, z);
                 if (roadClass == ErdenCapitalStreamingBuilder.RoadClass.NONE) continue;
 
+                // Generic street/canopy repair must never tunnel through the imported citadel,
+                // district buildings or their authored yards. The initial streamed build already
+                // established the correct local relationship between those structures and streets.
+                if (ErdenCapitalProtectedGeometry.protectsAuthoredStructure(x, z)) continue;
+
                 int authoredY = authoredSurfaceY(x, z);
                 BlockPos authoredSurface = new BlockPos(x, authoredY, z);
                 boolean fluid = !level.getFluidState(authoredSurface).isEmpty();
@@ -176,10 +181,10 @@ public final class ErdenAuthoredRoadNormalizer {
 
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_AUTHORED_ROADS_PASS revision={} normalized_chunks={} road_columns={} culvert_cells={} canopy_blocks_removed={} diagnostic_y={} canopy_independent=true existing_saves_repaired=true culvert_reasserted=true",
+                "LK_ERDEN_AUTHORED_ROADS_PASS revision={} normalized_chunks={} road_columns={} culvert_cells={} canopy_blocks_removed={} diagnostic_y={} canopy_independent=true existing_saves_repaired=true culvert_reasserted=true protected_authored_lots={}",
                 ErdenAuthoredRoadSavedData.REVISION,
                 data.normalizedChunkCount(), data.roadColumns(), data.culvertCells(),
-                data.canopyBlocksRemoved(), y);
+                data.canopyBlocksRemoved(), y, ErdenCapitalProtectedGeometry.lotCount());
     }
 
     private static void enqueue(int chunkX, int chunkZ) {
