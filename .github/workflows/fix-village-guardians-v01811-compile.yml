@@ -1,0 +1,49 @@
+name: Fix Village Guardians v0.18.11 Compile
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.compile-fix-trigger-v01811'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Patch 26.2 copper collection constants
+        run: |
+          git pull --rebase origin main
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillagePlacedTurretSystem.java')
+          s = p.read_text(encoding='utf-8')
+          replacements = {
+              'case CHAIN -> Blocks.LIGHTNING_ROD;': 'case CHAIN -> Blocks.REDSTONE_LAMP;',
+              'case ANTI_AIR -> Blocks.COPPER_BULB;': 'case ANTI_AIR -> Blocks.IRON_BARS;',
+          }
+          for old, new in replacements.items():
+              if s.count(old) != 1:
+                  raise SystemExit(f'expected one match: {old}')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          python3 projects/village-guardians/tools/test_v01811_defense_polish.py
+          git add projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillagePlacedTurretSystem.java
+          git commit -m 'fix(village): use concrete turret cap blocks on 26.2'
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          exit 1
