@@ -15,8 +15,10 @@ import java.util.regex.Pattern;
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageInventoryPanel {
     private static final int DESIRED_WIDTH = 142;
-    private static final int MIN_WIDTH = 104;
+    private static final int COMPACT_WIDTH = 96;
+    private static final int MIN_SAFE_WIDTH = 48;
     private static final int PANEL_HEIGHT = 148;
+    private static final int COMPACT_HEIGHT = 96;
     private static final int BACKGROUND = 0xFFE5DAC2;
     private static final int SURFACE = 0xFFF2EBD9;
     private static final int SURFACE_HOVER = 0xFFE2D1A9;
@@ -46,12 +48,24 @@ public final class VillageInventoryPanel {
         if (!(event.getScreen() instanceof InventoryScreen)) return;
         GuiGraphicsExtractor graphics = event.getGuiGraphics();
         Layout layout = layout(graphics.guiWidth(), graphics.guiHeight());
+        if (!layout.visible()) return;
         Minecraft minecraft = Minecraft.getInstance();
         Progress progress = parseProgress(status.progress());
 
         graphics.fill(layout.left() - 1, layout.top() - 1, layout.right() + 1, layout.bottom() + 1, BORDER);
         graphics.fill(layout.left(), layout.top(), layout.right(), layout.bottom(), BACKGROUND);
         graphics.fill(layout.left(), layout.top(), layout.left() + 3, layout.bottom(), ACCENT);
+
+        var player = minecraft.player;
+        int wall = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
+                VillageEquipmentSetSystem.EquipmentSet.WALL_GUARDIAN);
+        int hunter = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
+                VillageEquipmentSetSystem.EquipmentSet.NIGHT_HUNTER);
+
+        if (layout.compact()) {
+            renderCompact(graphics, minecraft, layout, progress, wall, hunter);
+            return;
+        }
 
         graphics.text(minecraft.font, "수호자", layout.left() + 9, layout.top() + 7, TEXT, false);
         String level = "Lv." + progress.level();
@@ -73,11 +87,6 @@ public final class VillageInventoryPanel {
         graphics.text(minecraft.font, fit(minecraft, VillageClientKeys.compactSummary(), layout.width() - 18),
                 layout.left() + 9, layout.top() + 70, MUTED, false);
 
-        var player = minecraft.player;
-        int wall = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
-                VillageEquipmentSetSystem.EquipmentSet.WALL_GUARDIAN);
-        int hunter = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
-                VillageEquipmentSetSystem.EquipmentSet.NIGHT_HUNTER);
         graphics.text(minecraft.font, fit(minecraft, setLine("성벽 수호자", wall), layout.width() - 18),
                 layout.left() + 9, layout.top() + 82, wall >= 2 ? GOLD : MUTED, false);
         graphics.text(minecraft.font, fit(minecraft, setLine("밤사냥꾼", hunter), layout.width() - 18),
@@ -96,8 +105,26 @@ public final class VillageInventoryPanel {
                 layout.left() + 9 + buttonWidth + gap, firstY + 21, buttonWidth, VillageClientKeys.quickCommunicationKeyName() + " 통신", GOLD);
     }
 
+    private static void renderCompact(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,
+                                      Progress progress, int wall, int hunter) {
+        int x = layout.left() + 6;
+        int max = Math.max(1, layout.width() - 12);
+        graphics.text(minecraft.font, fit(minecraft, "수호자 Lv." + progress.level(), max), x, layout.top() + 7, TEXT, false);
+        graphics.text(minecraft.font, fit(minecraft, compactSetLine("수호", wall), max),
+                x, layout.top() + 22, wall >= 2 ? GOLD : MUTED, false);
+        graphics.text(minecraft.font, fit(minecraft, compactSetLine("사냥", hunter), max),
+                x, layout.top() + 34, hunter >= 2 ? ACCENT : MUTED, false);
+        graphics.text(minecraft.font, fit(minecraft, "직업 " + status.role(), max), x, layout.top() + 49, MUTED, false);
+        graphics.text(minecraft.font, fit(minecraft, "주화 " + economyValue(status.economy()), max), x, layout.top() + 61, GOLD, false);
+        graphics.text(minecraft.font, fit(minecraft, VillageClientKeys.compactSummary(), max), x, layout.top() + 77, MUTED, false);
+    }
+
     private static String setLine(String name, int count) {
         return name + " " + count + "/3  " + (count >= 2 ? "◆2" : "◇2") + " " + (count >= 3 ? "◆3" : "◇3");
+    }
+
+    private static String compactSetLine(String name, int count) {
+        return name + " " + count + "/3 " + (count >= 2 ? "◆2" : "◇2") + " " + (count >= 3 ? "◆3" : "◇3");
     }
 
     private static void drawRow(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,
@@ -124,6 +151,7 @@ public final class VillageInventoryPanel {
         if (!(event.getScreen() instanceof InventoryScreen) || event.getButton() != 0) return;
         Minecraft minecraft = Minecraft.getInstance();
         Layout layout = layout(minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
+        if (!layout.visible() || layout.compact()) return;
         int gap = 5;
         int buttonWidth = (layout.width() - 18 - gap) / 2;
         int firstY = layout.top() + 108;
@@ -147,19 +175,23 @@ public final class VillageInventoryPanel {
     }
 
     private static Layout layout(int screenWidth, int screenHeight) {
+        if (screenWidth < 176 || screenHeight < COMPACT_HEIGHT + 6) return Layout.hidden();
         int inventoryLeft = (screenWidth - 176) / 2;
         int inventoryRight = inventoryLeft + 176;
         int leftSpace = Math.max(0, inventoryLeft - 6);
         int rightSpace = Math.max(0, screenWidth - inventoryRight - 6);
-        boolean useLeft = leftSpace >= MIN_WIDTH || rightSpace < MIN_WIDTH || leftSpace >= rightSpace;
+        boolean useLeft = leftSpace >= rightSpace;
         int available = useLeft ? leftSpace : rightSpace;
-        int width = Math.max(MIN_WIDTH, Math.min(DESIRED_WIDTH, Math.max(MIN_WIDTH, available - 4)));
-        int left = useLeft ? Math.max(2, inventoryLeft - width - 4)
-                : Math.min(screenWidth - width - 2, inventoryRight + 4);
-        int top = Math.max(3, screenHeight / 2 - PANEL_HEIGHT / 2);
-        int bottom = Math.min(screenHeight - 3, top + PANEL_HEIGHT);
-        if (bottom - top < 146) top = Math.max(2, bottom - 146);
-        return new Layout(left, top, width, bottom - top);
+        if (available < MIN_SAFE_WIDTH + 4) return Layout.hidden();
+
+        int width = Math.min(DESIRED_WIDTH, available - 4);
+        boolean compact = width < COMPACT_WIDTH || screenHeight < PANEL_HEIGHT + 6;
+        int targetHeight = compact ? COMPACT_HEIGHT : PANEL_HEIGHT;
+        if (screenHeight < targetHeight + 6) return Layout.hidden();
+
+        int left = useLeft ? inventoryLeft - width - 4 : inventoryRight + 4;
+        int top = Math.max(3, (screenHeight - targetHeight) / 2);
+        return new Layout(left, top, width, targetHeight, compact, true);
     }
 
     private static Progress parseProgress(String text) {
@@ -193,7 +225,8 @@ public final class VillageInventoryPanel {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
     }
 
-    private record Layout(int left, int top, int width, int height) {
+    private record Layout(int left, int top, int width, int height, boolean compact, boolean visible) {
+        static Layout hidden() { return new Layout(0, 0, 0, 0, true, false); }
         int right() { return left + width; }
         int bottom() { return top + height; }
     }
