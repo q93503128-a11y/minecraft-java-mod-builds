@@ -21,14 +21,17 @@ import java.util.Set;
  * player feet space; feet and head must already be source air. Horizontal moves and one-block rises
  * or drops are allowed only while moving to an adjacent horizontal cell, matching a staircase rather
  * than permitting vertical ladders. Support may be authored later underneath the route, but source
- * facade/roof/interior blocks remain immutable.</p>
+ * facade/roof/interior blocks remain immutable. Interior route cells must remain under authored
+ * structure. Exterior cells are permitted only when they stay in a narrow band outside the retained
+ * entrance plane and are physically attached to authored source structure, allowing wall-hugging
+ * exterior stairs without opening arbitrary air routes across the plot.</p>
  */
 public final class ErdenUrbanSourceAirRoutePlanner {
-    public static final int PLANNER_REVISION = 2;
+    public static final int PLANNER_REVISION = 3;
 
-    private static final int EDGE_MARGIN = 1;
     private static final int MAX_ROUTE_NODES = 32_000;
     private static final int MIN_HEADROOM = 2;
+    private static final int MAX_EXTERIOR_DEPTH = 6;
 
     private static final Map<String, RoutePlan> PLANS = new LinkedHashMap<>();
     private static boolean bootstrapped;
@@ -55,7 +58,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             RoutePlan plan = plan(snapshot, opportunity);
             PLANS.put(snapshot.fragmentKey(), plan);
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_SOURCE_AIR_ROUTE fragment={} recommendation={} route_classification={} target_mode={} ground_y={} target_y={} path_nodes={} rise={} turns={} explored_nodes={} source_blocks_cut=0 source_only=true world_reads=false mutations=0",
+                    "LK_ERDEN_SOURCE_AIR_ROUTE fragment={} recommendation={} route_classification={} target_mode={} ground_y={} target_y={} path_nodes={} rise={} turns={} explored_nodes={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 exterior_source_attached=true",
                     snapshot.fragmentKey(), opportunity.recommendation(), plan.classification(),
                     plan.targetMode(), opportunity.groundFeetY(), plan.targetFeetY(),
                     plan.path().size(), plan.rise(), plan.turns(), plan.exploredNodes());
@@ -79,7 +82,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
 
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden zero-cut source-air route plans fragments={} buildings={} classifications={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true revision={}",
+                "Prepared Erden zero-cut source-air route plans fragments={} buildings={} classifications={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true exterior_source_attached=true revision={}",
                 PLANS.size(), mapped, placementCounts, PLANNER_REVISION);
     }
 
@@ -106,15 +109,15 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             blocks.put(blockKey(block.x(), block.y(), block.z()), block);
         }
 
-        Set<Long> ground = reachableGround(snapshot, blocks, opportunity.groundFeetY());
-        if (ground.isEmpty()) {
+        List<Node> seeds = routeSeeds(snapshot, blocks, opportunity.groundFeetY());
+        if (seeds.isEmpty()) {
             return RoutePlan.none(RouteClassification.NO_GROUND_ROUTE);
         }
 
         int explored = 0;
         for (Target target : targets) {
             RoutePlan candidate = planTarget(
-                    snapshot, blocks, ground, opportunity.groundFeetY(), target);
+                    snapshot, blocks, seeds, opportunity.groundFeetY(), target);
             explored += candidate.exploredNodes();
             if (candidate.classification() == RouteClassification.ZERO_CUT_ROUTE) {
                 LivingKingdoms.LOGGER.info(
@@ -136,7 +139,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
     private static RoutePlan planTarget(
             ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
             Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
-            Set<Long> ground,
+            List<Node> seeds,
             int groundFeetY,
             Target target) {
         Set<Long> targetCells = new HashSet<>();
@@ -151,10 +154,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
         Map<Long, Long> previous = new HashMap<>();
         Map<Long, Node> nodes = new HashMap<>();
         Set<Long> visited = new HashSet<>();
-        for (long cell : ground) {
-            int x = cellX(cell);
-            int z = cellZ(cell);
-            Node seed = new Node(x, groundFeetY, z);
+        for (Node seed : seeds) {
             long key = nodeKey(seed.x(), seed.y(), seed.z());
             if (visited.add(key)) {
                 pending.addLast(seed);
@@ -180,7 +180,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
                     int z = current.z() + direction[1];
                     if (y < minimumY || y > maximumY) continue;
                     if (!routeBodyClear(snapshot, blocks, x, y, z)) continue;
-                    if (!routeColumnCovered(snapshot, blocks, x, y, z)) continue;
+                    if (!routeCellPermitted(snapshot, blocks, x, y, z)) continue;
                     Node next = new Node(x, y, z);
                     long nextKey = nodeKey(x, y, z);
                     if (!visited.add(nextKey)) continue;
@@ -222,6 +222,25 @@ public final class ErdenUrbanSourceAirRoutePlanner {
 
     private static int targetCellCount(Target target) {
         return target.regions().stream().mapToInt(region -> region.cells().size()).sum();
+    }
+
+    private static List<Node> routeSeeds(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
+            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
+            int feetY) {
+        List<Node> result = new ArrayList<>();
+        for (long cell : reachableGround(snapshot, blocks, feetY)) {
+            result.add(new Node(cellX(cell), feetY, cellZ(cell)));
+        }
+
+        int[] inward = inward(snapshot.exteriorSide());
+        int exteriorX = snapshot.entranceX() - inward[0];
+        int exteriorZ = snapshot.entranceZ() - inward[1];
+        if (routeBodyClear(snapshot, blocks, exteriorX, feetY, exteriorZ)
+                && routeCellPermitted(snapshot, blocks, exteriorX, feetY, exteriorZ)) {
+            result.add(new Node(exteriorX, feetY, exteriorZ));
+        }
+        return List.copyOf(result);
     }
 
     private static Set<Long> reachableGround(
@@ -267,7 +286,8 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
             Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
             int x, int feetY, int z) {
-        if (!routeBodyClear(snapshot, blocks, x, feetY, z)) return false;
+        if (!routeBodyClear(snapshot, blocks, x, feetY, z)
+                || !interiorSide(snapshot, x, z)) return false;
         ExternalUrbanFabricBuilder.UrbanSourceBlock floor = blocks.get(blockKey(x, feetY - 1, z));
         return floor != null && !floor.state().isAir()
                 && !(floor.state().getBlock() instanceof DoorBlock);
@@ -277,9 +297,7 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
             Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
             int x, int feetY, int z) {
-        if (x < EDGE_MARGIN || x >= snapshot.width() - EDGE_MARGIN
-                || z < EDGE_MARGIN || z >= snapshot.length() - EDGE_MARGIN) return false;
-        if (!interiorSide(snapshot, x, z)) return false;
+        if (x < 0 || x >= snapshot.width() || z < 0 || z >= snapshot.length()) return false;
         if (feetY <= 0 || feetY + MIN_HEADROOM - 1 >= snapshot.height()) return false;
         for (int dy = 0; dy < MIN_HEADROOM; dy++) {
             ExternalUrbanFabricBuilder.UrbanSourceBlock block =
@@ -287,6 +305,44 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             if (block != null && !block.state().isAir()) return false;
         }
         return true;
+    }
+
+    private static boolean routeCellPermitted(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
+            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
+            int x, int feetY, int z) {
+        if (interiorSide(snapshot, x, z)) {
+            return routeColumnCovered(snapshot, blocks, x, feetY, z);
+        }
+        int depth = exteriorDepth(snapshot, x, z);
+        return depth > 0 && depth <= MAX_EXTERIOR_DEPTH
+                && sourceAttached(blocks, x, feetY, z);
+    }
+
+    private static int exteriorDepth(
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot, int x, int z) {
+        return switch (snapshot.exteriorSide()) {
+            case "NORTH" -> snapshot.entranceZ() - z;
+            case "SOUTH" -> z - snapshot.entranceZ();
+            case "WEST" -> snapshot.entranceX() - x;
+            case "EAST" -> x - snapshot.entranceX();
+            default -> Integer.MAX_VALUE;
+        };
+    }
+
+    private static boolean sourceAttached(
+            Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
+            int x, int feetY, int z) {
+        for (int[] direction : DIRECTIONS) {
+            int adjacentX = x + direction[0];
+            int adjacentZ = z + direction[1];
+            for (int dy = -1; dy <= 2; dy++) {
+                ExternalUrbanFabricBuilder.UrbanSourceBlock adjacent =
+                        blocks.get(blockKey(adjacentX, feetY + dy, adjacentZ));
+                if (attachmentBlock(adjacent)) return true;
+            }
+        }
+        return attachmentBlock(blocks.get(blockKey(x, feetY - 1, z)));
     }
 
     private static boolean routeColumnCovered(
@@ -298,6 +354,17 @@ public final class ErdenUrbanSourceAirRoutePlanner {
             if (structuralBarrier(block)) return true;
         }
         return false;
+    }
+
+    private static boolean attachmentBlock(ExternalUrbanFabricBuilder.UrbanSourceBlock block) {
+        if (block == null || block.state().isAir()) return false;
+        String id = block.state().getBlock().toString();
+        return !(id.contains("water") || id.contains("lava")
+                || id.contains("torch") || id.contains("button") || id.contains("pressure_plate")
+                || id.contains("carpet") || id.contains("lantern") || id.contains("chain")
+                || id.contains("sign") || id.contains("leaves") || id.contains("sapling")
+                || id.contains("grass") || id.contains("flower") || id.contains("fern")
+                || id.contains("vine"));
     }
 
     private static boolean structuralBarrier(ExternalUrbanFabricBuilder.UrbanSourceBlock block) {
