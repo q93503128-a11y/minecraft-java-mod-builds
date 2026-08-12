@@ -251,9 +251,10 @@ public final class ErdenUrbanPlacedTopologyCatalog {
                 .filter(band -> Math.abs(band.feetY() - seed.y()) <= 2)
                 .max(Comparator.comparingInt(FloorBand::reachableCells))
                 .orElse(null);
+        final int maximumAuthoredFeetY = doorY + MAX_AUTHORED_UPPER_RISE;
         FloorBand upper = ground == null ? null : bands.stream()
                 .filter(band -> band.feetY() >= ground.feetY() + MIN_LEVEL_SEPARATION)
-                .filter(band -> band.feetY() <= doorY + MAX_AUTHORED_UPPER_RISE)
+                .filter(band -> band.feetY() <= maximumAuthoredFeetY)
                 .max(Comparator.comparingInt(FloorBand::reachableCells))
                 .orElse(null);
 
@@ -393,10 +394,10 @@ public final class ErdenUrbanPlacedTopologyCatalog {
                 || id.equals("minecraft:chest") || id.equals("minecraft:barrel")
                 || id.equals("minecraft:crafting_table") || id.equals("minecraft:furnace")
                 || id.equals("minecraft:smoker") || id.equals("minecraft:blast_furnace")
-                || id.endsWith("_anvil") || id.equals("minecraft:lectern")
-                || id.equals("minecraft:bookshelf") || id.equals("minecraft:stonecutter")
-                || id.equals("minecraft:smithing_table") || id.equals("minecraft:loom")
-                || id.equals("minecraft:cartography_table")
+                || id.endsWith("_anvil") || id.equals("minecraft:anvil")
+                || id.equals("minecraft:lectern") || id.equals("minecraft:bookshelf")
+                || id.equals("minecraft:stonecutter") || id.equals("minecraft:smithing_table")
+                || id.equals("minecraft:loom") || id.equals("minecraft:cartography_table")
                 || id.equals("minecraft:fletching_table") || id.equals("minecraft:grindstone")
                 || id.equals("minecraft:composter") || id.endsWith("cauldron");
     }
