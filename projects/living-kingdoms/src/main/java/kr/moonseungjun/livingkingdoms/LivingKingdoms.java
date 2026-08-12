@@ -13,6 +13,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenAuthoredRoadNormalizer;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenCitadelInteriorManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntranceThresholdManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenEntryPathReconciler;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntryTraversalAudit;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorInventoryManager;
@@ -104,6 +105,7 @@ public final class LivingKingdoms {
         ErdenUrbanMicroInfillManager.onServerTick(event);
         ErdenUrbanLifeManager.onServerTick(event);
         ErdenEntranceThresholdManager.onServerTick(event);
+        ErdenEntryPathReconciler.onServerTick(event);
         ErdenEntryTraversalAudit.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
