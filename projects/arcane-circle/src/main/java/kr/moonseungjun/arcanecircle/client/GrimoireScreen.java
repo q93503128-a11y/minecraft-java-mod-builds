@@ -205,7 +205,7 @@ public final class GrimoireScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         Layout l = layout();
-        g.fill(0, 0, width, height, 0xB7080B12);
+        g.fill(0, 0, width, height, 0xD1080710);
         frame(g, l);
         header(g, l, mouseX, mouseY);
         switch (page) {
@@ -249,10 +249,8 @@ public final class GrimoireScreen extends Screen {
         boolean unlocked = circle <= ArcaneClientState.integer("circle", 1);
         boolean hover = inside(mouseX, mouseY, r);
         int accent = unlocked ? circleColor(circle) : 0xFF4D4F59;
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF26344A : 0xFF121A29);
-        g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), accent);
-        ArcaneRenderUtil.ring(g, r.x() + 15, r.y() + r.h() / 2, 8, accent);
-        ArcaneRenderUtil.diamond(g, r.x() + 15, r.y() + r.h() / 2, 4, unlocked ? 0xFFF5ECFF : 0xFF686A72);
+        CodexVisualLanguage.card(g, r.x(), r.y(), r.w(), r.h(), accent, hover, false, unlocked);
+        CodexVisualLanguage.seal(g, r.x() + 15, r.y() + r.h() / 2, 8, accent, circle);
         g.text(font, Component.literal(circle + "C"), r.x() + 28, r.y() + 6, unlocked ? 0xFFF5EDFF : 0xFF85848C);
         int count = shop ? AcademyOfferCatalog.forCircle(circle).size() : SpellCatalog.spellsInCircle(circle).size();
         g.text(font, Component.literal(Integer.toString(count)), r.x() + 29, r.y() + 18, unlocked ? accent : 0xFF666872);
@@ -263,8 +261,7 @@ public final class GrimoireScreen extends Screen {
         boolean selected = activeSlot == slot;
         boolean hover = inside(mouseX, mouseY, r);
         int accent = spell == null ? 0xFF596171 : ArcaneRenderUtil.schoolColor(spell.school());
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), selected ? 0xFF2B2940 : hover ? 0xFF202B3D : 0xFF111827);
-        g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), selected ? 0xFFFFD36B : accent);
+        CodexVisualLanguage.card(g, r.x(), r.y(), r.w(), r.h(), selected ? 0xFFFFD36B : accent, hover, selected, true);
         String name = spell == null ? (slot + 1) + "  -" : (slot + 1) + "  " + spell.name();
         g.text(font, Component.literal(fit(name, r.w() - 8)), r.x() + 4, r.y() + 5,
                 selected ? 0xFFFFE3A2 : 0xFFE7E0ED);
@@ -280,8 +277,7 @@ public final class GrimoireScreen extends Screen {
         boolean hover = inside(mouseX, mouseY, r);
         boolean equipped = ArcaneClientState.slots().contains(spell.id());
         int accent = ArcaneRenderUtil.schoolColor(spell.school());
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF25334A : 0xFF111927);
-        g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), usable ? accent : 0xFF484A52);
+        CodexVisualLanguage.card(g, r.x(), r.y(), r.w(), r.h(), accent, hover, equipped, usable);
         ArcaneRenderUtil.ring(g, r.x() + 16, r.y() + r.h() / 2, 9, usable ? accent : 0xFF555760);
         if (usable) ArcaneRenderUtil.spellRune(g, r.x() + 16, r.y() + r.h() / 2, spell, 5, 0xFFF8F1FF);
         else ArcaneRenderUtil.diamond(g, r.x() + 16, r.y() + r.h() / 2, 4, 0xFF696A72);
@@ -318,8 +314,8 @@ public final class GrimoireScreen extends Screen {
             boolean cooldownReady = formula.ingredients().stream()
                     .allMatch(id -> ArcaneClientState.cooldownRemainingTicks(id) <= 0);
             boolean ready = circleReady && learned && cooldownReady;
-            g.fill(r.x(), r.y(), r.right(), r.bottom(), inside(mouseX, mouseY, r) ? 0xFF25344B : 0xFF111927);
-            g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), ready ? accent : 0xFFB75B68);
+            CodexVisualLanguage.card(g, r.x(), r.y(), r.w(), r.h(), ready ? accent : 0xFFB75B68,
+                    inside(mouseX, mouseY, r), ready, ready);
             g.text(font, Component.literal(fit(result.circle() + "C  " + result.name(), r.w() - 10)), r.x() + 6, r.y() + 5, 0xFFF0E7FA);
             String chain = formula.ingredients().stream().map(id -> SpellCatalog.spell(id).map(SpellDefinition::name).orElse(id))
                     .reduce((a, b) -> a + " + " + b).orElse("");
@@ -343,8 +339,7 @@ public final class GrimoireScreen extends Screen {
         boolean unlocked = circle <= ArcaneClientState.integer("circle", 1);
         boolean hover = inside(mouseX, mouseY, r);
         int accent = count == 0 ? 0xFF4D4F59 : unlocked ? circleColor(circle) : 0xFF5B5364;
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF26344A : 0xFF121A29);
-        g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), accent);
+        CodexVisualLanguage.card(g, r.x(), r.y(), r.w(), r.h(), accent, hover, false, count > 0 && unlocked);
         ArcaneRenderUtil.ring(g, r.x() + 15, r.y() + r.h() / 2, 8, accent);
         g.text(font, Component.literal(circle + "C"), r.x() + 28, r.y() + 6, count > 0 ? 0xFFF5EDFF : 0xFF777881);
         g.text(font, Component.literal(Integer.toString(count)), r.x() + 29, r.y() + 18, accent);
@@ -361,8 +356,8 @@ public final class GrimoireScreen extends Screen {
             boolean equipped = p.id().equals(ArcaneClientState.text("staff_id", "none"));
             boolean selected = p.id().equals(selectedStaffId);
             int accent = p.favoredSchool() == null ? 0xFFFFC866 : ArcaneRenderUtil.schoolColor(p.favoredSchool());
-            g.fill(r.x(), r.y(), r.right(), r.bottom(), selected ? 0xFF30415D : inside(mouseX, mouseY, r) ? 0xFF26354B : 0xFF111927);
-            g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), equipped ? 0xFFFFD36B : accent);
+            CodexVisualLanguage.card(g, r.x(), r.y(), r.w(), r.h(), equipped ? 0xFFFFD36B : accent,
+                    inside(mouseX, mouseY, r), selected || equipped, true);
             g.text(font, Component.literal(fit(p.displayName() + (equipped ? " · 장착" : ""), r.w() - 12)), r.x() + 6, r.y() + 6,
                     equipped ? 0xFFFFDFA0 : 0xFFF0E8FA);
             g.text(font, Component.literal(fit(staffStats(p), r.w() - 12)), r.x() + 6, r.y() + 21, 0xFF9EADC2);
@@ -376,8 +371,7 @@ public final class GrimoireScreen extends Screen {
         StaffProfile p = ModItems.profile(selectedStaffId);
         if (p == StaffProfile.NONE) return;
         Rect r = l.staffRecipe();
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), 0xF3111928);
-        g.fill(r.x(), r.y(), r.x() + 3, r.bottom(), 0xFFFFC866);
+        CodexVisualLanguage.panel(g, r.x(), r.y(), r.w(), r.h(), 0xFFFFC866);
         g.text(font, Component.literal(fit(p.displayName() + " · 조합법", r.w() - 16)), r.x() + 8, r.y() + 6, 0xFFFFDFA0);
         g.text(font, Component.literal(fit(p.recipeHint(), r.w() - 16)), r.x() + 8, r.y() + 20, 0xFFE9E0F1);
         g.text(font, Component.literal(fit(p.summary(), r.w() - 16)), r.x() + 8, r.y() + 34, 0xFF9EADC2);
@@ -395,13 +389,13 @@ public final class GrimoireScreen extends Screen {
         for (int i = 0; i < traditions.length; i++) {
             Rect r = l.tradition(i); MagicTradition t = traditions[i];
             boolean inspected = inspectedTradition == t, joined = current == t;
-            g.fill(r.x(), r.y(), r.right(), r.bottom(), inspected ? 0xFF3D3157 : inside(mouseX, mouseY, r) ? 0xFF253249 : 0xFF111827);
-            g.fill(r.x(), r.bottom() - 2, r.right(), r.bottom(), joined ? 0xFFFFD36B : inspected ? 0xFFB57ADC : 0xFF59687C);
+            CodexVisualLanguage.card(g, r.x(), r.y(), r.w(), r.h(),
+                    joined ? 0xFFFFD36B : inspected ? 0xFFB57ADC : 0xFF59687C,
+                    inside(mouseX, mouseY, r), inspected || joined, true);
             g.centeredText(font, Component.literal(t.displayName()), r.x() + r.w()/2, r.y()+5, inspected ? 0xFFFFE4A7 : 0xFFE9E0F1);
         }
         Rect detail = l.traditionDetail();
-        g.fill(detail.x(), detail.y(), detail.right(), detail.bottom(), 0xFF101827);
-        g.fill(detail.x(), detail.y(), detail.x()+3, detail.bottom(), 0xFF8A65B1);
+        CodexVisualLanguage.panel(g, detail.x(), detail.y(), detail.w(), detail.h(), 0xFF8A65B1);
         String prefix = "faction_" + inspectedTradition.name().toLowerCase();
         g.text(font, Component.literal(fit(inspectedTradition.description(), detail.w()-122)), detail.x()+8, detail.y()+6, 0xFFD9E0EC);
         g.text(font, Component.literal(fit("강점 · " + inspectedTradition.strength(), detail.w()-122)), detail.x()+8, detail.y()+20, 0xFF7BD4A4);
@@ -524,22 +518,20 @@ public final class GrimoireScreen extends Screen {
 
     private void infoPanel(GuiGraphicsExtractor g, int x, int y, int w, String title, List<String> lines) {
         int panelHeight = Math.max(82, 34 + lines.size() * 13);
-        g.fill(x, y, x + w, y + panelHeight, 0xFF101827); g.fill(x, y, x + w, y + 2, 0xFF745797);
+        CodexVisualLanguage.panel(g, x, y, w, panelHeight, 0xFF8D6BA1);
         g.text(font, Component.literal(title), x + 8, y + 8, 0xFFE8D9F5);
         for (int i = 0; i < lines.size(); i++) g.text(font, Component.literal(fit(lines.get(i), w - 16)), x + 8, y + 25 + i * 13, 0xFF9EABC0);
     }
 
     private void frame(GuiGraphicsExtractor g, Layout l) {
-        g.fill(l.left() - 2, l.top() - 2, l.right() + 2, l.bottom() + 2, 0xFF05070D);
-        g.fill(l.left(), l.top(), l.right(), l.bottom(), 0xFA0D1422);
-        g.fill(l.left(), l.top(), l.left() + 3, l.bottom(), 0xFF8B63B4);
-        g.fill(l.left(), l.top(), l.right(), l.top() + 2, 0xFFB78BDD);
+        CodexVisualLanguage.bookFrame(g, l.left(), l.top(), l.right(), l.bottom());
     }
 
     private void header(GuiGraphicsExtractor g, Layout l, int mouseX, int mouseY) {
         if(l.panelW()>=520)g.text(font, Component.literal("구중 마도서"), l.left() + 14, l.top() + 13, 0xFFF2E8FA);
         for (int i = 0; i < TABS.size(); i++) {
             Rect r = l.tab(i); boolean active = TABS.get(i).id().equals(page); boolean hover = inside(mouseX, mouseY, r);
+            CodexVisualLanguage.bookmark(g, r.x(), r.y(), r.w(), r.h(), active, hover, active ? 0xFFFFD36B : 0xFF84649B);
             g.centeredText(font, Component.literal(TABS.get(i).label()), r.x() + r.w() / 2, r.y() + 6,
                     active ? 0xFFFFE3A4 : hover ? 0xFFD8C3E9 : 0xFF8B8296);
             if (active) g.fill(r.x() + 8, r.bottom() - 2, r.right() - 8, r.bottom(), 0xFFB57ADC);
@@ -557,8 +549,7 @@ public final class GrimoireScreen extends Screen {
         g.text(font, Component.literal(s), l.content().right() - font.width(s) - 4, y + 5, 0xFF9EC1F2);
     }
     private void button(GuiGraphicsExtractor g, Rect r, String text, boolean hover, boolean wide) {
-        g.fill(r.x(), r.y(), r.right(), r.bottom(), hover ? 0xFF2C3A51 : 0xFF141D2B);
-        if (wide) g.fill(r.x(), r.y(), r.x() + 2, r.bottom(), 0xFF9E72C8);
+        CodexVisualLanguage.action(g, r.x(), r.y(), r.w(), r.h(), hover, wide);
         g.centeredText(font, Component.literal(text), r.x() + r.w() / 2, r.y() + 5, hover ? 0xFFFFFFFF : 0xFFD8CFDF);
     }
     private void footer(GuiGraphicsExtractor g, Layout l, String text) {

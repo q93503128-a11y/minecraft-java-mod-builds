@@ -57,7 +57,7 @@ public final class ArcaneGearRenderer {
                 castProgress=event.getRenderState().getRenderDataOrDefault(CAST_PROGRESS,0F);
         boolean release=event.getRenderState().getRenderDataOrDefault(CAST_RELEASE,false);
         PoseStack stack=event.getPoseStack();stack.pushPose();
-        if(r>0){robe(stack,event,r,mx,mz,phase);CastingSilhouetteRenderer.robeOverlay(stack,event,style,mx,mz,phase);}
+        if(r>0){robe(stack,event,r,mx,mz,phase);CastingSilhouetteRenderer.robeOverlay(stack,event,style,mx,mz,phase);RobeRegaliaRenderer.render(stack,event,style,mx,mz,phase);}
         if(b>0)boots(stack,event,b);if(h>0)hat(stack,event,h);
         CastingSilhouetteRenderer.render(stack,event,style,family,castProgress,release);
         stack.popPose();

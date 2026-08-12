@@ -209,26 +209,31 @@ public final class WorldMagicTracker {
 
         if (LowCircleVisualIdentity.owns(spell)) {
             LowCircleVisualIdentity.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
+            ArcaneSigilDetailGrammar.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
             return mesh.build();
         }
         if (MidCircleVisualIdentity.owns(spell)) {
             MidCircleVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
                     visual.direction, targetOffset(visual), mesh);
+            ArcaneSigilDetailGrammar.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
             return mesh.build();
         }
         if (FifthCircleVisualIdentity.owns(spell)) {
             FifthCircleVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
                     visual.direction, targetOffset(visual), visual.range, mesh);
+            ArcaneSigilDetailGrammar.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
             return mesh.build();
         }
         if (SixthCircleVisualIdentity.owns(spell)) {
             SixthCircleVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
                     visual.direction, targetOffset(visual), visual.range, mesh);
+            ArcaneSigilDetailGrammar.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
             return mesh.build();
         }
         if (ArchmageVisualIdentity.owns(spell)) {
             ArchmageVisualIdentity.appendCharge(spell, profile, outer, rotation, p,
                     visual.direction, targetOffset(visual), visual.range, mesh);
+            ArcaneSigilDetailGrammar.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
             return mesh.build();
         }
 
@@ -325,6 +330,7 @@ public final class WorldMagicTracker {
         }
 
         SpellVisualSignature.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
+        ArcaneSigilDetailGrammar.appendCharge(spell, profile, basis, outer, rotation, p, mesh);
         if (visual.fusion && release > 0.02) {
             mesh.brokenBand(basis, Vec3.ZERO, outer * 1.08, outer * 1.14,
                     72 + complexity * 10, 6, 1.30F, (float) (0.24 + release * 0.24));
@@ -465,6 +471,7 @@ public final class WorldMagicTracker {
                     motionProgress(visual, age), powerFactor, mesh);
             RangeReactivePresentation.appendRelease(spell, visual.direction, targetOffset(visual),
                     visual.range, age, powerFactor, mesh);
+            ArcaneSigilDetailGrammar.appendRelease(spell, profile, visual.direction, age, powerFactor, mesh);
             return mesh.build();
         }
         if (MidCircleVisualIdentity.owns(spell)) {
@@ -472,21 +479,25 @@ public final class WorldMagicTracker {
                     motionProgress(visual, age), powerFactor, mesh);
             RangeReactivePresentation.appendRelease(spell, visual.direction, targetOffset(visual),
                     visual.range, age, powerFactor, mesh);
+            ArcaneSigilDetailGrammar.appendRelease(spell, profile, visual.direction, age, powerFactor, mesh);
             return mesh.build();
         }
         if (FifthCircleVisualIdentity.owns(spell)) {
             FifthCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), visual.range,
                     age, motionProgress(visual, age), powerFactor, mesh);
+            ArcaneSigilDetailGrammar.appendRelease(spell, profile, visual.direction, age, powerFactor, mesh);
             return mesh.build();
         }
         if (SixthCircleVisualIdentity.owns(spell)) {
             SixthCircleVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), visual.range,
                     age, motionProgress(visual, age), powerFactor, mesh);
+            ArcaneSigilDetailGrammar.appendRelease(spell, profile, visual.direction, age, powerFactor, mesh);
             return mesh.build();
         }
         if (ArchmageVisualIdentity.owns(spell)) {
             ArchmageVisualIdentity.appendRelease(spell, visual.direction, targetOffset(visual), visual.range,
                     age, motionProgress(visual, age), powerFactor, mesh);
+            ArcaneSigilDetailGrammar.appendRelease(spell, profile, visual.direction, age, powerFactor, mesh);
             return mesh.build();
         }
         switch (profile.motion()) {
@@ -515,6 +526,7 @@ public final class WorldMagicTracker {
         }
         SpellVisualSignature.appendRelease(spell, visual.direction, targetOffset(visual),
                 visual.range, visual.power, age, powerFactor, mesh);
+        ArcaneSigilDetailGrammar.appendRelease(spell, profile, visual.direction, age, powerFactor, mesh);
         return mesh.build();
     }
 

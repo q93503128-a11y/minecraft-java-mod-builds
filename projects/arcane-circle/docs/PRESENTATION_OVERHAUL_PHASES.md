@@ -142,3 +142,21 @@ Robe sets should also be separated by silhouette, not only colour: cinder combat
 - Remaining fusion range ceilings that prevented range equipment from continuing to scale Void Lance, Winter Domain, Phoenix Requiem, World Sunder and sight-targeted fusion spells were removed.
 - Casting motion is visual-only and cannot alter cooldown, mana, target selection or authoritative hit timing.
 - Robe identity remains one logical equipment item; the renderer only adds style-specific panels/tails/mantles.
+
+
+## Alpha.25 visual-language refinement
+
+Status: implemented as an independent rendering/UI pass on top of the alpha.24 gameplay and authored spell directors.
+
+- The Grimoire now uses a procedural two-page dark-codex workspace with a visible spine, leather frame,
+  bookmark tabs, inset spell cards, seals and section panels instead of one flat rectangular admin panel.
+- `CodexVisualLanguage` owns only drawing language. Existing page navigation, networking, scroll memory,
+  scissor viewports and small-resolution layout remain authoritative in `GrimoireScreen`.
+- `ArcaneSigilDetailGrammar` adds spell-device micro-notation, segmented construction bands, role-specific
+  anchors, portal depth marks, target brackets and high-circle tilted coordinate planes without replacing
+  the bespoke Low/Mid/Fifth/Sixth/Archmage spell silhouettes.
+- `RobeRegaliaRenderer` adds style-specific collars, clasps, shoulder pieces, seams, crystals, streamers and
+  ceremonial train details. The robe remains one logical chest item.
+- Public magic mods were studied only for architecture and presentation principles. No external texture,
+  model, sound, UI asset or source file is copied into Arcane Circle. Ars Nouveau's code/assets licensing
+  distinction and Iron's Spells 'n Spellbooks' reserved source/assets were explicitly respected.
