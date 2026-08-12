@@ -233,6 +233,9 @@ public final class VillageCouncilState {
                 if (mayorId == null) { mayorId = player.getUUID(); mayorName = player.getGameProfile().name(); }
                 RPG_PROGRESS.put(player.getUUID(), RpgProgress.initial());
             }
+            VillageSiegePersistence.resetForNewGame();
+        } else {
+            VillageSiegePersistence.restoreNightSnapshot();
         }
         persist();
         freezeAndApplyTime(server);
@@ -264,8 +267,10 @@ public final class VillageCouncilState {
     private static void advanceTime(MinecraftServer server) {
         VillageTimePhase previous = timePhase;
         VillageTimePhase next = timePhase.next();
-        if (previous == VillageTimePhase.DAY && next == VillageTimePhase.NIGHT)
+        if (previous == VillageTimePhase.DAY && next == VillageTimePhase.NIGHT) {
             VillageProgressionSystem.captureNightStartSnapshot(server);
+            VillageSiegePersistence.captureNightSnapshot();
+        }
         timePhase = next;
         if (previous == VillageTimePhase.NIGHT && timePhase == VillageTimePhase.DAY) {
             villageDay++;
