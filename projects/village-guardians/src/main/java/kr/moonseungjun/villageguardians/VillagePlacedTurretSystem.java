@@ -351,10 +351,10 @@ public final class VillagePlacedTurretSystem {
             case BALLISTA, REPEATER, PIERCER -> Blocks.IRON_BARS;
             case FLAME -> Blocks.SOUL_LANTERN;
             case FROST -> Blocks.BLUE_ICE;
-            case CHAIN -> Blocks.LIGHTNING_ROD;
+            case CHAIN -> Blocks.REDSTONE_LAMP;
             case BOMBARD -> Blocks.HEAVY_CORE;
             case NULLIFIER -> Blocks.END_ROD;
-            case ANTI_AIR -> Blocks.COPPER_BULB;
+            case ANTI_AIR -> Blocks.IRON_BARS;
             case BEACON -> Blocks.SEA_LANTERN;
         };
     }
