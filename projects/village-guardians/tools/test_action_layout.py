@@ -1,82 +1,132 @@
 #!/usr/bin/env python3
-"""Verify compact left-navigation/right-detail layouts at common GUI scales."""
+"""Verify the active compact UI layouts and reject retired screen regressions."""
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
-FACILITY = (JAVA / "VillageFacilityScreen.java").read_text(encoding="utf-8")
-SHOP = (JAVA / "VillageShopScreen.java").read_text(encoding="utf-8")
-TOWN = (JAVA / "VillageTownHallScreen.java").read_text(encoding="utf-8")
-STATUS = (JAVA / "VillageStatusScreen.java").read_text(encoding="utf-8")
+TOWN = (JAVA / "VillageTownHallGridScreen.java").read_text(encoding="utf-8")
+ACTION = (JAVA / "VillageActionDetailScreen.java").read_text(encoding="utf-8")
+SHOP = (JAVA / "VillageShopCatalogScreen.java").read_text(encoding="utf-8")
+COMMAND = (JAVA / "VillageCommandCenterScreen.java").read_text(encoding="utf-8")
+RESULT = (JAVA / "VillageResultScreen.java").read_text(encoding="utf-8")
 COMMON_TREE = (JAVA / "VillageSkillTreeScreen.java").read_text(encoding="utf-8")
 ROLE_TREE = (JAVA / "VillageRoleProgressScreen.java").read_text(encoding="utf-8")
+
+RETIRED = (
+    "VillageTownHallScreen.java",
+    "VillageShopScreen.java",
+    "VillageQuickChatScreen.java",
+    "VillageFusionScreen.java",
+    "VillageRelicChoiceScreen.java",
+    "VillageWaveIntelScreen.java",
+    "VillageStatusScreen.java",
+    "VillageUiScreen.java",
+    "VillageFacilityScreen.java",
+)
 
 
 def clamp(value: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, value))
 
 
-def facility_split(screen_width: int, screen_height: int) -> tuple[int, int, int, bool]:
-    panel_width = min(880, max(330, screen_width - 16))
-    panel_width = min(panel_width, max(1, screen_width - 2))
-    panel_height = min(540, max(230, screen_height - 16))
-    panel_height = min(panel_height, max(1, screen_height - 2))
-    content_width = panel_width - 28
-    if content_width >= 340:
-        list_width = clamp(content_width * 24 // 100, 118, 198)
-        detail_width = content_width - list_width - 8
-        return list_width, detail_width, panel_height - 55, True
-    return content_width, content_width, panel_height - 62, False
+def safe_rect(width: int, height: int) -> tuple[int, int, int, int]:
+    side = clamp(width // 52, 7, 16)
+    top = clamp(height // 80, 6, 12)
+    bottom_padding = clamp(height // 11, 38, 56)
+    return side, top, width - side, height - bottom_padding
+
+
+def town_geometry(width: int, height: int) -> tuple[int, int, int]:
+    safe_left, safe_top, safe_right, safe_bottom = safe_rect(width, height)
+    safe_width = safe_right - safe_left
+    panel_width = min(820, max(300, safe_width - 12))
+    panel_width = min(panel_width, safe_width)
+    gap = 8
+    content_width = max(1, panel_width - 28 - gap)
+    list_width = clamp(panel_width * 27 // 100, 110, 205)
+    list_width = min(list_width, max(90, content_width - 120))
+    detail_width = panel_width - 28 - gap - list_width
+    return panel_width, list_width, detail_width
+
+
+def facility_button_widths(detail_width: int) -> list[int]:
+    inner = max(1, detail_width - 28)
+    if detail_width < 230:
+        return [inner, inner, inner]
+    gap = 5
+    available = max(3, inner - gap * 2)
+    base = max(1, available // 3)
+    remainder = max(0, available - base * 3)
+    return [base + (1 if remainder > 0 else 0),
+            base + (1 if remainder > 1 else 0), base]
+
+
+def action_geometry(width: int, height: int) -> tuple[int, int, bool]:
+    safe_left, safe_top, safe_right, safe_bottom = safe_rect(width, height)
+    safe_width = safe_right - safe_left
+    safe_height = safe_bottom - safe_top
+    panel_width = min(760, max(280, safe_width - 24))
+    panel_height = min(360, max(210, safe_height - 16))
+    panel_width = min(panel_width, safe_width)
+    panel_height = min(panel_height, safe_height)
+    available_height = max(1, panel_height - 63)
+    stacked = panel_width < 390 and panel_height >= 250 and available_height >= 170
+    if stacked:
+        list_height = clamp(available_height * 38 // 100, 72, max(72, available_height - 94))
+        detail_height = available_height - list_height - 7
+        return panel_width, detail_height, True
+    list_width = clamp(panel_width * 30 // 100, 105, 220)
+    list_width = min(list_width, max(86, panel_width - 26 - 7 - 112))
+    detail_width = panel_width - 26 - 7 - list_width
+    return panel_width, detail_width, False
 
 
 def main() -> None:
-    assert "listLeft" in FACILITY and "detailLeft" in FACILITY
-    assert "selectedIndex = actionCount() > 0 ? 0 : -1" in FACILITY
-    assert "PANEL = 0xFFE4D8BF" in FACILITY
-    assert "CARD_HEIGHT = 30" in FACILITY
-    assert "ACTION_HEIGHT = 20" in FACILITY
-    assert "Math.min(108" in FACILITY
-    assert "contentWidth >= 340" in FACILITY
+    for retired in RETIRED:
+        assert not (JAVA / retired).exists(), f"retired UI source returned: {retired}"
 
-    assert "renderOfferList" in SHOP and "renderOfferDetail" in SHOP
-    assert 'ROLES("직업 배치"' in TOWN
-    assert 'REPAIR("시설 수리"' in TOWN
-    assert 'MANAGEMENT("시설 강화"' in TOWN
-    assert "CARD_HEIGHT = 30" in TOWN
-    assert "* 24 / 100" in TOWN
-    assert "Math.min(112" in TOWN
-    assert "다음 단계 변화" in TOWN
-    assert "강화 비용" in TOWN
+    assert 'FACILITIES("시설 관리")' in TOWN and 'ROLES("직업 배치")' in TOWN
+    assert '"repair:" + f.id()' in TOWN and '"upgrade:" + f.id()' in TOWN
+    assert "pane.width() < 230" in TOWN
+    assert "actionTop" in TOWN and "enableScissor" in TOWN
+    assert "Math.max(48, available / count)" not in TOWN
+
+    for width, height in ((320, 180), (360, 202), (420, 224), (560, 299), (840, 448), (1680, 896)):
+        _, _, detail = town_geometry(width, height)
+        assert detail >= 120, (width, height, detail)
+        button_widths = facility_button_widths(detail)
+        assert all(value > 0 for value in button_widths)
+        if detail >= 230:
+            assert sum(button_widths) + 10 <= detail - 28, (width, detail, button_widths)
+        else:
+            assert max(button_widths) <= detail - 28, (width, detail, button_widths)
+
+        _, action_detail, stacked = action_geometry(width, height)
+        if stacked:
+            assert action_detail >= 94, (width, height, action_detail)
+        else:
+            assert action_detail >= 112, (width, height, action_detail)
+
+    for tab in ("ALL(\"전체\"", "EQUIPMENT(\"장비\"", "ARMOR(\"방어구\"",
+                "CONSUMABLE(\"소모품\"", "SALE(\"판매\""):
+        assert tab in SHOP
+    assert "VillageConfirmScreen" in SHOP
+    assert "PANEL = 0xF00B1217" in RESULT and "VillageUiSafeArea.screen" in RESULT
+    assert "PANEL = 0xFFF1E9D7" not in RESULT
+    assert "STATUS" in COMMAND and "FACILITY" in COMMAND
 
     assert "renderDetail" not in COMMON_TREE
     assert "Bubble" in COMMON_TREE
     assert "renderTreeFooter" not in ROLE_TREE
     assert "renderSkillFooter" not in ROLE_TREE
-    assert "TreeBubble" in ROLE_TREE and "SkillBubble" in ROLE_TREE
-    assert "SkillGrid" in ROLE_TREE
+    assert "TreeBubble" in ROLE_TREE and "SkillBubble" in ROLE_TREE and "SkillGrid" in ROLE_TREE
 
-    assert "mouseScrolled" not in STATUS
-    assert "ChatFormatting.stripFormatting" in STATUS
-    assert "TEXT = 0xFF211A14" in STATUS
-    assert "legacy-format colour leakage" in STATUS
-
-    for width, height in ((380, 260), (520, 300), (640, 360), (800, 450), (1000, 600), (1648, 928)):
-        left, right, content_height, horizontal = facility_split(width, height)
-        if horizontal:
-            assert left <= 198, (width, left)
-            assert right > left, (width, left, right)
-        else:
-            assert left == right, (width, left, right)
-        assert right >= 170, (width, right)
-        assert content_height >= 160, (height, content_height)
-
-    print("[PASS] Facility selectors remain narrow while descriptions receive most of the width")
-    print("[PASS] Very narrow screens switch to stacked layout without false width failures")
-    print("[PASS] Town hall uses shorter cards and explicit current/next upgrade comparison")
-    print("[PASS] Action buttons are capped at 108x20 or 112x20 instead of spanning panels")
-    print("[PASS] Growth trees use anchored popovers and reserve the full height for main content")
-    print("[PASS] Status text is dark, stripped of legacy white formatting, and fits without scrolling")
+    print("[PASS] Retired parchment/generic screens are absent from production sources")
+    print("[PASS] Town-hall function/repair/upgrade buttons stay inside narrow detail panes")
+    print("[PASS] Short narrow action screens choose side-by-side layout instead of crushed vertical panes")
+    print("[PASS] Result modal and active shop/command surfaces use current safe-area UI language")
+    print("[PASS] Growth trees retain anchored popovers without legacy footer panels")
 
 
 if __name__ == "__main__":
