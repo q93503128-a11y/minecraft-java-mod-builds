@@ -25,15 +25,18 @@ import java.util.Set;
  * Materializes the source-air routes that lead from Erden's retained urban entrances to real,
  * already-supported upper rooms in the imported structures.
  *
- * <p>The source planner proves that every route body cell is air in the immutable fragment. This
+ * <p>The source planner proves that every route body cell is air in the immutable raw source. This
  * manager rotates those local coordinates with the exact placement rotation and authors only stair
  * or support blocks into cells that were source air. It is intentionally run after the authored
  * interior preservation pass: retained source floors, walls and fixtures have already been restored,
  * while only a tightly bounded palette of generated conversion blocks may be reconciled inside cells
- * that the immutable source proves were air. No authored wall, roof, floor or fixture is cut.</p>
+ * that the immutable source proves were air. Crop-face seal blocks are treated as generated rather
+ * than authored only when {@link ErdenUrbanSyntheticSealProvenance} independently proves the raw
+ * schematic cell was AIR and the runtime block is in the approved clear palette. No authored wall,
+ * roof, floor or fixture is cut.</p>
  */
 public final class ErdenUrbanAuthoredUpperRouteManager {
-    public static final int ROUTE_REVISION = 1;
+    public static final int ROUTE_REVISION = 2;
 
     private static final int PROCESS_BUDGET = 1;
     private static final int UPDATE_FLAGS =
@@ -100,7 +103,7 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
 
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden authored upper-route materialization eligible={} examined={} roles={} source_blocks_cut=0 source_air_only=true world_transform_verified=true placement_counts_unchanged=true revision={}",
+                "Prepared Erden authored upper-route materialization eligible={} examined={} roles={} source_blocks_cut=0 source_air_only=true world_transform_verified=true synthetic_seal_provenance=true placement_counts_unchanged=true revision={}",
                 ROUTES.size(), examined, roles, ROUTE_REVISION);
     }
 
@@ -129,7 +132,7 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
             if (!prepared) {
                 // The preservation pass has already restored every retained source block. Clearing is
                 // therefore restricted to the known generated conversion palette, and only at cells
-                // that immutable source topology proved were air.
+                // that immutable raw source topology proved were air.
                 if (!prepare(level, route, true)) continue;
                 routes.markPrepared(key, ROUTE_REVISION);
                 prepared = true;
@@ -225,7 +228,9 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
         Set<Long> sourceOccupied = new HashSet<>();
         int doorLocalY = Integer.MAX_VALUE;
         for (ExternalUrbanFabricBuilder.UrbanSourceBlock block : snapshot.blocks()) {
-            if (!block.state().isAir()) {
+            if (!block.state().isAir()
+                    && !ErdenUrbanSyntheticSealProvenance.isClearableSourceAirSeal(
+                    snapshot.fragmentKey(), block.x(), block.y(), block.z())) {
                 sourceOccupied.add(localKey(block.x(), block.y(), block.z()));
             }
             if (block.x() == snapshot.entranceX()
@@ -427,8 +432,8 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
             for (int[] direction : DIRECTIONS) {
                 int x = current.x() + direction[0];
                 int z = current.z() + direction[1];
-                if (x < route.minX() || x > route.maxX()
-                        || z < route.minZ() || z > route.maxZ()) continue;
+                if (x < route.bounds().minX() || x > route.bounds().maxX()
+                        || z < route.bounds().minZ() || z > route.bounds().maxZ()) continue;
                 for (int dy : GROUND_STEP_HEIGHTS) {
                     int y = current.y() + dy;
                     if (Math.abs(y - route.expectedDoorY()) > 2) continue;
@@ -592,7 +597,7 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
         if (route == null || !verify(level, route)) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS role={} entrance={},{} path_nodes={} stair_blocks={} door_retained=true ground_to_stair=true existing_upper_room=true source_blocks_cut=0 source_air_only=true world_transform_verified=true",
+                "LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS role={} entrance={},{} path_nodes={} stair_blocks={} door_retained=true ground_to_stair=true existing_upper_room=true source_blocks_cut=0 source_air_only=true world_transform_verified=true synthetic_seal_provenance=true",
                 route.role(), route.entranceX(), route.entranceZ(),
                 route.nodes().size(), route.stairs().size());
     }
