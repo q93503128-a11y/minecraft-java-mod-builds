@@ -1,13 +1,198 @@
-name: Arcane Circle visual rewrite staging
+name: Build Arcane Circle v0.12.1 Alpha.26
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/arcane-circle/**'
+      - '.github/workflows/build-arcane-circle-v0121.yml'
 
 permissions:
   contents: write
 
+concurrency:
+  group: arcane-circle-v0121-main
+  cancel-in-progress: true
+
+env:
+  PROJECT_DIR: projects/arcane-circle
+  MOD_VERSION: 0.12.1-alpha.26
+  EXPECTED_JAR: arcanecircle-0.12.1-alpha.26.jar
+  PUBLISHED_DIR: published/arcane-circle
+  CI_RESULT_DIR: ci-results/arcane-circle
+
 jobs:
-  staging:
+  build:
+    name: Java 25 - alpha.26 ground-up UI VFX regalia
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
-      - run: echo 'Arcane Circle alpha.26 visual rewrite staging; canonical build resumes with final workflow.'
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+          cache-read-only: false
+
+      - name: Audit committed alpha.26 source without mutation
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_v0121_alpha26_visual_rewrite.py 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-audit.log"
+          git diff --check
+          git diff --exit-code
+
+      - name: Build Java 25 runtime
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/arcane-circle-gradle.log"
+
+      - name: Verify alpha.26 JAR and retired stack absence
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          test -f "build/libs/$EXPECTED_JAR.sha256"
+          jar tf "build/libs/$EXPECTED_JAR" >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, zipfile
+          jar=Path('build/libs/arcanecircle-0.12.1-alpha.26.jar')
+          with zipfile.ZipFile(jar) as z:
+              names=set(z.namelist())
+              required={
+                  'kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class',
+                  'kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class',
+                  'kr/moonseungjun/arcanecircle/client/GrimoireScreen.class',
+                  'kr/moonseungjun/arcanecircle/client/ArcaneHud.class',
+                  'kr/moonseungjun/arcanecircle/client/ArcaneRegaliaRenderer.class',
+                  'kr/moonseungjun/arcanecircle/client/ArcaneCastingPerformance.class',
+                  'kr/moonseungjun/arcanecircle/client/ArcaneGearRenderer.class',
+                  'kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellMetrics.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellPresentationProfile.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellCastingService.class',
+                  'kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class',
+                  'kr/moonseungjun/arcanecircle/magic/FusionSpellEffects.class',
+                  'kr/moonseungjun/arcanecircle/magic/HighCircleSpellEffects.class',
+                  'kr/moonseungjun/arcanecircle/magic/MageGearService.class',
+                  'kr/moonseungjun/arcanecircle/item/ArcaneTestKitItem.class',
+              }
+              missing=required-names
+              if missing: raise SystemExit(f'missing alpha.26 runtime entries: {sorted(missing)}')
+              retired={
+                  'CodexVisualLanguage','ArcaneSigilDetailGrammar','LowCircleVisualIdentity',
+                  'MidCircleVisualIdentity','FifthCircleVisualIdentity','SixthCircleVisualIdentity',
+                  'ArchmageVisualIdentity','RangeReactivePresentation','SpellVisualSignature',
+                  'CastingSilhouetteRenderer','RobeRegaliaRenderer'
+              }
+              leaked=[n for n in names if any(n.endswith('/'+r+'.class') or ('/'+r+'$') in n for r in retired)]
+              if leaked: raise SystemExit(f'retired presentation classes leaked into JAR: {sorted(leaked)}')
+              director=z.read('kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class')
+              for token in (b'meteorSwarm',b'executionWord',b'chainLightning',b'fireStorm',b'worldFault',b'phoenix',b'power_word_kill',b'meteor_swarm'):
+                  if token not in director: raise SystemExit(f'cinematic director regression: {token!r}')
+              tracker=z.read('kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class')
+              for token in (b'SpellCinematicDirector',b'CasterPoseSnapshot'):
+                  if token not in tracker: raise SystemExit(f'new runtime route not wired: {token!r}')
+              grimoire=z.read('kr/moonseungjun/arcanecircle/client/GrimoireScreen.class')
+              for token in (b'drawSpine',b'drawSpellDetail',b'drawLoadout',b'primaryAction'):
+                  if token not in grimoire: raise SystemExit(f'new grimoire regression: {token!r}')
+              hud=z.read('kr/moonseungjun/arcanecircle/client/ArcaneHud.class')
+              for token in (b'drawSeal',b'drawVitals',b'drawFusion'):
+                  if token not in hud: raise SystemExit(f'new HUD regression: {token!r}')
+              gear=z.read('kr/moonseungjun/arcanecircle/client/ArcaneGearRenderer.class')
+              for token in (b'ArcaneRegaliaRenderer',b'ArcaneCastingPerformance'):
+                  if token not in gear: raise SystemExit(f'new gear route not wired: {token!r}')
+              casting=z.read('kr/moonseungjun/arcanecircle/magic/SpellCastingService.class')
+              for token in (b'READY_HOLD_TIMEOUT_TICKS',b'chargeTimeoutTicks'):
+                  if token not in casting: raise SystemExit(f'held-cast regression: {token!r}')
+              kinetics=z.read('kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class')
+              for token in (b'presentationImpactDelay',b'WorldMagicService'):
+                  if token not in kinetics: raise SystemExit(f'impact synchronization regression: {token!r}')
+              magegear=z.read('kr/moonseungjun/arcanecircle/magic/MageGearService.class')
+              if b'syncAtomicRobe' not in magegear: raise SystemExit('atomic robe regression')
+              index=json.loads(z.read('data/arcanecircle/spell_catalog/index.json'))
+              if index.get('version')!='0.12.1-alpha.26': raise SystemExit('catalog version regression')
+          print('Arcane Circle alpha.26 committed-source JAR audit: PASS')
+          print('retired_visual_stack=absent')
+          PY
+          mkdir -p ../../deliverables
+          cp "build/libs/$EXPECTED_JAR" ../../deliverables/
+          cp "build/libs/$EXPECTED_JAR.sha256" ../../deliverables/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arcanecircle-0.12.1-alpha.26
+          path: deliverables/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish verified JAR only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          published=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p "$PUBLISHED_DIR"
+            rm -f "$PUBLISHED_DIR"/arcanecircle-*.jar "$PUBLISHED_DIR"/arcanecircle-*.jar.sha256
+            cp "deliverables/$EXPECTED_JAR" "$PUBLISHED_DIR/$EXPECTED_JAR"
+            cp "deliverables/$EXPECTED_JAR.sha256" "$PUBLISHED_DIR/$EXPECTED_JAR.sha256"
+            git add -A "$PUBLISHED_DIR"
+            if git diff --cached --quiet; then published=1; break; fi
+            git commit -m 'Publish Arcane Circle v0.12.1-alpha.26 verified JAR [skip ci]'
+            if git push origin HEAD:main; then published=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$published" -eq 1
+
+      - name: Record result
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/arcane-result
+          mkdir -p /tmp/arcane-result
+          if test -f "$GITHUB_WORKSPACE/arcane-circle-gradle.log"; then cp "$GITHUB_WORKSPACE/arcane-circle-gradle.log" /tmp/arcane-result/latest-gradle.log; elif test -f "$GITHUB_WORKSPACE/arcane-circle-audit.log"; then cp "$GITHUB_WORKSPACE/arcane-circle-audit.log" /tmp/arcane-result/latest-gradle.log; else printf '%s\n' 'No diagnostic log.' > /tmp/arcane-result/latest-gradle.log; fi
+          cat > /tmp/arcane-result/status.txt <<STATUS
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=25
+          gradle=9.2.1
+          version=$MOD_VERSION
+          source_mutation=disabled
+          presentation_phase=alpha26-ground-up-ui-vfx-regalia
+          retired_visual_stack=absent
+          STATUS
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$CI_RESULT_DIR"
+            mkdir -p "$CI_RESULT_DIR"
+            cp -a /tmp/arcane-result/. "$CI_RESULT_DIR/"
+            git add -A "$CI_RESULT_DIR"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "Record Arcane Circle v0.12.1-alpha.26 CI result for ${GITHUB_SHA::7} [skip ci]"
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
