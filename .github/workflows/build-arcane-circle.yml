@@ -158,3 +158,5 @@ jobs:
             sleep $((attempt * 2))
           done
           test "$recorded" -eq 1
+
+# Canonical Arcane workflow: all historical build/migration workflows are intentionally removed.
