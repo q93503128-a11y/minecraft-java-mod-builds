@@ -1,7 +1,6 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 
 /** Centralized raid difficulty curve shared by combat, structures and previews. */
 public final class VillageDifficultyTuning {
@@ -25,17 +24,11 @@ public final class VillageDifficultyTuning {
     }
 
     /**
-     * If everybody is currently downed/spectating, enemies still pressure the village but at 30% structure damage.
-     * This prevents one solo death during the 20 second respawn from automatically deleting several facilities.
+     * Death must keep its strategic cost. Downed/spectating defenders never receive a structure-damage discount.
+     * Kept as a compatibility hook for the raid call site until that large subsystem is next refactored.
      */
     public static float defenderStateStructureMultiplier(MinecraftServer server) {
-        if (server == null) return 1.0f;
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (player.isAlive() && !player.isSpectator() && !VillageRespawnSystem.isDowned(player)) {
-                return 1.0f;
-            }
-        }
-        return 0.30f;
+        return 1.0f;
     }
 
     /** One player is the baseline. Every additional player adds exactly 30% of the solo roster. */
