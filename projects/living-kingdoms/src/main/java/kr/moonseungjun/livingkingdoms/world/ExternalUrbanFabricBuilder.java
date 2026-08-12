@@ -27,7 +27,7 @@ import java.util.Set;
 /**
  * Fills the gaps between large capital anchors with entrance-centred facade fragments cut from
  * attributed external buildings. The result is streamed per chunk, keeps the original block states,
- * and connects every retained entrance to the nearest planned street.
+ * and connects every retained entrance to a planned street through the actual facade front.
  */
 public final class ExternalUrbanFabricBuilder {
     private static final String MANOR =
@@ -264,14 +264,23 @@ public final class ExternalUrbanFabricBuilder {
                     fragment.width, fragment.length, rotation);
             int entranceX = minX + entranceOffset.x;
             int entranceZ = minZ + entranceOffset.z;
-            RoadTarget road = nearestRoad(
+
+            // Keep the legacy nearest-road score so building position/rotation and all 233 role
+            // assignments remain byte-for-byte deterministic. Only the retained access target is
+            // corrected to the facade edge that actually contains this entrance.
+            RoadTarget nearest = nearestRoad(
                     entranceX, entranceZ, minX, minZ, maxX, maxZ);
-            if (road == null) continue;
-            int distance = Math.abs(road.x - entranceX) + Math.abs(road.z - entranceZ);
+            if (nearest == null) continue;
+            int distance = Math.abs(nearest.x - entranceX) + Math.abs(nearest.z - entranceZ);
             int score = distance * 10 + Math.floorMod(hash + offset * 17, 9);
             if (score < bestScore) {
+                FrontSide front = nearestSide(
+                        entranceX - minX, entranceZ - minZ, width, length);
+                RoadTarget frontRoad = nearestRoadOnSide(
+                        entranceX, entranceZ, minX, minZ, maxX, maxZ, front);
+                RoadTarget retained = frontRoad == null ? nearest : frontRoad;
                 UrbanEntrance entrance = new UrbanEntrance(
-                        role.id, entranceX, entranceZ, road.x, road.z);
+                        role.id, entranceX, entranceZ, retained.x, retained.z);
                 best = new UrbanPlacement(
                         resource, centerX, centerZ, rotation, role, fragment, entrance);
                 bestScore = score;
@@ -665,6 +674,58 @@ public final class ExternalUrbanFabricBuilder {
         if (minimum == south) return FrontSide.SOUTH;
         if (minimum == west) return FrontSide.WEST;
         return FrontSide.EAST;
+    }
+
+    /**
+     * Looks for a road only beyond the facade edge containing the retained entrance. This prevents
+     * a geographically closer street behind the building from making the access path cut through
+     * the imported structure. The caller falls back to the legacy nearest road only when the
+     * authored road network genuinely has no road on that facade side within the normal search
+     * radius, preserving the deterministic 233-placement inventory.
+     */
+    private static RoadTarget nearestRoadOnSide(
+            int x, int z,
+            int buildingMinX, int buildingMinZ,
+            int buildingMaxX, int buildingMaxZ,
+            FrontSide side) {
+        for (int radius = 1; radius <= MAX_ROAD_SEARCH; radius++) {
+            for (int offset = -radius; offset <= radius; offset++) {
+                RoadTarget top = roadTargetOnSide(
+                        x + offset, z - radius,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, side);
+                if (top != null) return top;
+                RoadTarget bottom = roadTargetOnSide(
+                        x + offset, z + radius,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, side);
+                if (bottom != null) return bottom;
+            }
+            for (int offset = -radius + 1; offset < radius; offset++) {
+                RoadTarget left = roadTargetOnSide(
+                        x - radius, z + offset,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, side);
+                if (left != null) return left;
+                RoadTarget right = roadTargetOnSide(
+                        x + radius, z + offset,
+                        buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ, side);
+                if (right != null) return right;
+            }
+        }
+        return null;
+    }
+
+    private static RoadTarget roadTargetOnSide(
+            int x, int z,
+            int buildingMinX, int buildingMinZ,
+            int buildingMaxX, int buildingMaxZ,
+            FrontSide side) {
+        boolean beyondFacade = switch (side) {
+            case NORTH -> z < buildingMinZ - 1;
+            case SOUTH -> z > buildingMaxZ + 1;
+            case WEST -> x < buildingMinX - 1;
+            case EAST -> x > buildingMaxX + 1;
+        };
+        if (!beyondFacade) return null;
+        return roadTarget(x, z, buildingMinX, buildingMinZ, buildingMaxX, buildingMaxZ);
     }
 
     private static RoadTarget nearestRoad(int x, int z,
