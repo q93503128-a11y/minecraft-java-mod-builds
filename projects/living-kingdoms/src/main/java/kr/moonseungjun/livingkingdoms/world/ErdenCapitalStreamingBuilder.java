@@ -51,7 +51,7 @@ public final class ErdenCapitalStreamingBuilder {
 
         // A PORTAL ticket can emit ChunkEvent.Load slightly before hasChunk() becomes observable to
         // this tick loop. Keep every retained request authoritative until its SavedData revision is
-        // complete, and re-enqueue loaded requests if an event/tick ordering window was missed.
+        // complete, and keep explicit requests ahead of incidental background chunk loads.
         requeueRetainedLoaded(level);
 
         if (active == null) startNext(level);
@@ -116,10 +116,15 @@ public final class ErdenCapitalStreamingBuilder {
                 releaseRetained(level, packed);
                 continue;
             }
-            if (QUEUED.contains(packed)) continue;
             int chunkX = unpackX(packed);
             int chunkZ = unpackZ(packed);
-            if (level.hasChunk(chunkX, chunkZ)) enqueue(level, packed, true);
+            if (level.hasChunk(chunkX, chunkZ)) {
+                // ChunkEvent.Load adds ordinary work at the tail. Explicitly retained requests are
+                // latency-sensitive (player-visible construction and diagnostics), so promote an
+                // already-queued pending cell instead of leaving it behind the whole background
+                // stream. enqueue(..., true) safely leaves the currently active cell untouched.
+                enqueue(level, packed, true);
+            }
         }
     }
 
