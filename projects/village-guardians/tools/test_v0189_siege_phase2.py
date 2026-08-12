@@ -97,7 +97,7 @@ def main() -> None:
     council = read("VillageCouncilState.java")
     world = read("VillageWorldSystem.java")
 
-    assert "mod_version=0.18.10-alpha.1" in props
+    assert "mod_version=0.18.11-alpha.1" in props
 
     # Segment durability owns combat HP, not individual wall blocks. North gate remains save-compatible.
     for token in ("NORTH_WEST", "NORTH_GATE", "NORTH_EAST", "WEST", "EAST", "SOUTH_WEST", "SOUTH_EAST"):

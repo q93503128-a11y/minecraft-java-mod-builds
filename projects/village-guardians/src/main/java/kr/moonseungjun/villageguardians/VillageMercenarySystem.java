@@ -161,34 +161,30 @@ public final class VillageMercenarySystem {
             int rank = rank(mercenary);
             applyClassPassives(mercenary, kind, rank);
             if (!VillageRaidSystem.isActive()) continue;
-            if (kind == MercenaryClass.RANGER) rangedAttack(level, mercenary, rank);
+            if (kind == MercenaryClass.BASTION) bastionControl(level, mercenary, rank);
+            else if (kind == MercenaryClass.STRIKER) strikerPressure(level, mercenary, rank);
+            else if (kind == MercenaryClass.RANGER) rangedAttack(level, mercenary, rank);
             else if (kind == MercenaryClass.MEDIC) healAllies(level, server, mercenary, rank);
         }
     }
 
-    public static synchronized void awardKillExperience(MinecraftServer server, Vec3 deathPosition) {
-        if (server == null || deathPosition == null) return;
-        ServerLevel level = server.overworld();
-        AABB area = new AABB(deathPosition, deathPosition).inflate(48.0);
-        boolean changed = false;
-        for (IronGolem mercenary : level.getEntitiesOfClass(IronGolem.class, area,
-                entity -> isMercenary(entity.getUUID()) && entity.isAlive())) {
-            UUID uuid = mercenary.getUUID();
-            int kills = KILLS.getOrDefault(uuid, 0) + 1;
-            int currentRank = LEVELS.getOrDefault(uuid, 1);
-            int nextRank = Math.min(5, 1 + kills / 8);
-            KILLS.put(uuid, kills);
-            changed = true;
-            if (nextRank > currentRank) {
-                LEVELS.put(uuid, nextRank);
-                applyClassPassives(mercenary, mercenaryClass(mercenary), nextRank);
-                refreshName(mercenary);
-                level.sendParticles(ParticleTypes.HAPPY_VILLAGER,
-                        mercenary.getX(), mercenary.getY() + 1.3, mercenary.getZ(),
-                        16, 0.45, 0.7, 0.45, 0.05);
-            }
+    public static synchronized void awardKillExperience(Mob killer) {
+        if (!(killer instanceof IronGolem mercenary) || !isMercenary(mercenary.getUUID())
+                || !(mercenary.level() instanceof ServerLevel level)) return;
+        UUID uuid = mercenary.getUUID();
+        int kills = KILLS.getOrDefault(uuid, 0) + 1;
+        int currentRank = LEVELS.getOrDefault(uuid, 1);
+        int nextRank = Math.min(5, 1 + kills / 8);
+        KILLS.put(uuid, kills);
+        if (nextRank > currentRank) {
+            LEVELS.put(uuid, nextRank);
+            applyClassPassives(mercenary, mercenaryClass(mercenary), nextRank);
+            refreshName(mercenary);
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                    mercenary.getX(), mercenary.getY() + 1.3, mercenary.getZ(),
+                    16, 0.45, 0.7, 0.45, 0.05);
         }
-        if (changed) persist();
+        persist();
     }
 
     public static synchronized void handleDeath(Mob mob) {
@@ -218,11 +214,31 @@ public final class VillageMercenarySystem {
                 entity -> isMercenary(entity.getUUID())).size();
     }
 
+    private static void bastionControl(ServerLevel level, IronGolem mercenary, int rank) {
+        double radius = 4.5 + rank * 0.55;
+        Vec3 eye = mercenary.position().add(0, 1.8, 0);
+        for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), radius, 5 + rank, null)) {
+            if (!VillageDefenseLineOfSight.hasLine(level, eye, enemy)) continue;
+            enemy.setTarget(mercenary);
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 28 + rank * 5, 0));
+        }
+    }
+
+    private static void strikerPressure(ServerLevel level, IronGolem mercenary, int rank) {
+        Mob target = VillageRaidSystem.nearestActiveEnemy(level, mercenary.blockPosition(), 22.0 + rank * 2.0);
+        if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.position().add(0, 1.8, 0), target)) return;
+        mercenary.setTarget(target);
+        mercenary.getNavigation().moveTo(target, 1.18 + rank * 0.025);
+    }
+
     private static void rangedAttack(ServerLevel level, IronGolem mercenary, int rank) {
-        Mob target = VillageRaidSystem.nearestActiveEnemy(level, mercenary.blockPosition(), 42.0 + rank * 3.0);
+        Vec3 start = mercenary.position().add(0, 1.8, 0);
+        Mob target = VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), 42.0 + rank * 3.0, 18, null)
+                .stream().filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))
+                .min(java.util.Comparator.comparingDouble(mercenary::distanceToSqr)).orElse(null);
+        mercenary.setTarget(null);
         if (target == null) return;
         float damage = (3.0f + rank * 1.3f) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
-        Vec3 start = mercenary.position().add(0, 1.8, 0);
         Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
         for (int i = 0; i <= 10; i++) {
             Vec3 point = start.lerp(end, i / 10.0);

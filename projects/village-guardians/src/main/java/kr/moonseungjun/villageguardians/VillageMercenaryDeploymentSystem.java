@@ -100,8 +100,12 @@ public final class VillageMercenaryDeploymentSystem {
                 case MEDIC -> 15.0;
             };
             if (force || !VillageRaidSystem.isActive() || golem.blockPosition().distSqr(rally) > leash * leash) {
-                golem.getNavigation().moveTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5,
+                boolean accepted = golem.getNavigation().moveTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5,
                         kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 1.18 : 1.02);
+                if (!accepted && zone == Deployment.WALL) {
+                    BlockPos fallback = rallyPoint(center, Deployment.INNER, kind);
+                    golem.getNavigation().moveTo(fallback.getX() + 0.5, fallback.getY(), fallback.getZ() + 0.5, 1.0);
+                }
             }
             if (!VillageRaidSystem.isActive()) continue;
             if (kind == VillageMercenarySystem.MercenaryClass.BASTION) {
@@ -110,7 +114,8 @@ public final class VillageMercenaryDeploymentSystem {
             } else if (kind == VillageMercenarySystem.MercenaryClass.STRIKER) {
                 Mob target = VillageRaidSystem.nearestActiveEnemy(level, golem.blockPosition(), 42.0);
                 if (target != null) golem.setTarget(target);
-            } else if (kind == VillageMercenarySystem.MercenaryClass.MEDIC) {
+            } else if (kind == VillageMercenarySystem.MercenaryClass.RANGER
+                    || kind == VillageMercenarySystem.MercenaryClass.MEDIC) {
                 golem.setTarget(null);
             }
         }

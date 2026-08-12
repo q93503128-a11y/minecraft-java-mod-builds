@@ -193,7 +193,9 @@ public final class VillagePlacedTurretSystem {
 
     private static void fire(ServerLevel level, TurretState state) {
         double range = state.type().range() + (state.level() - 1) * 2.5;
-        List<Mob> candidates = VillageRaidSystem.activeEnemiesNear(level, Vec3.atCenterOf(state.pos()), range, 12, null);
+        Vec3 muzzle = Vec3.atCenterOf(state.pos().above());
+        List<Mob> candidates = VillageRaidSystem.activeEnemiesNear(level, Vec3.atCenterOf(state.pos()), range, 12, null)
+                .stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, muzzle, mob)).toList();
         if (candidates.isEmpty()) return;
         Mob target = candidates.stream().min(Comparator.comparingDouble(mob -> mob.distanceToSqr(Vec3.atCenterOf(state.pos())))).orElse(null);
         if (state.type() == TurretType.ANTI_AIR) {
@@ -205,6 +207,7 @@ public final class VillagePlacedTurretSystem {
         float damage = (state.type().damage() + (state.level() - 1) * state.type().damage() * 0.16f)
                 * VillageDefenseResearchSystem.towerDamageMultiplier();
         switch (state.type()) {
+            case PIERCER -> hit(level, state, target, damage * piercingMultiplier(target), ParticleTypes.CRIT);
             case CHAIN -> {
                 List<Mob> chain = VillageRaidSystem.activeEnemiesNear(level, target.position(), 7.5,
                         2 + state.level() / 2, null);
@@ -233,9 +236,20 @@ public final class VillagePlacedTurretSystem {
         }
     }
 
+    private static float piercingMultiplier(Mob target) {
+        VillageEnemyArchetypeSystem.Archetype type = VillageRaidSystem.archetypeOf(target);
+        if (type == null) return target.hasEffect(MobEffects.RESISTANCE) ? 1.30f : 1.05f;
+        return switch (type) {
+            case BULWARK, SHIELDBREAKER, SIEGE_BEAST, IRON_WARLORD -> 1.55f;
+            case DREAD_KNIGHT -> 1.35f;
+            default -> target.hasEffect(MobEffects.RESISTANCE) ? 1.30f : 1.05f;
+        };
+    }
+
     private static void hit(ServerLevel level, TurretState state, Mob target, float damage,
                             net.minecraft.core.particles.ParticleOptions particle) {
         Vec3 start = Vec3.atCenterOf(state.pos().above());
+        if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;
         Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
         for (int i = 0; i <= 7; i++) {
             Vec3 point = start.lerp(end, i / 7.0);
@@ -264,14 +278,17 @@ public final class VillagePlacedTurretSystem {
         int damage = 0;
         for (Mob mob : enemies) {
             VillageEnemyArchetypeSystem.Archetype type = VillageRaidSystem.archetypeOf(mob);
-            if (type == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER && mob.distanceToSqr(Vec3.atCenterOf(state.pos())) <= 36.0 * 36.0) {
-                damage = Math.max(damage, 18 + VillageCouncilState.currentDay());
+            double distanceSquared = mob.distanceToSqr(Vec3.atCenterOf(state.pos()));
+            if (type == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER && distanceSquared <= 36.0 * 36.0) {
                 mob.getNavigation().moveTo(state.pos().getX() + 0.5, state.pos().getY(), state.pos().getZ() + 0.5, 1.08);
+                if (distanceSquared <= 7.5 * 7.5) {
+                    damage = Math.max(damage, 18 + VillageCouncilState.currentDay());
+                }
             } else if (type == VillageEnemyArchetypeSystem.Archetype.SAPPER
-                    && mob.distanceToSqr(Vec3.atCenterOf(state.pos())) <= 36.0) {
+                    && distanceSquared <= 6.0 * 6.0) {
                 damage = Math.max(damage, 30);
             } else if (type != null && VillageEnemyArchetypeSystem.isBoss(type)
-                    && mob.distanceToSqr(Vec3.atCenterOf(state.pos())) <= 64.0) {
+                    && distanceSquared <= 8.0 * 8.0) {
                 damage = Math.max(damage, 38);
             }
         }
@@ -313,7 +330,8 @@ public final class VillagePlacedTurretSystem {
         }
         BlockPos floor = pos.below();
         if (!level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)) return "단단한 바닥 위에 설치해야 합니다.";
-        if (!level.getBlockState(pos).isAir() || !level.getBlockState(pos.above()).isAir()) return "포탑 공간 2블록이 비어 있어야 합니다.";
+        if (!level.getBlockState(pos).isAir() || !level.getBlockState(pos.above()).isAir()
+                || !level.getBlockState(pos.above(2)).isAir()) return "포탑 공간 3블록이 비어 있어야 합니다.";
         if (count() >= capacity()) return "전체 포탑 설치 한도를 초과합니다.";
         return null;
     }
@@ -323,16 +341,32 @@ public final class VillagePlacedTurretSystem {
     private static void rebuildVisuals(ServerLevel level) { for (TurretState state : TURRETS.values()) buildVisual(level, state); }
     private static void buildVisual(ServerLevel level, TurretState state) {
         if (!state.active()) { buildWreck(level, state); return; }
-        VillageFortressTerrain.set(level, state.pos(), Blocks.STONE_BRICK_WALL);
+        Block base = state.level() >= 4 ? Blocks.POLISHED_BLACKSTONE_BRICK_WALL : Blocks.STONE_BRICK_WALL;
+        VillageFortressTerrain.set(level, state.pos(), base);
         VillageFortressTerrain.set(level, state.pos().above(), state.type().visual());
+        VillageFortressTerrain.set(level, state.pos().above(2), turretCap(state.type()));
+    }
+    private static Block turretCap(TurretType type) {
+        return switch (type) {
+            case BALLISTA, REPEATER, PIERCER -> Blocks.IRON_BARS;
+            case FLAME -> Blocks.SOUL_LANTERN;
+            case FROST -> Blocks.BLUE_ICE;
+            case CHAIN -> Blocks.LIGHTNING_ROD;
+            case BOMBARD -> Blocks.HEAVY_CORE;
+            case NULLIFIER -> Blocks.END_ROD;
+            case ANTI_AIR -> Blocks.COPPER_BULB;
+            case BEACON -> Blocks.SEA_LANTERN;
+        };
     }
     private static void buildWreck(ServerLevel level, TurretState state) {
         VillageFortressTerrain.set(level, state.pos(), Blocks.CRACKED_STONE_BRICKS);
         VillageFortressTerrain.set(level, state.pos().above(), Blocks.AIR);
+        VillageFortressTerrain.set(level, state.pos().above(2), Blocks.AIR);
     }
     private static void clearVisual(ServerLevel level, BlockPos pos) {
         VillageFortressTerrain.set(level, pos, Blocks.AIR);
         VillageFortressTerrain.set(level, pos.above(), Blocks.AIR);
+        VillageFortressTerrain.set(level, pos.above(2), Blocks.AIR);
     }
 
     private static void persist(TurretState state) {

@@ -173,7 +173,9 @@ public final class VillageGuardians {
         boolean boss = event.getEntity() instanceof Mob mob && VillageRaidSystem.isBossEnemy(mob);
         var server = event.getEntity().level().getServer();
         if (raidEnemy && server != null) {
-            VillageMercenarySystem.awardKillExperience(server, event.getEntity().position());
+            if (event.getSource().getEntity() instanceof Mob killer) {
+                VillageMercenarySystem.awardKillExperience(killer);
+            }
             if (boss) VillageRelicSystem.offerToParty(server);
         }
         if (event.getEntity() instanceof Mob mob) VillageMercenarySystem.handleDeath(mob);
