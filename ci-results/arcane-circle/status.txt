@@ -1,9 +1,9 @@
-status=success
-source_sha=2e35fe80fd9beafc1fe14121ed7b20e52a41eea1
-run_id=31551623200
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/31551623200
+status=failure
+source_sha=a2ffa580a63d03bba5257888a92c6f39655d1ee3
+run_id=31559046579
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/31559046579
 java=25
 gradle=9.2.1
-version=0.12.1-alpha.24
+version=0.12.1-alpha.25
 source_mutation=disabled
-presentation_phase=complete-1C-9C-caster-robe
+presentation_phase=complete-1C-9C-codex-sigil-robe-v2
