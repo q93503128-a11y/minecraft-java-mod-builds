@@ -26,6 +26,15 @@ public final class VillageLocalActionSystem {
             return true;
         }
 
+        // Compatibility guard: old clients or stale saved UI actions must never reopen the retired
+        // fixed-corner-tower production screen. All such actions route to the phase-2 siege command surface.
+        if (action.equals("open_tower_control") || action.equals("tower_status")
+                || action.startsWith("tower_open:") || action.startsWith("tower_branch:")
+                || action.startsWith("tower_upgrade:")) {
+            VillageSiegeCommandUi.open(player);
+            return true;
+        }
+
         if (action.equals("siege_command")) { VillageSiegeCommandUi.open(player); return true; }
         if (action.equals("siege_turret_catalog")) { VillageSiegeCommandUi.openTurretCatalog(player); return true; }
         if (action.equals("siege_turret_list")) { VillageSiegeCommandUi.openTurretList(player); return true; }
