@@ -28,14 +28,7 @@ public final class VillageEquipmentTooltipClient {
         event.getToolTip().add(Component.literal("• 등급: " + rarity.displayName()
                 + (enhancement > 0 ? "  ·  강화 +" + enhancement : ""))
                 .withStyle(rarity.formatting()));
-
-        if (enhancement < VillageEquipmentRaritySystem.maximumEnhancement()) {
-            event.getToolTip().add(Component.literal("다음 강화: "
-                    + VillageEquipmentRaritySystem.enhancementEffectSummary(stack, enhancement + 1))
-                    .withStyle(ChatFormatting.DARK_GRAY));
-        } else {
-            event.getToolTip().add(Component.literal("현재 대장간 기준 최대 강화")
-                    .withStyle(ChatFormatting.DARK_GRAY));
-        }
+        event.getToolTip().add(Component.literal("다음 강화 수치와 가능 단계는 대장간에서 확인")
+                .withStyle(ChatFormatting.DARK_GRAY));
     }
 }
