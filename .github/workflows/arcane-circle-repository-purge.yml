@@ -40,6 +40,24 @@ jobs:
       - name: Materialize clean current tree
         run: python3 .github/scripts/arcane_circle_purge_current.py
 
+      - name: Remove residual dormant presentation references
+        shell: bash
+        run: |
+          set -euo pipefail
+          profile="$PROJECT_DIR/src/main/java/kr/moonseungjun/arcanecircle/magic/SpellPresentationProfile.java"
+          if test -f "$profile"; then
+            refs="$(grep -R --include='*.java' -l 'SpellPresentationProfile' "$PROJECT_DIR/src/main/java" | grep -v '/SpellPresentationProfile.java$' || true)"
+            if test -z "$refs"; then
+              echo 'Removing unreferenced SpellPresentationProfile legacy presentation table'
+              rm -f "$profile"
+              sed -i '/SpellPresentationProfile.class/d' .github/workflows/build-arcane-circle.yml
+            else
+              sed -i 's/The MidCircleVisualIdentity director owns their geometry/The current cinematic director owns their geometry/' "$profile"
+              sed -i '/alpha\.2[0-9] phase/d' "$profile"
+            fi
+          fi
+          sed -i 's/Ground-up presentation director for alpha\.26\./Current ground-up presentation director./' "$PROJECT_DIR/src/main/java/kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.java"
+
       - name: Audit clean current tree
         working-directory: projects/arcane-circle
         run: |
