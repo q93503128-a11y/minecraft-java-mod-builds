@@ -26,7 +26,7 @@ import java.util.Set;
  * blindly.</p>
  */
 public final class ErdenUrbanUpperRoomOpportunityCatalog {
-    public static final int CATALOG_REVISION = 1;
+    public static final int CATALOG_REVISION = 2;
 
     private static final int EDGE_MARGIN = 2;
     private static final int MIN_UPPER_RISE = 4;
@@ -59,10 +59,10 @@ public final class ErdenUrbanUpperRoomOpportunityCatalog {
             OpportunityProfile profile = analyze(snapshot, exact);
             PROFILES.put(snapshot.fragmentKey(), profile);
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_UPPER_ROOM_OPPORTUNITY fragment={} exact_classification={} ground_y={} existing_level={} existing_cells={} existing_regions={} new_level={} new_cells={} new_regions={} rejection={} recommendation={} source_only=true world_reads=false mutations=0",
+                    "LK_ERDEN_UPPER_ROOM_OPPORTUNITY fragment={} exact_classification={} ground_y={} existing_level={} existing_cells={} existing_regions={} existing_candidates={} new_level={} new_cells={} new_regions={} rejection={} recommendation={} source_only=true world_reads=false mutations=0",
                     snapshot.fragmentKey(), exact.classification(), profile.groundFeetY(),
                     profile.existingFloor().feetY(), profile.existingFloor().usableCells(),
-                    profile.existingFloor().regions().size(),
+                    profile.existingFloor().regions().size(), profile.existingFloors().size(),
                     profile.newFloorVoid().feetY(), profile.newFloorVoid().usableCells(),
                     profile.newFloorVoid().regions().size(), profile.rejections(),
                     profile.recommendation());
@@ -112,13 +112,13 @@ public final class ErdenUrbanUpperRoomOpportunityCatalog {
         if (groundY == Integer.MIN_VALUE) {
             return new OpportunityProfile(
                     snapshot.fragmentKey(), groundY,
-                    LevelOpportunity.none(FloorMode.EXISTING_SOURCE_FLOOR),
+                    LevelOpportunity.none(FloorMode.EXISTING_SOURCE_FLOOR), List.of(),
                     LevelOpportunity.none(FloorMode.NEW_AUTHORED_FLOOR),
                     new RejectionStats(0, 0, 0, 0, 0, 0, 0), Recommendation.NO_SAFE_ROOM);
         }
 
         MutableRejections rejected = new MutableRejections();
-        LevelOpportunity bestExisting = LevelOpportunity.none(FloorMode.EXISTING_SOURCE_FLOOR);
+        List<LevelOpportunity> existingFloors = new ArrayList<>();
         LevelOpportunity bestNew = LevelOpportunity.none(FloorMode.NEW_AUTHORED_FLOOR);
         int maximumY = Math.min(snapshot.height() - 2, groundY + MAX_UPPER_RISE);
         for (int feetY = groundY + MIN_UPPER_RISE; feetY <= maximumY; feetY++) {
@@ -164,12 +164,22 @@ public final class ErdenUrbanUpperRoomOpportunityCatalog {
                     FloorMode.EXISTING_SOURCE_FLOOR, feetY, existing);
             LevelOpportunity newLevel = opportunity(
                     FloorMode.NEW_AUTHORED_FLOOR, feetY, newFloor);
-            if (better(existingLevel, bestExisting)) bestExisting = existingLevel;
+            if (existingLevel.usableCells() >= MIN_USABLE_CELLS) {
+                existingFloors.add(existingLevel);
+            }
             if (better(newLevel, bestNew)) bestNew = newLevel;
         }
 
+        existingFloors.sort(
+                Comparator.comparingInt(LevelOpportunity::usableCells).reversed()
+                        .thenComparingInt(LevelOpportunity::feetY));
+        List<LevelOpportunity> immutableExistingFloors = List.copyOf(existingFloors);
+        LevelOpportunity bestExisting = immutableExistingFloors.isEmpty()
+                ? LevelOpportunity.none(FloorMode.EXISTING_SOURCE_FLOOR)
+                : immutableExistingFloors.get(0);
+
         Recommendation recommendation;
-        if (bestExisting.usableCells() >= MIN_USABLE_CELLS) {
+        if (!immutableExistingFloors.isEmpty()) {
             recommendation = Recommendation.ROUTE_TO_EXISTING_ROOM;
         } else if (bestNew.usableCells() >= MIN_USABLE_CELLS) {
             recommendation = Recommendation.AUTHOR_NEW_FLOOR_IN_VOID;
@@ -177,7 +187,7 @@ public final class ErdenUrbanUpperRoomOpportunityCatalog {
             recommendation = Recommendation.NO_SAFE_ROOM;
         }
         return new OpportunityProfile(
-                snapshot.fragmentKey(), groundY, bestExisting, bestNew,
+                snapshot.fragmentKey(), groundY, bestExisting, immutableExistingFloors, bestNew,
                 rejected.freeze(), recommendation);
     }
 
@@ -380,6 +390,7 @@ public final class ErdenUrbanUpperRoomOpportunityCatalog {
             String fragmentKey,
             int groundFeetY,
             LevelOpportunity existingFloor,
+            List<LevelOpportunity> existingFloors,
             LevelOpportunity newFloorVoid,
             RejectionStats rejections,
             Recommendation recommendation) {
