@@ -25,3 +25,5 @@ Minecraft Java 26.2용 전투 연출 프로토타입이다.
 화면의 미세 칼날은 실제 엔티티가 아니라 클라이언트 렌더 geometry다. 서버는 만해 상태와 제한된 공격 판정만 계산한다.
 
 연출은 파티클 수를 늘리는 방식이 아니라 custom world geometry를 사용한다.
+
+CI 기준: Java 25 + NeoForge 26.2.0.38-beta에서 clean build와 JAR 내용 검사를 통과해야 배포 가능으로 본다.
