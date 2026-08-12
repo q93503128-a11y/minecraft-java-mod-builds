@@ -63,6 +63,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
             long key = key(entrance.x(), entrance.z());
             if (SNAPSHOTS.containsKey(key) || RESTORED.contains(key)) continue;
             if (ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;
+            if (!level.hasChunk(entrance.x() >> 4, entrance.z() >> 4)) continue;
             Snapshot snapshot = capture(level, entrance);
             if (snapshot == null) continue;
             SNAPSHOTS.put(key, snapshot);
@@ -191,8 +192,6 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
         int relativeY = y - snapshot.doorY;
 
         if (Math.abs(lateral) <= 1 && relativeY >= 0 && relativeY <= 8) return true;
-        // ErdenUrbanLifeManager builds the four-step stair at lateral=2, depth=2..5 and a landing
-        // at depth=6. Preserve a one-cell margin so source trim cannot close its headroom.
         return lateral >= 1 && lateral <= 3
                 && depth >= 1 && depth <= 6
                 && relativeY >= 0 && relativeY <= 6;
@@ -202,9 +201,6 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
         if (current.isAir()) return true;
         Block block = current.getBlock();
         if (block instanceof DoorBlock) return false;
-        // Functional converters deliberately place these as floors/shell material. Source structural
-        // blocks may replace them outside navigation lanes. Furniture/workstations are not listed and
-        // therefore always win.
         return block == Blocks.OAK_PLANKS
                 || block == Blocks.SPRUCE_PLANKS
                 || block == Blocks.SMOOTH_STONE
@@ -273,6 +269,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
     }
 
     private static int findLowestDoorY(ServerLevel level, int x, int z) {
+        if (!level.hasChunk(x >> 4, z >> 4)) return Integer.MIN_VALUE;
         int designed = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z));
         int minimum = Math.max(level.getMinY(), designed - 8);
         int maximum = Math.min(level.getMaxY() - 1, designed + 64);
@@ -289,6 +286,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
 
     private static int findWalkableFeetY(
             ServerLevel level, int x, int z, int preferredFeetY) {
+        if (!level.hasChunk(x >> 4, z >> 4)) return Integer.MIN_VALUE;
         int[] offsets = {0, 1, -1};
         for (int offset : offsets) {
             int feetY = preferredFeetY + offset;
@@ -312,6 +310,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
     }
 
     private static boolean bodyPassable(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) return false;
         BlockState state = level.getBlockState(pos);
         return state.isAir()
                 || state.getBlock() instanceof DoorBlock
@@ -335,7 +334,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
                 || id.equals("minecraft:lava")) {
             return false;
         }
-        if (id.endsWith("_leaves") || id.endsWith("_log") || id.endsWith("_wood")
+        if (id.endsWith("_leaves")
                 || id.contains("grass") || id.contains("flower") || id.contains("fern")
                 || id.contains("sapling") || id.contains("vine")) {
             return false;
