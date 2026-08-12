@@ -20,18 +20,18 @@ import java.util.Set;
 /**
  * Reconciles each imported door's real vertical position with its terrain-following access path.
  *
- * <p>The first three metres are treated as authored porch geometry. Slabs, stairs and full-block
+ * <p>The first two metres are treated as authored porch geometry. Slabs, stairs and full-block
  * doorstep rises are preserved and followed at their actual walkable height. Only after that porch
  * has been left does the manager grade and clear the terrain route toward the street. This keeps
  * imported facade details intact while still guaranteeing a climbable road connection.</p>
  */
 public final class ErdenEntranceThresholdManager {
-    public static final int THRESHOLD_REVISION = 4;
+    public static final int THRESHOLD_REVISION = 5;
 
     private static final int EXPECTED_ENTRANCES = 273;
     private static final int PROCESS_INTERVAL = 5;
     private static final int PROCESS_BUDGET = 6;
-    private static final int PORCH_STEPS = 3;
+    private static final int PORCH_STEPS = 2;
     private static final int BASE_APPROACH_STEPS = 8;
     private static final int MAX_APPROACH_STEPS = 16;
     private static final int UPDATE_FLAGS =
