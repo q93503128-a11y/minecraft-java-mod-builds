@@ -28,9 +28,10 @@ public final class VillageLocalActionSystem {
 
         if (action.equals("siege_command")) { VillageSiegeCommandUi.open(player); return true; }
         if (action.equals("siege_turret_catalog")) { VillageSiegeCommandUi.openTurretCatalog(player); return true; }
+        if (action.equals("siege_turret_list")) { VillageSiegeCommandUi.openTurretList(player); return true; }
         if (action.equals("siege_turret_repair_all")) {
             player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.repairAll(player)));
-            VillageSiegeCommandUi.open(player); return true;
+            VillageSiegeCommandUi.openTurretList(player); return true;
         }
         if (action.equals("siege_turret_cancel")) {
             player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.cancelPlacement(player)));
@@ -71,7 +72,7 @@ public final class VillageLocalActionSystem {
         if (action.startsWith("siege_turret_dismantle:")) {
             int id = parseInt(action.substring(23), -1);
             player.sendSystemMessage(Component.literal("§b" + VillagePlacedTurretSystem.dismantle(player, id)));
-            VillageSiegeCommandUi.openTurretCatalog(player); return true;
+            VillageSiegeCommandUi.openTurretList(player); return true;
         }
 
         if (action.equals("open_mercenary_command")) {
