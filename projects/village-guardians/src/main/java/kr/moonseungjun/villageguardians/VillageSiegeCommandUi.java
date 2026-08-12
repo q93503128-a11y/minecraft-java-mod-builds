@@ -20,8 +20,11 @@ public final class VillageSiegeCommandUi {
             labels.add(segment.displayName() + "|" + VillageSiegeSegmentSystem.statusLine(segment));
         }
         actions.add("siege_turret_catalog");
-        labels.add("직접 배치 포탑|설치 " + VillagePlacedTurretSystem.count() + " / "
-                + VillagePlacedTurretSystem.capacity() + " · 10개 계열 배치·수리·강화·철거");
+        labels.add("새 포탑 배치|10개 계열 중 역할을 고른 뒤 월드에서 설치 위치를 미리 검증");
+        actions.add("siege_turret_list");
+        labels.add("설치 포탑 관리|가동 " + VillagePlacedTurretSystem.activeCount() + "기 · 설치 "
+                + VillagePlacedTurretSystem.count() + "/" + VillagePlacedTurretSystem.capacity()
+                + " · 개별 수리·강화·철거");
         actions.add("siege_turret_repair_all");
         labels.add("손상 포탑 일괄 수리|파괴·손상 포탑을 보유 주화 범위에서 순차 복구");
         actions.add("open_wave_intel");
@@ -66,27 +69,50 @@ public final class VillageSiegeCommandUi {
                     + "|" + type.role() + " · 피해 " + type.damage() + " · 사거리 " + type.range()
                     + " · 기본 HP " + type.baseHp());
         }
+        actions.add("siege_turret_list");
+        labels.add("설치 포탑 관리|이미 설치한 포탑의 HP·레벨·위치 확인");
+        actions.add("siege_command");
+        labels.add("성벽·포탑 지휘|이전 화면으로 돌아가기");
+        send(player, "tower_control", "새 포탑 배치", "계열 선택 → 월드 바닥 우클릭 미리보기 → 같은 위치 재클릭 확정.\n"
+                + "통행로·건물 출입구·북문 전면·8블록 이내 중복 설치는 서버가 거부합니다.", actions, labels);
+    }
+
+    public static void openTurretList(ServerPlayer player) {
+        if (!nearTownHall(player)) return;
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
         for (VillagePlacedTurretSystem.TurretState state : VillagePlacedTurretSystem.states()) {
             actions.add("siege_turret_open:" + state.id());
             labels.add(state.summary() + "|위치 " + state.pos().getX() + ", " + state.pos().getY() + ", " + state.pos().getZ());
         }
-        actions.add("siege_command"); labels.add("성벽·포탑 지휘|이전 화면으로 돌아가기");
-        send(player, "tower_control", "직접 배치 포탑", "포탑 선택 → 월드 바닥 우클릭 미리보기 → 같은 위치 재클릭 확정.\n"
-                + "통행로·건물 출입구·북문 전면·8블록 이내 중복 설치는 서버가 거부합니다.", actions, labels);
+        if (actions.isEmpty()) {
+            actions.add("siege_turret_catalog");
+            labels.add("아직 설치된 포탑이 없습니다|새 포탑 계열을 선택해 첫 방어 거점을 배치");
+        } else {
+            actions.add("siege_turret_repair_all");
+            labels.add("손상 포탑 일괄 수리|보유 주화 범위에서 파괴·손상 포탑 순차 복구");
+            actions.add("siege_turret_catalog");
+            labels.add("새 포탑 배치|추가 방어 거점 설치");
+        }
+        actions.add("siege_command");
+        labels.add("성벽·포탑 지휘|이전 화면으로 돌아가기");
+        send(player, "tower_control", "설치 포탑 관리", "가동 " + VillagePlacedTurretSystem.activeCount()
+                + "기 · 설치 " + VillagePlacedTurretSystem.count() + "/" + VillagePlacedTurretSystem.capacity()
+                + "\n포탑 하나를 선택하면 수리·강화·철거를 관리할 수 있습니다.", actions, labels);
     }
 
     public static void openTurret(ServerPlayer player, int id) {
         if (!nearTownHall(player)) return;
         VillagePlacedTurretSystem.TurretState state = VillagePlacedTurretSystem.states().stream()
                 .filter(value -> value.id() == id).findFirst().orElse(null);
-        if (state == null) { openTurretCatalog(player); return; }
+        if (state == null) { openTurretList(player); return; }
         List<String> actions = List.of("siege_turret_repair:" + id, "siege_turret_upgrade:" + id,
-                "siege_turret_dismantle:" + id, "siege_turret_catalog");
+                "siege_turret_dismantle:" + id, "siege_turret_list");
         List<String> labels = List.of(
                 "수리|HP 0의 잔해도 다시 가동 상태로 복구",
                 "강화|Lv.5까지 HP·피해·사거리·공격 주기 강화",
                 "철거|블록 드롭 없이 철거하고 일부 주화 환급",
-                "포탑 목록|다른 설치 포탑과 신규 배치 계열 보기");
+                "설치 포탑 목록|다른 포탑 관리로 돌아가기");
         send(player, "tower_detail", state.type().displayName() + " #" + id,
                 state.summary() + "\n역할: " + state.type().role() + " · 피해 " + state.type().damage()
                         + " · 기본 사거리 " + state.type().range() + " · 공격 주기 " + state.type().interval() + "틱",
