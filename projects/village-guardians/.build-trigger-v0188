@@ -1,1 +1,1 @@
-Village Guardians 0.18.8 death-risk restoration, legacy UI routing cleanup, narrow-screen regression fixes and verified Java 25 build trigger. Retry 3 after runtime-safety UI migration.
+Village Guardians 0.18.8 death-risk restoration, legacy UI routing cleanup, narrow-screen regression fixes and verified Java 25 build trigger. Retry 4 after JAR verifier and shop-layout migration.
