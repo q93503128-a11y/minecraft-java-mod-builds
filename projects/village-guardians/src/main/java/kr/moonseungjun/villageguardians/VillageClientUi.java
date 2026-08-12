@@ -23,7 +23,7 @@ public final class VillageClientUi {
                                 case "town_hall" -> new VillageTownHallGridScreen(payload);
                                 case "equipment_shop" -> new VillageShopCatalogScreen(payload);
                                 case "status", "caller" -> new VillageCommandCenterScreen(payload);
-                                case "building", "management", "funding", "tower_control", "tower_detail" ->
+                                case "building", "management", "funding", "tower_control", "tower_detail", "skill_test" ->
                                         new VillageActionDetailScreen(payload);
                                 case "relic_collection" -> new VillageRelicScreen(payload);
                                 case "relic_choice" -> new VillageRelicChoiceConfirmScreen(payload);
@@ -32,10 +32,9 @@ public final class VillageClientUi {
                                 case "game_over" -> new VillageGameOverScreen(payload);
                                 case "skill_test_role", "skill_test_skill" -> new VillageSkillTestScreen(payload);
                                 case "skill_test_password" -> new VillageSkillTestPasswordScreen(payload);
-                                case "skill_test" -> new VillageFacilityScreen(payload);
                                 case "equipment_fusion" -> new VillageFusionSafeScreen(payload);
                                 case "result" -> new VillageResultScreen(payload);
-                                default -> new VillageUiScreen(payload);
+                                default -> new VillageActionDetailScreen(payload);
                             });
                 });
         event.register(VillageNetwork.SkillMotionPayload.TYPE,
@@ -47,11 +46,6 @@ public final class VillageClientUi {
         event.register(VillageNetwork.PlayerStatusPayload.TYPE,
                 (payload, context) -> VillageInventoryPanel.updateStatus(payload));
     }
-
-    // Legacy source-contract markers retained while the runtime now uses safer replacement screens:
-    // case "town_hall", "status", "equipment_shop"
-    // case "relic_choice" -> new VillageRelicChoiceScreen(payload)
-    // case "wave_intel" -> new VillageWaveIntelScreen(payload)
 
     private static VillageNetwork.OpenVillageUiPayload resolve(
             VillageNetwork.OpenVillageUiPayload payload) {
