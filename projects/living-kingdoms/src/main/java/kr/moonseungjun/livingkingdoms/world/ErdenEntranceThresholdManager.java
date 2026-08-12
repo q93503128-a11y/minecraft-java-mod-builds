@@ -26,7 +26,7 @@ import java.util.Set;
  * imported facade details intact while still guaranteeing a climbable road connection.</p>
  */
 public final class ErdenEntranceThresholdManager {
-    public static final int THRESHOLD_REVISION = 5;
+    public static final int THRESHOLD_REVISION = 6;
 
     private static final int EXPECTED_ENTRANCES = 273;
     private static final int PROCESS_INTERVAL = 5;
@@ -456,10 +456,13 @@ public final class ErdenEntranceThresholdManager {
                 || state.getCollisionShape(level, pos).isEmpty();
     }
 
+    /** Generated threshold grading may cut terrain and clutter, but never another authored door. */
     private static void set(ServerLevel level, int x, int y, int z, Block block) {
         if (y < level.getMinY() || y >= level.getMaxY()) return;
         BlockPos pos = new BlockPos(x, y, z);
-        if (level.getBlockState(pos).is(block)) return;
+        var existing = level.getBlockState(pos);
+        if (existing.getBlock() instanceof DoorBlock) return;
+        if (existing.is(block)) return;
         level.setBlock(pos, block.defaultBlockState(), UPDATE_FLAGS);
     }
 
