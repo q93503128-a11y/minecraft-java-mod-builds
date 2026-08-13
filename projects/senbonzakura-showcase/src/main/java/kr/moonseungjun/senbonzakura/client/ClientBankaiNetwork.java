@@ -8,10 +8,11 @@ public final class ClientBankaiNetwork {
     private ClientBankaiNetwork() {}
 
     public static void register(RegisterClientPayloadHandlersEvent event) {
-        event.register(BankaiVisualPayload.TYPE, ClientBankaiNetwork::handleBankaiVisual);
+        event.register(BankaiVisualPayload.TYPE, ClientBankaiNetwork::handleVisual);
     }
 
-    private static void handleBankaiVisual(BankaiVisualPayload payload, IPayloadContext context) {
+    private static void handleVisual(BankaiVisualPayload payload, IPayloadContext context) {
         BankaiWorldRenderer.accept(payload);
+        AbilityWorldRenderer.accept(payload);
     }
 }
