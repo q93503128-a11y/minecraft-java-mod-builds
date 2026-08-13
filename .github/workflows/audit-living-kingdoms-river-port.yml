@@ -18,6 +18,7 @@ permissions:
 env:
   PROJECT_DIR: projects/living-kingdoms
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_RIVER_PORT_TEST: '1'
 
 jobs:
   audit:
