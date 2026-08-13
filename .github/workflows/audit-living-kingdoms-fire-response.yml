@@ -68,6 +68,11 @@ jobs:
               cat ../../logs/fire-response.log
               exit 1
             fi
+            if grep -Fq 'Prepared Erden river-port CI chunks=' ../../logs/fire-response.log; then
+              echo 'River-port fixture contaminated the fire-response audit.' >&2
+              cat ../../logs/fire-response.log
+              exit 1
+            fi
             if grep -Fq 'LK_ERDEN_FIRE_RESPONSE_PASS revision=1 cisterns=8' ../../logs/fire-response.log; then
               passed=1
               break
@@ -83,6 +88,7 @@ jobs:
           test "$passed" -eq 1
 
           grep -F 'Prepared Erden fire-response CI responder=' ../../logs/fire-response.log
+          ! grep -Fq 'Prepared Erden river-port CI chunks=' ../../logs/fire-response.log
           grep -F 'real_guard_identity=true' ../../logs/fire-response.log
           grep -F 'Erden fire reported incident=' ../../logs/fire-response.log
           grep -F 'loaded_only=true' ../../logs/fire-response.log
