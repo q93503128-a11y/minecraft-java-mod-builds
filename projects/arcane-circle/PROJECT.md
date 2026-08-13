@@ -21,4 +21,4 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - High-complexity sigils prioritize fine concentric rules, inscription rings, nested geometry and balanced satellite seals; 3D depth stays secondary and may not overpower the readable planar formula.
 - Academy affiliation selector, join action, offer header/list and lore note own separate layout regions; narrow widths fold traditions into a 2x2 selector.
 - Canonical Java 25 verification is required after the alpha.31 source commit; source-only audit is not sufficient.
-- Current alpha.30 verification baseline: `0360d7b26c27e7cc29ab2cb9b7054361079829e3` plus this non-code trigger commit.
+- Verification target: alpha.31 refined sigil grammar + isolated academy selector/list regions from source commit `14077bc3`.
