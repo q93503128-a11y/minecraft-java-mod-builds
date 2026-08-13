@@ -17,3 +17,4 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - Sigil radius reacts to final range by spell geometry family; it is not a raw 1:1 range circle.
 - Light uses temporary vanilla Light blocks and must clean them on expiry/session/dimension/server shutdown.
 - Prismatic rendering is bounded by per-entry and per-frame primitive caps.
+- Canonical Java 25 verification is required after the alpha.29 corrective source commit; source-only audit is not sufficient.
