@@ -142,18 +142,35 @@ public final class ErdenUrbanAuthoredNewFloorManager {
             if (processed >= PROCESS_BUDGET) break;
             long key = plan.entranceKey();
             if (data.isCompleted(key, FLOOR_REVISION)) continue;
-            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;
-            if (!chunksReady(level, plan.bounds())) continue;
+            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) {
+            logCiStage(level, plan, "ground_not_complete");
+            continue;
+        }
+            if (!chunksReady(level, plan.bounds())) {
+            logCiStage(level, plan, "chunks_not_ready");
+            continue;
+        }
 
             if (!data.isPrepared(key, FLOOR_REVISION)) {
-                if (!materialize(level, plan, true)) continue;
+                if (!materialize(level, plan, true)) {
+            logCiStage(level, plan, "materialize_rejected");
+            continue;
+        }
                 data.markPrepared(key, FLOOR_REVISION);
+        if (plan.entranceKey() == ciPlanKey) {
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_AUTHORED_NEW_FLOOR_STAGE role={} entrance={},{} stage=materialized floor_cells={} route_nodes={} stairs={}",
+                    plan.role(), plan.entranceX(), plan.entranceZ(),
+                    plan.floorBlocks().size(), plan.routeNodes().size(), plan.stairs().size());
+        }
                 LivingKingdoms.LOGGER.debug(
                         "Prepared Erden authored new floor role={} entrance={},{} floor_cells={} route_nodes={} stairs={} openings={} source_blocks_cut=0",
                         plan.role(), plan.entranceX(), plan.entranceZ(), plan.floorBlocks().size(),
                         plan.routeNodes().size(), plan.stairs().size(), plan.stairwellOpenings());
             }
-            if (verify(level, plan)) {
+            boolean verified = verify(level, plan);
+        if (!verified) logCiStage(level, plan, "verify_rejected");
+        if (verified) {
                 data.markCompleted(key, FLOOR_REVISION);
             }
             processed++;
@@ -543,6 +560,14 @@ public final class ErdenUrbanAuthoredNewFloorManager {
                 sample.routeNodes().size(), sample.stairs().size(), sample.stairwellOpenings(),
                 sample.target().y(), FLOOR_REVISION);
     }
+
+    private static void logCiStage(
+        ServerLevel level, PlacementPlan plan, String stage) {
+    if (plan.entranceKey() != ciPlanKey || level.getGameTime() % 40L != 0L) return;
+    LivingKingdoms.LOGGER.info(
+            "LK_ERDEN_AUTHORED_NEW_FLOOR_WAIT role={} entrance={},{} stage={}",
+            plan.role(), plan.entranceX(), plan.entranceZ(), stage);
+}
 
     private static boolean chunksReady(ServerLevel level, Bounds bounds) {
         for (int chunkX = Math.floorDiv(bounds.minX(), 16);
