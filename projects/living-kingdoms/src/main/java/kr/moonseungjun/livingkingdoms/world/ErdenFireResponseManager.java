@@ -17,6 +17,7 @@ import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -438,19 +439,44 @@ public final class ErdenFireResponseManager {
     private static BlockPos findCiFireSupport(
             ServerLevel level,
             ErdenUrbanInfrastructureBuilder.FireCistern cistern) {
-        for (int offset = -8; offset <= -5; offset++) {
-            int x = cistern.x() + offset;
-            int z = cistern.z();
-            if ((x >> 4) != (cistern.x() >> 4) || (z >> 4) != (cistern.z() >> 4)) continue;
-            int groundY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z));
-            BlockPos support = new BlockPos(x, groundY + 1, z);
-            if (!level.getBlockState(support.below()).isAir()
-                    && level.getBlockState(support).isAir()
-                    && level.getBlockState(support.above()).isAir()) {
-                return support;
+        int chunkMinX = (cistern.x() >> 4) << 4;
+        int chunkMinZ = (cistern.z() >> 4) << 4;
+        BlockPos best = null;
+        long bestDistance = Long.MAX_VALUE;
+        int examined = 0;
+        for (int x = chunkMinX; x <= chunkMinX + 15; x++) {
+            for (int z = chunkMinZ; z <= chunkMinZ + 15; z++) {
+                long dx = (long) x - cistern.x();
+                long dz = (long) z - cistern.z();
+                long distance = dx * dx + dz * dz;
+                if (distance < 25L || distance > 196L) continue;
+                int preferredY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z)) + 1;
+                for (int vertical = 0; vertical <= 8; vertical++) {
+                    int[] ys = vertical == 0
+                            ? new int[]{preferredY}
+                            : new int[]{preferredY + vertical, preferredY - vertical};
+                    for (int y : ys) {
+                        if (y <= level.getMinY() || y >= level.getMaxY() - 1) continue;
+                        examined++;
+                        BlockPos support = new BlockPos(x, y, z);
+                        BlockState below = level.getBlockState(support.below());
+                        if (below.isAir() || !below.getFluidState().isEmpty()) continue;
+                        if (!level.getBlockState(support).isAir()
+                                || !level.getBlockState(support.above()).isAir()) continue;
+                        if (distance < bestDistance) {
+                            best = support;
+                            bestDistance = distance;
+                        }
+                    }
+                }
             }
         }
-        return null;
+        if (best != null) {
+            LivingKingdoms.LOGGER.info(
+                    "Selected bounded Erden fire CI support={} examined={} same_chunk=true two_block_air=true stable_ground=true",
+                    best, examined);
+        }
+        return best;
     }
 
     private static BlockPos safeStandingPosition(
