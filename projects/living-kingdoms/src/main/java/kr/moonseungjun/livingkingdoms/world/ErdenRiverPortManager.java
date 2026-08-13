@@ -133,7 +133,7 @@ public final class ErdenRiverPortManager {
         ErdenRiverPortSavedData data = level.getDataStorage().computeIfAbsent(ErdenRiverPortSavedData.TYPE);
         data.markChunk(activeChunk.packed(), PORT_REVISION);
         QUEUED.remove(activeChunk.packed());
-        releaseCi(level, activeChunk.packed());
+        if (!isPortCi()) releaseCi(level, activeChunk.packed());
         if (isPortCi()) {
             LivingKingdoms.LOGGER.info(
                     "LK_ERDEN_RIVER_PORT_CHUNK_COMPLETE chunk={},{} writes={} waterway=true loaded_only={}",
@@ -150,7 +150,7 @@ public final class ErdenRiverPortManager {
             int chunkZ = unpackZ(packed);
             if (!data.needsChunk(packed, PORT_REVISION)) {
                 QUEUED.remove(packed);
-                releaseCi(level, packed);
+                if (!isPortCi()) releaseCi(level, packed);
                 continue;
             }
             if (!level.hasChunk(chunkX, chunkZ)) {
@@ -522,7 +522,7 @@ public final class ErdenRiverPortManager {
         ciPassed = true;
         for (long packed : Set.copyOf(CI_RETAINED)) releaseCi(level, packed);
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_RIVER_PORT_PASS revision=1 silver_river_navigable=true west_wharf_physical=true customs_house=true shipyard=true supply_barge_escrow_linked=true real_boat_entity=true actual_water_movement=true travelled_metres={} loaded_only_runtime=true forced_citywide=false ci_corridor_only=true",
+                "LK_ERDEN_RIVER_PORT_PASS revision=1 silver_river_navigable=true west_wharf_physical=true customs_house=true shipyard=true supply_barge_escrow_linked=true real_boat_entity=true actual_water_movement=true travelled_metres={} loaded_only_runtime=true forced_citywide=false ci_corridor_only=true ci_corridor_retained_until_pass=true ci_tickets_released_at_pass=true",
                 Math.round(ciTravelled));
     }
 
