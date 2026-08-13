@@ -1,8 +1,12 @@
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 PORT_MANAGER = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java"
 FIRE_MANAGER = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java"
+JUSTICE_MANAGER = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java"
+CRIME_MANAGER = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/CrimeManager.java"
+MOD_MAIN = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
 STATUS = ROOT / "projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md"
 
 
@@ -42,26 +46,82 @@ require("if (!isFireCi() || ciPassed || !ciPrepared || ciFirePos == null) return
         "fire fixture verification is not isolated")
 FIRE_MANAGER.write_text(fire, encoding="utf-8")
 
+justice = JUSTICE_MANAGER.read_text(encoding="utf-8")
+# This helper depended on a non-existent StarterRealmManager.server() accessor and is not needed;
+# CrimeManager can distinguish the Erden warrant directly from CrimeSavedData.
+justice = re.sub(
+    r'\n    public static boolean hasActiveCase\(UUID suspect\) \{.*?\n    \}\n\n    public static void onServerTick',
+    '\n    public static void onServerTick',
+    justice,
+    count=1,
+    flags=re.S,
+)
+require("StarterRealmManager.server()" not in justice,
+        "justice manager still calls non-existent global server accessor")
+require("public static void onServerTick(ServerTickEvent.Post event)" in justice,
+        "justice server-tick entry point missing")
+require("actual_resident=true" in justice and "synthetic_guard=false" in justice,
+        "justice evidence markers missing")
+JUSTICE_MANAGER.write_text(justice, encoding="utf-8")
+
+crime = CRIME_MANAGER.read_text(encoding="utf-8")
+if "ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())" not in crime:
+    crime = crime.replace(
+        "        if (record.wanted() <= 0) return;\n\n        String local = RealmJurisdiction.at(level, player.blockPosition());",
+        "        if (record.wanted() <= 0) return;\n"
+        "        // Erden warrants are enforced by population-backed resident guards, never the\n"
+        "        // generic synthetic pursuit wave used by the other starter realms.\n"
+        "        if (ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())) return;\n\n"
+        "        String local = RealmJurisdiction.at(level, player.blockPosition());"
+    )
+if "ErdenJusticeManager.observeCrime(level, player, severity, description" not in crime:
+    crime = crime.replace(
+        "    private static void reportCrime(ServerLevel level, ServerPlayer player, String jurisdiction,\n"
+        "                                    int severity, String description) {\n"
+        "        CrimeSavedData.CrimeRecord record = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE)",
+        "    private static void reportCrime(ServerLevel level, ServerPlayer player, String jurisdiction,\n"
+        "                                    int severity, String description) {\n"
+        "        if (ErdenJusticeManager.JURISDICTION.equals(jurisdiction)) {\n"
+        "            ErdenJusticeManager.observeCrime(\n"
+        "                    level, player, severity, description, player.blockPosition());\n"
+        "            return;\n"
+        "        }\n"
+        "        CrimeSavedData.CrimeRecord record = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE)"
+    )
+require("ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())" in crime,
+        "generic Erden synthetic pursuit was not disabled")
+require("ErdenJusticeManager.observeCrime(level, player, severity, description" in crime,
+        "Erden crime reporting was not routed through civic justice")
+CRIME_MANAGER.write_text(crime, encoding="utf-8")
+
+main = MOD_MAIN.read_text(encoding="utf-8")
+if "import kr.moonseungjun.livingkingdoms.crime.ErdenJusticeManager;" not in main:
+    main = main.replace(
+        "import kr.moonseungjun.livingkingdoms.crime.CrimeManager;\n",
+        "import kr.moonseungjun.livingkingdoms.crime.CrimeManager;\n"
+        "import kr.moonseungjun.livingkingdoms.crime.ErdenJusticeManager;\n"
+    )
+if "ErdenJusticeManager.onServerTick(event);" not in main:
+    main = main.replace(
+        "        ErdenPopulationManager.onServerTick(event);\n"
+        "        ErdenFireResponseManager.onServerTick(event);",
+        "        ErdenPopulationManager.onServerTick(event);\n"
+        "        ErdenJusticeManager.onServerTick(event);\n"
+        "        ErdenFireResponseManager.onServerTick(event);"
+    )
+require("ErdenJusticeManager.onServerTick(event);" in main,
+        "Erden justice manager was not wired into the authoritative server tick")
+MOD_MAIN.write_text(main, encoding="utf-8")
+
 status = STATUS.read_text(encoding="utf-8")
 implemented_anchor = "## 왕국 완성 전 남은 핵심"
-implemented_lines = (
-    "- 완성된 로드 청크의 비기능 공터·후면 마당·골목 모서리를 도로·출입 통로·기능 필지를 침범하지 않는 안뜰·적재공간·세탁공간·정원·휴게공간·목재 야드로 채우는 2차 미세 필지 조립\n"
-    "- 왕도 외곽 생산 거점이 실제 재고·운송 에스크로를 통해 왕도 창고 원료를 공급하고, 로드된 생산 거점은 물리 컨테이너 재고로 동기화되는 왕국 단위 공급망\n"
-    "- 왕도 화재를 감지해 경비초소 근무자가 8개 화재 저수조 중 가까운 곳에서 급수한 뒤 현장까지 실제 길찾기로 이동해 근거리에서 진압하는 소방 대응\n"
-    "- 강우·막힘·하천 수위에 반응해 도로 측구·빗물 유입구·지하 배수관·6개 하수 처리 거점을 연결하는 실제 배수 시뮬레이션\n"
-    "- 은빛강 가항 수로, 서부 부두, 세관, 조선소·슬립웨이와 공급 장부의 바지선 화물을 실제 보트 엔티티 이동으로 연결한 수운\n"
+justice_line = (
+    "- 에르덴 범죄를 즉시 수배로 바꾸지 않고 실제 로드된 주민 목격자가 실제 경비초소 근무자에게 걸어가 신고한 뒤 수배장을 발부하며, 주민 경비의 근접 체포·구금·실제 시민법정 심리·판결·형기 집행으로 이어지는 시민 사법 절차\n"
 )
-if "은빛강 가항 수로, 서부 부두, 세관" not in status:
+if justice_line.strip() not in status:
     require(implemented_anchor in status, "implementation-status remaining-core heading not found")
-    status = status.replace(implemented_anchor, implemented_lines + "\n" + implemented_anchor, 1)
-for obsolete in (
-    "- 1차 시가지 파츠 사이의 남은 공터·후면 마당·골목 모서리를 채우는 2차 미세 필지 조립\n",
-    "- 외곽 농장·목장·광산·부두가 창고 원료 입고량을 실제 생산과 운송으로 공급하는 왕국 단위 공급망\n",
-    "- 화재 시 소방 인력과 저수조를 사용하는 대응 동선\n",
-    "- 강우량·막힘·하천 수위에 반응하는 실제 배수·하수 시뮬레이션\n",
-    "- 강변 부두, 세관, 조선소와 실제 수운\n",
-):
-    status = status.replace(obsolete, "")
+    status = status.replace(implemented_anchor, justice_line + "\n" + implemented_anchor, 1)
+status = status.replace("- 경비대 목격과 신고, 체포, 구금, 재판, 판결, 형 집행\n", "")
 STATUS.write_text(status, encoding="utf-8")
 
-print("Isolated river-port and fire-response CI fixtures and refreshed Erden status.")
+print("Isolated CI fixtures and wired population-backed Erden civic justice.")
