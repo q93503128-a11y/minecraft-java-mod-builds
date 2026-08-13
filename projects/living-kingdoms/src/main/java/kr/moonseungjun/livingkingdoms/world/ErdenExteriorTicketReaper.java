@@ -11,9 +11,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,9 +29,11 @@ public final class ErdenExteriorTicketReaper {
             {0, 0}, {28, 0}, {-28, 0}, {0, 28}, {0, -28}
     };
     private static final long SAMPLE_RELEASE_GRACE_TICKS = 40L;
+    private static final long INVENTORY_CAPTURE_GRACE_TICKS = 20L;
 
     private static final Set<Long> RELEASED = new HashSet<>();
     private static final Set<String> VALIDATED_STORAGE_NODES = new HashSet<>();
+    private static final Map<String, Long> INVENTORY_READY_SINCE = new HashMap<>();
     private static MinecraftServer activeServer;
     private static long sampleReadySince = -1L;
     private static boolean ticketCiPassed;
@@ -50,6 +54,8 @@ public final class ErdenExteriorTicketReaper {
                 .computeIfAbsent(ErdenKingdomExteriorSavedData.TYPE);
         ErdenExteriorResidenceSavedData residences = level.getDataStorage()
                 .computeIfAbsent(ErdenExteriorResidenceSavedData.TYPE);
+        ErdenKingdomExteriorContainerSavedData containers = level.getDataStorage()
+                .computeIfAbsent(ErdenKingdomExteriorContainerSavedData.TYPE);
         observePhysicalStorage(level);
 
         List<ErdenKingdomSupplyCatalog.SupplyNode> nodes = ErdenKingdomSupplyCatalog.nodes();
@@ -85,7 +91,7 @@ public final class ErdenExteriorTicketReaper {
                     ErdenExteriorResidenceBuilder.RESIDENCE_REVISION);
             boolean exteriorReady = !isExteriorAnchor(packed)
                     || exterior.isBuilt(packed, ErdenKingdomExteriorBuilder.EXTERIOR_REVISION);
-            boolean storageReady = storageReadyForChunk(packed);
+            boolean storageReady = storageReadyForChunk(level, packed, containers);
             if (RELEASED.contains(packed)
                     || !exteriorReady
                     || !residenceReady
@@ -112,8 +118,9 @@ public final class ErdenExteriorTicketReaper {
                 && residentSampleObserved) {
             ticketCiPassed = true;
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors={} released={} explicit_release=true persistent_forced_chunks=false storage_yards_observed={} resident_sample_observed=true validation_revision=2",
-                    required.size(), RELEASED.size(), VALIDATED_STORAGE_NODES.size());
+                    "LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors={} released={} explicit_release=true persistent_forced_chunks=false storage_yards_observed={} resident_sample_observed=true validation_revision=3 inventory_capture_grace_ticks={}",
+                    required.size(), RELEASED.size(), VALIDATED_STORAGE_NODES.size(),
+                    INVENTORY_CAPTURE_GRACE_TICKS);
         }
 
         if (!exteriorCiPassed
@@ -135,6 +142,7 @@ public final class ErdenExteriorTicketReaper {
         activeServer = server;
         RELEASED.clear();
         VALIDATED_STORAGE_NODES.clear();
+        INVENTORY_READY_SINCE.clear();
         sampleReadySince = -1L;
         ticketCiPassed = false;
         exteriorCiPassed = false;
@@ -154,10 +162,22 @@ public final class ErdenExteriorTicketReaper {
         return VALIDATED_STORAGE_NODES.size() == ErdenKingdomSupplyCatalog.nodes().size();
     }
 
-    private static boolean storageReadyForChunk(long packed) {
+    private static boolean storageReadyForChunk(
+            ServerLevel level,
+            long packed,
+            ErdenKingdomExteriorContainerSavedData containers) {
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
-            if (ErdenKingdomExteriorBuilder.storageAnchorChunk(node) == packed
-                    && !VALIDATED_STORAGE_NODES.contains(node.id)) return false;
+            if (ErdenKingdomExteriorBuilder.storageAnchorChunk(node) != packed) continue;
+            if (!VALIDATED_STORAGE_NODES.contains(node.id)) return false;
+            if (!node.producer()) continue;
+
+            if (!containers.isMaterialized(node.id)) {
+                INVENTORY_READY_SINCE.remove(node.id);
+                return false;
+            }
+            long readySince = INVENTORY_READY_SINCE.computeIfAbsent(
+                    node.id, ignored -> level.getGameTime());
+            if (level.getGameTime() - readySince < INVENTORY_CAPTURE_GRACE_TICKS) return false;
         }
         return true;
     }
