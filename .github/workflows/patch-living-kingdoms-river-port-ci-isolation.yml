@@ -22,41 +22,37 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
-
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-
-      - name: Isolate river-port and fire-response source fixtures
+      - name: Isolate CI fixtures and wire Erden civic justice
         run: python .github/scripts/isolate_living_kingdoms_river_port_ci.py
-
       - name: Clean compile Living Kingdoms
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
-
       - name: Verify source patch invariants
         shell: bash
         run: |
           set -euo pipefail
           port='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java'
           fire='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java'
-          port_workflow='.github/workflows/audit-living-kingdoms-river-port.yml'
-          fire_workflow='.github/workflows/audit-living-kingdoms-fire-response.yml'
+          justice='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java'
+          crime='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/CrimeManager.java'
+          main='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
           status='projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md'
           grep -Fq 'LIVING_KINGDOMS_CI_RIVER_PORT_TEST' "$port"
           ! grep -Fq 'LIVING_KINGDOMS_CI_REALM_TEST' "$port"
           grep -Fq 'LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST' "$fire"
           ! grep -Fq 'LIVING_KINGDOMS_CI_REALM_TEST' "$fire"
-          grep -Fq "LIVING_KINGDOMS_CI_RIVER_PORT_TEST: '1'" "$port_workflow"
-          grep -Fq "LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST: '1'" "$fire_workflow"
-          ! grep -Fq -- '- 화재 시 소방 인력과 저수조를 사용하는 대응 동선' "$status"
-          ! grep -Fq -- '- 1차 시가지 파츠 사이의 남은 공터' "$status"
-
+          grep -Fq 'actual_resident=true' "$justice"
+          grep -Fq 'synthetic_guard=false' "$justice"
+          grep -Fq 'ErdenJusticeManager.observeCrime' "$crime"
+          grep -Fq 'ErdenJusticeManager.onServerTick(event);' "$main"
+          ! grep -Fq -- '- 경비대 목격과 신고, 체포, 구금, 재판, 판결, 형 집행' "$status"
       - name: Commit source and docs directly to main
         shell: bash
         run: |
@@ -66,9 +62,12 @@ jobs:
           git add \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/CrimeManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
             projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md
           git diff --cached --quiet && exit 0
-          git commit -m 'fix(living-kingdoms): isolate fire and river port CI fixtures'
+          git commit -m 'feat(living-kingdoms): wire Erden civic justice flow'
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
