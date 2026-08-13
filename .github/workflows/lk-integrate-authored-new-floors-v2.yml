@@ -1,0 +1,169 @@
+name: Integrate Living Kingdoms authored new floors v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/lk-integrate-authored-new-floors-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Patch authored-route facade and inventory audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredUpperRouteManager.java')
+          s = p.read_text(encoding='utf-8')
+          pairs = [
+          ('''    public static int eligibleCount() {
+                  bootstrap();
+                  return ROUTES.size();
+              }
+          ''', '''    public static int eligibleCount() {
+                  bootstrap();
+                  return ROUTES.size() + ErdenUrbanAuthoredNewFloorManager.eligibleCount();
+              }
+          '''),
+          ('''    public static boolean isEligible(ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+                  bootstrap();
+                  return ROUTES.containsKey(entranceKey(entrance.x(), entrance.z()));
+              }
+          ''', '''    public static boolean isEligible(ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+                  bootstrap();
+                  long key = entranceKey(entrance.x(), entrance.z());
+                  return ROUTES.containsKey(key)
+                          || ErdenUrbanAuthoredNewFloorManager.isEligible(entrance);
+              }
+          '''),
+          ('''    public static boolean isPrepared(
+                      ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+                  bootstrap();
+                  long key = entranceKey(entrance.x(), entrance.z());
+                  if (!ROUTES.containsKey(key)) return false;
+                  return level.getDataStorage().computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE)
+                          .isPrepared(key, ROUTE_REVISION);
+              }
+          ''', '''    public static boolean isPrepared(
+                      ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+                  bootstrap();
+                  long key = entranceKey(entrance.x(), entrance.z());
+                  if (!ROUTES.containsKey(key)) {
+                      return ErdenUrbanAuthoredNewFloorManager.isPrepared(level, entrance);
+                  }
+                  return level.getDataStorage().computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE)
+                          .isPrepared(key, ROUTE_REVISION);
+              }
+          '''),
+          ('''    public static boolean isCompleted(
+                      ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+                  bootstrap();
+                  long key = entranceKey(entrance.x(), entrance.z());
+                  if (!ROUTES.containsKey(key)) return false;
+                  return level.getDataStorage().computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE)
+                          .isCompleted(key, ROUTE_REVISION);
+              }
+          ''', '''    public static boolean isCompleted(
+                      ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+                  bootstrap();
+                  long key = entranceKey(entrance.x(), entrance.z());
+                  if (!ROUTES.containsKey(key)) {
+                      return ErdenUrbanAuthoredNewFloorManager.isCompleted(level, entrance);
+                  }
+                  return level.getDataStorage().computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE)
+                          .isCompleted(key, ROUTE_REVISION);
+              }
+          '''),
+          ('''        PlacementRoute route = ROUTES.get(key);
+                  if (route == null) return null;
+                  ErdenUrbanAuthoredUpperRouteSavedData data = level.getDataStorage()
+                          .computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE);
+                  if (!data.isCompleted(key, ROUTE_REVISION)) return null;
+                  return route.target().pos();
+          ''', '''        PlacementRoute route = ROUTES.get(key);
+                  if (route == null) {
+                      return ErdenUrbanAuthoredNewFloorManager.verifiedUpperTarget(level, entrance);
+                  }
+                  ErdenUrbanAuthoredUpperRouteSavedData data = level.getDataStorage()
+                          .computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE);
+                  if (!data.isCompleted(key, ROUTE_REVISION)) return null;
+                  return route.target().pos();
+          '''),
+          ('''        PlacementRoute route = ROUTES.get(entranceKey(entrance.x(), entrance.z()));
+                  if (route == null) {
+                      throw new IllegalStateException("Entrance has no authored upper route: "
+                              + entrance.x() + "," + entrance.z());
+                  }
+                  if (!verify(level, route)) {
+          ''', '''        PlacementRoute route = ROUTES.get(entranceKey(entrance.x(), entrance.z()));
+                  if (route == null) {
+                      if (ErdenUrbanAuthoredNewFloorManager.isEligible(entrance)) {
+                          ErdenUrbanAuthoredNewFloorManager.verifyOrThrow(level, entrance);
+                          return;
+                      }
+                      throw new IllegalStateException("Entrance has no authored upper route: "
+                              + entrance.x() + "," + entrance.z());
+                  }
+                  if (!verify(level, route)) {
+          ''')]
+          for old, new in pairs:
+              if s.count(old) != 1:
+                  raise SystemExit(f'route patch anchor count {s.count(old)} for {old[:64]!r}')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+
+          a = Path('.github/workflows/audit-living-kingdoms-exterior-inventory.yml')
+          t = a.read_text(encoding='utf-8')
+          old = 'LK_ERDEN_EXTERIOR_INVENTORY_PASS revision=1 nodes=15 containers=15'
+          new = 'LK_ERDEN_EXTERIOR_INVENTORY_PASS revision=2 nodes=15 containers=15'
+          if t.count(old) != 1:
+              raise SystemExit(f'inventory audit marker count={t.count(old)}')
+          a.write_text(t.replace(old, new, 1), encoding='utf-8')
+
+          Path('.github/workflows/lk-integrate-authored-new-floors-v2.yml').unlink()
+          PY
+
+      - name: Java 25 compile integrated source
+        working-directory: projects/living-kingdoms
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon clean classes --stacktrace --console=plain
+
+      - name: Rebase and publish integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredUpperRouteManager.java \
+                  .github/workflows/audit-living-kingdoms-exterior-inventory.yml \
+                  .github/workflows/lk-integrate-authored-new-floors-v2.yml
+          git commit -m 'feat(living-kingdoms): integrate authored void upper floors'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1
