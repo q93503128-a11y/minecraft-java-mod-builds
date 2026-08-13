@@ -1,4 +1,4 @@
-name: Diagnose Living Kingdoms authored new-floor blocker stage
+name: Diagnose Living Kingdoms authored new-floor blocker stage safely
 
 on:
   push:
@@ -31,56 +31,57 @@ jobs:
           from pathlib import Path
           p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java')
           s = p.read_text(encoding='utf-8')
-          old = '''            if (data.isCompleted(key, FLOOR_REVISION)) continue;
-                  if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;
-                  if (!chunksReady(level, plan.bounds())) continue;
 
-                  if (!data.isPrepared(key, FLOOR_REVISION)) {
-                      if (!materialize(level, plan, true)) continue;
-                      data.markPrepared(key, FLOOR_REVISION);
-                      LivingKingdoms.LOGGER.debug(
-                              "Prepared Erden authored new floor role={} entrance={},{} floor_cells={} route_nodes={} stairs={} openings={} source_blocks_cut=0",
-                              plan.role(), plan.entranceX(), plan.entranceZ(), plan.floorBlocks().size(),
-                              plan.routeNodes().size(), plan.stairs().size(), plan.stairwellOpenings());
-                  }
-                  if (verify(level, plan)) {
-                      data.markCompleted(key, FLOOR_REVISION);
-                  }
-                  processed++;
-          '''
-          new = '''            if (data.isCompleted(key, FLOOR_REVISION)) continue;
-                  if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) {
+          replacements = [
+              (
+                  '            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;',
+                  '''            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) {
                       logCiStage(level, plan, "ground_not_complete");
                       continue;
-                  }
-                  if (!chunksReady(level, plan.bounds())) {
+                  }'''
+              ),
+              (
+                  '            if (!chunksReady(level, plan.bounds())) continue;',
+                  '''            if (!chunksReady(level, plan.bounds())) {
                       logCiStage(level, plan, "chunks_not_ready");
                       continue;
-                  }
-
-                  if (!data.isPrepared(key, FLOOR_REVISION)) {
-                      if (!materialize(level, plan, true)) {
-                          logCiStage(level, plan, "materialize_rejected");
-                          continue;
-                      }
-                      data.markPrepared(key, FLOOR_REVISION);
+                  }'''
+              ),
+              (
+                  '                if (!materialize(level, plan, true)) continue;',
+                  '''                if (!materialize(level, plan, true)) {
+                      logCiStage(level, plan, "materialize_rejected");
+                      continue;
+                  }'''
+              ),
+              (
+                  '                data.markPrepared(key, FLOOR_REVISION);',
+                  '''                data.markPrepared(key, FLOOR_REVISION);
+                  if (plan.entranceKey() == ciPlanKey) {
                       LivingKingdoms.LOGGER.info(
-                              "LK_ERDEN_AUTHORED_NEW_FLOOR_STAGE role={} entrance={},{} stage=materialized floor_cells={} route_nodes={} stairs={} openings={}",
-                              plan.role(), plan.entranceX(), plan.entranceZ(), plan.floorBlocks().size(),
-                              plan.routeNodes().size(), plan.stairs().size(), plan.stairwellOpenings());
-                  }
-                  if (verify(level, plan)) {
+                              "LK_ERDEN_AUTHORED_NEW_FLOOR_STAGE role={} entrance={},{} stage=materialized floor_cells={} route_nodes={} stairs={}",
+                              plan.role(), plan.entranceX(), plan.entranceZ(),
+                              plan.floorBlocks().size(), plan.routeNodes().size(), plan.stairs().size());
+                  }'''
+              ),
+              (
+                  '''            if (verify(level, plan)) {
+                      data.markCompleted(key, FLOOR_REVISION);
+                  }''',
+                  '''            if (verify(level, plan)) {
                       data.markCompleted(key, FLOOR_REVISION);
                   } else {
                       logCiStage(level, plan, "verify_rejected");
-                  }
-                  processed++;
-          '''
-          if s.count(old) != 1:
-              raise SystemExit(f'onServerTick stage anchor count={s.count(old)}')
-          s = s.replace(old, new, 1)
-          anchor = '''    private static boolean chunksReady(ServerLevel level, Bounds bounds) {
-          '''
+                  }'''
+              )
+          ]
+          for old, new in replacements:
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'stage patch anchor count={count}: {old[:90]!r}')
+              s = s.replace(old, new, 1)
+
+          anchor = '    private static boolean chunksReady(ServerLevel level, Bounds bounds) {'
           helper = '''    private static void logCiStage(
                   ServerLevel level, PlacementPlan plan, String stage) {
               if (plan.entranceKey() != ciPlanKey || level.getGameTime() % 40L != 0L) return;
