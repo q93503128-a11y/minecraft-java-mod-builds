@@ -505,6 +505,10 @@ public final class ErdenUrbanAuthoredNewFloorManager {
             for (int chunkZ = Math.floorDiv(sample.bounds().minZ(), 16);
                  chunkZ <= Math.floorDiv(sample.bounds().maxZ(), 16); chunkZ++) {
                 ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                // Capital streaming releases its construction ticket as soon as this cell is
+                // built. The authored-floor sample spans several cells, so retain only this
+                // deliberate CI footprint until every cell can be verified together.
+                level.setChunkForced(chunkX, chunkZ, true);
             }
         }
         ciPlanKey = sample.entranceKey();
@@ -526,8 +530,15 @@ public final class ErdenUrbanAuthoredNewFloorManager {
         PlacementPlan sample = PLANS.get(ciPlanKey);
         if (sample == null || !verify(level, sample)) return;
         ciPassed = true;
+        for (int chunkX = Math.floorDiv(sample.bounds().minX(), 16);
+             chunkX <= Math.floorDiv(sample.bounds().maxX(), 16); chunkX++) {
+            for (int chunkZ = Math.floorDiv(sample.bounds().minZ(), 16);
+                 chunkZ <= Math.floorDiv(sample.bounds().maxZ(), 16); chunkZ++) {
+                level.setChunkForced(chunkX, chunkZ, false);
+            }
+        }
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates={} sample_role={} sample_floor_cells={} sample_route_nodes={} sample_stairs={} stairwell_openings={} target_y={} source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false revision={}",
+                "LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates={} sample_role={} sample_floor_cells={} sample_route_nodes={} sample_stairs={} stairwell_openings={} target_y={} source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false ci_chunks_released=true revision={}",
                 PLANS.size(), sample.role(), sample.floorBlocks().size(),
                 sample.routeNodes().size(), sample.stairs().size(), sample.stairwellOpenings(),
                 sample.target().y(), FLOOR_REVISION);
