@@ -16,7 +16,9 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** Makes every exterior loading-yard barrel authoritative and player-editable. */
 public final class ErdenKingdomExteriorInventoryManager {
@@ -32,6 +34,8 @@ public final class ErdenKingdomExteriorInventoryManager {
             new ResourceItem("paper", Items.PAPER)
     );
 
+    private static final Set<String> CI_VERIFIED_NODES = new HashSet<>();
+    private static final Set<String> CI_VISIBLE_RESOURCES = new HashSet<>();
     private static MinecraftServer activeServer;
     private static boolean ciPassed;
 
@@ -63,8 +67,10 @@ public final class ErdenKingdomExteriorInventoryManager {
                 updated = updated.withStock(resource.resource, countItem(container, resource.item));
             }
             supply.replaceNode(updated);
-            containers.recordCapture();
+            containers.markCaptured(node.id);
+            noteCiVerification(node, updated, container);
         }
+        verifyCi(containers);
     }
 
     /** Must run after supply production, dispatch and arrival settlement. */
@@ -88,8 +94,9 @@ public final class ErdenKingdomExteriorInventoryManager {
             writeContainer(container, state, node.role);
             containers.markMaterialized(node.id);
             containers.recordWrite();
+            noteCiVerification(node, state, container);
         }
-        verifyCi(level, supply, containers);
+        verifyCi(containers);
     }
 
     public static void onInteraction(PlayerInteractEvent.RightClickBlock event) {
@@ -124,6 +131,8 @@ public final class ErdenKingdomExteriorInventoryManager {
         if (activeServer == server) return;
         activeServer = server;
         ciPassed = false;
+        CI_VERIFIED_NODES.clear();
+        CI_VISIBLE_RESOURCES.clear();
     }
 
     private static ServerLevel realm(MinecraftServer server) {
@@ -256,37 +265,46 @@ public final class ErdenKingdomExteriorInventoryManager {
         };
     }
 
-    private static void verifyCi(
-            ServerLevel level,
-            ErdenKingdomSupplySavedData supply,
-            ErdenKingdomExteriorContainerSavedData containers) {
+    /**
+     * Records an authoritative observation while this producer's chunk is actually loaded. The
+     * observation is sticky for the current server run, so the final CI decision does not require
+     * all remote producer chunks to remain loaded simultaneously after their transient tickets are
+     * deliberately released.
+     */
+    private static void noteCiVerification(
+            ErdenKingdomSupplyCatalog.SupplyNode node,
+            ErdenKingdomSupplySavedData.NodeState state,
+            Container container) {
+        if (!"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+        for (ResourceItem resource : resourcesFor(node.role)) {
+            long visible = countItem(container, resource.item);
+            if (visible != state.stock(resource.resource)) return;
+        }
+        CI_VERIFIED_NODES.add(node.id);
+        for (ResourceItem resource : resourcesFor(node.role)) {
+            if (countItem(container, resource.item) > 0L) {
+                CI_VISIBLE_RESOURCES.add(resource.resource);
+            }
+        }
+    }
+
+    private static void verifyCi(ErdenKingdomExteriorContainerSavedData containers) {
+        int producers = ErdenKingdomSupplyCatalog.producerCount();
         if (ciPassed
                 || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))
-                || containers.materializedCount() != ErdenKingdomSupplyCatalog.producerCount()) return;
-        int verifiedContainers = 0;
-        int visibleResources = 0;
-        for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
-            if (!node.producer()) continue;
-            Container container = container(level, node);
-            ErdenKingdomSupplySavedData.NodeState state = nodeState(supply, node.id);
-            if (container == null || state == null) return;
-            for (ResourceItem resource : resourcesFor(node.role)) {
-                long visible = countItem(container, resource.item);
-                if (visible != state.stock(resource.resource)) return;
-                if (visible > 0L) visibleResources++;
-            }
-            verifiedContainers++;
-        }
-        if (verifiedContainers != ErdenKingdomSupplyCatalog.producerCount()
-                || visibleResources < 6
+                || containers.materializedCount() != producers
+                || containers.capturedCount() != producers
+                || CI_VERIFIED_NODES.size() != producers
+                || CI_VISIBLE_RESOURCES.size() < RESOURCES.size()
                 || containers.captures() <= 0L
                 || containers.writes() <= 0L) return;
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_EXTERIOR_INVENTORY_PASS revision={} nodes={} containers={} visible_resources={} captures={} writes={} player_removal_authoritative=true dispatch_reduces_barrels=true local_reserves=true",
+                "LK_ERDEN_EXTERIOR_INVENTORY_PASS revision={} nodes={} containers={} captured_nodes={} verified_nodes={} visible_resources={} captures={} writes={} progressive_loaded_verification=true player_removal_authoritative=true dispatch_reduces_barrels=true local_reserves=true",
                 ErdenKingdomExteriorContainerSavedData.REVISION,
-                ErdenKingdomSupplyCatalog.producerCount(), verifiedContainers,
-                visibleResources, containers.captures(), containers.writes());
+                producers, containers.materializedCount(), containers.capturedCount(),
+                CI_VERIFIED_NODES.size(), CI_VISIBLE_RESOURCES.size(),
+                containers.captures(), containers.writes());
     }
 
     private record ResourceItem(String resource, Item item) {
