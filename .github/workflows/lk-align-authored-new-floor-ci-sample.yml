@@ -1,4 +1,4 @@
-name: Diagnose Living Kingdoms authored new-floor blocker stage
+name: Trace Living Kingdoms authored new-floor verify failure
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Add four-stage CI diagnostics
+      - name: Trace first verify mismatch
         shell: bash
         run: |
           set -euo pipefail
@@ -31,63 +31,109 @@ jobs:
           from pathlib import Path
           p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java')
           s = p.read_text(encoding='utf-8')
+          start_marker = '    private static boolean verify(ServerLevel level, PlacementPlan plan) {'
+          end_marker = '    private static void requestCiSampleChunks(ServerLevel level) {'
+          start = s.index(start_marker)
+          end = s.index(end_marker, start)
+          verify = '''    private static boolean verify(ServerLevel level, PlacementPlan plan) {
+              BlockPos doorPos = new BlockPos(
+                      plan.entranceX(), plan.expectedDoorY(), plan.entranceZ());
+              BlockState door = level.getBlockState(doorPos);
+              if (!(door.getBlock() instanceof DoorBlock)) {
+                  logCiVerifyFailure(level, plan, "door pos=" + doorPos + " state=" + door);
+                  return false;
+              }
 
-          replacements = [
-              ('            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;', '''            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) {
-                      logCiStage(level, plan, "ground_not_complete");
-                      continue;
-                  }'''),
-              ('            if (!chunksReady(level, plan.bounds())) continue;', '''            if (!chunksReady(level, plan.bounds())) {
-                      logCiStage(level, plan, "chunks_not_ready");
-                      continue;
-                  }'''),
-              ('                if (!materialize(level, plan, true)) continue;', '''                if (!materialize(level, plan, true)) {
-                      logCiStage(level, plan, "materialize_rejected");
-                      continue;
-                  }'''),
-              ('                data.markPrepared(key, FLOOR_REVISION);', '''                data.markPrepared(key, FLOOR_REVISION);
-                  if (plan.entranceKey() == ciPlanKey) {
-                      LivingKingdoms.LOGGER.info(
-                              "LK_ERDEN_AUTHORED_NEW_FLOOR_STAGE role={} entrance={},{} stage=materialized floor_cells={} route_nodes={} stairs={}",
-                              plan.role(), plan.entranceX(), plan.entranceZ(),
-                              plan.floorBlocks().size(), plan.routeNodes().size(), plan.stairs().size());
-                  }'''),
-              ('            if (verify(level, plan)) {', '''            boolean verified = verify(level, plan);
-                  if (!verified) logCiStage(level, plan, "verify_rejected");
-                  if (verified) {''')
-          ]
-          for old, new in replacements:
-              count = s.count(old)
-              if count != 1:
-                  raise SystemExit(f'stage patch anchor count={count}: {old!r}')
-              s = s.replace(old, new, 1)
+              for (BlockPos floor : plan.floorBlocks()) {
+                  BlockState floorState = level.getBlockState(floor);
+                  if (floorState.getBlock() != plan.floorBlock()) {
+                      logCiVerifyFailure(level, plan,
+                              "floor pos=" + floor + " state=" + floorState
+                                      + " expected=" + plan.floorBlock());
+                      return false;
+                  }
+                  BlockPos headPos = floor.above();
+                  BlockState head = level.getBlockState(headPos);
+                  if (!head.isAir()) {
+                      logCiVerifyFailure(level, plan,
+                              "floor_head pos=" + headPos + " state=" + head);
+                      return false;
+                  }
+              }
+              for (RouteNode node : plan.routeNodes()) {
+                  BlockPos feetPos = node.world().pos();
+                  BlockState feet = level.getBlockState(feetPos);
+                  StairIntent stair = plan.stairs().get(node.world());
+                  if (stair == null) {
+                      if (!feet.isAir()) {
+                          logCiVerifyFailure(level, plan,
+                                  "route_feet local=" + node.local() + " pos=" + feetPos
+                                          + " state=" + feet);
+                          return false;
+                      }
+                  } else if (!matchesStair(feet, plan.role(), stair.facing())) {
+                      logCiVerifyFailure(level, plan,
+                              "stair local=" + node.local() + " pos=" + feetPos
+                                      + " state=" + feet + " expected_facing=" + stair.facing());
+                      return false;
+                  }
+                  BlockPos routeHeadPos = new BlockPos(
+                          node.world().x(), node.world().y() + 1, node.world().z());
+                  BlockState routeHead = level.getBlockState(routeHeadPos);
+                  if (!routeHead.isAir()) {
+                      logCiVerifyFailure(level, plan,
+                              "route_head local=" + node.local() + " pos=" + routeHeadPos
+                                      + " state=" + routeHead);
+                      return false;
+                  }
+              }
 
-          anchor = '    private static boolean chunksReady(ServerLevel level, Bounds bounds) {'
-          helper = '''    private static void logCiStage(
-                  ServerLevel level, PlacementPlan plan, String stage) {
-              if (plan.entranceKey() != ciPlanKey || level.getGameTime() % 40L != 0L) return;
-              LivingKingdoms.LOGGER.info(
-                      "LK_ERDEN_AUTHORED_NEW_FLOOR_WAIT role={} entrance={},{} stage={}",
-                      plan.role(), plan.entranceX(), plan.entranceZ(), stage);
+              BlockPos targetSupportPos = new BlockPos(
+                      plan.target().x(), plan.target().y() - 1, plan.target().z());
+              BlockState targetSupport = level.getBlockState(targetSupportPos);
+              if (targetSupport.isAir()) {
+                  logCiVerifyFailure(level, plan,
+                          "target_support pos=" + targetSupportPos + " state=" + targetSupport);
+                  return false;
+              }
+              BlockState targetFeet = level.getBlockState(plan.target().pos());
+              if (!targetFeet.isAir()) {
+                  logCiVerifyFailure(level, plan,
+                          "target_feet pos=" + plan.target().pos() + " state=" + targetFeet);
+                  return false;
+              }
+              BlockState targetHead = level.getBlockState(plan.target().pos().above());
+              if (!targetHead.isAir()) {
+                  logCiVerifyFailure(level, plan,
+                          "target_head pos=" + plan.target().pos().above() + " state=" + targetHead);
+                  return false;
+              }
+              return true;
           }
 
-          ''' + anchor
-          if s.count(anchor) != 1:
-              raise SystemExit(f'helper anchor count={s.count(anchor)}')
-          s = s.replace(anchor, helper, 1)
+              private static void logCiVerifyFailure(
+                      ServerLevel level, PlacementPlan plan, String reason) {
+                  if (plan.entranceKey() != ciPlanKey || level.getGameTime() % 20L != 0L) return;
+                  LivingKingdoms.LOGGER.info(
+                          "LK_ERDEN_AUTHORED_NEW_FLOOR_VERIFY_FAIL role={} entrance={},{} reason={}",
+                          plan.role(), plan.entranceX(), plan.entranceZ(), reason);
+              }
+
+          '''
+          s = s[:start] + verify + s[end:]
           p.write_text(s, encoding='utf-8')
           PY
       - name: Java 25 compile
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
-      - name: Publish stage diagnostics
+      - name: Publish verify tracing
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java
-          git commit -m 'test(living-kingdoms): diagnose authored upper-floor blocker stage'
+          git commit -m 'test(living-kingdoms): trace authored upper-floor verify failure'
           for attempt in 1 2 3 4 5 6 7 8; do
             git fetch origin main
             git rebase origin/main
