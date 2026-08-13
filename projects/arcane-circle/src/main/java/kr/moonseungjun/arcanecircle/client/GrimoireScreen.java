@@ -26,9 +26,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Alpha.26 grimoire.  It is intentionally not a dashboard of cards: navigation lives on the book
- * spine, circles are an index, spell browsing is icon-first, and one selected subject owns the
- * reading page.  All gameplay data and packet actions are the same as before.
+ * Responsive spellbook presentation. Navigation, circle rail, browser, detail reader and loadout
+ * dock each own a non-overlapping region. Long explanatory text is clipped/wrapped inside its
+ * reader instead of being allowed to collide with interaction controls.
  */
 public final class GrimoireScreen extends Screen {
     private static final List<Tab> TABS=List.of(
@@ -37,7 +37,7 @@ public final class GrimoireScreen extends Screen {
     private static final Map<String,Integer> SAVED_SCROLL=new HashMap<>();
     private static int activeSlot=-1;
     private static int atlasCircle=1,fusionCircle=1,academyCircle=1;
-    private static String inspectedSpellId="",selectedStaffId="";
+    private static String inspectedSpellId="",selectedStaffId="",equipCandidateId="";
     private static MagicTradition inspectedTradition=MagicTradition.ARCANE;
 
     private final String page;
@@ -67,16 +67,33 @@ public final class GrimoireScreen extends Screen {
             case "academy" -> clickAcademy(event,l)||super.mouseClicked(event,doubleClick);
             case "quests" -> clickQuests(event,l)||super.mouseClicked(event,doubleClick);
             case "core" -> super.mouseClicked(event,doubleClick);
-            default -> clickAtlas(event,l)||super.mouseClicked(event,doubleClick);
+            default -> clickAtlas(event,l,doubleClick)||super.mouseClicked(event,doubleClick);
         };
     }
 
-    private boolean clickAtlas(MouseButtonEvent e,Layout l){
-        for(int c=1;c<=9;c++)if(inside(e.x(),e.y(),l.circleIndex(c))){atlasCircle=c;scroll=0;ensureInspectedSpell();saveScroll();return true;}
-        for(int i=0;i<5;i++)if(inside(e.x(),e.y(),l.loadout(i))){activeSlot=activeSlot==i?-1:i;notice(activeSlot<0?"장착 슬롯 선택 취소":"장착 대상 · "+(activeSlot+1)+"번 슬롯");return true;}
+    private boolean clickAtlas(MouseButtonEvent e,Layout l,boolean doubleClick){
+        for(int c=1;c<=9;c++)if(inside(e.x(),e.y(),l.circleIndex(c))){atlasCircle=c;scroll=0;ensureInspectedSpell();equipCandidateId="";activeSlot=-1;saveScroll();return true;}
+        for(int i=0;i<5;i++)if(inside(e.x(),e.y(),l.loadout(i))){
+            SpellDefinition candidate=SpellCatalog.spell(equipCandidateId).orElse(null);
+            if(candidate!=null&&usable(candidate)){
+                equipTo(candidate,i);activeSlot=-1;equipCandidateId="";
+            }else{
+                activeSlot=activeSlot==i?-1:i;
+                String current=ArcaneClientState.slot(i);
+                if(activeSlot>=0&&!current.isBlank())inspectedSpellId=current;
+                notice(activeSlot<0?"장착 슬롯 선택 취소":(i+1)+"번 슬롯 선택 · 장착할 주문을 클릭");
+            }
+            return true;
+        }
         List<SpellDefinition> spells=SpellCatalog.spellsInCircle(atlasCircle);
-        for(int i=0;i<spells.size();i++)if(inside(e.x(),e.y(),l.spellTile(i,scroll,spells.size()))){inspectedSpellId=spells.get(i).id();return true;}
-        if(inside(e.x(),e.y(),l.primaryAction())){SpellDefinition s=inspectedSpell();if(s!=null)equip(s);return true;}
+        for(int i=0;i<spells.size();i++)if(inside(e.x(),e.y(),l.spellTile(i,scroll,spells.size()))){
+            SpellDefinition s=spells.get(i);inspectedSpellId=s.id();equipCandidateId=s.id();
+            if(activeSlot>=0&&usable(s)){int slot=activeSlot;equipTo(s,slot);activeSlot=-1;equipCandidateId="";}
+            else if(doubleClick)quickEquip(s);
+            else notice(usable(s)?"주문 선택 · 슬롯 클릭 / 더블클릭 빠른 장착":"주문 정보 열람");
+            return true;
+        }
+        if(inside(e.x(),e.y(),l.primaryAction())){SpellDefinition s=inspectedSpell();if(s!=null){if(activeSlot>=0){int slot=activeSlot;equipTo(s,slot);activeSlot=-1;equipCandidateId="";}else quickEquip(s);}return true;}
         return false;
     }
 
@@ -167,6 +184,7 @@ public final class GrimoireScreen extends Screen {
     private void drawAtlas(GuiGraphicsExtractor g,Layout l,int mouseX,int mouseY){
         ensureInspectedSpell();Rect b=l.body();
         title(g,b,"주문 도감",atlasCircle+"써클 · "+circleSubtitle(atlasCircle));
+        if(b.w()>360)tiny(g,"주문↔슬롯 양방향 장착 · 더블클릭 빠른 장착",b.right()-4,b.y()+15,0xFF746D64,.48F,true);
         drawCircleIndex(g,l,atlasCircle,mouseX,mouseY,false);
         Rect v=l.browserViewport();
         g.enableScissor(v.x(),v.y(),v.right(),v.bottom());
@@ -204,8 +222,8 @@ public final class GrimoireScreen extends Screen {
         g.enableScissor(d.x(),d.y(),d.right(),d.bottom());
         g.fill(d.x(),d.y()+3,d.x()+1,d.bottom()-3,0xFF554838);
         int accent=ArcaneRenderUtil.schoolColor(s.school());int cx=d.x()+d.w()/2;Rect a=l.primaryAction();
-        boolean usable=ArcaneClientState.known().contains(s.id())&&s.circle()<=ArcaneClientState.integer("circle",1);
-        String label=activeSlot<0?"아래에서 장착 슬롯 선택":usable?(activeSlot+1)+"번 슬롯에 각인":"습득 필요";
+        boolean usable=usable(s);int empty=firstEmptySlot();
+        String label=!usable?"습득 필요":activeSlot>=0?(activeSlot+1)+"번 슬롯에 장착":empty>=0?"빠른 장착 · "+(empty+1)+"번":"교체할 슬롯을 클릭";
 
         if(l.compact()){
             int iconY=d.y()+15;
@@ -214,7 +232,7 @@ public final class GrimoireScreen extends Screen {
             tiny(g,s.circle()+"C · "+s.school().displayName(),cx,d.y()+41,accent,.52F,true);
             tiny(g,fit("MP "+s.manaCost()+" · 쿨 "+one(s.cooldownTicks()/20.0)+"s",d.w()*2),cx,d.y()+53,0xFFCDBDA7,.50F,true);
             tiny(g,fit("범위 "+one(s.range())+" · 숙련 "+ArcaneClientState.mastery(s.id())+"/"+SpellCatalog.masteryRequired(s.id()),d.w()*2),cx,d.y()+63,0xFF9F9587,.48F,true);
-            action(g,a,label,inside(mouseX,mouseY,a),usable&&activeSlot>=0,accent);
+            action(g,a,label,inside(mouseX,mouseY,a),usable&&(activeSlot>=0||firstEmptySlot()>=0),accent);
             g.disableScissor();return;
         }
 
@@ -230,17 +248,17 @@ public final class GrimoireScreen extends Screen {
         tiny(g,"쿨",d.x()+9,y+12,0xFF877D71,.54F,false);tiny(g,one(s.cooldownTicks()/20.0)+"s",d.x()+35,y+12,0xFFE7D5B8,.62F,false);
         tiny(g,"범위",d.x()+9,y+24,0xFF877D71,.54F,false);tiny(g,one(s.range()),d.x()+35,y+24,0xFFE7D5B8,.62F,false);
         tiny(g,"숙련",d.x()+9,y+36,0xFF877D71,.54F,false);tiny(g,ArcaneClientState.mastery(s.id())+" / "+SpellCatalog.masteryRequired(s.id()),d.x()+35,y+36,0xFFE7D5B8,.62F,false);
-        action(g,a,label,inside(mouseX,mouseY,a),usable&&activeSlot>=0,accent);
+        action(g,a,label,inside(mouseX,mouseY,a),usable&&(activeSlot>=0||firstEmptySlot()>=0),accent);
         g.disableScissor();
     }
 
     private void drawLoadout(GuiGraphicsExtractor g,Rect r,int slot,int mouseX,int mouseY){
         SpellDefinition s=SpellCatalog.spell(ArcaneClientState.slot(slot)).orElse(null);boolean active=activeSlot==slot,hover=inside(mouseX,mouseY,r);int accent=s==null?0xFF625D55:ArcaneRenderUtil.schoolColor(s.school());
-        int cx=r.x()+11,cy=r.y()+r.h()/2;if(active)ArcaneRenderUtil.diamond(g,cx,cy,9,0xFFFFD275);else ArcaneRenderUtil.ring(g,cx,cy,8,hover?accent:0xFF514C46);
-        if(s!=null)ArcaneRenderUtil.spellRune(g,cx,cy,s,4,active?0xFF241A0E:0xFFEAE0D1);
-        tiny(g,Integer.toString(slot+1),r.x()+22,r.y()+4,active?0xFFFFD584:0xFF8B8378,.55F,false);
-        tiny(g,s==null?"빈 슬롯":fit(s.name(),Math.max(30,(r.w()-28)*2)),r.x()+22,r.y()+13,s==null?0xFF5E5952:0xFFBEB4A5,.50F,false);
-        int cd=ArcaneClientState.cooldownRemainingTicks(slot);if(cd>0)g.fill(r.x()+2,r.bottom()-2,r.x()+2+(int)((r.w()-4)*ArcaneClientState.cooldownFraction(slot)),r.bottom()-1,0xFFB34D52);
+        int cx=r.x()+r.w()/2,cy=r.y()+r.h()/2,rad=Math.max(5,Math.min(9,Math.min(r.w(),r.h())/2-2));
+        if(active){ArcaneRenderUtil.ring(g,cx,cy,rad+2,0xFFFFD275);ArcaneRenderUtil.diamond(g,cx,cy,rad,0x26FFD275);}else ArcaneRenderUtil.ring(g,cx,cy,rad+1,hover?accent:0xFF514C46);
+        if(s!=null)ArcaneRenderUtil.spellRune(g,cx,cy,s,Math.max(3,rad-3),active?0xFFFFE6AA:0xFFEAE0D1);else ArcaneRenderUtil.diamond(g,cx,cy,Math.max(2,rad-4),0xFF655F57);
+        tiny(g,Integer.toString(slot+1),r.x()+3,r.y()+2,active?0xFFFFD584:0xFF8B8378,.50F,false);
+        if(s!=null&&ArcaneClientState.cooldownRemainingTicks(slot)>0)g.fill(r.x()+2,r.bottom()-2,r.x()+2+(int)((r.w()-4)*ArcaneClientState.cooldownFraction(slot)),r.bottom()-1,0xFFB34D52);
     }
 
     private void drawRecipes(GuiGraphicsExtractor g,Layout l,int mouseX,int mouseY){
@@ -257,7 +275,9 @@ public final class GrimoireScreen extends Screen {
         g.disableScissor();if(l.isWide())drawStaffDetail(g,l,selectedStaffId);
     }
 
-    private void drawStaffDetail(GuiGraphicsExtractor g,Layout l,String id){Rect d=l.detail();g.fill(d.x(),d.y()+4,d.x()+1,d.bottom()-4,0xFF554838);StaffProfile p=id.isBlank()?StaffProfile.NONE:ModItems.profile(id);int cx=d.x()+d.w()/2;ArcaneRenderUtil.diamond(g,cx,d.y()+31,18,p==StaffProfile.NONE?0xFF5D564D:0xFFD2AE70);g.centeredText(font,Component.literal(p.displayName()),cx,d.y()+58,0xFFEADCC7);int y=d.y()+78;for(String line:wrap(p.summary(),d.w()-18,4)){tiny(g,line,d.x()+9,y,0xFFAFA496,.60F,false);y+=9;}y+=6;for(String line:wrap(p.recipeHint().isBlank()?"제작 정보 없음":"제작 · "+p.recipeHint(),d.w()-18,4)){tiny(g,line,d.x()+9,y,0xFFD0B789,.56F,false);y+=9;}}
+    private void drawStaffDetail(GuiGraphicsExtractor g,Layout l,String id){
+        Rect d=l.detail();if(d.w()<70||d.h()<45)return;g.enableScissor(d.x(),d.y(),d.right(),d.bottom());g.fill(d.x(),d.y()+4,d.x()+1,d.bottom()-4,0xFF554838);StaffProfile p=id.isBlank()?StaffProfile.NONE:ModItems.profile(id);int cx=d.x()+d.w()/2;int iconR=Math.max(9,Math.min(18,d.h()/7));ArcaneRenderUtil.diamond(g,cx,d.y()+iconR+7,iconR,p==StaffProfile.NONE?0xFF5D564D:0xFFD2AE70);g.centeredText(font,Component.literal(fit(p.displayName(),Math.max(40,d.w()-8))),cx,d.y()+iconR*2+13,0xFFEADCC7);int y=d.y()+iconR*2+30,remaining=Math.max(0,d.bottom()-y-4),lines=Math.max(0,Math.min(4,remaining/9));for(String line:wrap(p.summary(),d.w()-18,lines)){tiny(g,line,d.x()+9,y,0xFFAFA496,.60F,false);y+=9;}if(y+8<d.bottom()){y+=5;int recipeLines=Math.max(0,Math.min(3,(d.bottom()-y-3)/9));for(String line:wrap(p.recipeHint().isBlank()?"제작 정보 없음":"제작 · "+p.recipeHint(),d.w()-18,recipeLines)){tiny(g,line,d.x()+9,y,0xFFD0B789,.56F,false);y+=9;}}g.disableScissor();
+    }
 
     private void drawAcademy(GuiGraphicsExtractor g,Layout l,int mouseX,int mouseY){
         Rect b=l.body();title(g,b,"마도회 기록부","아르카나 "+ArcaneClientState.longInteger("marks",0));MagicTradition current=MagicTradition.parse(ArcaneClientState.text("tradition","UNBOUND"));MagicTradition[] ts=traditions();
@@ -277,9 +297,12 @@ public final class GrimoireScreen extends Screen {
     }
 
     private void drawCore(GuiGraphicsExtractor g,Layout l){
-        Rect b=l.body();title(g,b,"마력핵","현재 마도사 상태");Rect v=l.viewport();int circle=ArcaneClientState.integer("circle",1),cx=v.x()+Math.min(72,v.w()/4),cy=v.y()+72;int accent=circleColor(circle);ArcaneRenderUtil.ring(g,cx,cy,35,accent);ArcaneRenderUtil.ring(g,cx,cy,27,0xFF695942);ArcaneRenderUtil.diamond(g,cx,cy,16,0xFFE9D5AC);g.centeredText(font,Component.literal(circle+"C"),cx,cy-4,0xFF251B10);
-        int x=cx+52,y=v.y()+20;List<String> left=List.of("MP  "+ArcaneClientState.integer("mana",0)+" / "+ArcaneClientState.integer("max",100),"회복  "+one(ArcaneClientState.regenPerSecond())+" /초","통찰  "+ArcaneClientState.integer("insight",0),"아르카나  "+ArcaneClientState.longInteger("marks",0));for(String s:left){g.text(font,Component.literal(s),x,y,0xFFD8CCBA);y+=17;}
-        y+=7;rule(g,y,x,Math.min(v.right(),x+210),0xFF4B4033);y+=10;MagicTradition t=MagicTradition.parse(ArcaneClientState.text("tradition","UNBOUND"));List<String> gear=List.of(ArcaneClientState.text("staff","맨손"),ArcaneClientState.text("gear_hat","모자 없음"),ArcaneClientState.text("gear_robe","로브 없음"),ArcaneClientState.text("gear_boots","마도화 없음"),"소속 · "+t.displayName());for(String s:gear){tiny(g,fit(s,Math.max(70,(v.right()-x)*2)),x,y,0xFF9F9587,.60F,false);y+=11;}
+        Rect b=l.body();title(g,b,"마력핵","현재 마도사 상태");Rect v=l.viewport();if(v.w()<44||v.h()<38)return;g.enableScissor(v.x(),v.y(),v.right(),v.bottom());
+        int circle=ArcaneClientState.integer("circle",1),accent=circleColor(circle);int topH=Math.max(56,Math.min(108,(int)Math.round(v.h()*.58)));int sealZone=Math.max(58,Math.min(145,v.w()/3));int sealR=Math.max(16,Math.min(34,Math.min(sealZone/3,topH/3)));int cx=v.x()+sealZone/2,cy=v.y()+topH/2;
+        ArcaneRenderUtil.ring(g,cx,cy,sealR,accent);ArcaneRenderUtil.ring(g,cx,cy,Math.max(10,sealR-8),0xFF695942);ArcaneRenderUtil.diamond(g,cx,cy,Math.max(7,sealR-18),0xFFE9D5AC);g.centeredText(font,Component.literal(circle+"C"),cx,cy-4,0xFF251B10);
+        int sx=v.x()+sealZone+6,sy=v.y()+7,statW=Math.max(38,v.right()-sx-4);List<String> stats=List.of("MP  "+ArcaneClientState.integer("mana",0)+" / "+ArcaneClientState.integer("max",100),"회복  "+one(ArcaneClientState.regenPerSecond())+" /초","통찰  "+ArcaneClientState.integer("insight",0),"아르카나  "+ArcaneClientState.longInteger("marks",0));int statStep=Math.max(11,Math.min(16,(topH-12)/4));for(String s:stats){tiny(g,fit(s,statW*2),sx,sy,0xFFD8CCBA,.62F,false);sy+=statStep;}
+        int gearTop=v.y()+topH;if(gearTop<v.bottom()-11){rule(g,gearTop,v.x()+2,v.right()-2,0xFF4B4033);tiny(g,"장비 · 소속",v.x()+3,gearTop+4,0xFF827A70,.50F,false);gearTop+=14;MagicTradition t=MagicTradition.parse(ArcaneClientState.text("tradition","UNBOUND"));List<String> gear=List.of("지팡이 · "+ArcaneClientState.text("staff","맨손"),"모자 · "+ArcaneClientState.text("gear_hat","없음"),"로브 · "+ArcaneClientState.text("gear_robe","없음"),"마도화 · "+ArcaneClientState.text("gear_boots","없음"),"소속 · "+t.displayName());int cols=v.w()>=235?2:1,rows=(gear.size()+cols-1)/cols,gap=7,colW=Math.max(35,(v.w()-gap*(cols-1))/cols),available=Math.max(1,v.bottom()-gearTop-2),rowH=Math.max(8,Math.min(12,available/Math.max(1,rows)));for(int i=0;i<gear.size();i++){int row=i/cols,col=i%cols,y=gearTop+row*rowH;if(y>=v.bottom()-5)break;int x=v.x()+col*(colW+gap);tiny(g,fit(gear.get(i),colW*2),x,y,0xFF9F9587,.54F,false);}}
+        g.disableScissor();
     }
 
     private void title(GuiGraphicsExtractor g,Rect body,String title,String sub){g.text(font,Component.literal(title),body.x()+2,body.y()+2,0xFFF0E2CD);tiny(g,sub,body.x()+2,body.y()+15,0xFF827A70,.54F,false);}
@@ -288,8 +311,11 @@ public final class GrimoireScreen extends Screen {
     private void drawNotice(GuiGraphicsExtractor g,Layout l){String server=ArcaneClientState.noticeText();String shown=!server.isBlank()?server:(!notice.isBlank()&&System.currentTimeMillis()<=noticeUntil?notice:"");if(shown.isBlank())return;int w=Math.min(l.body().w()-20,Math.max(120,font.width(shown)+18)),x=l.body().x()+l.body().w()/2-w/2,y=l.top()+7;g.fill(x,y,x+w,y+16,0xEE0B0B0D);g.fill(x,y,x+2,y+16,0xFFD2AE6B);g.centeredText(font,Component.literal(fit(shown,w-10)),x+w/2,y+4,0xFFEADDC9);}
     private void tiny(GuiGraphicsExtractor g,String text,int x,int y,int color,float scale,boolean centered){g.pose().pushMatrix();g.pose().translate(x,y);g.pose().scale(scale,scale);if(centered)g.centeredText(font,Component.literal(text),0,0,color);else g.text(font,Component.literal(text),0,0,color);g.pose().popMatrix();}
 
-    private void equip(SpellDefinition s){if(activeSlot<0){notice("먼저 장착 슬롯을 고르세요");return;}if(!ArcaneClientState.known().contains(s.id())){notice("아직 습득하지 않은 주문입니다");return;}if(s.circle()>ArcaneClientState.integer("circle",1)){notice(s.circle()+"써클 마력핵이 필요합니다");return;}ClientPacketDistributor.sendToServer(new EquipSpellPayload(s.id(),activeSlot));notice((activeSlot+1)+"번 슬롯 · "+s.name());}
-    private void request(String next){saveScroll();ClientPacketDistributor.sendToServer(new RequestGrimoirePayload(next));}
+    private boolean usable(SpellDefinition s){return s!=null&&ArcaneClientState.known().contains(s.id())&&s.circle()<=ArcaneClientState.integer("circle",1);}
+    private int firstEmptySlot(){for(int i=0;i<5;i++)if(ArcaneClientState.slot(i).isBlank())return i;return -1;}
+    private void equipTo(SpellDefinition s,int slot){if(slot<0||slot>=5){notice("잘못된 장착 슬롯입니다");return;}if(!usable(s)){notice(s==null?"장착할 주문이 없습니다":"아직 사용할 수 없는 주문입니다");return;}ClientPacketDistributor.sendToServer(new EquipSpellPayload(s.id(),slot));notice((slot+1)+"번 슬롯 · "+s.name());}
+    private void quickEquip(SpellDefinition s){if(!usable(s)){notice("아직 사용할 수 없는 주문입니다");return;}int slot=firstEmptySlot();if(slot<0){notice("빈 슬롯 없음 · 교체할 슬롯을 먼저 클릭하세요");return;}equipTo(s,slot);equipCandidateId="";}
+    private void request    private void request(String next){saveScroll();ClientPacketDistributor.sendToServer(new RequestGrimoirePayload(next));}
     private void notice(String text){notice=text;noticeUntil=System.currentTimeMillis()+1800L;}
     private void saveScroll(){SAVED_SCROLL.put(scrollKey(),scroll);}
     private String scrollKey(){return page+":"+("atlas".equals(page)?atlasCircle:"recipes".equals(page)?fusionCircle:"academy".equals(page)?academyCircle:0);}
@@ -315,21 +341,21 @@ public final class GrimoireScreen extends Screen {
     private record Tab(String id,String label,String roman){}
     private record Rect(int x,int y,int w,int h){int right(){return x+w;}int bottom(){return y+h;}}
     private record Layout(int left,int top,int panelW,int panelH){
-        int right(){return left+panelW;}int bottom(){return top+panelH;}boolean isWide(){return panelW>=590;}boolean compact(){return panelH<300||body().h()<240;}
-        int tabStep(){return Math.max(27,Math.min(38,Math.max(27,(panelH-36)/6)));}
-        Rect close(){return new Rect(right()-24,top+5,18,18);}Rect tab(int i){int step=tabStep(),h=Math.max(23,Math.min(32,step-2));return new Rect(left+4,top+28+i*step,48,h);}Rect body(){return new Rect(left+66,top+27,Math.max(96,panelW-78),Math.max(96,panelH-38));}
-        Rect viewport(){Rect b=body();return new Rect(b.x()+38,b.y()+31,Math.max(48,b.w()-40),Math.max(42,b.h()-38));}
-        int circleStep(){Rect b=body();return Math.max(13,Math.min(29,Math.max(13,(b.h()-34)/9)));}
-        Rect circleIndex(int c){Rect b=body();int step=circleStep(),h=Math.max(12,Math.min(22,step));return new Rect(b.x(),b.y()+28+(c-1)*step,30,h);}
-        int footerHeight(){return compact()?29:32;}int footerTop(){return body().bottom()-footerHeight();}
-        int detailWidth(){Rect b=body();int preferred=Math.max(96,Math.min(205,b.w()/3));int minBrowser=Math.max(52,Math.min(90,b.w()/3));int maxDetail=Math.max(70,b.w()-38-minBrowser-5);return Math.min(preferred,maxDetail);}
-        Rect detail(){Rect b=body();int w=detailWidth(),y=b.y()+31,h=Math.max(56,footerTop()-y-5);return new Rect(b.right()-w,y,w,h);}
-        Rect browserViewport(){Rect b=body(),d=detail();int x=b.x()+38,y=b.y()+31;return new Rect(x,y,Math.max(52,d.x()-x-5),Math.max(52,footerTop()-y-5));}
-        Rect spellTile(int i,int scroll,int count){Rect v=browserViewport();int cols=v.w()>=340?5:v.w()>=230?4:v.w()>=150?3:2;int gap=3,w=Math.max(20,(v.w()-gap*(cols-1))/cols),row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*48-scroll,w,44);}int maxTileScroll(int count){Rect v=browserViewport();int cols=v.w()>=340?5:v.w()>=230?4:v.w()>=150?3:2;return Math.max(0,((count+cols-1)/cols)*48-v.h());}
-        Rect loadout(int i){Rect b=body();int gap=4,w=Math.max(20,(b.w()-gap*4)/5);return new Rect(b.x()+i*(w+gap),footerTop()+2,w,Math.max(20,footerHeight()-4));}
-        Rect primaryAction(){Rect d=detail();int h=compact()?17:20;return new Rect(d.x()+8,d.bottom()-h,Math.max(54,d.w()-16),h);}
+        int right(){return left+panelW;}int bottom(){return top+panelH;}boolean isWide(){return panelW>=590;}boolean compact(){return panelH<320||body().h()<250;}
+        int tabStep(){return Math.max(20,Math.min(38,Math.max(20,(panelH-28)/6)));}
+        Rect close(){return new Rect(right()-24,top+5,18,18);}Rect tab(int i){int step=tabStep(),h=Math.max(18,Math.min(32,step-2));return new Rect(left+4,top+25+i*step,48,h);}Rect body(){return new Rect(left+66,top+27,Math.max(96,panelW-78),Math.max(78,panelH-38));}
+        int footerHeight(){return compact()?29:32;}int footerTop(){return body().bottom()-footerHeight();}int contentTop(){return body().y()+31;}int contentBottom(){return Math.max(contentTop()+1,footerTop()-4);}
+        Rect viewport(){Rect b=body();return new Rect(b.x()+38,contentTop(),Math.max(32,b.w()-40),Math.max(1,contentBottom()-contentTop()));}
+        int circleStep(){int available=Math.max(9,contentBottom()-(body().y()+28));return Math.max(1,available/9);}
+        Rect circleIndex(int c){Rect b=body();int step=circleStep(),y=b.y()+28+(c-1)*step,h=Math.max(1,Math.min(22,step));return new Rect(b.x(),y,30,h);}
+        int detailWidth(){Rect b=body();int available=Math.max(0,b.w()-38);if(available<178)return 0;int preferred=Math.max(96,Math.min(205,b.w()/3)),minBrowser=66,maxDetail=Math.max(70,available-minBrowser-5);return Math.min(preferred,maxDetail);}
+        Rect detail(){Rect b=body();int w=detailWidth(),y=contentTop(),h=Math.max(1,contentBottom()-y);return new Rect(w<=0?b.right():b.right()-w,y,w,h);}
+        Rect browserViewport(){Rect b=body(),d=detail();int x=b.x()+38,y=contentTop(),right=d.w()>0?d.x()-5:b.right();return new Rect(x,y,Math.max(1,right-x),Math.max(1,contentBottom()-y));}
+        Rect spellTile(int i,int scroll,int count){Rect v=browserViewport();int cols=v.w()>=340?5:v.w()>=230?4:v.w()>=150?3:v.w()>=88?2:1;int gap=3,w=Math.max(16,(v.w()-gap*(cols-1))/cols),row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*48-scroll,w,44);}int maxTileScroll(int count){Rect v=browserViewport();int cols=v.w()>=340?5:v.w()>=230?4:v.w()>=150?3:v.w()>=88?2:1;return Math.max(0,((count+cols-1)/cols)*48-v.h());}
+        Rect loadout(int i){Rect b=body();int gap=4,w=Math.max(16,(b.w()-gap*4)/5);return new Rect(b.x()+i*(w+gap),footerTop()+2,w,Math.max(18,footerHeight()-4));}
+        Rect primaryAction(){Rect d=detail();if(d.w()<70)return new Rect(d.x(),d.bottom(),0,0);int h=compact()?17:20;return new Rect(d.x()+8,Math.max(d.y(),d.bottom()-h),Math.max(54,d.w()-16),Math.min(h,d.h()));}
         Rect listRow(int i,int scroll,int h){Rect v=viewport();return new Rect(v.x(),v.y()+i*h-scroll,v.w(),h-2);}
-        Rect tradition(int i){Rect b=body();int x=b.x()+36,w=Math.max(55,(b.w()-160)/4);return new Rect(x+i*w,b.y()+26,w,20);}Rect traditionJoin(){Rect b=body();return new Rect(b.right()-100,b.y()+26,94,20);}Rect academyOffers(){Rect v=viewport();return new Rect(v.x(),v.y()+28,v.w(),Math.max(30,v.h()-54));}Rect offerRow(int i,int scroll){Rect v=academyOffers();return new Rect(v.x(),v.y()+i*31-scroll,v.w(),29);}Rect academyNote(){Rect v=viewport();return new Rect(v.x(),Math.max(v.y(),v.bottom()-29),v.w(),29);}
-        Rect questAccept(){Rect v=viewport();return new Rect(v.right()-88,v.y()+3,40,19);}Rect questReject(){Rect v=viewport();return new Rect(v.right()-43,v.y()+3,40,19);}Rect questRow(int i,int scroll,int baseY){Rect v=viewport();return new Rect(v.x(),v.y()+baseY+i*48-scroll,v.w(),45);}Rect questClaim(int i,int scroll){Rect r=questRow(i,scroll,51);return new Rect(r.right()-48,r.y()+7,44,20);}
+        boolean stackedTraditions(){return body().w()<310;}Rect tradition(int i){Rect b=body();int x=b.x()+36;if(stackedTraditions()){int gap=3,w=Math.max(42,(b.w()-42-gap)/2);return new Rect(x+(i%2)*(w+gap),b.y()+26+(i/2)*18,w,16);}int reserve=102,w=Math.max(44,(b.w()-36-reserve)/4);return new Rect(x+i*w,b.y()+26,w,20);}Rect traditionJoin(){Rect b=body();return stackedTraditions()?new Rect(b.right()-92,b.y()+63,88,18):new Rect(b.right()-100,b.y()+26,94,20);}Rect academyOffers(){Rect v=viewport();int offset=stackedTraditions()?48:28;return new Rect(v.x(),v.y()+offset,v.w(),Math.max(1,v.h()-offset-30));}Rect offerRow(int i,int scroll){Rect v=academyOffers();return new Rect(v.x(),v.y()+i*31-scroll,v.w(),29);}Rect academyNote(){Rect v=viewport();return new Rect(v.x(),Math.max(v.y(),v.bottom()-29),v.w(),29);}
+        Rect questAccept(){Rect v=viewport();return new Rect(Math.max(v.x(),v.right()-88),v.y()+3,40,19);}Rect questReject(){Rect v=viewport();return new Rect(Math.max(v.x(),v.right()-43),v.y()+3,40,19);}Rect questRow(int i,int scroll,int baseY){Rect v=viewport();return new Rect(v.x(),v.y()+baseY+i*48-scroll,v.w(),45);}Rect questClaim(int i,int scroll){Rect r=questRow(i,scroll,51);return new Rect(Math.max(r.x(),r.right()-48),r.y()+7,44,20);}
     }
 }

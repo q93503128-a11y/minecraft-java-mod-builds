@@ -10,7 +10,7 @@ import net.minecraft.world.phys.Vec3;
  * profile rather than circle rank alone: Power Word Kill stays compact; Meteor Swarm owns the sky.
  */
 final class ArcaneSigilDirector {
-    private static final int BUDGET = 1400;
+    private static final int BUDGET = 2200;
 
     private ArcaneSigilDirector() {}
 
@@ -34,6 +34,7 @@ final class ArcaneSigilDirector {
         }
         formulaFrame(mesh, spell, profile, primary, radius, p, rotation, seed);
         schoolFormula(mesh, spell, primary, radius, p, rotation, seed);
+        geometricDepth(mesh, spell, profile, primary, radius, p, rotation, seed);
         anchorFormula(mesh, spell, profile, primary, direction, targetOffset, radius, p, rotation, seed);
         if (fusion) fusionFormula(mesh, primary, radius, p, rotation, seed);
         return mesh.build();
@@ -225,6 +226,21 @@ final class ArcaneSigilDirector {
         m.runeGlyph(facing, Vec3.ZERO, r * .18, seed, rotation * .22, 1.02F);
     }
 
+    private static void geometricDepth(ArcaneWorldMesh.Builder m,SpellDefinition spell,SpellPresentationProfile.Profile profile,ArcaneWorldMesh.Basis b,double r,double p,double rotation,int seed){
+        int detail=profile.complexity();if(detail<4||p<.36)return;Vec3 n=b.normal();double depth=r*(detail>=6?.13:.085)*(.45+.55*p);int sides=5+Math.floorMod(seed,4);
+        m.polygon(b,n.scale(depth),r*.49,sides,rotation*.21,.82F);m.polygon(b,n.scale(-depth),r*.37,sides+1,-rotation*.17+.23,.62F);
+        for(int i=0;i<6;i++){double a=rotation*.08+i*Math.PI/3.0;Vec3 top=b.point(a,r*.49).add(n.scale(depth)),bottom=b.point(a+.18,r*.37).add(n.scale(-depth));m.line(top,bottom,i%3==0?.86F:.48F);}
+        switch(profile.sigil()){
+            case FRONT_COMPACT,FRONT_LANCE -> {for(int i=1;i<=2;i++){double d=depth*(.45+i*.55);m.circle(b,n.scale(d),r*(.28-i*.055),30+i*8,i==1?.86F:.58F);}if(detail>=6)m.helix(n.scale(-depth*1.35),n,b,depth*2.7,r*.19,2,34,.48F,false);}
+            case GROUND_SEAL,QUAD_ARRAY,SKY_RITUAL -> {ArcaneWorldMesh.Basis x=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up()),z=ArcaneWorldMesh.Basis.fromNormal(b.up(),b.right());m.brokenBand(x,Vec3.ZERO,r*.27,r*.31,38,5,.82F,.10F);m.brokenBand(z,Vec3.ZERO,r*.34,r*.38,42,6,.72F,.09F);if(detail>=6){m.circle(x,Vec3.ZERO,r*.48,46,.58F);m.circle(z,Vec3.ZERO,r*.54,50,.52F);}}
+            case TARGET_SEAL -> {ArcaneWorldMesh.Basis x=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.brokenBand(x,Vec3.ZERO,r*.35,r*.40,40,4,.86F,.11F);for(int i=0;i<4;i++){double a=Math.PI/4+i*Math.PI/2;Vec3 c=b.point(a,r*.58);m.line(c.add(n.scale(-depth)),c.add(n.scale(depth)),.72F);}}
+            case BODY_HALO,FEET_RUNE -> {ArcaneWorldMesh.Basis x=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.circle(x,Vec3.ZERO,r*.46,42,.68F);if(detail>=6)m.brokenBand(x,n.scale(depth*.25),r*.57,r*.62,46,5,.72F,.10F);}
+            case WALL_MATRIX -> {Vec3 up=b.up(),right=b.right();double w=r*.52,h=r*.36;for(int layer=-1;layer<=1;layer++){Vec3 o=n.scale(layer*depth*.62);m.line(o.add(right.scale(-w)).add(up.scale(-h)),o.add(right.scale(w)).add(up.scale(-h)),.55F);m.line(o.add(right.scale(-w)).add(up.scale(h)),o.add(right.scale(w)).add(up.scale(h)),.55F);}}
+            case PORTAL_GATE -> {if(detail>=5){ArcaneWorldMesh.Basis x=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.circle(x,Vec3.ZERO,r*.34,38,.60F);m.runeGlyph(b,n.scale(depth*.72),r*.12,seed^0x71A5,rotation*.31,.76F);}}
+        }
+        if(detail>=6){for(int i=0;i<6;i++){double a=i*Math.PI/3.0-rotation*.05;Vec3 c=b.point(a,r*.66).add(n.scale((i%2==0?1:-1)*depth*.55));m.runeGlyph(b,c,r*.065,seed+i*97,-a,.58F);}}
+    }
+
     private static double sigilRangeScale(SpellDefinition spell, SpellPresentationProfile.Profile profile, double range) {
         double base=Math.max(1.0,spell.range());
         double ratio=clamp(Math.max(.1,range)/base,.45,4.0);
@@ -242,32 +258,13 @@ final class ArcaneSigilDirector {
 
     private static void meteorRitual(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis b,
                                      double r, double p, double rotation, int seed) {
-        double outer=r*(.78+.22*p),inner=outer*.72;
-        m.circle(b,Vec3.ZERO,outer,96,1.34F);
-        m.circle(b,Vec3.ZERO,outer*.89,84,.66F);
-        m.circle(b,b.normal().scale(r*.045),inner,72,.78F);
-        m.runeRing(b,Vec3.ZERO,outer*.94,12,r*.050,seed,-rotation*.18,.72F);
-        m.star(b,Vec3.ZERO,inner*.58,inner*.34,8,rotation*.16,1.04F);
-        m.polygon(b,Vec3.ZERO,inner*.42,4,-rotation*.12+Math.PI/4.0,.72F);
-        m.circle(b,Vec3.ZERO,inner*.23,40,1.18F);
-        double orbit=outer*.63,child=outer*.145;
-        Vec3 down=b.normal().scale(Math.max(1.8,r*.11));
-        for(int i=0;i<4;i++){
-            double a=Math.PI/4.0+i*Math.PI/2.0+rotation*.035;
-            Vec3 c=b.point(a,orbit),rail=b.point(a,inner*.72);
-            m.line(rail,c,i%2==0?1.12F:.78F);
-            m.circle(b,c,child,34,1.22F);
-            m.polygon(b,c,child*.68,4,-a+Math.PI/4.0,.86F);
-            m.runeGlyph(b,c,child*.42,seed+i*101,-rotation*.20,.82F);
-            m.line(c,c.add(down),1.22F);
-            if(p>.72)m.circle(b,c.add(down.scale(.42)),child*.58,24,.64F);
-        }
-        if(p>.82){
-            for(int i=0;i<4;i++){
-                double a=i*Math.PI/2.0+rotation*.08;
-                m.arc(b,Vec3.ZERO,outer*1.07,a,Math.PI*.34,20,i==0?1.08F:.66F);
-            }
-        }
+        double outer=r*(.78+.22*p),inner=outer*.70,depth=Math.max(1.1,r*.095);Vec3 n=b.normal();
+        m.brokenBand(b,Vec3.ZERO,outer*.94,outer,104,7,1.32F,.17F);m.circle(b,Vec3.ZERO,outer*.87,88,.72F);m.runeRing(b,Vec3.ZERO,outer*.91,16,r*.043,seed,-rotation*.16,.68F);
+        m.polygon(b,Vec3.ZERO,inner*.72,8,rotation*.10,1.02F);m.polygon(b,Vec3.ZERO,inner*.54,4,-rotation*.13+Math.PI/4.0,.82F);m.runeChords(b,Vec3.ZERO,inner*.39,8,3,rotation*.07,.64F);m.circle(b,Vec3.ZERO,inner*.20,36,1.15F);
+        m.brokenBand(b,n.scale(depth),inner*.43,inner*.48,52,5,.88F,.10F);m.brokenBand(b,n.scale(-depth*.72),inner*.28,inner*.33,44,4,.76F,.09F);
+        ArcaneWorldMesh.Basis armA=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up()),armB=ArcaneWorldMesh.Basis.fromNormal(b.up(),b.right());m.circle(armA,Vec3.ZERO,inner*.40,48,.64F);m.circle(armB,Vec3.ZERO,inner*.47,52,.58F);
+        double orbit=outer*.64,child=outer*.14;for(int i=0;i<4;i++){double a=Math.PI/4.0+i*Math.PI/2.0+rotation*.025;Vec3 c=b.point(a,orbit),upper=c.add(n.scale(depth*.72)),lower=c.add(n.scale(-depth*.55)),rail=b.point(a,inner*.76);m.line(rail,upper,i%2==0?1.08F:.74F);m.brokenBand(b,upper,child*.78,child,34,4,1.18F,.14F);m.polygon(b,upper,child*.64,4,-a+Math.PI/4.0,.84F);m.runeGlyph(b,upper,child*.40,seed+i*101,-rotation*.18,.80F);m.circle(b,lower,child*.58,26,.58F);m.line(upper,lower,1.16F);m.line(lower,lower.add(n.scale(-Math.max(2.0,r*.12))),1.28F);for(int q=0;q<4;q++){double qa=q*Math.PI/2.0;Vec3 node=upper.add(b.point(qa,child*.82));m.line(node,node.add(n.scale(-depth*.9)),.46F);}}
+        if(p>.78){for(int i=0;i<8;i++){double a=i*Math.PI/4.0+rotation*.045;Vec3 c=b.point(a,outer*1.04);m.runeGlyph(b,c,r*.050,seed^i*131,a,.58F);}}
     }
 
     private static void skyRitual(ArcaneWorldMesh.Builder m, SpellDefinition spell,
