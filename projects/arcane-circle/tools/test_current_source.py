@@ -71,14 +71,16 @@ target_snapshot=text(magic/'CastTargetSnapshot.java')
 for token in ['targetEntityId','launchDirection','impactSurface','barrageSeed','dimension','executeLocked','resolvedTarget','boolean homing']:
     assert token in target_snapshot, f'target snapshot regression: {token}'
 world_magic=text(magic/'WorldMagicService.java')
-for token in ['captureSnapshot','CastTargetSnapshot snapshot','seed=%d','PLAYER_CHARGE_SEEDS','consumeNpcSnapshot',
+for token in ['captureSnapshot','CastTargetSnapshot snapshot','seed=%d','PLAYER_CHARGE_SEEDS','NPC_CHARGE_SEEDS',
+              'npcChargeSeed','npcReleaseSeed','consumeNpcSnapshot',
               'MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed())']:
     assert token in world_magic, f'world magic snapshot regression: {token}'
 
 destruction=text(magic/'DestructiveMagicService.java')
 for token in ['getDestroySpeed','getExplosionResistance','destroyBlock','maxBlocks','hasBlockEntity','world_sunder',
               'meteor_swarm','disintegrate','hasChunkAt','MAX_BLOCK_CHANGES_PER_TICK','MAX_BLOCK_SCANS_PER_TICK',
-              'TerrainClass','MAJOR','CONDITIONAL','lightning_bolt','thunderwave','gust_of_wind']:
+              'MAX_DROPPED_BLOCKS_PER_TICK','dropChangesRemaining','TerrainClass','MAJOR','CONDITIONAL',
+              'lightning_bolt','thunderwave','gust_of_wind']:
     assert token in destruction, f'destructive magic regression: {token}'
 assert 'case "move_earth" -> new Profile(.54, 11.0, 170, false)' in destruction
 assert 'case "earthquake" -> new Profile(.58, 14.5, 240, false)' in destruction
@@ -95,6 +97,8 @@ assert 'DestructiveMagicService.impact(player,"meteor_swarm"' in text(magic/'Hig
 fusion=text(magic/'FusionSpellEffects.java')
 assert 'DestructiveMagicService.impact(player, "world_sunder", center, radius, power)' in fusion
 assert 'CastTargetSnapshot.targetOr(player, fallback)' in fusion
+assert 'new AABB(lockedPoint, lockedPoint).inflate(2.4)' in fusion
+assert 'targetEntity(player)' not in fusion
 assert 'DestructiveMagicService.impact(player,"world_sunder",player.position()' not in fusion
 
 npc_resolver=text(world/'NpcSpellResolver.java')
@@ -145,7 +149,10 @@ print('source_mutation=disabled')
 print('target_snapshot_parity=PASS')
 print('seeded_meteor_barrage=PASS')
 print('destruction_tick_budget=PASS')
+print('destruction_drop_budget=PASS')
 print('npc_meteor_scheduler=PASS')
+print('npc_meteor_seed_stability=PASS')
+print('non_homing_target_seal=PASS')
 
 # Active-tree hygiene. Git history is the archive; current source contains no version-migration machinery.
 repo=root.parents[1]

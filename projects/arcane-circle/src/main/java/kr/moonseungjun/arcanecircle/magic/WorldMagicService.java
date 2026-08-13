@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class WorldMagicService {
     private static final Map<UUID, CastTargetSnapshot> NPC_RELEASES = new HashMap<>();
     private static final Map<UUID, ChargeSeed> PLAYER_CHARGE_SEEDS = new HashMap<>();
+    private static final Map<UUID, ChargeSeed> NPC_CHARGE_SEEDS = new HashMap<>();
     private static final Set<String> HOMING_SPELLS = Set.of();
     private record ChargeSeed(String spellId, long seed) {}
 
@@ -59,6 +60,14 @@ public final class WorldMagicService {
 
     public static CastTargetSnapshot captureSnapshot(LivingEntity caster, LivingEntity targetEntity,
                                                      SpellDefinition spell, double range) {
+        long seed = "meteor_swarm".equals(spell.id())
+                ? MeteorBarragePattern.castSeed(caster.getUUID(), ((ServerLevel) caster.level()).getGameTime())
+                : 0L;
+        return captureSnapshot(caster, targetEntity, spell, range, seed);
+    }
+
+    private static CastTargetSnapshot captureSnapshot(LivingEntity caster, LivingEntity targetEntity,
+                                                       SpellDefinition spell, double range, long barrageSeed) {
         Vec3 direction = targetEntity == null ? safeDirection(caster.getLookAngle())
                 : safeDirection(targetEntity.getEyePosition().subtract(caster.getEyePosition()));
         SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(spell);
@@ -76,11 +85,9 @@ public final class WorldMagicService {
             };
         }
         UUID entityId = targetEntity == null ? null : targetEntity.getUUID();
-        long seed = MeteorBarragePattern.castSeed(caster.getUUID(),
-                ((ServerLevel) caster.level()).getGameTime());
         return new CastTargetSnapshot(spell.id(), caster.getUUID(), caster.level().dimension(),
                 caster.getEyePosition(), target, direction, entityId, impactSurface(spell, target),
-                false, seed);
+                false, barrageSeed);
     }
 
     public static void release(ServerPlayer player, MagicPlayerData.CastPreparation cast) {
@@ -108,16 +115,18 @@ public final class WorldMagicService {
     public static void charge(LivingEntity caster, LivingEntity targetEntity, SpellDefinition spell,
                               double progress, double range, double power) {
         if (!(caster.level() instanceof ServerLevel)) return;
-        CastTargetSnapshot snapshot = captureSnapshot(caster, targetEntity, spell, range);
+        long seed = npcChargeSeed(caster, spell);
+        CastTargetSnapshot snapshot = captureSnapshot(caster, targetEntity, spell, range, seed);
         Vec3 center = presentationCenter(caster, spell, snapshot.target(), snapshot.launchDirection());
         send(caster, encode("charge", caster, spell, false, 0, center, snapshot.target(),
-                snapshot.launchDirection(), range, power, clamp01(progress), 8, 0, 0L));
+                snapshot.launchDirection(), range, power, clamp01(progress), 8, 0, seed));
     }
 
     public static void release(LivingEntity caster, LivingEntity targetEntity, SpellDefinition spell,
                                double range, double power) {
         if (!(caster.level() instanceof ServerLevel)) return;
-        CastTargetSnapshot snapshot = captureSnapshot(caster, targetEntity, spell, range);
+        long seed = npcReleaseSeed(caster, spell);
+        CastTargetSnapshot snapshot = captureSnapshot(caster, targetEntity, spell, range, seed);
         NPC_RELEASES.put(caster.getUUID(), snapshot);
         Vec3 center = presentationCenter(caster, spell, snapshot.target(), snapshot.launchDirection());
         double distance = snapshot.target().distanceTo(center);
@@ -143,12 +152,14 @@ public final class WorldMagicService {
     public static void stop(LivingEntity caster) {
         NPC_RELEASES.remove(caster.getUUID());
         PLAYER_CHARGE_SEEDS.remove(caster.getUUID());
+        NPC_CHARGE_SEEDS.remove(caster.getUUID());
         send(caster, "kind=stop;caster=" + caster.getUUID());
     }
 
     public static void clearAll() {
         NPC_RELEASES.clear();
         PLAYER_CHARGE_SEEDS.clear();
+        NPC_CHARGE_SEEDS.clear();
     }
 
     private static long chargeSeed(ServerPlayer player, SpellDefinition spell) {
@@ -171,6 +182,26 @@ public final class WorldMagicService {
         long seed = ThreadLocalRandom.current().nextLong();
         return seed == 0L ? MeteorBarragePattern.castSeed(player.getUUID(),
                 ((ServerLevel) player.level()).getGameTime()) : seed;
+    }
+
+    private static long npcChargeSeed(LivingEntity caster, SpellDefinition spell) {
+        if (!"meteor_swarm".equals(spell.id())) {
+            NPC_CHARGE_SEEDS.remove(caster.getUUID());
+            return 0L;
+        }
+        ChargeSeed existing = NPC_CHARGE_SEEDS.get(caster.getUUID());
+        if (existing != null && existing.spellId().equals(spell.id())) return existing.seed();
+        long seed = MeteorBarragePattern.castSeed(caster.getUUID(), ((ServerLevel) caster.level()).getGameTime());
+        NPC_CHARGE_SEEDS.put(caster.getUUID(), new ChargeSeed(spell.id(), seed));
+        return seed;
+    }
+
+    private static long npcReleaseSeed(LivingEntity caster, SpellDefinition spell) {
+        ChargeSeed existing = NPC_CHARGE_SEEDS.remove(caster.getUUID());
+        if (existing != null && existing.spellId().equals(spell.id())) return existing.seed();
+        return "meteor_swarm".equals(spell.id())
+                ? MeteorBarragePattern.castSeed(caster.getUUID(), ((ServerLevel) caster.level()).getGameTime())
+                : 0L;
     }
 
     private static void send(LivingEntity caster, String state) {

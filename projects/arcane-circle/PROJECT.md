@@ -19,13 +19,14 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - Pending casts are invalidated on death, spectator state or dimension mismatch. Respawn and dimension-change handlers also clear kinetic queues immediately.
 - `WorldMagicService` release payload and `SpellKineticsService` gameplay consume the same snapshot. Client visuals parse the same `seed` and render Meteor Swarm under the same seeded pattern context.
 - Meteor Swarm keeps 16 authored anchor strikes but applies per-cast bounded rotation/jitter, timing variance, fall-height variance and scale variance. Minimum strike separation is enforced and the last four impacts gain modest rhythmic weight.
-- Meteor charge and release reuse one server-generated barrage seed, so coordinate seals do not reshuffle between charge and release.
+- Meteor charge and release reuse one barrage seed for both players and NPC mages, so coordinate seals do not reshuffle between charge and release.
 - NPC Meteor Swarm no longer collapses into one generic sky-drop hit. `NpcMeteorBarrageService` schedules the same 16 seeded strike grammar over time, and ordinary delayed NPC projectiles consume their release-time locked target instead of a moved target's later position.
 - NPC barrage damage is staggered, but NPC terrain griefing remains disabled intentionally; high-circle NPCs do not silently excavate player builds until a separate Arcane destruction rule is exposed.
+- Non-homing target-seal fusions resolve entities at the locked impact point rather than following a stored UUID after release.
 - `World Sunder` is a target-ground battlefield rupture. Damage, knockback and terrain destruction are centered on the release snapshot target rather than the caster's feet.
 - Destructive terrain mutation remains server-authoritative and strength-aware (`getDestroySpeed` + explosion resistance). Unbreakable blocks, block entities, fluids and unloaded chunks are never removed.
-- Destruction now has a shared per-level tick budget: at most 420 changed blocks and 24,000 scanned in-range block cells per server tick across simultaneous destructive casts.
-- Mass terrain spells `move_earth`, `earthquake` and `world_sunder` are no-drop destruction to prevent hundreds of item entities. `shatter` retains bounded drops because its physical identity is material breakage and its per-impact cap remains small.
+- Destruction has shared per-level tick budgets: at most 420 changed blocks, 24,000 scanned in-range block cells and 96 drop-producing block breaks per server tick across simultaneous destructive casts.
+- Mass terrain spells `move_earth`, `earthquake` and `world_sunder` are no-drop destruction to prevent hundreds of item entities. `shatter` retains bounded drops because its physical identity is material breakage, but the shared drop-producing block budget prevents multiplayer item floods.
 - Terrain classification is exhaustive by default:
   - **A / MAJOR**: `disintegrate`, `delayed_blast_fireball`, `fire_storm`, `earthquake`, `meteor_swarm`, `world_sunder`, `arcane_annihilation`.
   - **B / CONDITIONAL**: `fireball`, `shatter`, `flame_strike`, `meteor_shard`, `move_earth`, `lightning_bolt`, `thunderwave`, `gust_of_wind`.

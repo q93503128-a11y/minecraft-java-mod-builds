@@ -212,18 +212,18 @@ public final class FusionSpellEffects {
     }
 
     private static Optional<Mob> sightTarget(ServerPlayer player, double range) {
+        ServerLevel level = (ServerLevel) player.level();
         Optional<CastTargetSnapshot> active = CastTargetSnapshot.active(player);
         if (active.isPresent()) {
-            Optional<Mob> locked = active.get().targetEntity(player)
-                    .filter(Mob.class::isInstance).map(Mob.class::cast)
-                    .filter(mob -> mob instanceof Enemy);
-            if (locked.isPresent()) return locked;
+            Vec3 lockedPoint = active.get().target();
+            return level.getEntitiesOfClass(Mob.class, new AABB(lockedPoint, lockedPoint).inflate(2.4),
+                            mob -> mob.isAlive() && mob instanceof Enemy).stream()
+                    .min(Comparator.comparingDouble(mob -> mob.getEyePosition().distanceToSqr(lockedPoint)));
         }
-        Vec3 eye = CastTargetSnapshot.launchOriginOr(player, player.getEyePosition());
-        Vec3 look = CastTargetSnapshot.launchDirectionOr(player, player.getLookAngle());
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
         double distance = Math.max(5.0, range);
         Vec3 end = eye.add(look.scale(distance));
-        ServerLevel level = (ServerLevel) player.level();
         return level.getEntitiesOfClass(Mob.class, new AABB(eye, end).inflate(2.5),
                         mob -> mob.isAlive() && mob instanceof Enemy).stream()
                 .filter(mob -> {

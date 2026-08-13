@@ -17,7 +17,7 @@ import java.util.WeakHashMap;
  * Server-authoritative terrain rupture for spells whose fiction is explicitly destructive.
  * Weak materials fail farther from the impact; hard/blast-resistant materials require a much
  * stronger local impulse. Unbreakable blocks, block entities, fluids and unloaded chunks are
- * never mutated. Per-impact caps are reinforced by one shared per-level tick budget.
+ * never mutated. Per-impact caps are reinforced by shared per-level tick budgets.
  */
 public final class DestructiveMagicService {
     public enum TerrainClass { MAJOR, CONDITIONAL, NONE }
@@ -31,6 +31,7 @@ public final class DestructiveMagicService {
 
     private static final int MAX_BLOCK_CHANGES_PER_TICK = 420;
     private static final int MAX_BLOCK_SCANS_PER_TICK = 24_000;
+    private static final int MAX_DROPPED_BLOCKS_PER_TICK = 96;
     private static final Map<ServerLevel, TickBudget> BUDGETS = new WeakHashMap<>();
 
     private record Candidate(BlockPos pos, double overload) {}
@@ -40,18 +41,24 @@ public final class DestructiveMagicService {
         private long tick = Long.MIN_VALUE;
         private int changes;
         private int scans;
+        private int droppedBlocks;
 
         void reset(long currentTick) {
             if (tick == currentTick) return;
             tick = currentTick;
             changes = 0;
             scans = 0;
+            droppedBlocks = 0;
         }
 
         boolean scanAvailable() { return scans < MAX_BLOCK_SCANS_PER_TICK; }
         int changesRemaining() { return Math.max(0, MAX_BLOCK_CHANGES_PER_TICK - changes); }
+        int dropChangesRemaining() { return Math.max(0, MAX_DROPPED_BLOCKS_PER_TICK - droppedBlocks); }
         void scanned() { scans++; }
-        void changed() { changes++; }
+        void changed(boolean drops) {
+            changes++;
+            if (drops) droppedBlocks++;
+        }
     }
 
     private DestructiveMagicService() {}
@@ -69,6 +76,7 @@ public final class DestructiveMagicService {
         ServerLevel level = (ServerLevel) player.level();
         TickBudget budget = budget(level);
         int changeLimit = Math.min(profile.maxBlocks(), budget.changesRemaining());
+        if (profile.drops()) changeLimit = Math.min(changeLimit, budget.dropChangesRemaining());
         if (changeLimit <= 0 || !budget.scanAvailable()) return 0;
 
         double radius = Math.max(.75, Math.min(10.5, requestedRadius * profile.radiusScale()));
@@ -110,10 +118,11 @@ public final class DestructiveMagicService {
         int changed = 0;
         for (Candidate candidate : candidates) {
             if (changed >= changeLimit || budget.changesRemaining() <= 0) break;
+            if (profile.drops() && budget.dropChangesRemaining() <= 0) break;
             if (!level.hasChunkAt(candidate.pos())) continue;
             if (level.destroyBlock(candidate.pos(), profile.drops(), player)) {
                 changed++;
-                budget.changed();
+                budget.changed(profile.drops());
             }
         }
         return changed;
