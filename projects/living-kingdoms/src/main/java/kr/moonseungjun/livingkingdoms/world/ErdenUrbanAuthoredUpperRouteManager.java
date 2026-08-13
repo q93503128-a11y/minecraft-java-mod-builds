@@ -160,19 +160,23 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
 
     public static int eligibleCount() {
         bootstrap();
-        return ROUTES.size();
+        return ROUTES.size() + ErdenUrbanAuthoredNewFloorManager.eligibleCount();
     }
 
     public static boolean isEligible(ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
         bootstrap();
-        return ROUTES.containsKey(entranceKey(entrance.x(), entrance.z()));
+        long key = entranceKey(entrance.x(), entrance.z());
+        return ROUTES.containsKey(key)
+                || ErdenUrbanAuthoredNewFloorManager.isEligible(entrance);
     }
 
     public static boolean isPrepared(
             ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
         bootstrap();
         long key = entranceKey(entrance.x(), entrance.z());
-        if (!ROUTES.containsKey(key)) return false;
+        if (!ROUTES.containsKey(key)) {
+            return ErdenUrbanAuthoredNewFloorManager.isPrepared(level, entrance);
+        }
         return level.getDataStorage().computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE)
                 .isPrepared(key, ROUTE_REVISION);
     }
@@ -181,7 +185,9 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
             ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
         bootstrap();
         long key = entranceKey(entrance.x(), entrance.z());
-        if (!ROUTES.containsKey(key)) return false;
+        if (!ROUTES.containsKey(key)) {
+            return ErdenUrbanAuthoredNewFloorManager.isCompleted(level, entrance);
+        }
         return level.getDataStorage().computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE)
                 .isCompleted(key, ROUTE_REVISION);
     }
@@ -192,7 +198,9 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
         bootstrap();
         long key = entranceKey(entrance.x(), entrance.z());
         PlacementRoute route = ROUTES.get(key);
-        if (route == null) return null;
+        if (route == null) {
+            return ErdenUrbanAuthoredNewFloorManager.verifiedUpperTarget(level, entrance);
+        }
         ErdenUrbanAuthoredUpperRouteSavedData data = level.getDataStorage()
                 .computeIfAbsent(ErdenUrbanAuthoredUpperRouteSavedData.TYPE);
         if (!data.isCompleted(key, ROUTE_REVISION)) return null;
@@ -204,6 +212,10 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
         bootstrap();
         PlacementRoute route = ROUTES.get(entranceKey(entrance.x(), entrance.z()));
         if (route == null) {
+            if (ErdenUrbanAuthoredNewFloorManager.isEligible(entrance)) {
+                ErdenUrbanAuthoredNewFloorManager.verifyOrThrow(level, entrance);
+                return;
+            }
             throw new IllegalStateException("Entrance has no authored upper route: "
                     + entrance.x() + "," + entrance.z());
         }
