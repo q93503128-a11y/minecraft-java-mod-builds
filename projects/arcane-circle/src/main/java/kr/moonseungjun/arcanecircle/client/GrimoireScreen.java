@@ -180,11 +180,11 @@ public final class GrimoireScreen extends Screen {
     private void drawCircleIndex(GuiGraphicsExtractor g,Layout l,int selected,int mouseX,int mouseY,boolean shop){
         for(int c=1;c<=9;c++){
             Rect r=l.circleIndex(c);boolean active=c==selected,hover=inside(mouseX,mouseY,r),unlocked=c<=ArcaneClientState.integer("circle",1);
-            int color=unlocked?circleColor(c):0xFF4D4A47;
-            if(active)g.fill(r.x(),r.y()+3,r.x()+2,r.bottom()-3,color);
-            g.centeredText(font,Component.literal(Integer.toString(c)),r.x()+r.w()/2,r.y()+6,active?0xFFF5E2BC:hover?0xFFD9C7A8:unlocked?0xFFA39A8C:0xFF5C5852);
-            if(active||hover)ArcaneRenderUtil.ring(g,r.x()+r.w()/2,r.y()+r.h()/2,8,color);
-            if(shop){int count=AcademyOfferCatalog.forCircle(c).size();tiny(g,Integer.toString(count),r.right()-2,r.bottom()-6,color,.45F,true);}
+            int color=unlocked?circleColor(c):0xFF4D4A47;int cy=r.y()+r.h()/2,ring=Math.max(4,Math.min(8,r.h()/2-1));
+            if(active)g.fill(r.x(),r.y()+2,r.x()+2,r.bottom()-2,color);
+            g.centeredText(font,Component.literal(Integer.toString(c)),r.x()+r.w()/2,cy-4,active?0xFFF5E2BC:hover?0xFFD9C7A8:unlocked?0xFFA39A8C:0xFF5C5852);
+            if(active||hover)ArcaneRenderUtil.ring(g,r.x()+r.w()/2,cy,ring,color);
+            if(shop){int count=AcademyOfferCatalog.forCircle(c).size();tiny(g,Integer.toString(count),r.right()-2,r.bottom()-5,color,.45F,true);}
         }
     }
 
@@ -200,19 +200,38 @@ public final class GrimoireScreen extends Screen {
     }
 
     private void drawSpellDetail(GuiGraphicsExtractor g,Layout l,SpellDefinition s,int mouseX,int mouseY){
-        Rect d=l.detail();if(d.w()<95||s==null)return;
-        g.fill(d.x(),d.y()+4,d.x()+1,d.bottom()-4,0xFF554838);
-        int accent=ArcaneRenderUtil.schoolColor(s.school());int cx=d.x()+d.w()/2;
+        Rect d=l.detail();if(d.w()<70||d.h()<56||s==null)return;
+        g.enableScissor(d.x(),d.y(),d.right(),d.bottom());
+        g.fill(d.x(),d.y()+3,d.x()+1,d.bottom()-3,0xFF554838);
+        int accent=ArcaneRenderUtil.schoolColor(s.school());int cx=d.x()+d.w()/2;Rect a=l.primaryAction();
+        boolean usable=ArcaneClientState.known().contains(s.id())&&s.circle()<=ArcaneClientState.integer("circle",1);
+        String label=activeSlot<0?"아래에서 장착 슬롯 선택":usable?(activeSlot+1)+"번 슬롯에 각인":"습득 필요";
+
+        if(l.compact()){
+            int iconY=d.y()+15;
+            ArcaneRenderUtil.ring(g,cx,iconY,11,accent);ArcaneRenderUtil.ring(g,cx,iconY,8,0xFF6E5E49);ArcaneRenderUtil.spellRune(g,cx,iconY,s,5,0xFFFFF2DC);
+            g.centeredText(font,Component.literal(fit(s.name(),Math.max(36,d.w()-8))),cx,d.y()+29,0xFFF0E4D1);
+            tiny(g,s.circle()+"C · "+s.school().displayName(),cx,d.y()+41,accent,.52F,true);
+            tiny(g,fit("MP "+s.manaCost()+" · 쿨 "+one(s.cooldownTicks()/20.0)+"s",d.w()*2),cx,d.y()+53,0xFFCDBDA7,.50F,true);
+            tiny(g,fit("범위 "+one(s.range())+" · 숙련 "+ArcaneClientState.mastery(s.id())+"/"+SpellCatalog.masteryRequired(s.id()),d.w()*2),cx,d.y()+63,0xFF9F9587,.48F,true);
+            action(g,a,label,inside(mouseX,mouseY,a),usable&&activeSlot>=0,accent);
+            g.disableScissor();return;
+        }
+
         ArcaneRenderUtil.ring(g,cx,d.y()+35,23,accent);ArcaneRenderUtil.ring(g,cx,d.y()+35,17,0xFF6E5E49);ArcaneRenderUtil.spellRune(g,cx,d.y()+35,s,11,0xFFFFF2DC);
         g.centeredText(font,Component.literal(fit(s.name(),d.w()-12)),cx,d.y()+65,0xFFF0E4D1);
         tiny(g,s.circle()+"C · "+s.school().displayName()+" · "+s.sigilAnchor().displayName(),cx,d.y()+79,accent,.58F,true);
-        List<String> desc=wrap(s.description(),d.w()-18,4);int y=d.y()+94;for(String line:desc){tiny(g,line,d.x()+9,y,0xFFB8AD9E,.62F,false);y+=9;}
+        int descStart=d.y()+94,statsHeight=44;
+        int maxDescLines=Math.max(0,Math.min(4,(a.y()-descStart-10-statsHeight-4)/9));
+        List<String> desc=wrap(s.description(),d.w()-18,maxDescLines);int y=descStart;
+        for(String line:desc){tiny(g,line,d.x()+9,y,0xFFB8AD9E,.62F,false);y+=9;}
         g.fill(d.x()+8,y+3,d.right()-8,y+4,0xFF493E31);y+=10;
         tiny(g,"MP",d.x()+9,y,0xFF877D71,.54F,false);tiny(g,Integer.toString(s.manaCost()),d.x()+35,y,0xFFE7D5B8,.62F,false);
         tiny(g,"쿨",d.x()+9,y+12,0xFF877D71,.54F,false);tiny(g,one(s.cooldownTicks()/20.0)+"s",d.x()+35,y+12,0xFFE7D5B8,.62F,false);
         tiny(g,"범위",d.x()+9,y+24,0xFF877D71,.54F,false);tiny(g,one(s.range()),d.x()+35,y+24,0xFFE7D5B8,.62F,false);
         tiny(g,"숙련",d.x()+9,y+36,0xFF877D71,.54F,false);tiny(g,ArcaneClientState.mastery(s.id())+" / "+SpellCatalog.masteryRequired(s.id()),d.x()+35,y+36,0xFFE7D5B8,.62F,false);
-        Rect a=l.primaryAction();boolean usable=ArcaneClientState.known().contains(s.id())&&s.circle()<=ArcaneClientState.integer("circle",1);String label=activeSlot<0?"아래에서 장착 슬롯 선택":usable?(activeSlot+1)+"번 슬롯에 각인":"습득 필요";action(g,a,label,inside(mouseX,mouseY,a),usable&&activeSlot>=0,accent);
+        action(g,a,label,inside(mouseX,mouseY,a),usable&&activeSlot>=0,accent);
+        g.disableScissor();
     }
 
     private void drawLoadout(GuiGraphicsExtractor g,Rect r,int slot,int mouseX,int mouseY){
@@ -279,7 +298,7 @@ public final class GrimoireScreen extends Screen {
     private SpellDefinition inspectedSpell(){return SpellCatalog.spell(inspectedSpellId).orElseGet(()->SpellCatalog.spellsInCircle(atlasCircle).isEmpty()?null:SpellCatalog.spellsInCircle(atlasCircle).getFirst());}
 
     private int maxScroll(Layout l){return switch(page){case "atlas"->{int count=SpellCatalog.spellsInCircle(atlasCircle).size();yield l.maxTileScroll(count);}case "recipes"->Math.max(0,fusionsInCircle(fusionCircle).size()*43-l.viewport().h());case "staffs"->Math.max(0,ModItems.profiles().size()*31-l.viewport().h());case "academy"->Math.max(0,AcademyOfferCatalog.forCircle(academyCircle).size()*31-l.academyOffers().h());case "quests"->Math.max(0,Math.min(3,ArcaneClientState.integer("quest_count",0))*48-l.viewport().h()+70);default->0;};}
-    private Layout layout(){int w=Math.min(780,Math.max(340,width-28)),h=Math.min(450,Math.max(260,height-24));w=Math.min(w,Math.max(1,width-8));h=Math.min(h,Math.max(1,height-8));return new Layout((width-w)/2,(height-h)/2,w,h);}
+    private Layout layout(){int w=Math.min(780,Math.max(220,width-28)),h=Math.min(450,Math.max(180,height-24));w=Math.min(w,Math.max(1,width-8));h=Math.min(h,Math.max(1,height-8));return new Layout((width-w)/2,(height-h)/2,w,h);}
     private List<String> wrap(String value,int pixels,int maxLines){List<String> out=new ArrayList<>();if(value==null||value.isBlank())return out;String remain=value.trim();for(int line=0;line<maxLines&&!remain.isEmpty();line++){if(font.width(remain)<=pixels){out.add(remain);break;}int cut=remain.length();while(cut>1&&font.width(remain.substring(0,cut))>pixels)cut--;int space=remain.lastIndexOf(' ',cut);if(space>Math.max(1,cut/2))cut=space;String part=remain.substring(0,cut).trim();out.add(line==maxLines-1?fit(part+"…",pixels):part);remain=remain.substring(cut).trim();}return out;}
     private String fit(String value,int pixels){if(value==null||pixels<=0)return"";if(font.width(value)<=pixels)return value;String suffix="…";int allowed=Math.max(0,pixels-font.width(suffix)),end=value.length();while(end>0&&font.width(value.substring(0,end))>allowed)end--;return end<=0?suffix:value.substring(0,end)+suffix;}
     private static String staffStats(StaffProfile p){return "MP "+signed(p.maxManaBonus())+" · 위력 "+signed((int)Math.round((p.powerMultiplier()-1)*100))+"% · 범위 "+signed((int)Math.round((p.rangeMultiplier()-1)*100))+"%";}
@@ -296,11 +315,21 @@ public final class GrimoireScreen extends Screen {
     private record Tab(String id,String label,String roman){}
     private record Rect(int x,int y,int w,int h){int right(){return x+w;}int bottom(){return y+h;}}
     private record Layout(int left,int top,int panelW,int panelH){
-        int right(){return left+panelW;}int bottom(){return top+panelH;}boolean isWide(){return panelW>=590;}
-        Rect close(){return new Rect(right()-24,top+5,18,18);}Rect tab(int i){return new Rect(left+4,top+32+i*38,48,32);}Rect body(){return new Rect(left+66,top+27,panelW-78,panelH-38);}Rect viewport(){Rect b=body();return new Rect(b.x()+38,b.y()+31,b.w()-40,b.h()-38);}Rect circleIndex(int c){Rect b=body();return new Rect(b.x(),b.y()+30+(c-1)*Math.max(22,Math.min(29,(b.h()-63)/9)),30,22);}
-        Rect browserViewport(){Rect b=body();int detail=Math.max(125,Math.min(205,b.w()/3));return new Rect(b.x()+38,b.y()+31,Math.max(72,b.w()-42-detail),b.h()-68);}Rect detail(){Rect b=body();int w=Math.max(125,Math.min(205,b.w()/3));return new Rect(b.right()-w,b.y()+31,w,b.h()-68);}Rect spellTile(int i,int scroll,int count){Rect v=browserViewport();int cols=v.w()>=340?5:v.w()>=230?4:v.w()>=150?3:2;int gap=3,w=(v.w()-gap*(cols-1))/cols,row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*48-scroll,w,44);}int maxTileScroll(int count){Rect v=browserViewport();int cols=v.w()>=340?5:v.w()>=230?4:v.w()>=150?3:2;return Math.max(0,((count+cols-1)/cols)*48-v.h());}
-        Rect loadout(int i){Rect b=body();int gap=4,w=(b.w()-gap*4)/5;return new Rect(b.x()+i*(w+gap),b.bottom()-28,w,24);}Rect primaryAction(){Rect d=detail();return new Rect(d.x()+8,d.bottom()-25,Math.max(80,d.w()-16),20);}Rect listRow(int i,int scroll,int h){Rect v=viewport();return new Rect(v.x(),v.y()+i*h-scroll,v.w(),h-2);}
-        Rect tradition(int i){Rect b=body();int x=b.x()+36,w=Math.max(55,(b.w()-160)/4);return new Rect(x+i*w,b.y()+26,w,20);}Rect traditionJoin(){Rect b=body();return new Rect(b.right()-100,b.y()+26,94,20);}Rect academyOffers(){Rect v=viewport();return new Rect(v.x(),v.y()+28,v.w(),Math.max(30,v.h()-54));}Rect offerRow(int i,int scroll){Rect v=academyOffers();return new Rect(v.x(),v.y()+i*31-scroll,v.w(),29);}Rect academyNote(){Rect v=viewport();return new Rect(v.x(),v.bottom()-25,v.w(),25);}
-        Rect questAccept(){Rect v=viewport();return new Rect(v.right()-132,v.y()+4,60,20);}Rect questReject(){Rect v=viewport();return new Rect(v.right()-66,v.y()+4,60,20);}Rect questRow(int i,int scroll,int offset){Rect v=viewport();return new Rect(v.x(),v.y()+offset+i*48-scroll,v.w(),42);}Rect questClaim(int i,int scroll){Rect r=questRow(i,scroll,ArcaneClientState.text("quest_offer_id","").isBlank()?51:57);return new Rect(r.right()-66,r.y()+8,60,20);}
+        int right(){return left+panelW;}int bottom(){return top+panelH;}boolean isWide(){return panelW>=590;}boolean compact(){return panelH<300||body().h()<240;}
+        int tabStep(){return Math.max(27,Math.min(38,Math.max(27,(panelH-36)/6)));}
+        Rect close(){return new Rect(right()-24,top+5,18,18);}Rect tab(int i){int step=tabStep(),h=Math.max(23,Math.min(32,step-2));return new Rect(left+4,top+28+i*step,48,h);}Rect body(){return new Rect(left+66,top+27,Math.max(96,panelW-78),Math.max(96,panelH-38));}
+        Rect viewport(){Rect b=body();return new Rect(b.x()+38,b.y()+31,Math.max(48,b.w()-40),Math.max(42,b.h()-38));}
+        int circleStep(){Rect b=body();return Math.max(13,Math.min(29,Math.max(13,(b.h()-34)/9)));}
+        Rect circleIndex(int c){Rect b=body();int step=circleStep(),h=Math.max(12,Math.min(22,step));return new Rect(b.x(),b.y()+28+(c-1)*step,30,h);}
+        int footerHeight(){return compact()?29:32;}int footerTop(){return body().bottom()-footerHeight();}
+        int detailWidth(){Rect b=body();int preferred=Math.max(96,Math.min(205,b.w()/3));int minBrowser=Math.max(52,Math.min(90,b.w()/3));int maxDetail=Math.max(70,b.w()-38-minBrowser-5);return Math.min(preferred,maxDetail);}
+        Rect detail(){Rect b=body();int w=detailWidth(),y=b.y()+31,h=Math.max(56,footerTop()-y-5);return new Rect(b.right()-w,y,w,h);}
+        Rect browserViewport(){Rect b=body(),d=detail();int x=b.x()+38,y=b.y()+31;return new Rect(x,y,Math.max(52,d.x()-x-5),Math.max(52,footerTop()-y-5));}
+        Rect spellTile(int i,int scroll,int count){Rect v=browserViewport();int cols=v.w()>=340?5:v.w()>=230?4:v.w()>=150?3:2;int gap=3,w=Math.max(20,(v.w()-gap*(cols-1))/cols),row=i/cols,col=i%cols;return new Rect(v.x()+col*(w+gap),v.y()+row*48-scroll,w,44);}int maxTileScroll(int count){Rect v=browserViewport();int cols=v.w()>=340?5:v.w()>=230?4:v.w()>=150?3:2;return Math.max(0,((count+cols-1)/cols)*48-v.h());}
+        Rect loadout(int i){Rect b=body();int gap=4,w=Math.max(20,(b.w()-gap*4)/5);return new Rect(b.x()+i*(w+gap),footerTop()+2,w,Math.max(20,footerHeight()-4));}
+        Rect primaryAction(){Rect d=detail();int h=compact()?17:20;return new Rect(d.x()+8,d.bottom()-h,Math.max(54,d.w()-16),h);}
+        Rect listRow(int i,int scroll,int h){Rect v=viewport();return new Rect(v.x(),v.y()+i*h-scroll,v.w(),h-2);}
+        Rect tradition(int i){Rect b=body();int x=b.x()+36,w=Math.max(55,(b.w()-160)/4);return new Rect(x+i*w,b.y()+26,w,20);}Rect traditionJoin(){Rect b=body();return new Rect(b.right()-100,b.y()+26,94,20);}Rect academyOffers(){Rect v=viewport();return new Rect(v.x(),v.y()+28,v.w(),Math.max(30,v.h()-54));}Rect offerRow(int i,int scroll){Rect v=academyOffers();return new Rect(v.x(),v.y()+i*31-scroll,v.w(),29);}Rect academyNote(){Rect v=viewport();return new Rect(v.x(),Math.max(v.y(),v.bottom()-29),v.w(),29);}
+        Rect questAccept(){Rect v=viewport();return new Rect(v.right()-88,v.y()+3,40,19);}Rect questReject(){Rect v=viewport();return new Rect(v.right()-43,v.y()+3,40,19);}Rect questRow(int i,int scroll,int baseY){Rect v=viewport();return new Rect(v.x(),v.y()+baseY+i*48-scroll,v.w(),45);}Rect questClaim(int i,int scroll){Rect r=questRow(i,scroll,51);return new Rect(r.right()-48,r.y()+7,44,20);}
     }
 }

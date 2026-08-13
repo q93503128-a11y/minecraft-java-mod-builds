@@ -16,16 +16,16 @@ def text(path): return path.read_text(encoding='utf-8')
 gradle=text(root/'gradle.properties')
 main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.28' in gradle
-assert 'VERSION = "0.12.1-alpha.28"' in main
-assert '"version": "0.12.1-alpha.28"' in index
+assert 'mod_version=0.12.1-alpha.29' in gradle
+assert 'VERSION = "0.12.1-alpha.29"' in main
+assert '"version": "0.12.1-alpha.29"' in index
 
 tracker=text(client/'WorldMagicTracker.java')
 assert 'SpellCinematicDirector.charge' in tracker and 'SpellCinematicDirector.release' in tracker
 assert 'SpellCinematicDirector.castingFamily' in tracker
 assert 'ArcaneSigilDirector.charge' in tracker and 'ArcaneSigilDirector.releaseEcho' in tracker
 sigil=text(client/'ArcaneSigilDirector.java')
-for token in ['formulaFrame','schoolFormula','anchorFormula','skyRitual','meteor_swarm','runeRing','brokenBand','fusionFormula']:
+for token in ['formulaFrame','schoolFormula','anchorFormula','skyRitual','meteorRitual','sigilRangeScale','meteor_swarm','runeRing','brokenBand','fusionFormula']:
     assert token in sigil, f'authored sigil regression: {token}'
 for token in ['LowCircleVisualIdentity','MidCircleVisualIdentity','FifthCircleVisualIdentity',
               'SixthCircleVisualIdentity','ArchmageVisualIdentity','ArcaneSigilDetailGrammar',
@@ -39,14 +39,16 @@ for token in ['enum Form','NEEDLE','ORB','VOLLEY','RAY','CONE','FIELD','WALL','G
               'SpellMetrics.effectRadius','SpellMetrics.wallWidth','SpellMetrics.waveLength','SpellMetrics.waveEndRadius']:
     assert token in director, f'cinematic director regression: {token}'
 assert 'double[][] o={{-10,-10},{10,-10},{-10,10},{10,10}}' in director
-assert 'add(0,28*(1-easeIn(t)),0)' in director
+assert 'fallHeight=42.0' in director and 'prismaticWallFrame' in director
 assert 'case "power_word_kill"' in director and '?.72:1.0' in director
 
 grimoire=text(client/'GrimoireScreen.java')
-for token in ['drawSpine','circleIndex','browserViewport','detail()','spellTile','primaryAction','drawLoadout','enableScissor','mouseScrolled']:
+for token in ['drawSpine','circleIndex','circleStep','compact()','browserViewport','detailWidth','detail()','spellTile','primaryAction','drawLoadout','enableScissor','mouseScrolled']:
     assert token in grimoire, f'grimoire architecture regression: {token}'
 assert 'CodexVisualLanguage' not in grimoire
-assert 'Math.max(125,Math.min(205,b.w()/3))' in grimoire
+assert 'Math.max(22,Math.min(29' not in grimoire
+assert 'MAX_FRAME = 9000' in tracker and 'MAX_ENTRY = 2800' in tracker
+assert '!"prismatic_wall".equals(v.spell.id())' in tracker
 
 hud=text(client/'ArcaneHud.java')
 assert 'spell_ribbon' in hud and 'drawSeal' in hud and 'drawVitals' in hud
@@ -73,6 +75,10 @@ assert 'default -> 190;' in casting_service and 'baseMinimum * staffScale' in ca
 staff=text(root/'src/main/java/kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.java')
 assert 'castTimeMultiplier' in staff and '시전 전개시간' in staff
 assert not (magic/'SpellSigilService.java').exists(), 'empty legacy SpellSigilService returned'
+light=text(magic/'ArcaneLightService.java')
+for token in ['Blocks.LIGHT','LightBlock.LEVEL','illuminate','clearAll']:
+    assert token in light, f'Light world-illumination regression: {token}'
+assert 'ArcaneLightService.illuminate(player,1800)' in text(magic/'ExpandedSpellEffects.java')
 mage_gear=text(magic/'MageGearService.java')
 assert 'syncAtomicRobe' in mage_gear
 

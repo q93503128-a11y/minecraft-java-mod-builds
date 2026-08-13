@@ -336,7 +336,7 @@ public final class HighCircleSpellEffects {
         for (int i = 0; i < 4; i++) {
             double angle = Math.PI * 2.0 * i / 4.0 + Math.PI / 4.0;
             Vec3 impact = center.add(Math.cos(angle) * 10.0, 0, Math.sin(angle) * 10.0);
-            Vec3 sky = impact.add(0, 28, 0);
+            Vec3 sky = impact.add(0, 42, 0);
             line(level(player), sky, impact, ParticleTypes.FLAME, 100);
             blastAt(player, impact, power, 11.0, ParticleTypes.FLAME, true);
         }
@@ -356,8 +356,7 @@ public final class HighCircleSpellEffects {
 
     private static boolean prismaticWall(ServerPlayer player, double range, double power) {
         Vec3 center = aim(player, range);
-        Vec3 right = player.getLookAngle().cross(new Vec3(0, 1, 0)).normalize();
-        double half = Math.max(12.0, range * 0.25);
+        double half = Math.max(12.0, Math.min(36.0, range * 0.25));
         for (Mob mob : enemies(player, center, half + 3.0)) {
             mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) power);
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 500, 7));

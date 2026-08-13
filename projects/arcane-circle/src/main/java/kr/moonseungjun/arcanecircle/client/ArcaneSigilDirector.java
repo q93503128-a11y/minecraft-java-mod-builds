@@ -10,7 +10,7 @@ import net.minecraft.world.phys.Vec3;
  * profile rather than circle rank alone: Power Word Kill stays compact; Meteor Swarm owns the sky.
  */
 final class ArcaneSigilDirector {
-    private static final int BUDGET = 7200;
+    private static final int BUDGET = 1400;
 
     private ArcaneSigilDirector() {}
 
@@ -21,11 +21,17 @@ final class ArcaneSigilDirector {
         double p = smooth(clamp(progress, 0.0, 1.0));
         double time = Math.max(0.0, (System.nanoTime() - startedAtNanos) / 1_000_000_000.0);
         double breath = 1.0 + Math.sin(time * (1.25 + profile.complexity() * .12)) * .025 * p;
-        double radius = Math.max(.42, profile.radius()) * (.58 + .42 * p) * breath * (fusion ? 1.10 : 1.0);
+        double rangeScale = sigilRangeScale(spell, profile, range);
+        double radius = Math.max(.42, profile.radius()) * rangeScale * (.58 + .42 * p) * breath * (fusion ? 1.10 : 1.0);
         int seed = spell.id().hashCode();
         double rotation = time * (.11 + profile.complexity() * .018) + seed * .00031;
         ArcaneWorldMesh.Basis primary = primaryBasis(profile.sigil(), direction);
 
+        if ("meteor_swarm".equals(spell.id())) {
+            meteorRitual(mesh, primary, radius, p, rotation, seed);
+            if (fusion) fusionFormula(mesh, primary, radius, p, rotation, seed);
+            return mesh.build();
+        }
         formulaFrame(mesh, spell, profile, primary, radius, p, rotation, seed);
         schoolFormula(mesh, spell, primary, radius, p, rotation, seed);
         anchorFormula(mesh, spell, profile, primary, direction, targetOffset, radius, p, rotation, seed);
@@ -217,6 +223,51 @@ final class ArcaneSigilDirector {
         ArcaneWorldMesh.Basis side = ArcaneWorldMesh.Basis.fromNormal(facing.right(), new Vec3(0,1,0));
         m.circle(side, Vec3.ZERO, r * .47, 38, .70F);
         m.runeGlyph(facing, Vec3.ZERO, r * .18, seed, rotation * .22, 1.02F);
+    }
+
+    private static double sigilRangeScale(SpellDefinition spell, SpellPresentationProfile.Profile profile, double range) {
+        double base=Math.max(1.0,spell.range());
+        double ratio=clamp(Math.max(.1,range)/base,.45,4.0);
+        double exponent=switch(profile.sigil()){
+            case SKY_RITUAL -> .52;
+            case GROUND_SEAL, QUAD_ARRAY, WALL_MATRIX -> .44;
+            case PORTAL_GATE -> .30;
+            case TARGET_SEAL -> .20;
+            case FRONT_COMPACT, FRONT_LANCE -> .12;
+            case BODY_HALO, FEET_RUNE -> .08;
+        };
+        double max=profile.sigil()==SpellPresentationProfile.SigilStyle.SKY_RITUAL?1.78:1.52;
+        return clamp(Math.pow(ratio,exponent),.78,max);
+    }
+
+    private static void meteorRitual(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis b,
+                                     double r, double p, double rotation, int seed) {
+        double outer=r*(.78+.22*p),inner=outer*.72;
+        m.circle(b,Vec3.ZERO,outer,96,1.34F);
+        m.circle(b,Vec3.ZERO,outer*.89,84,.66F);
+        m.circle(b,b.normal().scale(r*.045),inner,72,.78F);
+        m.runeRing(b,Vec3.ZERO,outer*.94,12,r*.050,seed,-rotation*.18,.72F);
+        m.star(b,Vec3.ZERO,inner*.58,inner*.34,8,rotation*.16,1.04F);
+        m.polygon(b,Vec3.ZERO,inner*.42,4,-rotation*.12+Math.PI/4.0,.72F);
+        m.circle(b,Vec3.ZERO,inner*.23,40,1.18F);
+        double orbit=outer*.63,child=outer*.145;
+        Vec3 down=b.normal().scale(Math.max(1.8,r*.11));
+        for(int i=0;i<4;i++){
+            double a=Math.PI/4.0+i*Math.PI/2.0+rotation*.035;
+            Vec3 c=b.point(a,orbit),rail=b.point(a,inner*.72);
+            m.line(rail,c,i%2==0?1.12F:.78F);
+            m.circle(b,c,child,34,1.22F);
+            m.polygon(b,c,child*.68,4,-a+Math.PI/4.0,.86F);
+            m.runeGlyph(b,c,child*.42,seed+i*101,-rotation*.20,.82F);
+            m.line(c,c.add(down),1.22F);
+            if(p>.72)m.circle(b,c.add(down.scale(.42)),child*.58,24,.64F);
+        }
+        if(p>.82){
+            for(int i=0;i<4;i++){
+                double a=i*Math.PI/2.0+rotation*.08;
+                m.arc(b,Vec3.ZERO,outer*1.07,a,Math.PI*.34,20,i==0?1.08F:.66F);
+            }
+        }
     }
 
     private static void skyRitual(ArcaneWorldMesh.Builder m, SpellDefinition spell,

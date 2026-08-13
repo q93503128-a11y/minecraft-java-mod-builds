@@ -26,8 +26,9 @@ public final class WorldMagicTracker {
             Identifier.fromNamespaceAndPath(ArcaneCircle.MOD_ID, "world_magic_cinematic_v3"));
     private static final Map<UUID, Visual> CHARGES = new HashMap<>();
     private static final List<Visual> RELEASES = new ArrayList<>();
-    private static final int MAX_VISUALS = 16;
-    private static final int MAX_FRAME = 68000;
+    private static final int MAX_VISUALS = 10;
+    private static final int MAX_FRAME = 9000;
+    private static final int MAX_ENTRY = 2800;
     private static final double MAX_DISTANCE_SQR = 224.0 * 224.0;
     private static final long CHARGE_TTL = 2_250_000_000L;
 
@@ -106,8 +107,10 @@ public final class WorldMagicTracker {
         for(Visual v:RELEASES){
             double age=clamp((now-v.startedAt)/(double)Math.max(1L,v.expiresAt-v.startedAt),0,1);
             int color=SpellCinematicDirector.color(v.spell);
-            ArcaneWorldMesh echo=ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt);
-            if(echo.size()>0)entries.add(new RenderEntry(v.center,echo,ArcaneSigilDirector.releaseEchoColor(color,age)));
+            if(!"prismatic_wall".equals(v.spell.id())){
+                ArcaneWorldMesh echo=ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt);
+                if(echo.size()>0)entries.add(new RenderEntry(v.center,echo,ArcaneSigilDirector.releaseEchoColor(color,age)));
+            }
             entries.add(new RenderEntry(v.center,
                     SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,age,v.impactAge,v.fusion,v.ingredients),
                     color));
@@ -129,13 +132,14 @@ public final class WorldMagicTracker {
         int used=0;
         for(RenderEntry entry:entries){
             if(used>=MAX_FRAME)break;
+            int cost=entry.mesh.size();if(cost<=0||cost>MAX_ENTRY||used+cost>MAX_FRAME)continue;
             Vec3 offset=entry.center.subtract(camera);
             if(offset.lengthSqr()>MAX_DISTANCE_SQR)continue;
             event.getPoseStack().pushPose();
             event.getPoseStack().translate(offset.x,offset.y,offset.z);
             entry.mesh.submit(event.getPoseStack(),event.getSubmitNodeCollector(),entry.argb,scale);
             event.getPoseStack().popPose();
-            used+=entry.mesh.size();
+            used+=cost;
         }
     }
 

@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.28",
+  "version": "0.12.1-alpha.29",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -64,9 +64,9 @@
   ],
   "performance_guard": {
     "voxel_boolean_unions": 0,
-    "charge_primitive_cap": 320,
-    "release_primitive_cap": 512,
-    "frame_primitive_cap": 1024,
+    "charge_primitive_cap": 1400,
+    "release_primitive_cap": 2600,
+    "frame_primitive_cap": 9000,
     "charge_progress_steps": 20
   },
   "mage_residents": true,

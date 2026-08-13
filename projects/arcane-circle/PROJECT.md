@@ -11,3 +11,9 @@
 게임 데이터·마력·숙련·시전·네트워크·판정은 서버 권위다. 0초 시전도 ready-hold 후 release 발동을 유지한다. 현재 presentation 정본은 `GrimoireScreen`, `ArcaneHud`, `ArcaneSigilDirector`, `SpellCinematicDirector`, `ArcaneRegaliaRenderer`, `ArcaneCastingPerformance`이며 구형 presentation 클래스와 버전별 migration/apply/fix 도구는 active tree에 두지 않는다.
 
 alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법진과 `SpellCinematicDirector`의 물리 현상을 연속된 한 연출로 사용한다. 지팡이 시전시간 배율은 직접 주문과 융합 주문의 시전 계산 및 하한에 실제로 참여한다.
+
+## Alpha.29 runtime contracts
+- Grimoire layout must fit all six spine tabs and all nine circle indices at high GUI scale without overlap.
+- Sigil radius reacts to final range by spell geometry family; it is not a raw 1:1 range circle.
+- Light uses temporary vanilla Light blocks and must clean them on expiry/session/dimension/server shutdown.
+- Prismatic rendering is bounded by per-entry and per-frame primitive caps.

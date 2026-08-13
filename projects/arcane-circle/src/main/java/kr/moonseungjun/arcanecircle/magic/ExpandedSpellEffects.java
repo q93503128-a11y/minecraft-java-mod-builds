@@ -194,6 +194,7 @@ public final class ExpandedSpellEffects {
 
     private static boolean light(ServerPlayer player) {
         player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 1800, 0));
+        ArcaneLightService.illuminate(player,1800);
         shell(player, 1.0, ParticleTypes.END_ROD);
         return true;
     }

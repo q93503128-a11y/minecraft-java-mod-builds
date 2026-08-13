@@ -88,7 +88,7 @@ public final class SpellPresentationProfile {
         put("sunburst", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 8.5, 5, 1, 0, 12, 1.64, 8);
 
         // 9C: deliberately non-monotonic physical scale.
-        put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 18.0, 6, 4, 0, 30, 2.55, 30);
+        put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 18.0, 6, 4, 0, 42, 2.55, 30);
         put("power_word_kill", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 2.35, 6, 0, 0, 0, 1.28, 2);
         put("prismatic_wall", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 10.5, 6, 4, 0, 0, 2.05, 4);
         put("shapechange", SigilStyle.BODY_HALO, MotionStyle.AURA, 2.85, 6, 3, 0, 0, 1.44, 0);
