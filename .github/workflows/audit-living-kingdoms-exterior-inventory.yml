@@ -37,18 +37,20 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Java 25 inventory compile
+      - name: Java 25 inventory and authored-floor compile
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
           grep -F 'public static final int EXTERIOR_REVISION = 2;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java
           grep -F 'public static final int RESIDENCE_REVISION = 2;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceBuilder.java
+          grep -F 'public static final int FLOOR_REVISION = 1;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java
+          grep -F 'public static final int EXPECTED_CANDIDATES = 116;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanNewFloorStructuralApprovalCatalog.java
           mkdir -p ../../logs
           gradle --no-daemon clean classes --stacktrace --console=plain \
             2>&1 | tee ../../logs/exterior-inventory-compile.log
 
-      - name: Fresh world authoritative producer inventory audit
+      - name: Fresh world authoritative inventory and authored-floor audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -69,7 +71,9 @@ jobs:
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 nodes=18 producers=15 wharves=3' ../../logs/exterior-inventory-server.log \
-              && grep -Fq 'LK_ERDEN_EXTERIOR_INVENTORY_PASS revision=1 nodes=15 containers=15' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_INVENTORY_PASS revision=2 nodes=15 containers=15' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'Prepared Erden upper-floor conversions buildings=233 synthetic_candidates=77 authored_candidates=156' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_SUPPLY_PASS revision=1 nodes=18 producers=15 wharves=3 resources=6 opening_convoys=18' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/exterior-inventory-server.log; then
               passed=1
@@ -85,6 +89,9 @@ jobs:
           cat ../../logs/exterior-inventory-server.log
           test "$passed" -eq 1
           grep -F 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-inventory-server.log
+          grep -F 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' ../../logs/exterior-inventory-server.log
+          grep -F 'source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false' ../../logs/exterior-inventory-server.log
+          grep -F 'Prepared Erden upper-floor conversions buildings=233 synthetic_candidates=77 authored_candidates=156' ../../logs/exterior-inventory-server.log
           grep -F 'player_removal_authoritative=true' ../../logs/exterior-inventory-server.log
           grep -F 'dispatch_reduces_barrels=true' ../../logs/exterior-inventory-server.log
           grep -F 'local_reserves=true' ../../logs/exterior-inventory-server.log
@@ -98,11 +105,15 @@ jobs:
           captures="$(sed -E 's/.*captures=([0-9]+).*/\1/' <<<"$inventory_marker")"
           writes="$(sed -E 's/.*writes=([0-9]+).*/\1/' <<<"$inventory_marker")"
           visible_resources="$(sed -E 's/.*visible_resources=([0-9]+).*/\1/' <<<"$inventory_marker")"
+          captured_nodes="$(sed -E 's/.*captured_nodes=([0-9]+).*/\1/' <<<"$inventory_marker")"
+          verified_nodes="$(sed -E 's/.*verified_nodes=([0-9]+).*/\1/' <<<"$inventory_marker")"
           test "$captures" -gt 0
           test "$writes" -gt 0
           test "$visible_resources" -ge 6
+          test "$captured_nodes" -eq 15
+          test "$verified_nodes" -eq 15
 
-          if grep -Eqi 'Unsupported exterior resource|Unknown Erden supply role|Invalid Erden exterior residence|Exception loading level|watchdog|Item debris remained' ../../logs/exterior-inventory-server.log; then
+          if grep -Eqi 'Unsupported exterior resource|Unknown Erden supply role|Invalid Erden exterior residence|Exception loading level|watchdog|Item debris remained|authored new-floor verification failed' ../../logs/exterior-inventory-server.log; then
             exit 1
           fi
 
