@@ -1,0 +1,48 @@
+name: Diagnose Living Kingdoms authored new floors
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/lk-authored-new-floor-diagnostic.yml'
+
+permissions:
+  contents: read
+
+env:
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Run bounded fresh-world diagnostic
+        working-directory: projects/living-kingdoms
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-authored-new-floor-diag
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-authored-new-floor-diag\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          timeout --signal=TERM 240s gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/authored-new-floor-diag-server.log 2>&1 || true
+          echo '=== MARKER SUMMARY ==='
+          grep -E 'LK_ERDEN_NEW_FLOOR_APPROVAL_PASS|Prepared Erden authored new floors|Prepared Erden upper-floor conversions|LK_ERDEN_AUTHORED_NEW_FLOOR_PASS|LK_ERDEN_EXTERIOR_INVENTORY_PASS|LK_ERDEN_EXTERIOR_TICKETS_PASS|LK_ERDEN_KINGDOM_EXTERIOR_PASS|LK_ERDEN_KINGDOM_SUPPLY_PASS|LK_ERDEN_PHYSICAL_ECONOMY_PASS|Exception|ERROR|Unable to complete Erden' ../../logs/authored-new-floor-diag-server.log | tail -200 || true
+      - name: Upload diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-authored-new-floor-diagnostic-${{ github.run_number }}
+          path: logs/authored-new-floor-diag-server.log
+          retention-days: 7
