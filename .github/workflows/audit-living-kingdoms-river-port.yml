@@ -68,6 +68,11 @@ jobs:
               cat ../../logs/river-port.log
               exit 1
             fi
+            if grep -Fq 'Prepared Erden fire-response CI' ../../logs/river-port.log; then
+              echo 'Fire-response fixture contaminated the river-port audit.' >&2
+              cat ../../logs/river-port.log
+              exit 1
+            fi
             if grep -Fq 'LK_ERDEN_RIVER_PORT_PASS revision=1' ../../logs/river-port.log; then
               passed=1
               break
@@ -83,6 +88,7 @@ jobs:
           test "$passed" -eq 1
 
           grep -F 'Prepared Erden river-port CI chunks=' ../../logs/river-port.log
+          ! grep -Fq 'Prepared Erden fire-response CI' ../../logs/river-port.log
           grep -F 'west_wharf_preserved=true' ../../logs/river-port.log
           grep -F 'silver_river_centered=true' ../../logs/river-port.log
           grep -F 'Materialized Erden supply barge shipment=' ../../logs/river-port.log
