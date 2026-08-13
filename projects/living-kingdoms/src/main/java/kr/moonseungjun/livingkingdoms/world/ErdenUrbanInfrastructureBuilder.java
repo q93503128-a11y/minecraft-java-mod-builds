@@ -74,6 +74,14 @@ public final class ErdenUrbanInfrastructureBuilder {
         return SERVICE_NODES.size();
     }
 
+    /** Stable runtime view of the eight civic cisterns that the fire brigade may actually use. */
+    public static List<FireCistern> fireCisterns() {
+        return SERVICE_NODES.stream()
+                .filter(node -> node.type == ServiceType.FIRE_CISTERN)
+                .map(node -> new FireCistern(node.x, serviceBaseY(node), node.z))
+                .toList();
+    }
+
     private static void addRoadDrainage(IncrementalWorldEditPlan plan, ServerLevel level, ChunkPos chunk) {
         int minX = chunk.getMinBlockX();
         int minZ = chunk.getMinBlockZ();
@@ -152,9 +160,6 @@ public final class ErdenUrbanInfrastructureBuilder {
         boolean eastWest = Math.abs(deltaX) >= Math.abs(deltaZ);
         Block material = entrance.residential() ? Blocks.PACKED_MUD : Blocks.STONE_BRICKS;
         for (int step = 0; step <= steps; step++) {
-            // The threshold reconciler owns the doorway itself and the first two metres of authored
-            // porch. Never pave those cells from terrain height: some imported doors begin at the
-            // template's minimum Y, so a step-0 surface write can literally replace the door block.
             if (step <= 2) continue;
             int centerX = entrance.x() + Math.round(deltaX * (step / (float) steps));
             int centerZ = entrance.z() + Math.round(deltaZ * (step / (float) steps));
@@ -250,6 +255,9 @@ public final class ErdenUrbanInfrastructureBuilder {
     private static boolean contains(ChunkPos chunk, int x, int z) {
         return x >= chunk.getMinBlockX() && x <= chunk.getMinBlockX() + 15
                 && z >= chunk.getMinBlockZ() && z <= chunk.getMinBlockZ() + 15;
+    }
+
+    public record FireCistern(int x, int y, int z) {
     }
 
     private enum ServiceType {
