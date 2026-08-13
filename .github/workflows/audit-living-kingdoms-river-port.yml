@@ -73,6 +73,11 @@ jobs:
               cat ../../logs/river-port.log
               exit 1
             fi
+            if grep -Fq 'Requested Erden exterior CI anchors' ../../logs/river-port.log; then
+              echo 'Exterior regression sweep contaminated the focused river-port audit.' >&2
+              cat ../../logs/river-port.log
+              exit 1
+            fi
             if grep -Fq 'LK_ERDEN_RIVER_PORT_PASS revision=1' ../../logs/river-port.log; then
               passed=1
               break
@@ -89,6 +94,7 @@ jobs:
 
           grep -F 'Prepared Erden river-port CI chunks=' ../../logs/river-port.log
           ! grep -Fq 'Prepared Erden fire-response CI' ../../logs/river-port.log
+          ! grep -Fq 'Requested Erden exterior CI anchors' ../../logs/river-port.log
           grep -F 'west_wharf_preserved=true' ../../logs/river-port.log
           grep -F 'silver_river_centered=true' ../../logs/river-port.log
           grep -F 'Materialized Erden supply barge shipment=' ../../logs/river-port.log
