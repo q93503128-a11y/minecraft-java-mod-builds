@@ -24,9 +24,7 @@ public final class FusionSpellEffects {
 
     private FusionSpellEffects() {}
 
-    public static boolean supports(String id) {
-        return IDS.contains(id);
-    }
+    public static boolean supports(String id) { return IDS.contains(id); }
 
     public static boolean execute(ServerPlayer player, String id, double range, double power) {
         return switch (id) {
@@ -44,22 +42,35 @@ public final class FusionSpellEffects {
     }
 
     private static boolean steamBurst(ServerPlayer player, double range, double power) {
-        ServerLevel level = (ServerLevel) player.level(); Vec3 origin = player.position(); Vec3 look = horizontal(player.getLookAngle());
-        double length = SpellMetrics.waveLength(range); double endRadius = SpellMetrics.waveEndRadius("steam_burst", range, 2);
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 origin = player.position();
+        Vec3 look = horizontal(CastTargetSnapshot.launchDirectionOr(player, player.getLookAngle()));
+        double length = SpellMetrics.waveLength(range);
+        double endRadius = SpellMetrics.waveEndRadius("steam_burst", range, 2);
         for (Mob mob : hostiles(player, length + endRadius + 1.0)) {
-            Vec3 delta = mob.position().subtract(origin); Vec3 flat = new Vec3(delta.x, 0.0, delta.z); double forward = flat.dot(look);
-            if (forward < 0.0 || forward > length) continue; double lateralSq = Math.max(0.0, flat.lengthSqr() - forward * forward);
-            double t = length <= 0.0001 ? 1.0 : forward / length; double allowed = endRadius * (0.16 + 0.84 * t) + Math.max(0.35, mob.getBbWidth() * 0.5);
-            if (lateralSq > allowed * allowed) continue; ArcaneDamage.hurt(level, player, mob, (float) power);
-            mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 75, 2)); mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 45));
-            Vec3 push = horizontal(delta).scale(0.35); mob.push(push.x, 0.12, push.z);
-        } sound(level, player, SoundEvents.FIRE_EXTINGUISH, 0.9F, 0.85F); return true;
+            Vec3 delta = mob.position().subtract(origin);
+            Vec3 flat = new Vec3(delta.x, 0.0, delta.z);
+            double forward = flat.dot(look);
+            if (forward < 0.0 || forward > length) continue;
+            double lateralSq = Math.max(0.0, flat.lengthSqr() - forward * forward);
+            double t = length <= 0.0001 ? 1.0 : forward / length;
+            double allowed = endRadius * (0.16 + 0.84 * t) + Math.max(0.35, mob.getBbWidth() * 0.5);
+            if (lateralSq > allowed * allowed) continue;
+            ArcaneDamage.hurt(level, player, mob, (float) power);
+            mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 75, 2));
+            mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 45));
+            Vec3 push = horizontal(delta).scale(0.35);
+            mob.push(push.x, 0.12, push.z);
+        }
+        sound(level, player, SoundEvents.FIRE_EXTINGUISH, 0.9F, 0.85F);
+        return true;
     }
 
     private static boolean frostStep(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
-        Vec3 look = horizontal(player.getLookAngle());
-        player.push(look.x * Math.min(2.2, 0.8 + range * 0.08), 0.18, look.z * Math.min(2.2, 0.8 + range * 0.08));
+        Vec3 look = horizontal(CastTargetSnapshot.launchDirectionOr(player, player.getLookAngle()));
+        player.push(look.x * Math.min(2.2, 0.8 + range * 0.08), 0.18,
+                look.z * Math.min(2.2, 0.8 + range * 0.08));
         for (Mob mob : hostiles(player, 4.5)) {
             ArcaneDamage.hurt(level, player, mob, (float) (power * 0.65));
             mob.setTicksFrozen(Math.max(mob.getTicksFrozen(), mob.getTicksRequiredToFreeze() + 120));
@@ -99,10 +110,15 @@ public final class FusionSpellEffects {
 
     private static boolean voidLance(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
-        Vec3 start = player.getEyePosition();
-        Vec3 direction = player.getLookAngle().normalize();
-        double length = Math.max(8.0, range);
-        Vec3 end = start.add(direction.scale(length));
+        Vec3 start = CastTargetSnapshot.launchOriginOr(player, player.getEyePosition());
+        Vec3 fallbackDirection = CastTargetSnapshot.launchDirectionOr(player, player.getLookAngle());
+        Vec3 fallbackEnd = start.add(fallbackDirection.scale(Math.max(8.0, range)));
+        Vec3 end = CastTargetSnapshot.targetOr(player, fallbackEnd);
+        Vec3 delta = end.subtract(start);
+        if (delta.lengthSqr() < 1.0E-8) delta = fallbackDirection.scale(Math.max(8.0, range));
+        double length = Math.max(0.001, delta.length());
+        Vec3 direction = delta.scale(1.0 / length);
+        end = start.add(delta);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, new AABB(start, end).inflate(1.5),
                 value -> value.isAlive() && value instanceof Enemy)) {
             Vec3 relative = mob.getEyePosition().subtract(start);
@@ -165,15 +181,21 @@ public final class FusionSpellEffects {
 
     private static boolean worldSunder(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
+        Vec3 fallback = player.position().add(horizontal(player.getLookAngle()).scale(Math.max(8.0, range * .70)));
+        Vec3 center = CastTargetSnapshot.targetOr(player, fallback);
         double radius = Math.max(12.0, range * 0.38);
-        for (Mob mob : hostiles(player, radius)) {
-            double distanceScale = Math.max(0.35, 1.0 - Math.sqrt(player.distanceToSqr(mob)) / radius);
+        for (Mob mob : hostilesAt(player, center, radius)) {
+            double distance = Math.sqrt(mob.position().distanceToSqr(center));
+            double distanceScale = Math.max(0.35, 1.0 - distance / radius);
             ArcaneDamage.hurt(level, player, mob, (float) (power * distanceScale));
-            mob.push(0.0, 0.65 + distanceScale * 0.9, 0.0);
+            Vec3 away = horizontal(mob.position().subtract(center));
+            mob.push(away.x * (.45 + distanceScale * .75), 0.65 + distanceScale * 0.9,
+                    away.z * (.45 + distanceScale * .75));
             mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 180, 3));
         }
-        DestructiveMagicService.impact(player,"world_sunder",player.position(),radius,power);
-        sound(level, player, SoundEvents.GENERIC_EXPLODE.value(), 1.0F, 0.52F);
+        DestructiveMagicService.impact(player, "world_sunder", center, radius, power);
+        level.playSound(null, center.x, center.y, center.z, SoundEvents.GENERIC_EXPLODE.value(),
+                SoundSource.PLAYERS, 1.0F, 0.52F);
         return true;
     }
 
@@ -183,16 +205,35 @@ public final class FusionSpellEffects {
                 value -> value.isAlive() && value instanceof Enemy);
     }
 
+    private static List<Mob> hostilesAt(ServerPlayer player, Vec3 center, double radius) {
+        ServerLevel level = (ServerLevel) player.level();
+        return level.getEntitiesOfClass(Mob.class, new AABB(center, center).inflate(radius),
+                value -> value.isAlive() && value instanceof Enemy);
+    }
+
     private static Optional<Mob> sightTarget(ServerPlayer player, double range) {
-        Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getLookAngle().normalize();
+        Optional<CastTargetSnapshot> active = CastTargetSnapshot.active(player);
+        if (active.isPresent()) {
+            Optional<Mob> locked = active.get().targetEntity(player)
+                    .filter(Mob.class::isInstance).map(Mob.class::cast)
+                    .filter(mob -> mob instanceof Enemy);
+            if (locked.isPresent()) return locked;
+        }
+        Vec3 eye = CastTargetSnapshot.launchOriginOr(player, player.getEyePosition());
+        Vec3 look = CastTargetSnapshot.launchDirectionOr(player, player.getLookAngle());
         double distance = Math.max(5.0, range);
-        return hostiles(player, distance).stream()
+        Vec3 end = eye.add(look.scale(distance));
+        ServerLevel level = (ServerLevel) player.level();
+        return level.getEntitiesOfClass(Mob.class, new AABB(eye, end).inflate(2.5),
+                        mob -> mob.isAlive() && mob instanceof Enemy).stream()
                 .filter(mob -> {
                     Vec3 delta = mob.getEyePosition().subtract(eye);
-                    return delta.lengthSqr() > 0.01 && delta.normalize().dot(look) > 0.82;
+                    double projection = delta.dot(look);
+                    return projection >= 0.0 && projection <= distance
+                            && delta.subtract(look.scale(projection)).length()
+                            <= Math.max(1.4, mob.getBbWidth() + .9);
                 })
-                .min(Comparator.comparingDouble(player::distanceToSqr));
+                .min(Comparator.comparingDouble(mob -> mob.getEyePosition().distanceToSqr(eye)));
     }
 
     private static Vec3 horizontal(Vec3 value) {

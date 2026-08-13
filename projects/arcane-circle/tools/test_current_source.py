@@ -3,6 +3,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 client=root/'src/main/java/kr/moonseungjun/arcanecircle/client'
 magic=root/'src/main/java/kr/moonseungjun/arcanecircle/magic'
+world=root/'src/main/java/kr/moonseungjun/arcanecircle/world'
 retired=[
     'CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
     'MidCircleVisualIdentity.java','FifthCircleVisualIdentity.java','SixthCircleVisualIdentity.java',
@@ -16,14 +17,15 @@ def text(path): return path.read_text(encoding='utf-8')
 gradle=text(root/'gradle.properties')
 main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.32' in gradle
-assert 'VERSION = "0.12.1-alpha.32"' in main
-assert '"version": "0.12.1-alpha.32"' in index
+assert 'mod_version=0.12.1-alpha.33' in gradle
+assert 'VERSION = "0.12.1-alpha.33"' in main
+assert '"version": "0.12.1-alpha.33"' in index
 
 tracker=text(client/'WorldMagicTracker.java')
 assert 'SpellCinematicDirector.charge' in tracker and 'SpellCinematicDirector.release' in tracker
 assert 'SpellCinematicDirector.castingFamily' in tracker
 assert 'ArcaneSigilDirector.charge' in tracker and 'ArcaneSigilDirector.releaseEcho' in tracker
+assert 'MeteorBarragePattern.withSeed' in tracker and 'longValue(values,"seed",0L)' in tracker
 sigil=text(client/'ArcaneSigilDirector.java')
 for token in ['formulaFrame','schoolFormula','geometricDepth','anchorFormula','skyRitual','meteorRitual','inscriptionRing','sigilRangeScale','meteor_swarm','fusionFormula']:
     assert token in sigil, f'authored sigil regression: {token}'
@@ -56,19 +58,54 @@ assert 'drawCircleIndex(g,l,academyCircle,mouseX,mouseY,true)' not in grimoire
 assert 'viewport().w()<410' in grimoire
 assert 'MAX_FRAME = 9000' in tracker and 'MAX_ENTRY = 2800' in tracker
 assert '!"prismatic_wall".equals(v.spell.id())' in tracker
+
 assert (magic/'MeteorBarragePattern.java').exists() and (magic/'DestructiveMagicService.java').exists()
+assert (magic/'CastTargetSnapshot.java').exists()
 barrage=text(magic/'MeteorBarragePattern.java')
-for token in ['STRIKES','impactTick','durationTicks','count()']:
+for token in ['BASE_STRIKES','impactTick','durationTicks','count()','strikes(long seed)','withSeed','castSeed','MIN_SEPARATION']:
     assert token in barrage, f'meteor barrage regression: {token}'
 assert barrage.count('new Strike(') >= 16
+assert 'private static final Strike[] STRIKES' not in barrage
+
+target_snapshot=text(magic/'CastTargetSnapshot.java')
+for token in ['targetEntityId','launchDirection','impactSurface','barrageSeed','dimension','executeLocked','resolvedTarget','boolean homing']:
+    assert token in target_snapshot, f'target snapshot regression: {token}'
+world_magic=text(magic/'WorldMagicService.java')
+for token in ['captureSnapshot','CastTargetSnapshot snapshot','seed=%d','PLAYER_CHARGE_SEEDS','consumeNpcSnapshot',
+              'MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed())']:
+    assert token in world_magic, f'world magic snapshot regression: {token}'
+
 destruction=text(magic/'DestructiveMagicService.java')
-for token in ['getDestroySpeed','getExplosionResistance','destroyBlock','maxBlocks','hasBlockEntity','world_sunder','meteor_swarm','disintegrate']:
+for token in ['getDestroySpeed','getExplosionResistance','destroyBlock','maxBlocks','hasBlockEntity','world_sunder',
+              'meteor_swarm','disintegrate','hasChunkAt','MAX_BLOCK_CHANGES_PER_TICK','MAX_BLOCK_SCANS_PER_TICK',
+              'TerrainClass','MAJOR','CONDITIONAL','lightning_bolt','thunderwave','gust_of_wind']:
     assert token in destruction, f'destructive magic regression: {token}'
+assert 'case "move_earth" -> new Profile(.54, 11.0, 170, false)' in destruction
+assert 'case "earthquake" -> new Profile(.58, 14.5, 240, false)' in destruction
+assert 'case "world_sunder" -> new Profile(.62, 28.0, 320, false)' in destruction
+
 kinetics=text(magic/'SpellKineticsService.java')
-for token in ['lockedTarget','meteorImpact','advanceMeteor','MeteorBarragePattern.count()']:
-    assert token in kinetics, f'meteor authoritative timing regression: {token}'
+for token in ['CastTargetSnapshot targetSnapshot','captureSnapshot','executeLocked','targetSnapshot().validFor(player)',
+              'barrageSeed','MeteorBarragePattern.strike(targetSnapshot.barrageSeed(), 0)','applyPhysicalAftermath']:
+    assert token in kinetics, f'authoritative target snapshot regression: {token}'
+assert 'WorldMagicService.lockedTarget' not in kinetics
+assert 'lockedTarget' not in kinetics
 assert 'DestructiveMagicService.impact(player,"meteor_swarm"' in text(magic/'HighCircleSpellEffects.java')
-assert 'DestructiveMagicService.impact(player,"world_sunder"' in text(magic/'FusionSpellEffects.java')
+
+fusion=text(magic/'FusionSpellEffects.java')
+assert 'DestructiveMagicService.impact(player, "world_sunder", center, radius, power)' in fusion
+assert 'CastTargetSnapshot.targetOr(player, fallback)' in fusion
+assert 'DestructiveMagicService.impact(player,"world_sunder",player.position()' not in fusion
+
+npc_resolver=text(world/'NpcSpellResolver.java')
+for token in ['consumeNpcSnapshot','NpcMeteorBarrageService.schedule','directAt','snapshot.launchOrigin()','lockedTarget']:
+    assert token in npc_resolver, f'NPC target parity regression: {token}'
+npc_barrage=text(world/'NpcMeteorBarrageService.java')
+for token in ['MeteorBarragePattern.strike','barrageSeed','MAX_ACTIVE_BARRAGES','resolveStrike','nextStrike']:
+    assert token in npc_barrage, f'NPC meteor scheduler regression: {token}'
+assert 'NpcMeteorBarrageService.tick' in main and 'NpcMeteorBarrageService.clearAll' in main
+assert 'WorldMagicService.clearAll' in main
+assert main.count('SpellKineticsService.clear(player.getUUID())') >= 2
 
 hud=text(client/'ArcaneHud.java')
 assert 'spell_ribbon' in hud and 'drawSeal' in hud and 'drawVitals' in hud
@@ -85,7 +122,6 @@ casting=text(client/'ArcaneCastingPerformance.java')
 for token in ['snap','aim','heavy','ground','ward','portal','ritual']:
     assert token in casting
 
-kinetics=text(magic/'SpellKineticsService.java')
 assert 'presentationImpactDelay' in kinetics and 'WorldMagicService' in kinetics
 casting_service=text(magic/'SpellCastingService.java')
 assert 'READY_HOLD_TIMEOUT_TICKS' in casting_service and 'chargeTimeoutTicks' in casting_service
@@ -106,7 +142,10 @@ print('Arcane Circle current-source audit: PASS')
 print('retired_visual_stack=absent')
 print('gameplay_content=preserved')
 print('source_mutation=disabled')
-
+print('target_snapshot_parity=PASS')
+print('seeded_meteor_barrage=PASS')
+print('destruction_tick_budget=PASS')
+print('npc_meteor_scheduler=PASS')
 
 # Active-tree hygiene. Git history is the archive; current source contains no version-migration machinery.
 repo=root.parents[1]

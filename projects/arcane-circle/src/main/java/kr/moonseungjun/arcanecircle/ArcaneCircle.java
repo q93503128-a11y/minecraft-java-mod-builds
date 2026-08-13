@@ -10,12 +10,14 @@ import kr.moonseungjun.arcanecircle.magic.RpgScaleService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellKineticsService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
+import kr.moonseungjun.arcanecircle.magic.WorldMagicService;
 import kr.moonseungjun.arcanecircle.network.ArcaneNetwork;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
 import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
 import kr.moonseungjun.arcanecircle.world.ArcaneMageService;
 import kr.moonseungjun.arcanecircle.world.ArcaneEncounterService;
 import kr.moonseungjun.arcanecircle.world.MagicWorldService;
+import kr.moonseungjun.arcanecircle.world.NpcMeteorBarrageService;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,7 +33,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.32";
+    public static final String VERSION = "0.12.1-alpha.33";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -97,7 +99,10 @@ public final class ArcaneCircle {
     }
 
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if(event.getEntity() instanceof ServerPlayer player)ArcaneLightService.clear(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            ArcaneLightService.clear(player);
+            WorldMagicService.stop(player);
+        }
         SpellCastingService.clearSession(event.getEntity().getUUID());
         ArcaneNoticeService.clear(event.getEntity().getUUID());
         MageGearService.clear(event.getEntity().getUUID());
@@ -108,6 +113,8 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ArcaneLightService.clear(player);
         SpellCastingService.clearSession(player.getUUID());
+        SpellKineticsService.clear(player.getUUID());
+        WorldMagicService.stop(player);
         MagicWorldService.onRespawn(player);
         ArcaneNetwork.sync(player);
     }
@@ -116,6 +123,8 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ArcaneLightService.clear(player);
         SpellCastingService.clearSession(player.getUUID());
+        SpellKineticsService.clear(player.getUUID());
+        WorldMagicService.stop(player);
         ArcaneNetwork.sync(player);
     }
 
@@ -127,6 +136,7 @@ public final class ArcaneCircle {
         MagicWorldService.tick(player);
         ArcaneEncounterService.tick(player);
         MageGearService.tickMovement(player);
+        NpcMeteorBarrageService.tick((ServerLevel) player.level());
         if (player.tickCount % 10 == 0) MageGearService.tick(player);
         if (player.tickCount % 4 == 0) ArcaneMageService.tickNear(player);
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
@@ -138,6 +148,8 @@ public final class ArcaneCircle {
         ArcaneLightService.clearAll(event.getServer());
         SpellCastingService.clearAllSessions();
         SpellKineticsService.clearAll();
+        NpcMeteorBarrageService.clearAll();
+        WorldMagicService.clearAll();
         ArcaneNoticeService.clearAll();
     }
 }

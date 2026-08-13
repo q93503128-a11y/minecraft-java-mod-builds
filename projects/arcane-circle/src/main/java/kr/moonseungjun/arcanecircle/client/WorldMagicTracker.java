@@ -1,6 +1,7 @@
 package kr.moonseungjun.arcanecircle.client;
 
 import kr.moonseungjun.arcanecircle.ArcaneCircle;
+import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import kr.moonseungjun.arcanecircle.network.WorldMagicPayload;
@@ -18,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Runtime bridge between server-authoritative spell events and the alpha.26 cinematic director.
+ * Runtime bridge between server-authoritative spell events and the cinematic director.
  * Gameplay timing, targeting and impact remain server owned; this class only snapshots and renders.
  */
 public final class WorldMagicTracker {
@@ -70,6 +71,7 @@ public final class WorldMagicTracker {
         double progress=clamp(decimal(values,"progress",1),0,1);
         int duration=Math.max(3,integer(values,"duration",10));
         int impactTicks=Math.max(0,integer(values,"impact",0));
+        long seed=longValue(values,"seed",0L);
         double impactAge=clamp(impactTicks/(double)Math.max(1,duration),.04,.92);
         long now=System.nanoTime();
 
@@ -77,13 +79,13 @@ public final class WorldMagicTracker {
             Visual previous=CHARGES.get(caster);
             long started=previous!=null&&previous.spell.id().equals(spell.id())?previous.startedAt:now;
             CHARGES.put(caster,new Visual(caster,spell,fusion,ingredients,center,target,direction,range,power,
-                    progress,started,now+CHARGE_TTL,false,0));
+                    progress,started,now+CHARGE_TTL,false,0,seed));
             return;
         }
         if("release".equals(kind)){
             while(RELEASES.size()>=MAX_VISUALS)RELEASES.removeFirst();
             RELEASES.add(new Visual(caster,spell,fusion,ingredients,center,target,direction,range,power,1,
-                    now,now+duration*50_000_000L,true,impactAge));
+                    now,now+duration*50_000_000L,true,impactAge,seed));
             CHARGES.remove(caster);
         }
     }
@@ -97,23 +99,25 @@ public final class WorldMagicTracker {
         List<RenderEntry> entries=new ArrayList<>();
         for(Visual v:CHARGES.values()){
             int color=SpellCinematicDirector.color(v.spell);
-            entries.add(new RenderEntry(v.center,
-                    ArcaneSigilDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.fusion,v.startedAt),
-                    color));
-            entries.add(new RenderEntry(v.center,
-                    SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt),
-                    color));
+            ArcaneWorldMesh sigilMesh=MeteorBarragePattern.withSeed(v.seed,
+                    ()->ArcaneSigilDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.fusion,v.startedAt));
+            ArcaneWorldMesh cinematicMesh=MeteorBarragePattern.withSeed(v.seed,
+                    ()->SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt));
+            entries.add(new RenderEntry(v.center,sigilMesh,color));
+            entries.add(new RenderEntry(v.center,cinematicMesh,color));
         }
         for(Visual v:RELEASES){
             double age=clamp((now-v.startedAt)/(double)Math.max(1L,v.expiresAt-v.startedAt),0,1);
             int color=SpellCinematicDirector.color(v.spell);
             if(!"prismatic_wall".equals(v.spell.id())){
-                ArcaneWorldMesh echo=ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt);
+                ArcaneWorldMesh echo=MeteorBarragePattern.withSeed(v.seed,
+                        ()->ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt));
                 if(echo.size()>0)entries.add(new RenderEntry(v.center,echo,ArcaneSigilDirector.releaseEchoColor(color,age)));
             }
-            entries.add(new RenderEntry(v.center,
-                    SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,age,v.impactAge,v.fusion,v.ingredients),
-                    color));
+            ArcaneWorldMesh releaseMesh=MeteorBarragePattern.withSeed(v.seed,
+                    ()->SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
+                            age,v.impactAge,v.fusion,v.ingredients));
+            entries.add(new RenderEntry(v.center,releaseMesh,color));
             if(SpellCinematicDirector.isPrismatic(v.spell)){
                 for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(v.center,
                         SpellCinematicDirector.prismaticAccent(v.spell,v.direction,targetOffset(v),v.range,age,layer),
@@ -149,12 +153,13 @@ public final class WorldMagicTracker {
     }
     private static Map<String,String> parse(String state){Map<String,String> result=new HashMap<>();for(String part:state.split(";")){int i=part.indexOf('=');if(i>0)result.put(part.substring(0,i),part.substring(i+1));}return result;}
     private static int integer(Map<String,String> values,String key,int fallback){try{return Integer.parseInt(values.getOrDefault(key,Integer.toString(fallback)));}catch(Exception ignored){return fallback;}}
+    private static long longValue(Map<String,String> values,String key,long fallback){try{return Long.parseLong(values.getOrDefault(key,Long.toString(fallback)));}catch(Exception ignored){return fallback;}}
     private static double decimal(Map<String,String> values,String key,double fallback){try{return Double.parseDouble(values.getOrDefault(key,Double.toString(fallback)));}catch(Exception ignored){return fallback;}}
     private static Vec3 safeDirection(Vec3 value){return value==null||value.lengthSqr()<1.0E-8?new Vec3(0,0,1):value.normalize();}
     private static double clamp(double value,double min,double max){return Math.max(min,Math.min(max,value));}
 
     private record Visual(UUID caster, SpellDefinition spell, boolean fusion, int ingredients,
                           Vec3 center, Vec3 target, Vec3 direction, double range, double power, double progress,
-                          long startedAt, long expiresAt, boolean release, double impactAge) {}
+                          long startedAt, long expiresAt, boolean release, double impactAge, long seed) {}
     private record RenderEntry(Vec3 center, ArcaneWorldMesh mesh, int argb) {}
 }
