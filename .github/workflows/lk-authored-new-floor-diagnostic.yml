@@ -26,7 +26,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Stop at exact authored-floor verify mismatch
+      - name: Verify authored-floor support collision fix
         working-directory: projects/living-kingdoms
         shell: bash
         run: |
@@ -45,7 +45,7 @@ jobs:
               found=1
               break
             fi
-            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|Exception loading level|Unable to complete Erden' ../../logs/authored-new-floor-diag-server.log; then
+            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|Exception loading level|Unable to complete Erden|required flat-route support collides' ../../logs/authored-new-floor-diag-server.log; then
               found=1
               break
             fi
@@ -53,7 +53,7 @@ jobs:
             sleep 1
           done
           echo '=== EXACT VERIFY SUMMARY ==='
-          grep -E 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS|Retained Erden authored-new-floor CI sample|LK_ERDEN_AUTHORED_NEW_FLOOR_(WAIT|STAGE|PASS|VERIFY_FAIL)|LK_ERDEN_NEW_FLOOR_APPROVAL_PASS|Prepared Erden authored new floors|Prepared Erden upper-floor conversions|LK_REALM_DIAGNOSTIC_FAIL|Exception|ERROR|Unable to complete Erden' ../../logs/authored-new-floor-diag-server.log | tail -320 || true
+          grep -E 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS|Retained Erden authored-new-floor CI sample|LK_ERDEN_AUTHORED_NEW_FLOOR_(WAIT|STAGE|PASS|VERIFY_FAIL)|LK_ERDEN_NEW_FLOOR_APPROVAL_PASS|Prepared Erden authored new floors|Prepared Erden upper-floor conversions|required flat-route support collides|LK_REALM_DIAGNOSTIC_FAIL|Exception|ERROR|Unable to complete Erden' ../../logs/authored-new-floor-diag-server.log | tail -320 || true
           test "$found" -eq 1
       - name: Upload diagnostic log
         if: always()
