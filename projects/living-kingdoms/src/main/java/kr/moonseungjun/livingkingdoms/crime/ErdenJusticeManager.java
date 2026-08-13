@@ -55,22 +55,60 @@ public final class ErdenJusticeManager {
     public static void observeCrime(ServerLevel level, ServerPlayer suspect,
                                     int severity, String offense, BlockPos incident) {
         if (!JURISDICTION.equals(RealmJurisdiction.at(level, incident))) return;
+        long tick = level.getGameTime();
         ErdenJusticeSavedData data = level.getDataStorage().computeIfAbsent(ErdenJusticeSavedData.TYPE);
         ErdenJusticeSavedData.CaseRecord previous = data.caseFor(suspect.getUUID());
         ErdenJusticeSavedData.CaseRecord record = data.observe(
                 suspect.getUUID(), offense, severity,
-                incident.getX(), incident.getY(), incident.getZ(), level.getGameTime());
-        if (previous == null) {
+                incident.getX(), incident.getY(), incident.getZ(), tick);
+
+        Villager eventWitness = null;
+        if ("observed".equals(record.stage()) && record.witnessName().isEmpty()) {
+            ErdenPopulationSavedData population = level.getDataStorage().computeIfAbsent(ErdenPopulationSavedData.TYPE);
+            Map<String, ErdenPopulationSavedData.Resident> roster = livingRoster(population);
+            Set<String> guardNames = new HashSet<>();
+            for (ErdenPopulationSavedData.Resident resident : roster.values()) {
+                if (resident.workRole().equals("guard_post")) guardNames.add(resident.name());
+            }
+            AABB witnessBox = new AABB(
+                    incident.getX() - 24.0D, incident.getY() - 12.0D, incident.getZ() - 24.0D,
+                    incident.getX() + 25.0D, incident.getY() + 13.0D, incident.getZ() + 25.0D);
+            eventWitness = level.getEntitiesOfClass(
+                            Villager.class,
+                            witnessBox,
+                            villager -> roster.containsKey(villager.getName().getString())
+                                    && villager.isAlive()
+                                    && !guardNames.contains(villager.getName().getString()))
+                    .stream()
+                    .filter(villager -> villager.distanceToSqr(
+                            incident.getX() + 0.5D, incident.getY(), incident.getZ() + 0.5D)
+                            <= WITNESS_RADIUS_SQR)
+                    .min(Comparator.comparingDouble(villager -> villager.distanceToSqr(
+                            incident.getX() + 0.5D, incident.getY(), incident.getZ() + 0.5D)))
+                    .orElse(null);
+            if (eventWitness != null) {
+                data.assignWitness(record.id(), eventWitness.getName().getString(), tick);
+                suspect.sendSystemMessage(Component.literal(
+                        "§c[목격] §f" + eventWitness.getName().getString()
+                                + "이(가) 현장에서 직접 목격하고 경비대에 신고하러 갑니다."
+                ));
+                LivingKingdoms.LOGGER.info(
+                        "Erden justice witness captured case={} witness={} actual_resident=true event_time_witness=true physical_report_required=true",
+                        record.id(), eventWitness.getName().getString());
+            }
+        }
+
+        if (previous == null && eventWitness == null) {
             suspect.sendSystemMessage(Component.literal(
-                    "§6[사건 발생] §f에르덴에서는 실제 목격자가 경비대에 신고해야 수배가 발부됩니다."
+                    "§6[사건 발생] §f현장 목격자가 확인되지 않았습니다. 뒤늦게 지나간 주민은 목격자로 소급되지 않습니다."
             ));
             LivingKingdoms.LOGGER.info(
-                    "Erden justice case observed case={} suspect={} offense={} severity={} immediate_warrant=false",
+                    "Erden justice case observed case={} suspect={} offense={} severity={} immediate_warrant=false event_time_witness=false",
                     record.id(), suspect.getScoreboardName(), offense, record.severity());
-        } else {
+        } else if (previous != null) {
             LivingKingdoms.LOGGER.info(
-                    "Erden justice case escalated case={} suspect={} offense={} severity={}",
-                    record.id(), suspect.getScoreboardName(), offense, record.severity());
+                    "Erden justice case escalated case={} suspect={} offense={} severity={} event_time_witness={}",
+                    record.id(), suspect.getScoreboardName(), offense, record.severity(), eventWitness != null);
         }
     }
 
@@ -114,30 +152,16 @@ public final class ErdenJusticeManager {
             Map<String, Villager> loaded,
             Set<String> guardNames,
             long tick) {
-        if (tick - record.createdTick() > WITNESS_EXPIRY_TICKS) {
-            data.close(record.id());
-            if (suspect != null) suspect.sendSystemMessage(Component.literal(
-                    "§7[사건 종결] §f확인 가능한 목격 신고가 없어 사건이 수배로 전환되지 않았습니다."
-            ));
-            return;
-        }
-        Villager witness = loaded.values().stream()
-                .filter(Villager::isAlive)
-                .filter(villager -> !guardNames.contains(villager.getName().getString()))
-                .filter(villager -> villager.distanceToSqr(
-                        record.incidentX() + 0.5D, record.incidentY(), record.incidentZ() + 0.5D)
-                        <= WITNESS_RADIUS_SQR)
-                .min(Comparator.comparingDouble(villager -> villager.distanceToSqr(
-                        record.incidentX() + 0.5D, record.incidentY(), record.incidentZ() + 0.5D)))
-                .orElse(null);
-        if (witness == null) return;
-        data.assignWitness(record.id(), witness.getName().getString(), tick);
+        // A witness may only be captured synchronously at the crime event. Residents who enter
+        // this area later are not retroactively treated as eyewitnesses.
+        if (tick - record.createdTick() <= WITNESS_EXPIRY_TICKS) return;
+        data.close(record.id());
         if (suspect != null) suspect.sendSystemMessage(Component.literal(
-                "§c[목격] §f" + witness.getName().getString() + "이(가) 사건을 목격하고 경비대에 신고하러 갑니다."
+                "§7[사건 종결] §f범행 시점의 실제 목격자가 없어 사건이 수배로 전환되지 않았습니다."
         ));
         LivingKingdoms.LOGGER.info(
-                "Erden justice witness assigned case={} witness={} actual_resident=true physical_report_required=true",
-                record.id(), witness.getName().getString());
+                "Erden justice unwitnessed case expired case={} retroactive_witness=false",
+                record.id());
     }
 
     private static void processReporting(
