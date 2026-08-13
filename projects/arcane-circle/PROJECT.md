@@ -23,4 +23,4 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - Destructive terrain mutation is server-authoritative and strength-aware (`getDestroySpeed` + explosion resistance), bounded per impact, and never removes unbreakable blocks or block entities.
 - Meteor Swarm uses `MeteorBarragePattern` as the sole server/client strike schedule; fixed simultaneous quartet layouts are forbidden.
 - Canonical Java 25 verification is required after the alpha.32 source commit; source-only audit is not sufficient.
-- Alpha.32 canonical verification target: destructive terrain + staggered Meteor Swarm barrage from source commit `37bb24ddd0e5c569afd0ca2beaa8b25dac039705`.
+- Alpha.32 implementation source: `3a51987dd0596251f84a7140307ced1a23d314eb` (`Arcane Circle alpha.32: destructive terrain and meteor barrage`).
