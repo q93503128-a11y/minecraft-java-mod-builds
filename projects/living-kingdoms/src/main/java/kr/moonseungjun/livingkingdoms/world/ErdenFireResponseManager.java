@@ -347,7 +347,7 @@ public final class ErdenFireResponseManager {
     private static void prepareCiSample(
             ServerLevel level,
             ErdenFireResponseSavedData data) {
-        if (!isCi() || ciPassed || ciPrepared) return;
+        if (!isFireCi() || ciPassed || ciPrepared) return;
         List<ErdenUrbanInfrastructureBuilder.FireCistern> cisterns =
                 ErdenUrbanInfrastructureBuilder.fireCisterns();
         if (cisterns.size() != 8) {
@@ -476,7 +476,7 @@ public final class ErdenFireResponseManager {
     private static void verifyCiIfReady(
             ServerLevel level,
             ErdenFireResponseSavedData data) {
-        if (!isCi() || ciPassed || !ciPrepared || ciFirePos == null) return;
+        if (!isFireCi() || ciPassed || !ciPrepared || ciFirePos == null) return;
         if (data.detectedCount() <= ciDetectedBaseline
                 || data.dispatchedCount() <= ciDispatchedBaseline
                 || data.extinguishedCount() <= ciExtinguishedBaseline
@@ -506,7 +506,7 @@ public final class ErdenFireResponseManager {
         }
     }
 
-    private static boolean isCi() {
-        return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
+    private static boolean isFireCi() {
+        return "1".equals(System.getenv("LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST"));
     }
 }

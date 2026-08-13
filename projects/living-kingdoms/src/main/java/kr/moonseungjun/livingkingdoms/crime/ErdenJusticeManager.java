@@ -74,14 +74,6 @@ public final class ErdenJusticeManager {
         }
     }
 
-    public static boolean hasActiveCase(UUID suspect) {
-        MinecraftServer server = StarterRealmManager.server();
-        if (server == null) return false;
-        ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);
-        if (level == null) return false;
-        return level.getDataStorage().computeIfAbsent(ErdenJusticeSavedData.TYPE).caseFor(suspect) != null;
-    }
-
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);

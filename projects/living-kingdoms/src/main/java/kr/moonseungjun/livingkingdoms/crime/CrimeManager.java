@@ -133,6 +133,9 @@ public final class CrimeManager {
         CrimeSavedData data = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE);
         CrimeSavedData.CrimeRecord record = data.record(player.getUUID());
         if (record.wanted() <= 0) return;
+        // Erden warrants are enforced by population-backed resident guards, never the
+        // generic synthetic pursuit wave used by the other starter realms.
+        if (ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())) return;
 
         String local = RealmJurisdiction.at(level, player.blockPosition());
         if (local == null || !record.wantedHere(local)) {
@@ -184,6 +187,11 @@ public final class CrimeManager {
 
     private static void reportCrime(ServerLevel level, ServerPlayer player, String jurisdiction,
                                     int severity, String description) {
+        if (ErdenJusticeManager.JURISDICTION.equals(jurisdiction)) {
+            ErdenJusticeManager.observeCrime(
+                    level, player, severity, description, player.blockPosition());
+            return;
+        }
         CrimeSavedData.CrimeRecord record = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE)
                 .addCrime(player.getUUID(), jurisdiction, severity, level.getGameTime());
         player.sendSystemMessage(Component.literal(

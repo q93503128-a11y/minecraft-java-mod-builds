@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.livingkingdoms.crime.CrimeManager;
+import kr.moonseungjun.livingkingdoms.crime.ErdenJusticeManager;
 import kr.moonseungjun.livingkingdoms.economy.RealmEconomyManager;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
@@ -137,6 +138,7 @@ public final class LivingKingdoms {
         ErdenEntryTraversalAudit.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
+        ErdenJusticeManager.onServerTick(event);
         ErdenFireResponseManager.onServerTick(event);
         ErdenKingdomExteriorInventoryManager.captureBeforeSupply(event);
         ErdenAuthoritativeEconomyManager.onServerTick(event);
