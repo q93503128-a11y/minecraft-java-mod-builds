@@ -1,4 +1,4 @@
-name: Trace Living Kingdoms authored new-floor verify failure
+name: Fix Living Kingdoms authored stair support self-collision
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Trace first verify mismatch
+      - name: Make authored route supports body-safe
         shell: bash
         run: |
           set -euo pipefail
@@ -31,109 +31,84 @@ jobs:
           from pathlib import Path
           p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java')
           s = p.read_text(encoding='utf-8')
-          start_marker = '    private static boolean verify(ServerLevel level, PlacementPlan plan) {'
-          end_marker = '    private static void requestCiSampleChunks(ServerLevel level) {'
-          start = s.index(start_marker)
-          end = s.index(end_marker, start)
-          verify = '''    private static boolean verify(ServerLevel level, PlacementPlan plan) {
-              BlockPos doorPos = new BlockPos(
-                      plan.entranceX(), plan.expectedDoorY(), plan.entranceZ());
-              BlockState door = level.getBlockState(doorPos);
-              if (!(door.getBlock() instanceof DoorBlock)) {
-                  logCiVerifyFailure(level, plan, "door pos=" + doorPos + " state=" + door);
-                  return false;
-              }
 
-              for (BlockPos floor : plan.floorBlocks()) {
-                  BlockState floorState = level.getBlockState(floor);
-                  if (floorState.getBlock() != plan.floorBlock()) {
-                      logCiVerifyFailure(level, plan,
-                              "floor pos=" + floor + " state=" + floorState
-                                      + " expected=" + plan.floorBlock());
-                      return false;
-                  }
-                  BlockPos headPos = floor.above();
-                  BlockState head = level.getBlockState(headPos);
-                  if (!head.isAir()) {
-                      logCiVerifyFailure(level, plan,
-                              "floor_head pos=" + headPos + " state=" + head);
-                      return false;
-                  }
-              }
-              for (RouteNode node : plan.routeNodes()) {
-                  BlockPos feetPos = node.world().pos();
-                  BlockState feet = level.getBlockState(feetPos);
-                  StairIntent stair = plan.stairs().get(node.world());
-                  if (stair == null) {
-                      if (!feet.isAir()) {
-                          logCiVerifyFailure(level, plan,
-                                  "route_feet local=" + node.local() + " pos=" + feetPos
-                                          + " state=" + feet);
-                          return false;
-                      }
-                  } else if (!matchesStair(feet, plan.role(), stair.facing())) {
-                      logCiVerifyFailure(level, plan,
-                              "stair local=" + node.local() + " pos=" + feetPos
-                                      + " state=" + feet + " expected_facing=" + stair.facing());
-                      return false;
-                  }
-                  BlockPos routeHeadPos = new BlockPos(
-                          node.world().x(), node.world().y() + 1, node.world().z());
-                  BlockState routeHead = level.getBlockState(routeHeadPos);
-                  if (!routeHead.isAir()) {
-                      logCiVerifyFailure(level, plan,
-                              "route_head local=" + node.local() + " pos=" + routeHeadPos
-                                      + " state=" + routeHead);
-                      return false;
-                  }
-              }
-
-              BlockPos targetSupportPos = new BlockPos(
-                      plan.target().x(), plan.target().y() - 1, plan.target().z());
-              BlockState targetSupport = level.getBlockState(targetSupportPos);
-              if (targetSupport.isAir()) {
-                  logCiVerifyFailure(level, plan,
-                          "target_support pos=" + targetSupportPos + " state=" + targetSupport);
-                  return false;
-              }
-              BlockState targetFeet = level.getBlockState(plan.target().pos());
-              if (!targetFeet.isAir()) {
-                  logCiVerifyFailure(level, plan,
-                          "target_feet pos=" + plan.target().pos() + " state=" + targetFeet);
-                  return false;
-              }
-              BlockState targetHead = level.getBlockState(plan.target().pos().above());
-              if (!targetHead.isAir()) {
-                  logCiVerifyFailure(level, plan,
-                          "target_head pos=" + plan.target().pos().above() + " state=" + targetHead);
-                  return false;
-              }
-              return true;
+          anchor = '''        for (RouteNode node : routeNodes) {
+              routeFeet.add(node.world().pos());
+              routeHeads.add(new BlockPos(node.world().x(), node.world().y() + 1, node.world().z()));
           }
 
-              private static void logCiVerifyFailure(
-                      ServerLevel level, PlacementPlan plan, String reason) {
-                  if (plan.entranceKey() != ciPlanKey || level.getGameTime() % 20L != 0L) return;
-                  LivingKingdoms.LOGGER.info(
-                          "LK_ERDEN_AUTHORED_NEW_FLOOR_VERIFY_FAIL role={} entrance={},{} reason={}",
-                          plan.role(), plan.entranceX(), plan.entranceZ(), reason);
+          Block floorBlock = floorBlock(placement.role());'''
+          replacement = '''        for (RouteNode node : routeNodes) {
+              routeFeet.add(node.world().pos());
+              routeHeads.add(new BlockPos(node.world().x(), node.world().y() + 1, node.world().z()));
+          }
+          Set<BlockPos> routeBody = new HashSet<>(routeFeet);
+          routeBody.addAll(routeHeads);
+          for (RouteNode node : routeNodes) {
+              if (stairs.containsKey(node.world())) continue;
+              int supportLocalY = node.local().y() - 1;
+              if (sourceOccupied.contains(localKey(
+                      node.local().x(), supportLocalY, node.local().z()))) continue;
+              BlockPos supportPos = new BlockPos(
+                      node.world().x(), node.world().y() - 1, node.world().z());
+              if (routeBody.contains(supportPos)) {
+                  throw new IllegalStateException(
+                          "Erden required flat-route support collides with route body fragment="
+                                  + placement.fragmentKey() + " local=" + node.local()
+                                  + " support=" + supportPos);
               }
+          }
 
-          '''
-          s = s[:start] + verify + s[end:]
+          Block floorBlock = floorBlock(placement.role());'''
+          if s.count(anchor) != 1:
+              raise SystemExit(f'static support-safety anchor count={s.count(anchor)}')
+          s = s.replace(anchor, replacement, 1)
+
+          anchor = '''        Block support = supportBlock(plan.role());
+          for (RouteNode node : plan.routeNodes()) {'''
+          replacement = '''        Block support = supportBlock(plan.role());
+          Set<BlockPos> protectedRouteBody = new HashSet<>();
+          for (RouteNode routeNode : plan.routeNodes()) {
+              protectedRouteBody.add(routeNode.world().pos());
+              protectedRouteBody.add(new BlockPos(
+                      routeNode.world().x(), routeNode.world().y() + 1, routeNode.world().z()));
+          }
+          for (RouteNode node : plan.routeNodes()) {'''
+          if s.count(anchor) != 1:
+              raise SystemExit(f'runtime route-body anchor count={s.count(anchor)}')
+          s = s.replace(anchor, replacement, 1)
+
+          anchor = '''            BlockPos supportPos = new BlockPos(
+                      node.world().x(), node.world().y() - 1, node.world().z());
+              if (sourceFloorAir && level.getBlockState(supportPos).isAir()) {
+                  level.setBlock(supportPos, support.defaultBlockState(), UPDATE_FLAGS);
+              }'''
+          replacement = '''            BlockPos supportPos = new BlockPos(
+                      node.world().x(), node.world().y() - 1, node.world().z());
+              boolean supportHitsRouteBody = protectedRouteBody.contains(supportPos);
+              if (sourceFloorAir && supportHitsRouteBody && stair == null) {
+                  return false;
+              }
+              if (sourceFloorAir && !supportHitsRouteBody
+                      && level.getBlockState(supportPos).isAir()) {
+                  level.setBlock(supportPos, support.defaultBlockState(), UPDATE_FLAGS);
+              }'''
+          if s.count(anchor) != 1:
+              raise SystemExit(f'support placement anchor count={s.count(anchor)}')
+          s = s.replace(anchor, replacement, 1)
           p.write_text(s, encoding='utf-8')
           PY
       - name: Java 25 compile
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
-      - name: Publish verify tracing
+      - name: Publish support collision fix
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java
-          git commit -m 'test(living-kingdoms): trace authored upper-floor verify failure'
+          git commit -m 'fix(living-kingdoms): prevent authored stair support self-collision'
           for attempt in 1 2 3 4 5 6 7 8; do
             git fetch origin main
             git rebase origin/main
