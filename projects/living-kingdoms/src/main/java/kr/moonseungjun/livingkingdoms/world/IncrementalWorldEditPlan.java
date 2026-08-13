@@ -8,6 +8,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -297,12 +298,19 @@ public final class IncrementalWorldEditPlan {
             if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);
             return false;
         }
+        // hasChunk() can be true while the FULL LevelChunk is still being promoted/generated.
+        // Never let streamed construction synchronously wait for that promotion on the server tick.
+        LevelChunk loadedChunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
+        if (loadedChunk == null) {
+            if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);
+            return false;
+        }
         BlockPos pos = new BlockPos(x, y, z);
-        if (level.getBlockState(pos).equals(state)) return true;
+        if (loadedChunk.getBlockState(pos).equals(state)) return true;
         // External structures can carry stale pending block-entity NBT after cleanup changed
         // the corresponding block to air. Remove that pending/ticking entry before replacing
         // the state so LevelChunk never tries to instantiate (for example) a beehive on air.
-        level.getChunkAt(pos).removeBlockEntity(pos);
+        loadedChunk.removeBlockEntity(pos);
         level.setBlock(pos, state, CONSTRUCTION_UPDATE_FLAGS);
         return true;
     }
