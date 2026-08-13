@@ -13,7 +13,9 @@ import java.util.List;
 final class ArcaneWorldMesh {
     private final List<Segment> segments;
     private final List<Face> faces;
-    ArcaneWorldMesh(List<Segment> segments,List<Face> faces){this.segments=List.copyOf(segments);this.faces=List.copyOf(faces);}
+    private final float lineScale;
+    private final float lineFloor;
+    ArcaneWorldMesh(List<Segment> segments,List<Face> faces,float lineScale,float lineFloor){this.segments=List.copyOf(segments);this.faces=List.copyOf(faces);this.lineScale=lineScale;this.lineFloor=lineFloor;}
     int size(){return segments.size()+faces.size()*2;}
 
     void submit(PoseStack poseStack,SubmitNodeCollector collector,int argb,float windowScale){
@@ -29,7 +31,7 @@ final class ArcaneWorldMesh {
             submitLines(poseStack,collector,tone(argb,.98,1.0),windowScale*.78F);
         }
     }
-    private void submitLines(PoseStack stack,SubmitNodeCollector collector,int color,float scale){collector.submitCustomGeometry(stack,RenderTypes.lines(),(pose,out)->{for(Segment s:segments){Vec3 d=s.end.subtract(s.start);if(d.lengthSqr()<1e-8)continue;Vec3 n=d.normalize();float w=Math.max(.72F,s.width*scale);out.addVertex(pose,(float)s.start.x,(float)s.start.y,(float)s.start.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);out.addVertex(pose,(float)s.end.x,(float)s.end.y,(float)s.end.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);}});}
+    private void submitLines(PoseStack stack,SubmitNodeCollector collector,int color,float scale){collector.submitCustomGeometry(stack,RenderTypes.lines(),(pose,out)->{for(Segment s:segments){Vec3 d=s.end.subtract(s.start);if(d.lengthSqr()<1e-8)continue;Vec3 n=d.normalize();float w=Math.max(lineFloor,s.width*scale*lineScale);out.addVertex(pose,(float)s.start.x,(float)s.start.y,(float)s.start.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);out.addVertex(pose,(float)s.end.x,(float)s.end.y,(float)s.end.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);}});}
     private static void vertex(VertexConsumer out,PoseStack.Pose pose,Vec3 v,int color){out.addVertex(pose,(float)v.x,(float)v.y,(float)v.z).setColor(color);}
     private static final double VIVID_SATURATION=2.05;
     private static final double FACE_ALPHA_BOOST=1.78;
@@ -45,14 +47,15 @@ final class ArcaneWorldMesh {
         return(clamp(a)<<24)|(clamp(r)<<16)|(clamp(g)<<8)|clamp(b);
     }
     private static int clamp(int v){return Math.max(0,Math.min(255,v));}
-    static Builder builder(int budget){return new Builder(budget);}
+    static Builder builder(int budget){return new Builder(budget,1.0F,.72F);}
+    static Builder fineBuilder(int budget){return new Builder(budget,.46F,.34F);}
     record Segment(Vec3 start,Vec3 end,float width){}
     record Face(Vec3 a,Vec3 b,Vec3 c,Vec3 d,float brightness,float alpha){}
 
     static final class Builder{
-        private final int budget;private final List<Segment> segments=new ArrayList<>();private final List<Face> faces=new ArrayList<>();
-        Builder(int budget){this.budget=Math.max(8,budget);}
-        int size(){return segments.size()+faces.size()*2;}boolean full(){return size()>=budget;}ArcaneWorldMesh build(){return new ArcaneWorldMesh(segments,faces);}
+        private final int budget;private final float lineScale,lineFloor;private final List<Segment> segments=new ArrayList<>();private final List<Face> faces=new ArrayList<>();
+        Builder(int budget,float lineScale,float lineFloor){this.budget=Math.max(8,budget);this.lineScale=Math.max(.1F,lineScale);this.lineFloor=Math.max(.1F,lineFloor);}
+        int size(){return segments.size()+faces.size()*2;}boolean full(){return size()>=budget;}ArcaneWorldMesh build(){return new ArcaneWorldMesh(segments,faces,lineScale,lineFloor);}
         Builder line(Vec3 a,Vec3 b,float width){if(!full()&&a!=null&&b!=null&&a.distanceToSqr(b)>1e-8)segments.add(new Segment(a,b,width));return this;}
         Builder face(Vec3 a,Vec3 b,Vec3 c,Vec3 d,float brightness,float alpha){if(!full())faces.add(new Face(a,b,c,d,brightness,alpha));return this;}
         Builder triangle(Vec3 a,Vec3 b,Vec3 c,float brightness,float alpha){return face(a,b,c,c,brightness,alpha);}

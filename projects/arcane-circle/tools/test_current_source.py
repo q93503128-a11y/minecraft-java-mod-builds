@@ -16,16 +16,16 @@ def text(path): return path.read_text(encoding='utf-8')
 gradle=text(root/'gradle.properties')
 main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.30' in gradle
-assert 'VERSION = "0.12.1-alpha.30"' in main
-assert '"version": "0.12.1-alpha.30"' in index
+assert 'mod_version=0.12.1-alpha.31' in gradle
+assert 'VERSION = "0.12.1-alpha.31"' in main
+assert '"version": "0.12.1-alpha.31"' in index
 
 tracker=text(client/'WorldMagicTracker.java')
 assert 'SpellCinematicDirector.charge' in tracker and 'SpellCinematicDirector.release' in tracker
 assert 'SpellCinematicDirector.castingFamily' in tracker
 assert 'ArcaneSigilDirector.charge' in tracker and 'ArcaneSigilDirector.releaseEcho' in tracker
 sigil=text(client/'ArcaneSigilDirector.java')
-for token in ['formulaFrame','schoolFormula','geometricDepth','anchorFormula','skyRitual','meteorRitual','sigilRangeScale','meteor_swarm','runeRing','brokenBand','helix','fusionFormula']:
+for token in ['formulaFrame','schoolFormula','geometricDepth','anchorFormula','skyRitual','meteorRitual','inscriptionRing','sigilRangeScale','meteor_swarm','fusionFormula']:
     assert token in sigil, f'authored sigil regression: {token}'
 for token in ['LowCircleVisualIdentity','MidCircleVisualIdentity','FifthCircleVisualIdentity',
               'SixthCircleVisualIdentity','ArchmageVisualIdentity','ArcaneSigilDetailGrammar',
@@ -43,12 +43,16 @@ assert 'fallHeight=42.0' in director and 'prismaticWallFrame' in director
 assert 'case "power_word_kill"' in director and '?.72:1.0' in director
 
 grimoire=text(client/'GrimoireScreen.java')
-for token in ['drawSpine','circleIndex','circleStep','contentBottom','compact()','browserViewport','detailWidth','detail()','spellTile','primaryAction','drawLoadout','equipCandidateId','firstEmptySlot','quickEquip','enableScissor','mouseScrolled']:
+for token in ['drawSpine','circleIndex','circleStep','contentBottom','compact()','browserViewport','detailWidth','detail()','spellTile','primaryAction','drawLoadout','equipCandidateId','firstEmptySlot','quickEquip','academySelector','academySummary','academyOfferHeader','enableScissor','mouseScrolled']:
     assert token in grimoire, f'grimoire architecture regression: {token}'
 assert 'CodexVisualLanguage' not in grimoire
 assert 'private void request    private void request' not in grimoire
 assert grimoire.count('private void request(String next)') == 1
 assert 'Math.max(22,Math.min(29' not in grimoire
+assert 'fineBuilder' in text(client/'ArcaneWorldMesh.java')
+assert 'lineFloor' in text(client/'ArcaneWorldMesh.java')
+assert 'drawCircleIndex(g,l,academyCircle,mouseX,mouseY,true)' not in grimoire
+assert 'viewport().w()<410' in grimoire
 assert 'MAX_FRAME = 9000' in tracker and 'MAX_ENTRY = 2800' in tracker
 assert '!"prismatic_wall".equals(v.spell.id())' in tracker
 

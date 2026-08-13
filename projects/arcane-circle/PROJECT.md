@@ -12,12 +12,13 @@
 
 alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법진과 `SpellCinematicDirector`의 물리 현상을 연속된 한 연출로 사용한다. 지팡이 시전시간 배율은 직접 주문과 융합 주문의 시전 계산 및 하한에 실제로 참여한다.
 
-## Alpha.30 runtime contracts
+## Alpha.31 runtime contracts
 - Grimoire layout assigns header/content/footer ownership; circle rail, detail reader and loadout dock may never overlap even at high GUI scale.
 - Spell equipment supports spell→slot, slot→spell and double-click-to-first-empty-slot flows without an extra confirmation button.
 - Sigil radius reacts to final range by spell geometry family; it is not a raw 1:1 range circle.
 - Light uses temporary vanilla Light blocks and must clean them on expiry/session/dimension/server shutdown.
 - Prismatic rendering is bounded by per-entry and per-frame primitive caps.
-- High-complexity sigils gain depth through orthogonal planes, axial structures and role-specific sub-arrays rather than flat line density.
-- Canonical Java 25 verification is required after the alpha.30 source commit; source-only audit is not sufficient.
+- High-complexity sigils prioritize fine concentric rules, inscription rings, nested geometry and balanced satellite seals; 3D depth stays secondary and may not overpower the readable planar formula.
+- Academy affiliation selector, join action, offer header/list and lore note own separate layout regions; narrow widths fold traditions into a 2x2 selector.
+- Canonical Java 25 verification is required after the alpha.31 source commit; source-only audit is not sufficient.
 - Current alpha.30 verification baseline: `0360d7b26c27e7cc29ab2cb9b7054361079829e3` plus this non-code trigger commit.

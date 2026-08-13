@@ -17,7 +17,7 @@ final class ArcaneSigilDirector {
     static ArcaneWorldMesh charge(SpellDefinition spell, Vec3 direction, Vec3 targetOffset,
                                   double range, double progress, boolean fusion, long startedAtNanos) {
         SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(spell);
-        ArcaneWorldMesh.Builder mesh = ArcaneWorldMesh.builder(BUDGET);
+        ArcaneWorldMesh.Builder mesh = ArcaneWorldMesh.fineBuilder(BUDGET);
         double p = smooth(clamp(progress, 0.0, 1.0));
         double time = Math.max(0.0, (System.nanoTime() - startedAtNanos) / 1_000_000_000.0);
         double breath = 1.0 + Math.sin(time * (1.25 + profile.complexity() * .12)) * .025 * p;
@@ -55,40 +55,52 @@ final class ArcaneSigilDirector {
     private static void formulaFrame(ArcaneWorldMesh.Builder m, SpellDefinition spell,
                                      SpellPresentationProfile.Profile profile, ArcaneWorldMesh.Basis basis,
                                      double r, double p, double rotation, int seed) {
-        int detail = profile.complexity();
-        double inner = r * (.71 + .02 * Math.sin(rotation * 1.7));
-        m.brokenBand(basis, Vec3.ZERO, r * .91, r, 56 + detail * 10,
-                Math.max(3, 9 - detail), 1.18F, .16F + (float) p * .12F);
-        m.circle(basis, Vec3.ZERO, inner, 44 + detail * 8, 1.04F);
-        if (p > .12) {
-            int sides = switch (spell.school()) {
-                case FIRE -> 3;
-                case FROST -> 6;
-                case WIND -> 5;
-                case WARD -> 8;
-                case LIFE -> 7;
-                case SPACE -> 4;
-                case ARCANE -> 6;
+        int detail=profile.complexity();
+        double outer=r*(.985+.010*Math.sin(rotation*1.3));
+        // Reference language: thin concentric rules first, ornament second. No giant filled ring.
+        m.circle(basis,Vec3.ZERO,outer,92+detail*8,.76F);
+        m.circle(basis,Vec3.ZERO,outer*.955,84+detail*7,.42F);
+        m.circle(basis,Vec3.ZERO,outer*.875,76+detail*6,.54F);
+        if(p>.10){
+            for(int i=0;i<10;i++){
+                double start=rotation*.08+i*Math.PI*2.0/10.0;
+                m.arc(basis,Vec3.ZERO,outer*.925,start,Math.PI*.115,12,.54F);
+            }
+        }
+        if(p>.22){
+            inscriptionRing(m,basis,outer*.905,10+detail*3,r*(.020+detail*.0018),seed,-rotation*.10,.50F);
+        }
+        if(p>.32){
+            int sides=switch(spell.school()){
+                case FIRE -> 3; case FROST,ARCANE -> 6; case WIND -> 5; case WARD -> 8;
+                case LIFE -> 7; case SPACE -> 4;
             };
-            m.polygon(basis, Vec3.ZERO, r * .58, sides, rotation * .64, 1.04F);
-            m.polygon(basis, Vec3.ZERO, r * .45, sides, -rotation * .41 + .31, .72F);
+            double geo=outer*.625;
+            m.polygon(basis,Vec3.ZERO,geo,sides,rotation*.10,.62F);
+            m.polygon(basis,Vec3.ZERO,geo,sides,rotation*.10+Math.PI/Math.max(3,sides),.48F);
+            m.circle(basis,Vec3.ZERO,outer*.535,60+detail*4,.40F);
         }
-        if (p > .28) {
-            int runeCount = 5 + detail * 2;
-            m.runeRing(basis, Vec3.ZERO, r * .79, runeCount,
-                    r * (.055 + detail * .003), seed, -rotation * .33, .74F);
+        if(p>.46){
+            m.runeChords(basis,Vec3.ZERO,outer*.405,7+detail,2+Math.floorMod(seed,3),rotation*.055,.42F);
+            m.circle(basis,Vec3.ZERO,outer*.235,36,.52F);
+            m.runeGlyph(basis,Vec3.ZERO,outer*.135,seed^0x51A7,rotation*.16,.58F);
         }
-        if (p > .46) {
-            m.runeChords(basis, Vec3.ZERO, r * .39, 6 + detail * 2,
-                    2 + Math.floorMod(seed, 3), rotation * .24, .64F);
-            m.runeGlyph(basis, Vec3.ZERO, r * .18, seed ^ 0x51A7, rotation * .52, 1.18F);
+        if(p>.60&&detail>=4){
+            int seals=Math.min(6,4+(detail-4));
+            for(int i=0;i<seals;i++){
+                double a=rotation*.035+i*Math.PI*2.0/seals;
+                Vec3 c=basis.point(a,outer*.735);
+                double sr=outer*(.068+(i%2)*.010);
+                m.circle(basis,c,sr,22,.48F);
+                m.circle(basis,c,sr*.72,18,.34F);
+                m.polygon(basis,c,sr*.52,3+i%3,-a+.2,.38F);
+                m.runeGlyph(basis,c,sr*.30,seed+i*67,-a,.36F);
+            }
         }
-        if (p > .72 && detail >= 4) {
-            Vec3 normal = basis.normal();
-            double depth = Math.min(r * .12, .42 + detail * .04);
-            Vec3 a = normal.scale(depth), b = normal.scale(-depth);
-            m.brokenBand(basis, a, r * .49, r * .54, 42 + detail * 5, 5, .92F, .10F);
-            m.brokenBand(basis, b, r * .31, r * .35, 36 + detail * 4, 4, .88F, .10F);
+        if(p>.76&&detail>=5){
+            Vec3 n=basis.normal();double d=Math.min(r*.045,.28+detail*.018);
+            m.circle(basis,n.scale(d),outer*.49,48,.34F);
+            m.circle(basis,n.scale(-d),outer*.355,42,.30F);
         }
     }
 
@@ -227,18 +239,15 @@ final class ArcaneSigilDirector {
     }
 
     private static void geometricDepth(ArcaneWorldMesh.Builder m,SpellDefinition spell,SpellPresentationProfile.Profile profile,ArcaneWorldMesh.Basis b,double r,double p,double rotation,int seed){
-        int detail=profile.complexity();if(detail<4||p<.36)return;Vec3 n=b.normal();double depth=r*(detail>=6?.13:.085)*(.45+.55*p);int sides=5+Math.floorMod(seed,4);
-        m.polygon(b,n.scale(depth),r*.49,sides,rotation*.21,.82F);m.polygon(b,n.scale(-depth),r*.37,sides+1,-rotation*.17+.23,.62F);
-        for(int i=0;i<6;i++){double a=rotation*.08+i*Math.PI/3.0;Vec3 top=b.point(a,r*.49).add(n.scale(depth)),bottom=b.point(a+.18,r*.37).add(n.scale(-depth));m.line(top,bottom,i%3==0?.86F:.48F);}
+        int detail=profile.complexity();if(detail<5||p<.58)return;Vec3 n=b.normal();double depth=Math.min(r*.060,.34+r*.010);double rr=r*(detail>=7?.31:.26);
+        m.circle(b,n.scale(depth),rr,40,.34F);m.circle(b,n.scale(-depth*.75),rr*.78,36,.28F);
+        for(int i=0;i<4;i++){double a=Math.PI/4.0+i*Math.PI/2.0;Vec3 a0=b.point(a,rr).add(n.scale(depth)),a1=b.point(a+.20,rr*.78).add(n.scale(-depth*.75));m.line(a0,a1,.30F);}
         switch(profile.sigil()){
-            case FRONT_COMPACT,FRONT_LANCE -> {for(int i=1;i<=2;i++){double d=depth*(.45+i*.55);m.circle(b,n.scale(d),r*(.28-i*.055),30+i*8,i==1?.86F:.58F);}if(detail>=6)m.helix(n.scale(-depth*1.35),n,b,depth*2.7,r*.19,2,34,.48F,false);}
-            case GROUND_SEAL,QUAD_ARRAY,SKY_RITUAL -> {ArcaneWorldMesh.Basis x=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up()),z=ArcaneWorldMesh.Basis.fromNormal(b.up(),b.right());m.brokenBand(x,Vec3.ZERO,r*.27,r*.31,38,5,.82F,.10F);m.brokenBand(z,Vec3.ZERO,r*.34,r*.38,42,6,.72F,.09F);if(detail>=6){m.circle(x,Vec3.ZERO,r*.48,46,.58F);m.circle(z,Vec3.ZERO,r*.54,50,.52F);}}
-            case TARGET_SEAL -> {ArcaneWorldMesh.Basis x=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.brokenBand(x,Vec3.ZERO,r*.35,r*.40,40,4,.86F,.11F);for(int i=0;i<4;i++){double a=Math.PI/4+i*Math.PI/2;Vec3 c=b.point(a,r*.58);m.line(c.add(n.scale(-depth)),c.add(n.scale(depth)),.72F);}}
-            case BODY_HALO,FEET_RUNE -> {ArcaneWorldMesh.Basis x=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.circle(x,Vec3.ZERO,r*.46,42,.68F);if(detail>=6)m.brokenBand(x,n.scale(depth*.25),r*.57,r*.62,46,5,.72F,.10F);}
-            case WALL_MATRIX -> {Vec3 up=b.up(),right=b.right();double w=r*.52,h=r*.36;for(int layer=-1;layer<=1;layer++){Vec3 o=n.scale(layer*depth*.62);m.line(o.add(right.scale(-w)).add(up.scale(-h)),o.add(right.scale(w)).add(up.scale(-h)),.55F);m.line(o.add(right.scale(-w)).add(up.scale(h)),o.add(right.scale(w)).add(up.scale(h)),.55F);}}
-            case PORTAL_GATE -> {if(detail>=5){ArcaneWorldMesh.Basis x=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.circle(x,Vec3.ZERO,r*.34,38,.60F);m.runeGlyph(b,n.scale(depth*.72),r*.12,seed^0x71A5,rotation*.31,.76F);}}
+            case GROUND_SEAL,QUAD_ARRAY,SKY_RITUAL -> {ArcaneWorldMesh.Basis cross=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.circle(cross,Vec3.ZERO,r*.205,34,.30F);if(detail>=7)m.circle(cross,n.scale(depth*.25),r*.265,38,.26F);}
+            case FRONT_LANCE,PORTAL_GATE -> {if(detail>=6){ArcaneWorldMesh.Basis cross=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.circle(cross,Vec3.ZERO,r*.18,30,.28F);}}
+            case TARGET_SEAL,WALL_MATRIX -> {for(int i=0;i<4;i++){double a=i*Math.PI/2.0;Vec3 c=b.point(a,r*.42);m.line(c.add(n.scale(-depth)),c.add(n.scale(depth)),.28F);}}
+            case FRONT_COMPACT,BODY_HALO,FEET_RUNE -> {}
         }
-        if(detail>=6){for(int i=0;i<6;i++){double a=i*Math.PI/3.0-rotation*.05;Vec3 c=b.point(a,r*.66).add(n.scale((i%2==0?1:-1)*depth*.55));m.runeGlyph(b,c,r*.065,seed+i*97,-a,.58F);}}
     }
 
     private static double sigilRangeScale(SpellDefinition spell, SpellPresentationProfile.Profile profile, double range) {
@@ -258,13 +267,46 @@ final class ArcaneSigilDirector {
 
     private static void meteorRitual(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis b,
                                      double r, double p, double rotation, int seed) {
-        double outer=r*(.78+.22*p),inner=outer*.70,depth=Math.max(1.1,r*.095);Vec3 n=b.normal();
-        m.brokenBand(b,Vec3.ZERO,outer*.94,outer,104,7,1.32F,.17F);m.circle(b,Vec3.ZERO,outer*.87,88,.72F);m.runeRing(b,Vec3.ZERO,outer*.91,16,r*.043,seed,-rotation*.16,.68F);
-        m.polygon(b,Vec3.ZERO,inner*.72,8,rotation*.10,1.02F);m.polygon(b,Vec3.ZERO,inner*.54,4,-rotation*.13+Math.PI/4.0,.82F);m.runeChords(b,Vec3.ZERO,inner*.39,8,3,rotation*.07,.64F);m.circle(b,Vec3.ZERO,inner*.20,36,1.15F);
-        m.brokenBand(b,n.scale(depth),inner*.43,inner*.48,52,5,.88F,.10F);m.brokenBand(b,n.scale(-depth*.72),inner*.28,inner*.33,44,4,.76F,.09F);
-        ArcaneWorldMesh.Basis armA=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up()),armB=ArcaneWorldMesh.Basis.fromNormal(b.up(),b.right());m.circle(armA,Vec3.ZERO,inner*.40,48,.64F);m.circle(armB,Vec3.ZERO,inner*.47,52,.58F);
-        double orbit=outer*.64,child=outer*.14;for(int i=0;i<4;i++){double a=Math.PI/4.0+i*Math.PI/2.0+rotation*.025;Vec3 c=b.point(a,orbit),upper=c.add(n.scale(depth*.72)),lower=c.add(n.scale(-depth*.55)),rail=b.point(a,inner*.76);m.line(rail,upper,i%2==0?1.08F:.74F);m.brokenBand(b,upper,child*.78,child,34,4,1.18F,.14F);m.polygon(b,upper,child*.64,4,-a+Math.PI/4.0,.84F);m.runeGlyph(b,upper,child*.40,seed+i*101,-rotation*.18,.80F);m.circle(b,lower,child*.58,26,.58F);m.line(upper,lower,1.16F);m.line(lower,lower.add(n.scale(-Math.max(2.0,r*.12))),1.28F);for(int q=0;q<4;q++){double qa=q*Math.PI/2.0;Vec3 node=upper.add(b.point(qa,child*.82));m.line(node,node.add(n.scale(-depth*.9)),.46F);}}
-        if(p>.78){for(int i=0;i<8;i++){double a=i*Math.PI/4.0+rotation*.045;Vec3 c=b.point(a,outer*1.04);m.runeGlyph(b,c,r*.050,seed^i*131,a,.58F);}}
+        double outer=r*(.84+.16*p),inner=outer*.71;Vec3 n=b.normal();double depth=Math.min(r*.050,.42);
+        // Celestial formula inspired by dense astrolabe/alchemical diagrams: many fine layers, no iron-frame octagon.
+        m.circle(b,Vec3.ZERO,outer,112,.78F);
+        m.circle(b,Vec3.ZERO,outer*.965,104,.40F);
+        m.circle(b,Vec3.ZERO,outer*.885,92,.52F);
+        for(int i=0;i<12;i++){double a=rotation*.035+i*Math.PI*2.0/12.0;m.arc(b,Vec3.ZERO,outer*.925,a,Math.PI*.105,13,.48F);}
+        inscriptionRing(m,b,outer*.905,24,outer*.022,seed,-rotation*.075,.48F);
+
+        // Two interlocked triangles + hexagonal calculation chamber, matching the requested classic magic-circle grammar.
+        double tri=inner*.82;
+        m.polygon(b,Vec3.ZERO,tri,3,rotation*.045+Math.PI/2.0,.60F);
+        m.polygon(b,Vec3.ZERO,tri,3,rotation*.045-Math.PI/2.0,.60F);
+        m.polygon(b,Vec3.ZERO,inner*.665,6,-rotation*.035,.42F);
+        m.circle(b,Vec3.ZERO,inner*.535,64,.38F);
+        m.circle(b,Vec3.ZERO,inner*.315,46,.48F);
+        m.runeChords(b,Vec3.ZERO,inner*.285,8,3,rotation*.040,.34F);
+        m.runeGlyph(b,Vec3.ZERO,inner*.145,seed^0x5A71,-rotation*.08,.48F);
+
+        // Four major drop seals are readable sub-circles rather than giant cubes/rails.
+        double orbit=outer*.695,child=outer*.102;
+        for(int i=0;i<4;i++){
+            double a=Math.PI/4.0+i*Math.PI/2.0+rotation*.020;
+            Vec3 c=b.point(a,orbit);
+            m.circle(b,c,child,30,.56F);m.circle(b,c,child*.76,24,.36F);
+            m.polygon(b,c,child*.58,3,-a+Math.PI/2.0,.42F);
+            m.polygon(b,c,child*.58,3,-a-Math.PI/2.0,.42F);
+            m.runeGlyph(b,c,child*.30,seed+i*101,-rotation*.06,.38F);
+            m.line(b.point(a,inner*.69),c,.30F);
+            if(p>.72)m.line(c.add(n.scale(depth*.30)),c.add(n.scale(-Math.max(.85,r*.050))),.30F);
+        }
+        // Minor zodiac/coordinate marks fill the outer ring without turning into a central line knot.
+        if(p>.58){for(int i=0;i<8;i++){double a=i*Math.PI/4.0-rotation*.025;Vec3 c=b.point(a,outer*.795);m.runeGlyph(b,c,outer*.030,seed^((i+1)*131),a,.32F);}}
+        if(p>.80){
+            m.circle(b,n.scale(depth),inner*.47,52,.30F);m.circle(b,n.scale(-depth*.70),inner*.365,46,.26F);
+            ArcaneWorldMesh.Basis cross=ArcaneWorldMesh.Basis.fromNormal(b.right(),b.up());m.circle(cross,Vec3.ZERO,inner*.205,34,.26F);
+        }
+    }
+
+    private static void inscriptionRing(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis b,double radius,int count,double size,int seed,double rotation,float width){
+        int n=Math.max(8,count);for(int i=0;i<n;i++){double a=rotation+i*Math.PI*2.0/n;Vec3 c=b.point(a,radius),t=b.point(a+Math.PI/2.0,size),rad=b.point(a,size*.55);m.line(c.subtract(t),c.add(t),width*(i%4==0?1.0F:.72F));if(((seed+i)&1)==0)m.line(c.subtract(rad),c.add(t.scale(.55)),width*.68F);else m.line(c.add(rad),c.subtract(t.scale(.48)),width*.62F);if(Math.floorMod(seed+i,3)==0)m.line(c.subtract(t.scale(.38)).subtract(rad.scale(.70)),c.add(t.scale(.32)).add(rad.scale(.65)),width*.54F);}
     }
 
     private static void skyRitual(ArcaneWorldMesh.Builder m, SpellDefinition spell,
