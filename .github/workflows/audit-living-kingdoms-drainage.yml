@@ -1,0 +1,99 @@
+name: Audit Living Kingdoms storm drainage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/audit-living-kingdoms-drainage.yml'
+
+concurrency:
+  group: living-kingdoms-drainage-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+
+jobs:
+  audit:
+    name: Fresh-world Erden drainage audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Compile drainage implementation
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: gradle --no-daemon classes --stacktrace --console=plain
+
+      - name: Exercise physical grate overflow and recovery in a fresh world
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../../logs
+          rm -rf run/world run/living_realm run/livingkingdoms-drainage-ci-world
+          mkdir -p run
+          printf 'level-name=livingkingdoms-drainage-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+
+          gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/drainage.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 900); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/drainage.log; then
+              cat ../../logs/drainage.log
+              exit 1
+            fi
+            if grep -Eq 'No physical Erden drainage grate|Diagnostic Erden drainage inlet was not clear|Exception in server tick loop|watchdog' ../../logs/drainage.log; then
+              cat ../../logs/drainage.log
+              exit 1
+            fi
+            if grep -Fq 'LK_ERDEN_DRAINAGE_PASS revision=1' ../../logs/drainage.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/drainage.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/drainage.log
+          test "$passed" -eq 1
+
+          grep -F 'Prepared Erden drainage CI grate=' ../../logs/drainage.log
+          grep -F 'physical_grate=true' ../../logs/drainage.log
+          grep -F 'Erden storm drain overflow drain=' ../../logs/drainage.log
+          grep -F 'loaded_only=true' ../../logs/drainage.log
+          grep -F 'owned_source=true' ../../logs/drainage.log
+          grep -F 'Erden stormwater receded source=' ../../logs/drainage.log
+          grep -F 'LK_ERDEN_DRAINAGE_PASS revision=1 physical_grate=true weather_accumulation=true obstruction_detected=true modeled_river_stage=true overflow_visible=true recovery=true loaded_city_only=true forced_citywide=false persistent_flood_ownership=true' ../../logs/drainage.log
+
+      - name: Upload drainage audit log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-drainage-${{ github.run_number }}
+          path: logs/drainage.log
+          if-no-files-found: warn
+          retention-days: 30
