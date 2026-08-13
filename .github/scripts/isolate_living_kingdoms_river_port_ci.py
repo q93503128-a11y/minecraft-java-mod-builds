@@ -54,10 +54,112 @@ justice = re.sub(
     count=1,
     flags=re.S,
 )
+
+if "event_time_witness=true" not in justice:
+    new_observe = '''    public static void observeCrime(ServerLevel level, ServerPlayer suspect,
+                                    int severity, String offense, BlockPos incident) {
+        if (!JURISDICTION.equals(RealmJurisdiction.at(level, incident))) return;
+        long tick = level.getGameTime();
+        ErdenJusticeSavedData data = level.getDataStorage().computeIfAbsent(ErdenJusticeSavedData.TYPE);
+        ErdenJusticeSavedData.CaseRecord previous = data.caseFor(suspect.getUUID());
+        ErdenJusticeSavedData.CaseRecord record = data.observe(
+                suspect.getUUID(), offense, severity,
+                incident.getX(), incident.getY(), incident.getZ(), tick);
+
+        Villager eventWitness = null;
+        if ("observed".equals(record.stage()) && record.witnessName().isEmpty()) {
+            ErdenPopulationSavedData population = level.getDataStorage().computeIfAbsent(ErdenPopulationSavedData.TYPE);
+            Map<String, ErdenPopulationSavedData.Resident> roster = livingRoster(population);
+            Set<String> guardNames = new HashSet<>();
+            for (ErdenPopulationSavedData.Resident resident : roster.values()) {
+                if (resident.workRole().equals("guard_post")) guardNames.add(resident.name());
+            }
+            AABB witnessBox = new AABB(
+                    incident.getX() - 24.0D, incident.getY() - 12.0D, incident.getZ() - 24.0D,
+                    incident.getX() + 25.0D, incident.getY() + 13.0D, incident.getZ() + 25.0D);
+            eventWitness = level.getEntitiesOfClass(
+                            Villager.class,
+                            witnessBox,
+                            villager -> roster.containsKey(villager.getName().getString())
+                                    && villager.isAlive()
+                                    && !guardNames.contains(villager.getName().getString()))
+                    .stream()
+                    .filter(villager -> villager.distanceToSqr(
+                            incident.getX() + 0.5D, incident.getY(), incident.getZ() + 0.5D)
+                            <= WITNESS_RADIUS_SQR)
+                    .min(Comparator.comparingDouble(villager -> villager.distanceToSqr(
+                            incident.getX() + 0.5D, incident.getY(), incident.getZ() + 0.5D)))
+                    .orElse(null);
+            if (eventWitness != null) {
+                data.assignWitness(record.id(), eventWitness.getName().getString(), tick);
+                suspect.sendSystemMessage(Component.literal(
+                        "§c[목격] §f" + eventWitness.getName().getString()
+                                + "이(가) 현장에서 직접 목격하고 경비대에 신고하러 갑니다."
+                ));
+                LivingKingdoms.LOGGER.info(
+                        "Erden justice witness captured case={} witness={} actual_resident=true event_time_witness=true physical_report_required=true",
+                        record.id(), eventWitness.getName().getString());
+            }
+        }
+
+        if (previous == null && eventWitness == null) {
+            suspect.sendSystemMessage(Component.literal(
+                    "§6[사건 발생] §f현장 목격자가 확인되지 않았습니다. 뒤늦게 지나간 주민은 목격자로 소급되지 않습니다."
+            ));
+            LivingKingdoms.LOGGER.info(
+                    "Erden justice case observed case={} suspect={} offense={} severity={} immediate_warrant=false event_time_witness=false",
+                    record.id(), suspect.getScoreboardName(), offense, record.severity());
+        } else if (previous != null) {
+            LivingKingdoms.LOGGER.info(
+                    "Erden justice case escalated case={} suspect={} offense={} severity={} event_time_witness={}",
+                    record.id(), suspect.getScoreboardName(), offense, record.severity(), eventWitness != null);
+        }
+    }
+'''
+    justice, count = re.subn(
+        r'    public static void observeCrime\(ServerLevel level, ServerPlayer suspect,.*?\n    \}\n\n    public static void onServerTick',
+        lambda _: new_observe + '\n    public static void onServerTick',
+        justice,
+        count=1,
+        flags=re.S,
+    )
+    require(count == 1, "could not replace Erden observeCrime with event-time witness capture")
+
+    new_observed = '''    private static void processObserved(
+            ServerLevel level,
+            ErdenJusticeSavedData data,
+            ErdenJusticeSavedData.CaseRecord record,
+            ServerPlayer suspect,
+            Map<String, Villager> loaded,
+            Set<String> guardNames,
+            long tick) {
+        // A witness may only be captured synchronously at the crime event. Residents who enter
+        // this area later are not retroactively treated as eyewitnesses.
+        if (tick - record.createdTick() <= WITNESS_EXPIRY_TICKS) return;
+        data.close(record.id());
+        if (suspect != null) suspect.sendSystemMessage(Component.literal(
+                "§7[사건 종결] §f범행 시점의 실제 목격자가 없어 사건이 수배로 전환되지 않았습니다."
+        ));
+        LivingKingdoms.LOGGER.info(
+                "Erden justice unwitnessed case expired case={} retroactive_witness=false",
+                record.id());
+    }
+'''
+    justice, count = re.subn(
+        r'    private static void processObserved\(.*?\n    \}\n\n    private static void processReporting',
+        lambda _: new_observed + '\n    private static void processReporting',
+        justice,
+        count=1,
+        flags=re.S,
+    )
+    require(count == 1, "could not remove retroactive witness assignment")
+
 require("StarterRealmManager.server()" not in justice,
         "justice manager still calls non-existent global server accessor")
-require("public static void onServerTick(ServerTickEvent.Post event)" in justice,
-        "justice server-tick entry point missing")
+require("event_time_witness=true" in justice,
+        "justice manager does not prove event-time witness capture")
+require("retroactive_witness=false" in justice,
+        "justice manager still lacks retroactive-witness rejection evidence")
 require("actual_resident=true" in justice and "synthetic_guard=false" in justice,
         "justice evidence markers missing")
 JUSTICE_MANAGER.write_text(justice, encoding="utf-8")
@@ -114,7 +216,11 @@ MOD_MAIN.write_text(main, encoding="utf-8")
 status = STATUS.read_text(encoding="utf-8")
 implemented_anchor = "## 왕국 완성 전 남은 핵심"
 justice_line = (
-    "- 에르덴 범죄를 즉시 수배로 바꾸지 않고 실제 로드된 주민 목격자가 실제 경비초소 근무자에게 걸어가 신고한 뒤 수배장을 발부하며, 주민 경비의 근접 체포·구금·실제 시민법정 심리·판결·형기 집행으로 이어지는 시민 사법 절차\n"
+    "- 에르덴 범죄를 즉시 수배로 바꾸지 않고 범행 순간 실제 로드된 주민만 목격자로 확정해 실제 경비초소 근무자에게 걸어가 신고한 뒤 수배장을 발부하며, 주민 경비의 근접 체포·구금·실제 시민법정 심리·판결·형기 집행으로 이어지는 시민 사법 절차\n"
+)
+status = status.replace(
+    "- 에르덴 범죄를 즉시 수배로 바꾸지 않고 실제 로드된 주민 목격자가 실제 경비초소 근무자에게 걸어가 신고한 뒤 수배장을 발부하며, 주민 경비의 근접 체포·구금·실제 시민법정 심리·판결·형기 집행으로 이어지는 시민 사법 절차\n",
+    justice_line
 )
 if justice_line.strip() not in status:
     require(implemented_anchor in status, "implementation-status remaining-core heading not found")
@@ -122,4 +228,4 @@ if justice_line.strip() not in status:
 status = status.replace("- 경비대 목격과 신고, 체포, 구금, 재판, 판결, 형 집행\n", "")
 STATUS.write_text(status, encoding="utf-8")
 
-print("Isolated CI fixtures and wired population-backed Erden civic justice.")
+print("Isolated CI fixtures and enforced event-time, population-backed Erden civic justice.")
