@@ -32,7 +32,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Isolate river-port source fixture and refresh status
+      - name: Isolate river-port and fire-response source fixtures
         run: python .github/scripts/isolate_living_kingdoms_river_port_ci.py
 
       - name: Clean compile Living Kingdoms
@@ -43,12 +43,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          manager='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java'
-          workflow='.github/workflows/audit-living-kingdoms-river-port.yml'
+          port='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java'
+          fire='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java'
+          port_workflow='.github/workflows/audit-living-kingdoms-river-port.yml'
+          fire_workflow='.github/workflows/audit-living-kingdoms-fire-response.yml'
           status='projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md'
-          grep -Fq 'LIVING_KINGDOMS_CI_RIVER_PORT_TEST' "$manager"
-          ! grep -Fq 'LIVING_KINGDOMS_CI_REALM_TEST' "$manager"
-          grep -Fq "LIVING_KINGDOMS_CI_RIVER_PORT_TEST: '1'" "$workflow"
+          grep -Fq 'LIVING_KINGDOMS_CI_RIVER_PORT_TEST' "$port"
+          ! grep -Fq 'LIVING_KINGDOMS_CI_REALM_TEST' "$port"
+          grep -Fq 'LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST' "$fire"
+          ! grep -Fq 'LIVING_KINGDOMS_CI_REALM_TEST' "$fire"
+          grep -Fq "LIVING_KINGDOMS_CI_RIVER_PORT_TEST: '1'" "$port_workflow"
+          grep -Fq "LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST: '1'" "$fire_workflow"
           ! grep -Fq -- '- 화재 시 소방 인력과 저수조를 사용하는 대응 동선' "$status"
           ! grep -Fq -- '- 1차 시가지 파츠 사이의 남은 공터' "$status"
 
@@ -60,9 +65,10 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java \
             projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md
           git diff --cached --quiet && exit 0
-          git commit -m 'fix(living-kingdoms): isolate river port CI fixture'
+          git commit -m 'fix(living-kingdoms): isolate fire and river port CI fixtures'
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
