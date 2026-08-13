@@ -11,11 +11,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -29,11 +27,9 @@ public final class ErdenExteriorTicketReaper {
             {0, 0}, {28, 0}, {-28, 0}, {0, 28}, {0, -28}
     };
     private static final long SAMPLE_RELEASE_GRACE_TICKS = 40L;
-    private static final long INVENTORY_CAPTURE_GRACE_TICKS = 20L;
 
     private static final Set<Long> RELEASED = new HashSet<>();
     private static final Set<String> VALIDATED_STORAGE_NODES = new HashSet<>();
-    private static final Map<String, Long> INVENTORY_READY_SINCE = new HashMap<>();
     private static MinecraftServer activeServer;
     private static long sampleReadySince = -1L;
     private static boolean ticketCiPassed;
@@ -91,7 +87,7 @@ public final class ErdenExteriorTicketReaper {
                     ErdenExteriorResidenceBuilder.RESIDENCE_REVISION);
             boolean exteriorReady = !isExteriorAnchor(packed)
                     || exterior.isBuilt(packed, ErdenKingdomExteriorBuilder.EXTERIOR_REVISION);
-            boolean storageReady = storageReadyForChunk(level, packed, containers);
+            boolean storageReady = storageReadyForChunk(packed, containers);
             if (RELEASED.contains(packed)
                     || !exteriorReady
                     || !residenceReady
@@ -107,20 +103,23 @@ public final class ErdenExteriorTicketReaper {
 
         if (releasedNow > 0 && (RELEASED.size() % 10 == 0 || RELEASED.size() == required.size())) {
             LivingKingdoms.LOGGER.info(
-                    "Released Erden exterior transient tickets progress={}/{} released_now={} storage_validated={}/{} resident_sample_validated={} persistent_forced_chunks=false",
+                    "Released Erden exterior transient tickets progress={}/{} released_now={} storage_validated={}/{} captured_producers={}/{} resident_sample_validated={} persistent_forced_chunks=false",
                     RELEASED.size(), required.size(), releasedNow,
-                    VALIDATED_STORAGE_NODES.size(), nodes.size(), residentSampleObserved);
+                    VALIDATED_STORAGE_NODES.size(), nodes.size(),
+                    containers.capturedCount(), ErdenKingdomSupplyCatalog.producerCount(),
+                    residentSampleObserved);
         }
 
         if (!ticketCiPassed
                 && RELEASED.size() == required.size()
                 && VALIDATED_STORAGE_NODES.size() == nodes.size()
+                && containers.capturedCount() == ErdenKingdomSupplyCatalog.producerCount()
                 && residentSampleObserved) {
             ticketCiPassed = true;
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors={} released={} explicit_release=true persistent_forced_chunks=false storage_yards_observed={} resident_sample_observed=true validation_revision=3 inventory_capture_grace_ticks={}",
+                    "LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors={} released={} explicit_release=true persistent_forced_chunks=false storage_yards_observed={} resident_sample_observed=true validation_revision=4 inventory_captured_nodes={}",
                     required.size(), RELEASED.size(), VALIDATED_STORAGE_NODES.size(),
-                    INVENTORY_CAPTURE_GRACE_TICKS);
+                    containers.capturedCount());
         }
 
         if (!exteriorCiPassed
@@ -142,7 +141,6 @@ public final class ErdenExteriorTicketReaper {
         activeServer = server;
         RELEASED.clear();
         VALIDATED_STORAGE_NODES.clear();
-        INVENTORY_READY_SINCE.clear();
         sampleReadySince = -1L;
         ticketCiPassed = false;
         exteriorCiPassed = false;
@@ -162,22 +160,19 @@ public final class ErdenExteriorTicketReaper {
         return VALIDATED_STORAGE_NODES.size() == ErdenKingdomSupplyCatalog.nodes().size();
     }
 
+    /**
+     * Producer storage tickets are retained until that exact barrel has both been initialized from
+     * authoritative supply state and subsequently read back into that state on a later sync. This is
+     * evidence-based rather than relying on a timing grace period.
+     */
     private static boolean storageReadyForChunk(
-            ServerLevel level,
             long packed,
             ErdenKingdomExteriorContainerSavedData containers) {
         for (ErdenKingdomSupplyCatalog.SupplyNode node : ErdenKingdomSupplyCatalog.nodes()) {
             if (ErdenKingdomExteriorBuilder.storageAnchorChunk(node) != packed) continue;
             if (!VALIDATED_STORAGE_NODES.contains(node.id)) return false;
             if (!node.producer()) continue;
-
-            if (!containers.isMaterialized(node.id)) {
-                INVENTORY_READY_SINCE.remove(node.id);
-                return false;
-            }
-            long readySince = INVENTORY_READY_SINCE.computeIfAbsent(
-                    node.id, ignored -> level.getGameTime());
-            if (level.getGameTime() - readySince < INVENTORY_CAPTURE_GRACE_TICKS) return false;
+            if (!containers.isMaterialized(node.id) || !containers.isCaptured(node.id)) return false;
         }
         return true;
     }
