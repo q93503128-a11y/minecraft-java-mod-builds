@@ -97,14 +97,6 @@ public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
         double farmTarget = 70.0 + continental * 3.0 + regional * 2.2 + detail * 0.5;
         surface = lerp(surface, farmTarget, south * 0.58);
 
-        // Silver River: a 180-260 m floodplain with a navigable main channel. It passes the western
-        // side of the capital and continues to the southern coast.
-        double riverCenterX = silverRiverCenterX(z);
-        double riverDistance = Math.abs(x - riverCenterX);
-        double floodplain = 1.0 - smoothstep(95.0, 310.0, riverDistance);
-        double channel = 1.0 - smoothstep(0.0, 72.0, riverDistance);
-        surface -= floodplain * 4.0 + channel * 7.5;
-
         // A western tributary creates the crossing that originally justified the royal capital.
         double tributaryCenterZ = 2_650.0 + Math.sin(x / 2_700.0) * 520.0;
         double tributaryDistance = Math.abs(z - tributaryCenterZ);
@@ -127,6 +119,17 @@ public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
                     0xA24BAED4963EE407L) * 0.7;
             surface = lerp(surface, 74.0 + local, terrace * 0.88);
         }
+
+        // Silver River is applied after metropolitan grading so the promised navigable channel
+        // cannot be lifted back above sea level by the capital terrain blend. Through the capital
+        // latitude it bends outside the western wall, keeping dense urban lots dry while allowing
+        // the authored west wharf to project directly into the main channel.
+        double riverCenterX = silverRiverCenterX(z);
+        double riverDistance = Math.abs(x - riverCenterX);
+        double floodplain = 1.0 - smoothstep(95.0, 310.0, riverDistance);
+        double channel = 1.0 - smoothstep(0.0, 72.0, riverDistance);
+        surface -= floodplain * 4.0 + channel * 7.5;
+
         return surface;
     }
 
@@ -135,9 +138,13 @@ public enum AuthoredContinentDensity implements DensityFunction.SimpleFunction {
         return 1.0 - smoothstep(72.0, 310.0, distance);
     }
 
-    private static double silverRiverCenterX(double z) {
-        return -820.0 + Math.sin(z / 2_900.0) * 470.0
+    /** Exact authored centre line used by terrain, drainage diagnostics and river-port construction. */
+    public static double silverRiverCenterX(double z) {
+        double natural = -820.0 + Math.sin(z / 2_900.0) * 470.0
                 + Math.sin(z / 930.0) * 105.0;
+        double capitalBypass = 1.0 - smoothstep(900.0, 1_800.0, Math.abs(z));
+        double wallSideChannel = -1_310.0 + Math.sin(z / 760.0) * 26.0;
+        return lerp(natural, wallSideChannel, capitalBypass);
     }
 
     private static double ellipse(double x, double z, double radiusX, double radiusZ) {
