@@ -477,33 +477,87 @@ public final class ErdenUrbanAuthoredNewFloorManager {
     }
 
     private static boolean verify(ServerLevel level, PlacementPlan plan) {
-        BlockState door = level.getBlockState(new BlockPos(
-                plan.entranceX(), plan.expectedDoorY(), plan.entranceZ()));
-        if (!(door.getBlock() instanceof DoorBlock)) return false;
+    BlockPos doorPos = new BlockPos(
+            plan.entranceX(), plan.expectedDoorY(), plan.entranceZ());
+    BlockState door = level.getBlockState(doorPos);
+    if (!(door.getBlock() instanceof DoorBlock)) {
+        logCiVerifyFailure(level, plan, "door pos=" + doorPos + " state=" + door);
+        return false;
+    }
 
-        for (BlockPos floor : plan.floorBlocks()) {
-            if (level.getBlockState(floor).getBlock() != plan.floorBlock()) return false;
-            if (!level.getBlockState(floor.above()).isAir()) return false;
+    for (BlockPos floor : plan.floorBlocks()) {
+        BlockState floorState = level.getBlockState(floor);
+        if (floorState.getBlock() != plan.floorBlock()) {
+            logCiVerifyFailure(level, plan,
+                    "floor pos=" + floor + " state=" + floorState
+                            + " expected=" + plan.floorBlock());
+            return false;
         }
-        for (RouteNode node : plan.routeNodes()) {
-            BlockState feet = level.getBlockState(node.world().pos());
-            StairIntent stair = plan.stairs().get(node.world());
-            if (stair == null) {
-                if (!feet.isAir()) return false;
-            } else if (!matchesStair(feet, plan.role(), stair.facing())) {
+        BlockPos headPos = floor.above();
+        BlockState head = level.getBlockState(headPos);
+        if (!head.isAir()) {
+            logCiVerifyFailure(level, plan,
+                    "floor_head pos=" + headPos + " state=" + head);
+            return false;
+        }
+    }
+    for (RouteNode node : plan.routeNodes()) {
+        BlockPos feetPos = node.world().pos();
+        BlockState feet = level.getBlockState(feetPos);
+        StairIntent stair = plan.stairs().get(node.world());
+        if (stair == null) {
+            if (!feet.isAir()) {
+                logCiVerifyFailure(level, plan,
+                        "route_feet local=" + node.local() + " pos=" + feetPos
+                                + " state=" + feet);
                 return false;
             }
-            if (!level.getBlockState(new BlockPos(
-                    node.world().x(), node.world().y() + 1, node.world().z())).isAir()) {
-                return false;
-            }
+        } else if (!matchesStair(feet, plan.role(), stair.facing())) {
+            logCiVerifyFailure(level, plan,
+                    "stair local=" + node.local() + " pos=" + feetPos
+                            + " state=" + feet + " expected_facing=" + stair.facing());
+            return false;
         }
+        BlockPos routeHeadPos = new BlockPos(
+                node.world().x(), node.world().y() + 1, node.world().z());
+        BlockState routeHead = level.getBlockState(routeHeadPos);
+        if (!routeHead.isAir()) {
+            logCiVerifyFailure(level, plan,
+                    "route_head local=" + node.local() + " pos=" + routeHeadPos
+                            + " state=" + routeHead);
+            return false;
+        }
+    }
 
-        BlockState targetSupport = level.getBlockState(new BlockPos(
-                plan.target().x(), plan.target().y() - 1, plan.target().z()));
-        if (targetSupport.isAir()) return false;
-        return level.getBlockState(plan.target().pos()).isAir()
-                && level.getBlockState(plan.target().pos().above()).isAir();
+    BlockPos targetSupportPos = new BlockPos(
+            plan.target().x(), plan.target().y() - 1, plan.target().z());
+    BlockState targetSupport = level.getBlockState(targetSupportPos);
+    if (targetSupport.isAir()) {
+        logCiVerifyFailure(level, plan,
+                "target_support pos=" + targetSupportPos + " state=" + targetSupport);
+        return false;
+    }
+    BlockState targetFeet = level.getBlockState(plan.target().pos());
+    if (!targetFeet.isAir()) {
+        logCiVerifyFailure(level, plan,
+                "target_feet pos=" + plan.target().pos() + " state=" + targetFeet);
+        return false;
+    }
+    BlockState targetHead = level.getBlockState(plan.target().pos().above());
+    if (!targetHead.isAir()) {
+        logCiVerifyFailure(level, plan,
+                "target_head pos=" + plan.target().pos().above() + " state=" + targetHead);
+        return false;
+    }
+    return true;
+}
+
+    private static void logCiVerifyFailure(
+            ServerLevel level, PlacementPlan plan, String reason) {
+        if (plan.entranceKey() != ciPlanKey || level.getGameTime() % 20L != 0L) return;
+        LivingKingdoms.LOGGER.info(
+                "LK_ERDEN_AUTHORED_NEW_FLOOR_VERIFY_FAIL role={} entrance={},{} reason={}",
+                plan.role(), plan.entranceX(), plan.entranceZ(), reason);
     }
 
     private static void requestCiSampleChunks(ServerLevel level) {
