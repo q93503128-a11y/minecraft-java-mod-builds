@@ -16,6 +16,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenEntranceDoorRepairManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntranceThresholdManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntryPathReconciler;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntryTraversalAudit;
+import kr.moonseungjun.livingkingdoms.world.ErdenFireResponseManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorInventoryManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowAudit;
@@ -136,6 +137,7 @@ public final class LivingKingdoms {
         ErdenEntryTraversalAudit.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
+        ErdenFireResponseManager.onServerTick(event);
         ErdenKingdomExteriorInventoryManager.captureBeforeSupply(event);
         ErdenAuthoritativeEconomyManager.onServerTick(event);
         ErdenKingdomExteriorInventoryManager.materializeAfterSupply(event);
