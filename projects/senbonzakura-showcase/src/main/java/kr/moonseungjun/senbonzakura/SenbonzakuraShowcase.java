@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 @Mod(SenbonzakuraShowcase.MOD_ID)
 public final class SenbonzakuraShowcase {
     public static final String MOD_ID = "senbonzakura";
-    public static final String VERSION = "0.1.0-alpha.8";
+    public static final String VERSION = "0.1.0-alpha.9";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SenbonzakuraShowcase(IEventBus modEventBus) {
