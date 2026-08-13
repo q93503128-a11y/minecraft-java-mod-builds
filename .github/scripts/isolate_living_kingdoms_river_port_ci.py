@@ -47,8 +47,6 @@ require("if (!isFireCi() || ciPassed || !ciPrepared || ciFirePos == null) return
 FIRE_MANAGER.write_text(fire, encoding="utf-8")
 
 justice = JUSTICE_MANAGER.read_text(encoding="utf-8")
-# This helper depended on a non-existent StarterRealmManager.server() accessor and is not needed;
-# CrimeManager can distinguish the Erden warrant directly from CrimeSavedData.
 justice = re.sub(
     r'\n    public static boolean hasActiveCase\(UUID suspect\) \{.*?\n    \}\n\n    public static void onServerTick',
     '\n    public static void onServerTick',
@@ -66,31 +64,31 @@ JUSTICE_MANAGER.write_text(justice, encoding="utf-8")
 
 crime = CRIME_MANAGER.read_text(encoding="utf-8")
 if "ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())" not in crime:
-    crime = crime.replace(
-        "        if (record.wanted() <= 0) return;\n\n        String local = RealmJurisdiction.at(level, player.blockPosition());",
-        "        if (record.wanted() <= 0) return;\n"
-        "        // Erden warrants are enforced by population-backed resident guards, never the\n"
-        "        // generic synthetic pursuit wave used by the other starter realms.\n"
-        "        if (ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())) return;\n\n"
-        "        String local = RealmJurisdiction.at(level, player.blockPosition());"
+    crime, count = re.subn(
+        r'(        if \(record\.wanted\(\) <= 0\) return;\n)',
+        r'\1        // Erden warrants are enforced by population-backed resident guards, never the\n'
+        r'        // generic synthetic pursuit wave used by the other starter realms.\n'
+        r'        if (ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())) return;\n',
+        crime,
+        count=1,
     )
-if "ErdenJusticeManager.observeCrime(level, player, severity, description" not in crime:
-    crime = crime.replace(
-        "    private static void reportCrime(ServerLevel level, ServerPlayer player, String jurisdiction,\n"
-        "                                    int severity, String description) {\n"
-        "        CrimeSavedData.CrimeRecord record = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE)",
-        "    private static void reportCrime(ServerLevel level, ServerPlayer player, String jurisdiction,\n"
-        "                                    int severity, String description) {\n"
-        "        if (ErdenJusticeManager.JURISDICTION.equals(jurisdiction)) {\n"
-        "            ErdenJusticeManager.observeCrime(\n"
-        "                    level, player, severity, description, player.blockPosition());\n"
-        "            return;\n"
-        "        }\n"
-        "        CrimeSavedData.CrimeRecord record = level.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE)"
+    require(count == 1, "could not locate wanted-record gate in CrimeManager")
+if "ErdenJusticeManager.observeCrime(" not in crime:
+    crime, count = re.subn(
+        r'(    private static void reportCrime\(ServerLevel level, ServerPlayer player, String jurisdiction,\n'
+        r'                                    int severity, String description\) \{\n)',
+        r'\1        if (ErdenJusticeManager.JURISDICTION.equals(jurisdiction)) {\n'
+        r'            ErdenJusticeManager.observeCrime(\n'
+        r'                    level, player, severity, description, player.blockPosition());\n'
+        r'            return;\n'
+        r'        }\n',
+        crime,
+        count=1,
     )
+    require(count == 1, "could not locate reportCrime method in CrimeManager")
 require("ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())" in crime,
         "generic Erden synthetic pursuit was not disabled")
-require("ErdenJusticeManager.observeCrime(level, player, severity, description" in crime,
+require("ErdenJusticeManager.observeCrime(" in crime,
         "Erden crime reporting was not routed through civic justice")
 CRIME_MANAGER.write_text(crime, encoding="utf-8")
 
