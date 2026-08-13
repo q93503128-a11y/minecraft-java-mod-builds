@@ -1,4 +1,4 @@
-name: Retain Living Kingdoms authored new-floor CI chunks
+name: Instrument Living Kingdoms authored new-floor blocker
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Retain exact CI sample footprint through materialization
+      - name: Add bounded CI blocker diagnostics
         shell: bash
         run: |
           set -euo pipefail
@@ -33,42 +33,163 @@ jobs:
           p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java')
           s = p.read_text(encoding='utf-8')
 
-          old = '''                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
-                      }
-                  }
-                  ciPlanKey = sample.entranceKey();
+          old = '''            if (data.isCompleted(key, FLOOR_REVISION)) continue;
+                  if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;
+                  if (!chunksReady(level, plan.bounds())) continue;
+
+                  if (!data.isPrepared(key, FLOOR_REVISION)) {
+                      if (!materialize(level, plan, true)) continue;
           '''
-          new = '''                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
-                          // Capital streaming releases its construction ticket as soon as this cell is
-                          // built. The authored-floor sample spans several cells, so retain only this
-                          // deliberate CI footprint until every cell can be verified together.
-                          level.setChunkForced(chunkX, chunkZ, true);
-                      }
+          new = '''            if (data.isCompleted(key, FLOOR_REVISION)) continue;
+                  if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) {
+                      logCiWait(level, plan, "ground_not_complete");
+                      continue;
                   }
-                  ciPlanKey = sample.entranceKey();
+                  if (!chunksReady(level, plan.bounds())) {
+                      logCiWait(level, plan, "chunks_not_ready " + chunkReadiness(level, plan.bounds()));
+                      continue;
+                  }
+
+                  if (!data.isPrepared(key, FLOOR_REVISION)) {
+                      if (!materialize(level, plan, true)) continue;
           '''
           if s.count(old) != 1:
-              raise SystemExit(f'CI retain patch anchor count={s.count(old)}')
+              raise SystemExit(f'onServerTick diagnostic anchor count={s.count(old)}')
           s = s.replace(old, new, 1)
 
-          old = '''        ciPassed = true;
-                  LivingKingdoms.LOGGER.info(
-                          "LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates={} sample_role={} sample_floor_cells={} sample_route_nodes={} sample_stairs={} stairwell_openings={} target_y={} source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false revision={}",
+          old = '''        if (!(level.getBlockState(new BlockPos(
+                      plan.entranceX(), plan.expectedDoorY(), plan.entranceZ())).getBlock()
+                      instanceof DoorBlock)) {
+                  return false;
+              }
+
+              for (BlockPos floor : plan.floorBlocks()) {
+                  BlockState state = level.getBlockState(floor);
+                  if (state.getBlock() != plan.floorBlock()
+                          && !runtimeBodyClearable(state, allowLegacyConversionClear)) return false;
+              }
           '''
-          new = '''        ciPassed = true;
-                  for (int chunkX = Math.floorDiv(sample.bounds().minX(), 16);
-                       chunkX <= Math.floorDiv(sample.bounds().maxX(), 16); chunkX++) {
-                      for (int chunkZ = Math.floorDiv(sample.bounds().minZ(), 16);
-                           chunkZ <= Math.floorDiv(sample.bounds().maxZ(), 16); chunkZ++) {
-                          level.setChunkForced(chunkX, chunkZ, false);
-                      }
+          new = '''        BlockPos doorPos = new BlockPos(
+                      plan.entranceX(), plan.expectedDoorY(), plan.entranceZ());
+              BlockState doorState = level.getBlockState(doorPos);
+              if (!(doorState.getBlock() instanceof DoorBlock)) {
+                  logCiWait(level, plan, "materialize door pos=" + doorPos + " state=" + doorState);
+                  return false;
+              }
+
+              for (BlockPos floor : plan.floorBlocks()) {
+                  BlockState state = level.getBlockState(floor);
+                  if (state.getBlock() != plan.floorBlock()
+                          && !runtimeBodyClearable(state, allowLegacyConversionClear)) {
+                      logCiWait(level, plan, "materialize floor pos=" + floor + " state=" + state);
+                      return false;
                   }
-                  LivingKingdoms.LOGGER.info(
-                          "LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates={} sample_role={} sample_floor_cells={} sample_route_nodes={} sample_stairs={} stairwell_openings={} target_y={} source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false ci_chunks_released=true revision={}",
+              }
           '''
           if s.count(old) != 1:
-              raise SystemExit(f'CI release patch anchor count={s.count(old)}')
+              raise SystemExit(f'materialize door/floor anchor count={s.count(old)}')
           s = s.replace(old, new, 1)
+
+          old = '''            if (stair == null) {
+                      if (!runtimeBodyClearable(feet, allowLegacyConversionClear)) return false;
+                  } else if (!matchesStair(feet, plan.role(), stair.facing())
+                          && !runtimeBodyClearable(feet, allowLegacyConversionClear)) {
+                      return false;
+                  }
+                  BlockState head = level.getBlockState(new BlockPos(
+                          node.world().x(), node.world().y() + 1, node.world().z()));
+                  if (!runtimeBodyClearable(head, allowLegacyConversionClear)) return false;
+          '''
+          new = '''            if (stair == null) {
+                      if (!runtimeBodyClearable(feet, allowLegacyConversionClear)) {
+                          logCiWait(level, plan, "materialize route_feet local=" + node.local()
+                                  + " world=" + node.world().pos() + " state=" + feet);
+                          return false;
+                      }
+                  } else if (!matchesStair(feet, plan.role(), stair.facing())
+                          && !runtimeBodyClearable(feet, allowLegacyConversionClear)) {
+                      logCiWait(level, plan, "materialize stair_feet local=" + node.local()
+                              + " world=" + node.world().pos() + " state=" + feet
+                              + " expected_facing=" + stair.facing());
+                      return false;
+                  }
+                  BlockPos headPos = new BlockPos(
+                          node.world().x(), node.world().y() + 1, node.world().z());
+                  BlockState head = level.getBlockState(headPos);
+                  if (!runtimeBodyClearable(head, allowLegacyConversionClear)) {
+                      logCiWait(level, plan, "materialize route_head local=" + node.local()
+                              + " world=" + headPos + " state=" + head);
+                      return false;
+                  }
+          '''
+          if s.count(old) != 1:
+              raise SystemExit(f'materialize route anchor count={s.count(old)}')
+          s = s.replace(old, new, 1)
+
+          old = '''        BlockState door = level.getBlockState(new BlockPos(
+                      plan.entranceX(), plan.expectedDoorY(), plan.entranceZ()));
+              if (!(door.getBlock() instanceof DoorBlock)) return false;
+
+              for (BlockPos floor : plan.floorBlocks()) {
+                  if (level.getBlockState(floor).getBlock() != plan.floorBlock()) return false;
+                  if (!level.getBlockState(floor.above()).isAir()) return false;
+              }
+          '''
+          new = '''        BlockPos doorPos = new BlockPos(
+                      plan.entranceX(), plan.expectedDoorY(), plan.entranceZ());
+              BlockState door = level.getBlockState(doorPos);
+              if (!(door.getBlock() instanceof DoorBlock)) {
+                  logCiWait(level, plan, "verify door pos=" + doorPos + " state=" + door);
+                  return false;
+              }
+
+              for (BlockPos floor : plan.floorBlocks()) {
+                  BlockState floorState = level.getBlockState(floor);
+                  if (floorState.getBlock() != plan.floorBlock()) {
+                      logCiWait(level, plan, "verify floor pos=" + floor + " state=" + floorState);
+                      return false;
+                  }
+                  BlockState above = level.getBlockState(floor.above());
+                  if (!above.isAir()) {
+                      logCiWait(level, plan, "verify floor_head pos=" + floor.above() + " state=" + above);
+                      return false;
+                  }
+              }
+          '''
+          if s.count(old) != 1:
+              raise SystemExit(f'verify floor anchor count={s.count(old)}')
+          s = s.replace(old, new, 1)
+
+          anchor = '''    private static boolean chunksReady(ServerLevel level, Bounds bounds) {
+          '''
+          helper = '''    private static void logCiWait(
+                  ServerLevel level, PlacementPlan plan, String reason) {
+              if (plan.entranceKey() != ciPlanKey || level.getGameTime() % 40L != 0L) return;
+              LivingKingdoms.LOGGER.info(
+                      "LK_ERDEN_AUTHORED_NEW_FLOOR_WAIT role={} entrance={},{} reason={}",
+                      plan.role(), plan.entranceX(), plan.entranceZ(), reason);
+          }
+
+              private static String chunkReadiness(ServerLevel level, Bounds bounds) {
+                  List<String> states = new ArrayList<>();
+                  for (int chunkX = Math.floorDiv(bounds.minX(), 16);
+                       chunkX <= Math.floorDiv(bounds.maxX(), 16); chunkX++) {
+                      for (int chunkZ = Math.floorDiv(bounds.minZ(), 16);
+                           chunkZ <= Math.floorDiv(bounds.maxZ(), 16); chunkZ++) {
+                          if (!level.hasChunk(chunkX, chunkZ)
+                                  || !ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ)) {
+                              states.add(ErdenCapitalStreamingBuilder.diagnosticChunkState(
+                                      level, chunkX, chunkZ));
+                          }
+                      }
+                  }
+                  return states.isEmpty() ? "ready" : String.join(";", states);
+              }
+
+          ''' + anchor
+          if s.count(anchor) != 1:
+              raise SystemExit(f'helper anchor count={s.count(anchor)}')
+          s = s.replace(anchor, helper, 1)
           p.write_text(s, encoding='utf-8')
           PY
 
@@ -76,14 +197,14 @@ jobs:
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
 
-      - name: Publish source patch
+      - name: Publish source instrumentation
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java
-          git commit -m 'test(living-kingdoms): retain authored upper-floor CI chunks'
+          git commit -m 'test(living-kingdoms): instrument authored upper-floor blocker'
           for attempt in 1 2 3 4 5 6 7 8; do
             git fetch origin main
             git rebase origin/main
