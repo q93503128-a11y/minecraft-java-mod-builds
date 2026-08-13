@@ -35,16 +35,16 @@ jobs:
 
       - name: Verify JAR
         run: |
-          test -f build/libs/senbonzakura-0.1.0-alpha.4.jar
-          jar tf build/libs/senbonzakura-0.1.0-alpha.4.jar | grep -q 'kr/moonseungjun/senbonzakura/SenbonzakuraShowcase.class'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.4.jar | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiWorldRenderer.class'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.4.jar | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiKeyHandler.class'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.4.jar | grep -q 'assets/senbonzakura/items/zanpakuto_senbonzakura.json'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.4.jar | grep -q 'META-INF/neoforge.mods.toml'
+          test -f build/libs/senbonzakura-0.1.0-alpha.5.jar
+          jar tf build/libs/senbonzakura-0.1.0-alpha.5.jar | grep -q 'kr/moonseungjun/senbonzakura/SenbonzakuraShowcase.class'
+          jar tf build/libs/senbonzakura-0.1.0-alpha.5.jar | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiWorldRenderer.class'
+          jar tf build/libs/senbonzakura-0.1.0-alpha.5.jar | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiKeyHandler.class'
+          jar tf build/libs/senbonzakura-0.1.0-alpha.5.jar | grep -q 'assets/senbonzakura/items/zanpakuto_senbonzakura.json'
+          jar tf build/libs/senbonzakura-0.1.0-alpha.5.jar | grep -q 'META-INF/neoforge.mods.toml'
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: senbonzakura-0.1.0-alpha.4
-          path: projects/senbonzakura-showcase/build/libs/senbonzakura-0.1.0-alpha.4.jar
+          name: senbonzakura-0.1.0-alpha.5
+          path: projects/senbonzakura-showcase/build/libs/senbonzakura-0.1.0-alpha.5.jar
           if-no-files-found: error
