@@ -8,4 +8,4 @@
 - Source audit: `tools/test_current_source.py`
 - JAR audit: `tools/verify_jar.py`
 
-게임 데이터·마력·숙련·시전·네트워크·판정은 서버 권위다. 0초 시전도 ready-hold 후 release 발동을 유지한다. 현재 presentation 정본은 `GrimoireScreen`, `ArcaneHud`, `SpellCinematicDirector`, `ArcaneRegaliaRenderer`, `ArcaneCastingPerformance`이며 구형 presentation 클래스와 버전별 migration/apply/fix 도구는 active tree에 두지 않는다.
+게임 데이터·마력·숙련·시전·네트워크·판정은 서버 권위다. 0초 시전도 ready-hold 후 release 발동을 유지한다. 현재 presentation 정본은 `GrimoireScreen`, `ArcaneHud`, `ArcaneSigilDirector`, `SpellCinematicDirector`, `ArcaneRegaliaRenderer`, `ArcaneCastingPerformance`이며 구형 presentation 클래스와 버전별 migration/apply/fix 도구는 active tree에 두지 않는다.

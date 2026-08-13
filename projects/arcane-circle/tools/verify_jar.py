@@ -18,6 +18,7 @@ required = {
     "kr/moonseungjun/arcanecircle/magic/WorldMagicService.class",
     "kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class",
     "kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class",
+    "kr/moonseungjun/arcanecircle/client/ArcaneSigilDirector.class",
     "kr/moonseungjun/arcanecircle/client/GrimoireScreen.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneHud.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneRegaliaRenderer.class",
@@ -25,7 +26,6 @@ required = {
     "kr/moonseungjun/arcanecircle/client/ArcaneGearRenderer.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneWorldMesh.class",
     "kr/moonseungjun/arcanecircle/magic/SpellCatalog.class",
-    "kr/moonseungjun/arcanecircle/magic/SpellSigilService.class",
     "kr/moonseungjun/arcanecircle/magic/HighCircleSpellEffects.class",
     "kr/moonseungjun/arcanecircle/magic/SpellWorldLore.class",
     "kr/moonseungjun/arcanecircle/world/ArcaneWorldData.class",
@@ -57,7 +57,7 @@ with zipfile.ZipFile(jar) as archive:
     ]
     if forbidden:
         raise SystemExit(f"forbidden survival/development entries: {forbidden[:8]}")
-    retired = ['CodexVisualLanguage', 'ArcaneSigilDetailGrammar', 'LowCircleVisualIdentity', 'MidCircleVisualIdentity', 'FifthCircleVisualIdentity', 'SixthCircleVisualIdentity', 'ArchmageVisualIdentity', 'RangeReactivePresentation', 'SpellVisualSignature', 'CastingSilhouetteRenderer', 'RobeRegaliaRenderer']
+    retired = ['CodexVisualLanguage', 'ArcaneSigilDetailGrammar', 'LowCircleVisualIdentity', 'MidCircleVisualIdentity', 'FifthCircleVisualIdentity', 'SixthCircleVisualIdentity', 'ArchmageVisualIdentity', 'RangeReactivePresentation', 'SpellVisualSignature', 'CastingSilhouetteRenderer', 'RobeRegaliaRenderer', 'SignatureGeometry', 'SpellSigilService']
     leaked = [n for n in names if any(n.endswith('/'+c+'.class') or ('/'+c+'$') in n for c in retired)]
     if leaked:
         raise SystemExit(f"retired presentation bytecode leaked: {sorted(leaked)}")

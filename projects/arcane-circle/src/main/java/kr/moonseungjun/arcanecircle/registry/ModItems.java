@@ -28,31 +28,31 @@ public final class ModItems {
 
     public static final StaffProfile NOVICE_PROFILE = new StaffProfile(
             "novice_staff", "견습 마도봉", "불안정한 1써클 마력핵을 보조하는 입문 지팡이.", "첫 각성 시 최초 1회 지급",
-            25, 1.02, 0.96, 1.04, 1.0, 0.96, 1.15, null, 1.0);
+            25, 1.02, 0.96, 1.04, 1.0, 0.96, 0.96, 1.15, null, 1.0);
     public static final StaffProfile EMBER_PROFILE = new StaffProfile(
             "ember_staff", "홍염 지팡이", "화염 회로를 과충전하는 2써클 공격형 지팡이.", "견습 마도봉 + 블레이즈 막대 + 마그마 크림",
-            20, 1.04, 0.90, 1.15, 1.08, 0.92, 1.10, SpellDefinition.School.FIRE, 1.45);
+            20, 1.04, 0.90, 1.15, 1.08, 0.91, 0.92, 1.10, SpellDefinition.School.FIRE, 1.45);
     public static final StaffProfile GLACIAL_PROFILE = new StaffProfile(
             "glacial_staff", "빙하 지팡이", "서리 주문의 범위와 동결력을 크게 확장한다.", "견습 마도봉 + 푸른 얼음 + 자수정 조각",
-            35, 1.05, 0.88, 1.16, 1.24, 0.88, 1.18, SpellDefinition.School.FROST, 1.50);
+            35, 1.05, 0.88, 1.16, 1.24, 0.90, 0.88, 1.18, SpellDefinition.School.FROST, 1.50);
     public static final StaffProfile ZEPHYR_PROFILE = new StaffProfile(
             "zephyr_staff", "청풍 지팡이", "풍류 주문의 연속 시전과 기동력을 높인다.", "견습 마도봉 + 팬텀 막 + 브리즈 막대",
-            30, 1.05, 0.86, 1.14, 1.22, 0.70, 1.28, SpellDefinition.School.WIND, 1.55);
+            30, 1.05, 0.86, 1.14, 1.22, 0.82, 0.70, 1.28, SpellDefinition.School.WIND, 1.55);
     public static final StaffProfile AEGIS_PROFILE = new StaffProfile(
             "aegis_staff", "수호 지팡이", "고위 방벽술의 흡수량과 유지력을 증폭한다.", "견습 마도봉 + 방패 + 금 블록",
-            80, 1.08, 0.82, 1.24, 1.12, 0.76, 1.30, SpellDefinition.School.WARD, 1.75);
+            80, 1.08, 0.82, 1.24, 1.12, 0.88, 0.76, 1.30, SpellDefinition.School.WARD, 1.75);
     public static final StaffProfile VERDANT_PROFILE = new StaffProfile(
             "verdant_staff", "생명의 지팡이", "치유와 자연 회복을 고위 성직술 수준으로 강화한다.", "견습 마도봉 + 황금 사과 + 에메랄드 블록",
-            95, 1.09, 0.76, 1.30, 1.18, 0.74, 1.68, SpellDefinition.School.LIFE, 1.85);
+            95, 1.09, 0.76, 1.30, 1.18, 0.86, 0.74, 1.68, SpellDefinition.School.LIFE, 1.85);
     public static final StaffProfile RIFT_PROFILE = new StaffProfile(
             "rift_staff", "균열 지팡이", "공간을 찢어 사거리와 전이 안정성을 크게 높인다.", "견습 마도봉 + 엔더의 눈 + 우는 흑요석 + 메아리 조각",
-            110, 1.10, 0.72, 1.36, 1.48, 0.68, 1.35, SpellDefinition.School.SPACE, 1.80);
+            110, 1.10, 0.72, 1.36, 1.48, 0.78, 0.68, 1.35, SpellDefinition.School.SPACE, 1.80);
     public static final StaffProfile SAGE_PROFILE = new StaffProfile(
             "sage_staff", "현자의 지팡이", "고위 회로를 적은 마력으로 빠르게 반복하는 범용 지팡이.", "균열 지팡이 + 마법이 부여된 책 + 금 블록 + 다이아몬드 블록",
-            620, 1.16, 0.44, 2.10, 1.75, 0.42, 2.20, SpellDefinition.School.ARCANE, 1.70);
+            620, 1.16, 0.44, 2.10, 1.75, 0.58, 0.42, 2.20, SpellDefinition.School.ARCANE, 1.70);
     public static final StaffProfile ARCHMAGE_PROFILE = new StaffProfile(
             "archmage_staff", "대마도사의 지팡이", "최고위 영역술을 전제로 모든 마법 수치를 증폭한다.", "현자의 지팡이 + 네더의 별 + 메아리 조각 + 네더라이트 블록",
-            1800, 1.25, 0.24, 3.80, 2.85, 0.23, 3.60, null, 1.0);
+            1800, 1.25, 0.24, 3.80, 2.85, 0.38, 0.23, 3.60, null, 1.0);
 
     public static final DeferredItem<ArcaneStaffItem> NOVICE_STAFF = registerStaff("novice_staff", NOVICE_PROFILE, Rarity.COMMON);
     public static final DeferredItem<ArcaneStaffItem> EMBER_STAFF = registerStaff("ember_staff", EMBER_PROFILE, Rarity.UNCOMMON);

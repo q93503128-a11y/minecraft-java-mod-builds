@@ -192,7 +192,7 @@ public final class SpellCastingService {
     public static int requiredCastTicks(ServerPlayer player, SpellDefinition spell) {
         MagicPlayerData.MageState state = data(player).state(player);
         int circle = Math.max(1, Math.min(9, spell.circle()));
-        int[] sameCircleTicks = {0, 10, 18, 30, 50, 84, 140, 230, 380, 620};
+        int[] sameCircleTicks = {0, 6, 10, 16, 26, 42, 68, 105, 155, 220};
         int circleGap = Math.max(0, state.circle() - circle);
         int masteryTier = SpellCatalog.masteryTier(state.mastery(spell.id()));
         double gapScale = Math.pow(0.78, circleGap);
@@ -200,8 +200,10 @@ public final class SpellCastingService {
         kr.moonseungjun.arcanecircle.world.MagicTradition chosen =
                 kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer())
                         .tradition(player);
-        double raw = sameCircleTicks[circle] * gapScale * masteryScale * chosen.castTimeMultiplier();
-        return raw < 2.0 ? 0 : Math.max(2, (int) Math.round(raw));
+        double staffScale = Math.max(0.25,
+                kr.moonseungjun.arcanecircle.registry.ModItems.equipped(player).castTimeMultiplier());
+        double raw = sameCircleTicks[circle] * gapScale * masteryScale * chosen.castTimeMultiplier() * staffScale;
+        return raw < 1.0 ? 0 : Math.max(1, (int) Math.round(raw));
     }
 
     public static void queueFusionSlot(ServerPlayer player, int slot) {
@@ -362,17 +364,20 @@ public final class SpellCastingService {
         double complexity = 1.35 + Math.max(0, ingredientCount - 2) * 0.18 + circle * 0.055;
         int unfamiliarPenalty = registered ? 8 : 18 + ingredientCount * 7 + circle * 3;
         int calculated = (int) Math.ceil(direct * complexity) + unfamiliarPenalty - masteryTier * 3;
-        int minimum = switch (circle) {
-            case 1 -> 20;
-            case 2 -> 34;
-            case 3 -> 56;
-            case 4 -> 90;
-            case 5 -> 150;
-            case 6 -> 240;
-            case 7 -> 380;
-            case 8 -> 620;
-            default -> 960;
+        int baseMinimum = switch (circle) {
+            case 1 -> 10;
+            case 2 -> 16;
+            case 3 -> 24;
+            case 4 -> 36;
+            case 5 -> 54;
+            case 6 -> 78;
+            case 7 -> 108;
+            case 8 -> 145;
+            default -> 190;
         };
+        double staffScale = Math.max(0.25,
+                kr.moonseungjun.arcanecircle.registry.ModItems.equipped(player).castTimeMultiplier());
+        int minimum = Math.max(1, (int) Math.round(baseMinimum * staffScale));
         int resultTicks = Math.max(minimum, calculated);
         if (registered && result.circle() <= 3 && masteryTier >= 8) return 0;
         return resultTicks;

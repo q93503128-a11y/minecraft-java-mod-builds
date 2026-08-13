@@ -95,15 +95,22 @@ public final class WorldMagicTracker {
 
         List<RenderEntry> entries=new ArrayList<>();
         for(Visual v:CHARGES.values()){
+            int color=SpellCinematicDirector.color(v.spell);
+            entries.add(new RenderEntry(v.center,
+                    ArcaneSigilDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.fusion,v.startedAt),
+                    color));
             entries.add(new RenderEntry(v.center,
                     SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt),
-                    SpellCinematicDirector.color(v.spell)));
+                    color));
         }
         for(Visual v:RELEASES){
             double age=clamp((now-v.startedAt)/(double)Math.max(1L,v.expiresAt-v.startedAt),0,1);
+            int color=SpellCinematicDirector.color(v.spell);
+            ArcaneWorldMesh echo=ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt);
+            if(echo.size()>0)entries.add(new RenderEntry(v.center,echo,ArcaneSigilDirector.releaseEchoColor(color,age)));
             entries.add(new RenderEntry(v.center,
                     SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,age,v.impactAge,v.fusion,v.ingredients),
-                    SpellCinematicDirector.color(v.spell)));
+                    color));
             if(SpellCinematicDirector.isPrismatic(v.spell)){
                 for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(v.center,
                         SpellCinematicDirector.prismaticAccent(v.spell,v.direction,targetOffset(v),v.range,age,layer),

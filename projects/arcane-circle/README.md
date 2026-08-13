@@ -21,11 +21,12 @@ Minecraft Java 26.2 + NeoForge 26.2.0.38-beta + Java 25 기반 1~9써클 마법 
 ## 현재 presentation
 - `GrimoireScreen`: 기능 인덱스 + 1~9써클 인장 + 주문 브라우저 + 선택 주문 상세 + 장착 스트립
 - `ArcaneHud`: 주문 인장형 전투 HUD
-- `SpellCinematicDirector`: 주문의 실제 공간 사건을 기준으로 한 월드 연출
-- `ArcaneRegaliaRenderer`: 복장별 독립 실루엣
+- `ArcaneSigilDirector`: 주문별 술식·보조진·룬·다중 평면을 조립하는 실제 시전 마법진
+- `SpellCinematicDirector`: 마법진에서 이어지는 투사체·게이트·폭풍·영역·충돌의 물리 연출
+- `ArcaneRegaliaRenderer`: 보디스·라펠·맨틀·치마폭·트레인으로 구성한 입체 마도복
 - `ArcaneCastingPerformance`: snap/aim/heavy/ground/ward/portal/ritual 시전 자세
 
-모든 주문에 같은 범용 마법진을 덧씌우지 않는다. 높은 써클이라는 이유만으로 항상 더 큰 원을 그리지 않으며, 주문의 역할·위치·고도·평면·체적·이동·충돌·잔류가 디자인의 시작점이다.
+모든 주문은 시전 단계에서 읽을 수 있는 실제 술식 마법진을 갖는다. 단, 같은 원을 복붙하지 않는다. 학파·주문·앵커에 따라 룬, 보조진, 평면, 3D 깊이와 전개 순서가 달라지고, 높은 써클이라는 이유만으로 무조건 커지지는 않는다. 완성된 술식에서 투사체·게이트·폭풍·영역·충돌·잔류가 이어진다.
 
 ## 빌드와 검사
 ```bash

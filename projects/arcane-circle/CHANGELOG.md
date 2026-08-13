@@ -1,11 +1,13 @@
 # Changelog
 
-## Current 0.12.1 alpha line
-- 과거 카드형 마도서와 네모 주문 핫바 presentation을 폐기했다.
-- 공통 마법진 장식층과 써클별 범용 VisualIdentity 체계를 제거했다.
-- `SpellCinematicDirector`가 주문의 실제 공간 사건을 기준으로 연출한다.
-- 복장과 시전 동작을 `ArcaneRegaliaRenderer` / `ArcaneCastingPerformance`로 분리했다.
-- 구형 presentation 클래스, 과거 전용 CI, 버전별 apply/fix/migration 도구를 active tree에서 제거했다.
-- 1~9써클, 직접 주문 90개, 융합 주문 19개, ready-hold/release, 서버 권위 판정, `presentationImpactDelay`, `syncAtomicRobe` 계약은 유지한다.
+## 0.12.1-alpha.28
+- 모든 주문의 시전 단계에 주문별 실제 술식 마법진을 추가했다. 룬·보조진·다중 평면·학파 문법·앵커 문법을 조립하고 완성 후 release까지 짧게 잔류한다.
+- Meteor Swarm은 상공 주술식과 네 개의 낙하점 보조진을 분리했고, Power Word Kill 같은 주문은 의도적으로 소형 결속진을 유지한다.
+- 기존 물리 연출은 삭제하지 않고 완성된 마법진 뒤에 투사체·게이트·폭풍·영역·충돌로 이어지도록 이중 계층화했다.
+- 로브를 큰 몸통 카드 방식에서 보디스·라펠·어깨 맨틀·분할 치마폭·옆 천·후면 트레인의 입체 의복 구조로 전면 재작성했다.
+- 지팡이에 시전시간 배율을 추가했다. 동써클 9C 기본 전개는 31초에서 11초로 낮추고, 현자/대마도사 지팡이는 각각 ×0.58/×0.38의 추가 시전 보정을 준다.
+- 융합 주문의 고정 시전 하한을 크게 낮추고 지팡이 시전 배율이 하한에도 적용되도록 수정했다.
+- 빈 `SpellSigilService`와 사용되지 않던 `SignatureGeometry`를 active tree에서 삭제했다.
+- ready-hold/release, 서버 권위 판정, 쿨다운 장비 10% 하한, 써클/숙련 추가 보정은 유지한다.
 
 과거 세부 변경 이력은 Git history가 보존한다.

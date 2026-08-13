@@ -7,7 +7,7 @@ retired=[
     'CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
     'MidCircleVisualIdentity.java','FifthCircleVisualIdentity.java','SixthCircleVisualIdentity.java',
     'ArchmageVisualIdentity.java','RangeReactivePresentation.java','SpellVisualSignature.java',
-    'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java'
+    'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java','SignatureGeometry.java'
 ]
 for name in retired:
     assert not (client/name).exists(), f'retired presentation file still present: {name}'
@@ -16,13 +16,17 @@ def text(path): return path.read_text(encoding='utf-8')
 gradle=text(root/'gradle.properties')
 main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.27' in gradle
-assert 'VERSION = "0.12.1-alpha.27"' in main
-assert '"version": "0.12.1-alpha.27"' in index
+assert 'mod_version=0.12.1-alpha.28' in gradle
+assert 'VERSION = "0.12.1-alpha.28"' in main
+assert '"version": "0.12.1-alpha.28"' in index
 
 tracker=text(client/'WorldMagicTracker.java')
 assert 'SpellCinematicDirector.charge' in tracker and 'SpellCinematicDirector.release' in tracker
 assert 'SpellCinematicDirector.castingFamily' in tracker
+assert 'ArcaneSigilDirector.charge' in tracker and 'ArcaneSigilDirector.releaseEcho' in tracker
+sigil=text(client/'ArcaneSigilDirector.java')
+for token in ['formulaFrame','schoolFormula','anchorFormula','skyRitual','meteor_swarm','runeRing','brokenBand','fusionFormula']:
+    assert token in sigil, f'authored sigil regression: {token}'
 for token in ['LowCircleVisualIdentity','MidCircleVisualIdentity','FifthCircleVisualIdentity',
               'SixthCircleVisualIdentity','ArchmageVisualIdentity','ArcaneSigilDetailGrammar',
               'RangeReactivePresentation','SpellVisualSignature']:
@@ -52,8 +56,9 @@ gear=text(client/'ArcaneGearRenderer.java')
 assert 'ArcaneRegaliaRenderer.render' in gear and 'ArcaneCastingPerformance.render' in gear
 assert 'CastingSilhouetteRenderer' not in gear and 'RobeRegaliaRenderer' not in gear
 regalia=text(client/'ArcaneRegaliaRenderer.java')
-for token in ['apprentice','sage','cinder','glacier','tempest','archmage','rift']:
-    assert token in regalia
+for token in ['outfit','bodice','lapel','shoulderMantle','skirtPair','sideGore','backTrain','facetedSkirt','asymmetricSkirt','ceremonialTab']:
+    assert token in regalia, f'regalia garment regression: {token}'
+assert 'private static void torso(' not in regalia, 'old torso-card garment returned'
 casting=text(client/'ArcaneCastingPerformance.java')
 for token in ['snap','aim','heavy','ground','ward','portal','ritual']:
     assert token in casting
@@ -62,6 +67,12 @@ kinetics=text(magic/'SpellKineticsService.java')
 assert 'presentationImpactDelay' in kinetics and 'WorldMagicService' in kinetics
 casting_service=text(magic/'SpellCastingService.java')
 assert 'READY_HOLD_TIMEOUT_TICKS' in casting_service and 'chargeTimeoutTicks' in casting_service
+assert '{0, 6, 10, 16, 26, 42, 68, 105, 155, 220}' in casting_service
+assert 'equipped(player).castTimeMultiplier()' in casting_service
+assert 'default -> 190;' in casting_service and 'baseMinimum * staffScale' in casting_service
+staff=text(root/'src/main/java/kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.java')
+assert 'castTimeMultiplier' in staff and '시전 전개시간' in staff
+assert not (magic/'SpellSigilService.java').exists(), 'empty legacy SpellSigilService returned'
 mage_gear=text(magic/'MageGearService.java')
 assert 'syncAtomicRobe' in mage_gear
 
