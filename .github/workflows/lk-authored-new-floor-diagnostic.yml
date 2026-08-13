@@ -26,7 +26,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Stop at first post-ground authored-floor result
+      - name: Stop at authored-floor verification result
         working-directory: projects/living-kingdoms
         shell: bash
         run: |
@@ -40,8 +40,8 @@ jobs:
           pid=$!
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
           found=0
-          for attempt in $(seq 1 210); do
-            if grep -Eq 'LK_ERDEN_AUTHORED_NEW_FLOOR_(STAGE|PASS)|LK_ERDEN_AUTHORED_NEW_FLOOR_WAIT .*stage=(materialize_rejected|verify_rejected)' ../../logs/authored-new-floor-diag-server.log; then
+          for attempt in $(seq 1 220); do
+            if grep -Eq 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS|LK_ERDEN_AUTHORED_NEW_FLOOR_WAIT .*stage=(materialize_rejected|verify_rejected)' ../../logs/authored-new-floor-diag-server.log; then
               found=1
               break
             fi
@@ -52,7 +52,7 @@ jobs:
             if ! kill -0 "$pid" 2>/dev/null; then break; fi
             sleep 1
           done
-          echo '=== BLOCKER SUMMARY ==='
+          echo '=== VERIFY SUMMARY ==='
           grep -E 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS|Retained Erden authored-new-floor CI sample|LK_ERDEN_AUTHORED_NEW_FLOOR_(WAIT|STAGE|PASS)|LK_ERDEN_NEW_FLOOR_APPROVAL_PASS|Prepared Erden authored new floors|Prepared Erden upper-floor conversions|LK_REALM_DIAGNOSTIC_FAIL|Exception|ERROR|Unable to complete Erden' ../../logs/authored-new-floor-diag-server.log | tail -300 || true
           test "$found" -eq 1
       - name: Upload diagnostic log
