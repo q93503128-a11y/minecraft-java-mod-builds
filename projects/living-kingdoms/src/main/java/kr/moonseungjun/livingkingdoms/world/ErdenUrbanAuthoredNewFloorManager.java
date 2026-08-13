@@ -492,7 +492,13 @@ public final class ErdenUrbanAuthoredNewFloorManager {
     private static void requestCiSampleChunks(ServerLevel level) {
         if (ciChunksRequested
                 || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
-        PlacementPlan sample = PLANS.values().stream().findFirst().orElse(null);
+        ExternalUrbanFabricBuilder.UrbanEntrance diagnostic =
+                ExternalUrbanFabricBuilder.diagnosticEntrance();
+        PlacementPlan sample = diagnostic == null ? null
+                : PLANS.get(entranceKey(diagnostic.x(), diagnostic.z()));
+        if (sample == null) {
+            sample = PLANS.values().stream().findFirst().orElse(null);
+        }
         if (sample == null) return;
         for (int chunkX = Math.floorDiv(sample.bounds().minX(), 16);
              chunkX <= Math.floorDiv(sample.bounds().maxX(), 16); chunkX++) {
@@ -503,6 +509,12 @@ public final class ErdenUrbanAuthoredNewFloorManager {
         }
         ciPlanKey = sample.entranceKey();
         ciChunksRequested = true;
+        LivingKingdoms.LOGGER.info(
+                "Retained Erden authored-new-floor CI sample role={} entrance={},{} bounds={}..{} x {}..{} floor_cells={} route_nodes={}",
+                sample.role(), sample.entranceX(), sample.entranceZ(),
+                sample.bounds().minX(), sample.bounds().maxX(),
+                sample.bounds().minZ(), sample.bounds().maxZ(),
+                sample.floorBlocks().size(), sample.routeNodes().size());
     }
 
     private static void verifyCiIfReady(
