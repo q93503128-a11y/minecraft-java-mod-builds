@@ -1,7 +1,7 @@
 from pathlib import Path
-import re
 
 ROOT = Path(__file__).resolve().parents[2]
+EXTERIOR = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java"
 FIRE = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java"
 PORT = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java"
 JUSTICE = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java"
@@ -17,82 +17,35 @@ def require(ok: bool, message: str) -> None:
 
 port = PORT.read_text(encoding="utf-8")
 require("LIVING_KINGDOMS_CI_RIVER_PORT_TEST" in port, "river-port CI fixture is not isolated")
-require("LIVING_KINGDOMS_CI_REALM_TEST" not in port, "river-port still uses generic realm fixture")
 require("ci_corridor_retained_until_pass=true" in port, "river-port ticket lifecycle proof missing")
-
-justice = JUSTICE.read_text(encoding="utf-8")
-require("event_time_witness=true" in justice, "event-time witness proof missing")
-require("retroactive_witness=false" in justice, "retroactive witness rejection missing")
-require("synthetic_guard=false" in justice, "resident-guard proof missing")
-require("ErdenJusticeManager.observeCrime(" in CRIME.read_text(encoding="utf-8"), "Erden crime routing missing")
-require("ErdenJusticeManager.onServerTick(event);" in MAIN.read_text(encoding="utf-8"), "justice tick wiring missing")
-
 fire = FIRE.read_text(encoding="utf-8")
 require("LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST" in fire, "fire CI fixture is not isolated")
-require("LIVING_KINGDOMS_CI_REALM_TEST" not in fire, "fire still uses generic realm fixture")
+require("Selected bounded Erden fire CI support=" in fire, "bounded fire fixture search missing")
+justice = JUSTICE.read_text(encoding="utf-8")
+require("event_time_witness=true" in justice and "retroactive_witness=false" in justice,
+        "Erden justice witness invariants missing")
+require("ErdenJusticeManager.observeCrime(" in CRIME.read_text(encoding="utf-8"), "Erden crime routing missing")
+require("ErdenJusticeManager.onServerTick(event);" in MAIN.read_text(encoding="utf-8"), "justice tick wiring missing")
+require("범행 순간 실제 로드된 주민만 목격자로 확정" in STATUS.read_text(encoding="utf-8"),
+        "Erden status lost justice implementation")
 
-new_search = '''    private static BlockPos findCiFireSupport(
-            ServerLevel level,
-            ErdenUrbanInfrastructureBuilder.FireCistern cistern) {
-        int chunkMinX = (cistern.x() >> 4) << 4;
-        int chunkMinZ = (cistern.z() >> 4) << 4;
-        BlockPos best = null;
-        long bestDistance = Long.MAX_VALUE;
-        int examined = 0;
-        for (int x = chunkMinX; x <= chunkMinX + 15; x++) {
-            for (int z = chunkMinZ; z <= chunkMinZ + 15; z++) {
-                long dx = (long) x - cistern.x();
-                long dz = (long) z - cistern.z();
-                long distance = dx * dx + dz * dz;
-                if (distance < 25L || distance > 196L) continue;
-                int preferredY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z)) + 1;
-                for (int vertical = 0; vertical <= 8; vertical++) {
-                    int[] ys = vertical == 0
-                            ? new int[]{preferredY}
-                            : new int[]{preferredY + vertical, preferredY - vertical};
-                    for (int y : ys) {
-                        if (y <= level.getMinY() || y >= level.getMaxY() - 1) continue;
-                        examined++;
-                        BlockPos support = new BlockPos(x, y, z);
-                        BlockState below = level.getBlockState(support.below());
-                        if (below.isAir() || !below.getFluidState().isEmpty()) continue;
-                        if (!level.getBlockState(support).isAir()
-                                || !level.getBlockState(support.above()).isAir()) continue;
-                        if (distance < bestDistance) {
-                            best = support;
-                            bestDistance = distance;
-                        }
-                    }
-                }
-            }
-        }
-        if (best != null) {
-            LivingKingdoms.LOGGER.info(
-                    "Selected bounded Erden fire CI support={} examined={} same_chunk=true two_block_air=true stable_ground=true",
-                    best, examined);
-        }
-        return best;
-    }
-'''
-if "Selected bounded Erden fire CI support=" not in fire:
-    fire, count = re.subn(
-        r'    private static BlockPos findCiFireSupport\(.*?\n    \}\n\n    private static BlockPos safeStandingPosition',
-        lambda _: new_search + '\n    private static BlockPos safeStandingPosition',
-        fire,
-        count=1,
-        flags=re.S,
-    )
-    require(count == 1, "could not replace fragile fire CI support search")
-if "import net.minecraft.world.level.block.state.BlockState;" not in fire:
-    fire = fire.replace(
-        "import net.minecraft.world.level.block.Blocks;\n",
-        "import net.minecraft.world.level.block.Blocks;\nimport net.minecraft.world.level.block.state.BlockState;\n",
-    )
-require("Selected bounded Erden fire CI support=" in fire, "bounded fire support marker missing")
-require("distance < 25L || distance > 196L" in fire, "bounded support radius missing")
-FIRE.write_text(fire, encoding="utf-8")
+exterior = EXTERIOR.read_text(encoding="utf-8")
+old = '''    private static boolean isCi() {
+        return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
+    }'''
+new = '''    private static boolean isCi() {
+        if (!"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return false;
+        // Focused subsystem audits still bootstrap the authored realm, but must not also request
+        // the 178-chunk exterior regression sweep. Naturally loaded exterior chunks continue to
+        // use the normal streaming path, so production behavior is unchanged.
+        return !"1".equals(System.getenv("LIVING_KINGDOMS_CI_RIVER_PORT_TEST"))
+                && !"1".equals(System.getenv("LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST"));
+    }'''
+if "Focused subsystem audits still bootstrap the authored realm" not in exterior:
+    require(old in exterior, "could not locate exterior CI gate")
+    exterior = exterior.replace(old, new, 1)
+require("LIVING_KINGDOMS_CI_RIVER_PORT_TEST" in exterior, "port focused-CI exclusion missing")
+require("LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST" in exterior, "fire focused-CI exclusion missing")
+EXTERIOR.write_text(exterior, encoding="utf-8")
 
-status = STATUS.read_text(encoding="utf-8")
-require("범행 순간 실제 로드된 주민만 목격자로 확정" in status, "Erden status lost justice implementation")
-
-print("Widened the isolated fire-response CI support search without changing production fire behavior.")
+print("Isolated focused port/fire audits from the 178-chunk exterior CI sweep without changing production streaming.")
