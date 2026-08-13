@@ -19,10 +19,45 @@ manager = manager.replace(
     'return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));',
     'return "1".equals(System.getenv("LIVING_KINGDOMS_CI_RIVER_PORT_TEST"));'
 )
+
+# A completed CI chunk must stay retained until the physical barge has traversed the whole
+# corridor. Releasing each chunk as soon as its construction plan finishes makes corePortBuilt()
+# require four anchors that can never stay loaded at the same time on an empty dedicated server.
+manager = manager.replace(
+    "        QUEUED.remove(activeChunk.packed());\n"
+    "        releaseCi(level, activeChunk.packed());\n"
+    "        if (isPortCi()) {",
+    "        QUEUED.remove(activeChunk.packed());\n"
+    "        if (!isPortCi()) releaseCi(level, activeChunk.packed());\n"
+    "        if (isPortCi()) {"
+)
+manager = manager.replace(
+    "            if (!data.needsChunk(packed, PORT_REVISION)) {\n"
+    "                QUEUED.remove(packed);\n"
+    "                releaseCi(level, packed);\n"
+    "                continue;\n"
+    "            }",
+    "            if (!data.needsChunk(packed, PORT_REVISION)) {\n"
+    "                QUEUED.remove(packed);\n"
+    "                if (!isPortCi()) releaseCi(level, packed);\n"
+    "                continue;\n"
+    "            }"
+)
+manager = manager.replace(
+    "loaded_only_runtime=true forced_citywide=false ci_corridor_only=true\",",
+    "loaded_only_runtime=true forced_citywide=false ci_corridor_only=true ci_corridor_retained_until_pass=true ci_tickets_released_at_pass=true\","
+)
+
 require("LIVING_KINGDOMS_CI_REALM_TEST" not in manager,
         "generic realm CI flag still referenced by river-port manager")
 require("LIVING_KINGDOMS_CI_RIVER_PORT_TEST" in manager,
         "dedicated river-port CI flag was not installed")
+require("if (!isPortCi()) releaseCi(level, activeChunk.packed());" in manager,
+        "completed port chunks would still release their CI corridor ticket early")
+require("if (!isPortCi()) releaseCi(level, packed);" in manager,
+        "already-built port chunks would still release their CI corridor ticket early")
+require("ci_corridor_retained_until_pass=true" in manager,
+        "river-port PASS evidence does not record CI corridor ticket lifecycle")
 MANAGER.write_text(manager, encoding="utf-8")
 
 status = STATUS.read_text(encoding="utf-8")
@@ -47,4 +82,4 @@ for obsolete in (
     status = status.replace(obsolete, "")
 STATUS.write_text(status, encoding="utf-8")
 
-print("Isolated river-port CI fixture in source and refreshed Erden implementation status.")
+print("Isolated river-port CI fixture, retained its physical corridor through PASS, and refreshed Erden status.")
