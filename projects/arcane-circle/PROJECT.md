@@ -20,8 +20,7 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - Prismatic rendering is bounded by per-entry and per-frame primitive caps.
 - High-complexity sigils prioritize fine concentric rules, inscription rings, nested geometry and balanced satellite seals; 3D depth stays secondary and may not overpower the readable planar formula.
 - Academy affiliation selector, join action, offer header/list and lore note own separate layout regions; narrow widths fold traditions into a 2x2 selector.
-- Canonical Java 25 verification is required after the alpha.31 source commit; source-only audit is not sufficient.
-- Verification target: alpha.31 refined sigil grammar + isolated academy selector/list regions from source commit `14077bc3`.
-
 - Destructive terrain mutation is server-authoritative and strength-aware (`getDestroySpeed` + explosion resistance), bounded per impact, and never removes unbreakable blocks or block entities.
 - Meteor Swarm uses `MeteorBarragePattern` as the sole server/client strike schedule; fixed simultaneous quartet layouts are forbidden.
+- Canonical Java 25 verification is required after the alpha.32 source commit; source-only audit is not sufficient.
+- Alpha.32 canonical verification target: destructive terrain + staggered Meteor Swarm barrage from source commit `37bb24ddd0e5c569afd0ca2beaa8b25dac039705`.
