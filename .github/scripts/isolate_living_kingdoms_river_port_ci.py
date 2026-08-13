@@ -1,7 +1,8 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-MANAGER = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java"
+PORT_MANAGER = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java"
+FIRE_MANAGER = ROOT / "projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java"
 STATUS = ROOT / "projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md"
 
 
@@ -10,55 +11,36 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit(message)
 
 
-manager = MANAGER.read_text(encoding="utf-8")
-require("private static boolean isCi()" in manager or "private static boolean isPortCi()" in manager,
-        "ErdenRiverPortManager CI flag method not found")
-if "private static boolean isPortCi()" not in manager:
-    manager = manager.replace("isCi()", "isPortCi()")
-manager = manager.replace(
-    'return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));',
-    'return "1".equals(System.getenv("LIVING_KINGDOMS_CI_RIVER_PORT_TEST"));'
-)
-
-# A completed CI chunk must stay retained until the physical barge has traversed the whole
-# corridor. Releasing each chunk as soon as its construction plan finishes makes corePortBuilt()
-# require four anchors that can never stay loaded at the same time on an empty dedicated server.
-manager = manager.replace(
-    "        QUEUED.remove(activeChunk.packed());\n"
-    "        releaseCi(level, activeChunk.packed());\n"
-    "        if (isPortCi()) {",
-    "        QUEUED.remove(activeChunk.packed());\n"
-    "        if (!isPortCi()) releaseCi(level, activeChunk.packed());\n"
-    "        if (isPortCi()) {"
-)
-manager = manager.replace(
-    "            if (!data.needsChunk(packed, PORT_REVISION)) {\n"
-    "                QUEUED.remove(packed);\n"
-    "                releaseCi(level, packed);\n"
-    "                continue;\n"
-    "            }",
-    "            if (!data.needsChunk(packed, PORT_REVISION)) {\n"
-    "                QUEUED.remove(packed);\n"
-    "                if (!isPortCi()) releaseCi(level, packed);\n"
-    "                continue;\n"
-    "            }"
-)
-manager = manager.replace(
-    "loaded_only_runtime=true forced_citywide=false ci_corridor_only=true\",",
-    "loaded_only_runtime=true forced_citywide=false ci_corridor_only=true ci_corridor_retained_until_pass=true ci_tickets_released_at_pass=true\","
-)
-
-require("LIVING_KINGDOMS_CI_REALM_TEST" not in manager,
+port = PORT_MANAGER.read_text(encoding="utf-8")
+require("private static boolean isPortCi()" in port,
+        "ErdenRiverPortManager dedicated CI flag method not found")
+require("LIVING_KINGDOMS_CI_REALM_TEST" not in port,
         "generic realm CI flag still referenced by river-port manager")
-require("LIVING_KINGDOMS_CI_RIVER_PORT_TEST" in manager,
-        "dedicated river-port CI flag was not installed")
-require("if (!isPortCi()) releaseCi(level, activeChunk.packed());" in manager,
-        "completed port chunks would still release their CI corridor ticket early")
-require("if (!isPortCi()) releaseCi(level, packed);" in manager,
-        "already-built port chunks would still release their CI corridor ticket early")
-require("ci_corridor_retained_until_pass=true" in manager,
-        "river-port PASS evidence does not record CI corridor ticket lifecycle")
-MANAGER.write_text(manager, encoding="utf-8")
+require("LIVING_KINGDOMS_CI_RIVER_PORT_TEST" in port,
+        "dedicated river-port CI flag missing")
+require("if (!isPortCi()) releaseCi(level, activeChunk.packed());" in port,
+        "completed port chunks would release their CI corridor ticket early")
+require("if (!isPortCi()) releaseCi(level, packed);" in port,
+        "already-built port chunks would release their CI corridor ticket early")
+require("ci_corridor_retained_until_pass=true" in port,
+        "river-port PASS evidence does not record CI corridor lifecycle")
+
+fire = FIRE_MANAGER.read_text(encoding="utf-8")
+if "private static boolean isFireCi()" not in fire:
+    fire = fire.replace("isCi()", "isFireCi()")
+fire = fire.replace(
+    'return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));',
+    'return "1".equals(System.getenv("LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST"));'
+)
+require("LIVING_KINGDOMS_CI_REALM_TEST" not in fire,
+        "generic realm CI flag still referenced by fire-response fixture")
+require("LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST" in fire,
+        "dedicated fire-response CI flag missing")
+require("if (!isFireCi() || ciPassed || ciPrepared) return;" in fire,
+        "fire fixture preparation is not isolated")
+require("if (!isFireCi() || ciPassed || !ciPrepared || ciFirePos == null) return;" in fire,
+        "fire fixture verification is not isolated")
+FIRE_MANAGER.write_text(fire, encoding="utf-8")
 
 status = STATUS.read_text(encoding="utf-8")
 implemented_anchor = "## 왕국 완성 전 남은 핵심"
@@ -82,4 +64,4 @@ for obsolete in (
     status = status.replace(obsolete, "")
 STATUS.write_text(status, encoding="utf-8")
 
-print("Isolated river-port CI fixture, retained its physical corridor through PASS, and refreshed Erden status.")
+print("Isolated river-port and fire-response CI fixtures and refreshed Erden status.")
