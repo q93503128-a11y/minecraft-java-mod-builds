@@ -806,7 +806,10 @@ public final class SpellCastingService {
     private static boolean areaAtAim(ServerPlayer player, double range, double power, ParticleOptions particle,
                                      boolean fire, boolean freeze) {
         Vec3 center = lookTarget(player, range).map(Mob::position).orElse(aimGround(player, range));
-        return areaAt(player, center, SpellMetrics.effectRadius("fireball", range, 3), power, particle, fire, freeze);
+        double radius=SpellMetrics.effectRadius("fireball", range, 3);
+        boolean result=areaAt(player,center,radius,power,particle,fire,freeze);
+        DestructiveMagicService.impact(player,"fireball",center,radius,power);
+        return result;
     }
 
     private static boolean areaAt(ServerPlayer player, Vec3 center, double radius, double power,
@@ -883,6 +886,7 @@ public final class SpellCastingService {
         ServerLevel level = (ServerLevel) player.level();
         Vec3 center = aimGround(player, range);
         areaAt(player, center, 5.0, power * 1.15, ParticleTypes.FLAME, true, false);
+        DestructiveMagicService.impact(player,"meteor_shard",center,5.0,power);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
                 SoundSource.PLAYERS, 1.25F, 0.75F);
         return true;
@@ -972,6 +976,8 @@ public final class SpellCastingService {
 
     private static boolean arcaneAnnihilation(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
+        Vec3 start=player.getEyePosition(); Vec3 end=start.add(player.getLookAngle().normalize().scale(range));
+        DestructiveMagicService.ray(player,"arcane_annihilation",start,end,power);
         List<Mob> targets = lineTargets(player, range, 2.2);
         for (int index = 0; index < targets.size(); index++) {
             targets.get(index).hurtServer(level, level.damageSources().playerAttack(player),

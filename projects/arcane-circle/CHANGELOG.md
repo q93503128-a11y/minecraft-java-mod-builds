@@ -1,3 +1,9 @@
+## 0.12.1-alpha.32
+- Destructive spells now rupture blocks using hardness + blast resistance with bounded per-impact budgets; unbreakable blocks and block entities remain protected.
+- Meteor Swarm is a shared 16-strike staggered barrage: authoritative server impacts, terrain damage and client VFX consume one deterministic pattern.
+- Replaced the four simultaneous fixed meteors and updated the ritual to show many bombardment coordinates.
+- Audited kinetic timing, world-mutation caps, fixed-quartet regression, JAR verification and source contracts.
+
 # Changelog
 
 ## 0.12.1-alpha.31

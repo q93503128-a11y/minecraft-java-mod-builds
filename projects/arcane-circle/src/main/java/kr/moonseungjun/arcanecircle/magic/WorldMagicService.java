@@ -206,6 +206,11 @@ public final class WorldMagicService {
         return player.position().add(flat.normalize().scale(Math.min(3.0, range))).add(0.0, 0.055, 0.0);
     }
 
+    static Vec3 lockedTarget(ServerPlayer player, SpellDefinition spell, double range) {
+        Vec3 direction = safeDirection(player.getLookAngle());
+        return targetPoint(player, spell, range, direction);
+    }
+
     public static double kineticDistance(ServerPlayer player, SpellDefinition spell, double range) {
         Vec3 direction = safeDirection(player.getLookAngle());
         Vec3 target = targetPoint(player, spell, range, direction);

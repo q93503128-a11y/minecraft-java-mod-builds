@@ -217,7 +217,7 @@ public final class SpellPresentationProfile {
         put("sunburst", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 8.80, 6, 1, 0, 12, 1.70, 8);
         put("astral_prison", SigilStyle.TARGET_SEAL, MotionStyle.PRISON, 4.40, 6, 8, 0, 0, 1.68, 2);
         put("phoenix_requiem", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 11.00, 6, 6, 0, 14, 1.96, 6);
-        put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 18.00, 6, 4, 0, 30, 2.60, 30);
+        put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 18.00, 6, 12, 0, 34, 2.60, MeteorBarragePattern.firstImpactTick());
         put("power_word_kill", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 2.35, 6, 0, 0, 0, 1.34, 2);
         put("prismatic_wall", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 10.80, 6, 7, 0, 0, 2.10, 4);
         put("shapechange", SigilStyle.BODY_HALO, MotionStyle.AURA, 3.00, 6, 6, 0, 0, 1.52, 0);
@@ -278,6 +278,7 @@ public final class SpellPresentationProfile {
     }
 
     public static int releaseDurationTicks(SpellDefinition spell, double distance) {
+        if("meteor_swarm".equals(spell.id()))return MeteorBarragePattern.durationTicks();
         Profile profile = profile(spell);
         int impact = impactDelayTicks(spell, distance);
         return switch (profile.motion()) {

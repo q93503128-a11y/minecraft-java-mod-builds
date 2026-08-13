@@ -3,6 +3,7 @@ package kr.moonseungjun.arcanecircle.magic;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +28,15 @@ public final class SpellKineticsService {
         SpellArchetype.Mode mode = SpellArchetype.mode(cast.spell().id());
         int circle = Math.max(1, Math.min(9, cast.spell().circle()));
         WorldMagicService.release(player, cast);
+
+        if ("meteor_swarm".equals(cast.spell().id())) {
+            Vec3 lockedTarget=WorldMagicService.lockedTarget(player,cast.spell(),cast.range());
+            MeteorBarragePattern.Strike first=MeteorBarragePattern.strike(0);
+            enqueue(player,new PendingCast(cast,snapshot,clock(player)+first.impactTick(),0,
+                    MeteorBarragePattern.count(),cast.power(),false,lockedTarget,0));
+            ArcaneNoticeService.push(player,Component.literal("§6[운석 폭격] §f"+MeteorBarragePattern.count()+"발 연속 낙하"),75);
+            return true;
+        }
 
         int presentationImpactDelay = SpellPresentationProfile.impactDelayTicks(cast.spell(),
                 SpellCastingService.kineticDistance(player, cast.spell(), cast.range()));
@@ -119,15 +129,22 @@ public final class SpellKineticsService {
         while (iterator.hasNext()) {
             PendingCast pending = iterator.next();
             if (now < pending.nextTick()) continue;
-            boolean executed = SpellCastingService.executeResolved(player, pending.cast().spell().id(),
-                    pending.cast().range(), pending.pulsePower());
-            int remaining = pending.remainingPulses() - 1;
-            boolean any = pending.anyExecuted() || executed;
-            if (remaining <= 0) {
+            boolean meteor="meteor_swarm".equals(pending.cast().spell().id())&&pending.lockedTarget()!=null;
+            boolean executed=meteor
+                    ? HighCircleSpellEffects.meteorImpact(player,pending.lockedTarget(),pending.cast().range(),pending.pulsePower(),pending.pulseIndex())
+                    : SpellCastingService.executeResolved(player,pending.cast().spell().id(),pending.cast().range(),pending.pulsePower());
+            int remaining=pending.remainingPulses()-1;
+            boolean any=pending.anyExecuted()||executed;
+            if(remaining<=0){
                 iterator.remove();
-                SpellCastingService.finishKineticCast(player, pending.cast(), pending.snapshot(), any);
-            } else {
-                pending.advance(now + pending.interval(), remaining, any);
+                SpellCastingService.finishKineticCast(player,pending.cast(),pending.snapshot(),any);
+            }else if(meteor){
+                int nextIndex=pending.pulseIndex()+1;
+                int gap=Math.max(1,MeteorBarragePattern.strike(nextIndex).impactTick()
+                        -MeteorBarragePattern.strike(pending.pulseIndex()).impactTick());
+                pending.advanceMeteor(now+gap,remaining,any,nextIndex);
+            }else{
+                pending.advance(now+pending.interval(),remaining,any);
             }
         }
         if (casts.isEmpty()) PENDING.remove(player.getUUID());
@@ -153,6 +170,8 @@ public final class SpellKineticsService {
         private int remainingPulses;
         private final double pulsePower;
         private boolean anyExecuted;
+        private final Vec3 lockedTarget;
+        private int pulseIndex;
 
         private PendingCast(MagicPlayerData.CastPreparation cast,
                             CombatGrowthService.Snapshot snapshot,
@@ -161,13 +180,16 @@ public final class SpellKineticsService {
                             int remainingPulses,
                             double pulsePower,
                             boolean anyExecuted) {
-            this.cast = cast;
-            this.snapshot = snapshot;
-            this.nextTick = nextTick;
-            this.interval = interval;
-            this.remainingPulses = remainingPulses;
-            this.pulsePower = pulsePower;
-            this.anyExecuted = anyExecuted;
+            this(cast,snapshot,nextTick,interval,remainingPulses,pulsePower,anyExecuted,null,0);
+        }
+
+        private PendingCast(MagicPlayerData.CastPreparation cast,
+                            CombatGrowthService.Snapshot snapshot,
+                            long nextTick, int interval, int remainingPulses,
+                            double pulsePower, boolean anyExecuted, Vec3 lockedTarget, int pulseIndex) {
+            this.cast=cast; this.snapshot=snapshot; this.nextTick=nextTick; this.interval=interval;
+            this.remainingPulses=remainingPulses; this.pulsePower=pulsePower; this.anyExecuted=anyExecuted;
+            this.lockedTarget=lockedTarget; this.pulseIndex=pulseIndex;
         }
 
         MagicPlayerData.CastPreparation cast() { return cast; }
@@ -177,11 +199,17 @@ public final class SpellKineticsService {
         int remainingPulses() { return remainingPulses; }
         double pulsePower() { return pulsePower; }
         boolean anyExecuted() { return anyExecuted; }
+        Vec3 lockedTarget() { return lockedTarget; }
+        int pulseIndex() { return pulseIndex; }
 
         void advance(long next, int remaining, boolean executed) {
             this.nextTick = next;
             this.remainingPulses = remaining;
             this.anyExecuted = executed;
+        }
+
+        void advanceMeteor(long next,int remaining,boolean executed,int index){
+            this.nextTick=next; this.remainingPulses=remaining; this.anyExecuted=executed; this.pulseIndex=index;
         }
     }
 }

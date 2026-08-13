@@ -39,7 +39,7 @@ public final class HighCircleSpellEffects {
             case "flesh_to_stone" -> petrify(player, range, power, 420);
             case "circle_of_death" -> blast(player, range, power, 10.0, ParticleTypes.SOUL, 0, false);
 
-            case "delayed_blast_fireball" -> blast(player, range, power, 10.0, ParticleTypes.FLAME, 280, false);
+            case "delayed_blast_fireball" -> destructiveBlast(player,"delayed_blast_fireball",range,power,10.0,ParticleTypes.FLAME,280,false);
             case "etherealness" -> ethereal(player, power);
             case "finger_of_death" -> deathRay(player, range, power);
             case "fire_storm" -> multiBlast(player, range, power, ParticleTypes.FLAME, 6, 5.0);
@@ -108,6 +108,7 @@ public final class HighCircleSpellEffects {
         Vec3 start = player.getEyePosition().add(player.getLookAngle().normalize().scale(1.6));
         Vec3 end = aim(player, range);
         line(level, start, end, particle, Math.max(48, (int) range * 3));
+        if(lethal)DestructiveMagicService.ray(player,"disintegrate",start,end,power);
         List<Mob> hits = lineTargets(player, start, end, 1.6);
         for (Mob mob : hits) {
             ArcaneDamage.hurt(level, player, mob, (float) (power * (lethal ? 1.25 : 1.0)));
@@ -147,6 +148,7 @@ public final class HighCircleSpellEffects {
             mob.push(away.x * (huge ? 2.2 : 1.4), huge ? 1.8 : 1.1, away.z * (huge ? 2.2 : 1.4));
         }
         for (double rr = 2; rr <= r; rr += 2.0) ring(level, center.add(0, 0.15, 0), rr, particle, 48);
+        DestructiveMagicService.impact(player,huge?"earthquake":"move_earth",center,r,power);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.2F, 0.55F);
         return true;
     }
@@ -173,6 +175,14 @@ public final class HighCircleSpellEffects {
         for (double rr = 1.5; rr <= scaled; rr += 1.5) ring(level, center.add(0, 0.2, 0), rr, particle, 52);
         burst(level, center.add(0, 1, 0), particle, 160, scaled * 0.35);
         return true;
+    }
+
+    private static boolean destructiveBlast(ServerPlayer player,String id,double range,double power,double radius,
+                                            ParticleOptions particle,int fireTicks,boolean freeze){
+        Vec3 center=aim(player,range);
+        boolean result=blast(player,range,power,radius,particle,fireTicks,freeze);
+        DestructiveMagicService.impact(player,id,center,radius*Math.max(1.0,Math.sqrt(range/25.0)),power);
+        return result;
     }
 
     private static boolean curseTarget(ServerPlayer player, double range, double power, int duration, boolean fear) {
@@ -222,6 +232,7 @@ public final class HighCircleSpellEffects {
             double angle = Math.PI * 2.0 * i / count;
             Vec3 at = center.add(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
             blastAt(player, at, power, radius * 0.75, particle, particle == ParticleTypes.FLAME);
+            if(particle==ParticleTypes.FLAME)DestructiveMagicService.impact(player,"fire_storm",at,radius*.75,power*.72);
         }
         return true;
     }
@@ -332,14 +343,20 @@ public final class HighCircleSpellEffects {
     }
 
     private static boolean meteorSwarm(ServerPlayer player, double range, double power) {
-        Vec3 center = aim(player, range);
-        for (int i = 0; i < 4; i++) {
-            double angle = Math.PI * 2.0 * i / 4.0 + Math.PI / 4.0;
-            Vec3 impact = center.add(Math.cos(angle) * 10.0, 0, Math.sin(angle) * 10.0);
-            Vec3 sky = impact.add(0, 42, 0);
-            line(level(player), sky, impact, ParticleTypes.FLAME, 100);
-            blastAt(player, impact, power, 11.0, ParticleTypes.FLAME, true);
-        }
+        Vec3 center=aim(player,range); boolean any=false;
+        for(int i=0;i<MeteorBarragePattern.count();i++)any|=meteorImpact(player,center,range,power,i);
+        return any;
+    }
+
+    static boolean meteorImpact(ServerPlayer player, Vec3 center, double range, double power, int index) {
+        MeteorBarragePattern.Strike strike=MeteorBarragePattern.strike(index);
+        Vec3 impact=center.add(strike.offsetX(),0,strike.offsetZ());
+        double radius=3.0+strike.scale()*1.65;
+        double strikePower=power*(.19+.075*strike.scale());
+        blastAt(player,impact,strikePower,radius,ParticleTypes.FLAME,true);
+        DestructiveMagicService.impact(player,"meteor_swarm",impact,radius,power*strike.scale());
+        level(player).playSound(null,BlockPos.containing(impact),SoundEvents.GENERIC_EXPLODE.value(),
+                SoundSource.PLAYERS,Math.min(1.6F,.82F+(float)strike.scale()*.38F),.62F+(index%4)*.055F);
         return true;
     }
 

@@ -16,9 +16,9 @@ def text(path): return path.read_text(encoding='utf-8')
 gradle=text(root/'gradle.properties')
 main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.31' in gradle
-assert 'VERSION = "0.12.1-alpha.31"' in main
-assert '"version": "0.12.1-alpha.31"' in index
+assert 'mod_version=0.12.1-alpha.32' in gradle
+assert 'VERSION = "0.12.1-alpha.32"' in main
+assert '"version": "0.12.1-alpha.32"' in index
 
 tracker=text(client/'WorldMagicTracker.java')
 assert 'SpellCinematicDirector.charge' in tracker and 'SpellCinematicDirector.release' in tracker
@@ -38,8 +38,9 @@ for token in ['enum Form','NEEDLE','ORB','VOLLEY','RAY','CONE','FIELD','WALL','G
               'meteorSwarm','executionWord','chainLightning','fireStorm','worldFault','phoenix',
               'SpellMetrics.effectRadius','SpellMetrics.wallWidth','SpellMetrics.waveLength','SpellMetrics.waveEndRadius']:
     assert token in director, f'cinematic director regression: {token}'
-assert 'double[][] o={{-10,-10},{10,-10},{-10,10},{10,10}}' in director
-assert 'fallHeight=42.0' in director and 'prismaticWallFrame' in director
+assert 'MeteorBarragePattern.count()' in director and 's.impactTick()' in director
+assert 'double[][] o={{-10,-10},{10,-10},{-10,10},{10,10}}' not in director
+assert 'fallHeight=42.0' not in director and 'prismaticWallFrame' in director
 assert 'case "power_word_kill"' in director and '?.72:1.0' in director
 
 grimoire=text(client/'GrimoireScreen.java')
@@ -55,6 +56,19 @@ assert 'drawCircleIndex(g,l,academyCircle,mouseX,mouseY,true)' not in grimoire
 assert 'viewport().w()<410' in grimoire
 assert 'MAX_FRAME = 9000' in tracker and 'MAX_ENTRY = 2800' in tracker
 assert '!"prismatic_wall".equals(v.spell.id())' in tracker
+assert (magic/'MeteorBarragePattern.java').exists() and (magic/'DestructiveMagicService.java').exists()
+barrage=text(magic/'MeteorBarragePattern.java')
+for token in ['STRIKES','impactTick','durationTicks','count()']:
+    assert token in barrage, f'meteor barrage regression: {token}'
+assert barrage.count('new Strike(') >= 16
+destruction=text(magic/'DestructiveMagicService.java')
+for token in ['getDestroySpeed','getExplosionResistance','destroyBlock','maxBlocks','hasBlockEntity','world_sunder','meteor_swarm','disintegrate']:
+    assert token in destruction, f'destructive magic regression: {token}'
+kinetics=text(magic/'SpellKineticsService.java')
+for token in ['lockedTarget','meteorImpact','advanceMeteor','MeteorBarragePattern.count()']:
+    assert token in kinetics, f'meteor authoritative timing regression: {token}'
+assert 'DestructiveMagicService.impact(player,"meteor_swarm"' in text(magic/'HighCircleSpellEffects.java')
+assert 'DestructiveMagicService.impact(player,"world_sunder"' in text(magic/'FusionSpellEffects.java')
 
 hud=text(client/'ArcaneHud.java')
 assert 'spell_ribbon' in hud and 'drawSeal' in hud and 'drawVitals' in hud

@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.client;
 
+import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import kr.moonseungjun.arcanecircle.magic.SpellMetrics;
 import net.minecraft.world.phys.Vec3;
@@ -235,17 +236,28 @@ final class SpellCinematicDirector {
     }
 
     private static void meteorSwarm(ArcaneWorldMesh.Builder m,Vec3 target,double age,double impact,double scale){
-        ArcaneWorldMesh.Basis down=ArcaneWorldMesh.Basis.facing(new Vec3(0,-1,0));ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();
-        double imp=Math.max(.15,impact<=0?.62:impact),t=clamp(age/imp,0,1),fallHeight=42.0;double[][] o={{-10,-10},{10,-10},{-10,10},{10,10}};
-        for(int i=0;i<4;i++){
-            Vec3 hit=target.add(o[i][0],0,o[i][1]);Vec3 pos=hit.add(0,fallHeight*(1-easeIn(t)),0);double head=1.34*scale;
-            m.orb(pos,head,30,1.24F,.52F);m.shard(pos.add(0,1.25*scale,0),new Vec3(0,-1,0),down,5.2*scale,.78*scale,1.22F,.42F);
-            m.beamPrism(pos.add(0,3.0*scale,0),new Vec3(0,-1,0),down,4.0*scale,.20*scale,1.14F,.24F);
-            for(int tail=0;tail<3;tail++){double a=tail*Math.PI*2/3.0+i*.37;Vec3 edge=pos.add(g.point(a,.62*scale));m.line(edge,edge.add(0,3.8*scale,0),tail==0?1.05F:.62F);}
-            if(age>=imp){double a=clamp((age-imp)/.32,0,1),e=easeOut(a),r=11*e;m.band(g,hit,r*.84,r,64,1.24F,(float)(.36*(1-a)));m.circle(g,hit,r*.58,48,.82F);for(int ray=0;ray<8;ray++){double q=ray*Math.PI/4.0;m.line(hit.add(g.point(q,r*.12)),hit.add(g.point(q,r)),ray%2==0?1.08F:.58F);}}
+        ArcaneWorldMesh.Basis down=ArcaneWorldMesh.Basis.facing(new Vec3(0,-1,0));
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();
+        double nowTicks=age*MeteorBarragePattern.durationTicks();
+        for(int i=0;i<MeteorBarragePattern.count();i++){
+            MeteorBarragePattern.Strike s=MeteorBarragePattern.strike(i);
+            double local=(nowTicks-(s.impactTick()-8.0))/8.0;
+            if(local<0.0||local>1.55)continue;
+            Vec3 hit=target.add(s.offsetX(),0,s.offsetZ());
+            double fall=clamp(local,0,1),meteorScale=scale*(.42+.30*s.scale());
+            Vec3 pos=hit.add(0,s.fallHeight()*(1-easeIn(fall)),0);
+            if(local<=1.0){
+                m.orb(pos,.42*meteorScale,18,1.24F,.48F);
+                m.shard(pos.add(0,.55*meteorScale,0),new Vec3(0,-1,0),down,1.85*meteorScale,.24*meteorScale,1.20F,.38F);
+                Vec3 tail=pos.add(0,2.4+meteorScale*1.2,0); m.line(tail,pos,.68F);
+            }else{
+                double impactAge=(local-1.0)*.44;
+                impactRing(m,g,hit,meteorScale*(1.05+s.scale()*.45),impactAge);
+                for(int q=0;q<5;q++){double a=q*Math.PI*2/5.0+i*.73;m.line(hit.add(g.point(a,.18)),hit.add(g.point(a,meteorScale*(.8+impactAge*2.2))),.42F);}
+            }
         }
-        if(age>=imp){double a=clamp((age-imp)/.40,0,1),r=18*easeOut(a);m.circle(g,target,r,80,1.18F);m.circle(g,target,r*.72,64,.58F);}
     }
+
     private static void executionWord(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis b,Vec3 target,double age,double scale){double r=.42*scale*(1+age*.28);m.runeGlyph(b,target,r,0xDEAD,0,1.55F);m.line(target.add(b.right().scale(-r*1.4)),target.add(b.right().scale(r*1.4)),1.0F);if(age>.35){Vec3 top=target.add(0,1.35,0),bottom=target.add(0,-1.1,0);m.line(top,bottom,1.65F);m.orb(target,.18*scale,14,1.35F,(float)(.42*(1-age)));}}
     private static void chainLightning(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis b,Vec3 dir,Vec3 target,double age,double scale,int seed){int branches=6;Vec3 prev=Vec3.ZERO;for(int i=1;i<=branches;i++){double t=i/(double)branches;Vec3 p=target.scale(t).add(b.point(seed*.001+i*2.17,.18*scale*Math.sin(Math.PI*t)));m.line(prev,p,i%2==0?.72F:1.25F);if(i>2)m.line(p,p.add(b.point(i*.91,.55*scale)),.48F);prev=p;}impactSpark(m,b,target,age,scale,seed);}
     private static void fireStorm(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis g,Vec3 target,double age,double scale){for(int i=0;i<6;i++){double a=Math.PI*2*i/6;Vec3 hit=target.add(g.point(a,4.0+i*.35));double h=(6.5+i*.5)*(1-clamp(age/.72,0,1));Vec3 top=hit.add(0,h,0);m.beamPrism(top,new Vec3(0,-1,0),ArcaneWorldMesh.Basis.facing(new Vec3(0,-1,0)),Math.max(.2,h),.18*scale,1.18F,.32F);impactRing(m,g,hit,scale*(.8+i*.06),Math.max(0,age-.55));}}
@@ -276,7 +288,7 @@ final class SpellCinematicDirector {
             case "misty_step","dimension_door","passwall","plane_shift","teleport","demiplane","gate","teleportation_circle" -> sig(Form.GATE,id.equals("gate")?1.7:1.0,5,2,.4,0,2.2);
             case "blink","etherealness" -> sig(Form.SHIFT,1.0,4,2,.3,0,4.1);
             case "hold_person","hold_monster","resilient_sphere","forcecage","astral_prison","maze","thunder_cage" -> sig(Form.PRISON,id.equals("forcecage")||id.equals("astral_prison")?1.45:1.0,5,1,.2,0,2.5);
-            case "flame_strike","fire_storm","meteor_swarm","delayed_blast_fireball" -> sig(Form.SKY,id.equals("meteor_swarm")?2.3:1.2,6,id.equals("meteor_swarm")?4:id.equals("fire_storm")?6:1,id.equals("meteor_swarm")?10:3,id.equals("meteor_swarm")?42:14,1.9);
+            case "flame_strike","fire_storm","meteor_swarm","delayed_blast_fireball" -> sig(Form.SKY,id.equals("meteor_swarm")?2.3:1.2,6,id.equals("meteor_swarm")?12:id.equals("fire_storm")?6:1,id.equals("meteor_swarm")?12:3,id.equals("meteor_swarm")?34:14,1.9);
             case "control_weather" -> sig(Form.WEATHER,2.1,7,8,8,18,1.2);
             case "mage_armor","shield","mirror_image","blur","invisibility","greater_invisibility","stoneskin","freedom_of_movement","true_seeing","globe_of_invulnerability","fire_shield","solar_guard","foresight","haste","protection_from_energy" -> sig(Form.AURA,1.0,4,1,.2,0,2.8);
             case "power_word_kill","eyebite","phantasmal_killer","feeblemind","dominate_person","dominate_monster","mass_suggestion","vampiric_touch" -> sig(Form.MARK,id.equals("power_word_kill")?.72:1.0,5,1,.1,0,3.0);

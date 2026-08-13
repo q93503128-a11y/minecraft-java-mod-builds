@@ -46,8 +46,7 @@ public final class ExpandedSpellEffects {
             case "invisibility" -> invisibility(player, 420, false);
             case "gust_of_wind" -> linePush(player, range, power);
             case "hold_person" -> hold(player, range, 190, 6, power);
-            case "shatter" -> areaDamage(player, aimGround(player, range), SpellMetrics.effectRadius("shatter", range, 2), power,
-                    ParticleTypes.CRIT, false, false, false);
+            case "shatter" -> shatter(player,range,power);
             case "blur" -> blur(player, power);
             case "levitate" -> levitate(player, power, 260);
 
@@ -171,6 +170,12 @@ public final class ExpandedSpellEffects {
         burst(level, center.add(0.0, 0.8, 0.0), particle, Math.min(120, 28 + (int) (radius * 7)),
                 Math.max(0.7, radius * 0.28));
         return true;
+    }
+
+    private static boolean shatter(ServerPlayer player,double range,double power){
+        Vec3 center=aimGround(player,range); double radius=SpellMetrics.effectRadius("shatter",range,2);
+        boolean result=areaDamage(player,center,radius,power,ParticleTypes.CRIT,false,false,false);
+        DestructiveMagicService.impact(player,"shatter",center,radius,power); return result;
     }
 
     private static boolean ward(ServerPlayer player, double power, int duration, int baseAmplifier) {
@@ -499,6 +504,7 @@ public final class ExpandedSpellEffects {
         Optional<Mob> target = lookTarget(player, range);
         Vec3 center = target.map(Mob::position).orElse(aimGround(player, range));
         missile(player, range, power * 0.65, ParticleTypes.SNOWFLAKE, 0, 160);
+        DestructiveMagicService.impact(player,"flame_strike",center,SpellMetrics.effectRadius("flame_strike",range,5),power);
         return areaDamage(player, center, SpellMetrics.effectRadius("ice_knife", range, 2), power * 0.65, ParticleTypes.SNOWFLAKE, false, true, false);
     }
 

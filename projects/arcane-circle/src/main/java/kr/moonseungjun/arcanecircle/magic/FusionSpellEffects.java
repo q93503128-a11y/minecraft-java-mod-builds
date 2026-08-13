@@ -172,6 +172,7 @@ public final class FusionSpellEffects {
             mob.push(0.0, 0.65 + distanceScale * 0.9, 0.0);
             mob.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 180, 3));
         }
+        DestructiveMagicService.impact(player,"world_sunder",player.position(),radius,power);
         sound(level, player, SoundEvents.GENERIC_EXPLODE.value(), 1.0F, 0.52F);
         return true;
     }

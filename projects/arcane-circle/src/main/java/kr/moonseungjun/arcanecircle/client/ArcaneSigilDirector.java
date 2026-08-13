@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.client;
 
+import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import kr.moonseungjun.arcanecircle.magic.SpellPresentationProfile;
 import net.minecraft.world.phys.Vec3;
@@ -285,17 +286,16 @@ final class ArcaneSigilDirector {
         m.runeChords(b,Vec3.ZERO,inner*.285,8,3,rotation*.040,.34F);
         m.runeGlyph(b,Vec3.ZERO,inner*.145,seed^0x5A71,-rotation*.08,.48F);
 
-        // Four major drop seals are readable sub-circles rather than giant cubes/rails.
-        double orbit=outer*.695,child=outer*.102;
-        for(int i=0;i<4;i++){
-            double a=Math.PI/4.0+i*Math.PI/2.0+rotation*.020;
-            Vec3 c=b.point(a,orbit);
-            m.circle(b,c,child,30,.56F);m.circle(b,c,child*.76,24,.36F);
-            m.polygon(b,c,child*.58,3,-a+Math.PI/2.0,.42F);
-            m.polygon(b,c,child*.58,3,-a-Math.PI/2.0,.42F);
-            m.runeGlyph(b,c,child*.30,seed+i*101,-rotation*.06,.38F);
-            m.line(b.point(a,inner*.69),c,.30F);
-            if(p>.72)m.line(c.add(n.scale(depth*.30)),c.add(n.scale(-Math.max(.85,r*.050))),.30F);
+        // Bombardment coordinates: many small seals, not four fixed cardinal drop points.
+        double child=outer*.052;
+        for(int i=0;i<12;i++){
+            MeteorBarragePattern.Strike strike=MeteorBarragePattern.strike(i);
+            Vec3 raw=new Vec3(strike.offsetX(),0,strike.offsetZ()); double len=Math.max(1.0,raw.length());
+            Vec3 c=b.right().scale(raw.x/len*outer*.70).add(b.up().scale(raw.z/len*outer*.70));
+            double sr=child*(.82+.28*strike.scale());
+            m.circle(b,c,sr,18,.42F); m.polygon(b,c,sr*.60,3+i%4,-rotation*.035+i,.34F);
+            m.runeGlyph(b,c,sr*.30,seed+i*101,-rotation*.045,.30F);
+            m.line(c,b.point(Math.atan2(strike.offsetZ(),strike.offsetX()),inner*.68),.24F);
         }
         // Minor zodiac/coordinate marks fill the outer ring without turning into a central line knot.
         if(p>.58){for(int i=0;i<8;i++){double a=i*Math.PI/4.0-rotation*.025;Vec3 c=b.point(a,outer*.795);m.runeGlyph(b,c,outer*.030,seed^((i+1)*131),a,.32F);}}
