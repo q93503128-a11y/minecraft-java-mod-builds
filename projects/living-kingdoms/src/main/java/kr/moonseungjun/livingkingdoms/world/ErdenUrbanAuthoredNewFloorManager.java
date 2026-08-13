@@ -323,6 +323,23 @@ public final class ErdenUrbanAuthoredNewFloorManager {
             routeHeads.add(new BlockPos(node.world().x(), node.world().y() + 1, node.world().z()));
         }
 
+        Set<BlockPos> routeBody = new HashSet<>(routeFeet);
+        routeBody.addAll(routeHeads);
+        for (RouteNode node : routeNodes) {
+            if (stairs.containsKey(node.world())) continue;
+            int supportLocalY = node.local().y() - 1;
+            if (sourceOccupied.contains(localKey(
+                    node.local().x(), supportLocalY, node.local().z()))) continue;
+            BlockPos supportPos = new BlockPos(
+                    node.world().x(), node.world().y() - 1, node.world().z());
+            if (routeBody.contains(supportPos)) {
+                throw new IllegalStateException(
+                        "Erden required flat-route support collides with route body fragment="
+                                + placement.fragmentKey() + " local=" + node.local()
+                                + " support=" + supportPos);
+            }
+        }
+
         Block floorBlock = floorBlock(placement.role());
         Set<BlockPos> floorBlocks = new LinkedHashSet<>();
         int openings = 0;
@@ -444,6 +461,12 @@ public final class ErdenUrbanAuthoredNewFloorManager {
         }
 
         Block support = supportBlock(plan.role());
+        Set<BlockPos> protectedRouteBody = new HashSet<>();
+        for (RouteNode routeNode : plan.routeNodes()) {
+            protectedRouteBody.add(routeNode.world().pos());
+            protectedRouteBody.add(new BlockPos(
+                    routeNode.world().x(), routeNode.world().y() + 1, routeNode.world().z()));
+        }
         for (RouteNode node : plan.routeNodes()) {
             StairIntent stair = plan.stairs().get(node.world());
             BlockPos feetPos = node.world().pos();
@@ -469,7 +492,12 @@ public final class ErdenUrbanAuthoredNewFloorManager {
                     node.local().x(), localFloorY, node.local().z()));
             BlockPos supportPos = new BlockPos(
                     node.world().x(), node.world().y() - 1, node.world().z());
-            if (sourceFloorAir && level.getBlockState(supportPos).isAir()) {
+            boolean supportHitsRouteBody = protectedRouteBody.contains(supportPos);
+            if (sourceFloorAir && supportHitsRouteBody && stair == null) {
+                return false;
+            }
+            if (sourceFloorAir && !supportHitsRouteBody
+                    && level.getBlockState(supportPos).isAir()) {
                 level.setBlock(supportPos, support.defaultBlockState(), UPDATE_FLAGS);
             }
         }
