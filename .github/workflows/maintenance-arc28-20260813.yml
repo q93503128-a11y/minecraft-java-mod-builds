@@ -9,10 +9,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: maintenance-arc28-20260813
-  cancel-in-progress: true
-
 jobs:
   patch:
     runs-on: ubuntu-latest
@@ -21,188 +17,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Apply current Arcane corrections
+      - name: Apply source patch
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git pull --rebase origin main
-          python3 - <<'PY'
-          from pathlib import Path
-
-          root=Path('projects/arcane-circle')
-          def read(rel): return (root/rel).read_text(encoding='utf-8')
-          def write(rel,s): (root/rel).write_text(s,encoding='utf-8')
-          def rep(rel,old,new,count=1):
-              s=read(rel)
-              actual=s.count(old)
-              assert actual==count, f'{rel}: expected {count} occurrences, found {actual}: {old[:80]!r}'
-              write(rel,s.replace(old,new,count))
-
-          # Staff profiles: cast-time authority sits between range and cooldown.
-          staff_replacements={
-            '25, 1.02, 0.96, 1.04, 1.0, 0.96, 1.15, null, 1.0);':'25, 1.02, 0.96, 1.04, 1.0, 0.96, 0.96, 1.15, null, 1.0);',
-            '20, 1.04, 0.90, 1.15, 1.08, 0.92, 1.10, SpellDefinition.School.FIRE, 1.45);':'20, 1.04, 0.90, 1.15, 1.08, 0.91, 0.92, 1.10, SpellDefinition.School.FIRE, 1.45);',
-            '35, 1.05, 0.88, 1.16, 1.24, 0.88, 1.18, SpellDefinition.School.FROST, 1.50);':'35, 1.05, 0.88, 1.16, 1.24, 0.90, 0.88, 1.18, SpellDefinition.School.FROST, 1.50);',
-            '30, 1.05, 0.86, 1.14, 1.22, 0.70, 1.28, SpellDefinition.School.WIND, 1.55);':'30, 1.05, 0.86, 1.14, 1.22, 0.82, 0.70, 1.28, SpellDefinition.School.WIND, 1.55);',
-            '80, 1.08, 0.82, 1.24, 1.12, 0.76, 1.30, SpellDefinition.School.WARD, 1.75);':'80, 1.08, 0.82, 1.24, 1.12, 0.88, 0.76, 1.30, SpellDefinition.School.WARD, 1.75);',
-            '95, 1.09, 0.76, 1.30, 1.18, 0.74, 1.68, SpellDefinition.School.LIFE, 1.85);':'95, 1.09, 0.76, 1.30, 1.18, 0.86, 0.74, 1.68, SpellDefinition.School.LIFE, 1.85);',
-            '110, 1.10, 0.72, 1.36, 1.48, 0.68, 1.35, SpellDefinition.School.SPACE, 1.80);':'110, 1.10, 0.72, 1.36, 1.48, 0.78, 0.68, 1.35, SpellDefinition.School.SPACE, 1.80);',
-            '620, 1.16, 0.44, 2.10, 1.75, 0.42, 2.20, SpellDefinition.School.ARCANE, 1.70);':'620, 1.16, 0.44, 2.10, 1.75, 0.58, 0.42, 2.20, SpellDefinition.School.ARCANE, 1.70);',
-            '1800, 1.25, 0.24, 3.80, 2.85, 0.23, 3.60, null, 1.0);':'1800, 1.25, 0.24, 3.80, 2.85, 0.38, 0.23, 3.60, null, 1.0);',
-          }
-          s=read('src/main/java/kr/moonseungjun/arcanecircle/registry/ModItems.java')
-          for old,new in staff_replacements.items():
-              assert s.count(old)==1, f'ModItems profile pattern mismatch: {old}'
-              s=s.replace(old,new,1)
-          write('src/main/java/kr/moonseungjun/arcanecircle/registry/ModItems.java',s)
-
-          # Direct cast timing: same-circle bases are readable but no longer punitive, and staff matters.
-          old='''        int[] sameCircleTicks = {0, 10, 18, 30, 50, 84, 140, 230, 380, 620};
-          int circleGap = Math.max(0, state.circle() - circle);
-          int masteryTier = SpellCatalog.masteryTier(state.mastery(spell.id()));
-          double gapScale = Math.pow(0.78, circleGap);
-          double masteryScale = Math.max(0.72, 1.0 - masteryTier * 0.028);
-          kr.moonseungjun.arcanecircle.world.MagicTradition chosen =
-                  kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer())
-                          .tradition(player);
-          double raw = sameCircleTicks[circle] * gapScale * masteryScale * chosen.castTimeMultiplier();
-          return raw < 2.0 ? 0 : Math.max(2, (int) Math.round(raw));'''
-          new='''        int[] sameCircleTicks = {0, 6, 10, 16, 26, 42, 68, 105, 155, 220};
-          int circleGap = Math.max(0, state.circle() - circle);
-          int masteryTier = SpellCatalog.masteryTier(state.mastery(spell.id()));
-          double gapScale = Math.pow(0.78, circleGap);
-          double masteryScale = Math.max(0.72, 1.0 - masteryTier * 0.028);
-          kr.moonseungjun.arcanecircle.world.MagicTradition chosen =
-                  kr.moonseungjun.arcanecircle.world.ArcaneWorldData.get(((ServerLevel) player.level()).getServer())
-                          .tradition(player);
-          double staffScale = Math.max(0.25,
-                  kr.moonseungjun.arcanecircle.registry.ModItems.equipped(player).castTimeMultiplier());
-          double raw = sameCircleTicks[circle] * gapScale * masteryScale * chosen.castTimeMultiplier() * staffScale;
-          return raw < 1.0 ? 0 : Math.max(1, (int) Math.round(raw));'''
-          rep('src/main/java/kr/moonseungjun/arcanecircle/magic/SpellCastingService.java',old,new)
-
-          old='''        int minimum = switch (circle) {
-              case 1 -> 20;
-              case 2 -> 34;
-              case 3 -> 56;
-              case 4 -> 90;
-              case 5 -> 150;
-              case 6 -> 240;
-              case 7 -> 380;
-              case 8 -> 620;
-              default -> 960;
-          };
-          int resultTicks = Math.max(minimum, calculated);'''
-          new='''        int baseMinimum = switch (circle) {
-              case 1 -> 10;
-              case 2 -> 16;
-              case 3 -> 24;
-              case 4 -> 36;
-              case 5 -> 54;
-              case 6 -> 78;
-              case 7 -> 108;
-              case 8 -> 145;
-              default -> 190;
-          };
-          double staffScale = Math.max(0.25,
-                  kr.moonseungjun.arcanecircle.registry.ModItems.equipped(player).castTimeMultiplier());
-          int minimum = Math.max(1, (int) Math.round(baseMinimum * staffScale));
-          int resultTicks = Math.max(minimum, calculated);'''
-          rep('src/main/java/kr/moonseungjun/arcanecircle/magic/SpellCastingService.java',old,new)
-
-          # Runtime: authored spell formula first, physical spell body second; keep a brief release echo.
-          old='''        List<RenderEntry> entries=new ArrayList<>();
-          for(Visual v:CHARGES.values()){
-              entries.add(new RenderEntry(v.center,
-                      SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt),
-                      SpellCinematicDirector.color(v.spell)));
-          }
-          for(Visual v:RELEASES){
-              double age=clamp((now-v.startedAt)/(double)Math.max(1L,v.expiresAt-v.startedAt),0,1);
-              entries.add(new RenderEntry(v.center,
-                      SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,age,v.impactAge,v.fusion,v.ingredients),
-                      SpellCinematicDirector.color(v.spell)));
-              if(SpellCinematicDirector.isPrismatic(v.spell)){'''
-          new='''        List<RenderEntry> entries=new ArrayList<>();
-          for(Visual v:CHARGES.values()){
-              int color=SpellCinematicDirector.color(v.spell);
-              entries.add(new RenderEntry(v.center,
-                      ArcaneSigilDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.fusion,v.startedAt),
-                      color));
-              entries.add(new RenderEntry(v.center,
-                      SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt),
-                      color));
-          }
-          for(Visual v:RELEASES){
-              double age=clamp((now-v.startedAt)/(double)Math.max(1L,v.expiresAt-v.startedAt),0,1);
-              int color=SpellCinematicDirector.color(v.spell);
-              ArcaneWorldMesh echo=ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt);
-              if(echo.size()>0)entries.add(new RenderEntry(v.center,echo,ArcaneSigilDirector.releaseEchoColor(color,age)));
-              entries.add(new RenderEntry(v.center,
-                      SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,age,v.impactAge,v.fusion,v.ingredients),
-                      color));
-              if(SpellCinematicDirector.isPrismatic(v.spell)){'''
-          rep('src/main/java/kr/moonseungjun/arcanecircle/client/WorldMagicTracker.java',old,new)
-
-          # Remove dead architectures that escaped the previous purge.
-          for rel in [
-              'src/main/java/kr/moonseungjun/arcanecircle/magic/SpellSigilService.java',
-              'src/main/java/kr/moonseungjun/arcanecircle/client/SignatureGeometry.java',
-          ]:
-              p=root/rel
-              assert p.exists(), f'expected legacy file missing before purge: {rel}'
-              p.unlink()
-
-          # Version sources.
-          rep('gradle.properties','mod_version=0.12.1-alpha.27','mod_version=0.12.1-alpha.28')
-          rep('src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java','VERSION = "0.12.1-alpha.27"','VERSION = "0.12.1-alpha.28"')
-          rep('src/main/resources/data/arcanecircle/spell_catalog/index.json','"version": "0.12.1-alpha.27"','"version": "0.12.1-alpha.28"')
-
-          # Current documentation: formula circle + physical spell event are both canonical.
-          rep('README.md','- `SpellCinematicDirector`: 주문의 실제 공간 사건을 기준으로 한 월드 연출\n- `ArcaneRegaliaRenderer`: 복장별 독립 실루엣',
-              '- `ArcaneSigilDirector`: 주문별 술식·보조진·룬·다중 평면을 조립하는 실제 시전 마법진\n- `SpellCinematicDirector`: 마법진에서 이어지는 투사체·게이트·폭풍·영역·충돌의 물리 연출\n- `ArcaneRegaliaRenderer`: 보디스·라펠·맨틀·치마폭·트레인으로 구성한 입체 마도복')
-          rep('README.md','모든 주문에 같은 범용 마법진을 덧씌우지 않는다. 높은 써클이라는 이유만으로 항상 더 큰 원을 그리지 않으며, 주문의 역할·위치·고도·평면·체적·이동·충돌·잔류가 디자인의 시작점이다.',
-              '모든 주문은 시전 단계에서 읽을 수 있는 실제 술식 마법진을 갖는다. 단, 같은 원을 복붙하지 않는다. 학파·주문·앵커에 따라 룬, 보조진, 평면, 3D 깊이와 전개 순서가 달라지고, 높은 써클이라는 이유만으로 무조건 커지지는 않는다. 완성된 술식에서 투사체·게이트·폭풍·영역·충돌·잔류가 이어진다.')
-          rep('PROJECT.md','`GrimoireScreen`, `ArcaneHud`, `SpellCinematicDirector`, `ArcaneRegaliaRenderer`, `ArcaneCastingPerformance`',
-              '`GrimoireScreen`, `ArcaneHud`, `ArcaneSigilDirector`, `SpellCinematicDirector`, `ArcaneRegaliaRenderer`, `ArcaneCastingPerformance`')
-
-          write('CHANGELOG.md','''# Changelog
-
-## 0.12.1-alpha.28
-- 모든 주문의 시전 단계에 주문별 실제 술식 마법진을 추가했다. 룬·보조진·다중 평면·학파 문법·앵커 문법을 조립하고 완성 후 release까지 짧게 잔류한다.
-- Meteor Swarm은 상공 주술식과 네 개의 낙하점 보조진을 분리했고, Power Word Kill 같은 주문은 의도적으로 소형 결속진을 유지한다.
-- 기존 물리 연출은 삭제하지 않고 완성된 마법진 뒤에 투사체·게이트·폭풍·영역·충돌로 이어지도록 이중 계층화했다.
-- 로브를 큰 몸통 카드 방식에서 보디스·라펠·어깨 맨틀·분할 치마폭·옆 천·후면 트레인의 입체 의복 구조로 전면 재작성했다.
-- 지팡이에 시전시간 배율을 추가했다. 동써클 9C 기본 전개는 31초에서 11초로 낮추고, 현자/대마도사 지팡이는 각각 ×0.58/×0.38의 추가 시전 보정을 준다.
-- 융합 주문의 고정 시전 하한을 크게 낮추고 지팡이 시전 배율이 하한에도 적용되도록 수정했다.
-- 빈 `SpellSigilService`와 사용되지 않던 `SignatureGeometry`를 active tree에서 삭제했다.
-- ready-hold/release, 서버 권위 판정, 쿨다운 장비 10% 하한, 써클/숙련 추가 보정은 유지한다.
-
-과거 세부 변경 이력은 Git history가 보존한다.
-''')
-
-          # Source audit follows alpha.28 contracts.
-          rep('tools/test_current_source.py',"    'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java'\n]", "    'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java','SignatureGeometry.java'\n]")
-          rep('tools/test_current_source.py',"assert 'mod_version=0.12.1-alpha.27' in gradle\nassert 'VERSION = \"0.12.1-alpha.27\"' in main\nassert '\"version\": \"0.12.1-alpha.27\"' in index", "assert 'mod_version=0.12.1-alpha.28' in gradle\nassert 'VERSION = \"0.12.1-alpha.28\"' in main\nassert '\"version\": \"0.12.1-alpha.28\"' in index")
-          rep('tools/test_current_source.py',"assert 'SpellCinematicDirector.castingFamily' in tracker", "assert 'SpellCinematicDirector.castingFamily' in tracker\nassert 'ArcaneSigilDirector.charge' in tracker and 'ArcaneSigilDirector.releaseEcho' in tracker\nsigil=text(client/'ArcaneSigilDirector.java')\nfor token in ['formulaFrame','schoolFormula','anchorFormula','skyRitual','meteor_swarm','runeRing','brokenBand','fusionFormula']:\n    assert token in sigil, f'authored sigil regression: {token}'")
-          rep('tools/test_current_source.py',"for token in ['apprentice','sage','cinder','glacier','tempest','archmage','rift']:\n    assert token in regalia", "for token in ['outfit','bodice','lapel','shoulderMantle','skirtPair','sideGore','backTrain','facetedSkirt','asymmetricSkirt','ceremonialTab']:\n    assert token in regalia, f'regalia garment regression: {token}'\nassert 'private static void torso(' not in regalia, 'old torso-card garment returned'")
-          rep('tools/test_current_source.py',"casting_service=text(magic/'SpellCastingService.java')\nassert 'READY_HOLD_TIMEOUT_TICKS' in casting_service and 'chargeTimeoutTicks' in casting_service\nmage_gear=text(magic/'MageGearService.java')", "casting_service=text(magic/'SpellCastingService.java')\nassert 'READY_HOLD_TIMEOUT_TICKS' in casting_service and 'chargeTimeoutTicks' in casting_service\nassert '{0, 6, 10, 16, 26, 42, 68, 105, 155, 220}' in casting_service\nassert 'equipped(player).castTimeMultiplier()' in casting_service\nassert 'default -> 190;' in casting_service and 'baseMinimum * staffScale' in casting_service\nstaff=text(root/'src/main/java/kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.java')\nassert 'castTimeMultiplier' in staff and '시전 전개시간' in staff\nassert not (magic/'SpellSigilService.java').exists(), 'empty legacy SpellSigilService returned'\nmage_gear=text(magic/'MageGearService.java')")
-
-          # JAR audit must require the new sigil and forbid both retired classes.
-          rep('tools/verify_jar.py','    "kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class",',
-              '    "kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class",\n    "kr/moonseungjun/arcanecircle/client/ArcaneSigilDirector.class",')
-          rep('tools/verify_jar.py','    "kr/moonseungjun/arcanecircle/magic/SpellSigilService.class",\n','')
-          rep('tools/verify_jar.py',"'CastingSilhouetteRenderer', 'RobeRegaliaRenderer']", "'CastingSilhouetteRenderer', 'RobeRegaliaRenderer', 'SignatureGeometry', 'SpellSigilService']")
-          PY
-
+          python3 .github/scripts/maintenance_20260813.py
           python3 projects/arcane-circle/tools/test_current_source.py
           git diff --check
-          git status --short
           git add -A projects/arcane-circle
-          git commit -m 'Arcane Circle alpha.28: restore authored sigils, robes, and staff casting'
-          for attempt in 1 2 3 4 5 6 7 8; do
+          git commit -m 'Arcane Circle alpha.28: authored sigils, real robes, staff casting'
+          for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then exit 0; fi
             git pull --rebase origin main
             sleep $((attempt * 2))
