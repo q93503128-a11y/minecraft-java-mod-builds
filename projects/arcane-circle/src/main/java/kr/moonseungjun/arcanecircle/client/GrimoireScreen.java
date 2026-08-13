@@ -315,7 +315,7 @@ public final class GrimoireScreen extends Screen {
     private int firstEmptySlot(){for(int i=0;i<5;i++)if(ArcaneClientState.slot(i).isBlank())return i;return -1;}
     private void equipTo(SpellDefinition s,int slot){if(slot<0||slot>=5){notice("잘못된 장착 슬롯입니다");return;}if(!usable(s)){notice(s==null?"장착할 주문이 없습니다":"아직 사용할 수 없는 주문입니다");return;}ClientPacketDistributor.sendToServer(new EquipSpellPayload(s.id(),slot));notice((slot+1)+"번 슬롯 · "+s.name());}
     private void quickEquip(SpellDefinition s){if(!usable(s)){notice("아직 사용할 수 없는 주문입니다");return;}int slot=firstEmptySlot();if(slot<0){notice("빈 슬롯 없음 · 교체할 슬롯을 먼저 클릭하세요");return;}equipTo(s,slot);equipCandidateId="";}
-    private void request    private void request(String next){saveScroll();ClientPacketDistributor.sendToServer(new RequestGrimoirePayload(next));}
+    private void request(String next){saveScroll();ClientPacketDistributor.sendToServer(new RequestGrimoirePayload(next));}
     private void notice(String text){notice=text;noticeUntil=System.currentTimeMillis()+1800L;}
     private void saveScroll(){SAVED_SCROLL.put(scrollKey(),scroll);}
     private String scrollKey(){return page+":"+("atlas".equals(page)?atlasCircle:"recipes".equals(page)?fusionCircle:"academy".equals(page)?academyCircle:0);}

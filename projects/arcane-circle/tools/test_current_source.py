@@ -46,6 +46,8 @@ grimoire=text(client/'GrimoireScreen.java')
 for token in ['drawSpine','circleIndex','circleStep','contentBottom','compact()','browserViewport','detailWidth','detail()','spellTile','primaryAction','drawLoadout','equipCandidateId','firstEmptySlot','quickEquip','enableScissor','mouseScrolled']:
     assert token in grimoire, f'grimoire architecture regression: {token}'
 assert 'CodexVisualLanguage' not in grimoire
+assert 'private void request    private void request' not in grimoire
+assert grimoire.count('private void request(String next)') == 1
 assert 'Math.max(22,Math.min(29' not in grimoire
 assert 'MAX_FRAME = 9000' in tracker and 'MAX_ENTRY = 2800' in tracker
 assert '!"prismatic_wall".equals(v.spell.id())' in tracker
