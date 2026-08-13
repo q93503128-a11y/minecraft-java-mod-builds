@@ -38,6 +38,10 @@ jobs:
           capital="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalStreamingBuilder.java"
           workforce="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java"
           lifecycle="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java"
+          justice="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java"
+          crime="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/crime/CrimeManager.java"
+          fire="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java"
+          port="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java"
 
           grep -F 'if (!chunkBounded) retainConstructionChunk(level, chunkX, chunkZ);' "$edits"
           grep -F 'addTicketAndLoadWithRadius(' "$edits"
@@ -64,6 +68,24 @@ jobs:
           grep -F 'if (!person.founder() || person.retiredOn(day))' "$lifecycle"
           grep -F 'routeLoaded(level, villager.blockPosition(), targetPos)' "$lifecycle"
           ! grep -F 'level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)' "$lifecycle"
+
+          # Erden justice must be evidence-driven: only a resident present at the event can witness,
+          # the report must reach a real guard-post worker, and generic synthetic pursuit stays off.
+          grep -F 'event_time_witness=true' "$justice"
+          grep -F 'retroactive_witness=false' "$justice"
+          grep -F 'actual_guard_worker=true' "$justice"
+          grep -F 'proximity_arrest=true synthetic_guard=false' "$justice"
+          grep -F 'actual_citizen_court=true' "$justice"
+          grep -F 'sentence_executed=true' "$justice"
+          grep -F 'ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())' "$crime"
+          grep -F 'ErdenJusticeManager.observeCrime(' "$crime"
+          ! grep -F 'StarterRealmManager.server()' "$justice"
+
+          # Deterministic subsystem fixtures must never piggyback on the generic realm-test flag.
+          grep -F 'LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST' "$fire"
+          ! grep -F 'LIVING_KINGDOMS_CI_REALM_TEST' "$fire"
+          grep -F 'LIVING_KINGDOMS_CI_RIVER_PORT_TEST' "$port"
+          ! grep -F 'LIVING_KINGDOMS_CI_REALM_TEST' "$port"
       - name: Compile current Living Kingdoms sources
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
