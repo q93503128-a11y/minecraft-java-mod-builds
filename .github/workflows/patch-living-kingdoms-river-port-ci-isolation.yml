@@ -29,45 +29,35 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Isolate CI fixtures and wire Erden civic justice
+      - name: Isolate focused subsystem audits
         run: python .github/scripts/isolate_living_kingdoms_river_port_ci.py
       - name: Clean compile Living Kingdoms
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
-      - name: Verify source patch invariants
+      - name: Verify focused CI isolation
         shell: bash
         run: |
           set -euo pipefail
+          exterior='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java'
           port='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java'
           fire='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java'
           justice='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java'
-          crime='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/CrimeManager.java'
-          main='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
-          status='projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md'
-          grep -Fq 'LIVING_KINGDOMS_CI_RIVER_PORT_TEST' "$port"
-          ! grep -Fq 'LIVING_KINGDOMS_CI_REALM_TEST' "$port"
-          grep -Fq 'LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST' "$fire"
-          ! grep -Fq 'LIVING_KINGDOMS_CI_REALM_TEST' "$fire"
-          grep -Fq 'actual_resident=true' "$justice"
-          grep -Fq 'synthetic_guard=false' "$justice"
-          grep -Fq 'ErdenJusticeManager.observeCrime' "$crime"
-          grep -Fq 'ErdenJusticeManager.onServerTick(event);' "$main"
-          ! grep -Fq -- '- 경비대 목격과 신고, 체포, 구금, 재판, 판결, 형 집행' "$status"
-      - name: Commit source and docs directly to main
+          grep -Fq 'Focused subsystem audits still bootstrap the authored realm' "$exterior"
+          grep -Fq 'LIVING_KINGDOMS_CI_RIVER_PORT_TEST' "$exterior"
+          grep -Fq 'LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST' "$exterior"
+          grep -Fq 'ci_corridor_retained_until_pass=true' "$port"
+          grep -Fq 'Selected bounded Erden fire CI support=' "$fire"
+          grep -Fq 'event_time_witness=true' "$justice"
+          grep -Fq 'retroactive_witness=false' "$justice"
+      - name: Commit focused CI isolation directly to main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenRiverPortManager.java \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/CrimeManager.java \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
-            projects/living-kingdoms/docs/ERDEN_IMPLEMENTATION_STATUS.md
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java
           git diff --cached --quiet && exit 0
-          git commit -m 'feat(living-kingdoms): wire Erden civic justice flow'
+          git commit -m 'test(living-kingdoms): isolate focused audits from exterior sweep'
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
