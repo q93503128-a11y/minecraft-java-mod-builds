@@ -94,10 +94,10 @@ public final class ErdenRiverPortManager {
         ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);
         if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
 
-        if (isCi()) prepareCi(level);
+        if (isPortCi()) prepareCi(level);
         advanceConstruction(level);
         if (level.getGameTime() % VESSEL_INTERVAL == 0L) tickVessel(level);
-        if (isCi()) verifyCi(level);
+        if (isPortCi()) verifyCi(level);
     }
 
     private static void reset(MinecraftServer server) {
@@ -134,10 +134,10 @@ public final class ErdenRiverPortManager {
         data.markChunk(activeChunk.packed(), PORT_REVISION);
         QUEUED.remove(activeChunk.packed());
         releaseCi(level, activeChunk.packed());
-        if (isCi()) {
+        if (isPortCi()) {
             LivingKingdoms.LOGGER.info(
                     "LK_ERDEN_RIVER_PORT_CHUNK_COMPLETE chunk={},{} writes={} waterway=true loaded_only={}",
-                    activeChunk.chunkX(), activeChunk.chunkZ(), activeChunk.plan().appliedWrites(), !isCi());
+                    activeChunk.chunkX(), activeChunk.chunkZ(), activeChunk.plan().appliedWrites(), !isPortCi());
         }
         activeChunk = null;
     }
@@ -164,7 +164,7 @@ public final class ErdenRiverPortManager {
             LivingKingdoms.LOGGER.debug(
                     "Prepared Erden river-port chunk {},{} writes={} operations={} loaded_only={} ci_ticket={}",
                     chunkX, chunkZ, plan.estimatedWrites(), plan.operationCount(),
-                    !isCi(), CI_RETAINED.contains(packed));
+                    !isPortCi(), CI_RETAINED.contains(packed));
             return;
         }
     }
@@ -321,7 +321,7 @@ public final class ErdenRiverPortManager {
         ErdenRiverPortSavedData port = level.getDataStorage().computeIfAbsent(ErdenRiverPortSavedData.TYPE);
         ErdenKingdomSupplySavedData supply = level.getDataStorage().computeIfAbsent(ErdenKingdomSupplySavedData.TYPE);
 
-        boolean mayMaterialise = isCi() || nearAnyPlayer(level, -1_250, 300, PHYSICAL_RADIUS);
+        boolean mayMaterialise = isPortCi() || nearAnyPlayer(level, -1_250, 300, PHYSICAL_RADIUS);
         if (!mayMaterialise) {
             discardBoat(level, port);
             port.clearVessel();
@@ -355,11 +355,11 @@ public final class ErdenRiverPortManager {
             if (port.activeShipment().isEmpty()) port.assignVessel(shipment.id(), boat.getUUID().toString());
             LivingKingdoms.LOGGER.info(
                     "Materialized Erden supply barge shipment={} resource={} amount={} real_entity=true escrow_linked=true loaded_only={} route_points={}",
-                    shipment.id(), shipment.resource(), shipment.amount(), !isCi(), route.size());
+                    shipment.id(), shipment.resource(), shipment.amount(), !isPortCi(), route.size());
         }
         if (boat == null) return;
 
-        if (isCi()) accumulateCiTravel(boat);
+        if (isPortCi()) accumulateCiTravel(boat);
         int index = port.waypoint();
         if (index >= route.size()) {
             boat.setDeltaMovement(0.0D, boat.getDeltaMovement().y, 0.0D);
@@ -596,8 +596,8 @@ public final class ErdenRiverPortManager {
         return (int) packed;
     }
 
-    private static boolean isCi() {
-        return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
+    private static boolean isPortCi() {
+        return "1".equals(System.getenv("LIVING_KINGDOMS_CI_RIVER_PORT_TEST"));
     }
 
     private record ActiveChunk(long packed, int chunkX, int chunkZ, IncrementalWorldEditPlan plan) {
