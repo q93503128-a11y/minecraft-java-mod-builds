@@ -1,4 +1,4 @@
-name: Diagnose Living Kingdoms authored new-floor blocker stage safely
+name: Diagnose Living Kingdoms authored new-floor blocker stage
 
 on:
   push:
@@ -33,52 +33,33 @@ jobs:
           s = p.read_text(encoding='utf-8')
 
           replacements = [
-              (
-                  '            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;',
-                  '''            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) {
+              ('            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) continue;', '''            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) {
                       logCiStage(level, plan, "ground_not_complete");
                       continue;
-                  }'''
-              ),
-              (
-                  '            if (!chunksReady(level, plan.bounds())) continue;',
-                  '''            if (!chunksReady(level, plan.bounds())) {
+                  }'''),
+              ('            if (!chunksReady(level, plan.bounds())) continue;', '''            if (!chunksReady(level, plan.bounds())) {
                       logCiStage(level, plan, "chunks_not_ready");
                       continue;
-                  }'''
-              ),
-              (
-                  '                if (!materialize(level, plan, true)) continue;',
-                  '''                if (!materialize(level, plan, true)) {
+                  }'''),
+              ('                if (!materialize(level, plan, true)) continue;', '''                if (!materialize(level, plan, true)) {
                       logCiStage(level, plan, "materialize_rejected");
                       continue;
-                  }'''
-              ),
-              (
-                  '                data.markPrepared(key, FLOOR_REVISION);',
-                  '''                data.markPrepared(key, FLOOR_REVISION);
+                  }'''),
+              ('                data.markPrepared(key, FLOOR_REVISION);', '''                data.markPrepared(key, FLOOR_REVISION);
                   if (plan.entranceKey() == ciPlanKey) {
                       LivingKingdoms.LOGGER.info(
                               "LK_ERDEN_AUTHORED_NEW_FLOOR_STAGE role={} entrance={},{} stage=materialized floor_cells={} route_nodes={} stairs={}",
                               plan.role(), plan.entranceX(), plan.entranceZ(),
                               plan.floorBlocks().size(), plan.routeNodes().size(), plan.stairs().size());
-                  }'''
-              ),
-              (
-                  '''            if (verify(level, plan)) {
-                      data.markCompleted(key, FLOOR_REVISION);
-                  }''',
-                  '''            if (verify(level, plan)) {
-                      data.markCompleted(key, FLOOR_REVISION);
-                  } else {
-                      logCiStage(level, plan, "verify_rejected");
-                  }'''
-              )
+                  }'''),
+              ('            if (verify(level, plan)) {', '''            boolean verified = verify(level, plan);
+                  if (!verified) logCiStage(level, plan, "verify_rejected");
+                  if (verified) {''')
           ]
           for old, new in replacements:
               count = s.count(old)
               if count != 1:
-                  raise SystemExit(f'stage patch anchor count={count}: {old[:90]!r}')
+                  raise SystemExit(f'stage patch anchor count={count}: {old!r}')
               s = s.replace(old, new, 1)
 
           anchor = '    private static boolean chunksReady(ServerLevel level, Bounds bounds) {'
