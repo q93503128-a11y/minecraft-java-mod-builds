@@ -871,7 +871,12 @@ public final class ErdenKingdomExteriorBuilder {
     }
 
     private static boolean isCi() {
-        return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
+        if (!"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return false;
+        // Focused subsystem audits still bootstrap the authored realm, but must not also request
+        // the 178-chunk exterior regression sweep. Naturally loaded exterior chunks continue to
+        // use the normal streaming path, so production behavior is unchanged.
+        return !"1".equals(System.getenv("LIVING_KINGDOMS_CI_RIVER_PORT_TEST"))
+                && !"1".equals(System.getenv("LIVING_KINGDOMS_CI_FIRE_RESPONSE_TEST"));
     }
 
     private static void release(ServerLevel level, long packed) {
