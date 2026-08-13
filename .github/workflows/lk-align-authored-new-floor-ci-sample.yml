@@ -1,4 +1,4 @@
-name: Align Living Kingdoms authored new-floor CI sample
+name: Retain Living Kingdoms authored new-floor CI chunks
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Align CI sample with ground-floor diagnostic entrance
+      - name: Retain exact CI sample footprint through materialization
         shell: bash
         run: |
           set -euo pipefail
@@ -32,53 +32,44 @@ jobs:
           from pathlib import Path
           p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java')
           s = p.read_text(encoding='utf-8')
-          old = '''    private static void requestCiSampleChunks(ServerLevel level) {
-                  if (ciChunksRequested
-                          || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
-                  PlacementPlan sample = PLANS.values().stream().findFirst().orElse(null);
-                  if (sample == null) return;
-                  for (int chunkX = Math.floorDiv(sample.bounds().minX(), 16);
-                       chunkX <= Math.floorDiv(sample.bounds().maxX(), 16); chunkX++) {
-                      for (int chunkZ = Math.floorDiv(sample.bounds().minZ(), 16);
-                           chunkZ <= Math.floorDiv(sample.bounds().maxZ(), 16); chunkZ++) {
-                          ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+
+          old = '''                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
                       }
                   }
                   ciPlanKey = sample.entranceKey();
-                  ciChunksRequested = true;
-              }
           '''
-          new = '''    private static void requestCiSampleChunks(ServerLevel level) {
-                  if (ciChunksRequested
-                          || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
-                  ExternalUrbanFabricBuilder.UrbanEntrance diagnostic =
-                          ExternalUrbanFabricBuilder.diagnosticEntrance();
-                  PlacementPlan sample = diagnostic == null ? null
-                          : PLANS.get(entranceKey(diagnostic.x(), diagnostic.z()));
-                  if (sample == null) {
-                      sample = PLANS.values().stream().findFirst().orElse(null);
-                  }
-                  if (sample == null) return;
-                  for (int chunkX = Math.floorDiv(sample.bounds().minX(), 16);
-                       chunkX <= Math.floorDiv(sample.bounds().maxX(), 16); chunkX++) {
-                      for (int chunkZ = Math.floorDiv(sample.bounds().minZ(), 16);
-                           chunkZ <= Math.floorDiv(sample.bounds().maxZ(), 16); chunkZ++) {
-                          ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+          new = '''                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                          // Capital streaming releases its construction ticket as soon as this cell is
+                          // built. The authored-floor sample spans several cells, so retain only this
+                          // deliberate CI footprint until every cell can be verified together.
+                          level.setChunkForced(chunkX, chunkZ, true);
                       }
                   }
                   ciPlanKey = sample.entranceKey();
-                  ciChunksRequested = true;
-                  LivingKingdoms.LOGGER.info(
-                          "Retained Erden authored-new-floor CI sample role={} entrance={},{} bounds={}..{} x {}..{} floor_cells={} route_nodes={}",
-                          sample.role(), sample.entranceX(), sample.entranceZ(),
-                          sample.bounds().minX(), sample.bounds().maxX(),
-                          sample.bounds().minZ(), sample.bounds().maxZ(),
-                          sample.floorBlocks().size(), sample.routeNodes().size());
-              }
           '''
           if s.count(old) != 1:
-              raise SystemExit(f'CI sample patch anchor count={s.count(old)}')
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+              raise SystemExit(f'CI retain patch anchor count={s.count(old)}')
+          s = s.replace(old, new, 1)
+
+          old = '''        ciPassed = true;
+                  LivingKingdoms.LOGGER.info(
+                          "LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates={} sample_role={} sample_floor_cells={} sample_route_nodes={} sample_stairs={} stairwell_openings={} target_y={} source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false revision={}",
+          '''
+          new = '''        ciPassed = true;
+                  for (int chunkX = Math.floorDiv(sample.bounds().minX(), 16);
+                       chunkX <= Math.floorDiv(sample.bounds().maxX(), 16); chunkX++) {
+                      for (int chunkZ = Math.floorDiv(sample.bounds().minZ(), 16);
+                           chunkZ <= Math.floorDiv(sample.bounds().maxZ(), 16); chunkZ++) {
+                          level.setChunkForced(chunkX, chunkZ, false);
+                      }
+                  }
+                  LivingKingdoms.LOGGER.info(
+                          "LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates={} sample_role={} sample_floor_cells={} sample_route_nodes={} sample_stairs={} stairwell_openings={} target_y={} source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false ci_chunks_released=true revision={}",
+          '''
+          if s.count(old) != 1:
+              raise SystemExit(f'CI release patch anchor count={s.count(old)}')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
           PY
 
       - name: Java 25 compile
@@ -92,7 +83,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java
-          git commit -m 'test(living-kingdoms): align authored upper-floor CI sample'
+          git commit -m 'test(living-kingdoms): retain authored upper-floor CI chunks'
           for attempt in 1 2 3 4 5 6 7 8; do
             git fetch origin main
             git rebase origin/main
