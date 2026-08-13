@@ -32,17 +32,10 @@ jobs:
           p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java')
           s = p.read_text(encoding='utf-8')
 
-          anchor = '''        for (RouteNode node : routeNodes) {
-              routeFeet.add(node.world().pos());
-              routeHeads.add(new BlockPos(node.world().x(), node.world().y() + 1, node.world().z()));
-          }
-
-          Block floorBlock = floorBlock(placement.role());'''
-          replacement = '''        for (RouteNode node : routeNodes) {
-              routeFeet.add(node.world().pos());
-              routeHeads.add(new BlockPos(node.world().x(), node.world().y() + 1, node.world().z()));
-          }
-          Set<BlockPos> routeBody = new HashSet<>(routeFeet);
+          floor_marker = '        Block floorBlock = floorBlock(placement.role());'
+          if s.count(floor_marker) != 1:
+              raise SystemExit(f'floor marker count={s.count(floor_marker)}')
+          static_guard = '''        Set<BlockPos> routeBody = new HashSet<>(routeFeet);
           routeBody.addAll(routeHeads);
           for (RouteNode node : routeNodes) {
               if (stairs.containsKey(node.world())) continue;
@@ -59,30 +52,25 @@ jobs:
               }
           }
 
-          Block floorBlock = floorBlock(placement.role());'''
-          if s.count(anchor) != 1:
-              raise SystemExit(f'static support-safety anchor count={s.count(anchor)}')
-          s = s.replace(anchor, replacement, 1)
+'''
+          s = s.replace(floor_marker, static_guard + floor_marker, 1)
 
-          anchor = '''        Block support = supportBlock(plan.role());
-          for (RouteNode node : plan.routeNodes()) {'''
-          replacement = '''        Block support = supportBlock(plan.role());
-          Set<BlockPos> protectedRouteBody = new HashSet<>();
+          runtime_marker = '        Block support = supportBlock(plan.role());'
+          if s.count(runtime_marker) != 1:
+              raise SystemExit(f'runtime marker count={s.count(runtime_marker)}')
+          runtime_guard = '''        Set<BlockPos> protectedRouteBody = new HashSet<>();
           for (RouteNode routeNode : plan.routeNodes()) {
               protectedRouteBody.add(routeNode.world().pos());
               protectedRouteBody.add(new BlockPos(
                       routeNode.world().x(), routeNode.world().y() + 1, routeNode.world().z()));
           }
-          for (RouteNode node : plan.routeNodes()) {'''
-          if s.count(anchor) != 1:
-              raise SystemExit(f'runtime route-body anchor count={s.count(anchor)}')
-          s = s.replace(anchor, replacement, 1)
+'''
+          s = s.replace(runtime_marker, runtime_marker + '\n' + runtime_guard, 1)
 
-          anchor = '''            BlockPos supportPos = new BlockPos(
-                      node.world().x(), node.world().y() - 1, node.world().z());
-              if (sourceFloorAir && level.getBlockState(supportPos).isAir()) {
-                  level.setBlock(supportPos, support.defaultBlockState(), UPDATE_FLAGS);
-              }'''
+          materialize_start = s.index('    private static boolean materialize(')
+          support_start = s.index('            BlockPos supportPos = new BlockPos(', materialize_start)
+          if_start = s.index('            if (sourceFloorAir && level.getBlockState(supportPos).isAir()) {', support_start)
+          if_end = s.index('            }', if_start) + len('            }')
           replacement = '''            BlockPos supportPos = new BlockPos(
                       node.world().x(), node.world().y() - 1, node.world().z());
               boolean supportHitsRouteBody = protectedRouteBody.contains(supportPos);
@@ -93,9 +81,7 @@ jobs:
                       && level.getBlockState(supportPos).isAir()) {
                   level.setBlock(supportPos, support.defaultBlockState(), UPDATE_FLAGS);
               }'''
-          if s.count(anchor) != 1:
-              raise SystemExit(f'support placement anchor count={s.count(anchor)}')
-          s = s.replace(anchor, replacement, 1)
+          s = s[:support_start] + replacement + s[if_end:]
           p.write_text(s, encoding='utf-8')
           PY
       - name: Java 25 compile
