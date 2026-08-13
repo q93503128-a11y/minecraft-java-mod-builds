@@ -3,14 +3,14 @@
 - Slug: `living-kingdoms`
 - Mod ID: `livingkingdoms`
 - Namespace: `livingkingdoms`
-- Mod version: `0.1.0-alpha.3`
+- Mod version: `0.1.0-alpha.12`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `livingkingdoms-0.1.0-alpha.3.jar`
+- Final JAR: `livingkingdoms-0.1.0-alpha.12.jar`
 - Existing-world compatibility: 신규 Java 프로젝트다. 첫 플레이어블 알파 이후 `livingkingdoms` 저장 키와 월드 구획 ID를 고정한다. 평지 기반 alpha.1 시험 월드는 alpha.2 이후 노이즈 대륙의 시각 검증에 사용할 수 없다.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods: e4mc 등 서버 연결 보조 모드, 사용자가 별도로 설치하는 클라이언트 시각 모드
@@ -42,7 +42,7 @@
 11. 대형 수도 생성은 한 서버 틱에서 처리하지 않고 청크 준비와 제한된 틱별 블록 작업으로 분할한다.
 12. 최초 왕국 생성 중에는 미완성 지형과 건축물을 플레이어에게 노출하지 않고, 서버 진행률과 동기화된 비일시정지 로딩 화면을 유지한다.
 
-## alpha.3 수직 구간
+## alpha.12 수직 구간
 
 - 오버월드 다중 노이즈 기반 판타지 대륙 차원
 - 실제 지형 조사 후 수도 중심과 기준 고도 저장
