@@ -28,21 +28,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
-
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-
       - name: Compile fire-response implementation
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: gradle --no-daemon classes --stacktrace --console=plain
-
       - name: Exercise real guard-cistern-fire route in a fresh world
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -53,40 +49,22 @@ jobs:
           mkdir -p run
           printf 'level-name=livingkingdoms-fire-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
           printf 'eula=true\n' > run/eula.txt
-
           gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/fire-response.log 2>&1 &
           pid=$!
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
-
           passed=0
           for attempt in $(seq 1 900); do
-            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/fire-response.log; then
-              cat ../../logs/fire-response.log
-              exit 1
-            fi
-            if grep -Eq 'Expected eight Erden fire cisterns|Missing diagnostic fire cistern|No safe CI fire support cell|Exception in server tick loop|watchdog' ../../logs/fire-response.log; then
-              cat ../../logs/fire-response.log
-              exit 1
-            fi
-            if grep -Fq 'Prepared Erden river-port CI chunks=' ../../logs/fire-response.log; then
-              echo 'River-port fixture contaminated the fire-response audit.' >&2
-              cat ../../logs/fire-response.log
-              exit 1
-            fi
-            if grep -Fq 'LK_ERDEN_FIRE_RESPONSE_PASS revision=1 cisterns=8' ../../logs/fire-response.log; then
-              passed=1
-              break
-            fi
-            if ! kill -0 "$pid" 2>/dev/null; then
-              cat ../../logs/fire-response.log
-              exit 1
-            fi
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/fire-response.log; then cat ../../logs/fire-response.log; exit 1; fi
+            if grep -Eq 'Expected eight Erden fire cisterns|Missing diagnostic fire cistern|No safe CI fire support cell|Exception in server tick loop|watchdog' ../../logs/fire-response.log; then cat ../../logs/fire-response.log; exit 1; fi
+            if grep -Fq 'Prepared Erden river-port CI chunks=' ../../logs/fire-response.log; then echo 'River-port fixture contaminated the fire-response audit.' >&2; cat ../../logs/fire-response.log; exit 1; fi
+            if grep -Fq 'LK_ERDEN_FIRE_RESPONSE_PASS revision=1 cisterns=8' ../../logs/fire-response.log; then passed=1; break; fi
+            if ! kill -0 "$pid" 2>/dev/null; then cat ../../logs/fire-response.log; exit 1; fi
             sleep 1
           done
-
           cat ../../logs/fire-response.log
           test "$passed" -eq 1
-
+          grep -F 'Selected bounded Erden fire CI support=' ../../logs/fire-response.log
+          grep -F 'same_chunk=true two_block_air=true stable_ground=true' ../../logs/fire-response.log
           grep -F 'Prepared Erden fire-response CI responder=' ../../logs/fire-response.log
           ! grep -Fq 'Prepared Erden river-port CI chunks=' ../../logs/fire-response.log
           grep -F 'real_guard_identity=true' ../../logs/fire-response.log
@@ -98,7 +76,6 @@ jobs:
           grep -F 'proximity_verified=true' ../../logs/fire-response.log
           grep -F 'cistern_staged=true' ../../logs/fire-response.log
           grep -F 'LK_ERDEN_FIRE_RESPONSE_PASS revision=1 cisterns=8 detected=true guard_dispatched=true cistern_staged=true water_draw_ticks=20 actual_navigation=true proximity_extinguish=true loaded_city_only=true forced_citywide=false persistent_incidents=true' ../../logs/fire-response.log
-
       - name: Upload fire-response audit log
         if: always()
         uses: actions/upload-artifact@v4
