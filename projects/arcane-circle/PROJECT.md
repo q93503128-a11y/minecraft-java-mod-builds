@@ -20,3 +20,4 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - Prismatic rendering is bounded by per-entry and per-frame primitive caps.
 - High-complexity sigils gain depth through orthogonal planes, axial structures and role-specific sub-arrays rather than flat line density.
 - Canonical Java 25 verification is required after the alpha.30 source commit; source-only audit is not sufficient.
+- Current alpha.30 verification baseline: `0360d7b26c27e7cc29ab2cb9b7054361079829e3` plus this non-code trigger commit.
