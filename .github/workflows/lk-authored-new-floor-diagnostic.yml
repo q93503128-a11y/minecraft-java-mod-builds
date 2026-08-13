@@ -38,7 +38,7 @@ jobs:
           timeout --signal=TERM 240s gradle --no-daemon runServer --stacktrace --console=plain \
             > ../../logs/authored-new-floor-diag-server.log 2>&1 || true
           echo '=== MARKER SUMMARY ==='
-          grep -E 'LK_ERDEN_NEW_FLOOR_APPROVAL_PASS|Prepared Erden authored new floors|Retained Erden authored-new-floor CI sample|Prepared Erden upper-floor conversions|LK_ERDEN_AUTHORED_NEW_FLOOR_PASS|Completed Erden authored new floors|LK_ERDEN_EXTERIOR_INVENTORY_PASS|LK_ERDEN_EXTERIOR_TICKETS_PASS|LK_ERDEN_KINGDOM_EXTERIOR_PASS|LK_ERDEN_KINGDOM_SUPPLY_PASS|LK_ERDEN_PHYSICAL_ECONOMY_PASS|Exception|ERROR|Unable to complete Erden' ../../logs/authored-new-floor-diag-server.log | tail -250 || true
+          grep -E 'LK_ERDEN_NEW_FLOOR_APPROVAL_PASS|Prepared Erden authored new floors|Retained Erden authored-new-floor CI sample|Prepared Erden upper-floor conversions|LK_ERDEN_AUTHORED_NEW_FLOOR_(PASS|WAIT|STAGE)|Completed Erden authored new floors|LK_ERDEN_EXTERIOR_INVENTORY_PASS|LK_ERDEN_EXTERIOR_TICKETS_PASS|LK_ERDEN_KINGDOM_EXTERIOR_PASS|LK_ERDEN_KINGDOM_SUPPLY_PASS|LK_ERDEN_PHYSICAL_ECONOMY_PASS|Exception|ERROR|Unable to complete Erden' ../../logs/authored-new-floor-diag-server.log | tail -300 || true
       - name: Upload diagnostic log
         if: always()
         uses: actions/upload-artifact@v4
