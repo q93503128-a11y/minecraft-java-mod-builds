@@ -14,8 +14,12 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
 import org.lwjgl.glfw.GLFW;
 
 public final class BankaiKeyHandler {
+    /**
+     * New translation id intentionally breaks inheritance from the old Shift+B entry stored in options.txt.
+     * Default is plain B with no modifier.
+     */
     public static final KeyMapping BANKAI = new KeyMapping(
-            "key.senbonzakura.bankai",
+            "key.senbonzakura.bankai_direct",
             KeyConflictContext.IN_GAME,
             KeyModifier.NONE,
             InputConstants.Type.KEYSYM,
