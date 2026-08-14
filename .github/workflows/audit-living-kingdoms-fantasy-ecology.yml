@@ -56,6 +56,9 @@ jobs:
           grep -Fq 'insideCapital(x, z)' "$ecology"
           grep -Fq '!level.hasChunk(x >> 4, z >> 4)' "$ecology"
           grep -Fq 'LOCAL_SPECIES_CAP = 5' "$ecology"
+          grep -Fq 'CI_TICKET_REFRESH_INTERVAL = 100' "$ecology"
+          grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_TICKET_REFRESH' "$ecology"
+          grep -Fq 'timeout_safe_refresh=true' "$ecology"
           grep -Fq 'actual_custom_entity_types=true' "$ecology"
           grep -Fq 'FantasyEntityTypes.register(modEventBus)' "$main"
           grep -Fq 'ErdenFantasyEcologyManager.onServerTick(event)' "$main"
@@ -96,9 +99,11 @@ jobs:
           cat ../../logs/fantasy-ecology.log
           test "$passed" -eq 1
           grep -F 'Prepared Erden fantasy ecology CI samples=3' ../../logs/fantasy-ecology.log
+          grep -F 'LK_ERDEN_FANTASY_ECOLOGY_TICKET_REFRESH' ../../logs/fantasy-ecology.log
           grep -F 'actual_custom_entity_types=true actual_entity_instances=true' ../../logs/fantasy-ecology.log
           grep -F 'northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false' ../../logs/fantasy-ecology.log
           grep -F 'player_loaded_runtime=true local_species_cap=5 forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true' ../../logs/fantasy-ecology.log
+          grep -Eq 'ci_ticket_refreshes=[1-9][0-9]* timeout_safe_refresh=true' ../../logs/fantasy-ecology.log
       - name: Upload fantasy ecology audit log
         if: always()
         uses: actions/upload-artifact@v4
