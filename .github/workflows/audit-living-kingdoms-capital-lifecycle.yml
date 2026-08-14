@@ -37,6 +37,19 @@ jobs:
       - name: Clean compile lifecycle integration
         working-directory: ${{ env.PROJECT_DIR }}
         run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Verify lifecycle regression guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          life='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalLifecycleManager.java'
+          pop='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java'
+          fire='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java'
+          justice='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java'
+          grep -Fq 'line.lastBirthYear() != Integer.MIN_VALUE' "$life"
+          grep -Fq 'discardLoadedPerson(level, person.name())' "$life"
+          grep -Fq 'isActiveFounderWorker' "$pop"
+          grep -Fq 'isActiveFounderWorker' "$fire"
+          grep -Fq 'isActiveFounderWorker' "$justice"
       - name: Exercise capital lifecycle projection in a fresh world
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
