@@ -35,13 +35,19 @@ jobs:
 
       - name: Verify JAR
         run: |
-          test -f build/libs/senbonzakura-0.1.0-alpha.10.jar
-          jar tf build/libs/senbonzakura-0.1.0-alpha.10.jar | grep -q 'kr/moonseungjun/senbonzakura/SenbonzakuraShowcase.class'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.10.jar | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiWorldRenderer.class'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.10.jar | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiKeyHandler.class'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.10.jar | grep -q 'kr/moonseungjun/senbonzakura/bankai/BankaiService.class'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.10.jar | grep -q 'assets/senbonzakura/items/zanpakuto_senbonzakura.json'
-          jar tf build/libs/senbonzakura-0.1.0-alpha.10.jar | grep -q 'META-INF/neoforge.mods.toml'
+          JAR=build/libs/senbonzakura-0.1.0-alpha.10.jar
+          test -f "$JAR"
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/SenbonzakuraShowcase.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiWorldRenderer.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiKeyHandler.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/bankai/BankaiService.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/network/BankaiNetwork.class'
+          jar tf "$JAR" | grep -q 'assets/senbonzakura/items/zanpakuto_senbonzakura.json'
+          jar tf "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
+          if jar tf "$JAR" | grep -Eq 'kr/moonseungjun/senbonzakura/(ability/|client/(Ability|Skill))'; then
+            echo 'Bankai-only JAR contains removed ability or skill UI classes'
+            exit 1
+          fi
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
