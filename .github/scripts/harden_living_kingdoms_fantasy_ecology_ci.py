@@ -70,12 +70,40 @@ if "CI_TICKET_REFRESH_INTERVAL" not in text:
                 LOCAL_SPECIES_CAP);'''
     new_pass = '''"LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3 silver_hart=true ash_hound=true river_wisp=true actual_custom_entity_types=true actual_entity_instances=true northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false player_loaded_runtime=true local_species_cap={} forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true ci_ticket_refreshes={} timeout_safe_refresh=true",
                 LOCAL_SPECIES_CAP, ciTicketRefreshes);'''
-    require(old_pass in text, "ecology PASS anchor missing")
+    require(old_pass in text, "ecology PASS log anchor missing")
     text = text.replace(old_pass, new_pass, 1)
+
+# Fast worlds can finish the three-sample audit before the first 100-tick cadence. Exercise the
+# exact refresh path once immediately after all bounded sample tickets are registered, then keep the
+# periodic refresh above as the timeout protection. This remains CI-only and never force-loads
+# ecology chunks in normal gameplay.
+if "ciTicketRefreshes == 0L" not in text:
+    old_prepare = '''        for (Sample sample : CI_SAMPLES) {
+            ChunkPos chunk = new ChunkPos(sample.x() >> 4, sample.z() >> 4);
+            long packed = pack(chunk.x(), chunk.z());
+            if (CI_TICKETS.add(packed)) {
+                level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
+            }
+        }
+        if (ciPrepared) return;'''
+    new_prepare = '''        for (Sample sample : CI_SAMPLES) {
+            ChunkPos chunk = new ChunkPos(sample.x() >> 4, sample.z() >> 4);
+            long packed = pack(chunk.x(), chunk.z());
+            if (CI_TICKETS.add(packed)) {
+                level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
+            }
+        }
+        if (ciTicketRefreshes == 0L && !CI_TICKETS.isEmpty()) {
+            refreshCiTickets(level);
+        }
+        if (ciPrepared) return;'''
+    require(old_prepare in text, "ecology CI prepare ticket anchor missing")
+    text = text.replace(old_prepare, new_prepare, 1)
 
 for token in [
     "CI_TICKET_REFRESH_INTERVAL = 100",
     "refreshCiTickets(level)",
+    "ciTicketRefreshes == 0L",
     "LK_ERDEN_FANTASY_ECOLOGY_TICKET_REFRESH",
     "ci_ticket_refreshes={}",
     "timeout_safe_refresh=true",
@@ -83,4 +111,4 @@ for token in [
     require(token in text, "missing ecology CI ticket invariant: " + token)
 
 PATH.write_text(text, encoding="utf-8")
-print("Hardened bounded fantasy ecology CI tickets against ticket-type expiry; normal runtime remains loaded-chunk-only.")
+print("Hardened bounded fantasy ecology CI tickets and exercises the refresh path before fast-world PASS.")
