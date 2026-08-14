@@ -13,9 +13,11 @@ import net.minecraft.server.level.TicketType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
@@ -73,6 +75,8 @@ public final class ErdenRiverPortManager {
     private static double ciTravelled;
     private static double ciLastBoatX = Double.NaN;
     private static double ciLastBoatZ = Double.NaN;
+    private static long ciLastProgressTick;
+    private static int ciLastWaypoint = -1;
 
     private ErdenRiverPortManager() {
     }
@@ -111,6 +115,8 @@ public final class ErdenRiverPortManager {
         ciTravelled = 0.0D;
         ciLastBoatX = Double.NaN;
         ciLastBoatZ = Double.NaN;
+        ciLastProgressTick = 0L;
+        ciLastWaypoint = -1;
     }
 
     private static void enqueue(ServerLevel level, int chunkX, int chunkZ, boolean priority) {
@@ -353,6 +359,10 @@ public final class ErdenRiverPortManager {
             if (boat == null) return;
             port.setVesselIdentity(boat.getUUID().toString());
             if (port.activeShipment().isEmpty()) port.assignVessel(shipment.id(), boat.getUUID().toString());
+            if (isPortCi()) {
+                ciLastProgressTick = level.getGameTime();
+                ciLastWaypoint = port.waypoint();
+            }
             LivingKingdoms.LOGGER.info(
                     "Materialized Erden supply barge shipment={} resource={} amount={} real_entity=true escrow_linked=true loaded_only={} route_points={}",
                     shipment.id(), shipment.resource(), shipment.amount(), !isPortCi(), route.size());
@@ -384,6 +394,10 @@ public final class ErdenRiverPortManager {
         if (distance <= 4.0D) {
             int next = index + 1;
             port.setWaypoint(next);
+            if (isPortCi()) {
+                ciLastProgressTick = level.getGameTime();
+                ciLastWaypoint = next;
+            }
             if (next >= route.size()) {
                 boat.setDeltaMovement(0.0D, boat.getDeltaMovement().y, 0.0D);
                 port.markDocked();
@@ -394,10 +408,46 @@ public final class ErdenRiverPortManager {
             return;
         }
 
-        double vx = dx / distance * VESSEL_SPEED;
-        double vz = dz / distance * VESSEL_SPEED;
-        boat.setDeltaMovement(vx, boat.getDeltaMovement().y, vz);
-        boat.setYRot((float) Math.toDegrees(Math.atan2(-vx, vz)));
+        // An unmanned vanilla boat can damp externally assigned velocity before it makes reliable
+        // route progress. Move the real entity through Minecraft collision resolution by the exact
+        // distance that the configured 0.20 m/tick speed represents over this 5-tick controller
+        // interval. This is not a waypoint teleport: collisions still constrain the entity.
+        double step = Math.min(Math.max(0.0D, distance - 3.0D), VESSEL_SPEED * VESSEL_INTERVAL);
+        double moveX = dx / distance * step;
+        double moveZ = dz / distance * step;
+        double beforeX = boat.getX();
+        double beforeZ = boat.getZ();
+        boat.move(MoverType.SELF, new Vec3(moveX, 0.0D, moveZ));
+        boat.setDeltaMovement(0.0D, boat.getDeltaMovement().y, 0.0D);
+        boat.setYRot((float) Math.toDegrees(Math.atan2(-moveX, moveZ)));
+
+        double actualX = boat.getX() - beforeX;
+        double actualZ = boat.getZ() - beforeZ;
+        double actualMoved = Math.sqrt(actualX * actualX + actualZ * actualZ);
+        if (isPortCi()) {
+            long now = level.getGameTime();
+            if (actualMoved >= 0.05D || ciLastWaypoint != port.waypoint()) {
+                ciLastProgressTick = now;
+                ciLastWaypoint = port.waypoint();
+            }
+            if (now % 100L == 0L) {
+                LivingKingdoms.LOGGER.info(
+                        "LK_ERDEN_RIVER_PORT_PROGRESS waypoint={} x={} y={} z={} target_x={} target_z={} distance={} moved={} travelled={} water_target={} entity_loaded=true collision_move=true",
+                        port.waypoint(), Math.round(boat.getX()), Math.round(boat.getY()), Math.round(boat.getZ()),
+                        target.x(), target.z(), Math.round(distance), String.format(java.util.Locale.ROOT, "%.3f", actualMoved),
+                        Math.round(ciTravelled), waterAt(level, target));
+            }
+            if (ciLastProgressTick > 0L
+                    && now - ciLastProgressTick > 400L
+                    && routeChunkReady(level, port, target)
+                    && waterAt(level, target)) {
+                LivingKingdoms.LOGGER.error(
+                        "LK_ERDEN_RIVER_PORT_STALL waypoint={} x={} z={} target_x={} target_z={} distance={} travelled={} stalled_ticks={} entity_loaded=true route_ready=true water_target=true",
+                        port.waypoint(), Math.round(boat.getX()), Math.round(boat.getZ()), target.x(), target.z(),
+                        Math.round(distance), Math.round(ciTravelled), now - ciLastProgressTick);
+                throw new IllegalStateException("LK_ERDEN_RIVER_PORT_STALL physical barge made no collision-resolved progress");
+            }
+        }
     }
 
     private static Entity createBoat(
