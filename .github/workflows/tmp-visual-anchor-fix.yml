@@ -1,0 +1,38 @@
+name: Temporary visual anchor fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-visual-anchor-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply anchor fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/tmp_visual_anchor_fix.py
+          git rm .github/scripts/tmp_visual_anchor_fix.py
+          git rm .github/workflows/tmp-visual-anchor-fix.yml
+          git diff --check
+      - name: Commit to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(arcane-circle): keep centered spell visuals on their effect anchor'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
