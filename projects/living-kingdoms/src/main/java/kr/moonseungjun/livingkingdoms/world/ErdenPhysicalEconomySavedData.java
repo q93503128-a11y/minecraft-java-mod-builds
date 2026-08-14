@@ -195,6 +195,28 @@ public final class ErdenPhysicalEconomySavedData extends SavedData {
         return List.copyOf(wallets);
     }
 
+    public WalletState wallet(String householdId) {
+        if (householdId == null || householdId.isBlank()) return null;
+        for (WalletState wallet : wallets) {
+            if (wallet.householdId().equals(householdId)) return wallet;
+        }
+        return null;
+    }
+
+    public boolean replaceWallet(WalletState replacement) {
+        if (replacement == null || replacement.householdId().isBlank()) return false;
+        for (int index = 0; index < wallets.size(); index++) {
+            WalletState current = wallets.get(index);
+            if (!current.householdId().equals(replacement.householdId())) continue;
+            if (!current.equals(replacement)) {
+                wallets.set(index, replacement);
+                setDirty();
+            }
+            return true;
+        }
+        return false;
+    }
+
     public long lastProcessedDay() {
         return lastProcessedDay;
     }

@@ -252,6 +252,14 @@ public final class ErdenCapitalLifecycleSavedData extends SavedData {
         }
     }
 
+    public boolean addPerson(Person person) {
+        if (person == null || person.id().isBlank() || person.name().isBlank()
+                || person.householdId().isBlank() || person(person.id()) != null) return false;
+        persons.add(person);
+        setDirty();
+        return true;
+    }
+
     public boolean movePersonHousehold(String personId, String targetHousehold) {
         if (targetHousehold == null || targetHousehold.isBlank()) return false;
         for (int i = 0; i < persons.size(); i++) {

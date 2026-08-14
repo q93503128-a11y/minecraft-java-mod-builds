@@ -50,6 +50,11 @@ public final class ErdenCapitalMarriageSavedData extends SavedData {
             if (endDay >= 0L && endDay <= day) return this;
             return new Union(id, personA, personB, householdId, startDay, day, remarriage);
         }
+
+        public Union withHousehold(String household) {
+            if (household == null || household.isBlank() || household.equals(householdId)) return this;
+            return new Union(id, personA, personB, household, startDay, endDay, remarriage);
+        }
     }
 
     private static final Codec<ErdenCapitalMarriageSavedData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -124,6 +129,40 @@ public final class ErdenCapitalMarriageSavedData extends SavedData {
         unions.addAll(initialUnions);
         householdMoves = 0;
         setDirty();
+    }
+
+    public boolean moveUnionHousehold(String unionId, String householdId) {
+        if (unionId == null || unionId.isBlank() || householdId == null || householdId.isBlank()) return false;
+        for (int index = 0; index < unions.size(); index++) {
+            Union union = unions.get(index);
+            if (!union.id().equals(unionId)) continue;
+            Union updated = union.withHousehold(householdId);
+            if (!updated.equals(union)) {
+                unions.set(index, updated);
+                setDirty();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public Union createUnion(
+            String personA,
+            String personB,
+            String householdId,
+            long startDay,
+            boolean remarriage) {
+        if (personA == null || personB == null || personA.isBlank() || personB.isBlank()
+                || householdId == null || householdId.isBlank() || personA.equals(personB)) return null;
+        for (Union union : unions) {
+            if (union.activeOn(startDay) && (union.involves(personA) || union.involves(personB))) return null;
+        }
+        Union created = new Union(
+                "erden_capital_union_%04d".formatted(nextUnionSequence++),
+                personA, personB, householdId, startDay, -1L, remarriage);
+        unions.add(created);
+        setDirty();
+        return created;
     }
 
     public void replaceYear(
