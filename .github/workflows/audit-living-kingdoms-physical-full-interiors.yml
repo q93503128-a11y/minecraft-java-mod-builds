@@ -1,0 +1,140 @@
+name: Audit Living Kingdoms physical full interiors
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/audit-living-kingdoms-physical-full-interiors.yml'
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Source guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          route="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanFullInteriorRouteCatalog.java"
+          manager="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanFullInteriorExpansionManager.java"
+          saved="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanFullInteriorExpansionSavedData.java"
+          mod="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
+
+          grep -F 'public static final int CATALOG_REVISION = 1;' "$route"
+          grep -F 'source_blocks_cut=0 source_air_only=true source_only=true world_reads=false mutations=0' "$route"
+          grep -F 'isClearableSourceAirSeal' "$route"
+          grep -F 'EXPECTED_BUILDINGS = 40' "$manager"
+          grep -F 'EXPECTED_ADDITIONAL_LEVELS = 40' "$manager"
+          grep -F 'EXPECTED_ADDITIONAL_ROOMS = 80' "$manager"
+          grep -F 'ErdenUrbanAuthoredUpperRouteManager.isCompleted' "$manager"
+          grep -F 'source_blocks_cut=0 source_air_only=true' "$manager"
+          grep -F 'erden_urban_full_interior_expansion' "$saved"
+          grep -F 'ErdenUrbanFullInteriorExpansionManager.onServerTick(event);' "$mod"
+
+      - name: Java 25 clean compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../../logs
+          gradle --no-daemon clean classes --stacktrace --console=plain \
+            2>&1 | tee ../../logs/full-interiors-compile.log
+
+      - name: Fresh-world physical multi-floor audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-full-interiors-ci-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-full-interiors-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/full-interiors-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 900); do
+            if grep -Fq 'LK_ERDEN_FULL_INTERIOR_EXPANSION_PASS' ../../logs/full-interiors-server.log; then
+              passed=1
+              break
+            fi
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/full-interiors-server.log \
+              || grep -Eqi 'watchdog|A single server tick took|Exception caught during firing event|Failed incremental homeland construction|IllegalStateException' ../../logs/full-interiors-server.log; then
+              cat ../../logs/full-interiors-server.log
+              exit 1
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/full-interiors-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$passed" -eq 1
+
+          grep -F 'Prepared Erden full interior extension routes fragments=3' ../../logs/full-interiors-server.log \
+            | grep -F 'buildings_with_expansion=40' \
+            | grep -F 'mapped_levels=40' \
+            | grep -F 'mapped_rooms=80' \
+            | grep -F 'source_blocks_cut=0'
+          grep -F 'Prepared Erden physical full interior expansions buildings=40 levels=40 rooms=80' ../../logs/full-interiors-server.log \
+            | grep -F 'plots=233 housing=77 work=156'
+          grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/full-interiors-server.log \
+            | grep -F 'source_blocks_cut=0'
+          grep -F 'LK_ERDEN_FULL_INTERIOR_EXPANSION_PASS' ../../logs/full-interiors-server.log \
+            | grep -F 'sample_levels=[20]' \
+            | grep -F 'sample_rooms=2' \
+            | grep -F 'predecessor_upper_verified=true' \
+            | grep -F 'all_room_routes=true' \
+            | grep -F 'physical_floor=true' \
+            | grep -F 'source_blocks_cut=0' \
+            | grep -F 'plots=233 housing=77 work=156'
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          log = Path('../../logs/full-interiors-server.log').read_text(errors='replace')
+          marker = next(line for line in log.splitlines()
+                        if 'LK_ERDEN_FULL_INTERIOR_EXPANSION_PASS' in line)
+          rooms = re.search(r'sample_rooms=(\d+)', marker)
+          floors = re.search(r'sample_floor_cells=(\d+)', marker)
+          routes = re.search(r'sample_route_nodes=(\d+)', marker)
+          stairs = re.search(r'sample_stairs=(\d+)', marker)
+          if not all((rooms, floors, routes, stairs)):
+              raise SystemExit('physical full-interior marker parse failed')
+          if int(rooms.group(1)) != 2 or int(floors.group(1)) < 40:
+              raise SystemExit(f'physical room/floor count too small: {marker}')
+          if int(routes.group(1)) < 6 or int(stairs.group(1)) < 5:
+              raise SystemExit(f'physical staircase evidence too small: {marker}')
+          print('LK_ERDEN_PHYSICAL_FULL_INTERIOR_AUDIT_PASS ' + marker.split('LK_ERDEN_FULL_INTERIOR_EXPANSION_PASS ',1)[1])
+          PY
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-physical-full-interiors-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
