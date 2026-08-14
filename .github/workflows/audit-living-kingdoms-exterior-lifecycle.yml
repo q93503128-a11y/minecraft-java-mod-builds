@@ -43,6 +43,8 @@ jobs:
           set -euo pipefail
           manager="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java"
           saved="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleSavedData.java"
+          marriage="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorMarriageManager.java"
+          marriage_saved="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorMarriageSavedData.java"
           workforce="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java"
           main="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
           edits="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/IncrementalWorldEditPlan.java"
@@ -64,6 +66,13 @@ jobs:
           grep -F 'projectFutureLifecycle' "$manager"
           grep -F 'ci_projection_non_persistent=true' "$manager"
           grep -F 'public static boolean controlsRoutine(' "$manager"
+          grep -F 'movePersonHousehold(String personId, String newHouseholdId)' "$saved"
+          grep -F 'ErdenExteriorMarriageManager.parentPair(' "$manager"
+          grep -F 'public static final int MARRIAGE_REVISION = 1' "$marriage"
+          grep -F 'REMARRIAGE_WAIT_YEARS = 1' "$marriage"
+          grep -F 'founder_workplaces_preserved=true' "$marriage"
+          grep -F 'spouse_based_births=true' "$marriage"
+          grep -F 'erden_exterior_marriages' "$marriage_saved"
           grep -F 'event.isCanceled()' "$workforce"
           grep -F 'ErdenExteriorLifecycleManager.controlsRoutine(' "$workforce"
           grep -F 'ErdenExteriorLifecycleManager.foundingWorkerAvailable(' "$workforce"
@@ -103,6 +112,7 @@ jobs:
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS revision=1 founders=216 households=74' ../../logs/exterior-lifecycle-server.log \
+              && grep -Fq 'LK_ERDEN_EXTERIOR_MARRIAGE_PASS revision=1 founding_unions=68 expected_founders=68' ../../logs/exterior-lifecycle-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_WORKFORCE_PASS revision=1 nodes=18 households=74 residents=216 workers=142' ../../logs/exterior-lifecycle-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-lifecycle-server.log \
               && grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 nodes=18 producers=15 wharves=3' ../../logs/exterior-lifecycle-server.log \
@@ -120,10 +130,12 @@ jobs:
           cat ../../logs/exterior-lifecycle-server.log
           test "$passed" -eq 1
           grep -F 'Prepared Erden exterior lifecycle revision=1 founders=216 households=74 year_days=112 adult_age=18 retirement_age=58 births_economy_gated=true succession=true save_overlay=true' ../../logs/exterior-lifecycle-server.log
+          grep -F 'Prepared Erden exterior marriages revision=1 founding_unions=68 active=68 persistent=true remarriage=true spouse_household_relocation=true founder_workplaces_preserved=true spouse_based_births=true' ../../logs/exterior-lifecycle-server.log
+          grep -F 'LK_ERDEN_EXTERIOR_MARRIAGE_PASS revision=1 founding_unions=68 expected_founders=68 persistent_unions=true death_closes_union=true remarriage_wait_years=1 nonfounder_household_moves=true founder_workplaces_preserved=true household_capacity=5 spouse_based_births=true' ../../logs/exterior-lifecycle-server.log
           grep -E 'LK_ERDEN_EXTERIOR_LIFECYCLE_PASS .*future_adults=[1-9][0-9]* .*scheduled_retirements=[1-9][0-9]* .*succession_households=[1-9][0-9]* .*parent_ready_households=[1-9][0-9]*' ../../logs/exterior-lifecycle-server.log
           grep -F 'year_days=112 adulthood=18 retirement=58 births=true inheritance=true replacement_labor=true permanent_deaths=true save_overlay=true' ../../logs/exterior-lifecycle-server.log
           grep -E 'projected_births=[1-9][0-9]* projected_successions=[1-9][0-9]* projected_replacement_workers=[1-9][0-9]* projected_years=20 ci_projection_non_persistent=true' ../../logs/exterior-lifecycle-server.log
-          grep -F 'storage_yards_observed=18 resident_sample_observed=true validation_revision=2' ../../logs/exterior-lifecycle-server.log
+          grep -F 'storage_yards_observed=18 resident_sample_observed=true validation_revision=4' ../../logs/exterior-lifecycle-server.log
           grep -F 'request_queue=178' ../../logs/exterior-lifecycle-server.log
           grep -F 'workforce_linked=true staffed_production=true wharf_labor=true' ../../logs/exterior-lifecycle-server.log
           grep -F 'fixed_daily_imports=false' ../../logs/exterior-lifecycle-server.log
