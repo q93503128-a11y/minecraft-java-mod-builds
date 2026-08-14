@@ -6,6 +6,7 @@ import kr.moonseungjun.livingkingdoms.crime.ErdenJusticeManager;
 import kr.moonseungjun.livingkingdoms.economy.RealmEconomyManager;
 import kr.moonseungjun.livingkingdoms.entity.FantasyEntityTypes;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
+import kr.moonseungjun.livingkingdoms.item.FantasyItems;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import kr.moonseungjun.livingkingdoms.skill.SkillCrimeHooks;
@@ -87,6 +88,7 @@ public final class LivingKingdoms {
     public LivingKingdoms(IEventBus modEventBus) {
         LivingWorldgenTypes.register(modEventBus);
         FantasyEntityTypes.register(modEventBus);
+        FantasyItems.register(modEventBus);
         FoundationCatalog.bootstrap();
         modEventBus.addListener(LivingKingdomsNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
