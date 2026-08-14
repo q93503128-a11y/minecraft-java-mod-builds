@@ -184,6 +184,8 @@ assert 'ArcaneLightService.illuminate(player,1800)' in text(magic/'ExpandedSpell
 assert 'syncAtomicRobe' in text(magic/'MageGearService.java')
 assert not (magic/'SpellSigilService.java').exists()
 
+buff=text(magic/'ArcaneBuffRuntime.java')
+
 # Maintained-buff visual lifetime parity.
 for token in ['case "feather_fall" -> 120','case "mirror_image" -> 260','case "blur" -> 360',
               'case "fly" -> 600','case "simulacrum" -> 1200','case "clone" -> 1800',
