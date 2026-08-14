@@ -1,0 +1,124 @@
+name: Audit Living Kingdoms capital housing
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/audit-living-kingdoms-capital-housing.yml'
+
+concurrency:
+  group: living-kingdoms-capital-housing-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CAPITAL_HOUSING_TEST: '1'
+
+jobs:
+  audit:
+    name: Fresh-world Erden capital housing audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Clean compile housing integration
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Verify housing source regression guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          housing='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalHousingManager.java'
+          saved='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalHousingSavedData.java'
+          life='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalLifecycleManager.java'
+          life_saved='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalLifecycleSavedData.java'
+          marriage='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalMarriageSavedData.java'
+          economy='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPhysicalEconomySavedData.java'
+          auth='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java'
+          market='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenLivingEconomyManager.java'
+          mod='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
+          grep -Fq 'EXPECTED_RESIDENCES = ErdenPopulationManager.EXPECTED_HOUSEHOLDS' "$housing"
+          grep -Fq 'formIndependentHouseholds' "$housing"
+          grep -Fq 'movePair' "$housing"
+          grep -Fq 'admitMigrants' "$housing"
+          grep -Fq 'reletWallet' "$housing"
+          grep -Fq 'collectRent' "$housing"
+          grep -Fq 'MAX_RELOCATION_GRANT = 10L' "$housing"
+          grep -Fq 'no_synthetic_tenements=true' "$housing"
+          grep -Fq 'source_blocks_cut=0' "$housing"
+          grep -Fq 'SCHEMA_VERSION = 1' "$saved"
+          grep -Fq 'addPerson(Person person)' "$life_saved"
+          grep -Fq 'movePersonHousehold' "$life_saved"
+          grep -Fq 'moveUnionHousehold' "$marriage"
+          grep -Fq 'createUnion(' "$marriage"
+          grep -Fq 'replaceWallet(WalletState replacement)' "$economy"
+          grep -Fq 'livingHouseholdIds' "$life"
+          grep -Fq 'ErdenCapitalLifecycleManager.livingHouseholdIds(level, population, day)' "$auth"
+          grep -Fq '!activeHouseholds.contains(household.id())' "$market"
+          grep -Fq 'ErdenCapitalHousingManager.onServerTick(event)' "$mod"
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java').read_text()
+          assert p.index('ErdenAuthoritativeEconomyManager.onServerTick(event);') < p.index('ErdenCapitalHousingManager.onServerTick(event);')
+          PY
+      - name: Exercise capital housing in a fresh world
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../../logs run
+          rm -rf run/world run/living_realm run/livingkingdoms-capital-housing-ci-world
+          printf 'level-name=livingkingdoms-capital-housing-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/capital-housing.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 900); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/capital-housing.log; then
+              cat ../../logs/capital-housing.log
+              exit 1
+            fi
+            if grep -Eq 'Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError' ../../logs/capital-housing.log; then
+              cat ../../logs/capital-housing.log
+              exit 1
+            fi
+            if grep -Fq 'LK_ERDEN_CAPITAL_HOUSING_PASS revision=1' ../../logs/capital-housing.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/capital-housing.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/capital-housing.log
+          test "$passed" -eq 1
+          grep -F 'Prepared Erden capital housing revision=1 residences=77 fixed_wallet_slots=77' ../../logs/capital-housing.log
+          grep -Eq 'LK_ERDEN_CAPITAL_HOUSING_PASS revision=1 residences=77 wallet_slots=77 projection_years=72 projected_vacant=[1-9][0-9]* projected_occupied=[1-9][0-9]*' ../../logs/capital-housing.log
+          grep -F 'independent_household_path=true spouse_union_retarget=true migrant_household_path=true persistent_vacancy=true dynamic_rent=true rent_relief_on_arrears=true unclaimed_estate_conserved=true' ../../logs/capital-housing.log
+          grep -F 'existing_wallet_slot_reused=true no_synthetic_tenements=true source_blocks_cut=0' ../../logs/capital-housing.log
+      - name: Upload capital housing audit log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-capital-housing-${{ github.run_number }}
+          path: logs/capital-housing.log
+          if-no-files-found: warn
+          retention-days: 30
