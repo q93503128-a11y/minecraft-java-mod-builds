@@ -51,15 +51,22 @@ jobs:
           ! grep -Fq 'MAX_AUTHORED_UPPER_RISE' "$placed"
           grep -F 'int maximumY = snapshot.height() - 2;' "$opportunity"
           grep -F 'MAX_NEW_AUTHORED_UPPER_RISE = 16' "$opportunity"
+          grep -F 'SURVEY_REVISION = 3' "$survey"
+          grep -F 'sourceAuthoredBlockCount(placement.fragmentKey())' "$survey"
           ! grep -Fq 'VERTICAL_SCAN' "$survey"
           ! grep -Fq 'HALF_WIDTH' "$survey"
 
-          grep -F 'public final class ErdenUrbanFullInteriorPlanCatalog' "$plan"
-          grep -F 'MIN_FLOOR_SEPARATION = 5' "$plan"
+          grep -F 'public static final int CATALOG_REVISION = 2;' "$plan"
+          grep -F 'MIN_VERTICAL_OVERLAP_CELLS = 20' "$plan"
+          grep -F 'MIN_VERTICAL_OVERLAP_RATIO = 0.35D' "$plan"
+          grep -F 'MAX_VERTICAL_LEVEL_GAP = 9' "$plan"
+          grep -F 'Recommendation.AUTHOR_NEW_FLOOR_IN_VOID' "$plan"
+          grep -F 'selectVerticallyContinuousLevels' "$plan"
+          grep -F 'overlapCells(candidate, lower)' "$plan"
           grep -F 'sourceAir(blocks, x, feetY - 1, z)' "$plan"
           grep -F 'retainedRoofAbove' "$plan"
-          grep -F 'shellAnchors' "$plan"
           grep -F 'isClearableSourceAirSeal' "$plan"
+          ! grep -Fq 'MIN_SHELL_ANCHORS' "$plan"
           grep -F 'source_blocks_cut=0 source_only=true world_reads=false mutations=0' "$plan"
           grep -F 'ErdenUrbanFullInteriorPlanCatalog.bootstrap();' "$mod"
 
@@ -116,6 +123,15 @@ jobs:
           if any('source_blocks_cut=0' not in line or 'world_reads=false' not in line for line in fragment_lines):
               raise SystemExit('full-interior fragment plan lost source-only/no-cut invariant')
 
+          all_in_one = next((line for line in fragment_lines if 'all_in_one_house.schem#0' in line), None)
+          manor = next((line for line in fragment_lines if 'medieval_manor.schem#0' in line), None)
+          if all_in_one is None or manor is None:
+              raise SystemExit('representative source plans missing')
+          if not re.search(r'selected_authored_levels=\[[^]]*18[^]]*\]', all_in_one):
+              raise SystemExit(f'proven all_in_one Y18 authored floor was lost: {all_in_one}')
+          if 'existing_levels=[15]' not in manor:
+              raise SystemExit(f'proven manor Y15 source floor was lost: {manor}')
+
           summary = next((line for line in log.splitlines()
                           if 'Prepared Erden full interior source plans fragments=3 buildings=233' in line), None)
           if summary is None:
@@ -130,10 +146,12 @@ jobs:
           with_multi = number('buildings_with_two_or_more_upper')
           upper_levels = number('planned_upper_levels')
           rooms = number('planned_rooms')
-          if with_upper <= 0 or upper_levels <= 0 or rooms <= 0:
-              raise SystemExit(f'no usable authored completion plan: {summary}')
-          if upper_levels < with_upper:
-              raise SystemExit(f'upper level accounting drift: {summary}')
+          if with_upper < 156:
+              raise SystemExit(f'expected the 116 proven authored-new plus 40 existing-upper buildings: {summary}')
+          if upper_levels < with_upper or rooms < with_upper:
+              raise SystemExit(f'upper level/room accounting drift: {summary}')
+          if with_multi <= 0:
+              raise SystemExit(f'no vertically continuous multi-upper building was recovered: {summary}')
 
           existing_multilevel = sum('classification=AUTHORED_MULTILEVEL' in line
                                     for line in log.splitlines()
@@ -144,7 +162,8 @@ jobs:
               f'buildings_with_two_or_more_upper={with_multi} '
               f'planned_upper_levels={upper_levels} planned_rooms={rooms} '
               f'existing_source_multilevel_fragments={existing_multilevel} '
-              'decorative_shell_completion_required=true '
+              'proven_all_in_one_y18=true proven_manor_y15=true '
+              'vertical_continuity=true decorative_shell_completion_required=true '
               'source_blocks_cut=0 source_only=true world_reads=false mutations=0 '
               'plots=233 housing=77 work=156'
           )
