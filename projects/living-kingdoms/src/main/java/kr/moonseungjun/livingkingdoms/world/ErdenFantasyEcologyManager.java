@@ -39,6 +39,7 @@ public final class ErdenFantasyEcologyManager {
     public static final int ECOLOGY_REVISION = 1;
 
     private static final int SPAWN_INTERVAL = 100;
+    private static final int BEHAVIOR_INTERVAL = 20;
     private static final int CI_TICKET_REFRESH_INTERVAL = 100;
     private static final int ATTEMPTS_PER_PLAYER = 6;
     private static final int MIN_SPAWN_DISTANCE = 22;
@@ -76,8 +77,12 @@ public final class ErdenFantasyEcologyManager {
             }
             verifyCi(level);
         }
-        if (level.getGameTime() % SPAWN_INTERVAL != 0L) return;
-        spawnAroundTravellers(level);
+        if (level.getGameTime() % BEHAVIOR_INTERVAL == 0L) {
+            tickLoadedSpeciesBehavior(level);
+        }
+        if (level.getGameTime() % SPAWN_INTERVAL == 0L) {
+            spawnAroundTravellers(level);
+        }
     }
 
     private static void reset(MinecraftServer server) {
@@ -87,6 +92,78 @@ public final class ErdenFantasyEcologyManager {
         ciPrepared = false;
         ciPassed = false;
         ciTicketRefreshes = 0L;
+    }
+
+    private static void tickLoadedSpeciesBehavior(ServerLevel level) {
+        Set<UUID> handledHarts = new HashSet<>();
+        Set<UUID> handledHounds = new HashSet<>();
+        Set<UUID> handledWisps = new HashSet<>();
+        for (ServerPlayer player : level.players()) {
+            AABB area = new AABB(
+                    player.getX() - LOCAL_RADIUS, level.getMinY(), player.getZ() - LOCAL_RADIUS,
+                    player.getX() + LOCAL_RADIUS, level.getMaxY(), player.getZ() + LOCAL_RADIUS);
+            herdSilverHarts(level.getEntitiesOfClass(SilverHartEntity.class, area), player, handledHarts);
+            coordinateAshHounds(level, level.getEntitiesOfClass(AshHoundEntity.class, area), player, handledHounds);
+            bindRiverWisps(level, level.getEntitiesOfClass(RiverWispEntity.class, area), handledWisps);
+        }
+    }
+
+    private static void herdSilverHarts(
+            List<SilverHartEntity> harts,
+            ServerPlayer player,
+            Set<UUID> handled) {
+        List<SilverHartEntity> herd = harts.stream()
+                .filter(hart -> handled.add(hart.getUUID()))
+                .sorted(java.util.Comparator.comparing(Entity::getUUID))
+                .toList();
+        if (herd.size() < 2) return;
+        SilverHartEntity leader = herd.getFirst();
+        for (int index = 1; index < herd.size(); index++) {
+            SilverHartEntity follower = herd.get(index);
+            if (follower.distanceToSqr(player) <= 18.0D * 18.0D) continue;
+            if (follower.distanceToSqr(leader) > 12.0D * 12.0D) {
+                follower.getNavigation().moveTo(leader, 0.90D);
+            }
+        }
+    }
+
+    private static void coordinateAshHounds(
+            ServerLevel level,
+            List<AshHoundEntity> hounds,
+            ServerPlayer player,
+            Set<UUID> handled) {
+        if (hounds.isEmpty()) return;
+        boolean huntingTime = level.isDarkOutside();
+        AshHoundEntity leader = null;
+        for (AshHoundEntity hound : hounds.stream()
+                .sorted(java.util.Comparator.comparing(Entity::getUUID)).toList()) {
+            if (!handled.add(hound.getUUID())) continue;
+            if (!huntingTime) {
+                if (hound.getTarget() instanceof ServerPlayer) hound.setTarget(null);
+                continue;
+            }
+            if (leader == null) leader = hound;
+            if (player.isAlive() && hound.distanceToSqr(player) <= 34.0D * 34.0D) {
+                hound.setTarget(player);
+            } else if (leader != hound && leader.getTarget() instanceof ServerPlayer target) {
+                hound.setTarget(target);
+            }
+        }
+    }
+
+    private static void bindRiverWisps(
+            ServerLevel level,
+            List<RiverWispEntity> wisps,
+            Set<UUID> handled) {
+        for (RiverWispEntity wisp : wisps) {
+            if (!handled.add(wisp.getUUID())) continue;
+            int z = wisp.blockPosition().getZ();
+            int centerX = (int) Math.round(AuthoredContinentDensity.silverRiverCenterX(z));
+            double offset = Math.abs(wisp.getX() - (centerX + 0.5D));
+            if (offset <= 26.0D || !level.hasChunk(centerX >> 4, z >> 4)) continue;
+            double targetY = Math.max(65.0D, wisp.getY());
+            wisp.getNavigation().moveTo(centerX + 0.5D, targetY, z + 0.5D, 1.05D);
+        }
     }
 
     private static void spawnAroundTravellers(ServerLevel level) {
@@ -263,7 +340,7 @@ public final class ErdenFantasyEcologyManager {
         }
         CI_TICKETS.clear();
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3 silver_hart=true ash_hound=true river_wisp=true actual_custom_entity_types=true actual_entity_instances=true northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false player_loaded_runtime=true local_species_cap={} forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true ci_ticket_refreshes={} timeout_safe_refresh=true",
+                "LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3 silver_hart=true ash_hound=true river_wisp=true actual_custom_entity_types=true actual_entity_instances=true hart_player_avoidance=true hart_herding=true ash_hound_untameable=true ash_hound_night_pack=true river_wisp_no_item_courier=true river_bound_navigation=true northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false player_loaded_runtime=true local_species_cap={} forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true ci_ticket_refreshes={} timeout_safe_refresh=true",
                 LOCAL_SPECIES_CAP, ciTicketRefreshes);
     }
 
