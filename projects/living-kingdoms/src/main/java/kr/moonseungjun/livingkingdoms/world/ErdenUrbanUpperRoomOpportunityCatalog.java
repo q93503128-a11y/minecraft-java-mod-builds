@@ -26,11 +26,11 @@ import java.util.Set;
  * blindly.</p>
  */
 public final class ErdenUrbanUpperRoomOpportunityCatalog {
-    public static final int CATALOG_REVISION = 3;
+    public static final int CATALOG_REVISION = 4;
 
     private static final int EDGE_MARGIN = 2;
     private static final int MIN_UPPER_RISE = 4;
-    private static final int MAX_UPPER_RISE = 16;
+    private static final int MAX_NEW_AUTHORED_UPPER_RISE = 16;
     private static final int MIN_REGION_CELLS = 12;
     private static final int MIN_USABLE_CELLS = 12;
     private static final int MAX_WALL_RAY = 18;
@@ -120,7 +120,10 @@ public final class ErdenUrbanUpperRoomOpportunityCatalog {
         MutableRejections rejected = new MutableRejections();
         List<LevelOpportunity> existingFloors = new ArrayList<>();
         LevelOpportunity bestNew = LevelOpportunity.none(FloorMode.NEW_AUTHORED_FLOOR);
-        int maximumY = Math.min(snapshot.height() - 2, groundY + MAX_UPPER_RISE);
+        // Existing source-authored floors may legitimately sit far above the entrance in tall
+        // manor/castle fragments. Scan the complete retained source height. Only NEW authored
+        // floors remain bounded to the conservative near-ground safety envelope below.
+        int maximumY = snapshot.height() - 2;
         for (int feetY = groundY + MIN_UPPER_RISE; feetY <= maximumY; feetY++) {
             Set<Long> existing = new HashSet<>();
             Set<Long> newFloor = new HashSet<>();
@@ -152,7 +155,8 @@ public final class ErdenUrbanUpperRoomOpportunityCatalog {
                     if (supportsFloor(floor)) {
                         existing.add(cellKey(x, z));
                         rejected.existingSupported++;
-                    } else if (floor == null || floor.state().isAir()) {
+                    } else if (feetY <= groundY + MAX_NEW_AUTHORED_UPPER_RISE
+                            && (floor == null || floor.state().isAir())) {
                         newFloor.add(cellKey(x, z));
                         rejected.newFloorVoid++;
                     } else {

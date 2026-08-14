@@ -28,13 +28,12 @@ import java.util.Set;
  * layouts remain on the compatibility fallback.</p>
  */
 public final class ErdenUrbanPlacedTopologyCatalog {
-    public static final int CATALOG_REVISION = 1;
+    public static final int CATALOG_REVISION = 2;
 
     private static final int EXPECTED_BUILDINGS = 233;
     private static final int MIN_FLOOR_CELLS = 12;
     private static final int MIN_GROUND_REACHABLE = 18;
     private static final int MIN_LEVEL_SEPARATION = 3;
-    private static final int MAX_AUTHORED_UPPER_RISE = 12;
 
     private static final Map<String, FragmentProfile> FRAGMENTS = new LinkedHashMap<>();
     private static final Map<Long, PlacementProfile> PLACEMENTS = new LinkedHashMap<>();
@@ -180,13 +179,9 @@ public final class ErdenUrbanPlacedTopologyCatalog {
                     doorY = Math.min(doorY, block.y());
                 }
             }
-            if (sourceBlock instanceof StairBlock
-                    && interiorSide(snapshot, block.x(), block.z())
-                    && block.y() >= Math.max(0, doorY == Integer.MAX_VALUE ? 0 : doorY - 1)
-                    && block.y() <= (doorY == Integer.MAX_VALUE
-                            ? snapshot.height() : doorY + MAX_AUTHORED_UPPER_RISE + 1)) {
-                stairs++;
-            }
+            // Stair counting is repeated after the retained entrance height is known.
+            // Do not impose an arbitrary upper-floor cap here: tall licensed source buildings
+            // keep their complete authored Y span in the cropped urban fragment.
             if (functionalFixture(sourceBlock)) fixtures++;
         }
 
@@ -201,9 +196,7 @@ public final class ErdenUrbanPlacedTopologyCatalog {
         stairs = 0;
         for (ExternalUrbanFabricBuilder.UrbanSourceBlock block : snapshot.blocks()) {
             if (block.state().getBlock() instanceof StairBlock
-                    && interiorSide(snapshot, block.x(), block.z())
-                    && block.y() >= Math.max(0, doorY - 1)
-                    && block.y() <= doorY + MAX_AUTHORED_UPPER_RISE + 1) {
+                    && interiorSide(snapshot, block.x(), block.z())) {
                 stairs++;
             }
         }
@@ -236,7 +229,8 @@ public final class ErdenUrbanPlacedTopologyCatalog {
                 if (!interiorSide(snapshot, x, z)) continue;
                 int feetY = resolveFeetY(snapshot, blocks, x, z, current.y());
                 if (feetY == Integer.MIN_VALUE || Math.abs(feetY - current.y()) > 1) continue;
-                if (feetY > doorY + MAX_AUTHORED_UPPER_RISE) continue;
+                // The fragment retains the complete source height. Reachability itself is the
+                // safety gate, so a valid authored staircase may continue to any retained floor.
                 long key = nodeKey(x, feetY, z);
                 if (visited.add(key)) {
                     if (feetY != current.y()) verticalTransitions++;
@@ -251,7 +245,7 @@ public final class ErdenUrbanPlacedTopologyCatalog {
                 .filter(band -> Math.abs(band.feetY() - seed.y()) <= 2)
                 .max(Comparator.comparingInt(FloorBand::reachableCells))
                 .orElse(null);
-        final int maximumAuthoredFeetY = doorY + MAX_AUTHORED_UPPER_RISE;
+        final int maximumAuthoredFeetY = snapshot.height() - 2;
         FloorBand upper = ground == null ? null : bands.stream()
                 .filter(band -> band.feetY() >= ground.feetY() + MIN_LEVEL_SEPARATION)
                 .filter(band -> band.feetY() <= maximumAuthoredFeetY)

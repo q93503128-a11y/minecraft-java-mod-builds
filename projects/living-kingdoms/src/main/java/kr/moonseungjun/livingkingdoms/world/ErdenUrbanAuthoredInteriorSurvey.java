@@ -27,16 +27,15 @@ import java.util.Set;
  * <p>This is deliberately read-only. It gives the authored-interior overhaul a finished-world source
  * of truth: reachable floor area, vertical connectivity, retained stairs, doors and functional
  * fixtures are measured from the actual rotated schematic after streamed construction. The scan uses
- * exactly the same horizontal envelope as the current room converter, so it never requires chunks
- * that the converter itself would not already need and never synchronously loads terrain.</p>
+ * the exact placed fragment footprint and retained source height. It still surveys loaded chunks only
+ * and never synchronously loads terrain.</p>
  */
 public final class ErdenUrbanAuthoredInteriorSurvey {
-    public static final int SURVEY_REVISION = 1;
+    public static final int SURVEY_REVISION = 2;
 
-    private static final int HALF_WIDTH = 3;
-    private static final int DEPTH = 9;
-    private static final int VERTICAL_SCAN = 16;
-    private static final int PROCESS_BUDGET = 4;
+    // A full imported building can span several chunks and dozens of vertical blocks. Survey one
+    // building per tick so exact-footprint verification remains loaded-only without a tick spike.
+    private static final int PROCESS_BUDGET = 1;
     private static final int EXPECTED_BUILDINGS = 233;
 
     private static MinecraftServer activeServer;
@@ -117,8 +116,12 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
             ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
         int doorY = findLowestDoorY(level, entrance.x(), entrance.z());
         if (doorY == Integer.MIN_VALUE) return null;
+        ErdenUrbanPlacedTopologyCatalog.PlacementProfile placement =
+                ErdenUrbanPlacedTopologyCatalog.profile(entrance.x(), entrance.z());
+        if (placement == null) return null;
         Vector inward = inward(entrance);
-        Bounds bounds = bounds(entrance, inward);
+        Bounds bounds = new Bounds(
+                placement.minX(), placement.maxX(), placement.minZ(), placement.maxZ());
         if (!chunksReady(level, bounds)) return null;
 
         int reachable = 0;
@@ -141,7 +144,7 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
             for (int[] offset : NEIGHBORS) {
                 int x = current.x + offset[0];
                 int z = current.z + offset[1];
-                if (!insideEnvelope(entrance, inward, x, z)) continue;
+                if (!insideBounds(bounds, x, z)) continue;
                 int feetY = findWalkableFeetY(level, x, z, current.y);
                 if (feetY == Integer.MIN_VALUE || Math.abs(feetY - current.y) > 1) continue;
                 long nodeKey = nodeKey(x, feetY, z);
@@ -153,8 +156,9 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
         int doors = 0;
         int fixtures = 0;
         int authoredBlocks = 0;
-        int minimumY = Math.max(level.getMinY(), doorY - 1);
-        int maximumY = Math.min(level.getMaxY() - 1, doorY + VERTICAL_SCAN);
+        int minimumY = Math.max(level.getMinY(), placement.baseY() - 1);
+        int maximumY = Math.min(
+                level.getMaxY() - 1, placement.baseY() + placement.height() - 1);
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int x = bounds.minX; x <= bounds.maxX; x++) {
             for (int z = bounds.minZ; z <= bounds.maxZ; z++) {
@@ -192,37 +196,9 @@ public final class ErdenUrbanAuthoredInteriorSurvey {
         return new Vector(0, deltaZ >= 0 ? -1 : 1);
     }
 
-    private static Bounds bounds(
-            ExternalUrbanFabricBuilder.UrbanEntrance entrance, Vector inward) {
-        int lateralX = -inward.z;
-        int lateralZ = inward.x;
-        int minX = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
-        int minZ = Integer.MAX_VALUE;
-        int maxZ = Integer.MIN_VALUE;
-        for (int depth = 0; depth <= DEPTH; depth++) {
-            for (int lateral = -HALF_WIDTH; lateral <= HALF_WIDTH; lateral++) {
-                int x = entrance.x() + inward.x * depth + lateralX * lateral;
-                int z = entrance.z() + inward.z * depth + lateralZ * lateral;
-                minX = Math.min(minX, x);
-                maxX = Math.max(maxX, x);
-                minZ = Math.min(minZ, z);
-                maxZ = Math.max(maxZ, z);
-            }
-        }
-        return new Bounds(minX, maxX, minZ, maxZ);
-    }
-
-    private static boolean insideEnvelope(
-            ExternalUrbanFabricBuilder.UrbanEntrance entrance,
-            Vector inward,
-            int x,
-            int z) {
-        int dx = x - entrance.x();
-        int dz = z - entrance.z();
-        int depth = dx * inward.x + dz * inward.z;
-        int lateral = dx * (-inward.z) + dz * inward.x;
-        return depth >= 0 && depth <= DEPTH && Math.abs(lateral) <= HALF_WIDTH;
+    private static boolean insideBounds(Bounds bounds, int x, int z) {
+        return x >= bounds.minX && x <= bounds.maxX
+                && z >= bounds.minZ && z <= bounds.maxZ;
     }
 
     private static int depth(
