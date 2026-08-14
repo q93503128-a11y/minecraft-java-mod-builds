@@ -9,5 +9,8 @@
   "livingkingdoms.origin.invalid": "Review this combination",
   "entity.livingkingdoms.silver_hart": "Silver Hart",
   "entity.livingkingdoms.ash_hound": "Ash Hound",
-  "entity.livingkingdoms.river_wisp": "River Wisp"
+  "entity.livingkingdoms.river_wisp": "River Wisp",
+  "item.livingkingdoms.silver_antler": "Silver Antler",
+  "item.livingkingdoms.ash_fang": "Ash Fang",
+  "item.livingkingdoms.river_essence": "River Essence"
 }
