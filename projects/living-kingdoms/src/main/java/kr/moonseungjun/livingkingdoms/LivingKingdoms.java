@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import kr.moonseungjun.livingkingdoms.crime.CrimeManager;
 import kr.moonseungjun.livingkingdoms.crime.ErdenJusticeManager;
 import kr.moonseungjun.livingkingdoms.economy.RealmEconomyManager;
+import kr.moonseungjun.livingkingdoms.entity.FantasyEntityTypes;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.network.LivingKingdomsNetwork;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
@@ -21,6 +22,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenEntranceThresholdManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntryPathReconciler;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntryTraversalAudit;
 import kr.moonseungjun.livingkingdoms.world.ErdenFireResponseManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenFantasyEcologyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenKingdomExteriorInventoryManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCargoEscrowAudit;
@@ -84,6 +86,7 @@ public final class LivingKingdoms {
 
     public LivingKingdoms(IEventBus modEventBus) {
         LivingWorldgenTypes.register(modEventBus);
+        FantasyEntityTypes.register(modEventBus);
         FoundationCatalog.bootstrap();
         modEventBus.addListener(LivingKingdomsNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
@@ -156,6 +159,7 @@ public final class LivingKingdoms {
         ErdenDiagnosticDebrisSettler.onServerTick(event);
         ErdenAuthoredRoadNormalizer.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
+        ErdenFantasyEcologyManager.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
     }
 
