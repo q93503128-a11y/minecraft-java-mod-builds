@@ -1,7 +1,6 @@
 package kr.moonseungjun.senbonzakura;
 
 import com.mojang.logging.LogUtils;
-import kr.moonseungjun.senbonzakura.ability.AbilityService;
 import kr.moonseungjun.senbonzakura.bankai.BankaiService;
 import kr.moonseungjun.senbonzakura.network.BankaiNetwork;
 import kr.moonseungjun.senbonzakura.registry.ModItems;
@@ -17,7 +16,7 @@ import org.slf4j.Logger;
 @Mod(SenbonzakuraShowcase.MOD_ID)
 public final class SenbonzakuraShowcase {
     public static final String MOD_ID = "senbonzakura";
-    public static final String VERSION = "0.1.0-alpha.12";
+    public static final String VERSION = "0.1.0-alpha.13";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SenbonzakuraShowcase(IEventBus modEventBus) {
@@ -28,13 +27,12 @@ public final class SenbonzakuraShowcase {
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
-        LOGGER.info("Senbonzakura / Ability Showcase {} loaded", VERSION);
+        LOGGER.info("Senbonzakura Showcase {} loaded", VERSION);
     }
 
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             BankaiService.tick(player);
-            AbilityService.tick(player);
         }
     }
 
@@ -52,11 +50,9 @@ public final class SenbonzakuraShowcase {
 
     private void clear(ServerPlayer player) {
         BankaiService.clear(player, true);
-        AbilityService.clear(player, true);
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
         BankaiService.clearAll();
-        AbilityService.clearAll();
     }
 }

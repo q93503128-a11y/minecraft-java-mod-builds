@@ -30,15 +30,21 @@ jobs:
 
       - name: Source audit
         run: |
-          grep -q 'mod_version=0.1.0-alpha.12' gradle.properties
-          grep -q 'senbonzakura-showcase-v8' src/main/java/kr/moonseungjun/senbonzakura/network/BankaiNetwork.java
+          grep -q 'mod_version=0.1.0-alpha.13' gradle.properties
+          grep -q 'senbonzakura-showcase-v9' src/main/java/kr/moonseungjun/senbonzakura/network/BankaiNetwork.java
           grep -q 'BLADE_STORM_START_TICK' src/main/java/kr/moonseungjun/senbonzakura/bankai/BankaiService.java
           grep -q 'RENDER_SPEED_SCALES' src/main/java/kr/moonseungjun/senbonzakura/bankai/BankaiService.java
           grep -q 'mob.invulnerableTime = 0' src/main/java/kr/moonseungjun/senbonzakura/bankai/BankaiService.java
-          grep -q 'AbilityService.tick' src/main/java/kr/moonseungjun/senbonzakura/SenbonzakuraShowcase.java
-          grep -q 'AbilityWorldRenderer::onExtract' src/main/java/kr/moonseungjun/senbonzakura/SenbonzakuraShowcaseClient.java
           grep -q 'ExternalShockwaveVfx::onExtract' src/main/java/kr/moonseungjun/senbonzakura/SenbonzakuraShowcaseClient.java
-          test "$(grep -c '^    [A-Z_]*("' src/main/java/kr/moonseungjun/senbonzakura/ability/ShowcaseAbility.java)" -eq 8
+          test ! -d src/main/java/kr/moonseungjun/senbonzakura/ability
+          if find src/main/java/kr/moonseungjun/senbonzakura/client -maxdepth 1 -name 'Ability*.java' | grep -q .; then
+            echo 'Removed ability client classes returned'
+            exit 1
+          fi
+          if grep -R -E 'ability_request|ShowcaseAbility|AbilityService|AbilityKeyHandler|AbilityWorldRenderer' src/main/java src/main/resources README.md PROJECT.md; then
+            echo 'Removed ability framework reference remains'
+            exit 1
+          fi
           if grep -q 'Shift + B' src/main/java/kr/moonseungjun/senbonzakura/item/ZanpakutoItem.java; then
             echo 'Stale Shift+B tooltip remains'
             exit 1
@@ -51,7 +57,7 @@ jobs:
 
       - name: Verify JAR
         run: |
-          JAR=build/libs/senbonzakura-0.1.0-alpha.12.jar
+          JAR=build/libs/senbonzakura-0.1.0-alpha.13.jar
           test -f "$JAR"
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/SenbonzakuraShowcase.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiWorldRenderer.class'
@@ -60,17 +66,17 @@ jobs:
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/bankai/BankaiService.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/bankai/BankaiFlowMath.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/network/BankaiNetwork.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/ability/ShowcaseAbility.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/ability/AbilityService.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/client/AbilityKeyHandler.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/client/AbilityWorldRenderer.class'
           jar tf "$JAR" | grep -q 'assets/senbonzakura/items/zanpakuto_senbonzakura.json'
           jar tf "$JAR" | grep -q 'assets/senbonzakura/models/item/zanpakuto_senbonzakura.json'
           jar tf "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
+          if jar tf "$JAR" | grep -Eq 'kr/moonseungjun/senbonzakura/(ability/|client/Ability)'; then
+            echo 'Bankai-only JAR contains removed ability classes'
+            exit 1
+          fi
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: senbonzakura-0.1.0-alpha.12
-          path: projects/senbonzakura-showcase/build/libs/senbonzakura-0.1.0-alpha.12.jar
+          name: senbonzakura-0.1.0-alpha.13
+          path: projects/senbonzakura-showcase/build/libs/senbonzakura-0.1.0-alpha.13.jar
           if-no-files-found: error
