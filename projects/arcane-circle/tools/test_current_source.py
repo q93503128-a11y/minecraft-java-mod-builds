@@ -64,7 +64,7 @@ assert 'viewport().w()<410' in grimoire
 summary=text(magic/'SpellEffectSummary.java'); definition=text(magic/'SpellDefinition.java')
 assert 'SpellEffectSummary.summary(this)' in definition and '효과 · ' in definition
 for token in ['case "wish"','기존 이로운','case "time_stop"','AI·이동','case "antimagic_field"','Arcane 시전',
-'case "meteor_swarm"','16발','case "world_sunder"','방향성 실제 세계 균열','case "fly"','자유 비행',
+'case "meteor_swarm"','16발','case "world_sunder"','장거리·심층 실제 세계 균열','case "fly"','자유 비행',
 'case "clone"','치명상','case "control_weather"','실제 폭우·뇌우','case "prismatic_wall"','14초 지속']:
     assert token in summary, token
 assert summary.count('case "') >= 109
