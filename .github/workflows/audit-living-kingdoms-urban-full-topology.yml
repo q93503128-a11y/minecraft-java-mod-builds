@@ -56,16 +56,16 @@ jobs:
           ! grep -Fq 'VERTICAL_SCAN' "$survey"
           ! grep -Fq 'HALF_WIDTH' "$survey"
 
-          grep -F 'public static final int CATALOG_REVISION = 2;' "$plan"
+          grep -F 'public static final int CATALOG_REVISION = 3;' "$plan"
           grep -F 'MIN_VERTICAL_OVERLAP_CELLS = 20' "$plan"
           grep -F 'MIN_VERTICAL_OVERLAP_RATIO = 0.35D' "$plan"
           grep -F 'MAX_VERTICAL_LEVEL_GAP = 9' "$plan"
           grep -F 'Recommendation.AUTHOR_NEW_FLOOR_IN_VOID' "$plan"
           grep -F 'selectVerticallyContinuousLevels' "$plan"
           grep -F 'overlapCells(candidate, lower)' "$plan"
-          grep -F 'sourceAir(blocks, x, feetY - 1, z)' "$plan"
-          grep -F 'retainedRoofAbove' "$plan"
+          grep -F 'sourceAir(snapshot, blocks, x, feetY - 1, z)' "$plan"
           grep -F 'isClearableSourceAirSeal' "$plan"
+          grep -F 'retainedRoofAbove' "$plan"
           ! grep -Fq 'MIN_SHELL_ANCHORS' "$plan"
           grep -F 'source_blocks_cut=0 source_only=true world_reads=false mutations=0' "$plan"
           grep -F 'ErdenUrbanFullInteriorPlanCatalog.bootstrap();' "$mod"
@@ -163,7 +163,8 @@ jobs:
               f'planned_upper_levels={upper_levels} planned_rooms={rooms} '
               f'existing_source_multilevel_fragments={existing_multilevel} '
               'proven_all_in_one_y18=true proven_manor_y15=true '
-              'vertical_continuity=true decorative_shell_completion_required=true '
+              'vertical_continuity=true clearable_source_air_seals=true '
+              'decorative_shell_completion_required=true '
               'source_blocks_cut=0 source_only=true world_reads=false mutations=0 '
               'plots=233 housing=77 work=156'
           )
