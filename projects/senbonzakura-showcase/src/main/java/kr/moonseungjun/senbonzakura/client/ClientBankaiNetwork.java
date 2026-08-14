@@ -13,6 +13,5 @@ public final class ClientBankaiNetwork {
 
     private static void handleVisual(BankaiVisualPayload payload, IPayloadContext context) {
         BankaiWorldRenderer.accept(payload);
-        AbilityWorldRenderer.accept(payload);
     }
 }
