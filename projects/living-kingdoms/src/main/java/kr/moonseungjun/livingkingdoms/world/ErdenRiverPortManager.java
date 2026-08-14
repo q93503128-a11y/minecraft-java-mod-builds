@@ -77,6 +77,7 @@ public final class ErdenRiverPortManager {
     private static double ciLastBoatZ = Double.NaN;
     private static long ciLastProgressTick;
     private static int ciLastWaypoint = -1;
+    private static double ciBestTargetDistance = Double.POSITIVE_INFINITY;
 
     private ErdenRiverPortManager() {
     }
@@ -117,6 +118,7 @@ public final class ErdenRiverPortManager {
         ciLastBoatZ = Double.NaN;
         ciLastProgressTick = 0L;
         ciLastWaypoint = -1;
+        ciBestTargetDistance = Double.POSITIVE_INFINITY;
     }
 
     private static void enqueue(ServerLevel level, int chunkX, int chunkZ, boolean priority) {
@@ -362,6 +364,7 @@ public final class ErdenRiverPortManager {
             if (isPortCi()) {
                 ciLastProgressTick = level.getGameTime();
                 ciLastWaypoint = port.waypoint();
+                ciBestTargetDistance = Double.POSITIVE_INFINITY;
             }
             LivingKingdoms.LOGGER.info(
                     "Materialized Erden supply barge shipment={} resource={} amount={} real_entity=true escrow_linked=true loaded_only={} route_points={}",
@@ -397,6 +400,7 @@ public final class ErdenRiverPortManager {
             if (isPortCi()) {
                 ciLastProgressTick = level.getGameTime();
                 ciLastWaypoint = next;
+                ciBestTargetDistance = Double.POSITIVE_INFINITY;
             }
             if (next >= route.size()) {
                 boat.setDeltaMovement(0.0D, boat.getDeltaMovement().y, 0.0D);
@@ -426,15 +430,22 @@ public final class ErdenRiverPortManager {
         double actualMoved = Math.sqrt(actualX * actualX + actualZ * actualZ);
         if (isPortCi()) {
             long now = level.getGameTime();
-            if (actualMoved >= 0.05D || ciLastWaypoint != port.waypoint()) {
-                ciLastProgressTick = now;
+            double remainingX = target.x() + 0.5D - boat.getX();
+            double remainingZ = target.z() + 0.5D - boat.getZ();
+            double remainingDistance = Math.sqrt(remainingX * remainingX + remainingZ * remainingZ);
+            if (ciLastWaypoint != port.waypoint()) {
                 ciLastWaypoint = port.waypoint();
+                ciBestTargetDistance = remainingDistance;
+                ciLastProgressTick = now;
+            } else if (remainingDistance + 0.20D < ciBestTargetDistance) {
+                ciBestTargetDistance = remainingDistance;
+                ciLastProgressTick = now;
             }
             if (now % 100L == 0L) {
                 LivingKingdoms.LOGGER.info(
-                        "LK_ERDEN_RIVER_PORT_PROGRESS waypoint={} x={} y={} z={} target_x={} target_z={} distance={} moved={} travelled={} water_target={} entity_loaded=true collision_move=true",
+                        "LK_ERDEN_RIVER_PORT_PROGRESS waypoint={} x={} y={} z={} target_x={} target_z={} distance={} moved={} travelled={} water_target={} entity_loaded=true collision_move=true goal_progress=true",
                         port.waypoint(), Math.round(boat.getX()), Math.round(boat.getY()), Math.round(boat.getZ()),
-                        target.x(), target.z(), Math.round(distance), String.format(java.util.Locale.ROOT, "%.3f", actualMoved),
+                        target.x(), target.z(), Math.round(remainingDistance), String.format(java.util.Locale.ROOT, "%.3f", actualMoved),
                         Math.round(ciTravelled), waterAt(level, target));
             }
             if (ciLastProgressTick > 0L
@@ -442,10 +453,11 @@ public final class ErdenRiverPortManager {
                     && routeChunkReady(level, port, target)
                     && waterAt(level, target)) {
                 LivingKingdoms.LOGGER.error(
-                        "LK_ERDEN_RIVER_PORT_STALL waypoint={} x={} z={} target_x={} target_z={} distance={} travelled={} stalled_ticks={} entity_loaded=true route_ready=true water_target=true",
+                        "LK_ERDEN_RIVER_PORT_STALL waypoint={} x={} z={} target_x={} target_z={} distance={} best_distance={} travelled={} stalled_ticks={} entity_loaded=true route_ready=true water_target=true goal_progress=false",
                         port.waypoint(), Math.round(boat.getX()), Math.round(boat.getZ()), target.x(), target.z(),
-                        Math.round(distance), Math.round(ciTravelled), now - ciLastProgressTick);
-                throw new IllegalStateException("LK_ERDEN_RIVER_PORT_STALL physical barge made no collision-resolved progress");
+                        Math.round(remainingDistance), String.format(java.util.Locale.ROOT, "%.2f", ciBestTargetDistance),
+                        Math.round(ciTravelled), now - ciLastProgressTick);
+                throw new IllegalStateException("LK_ERDEN_RIVER_PORT_STALL physical barge failed to approach its active waypoint");
             }
         }
     }
