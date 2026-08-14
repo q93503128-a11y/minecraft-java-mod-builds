@@ -1,0 +1,118 @@
+name: Audit Living Kingdoms fantasy materials
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/item/**'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
+      - 'projects/living-kingdoms/src/main/resources/data/livingkingdoms/loot_table/entities/**'
+      - 'projects/living-kingdoms/src/main/resources/assets/livingkingdoms/items/**'
+      - 'projects/living-kingdoms/src/main/resources/assets/livingkingdoms/lang/**'
+      - '.github/workflows/audit-living-kingdoms-fantasy-materials.yml'
+
+concurrency:
+  group: living-kingdoms-fantasy-materials-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_FANTASY_ECOLOGY_TEST: '1'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Clean compile fantasy materials
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Verify fantasy material source and data
+        shell: bash
+        run: |
+          set -euo pipefail
+          items='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/item/FantasyItems.java'
+          main='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
+          grep -Fq 'DeferredRegister.createItems' "$items"
+          grep -Fq 'SILVER_ANTLER' "$items"
+          grep -Fq 'ASH_FANG' "$items"
+          grep -Fq 'RIVER_ESSENCE' "$items"
+          grep -Fq 'FantasyItems.register(modEventBus)' "$main"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('projects/living-kingdoms/src/main/resources')
+          expected = {
+              'silver_hart': 'livingkingdoms:silver_antler',
+              'ash_hound': 'livingkingdoms:ash_fang',
+              'river_wisp': 'livingkingdoms:river_essence',
+          }
+          for entity, item in expected.items():
+              path = root / 'data/livingkingdoms/loot_table/entities' / f'{entity}.json'
+              data = json.loads(path.read_text(encoding='utf-8'))
+              assert data['type'] == 'minecraft:entity'
+              entries = data['pools'][0]['entries']
+              assert any(entry.get('name') == item for entry in entries), (entity, item)
+          for item in ('silver_antler', 'ash_fang', 'river_essence'):
+              model = root / 'assets/livingkingdoms/items' / f'{item}.json'
+              json.loads(model.read_text(encoding='utf-8'))
+          for lang in ('en_us', 'ko_kr'):
+              data = json.loads((root / 'assets/livingkingdoms/lang' / f'{lang}.json').read_text(encoding='utf-8'))
+              for item in ('silver_antler', 'ash_fang', 'river_essence'):
+                  assert f'item.livingkingdoms.{item}' in data
+          PY
+      - name: Load loot tables and custom items in a fresh server world
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../../logs run
+          rm -rf run/world run/living_realm run/livingkingdoms-fantasy-materials-ci-world
+          printf 'level-name=livingkingdoms-fantasy-materials-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/fantasy-materials.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 1200); do
+            if grep -Eiq "Couldn't parse .*loot|Failed to parse .*loot|Unknown item|Unknown registry key|JsonParseException|Duplicate id|Exception in server tick loop|NoClassDefFoundError|NoSuchMethodError" ../../logs/fantasy-materials.log; then
+              cat ../../logs/fantasy-materials.log
+              exit 1
+            fi
+            if grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1' ../../logs/fantasy-materials.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/fantasy-materials.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/fantasy-materials.log
+          test "$passed" -eq 1
+          ! grep -Eiq "Couldn't parse .*loot|Failed to parse .*loot|Unknown item|Unknown registry key|JsonParseException|Duplicate id" ../../logs/fantasy-materials.log
+          grep -F 'actual_custom_entity_types=true actual_entity_instances=true' ../../logs/fantasy-materials.log
+      - name: Upload fantasy material audit log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-fantasy-materials-${{ github.run_number }}
+          path: logs/fantasy-materials.log
+          if-no-files-found: warn
+          retention-days: 30
