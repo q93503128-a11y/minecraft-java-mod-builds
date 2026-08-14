@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/scripts/wire_erden_capital_lifecycle.py'
+      - '.github/scripts/refine_erden_capital_lifecycle_runtime.py'
       - '.github/workflows/patch-living-kingdoms-capital-lifecycle.yml'
 
 concurrency:
@@ -31,6 +32,8 @@ jobs:
           gradle-version: '9.2.1'
       - name: Wire capital lifecycle into population and economy
         run: python .github/scripts/wire_erden_capital_lifecycle.py
+      - name: Align retirement and death with physical runtime
+        run: python .github/scripts/refine_erden_capital_lifecycle_runtime.py
       - name: Clean compile Living Kingdoms
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
@@ -42,13 +45,19 @@ jobs:
           saved='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalLifecycleSavedData.java'
           pop='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java'
           eco='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java'
+          fire='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java'
+          justice='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java'
           mod='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
           grep -Fq 'LK_ERDEN_CAPITAL_LIFECYCLE_PASS' "$life"
           grep -Fq 'source_blocks_cut=0' "$life"
           grep -Fq 'save_overlay=true' "$life"
+          grep -Fq 'discardLoadedPerson(level, person.name())' "$life"
           grep -Fq 'ErdenCapitalLifecycleManager.prepare(level, population)' "$pop"
+          grep -Fq 'isActiveFounderWorker' "$pop"
           grep -Fq 'ErdenCapitalLifecycleManager.activeWorkers(level, population, day)' "$eco"
           grep -Fq 'payWages(workers, sites, wallets, counters)' "$eco"
+          grep -Fq 'isActiveFounderWorker' "$fire"
+          grep -Fq 'isActiveFounderWorker' "$justice"
           grep -Fq 'ErdenCapitalLifecycleManager.onServerTick(event)' "$mod"
           grep -Fq 'SCHEMA_VERSION = 1' "$saved"
       - name: Commit compiled integration directly to main
@@ -59,10 +68,13 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalLifecycleManager.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java
           git diff --cached --quiet && exit 0
-          git commit -m 'feat(living-kingdoms): wire capital generations into city life'
+          git commit -m 'fix(living-kingdoms): align capital lifecycle runtime roles'
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
