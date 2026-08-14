@@ -18,4 +18,10 @@ public final class SilverHartEntity extends Goat {
         goalSelector.addGoal(1, new AvoidEntityGoal<>(
                 this, Player.class, 18.0F, 1.18D, 1.42D));
     }
+    /** These are player-local ecology instances, not permanent settlement actors. */
+    @Override
+    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
+        return true;
+    }
+
 }

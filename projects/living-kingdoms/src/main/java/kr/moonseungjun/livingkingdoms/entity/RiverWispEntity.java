@@ -17,4 +17,10 @@ public final class RiverWispEntity extends Allay {
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         return InteractionResult.PASS;
     }
+    /** These are player-local ecology instances, not permanent settlement actors. */
+    @Override
+    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
+        return true;
+    }
+
 }

@@ -32,4 +32,10 @@ public final class AshHoundEntity extends Wolf {
     public boolean isFood(ItemStack stack) {
         return false;
     }
+    /** These are player-local ecology instances, not permanent settlement actors. */
+    @Override
+    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
+        return true;
+    }
+
 }
