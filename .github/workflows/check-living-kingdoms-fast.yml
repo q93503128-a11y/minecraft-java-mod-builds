@@ -77,6 +77,8 @@ jobs:
           grep -F 'proximity_arrest=true synthetic_guard=false' "$justice"
           grep -F 'actual_citizen_court=true' "$justice"
           grep -F 'sentence_executed=true' "$justice"
+          grep -F 'crime.reduceWanted(suspect.getUUID(), 100);' "$justice"
+          grep -F 'warrant_cleared=true' "$justice"
           grep -F 'ErdenJusticeManager.JURISDICTION.equals(record.jurisdiction())' "$crime"
           grep -F 'ErdenJusticeManager.observeCrime(' "$crime"
           ! grep -F 'StarterRealmManager.server()' "$justice"
