@@ -53,6 +53,7 @@ public final class ErdenRiverPortManager {
     private static final int QUAY_Y = 64;
     private static final int TICK_BUDGET = 2_400;
     private static final int VESSEL_INTERVAL = 5;
+    private static final int CI_TICKET_REFRESH_INTERVAL = 100;
     private static final int PHYSICAL_RADIUS = 340;
     private static final double VESSEL_SPEED = 0.20D;
     private static final Identifier CHEST_BOAT_ID =
@@ -78,6 +79,7 @@ public final class ErdenRiverPortManager {
     private static long ciLastProgressTick;
     private static int ciLastWaypoint = -1;
     private static double ciBestTargetDistance = Double.POSITIVE_INFINITY;
+    private static long ciTicketRefreshes;
 
     private ErdenRiverPortManager() {
     }
@@ -99,7 +101,12 @@ public final class ErdenRiverPortManager {
         ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);
         if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
 
-        if (isPortCi()) prepareCi(level);
+        if (isPortCi()) {
+            prepareCi(level);
+            if (level.getGameTime() % CI_TICKET_REFRESH_INTERVAL == 0L) {
+                refreshCiTickets(level);
+            }
+        }
         advanceConstruction(level);
         if (level.getGameTime() % VESSEL_INTERVAL == 0L) tickVessel(level);
         if (isPortCi()) verifyCi(level);
@@ -119,6 +126,7 @@ public final class ErdenRiverPortManager {
         ciLastProgressTick = 0L;
         ciLastWaypoint = -1;
         ciBestTargetDistance = Double.POSITIVE_INFINITY;
+        ciTicketRefreshes = 0L;
     }
 
     private static void enqueue(ServerLevel level, int chunkX, int chunkZ, boolean priority) {
@@ -572,6 +580,22 @@ public final class ErdenRiverPortManager {
                 required.size());
     }
 
+    private static void refreshCiTickets(ServerLevel level) {
+        if (CI_RETAINED.isEmpty()) return;
+        int loaded = 0;
+        for (long packed : Set.copyOf(CI_RETAINED)) {
+            ChunkPos chunk = new ChunkPos(unpackX(packed), unpackZ(packed));
+            level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
+            if (level.hasChunk(chunk.x(), chunk.z())) loaded++;
+        }
+        ciTicketRefreshes++;
+        if (ciTicketRefreshes == 1L || ciTicketRefreshes % 5L == 0L) {
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_RIVER_PORT_TICKET_REFRESH refresh={} retained={} loaded={} interval_ticks={} timeout_safe_refresh=true async_ticket=true forced_chunks=false",
+                    ciTicketRefreshes, CI_RETAINED.size(), loaded, CI_TICKET_REFRESH_INTERVAL);
+        }
+    }
+
     private static void verifyCi(ServerLevel level) {
         if (!ciPrepared || ciPassed) return;
         ErdenRiverPortSavedData port = level.getDataStorage().computeIfAbsent(ErdenRiverPortSavedData.TYPE);
@@ -584,8 +608,8 @@ public final class ErdenRiverPortManager {
         ciPassed = true;
         for (long packed : Set.copyOf(CI_RETAINED)) releaseCi(level, packed);
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_RIVER_PORT_PASS revision=1 silver_river_navigable=true west_wharf_physical=true customs_house=true shipyard=true supply_barge_escrow_linked=true real_boat_entity=true actual_water_movement=true travelled_metres={} loaded_only_runtime=true forced_citywide=false ci_corridor_only=true ci_corridor_retained_until_pass=true ci_tickets_released_at_pass=true",
-                Math.round(ciTravelled));
+                "LK_ERDEN_RIVER_PORT_PASS revision=1 silver_river_navigable=true west_wharf_physical=true customs_house=true shipyard=true supply_barge_escrow_linked=true real_boat_entity=true actual_water_movement=true travelled_metres={} loaded_only_runtime=true forced_citywide=false ci_corridor_only=true ci_corridor_retained_until_pass=true ci_tickets_released_at_pass=true ci_ticket_refreshes={} timeout_safe_refresh=true",
+                Math.round(ciTravelled), ciTicketRefreshes);
     }
 
     private static void accumulateCiTravel(Entity boat) {
