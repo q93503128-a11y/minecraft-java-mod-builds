@@ -1,0 +1,86 @@
+name: Patch Living Kingdoms regional settlements
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: living-kingdoms-regional-settlements
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Normalize staged regional template
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('.github/scripts/add_living_kingdoms_regional_settlements.py')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('Blocks.LEAD == null ? Blocks.OAK_FENCE : Blocks.OAK_FENCE', 'Blocks.OAK_FENCE')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Apply regional settlement overlay
+        run: python .github/scripts/add_living_kingdoms_regional_settlements.py
+      - name: Clean compile Living Kingdoms
+        working-directory: projects/living-kingdoms
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Verify regional settlement invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          builder='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java'
+          saved='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorSavedData.java'
+          homes='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceCatalog.java'
+          grep -Fq 'REGIONAL_SETTLEMENT_REVISION = 1' "$builder"
+          grep -Fq 'EXPECTED_REGIONAL_HUBS = 17' "$builder"
+          grep -Fq 'REGIONAL_CORE_DISTANCE = 80' "$builder"
+          grep -Fq 'REGIONAL_CROSS_DISTANCE = 88' "$builder"
+          grep -Fq 'market_village' "$builder"
+          grep -Fq 'drovers_waystation' "$builder"
+          grep -Fq 'mining_village' "$builder"
+          grep -Fq 'mill_village' "$builder"
+          grep -Fq 'river_trade_post' "$builder"
+          grep -Fq 'reused_housing=true' "$builder"
+          grep -Fq 'LIVING_KINGDOMS_CI_REGIONAL_SETTLEMENT_TEST' "$builder"
+          grep -Fq 'regional_revision' "$saved"
+          grep -Fq 'regionalNeeds' "$saved"
+          grep -Fq 'markRegionalNode' "$saved"
+          grep -Fq 'hamletOutwardX' "$homes"
+          grep -Fq 'hamletOutwardZ' "$homes"
+          grep -Fq 'HAMLET_DISTANCE = 96' "$homes"
+          grep -Fq 'EXTERIOR_REVISION = 2' "$builder"
+      - name: Commit compiled regional overlay directly to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorSavedData.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceCatalog.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenKingdomExteriorBuilder.java
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat(living-kingdoms): add regional settlement centres'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
