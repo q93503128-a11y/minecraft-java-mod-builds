@@ -1,0 +1,50 @@
+name: Temporary Arcane Circle alpha38 render audit sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-arcane-alpha38-audit-render-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Replace comment-only assertion with render structure assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('projects/arcane-circle/tools/test_current_source.py')
+          s=p.read_text(encoding='utf-8')
+          old="['delayedCataclysm','annihilationBeam','meteorShardImpact','sky authority crown']"
+          new="['delayedCataclysm','annihilationBeam','meteorShardImpact','crownFade']"
+          if old not in s:
+              raise SystemExit('comment-only director assertion missing')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
+          git rm .github/workflows/tmp-arcane-alpha38-audit-render-sync.yml
+          git diff --check
+      - name: Commit to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'test(arcane-circle): assert alpha.38 meteor crown structure'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
