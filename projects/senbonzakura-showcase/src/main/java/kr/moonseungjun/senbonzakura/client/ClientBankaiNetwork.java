@@ -13,5 +13,7 @@ public final class ClientBankaiNetwork {
 
     private static void handleVisual(BankaiVisualPayload payload, IPayloadContext context) {
         BankaiWorldRenderer.accept(payload);
+        ExternalShockwaveVfx.accept(payload);
+        AbilityWorldRenderer.accept(payload);
     }
 }

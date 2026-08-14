@@ -1,5 +1,7 @@
 package kr.moonseungjun.senbonzakura.network;
 
+import kr.moonseungjun.senbonzakura.ability.AbilityService;
+import kr.moonseungjun.senbonzakura.ability.ShowcaseAbility;
 import kr.moonseungjun.senbonzakura.bankai.BankaiService;
 import kr.moonseungjun.senbonzakura.registry.ModItems;
 import net.minecraft.network.chat.Component;
@@ -11,11 +13,13 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 public final class BankaiNetwork {
-    public static final String PROTOCOL_VERSION = "senbonzakura-showcase-v7";
+    public static final String PROTOCOL_VERSION = "senbonzakura-showcase-v8";
 
     private BankaiNetwork() {}
 
@@ -29,16 +33,25 @@ public final class BankaiNetwork {
 
     private static void handleServerPayload(BankaiVisualPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)) return;
-        if (!"action=request".equals(payload.state())) return;
+        String state = payload.state();
 
-        boolean holding = player.getMainHandItem().getItem() == ModItems.SENBONZAKURA.get()
-                || player.getOffhandItem().getItem() == ModItems.SENBONZAKURA.get();
-        if (!holding) {
-            player.sendSystemMessage(Component.literal(
-                    "[천본앵] 참백도 · 천본앵을 손에 들어야 합니다."));
+        if ("action=request".equals(state)) {
+            boolean holding = player.getMainHandItem().getItem() == ModItems.SENBONZAKURA.get()
+                    || player.getOffhandItem().getItem() == ModItems.SENBONZAKURA.get();
+            if (!holding) {
+                player.sendSystemMessage(Component.literal(
+                        "[천본앵] 참백도 · 천본앵을 손에 들어야 합니다."));
+                return;
+            }
+            BankaiService.activate(player);
             return;
         }
-        BankaiService.activate(player);
+
+        Map<String, String> values = parse(state);
+        if (!"ability_request".equals(values.get("action"))) return;
+        ShowcaseAbility ability = ShowcaseAbility.byId(values.get("ability"));
+        if (ability == null) return;
+        AbilityService.activate(player, ability);
     }
 
     public static void broadcastStart(
@@ -58,19 +71,49 @@ public final class BankaiNetwork {
                 facing.y,
                 facing.z,
                 durationTicks);
-
-        // The visual belongs to the cast dimension. Broadcasting starts to every dimension made
-        // unrelated players render a ghost Bankai at the same coordinates in their own world.
-        PacketDistributor.sendToPlayersInDimension(
-                level,
-                new BankaiVisualPayload(state));
+        PacketDistributor.sendToPlayersInDimension(level, new BankaiVisualPayload(state));
     }
 
     public static void broadcastStop(UUID caster) {
-        // Stop packets are tiny and intentionally global: this also clears any stale client state
-        // after a dimension transfer or disconnect where the original cast level is no longer the
-        // player's current level.
         PacketDistributor.sendToAllPlayers(
                 new BankaiVisualPayload("action=stop;caster=" + caster));
+    }
+
+    public static void broadcastAbilityStart(
+            ServerLevel level,
+            UUID caster,
+            ShowcaseAbility ability,
+            Vec3 origin,
+            Vec3 facing) {
+        String state = String.format(
+                Locale.ROOT,
+                "action=ability_start;caster=%s;ability=%s;x=%.4f;y=%.4f;z=%.4f;dx=%.5f;dy=%.5f;dz=%.5f;duration=%d",
+                caster,
+                ability.id(),
+                origin.x,
+                origin.y,
+                origin.z,
+                facing.x,
+                facing.y,
+                facing.z,
+                ability.durationTicks());
+        PacketDistributor.sendToPlayersInDimension(level, new BankaiVisualPayload(state));
+    }
+
+    public static void broadcastAbilityStop(UUID caster, ShowcaseAbility ability) {
+        PacketDistributor.sendToAllPlayers(new BankaiVisualPayload(
+                "action=ability_stop;caster=" + caster + ";ability=" + ability.id()));
+    }
+
+    private static Map<String, String> parse(String state) {
+        Map<String, String> values = new HashMap<>();
+        if (state == null || state.isBlank()) return values;
+        for (String token : state.split(";")) {
+            int split = token.indexOf('=');
+            if (split > 0 && split < token.length() - 1) {
+                values.put(token.substring(0, split), token.substring(split + 1));
+            }
+        }
+        return values;
     }
 }

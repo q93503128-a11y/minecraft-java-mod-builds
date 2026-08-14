@@ -22,10 +22,16 @@ import java.util.UUID;
 public final class BankaiService {
     public static final int DURATION_TICKS = 260;
     public static final int COOLDOWN_TICKS = 600;
-    public static final double ATTACK_RADIUS = 24.0;
+    public static final double ATTACK_RADIUS = 32.0;
     public static final double SAFE_RADIUS = 2.45;
 
-    private static final int HIT_SWEEP_HISTORY_TICKS = 9;
+    private static final int BLADE_STORM_START_TICK = 108;
+    private static final int BLADE_STORM_END_TICK = 248;
+    private static final int HIT_SWEEP_HISTORY_TICKS = 4;
+    private static final int MAX_CONTACTS_PER_TICK = 4;
+    private static final double[] RENDER_SPEED_SCALES = {0.82, 1.00, 1.10, 1.30};
+    private static final double[] RENDER_TUBE_RADII = {5.7, 6.2, 7.1, 8.2};
+
     private static final Map<UUID, ActiveBankai> ACTIVE = new HashMap<>();
     private static final Map<UUID, Long> READY_AT = new HashMap<>();
 
@@ -66,7 +72,6 @@ public final class BankaiService {
             return;
         }
 
-        // Keep the ritual opening readable, then return control while the blade rivers continue.
         if (age < 108) {
             Vec3 motion = player.getDeltaMovement();
             player.setDeltaMovement(0.0, motion.y, 0.0);
@@ -85,18 +90,20 @@ public final class BankaiService {
                     SoundSource.PLAYERS, 1.35F, 1.18F);
         }
 
+        if (age >= BLADE_STORM_START_TICK && age <= BLADE_STORM_END_TICK) {
+            bladeStormTick(level, player, active, age);
+        }
+
+        // These are audio accents only. Damage is continuous while the visible blade rivers pass.
         if (age == 150) {
-            slashWave(level, player, active, age, 7.5F, 36);
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
                     SoundSource.PLAYERS, 1.35F, 0.74F);
         }
         if (age == 180) {
-            slashWave(level, player, active, age, 7.5F, 36);
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
                     SoundSource.PLAYERS, 1.35F, 0.66F);
         }
         if (age == 212) {
-            slashWave(level, player, active, age, 10.0F, 42);
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
                     SoundSource.PLAYERS, 1.55F, 0.58F);
         }
@@ -114,76 +121,96 @@ public final class BankaiService {
     }
 
     /**
-     * Server-authoritative damage samples the same seven macro-current centers as the renderer.
-     * A mob must intersect the recent swept corridor of at least one visible blade river; being in
-     * a blind radial circle around the player's current position is no longer enough.
+     * Dense multi-hit storm. The renderer uses four different speed layers for the near/break,
+     * dense, mid and far blade masses, so the server samples all four rather than pretending the
+     * entire visible storm follows the 1.0-speed center. Every tick a target can be contacted by
+     * several independent layers; each contact is a deliberately tiny cut so the Bankai produces
+     * a very high hit count instead of three oversized damage events.
      */
-    private static void slashWave(
+    private static void bladeStormTick(
             ServerLevel level,
             ServerPlayer player,
             ActiveBankai active,
-            int age,
-            float damage,
-            int limit) {
-        Vec3 center = active.origin();
-        AABB area = new AABB(center, center).inflate(ATTACK_RADIUS, 9.0, ATTACK_RADIUS);
+            int age) {
+        Vec3 origin = active.origin();
+        AABB area = new AABB(origin, origin).inflate(ATTACK_RADIUS, 12.0, ATTACK_RADIUS);
         List<Mob> targets = level.getEntitiesOfClass(
                         Mob.class,
                         area,
                         mob -> validTarget(player, mob))
                 .stream()
-                .filter(mob -> horizontalDistanceSqr(center, mob.position())
+                .filter(mob -> horizontalDistanceSqr(origin, mob.position())
                         >= SAFE_RADIUS * SAFE_RADIUS)
-                .filter(mob -> intersectsBladeCurrents(active, age, mob.position()))
                 .sorted(Comparator.comparingDouble(
-                        mob -> horizontalDistanceSqr(center, mob.position())))
-                .limit(limit)
+                        mob -> horizontalDistanceSqr(origin, mob.position())))
+                .limit(96)
                 .toList();
 
+        boolean finale = age >= 202;
+        float damagePerContact = finale ? 0.14F : 0.10F;
         for (Mob mob : targets) {
-            boolean damaged = mob.hurtServer(
-                    level,
-                    level.damageSources().playerAttack(player),
-                    damage);
-            if (damaged) mob.setTarget(player);
+            Vec3 samplePoint = mob.position().add(0.0, mob.getBbHeight() * 0.5, 0.0);
+            int contacts = bladeContactCount(active, age, samplePoint);
+            if (contacts <= 0) continue;
+
+            int pulses = Math.min(MAX_CONTACTS_PER_TICK, contacts);
+            for (int i = 0; i < pulses && mob.isAlive(); i++) {
+                // Senbonzakura is intentionally a rapid multi-hit source. Vanilla's generic hurt
+                // invulnerability would collapse dozens of visible blade contacts into one hit.
+                mob.invulnerableTime = 0;
+                if (mob.hurtServer(
+                        level,
+                        level.damageSources().playerAttack(player),
+                        damagePerContact)) {
+                    mob.setTarget(player);
+                }
+            }
         }
     }
 
-    private static boolean intersectsBladeCurrents(
-            ActiveBankai active,
-            int age,
-            Vec3 point) {
-        double progress = age / (double) DURATION_TICKS;
+    private static int bladeContactCount(ActiveBankai active, int age, Vec3 point) {
+        int contacts = 0;
+        int previousAge = Math.max(BLADE_STORM_START_TICK, age - HIT_SWEEP_HISTORY_TICKS);
         double seconds = age / 20.0;
-        int previousAge = Math.max(0, age - HIT_SWEEP_HISTORY_TICKS);
-        double previousProgress = previousAge / (double) DURATION_TICKS;
+        double progress = age / (double) DURATION_TICKS;
         double previousSeconds = previousAge / 20.0;
-        double tubeRadius = age >= 205 ? 5.35 : 4.75;
-        double tubeRadiusSqr = tubeRadius * tubeRadius;
+        double previousProgress = previousAge / (double) DURATION_TICKS;
 
-        for (int cluster = 0; cluster < BankaiFlowMath.CLUSTER_COUNT; cluster++) {
-            Vec3 previous = BankaiFlowMath.currentCenter(
-                    active.origin(),
-                    active.facing(),
-                    cluster,
-                    previousSeconds,
-                    previousProgress,
-                    1.0);
-            Vec3 current = BankaiFlowMath.currentCenter(
-                    active.origin(),
-                    active.facing(),
-                    cluster,
-                    seconds,
-                    progress,
-                    1.0);
+        for (int layer = 0; layer < RENDER_SPEED_SCALES.length; layer++) {
+            double speedScale = RENDER_SPEED_SCALES[layer];
+            double radius = RENDER_TUBE_RADII[layer];
+            if (age >= 202) radius += 0.9;
+            double radiusSqr = radius * radius;
+            boolean layerContact = false;
 
-            double midpointY = (previous.y + current.y) * 0.5;
-            if (Math.abs(point.y - midpointY) > 8.0) continue;
-            if (horizontalPointSegmentDistanceSqr(point, previous, current) <= tubeRadiusSqr) {
-                return true;
+            for (int cluster = 0; cluster < BankaiFlowMath.CLUSTER_COUNT; cluster++) {
+                Vec3 previous = BankaiFlowMath.currentCenter(
+                        active.origin(),
+                        active.facing(),
+                        cluster,
+                        previousSeconds,
+                        previousProgress,
+                        speedScale);
+                Vec3 current = BankaiFlowMath.currentCenter(
+                        active.origin(),
+                        active.facing(),
+                        cluster,
+                        seconds,
+                        progress,
+                        speedScale);
+
+                double midpointY = (previous.y + current.y) * 0.5;
+                double verticalAllowance = 7.0 + layer * 0.9;
+                if (Math.abs(point.y - midpointY) > verticalAllowance) continue;
+                if (horizontalPointSegmentDistanceSqr(point, previous, current) <= radiusSqr) {
+                    layerContact = true;
+                    break;
+                }
             }
+
+            if (layerContact) contacts++;
         }
-        return false;
+        return contacts;
     }
 
     private static double horizontalPointSegmentDistanceSqr(Vec3 point, Vec3 a, Vec3 b) {
@@ -192,9 +219,7 @@ public final class BankaiService {
         double apx = point.x - a.x;
         double apz = point.z - a.z;
         double lengthSqr = abx * abx + abz * abz;
-        if (lengthSqr < 1.0E-8) {
-            return apx * apx + apz * apz;
-        }
+        if (lengthSqr < 1.0E-8) return apx * apx + apz * apz;
 
         double t = BankaiFlowMath.clamp(
                 (apx * abx + apz * abz) / lengthSqr,
