@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/scripts/wire_erden_capital_lifecycle.py'
       - '.github/scripts/refine_erden_capital_lifecycle_runtime.py'
+      - '.github/scripts/fix_erden_capital_lifecycle_birth_spacing.py'
       - '.github/workflows/patch-living-kingdoms-capital-lifecycle.yml'
 
 concurrency:
@@ -34,6 +35,8 @@ jobs:
         run: python .github/scripts/wire_erden_capital_lifecycle.py
       - name: Align retirement and death with physical runtime
         run: python .github/scripts/refine_erden_capital_lifecycle_runtime.py
+      - name: Fix first-birth spacing sentinel
+        run: python .github/scripts/fix_erden_capital_lifecycle_birth_spacing.py
       - name: Clean compile Living Kingdoms
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
@@ -51,6 +54,7 @@ jobs:
           grep -Fq 'LK_ERDEN_CAPITAL_LIFECYCLE_PASS' "$life"
           grep -Fq 'source_blocks_cut=0' "$life"
           grep -Fq 'save_overlay=true' "$life"
+          grep -Fq 'line.lastBirthYear() != Integer.MIN_VALUE' "$life"
           grep -Fq 'discardLoadedPerson(level, person.name())' "$life"
           grep -Fq 'ErdenCapitalLifecycleManager.prepare(level, population)' "$pop"
           grep -Fq 'isActiveFounderWorker' "$pop"
