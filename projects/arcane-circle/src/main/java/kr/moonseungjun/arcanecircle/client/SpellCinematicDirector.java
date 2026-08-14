@@ -87,6 +87,9 @@ final class SpellCinematicDirector {
         int seed=spell.id().hashCode();
 
         if ("meteor_swarm".equals(spell.id())) { meteorSwarm(m,targetOffset,age,impactAge,scale); return m.build(); }
+        if ("meteor_shard".equals(spell.id())) { meteorShardImpact(m,targetOffset,age,impactAge,scale); return m.build(); }
+        if ("delayed_blast_fireball".equals(spell.id())) { delayedCataclysm(m,ground,targetOffset,age,impactAge,scale); return m.build(); }
+        if ("arcane_annihilation".equals(spell.id())) { annihilationBeam(m,face,direction,targetOffset,age,scale,seed); return m.build(); }
         if ("prismatic_wall".equals(spell.id())) { prismaticWallFrame(m,face,targetOffset,range,age,spell.circle()); return m.build(); }
         if ("power_word_kill".equals(spell.id())) { executionWord(m,face,targetOffset,age,scale); return m.build(); }
         if ("chain_lightning".equals(spell.id())) { chainLightning(m,face,direction,targetOffset,age,scale,seed); return m.build(); }
@@ -239,29 +242,117 @@ final class SpellCinematicDirector {
         ArcaneWorldMesh.Basis down=ArcaneWorldMesh.Basis.facing(new Vec3(0,-1,0));
         ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();
         double nowTicks=age*MeteorBarragePattern.durationTicks();
+        // The sky stays claimed for the whole barrage instead of the ritual disappearing before impact.
+        Vec3 crown=target.add(0,14.0+scale*2.2,0);
+        double crownFade=clamp((1.0-age)/.18,0,1), crownR=(7.0+scale*2.5)*(1.0-.08*Math.sin(age*6.0));
+        m.brokenBand(g,crown,crownR*.78,crownR,96,8,1.16F,(float)(.16*crownFade));
+        m.brokenBand(g,crown,crownR*.50,crownR*.58,72,7,1.08F,(float)(.11*crownFade));
+        for(int a=0;a<8;a++){
+            double ang=a*Math.PI/4.0-age*.20;
+            Vec3 node=crown.add(g.point(ang,crownR*.88));
+            m.line(node,node.add(0,-2.8-scale*.35,0),a%2==0?.70F:.38F);
+            if(a%2==0)m.runeGlyph(g,node,.26*scale,a*97,ang,.38F);
+        }
         for(int i=0;i<MeteorBarragePattern.count();i++){
             MeteorBarragePattern.Strike s=MeteorBarragePattern.strike(i);
-            double local=(nowTicks-(s.impactTick()-8.0))/8.0;
-            if(local<0.0||local>1.55)continue;
+            double local=(nowTicks-(s.impactTick()-9.0))/9.0;
+            if(local<0.0||local>1.62)continue;
             Vec3 hit=target.add(s.offsetX(),0,s.offsetZ());
-            double fall=clamp(local,0,1),meteorScale=scale*(.42+.30*s.scale());
+            double fall=clamp(local,0,1),meteorScale=scale*(.48+.34*s.scale());
             Vec3 pos=hit.add(0,s.fallHeight()*(1-easeIn(fall)),0);
             if(local<=1.0){
-                m.orb(pos,.42*meteorScale,18,1.24F,.48F);
-                m.shard(pos.add(0,.55*meteorScale,0),new Vec3(0,-1,0),down,1.85*meteorScale,.24*meteorScale,1.20F,.38F);
-                Vec3 tail=pos.add(0,2.4+meteorScale*1.2,0); m.line(tail,pos,.68F);
+                m.orb(pos,.48*meteorScale,20,1.28F,.52F);
+                m.shard(pos.add(0,.62*meteorScale,0),new Vec3(0,-1,0),down,2.15*meteorScale,.28*meteorScale,1.24F,.42F);
+                for(int tail=0;tail<3;tail++){
+                    double ta=tail*Math.PI*2/3.0+i*.31;
+                    Vec3 tip=pos.add(g.point(ta,.18*meteorScale)).add(0,3.0+meteorScale*(1.0+tail*.18),0);
+                    m.line(tip,pos,tail==0?.82F:.46F);
+                }
             }else{
-                double impactAge=(local-1.0)*.44;
-                impactRing(m,g,hit,meteorScale*(1.05+s.scale()*.45),impactAge);
-                for(int q=0;q<5;q++){double a=q*Math.PI*2/5.0+i*.73;m.line(hit.add(g.point(a,.18)),hit.add(g.point(a,meteorScale*(.8+impactAge*2.2))),.42F);}
+                double hitAge=(local-1.0)*.54;
+                impactRing(m,g,hit,meteorScale*(1.35+s.scale()*.62),hitAge);
+                impactRing(m,g,hit,meteorScale*(.82+s.scale()*.32),Math.max(0,hitAge-.08));
+                for(int q=0;q<8;q++){
+                    double qa=q*Math.PI/4.0+i*.73;
+                    double reach=meteorScale*(1.05+s.scale()*.45+hitAge*3.1);
+                    m.line(hit.add(g.point(qa,.18)),hit.add(g.point(qa+.08*Math.sin(q+i),reach)),q%3==0?.68F:.38F);
+                }
+                for(int q=0;q<4;q++){
+                    double qa=q*Math.PI/2.0+i*.41;
+                    Vec3 base=hit.add(g.point(qa,meteorScale*(.55+.12*q)));
+                    m.shard(base.add(0,.35+q*.10,0),new Vec3(0,1,0),g,.75+q*.20,.10+.02*q,1.10F,.20F);
+                }
             }
         }
     }
 
+    private static void meteorShardImpact(ArcaneWorldMesh.Builder m,Vec3 target,double age,double impact,double scale){
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground(); ArcaneWorldMesh.Basis down=ArcaneWorldMesh.Basis.facing(new Vec3(0,-1,0));
+        double imp=Math.max(.18,impact<=0?.42:impact),t=clamp(age/imp,0,1),alt=14.0+scale*2.0;
+        Vec3 sky=target.add(0,alt,0); double ring=3.4*scale*(1.0-.22*t);
+        m.brokenBand(g,sky,ring*.74,ring,64,7,1.12F,.14F);
+        Vec3 pos=target.add(0,alt*(1-easeIn(t)),0);
+        if(t<1){m.orb(pos,.44*scale,18,1.24F,.46F);m.shard(pos.add(0,.5*scale,0),new Vec3(0,-1,0),down,2.0*scale,.26*scale,1.22F,.40F);}
+        if(age>=imp){double local=age-imp;impactRing(m,g,target,scale*2.0,local);for(int i=0;i<8;i++){double a=i*Math.PI/4.0;m.line(target.add(g.point(a,.15)),target.add(g.point(a,scale*(1.2+local*3.0))),i%2==0?.74F:.40F);}}
+    }
+
+    private static void delayedCataclysm(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis g,Vec3 target,double age,double impact,double scale){
+        double imp=Math.max(.20,impact<=0?.62:impact),t=clamp(age/imp,0,1);
+        double contract=1.0-easeIn(t),outer=(4.8*scale)*(.38+.62*contract);
+        Vec3 core=target.add(0,1.10+.35*contract,0);
+        m.orb(core,.48*scale*(.72+.28*contract),22,1.30F,.50F);
+        m.brokenBand(g,target.add(0,.06,0),outer*.84,outer,84,8,1.16F,.15F);
+        m.brokenBand(g,target.add(0,.09,0),outer*.52,outer*.60,64,7,1.08F,.10F);
+        for(int i=0;i<8;i++){double a=i*Math.PI/4.0-age*.9;Vec3 n=target.add(g.point(a,outer*.92));m.line(n,core,i%2==0?.62F:.34F);}
+        if(age>=imp){double local=age-imp;impactRing(m,g,target,scale*3.0,local);impactRing(m,g,target,scale*1.8,Math.max(0,local-.07));for(int i=0;i<12;i++){double a=i*Math.PI/6.0;m.line(target.add(g.point(a,.2)),target.add(g.point(a,scale*(1.6+local*4.2))),i%3==0?.86F:.42F);}}
+    }
+
+    private static void annihilationBeam(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis face,Vec3 direction,Vec3 target,double age,double scale,int seed){
+        Vec3 axis=target.lengthSqr()>.01?target:direction.scale(12.0); double len=Math.max(.5,axis.length()); Vec3 n=axis.scale(1.0/len);
+        ArcaneWorldMesh.Basis beam=ArcaneWorldMesh.Basis.facing(n); double bore=.16*scale*(1.0+.22*Math.sin(age*18.0));
+        m.beamPrism(Vec3.ZERO,n,beam,len,bore*1.35,1.16F,.30F);
+        m.beamPrism(Vec3.ZERO,n,beam,len,bore*.72,1.30F,.42F);
+        int gates=Math.max(4,Math.min(10,(int)(len/4.0)));
+        for(int i=1;i<=gates;i++){double t=i/(double)(gates+1);Vec3 c=n.scale(len*t);double r=(.34+.10*(i%3))*scale;m.polygon(beam,c,r,6,age*(i%2==0?1.8:-1.4)+i,.52F);}
+        if(age>.55){double local=(age-.55)/.45;impactRing(m,ArcaneWorldMesh.Basis.ground(),target,scale*1.75,local*.24);for(int i=0;i<10;i++){double a=i*Math.PI/5.0+seed*.0001;m.line(target.add(face.point(a,.12)),target.add(face.point(a,scale*(.8+local*1.7))),i%2==0?.78F:.40F);}}
+    }
+
     private static void executionWord(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis b,Vec3 target,double age,double scale){double r=.42*scale*(1+age*.28);m.runeGlyph(b,target,r,0xDEAD,0,1.55F);m.line(target.add(b.right().scale(-r*1.4)),target.add(b.right().scale(r*1.4)),1.0F);if(age>.35){Vec3 top=target.add(0,1.35,0),bottom=target.add(0,-1.1,0);m.line(top,bottom,1.65F);m.orb(target,.18*scale,14,1.35F,(float)(.42*(1-age)));}}
     private static void chainLightning(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis b,Vec3 dir,Vec3 target,double age,double scale,int seed){int branches=6;Vec3 prev=Vec3.ZERO;for(int i=1;i<=branches;i++){double t=i/(double)branches;Vec3 p=target.scale(t).add(b.point(seed*.001+i*2.17,.18*scale*Math.sin(Math.PI*t)));m.line(prev,p,i%2==0?.72F:1.25F);if(i>2)m.line(p,p.add(b.point(i*.91,.55*scale)),.48F);prev=p;}impactSpark(m,b,target,age,scale,seed);}
-    private static void fireStorm(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis g,Vec3 target,double age,double scale){for(int i=0;i<6;i++){double a=Math.PI*2*i/6;Vec3 hit=target.add(g.point(a,4.0+i*.35));double h=(6.5+i*.5)*(1-clamp(age/.72,0,1));Vec3 top=hit.add(0,h,0);m.beamPrism(top,new Vec3(0,-1,0),ArcaneWorldMesh.Basis.facing(new Vec3(0,-1,0)),Math.max(.2,h),.18*scale,1.18F,.32F);impactRing(m,g,hit,scale*(.8+i*.06),Math.max(0,age-.55));}}
-    private static void worldFault(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis g,Vec3 target,double range,double age,double scale,String id){double r=Math.max(7,SpellMetrics.effectRadius(id,range,9))*clamp(age/.55,0,1);int n="world_sunder".equals(id)?14:10;for(int i=0;i<n;i++){double a=Math.PI*2*i/n+i*.17;Vec3 p0=target.add(g.point(a,r*.05));Vec3 p1=target.add(g.point(a+.12*Math.sin(i*2.1),r*.50));Vec3 p2=target.add(g.point(a-.09*Math.cos(i*.7),r));m.line(p0,p1,i%3==0?1.45F:.82F).line(p1,p2,.72F);} }
+    private static void fireStorm(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis g,Vec3 target,double age,double scale){
+        Vec3 crown=target.add(0,9.0+scale,0); double contract=1.0-clamp(age/.58,0,1);
+        m.brokenBand(g,crown,5.2*scale*(.72+.28*contract),5.8*scale*(.72+.28*contract),76,7,1.12F,.14F);
+        for(int i=0;i<6;i++){
+            double a=Math.PI*2*i/6; Vec3 hit=target.add(g.point(a,5.0));
+            double h=(9.0+i*.55)*(1-clamp(age/.70,0,1)); Vec3 top=hit.add(0,h,0);
+            m.beamPrism(top,new Vec3(0,-1,0),ArcaneWorldMesh.Basis.facing(new Vec3(0,-1,0)),Math.max(.2,h),.24*scale,1.20F,.34F);
+            if(age>.46){
+                double local=Math.max(0,age-.46);
+                impactRing(m,g,hit,scale*1.55,local);
+                impactRing(m,g,hit,scale*.95,Math.max(0,local-.08));
+                for(int q=0;q<5;q++){double qa=q*Math.PI*2/5.0+i*.31;m.line(hit.add(g.point(qa,.15)),hit.add(g.point(qa,scale*(1.0+local*2.2))),q==0?.70F:.36F);}
+            }
+        }
+    }
+    private static void worldFault(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis g,Vec3 target,double range,double age,double scale,String id){
+        double grow=clamp(age/.48,0,1),r=Math.max(8,SpellMetrics.effectRadius(id,range,9))*grow;
+        int n="world_sunder".equals(id)?22:16;
+        if(grow>.18){
+            m.brokenBand(g,target,r*.36,r*.42,72,7,1.08F,.11F);
+            m.brokenBand(g,target,r*.72,r*.78,88,9,1.04F,.08F);
+        }
+        for(int i=0;i<n;i++){
+            double a=Math.PI*2*i/n+i*.17;
+            Vec3 p0=target.add(g.point(a,r*.04));
+            Vec3 p1=target.add(g.point(a+.15*Math.sin(i*2.1),r*(.38+.05*(i%3))));
+            Vec3 p2=target.add(g.point(a-.12*Math.cos(i*.7),r*(.88+.04*(i%4))));
+            m.line(p0,p1,i%3==0?1.58F:.88F).line(p1,p2,i%4==0?.82F:.52F);
+            if(age>.28&&i%3==0){Vec3 c=p1.add(0,.28+.10*(i%4),0);m.shard(c,new Vec3(0,1,0),g,.55+.14*(i%4),.10+.015*(i%3),1.06F,.18F);}
+        }
+        if("world_sunder".equals(id)&&age>.36){
+            for(int i=-5;i<=5;i++){double x=i*r*.13;Vec3 c=target.add(x,0,Math.sin(i*1.7)*r*.10);m.line(c.add(-.35,0,-.20),c.add(.42,0,.26),i==0?1.72F:.72F);}
+        }
+    }
     private static void phoenix(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis b,Vec3 target,double age,double scale){double spread=(1.0+age*2.2)*scale;Vec3 c=target.add(0,.8,0);for(int side:new int[]{-1,1}){Vec3 root=c.add(b.right().scale(.18*side));Vec3 mid=c.add(b.right().scale(spread*.65*side)).add(b.up().scale(spread*.55));Vec3 tip=c.add(b.right().scale(spread*side)).add(b.up().scale(spread*.15));m.line(root,mid,1.45F).line(mid,tip,1.15F);for(int i=1;i<=4;i++){double f=i/4.0;m.line(mid,root.add(b.right().scale(spread*f*side)).add(b.up().scale(-spread*.35*f)),.58F);}}m.orb(c,.32*scale,18,1.25F,(float)(.36*(1-age)));}
 
     private static void gateFrame(ArcaneWorldMesh.Builder m,ArcaneWorldMesh.Basis b,Vec3 c,double w,double h,double rot,int seed){Vec3 r=b.right().scale(w),u=b.up().scale(h);m.line(c.subtract(r).subtract(u),c.add(r).subtract(u),1.25F);m.line(c.add(r).subtract(u),c.add(r).add(u),1.25F);m.line(c.add(r).add(u),c.subtract(r).add(u),1.25F);m.line(c.subtract(r).add(u),c.subtract(r).subtract(u),1.25F);m.runeGlyph(b,c,u.length()*.22,seed,rot,.72F);}
@@ -288,7 +379,12 @@ final class SpellCinematicDirector {
             case "misty_step","dimension_door","passwall","plane_shift","teleport","demiplane","gate","teleportation_circle" -> sig(Form.GATE,id.equals("gate")?1.7:1.0,5,2,.4,0,2.2);
             case "blink","etherealness" -> sig(Form.SHIFT,1.0,4,2,.3,0,4.1);
             case "hold_person","hold_monster","resilient_sphere","forcecage","astral_prison","maze","thunder_cage" -> sig(Form.PRISON,id.equals("forcecage")||id.equals("astral_prison")?1.45:1.0,5,1,.2,0,2.5);
-            case "flame_strike","fire_storm","meteor_swarm","delayed_blast_fireball" -> sig(Form.SKY,id.equals("meteor_swarm")?2.3:1.2,6,id.equals("meteor_swarm")?12:id.equals("fire_storm")?6:1,id.equals("meteor_swarm")?12:3,id.equals("meteor_swarm")?34:14,1.9);
+            case "flame_strike","fire_storm","meteor_swarm","delayed_blast_fireball","meteor_shard" -> sig(Form.SKY,
+                    id.equals("meteor_swarm")?2.65:id.equals("fire_storm")?1.55:id.equals("delayed_blast_fireball")?1.48:id.equals("meteor_shard")?1.28:1.2,
+                    7,id.equals("meteor_swarm")?12:id.equals("fire_storm")?6:id.equals("meteor_shard")?1:1,
+                    id.equals("meteor_swarm")?14:id.equals("fire_storm")?5:3,
+                    id.equals("meteor_swarm")?46:id.equals("fire_storm")?20:id.equals("meteor_shard")?16:14,1.9);
+            case "arcane_annihilation" -> sig(Form.RAY,1.90,7,6,.30,0,4.4);
             case "control_weather" -> sig(Form.WEATHER,2.1,7,8,8,18,1.2);
             case "mage_armor","shield","mirror_image","blur","invisibility","greater_invisibility","stoneskin","freedom_of_movement","true_seeing","globe_of_invulnerability","fire_shield","solar_guard","foresight","haste","protection_from_energy" -> sig(Form.AURA,1.0,4,1,.2,0,2.8);
             case "power_word_kill","eyebite","phantasmal_killer","feeblemind","dominate_person","dominate_monster","mass_suggestion","vampiric_touch" -> sig(Form.MARK,id.equals("power_word_kill")?.72:1.0,5,1,.1,0,3.0);

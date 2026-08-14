@@ -10,9 +10,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.37' in gradle
-assert 'VERSION = "0.12.1-alpha.37"' in main
-assert '"version": "0.12.1-alpha.37"' in index
+assert 'mod_version=0.12.1-alpha.38' in gradle
+assert 'VERSION = "0.12.1-alpha.38"' in main
+assert '"version": "0.12.1-alpha.38"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -35,7 +35,7 @@ for token in ['formulaFrame','schoolFormula','geometricDepth','anchorFormula','s
 director=text(client/'SpellCinematicDirector.java')
 for token in ['enum Form','NEEDLE','ORB','VOLLEY','RAY','CONE','FIELD','WALL','GATE','PRISON','SKY','WEATHER','AURA',
 'MARK','SHIFT','TRANSFORM','CLOCK','TERRAIN','DOMAIN','meteorSwarm','executionWord','chainLightning','fireStorm',
-'worldFault','phoenix','SpellMetrics.effectRadius','SpellMetrics.wallWidth','SpellMetrics.waveLength','SpellMetrics.waveEndRadius',
+'worldFault','phoenix','delayedCataclysm','annihilationBeam','meteorShardImpact','SpellMetrics.effectRadius','SpellMetrics.wallWidth','SpellMetrics.waveLength','SpellMetrics.waveEndRadius',
 'MeteorBarragePattern.count()','s.impactTick()','prismaticWallFrame','case "power_word_kill"']:
     assert token in director, token
 assert 'double[][] o={{-10,-10},{10,-10},{-10,10},{10,10}}' not in director
@@ -131,15 +131,22 @@ assert 'age < .90' in overhaul and 'elapsedSeconds / .30' in overhaul
 assert 'return visual.target.subtract(visual.center);' in tracker
 assert 'visual.direction.scale(Math.max(1,visual.range))' not in tracker
 
-# Destruction budgets/classification and explicit World Sunder fissure.
+# Destruction budgets/classification and catastrophe-shaped terrain impact.
 destruction=text(magic/'DestructiveMagicService.java')
-for token in ['getDestroySpeed','getExplosionResistance','destroyBlock','hasChunkAt','MAX_BLOCK_CHANGES_PER_TICK',
-'MAX_BLOCK_SCANS_PER_TICK','MAX_DROPPED_BLOCKS_PER_TICK','dropChangesRemaining','TerrainClass','MAJOR','CONDITIONAL',
-'lightning_bolt','thunderwave','gust_of_wind','fissure','seven-point cut','case "world_sunder" -> fissure']:
+for token in ['getDestroySpeed','getExplosionResistance','destroyBlock','hasChunkAt','MAX_BLOCK_CHANGES_PER_TICK = 720',
+'MAX_BLOCK_SCANS_PER_TICK = 48_000','MAX_DROPPED_BLOCKS_PER_TICK = 96','dropChangesRemaining','TerrainClass','MAJOR','CONDITIONAL',
+'lightning_bolt','thunderwave','gust_of_wind','fissure','thirteen-point cut','case "world_sunder" -> fissure',
+'quakeField','eight uneven secondary foci','meteorCrater','deep bowl','annihilationCorridor','true deletion corridor']:
     assert token in destruction, token
-assert 'case "move_earth" -> new Profile(.54, 11.0, 170, false)' in destruction
-assert 'case "earthquake" -> new Profile(.58, 14.5, 240, false)' in destruction
-assert 'case "world_sunder" -> new Profile(.62, 28.0, 320, false)' in destruction
+for token in ['case "move_earth" -> new Profile(.78, 14.0, 260, false, 12.0, .44)',
+              'case "earthquake" -> new Profile(1.00, 19.5, 380, false, 18.0, .52)',
+              'case "meteor_swarm" -> new Profile(1.00, 22.5, 190, false, 10.0, .72)',
+              'case "world_sunder" -> new Profile(1.00, 31.0, 480, false, 15.0, .82)',
+              'case "arcane_annihilation" -> new Profile(1.00, 28.0, 110, false, 3.8, .70)']:
+    assert token in destruction, token
+assert 'DestructiveMagicService.quakeField(player, center, r, power)' in text(magic/'HighCircleSpellEffects.java')
+assert 'DestructiveMagicService.meteorCrater(player, impact, radius, power * strike.scale())' in text(magic/'HighCircleSpellEffects.java')
+assert 'DestructiveMagicService.annihilationCorridor(player, start, end, power)' in text(magic/'SpellCastingService.java')
 fusion=text(magic/'FusionSpellEffects.java')
 assert 'DestructiveMagicService.impact(player, "world_sunder", center, radius, power)' in fusion
 assert 'CastTargetSnapshot.targetOr(player, fallback)' in fusion
@@ -211,6 +218,14 @@ for token in ['BUFFS = Set.of','buffMantle','highCircleCrown','Basis.fromNormal'
               'nine independent satellite formulae','spell.circle() >= 9','age < .90']:
     assert token in overhaul, token
 assert 'ArcaneBuffRuntime.apply(player, "solar_guard", power, range)' in fusion
+assert 'CATASTROPHIC = Set.of' in overhaul and 'catastrophicAuthority' in overhaul
+for token in ['delayedCataclysm','annihilationBeam','meteorShardImpact','sky authority crown']:
+    assert token in director, token
+for token in ['put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 22.00',
+              'put("earthquake", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 15.50',
+              'put("world_sunder", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 18.00',
+              'put("arcane_annihilation", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 2.80']:
+    assert token in presentation, token
 assert 'case "prismatic_wall" -> 280;' in gameplay
 assert '14초 지속 7색 장벽' in summary
 

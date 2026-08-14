@@ -996,12 +996,16 @@ public final class SpellCastingService {
     private static boolean arcaneAnnihilation(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
         Vec3 start=player.getEyePosition(); Vec3 end=start.add(player.getLookAngle().normalize().scale(range));
-        DestructiveMagicService.ray(player,"arcane_annihilation",start,end,power);
+        DestructiveMagicService.annihilationCorridor(player, start, end, power);
         List<Mob> targets = lineTargets(player, range, 2.2);
         for (int index = 0; index < targets.size(); index++) {
             targets.get(index).hurtServer(level, level.damageSources().playerAttack(player),
                     (float) (power * Math.max(0.65, 1.15 - index * 0.08)));
         }
+        level.playSound(null, BlockPos.containing(end), SoundEvents.GENERIC_EXPLODE.value(),
+                SoundSource.PLAYERS, 1.35F, 0.52F);
+        level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE,
+                SoundSource.PLAYERS, .85F, .60F);
         return true;
     }
 

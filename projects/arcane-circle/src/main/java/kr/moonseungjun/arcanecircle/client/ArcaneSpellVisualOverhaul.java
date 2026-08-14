@@ -42,6 +42,9 @@ final class ArcaneSpellVisualOverhaul {
             "protection_from_energy", "greater_invisibility", "resilient_sphere", "stoneskin",
             "freedom_of_movement", "true_seeing", "globe_of_invulnerability", "simulacrum", "clone",
             "fire_shield", "solar_guard", "shapechange", "foresight");
+    private static final Set<String> CATASTROPHIC = Set.of(
+            "delayed_blast_fireball", "fire_storm", "earthquake", "meteor_swarm",
+            "world_sunder", "arcane_annihilation");
 
     private ArcaneSpellVisualOverhaul() {}
 
@@ -95,6 +98,7 @@ final class ArcaneSpellVisualOverhaul {
             }
         }
         if (spell.circle() >= 6) highCircleCrown(m, basis, r, p, time, seed, spell.circle());
+        if (CATASTROPHIC.contains(spell.id())) catastrophicAuthority(m, basis, r, p, time, seed, spell.id());
         return m.build();
     }
 
@@ -322,6 +326,41 @@ final class ArcaneSpellVisualOverhaul {
                 m.circle(b, c, sr, 18, .42F);
                 m.polygon(b, c, sr * .68, 3 + i % 4, a + t * .02, .34F);
                 m.line(c, b.point(a, r * .78), .24F);
+            }
+        }
+    }
+
+    /** Catastrophe-only charge authority: converging break seals + cross-plane lock rings. */
+    private static void catastrophicAuthority(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis b, double r,
+                                              double p, double t, int seed, String id) {
+        if (p < .28) return;
+        double wake = smooth(clamp((p - .28) / .72, 0.0, 1.0));
+        double outer = r * (1.08 + .10 * wake);
+        m.brokenBand(b, Vec3.ZERO, outer * .90, outer, 88, 9, 1.14F, .11F);
+        m.brokenBand(b, Vec3.ZERO, outer * .66, outer * .72, 72, 7, 1.06F, .09F);
+        int anchors = "meteor_swarm".equals(id) ? 8 : 6;
+        for (int i = 0; i < anchors; i++) {
+            double a = i * Math.PI * 2.0 / anchors + t * (i % 2 == 0 ? .018 : -.015);
+            Vec3 outerNode = b.point(a, outer * .96);
+            Vec3 innerNode = b.point(a + (i % 2 == 0 ? .13 : -.11), outer * .72);
+            m.line(outerNode, innerNode, i % 3 == 0 ? .68F : .34F);
+            m.runeGlyph(b, outerNode, r * .052, seed + i * 211, -a + t * .025, .38F);
+        }
+        if (p > .58) {
+            ArcaneWorldMesh.Basis cross = ArcaneWorldMesh.Basis.fromNormal(b.right(), b.normal());
+            double crossR = r * (.42 + .16 * wake);
+            m.circle(cross, b.normal().scale(r * .06), crossR, 54, .46F);
+            m.brokenBand(cross, b.normal().scale(-r * .05), crossR * .72, crossR * .82,
+                    48, 6, 1.08F, .08F);
+        }
+        if (p > .76) {
+            Vec3 n = b.normal();
+            for (int i = 0; i < 4; i++) {
+                double a = Math.PI / 4.0 + i * Math.PI / 2.0;
+                Vec3 base = b.point(a, r * .52);
+                double h = r * (.24 + .05 * (i % 2));
+                m.line(base.add(n.scale(-h)), base.add(n.scale(h)), i % 2 == 0 ? .66F : .42F);
+                m.diamond(b, base.add(n.scale(h)), r * .045, a + t * .03, 1.10F, .14F);
             }
         }
     }

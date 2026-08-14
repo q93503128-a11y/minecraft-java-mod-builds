@@ -148,7 +148,8 @@ public final class HighCircleSpellEffects {
             mob.push(away.x * (huge ? 2.2 : 1.4), huge ? 1.8 : 1.1, away.z * (huge ? 2.2 : 1.4));
         }
         for (double rr = 2; rr <= r; rr += 2.0) ring(level, center.add(0, 0.15, 0), rr, particle, 48);
-        DestructiveMagicService.impact(player,huge?"earthquake":"move_earth",center,r,power);
+        if (huge) DestructiveMagicService.quakeField(player, center, r, power);
+        else DestructiveMagicService.impact(player, "move_earth", center, r, power);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.2F, 0.55F);
         return true;
     }
@@ -354,7 +355,7 @@ public final class HighCircleSpellEffects {
         double radius=3.0+strike.scale()*1.65;
         double strikePower=power*(.19+.075*strike.scale());
         blastAt(player,impact,strikePower,radius,ParticleTypes.FLAME,true);
-        DestructiveMagicService.impact(player,"meteor_swarm",impact,radius,power*strike.scale());
+        DestructiveMagicService.meteorCrater(player, impact, radius, power * strike.scale());
         level(player).playSound(null,BlockPos.containing(impact),SoundEvents.GENERIC_EXPLODE.value(),
                 SoundSource.PLAYERS,Math.min(1.6F,.82F+(float)strike.scale()*.38F),.62F+(index%4)*.055F);
         return true;

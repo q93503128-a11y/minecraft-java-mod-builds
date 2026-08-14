@@ -104,7 +104,7 @@ public final class SpellEffectSummary {
             case "sunburst" -> "고정 목표 초대형 태양광 폭발 · 광역 피해·화상·실명";
 
             // 9C
-            case "meteor_swarm" -> "16발 시드형 연속 폭격 · 개별 피해·화상·지형 파괴";
+            case "meteor_swarm" -> "16발 시드형 연속 폭격 · 개별 피해·화상·대형 충돌구 지형 파괴";
             case "power_word_kill" -> "약해진 대상 즉사급 처형 · 그 외에는 대형 단일 피해";
             case "prismatic_wall" -> "14초 지속 7색 장벽 · 수명 90%까지 선명 유지 · 반복 피해·상태이상·통과 저지";
             case "shapechange" -> "90초 변이 육체 · 35%급 피해 경감 + 자체 재생 + 전투 신체 강화";
@@ -134,7 +134,7 @@ public final class SpellEffectSummary {
             case "winter_domain" -> "12초 지속 겨울 영역 · 반복 냉기 피해·동결·둔화";
             case "astral_prison" -> "단일 피해 · 11초 AI·이동·Arcane 시전 완전 봉쇄";
             case "phoenix_requiem" -> "자신/동맹만 치유·재생 + 주변 비아군 화염 피해";
-            case "world_sunder" -> "목표 지면 초대형 피해·띄우기 · 방향성 실제 세계 균열";
+            case "world_sunder" -> "목표 지면 초대형 피해·띄우기 · 장거리·심층 실제 세계 균열";
             default -> fallback(spell);
         };
     }

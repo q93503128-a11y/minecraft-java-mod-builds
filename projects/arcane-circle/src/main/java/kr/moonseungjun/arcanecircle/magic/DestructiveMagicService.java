@@ -14,10 +14,12 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 /**
- * Server-authoritative terrain rupture for spells whose fiction is explicitly destructive.
- * Weak materials fail farther from the impact; hard/blast-resistant materials require a much
- * stronger local impulse. Unbreakable blocks, block entities, fluids and unloaded chunks are
- * never mutated. Per-impact caps are reinforced by shared per-level tick budgets.
+ * Server-authoritative terrain rupture for physically destructive spells.
+ *
+ * Alpha.38 separates footprint from visual hype: surgical spells stay narrow, while genuine
+ * catastrophe-class magic owns broad/deep terrain shapes.  Every shape still funnels through the
+ * same hardness, blast-resistance, chunk, fluid and block-entity protections and a shared per-tick
+ * budget, so larger spectacle does not mean an unbounded world-edit spike.
  */
 public final class DestructiveMagicService {
     public enum TerrainClass { MAJOR, CONDITIONAL, NONE }
@@ -29,13 +31,15 @@ public final class DestructiveMagicService {
             "fireball", "shatter", "flame_strike", "meteor_shard", "move_earth",
             "lightning_bolt", "thunderwave", "gust_of_wind");
 
-    private static final int MAX_BLOCK_CHANGES_PER_TICK = 420;
-    private static final int MAX_BLOCK_SCANS_PER_TICK = 24_000;
+    // Catastrophe spells may touch a lot of terrain, but all calls on a level still share these.
+    private static final int MAX_BLOCK_CHANGES_PER_TICK = 720;
+    private static final int MAX_BLOCK_SCANS_PER_TICK = 48_000;
     private static final int MAX_DROPPED_BLOCKS_PER_TICK = 96;
     private static final Map<ServerLevel, TickBudget> BUDGETS = new WeakHashMap<>();
 
     private record Candidate(BlockPos pos, double overload) {}
-    private record Profile(double radiusScale, double baseEnergy, int maxBlocks, boolean drops) {}
+    private record Profile(double radiusScale, double baseEnergy, int maxBlocks, boolean drops,
+                           double maxRadius, double verticalScale) {}
 
     private static final class TickBudget {
         private long tick = Long.MIN_VALUE;
@@ -79,12 +83,13 @@ public final class DestructiveMagicService {
         if (profile.drops()) changeLimit = Math.min(changeLimit, budget.dropChangesRemaining());
         if (changeLimit <= 0 || !budget.scanAvailable()) return 0;
 
-        double radius = Math.max(.75, Math.min(10.5, requestedRadius * profile.radiusScale()));
-        double energy = profile.baseEnergy() * (.84 + .16 * Math.sqrt(Math.max(.1, power)));
+        double radius = Math.max(.75, Math.min(profile.maxRadius(),
+                Math.max(.75, requestedRadius) * profile.radiusScale()));
+        double energy = profile.baseEnergy() * (.78 + .22 * Math.sqrt(Math.max(.1, power)));
         int bound = (int) Math.ceil(radius);
         List<Candidate> candidates = new ArrayList<>();
         BlockPos origin = BlockPos.containing(center);
-        double vertical = Math.max(1.25, radius * .62);
+        double vertical = Math.max(1.15, radius * profile.verticalScale());
 
         scan:
         for (int x = -bound; x <= bound; x++) {
@@ -106,8 +111,8 @@ public final class DestructiveMagicService {
                     if (blast >= 1000F) continue;
 
                     double strength = 1.0 + Math.max(0, hardness) * 2.6 + Math.sqrt(blast) * 1.45;
-                    double falloff = Math.pow(Math.max(0.0, 1.0 - normalized), .78);
-                    double local = energy * (.20 + .80 * falloff);
+                    double falloff = Math.pow(Math.max(0.0, 1.0 - normalized), .74);
+                    double local = energy * (.18 + .82 * falloff);
                     if (local < strength) continue;
                     candidates.add(new Candidate(pos, local / Math.max(.25, strength)));
                 }
@@ -128,6 +133,7 @@ public final class DestructiveMagicService {
         return changed;
     }
 
+    /** Narrow line damage for lightning/disintegrate style spells. */
     public static int ray(ServerPlayer player, String spellId, Vec3 start, Vec3 end, double power) {
         if (start == null || end == null) return 0;
         Vec3 delta = end.subtract(start);
@@ -135,19 +141,81 @@ public final class DestructiveMagicService {
         if (length < .05) return 0;
         Vec3 unit = delta.scale(1.0 / length);
         int changed = 0;
-        int samples = Math.min(72, Math.max(1, (int) Math.ceil(length / .75)));
+        int samples = Math.min(96, Math.max(1, (int) Math.ceil(length / .70)));
         for (int i = 1; i <= samples; i++) {
             Vec3 at = start.add(unit.scale(length * i / (double) samples));
-            changed += impact(player, spellId, at, 1.15, power);
-            if (changed >= 72 || budget((ServerLevel) player.level()).changesRemaining() <= 0) break;
+            changed += impact(player, spellId, at, 1.18, power);
+            if (changed >= 120 || budget((ServerLevel) player.level()).changesRemaining() <= 0) break;
         }
         return changed;
     }
 
     /**
-     * Makes World Sunder read as a split in the battlefield rather than only another round crater.
-     * The irregular seven-point cut reuses impact() and therefore cannot bypass chunk protection,
-     * hardness/resistance checks or the shared per-tick mutation budgets.
+     * 8C Earthquake is a battlefield event, not one round crater.  A dense epicenter fails first,
+     * then eight uneven secondary foci tear the outer ground.  Shared budgets keep it bounded.
+     */
+    public static int quakeField(ServerPlayer player, Vec3 center, double requestedRadius, double power) {
+        if (center == null) return 0;
+        double field = Math.max(11.0, Math.min(24.0, requestedRadius));
+        int changed = impact(player, "earthquake", center.add(0, -.35, 0), field * .58, power * 1.14);
+        for (int i = 0; i < 8; i++) {
+            double a = Math.PI * 2.0 * i / 8.0 + Math.sin(i * 1.91) * .12;
+            double d = field * (.42 + .055 * (i % 3));
+            Vec3 at = center.add(Math.cos(a) * d, -.18 - .08 * (i % 2), Math.sin(a) * d);
+            changed += impact(player, "earthquake", at, field * (.27 + .025 * (i % 2)),
+                    power * (.72 + .05 * (i % 3)));
+            TickBudget tick = budget((ServerLevel) player.level());
+            if (!tick.scanAvailable() || tick.changesRemaining() <= 0) break;
+        }
+        return changed;
+    }
+
+    /**
+     * One Meteor Swarm projectile creates a deep bowl plus an irregular fractured rim.  Sixteen
+     * staggered strikes therefore leave a real bombardment field instead of sixteen pinholes.
+     */
+    public static int meteorCrater(ServerPlayer player, Vec3 center, double radius, double power) {
+        if (center == null) return 0;
+        double r = Math.max(4.2, Math.min(9.5, radius * 1.38));
+        int changed = impact(player, "meteor_swarm", center.add(0, -.45, 0), r, power * 1.16);
+        changed += impact(player, "meteor_swarm", center.add(0, -1.75, 0), r * .70, power * 1.05);
+        for (int i = 0; i < 5; i++) {
+            double a = i * Math.PI * 2.0 / 5.0 + .41;
+            Vec3 rim = center.add(Math.cos(a) * r * .46, -.20, Math.sin(a) * r * .46);
+            changed += impact(player, "meteor_swarm", rim, r * .34, power * .72);
+            TickBudget tick = budget((ServerLevel) player.level());
+            if (!tick.scanAvailable() || tick.changesRemaining() <= 0) break;
+        }
+        return changed;
+    }
+
+    /**
+     * Arcane Annihilation is a true deletion corridor.  It samples a thick beam from safely in
+     * front of the caster to the sealed endpoint and carves through intervening terrain.
+     */
+    public static int annihilationCorridor(ServerPlayer player, Vec3 start, Vec3 end, double power) {
+        if (start == null || end == null) return 0;
+        Vec3 delta = end.subtract(start);
+        double length = delta.length();
+        if (length < 1.0) return 0;
+        Vec3 unit = delta.scale(1.0 / length);
+        double bore = Math.max(2.15, Math.min(3.75, 2.0 + Math.sqrt(Math.max(.1, power)) * .16));
+        int changed = 0;
+        double first = Math.min(length, 2.8); // never erase the block directly under the caster.
+        for (double d = first; d <= length + .001; d += 2.35) {
+            double t = d / Math.max(1.0, length);
+            Vec3 at = start.add(unit.scale(d));
+            changed += impact(player, "arcane_annihilation", at, bore * (.86 + .20 * t),
+                    power * (.88 + .16 * t));
+            TickBudget tick = budget((ServerLevel) player.level());
+            if (changed >= 520 || !tick.scanAvailable() || tick.changesRemaining() <= 0) break;
+        }
+        return changed;
+    }
+
+    /**
+     * World Sunder is a long, deep thirteen-point cut.  The center breaks widest/deepest and the
+     * crack meanders instead of reading as a row of identical circular explosions.
      */
     public static int fissure(ServerPlayer player, String spellId, Vec3 center,
                               Vec3 direction, double range, double power) {
@@ -156,15 +224,16 @@ public final class DestructiveMagicService {
         if (flat.lengthSqr() < 1.0E-8) flat = new Vec3(0.0, 0.0, 1.0);
         flat = flat.normalize();
         Vec3 right = new Vec3(-flat.z, 0.0, flat.x);
-        double halfLength = Math.max(7.0, Math.min(15.0, range * .20));
+        double halfLength = Math.max(12.0, Math.min(28.0, range * .34));
         int changed = 0;
-        for (int i = -3; i <= 3; i++) {
-            double t = i / 3.0;
+        for (int i = -6; i <= 6; i++) {
+            double t = i / 6.0;
             double weight = 1.0 - Math.abs(t);
-            double wobble = Math.sin((i + 3) * 1.73) * (1.0 + weight * .55);
-            Vec3 at = center.add(flat.scale(t * halfLength)).add(right.scale(wobble));
-            changed += impact(player, spellId, at, 3.0 + weight * 2.2,
-                    power * (.78 + weight * .26));
+            double wobble = Math.sin((i + 6) * 1.41) * (1.15 + weight * 1.45);
+            Vec3 at = center.add(flat.scale(t * halfLength)).add(right.scale(wobble))
+                    .add(0, -.28 - weight * .72, 0);
+            changed += impact(player, spellId, at, 3.8 + weight * 3.8,
+                    power * (.74 + weight * .42));
             TickBudget tickBudget = budget((ServerLevel) player.level());
             if (!tickBudget.scanAvailable() || tickBudget.changesRemaining() <= 0) break;
         }
@@ -196,21 +265,21 @@ public final class DestructiveMagicService {
 
     private static Profile profile(String id) {
         return switch (id) {
-            case "fireball" -> new Profile(.72, 7.6, 72, false);
-            case "shatter" -> new Profile(.74, 9.0, 88, true);
-            case "flame_strike" -> new Profile(.62, 10.5, 96, false);
-            case "meteor_shard" -> new Profile(.88, 12.5, 112, false);
-            case "disintegrate" -> new Profile(.78, 24.0, 18, false);
-            case "delayed_blast_fireball" -> new Profile(.92, 15.5, 150, false);
-            case "fire_storm" -> new Profile(.66, 11.5, 52, false);
-            case "move_earth" -> new Profile(.54, 11.0, 170, false);
-            case "earthquake" -> new Profile(.58, 14.5, 240, false);
-            case "meteor_swarm" -> new Profile(.92, 16.5, 34, false);
-            case "world_sunder" -> new Profile(.62, 28.0, 320, false);
-            case "arcane_annihilation" -> new Profile(.70, 22.0, 48, false);
-            case "lightning_bolt" -> new Profile(.30, 10.0, 18, false);
-            case "thunderwave" -> new Profile(.34, 6.6, 22, false);
-            case "gust_of_wind" -> new Profile(.28, 4.2, 10, false);
+            case "fireball" -> new Profile(.78, 8.2, 100, false, 6.0, .58);
+            case "shatter" -> new Profile(.76, 9.2, 100, true, 5.5, .46);
+            case "flame_strike" -> new Profile(.72, 12.0, 130, false, 7.0, .78);
+            case "meteor_shard" -> new Profile(1.00, 14.5, 180, false, 8.5, .74);
+            case "disintegrate" -> new Profile(.90, 26.0, 44, false, 2.1, .54);
+            case "delayed_blast_fireball" -> new Profile(1.00, 18.5, 280, false, 12.0, .76);
+            case "fire_storm" -> new Profile(.92, 15.5, 120, false, 8.5, .72);
+            case "move_earth" -> new Profile(.78, 14.0, 260, false, 12.0, .44);
+            case "earthquake" -> new Profile(1.00, 19.5, 380, false, 18.0, .52);
+            case "meteor_swarm" -> new Profile(1.00, 22.5, 190, false, 10.0, .72);
+            case "world_sunder" -> new Profile(1.00, 31.0, 480, false, 15.0, .82);
+            case "arcane_annihilation" -> new Profile(1.00, 28.0, 110, false, 3.8, .70);
+            case "lightning_bolt" -> new Profile(.30, 10.0, 18, false, 1.4, .44);
+            case "thunderwave" -> new Profile(.34, 6.6, 22, false, 1.6, .42);
+            case "gust_of_wind" -> new Profile(.28, 4.2, 10, false, 1.25, .38);
             default -> null;
         };
     }
