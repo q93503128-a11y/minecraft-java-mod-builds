@@ -85,6 +85,7 @@ public final class ErdenPopulationManager {
         ensurePopulation(population, entrances);
         logPlanOnce(population, entrances);
         requestCiChunks(level, population);
+        ErdenCapitalLifecycleManager.prepare(level, population);
         processDailyEconomy(level, population);
         ensureLoadedResidents(level, population);
         runResidentRoutines(level, population);
@@ -290,18 +291,12 @@ public final class ErdenPopulationManager {
         for (long day = firstDay; day <= currentDay; day++) {
             Map<String, Long> production = new LinkedHashMap<>();
             Map<String, Long> consumption = new LinkedHashMap<>();
-            int livingHouseholds = 0;
-            int livingResidents = 0;
-            for (ErdenPopulationSavedData.Household household : population.households()) {
-                int aliveHere = 0;
-                for (ErdenPopulationSavedData.Resident resident : household.residents()) {
-                    if (population.isDead(resident.id())) continue;
-                    aliveHere++;
-                    if (resident.worker()) addProduction(production, resident.workRole());
-                }
-                if (aliveHere <= 0) continue;
-                livingHouseholds++;
-                livingResidents += aliveHere;
+            List<ErdenCapitalLifecycleManager.WorkerSnapshot> activeWorkers =
+                    ErdenCapitalLifecycleManager.activeWorkers(level, population, day);
+            int livingHouseholds = ErdenCapitalLifecycleManager.livingHouseholdCount(level, population, day);
+            int livingResidents = ErdenCapitalLifecycleManager.livingCount(level, population, day);
+            for (ErdenCapitalLifecycleManager.WorkerSnapshot worker : activeWorkers) {
+                addProduction(production, worker.workRole());
             }
             add(consumption, "food", livingResidents);
             add(consumption, "goods", livingHouseholds);
@@ -314,7 +309,7 @@ public final class ErdenPopulationManager {
                     && (previousDay < 0L || day % 7L == 0L)) {
                 LivingKingdoms.LOGGER.info(
                         "Processed Erden household economy day={} alive_residents={} alive_workers={} stocks={} cumulative_shortage={}",
-                        day, population.aliveResidentCount(), population.aliveWorkerCount(),
+                        day, livingResidents, activeWorkers.size(),
                         population.stocks(), population.totalShortage());
             }
         }

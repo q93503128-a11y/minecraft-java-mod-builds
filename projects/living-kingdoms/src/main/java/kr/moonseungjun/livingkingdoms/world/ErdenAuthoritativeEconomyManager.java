@@ -217,7 +217,7 @@ public final class ErdenAuthoritativeEconomyManager {
             ErdenCargoEscrowManager.beginEconomyDay(level, day);
             DayResult result;
             try {
-                result = processDay(day, population, economy.sites(), economy.wallets(), livingEconomy);
+                result = processDay(level, day, population, economy.sites(), economy.wallets(), livingEconomy);
             } finally {
                 ErdenCargoEscrowManager.endEconomyDay();
             }
@@ -252,6 +252,7 @@ public final class ErdenAuthoritativeEconomyManager {
     }
 
     private static DayResult processDay(
+            ServerLevel level,
             long day,
             ErdenPopulationSavedData population,
             List<ErdenPhysicalEconomySavedData.SiteState> existingSites,
@@ -263,7 +264,7 @@ public final class ErdenAuthoritativeEconomyManager {
         for (ErdenPhysicalEconomySavedData.WalletState wallet : existingWallets) {
             wallets.put(wallet.householdId(), wallet);
         }
-        Map<Long, WorkerRef> workers = livingWorkers(population);
+        Map<Long, WorkerRef> workers = livingWorkers(level, population, day);
         DayCounters counters = new DayCounters();
 
         ErdenLivingEconomyManager.prepareDay(day, sites);
@@ -277,7 +278,7 @@ public final class ErdenAuthoritativeEconomyManager {
         counters.sales += market.salesCoins();
         counters.fulfilledHouseholds += market.fulfilledHouseholds();
         reconcileBakeryReserves(sites, counters);
-        payWages(population, sites, wallets, counters);
+        payWages(workers, sites, wallets, counters);
 
         return new DayResult(
                 List.copyOf(sites.values()),
@@ -524,7 +525,7 @@ public final class ErdenAuthoritativeEconomyManager {
     }
 
     private static void payWages(
-            ErdenPopulationSavedData population,
+            Map<Long, WorkerRef> workers,
             Map<String, ErdenPhysicalEconomySavedData.SiteState> sites,
             Map<String, ErdenPhysicalEconomySavedData.WalletState> wallets,
             DayCounters counters) {
@@ -532,26 +533,23 @@ public final class ErdenAuthoritativeEconomyManager {
         for (ErdenPhysicalEconomySavedData.SiteState site : sites.values()) {
             siteIds.put(positionKey(site.x(), site.z()), site.id());
         }
-        for (ErdenPopulationSavedData.Household household : population.households()) {
-            ErdenPhysicalEconomySavedData.WalletState wallet = wallets.get(household.id());
-            if (wallet == null) continue;
-            for (ErdenPopulationSavedData.Resident resident : household.residents()) {
-                if (!resident.worker() || population.isDead(resident.id())) continue;
-                String siteId = siteIds.get(positionKey(resident.workX(), resident.workZ()));
-                if (siteId == null) continue;
-                ErdenPhysicalEconomySavedData.SiteState site = sites.get(siteId);
-                long available = site.metric("coins");
-                if (available < DAILY_WAGE) {
-                    site = site.addMetric("treasury_subsidy", DAILY_WAGE - available)
-                            .withMetric("coins", DAILY_WAGE);
-                }
-                site = site.addMetric("coins", -DAILY_WAGE)
-                        .addMetric("wages_paid", DAILY_WAGE);
-                wallet = wallet.earn(DAILY_WAGE);
-                counters.wages += DAILY_WAGE;
-                sites.put(site.id(), site);
+        for (Map.Entry<Long, WorkerRef> entry : workers.entrySet()) {
+            WorkerRef worker = entry.getValue();
+            ErdenPhysicalEconomySavedData.WalletState wallet = wallets.get(worker.householdId());
+            String siteId = siteIds.get(entry.getKey());
+            if (wallet == null || siteId == null) continue;
+            ErdenPhysicalEconomySavedData.SiteState site = sites.get(siteId);
+            long available = site.metric("coins");
+            if (available < DAILY_WAGE) {
+                site = site.addMetric("treasury_subsidy", DAILY_WAGE - available)
+                        .withMetric("coins", DAILY_WAGE);
             }
-            wallets.put(household.id(), wallet);
+            site = site.addMetric("coins", -DAILY_WAGE)
+                    .addMetric("wages_paid", DAILY_WAGE);
+            wallet = wallet.earn(DAILY_WAGE);
+            counters.wages += DAILY_WAGE;
+            sites.put(site.id(), site);
+            wallets.put(worker.householdId(), wallet);
         }
     }
 
@@ -621,14 +619,15 @@ public final class ErdenAuthoritativeEconomyManager {
                 + Math.max(0L, site.metric(ErdenCargoEscrowManager.pendingMetric(resource)));
     }
 
-    private static Map<Long, WorkerRef> livingWorkers(ErdenPopulationSavedData population) {
+    private static Map<Long, WorkerRef> livingWorkers(
+            ServerLevel level,
+            ErdenPopulationSavedData population,
+            long day) {
         Map<Long, WorkerRef> result = new HashMap<>();
-        for (ErdenPopulationSavedData.Household household : population.households()) {
-            for (ErdenPopulationSavedData.Resident resident : household.residents()) {
-                if (!resident.worker() || population.isDead(resident.id())) continue;
-                result.put(positionKey(resident.workX(), resident.workZ()),
-                        new WorkerRef(household.id(), resident.id()));
-            }
+        for (ErdenCapitalLifecycleManager.WorkerSnapshot worker
+                : ErdenCapitalLifecycleManager.activeWorkers(level, population, day)) {
+            result.put(positionKey(worker.workX(), worker.workZ()),
+                    new WorkerRef(worker.householdId(), worker.personId()));
         }
         return result;
     }

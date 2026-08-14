@@ -12,6 +12,7 @@ import kr.moonseungjun.livingkingdoms.skill.SkillProgressionManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenAuthoritativeEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenAuthoredRoadNormalizer;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
+import kr.moonseungjun.livingkingdoms.world.ErdenCapitalLifecycleManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCitadelInteriorManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntranceDoorRepairManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntranceThresholdManager;
@@ -138,6 +139,7 @@ public final class LivingKingdoms {
         ErdenEntryTraversalAudit.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
+        ErdenCapitalLifecycleManager.onServerTick(event);
         ErdenJusticeManager.onServerTick(event);
         ErdenFireResponseManager.onServerTick(event);
         ErdenKingdomExteriorInventoryManager.captureBeforeSupply(event);
@@ -224,6 +226,7 @@ public final class LivingKingdoms {
         if (event.getEntity() instanceof Villager villager
                 && villager.level() instanceof ServerLevel level) {
             ErdenPopulationManager.markDeadIfResident(level, villager);
+            ErdenCapitalLifecycleManager.markDeadIfLifecycleResident(level, villager);
             ErdenExteriorWorkforceManager.markDeadIfWorker(level, villager);
             ErdenExteriorLifecycleManager.markDeadIfLifecycleResident(level, villager);
         }
@@ -243,6 +246,7 @@ public final class LivingKingdoms {
         ErdenTransportManager.handleInteraction(event);
         StarterNpcManager.handleInteraction(event);
         ErdenPopulationManager.handleInteraction(event);
+        ErdenCapitalLifecycleManager.handleInteraction(event);
         ErdenExteriorLifecycleManager.handleInteraction(event);
         ErdenExteriorWorkforceManager.handleInteraction(event);
         ErdenLivingEconomyManager.handleInteraction(event);
