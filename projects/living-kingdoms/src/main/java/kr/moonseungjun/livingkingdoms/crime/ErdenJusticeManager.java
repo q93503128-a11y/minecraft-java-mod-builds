@@ -317,13 +317,13 @@ public final class ErdenJusticeManager {
                     Set.<Relative>of(), suspect.getYRot(), suspect.getXRot(), true);
         }
         if (tick - record.stageTick() < sentenceTicks) return;
-        crime.settleAfterArrest(suspect.getUUID());
+        crime.reduceWanted(suspect.getUUID(), 100);
         data.close(record.id());
         suspect.sendSystemMessage(Component.literal(
                 "§a[형 집행 완료] §f에르덴 시민법정의 형기를 마쳐 석방됐습니다."
         ));
         LivingKingdoms.LOGGER.info(
-                "Erden justice sentence completed case={} physical_witness=true physical_report=true resident_guard=true court_trial=true sentence_executed=true",
+                "Erden justice sentence completed case={} physical_witness=true physical_report=true resident_guard=true court_trial=true sentence_executed=true warrant_cleared=true",
                 record.id());
     }
 
