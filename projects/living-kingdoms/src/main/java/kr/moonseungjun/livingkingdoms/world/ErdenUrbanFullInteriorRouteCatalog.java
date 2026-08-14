@@ -22,7 +22,7 @@ import java.util.Set;
  * imported architecture is never cut and no world chunk is read.</p>
  */
 public final class ErdenUrbanFullInteriorRouteCatalog {
-    public static final int CATALOG_REVISION = 1;
+    public static final int CATALOG_REVISION = 2;
 
     private static final int MIN_HEADROOM = 2;
     private static final int MAX_EXPLORED_NODES = 24_000;
@@ -154,12 +154,17 @@ public final class ErdenUrbanFullInteriorRouteCatalog {
             }
             List<RegionRoute> regionRoutes = new ArrayList<>();
             Set<Long> floorCells = new HashSet<>();
+            // Room branches are planned sequentially. Once one branch has claimed an ascending
+            // stair cell, later branches may share it only in the same direction. This turns the
+            // independent shortest paths into one coherent staircase network instead of allowing
+            // two stair blocks at the same position to demand opposite facings.
+            Map<Long, RiseDirection> committedAscents = new HashMap<>();
             for (ErdenUrbanFullInteriorPlanCatalog.PlannedRegion region : target.regions()) {
                 Set<Long> regionCells = new HashSet<>(region.cells());
                 if (regionCells.isEmpty()) continue;
                 RouteSearch search = search(
                         snapshot, blocks, lower.feetY(), lowerCells,
-                        target.feetY(), regionCells);
+                        target.feetY(), regionCells, committedAscents);
                 if (search.path().isEmpty()) {
                     throw new IllegalStateException(
                             "No zero-cut staircase branch to planned Erden room fragment="
@@ -168,6 +173,7 @@ public final class ErdenUrbanFullInteriorRouteCatalog {
                                     + " region_cells=" + regionCells.size()
                                     + " explored=" + search.exploredNodes());
                 }
+                commitAscents(search.path(), committedAscents, snapshot.fragmentKey());
                 floorCells.addAll(regionCells);
                 regionRoutes.add(new RegionRoute(
                         List.copyOf(region.cells()), search.path(),
@@ -210,7 +216,8 @@ public final class ErdenUrbanFullInteriorRouteCatalog {
             int lowerY,
             Set<Long> lowerCells,
             int targetY,
-            Set<Long> targetCells) {
+            Set<Long> targetCells,
+            Map<Long, RiseDirection> committedAscents) {
         ArrayDeque<Node> pending = new ArrayDeque<>();
         Map<Long, Long> previous = new HashMap<>();
         Map<Long, Node> nodes = new HashMap<>();
@@ -242,6 +249,14 @@ public final class ErdenUrbanFullInteriorRouteCatalog {
                     int y = current.y() + dy;
                     int z = current.z() + direction[1];
                     if (y < lowerY || y > targetY) continue;
+                    if (dy == 1) {
+                        long riseKey = nodeKey(current.x(), current.y(), current.z());
+                        RiseDirection committed = committedAscents.get(riseKey);
+                        if (committed != null
+                                && (committed.dx() != direction[0] || committed.dz() != direction[1])) {
+                            continue;
+                        }
+                    }
                     if (!routeBodyClear(snapshot, blocks, x, y, z)) continue;
                     if (!routeCellPermitted(snapshot, blocks, x, y, z)) continue;
                     Node next = new Node(x, y, z);
@@ -267,6 +282,28 @@ public final class ErdenUrbanFullInteriorRouteCatalog {
         }
         java.util.Collections.reverse(reverse);
         return new RouteSearch(List.copyOf(reverse), visited.size());
+    }
+
+    private static void commitAscents(
+            List<Node> path,
+            Map<Long, RiseDirection> committedAscents,
+            String fragmentKey) {
+        for (int index = 1; index < path.size(); index++) {
+            Node previous = path.get(index - 1);
+            Node current = path.get(index);
+            if (current.y() - previous.y() != 1) continue;
+            int dx = current.x() - previous.x();
+            int dz = current.z() - previous.z();
+            RiseDirection direction = new RiseDirection(dx, dz);
+            long key = nodeKey(previous.x(), previous.y(), previous.z());
+            RiseDirection old = committedAscents.putIfAbsent(key, direction);
+            if (old != null && !old.equals(direction)) {
+                throw new IllegalStateException(
+                        "Conflicting source-route ascent survived planning fragment="
+                                + fragmentKey + " at=" + previous + " old=" + old
+                                + " new=" + direction);
+            }
+        }
     }
 
     private static boolean routeBodyClear(
@@ -351,6 +388,9 @@ public final class ErdenUrbanFullInteriorRouteCatalog {
 
     private static int cellZ(long key) {
         return (int) key;
+    }
+
+    private record RiseDirection(int dx, int dz) {
     }
 
     private record RouteSearch(List<Node> path, int exploredNodes) {
