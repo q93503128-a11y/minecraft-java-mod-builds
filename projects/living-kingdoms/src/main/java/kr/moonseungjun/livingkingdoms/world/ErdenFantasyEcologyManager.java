@@ -196,6 +196,9 @@ public final class ErdenFantasyEcologyManager {
                 level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
             }
         }
+        if (ciTicketRefreshes == 0L && !CI_TICKETS.isEmpty()) {
+            refreshCiTickets(level);
+        }
         if (ciPrepared) return;
         for (Sample sample : CI_SAMPLES) {
             if (!level.hasChunk(sample.x() >> 4, sample.z() >> 4)) return;
