@@ -219,7 +219,7 @@ for token in ['BUFFS = Set.of','buffMantle','highCircleCrown','Basis.fromNormal'
     assert token in overhaul, token
 assert 'ArcaneBuffRuntime.apply(player, "solar_guard", power, range)' in fusion
 assert 'CATASTROPHIC = Set.of' in overhaul and 'catastrophicAuthority' in overhaul
-for token in ['delayedCataclysm','annihilationBeam','meteorShardImpact','sky authority crown']:
+for token in ['delayedCataclysm','annihilationBeam','meteorShardImpact','crownFade']:
     assert token in director, token
 for token in ['put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 22.00',
               'put("earthquake", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 15.50',
