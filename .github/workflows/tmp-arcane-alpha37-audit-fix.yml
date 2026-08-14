@@ -1,0 +1,53 @@
+name: Temporary Arcane Circle alpha37 audit order fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-arcane-alpha37-audit-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fix audit variable order
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('projects/arcane-circle/tools/test_current_source.py')
+          s=p.read_text(encoding='utf-8')
+          marker='# Maintained-buff visual lifetime parity.\n'
+          insert="buff=text(magic/'ArcaneBuffRuntime.java')\n\n"
+          if marker not in s:
+              raise SystemExit('maintained buff audit marker missing')
+          before=s[:s.index(marker)]
+          if "buff=text(magic/'ArcaneBuffRuntime.java')" not in before:
+              s=s.replace(marker,insert+marker,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          git rm .github/workflows/tmp-arcane-alpha37-audit-fix.yml
+          git diff --check
+      - name: Commit to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(arcane-circle): order alpha.37 source-audit inputs'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
