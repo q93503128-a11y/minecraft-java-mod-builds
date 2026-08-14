@@ -93,13 +93,15 @@ assert 'WorldMagicService.lockedTarget' not in kinetics and 'lockedTarget' not i
 assert (magic/'SpellGameplayService.java').exists()
 gameplay=text(magic/'SpellGameplayService.java')
 for token in ['LivingIncomingDamageEvent','event.setCanceled(true)','getAbilities().mayfly = true','onUpdateAbilities()',
-'setNoAi(true)','wasNoAi','restoreControl','Attributes.SCALE','setWeatherParameters(0, duration, true, true)',
+'setNoAi(true)','wasNoAi','restoreControl','Attributes.SCALE','CommandSourceStack','LevelBasedPermissionSet.ADMIN',
+'performPrefixedCommand','/weather thunder ','/weather clear ',
 'DeathWard','"simulacrum"','"clone"','"control_weather"','"prismatic_wall"','"incendiary_cloud"',
 '"wall_of_force"','"wall_of_ice"','"wind_wall"','"sleet_storm"','"insect_plague"','"flesh_to_stone"',
 '"forcecage"','"true_polymorph"','"thunder_cage"','"astral_prison"','setTicksFrozen(0)',
 'player.isAlliedTo(value)','SpellMetrics.wallWidth','snapshot.target()','snapshot.targetEntity(player)',
 'DestructiveMagicService.impact(player, id, center, radius, power)','LIGHTNING_BOLT_THUNDER']:
     assert token in gameplay, token
+assert 'setWeatherParameters' not in gameplay
 ice=gameplay[gameplay.index('private static boolean iceKnife'):gameplay.index('private static boolean fireShield')]
 assert 'DestructiveMagicService.impact' not in ice and 'flame_strike' not in ice
 assert 'case "sleet_storm"' in gameplay and 'MobEffects.POISON' not in gameplay[gameplay.index('case "sleet_storm"'):gameplay.index('case "cloudkill"')]
