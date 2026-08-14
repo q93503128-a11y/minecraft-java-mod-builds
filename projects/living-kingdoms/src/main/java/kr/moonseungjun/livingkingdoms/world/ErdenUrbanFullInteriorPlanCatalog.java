@@ -22,20 +22,26 @@ import java.util.Set;
  *
  * <p>The licensed schematics are intentionally treated as immutable architecture. A planned authored
  * floor is accepted only where its floor plane, feet and head cells are source air, the body volume is
- * enclosed by retained structural walls, and a retained roof exists above. Large connected regions
- * must also touch the real shell at several boundary points so floating plates in towers or courtyards
- * are rejected. Existing supported source floors are kept as first-class levels. This catalog never
- * reads or mutates a world chunk; it is geometry input for the later multi-floor route/materializer.</p>
+ * enclosed by retained structural walls, and a retained roof exists above. A source-air floor already
+ * proved by the upper-room opportunity audit is retained as a seed. Further floors must form a real
+ * vertical stack: a normal storey gap and substantial X/Z overlap with an already accepted lower level.
+ * This avoids both the former false rejection of free-spanning timber floors and arbitrary floating
+ * plates in towers or courtyards. Existing supported source floors remain first-class levels. This
+ * catalog never reads or mutates a world chunk; it is geometry input for the later multi-floor
+ * route/materializer.</p>
  */
 public final class ErdenUrbanFullInteriorPlanCatalog {
-    public static final int CATALOG_REVISION = 1;
+    public static final int CATALOG_REVISION = 2;
 
     private static final int EDGE_MARGIN = 2;
     private static final int MIN_UPPER_RISE = 4;
     private static final int MIN_FLOOR_SEPARATION = 5;
     private static final int MIN_REGION_CELLS = 20;
     private static final int MIN_LEVEL_CELLS = 28;
-    private static final int MIN_SHELL_ANCHORS = 6;
+    private static final int MIN_VERTICAL_OVERLAP_CELLS = 20;
+    private static final double MIN_VERTICAL_OVERLAP_RATIO = 0.35D;
+    private static final int MIN_VERTICAL_LEVEL_GAP = 5;
+    private static final int MAX_VERTICAL_LEVEL_GAP = 9;
     private static final int MAX_WALL_RAY = 18;
 
     private static final Map<String, InteriorPlan> PLANS = new LinkedHashMap<>();
@@ -139,10 +145,33 @@ public final class ErdenUrbanFullInteriorPlanCatalog {
                 .sorted(Comparator.comparingInt(PlannedLevel::feetY))
                 .toList();
 
+        List<PlannedLevel> seededNew = new ArrayList<>();
+        ErdenUrbanUpperRoomOpportunityCatalog.LevelOpportunity provenNew = opportunity.newFloorVoid();
+        if (opportunity.recommendation()
+                == ErdenUrbanUpperRoomOpportunityCatalog.Recommendation.AUTHOR_NEW_FLOOR_IN_VOID
+                && provenNew.feetY() != Integer.MIN_VALUE
+                && provenNew.usableCells() >= MIN_LEVEL_CELLS) {
+            List<PlannedRegion> seedRegions = provenNew.regions().stream()
+                    .filter(region -> region.cells().size() >= MIN_REGION_CELLS)
+                    .map(region -> new PlannedRegion(
+                            region.cells(), shellAnchors(snapshot, blocks, provenNew.feetY(), region.cells())))
+                    .toList();
+            int seedCells = seedRegions.stream().mapToInt(region -> region.cells().size()).sum();
+            if (seedCells >= MIN_LEVEL_CELLS) {
+                int seedAnchors = seedRegions.stream().mapToInt(PlannedRegion::shellAnchors).sum();
+                seededNew.add(new PlannedLevel(
+                        LevelKind.NEW_AUTHORED_FLOOR, provenNew.feetY(), seedCells,
+                        List.copyOf(seedRegions), seedAnchors));
+            }
+        }
+
+        List<PlannedLevel> fixedLevels = new ArrayList<>(existing);
+        fixedLevels.addAll(seededNew);
+
         List<PlannedLevel> candidates = new ArrayList<>();
         int maximumY = snapshot.height() - 4;
         for (int feetY = groundY + MIN_UPPER_RISE; feetY <= maximumY; feetY++) {
-            if (tooCloseToExisting(feetY, existing)) continue;
+            if (tooCloseToExisting(feetY, fixedLevels)) continue;
             Set<Long> cells = new HashSet<>();
             for (int x = EDGE_MARGIN; x < snapshot.width() - EDGE_MARGIN; x++) {
                 for (int z = EDGE_MARGIN; z < snapshot.length() - EDGE_MARGIN; z++) {
@@ -160,7 +189,6 @@ public final class ErdenUrbanFullInteriorPlanCatalog {
 
             List<PlannedRegion> regions = regions(cells, snapshot, blocks, feetY).stream()
                     .filter(region -> region.cells().size() >= MIN_REGION_CELLS)
-                    .filter(region -> region.shellAnchors() >= MIN_SHELL_ANCHORS)
                     .sorted(Comparator.comparingInt((PlannedRegion region) -> region.cells().size()).reversed())
                     .toList();
             int usable = regions.stream().mapToInt(region -> region.cells().size()).sum();
@@ -171,7 +199,10 @@ public final class ErdenUrbanFullInteriorPlanCatalog {
             }
         }
 
-        List<PlannedLevel> selected = selectIndependentLevels(candidates, existing, groundY);
+        List<PlannedLevel> selectedExtensions = selectVerticallyContinuousLevels(candidates, fixedLevels);
+        List<PlannedLevel> selected = new ArrayList<>(seededNew);
+        selected.addAll(selectedExtensions);
+        selected.sort(Comparator.comparingInt(PlannedLevel::feetY));
         int rooms = existing.stream().mapToInt(level -> level.regions().size()).sum()
                 + selected.stream().mapToInt(level -> level.regions().size()).sum();
         int authoredCells = selected.stream().mapToInt(PlannedLevel::usableCells).sum();
@@ -187,41 +218,81 @@ public final class ErdenUrbanFullInteriorPlanCatalog {
                 rooms, authoredCells, anchors, classification);
     }
 
-    private static List<PlannedLevel> selectIndependentLevels(
+    private static List<PlannedLevel> selectVerticallyContinuousLevels(
             List<PlannedLevel> candidates,
-            List<PlannedLevel> existing,
-            int groundY) {
-        List<PlannedLevel> sorted = candidates.stream()
-                .sorted(Comparator.comparingInt(PlannedLevel::feetY))
-                .toList();
+            List<PlannedLevel> fixedLevels) {
+        List<PlannedLevel> accepted = new ArrayList<>(fixedLevels);
         List<PlannedLevel> selected = new ArrayList<>();
-        int cursorY = groundY + MIN_FLOOR_SEPARATION;
-        int index = 0;
-        while (index < sorted.size()) {
-            while (index < sorted.size() && sorted.get(index).feetY() < cursorY) index++;
-            if (index >= sorted.size()) break;
+        Set<Integer> consumedY = new HashSet<>();
 
-            int windowStart = sorted.get(index).feetY();
-            PlannedLevel best = null;
-            while (index < sorted.size()
-                    && sorted.get(index).feetY() < windowStart + MIN_FLOOR_SEPARATION) {
-                PlannedLevel candidate = sorted.get(index++);
-                if (tooCloseToExisting(candidate.feetY(), existing)) continue;
-                if (best == null
-                        || candidate.usableCells() > best.usableCells()
-                        || (candidate.usableCells() == best.usableCells()
-                        && candidate.shellAnchors() > best.shellAnchors())) {
-                    best = candidate;
+        while (true) {
+            CandidateContinuity best = null;
+            for (PlannedLevel candidate : candidates) {
+                if (consumedY.contains(candidate.feetY())
+                        || tooCloseToExisting(candidate.feetY(), accepted)) {
+                    continue;
                 }
+                CandidateContinuity continuity = bestContinuity(candidate, accepted);
+                if (continuity == null) continue;
+                if (best == null || betterContinuity(continuity, best)) best = continuity;
             }
-            if (best != null) {
-                selected.add(best);
-                cursorY = best.feetY() + MIN_FLOOR_SEPARATION;
-            } else {
-                cursorY = windowStart + MIN_FLOOR_SEPARATION;
+            if (best == null) break;
+            accepted.add(best.candidate());
+            selected.add(best.candidate());
+            consumedY.add(best.candidate().feetY());
+        }
+        selected.sort(Comparator.comparingInt(PlannedLevel::feetY));
+        return List.copyOf(selected);
+    }
+
+    private static CandidateContinuity bestContinuity(
+            PlannedLevel candidate, List<PlannedLevel> accepted) {
+        CandidateContinuity best = null;
+        for (PlannedLevel lower : accepted) {
+            int gap = candidate.feetY() - lower.feetY();
+            if (gap < MIN_VERTICAL_LEVEL_GAP || gap > MAX_VERTICAL_LEVEL_GAP) continue;
+            int overlap = overlapCells(candidate, lower);
+            int denominator = Math.max(1, Math.min(candidate.usableCells(), lower.usableCells()));
+            double ratio = overlap / (double) denominator;
+            if (overlap < MIN_VERTICAL_OVERLAP_CELLS || ratio < MIN_VERTICAL_OVERLAP_RATIO) continue;
+            CandidateContinuity continuity = new CandidateContinuity(candidate, lower, gap, overlap, ratio);
+            if (best == null || betterForSameCandidate(continuity, best)) best = continuity;
+        }
+        return best;
+    }
+
+    private static boolean betterContinuity(CandidateContinuity candidate, CandidateContinuity current) {
+        if (candidate.candidate().feetY() != current.candidate().feetY()) {
+            return candidate.candidate().feetY() < current.candidate().feetY();
+        }
+        if (candidate.overlapCells() != current.overlapCells()) {
+            return candidate.overlapCells() > current.overlapCells();
+        }
+        return candidate.candidate().usableCells() > current.candidate().usableCells();
+    }
+
+    private static boolean betterForSameCandidate(
+            CandidateContinuity candidate, CandidateContinuity current) {
+        if (candidate.overlapRatio() != current.overlapRatio()) {
+            return candidate.overlapRatio() > current.overlapRatio();
+        }
+        if (candidate.overlapCells() != current.overlapCells()) {
+            return candidate.overlapCells() > current.overlapCells();
+        }
+        return candidate.gap() < current.gap();
+    }
+
+    private static int overlapCells(PlannedLevel first, PlannedLevel second) {
+        Set<Long> cells = new HashSet<>();
+        for (PlannedRegion region : first.regions()) cells.addAll(region.cells());
+        int overlap = 0;
+        Set<Long> counted = new HashSet<>();
+        for (PlannedRegion region : second.regions()) {
+            for (long cell : region.cells()) {
+                if (cells.contains(cell) && counted.add(cell)) overlap++;
             }
         }
-        return List.copyOf(selected);
+        return overlap;
     }
 
     private static boolean tooCloseToExisting(int feetY, List<PlannedLevel> existing) {
@@ -401,6 +472,14 @@ public final class ErdenUrbanFullInteriorPlanCatalog {
         MULTI_UPPER_PLAN,
         SINGLE_UPPER_PLAN,
         NO_SAFE_INTERIOR_PLAN
+    }
+
+    private record CandidateContinuity(
+            PlannedLevel candidate,
+            PlannedLevel lower,
+            int gap,
+            int overlapCells,
+            double overlapRatio) {
     }
 
     public record PlannedRegion(List<Long> cells, int shellAnchors) {
