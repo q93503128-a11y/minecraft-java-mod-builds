@@ -166,13 +166,13 @@ if "private static void tickLoadedSpeciesBehavior(" not in text:
                 .sorted(java.util.Comparator.comparing(Entity::getUUID)).toList()) {
             if (!handled.add(hound.getUUID())) continue;
             if (!huntingTime) {
-                if (hound.getTarget() instanceof Player) hound.setTarget(null);
+                if (hound.getTarget() instanceof ServerPlayer) hound.setTarget(null);
                 continue;
             }
             if (leader == null) leader = hound;
             if (player.isAlive() && hound.distanceToSqr(player) <= 34.0D * 34.0D) {
                 hound.setTarget(player);
-            } else if (leader != hound && leader.getTarget() instanceof Player target) {
+            } else if (leader != hound && leader.getTarget() instanceof ServerPlayer target) {
                 hound.setTarget(target);
             }
         }
