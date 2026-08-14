@@ -11,5 +11,8 @@
   "key.livingkingdoms.character_status": "상세 상태창 열기",
   "entity.livingkingdoms.silver_hart": "은각사슴",
   "entity.livingkingdoms.ash_hound": "재빛사냥개",
-  "entity.livingkingdoms.river_wisp": "강빛정령"
+  "entity.livingkingdoms.river_wisp": "강빛정령",
+  "item.livingkingdoms.silver_antler": "은각 가지뿔",
+  "item.livingkingdoms.ash_fang": "재빛 송곳니",
+  "item.livingkingdoms.river_essence": "강빛 정수"
 }
