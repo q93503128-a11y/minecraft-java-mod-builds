@@ -38,6 +38,9 @@ jobs:
           capital="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalStreamingBuilder.java"
           workforce="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorWorkforceManager.java"
           lifecycle="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java"
+          lifecycle_saved="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleSavedData.java"
+          marriage="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorMarriageManager.java"
+          marriage_saved="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorMarriageSavedData.java"
           justice="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/crime/ErdenJusticeManager.java"
           crime="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/crime/CrimeManager.java"
           fire="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFireResponseManager.java"
@@ -68,6 +71,18 @@ jobs:
           grep -F 'if (!person.founder() || person.retiredOn(day))' "$lifecycle"
           grep -F 'routeLoaded(level, villager.blockPosition(), targetPos)' "$lifecycle"
           ! grep -F 'level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)' "$lifecycle"
+
+          # Exterior family formation is persistent and residence-aware. Product births must use an
+          # active married pair, while founder employment stays anchored to its original workplace.
+          grep -F 'movePersonHousehold(String personId, String newHouseholdId)' "$lifecycle_saved"
+          grep -F 'ErdenExteriorMarriageManager.parentPair(' "$lifecycle"
+          grep -F 'parents.size() != 2' "$lifecycle"
+          grep -F 'public static final int MARRIAGE_REVISION = 1' "$marriage"
+          grep -F 'if (mover.founder()) continue;' "$marriage"
+          grep -F 'REMARRIAGE_WAIT_YEARS = 1' "$marriage"
+          grep -F 'founder_workplaces_preserved=true' "$marriage"
+          grep -F 'spouse_based_births=true' "$marriage"
+          grep -F 'activeUnionForHousehold' "$marriage_saved"
 
           # Erden justice must be evidence-driven: only a resident present at the event can witness,
           # the report must reach a real guard-post worker, and generic synthetic pursuit stays off.
