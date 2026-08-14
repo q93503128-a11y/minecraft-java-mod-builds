@@ -39,6 +39,7 @@ public final class ErdenFantasyEcologyManager {
     public static final int ECOLOGY_REVISION = 1;
 
     private static final int SPAWN_INTERVAL = 100;
+    private static final int CI_TICKET_REFRESH_INTERVAL = 100;
     private static final int ATTEMPTS_PER_PLAYER = 6;
     private static final int MIN_SPAWN_DISTANCE = 22;
     private static final int SPAWN_DISTANCE_SPAN = 27;
@@ -57,6 +58,7 @@ public final class ErdenFantasyEcologyManager {
     private static final List<UUID> CI_ENTITIES = new ArrayList<>();
     private static boolean ciPrepared;
     private static boolean ciPassed;
+    private static long ciTicketRefreshes;
 
     private ErdenFantasyEcologyManager() {
     }
@@ -69,6 +71,9 @@ public final class ErdenFantasyEcologyManager {
 
         if (isCi()) {
             prepareCi(level);
+            if (level.getGameTime() % CI_TICKET_REFRESH_INTERVAL == 0L) {
+                refreshCiTickets(level);
+            }
             verifyCi(level);
         }
         if (level.getGameTime() % SPAWN_INTERVAL != 0L) return;
@@ -81,6 +86,7 @@ public final class ErdenFantasyEcologyManager {
         CI_ENTITIES.clear();
         ciPrepared = false;
         ciPassed = false;
+        ciTicketRefreshes = 0L;
     }
 
     private static void spawnAroundTravellers(ServerLevel level) {
@@ -212,6 +218,22 @@ public final class ErdenFantasyEcologyManager {
         }
     }
 
+    private static void refreshCiTickets(ServerLevel level) {
+        if (CI_TICKETS.isEmpty() || ciPassed) return;
+        int loaded = 0;
+        for (long packed : Set.copyOf(CI_TICKETS)) {
+            ChunkPos chunk = new ChunkPos(unpackX(packed), unpackZ(packed));
+            level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
+            if (level.hasChunk(chunk.x(), chunk.z())) loaded++;
+        }
+        ciTicketRefreshes++;
+        if (ciTicketRefreshes == 1L || ciTicketRefreshes % 10L == 0L) {
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_FANTASY_ECOLOGY_TICKET_REFRESH refresh={} retained={} loaded={} interval_ticks={} timeout_safe_refresh=true forced_chunks=false",
+                    ciTicketRefreshes, CI_TICKETS.size(), loaded, CI_TICKET_REFRESH_INTERVAL);
+        }
+    }
+
     private static void verifyCi(ServerLevel level) {
         if (!ciPrepared || ciPassed) return;
         boolean hart = false;
@@ -238,8 +260,8 @@ public final class ErdenFantasyEcologyManager {
         }
         CI_TICKETS.clear();
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3 silver_hart=true ash_hound=true river_wisp=true actual_custom_entity_types=true actual_entity_instances=true northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false player_loaded_runtime=true local_species_cap={} forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true",
-                LOCAL_SPECIES_CAP);
+                "LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3 silver_hart=true ash_hound=true river_wisp=true actual_custom_entity_types=true actual_entity_instances=true northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false player_loaded_runtime=true local_species_cap={} forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true ci_ticket_refreshes={} timeout_safe_refresh=true",
+                LOCAL_SPECIES_CAP, ciTicketRefreshes);
     }
 
     private static long mix(long value) {
