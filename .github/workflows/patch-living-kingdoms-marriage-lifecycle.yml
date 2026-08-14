@@ -1,0 +1,67 @@
+name: Patch Living Kingdoms marriage lifecycle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/wire_erden_marriage_lifecycle.py'
+      - '.github/workflows/patch-living-kingdoms-marriage-lifecycle.yml'
+
+concurrency:
+  group: living-kingdoms-marriage-lifecycle
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Wire marriage residence and spouse-based births
+        run: python .github/scripts/wire_erden_marriage_lifecycle.py
+      - name: Clean compile Living Kingdoms
+        working-directory: projects/living-kingdoms
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Verify marriage lifecycle invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          saved='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleSavedData.java'
+          lifecycle='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java'
+          marriage='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorMarriageManager.java'
+          grep -Fq 'movePersonHousehold(String personId, String newHouseholdId)' "$saved"
+          grep -Fq 'ErdenExteriorMarriageManager.parentPair(' "$lifecycle"
+          grep -Fq 'parents.size() != 2' "$lifecycle"
+          grep -Fq 'if (mover.founder()) continue;' "$marriage"
+          grep -Fq 'founder_workplaces_preserved=true' "$marriage"
+          grep -Fq 'spouse_based_births=true' "$marriage"
+      - name: Commit compiled source directly to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleSavedData.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorLifecycleManager.java
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat(living-kingdoms): connect marriage households to lifecycle'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
