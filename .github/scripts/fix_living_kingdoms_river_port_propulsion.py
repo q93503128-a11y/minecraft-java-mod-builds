@@ -49,7 +49,7 @@ if "CI_TICKET_REFRESH_INTERVAL" not in s:
         for (long packed : Set.copyOf(CI_RETAINED)) {
             ChunkPos chunk = new ChunkPos(unpackX(packed), unpackZ(packed));
             level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
-            if (level.hasChunk(chunk.x, chunk.z)) loaded++;
+            if (level.hasChunk(chunk.x(), chunk.z())) loaded++;
         }
         ciTicketRefreshes++;
         if (ciTicketRefreshes == 1L || ciTicketRefreshes % 5L == 0L) {
@@ -74,6 +74,7 @@ for token in [
     "CI_TICKET_REFRESH_INTERVAL = 100",
     "refreshCiTickets(level)",
     "addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0)",
+    "chunk.x(), chunk.z()",
     "LK_ERDEN_RIVER_PORT_TICKET_REFRESH",
     "timeout_safe_refresh=true",
     "ci_ticket_refreshes={}",
