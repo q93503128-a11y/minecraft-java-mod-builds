@@ -185,7 +185,10 @@ public final class ArcaneBuffRuntime {
         if (armor != null) {
             multiplier = Math.min(multiplier, armor.charges > 0 ? .68 : .84);
             flat = Math.max(flat, .8);
-            if (armor.charges > 0) armor.charges--;
+            if (armor.charges > 0) {
+                armor.charges--;
+                if (armor.nextChargeAt <= now) armor.nextChargeAt = now + rechargeInterval("mage_armor");
+            }
         }
         State stone = active(player, "stoneskin", now);
         if (stone != null) {
@@ -197,6 +200,7 @@ public final class ArcaneBuffRuntime {
         State solar = active(player, "solar_guard", now);
         if (solar != null && solar.charges > 0) {
             solar.charges--;
+            if (solar.nextChargeAt <= now) solar.nextChargeAt = now + rechargeInterval("solar_guard");
             multiplier = Math.min(multiplier, .58);
             Entity source = event.getSource().getEntity();
             if (source instanceof LivingEntity attacker && attacker != player && attacker.isAlive()) {

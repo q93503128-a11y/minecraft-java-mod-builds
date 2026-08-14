@@ -38,10 +38,10 @@ final class ArcaneSpellVisualOverhaul {
             "ice_storm", "flame_strike", "fire_storm", "control_weather", "insect_plague",
             "incendiary_cloud", "sunburst", "meteor_swarm", "phoenix_requiem");
     private static final Set<String> BUFFS = Set.of(
-            "shield", "mage_armor", "mirror_image", "invisibility", "blur", "haste",
+            "shield", "feather_fall", "mage_armor", "mirror_image", "invisibility", "blur", "fly", "haste",
             "protection_from_energy", "greater_invisibility", "resilient_sphere", "stoneskin",
-            "freedom_of_movement", "true_seeing", "globe_of_invulnerability", "fire_shield",
-            "solar_guard", "shapechange", "foresight");
+            "freedom_of_movement", "true_seeing", "globe_of_invulnerability", "simulacrum", "clone",
+            "fire_shield", "solar_guard", "shapechange", "foresight");
 
     private ArcaneSpellVisualOverhaul() {}
 
@@ -133,12 +133,13 @@ final class ArcaneSpellVisualOverhaul {
         if ("prismatic_wall".equals(spell.id())) return m.build();
 
         SpellPresentationProfile.MotionStyle motion = SpellPresentationProfile.profile(spell).motion();
+        boolean persistentBuff = BUFFS.contains(spell.id());
+        if (persistentBuff) buffMantle(m, spell, targetOffset, rise, elapsedSeconds);
         switch (motion) {
             case WALL -> materialWall(m, spell, direction, targetOffset, range, rise, elapsedSeconds);
             case FIELD, STORM -> fieldAtmosphere(m, spell, targetOffset, range, rise, pulse, elapsedSeconds);
             case AURA -> {
-                if (BUFFS.contains(spell.id())) buffMantle(m, spell, targetOffset, rise, elapsedSeconds);
-                else auraMantle(m, spell, targetOffset, rise, elapsedSeconds);
+                if (!persistentBuff) auraMantle(m, spell, targetOffset, rise, elapsedSeconds);
             }
             case SKY_DROP -> skyConvergence(m, spell, targetOffset, range, rise, elapsedSeconds);
             case DART, BOLT, HEAVY_ORB, MISSILE_SWARM, LANCE, BEAM, WAVE, TARGET_BURST ->
@@ -567,6 +568,44 @@ final class ArcaneSpellVisualOverhaul {
         int seed = spell.id().hashCode();
         double pulse = .96 + .04 * Math.sin(time * 2.0);
         switch (spell.id()) {
+            case "feather_fall" -> {
+                for (int sideSign : new int[]{-1, 1}) {
+                    for (int i = 0; i < 3; i++) {
+                        double y = .45 + i * .42;
+                        Vec3 root = center.add(sideSign * .20, y, 0);
+                        Vec3 tip = center.add(sideSign * (.62 + i * .14), y + .18, .08 * Math.sin(time * 1.4 + i));
+                        m.line(root, tip, i == 0 ? .64F : .38F);
+                        m.line(tip, tip.add(sideSign * .18, -.12, 0), .30F);
+                    }
+                }
+                m.arc(g, center.add(0, .08, 0), .72, time * .18, Math.PI * 1.25, 28, .42F);
+            }
+            case "fly" -> {
+                for (int sideSign : new int[]{-1, 1}) {
+                    Vec3 root = center.add(sideSign * .18, 1.15, 0);
+                    for (int i = 0; i < 4; i++) {
+                        Vec3 elbow = center.add(sideSign * (.55 + i * .22), 1.55 - i * .13, .08 * Math.sin(time * 1.7 + i));
+                        Vec3 tip = center.add(sideSign * (1.05 + i * .18), 1.20 - i * .20, .12 * Math.cos(time * 1.3 + i));
+                        m.line(root, elbow, i == 0 ? .72F : .46F);
+                        m.line(elbow, tip, .38F);
+                    }
+                }
+                m.helix(center.add(0, .05, 0), new Vec3(0, 1, 0), front, 1.55, .38, 2, 34, .34F, true);
+            }
+            case "simulacrum" -> {
+                Vec3 echo = center.add(-.92, .98, .12);
+                m.diamond(front, echo, .52, time * .035, 1.08F, .18F);
+                m.runeGlyph(front, echo, .23, seed ^ 0x51A0, -time * .05, .48F);
+                m.line(center.add(0, .80, 0), echo, .30F);
+                m.circle(g, center.add(0, .04, 0), .82, 40, .38F);
+            }
+            case "clone" -> {
+                Vec3 core = center.add(0, .52, -.72);
+                m.circle(front, core, .58, 38, .58F);
+                m.polygon(front, core, .43, 6, time * .045, .42F);
+                m.runeGlyph(front, core, .20, seed ^ 0xC10E, -time * .035, .46F);
+                m.brokenBand(g, center.add(0, .04, 0), .96, 1.08, 48, 7, 1.02F, .10F);
+            }
             case "shield" -> {
                 Vec3 c = center.add(0, 1.15, .62);
                 for (int i = 0; i < 3; i++) m.polygon(front, c.add(0, 0, i * .045),

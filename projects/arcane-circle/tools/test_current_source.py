@@ -184,6 +184,16 @@ assert 'ArcaneLightService.illuminate(player,1800)' in text(magic/'ExpandedSpell
 assert 'syncAtomicRobe' in text(magic/'MageGearService.java')
 assert not (magic/'SpellSigilService.java').exists()
 
+# Maintained-buff visual lifetime parity.
+for token in ['case "feather_fall" -> 120','case "mirror_image" -> 260','case "blur" -> 360',
+              'case "fly" -> 600','case "simulacrum" -> 1200','case "clone" -> 1800',
+              'case "globe_of_invulnerability" -> 520','case "fire_shield" -> 620']:
+    assert token in gameplay, token
+for token in ['"feather_fall"','"fly"','"simulacrum"','"clone"','persistentBuff']:
+    assert token in overhaul, token
+assert 'armor.nextChargeAt = now + rechargeInterval("mage_armor")' in buff
+assert 'solar.nextChargeAt = now + rechargeInterval("solar_guard")' in buff
+
 # Alpha.37 non-potion buff identity + 3D high-circle authority.
 buff=text(magic/'ArcaneBuffRuntime.java')
 for token in ['durationTicks','onIncomingDamage','castTimeMultiplier','adjustCooldownTicks',

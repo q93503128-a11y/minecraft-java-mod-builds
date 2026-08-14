@@ -121,6 +121,12 @@ public final class SpellGameplayService {
         return switch (spellId) {
             case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS;
             case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS;
+            case "feather_fall" -> 120;
+            case "mirror_image" -> 260;
+            case "blur" -> 360;
+            case "fly" -> 600;
+            case "simulacrum" -> 1200;
+            case "clone" -> 1800;
             case "grease" -> 160;
             case "web" -> 220;
             case "slow" -> 180;
@@ -143,8 +149,8 @@ public final class SpellGameplayService {
             case "thunder_cage" -> 160;
             case "astral_prison" -> 220;
             case "resilient_sphere" -> 400;
-            case "globe_of_invulnerability" -> 360;
-            case "fire_shield" -> 300;
+            case "globe_of_invulnerability" -> 520;
+            case "fire_shield" -> 620;
             default -> 0;
         };
     }
