@@ -111,7 +111,7 @@ public final class SpellEffectSummary {
             case "time_stop" -> "6초 고정 시간장 · 주변 비아군 AI·이동·Arcane 시전 정지";
             case "true_polymorph" -> "대상 피해 · 장시간 둔화·약화·표식";
             case "weird" -> "대형 범위 정신 피해 · 실명·위더·둔화";
-            case "wish" -> "체력·마력 완전 회복 · 해로운 상태 제거 · 소원 외 주문 쿨 초기화";
+            case "wish" -> "체력·마력 완전 회복 · 해로운 상태 제거 · 기존 이로운 버프 보존 · 소원 외 주문 쿨 초기화";
             case "gate" -> "최상급 장거리 공간 이동";
             case "foresight" -> "120초 시야·속도·저항·행운·흡수 강화";
 
