@@ -314,7 +314,8 @@ public final class ErdenCapitalLifecycleManager {
         Map<String, ErdenPopulationSavedData.Household> households = householdMap(population);
         for (int lineIndex = 0; lineIndex < model.lines.size(); lineIndex++) {
             ErdenCapitalLifecycleSavedData.HouseholdLine line = model.lines.get(lineIndex);
-            if (year - line.lastBirthYear() < BIRTH_SPACING_YEARS) continue;
+            if (line.lastBirthYear() != Integer.MIN_VALUE
+                    && year - line.lastBirthYear() < BIRTH_SPACING_YEARS) continue;
             List<ErdenCapitalLifecycleSavedData.Person> members = model.persons.stream()
                     .filter(person -> person.householdId().equals(line.householdId()) && person.aliveOn(day))
                     .toList();
