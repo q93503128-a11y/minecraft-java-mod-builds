@@ -120,6 +120,20 @@ public final class ErdenCapitalLifecycleManager {
                 .livingCount(day);
     }
 
+    public static Set<String> livingHouseholdIds(
+            ServerLevel level,
+            ErdenPopulationSavedData population,
+            long day) {
+        prepare(level, population);
+        ErdenCapitalLifecycleSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalLifecycleSavedData.TYPE);
+        Set<String> result = new HashSet<>();
+        for (ErdenCapitalLifecycleSavedData.Person person : data.persons()) {
+            if (person.aliveOn(day)) result.add(person.householdId());
+        }
+        return Set.copyOf(result);
+    }
+
     public static int livingHouseholdCount(
             ServerLevel level,
             ErdenPopulationSavedData population,

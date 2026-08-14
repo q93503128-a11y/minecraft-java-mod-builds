@@ -13,6 +13,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenAuthoritativeEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenAuthoredRoadNormalizer;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalLifecycleManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenCapitalHousingManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalMarriageManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenCitadelInteriorManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenEntranceDoorRepairManager;
@@ -146,6 +147,7 @@ public final class LivingKingdoms {
         ErdenFireResponseManager.onServerTick(event);
         ErdenKingdomExteriorInventoryManager.captureBeforeSupply(event);
         ErdenAuthoritativeEconomyManager.onServerTick(event);
+        ErdenCapitalHousingManager.onServerTick(event);
         ErdenKingdomExteriorInventoryManager.materializeAfterSupply(event);
         ErdenLivingEconomyManager.onServerTick(event);
         ErdenTransportManager.onServerTick(event);

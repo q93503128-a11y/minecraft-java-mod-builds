@@ -126,6 +126,7 @@ public final class ErdenLivingEconomyManager {
     public static MarketResult runDailyMarket(
             long day,
             ErdenPopulationSavedData population,
+            Set<String> activeHouseholds,
             Map<String, ErdenPhysicalEconomySavedData.SiteState> sites,
             Map<String, ErdenPhysicalEconomySavedData.WalletState> wallets,
             ErdenLivingEconomySavedData previousLivingEconomy) {
@@ -138,7 +139,7 @@ public final class ErdenLivingEconomyManager {
         int unaffordableFailures = 0;
 
         for (ErdenPopulationSavedData.Household household : population.households()) {
-            if (aliveResidents(population, household) <= 0) continue;
+            if (!activeHouseholds.contains(household.id())) continue;
             ErdenPhysicalEconomySavedData.WalletState wallet = wallets.get(household.id());
             long coins = wallet == null ? 0L : wallet.coins();
             int attemptTick = shoppingTick(household.id(), day);

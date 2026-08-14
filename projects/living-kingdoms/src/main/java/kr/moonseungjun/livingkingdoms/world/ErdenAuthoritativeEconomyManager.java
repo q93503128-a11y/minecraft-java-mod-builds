@@ -272,9 +272,11 @@ public final class ErdenAuthoritativeEconomyManager {
         runProduction(sites, workers, counters);
         distributeBread(sites, counters);
         runServiceSites(sites, workers, counters);
+        Set<String> activeHouseholds =
+                ErdenCapitalLifecycleManager.livingHouseholdIds(level, population, day);
         ErdenLivingEconomyManager.MarketResult market =
                 ErdenLivingEconomyManager.runDailyMarket(
-                        day, population, sites, wallets, livingEconomy);
+                        day, population, activeHouseholds, sites, wallets, livingEconomy);
         counters.sales += market.salesCoins();
         counters.fulfilledHouseholds += market.fulfilledHouseholds();
         reconcileBakeryReserves(sites, counters);
