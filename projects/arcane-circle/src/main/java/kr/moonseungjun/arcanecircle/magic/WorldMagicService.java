@@ -228,7 +228,7 @@ public final class WorldMagicService {
                     ? target.add(0.0, 0.055, 0.0) : target;
             case GROUND_SEAL, QUAD_ARRAY -> target.add(0.0, 0.055, 0.0);
             case WALL_MATRIX -> target.add(0.0, Math.max(1.2, profile.radius() * 0.34), 0.0);
-            case PORTAL_GATE -> target.add(0.0, Math.max(1.1, profile.radius() * 0.52), 0.0);
+            case PORTAL_GATE -> caster.position().add(0.0, 0.055, 0.0);
             case BODY_HALO -> caster.position().add(0.0, 1.0, 0.0);
             case FEET_RUNE -> caster.position().add(0.0, 0.055, 0.0);
             case FRONT_COMPACT, FRONT_LANCE -> caster instanceof ServerPlayer player

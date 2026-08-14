@@ -187,7 +187,7 @@ public final class SpellPresentationProfile {
         put("winter_domain", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 9.40, 6, 12, 0, 0, 1.72, 2);
         put("antimagic_field", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 7.00, 6, 10, 0, 0, 1.42, 0);
         put("clone", SigilStyle.BODY_HALO, MotionStyle.AURA, 2.80, 6, 3, 0, 0, 1.38, 0);
-        put("control_weather", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 16.00, 6, 8, 0, 24, 1.88, 8);
+        put("control_weather", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 18.00, 6, 10, 0, 26, 2.02, 8);
         put("demiplane", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 6.80, 6, 8, 0, 0, 1.78, 0);
         put("dominate_monster", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 3.10, 6, 8, 0, 0, 1.48, 2);
         put("earthquake", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 11.00, 6, 12, 0, 0, 1.80, 4);
@@ -199,15 +199,15 @@ public final class SpellPresentationProfile {
         put("phoenix_requiem", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 11.00, 6, 6, 0, 14, 1.96, 6);
         put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 18.00, 6, 12, 0, 34, 2.60, MeteorBarragePattern.firstImpactTick());
         put("power_word_kill", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 2.35, 6, 0, 0, 0, 1.34, 2);
-        put("prismatic_wall", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 10.80, 6, 7, 0, 0, 2.10, 4);
+        put("prismatic_wall", SigilStyle.WALL_MATRIX, MotionStyle.WALL, 12.40, 6, 7, 0, 0, 2.38, 4);
         put("shapechange", SigilStyle.BODY_HALO, MotionStyle.AURA, 3.00, 6, 6, 0, 0, 1.52, 0);
         put("time_stop", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 9.00, 6, 12, 0, 0, 1.80, 3);
         put("true_polymorph", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 3.80, 6, 8, 0, 0, 1.52, 3);
         put("weird", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 7.60, 6, 9, 0, 0, 1.70, 3);
         put("wish", SigilStyle.BODY_HALO, MotionStyle.AURA, 3.20, 6, 6, 0, 0, 1.62, 0);
-        put("gate", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 10.80, 6, 8, 0, 0, 2.25, 0);
+        put("gate", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 11.80, 6, 8, 0, 0, 2.35, 0);
         put("foresight", SigilStyle.BODY_HALO, MotionStyle.AURA, 1.80, 6, 7, 0, 0, 1.24, 0);
-        put("world_sunder", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 14.50, 6, 12, 0, 0, 2.32, 5);
+        put("world_sunder", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 16.00, 6, 12, 0, 0, 2.45, 5);
     }
 
     private SpellPresentationProfile() {}

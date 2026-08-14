@@ -10,9 +10,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.35' in gradle
-assert 'VERSION = "0.12.1-alpha.35"' in main
-assert '"version": "0.12.1-alpha.35"' in index
+assert 'mod_version=0.12.1-alpha.36' in gradle
+assert 'VERSION = "0.12.1-alpha.36"' in main
+assert '"version": "0.12.1-alpha.36"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -24,7 +24,7 @@ for name in retired: assert not (client/name).exists(), name
 tracker=text(client/'WorldMagicTracker.java')
 for token in ['SpellCinematicDirector.charge','SpellCinematicDirector.release','SpellCinematicDirector.castingFamily',
 'ArcaneSigilDirector.charge','ArcaneSigilDirector.releaseEcho','MeteorBarragePattern.withSeed','longValue(values,"seed",0L)',
-'MAX_FRAME = 9000','MAX_ENTRY = 2800']:
+'MAX_FRAME = 12000','MAX_ENTRY = 3400']:
     assert token in tracker, token
 assert tracker.count('!"prismatic_wall".equals(v.spell.id())') >= 2
 
@@ -65,7 +65,7 @@ summary=text(magic/'SpellEffectSummary.java'); definition=text(magic/'SpellDefin
 assert 'SpellEffectSummary.summary(this)' in definition and '효과 · ' in definition
 for token in ['case "wish"','기존 이로운','case "time_stop"','AI·이동','case "antimagic_field"','Arcane 시전',
 'case "meteor_swarm"','16발','case "world_sunder"','방향성 실제 세계 균열','case "fly"','자유 비행',
-'case "clone"','치명상','case "control_weather"','실제 폭우·뇌우','case "prismatic_wall"','14초 지속']:
+'case "clone"','치명상','case "control_weather"','실제 폭우·뇌우','case "prismatic_wall"','30초 지속']:
     assert token in summary, token
 assert summary.count('case "') >= 109
 
@@ -111,8 +111,23 @@ presentation=text(magic/'SpellPresentationProfile.java')
 assert 'SpellGameplayService.visualDurationTicks(spell.id())' in presentation
 audit_duration=gameplay[gameplay.index('public static int visualDurationTicks'):gameplay.index('/** Used by Arcane-field') if '/** Used by Arcane-field' in gameplay else gameplay.index('public static boolean blocksCasting')]
 for token in ['case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS','case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS',
-'case "prismatic_wall" -> 280','case "control_weather" -> 400']:
+'case "prismatic_wall" -> 600','case "control_weather" -> 400']:
     assert token in audit_duration, token
+
+# Alpha.36 presentation contract: spell-authored layers, upward portals/prisons and durable prism wall.
+overhaul=text(client/'ArcaneSpellVisualOverhaul.java')
+for token in ['replacesBaseSigil','portalPair','risingPortal','risingPrison','prismaticWallLayer',
+              'temporalAstrolabe','wishCrown','executionFormula','tectonicFormula','materialWall',
+              'fieldAtmosphere','skyConvergence','impactFormula','terrainLift']:
+    assert token in overhaul, token
+for token in ['ArcaneSpellVisualOverhaul.chargeSigil','ArcaneSpellVisualOverhaul.chargeBody',
+              'ArcaneSpellVisualOverhaul.release','ArcaneSpellVisualOverhaul.prismaticWallLayer',
+              'MAX_FRAME = 12000','MAX_ENTRY = 3400']:
+    assert token in tracker, token
+assert 'case PORTAL_GATE -> caster.position().add(0.0, 0.055, 0.0);' in world_magic
+assert 'case "prismatic_wall" -> 600;' in gameplay
+assert '30초 지속 7색 장벽' in summary
+assert 'age < .90' in overhaul and 'elapsedSeconds / .30' in overhaul
 
 # Destruction budgets/classification and explicit World Sunder fissure.
 destruction=text(magic/'DestructiveMagicService.java')

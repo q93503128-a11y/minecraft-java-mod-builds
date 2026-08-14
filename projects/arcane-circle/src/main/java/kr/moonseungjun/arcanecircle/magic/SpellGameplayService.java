@@ -126,7 +126,7 @@ public final class SpellGameplayService {
             case "wind_wall" -> 180;
             case "wall_of_ice" -> 220;
             case "incendiary_cloud" -> 240;
-            case "prismatic_wall" -> 280;
+            case "prismatic_wall" -> 600;
             case "winter_domain" -> 240;
             case "control_weather" -> 400;
             case "hold_person" -> 180;

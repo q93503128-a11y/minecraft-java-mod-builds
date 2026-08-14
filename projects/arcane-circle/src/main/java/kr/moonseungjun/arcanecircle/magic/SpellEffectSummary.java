@@ -106,7 +106,7 @@ public final class SpellEffectSummary {
             // 9C
             case "meteor_swarm" -> "16발 시드형 연속 폭격 · 개별 피해·화상·지형 파괴";
             case "power_word_kill" -> "약해진 대상 즉사급 처형 · 그 외에는 대형 단일 피해";
-            case "prismatic_wall" -> "14초 지속 7색 장벽 · 반복 피해·상태이상·통과 저지";
+            case "prismatic_wall" -> "30초 지속 7색 장벽 · 반복 피해·상태이상·통과 저지";
             case "shapechange" -> "90초 대폭 강화 + 들어오는 피해 35% 추가 감소";
             case "time_stop" -> "6초 고정 시간장 · 주변 비아군 AI·이동·Arcane 시전 정지";
             case "true_polymorph" -> "대상 피해 · 15초 축소 변형 + AI·이동·Arcane 시전 봉쇄";

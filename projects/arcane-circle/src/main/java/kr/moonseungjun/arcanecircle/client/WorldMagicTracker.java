@@ -26,8 +26,8 @@ public final class WorldMagicTracker {
     private static final Map<UUID, Visual> CHARGES = new HashMap<>();
     private static final List<Visual> RELEASES = new ArrayList<>();
     private static final int MAX_VISUALS = 10;
-    private static final int MAX_FRAME = 9000;
-    private static final int MAX_ENTRY = 2800;
+    private static final int MAX_FRAME = 12000;
+    private static final int MAX_ENTRY = 3400;
     private static final double MAX_DISTANCE_SQR = 224.0 * 224.0;
     private static final long CHARGE_TTL = 2_250_000_000L;
 
@@ -98,29 +98,48 @@ public final class WorldMagicTracker {
         List<RenderEntry> entries=new ArrayList<>();
         for(Visual v:CHARGES.values()){
             int color=SpellCinematicDirector.color(v.spell);
-            ArcaneWorldMesh sigilMesh=MeteorBarragePattern.withSeed(v.seed,
-                    ()->ArcaneSigilDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.fusion,v.startedAt));
-            ArcaneWorldMesh cinematicMesh=MeteorBarragePattern.withSeed(v.seed,
-                    ()->SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt));
-            entries.add(new RenderEntry(v.center,sigilMesh,color));
-            entries.add(new RenderEntry(v.center,cinematicMesh,color));
+            if(!ArcaneSpellVisualOverhaul.replacesBaseSigil(v.spell)){
+                ArcaneWorldMesh sigilMesh=MeteorBarragePattern.withSeed(v.seed,
+                        ()->ArcaneSigilDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.fusion,v.startedAt));
+                entries.add(new RenderEntry(v.center,sigilMesh,color));
+            }
+            ArcaneWorldMesh authoredSigil=MeteorBarragePattern.withSeed(v.seed,
+                    ()->ArcaneSpellVisualOverhaul.chargeSigil(v.spell,v.direction,v.progress,v.range,v.startedAt));
+            if(authoredSigil.size()>0)entries.add(new RenderEntry(v.center,authoredSigil,color));
+            if(!ArcaneSpellVisualOverhaul.replacesBaseChargeBody(v.spell)){
+                ArcaneWorldMesh cinematicMesh=MeteorBarragePattern.withSeed(v.seed,
+                        ()->SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt));
+                entries.add(new RenderEntry(v.center,cinematicMesh,color));
+            }
+            ArcaneWorldMesh authoredBody=MeteorBarragePattern.withSeed(v.seed,
+                    ()->ArcaneSpellVisualOverhaul.chargeBody(v.spell,v.direction,targetOffset(v),v.progress,v.range,v.startedAt));
+            if(authoredBody.size()>0)entries.add(new RenderEntry(v.center,authoredBody,color));
         }
         for(Visual v:RELEASES){
             double age=clamp((now-v.startedAt)/(double)Math.max(1L,v.expiresAt-v.startedAt),0,1);
+            double durationSeconds=Math.max(.05,(v.expiresAt-v.startedAt)/1_000_000_000.0);
+            double elapsedSeconds=age*durationSeconds;
             int color=SpellCinematicDirector.color(v.spell);
-            if(!"prismatic_wall".equals(v.spell.id())){
+            if(!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseSigil(v.spell)){
                 ArcaneWorldMesh echo=MeteorBarragePattern.withSeed(v.seed,
                         ()->ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt));
                 if(echo.size()>0)entries.add(new RenderEntry(v.center,echo,ArcaneSigilDirector.releaseEchoColor(color,age)));
             }
-            // Seven coloured panels are the wall. The old pure-white base mesh was only scaffolding.
-            if(!"prismatic_wall".equals(v.spell.id())){
+            if(!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseRelease(v.spell)){
                 ArcaneWorldMesh releaseMesh=MeteorBarragePattern.withSeed(v.seed,
                         ()->SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
                                 age,v.impactAge,v.fusion,v.ingredients));
                 entries.add(new RenderEntry(v.center,releaseMesh,color));
             }
-            if(SpellCinematicDirector.isPrismatic(v.spell)){
+            ArcaneWorldMesh authoredRelease=MeteorBarragePattern.withSeed(v.seed,
+                    ()->ArcaneSpellVisualOverhaul.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
+                            age,elapsedSeconds,durationSeconds,v.seed));
+            if(authoredRelease.size()>0)entries.add(new RenderEntry(v.center,authoredRelease,color));
+            if("prismatic_wall".equals(v.spell.id())){
+                for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(v.center,
+                        ArcaneSpellVisualOverhaul.prismaticWallLayer(v.spell,v.direction,targetOffset(v),v.range,
+                                age,elapsedSeconds,layer),SpellCinematicDirector.prismaticColor(layer)));
+            }else if("prismatic_spray".equals(v.spell.id())){
                 for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(v.center,
                         SpellCinematicDirector.prismaticAccent(v.spell,v.direction,targetOffset(v),v.range,age,layer),
                         SpellCinematicDirector.prismaticColor(layer)));
