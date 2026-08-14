@@ -1,6 +1,7 @@
 package kr.moonseungjun.arcanecircle.world;
 
 import kr.moonseungjun.arcanecircle.magic.ArcaneDamage;
+import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
 import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
 import net.minecraft.core.BlockPos;
@@ -30,7 +31,8 @@ public final class NpcMeteorBarrageService {
 
     public static boolean schedule(ServerLevel level, Mob caster, CastTargetSnapshot targetSnapshot,
                                    double range, double power) {
-        if (targetSnapshot == null || !targetSnapshot.validFor(caster)) return false;
+        if (ArcaneFieldService.blocksCasting(caster)
+                || targetSnapshot == null || !targetSnapshot.validFor(caster)) return false;
         while (ACTIVE.size() >= MAX_ACTIVE_BARRAGES) ACTIVE.removeFirst();
         ACTIVE.add(new Barrage(level, caster.getUUID(), targetSnapshot, range, power,
                 level.getGameTime(), 0));
@@ -48,6 +50,7 @@ public final class NpcMeteorBarrageService {
             if (barrage.level() != level) continue;
             Entity rawCaster = level.getEntity(barrage.casterId());
             if (!(rawCaster instanceof Mob caster) || !caster.isAlive()
+                    || ArcaneFieldService.blocksCasting(caster)
                     || !barrage.targetSnapshot().validFor(caster)) {
                 iterator.remove();
                 continue;

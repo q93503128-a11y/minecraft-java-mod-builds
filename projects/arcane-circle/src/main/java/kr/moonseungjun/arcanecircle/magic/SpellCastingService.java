@@ -61,6 +61,10 @@ public final class SpellCastingService {
     private SpellCastingService() {}
 
     public static void beginSlotCharge(ServerPlayer player, int slot) {
+        if (ArcaneFieldService.blocksCasting(player)) {
+            fail(player, "반마법장 또는 시간 정지로 마법 회로를 전개할 수 없습니다.");
+            return;
+        }
         MagicPlayerData data = data(player);
         MagicPlayerData.CastPreparation cast = data.prepareSlot(player, slot);
         if (!cast.accepted()) {
@@ -207,6 +211,10 @@ public final class SpellCastingService {
     }
 
     public static void queueFusionSlot(ServerPlayer player, int slot) {
+        if (ArcaneFieldService.blocksCasting(player)) {
+            fail(player, "반마법장 또는 시간 정지로 융합 회로를 전개할 수 없습니다.");
+            return;
+        }
         cancelCharge(player, false);
         MagicPlayerData.MageState state = data(player).state(player);
         String spellId = state.slot(slot);
@@ -275,6 +283,10 @@ public final class SpellCastingService {
     public static void commitFusion(ServerPlayer player) {
         FusionQueueState queue = FUSION_QUEUES.remove(player.getUUID());
         WorldMagicService.stop(player);
+        if (ArcaneFieldService.blocksCasting(player)) {
+            fail(player, "반마법장 또는 시간 정지로 융합 회로가 소거되었습니다.");
+            return;
+        }
         if (queue == null || queue.ingredients.isEmpty()) return;
         long now = serverClock(player);
         if (now - queue.updatedAt > QUEUE_TIMEOUT_TICKS) {
@@ -446,6 +458,10 @@ public final class SpellCastingService {
     private static void castPrepared(ServerPlayer player, MagicPlayerData data, MagicPlayerData.CastPreparation cast) {
         if (!cast.accepted()) {
             fail(player, cast.message());
+            return;
+        }
+        if (ArcaneFieldService.blocksCasting(player)) {
+            fail(player, "반마법장 또는 시간 정지로 마법 회로가 소거되었습니다.");
             return;
         }
         SpellDefinition spell = cast.spell();
@@ -1101,7 +1117,8 @@ public final class SpellCastingService {
         Vec3 closest = start.add(direction.scale(projection));
         return closest.distanceToSqr(point);
     }
-private static void fail(ServerPlayer player, String message) {
+
+    private static void fail(ServerPlayer player, String message) {
         ArcaneNoticeService.push(player, Component.literal("§c[마법 실패] §f" + message));
         ((ServerLevel) player.level()).playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_BASS.value(),
                 SoundSource.PLAYERS, 0.35F, 0.7F);

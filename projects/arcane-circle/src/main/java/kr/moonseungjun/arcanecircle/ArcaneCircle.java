@@ -1,6 +1,7 @@
 package kr.moonseungjun.arcanecircle;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneLightService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
@@ -33,7 +34,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.33";
+    public static final String VERSION = "0.12.1-alpha.34";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -101,6 +102,7 @@ public final class ArcaneCircle {
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             ArcaneLightService.clear(player);
+            ArcaneFieldService.clear(player.getUUID());
             WorldMagicService.stop(player);
         }
         SpellCastingService.clearSession(event.getEntity().getUUID());
@@ -112,6 +114,7 @@ public final class ArcaneCircle {
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ArcaneLightService.clear(player);
+        ArcaneFieldService.clear(player.getUUID());
         SpellCastingService.clearSession(player.getUUID());
         SpellKineticsService.clear(player.getUUID());
         WorldMagicService.stop(player);
@@ -122,6 +125,7 @@ public final class ArcaneCircle {
     private void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ArcaneLightService.clear(player);
+        ArcaneFieldService.clear(player.getUUID());
         SpellCastingService.clearSession(player.getUUID());
         SpellKineticsService.clear(player.getUUID());
         WorldMagicService.stop(player);
@@ -139,6 +143,9 @@ public final class ArcaneCircle {
         NpcMeteorBarrageService.tick((ServerLevel) player.level());
         if (player.tickCount % 10 == 0) MageGearService.tick(player);
         if (player.tickCount % 4 == 0) ArcaneMageService.tickNear(player);
+        // Run after NPC mage logic so Time Stop/Antimagic wins the current server tick and can
+        // cancel any custom mage charge that would otherwise ignore vanilla no-AI state.
+        ArcaneFieldService.tick((ServerLevel) player.level());
         MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
         if (player.tickCount % 10 == 0) data.regenerate(player);
         if (player.tickCount % 5 == 0) ArcaneNetwork.sync(player);
@@ -146,6 +153,7 @@ public final class ArcaneCircle {
 
     private void onServerStopped(ServerStoppedEvent event) {
         ArcaneLightService.clearAll(event.getServer());
+        ArcaneFieldService.clearAll();
         SpellCastingService.clearAllSessions();
         SpellKineticsService.clearAll();
         NpcMeteorBarrageService.clearAll();

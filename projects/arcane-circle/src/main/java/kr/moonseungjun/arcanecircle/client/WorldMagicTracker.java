@@ -1,6 +1,7 @@
 package kr.moonseungjun.arcanecircle.client;
 
 import kr.moonseungjun.arcanecircle.ArcaneCircle;
+import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
@@ -18,10 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Runtime bridge between server-authoritative spell events and the cinematic director.
- * Gameplay timing, targeting and impact remain server owned; this class only snapshots and renders.
- */
+/** Runtime bridge between server-authoritative spell events and the cinematic director. */
 public final class WorldMagicTracker {
     private static final ContextKey<List<RenderEntry>> DATA_KEY = new ContextKey<>(
             Identifier.fromNamespaceAndPath(ArcaneCircle.MOD_ID, "world_magic_cinematic_v3"));
@@ -34,7 +32,6 @@ public final class WorldMagicTracker {
     private static final long CHARGE_TTL = 2_250_000_000L;
 
     record CasterPoseSnapshot(int family, float progress, boolean release) {}
-
     private WorldMagicTracker() {}
 
     static CasterPoseSnapshot castingPose(UUID caster) {
@@ -70,6 +67,9 @@ public final class WorldMagicTracker {
         double power=Math.max(.1,decimal(values,"power",Math.max(.1,spell.power())));
         double progress=clamp(decimal(values,"progress",1),0,1);
         int duration=Math.max(3,integer(values,"duration",10));
+        // Sustained field visuals must live exactly as long as their authoritative server field.
+        if("time_stop".equals(spell.id()))duration=ArcaneFieldService.TIME_STOP_TICKS;
+        else if("antimagic_field".equals(spell.id()))duration=ArcaneFieldService.ANTIMAGIC_TICKS;
         int impactTicks=Math.max(0,integer(values,"impact",0));
         long seed=longValue(values,"seed",0L);
         double impactAge=clamp(impactTicks/(double)Math.max(1,duration),.04,.92);
@@ -95,7 +95,6 @@ public final class WorldMagicTracker {
         CHARGES.values().removeIf(v->v.expiresAt<now);
         RELEASES.removeIf(v->v.expiresAt<now);
         if(CHARGES.isEmpty()&&RELEASES.isEmpty())return;
-
         List<RenderEntry> entries=new ArrayList<>();
         for(Visual v:CHARGES.values()){
             int color=SpellCinematicDirector.color(v.spell);
@@ -114,10 +113,13 @@ public final class WorldMagicTracker {
                         ()->ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt));
                 if(echo.size()>0)entries.add(new RenderEntry(v.center,echo,ArcaneSigilDirector.releaseEchoColor(color,age)));
             }
-            ArcaneWorldMesh releaseMesh=MeteorBarragePattern.withSeed(v.seed,
-                    ()->SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
-                            age,v.impactAge,v.fusion,v.ingredients));
-            entries.add(new RenderEntry(v.center,releaseMesh,color));
+            // Seven coloured panels are the wall. The old pure-white base mesh was only scaffolding.
+            if(!"prismatic_wall".equals(v.spell.id())){
+                ArcaneWorldMesh releaseMesh=MeteorBarragePattern.withSeed(v.seed,
+                        ()->SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
+                                age,v.impactAge,v.fusion,v.ingredients));
+                entries.add(new RenderEntry(v.center,releaseMesh,color));
+            }
             if(SpellCinematicDirector.isPrismatic(v.spell)){
                 for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(v.center,
                         SpellCinematicDirector.prismaticAccent(v.spell,v.direction,targetOffset(v),v.range,age,layer),

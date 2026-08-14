@@ -16,6 +16,12 @@ public record SpellDefinition(
         String description,
         List<String> fusionSources
 ) {
+    /** Grimoire text is mechanical and testable rather than a vague lore-only sentence. */
+    public String description() {
+        String effect = SpellEffectSummary.summary(this);
+        return effect == null || effect.isBlank() ? description : "효과 · " + effect;
+    }
+
     public enum School {
         ARCANE("비전"), FIRE("화염"), FROST("서리"), WIND("풍류"), WARD("수호"), LIFE("생명"), SPACE("공간");
 

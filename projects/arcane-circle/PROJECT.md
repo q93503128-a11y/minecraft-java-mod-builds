@@ -8,33 +8,24 @@
 - Source audit: `tools/test_current_source.py`
 - JAR audit: `tools/verify_jar.py`
 
-게임 데이터·마력·숙련·시전·네트워크·판정은 서버 권위다. 0초 시전도 ready-hold 후 release 발동을 유지한다. 현재 presentation 정본은 `GrimoireScreen`, `ArcaneHud`, `ArcaneSigilDirector`, `SpellCinematicDirector`, `ArcaneRegaliaRenderer`, `ArcaneCastingPerformance`이며 구형 presentation 클래스와 버전별 migration/apply/fix 도구는 active tree에 두지 않는다.
+게임 데이터·마력·숙련·시전·네트워크·판정은 서버 권위다. 0초 시전도 ready-hold 후 release 발동을 유지한다. 현재 presentation 정본은 `GrimoireScreen`, `ArcaneHud`, `ArcaneSigilDirector`, `SpellCinematicDirector`, `ArcaneRegaliaRenderer`이며 `ArcaneCastingPerformance`는 호환 훅만 남기고 별도 플레이어 신체 지오메트리를 그리지 않는다. 구형 presentation 클래스와 버전별 migration/apply/fix 도구는 active tree에 두지 않는다.
 
 alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법진과 `SpellCinematicDirector`의 물리 현상을 연속된 한 연출로 사용한다. 지팡이 시전시간 배율은 직접 주문과 융합 주문의 시전 계산 및 하한에 실제로 참여한다.
 
-## Alpha.33 runtime contracts
+## Alpha.34 runtime contracts
 
-- `CastTargetSnapshot` is captured exactly once when a player releases a cast. Absolute target position, launch origin/direction, optional target entity UUID, impact surface, dimension and barrage seed travel together through the authoritative pending-impact path.
-- Non-homing spells never resample a later player look direction. Homing is explicit opt-in only; the current canonical homing set is empty until client/server moving-target presentation is authored end-to-end.
-- Pending casts are invalidated on death, spectator state or dimension mismatch. Respawn and dimension-change handlers also clear kinetic queues immediately.
-- `WorldMagicService` release payload and `SpellKineticsService` gameplay consume the same snapshot. Client visuals parse the same `seed` and render Meteor Swarm under the same seeded pattern context.
-- Meteor Swarm keeps 16 authored anchor strikes but applies per-cast bounded rotation/jitter, timing variance, fall-height variance and scale variance. Minimum strike separation is enforced and the last four impacts gain modest rhythmic weight.
-- Meteor charge and release reuse one barrage seed for both players and NPC mages, so coordinate seals do not reshuffle between charge and release.
-- NPC Meteor Swarm no longer collapses into one generic sky-drop hit. `NpcMeteorBarrageService` schedules the same 16 seeded strike grammar over time, and ordinary delayed NPC projectiles consume their release-time locked target instead of a moved target's later position.
-- NPC barrage damage is staggered, but NPC terrain griefing remains disabled intentionally; high-circle NPCs do not silently excavate player builds until a separate Arcane destruction rule is exposed.
-- Non-homing target-seal fusions resolve entities at the locked impact point rather than following a stored UUID after release.
-- `World Sunder` is a target-ground battlefield rupture. Damage, knockback and terrain destruction are centered on the release snapshot target rather than the caster's feet.
-- Destructive terrain mutation remains server-authoritative and strength-aware (`getDestroySpeed` + explosion resistance). Unbreakable blocks, block entities, fluids and unloaded chunks are never removed.
-- Destruction has shared per-level tick budgets: at most 420 changed blocks, 24,000 scanned in-range block cells and 96 drop-producing block breaks per server tick across simultaneous destructive casts.
-- Mass terrain spells `move_earth`, `earthquake` and `world_sunder` are no-drop destruction to prevent hundreds of item entities. `shatter` retains bounded drops because its physical identity is material breakage, but the shared drop-producing block budget prevents multiplayer item floods.
-- Terrain classification is exhaustive by default:
-  - **A / MAJOR**: `disintegrate`, `delayed_blast_fireball`, `fire_storm`, `earthquake`, `meteor_swarm`, `world_sunder`, `arcane_annihilation`.
-  - **B / CONDITIONAL**: `fireball`, `shatter`, `flame_strike`, `meteor_shard`, `move_earth`, `lightning_bolt`, `thunderwave`, `gust_of_wind`.
-  - **C / NONE**: every other direct or fusion spell unless explicitly promoted later. Mental, time, space, ward and utility magic do not erase terrain merely because of circle rank. Cold magic also stays out of destructive block removal; freezing/icing is a separate environmental transformation concern, not generic excavation.
-- Lightning/sonic/wind B-class spells use weak no-drop physical aftermath profiles; only sufficiently fragile blocks inside their actual launch path can fail.
-- Grimoire layout still assigns header/content/footer ownership; circle rail, detail reader and loadout dock may never overlap even at high GUI scale.
-- Sigil radius reacts to final range by spell geometry family; it is not a raw 1:1 range circle.
-- Light uses temporary vanilla Light blocks and must clean them on expiry/session/dimension/server shutdown.
-- Prismatic rendering remains bounded by per-entry and per-frame primitive caps.
-- High-complexity sigils prioritize fine concentric rules, inscription rings, nested geometry and balanced satellite seals; 3D depth stays secondary and may not overpower the readable planar formula.
-- Canonical Java 25 verification is required after the alpha.33 source commit; source-only audit is not sufficient.
+- `CastTargetSnapshot`은 release 순간 절대 목표점·발사 원점/방향·대상 UUID·impact surface·dimension·barrage seed를 한 번만 고정한다. 비추적 주문은 이후 시선을 다시 읽지 않는다.
+- Meteor Swarm은 플레이어/NPC/client가 동일 seed와 `MeteorBarragePattern`을 사용하며 16발 staggered barrage를 유지한다.
+- 3인칭 시전 연출은 더 이상 `RenderPlayerEvent.Post`에서 가짜 팔/끈/칼날 filled-box geometry를 덧그리지 않는다. 주문 마법진과 실제 spell cinematic만 시전 presentation을 담당한다.
+- Prismatic Wall은 7색 panel만 렌더한다. 기존 흰색 structural base frame은 제출하지 않는다.
+- 주문도감 상세 설명은 `SpellEffectSummary`의 짧은 실제 기계 효과 문구를 사용한다. 범위 피해, 상태 효과, 지형 파괴, 지속시간과 같은 실제 플레이 결과를 우선 표시한다.
+- `Wish`는 체력·마력과 주문 회로를 복구하되 기존 이로운 버프를 지우지 않는다. 독/위더/둔화/약화/실명/혼란/채굴 피로/부양/암흑/허기와 화상·동결 같은 해로운 상태만 정리하고 재생·흡수를 추가한다. `MagicPlayerData.beginCast`의 mana/full-cooldown reset 계약을 그대로 사용한다.
+- `Antimagic Field`는 12초 동안 시전자를 따라가는 서버 권위 필드다. 범위 안의 spell-like 상태효과를 지속 억제하고 플레이어/NPC의 Arcane charge, fusion, pending impact를 차단한다. 시전자 자신도 필드 안에서는 새 주문을 전개할 수 없다.
+- `Time Stop`은 6초 동안 release 지점에 고정되는 서버 권위 시간장이다. 시전자를 제외한 비아군 mob은 기존 `noAI` 상태를 보존한 채 AI와 이동이 실제 정지하며, 비아군 플레이어는 이동·Arcane 시전이 봉쇄된다. 필드가 끝나거나 시전자가 로그아웃/사망/차원 이동하면 원래 mob AI 상태를 복원한다.
+- `NpcSpellResolver`와 `NpcMeteorBarrageService`도 `ArcaneFieldService.blocksCasting`을 통과해야 하므로 vanilla no-AI를 우회하는 커스텀 마도사 주문 경로가 시간정지/반마법장을 뚫지 못한다.
+- `World Sunder / 세계 균열`은 기존 목표 지점 crater에 더해 release 방향을 따라 불규칙한 7-point fissure 절개를 만든다. 모든 절개는 `DestructiveMagicService.impact()`를 재사용해 hardness/resistance, loaded-chunk 보호와 shared tick budget을 우회하지 않는다.
+- 파괴 성능 상한은 level당 tick 기준 최대 420 block changes / 24,000 scanned cells / 96 drop-producing breaks를 유지한다. block entity, fluid, unbreakable, unloaded chunk는 보호한다.
+- 대량 지형 주문은 no-drop을 유지하며 `shatter`만 bounded drop identity를 유지한다.
+- Terrain class는 **MAJOR** `disintegrate`, `delayed_blast_fireball`, `fire_storm`, `earthquake`, `meteor_swarm`, `world_sunder`, `arcane_annihilation`; **CONDITIONAL** `fireball`, `shatter`, `flame_strike`, `meteor_shard`, `move_earth`, `lightning_bolt`, `thunderwave`, `gust_of_wind`; 나머지는 기본적으로 **NONE**이다.
+- Grimoire header/content/footer ownership, fine-line sigil grammar, prismatic primitive budget, temporary Light cleanup, robe atomic equipment, ready-hold release 계약은 alpha.33과 동일하게 유지한다.
+- Canonical Java 25 clean build + source audit + JAR verify가 alpha.34 source commit 이후 반드시 성공해야 하며 source-only PASS로 배포하지 않는다.

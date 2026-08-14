@@ -1,6 +1,7 @@
 package kr.moonseungjun.arcanecircle.world;
 
 import kr.moonseungjun.arcanecircle.magic.ArcaneDamage;
+import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import kr.moonseungjun.arcanecircle.magic.SpellMetrics;
@@ -29,6 +30,10 @@ final class NpcSpellResolver {
 
     static boolean execute(ServerLevel level, Mob caster, LivingEntity target,
                            SpellDefinition spell, double range, double power) {
+        if (ArcaneFieldService.blocksCasting(caster)) {
+            WorldMagicService.stop(caster);
+            return false;
+        }
         if (target == null || !target.isAlive() || caster.isAlliedTo(target)) return false;
         CastTargetSnapshot snapshot = WorldMagicService.consumeNpcSnapshot(caster, spell.id())
                 .orElseGet(() -> WorldMagicService.captureSnapshot(caster, target, spell, range));

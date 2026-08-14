@@ -144,6 +144,33 @@ public final class DestructiveMagicService {
         return changed;
     }
 
+    /**
+     * Makes World Sunder read as a split in the battlefield rather than only another round crater.
+     * The irregular seven-point cut reuses impact() and therefore cannot bypass chunk protection,
+     * hardness/resistance checks or the shared per-tick mutation budgets.
+     */
+    public static int fissure(ServerPlayer player, String spellId, Vec3 center,
+                              Vec3 direction, double range, double power) {
+        if (center == null) return 0;
+        Vec3 flat = direction == null ? Vec3.ZERO : new Vec3(direction.x, 0.0, direction.z);
+        if (flat.lengthSqr() < 1.0E-8) flat = new Vec3(0.0, 0.0, 1.0);
+        flat = flat.normalize();
+        Vec3 right = new Vec3(-flat.z, 0.0, flat.x);
+        double halfLength = Math.max(7.0, Math.min(15.0, range * .20));
+        int changed = 0;
+        for (int i = -3; i <= 3; i++) {
+            double t = i / 3.0;
+            double weight = 1.0 - Math.abs(t);
+            double wobble = Math.sin((i + 3) * 1.73) * (1.0 + weight * .55);
+            Vec3 at = center.add(flat.scale(t * halfLength)).add(right.scale(wobble));
+            changed += impact(player, spellId, at, 3.0 + weight * 2.2,
+                    power * (.78 + weight * .26));
+            TickBudget tickBudget = budget((ServerLevel) player.level());
+            if (!tickBudget.scanAvailable() || tickBudget.changesRemaining() <= 0) break;
+        }
+        return changed;
+    }
+
     public static void applyPhysicalAftermath(ServerPlayer player, String spellId,
                                               CastTargetSnapshot snapshot, double range, double power) {
         if (snapshot == null || !snapshot.validFor(player)) return;
@@ -154,6 +181,8 @@ public final class DestructiveMagicService {
                     snapshot.launchOrigin(), snapshot.target(), power * .52);
             case "gust_of_wind" -> ray(player, "gust_of_wind",
                     snapshot.launchOrigin(), snapshot.target(), power * .38);
+            case "world_sunder" -> fissure(player, "world_sunder", snapshot.target(),
+                    snapshot.launchDirection(), range, power);
             default -> {
             }
         }

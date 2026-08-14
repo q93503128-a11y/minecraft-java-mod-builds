@@ -28,6 +28,16 @@ public final class SpellKineticsService {
         CastTargetSnapshot targetSnapshot = WorldMagicService.captureSnapshot(player, cast.spell(), cast.range());
         WorldMagicService.release(player, cast, targetSnapshot);
 
+        // These spells own sustained server state.  Treating them as generic FIELD pulses was the
+        // reason Time Stop and Antimagic Field behaved like short potion bursts instead of spells.
+        if (ArcaneFieldService.handles(cast.spell().id())) {
+            boolean executed = targetSnapshot.executeLocked(player,
+                    () -> ArcaneFieldService.executeSpecial(player, cast.spell().id(),
+                            cast.range(), cast.power(), targetSnapshot));
+            SpellCastingService.finishKineticCast(player, cast, growthSnapshot, executed);
+            return executed;
+        }
+
         if ("meteor_swarm".equals(cast.spell().id())) {
             MeteorBarragePattern.Strike first = MeteorBarragePattern.strike(targetSnapshot.barrageSeed(), 0);
             enqueue(player, new PendingCast(cast, growthSnapshot, targetSnapshot,
@@ -106,6 +116,7 @@ public final class SpellKineticsService {
 
     private static boolean executeLocked(ServerPlayer player, CastTargetSnapshot targetSnapshot,
                                          String spellId, double range, double power) {
+        if (ArcaneFieldService.blocksCasting(player)) return false;
         boolean executed = targetSnapshot.executeLocked(player,
                 () -> SpellCastingService.executeResolved(player, spellId, range, power));
         if (executed) DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
@@ -125,9 +136,10 @@ public final class SpellKineticsService {
     public static void tick(ServerPlayer player) {
         List<PendingCast> casts = PENDING.get(player.getUUID());
         if (casts == null || casts.isEmpty()) return;
-        if (!player.isAlive() || player.isSpectator()) {
+        if (!player.isAlive() || player.isSpectator() || ArcaneFieldService.blocksCasting(player)) {
             casts.clear();
             PENDING.remove(player.getUUID());
+            WorldMagicService.stop(player);
             return;
         }
 
