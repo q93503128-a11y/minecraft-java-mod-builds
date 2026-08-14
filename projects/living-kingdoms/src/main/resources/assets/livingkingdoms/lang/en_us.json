@@ -6,5 +6,8 @@
   "livingkingdoms.origin.background": "Background",
   "livingkingdoms.origin.residence": "Starting Residence",
   "livingkingdoms.origin.confirm": "Begin This Life",
-  "livingkingdoms.origin.invalid": "Review this combination"
+  "livingkingdoms.origin.invalid": "Review this combination",
+  "entity.livingkingdoms.silver_hart": "Silver Hart",
+  "entity.livingkingdoms.ash_hound": "Ash Hound",
+  "entity.livingkingdoms.river_wisp": "River Wisp"
 }
