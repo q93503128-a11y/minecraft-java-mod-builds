@@ -75,6 +75,12 @@ public final class ErdenCapitalLifecycleSavedData extends SavedData {
                     retirementDay, deathDay);
         }
 
+        public Person withHousehold(String household) {
+            return new Person(id, name, household, birthDay, parentA, parentB,
+                    generation, founder, foundingWorker, workX, workZ, workRole,
+                    shiftStart, shiftEnd, retirementDay, deathDay);
+        }
+
         public Person withRetirement(long day) {
             return new Person(id, name, householdId, birthDay, parentA, parentB,
                     generation, founder, foundingWorker, workX, workZ, workRole,
@@ -244,6 +250,19 @@ public final class ErdenCapitalLifecycleSavedData extends SavedData {
             setDirty();
             return;
         }
+    }
+
+    public boolean movePersonHousehold(String personId, String targetHousehold) {
+        if (targetHousehold == null || targetHousehold.isBlank()) return false;
+        for (int i = 0; i < persons.size(); i++) {
+            Person person = persons.get(i);
+            if (!person.id().equals(personId) || person.founder()) continue;
+            if (person.householdId().equals(targetHousehold)) return true;
+            persons.set(i, person.withHousehold(targetHousehold));
+            setDirty();
+            return true;
+        }
+        return false;
     }
 
     public int founderCount() {

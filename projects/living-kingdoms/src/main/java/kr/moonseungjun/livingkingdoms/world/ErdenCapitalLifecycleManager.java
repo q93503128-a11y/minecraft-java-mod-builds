@@ -280,7 +280,7 @@ public final class ErdenCapitalLifecycleManager {
             }
         }
         reconcileSuccessions(model, day);
-        maybeBirthChildren(population, model, establishedDay, day);
+        maybeBirthChildren(level, population, model, establishedDay, day);
         assignVacantWorkplaces(level, population, model, day);
     }
 
@@ -302,6 +302,7 @@ public final class ErdenCapitalLifecycleManager {
     }
 
     private static void maybeBirthChildren(
+            ServerLevel level,
             ErdenPopulationSavedData population,
             Model model,
             long establishedDay,
@@ -320,15 +321,8 @@ public final class ErdenCapitalLifecycleManager {
                     .filter(person -> person.householdId().equals(line.householdId()) && person.aliveOn(day))
                     .toList();
             if (members.size() >= HOUSEHOLD_CAPACITY) continue;
-            List<ErdenCapitalLifecycleSavedData.Person> parents = members.stream()
-                    .filter(ErdenCapitalLifecycleSavedData.Person::founder)
-                    .filter(person -> {
-                        int age = ageYears(person, day);
-                        return age >= MIN_PARENT_AGE && age <= MAX_PARENT_AGE;
-                    })
-                    .sorted(Comparator.comparing(ErdenCapitalLifecycleSavedData.Person::id))
-                    .limit(2)
-                    .toList();
+            List<ErdenCapitalLifecycleSavedData.Person> parents =
+                    ErdenCapitalMarriageManager.parentPair(level, line.householdId(), members, day);
             if (parents.size() != 2) continue;
             if (Math.floorMod(line.householdId().hashCode() * 31L + year * 17L, 100L) >= 55L) continue;
             ErdenPopulationSavedData.Household household = households.get(line.householdId());
@@ -549,6 +543,22 @@ public final class ErdenCapitalLifecycleManager {
                 replacementWorkers, living, ADULT_AGE, RETIREMENT_AGE);
     }
 
+    public static Projection projectForAudit(
+            ServerLevel level,
+            ErdenPopulationSavedData population,
+            int years) {
+        prepare(level, population);
+        ErdenCapitalLifecycleSavedData data = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalLifecycleSavedData.TYPE);
+        Model projection = new Model(data.persons(), data.householdLines(), data.nextBirthSequence());
+        long baseDay = Math.max(data.lastProcessedDay(), data.establishedDay());
+        long targetDay = baseDay + (long) Math.max(1, years) * DAYS_PER_YEAR;
+        for (long day = baseDay + 1L; day <= targetDay; day++) {
+            processModelDay(level, population, projection, data.establishedDay(), day, false);
+        }
+        return new Projection(List.copyOf(projection.persons), List.copyOf(projection.lines), targetDay);
+    }
+
     public static boolean isActiveFounderWorker(
             ServerLevel level,
             ErdenPopulationSavedData population,
@@ -736,6 +746,12 @@ public final class ErdenCapitalLifecycleManager {
             case "warehouse" -> "창고";
             default -> role;
         };
+    }
+
+    public record Projection(
+            List<ErdenCapitalLifecycleSavedData.Person> persons,
+            List<ErdenCapitalLifecycleSavedData.HouseholdLine> householdLines,
+            long targetDay) {
     }
 
     public record WorkerSnapshot(
