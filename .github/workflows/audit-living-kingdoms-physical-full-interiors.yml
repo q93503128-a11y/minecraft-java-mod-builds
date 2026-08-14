@@ -41,7 +41,9 @@ jobs:
           saved="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanFullInteriorExpansionSavedData.java"
           mod="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java"
 
-          grep -F 'public static final int CATALOG_REVISION = 1;' "$route"
+          grep -F 'public static final int CATALOG_REVISION = 2;' "$route"
+          grep -F 'Map<Long, RiseDirection> committedAscents' "$route"
+          grep -F 'commitAscents(search.path(), committedAscents' "$route"
           grep -F 'source_blocks_cut=0 source_air_only=true source_only=true world_reads=false mutations=0' "$route"
           grep -F 'isClearableSourceAirSeal' "$route"
           grep -F 'EXPECTED_BUILDINGS = 40' "$manager"
