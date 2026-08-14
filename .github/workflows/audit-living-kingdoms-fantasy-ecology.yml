@@ -57,6 +57,8 @@ jobs:
           grep -Fq '!level.hasChunk(x >> 4, z >> 4)' "$ecology"
           grep -Fq 'LOCAL_SPECIES_CAP = 5' "$ecology"
           grep -Fq 'CI_TICKET_REFRESH_INTERVAL = 100' "$ecology"
+          grep -Fq 'ciTicketRefreshes == 0L' "$ecology"
+          grep -Fq 'refreshCiTickets(level)' "$ecology"
           grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_TICKET_REFRESH' "$ecology"
           grep -Fq 'timeout_safe_refresh=true' "$ecology"
           grep -Fq 'actual_custom_entity_types=true' "$ecology"
