@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/scripts/wire_living_kingdoms_fantasy_ecology.py'
       - '.github/scripts/harden_living_kingdoms_fantasy_ecology_ci.py'
+      - '.github/scripts/upgrade_living_kingdoms_fantasy_species_behavior.py'
       - '.github/workflows/patch-living-kingdoms-fantasy-ecology.yml'
 
 concurrency:
@@ -34,6 +35,8 @@ jobs:
         run: python .github/scripts/wire_living_kingdoms_fantasy_ecology.py
       - name: Harden ecology CI ticket lifecycle
         run: python .github/scripts/harden_living_kingdoms_fantasy_ecology_ci.py
+      - name: Add species-specific behavior
+        run: python .github/scripts/upgrade_living_kingdoms_fantasy_species_behavior.py
       - name: Clean compile Living Kingdoms
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
@@ -43,6 +46,9 @@ jobs:
           set -euo pipefail
           registry='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/FantasyEntityTypes.java'
           ecology='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFantasyEcologyManager.java'
+          hart='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/SilverHartEntity.java'
+          hound='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/AshHoundEntity.java'
+          wisp='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/RiverWispEntity.java'
           client='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/client/LivingKingdomsClient.java'
           main='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
           grep -Fq 'DeferredRegister.createEntities' "$registry"
@@ -50,7 +56,20 @@ jobs:
           grep -Fq 'ash_hound' "$registry"
           grep -Fq 'river_wisp' "$registry"
           grep -Fq 'EntityAttributeCreationEvent' "$registry"
-          grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_PASS' "$ecology"
+          grep -Fq 'AvoidEntityGoal' "$hart"
+          grep -Fq 'Player.class, 18.0F' "$hart"
+          grep -Fq 'HurtByTargetGoal' "$hound"
+          grep -Fq 'InteractionResult.PASS' "$hound"
+          grep -Fq 'return false;' "$hound"
+          ! grep -Fq 'NearestAttackableTargetGoal' "$hound"
+          grep -Fq 'InteractionResult.PASS' "$wisp"
+          grep -Fq 'tickLoadedSpeciesBehavior' "$ecology"
+          grep -Fq 'herdSilverHarts' "$ecology"
+          grep -Fq 'coordinateAshHounds' "$ecology"
+          grep -Fq 'bindRiverWisps' "$ecology"
+          grep -Fq 'hart_player_avoidance=true' "$ecology"
+          grep -Fq 'ash_hound_night_pack=true' "$ecology"
+          grep -Fq 'river_bound_navigation=true' "$ecology"
           grep -Fq 'CI_TICKET_REFRESH_INTERVAL = 100' "$ecology"
           grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_TICKET_REFRESH' "$ecology"
           grep -Fq 'timeout_safe_refresh=true' "$ecology"
@@ -59,7 +78,7 @@ jobs:
           grep -Fq 'FantasyEntityTypes.register(modEventBus)' "$main"
           grep -Fq 'ErdenFantasyEcologyManager.onServerTick(event)' "$main"
           grep -Fq 'FantasyEntityRenderers::register' "$client"
-      - name: Commit compiled wiring directly to main
+      - name: Commit compiled ecology behavior directly to main
         shell: bash
         run: |
           set -euo pipefail
@@ -68,9 +87,12 @@ jobs:
           git add \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/client/LivingKingdomsClient.java \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFantasyEcologyManager.java
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFantasyEcologyManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/SilverHartEntity.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/AshHoundEntity.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/RiverWispEntity.java
           git diff --cached --quiet && exit 0
-          git commit -m 'test(living-kingdoms): refresh fantasy ecology CI tickets'
+          git commit -m 'feat(living-kingdoms): add fantasy species behaviors'
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
