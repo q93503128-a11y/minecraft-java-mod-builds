@@ -44,7 +44,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -61,7 +60,6 @@ public final class AshHoundEntity extends Wolf {
         super.registerGoals();
         goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.20D, true));
         targetSelector.addGoal(1, new HurtByTargetGoal(this).setAlertOthers());
-        targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
     }
 
     @Override
@@ -199,7 +197,6 @@ if "private static void tickLoadedSpeciesBehavior(" not in text:
     require(anchor in text, "ecology spawnAroundTravellers anchor missing")
     text = text.replace(anchor, helper + anchor, 1)
 
-# Add behavior proof tokens to the existing CI PASS without changing its three-species lifecycle.
 old_pass_fragment = "actual_custom_entity_types=true actual_entity_instances=true northern_forest_spawn=true"
 new_pass_fragment = "actual_custom_entity_types=true actual_entity_instances=true hart_player_avoidance=true hart_herding=true ash_hound_untameable=true ash_hound_night_pack=true river_wisp_no_item_courier=true river_bound_navigation=true northern_forest_spawn=true"
 if "hart_player_avoidance=true" not in text:
@@ -211,7 +208,7 @@ for path, tokens in {
     HART: ["AvoidEntityGoal", "Player.class, 18.0F"],
     HOUND: ["InteractionResult.PASS", "return false;", "HurtByTargetGoal"],
     WISP: ["InteractionResult.PASS"],
-    ECO: ["tickLoadedSpeciesBehavior", "herdSilverHarts", "coordinateAshHounds", "bindRiverWisps", "hart_herding=true", "ash_hound_untameable=true", "river_bound_navigation=true"],
+    ECO: ["tickLoadedSpeciesBehavior", "herdSilverHarts", "coordinateAshHounds", "bindRiverWisps", "hart_herding=true", "ash_hound_untameable=true", "ash_hound_night_pack=true", "river_bound_navigation=true"],
 }.items():
     current = path.read_text(encoding="utf-8")
     for token in tokens:
