@@ -42,6 +42,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredInteriorPreserver;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredInteriorSurvey;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredNewFloorManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredUpperRouteManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenUrbanFullInteriorPlanCatalog;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanInteriorBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanMicroInfillManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanLifeManager;
@@ -113,6 +114,7 @@ public final class LivingKingdoms {
         ErdenUrbanPlacedTopologyCatalog.bootstrap();
         ErdenUrbanSourceShellPlanner.bootstrap();
         ErdenUrbanUpperRoomOpportunityCatalog.bootstrap();
+        ErdenUrbanFullInteriorPlanCatalog.bootstrap();
         ErdenUrbanSourceAirRoutePlanner.bootstrap();
         ErdenUrbanNewFloorStructuralApprovalCatalog.bootstrap();
         ErdenUrbanAuthoredNewFloorManager.bootstrap();
