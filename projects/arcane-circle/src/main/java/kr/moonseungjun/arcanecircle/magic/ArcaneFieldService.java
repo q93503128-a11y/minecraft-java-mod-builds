@@ -58,6 +58,7 @@ public final class ArcaneFieldService {
 
     public static boolean blocksCasting(LivingEntity caster) {
         if (caster == null || !caster.isAlive()) return false;
+        if (SpellGameplayService.blocksCasting(caster)) return true;
         for (AntimagicField field : ANTIMAGIC.values()) {
             if (!field.active() || field.level() != caster.level()) continue;
             Entity owner = field.level().getEntity(field.ownerId());
@@ -106,9 +107,6 @@ public final class ArcaneFieldService {
                 + one(radius) + " · 상태효과와 Arcane 시전을 지속 억제"), 100);
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE,
                 SoundSource.PLAYERS, 1.0F, .72F);
-        // Apply the suppression immediately, but do not send stop for the owner: the release
-        // cinematic that just created this field must remain visible. New casts are rejected by
-        // SpellCastingService before a charge can start.
         applyAntimagicField(level, player, radius);
         return true;
     }
@@ -147,19 +145,14 @@ public final class ArcaneFieldService {
             AntimagicField field = anti.next().getValue();
             if (field.level() != level) continue;
             Entity owner = level.getEntity(field.ownerId());
-            if (!field.active() || !(owner instanceof ServerPlayer player) || !player.isAlive() || player.isSpectator()) {
-                anti.remove();
-            }
+            if (!field.active() || !(owner instanceof ServerPlayer player) || !player.isAlive() || player.isSpectator()) anti.remove();
         }
-
         Iterator<Map.Entry<UUID, TimeField>> time = TIME_FIELDS.entrySet().iterator();
         while (time.hasNext()) {
             TimeField field = time.next().getValue();
             if (field.level() != level) continue;
             Entity owner = level.getEntity(field.ownerId());
-            if (!field.active() || !(owner instanceof ServerPlayer player) || !player.isAlive() || player.isSpectator()) {
-                time.remove();
-            }
+            if (!field.active() || !(owner instanceof ServerPlayer player) || !player.isAlive() || player.isSpectator()) time.remove();
         }
     }
 
@@ -177,10 +170,10 @@ public final class ArcaneFieldService {
         for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, box,
                 value -> value.isAlive() && !value.isRemoved()
                         && owner.position().distanceToSqr(value.position()) <= radius * radius)) {
+            SpellGameplayService.clear(entity.getUUID());
             suppressMagicEffects(entity);
             if (entity instanceof ServerPlayer player) {
                 if (player == owner) {
-                    // Suppress any older delayed spell without killing this field's just-released VFX.
                     SpellKineticsService.clear(player.getUUID());
                     clearFusion(player);
                 } else {
@@ -206,8 +199,7 @@ public final class ArcaneFieldService {
                             && !owner.isAlliedTo(value)
                             && field.center().distanceToSqr(value.position()) <= radius * radius)) {
                 shouldRemainFrozen.add(mob.getUUID());
-                FROZEN_MOBS.computeIfAbsent(mob.getUUID(), ignored ->
-                        new FrozenMob(level, mob.getUUID(), mob.isNoAi()));
+                FROZEN_MOBS.computeIfAbsent(mob.getUUID(), ignored -> new FrozenMob(level, mob.getUUID(), mob.isNoAi()));
                 mob.setNoAi(true);
                 mob.setDeltaMovement(Vec3.ZERO);
                 if (ArcaneMageService.isMage(mob)) WorldMagicService.stop(mob);

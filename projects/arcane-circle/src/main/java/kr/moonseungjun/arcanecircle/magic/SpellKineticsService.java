@@ -28,7 +28,7 @@ public final class SpellKineticsService {
         CastTargetSnapshot targetSnapshot = WorldMagicService.captureSnapshot(player, cast.spell(), cast.range());
         WorldMagicService.release(player, cast, targetSnapshot);
 
-        // These spells own sustained server state.  Treating them as generic FIELD pulses was the
+        // These spells own sustained server state. Treating them as generic FIELD pulses was the
         // reason Time Stop and Antimagic Field behaved like short potion bursts instead of spells.
         if (ArcaneFieldService.handles(cast.spell().id())) {
             boolean executed = targetSnapshot.executeLocked(player,
@@ -50,6 +50,20 @@ public final class SpellKineticsService {
 
         int presentationImpactDelay = SpellPresentationProfile.impactDelayTicks(cast.spell(),
                 WorldMagicService.kineticDistance(player, cast.spell(), cast.range(), targetSnapshot));
+
+        // Persistent/control/defensive spells execute exactly once at the authored impact moment.
+        // Their own runtime then owns every later tick; generic FIELD pulses must not restart them.
+        if (SpellGameplayService.handles(cast.spell().id())) {
+            if (presentationImpactDelay > 1) {
+                enqueue(player, new PendingCast(cast, growthSnapshot, targetSnapshot,
+                        clock(player) + presentationImpactDelay, 0, 1, cast.power(), false, 0));
+                return true;
+            }
+            boolean executed = executeLocked(player, targetSnapshot, cast.spell().id(),
+                    cast.range(), cast.power());
+            SpellCastingService.finishKineticCast(player, cast, growthSnapshot, executed);
+            return executed;
+        }
 
         if (mode == SpellArchetype.Mode.INSTANT) {
             if (presentationImpactDelay > 1) {
@@ -117,9 +131,13 @@ public final class SpellKineticsService {
     private static boolean executeLocked(ServerPlayer player, CastTargetSnapshot targetSnapshot,
                                          String spellId, double range, double power) {
         if (ArcaneFieldService.blocksCasting(player)) return false;
-        boolean executed = targetSnapshot.executeLocked(player,
-                () -> SpellCastingService.executeResolved(player, spellId, range, power));
-        if (executed) DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
+        boolean gameplayOwned = SpellGameplayService.handles(spellId);
+        boolean executed = targetSnapshot.executeLocked(player, () -> gameplayOwned
+                ? SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)
+                : SpellCastingService.executeResolved(player, spellId, range, power));
+        if (executed && !gameplayOwned) {
+            DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
+        }
         return executed;
     }
 

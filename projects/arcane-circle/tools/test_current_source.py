@@ -10,9 +10,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.34' in gradle
-assert 'VERSION = "0.12.1-alpha.34"' in main
-assert '"version": "0.12.1-alpha.34"' in index
+assert 'mod_version=0.12.1-alpha.35' in gradle
+assert 'VERSION = "0.12.1-alpha.35"' in main
+assert '"version": "0.12.1-alpha.35"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -64,7 +64,8 @@ assert 'viewport().w()<410' in grimoire
 summary=text(magic/'SpellEffectSummary.java'); definition=text(magic/'SpellDefinition.java')
 assert 'SpellEffectSummary.summary(this)' in definition and '효과 · ' in definition
 for token in ['case "wish"','기존 이로운','case "time_stop"','AI·이동','case "antimagic_field"','Arcane 시전',
-'case "meteor_swarm"','16발','case "world_sunder"','방향성 실제 세계 균열']:
+'case "meteor_swarm"','16발','case "world_sunder"','방향성 실제 세계 균열','case "fly"','자유 비행',
+'case "clone"','치명상','case "control_weather"','실제 폭우·뇌우','case "prismatic_wall"','14초 지속']:
     assert token in summary, token
 assert summary.count('case "') >= 109
 
@@ -83,9 +84,33 @@ for token in ['captureSnapshot','CastTargetSnapshot snapshot','seed=%d','PLAYER_
 kinetics=text(magic/'SpellKineticsService.java')
 for token in ['CastTargetSnapshot targetSnapshot','captureSnapshot','targetSnapshot().validFor(player)','barrageSeed',
 'MeteorBarragePattern.strike(targetSnapshot.barrageSeed(), 0)','applyPhysicalAftermath','ArcaneFieldService.handles',
-'ArcaneFieldService.executeSpecial','ArcaneFieldService.blocksCasting']:
+'ArcaneFieldService.executeSpecial','ArcaneFieldService.blocksCasting','SpellGameplayService.handles',
+'SpellGameplayService.execute','gameplayOwned','generic FIELD pulses must not restart']:
     assert token in kinetics, token
 assert 'WorldMagicService.lockedTarget' not in kinetics and 'lockedTarget' not in kinetics
+
+# Real gameplay runtime: this gate checks mechanics, not just switch-case existence.
+assert (magic/'SpellGameplayService.java').exists()
+gameplay=text(magic/'SpellGameplayService.java')
+for token in ['LivingIncomingDamageEvent','event.setCanceled(true)','getAbilities().mayfly = true','onUpdateAbilities()',
+'setNoAi(true)','wasNoAi','restoreControl','Attributes.SCALE','setWeatherParameters(0, duration, true, true)',
+'DeathWard','"simulacrum"','"clone"','"control_weather"','"prismatic_wall"','"incendiary_cloud"',
+'"wall_of_force"','"wall_of_ice"','"wind_wall"','"sleet_storm"','"insect_plague"','"flesh_to_stone"',
+'"forcecage"','"true_polymorph"','"thunder_cage"','"astral_prison"','setTicksFrozen(0)',
+'player.isAlliedTo(value)','SpellMetrics.wallWidth','snapshot.target()','snapshot.targetEntity(player)',
+'DestructiveMagicService.impact(player, id, center, radius, power)','LIGHTNING_BOLT_THUNDER']:
+    assert token in gameplay, token
+ice=gameplay[gameplay.index('private static boolean iceKnife'):gameplay.index('private static boolean fireShield')]
+assert 'DestructiveMagicService.impact' not in ice and 'flame_strike' not in ice
+assert 'case "sleet_storm"' in gameplay and 'MobEffects.POISON' not in gameplay[gameplay.index('case "sleet_storm"'):gameplay.index('case "cloudkill"')]
+
+# Visual lifetime must track actual sustained gameplay, especially Time Stop/Antimagic.
+presentation=text(magic/'SpellPresentationProfile.java')
+assert 'SpellGameplayService.visualDurationTicks(spell.id())' in presentation
+audit_duration=gameplay[gameplay.index('public static int visualDurationTicks'):gameplay.index('/** Used by Arcane-field') if '/** Used by Arcane-field' in gameplay else gameplay.index('public static boolean blocksCasting')]
+for token in ['case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS','case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS',
+'case "prismatic_wall" -> 280','case "control_weather" -> 400']:
+    assert token in audit_duration, token
 
 # Destruction budgets/classification and explicit World Sunder fissure.
 destruction=text(magic/'DestructiveMagicService.java')
@@ -106,7 +131,7 @@ assert 'targetEntity(player)' not in fusion
 field=text(magic/'ArcaneFieldService.java')
 for token in ['TIME_STOP_TICKS = 120','ANTIMAGIC_TICKS = 240','activateAntimagic','activateTimeStop','fulfillWish',
 'blocksCasting','setNoAi(true)','wasNoAi','restoreFrozenLevel','suppressMagicEffects','cleanseHarmful',
-'SpellKineticsService.clear','clearFusion']:
+'SpellKineticsService.clear','clearFusion','SpellGameplayService.blocksCasting(caster)','SpellGameplayService.clear(entity.getUUID())']:
     assert token in field, token
 assert 'removeAllEffects' not in field
 harmful=field[field.index('private static void cleanseHarmful'):field.index('private static void restoreFrozenLevel')]
@@ -124,7 +149,10 @@ for token in ['MeteorBarragePattern.strike','barrageSeed','MAX_ACTIVE_BARRAGES',
     assert token in npc_barrage, token
 assert 'NpcMeteorBarrageService.tick' in main and 'NpcMeteorBarrageService.clearAll' in main
 assert 'ArcaneFieldService.tick' in main and 'ArcaneFieldService.clearAll' in main
+assert 'SpellGameplayService.tick' in main and 'SpellGameplayService.clearAll' in main
+assert 'SpellGameplayService::onIncomingDamage' in main
 assert main.index('ArcaneMageService.tickNear(player)') < main.index('ArcaneFieldService.tick')
+assert main.index('SpellGameplayService.tick') < main.index('ArcaneFieldService.tick')
 assert main.count('SpellKineticsService.clear(player.getUUID())') >= 2
 
 # Existing HUD/gear/light/staff contracts.
@@ -155,7 +183,8 @@ for obsolete in ['AUDIT_REPORT_V0.5.md','BUILD_AND_RUNTIME_REPORT.md','MAGIC_WOR
 print('Arcane Circle current-source audit: PASS')
 for name in ['target_snapshot_parity','seeded_meteor_barrage','destruction_tick_budget','destruction_drop_budget',
 'world_sunder_fissure','npc_meteor_scheduler','non_homing_target_seal','sustained_antimagic','authoritative_time_stop',
-'wish_preserves_beneficial_effects','grimoire_effect_summaries']:
+'wish_preserves_beneficial_effects','grimoire_effect_summaries','persistent_spell_runtime','hard_control_restore',
+'controlled_flight','death_substitution','actual_weather_control','persistent_wall_collision','visual_lifetime_parity']:
     print(name+'=PASS')
 print('third_person_fake_geometry=absent')
 print('prismatic_white_frame=absent')
