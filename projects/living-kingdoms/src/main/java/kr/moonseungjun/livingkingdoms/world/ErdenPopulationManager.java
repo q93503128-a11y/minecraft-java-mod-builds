@@ -109,11 +109,19 @@ public final class ErdenPopulationManager {
         event.setCanceled(true);
         ErdenPopulationSavedData.Resident resident = reference.resident;
         String message;
-        if (resident.worker()) {
+        long lifecycleDay = Math.floorDiv(level.getGameTime(), 24_000L);
+        boolean activeWorker = resident.worker()
+                && ErdenCapitalLifecycleManager.isActiveFounderWorker(
+                level, level.getDataStorage().computeIfAbsent(ErdenPopulationSavedData.TYPE),
+                resident.id(), lifecycleDay);
+        if (activeWorker) {
             message = reference.household.familyName() + " 가구의 구성원입니다. "
                     + roleName(resident.workRole()) + "에서 "
                     + shiftName(resident.shiftStart(), resident.shiftEnd())
                     + " 근무를 맡고 있습니다.";
+        } else if (resident.worker()) {
+            message = reference.household.familyName()
+                    + " 가구의 어른입니다. 생업에서는 은퇴했고 집안과 이웃 일을 돕고 있습니다.";
         } else if (resident.lifeStage().equals("child")) {
             message = reference.household.familyName()
                     + " 가구의 아이입니다. 집 근처에서 심부름과 기초 일을 배우고 있습니다.";
@@ -403,10 +411,13 @@ public final class ErdenPopulationManager {
                 Villager.class, capital,
                 villager -> residents.containsKey(villager.getName().getString()));
         long dayTime = Math.floorMod(level.getGameTime(), 24_000L);
+        long lifecycleDay = Math.floorDiv(level.getGameTime(), 24_000L);
         for (Villager villager : villagers) {
             ResidentRef reference = residents.get(villager.getName().getString());
             if (reference == null || population.isDead(reference.resident.id())) continue;
             boolean working = reference.resident.worker()
+                    && ErdenCapitalLifecycleManager.isActiveFounderWorker(
+                    level, population, reference.resident.id(), lifecycleDay)
                     && inShift(dayTime,
                     reference.resident.shiftStart(), reference.resident.shiftEnd());
             Target target = resolveTarget(level, reference, working);

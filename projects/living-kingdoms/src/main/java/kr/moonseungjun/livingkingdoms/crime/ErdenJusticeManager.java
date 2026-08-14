@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms.crime;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.world.ErdenCapitalStreamingBuilder;
+import kr.moonseungjun.livingkingdoms.world.ErdenCapitalLifecycleManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationSavedData;
 import kr.moonseungjun.livingkingdoms.world.ExternalDistrictBuildingBuilder;
 import kr.moonseungjun.livingkingdoms.world.RealmJurisdiction;
@@ -126,8 +127,13 @@ public final class ErdenJusticeManager {
         Map<String, ErdenPopulationSavedData.Resident> roster = livingRoster(population);
         Map<String, Villager> loaded = loadedResidents(level, roster);
         Set<String> guards = new HashSet<>();
+        long lifecycleDay = Math.floorDiv(level.getGameTime(), 24_000L);
         for (ErdenPopulationSavedData.Resident resident : roster.values()) {
-            if (resident.workRole().equals("guard_post")) guards.add(resident.name());
+            if (resident.workRole().equals("guard_post")
+                    && ErdenCapitalLifecycleManager.isActiveFounderWorker(
+                    level, population, resident.id(), lifecycleDay)) {
+                guards.add(resident.name());
+            }
         }
 
         for (ErdenJusticeSavedData.CaseRecord record : data.cases()) {

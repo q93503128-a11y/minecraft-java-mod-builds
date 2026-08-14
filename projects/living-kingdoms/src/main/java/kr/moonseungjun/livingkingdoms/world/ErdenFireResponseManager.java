@@ -279,7 +279,11 @@ public final class ErdenFireResponseManager {
         Set<String> guardNames = new HashSet<>();
         for (ErdenPopulationSavedData.Household household : population.households()) {
             for (ErdenPopulationSavedData.Resident resident : household.residents()) {
-                if (!resident.workRole().equals("guard_post") || population.isDead(resident.id())) continue;
+                long day = Math.floorDiv(level.getGameTime(), 24_000L);
+                if (!resident.workRole().equals("guard_post")
+                        || population.isDead(resident.id())
+                        || !ErdenCapitalLifecycleManager.isActiveFounderWorker(
+                        level, population, resident.id(), day)) continue;
                 guardNames.add(resident.name());
             }
         }

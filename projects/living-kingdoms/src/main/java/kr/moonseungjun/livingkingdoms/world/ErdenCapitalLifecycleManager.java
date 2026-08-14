@@ -271,8 +271,11 @@ public final class ErdenCapitalLifecycleManager {
             if (day >= naturalDeathDay(person)) {
                 person = person.withDeath(day);
                 model.persons.set(i, person);
-                if (persistFounderDeaths && person.founder() && !population.isDead(person.id())) {
-                    population.markDead(person.id());
+                if (persistFounderDeaths) {
+                    if (person.founder() && !population.isDead(person.id())) {
+                        population.markDead(person.id());
+                    }
+                    discardLoadedPerson(level, person.name());
                 }
             }
         }
@@ -545,6 +548,17 @@ public final class ErdenCapitalLifecycleManager {
                 replacementWorkers, living, ADULT_AGE, RETIREMENT_AGE);
     }
 
+    public static boolean isActiveFounderWorker(
+            ServerLevel level,
+            ErdenPopulationSavedData population,
+            String personId,
+            long day) {
+        prepare(level, population);
+        ErdenCapitalLifecycleSavedData.Person person = level.getDataStorage()
+                .computeIfAbsent(ErdenCapitalLifecycleSavedData.TYPE).person(personId);
+        return person != null && person.founder() && isActiveWorker(person, day);
+    }
+
     private static boolean isActiveWorker(ErdenCapitalLifecycleSavedData.Person person, long day) {
         return person.aliveOn(day) && person.assignedWorker() && !person.retiredOn(day)
                 && ageYears(person, day) >= ADULT_AGE;
@@ -640,6 +654,14 @@ public final class ErdenCapitalLifecycleManager {
             }
         }
         return preferredY;
+    }
+
+    private static void discardLoadedPerson(ServerLevel level, String name) {
+        for (Villager villager : level.getEntitiesOfClass(
+                Villager.class, capitalBounds(level),
+                candidate -> candidate.getName().getString().equals(name))) {
+            villager.discard();
+        }
     }
 
     private static AABB capitalBounds(ServerLevel level) {
