@@ -305,12 +305,20 @@ public final class ErdenCapitalHousingManager {
                     firstId, migrantName(firstSequence), vacancy.slotId(), day, 24 + Math.floorMod(firstSequence, 8));
             ErdenCapitalLifecycleSavedData.Person second = migrant(
                     secondId, migrantName(secondSequence), vacancy.slotId(), day, 22 + Math.floorMod(secondSequence, 9));
-            if (!lifecycle.addPerson(first) || !lifecycle.addPerson(second)) continue;
+            List<String> migrantIds = List.of(first.id(), second.id());
+            if (!lifecycle.addPeople(List.of(first, second))) continue;
             ErdenCapitalMarriageSavedData.Union union = marriages.createUnion(
                     first.id(), second.id(), vacancy.slotId(), day, false);
-            if (union == null) continue;
+            if (union == null) {
+                lifecycle.removeNonFounderPeople(migrantIds);
+                continue;
+            }
             WalletRelet relet = reletWallet(economy, vacancy.slotId());
-            if (!relet.success()) continue;
+            if (!relet.success()) {
+                marriages.removeUnion(union.id());
+                lifecycle.removeNonFounderPeople(migrantIds);
+                continue;
+            }
             estateSwept += relet.estateSwept();
             occupancy.put(vacancy.slotId(), 2);
             replaceResidence(residences, vacancy.asLease(first.id(), day, marketRent(vacantResidences(residences).size())));
@@ -440,8 +448,17 @@ public final class ErdenCapitalHousingManager {
 
     private static String migrantName(int sequence) {
         int value = Math.max(0, sequence - 1);
-        return "이주민 " + MIGRANT_HEADS.get(value % MIGRANT_HEADS.size())
-                + MIGRANT_TAILS.get((value / MIGRANT_HEADS.size()) % MIGRANT_TAILS.size());
+        int base = MIGRANT_HEADS.size() * MIGRANT_TAILS.size();
+        StringBuilder name = new StringBuilder("이주민 ");
+        int remaining = value;
+        do {
+            int digit = Math.floorMod(remaining, base);
+            if (name.length() > 4) name.append('·');
+            name.append(MIGRANT_HEADS.get(digit % MIGRANT_HEADS.size()));
+            name.append(MIGRANT_TAILS.get(digit / MIGRANT_HEADS.size()));
+            remaining = Math.floorDiv(remaining, base);
+        } while (remaining > 0);
+        return name.toString();
     }
 
     private static void logPlanOnce(ErdenCapitalHousingSavedData housing) {

@@ -146,6 +146,13 @@ public final class ErdenCapitalMarriageSavedData extends SavedData {
         return false;
     }
 
+    public boolean removeUnion(String unionId) {
+        if (unionId == null || unionId.isBlank()) return false;
+        boolean changed = unions.removeIf(union -> union.id().equals(unionId));
+        if (changed) setDirty();
+        return changed;
+    }
+
     public Union createUnion(
             String personA,
             String personB,

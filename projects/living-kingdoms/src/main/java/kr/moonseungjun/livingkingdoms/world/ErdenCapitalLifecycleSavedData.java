@@ -260,6 +260,32 @@ public final class ErdenCapitalLifecycleSavedData extends SavedData {
         return true;
     }
 
+    public boolean addPeople(List<Person> additions) {
+        if (additions == null || additions.isEmpty()) return false;
+        java.util.Set<String> ids = new java.util.HashSet<>();
+        java.util.Set<String> names = new java.util.HashSet<>();
+        for (Person person : additions) {
+            if (person == null || person.id().isBlank() || person.name().isBlank()
+                    || person.householdId().isBlank()
+                    || person(person.id()) != null || personByName(person.name()) != null
+                    || !ids.add(person.id()) || !names.add(person.name())) return false;
+        }
+        persons.addAll(additions);
+        setDirty();
+        return true;
+    }
+
+    public boolean removeNonFounderPeople(List<String> personIds) {
+        if (personIds == null || personIds.isEmpty()) return false;
+        java.util.Set<String> ids = new java.util.HashSet<>(personIds);
+        for (Person person : persons) {
+            if (ids.contains(person.id()) && person.founder()) return false;
+        }
+        boolean changed = persons.removeIf(person -> ids.contains(person.id()) && !person.founder());
+        if (changed) setDirty();
+        return changed;
+    }
+
     public boolean movePersonHousehold(String personId, String targetHousehold) {
         if (targetHousehold == null || targetHousehold.isBlank()) return false;
         for (int i = 0; i < persons.size(); i++) {
