@@ -37,6 +37,8 @@ jobs:
           PY
       - name: Apply regional settlement overlay
         run: python .github/scripts/add_living_kingdoms_regional_settlements.py
+      - name: Add bounded regional settlement CI proof
+        run: python .github/scripts/add_living_kingdoms_regional_settlement_ci.py
       - name: Clean compile Living Kingdoms
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
@@ -58,6 +60,9 @@ jobs:
           grep -Fq 'river_trade_post' "$builder"
           grep -Fq 'reused_housing=true' "$builder"
           grep -Fq 'LIVING_KINGDOMS_CI_REGIONAL_SETTLEMENT_TEST' "$builder"
+          grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS' "$builder"
+          grep -Fq 'sample_cross_street=true' "$builder"
+          grep -Fq 'intersectsExterior(new ChunkPos(chunkX, chunkZ))' "$builder"
           grep -Fq 'regional_revision' "$saved"
           grep -Fq 'regionalNeeds' "$saved"
           grep -Fq 'markRegionalNode' "$saved"
