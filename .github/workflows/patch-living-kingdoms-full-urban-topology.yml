@@ -1,0 +1,78 @@
+name: Patch Living Kingdoms full urban topology
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-full-urban-topology.yml'
+      - '.github/scripts/patch_living_kingdoms_full_urban_topology.py'
+
+concurrency:
+  group: patch-living-kingdoms-full-urban-topology
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply topology recovery patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/patch_living_kingdoms_full_urban_topology.py
+          git diff --check
+          git diff -- projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanPlacedTopologyCatalog.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanUpperRoomOpportunityCatalog.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorSurvey.java
+
+          placed='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanPlacedTopologyCatalog.java'
+          opportunity='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanUpperRoomOpportunityCatalog.java'
+          survey='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorSurvey.java'
+          grep -F 'final int maximumAuthoredFeetY = snapshot.height() - 2;' "$placed"
+          ! grep -Fq 'MAX_AUTHORED_UPPER_RISE' "$placed"
+          grep -F 'int maximumY = snapshot.height() - 2;' "$opportunity"
+          grep -F 'MAX_NEW_AUTHORED_UPPER_RISE = 16' "$opportunity"
+          grep -F 'placement.minX(), placement.maxX(), placement.minZ(), placement.maxZ()' "$survey"
+          grep -F 'placement.baseY() + placement.height() - 1' "$survey"
+          ! grep -Fq 'HALF_WIDTH' "$survey"
+          ! grep -Fq 'DEPTH = 9' "$survey"
+          ! grep -Fq 'VERTICAL_SCAN' "$survey"
+
+      - name: Java 25 clean compile
+        working-directory: projects/living-kingdoms
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon clean classes --stacktrace --console=plain
+
+      - name: Commit verified source patch to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanPlacedTopologyCatalog.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanUpperRoomOpportunityCatalog.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorSurvey.java
+          git commit -m 'fix(living-kingdoms): recover full authored building topology'
+          git pull --rebase origin main
+          git push origin HEAD:main
