@@ -59,8 +59,8 @@ jobs:
           ! grep -Fq 'VERTICAL_SCAN' "$survey"
           ! grep -Fq 'HALF_WIDTH' "$survey"
 
-          grep -F 'UrbanFragment cropFragment(' "$builder"
-          grep -F 'source.height()' "$builder"
+          grep -F 'private static FacadeFragment cropFragment(' "$builder"
+          grep -F 'fragmentWidth, height, fragmentLength' "$builder"
 
       - name: Java 25 clean compile
         working-directory: ${{ env.PROJECT_DIR }}
@@ -143,8 +143,6 @@ jobs:
               if ys and max(ys) - min(ys) > 12:
                   high_band.append(e)
 
-          if len(entries) < 1:
-              raise SystemExit('No source fragments analyzed')
           if not multilevel:
               raise SystemExit('No authored multilevel source fragment remains detectable')
           if not high_connected:
