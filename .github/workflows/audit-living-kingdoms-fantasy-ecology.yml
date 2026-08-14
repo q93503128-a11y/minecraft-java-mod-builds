@@ -43,6 +43,9 @@ jobs:
           set -euo pipefail
           registry='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/FantasyEntityTypes.java'
           ecology='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenFantasyEcologyManager.java'
+          hart='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/SilverHartEntity.java'
+          hound='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/AshHoundEntity.java'
+          wisp='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/entity/RiverWispEntity.java'
           renderers='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/client/FantasyEntityRenderers.java'
           main='projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java'
           grep -Fq 'DeferredRegister.createEntities' "$registry"
@@ -53,13 +56,35 @@ jobs:
           grep -Fq 'FantasyEntityTypes.SILVER_HART.get(), GoatRenderer::new' "$renderers"
           grep -Fq 'FantasyEntityTypes.ASH_HOUND.get(), WolfRenderer::new' "$renderers"
           grep -Fq 'FantasyEntityTypes.RIVER_WISP.get(), AllayRenderer::new' "$renderers"
+          grep -Fq 'AvoidEntityGoal' "$hart"
+          grep -Fq 'Player.class, 18.0F' "$hart"
+          grep -Fq 'HurtByTargetGoal' "$hound"
+          grep -Fq 'InteractionResult.PASS' "$hound"
+          grep -Fq 'return false;' "$hound"
+          ! grep -Fq 'NearestAttackableTargetGoal' "$hound"
+          grep -Fq 'InteractionResult.PASS' "$wisp"
+          for file in "$hart" "$hound" "$wisp"; do
+            grep -Fq 'removeWhenFarAway(double distanceToClosestPlayer)' "$file"
+          done
           grep -Fq 'insideCapital(x, z)' "$ecology"
           grep -Fq '!level.hasChunk(x >> 4, z >> 4)' "$ecology"
           grep -Fq 'LOCAL_SPECIES_CAP = 5' "$ecology"
+          grep -Fq 'BEHAVIOR_INTERVAL = 20' "$ecology"
+          grep -Fq 'tickLoadedSpeciesBehavior(level)' "$ecology"
+          grep -Fq 'herdSilverHarts' "$ecology"
+          grep -Fq 'coordinateAshHounds' "$ecology"
+          grep -Fq 'bindRiverWisps' "$ecology"
+          grep -Fq 'level.isDarkOutside()' "$ecology"
           grep -Fq 'CI_TICKET_REFRESH_INTERVAL = 100' "$ecology"
           grep -Fq 'ciTicketRefreshes == 0L' "$ecology"
           grep -Fq 'refreshCiTickets(level)' "$ecology"
           grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_TICKET_REFRESH' "$ecology"
+          grep -Fq 'hart_player_avoidance=true' "$ecology"
+          grep -Fq 'hart_herding=true' "$ecology"
+          grep -Fq 'ash_hound_untameable=true' "$ecology"
+          grep -Fq 'ash_hound_night_pack=true' "$ecology"
+          grep -Fq 'river_wisp_no_item_courier=true' "$ecology"
+          grep -Fq 'river_bound_navigation=true' "$ecology"
           grep -Fq 'timeout_safe_refresh=true' "$ecology"
           grep -Fq 'actual_custom_entity_types=true' "$ecology"
           grep -Fq 'FantasyEntityTypes.register(modEventBus)' "$main"
@@ -103,6 +128,7 @@ jobs:
           grep -F 'Prepared Erden fantasy ecology CI samples=3' ../../logs/fantasy-ecology.log
           grep -F 'LK_ERDEN_FANTASY_ECOLOGY_TICKET_REFRESH' ../../logs/fantasy-ecology.log
           grep -F 'actual_custom_entity_types=true actual_entity_instances=true' ../../logs/fantasy-ecology.log
+          grep -F 'hart_player_avoidance=true hart_herding=true ash_hound_untameable=true ash_hound_night_pack=true river_wisp_no_item_courier=true river_bound_navigation=true' ../../logs/fantasy-ecology.log
           grep -F 'northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false' ../../logs/fantasy-ecology.log
           grep -F 'player_loaded_runtime=true local_species_cap=5 forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true' ../../logs/fantasy-ecology.log
           grep -Eq 'ci_ticket_refreshes=[1-9][0-9]* timeout_safe_refresh=true' ../../logs/fantasy-ecology.log
