@@ -10,9 +10,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.36' in gradle
-assert 'VERSION = "0.12.1-alpha.36"' in main
-assert '"version": "0.12.1-alpha.36"' in index
+assert 'mod_version=0.12.1-alpha.37' in gradle
+assert 'VERSION = "0.12.1-alpha.37"' in main
+assert '"version": "0.12.1-alpha.37"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -65,7 +65,7 @@ summary=text(magic/'SpellEffectSummary.java'); definition=text(magic/'SpellDefin
 assert 'SpellEffectSummary.summary(this)' in definition and '효과 · ' in definition
 for token in ['case "wish"','기존 이로운','case "time_stop"','AI·이동','case "antimagic_field"','Arcane 시전',
 'case "meteor_swarm"','16발','case "world_sunder"','방향성 실제 세계 균열','case "fly"','자유 비행',
-'case "clone"','치명상','case "control_weather"','실제 폭우·뇌우','case "prismatic_wall"','30초 지속']:
+'case "clone"','치명상','case "control_weather"','실제 폭우·뇌우','case "prismatic_wall"','14초 지속']:
     assert token in summary, token
 assert summary.count('case "') >= 109
 
@@ -111,10 +111,10 @@ presentation=text(magic/'SpellPresentationProfile.java')
 assert 'SpellGameplayService.visualDurationTicks(spell.id())' in presentation
 audit_duration=gameplay[gameplay.index('public static int visualDurationTicks'):gameplay.index('/** Used by Arcane-field') if '/** Used by Arcane-field' in gameplay else gameplay.index('public static boolean blocksCasting')]
 for token in ['case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS','case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS',
-'case "prismatic_wall" -> 600','case "control_weather" -> 400']:
+'case "prismatic_wall" -> 280','case "control_weather" -> 400']:
     assert token in audit_duration, token
 
-# Alpha.36 presentation contract: spell-authored layers, upward portals/prisons and durable prism wall.
+# Alpha.37 presentation contract: spell-authored layers, upward portals/prisons and durable prism wall.
 overhaul=text(client/'ArcaneSpellVisualOverhaul.java')
 for token in ['replacesBaseSigil','portalPair','risingPortal','risingPrison','prismaticWallLayer',
               'temporalAstrolabe','wishCrown','executionFormula','tectonicFormula','materialWall',
@@ -125,8 +125,8 @@ for token in ['ArcaneSpellVisualOverhaul.chargeSigil','ArcaneSpellVisualOverhaul
               'MAX_FRAME = 12000','MAX_ENTRY = 3400']:
     assert token in tracker, token
 assert 'case PORTAL_GATE -> caster.position().add(0.0, 0.055, 0.0);' in world_magic
-assert 'case "prismatic_wall" -> 600;' in gameplay
-assert '30초 지속 7색 장벽' in summary
+assert 'case "prismatic_wall" -> 280;' in gameplay
+assert '14초 지속 7색 장벽' in summary
 assert 'age < .90' in overhaul and 'elapsedSeconds / .30' in overhaul
 assert 'return visual.target.subtract(visual.center);' in tracker
 assert 'visual.direction.scale(Math.max(1,visual.range))' not in tracker
@@ -183,6 +183,24 @@ for token in ['Blocks.LIGHT','LightBlock.LEVEL','illuminate','clearAll']: assert
 assert 'ArcaneLightService.illuminate(player,1800)' in text(magic/'ExpandedSpellEffects.java')
 assert 'syncAtomicRobe' in text(magic/'MageGearService.java')
 assert not (magic/'SpellSigilService.java').exists()
+
+# Alpha.37 non-potion buff identity + 3D high-circle authority.
+buff=text(magic/'ArcaneBuffRuntime.java')
+for token in ['durationTicks','onIncomingDamage','castTimeMultiplier','adjustCooldownTicks',
+              'protection_from_energy','greater_invisibility','freedom_of_movement','true_seeing',
+              'solar_guard','shapechange','foresight','rechargeInterval','reveal']:
+    assert token in buff, token
+for token in ['ArcaneBuffRuntime.apply','ArcaneBuffRuntime.tick','ArcaneBuffRuntime.onIncomingDamage',
+              'ArcaneBuffRuntime.clear','ArcaneBuffRuntime.clearAll']:
+    assert token in gameplay, token
+for token in ['ArcaneBuffRuntime.castTimeMultiplier(player)','ArcaneBuffRuntime.adjustCooldownTicks(player']:
+    assert token in casting_service, token
+for token in ['BUFFS = Set.of','buffMantle','highCircleCrown','Basis.fromNormal',
+              'nine independent satellite formulae','spell.circle() >= 9','age < .90']:
+    assert token in overhaul, token
+assert 'ArcaneBuffRuntime.apply(player, "solar_guard", power, range)' in fusion
+assert 'case "prismatic_wall" -> 280;' in gameplay
+assert '14초 지속 7색 장벽' in summary
 
 # Active-tree hygiene: history is the archive.
 repo=root.parents[1]

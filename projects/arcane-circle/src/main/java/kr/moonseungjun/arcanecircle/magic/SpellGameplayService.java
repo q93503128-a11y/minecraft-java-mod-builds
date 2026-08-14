@@ -43,6 +43,8 @@ import java.util.WeakHashMap;
 public final class SpellGameplayService {
     private static final Set<String> HANDLED = Set.of(
             "grease", "sleep", "web", "mirror_image", "hold_person", "blur",
+            "shield", "mage_armor", "invisibility", "haste", "protection_from_energy",
+            "greater_invisibility", "stoneskin",
             "fly", "slow", "sleet_storm", "resilient_sphere", "freedom_of_movement",
             "wall_of_fire", "ice_storm", "wall_of_force", "cloudkill", "hold_monster",
             "flame_strike", "dominate_person", "insect_plague", "true_seeing", "flesh_to_stone",
@@ -72,6 +74,8 @@ public final class SpellGameplayService {
                                   CastTargetSnapshot snapshot) {
         if (snapshot == null || !snapshot.validFor(player)) return false;
         return switch (spellId) {
+            case "shield", "mage_armor", "invisibility", "haste", "protection_from_energy",
+                    "greater_invisibility", "stoneskin" -> ArcaneBuffRuntime.apply(player, spellId, power, range);
             case "grease", "web", "slow", "sleet_storm", "cloudkill", "insect_plague",
                     "incendiary_cloud", "winter_domain" -> startZone(player, spellId, range, power, snapshot);
             case "wall_of_fire", "wall_of_force", "wind_wall", "wall_of_ice", "prismatic_wall" ->
@@ -97,13 +101,13 @@ public final class SpellGameplayService {
             case "fly" -> fly(player);
             case "resilient_sphere" -> resilientSphere(player, power);
             case "globe_of_invulnerability" -> globe(player, power);
-            case "freedom_of_movement" -> freedom(player);
-            case "true_seeing" -> trueSeeing(player, range);
+            case "freedom_of_movement" -> ArcaneBuffRuntime.apply(player, spellId, power, range);
+            case "true_seeing" -> ArcaneBuffRuntime.apply(player, spellId, power, range);
             case "simulacrum" -> simulacrum(player, power);
             case "clone" -> cloneWard(player, power);
             case "control_weather" -> controlWeather(player, range, power);
-            case "shapechange" -> shapechange(player);
-            case "foresight" -> foresight(player);
+            case "shapechange" -> ArcaneBuffRuntime.apply(player, spellId, power, range);
+            case "foresight" -> ArcaneBuffRuntime.apply(player, spellId, power, range);
             case "ice_knife" -> iceKnife(player, range, power, snapshot);
             case "fire_shield" -> fireShield(player, power);
             case "phoenix_requiem" -> phoenixRequiem(player, range, power);
@@ -112,6 +116,8 @@ public final class SpellGameplayService {
     }
 
     public static int visualDurationTicks(String spellId) {
+        int buffDuration = ArcaneBuffRuntime.durationTicks(spellId);
+        if (buffDuration > 0) return buffDuration;
         return switch (spellId) {
             case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS;
             case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS;
@@ -126,7 +132,7 @@ public final class SpellGameplayService {
             case "wind_wall" -> 180;
             case "wall_of_ice" -> 220;
             case "incendiary_cloud" -> 240;
-            case "prismatic_wall" -> 600;
+            case "prismatic_wall" -> 280;
             case "winter_domain" -> 240;
             case "control_weather" -> 400;
             case "hold_person" -> 180;
@@ -153,6 +159,7 @@ public final class SpellGameplayService {
         long now = level.getGameTime();
         Long previous = LAST_TICK.put(level, now);
         if (previous != null && previous == now) return;
+        ArcaneBuffRuntime.tick(level, now);
         tickFlight(level, now);
         tickControls(level, now);
         tickZones(level, now);
@@ -175,6 +182,7 @@ public final class SpellGameplayService {
             ArcaneNoticeService.push(player, Component.literal("§b[미러 이미지] §f환영이 공격을 대신 받았습니다. §7남은 환영 " + remaining), 35);
             return;
         }
+        if (ArcaneBuffRuntime.onIncomingDamage(player, event, now)) return;
         ReductionWard ward = REDUCTION.get(id);
         if (ward != null && ward.expiresAt() > now) event.setAmount((float) Math.max(0.0, event.getAmount() * (1.0 - ward.reduction())));
         DeathWard death = DEATH_WARDS.get(id);
@@ -209,6 +217,7 @@ public final class SpellGameplayService {
         FlightState flight = FLIGHT.remove(id);
         if (flight != null) revokeFlight(flight);
         MIRRORS.remove(id); REDUCTION.remove(id); FIRE_SHIELDS.remove(id); DEATH_WARDS.remove(id);
+        ArcaneBuffRuntime.clear(id);
         WeatherState weather = WEATHER.remove(id);
         if (weather != null && WEATHER.values().stream().noneMatch(state -> state.level() == weather.level() && state.active())) {
             setWeather(weather.level(), false, 100);
@@ -226,6 +235,7 @@ public final class SpellGameplayService {
         for (FlightState state : FLIGHT.values()) revokeFlight(state);
         for (ControlState state : CONTROLS.values()) restoreControl(state);
         FLIGHT.clear(); MIRRORS.clear(); REDUCTION.clear(); FIRE_SHIELDS.clear(); DEATH_WARDS.clear();
+        ArcaneBuffRuntime.clearAll();
         CONTROLS.clear(); ZONES.clear(); WEATHER.clear(); LAST_TICK.clear();
     }
 

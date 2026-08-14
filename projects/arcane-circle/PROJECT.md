@@ -29,3 +29,12 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - Terrain class는 **MAJOR** `disintegrate`, `delayed_blast_fireball`, `fire_storm`, `earthquake`, `meteor_swarm`, `world_sunder`, `arcane_annihilation`; **CONDITIONAL** `fireball`, `shatter`, `flame_strike`, `meteor_shard`, `move_earth`, `lightning_bolt`, `thunderwave`, `gust_of_wind`; 나머지는 기본적으로 **NONE**이다.
 - Grimoire header/content/footer ownership, fine-line sigil grammar, prismatic primitive budget, temporary Light cleanup, robe atomic equipment, ready-hold release 계약은 alpha.33과 동일하게 유지한다.
 - Canonical Java 25 clean build + source audit + JAR verify가 alpha.34 source commit 이후 반드시 성공해야 하며 source-only PASS로 배포하지 않는다.
+
+
+## Alpha.37 presentation + buff identity contracts
+
+- Prismatic Wall gameplay lifetime is 14 seconds (280 ticks). The alpha.36 30-second increase was reverted: the original problem was full-life visual fading, not server duration. Seven panels remain fully readable for the first 90% of life and only dissolve in the final 10%.
+- 6C+ presentation complexity is structural, not radius-only. 7C adds a second ritual plane, 8C adds a three-dimensional gyroscope, and 9C adds nine satellite formulae plus displaced authority bands. Compact spells such as Power Word Kill may stay physically small while still reading as 9C.
+- Portal/prison/high-circle release geometry may occupy multiple planes and anchors, but Gate's caster-side aperture still rises from the floor in front of the caster and must never center a giant frame on the caster body.
+- Self buffs use `ArcaneBuffRuntime` for their defining mechanics. Vanilla effects are supplemental feedback only. Haste changes Arcane cast/cooldown timing; Shield/Mage Armor/Energy Protection/Solar Guard own charge mechanics; Invisibility/Greater Invisibility/Foresight own miss windows; Freedom and True Seeing are continuously enforced; Stoneskin/Shapechange own incoming-damage shaping.
+- Persistent buff visuals are spell-authored silhouettes rather than one shared body halo: armor plates, mirror satellites, phase arcs, haste clock/helix, energy diamonds, stone facets, freedom spiral, true-sight eye, fire/solar crowns, shapechange morph rings and foresight eye-clock.

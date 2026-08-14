@@ -96,12 +96,9 @@ public final class FusionSpellEffects {
 
     private static boolean solarGuard(ServerPlayer player, double range, double power) {
         ServerLevel level = (ServerLevel) player.level();
-        int amplifier = Math.max(1, (int) Math.floor(power / 22.0));
-        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 220, amplifier));
-        player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 300, 0));
-        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 160, Math.min(2, amplifier / 2)));
+        ArcaneBuffRuntime.apply(player, "solar_guard", power, range);
         for (Mob mob : hostiles(player, Math.min(8.0, range))) {
-            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.42));
+            ArcaneDamage.hurt(level, player, mob, (float) (power * 0.34));
             mob.setRemainingFireTicks(Math.max(mob.getRemainingFireTicks(), 100));
         }
         sound(level, player, SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.3F);

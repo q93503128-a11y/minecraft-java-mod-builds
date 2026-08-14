@@ -11,20 +11,20 @@ public final class SpellEffectSummary {
             case "magic_missile" -> "조준 지점에 비전 피해를 주는 다중 탄환";
             case "fire_bolt" -> "단일 화염 피해 · 적중 대상 화상";
             case "ray_of_frost" -> "단일 냉기 피해 · 동결/둔화";
-            case "shield" -> "약 8.5초 동안 피해 흡수 보호막";
+            case "shield" -> "약 8.5초 · 반응 방벽 2장으로 다음 충격의 고정 피해를 직접 흡수";
             case "feather_fall" -> "6초 동안 낙하를 안정화해 추락 피해 억제";
             case "light" -> "90초 야간 시야 · 주변에 실제 임시 광원 생성";
             case "grease" -> "8초 지속 미끄럼 영역 · 반복 둔화·밀림";
             case "sleep" -> "조준 범위 적의 AI·이동을 7초간 정지 + 암흑";
             case "thunderwave" -> "전방 충격파 피해·넉백 · 취약 블록 파손";
-            case "mage_armor" -> "장시간 피해 감소 효과";
+            case "mage_armor" -> "36초 · 4장 재생형 아케인 플레이트가 소모·재충전되며 피해 분산";
 
             // 2C
             case "scorching_ray" -> "세 갈래 화염 광선 피해 · 화상";
             case "misty_step" -> "가까운 안전 지점으로 순간이동";
             case "web" -> "11초 지속 거미줄 영역 · 반복 강한 둔화·약화";
             case "mirror_image" -> "13초 내 다음 3회의 공격을 환영이 대신 받음";
-            case "invisibility" -> "일정 시간 투명화";
+            case "invisibility" -> "21초 투명화 · 첫 피격 궤적 1회를 은신막이 완전 회피 후 해제";
             case "gust_of_wind" -> "직선 강풍으로 적 밀치기 · 매우 약한 블록 파손";
             case "hold_person" -> "조준 대상 AI·이동·Arcane 시전을 9초간 완전 속박";
             case "shatter" -> "목표 지점 진동 피해 · 약한 블록 파괴 및 제한 드롭";
@@ -35,24 +35,24 @@ public final class SpellEffectSummary {
             case "fireball" -> "착탄 범위 화염 피해·화상 · 주변 지형 일부 파괴";
             case "lightning_bolt" -> "직선 관통 번개 피해 · 경로의 약한 블록만 파손";
             case "fly" -> "30초 동안 자유 비행 허용 · 종료 시 안전하게 비행 해제";
-            case "haste" -> "이동·행동 속도 강화";
+            case "haste" -> "30초 · 마법진 전개 28% 단축 + 주문 재사용 대기 15% 단축 + 이동 가속";
             case "dispel_magic" -> "조준 대상의 마법성 강화 상태 또는 자신의 해로운 효과 해제";
             case "vampiric_touch" -> "단일 피해 · 준 피해 일부를 체력으로 흡수";
             case "slow" -> "9초 지속 영역 · 적 이동·전투 능력을 반복 감소";
-            case "protection_from_energy" -> "원소 피해에 버티는 장기 방호 효과";
+            case "protection_from_energy" -> "30초 · 5중 공명막이 강한 충격을 흡수하고 전투 중 재충전";
             case "sleet_storm" -> "9초 지속 냉기 폭풍 · 반복 피해·동결·둔화, 중독 없음";
             case "blink" -> "조준 방향의 안전 지점으로 공간 도약";
 
             // 4C
             case "wall_of_fire" -> "10초 지속 화염 장벽 · 접촉 적 반복 피해·화상";
             case "ice_storm" -> "고정한 목표 지점 냉기 폭격 · 광역 피해·동결";
-            case "greater_invisibility" -> "전투 중에도 오래 유지되는 투명화";
+            case "greater_invisibility" -> "39초 상급 위상 은신 · 4초마다 다음 피격 1회 완전 회피";
             case "resilient_sphere" -> "20초 구형 역장 · 흡수 + 들어오는 피해 82% 감소";
             case "dimension_door" -> "더 먼 안전 지점으로 즉시 공간 이동";
-            case "stoneskin" -> "장시간 강한 피해 감소";
+            case "stoneskin" -> "38초 석질 장갑 · 큰 타격의 비율 피해와 고정 피해를 동시에 경감";
             case "confusion" -> "범위 적의 행동 능력을 둔화·약화시키는 정신 교란";
             case "blight" -> "강한 단일 생명 피해 · 약화";
-            case "freedom_of_movement" -> "둔화·속박·동결·부양을 즉시 해제 + 이동 강화";
+            case "freedom_of_movement" -> "26초 · 둔화·속박·동결·강제 부양을 지속적으로 정화 + 이동 강화";
             case "phantasmal_killer" -> "단일 대상 정신 피해 · 공포성 약화 상태";
 
             // 5C
@@ -73,7 +73,7 @@ public final class SpellEffectSummary {
             case "mass_suggestion" -> "넓은 범위 적의 AI·이동·Arcane 시전을 8초간 일괄 봉쇄";
             case "move_earth" -> "고정 목표 지면 광역 피해·띄우기 · 조건부 지형 파괴";
             case "sunbeam" -> "직선 태양광 피해 · 실명";
-            case "true_seeing" -> "60초 야간 시야 · 주변 투명화 제거 + 생명체 발광 표시";
+            case "true_seeing" -> "60초 · 주변 은신을 주기적으로 벗기고 생명체를 계속 추적 표시";
             case "freezing_sphere" -> "목표 폭발 냉기 피해 · 강한 동결";
             case "eyebite" -> "단일 피해 · 약화와 공포성 둔화";
             case "flesh_to_stone" -> "단일 피해 · 18초 AI·이동·Arcane 시전 완전 석화";
@@ -106,14 +106,14 @@ public final class SpellEffectSummary {
             // 9C
             case "meteor_swarm" -> "16발 시드형 연속 폭격 · 개별 피해·화상·지형 파괴";
             case "power_word_kill" -> "약해진 대상 즉사급 처형 · 그 외에는 대형 단일 피해";
-            case "prismatic_wall" -> "30초 지속 7색 장벽 · 반복 피해·상태이상·통과 저지";
-            case "shapechange" -> "90초 대폭 강화 + 들어오는 피해 35% 추가 감소";
+            case "prismatic_wall" -> "14초 지속 7색 장벽 · 수명 90%까지 선명 유지 · 반복 피해·상태이상·통과 저지";
+            case "shapechange" -> "90초 변이 육체 · 35%급 피해 경감 + 자체 재생 + 전투 신체 강화";
             case "time_stop" -> "6초 고정 시간장 · 주변 비아군 AI·이동·Arcane 시전 정지";
             case "true_polymorph" -> "대상 피해 · 15초 축소 변형 + AI·이동·Arcane 시전 봉쇄";
             case "weird" -> "고정 목표 대형 정신 피해 · 실명·위더·둔화";
             case "wish" -> "체력·마력 완전 회복 · 해로운 상태 제거 · 기존 이로운 버프 보존 · 소원 외 주문 쿨 초기화";
             case "gate" -> "최상급 장거리 공간 이동";
-            case "foresight" -> "120초 강화 + 들어오는 피해 38% 추가 감소";
+            case "foresight" -> "120초 예지 · 3초마다 다음 피격 1회 완전 회피 + 예지 시야";
 
             // Fusion
             case "burning_hands" -> "전방 화염 충격파 피해·넉백·화상";
@@ -129,7 +129,7 @@ public final class SpellEffectSummary {
             case "steam_burst" -> "전방 증기 피해·둔화·화상·넉백";
             case "frost_step" -> "전방 도약 · 주변 적 냉기 피해·동결";
             case "thunder_cage" -> "단일 번개 피해 · 8초 AI·이동·Arcane 시전 완전 봉쇄";
-            case "solar_guard" -> "흡수·저항·화염 면역 + 주변 적 화염 피해";
+            case "solar_guard" -> "30초 태양 방패 4장 · 피해 흡수·재충전 + 공격자 점화·넉백";
             case "void_lance" -> "긴 직선 관통 피해 · 대상 표식";
             case "winter_domain" -> "12초 지속 겨울 영역 · 반복 냉기 피해·동결·둔화";
             case "astral_prison" -> "단일 피해 · 11초 AI·이동·Arcane 시전 완전 봉쇄";

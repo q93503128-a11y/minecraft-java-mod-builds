@@ -37,6 +37,11 @@ final class ArcaneSpellVisualOverhaul {
     private static final Set<String> CELESTIAL = Set.of(
             "ice_storm", "flame_strike", "fire_storm", "control_weather", "insect_plague",
             "incendiary_cloud", "sunburst", "meteor_swarm", "phoenix_requiem");
+    private static final Set<String> BUFFS = Set.of(
+            "shield", "mage_armor", "mirror_image", "invisibility", "blur", "haste",
+            "protection_from_energy", "greater_invisibility", "resilient_sphere", "stoneskin",
+            "freedom_of_movement", "true_seeing", "globe_of_invulnerability", "fire_shield",
+            "solar_guard", "shapechange", "foresight");
 
     private ArcaneSpellVisualOverhaul() {}
 
@@ -62,47 +67,32 @@ final class ArcaneSpellVisualOverhaul {
         int seed = spell.id().hashCode();
         ArcaneWorldMesh.Basis basis = signatureBasis(spell, direction);
 
-        if (PORTALS.contains(spell.id())) {
+        if (PORTALS.contains(spell.id()))
             portalContract(m, ArcaneWorldMesh.Basis.ground(), r, p, time, seed, spell.circle());
-            return m.build();
-        }
-        if (PRISONS.contains(spell.id())) {
+        else if (PRISONS.contains(spell.id()))
             bindingContract(m, ArcaneWorldMesh.Basis.ground(), r, p, time, seed, spell.circle());
-            return m.build();
-        }
-        if ("time_stop".equals(spell.id())) {
+        else if ("time_stop".equals(spell.id()))
             temporalAstrolabe(m, basis, r, p, time, seed);
-            return m.build();
-        }
-        if ("wish".equals(spell.id())) {
+        else if ("wish".equals(spell.id()))
             wishCrown(m, basis, r, p, time, seed);
-            return m.build();
-        }
-        if (DEATH.contains(spell.id())) {
+        else if (DEATH.contains(spell.id()))
             executionFormula(m, basis, r, p, time, seed, spell.circle());
-            return m.build();
-        }
-        if (TERRAIN.contains(spell.id())) {
+        else if (TERRAIN.contains(spell.id()))
             tectonicFormula(m, ArcaneWorldMesh.Basis.ground(), r, p, time, seed, spell.circle());
-            return m.build();
-        }
-        if (WALLS.contains(spell.id())) {
+        else if (WALLS.contains(spell.id()))
             wallCovenant(m, basis, r, p, time, seed, spell.circle());
-            return m.build();
-        }
-        if (CELESTIAL.contains(spell.id())) {
+        else if (CELESTIAL.contains(spell.id()))
             celestialFormula(m, ArcaneWorldMesh.Basis.ground(), r, p, time, seed, spell.circle());
-            return m.build();
-        }
-
-        switch (spell.school()) {
-            case FIRE -> combustionFormula(m, basis, r, p, time, seed, spell.circle());
-            case FROST -> frostFormula(m, basis, r, p, time, seed, spell.circle());
-            case WIND -> windFormula(m, basis, r, p, time, seed, spell.circle());
-            case WARD -> wardFormula(m, basis, r, p, time, seed, spell.circle());
-            case LIFE -> lifeFormula(m, basis, r, p, time, seed, spell.circle());
-            case SPACE -> spaceFormula(m, basis, r, p, time, seed, spell.circle());
-            case ARCANE -> arcaneFormula(m, basis, r, p, time, seed, spell.circle());
+        else {
+            switch (spell.school()) {
+                case FIRE -> combustionFormula(m, basis, r, p, time, seed, spell.circle());
+                case FROST -> frostFormula(m, basis, r, p, time, seed, spell.circle());
+                case WIND -> windFormula(m, basis, r, p, time, seed, spell.circle());
+                case WARD -> wardFormula(m, basis, r, p, time, seed, spell.circle());
+                case LIFE -> lifeFormula(m, basis, r, p, time, seed, spell.circle());
+                case SPACE -> spaceFormula(m, basis, r, p, time, seed, spell.circle());
+                case ARCANE -> arcaneFormula(m, basis, r, p, time, seed, spell.circle());
+            }
         }
         if (spell.circle() >= 6) highCircleCrown(m, basis, r, p, time, seed, spell.circle());
         return m.build();
@@ -131,11 +121,13 @@ final class ArcaneSpellVisualOverhaul {
 
         if (PORTALS.contains(spell.id())) {
             portalPair(m, spell, direction, targetOffset, rise, elapsedSeconds, true);
+            if (spell.circle() >= 7) highCircleAfterimage(m, spell, targetOffset, rise, elapsedSeconds);
             return m.build();
         }
         if (PRISONS.contains(spell.id())) {
             if ("resilient_sphere".equals(spell.id())) risingSphere(m, targetOffset, rise, elapsedSeconds, spell.circle());
             else risingPrison(m, targetOffset, rise, elapsedSeconds, spell.circle(), spell.id().hashCode());
+            if (spell.circle() >= 7) highCircleAfterimage(m, spell, targetOffset, rise, elapsedSeconds);
             return m.build();
         }
         if ("prismatic_wall".equals(spell.id())) return m.build();
@@ -144,7 +136,10 @@ final class ArcaneSpellVisualOverhaul {
         switch (motion) {
             case WALL -> materialWall(m, spell, direction, targetOffset, range, rise, elapsedSeconds);
             case FIELD, STORM -> fieldAtmosphere(m, spell, targetOffset, range, rise, pulse, elapsedSeconds);
-            case AURA -> auraMantle(m, spell, targetOffset, rise, elapsedSeconds);
+            case AURA -> {
+                if (BUFFS.contains(spell.id())) buffMantle(m, spell, targetOffset, rise, elapsedSeconds);
+                else auraMantle(m, spell, targetOffset, rise, elapsedSeconds);
+            }
             case SKY_DROP -> skyConvergence(m, spell, targetOffset, range, rise, elapsedSeconds);
             case DART, BOLT, HEAVY_ORB, MISSILE_SWARM, LANCE, BEAM, WAVE, TARGET_BURST ->
                     impactFormula(m, spell, direction, targetOffset, rise, elapsedSeconds);
@@ -288,15 +283,46 @@ final class ArcaneSpellVisualOverhaul {
 
     private static void highCircleCrown(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis b, double r,
                                         double p, double t, int seed, int circle) {
-        int seals = Math.min(9, 3 + circle - 5);
-        double orbit = r * (circle >= 9 ? .98 : .90);
-        for (int i = 0; i < seals; i++) {
-            double a = i * Math.PI * 2.0 / seals + t * (i % 2 == 0 ? .025 : -.020);
-            Vec3 c = b.point(a, orbit);
-            m.circle(b, c, r * .035, 12, .36F);
-            m.line(c, b.point(a, r * .72), .26F);
+        if (p < .34) return;
+        double reveal = smooth(clamp((p - .34) / .66, 0.0, 1.0));
+        double authority = r * (.92 + .10 * reveal);
+        int seals = Math.min(12, 4 + circle);
+        m.brokenBand(b, Vec3.ZERO, authority * .91, authority, 76 + circle * 4, 7,
+                1.05F, (float) (.10 + .06 * reveal));
+        m.runeRing(b, Vec3.ZERO, authority * .82, seals, r * .035, seed ^ 0x7A11,
+                -t * .028, .34F);
+
+        // 7C stops being a flat decal: a second plane cuts through the primary formula.
+        if (circle >= 7 && p > .48) {
+            ArcaneWorldMesh.Basis cross = ArcaneWorldMesh.Basis.fromNormal(b.right(), b.up());
+            m.circle(cross, Vec3.ZERO, r * .48, 54, .44F);
+            m.circle(cross, b.normal().scale(r * .07), r * .33, 44, .30F);
         }
-        if (circle >= 8) m.brokenBand(b, Vec3.ZERO, r * 1.01, r * 1.06, 64, 7, 1.0F, .10F);
+        // 8C owns three dimensions with a counter-rotating gyroscope.
+        if (circle >= 8 && p > .60) {
+            ArcaneWorldMesh.Basis cross2 = ArcaneWorldMesh.Basis.fromNormal(b.up(), b.normal());
+            m.circle(cross2, Vec3.ZERO, r * .60, 62, .52F);
+            m.brokenBand(cross2, Vec3.ZERO, r * .38, r * .43, 48, 6, 1.0F, .10F);
+            for (int i = 0; i < 4; i++) {
+                double a = i * Math.PI / 2.0 + t * .025;
+                Vec3 c = b.point(a, r * .70).add(b.normal().scale((i % 2 == 0 ? 1 : -1) * r * .16));
+                m.runeGlyph(b, c, r * .052, seed + i * 137, -t * .035 + a, .38F);
+            }
+        }
+        // 9C is not merely larger: nine independent satellite formulae surround the authority core.
+        if (circle >= 9 && p > .72) {
+            Vec3 n = b.normal();
+            m.brokenBand(b, n.scale(r * .10), r * 1.07, r * 1.14, 92, 8, 1.10F, .12F);
+            m.brokenBand(b, n.scale(-r * .07), r * .69, r * .75, 72, 7, 1.02F, .10F);
+            for (int i = 0; i < 9; i++) {
+                double a = i * Math.PI * 2.0 / 9.0 - t * .018;
+                Vec3 c = b.point(a, r * 1.08).add(n.scale(((i % 3) - 1) * r * .08));
+                double sr = r * (.055 + (i % 2) * .009);
+                m.circle(b, c, sr, 18, .42F);
+                m.polygon(b, c, sr * .68, 3 + i % 4, a + t * .02, .34F);
+                m.line(c, b.point(a, r * .78), .24F);
+            }
+        }
     }
 
     private static void portalContract(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis g, double r,
@@ -532,6 +558,126 @@ final class ArcaneSpellVisualOverhaul {
         m.arc(z, c, r * .68, time * .18 + 1.2, Math.PI * 1.42, 28, .42F);
     }
 
+
+    private static void buffMantle(ArcaneWorldMesh.Builder m, SpellDefinition spell, Vec3 center,
+                                   double rise, double time) {
+        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
+        ArcaneWorldMesh.Basis front = ArcaneWorldMesh.Basis.facing(new Vec3(0, 0, 1));
+        ArcaneWorldMesh.Basis side = ArcaneWorldMesh.Basis.facing(new Vec3(1, 0, 0));
+        int seed = spell.id().hashCode();
+        double pulse = .96 + .04 * Math.sin(time * 2.0);
+        switch (spell.id()) {
+            case "shield" -> {
+                Vec3 c = center.add(0, 1.15, .62);
+                for (int i = 0; i < 3; i++) m.polygon(front, c.add(0, 0, i * .045),
+                        (.70 - i * .11) * pulse, 6, time * (i % 2 == 0 ? .08 : -.06), i == 0 ? .92F : .46F);
+            }
+            case "mage_armor" -> {
+                for (int i = 0; i < 4; i++) {
+                    double a = Math.PI / 4.0 + i * Math.PI / 2.0 + time * .08;
+                    Vec3 c = center.add(g.point(a, .72)).add(0, .75 + (i % 2) * .62, 0);
+                    m.diamond(front, c, .28, -a, 1.10F, .20F);
+                    m.runeGlyph(front, c, .13, seed + i * 31, a, .42F);
+                }
+            }
+            case "mirror_image" -> {
+                for (int i = 0; i < 3; i++) {
+                    double a = i * Math.PI * 2.0 / 3.0 + time * .62;
+                    Vec3 c = center.add(g.point(a, 1.15)).add(0, .85 + .18 * Math.sin(time * 1.4 + i), 0);
+                    m.circle(front, c, .34, 24, .58F);
+                    m.line(c.add(0, -.42, 0), c.add(0, .42, 0), .34F);
+                }
+            }
+            case "invisibility", "greater_invisibility" -> {
+                int rings = "greater_invisibility".equals(spell.id()) ? 4 : 2;
+                for (int i = 0; i < rings; i++) {
+                    double y = .35 + i * .38;
+                    m.arc(g, center.add(0, y, 0), .72 + i * .13, time * (.45 - i * .09) + i,
+                            Math.PI * 1.35, 30, i == 0 ? .66F : .38F);
+                }
+                if (rings > 2) m.circle(side, center.add(0, 1.0, 0), .78, 34, .38F);
+            }
+            case "blur" -> {
+                for (int i = -2; i <= 2; i++) {
+                    double x = i * .18 + Math.sin(time * 5.0 + i) * .08;
+                    m.arc(front, center.add(x, 1.0, 0), .76, time * .8 + i, Math.PI * 1.18, 24,
+                            i == 0 ? .70F : .30F);
+                }
+            }
+            case "haste" -> {
+                m.circle(g, center.add(0, .04, 0), 1.05, 54, .72F);
+                for (int i = 0; i < 12; i++) {
+                    double a = i * Math.PI * 2.0 / 12.0 + time * .30;
+                    m.line(center.add(g.point(a, .82)), center.add(g.point(a, 1.08)), i % 3 == 0 ? .68F : .32F);
+                }
+                m.helix(center.add(0, .05, 0), new Vec3(0, 1, 0), front, 1.65, .42, 2, 36, .42F, true);
+            }
+            case "protection_from_energy" -> {
+                for (int i = 0; i < 5; i++) {
+                    double a = i * Math.PI * 2.0 / 5.0 - time * .22;
+                    Vec3 c = center.add(g.point(a, 1.02)).add(0, .95, 0);
+                    m.diamond(front, c, .30, a + time * .08, 1.14F, .22F);
+                }
+                m.circle(g, center.add(0, .05, 0), .78, 40, .42F);
+            }
+            case "resilient_sphere", "globe_of_invulnerability" -> {
+                double r = "globe_of_invulnerability".equals(spell.id()) ? 1.85 : 1.25;
+                Vec3 c = center.add(0, 1.05, 0);
+                m.sphere(c, r * pulse, 6, .62F);
+                m.brokenBand(g, center.add(0, .04, 0), r * .92, r * 1.02, 58, 7, 1.05F, .12F);
+            }
+            case "stoneskin" -> {
+                for (int i = 0; i < 7; i++) {
+                    double a = i * Math.PI * 2.0 / 7.0 + time * .07;
+                    Vec3 c = center.add(g.point(a, .72 + .12 * (i % 2))).add(0, .45 + .22 * (i % 4), 0);
+                    m.polygon(front, c, .24 + .03 * (i % 3), 5, -a, i % 2 == 0 ? .66F : .38F);
+                }
+            }
+            case "freedom_of_movement" -> {
+                m.helix(center.add(0, .02, 0), new Vec3(0, 1, 0), front, 1.85, .68, 3, 42, .52F, true);
+                m.arc(g, center.add(0, .05, 0), 1.12, time * .48, Math.PI * 1.55, 34, .72F);
+            }
+            case "true_seeing" -> {
+                Vec3 eye = center.add(0, 1.65, 0);
+                m.arc(front, eye, .92, Math.PI * .10, Math.PI * .80, 34, .72F);
+                m.arc(front, eye, .92, Math.PI * 1.10, Math.PI * .80, 34, .72F);
+                m.circle(front, eye, .28, 28, .78F);
+                m.runeGlyph(front, eye, .16, seed, -time * .08, .42F);
+                m.brokenBand(g, center.add(0, .05, 0), 1.25, 1.35, 54, 8, 1.02F, .10F);
+            }
+            case "fire_shield", "solar_guard" -> {
+                int n = "solar_guard".equals(spell.id()) ? 8 : 6;
+                double orbit = "solar_guard".equals(spell.id()) ? 1.22 : .92;
+                for (int i = 0; i < n; i++) {
+                    double a = i * Math.PI * 2.0 / n + time * .18;
+                    Vec3 c = center.add(g.point(a, orbit)).add(0, .82 + .30 * Math.sin(a + time), 0);
+                    m.star(front, c, .25, .10, 4, -a, i % 2 == 0 ? .74F : .42F);
+                }
+                if ("solar_guard".equals(spell.id())) m.circle(front, center.add(0, 1.05, 0), .70, 42, .62F);
+            }
+            case "shapechange" -> {
+                for (int i = 0; i < 6; i++) {
+                    double y = .18 + i * .30;
+                    double rr = .48 + i * .10 + .08 * Math.sin(time * 1.2 + i);
+                    m.polygon(g, center.add(0, y, 0), rr, 3 + (i + seed & 3),
+                            time * (i % 2 == 0 ? .18 : -.14), i % 2 == 0 ? .66F : .38F);
+                }
+            }
+            case "foresight" -> {
+                Vec3 eye = center.add(0, 2.05, 0);
+                m.circle(front, eye, .82, 52, .62F);
+                m.runeGlyph(front, eye, .28, seed ^ 0xF012, -time * .04, .58F);
+                m.circle(g, center.add(0, .05, 0), 1.32, 62, .52F);
+                for (int i = 0; i < 12; i++) {
+                    double a = i * Math.PI * 2.0 / 12.0 - time * .08;
+                    m.line(center.add(g.point(a, 1.12)), center.add(g.point(a, 1.34)), i % 3 == 0 ? .72F : .34F);
+                }
+                m.circle(side, center.add(0, 1.05, 0), .92, 42, .36F);
+            }
+            default -> auraMantle(m, spell, center, rise, time);
+        }
+    }
+
     private static void skyConvergence(ArcaneWorldMesh.Builder m, SpellDefinition spell, Vec3 target,
                                        double range, double rise, double time) {
         ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
@@ -640,8 +786,22 @@ final class ArcaneSpellVisualOverhaul {
     private static void highCircleAfterimage(ArcaneWorldMesh.Builder m, SpellDefinition spell, Vec3 target,
                                              double rise, double time) {
         ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        double r = (2.0 + spell.circle() * .25) * (.45 + .55 * rise);
-        m.brokenBand(g, target.add(0, .04, 0), r * .82, r, 54, 6, 1.02F, .13F);
+        ArcaneWorldMesh.Basis x = ArcaneWorldMesh.Basis.facing(new Vec3(1, 0, 0));
+        ArcaneWorldMesh.Basis z = ArcaneWorldMesh.Basis.facing(new Vec3(0, 0, 1));
+        double r = (1.6 + spell.circle() * .28) * (.45 + .55 * rise);
+        m.brokenBand(g, target.add(0, .04, 0), r * .82, r, 62, 6, 1.04F, .13F);
+        if (spell.circle() >= 8) {
+            Vec3 c = target.add(0, 1.1, 0);
+            m.circle(x, c, r * .42, 42, .38F);
+            m.circle(z, c, r * .55, 48, .44F);
+        }
+        if (spell.circle() >= 9) {
+            for (int i = 0; i < 9; i++) {
+                double a = i * Math.PI * 2.0 / 9.0 + time * .035;
+                Vec3 c = target.add(g.point(a, r * .92)).add(0, .18 + (i % 3) * .26, 0);
+                m.runeGlyph(g, c, r * .055, spell.id().hashCode() + i * 71, -time * .04, .36F);
+            }
+        }
     }
 
     private static Vec3 flat(Vec3 value) {

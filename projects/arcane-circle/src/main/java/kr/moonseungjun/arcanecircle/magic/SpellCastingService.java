@@ -206,7 +206,8 @@ public final class SpellCastingService {
                         .tradition(player);
         double staffScale = Math.max(0.25,
                 kr.moonseungjun.arcanecircle.registry.ModItems.equipped(player).castTimeMultiplier());
-        double raw = sameCircleTicks[circle] * gapScale * masteryScale * chosen.castTimeMultiplier() * staffScale;
+        double raw = sameCircleTicks[circle] * gapScale * masteryScale * chosen.castTimeMultiplier() * staffScale
+                * ArcaneBuffRuntime.castTimeMultiplier(player);
         return raw < 1.0 ? 0 : Math.max(1, (int) Math.round(raw));
     }
 
@@ -389,7 +390,8 @@ public final class SpellCastingService {
         };
         double staffScale = Math.max(0.25,
                 kr.moonseungjun.arcanecircle.registry.ModItems.equipped(player).castTimeMultiplier());
-        int minimum = Math.max(1, (int) Math.round(baseMinimum * staffScale));
+        int minimum = Math.max(1, (int) Math.round(baseMinimum * staffScale
+                * ArcaneBuffRuntime.castTimeMultiplier(player)));
         int resultTicks = Math.max(minimum, calculated);
         if (registered && result.circle() <= 3 && masteryTier >= 8) return 0;
         return resultTicks;
@@ -413,7 +415,7 @@ public final class SpellCastingService {
             MagicPlayerData.CastPreparation preview = magic.preview(player, ingredient);
             int total = preview.accepted() ? preview.cooldownTicks()
                     : SpellCatalog.spell(ingredient).map(SpellDefinition::cooldownTicks).orElse(20);
-            magic.startCooldown(player, ingredient, total);
+            magic.startCooldown(player, ingredient, ArcaneBuffRuntime.adjustCooldownTicks(player, total));
         }
     }
 
@@ -478,7 +480,7 @@ public final class SpellCastingService {
         CombatGrowthService.Snapshot snapshot = CombatGrowthService.capture(player, cast.range());
         releasePrelude(player, cast);
         data.beginCast(player, cast);
-        data.startCooldown(player, spell.id(), cast.cooldownTicks());
+        data.startCooldown(player, spell.id(), ArcaneBuffRuntime.adjustCooldownTicks(player, cast.cooldownTicks()));
         if (cast.fusion()) startFusionIngredientCooldowns(player, data, cast.ingredients());
         SpellKineticsService.launch(player, cast, snapshot);
     }
@@ -507,7 +509,8 @@ public final class SpellCastingService {
         } else {
             ArcaneNoticeService.push(player, Component.literal("§b" + spell.name() + " §f완료 · 마력 "
                     + (int) state.mana() + "/" + stats.maxMana() + " · 쿨 "
-                    + (cast.cooldownTicks() <= 0 ? "없음" : String.format("%.1f", cast.cooldownTicks() / 20.0) + "초")));
+                    + (cast.cooldownTicks() <= 0 ? "없음" : String.format("%.1f",
+                    ArcaneBuffRuntime.adjustCooldownTicks(player, cast.cooldownTicks()) / 20.0) + "초")));
         }
 
         if (impact.meaningful()) {
