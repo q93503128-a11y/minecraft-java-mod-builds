@@ -398,15 +398,20 @@ public final class ErdenExteriorLifecycleManager {
             List<ErdenExteriorLifecycleSavedData.Person> members = members(
                     resultPeople, household.id());
             int living = 0;
-            List<ErdenExteriorLifecycleSavedData.Person> parents = new ArrayList<>();
+            List<ErdenExteriorLifecycleSavedData.Person> parents = level == null
+                    ? new ArrayList<>()
+                    : new ArrayList<>(ErdenExteriorMarriageManager.parentPair(
+                    level, household.id(), members, day));
             for (ErdenExteriorLifecycleSavedData.Person member : members) {
                 if (!member.aliveOn(day)) continue;
                 living++;
-                int age = ageYears(member, day);
-                if (age >= MIN_PARENT_AGE && age <= MAX_PARENT_AGE
-                        && !member.retiredOn(day)) parents.add(member);
+                if (level == null) {
+                    int age = ageYears(member, day);
+                    if (age >= MIN_PARENT_AGE && age <= MAX_PARENT_AGE
+                            && !member.retiredOn(day)) parents.add(member);
+                }
             }
-            if (living >= MAX_HOUSEHOLD_SIZE || parents.size() < 2) continue;
+            if (living >= MAX_HOUSEHOLD_SIZE || parents.size() != 2) continue;
             ErdenExteriorWorkforceSavedData.NodeLabor labor = workforce.labor(household.nodeId());
             if (labor == null || labor.productionPercent() < 65) continue;
             long seed = (long) household.id().hashCode() * 41L + year * 101L;

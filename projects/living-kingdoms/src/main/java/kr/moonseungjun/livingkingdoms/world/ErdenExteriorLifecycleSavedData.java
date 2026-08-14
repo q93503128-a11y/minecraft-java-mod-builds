@@ -84,6 +84,12 @@ public final class ErdenExteriorLifecycleSavedData extends SavedData {
                     generation, founder, foundingWorker, workRole, shiftStart, shiftEnd, restDay,
                     retirementDay, day);
         }
+
+        public Person withHousehold(String newHouseholdId) {
+            return new Person(id, name, newHouseholdId, nodeId, birthDay, parentA, parentB,
+                    generation, founder, foundingWorker, workRole, shiftStart, shiftEnd, restDay,
+                    retirementDay, deathDay);
+        }
     }
 
     public record HouseholdLine(
@@ -241,6 +247,18 @@ public final class ErdenExteriorLifecycleSavedData extends SavedData {
         householdLines.clear();
         householdLines.addAll(replacementLines);
         setDirty();
+    }
+
+    public boolean movePersonHousehold(String personId, String newHouseholdId) {
+        for (int i = 0; i < persons.size(); i++) {
+            Person person = persons.get(i);
+            if (!person.id().equals(personId)) continue;
+            if (person.householdId().equals(newHouseholdId)) return false;
+            persons.set(i, person.withHousehold(newHouseholdId));
+            setDirty();
+            return true;
+        }
+        return false;
     }
 
     public void markDeath(String personId, long day) {
