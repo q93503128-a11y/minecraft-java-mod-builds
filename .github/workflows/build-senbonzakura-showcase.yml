@@ -28,6 +28,17 @@ jobs:
           java-version: '25'
           cache: gradle
 
+      - name: Source audit
+        run: |
+          grep -q 'mod_version=0.1.0-alpha.11' gradle.properties
+          grep -q 'senbonzakura-showcase-v7' src/main/java/kr/moonseungjun/senbonzakura/network/BankaiNetwork.java
+          grep -q 'BankaiFlowMath.currentCenter' src/main/java/kr/moonseungjun/senbonzakura/client/BankaiWorldRenderer.java
+          grep -q 'intersectsBladeCurrents' src/main/java/kr/moonseungjun/senbonzakura/bankai/BankaiService.java
+          if grep -q 'Shift + B' src/main/java/kr/moonseungjun/senbonzakura/item/ZanpakutoItem.java; then
+            echo 'Stale Shift+B tooltip remains'
+            exit 1
+          fi
+
       - name: Build
         run: |
           chmod +x gradlew
@@ -35,14 +46,16 @@ jobs:
 
       - name: Verify JAR
         run: |
-          JAR=build/libs/senbonzakura-0.1.0-alpha.10.jar
+          JAR=build/libs/senbonzakura-0.1.0-alpha.11.jar
           test -f "$JAR"
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/SenbonzakuraShowcase.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiWorldRenderer.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/client/BankaiKeyHandler.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/bankai/BankaiService.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/bankai/BankaiFlowMath.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/senbonzakura/network/BankaiNetwork.class'
           jar tf "$JAR" | grep -q 'assets/senbonzakura/items/zanpakuto_senbonzakura.json'
+          jar tf "$JAR" | grep -q 'assets/senbonzakura/models/item/zanpakuto_senbonzakura.json'
           jar tf "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
           if jar tf "$JAR" | grep -Eq 'kr/moonseungjun/senbonzakura/(ability/|client/(Ability|Skill))'; then
             echo 'Bankai-only JAR contains removed ability or skill UI classes'
@@ -52,6 +65,6 @@ jobs:
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: senbonzakura-0.1.0-alpha.10
-          path: projects/senbonzakura-showcase/build/libs/senbonzakura-0.1.0-alpha.10.jar
+          name: senbonzakura-0.1.0-alpha.11
+          path: projects/senbonzakura-showcase/build/libs/senbonzakura-0.1.0-alpha.11.jar
           if-no-files-found: error

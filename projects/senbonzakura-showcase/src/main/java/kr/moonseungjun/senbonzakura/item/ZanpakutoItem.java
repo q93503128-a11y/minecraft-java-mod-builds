@@ -23,10 +23,14 @@ public final class ZanpakutoItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display,
-                                Consumer<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(
+            ItemStack stack,
+            TooltipContext context,
+            TooltipDisplay display,
+            Consumer<Component> tooltip,
+            TooltipFlag flag) {
         tooltip.accept(Component.literal("§f참백도 · 천본앵"));
-        tooltip.accept(Component.literal("§dShift + B: §f卍解 · 千本桜景厳"));
+        tooltip.accept(Component.literal("§dB: §f卍解 · 千本桜景厳"));
         tooltip.accept(Component.literal("§7전개 13초 · 재사용 대기 30초"));
         tooltip.accept(Component.literal("§8거대 검열 → 분해 → 칼날 해류"));
         super.appendHoverText(stack, context, display, tooltip, flag);
