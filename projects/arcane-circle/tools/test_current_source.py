@@ -128,6 +128,8 @@ assert 'case PORTAL_GATE -> caster.position().add(0.0, 0.055, 0.0);' in world_ma
 assert 'case "prismatic_wall" -> 600;' in gameplay
 assert '30초 지속 7색 장벽' in summary
 assert 'age < .90' in overhaul and 'elapsedSeconds / .30' in overhaul
+assert 'return visual.target.subtract(visual.center);' in tracker
+assert 'visual.direction.scale(Math.max(1,visual.range))' not in tracker
 
 # Destruction budgets/classification and explicit World Sunder fissure.
 destruction=text(magic/'DestructiveMagicService.java')

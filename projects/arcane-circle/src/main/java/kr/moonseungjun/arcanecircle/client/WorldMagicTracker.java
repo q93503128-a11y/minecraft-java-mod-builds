@@ -169,8 +169,10 @@ public final class WorldMagicTracker {
     }
 
     private static Vec3 targetOffset(Visual visual){
-        Vec3 d=visual.target.subtract(visual.center);
-        return d.lengthSqr()<1.0E-8?visual.direction.scale(Math.max(1,visual.range)):d;
+        // A zero offset is meaningful: TARGET/BODY/FEET spells are rendered around the same
+        // authoritative point that owns the effect.  The old fallback displaced those visuals
+        // forward by the entire range and was especially obvious on prisons, self auras and marks.
+        return visual.target.subtract(visual.center);
     }
     private static Map<String,String> parse(String state){Map<String,String> result=new HashMap<>();for(String part:state.split(";")){int i=part.indexOf('=');if(i>0)result.put(part.substring(0,i),part.substring(i+1));}return result;}
     private static int integer(Map<String,String> values,String key,int fallback){try{return Integer.parseInt(values.getOrDefault(key,Integer.toString(fallback)));}catch(Exception ignored){return fallback;}}
