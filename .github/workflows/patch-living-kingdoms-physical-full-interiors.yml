@@ -1,0 +1,104 @@
+name: Patch Living Kingdoms physical full interiors
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-physical-full-interiors.yml'
+      - '.github/staging/living-kingdoms/ErdenUrbanFullInteriorRouteCatalog.java'
+      - '.github/staging/living-kingdoms/ErdenUrbanFullInteriorExpansionSavedData.java'
+      - '.github/staging/living-kingdoms/ErdenUrbanFullInteriorExpansionManager.java'
+
+concurrency:
+  group: patch-living-kingdoms-physical-full-interiors
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  install-compile-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Install full-interior product sources and wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world
+          cp .github/staging/living-kingdoms/ErdenUrbanFullInteriorRouteCatalog.java "$target/"
+          cp .github/staging/living-kingdoms/ErdenUrbanFullInteriorExpansionSavedData.java "$target/"
+          cp .github/staging/living-kingdoms/ErdenUrbanFullInteriorExpansionManager.java "$target/"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java')
+          s = p.read_text(encoding='utf-8')
+          imports = [
+              'import kr.moonseungjun.livingkingdoms.world.ErdenUrbanFullInteriorExpansionManager;\n',
+              'import kr.moonseungjun.livingkingdoms.world.ErdenUrbanFullInteriorRouteCatalog;\n',
+          ]
+          anchor = 'import kr.moonseungjun.livingkingdoms.world.ErdenUrbanFullInteriorPlanCatalog;\n'
+          if anchor not in s:
+              raise SystemExit('full interior import anchor missing')
+          for item in imports:
+              if item not in s:
+                  s = s.replace(anchor, anchor + item, 1)
+          bootstrap_anchor = '        ErdenUrbanFullInteriorPlanCatalog.bootstrap();\n'
+          bootstrap = '        ErdenUrbanFullInteriorRouteCatalog.bootstrap();\n        ErdenUrbanFullInteriorExpansionManager.bootstrap();\n'
+          if bootstrap not in s:
+              if bootstrap_anchor not in s:
+                  raise SystemExit('full interior bootstrap anchor missing')
+              s = s.replace(bootstrap_anchor, bootstrap_anchor + bootstrap, 1)
+          tick_anchor = '        ErdenUrbanAuthoredUpperRouteManager.onServerTick(event);\n'
+          tick = '        ErdenUrbanFullInteriorExpansionManager.onServerTick(event);\n'
+          if tick not in s:
+              if tick_anchor not in s:
+                  raise SystemExit('upper route tick anchor missing')
+              s = s.replace(tick_anchor, tick_anchor + tick, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          git diff --check
+          grep -F 'ErdenUrbanFullInteriorRouteCatalog.bootstrap();' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+          grep -F 'ErdenUrbanFullInteriorExpansionManager.bootstrap();' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+          grep -F 'ErdenUrbanFullInteriorExpansionManager.onServerTick(event);' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+
+      - name: Java 25 clean compile
+        working-directory: projects/living-kingdoms
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon clean classes --stacktrace --console=plain
+
+      - name: Commit verified full-interior product sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanFullInteriorRouteCatalog.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanFullInteriorExpansionSavedData.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanFullInteriorExpansionManager.java
+          git commit -m 'feat(living-kingdoms): materialize additional urban interior floors'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
