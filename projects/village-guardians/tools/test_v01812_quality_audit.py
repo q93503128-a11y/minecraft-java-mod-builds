@@ -68,10 +68,16 @@ def main() -> None:
     require("elite pursuit chooses the nearest player instead of player-list order",
             elite.count("min(java.util.Comparator.comparingDouble(mob::distanceToSqr))") >= 2)
 
-    require("boss aspect telegraphs lethal pulses and ignores downed players",
+    require("boss aspects ignore downed targets and telegraph lethal pulses",
             "globalTicks % 100 == 85" in aspect
             and "globalTicks % 80 == 65" in aspect
             and "!VillageRespawnSystem.isDowned(player)" in aspect)
+    require("stormcaller warning and damage share one fixed dodgeable strike point",
+            "STORM_WARNINGS" in aspect
+            and "STORM_WARNINGS.put(mob.getUUID(), warningPos)" in aspect
+            and "Vec3 strike = STORM_WARNINGS.remove(mob.getUUID())" in aspect
+            and "player.position().distanceToSqr(strike) > impactRadiusSquared" in aspect
+            and "경고 지점에서 벗어나면 피할 수 있습니다" in aspect)
 
 
 if __name__ == "__main__":
