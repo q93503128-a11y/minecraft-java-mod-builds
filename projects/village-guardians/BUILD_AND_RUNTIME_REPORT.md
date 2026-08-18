@@ -2,17 +2,30 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.11-alpha.1`
+- Current source version: `0.18.12-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.11-alpha.1.jar`
-- Final acceptance Actions run: `31583212244`
-- Final acceptance head: `c9971ef5acd00f30d84d683b12de0914d869c567`
-- Final JAR SHA-256: `fc0b411c5c4400a44434f7d7205f1de94ceacce484c8917f0f64425a42def4b7`
-- Final JAR size: `906456` bytes
+- Target JAR: `villageguardians-0.18.12-alpha.1.jar`
+- Final acceptance Actions run: `32083991529`
+- Final acceptance head: `dba4f47c4a4f79f9a36d9ee492762d6a49e76cfc`
+- Final JAR SHA-256: `2597579386b3a77c9a2423d70f560c03b710ee3ce91d6aeecf7662c7bd50cacd`
+- Final JAR size: `908845` bytes
+
+## 0.18.12 수동 품질 감사
+
+- 자동 테스트에 의존하지 않고 포탑, 용병, 정예, 공성 보스, 보스 변이의 실제 호출 흐름과 상태 경계를 수동으로 추적했다.
+- 포탑 LOS가 자기 3블록 실루엣에 막힐 수 있는 시작점 문제를 수정하고 목표 방향으로 캡 바깥 muzzle을 계산한다. 대공 우선순위와 연쇄 전격의 경로 연출도 실제 판정 순서와 맞췄다.
+- 용병 배치는 표시 이름 파싱을 제거하고 `VillageMercenarySystem.classOf`의 SavedData 기반 병과 상태를 정본으로 사용한다. 원거리/치유 병과의 바닐라 근접 경로도 랠리 복귀와 충돌하지 않도록 억제한다.
+- 파성 거신의 북문 no-op을 제거하고 2페이즈 파쇄 주기를 45→30틱으로 실제 단축했다. 사령 결속자와 검은 결투원수에도 발동 전 시각 경고를 추가했다.
+- 정예 화염/역병/갈고리 행동은 즉발 판정 전에 텔레그래프가 나오며, 암살자와 돌파 기병은 가장 가까운 유효 플레이어를 선택한다.
+- 보스 변이는 다운된 플레이어를 제외한다. 뇌광은 경고한 월드 좌표를 `STORM_WARNINGS`에 저장하고 같은 지점에서만 피해를 판정하여 실제 회피 가능한 공격이 됐다.
+- `tools/test_v01812_quality_audit.py`와 기존 0.18.8~0.18.11 계약을 모두 실행했다.
+- 최종 Actions run `32083991529`: Java 25 설정 PASS, deterministic contracts PASS, NeoForge clean build PASS, JAR verifier PASS, artifact upload PASS.
+- 실제 Actions artifact를 다시 내려받아 JAR CRC/압축 무결성, `neoforge.mods.toml`, manifest, 수정 핵심 클래스 포함을 재검증했다.
+- 최종 JAR SHA-256 `2597579386b3a77c9a2423d70f560c03b710ee3ce91d6aeecf7662c7bd50cacd`, 크기 `908845` bytes.
 
 ## 0.18.11 용병·포탑 안정화
 
