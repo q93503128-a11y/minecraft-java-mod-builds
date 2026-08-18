@@ -1,0 +1,47 @@
+name: Patch Living Kingdoms ground void survey
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-ground-void-survey.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '25' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '9.2.1' }
+      - name: Hook survey
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java')
+          s=p.read_text()
+          anchor='        ErdenUrbanAuthoredUpperRouteManager.bootstrap();\n'
+          line='        ErdenUrbanGroundVoidOpportunityCatalog.bootstrap();\n'
+          if line not in s:
+              if anchor not in s: raise SystemExit('bootstrap anchor missing')
+              s=s.replace(anchor,anchor+line,1)
+          p.write_text(s)
+          PY
+          grep -F 'ErdenUrbanGroundVoidOpportunityCatalog.bootstrap();' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+          git diff --check
+      - name: Java 25 clean compile
+        working-directory: projects/living-kingdoms
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Commit and clean
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanGroundVoidOpportunityCatalog.java
+          git rm .github/workflows/patch-living-kingdoms-ground-void-survey.yml
+          git commit -m 'feat(living-kingdoms): audit no-cut ground interior voids'
+          for attempt in 1 2 3 4 5; do git fetch origin main; if git rebase origin/main && git push origin HEAD:main; then exit 0; fi; git rebase --abort 2>/dev/null || true; sleep $((attempt*2)); done
+          exit 1
