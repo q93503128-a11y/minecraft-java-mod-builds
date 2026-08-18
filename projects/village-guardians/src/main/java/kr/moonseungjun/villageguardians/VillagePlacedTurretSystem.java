@@ -58,6 +58,27 @@ public final class VillagePlacedTurretSystem {
         }
     }
 
+    /** Re-project an externally restored/reset siege snapshot into runtime state and world visuals. */
+    public static synchronized void reloadAfterPersistenceChange(MinecraftServer server) {
+        if (server == null) return;
+        ServerLevel level = server.overworld();
+        for (TurretState state : new ArrayList<>(TURRETS.values())) clearVisual(level, state);
+        TURRETS.clear();
+        PENDING.clear();
+        DISABLED_TICKS.clear();
+        PENDING_BOMBARDS.clear();
+        combatTicks = 0;
+        VillageSiegePersistence.stringsWithPrefix(PREFIX).forEach((key, value) -> {
+            try {
+                int id = Integer.parseInt(key.substring(PREFIX.length()));
+                TurretState state = decode(id, value);
+                if (state != null) TURRETS.put(id, state);
+            } catch (NumberFormatException ignored) { }
+        });
+        VillageTurretPresentationSystem.initialize(level, states());
+        rebuildVisuals(level);
+    }
+
     public static synchronized int count() { return TURRETS.size(); }
     public static synchronized int activeCount() {
         return (int) TURRETS.values().stream().filter(TurretState::active).count();

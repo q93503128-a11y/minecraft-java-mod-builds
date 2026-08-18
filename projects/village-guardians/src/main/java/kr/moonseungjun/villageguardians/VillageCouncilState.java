@@ -237,6 +237,9 @@ public final class VillageCouncilState {
         } else {
             VillageSiegePersistence.restoreNightSnapshot();
         }
+        // SavedData restoration is not enough: rebuild runtime turret state, collision shells, mesh actors and wall projection now.
+        VillagePlacedTurretSystem.reloadAfterPersistenceChange(server);
+        VillageSiegeSegmentSystem.restoreAllVisuals(server.overworld());
         persist();
         freezeAndApplyTime(server);
         VillageWorldSystem.purgeDaytimeHostiles(server);
