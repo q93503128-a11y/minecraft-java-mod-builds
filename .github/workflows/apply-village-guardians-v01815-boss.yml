@@ -1,0 +1,102 @@
+name: Apply Village Guardians v0.18.15 Boss Identity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.apply-v01815'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Rebase
+        run: git pull --rebase origin main
+      - name: Apply and run complete pre-build contracts
+        shell: bash
+        run: |
+          set +e
+          LOG="$RUNNER_TEMP/v01815-apply.log"
+          : > "$LOG"
+          {
+            echo "head_before=$(git rev-parse HEAD)"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "=== APPLY ==="
+            python3 projects/village-guardians/tools/apply_v01815_boss_identity.py
+            APPLY=$?
+            echo "apply_exit=$APPLY"
+            PREP=99
+            if [ "$APPLY" -eq 0 ]; then
+              python3 projects/village-guardians/tools/prepare_v01815_contracts.py
+              PREP=$?
+            fi
+            echo "prepare_exit=$PREP"
+            TESTS=99
+            if [ "$APPLY" -eq 0 ] && [ "$PREP" -eq 0 ]; then
+              echo "=== COMPLETE CONTRACT SET ==="
+              TESTS=0
+              for test in \
+                tools/test_rpg_balance.py \
+                tools/test_village_zone.py \
+                tools/test_progression_loop.py \
+                tools/test_progression_depth.py \
+                tools/test_fortress_layout.py \
+                tools/test_runtime_safety.py \
+                tools/test_ui_layout_contract.py \
+                tools/test_action_layout.py \
+                tools/test_enemy_content.py \
+                tools/test_v0188_risk_ui_cleanup.py \
+                tools/test_v0189_siege_phase2.py \
+                tools/test_v01810_ranger_ricochet.py \
+                tools/test_v01811_defense_polish.py \
+                tools/test_v01812_quality_audit.py \
+                tools/test_v01813_siege_integration.py \
+                tools/test_v01814_persistent_presentation.py \
+                tools/test_v01815_boss_identity.py; do
+                echo "=== $test ==="
+                python3 "projects/village-guardians/$test" || { TESTS=$?; break; }
+              done
+            fi
+            echo "tests_exit=$TESTS"
+          } >> "$LOG" 2>&1
+
+          APPLY=$(grep '^apply_exit=' "$LOG" | tail -1 | cut -d= -f2)
+          PREP=$(grep '^prepare_exit=' "$LOG" | tail -1 | cut -d= -f2)
+          TESTS=$(grep '^tests_exit=' "$LOG" | tail -1 | cut -d= -f2)
+          STATUS=PASS
+          if [ "$APPLY" -ne 0 ] || [ "$PREP" -ne 0 ] || [ "$TESTS" -ne 0 ]; then STATUS=FAIL; fi
+          if [ "$STATUS" = FAIL ]; then git reset --hard HEAD; fi
+
+          mkdir -p projects/village-guardians/.ci
+          {
+            echo "status=$STATUS"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "trigger_head=$(git rev-parse HEAD)"
+            echo
+            cat "$LOG"
+          } > projects/village-guardians/.ci/v01815-apply-report.txt
+
+          if [ "$STATUS" = PASS ]; then
+            git add -A projects/village-guardians
+            git commit -m 'feat(village): make boss telegraphs stateful and readable'
+          else
+            git add projects/village-guardians/.ci/v01815-apply-report.txt
+            git commit -m 'ci(village): record v0.18.15 apply failure [skip ci]'
+          fi
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+          done
+          test "$STATUS" = PASS
