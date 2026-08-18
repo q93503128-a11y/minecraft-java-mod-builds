@@ -34,11 +34,30 @@ public final class StarterNpcManager {
         if (realm == null || !RealmSitePlanner.isBuilt(realm, profile.homelandId())) return;
 
         StarterNpcLifeSavedData life = realm.getDataStorage().computeIfAbsent(StarterNpcLifeSavedData.TYPE);
-        for (NpcDefinition definition : definitions(realm, profile.homelandId())) {
+        List<NpcDefinition> definitions = definitions(realm, profile.homelandId());
+        if (life.requiresSpawnTrackingMigration()) {
+            life.migratePreviouslyManaged(definitions.stream()
+                    .filter(definition -> !life.isDead(definition.id()))
+                    .map(NpcDefinition::id)
+                    .toList());
+            LivingKingdoms.LOGGER.info(
+                    "Migrated named citizen spawn tracking homeland={} citizens={} revision={}",
+                    profile.homelandId(), definitions.size(), StarterNpcLifeSavedData.SPAWN_TRACKING_REVISION);
+        }
+
+        for (NpcDefinition definition : definitions) {
             if (life.isDead(definition.id())) continue;
             Villager existing = findExisting(realm, definition);
-            if (existing == null) spawn(realm, definition);
-            else repairExisting(realm, existing, definition);
+            if (existing != null) {
+                life.markSpawned(definition.id());
+                repairExisting(realm, existing, definition);
+                continue;
+            }
+            // A previously spawned entity can be in an unloaded chunk. Absence from the loaded-entity
+            // index is not evidence that it died or should be duplicated.
+            if (!life.wasSpawned(definition.id()) && spawn(realm, definition)) {
+                life.markSpawned(definition.id());
+            }
         }
     }
 
@@ -98,10 +117,12 @@ public final class StarterNpcManager {
     }
 
     private static Villager findExisting(ServerLevel level, NpcDefinition definition) {
-        AABB area = new AABB(
-                definition.x() - 24.0, definition.y() - 18.0, definition.z() - 24.0,
-                definition.x() + 24.0, definition.y() + 22.0, definition.z() + 24.0
-        );
+        AABB area = ErdenUrbanLifeManager.managesCitizenId(definition.id())
+                ? ErdenUrbanLifeManager.managedCitizenBounds(level)
+                : new AABB(
+                        definition.x() - 24.0, definition.y() - 18.0, definition.z() - 24.0,
+                        definition.x() + 24.0, definition.y() + 22.0, definition.z() + 24.0
+                );
         List<Villager> matches = level.getEntitiesOfClass(
                 Villager.class, area,
                 villager -> definition.name().equals(villager.getName().getString())
@@ -109,16 +130,16 @@ public final class StarterNpcManager {
         return matches.isEmpty() ? null : matches.getFirst();
     }
 
-    private static void spawn(ServerLevel level, NpcDefinition definition) {
+    private static boolean spawn(ServerLevel level, NpcDefinition definition) {
         EntityType<?> villagerType = BuiltInRegistries.ENTITY_TYPE.getOptional(VILLAGER_ID).orElse(null);
         if (villagerType == null) {
             LivingKingdoms.LOGGER.error("Minecraft villager entity type is unavailable");
-            return;
+            return false;
         }
         Entity created = villagerType.create(level, EntitySpawnReason.COMMAND);
         if (!(created instanceof Villager villager)) {
             LivingKingdoms.LOGGER.error("Failed to create named citizen {}", definition.id());
-            return;
+            return false;
         }
         int standingY = safeStandingY(level, definition.x(), definition.y(), definition.z());
         villager.setPos(definition.x() + 0.5, standingY, definition.z() + 0.5);
@@ -128,15 +149,24 @@ public final class StarterNpcManager {
         villager.setInvulnerable(false);
         if (!level.addFreshEntity(villager)) {
             LivingKingdoms.LOGGER.error("Failed to add named citizen {}", definition.id());
+            return false;
         }
+        return true;
     }
 
     private static void repairExisting(ServerLevel level, Villager villager, NpcDefinition definition) {
         int standingY = safeStandingY(level, definition.x(), definition.y(), definition.z());
-        boolean unsafe = villager.getY() < standingY - 0.5
+        boolean managedByUrbanLife = ErdenUrbanLifeManager.managesCitizenId(definition.id());
+        boolean unsafe = villager.getY() < level.getMinY() + 2.0D
                 || !level.getBlockState(villager.blockPosition()).isAir()
                 || !level.getBlockState(villager.blockPosition().above()).isAir();
-        if (unsafe || villager.distanceToSqr(definition.x() + 0.5, standingY, definition.z() + 0.5) > 400.0) {
+        if (!managedByUrbanLife && villager.getY() < standingY - 0.5D) {
+            unsafe = true;
+        }
+        boolean escapedStaticPost = !managedByUrbanLife
+                && villager.distanceToSqr(
+                        definition.x() + 0.5, standingY, definition.z() + 0.5) > 400.0D;
+        if (unsafe || escapedStaticPost) {
             villager.setPos(definition.x() + 0.5, standingY, definition.z() + 0.5);
         }
         villager.setInvulnerable(false);
