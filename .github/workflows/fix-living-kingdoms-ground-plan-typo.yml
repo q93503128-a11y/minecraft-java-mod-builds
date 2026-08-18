@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
 
+# Retriggered after canonical validation exposed the source typo still present on main.
 jobs:
   fix:
     runs-on: ubuntu-24.04
