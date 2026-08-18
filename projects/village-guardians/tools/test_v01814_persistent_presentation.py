@@ -23,6 +23,7 @@ def main() -> None:
     enemy_fx = read("VillageEnemyEffectSystem.java")
     effect_entity = read("VillageSkillEffectEntity.java")
     mesh = read("VillageSkillMeshLibrary.java")
+    council = read("VillageCouncilState.java")
 
     require("version is v0.18.14-alpha.1", "mod_version=0.18.14-alpha.1" in props)
 
@@ -43,6 +44,10 @@ def main() -> None:
             "VillageTurretPresentationSystem.tick(level, states())" in turret
             and "VillageTurretPresentationSystem.aim" in turret
             and "actor.setDirection(horizontal.normalize())" in presentation)
+    require("failed-night and new-game persistence changes immediately rebuild runtime turrets and wall visuals",
+            "reloadAfterPersistenceChange(MinecraftServer server)" in turret
+            and "VillagePlacedTurretSystem.reloadAfterPersistenceChange(server);" in council
+            and "VillageSiegeSegmentSystem.restoreAllVisuals(server.overworld());" in council)
     for token in (
         "turret_body_ballista", "turret_body_repeater", "turret_body_piercer",
         "turret_body_flame", "turret_body_frost", "turret_body_chain",
