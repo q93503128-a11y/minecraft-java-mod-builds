@@ -1,5 +1,5 @@
 name: Validate Living Kingdoms physical economy
-# revision: 4
+# revision: 5
 
 on:
   push:
@@ -52,8 +52,9 @@ jobs:
           passed=0
           for attempt in $(seq 1 720); do
             if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' "$LOG_FILE"; then cat "$LOG_FILE"; exit 1; fi
-            if grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$LOG_FILE" \
-              && grep -Fq 'fulfilled_households=77' "$LOG_FILE" \
+            if grep -Fq 'Requested Erden physical-economy authored interior CI samples sites=3' "$LOG_FILE" \
+              && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$LOG_FILE" \
+              && grep -Fq 'purchase_outcomes=77' "$LOG_FILE" \
               && grep -Fq 'Reconciled Erden bakery reserves day=' "$LOG_FILE" \
               && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$LOG_FILE" \
               && grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' "$LOG_FILE"; then
@@ -65,9 +66,10 @@ jobs:
           done
           cat "$LOG_FILE"
           test "$passed" -eq 1
+          grep -F 'Requested Erden physical-economy authored interior CI samples sites=3' "$LOG_FILE" | grep -F 'bounded_plan_chunks=true' | grep -F 'loaded_lease=true' | grep -F 'persistent_forced_chunks=false'
           grep -F 'Prepared Erden physical economy sites=156 warehouses=15 wallets=77 container_resources=8' "$LOG_FILE"
           grep -F 'Processed Erden physical economy day=' "$LOG_FILE"
-          grep -F 'fulfilled_households=77' "$LOG_FILE"
+          grep -F 'purchase_outcomes=77' "$LOG_FILE"
           grep -F 'Reconciled Erden bakery reserves day=' "$LOG_FILE"
           grep -F 'bakeries=21 reserve_bread=42' "$LOG_FILE"
           grep -F 'conserved=true' "$LOG_FILE"
