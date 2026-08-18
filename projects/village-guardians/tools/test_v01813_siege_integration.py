@@ -46,10 +46,20 @@ def main() -> None:
             "Math.floorMod(structureAttackTicks + id.hashCode(), STRUCTURE_ATTACK_INTERVAL) == 0" in raid
             and "Math.floorMod(attackTicks + id.hashCode(), 30) == 0" in attack)
 
+    require("tower hunter owns one coherent nearest placed-turret objective",
+            "public static synchronized TurretState nearestActiveTurret(Vec3 origin, double range)" in turret
+            and "disableNearestActiveTurret(mob.position(), 48.0, 20 * 7)" in enemy
+            and "archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER" in raid
+            and "VillagePlacedTurretSystem.nearestActiveTurret(mob.position(), 48.0)" in raid
+            and "mob.getNavigation().moveTo(turretCenter.x, turretCenter.y, turretCenter.z, 1.14)" in raid
+            and "disableRandomActiveTurret" not in turret
+            and "disableRandomActiveTurret" not in enemy)
+    require("turret pressure layer no longer fights raid navigation ownership",
+            "Navigation ownership lives in VillageRaidSystem" in turret
+            and "mob.getNavigation().moveTo(state.pos()" not in turret)
     require("tower hunter disrupts real placed turrets instead of retired fixed tower kinds",
-            "VillagePlacedTurretSystem.disableRandomActiveTurret(20 * 7)" in enemy
-            and "VillageTowerSpecializationSystem.disableRandomInstalledTower" not in enemy
-            and "disableRandomActiveTurret" in turret
+            "VillageTowerSpecializationSystem.disableRandomInstalledTower" not in enemy
+            and "disableNearestActiveTurret" in turret
             and "isDisabled(state.id())" in turret)
 
     require("legacy duplicate research bonus firing path is retired",
@@ -64,6 +74,10 @@ def main() -> None:
             and "resolveBombards(level)" in turret
             and "VillageDefenseEffectSystem.bombardImpact" in turret
             and "case BOMBARD -> queueBombard" in turret)
+    require("bombard can arc over cover while direct-fire turrets still require LOS",
+            "List<Mob> nearby = VillageRaidSystem.activeEnemiesNear" in turret
+            and "state.type() == TurretType.BOMBARD" in turret
+            and "nearby.stream().filter(mob -> VillageDefenseLineOfSight.hasLine" in turret)
 
     require("automated defense visuals use synchronized procedural mesh actors",
             "VillageSkillEffectEntity.spawn(level, null" in effects
