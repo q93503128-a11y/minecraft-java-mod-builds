@@ -6,8 +6,8 @@ Minecraft Java 26.2에서 낮 동안 마을을 준비하고, 밤에는 실제 �
 - NeoForge `26.2.0.37-beta` 이상 26.2.x
 - Java `25`
 - Gradle `9.2.1`
-- 현재 소스 버전 `0.18.14-alpha.1`
-- 목표 JAR `villageguardians-0.18.14-alpha.1.jar`
+- 현재 소스 버전 `0.18.15-alpha.1`
+- 목표 JAR `villageguardians-0.18.15-alpha.1.jar`
 
 ## 핵심 루프
 
@@ -118,6 +118,21 @@ Minecraft Java 26.2에서 낮 동안 마을을 준비하고, 밤에는 실제 �
 - 수호병은 근거리 적의 시선을 끌고 억제하며, 공격병은 가시 목표를 적극 압박하고, 궁수는 LOS 원거리 지원, 의무병은 회복에 집중한다.
 - 궁수·의무병의 바닐라 철골렘 근접 추격을 억제했고, 성벽 배치 경로 생성이 실패하면 성 내부 안전 거점으로 fallback한다.
 - Java 25 + Gradle 9.2.1 + NeoForge 26.2 실제 clean build와 JAR 검증을 통과했다. 최종 acceptance run은 `31583212244`다.
+
+## 0.18.15 보스 Identity·고정 Cast State
+
+0.18.14에서 정예와 포탑의 지속 Presentation을 실체화한 뒤, 보스의 이중 정체성(Aspect + Siege Doctrine)과 텔레그래프/실제 판정 일치를 다시 수동 감사했다.
+
+- 같은 날 모든 보스가 한 교리만 쓰던 구조를 날짜 + 실제 웨이브 + boss archetype 기반 교리 결정으로 바꿨다. 정찰도 한 교리 확정이 아니라 파성/사령/결투 혼성 가능성을 정확히 보여준다.
+- 최초 식을 `day*5 + wave*3 + archetype`로 만들었을 때 교리가 3종이라 `wave*3 mod 3 = 0`이 되어 웨이브 입력이 실질적으로 무효라는 수학 버그를 수동 검사로 발견했다. 최종식은 `wave*2`를 사용하며 3연속 웨이브가 세 교리 슬롯을 실제 순환할 수 있는 계약을 추가했다.
+- 보스는 기존 바닐라 엔티티 위에 Aspect 색 + Siege Doctrine 형상을 결합한 owner-follow procedural mesh silhouette를 가진다. 파성은 거대한 파쇄 스파이크, 사령은 의식 결정/기둥, 결투는 교차 검날 계열로 구분된다.
+- 50% 이하 2페이즈는 장기 owner-follow 강화층과 전환 burst를 추가하며, 원래 Aspect 색을 그대로 이어받아 1페이즈와 시각 정체성이 단절되지 않는다.
+- 파성 거신은 `BreachCast(segment, impact, dueTick)`을 생성해 경고한 성벽 Segment와 충격 지점 그대로 10틱 뒤 파쇄한다. 이미 돌파된 Segment는 stale cast를 즉시 지운다.
+- 사령 결속자는 `RitualCast(center, dueTick)`에 경고 시점의 월드 중심을 고정하고 20틱 뒤 같은 15블록 영역의 병력만 회복·보호한다. 보스가 이동해도 의식 중심이 순간이동하지 않는다.
+- 검은 결투원수는 `DuelCast(target UUID, dueTick)`로 35틱 동안 같은 플레이어에게 결투 표식을 유지한다. 발동 순간 대상을 다시 뽑지 않으므로 경고 A → 피해 B가 사라졌다.
+- 혈계 Aspect도 `BLOOD_WARNINGS`에 15틱 전 중심을 저장해 생명 흡수 경고와 실제 11블록 피해/회복 지점이 일치한다. 뇌광의 기존 fixed dodge point도 procedural mesh ground warning으로 교체했다.
+- 결투 표식 API가 `Mob`을 받도록 잘못 설계되어 `ServerPlayer`와 타입이 맞지 않는 문제를 Java 빌드 전에 수동으로 발견해 `LivingEntity`로 교정했다.
+- 최종 acceptance run `32089737176` / built head `b52f8cd63f643db2b759c5db48985f0bab03b710`에서 18개 pre-build 계약, Java 25 clean build, JAR verifier, artifact upload가 모두 성공했다. JAR SHA-256 `6a37f758510ba5ee20ec20d607dd9696a60e15f160961587a43b4042632497e4`, 크기 `940741` bytes다.
 
 ## 0.18.14 포탑·정예 Presentation 실체화
 

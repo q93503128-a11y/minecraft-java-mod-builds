@@ -2,17 +2,29 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.14-alpha.1`
+- Current source version: `0.18.15-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.14-alpha.1.jar`
-- Final acceptance Actions run: `32088820912`
-- Final acceptance head: `bbdc4b1b7ecd90c02952bcbc400fc50fbe34a1e5`
-- Final JAR SHA-256: `9aef5f25c469d5023306dfd22345af4e9f0e4aaf4b72d3666ac33bb6861b9357`
-- Final JAR size: `931551` bytes
+- Target JAR: `villageguardians-0.18.15-alpha.1.jar`
+- Final acceptance Actions run: `32089737176`
+- Final acceptance head: `b52f8cd63f643db2b759c5db48985f0bab03b710`
+- Final JAR SHA-256: `6a37f758510ba5ee20ec20d607dd9696a60e15f160961587a43b4042632497e4`
+- Final JAR size: `940741` bytes
+
+## 0.18.15 보스 Presentation·Cast 정합 감사
+
+- `VillageBossEffectSystem`을 추가해 persistent boss presence, phase-two layer, breach/ritual/duel/bloodbound/storm cast telegraph를 공용 synchronized procedural-mesh 경로로 통합했다.
+- `VillageSiegeBossSystem`은 `BREACH_CASTS`, `RITUAL_CASTS`, `DUEL_CASTS`를 통해 경고 시점의 Segment/좌표/대상 UUID를 실제 발동까지 유지한다.
+- 보스 교리는 날짜 단독이 아니라 day + actual wave + archetype으로 혼성화했고, 3교리 modulo에서 `wave*3`가 무효임을 발견해 `wave*2`로 수정했다. 별도 regression에서 연속 3웨이브가 세 슬롯을 모두 방문함을 계산 검증한다.
+- `VillageBossAspectSystem`의 Bloodbound도 fixed center cast state를 사용하고 Stormcaller fixed dodge point는 mesh ground warning으로 교체했다.
+- persistent boss actor는 boss 사망 시 owner-follow 수명 규칙으로 자동 정리되며 phase two overlay는 기존 Aspect id를 extra로 전달해 색 정체성을 보존한다.
+- 결투 target presentation API는 `LivingEntity`를 사용해 ServerPlayer와 타입 정합을 맞췄다.
+- Actions run `32089737176`: 18개 deterministic/pre-build contracts PASS, Java 25 + NeoForge clean build PASS, JAR verifier PASS, artifact upload PASS.
+- Actions artifact를 별도 다운로드해 ZIP/JAR CRC, mod metadata/manifest, `VillageBossEffectSystem`, `VillageSiegeBossSystem`, `VillageBossAspectSystem`, `VillageSkillEffectEntity`, `VillageSkillMeshLibrary`, 그리고 `BreachCast/RitualCast/DuelCast` inner class 포함을 다시 검증했다.
+- 최종 JAR SHA-256 `6a37f758510ba5ee20ec20d607dd9696a60e15f160961587a43b4042632497e4`, 크기 `940741` bytes.
 
 ## 0.18.14 지속형 Presentation·복구 감사
 
