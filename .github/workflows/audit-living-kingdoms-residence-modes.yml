@@ -1,0 +1,123 @@
+name: Audit Living Kingdoms residence modes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-living-kingdoms-residence-modes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Residence source and fresh-world audit
+        id: residence
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world"
+          mkdir -p logs
+          grep -F 'EXPECTED_GROUND_ONLY_BUILDINGS = 77' "$root/ErdenUrbanResidenceResolver.java"
+          grep -F 'residence_mode=verified_upper_or_ground' "$root/ErdenPopulationManager.java"
+          grep -F 'fresh_synthetic_upper_created=0' "$root/ErdenUrbanLifeManager.java"
+          if grep -Fq 'urbanLife.isUpperFloorComplete' "$root/ErdenPopulationManager.java"; then
+            echo 'Population manager still depends on legacy synthetic upper completion.' >&2
+            exit 1
+          fi
+          (cd "$PROJECT_DIR" && gradle --no-daemon clean classes --stacktrace --console=plain) 2>&1 | tee logs/residence-compile.log
+          rm -rf "$PROJECT_DIR/run/world" "$PROJECT_DIR/run/living_realm" "$PROJECT_DIR/run/livingkingdoms-residence-ci-world"
+          mkdir -p "$PROJECT_DIR/run"
+          printf 'level-name=livingkingdoms-residence-ci-world\npause-when-empty-seconds=0\n' > "$PROJECT_DIR/run/server.properties"
+          printf 'eula=true\n' > "$PROJECT_DIR/run/eula.txt"
+          (cd "$PROJECT_DIR" && gradle --no-daemon runServer --stacktrace --console=plain) > logs/residence-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          passed=0
+          for attempt in $(seq 1 900); do
+            if grep -Eqi 'LK_REALM_DIAGNOSTIC_FAIL|watchdog|A single server tick took|IllegalStateException|Failed to spawn Erden resident' logs/residence-server.log; then
+              cat logs/residence-server.log
+              exit 1
+            fi
+            if grep -Fq 'Completed Erden residence modes buildings=233 authored_upper_buildings=156 ground_only_buildings=77 fresh_synthetic_upper_created=0 legacy_synthetic_records=0' logs/residence-server.log \
+              && grep -Fq 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log \
+              && grep -Fq 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' logs/residence-server.log \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log \
+              && grep -Fq 'residence_mode=verified_upper_or_ground' logs/residence-server.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat logs/residence-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$passed" -eq 1
+          grep -F 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' logs/residence-server.log
+          grep -F 'Completed Erden residence modes buildings=233 authored_upper_buildings=156 ground_only_buildings=77 fresh_synthetic_upper_created=0 legacy_synthetic_records=0' logs/residence-server.log
+          grep -F 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log | grep -F 'synthetic_fallback=false' | grep -F 'fresh_synthetic_upper_created=0'
+          grep -F 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' logs/residence-server.log | grep -F 'authored_upper=true' | grep -F 'source_blocks_cut=0' | grep -F 'routine=home'
+          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log | grep -F 'shortages=0' | grep -F 'residence_mode=verified_upper_or_ground'
+          if grep -Fq 'Completed Erden walkable upper floors buildings=' logs/residence-server.log; then
+            echo 'Legacy synthetic upper construction unexpectedly completed on a fresh world.' >&2
+            exit 1
+          fi
+          echo 'LK_ERDEN_RESIDENCE_MODES_AUDIT_PASS buildings=233 authored_upper=156 ground_only=77 fresh_synthetic_upper=0 population=231 workers=154 source_blocks_cut=0' | tee logs/residence-pass.txt
+      - name: Upload residence audit logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-residence-modes-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+      - name: Record residence audit pointer
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .github/build-pointers
+          outcome='${{ steps.residence.outcome }}'
+          cat > .github/build-pointers/living-kingdoms-residence-modes.json <<EOF
+          {
+            "run_id": "${{ github.run_id }}",
+            "run_number": "${{ github.run_number }}",
+            "commit_sha": "${{ github.sha }}",
+            "job_status": "$outcome"
+          }
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/living-kingdoms-residence-modes.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Living Kingdoms residence mode audit ${{ github.run_number }} [skip ci]"
+            for attempt in 1 2 3 4 5; do
+              git fetch origin main
+              if git rebase origin/main && git push origin HEAD:main; then break; fi
+              git rebase --abort 2>/dev/null || true
+              sleep $((attempt * 2))
+            done
+          fi
+      - name: Enforce residence audit result
+        if: always()
+        run: test '${{ steps.residence.outcome }}' = 'success'
