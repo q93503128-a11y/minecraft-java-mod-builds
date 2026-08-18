@@ -45,3 +45,4 @@ jobs:
           git commit -m 'feat(living-kingdoms): audit no-cut ground interior voids'
           for attempt in 1 2 3 4 5; do git fetch origin main; if git rebase origin/main && git push origin HEAD:main; then exit 0; fi; git rebase --abort 2>/dev/null || true; sleep $((attempt*2)); done
           exit 1
+# registered trigger
