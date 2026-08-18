@@ -77,7 +77,26 @@ def prepareExternalStructures = tasks.register('prepareExternalStructures') {
         attribution.append('Use inside Living Kingdoms: terrain-cleaned, rotated and adapted Erden architecture parts and functional district buildings.\n\n')
         externalStructureAssets.each { asset ->
             URI source = new URI("https://www.schemcraft.com/schematics/${asset.slug}/download")
-            byte[] archive = source.toURL().openStream().withCloseable { it.readAllBytes() }
+            byte[] archive = null
+  Exception downloadFailure = null
+  for (int attempt = 1; attempt <= 5 && archive == null; attempt++) {
+      try {
+          def connection = source.toURL().openConnection()
+          connection.setConnectTimeout(15000)
+          connection.setReadTimeout(60000)
+          archive = connection.getInputStream().withCloseable { it.readAllBytes() }
+          downloadFailure = null
+      } catch (Exception failure) {
+          downloadFailure = failure
+          if (attempt < 5) {
+              logger.warn("Schemcraft download attempt {}/5 failed for {}: {}", attempt, asset.slug, failure.toString())
+              Thread.sleep(attempt * 2000L)
+          }
+      }
+  }
+  if (archive == null) {
+      throw new GradleException("Failed to download external structure ${asset.slug} after 5 attempts", downloadFailure)
+  }
             byte[] schematic = null
             new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(archive)).withCloseable { zip ->
                 java.util.zip.ZipEntry entry
