@@ -97,6 +97,11 @@ public final class VillageSkillMeshLibrary {
             case "merc_striker_pressure" -> renderDefenseShot(pose, out, state, age, progress, 9);
             case "merc_medic_pulse" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 3);
             case "siege_structure_impact" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 4);
+            case "turret_placement_preview" -> renderDefenseMaintenance(pose, out, basis, age, progress, 0);
+            case "turret_deploy_pulse" -> renderDefenseMaintenance(pose, out, basis, age, progress, 1);
+            case "defense_repair_pulse" -> renderDefenseMaintenance(pose, out, basis, age, progress, 2);
+            case "turret_upgrade_burst" -> renderDefenseMaintenance(pose, out, basis, age, progress, 3);
+            case "defense_breach_alarm" -> renderDefenseMaintenance(pose, out, basis, age, progress, 4);
 
             case "turret_body_ballista" -> renderTurretBody(pose, out, basis, age, state.extra, 0);
             case "turret_body_repeater" -> renderTurretBody(pose, out, basis, age, state.extra, 1);
@@ -132,6 +137,49 @@ public final class VillageSkillMeshLibrary {
             case "boss_bloodbound_impact" -> renderBossZone(pose, out, basis, age, progress, state.extra, 7);
             case "boss_storm_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 8);
             default -> renderFallbackRune(pose, out, basis, age, progress);
+        }
+    }
+
+    private static void renderDefenseMaintenance(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, int mode) {
+        double fade = Math.max(0.0, 1.0 - progress);
+        int primary = switch (mode) {
+            case 0 -> rgba(82, 222, 197, (int) (165 * fade));
+            case 1 -> rgba(244, 197, 95, (int) (210 * fade));
+            case 2 -> rgba(112, 214, 155, (int) (195 * fade));
+            case 3 -> rgba(255, 213, 112, (int) (220 * fade));
+            default -> rgba(232, 72, 72, (int) (225 * fade));
+        };
+        double radius = mode == 4 ? 2.2 + progress * 3.2 : 0.78 + progress * 1.35;
+        ring(pose, out, b, radius, 0.035, mode == 4 ? 0.12 : 0.075,
+                mode == 4 ? 64 : 48, primary, age * (mode == 4 ? 0.035 : 0.055));
+        ring(pose, out, b, Math.max(0.45, radius * 0.68), 0.055, 0.045,
+                40, withAlpha(primary, Math.max(20, (int) (135 * fade))), -age * 0.04);
+        if (mode == 0) {
+            for (int i = 0; i < 4; i++) {
+                double a = i * TAU / 4.0 + age * 0.025;
+                chevron(pose, out, b, a, 0.95, 0.12, 0.25, primary);
+            }
+        } else if (mode == 1) {
+            verticalPillar(pose, out, b, 0.34 + progress * 0.18, 2.2 * fade + 0.3, primary);
+        } else if (mode == 2) {
+            for (int i = 0; i < 3; i++) {
+                ring(pose, out, b, 0.72 + i * 0.24, 0.28 + i * 0.34 + progress * 0.55,
+                        0.045, 36, withAlpha(primary, Math.max(20, (int) ((170 - i * 22) * fade))), age * 0.02);
+            }
+        } else if (mode == 3) {
+            for (int i = 0; i < 6; i++) {
+                double a = i * TAU / 6.0;
+                chevron(pose, out, b, a, 0.82 + progress * 0.45,
+                        0.45 + progress * 1.25, 0.30, primary);
+            }
+            verticalPillar(pose, out, b, 0.22, 2.8 * fade + 0.35, primary);
+        } else {
+            for (int i = 0; i < 8; i++) {
+                double a = i * TAU / 8.0 + age * 0.015;
+                groundCrack(pose, out, b, a, 0.65, 2.4 + progress * 1.8, 0.08, primary);
+            }
         }
     }
 

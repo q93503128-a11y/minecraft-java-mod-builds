@@ -83,6 +83,38 @@ public final class VillageDefenseEffectSystem {
                 heavy ? "2.4" : "1.5");
     }
 
+    public static void turretPlacementPreview(
+            ServerLevel level, Vec3 center, VillagePlacedTurretSystem.TurretType type) {
+        if (level == null || center == null || type == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "turret_placement_preview", center,
+                new Vec3(0.0, 0.0, 1.0), 18, 0.0f, Integer.toString(type.ordinal()));
+    }
+
+    public static void turretDeployPulse(
+            ServerLevel level, Vec3 center, VillagePlacedTurretSystem.TurretType type) {
+        if (level == null || center == null || type == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "turret_deploy_pulse", center,
+                new Vec3(0.0, 0.0, 1.0), 26, 0.0f, Integer.toString(type.ordinal()));
+    }
+
+    public static void turretRepairPulse(ServerLevel level, Vec3 center) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "defense_repair_pulse", center,
+                new Vec3(0.0, 0.0, 1.0), 24, 0.0f, "");
+    }
+
+    public static void turretUpgradePulse(ServerLevel level, Vec3 center, int levelValue) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "turret_upgrade_burst", center,
+                new Vec3(0.0, 0.0, 1.0), 30, 0.0f, Integer.toString(Math.max(1, levelValue)));
+    }
+
+    public static void breachAlarm(ServerLevel level, Vec3 center) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "defense_breach_alarm", center,
+                new Vec3(0.0, 0.0, 1.0), 34, 0.0f, "5.0");
+    }
+
     private static void spawnLine(ServerLevel level, String kind, Vec3 start, Vec3 end, int duration) {
         if (level == null || start == null || end == null) return;
         Vec3 delta = end.subtract(start);

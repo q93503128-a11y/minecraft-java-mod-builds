@@ -23,7 +23,7 @@ def main() -> None:
     entity = read("VillageSkillEffectEntity.java")
     mesh = read("VillageSkillMeshLibrary.java")
 
-    require("version is v0.18.15-alpha.1", "mod_version=0.18.15-alpha.1" in props)
+    require("version is v0.18.15-alpha.1", "mod_version=0.18.16-alpha.1" in props)
 
     require("boss doctrines genuinely diversify by day wave and actual boss archetype",
             "doctrineFor(" in boss

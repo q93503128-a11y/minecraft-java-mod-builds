@@ -164,6 +164,49 @@ public final class VillageRaidSystem {
     public static boolean isActive() { return active; }
     public static boolean isRaidLocked() { return active || countdownTicks > 0; }
 
+    /** Compact authoritative snapshot for the defense HUD; never reparses formatted status text. */
+    public static RaidHudSnapshot hudSnapshot() {
+        int north = 0;
+        int west = 0;
+        int east = 0;
+        int rear = 0;
+        for (UUID id : ACTIVE_ENEMIES) {
+            switch (VillageAttackPlanSystem.frontOf(id)) {
+                case NORTH -> north++;
+                case NORTH_WEST, WEST -> west++;
+                case NORTH_EAST, EAST -> east++;
+                case SOUTH_WEST, SOUTH_EAST -> rear++;
+            }
+        }
+        String mode = VillageProgressionSystem.isGameOver() ? "GAME_OVER"
+                : countdownTicks > 0 ? "COUNTDOWN"
+                : active ? "ACTIVE" : "SAFE";
+        int nextSeconds = 0;
+        if (countdownTicks > 0) {
+            nextSeconds = Math.max(1, (countdownTicks + 19) / 20);
+        } else if (active && wave < maxWaves) {
+            int ticks = ACTIVE_ENEMIES.isEmpty() && betweenWaveTicks > 0
+                    ? betweenWaveTicks
+                    : Math.max(0, FORCED_NEXT_WAVE_TICKS - waveElapsedTicks);
+            nextSeconds = Math.max(1, (ticks + 19) / 20);
+        }
+        return new RaidHudSnapshot(active, mode, wave, maxWaves, ACTIVE_ENEMIES.size(), nextSeconds,
+                currentTrait.displayName(), north, west, east, rear);
+    }
+
+    public record RaidHudSnapshot(
+            boolean active,
+            String mode,
+            int wave,
+            int maxWaves,
+            int enemyCount,
+            int nextSeconds,
+            String trait,
+            int north,
+            int west,
+            int east,
+            int rear) {}
+
     public static String status() {
         if (VillageProgressionSystem.isGameOver()) return "§c마을 방어 실패 상태";
         if (countdownTicks > 0) {

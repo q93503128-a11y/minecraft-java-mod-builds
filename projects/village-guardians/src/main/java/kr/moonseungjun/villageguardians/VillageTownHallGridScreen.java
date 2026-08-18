@@ -18,18 +18,18 @@ import java.util.List;
  */
 public final class VillageTownHallGridScreen extends Screen {
     private static final String SEP = "\u001F";
-    private static final int OVERLAY = 0x7805090C;
-    private static final int PANEL = 0xF00B1217;
-    private static final int PANEL_2 = 0xE9142027;
-    private static final int PANEL_3 = 0xE91B2A32;
-    private static final int LINE = 0xB04F6873;
-    private static final int TEXT = 0xFFF3F5F5;
-    private static final int MUTED = 0xFFA8B4B9;
-    private static final int CYAN = 0xFF50D9C1;
-    private static final int GOLD = 0xFFF2C35D;
-    private static final int RED = 0xFFE56A64;
-    private static final int GREEN = 0xFF76D39A;
-    private static final int BLUE = 0xFF7AA9E8;
+    private static final int OVERLAY = VillageDefenseUiTheme.BACKDROP;
+    private static final int PANEL = VillageDefenseUiTheme.PANEL;
+    private static final int PANEL_2 = VillageDefenseUiTheme.PANEL_SOFT;
+    private static final int PANEL_3 = VillageDefenseUiTheme.PANEL_ACTIVE;
+    private static final int LINE = VillageDefenseUiTheme.EDGE;
+    private static final int TEXT = VillageDefenseUiTheme.TEXT;
+    private static final int MUTED = VillageDefenseUiTheme.MUTED;
+    private static final int CYAN = VillageDefenseUiTheme.CYAN;
+    private static final int GOLD = VillageDefenseUiTheme.GOLD;
+    private static final int RED = VillageDefenseUiTheme.RED;
+    private static final int GREEN = VillageDefenseUiTheme.GREEN;
+    private static final int BLUE = VillageDefenseUiTheme.BLUE;
 
     private final String body;
     private final List<RoleCard> roles = new ArrayList<>();

@@ -19,15 +19,15 @@ import java.util.Locale;
  */
 public final class VillageCommandCenterScreen extends Screen {
     private static final String SEP = "\u001F";
-    private static final int OVERLAY = 0x70070A0D;
-    private static final int TEXT = 0xFFF1F4F5;
-    private static final int MUTED = 0xFFAAB5BA;
-    private static final int CYAN = 0xFF52D9C2;
-    private static final int GOLD = 0xFFFFC65C;
-    private static final int RED = 0xFFE06E64;
-    private static final int SURFACE = 0xD1131B1F;
-    private static final int SURFACE_2 = 0xD51A252A;
-    private static final int LINE = 0xA34B6873;
+    private static final int OVERLAY = VillageDefenseUiTheme.BACKDROP;
+    private static final int TEXT = VillageDefenseUiTheme.TEXT;
+    private static final int MUTED = VillageDefenseUiTheme.MUTED;
+    private static final int CYAN = VillageDefenseUiTheme.CYAN;
+    private static final int GOLD = VillageDefenseUiTheme.GOLD;
+    private static final int RED = VillageDefenseUiTheme.RED;
+    private static final int SURFACE = VillageDefenseUiTheme.PANEL_SOFT;
+    private static final int SURFACE_2 = VillageDefenseUiTheme.PANEL_ACTIVE;
+    private static final int LINE = VillageDefenseUiTheme.EDGE;
 
     private final String screenId;
     private final String heading;

@@ -117,8 +117,8 @@ public final class VillagePlacedTurretSystem {
         }
         if (pending.preview() == null || !pending.preview().equals(candidate)) {
             PENDING.put(player.getUUID(), new PendingPlacement(pending.type(), candidate.immutable()));
-            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, candidate.getX() + 0.5, candidate.getY() + 0.7,
-                    candidate.getZ() + 0.5, 12, 0.45, 0.35, 0.45, 0.03);
+            VillageDefenseEffectSystem.turretPlacementPreview(level,
+                    Vec3.atCenterOf(candidate).add(0.0, -0.45, 0.0), pending.type());
             player.sendSystemMessage(Component.literal("§a[배치 미리보기] §f유효한 위치입니다. 같은 블록을 다시 우클릭해 확정하세요."));
             return true;
         }
@@ -133,6 +133,8 @@ public final class VillagePlacedTurretSystem {
                 pending.type().baseHp(), true);
         synchronized (VillagePlacedTurretSystem.class) { TURRETS.put(id, state); persist(state); }
         buildVisual(level, state);
+        VillageDefenseEffectSystem.turretDeployPulse(level,
+                Vec3.atCenterOf(state.pos()).add(0.0, -0.45, 0.0), state.type());
         PENDING.remove(player.getUUID());
         player.sendSystemMessage(Component.literal("§6[포탑 설치] §f" + pending.type().displayName()
                 + " #" + id + " 설치 완료 · 주화 " + cost + " 사용"));
@@ -153,7 +155,11 @@ public final class VillagePlacedTurretSystem {
         if (!VillageProgressionSystem.spendCoins(player, cost)) return "수리 주화가 부족합니다. 필요 " + cost;
         TurretState repaired = new TurretState(id, state.type(), state.pos(), state.level(), maximum, true);
         TURRETS.put(id, repaired); persist(repaired);
-        if (player.level() instanceof ServerLevel level) buildVisual(level, repaired);
+        if (player.level() instanceof ServerLevel level) {
+            buildVisual(level, repaired);
+            VillageDefenseEffectSystem.turretRepairPulse(level,
+                    Vec3.atCenterOf(repaired.pos()).add(0.0, -0.35, 0.0));
+        }
         return state.type().displayName() + " #" + id + " 수리 완료 · HP " + maximum + "/" + maximum;
     }
 
@@ -169,7 +175,11 @@ public final class VillagePlacedTurretSystem {
         TurretState upgraded = new TurretState(id, state.type(), state.pos(), newLevel,
                 state.type().baseHp() + (newLevel - 1) * 70, true);
         TURRETS.put(id, upgraded); persist(upgraded);
-        if (player.level() instanceof ServerLevel level) buildVisual(level, upgraded);
+        if (player.level() instanceof ServerLevel level) {
+            buildVisual(level, upgraded);
+            VillageDefenseEffectSystem.turretUpgradePulse(level,
+                    Vec3.atCenterOf(upgraded.pos()).add(0.0, -0.35, 0.0), newLevel);
+        }
         return state.type().displayName() + " #" + id + " Lv." + newLevel + " 강화 완료";
     }
 
@@ -197,7 +207,11 @@ public final class VillagePlacedTurretSystem {
             VillageProgressionSystem.spendCoins(player, cost);
             TurretState fixed = new TurretState(state.id(), state.type(), state.pos(), state.level(), maxHp(state), true);
             TURRETS.put(state.id(), fixed); persist(fixed);
-            if (player.level() instanceof ServerLevel level) buildVisual(level, fixed);
+            if (player.level() instanceof ServerLevel level) {
+                buildVisual(level, fixed);
+                VillageDefenseEffectSystem.turretRepairPulse(level,
+                        Vec3.atCenterOf(fixed.pos()).add(0.0, -0.35, 0.0));
+            }
             totalCost += cost; repaired++;
         }
         return repaired == 0 ? "수리할 포탑이 없거나 주화가 부족합니다."

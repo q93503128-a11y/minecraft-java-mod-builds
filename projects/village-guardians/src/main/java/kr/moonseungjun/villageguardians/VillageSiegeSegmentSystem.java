@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.Locale;
 
@@ -87,6 +88,8 @@ public final class VillageSiegeSegmentSystem {
         VillageSiegePersistence.putInt("segment_breach_" + segment.id(), breachAxis);
         applyDamageVisual(server.overworld(), segment, damageState(segment), breachAxis);
         if (after == 0) {
+            VillageDefenseEffectSystem.breachAlarm(server.overworld(),
+                    Vec3.atCenterOf(attackPoint(segment, impact)));
             server.getPlayerList().broadcastSystemMessage(Component.literal(
                     "§4[성벽 돌파] §f" + segment.displayName()
                             + "에 국소 돌파구가 생겼습니다. 적이 새 진입로로 사용할 수 있습니다."), false);

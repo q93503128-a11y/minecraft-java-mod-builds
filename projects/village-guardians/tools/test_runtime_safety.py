@@ -68,7 +68,8 @@ def main() -> None:
     assert "VillageMainHudOverlay.accept(payload)" in client_ui
     assert "minecraft.gui.screen() != null" in main_hud
     assert "minecraft.gui.screen() != null" in skill_hud
-    assert "guiHeight() - 98" in skill_hud
+    assert "graphics.guiHeight() - 112" in skill_hud
+    assert "abilityCard" in skill_hud
     assert "bottomReserve" not in safe_area
     assert "bottomPadding" in safe_area and "height - bottomPadding" in safe_area
     assert "RenderGuiLayerEvent.Pre" in hud_suppressor
