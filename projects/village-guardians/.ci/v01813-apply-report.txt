@@ -1,0 +1,53 @@
+status=FAIL
+run_id=32086640299
+trigger_head=3dae42d3c915c45857de342e85f4dcd174fbccef
+
+head_before=3dae42d3c915c45857de342e85f4dcd174fbccef
+run_id=32086640299
+=== APPLY ===
+[PASS] applied v0.18.13 siege integration patch
+apply_exit=0
+=== CONTRACT MIGRATION ===
+[PASS] v0.18.9 turret regression now rejects retired duplicate research firing
+migrate_exit=0
+=== REGRESSION ===
+[PASS] version is v0.18.13-alpha.1
+[PASS] raid enemies own authoritative wave metadata before entity join
+[PASS] attack plan no longer parses gameplay state from display names
+[PASS] downed players are excluded from generic raid pursuit and archetype abilities
+[PASS] structure pressure is staggered per attacker instead of one global burst tick
+[PASS] tower hunter disrupts real placed turrets instead of retired fixed tower kinds
+[PASS] legacy duplicate research bonus firing path is retired
+[PASS] bombard is a delayed snapshot-position shell with real impact resolution
+[PASS] automated defense visuals use synchronized procedural mesh actors
+[PASS] mesh renderer has turret_ballista_shot
+[PASS] mesh renderer has turret_repeater_shot
+[PASS] mesh renderer has turret_piercer_shot
+[PASS] mesh renderer has turret_flame_shot
+[PASS] mesh renderer has turret_frost_shot
+[PASS] mesh renderer has turret_chain_shot
+[PASS] mesh renderer has turret_bombard_arc
+[PASS] mesh renderer has turret_bombard_impact
+[PASS] mesh renderer has turret_nullifier_shot
+[PASS] mesh renderer has turret_antiair_shot
+[PASS] mesh renderer has turret_beacon_pulse
+[PASS] mesh renderer has merc_ranger_shot
+[PASS] mesh renderer has merc_bastion_guard
+[PASS] mesh renderer has merc_striker_pressure
+[PASS] mesh renderer has merc_medic_pulse
+[PASS] mesh renderer has siege_structure_impact
+[PASS] turret straight-line particle spam is replaced by mesh shot plus impact feedback
+[PASS] four mercenary roles expose synchronized combat feedback
+[PASS] v0.18.13 siege integration contracts complete
+[PASS] version is v0.18.12-alpha.1
+[PASS] turret LOS starts outside its own three-block visual column
+[PASS] anti-air targeting chooses nearest valid airborne target
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 84, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 37, in main
+    require("chain turret visuals arc from target to target rather than starburst from tower",
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 14, in require
+    raise AssertionError(label)
+AssertionError: chain turret visuals arc from target to target rather than starburst from tower
+tests_exit=1
