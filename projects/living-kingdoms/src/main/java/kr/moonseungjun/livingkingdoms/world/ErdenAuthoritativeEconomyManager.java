@@ -1,7 +1,6 @@
 package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
-import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -12,7 +11,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -688,19 +686,13 @@ public final class ErdenAuthoritativeEconomyManager {
             ErdenPhysicalEconomySavedData.SiteState site) {
         ExternalUrbanFabricBuilder.UrbanEntrance entrance = findEntrance(site.x(), site.z());
         if (entrance == null) return null;
-        int doorY = findLowestDoorY(level, site.x(), site.z());
-        if (doorY == Integer.MIN_VALUE) return null;
-        Room room = room(entrance, doorY - 1);
-        Point point = switch (site.role()) {
-            case "shop" -> room.point(-3, 7);
-            case "bakery" -> room.point(-3, 5);
-            case "inn" -> room.point(-3, 9);
-            case "stable" -> room.point(3, 5);
-            case "guard_post" -> room.point(-3, 3);
-            case "warehouse" -> room.point(-3, 3);
-            default -> null;
-        };
-        return point == null ? null : new BlockPos(point.x, room.floorY + 1, point.z);
+        BlockPos planned = ErdenUrbanAuthoredGroundPlanCatalog.primaryContainer(entrance);
+        if (planned == null) {
+            throw new IllegalStateException(
+                    "Economy site has no authored primary container role=" + site.role()
+                            + " entrance=" + site.x() + "," + site.z());
+        }
+        return level.hasChunk(planned.getX() >> 4, planned.getZ() >> 4) ? planned : null;
     }
 
     private static long countItem(Container container, Item item) {
@@ -807,37 +799,6 @@ public final class ErdenAuthoritativeEconomyManager {
         return null;
     }
 
-    private static int findLowestDoorY(ServerLevel level, int x, int z) {
-        int designed = (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z));
-        int minimum = Math.max(level.getMinY(), designed - 8);
-        int maximum = Math.min(level.getMaxY() - 1, designed + 64);
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int y = minimum; y <= maximum; y++) {
-            cursor.set(x, y, z);
-            if (level.getBlockState(cursor).getBlock() instanceof DoorBlock) return y;
-        }
-        return Integer.MIN_VALUE;
-    }
-
-    private static Room room(
-            ExternalUrbanFabricBuilder.UrbanEntrance entrance,
-            int floorY) {
-        int deltaX = entrance.roadX() - entrance.x();
-        int deltaZ = entrance.roadZ() - entrance.z();
-        int inwardX;
-        int inwardZ;
-        if (Math.abs(deltaX) >= Math.abs(deltaZ)) {
-            inwardX = deltaX >= 0 ? -1 : 1;
-            inwardZ = 0;
-        } else {
-            inwardX = 0;
-            inwardZ = deltaZ >= 0 ? -1 : 1;
-        }
-        return new Room(
-                floorY, entrance.x(), entrance.z(),
-                inwardX, inwardZ, -inwardZ, inwardX);
-    }
-
     private static String compactStocks(ErdenPhysicalEconomySavedData.SiteState site) {
         List<String> parts = new ArrayList<>();
         for (ResourceItem resource : PHYSICAL_RESOURCES) {
@@ -917,24 +878,6 @@ public final class ErdenAuthoritativeEconomyManager {
     }
 
     private record WorkerRef(String householdId, String residentId) {
-    }
-
-    private record Point(int x, int z) {
-    }
-
-    private record Room(
-            int floorY,
-            int originX,
-            int originZ,
-            int inwardX,
-            int inwardZ,
-            int rightX,
-            int rightZ) {
-        Point point(int lateral, int depth) {
-            return new Point(
-                    originX + inwardX * depth + rightX * lateral,
-                    originZ + inwardZ * depth + rightZ * lateral);
-        }
     }
 
     private static final class DayCounters {
