@@ -215,7 +215,7 @@ for token in ['ArcaneBuffRuntime.apply','ArcaneBuffRuntime.tick','ArcaneBuffRunt
 for token in ['ArcaneBuffRuntime.castTimeMultiplier(player)','ArcaneBuffRuntime.adjustCooldownTicks(player']:
     assert token in casting_service, token
 for token in ['BUFFS = Set.of','buffMantle','highCircleCrown','Basis.fromNormal',
-              'nine independent satellite formulae','spell.circle() >= 9','age < .90']:
+              'nine independent formulae are complete mini-circles','spell.circle() >= 9','age < .90']:
     assert token in overhaul, token
 assert 'ArcaneBuffRuntime.apply(player, "solar_guard", power, range)' in fusion
 assert 'CATASTROPHIC = Set.of' in overhaul and 'catastrophicAuthority' in overhaul
@@ -258,11 +258,24 @@ for obsolete in ['AUDIT_REPORT_V0.5.md','BUILD_AND_RUNTIME_REPORT.md','MAGIC_WOR
     assert not (root/obsolete).exists(), obsolete
 
 print('Arcane Circle current-source audit: PASS')
-for name in ['target_snapshot_parity','seeded_meteor_barrage','destruction_tick_budget','destruction_drop_budget',
-'world_sunder_fissure','npc_meteor_scheduler','non_homing_target_seal','sustained_antimagic','authoritative_time_stop',
-'wish_preserves_beneficial_effects','grimoire_effect_summaries','persistent_spell_runtime','hard_control_restore',
-'controlled_flight','death_substitution','actual_weather_control','persistent_wall_collision','visual_lifetime_parity']:
-    print(name+'=PASS')
+print('target_snapshot_parity=PASS')
+print('seeded_meteor_barrage=PASS')
+print('destruction_tick_budget=PASS')
+print('destruction_drop_budget=PASS')
+print('world_sunder_fissure=PASS')
+print('npc_meteor_scheduler=PASS')
+print('non_homing_target_seal=PASS')
+print('sustained_antimagic=PASS')
+print('authoritative_time_stop=PASS')
+print('wish_preserves_beneficial_effects=PASS')
+print('grimoire_effect_summaries=PASS')
+print('persistent_spell_runtime=PASS')
+print('hard_control_restore=PASS')
+print('controlled_flight=PASS')
+print('death_substitution=PASS')
+print('actual_weather_control=PASS')
+print('persistent_wall_collision=PASS')
+print('visual_lifetime_parity=PASS')
 print('third_person_fake_geometry=absent')
 print('prismatic_white_frame=absent')
 print('retired_visual_stack=absent')
