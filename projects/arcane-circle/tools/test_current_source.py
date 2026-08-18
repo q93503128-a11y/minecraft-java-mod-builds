@@ -344,7 +344,7 @@ for token in ['world_magic_cinematic_v4','HighCircleMaintenanceOverlay.charge','
               'SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0',
               'entries.sort(Comparator.comparingInt(RenderEntry::priority).reversed())','releaseOpacity','withOpacity',
               'followsCaster','if("time_stop".equals(spell.id()))return false;',
-              'if("antimagic_field".equals(spell.id()))return true;','findPlayer(UUID id)',
+              'if("antimagic_field".equals(spell.id())||"control_weather".equals(spell.id()))return true;','findLiving(UUID id)',
               'if(distanceSqr>SILHOUETTE_DISTANCE_SQR&&entry.priority<90)continue;',
               'if(distanceSqr>DETAIL_DISTANCE_SQR&&entry.priority<58)continue;']:
     assert token in tracker, token
@@ -352,7 +352,9 @@ staged_block=tracker[tracker.index('if(v.spell.circle()>=7){'):tracker.index('fo
 assert 'if(!HighCircleMaintenanceOverlay.replacesChargeTimeline(v.spell))' in staged_block
 assert staged_block.index('HighCircleMaintenanceOverlay.replacesChargeTimeline') < staged_block.index('AuthoredHighCircleTimeline.charge')
 for attached_id in ['shield','mage_armor','haste','greater_invisibility','true_seeing','solar_guard','shapechange','foresight','fly']:
-    assert f'"{attached_id}"' in tracker, attached_id
+    authored_body=f'put("{attached_id}", SigilStyle.BODY_HALO'
+    authored_feet=f'put("{attached_id}", SigilStyle.FEET_RUNE'
+    assert authored_body in presentation or authored_feet in presentation, attached_id
 # Do not replace the alpha.43 mesh renderer with another global pass: alpha.44 LOD is layer-level and safer pre-live-test.
 assert 'int size(int lod)' not in mesh
 assert 'void submit(PoseStack poseStack,SubmitNodeCollector collector,int argb,float windowScale,int lod' not in mesh
