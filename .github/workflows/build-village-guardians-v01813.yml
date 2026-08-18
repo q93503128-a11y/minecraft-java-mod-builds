@@ -100,8 +100,37 @@ jobs:
           jar_sha256=$JAR_SHA
           jar_size=$JAR_SIZE
           EOF
-          git add projects/village-guardians/.ci/v01813-final.txt
+          rm -f projects/village-guardians/.ci/v01813-build-report.txt
+          git add -A projects/village-guardians/.ci
           git commit -m 'ci(village): record v0.18.13 acceptance [skip ci]'
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          exit 1
+      - name: Record build failure
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p projects/village-guardians/.ci
+          {
+            echo "status=FAIL"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "head_sha=$GITHUB_SHA"
+            echo "version=$BUILD_VERSION"
+            echo
+            echo "=== gradle log tail ==="
+            if test -f village-guardians-v01813-gradle.log; then
+              tail -n 220 village-guardians-v01813-gradle.log
+            else
+              echo "Gradle log was not created; failure occurred before or outside clean build."
+            fi
+          } > projects/village-guardians/.ci/v01813-build-report.txt
+          git add projects/village-guardians/.ci/v01813-build-report.txt
+          git commit -m 'ci(village): record v0.18.13 build failure [skip ci]'
           for attempt in 1 2 3 4; do
             if git push origin HEAD:main; then exit 0; fi
             git pull --rebase origin main
