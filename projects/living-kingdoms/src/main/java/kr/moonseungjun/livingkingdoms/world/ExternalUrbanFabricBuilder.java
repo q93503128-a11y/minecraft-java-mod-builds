@@ -634,7 +634,7 @@ public final class ExternalUrbanFabricBuilder {
         List<BuildingBlock> doors = findEntranceBlocks(
                 blocks, templateWidth, templateLength);
         List<FacadeFragment> fragments = createFragments(
-                blocks, doors, templateWidth, templateHeight, templateLength);
+                resource, blocks, doors, templateWidth, templateHeight, templateLength);
         SourceTemplate template = new SourceTemplate(
                 templateWidth, templateHeight, templateLength,
                 List.copyOf(blocks), fragments);
@@ -647,12 +647,50 @@ public final class ExternalUrbanFabricBuilder {
     }
 
     private static List<FacadeFragment> createFragments(
+            String resource,
             List<BuildingBlock> sourceBlocks,
             List<BuildingBlock> entrances,
             int width, int height, int length) {
         List<BuildingBlock> candidates = entrances.isEmpty()
                 ? List.of(new BuildingBlock(width / 2, 1, 0, Blocks.OAK_DOOR.defaultBlockState()))
                 : entrances;
+
+        // The fantasy starter castle exposes several real doors. A nearest-edge crop retained a
+        // nearly sealed 11-cell slice even though the same licensed source has an 802-cell interior
+        // within the exact same 34x38 urban footprint. Choose the largest real doorway-connected
+        // component before any world placement; no imported block is edited by this selection.
+        if (CASTLE_HOUSE.equals(resource) && !entrances.isEmpty()) {
+            FacadeFragment best = null;
+            int bestReachable = -1;
+            BuildingBlock bestEntrance = null;
+            FrontSide bestCropSide = null;
+            for (BuildingBlock entrance : candidates) {
+                for (FrontSide cropSide : FrontSide.values()) {
+                    int depth = Math.min(38, cropSide.horizontal ? width : length);
+                    if (edgeDistance(entrance.x, entrance.z, width, length, cropSide) >= depth) continue;
+                    FacadeFragment candidate = cropFragment(
+                            sourceBlocks, entrance, cropSide, width, height, length);
+                    if (candidate.blocks.size() < 500 || !containsRealEntrance(candidate)) continue;
+                    int reachable = fragmentReachableCells(candidate);
+                    if (reachable > bestReachable) {
+                        best = candidate;
+                        bestReachable = reachable;
+                        bestEntrance = entrance;
+                        bestCropSide = cropSide;
+                    }
+                }
+            }
+            if (best == null || bestReachable < 500) {
+                throw new IllegalStateException(
+                        "No usable fixed-footprint castle-house crop; best_reachable=" + bestReachable);
+            }
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_CASTLE_HOUSE_CROP_SELECTED reachable={} crop_side={} source_door={},{} fragment={}x{} entrance_local={},{} resolved_side={} same_footprint=true source_only=true world_reads=false mutations=0",
+                    bestReachable, bestCropSide, bestEntrance.x, bestEntrance.z,
+                    best.width, best.length, best.entranceX, best.entranceZ, best.exteriorSide);
+            return List.of(best);
+        }
+
         LinkedHashSet<FrontSide> usedSides = new LinkedHashSet<>();
         List<FacadeFragment> result = new ArrayList<>();
         for (BuildingBlock entrance : candidates) {
