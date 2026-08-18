@@ -23,8 +23,5 @@ retired_visual_stack=absent
 gameplay_content=preserved
 source_mutation=disabled
 legacy_arcane_tooling=absent
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 309, in <module>
-    dispatched=set(re.findall(r'case "([a-z0-9_]+)"',draw_block))
-                   ^^
-NameError: name 're' is not defined. Did you forget to import 're'?
+alpha43_high_circle_authored_timeline=PASS
+alpha42_low_circle_sigil_baseline=preserved
