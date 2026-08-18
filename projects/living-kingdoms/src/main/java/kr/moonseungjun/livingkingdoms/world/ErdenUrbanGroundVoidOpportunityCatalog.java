@@ -14,14 +14,18 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Source-only survey for the 77 urban shells that have no safe authored upper floor.
- * It asks a narrower question than the normal topology catalog: how much walkable ground area
- * can be created by adding floor blocks into source AIR only, without deleting a single imported
- * block. No world chunks are read or loaded and this class never mutates a block.
+ * Source-only survey of the authored ground floor in every Erden urban placement.
+ *
+ * <p>This used to exist only for the 77 castle-house placements that were misclassified as
+ * ground-only fallbacks. Once the retained crop edge is interpreted correctly those buildings
+ * expose their real ground floor and a zero-cut route to an authored upper level, so the useful
+ * invariant is now stronger: all 233 urban buildings must retain a meaningful, connected,
+ * roofed source ground floor. This catalog never reads world chunks and never mutates source or
+ * placed blocks.</p>
  */
 public final class ErdenUrbanGroundVoidOpportunityCatalog {
-    public static final int CATALOG_REVISION = 1;
-    public static final int EXPECTED_GROUND_ONLY = 77;
+    public static final int CATALOG_REVISION = 2;
+    public static final int EXPECTED_PLACEMENTS = 233;
     private static final int MIN_USABLE_CELLS = 35;
     private static final int MIN_DEPTH = 6;
     private static final int ROOF_SCAN = 18;
@@ -42,16 +46,17 @@ public final class ErdenUrbanGroundVoidOpportunityCatalog {
         int maximumReachable = 0;
         int minimumFloorAdds = Integer.MAX_VALUE;
         int maximumFloorAdds = 0;
-        Set<String> groundOnlyFragments = new HashSet<>();
+        Set<String> fragments = new HashSet<>();
 
         for (ErdenUrbanPlacedTopologyCatalog.PlacementProfile placement
                 : ErdenUrbanPlacedTopologyCatalog.placements().values()) {
-            if (ErdenUrbanAuthoredUpperRouteManager.isEligible(placement.entrance())) continue;
             placements++;
-            groundOnlyFragments.add(placement.fragmentKey());
+            fragments.add(placement.fragmentKey());
             VoidProfile profile = FRAGMENTS.computeIfAbsent(placement.fragmentKey(), key -> {
                 ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot = snapshots.get(key);
-                if (snapshot == null) throw new IllegalStateException("Missing ground-void source " + key);
+                if (snapshot == null) {
+                    throw new IllegalStateException("Missing authored-ground source " + key);
+                }
                 return analyze(snapshot);
             });
             if (profile.usable()) usablePlacements++;
@@ -60,21 +65,22 @@ public final class ErdenUrbanGroundVoidOpportunityCatalog {
             minimumFloorAdds = Math.min(minimumFloorAdds, profile.newFloorCells());
             maximumFloorAdds = Math.max(maximumFloorAdds, profile.newFloorCells());
         }
-        if (placements != EXPECTED_GROUND_ONLY) {
-            throw new IllegalStateException("Ground-only Erden placement count drifted: " + placements);
+        if (placements != EXPECTED_PLACEMENTS) {
+            throw new IllegalStateException(
+                    "Authored-ground Erden placement count drifted: " + placements);
         }
         if (minimumReachable == Integer.MAX_VALUE) minimumReachable = 0;
         if (minimumFloorAdds == Integer.MAX_VALUE) minimumFloorAdds = 0;
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_GROUND_VOID_SURVEY placements={} fragments={} usable_placements={} reachable_min={} reachable_max={} floor_add_min={} floor_add_max={} min_usable_cells={} min_depth={} source_blocks_cut=0 source_air_only=true source_only=true world_reads=false mutations=0 revision={}",
-                placements, groundOnlyFragments.size(), usablePlacements,
+                "LK_ERDEN_AUTHORED_GROUND_SURVEY placements={} fragments={} usable_placements={} reachable_min={} reachable_max={} floor_add_min={} floor_add_max={} min_usable_cells={} min_depth={} source_blocks_cut=0 source_air_only=true source_only=true world_reads=false mutations=0 revision={}",
+                placements, fragments.size(), usablePlacements,
                 minimumReachable, maximumReachable, minimumFloorAdds, maximumFloorAdds,
                 MIN_USABLE_CELLS, MIN_DEPTH, CATALOG_REVISION);
         for (Map.Entry<String, VoidProfile> entry : FRAGMENTS.entrySet()) {
             VoidProfile p = entry.getValue();
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_GROUND_VOID_FRAGMENT fragment={} reachable={} existing_support={} new_floor_cells={} max_depth={} roofed=true connected=true usable={} source_blocks_cut=0 source_air_only=true",
+                    "LK_ERDEN_AUTHORED_GROUND_FRAGMENT fragment={} reachable={} existing_support={} new_floor_cells={} max_depth={} roofed=true connected=true usable={} source_blocks_cut=0 source_air_only=true",
                     entry.getKey(), p.reachableCells(), p.existingSupportedCells(),
                     p.newFloorCells(), p.maxDepth(), p.usable());
         }
