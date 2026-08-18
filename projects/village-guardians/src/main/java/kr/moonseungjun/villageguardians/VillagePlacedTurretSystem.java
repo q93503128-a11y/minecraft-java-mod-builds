@@ -35,7 +35,6 @@ public final class VillagePlacedTurretSystem {
     private static final Map<Integer, Integer> DISABLED_TICKS = new HashMap<>();
     private static final List<PendingBombard> PENDING_BOMBARDS = new ArrayList<>();
     private static int combatTicks;
-    private static int disableCursor;
 
     private VillagePlacedTurretSystem() {}
 
@@ -45,7 +44,6 @@ public final class VillagePlacedTurretSystem {
         DISABLED_TICKS.clear();
         PENDING_BOMBARDS.clear();
         combatTicks = 0;
-        disableCursor = 0;
         VillageSiegePersistence.stringsWithPrefix(PREFIX).forEach((key, value) -> {
             try {
                 int id = Integer.parseInt(key.substring(PREFIX.length()));
@@ -187,8 +185,7 @@ public final class VillagePlacedTurretSystem {
         if (!VillageRaidSystem.isActive()) {
             PENDING_BOMBARDS.clear();
             DISABLED_TICKS.clear();
-            disableCursor = 0;
-            return;
+                return;
         }
         combatTicks++;
         ServerLevel level = server.overworld();
@@ -210,8 +207,10 @@ public final class VillagePlacedTurretSystem {
 
     private static void fire(ServerLevel level, TurretState state) {
         double range = state.type().range() + (state.level() - 1) * 2.5;
-        List<Mob> candidates = VillageRaidSystem.activeEnemiesNear(level, Vec3.atCenterOf(state.pos()), range, 12, null)
-                .stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob)).toList();
+        List<Mob> nearby = VillageRaidSystem.activeEnemiesNear(level, Vec3.atCenterOf(state.pos()), range, 12, null);
+        List<Mob> candidates = state.type() == TurretType.BOMBARD
+                ? nearby
+                : nearby.stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob)).toList();
         if (candidates.isEmpty()) return;
         Mob target = candidates.stream().min(Comparator.comparingDouble(mob -> mob.distanceToSqr(Vec3.atCenterOf(state.pos())))).orElse(null);
         if (state.type() == TurretType.ANTI_AIR) {
@@ -339,7 +338,7 @@ public final class VillagePlacedTurretSystem {
             VillageEnemyArchetypeSystem.Archetype type = VillageRaidSystem.archetypeOf(mob);
             double distanceSquared = mob.distanceToSqr(Vec3.atCenterOf(state.pos()));
             if (type == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER && distanceSquared <= 36.0 * 36.0) {
-                mob.getNavigation().moveTo(state.pos().getX() + 0.5, state.pos().getY(), state.pos().getZ() + 0.5, 1.08);
+                // Navigation ownership lives in VillageRaidSystem; this layer only resolves physical turret contact damage.
                 if (distanceSquared <= 7.5 * 7.5) {
                     damage = Math.max(damage, 18 + VillageCouncilState.currentDay());
                 }
@@ -354,13 +353,19 @@ public final class VillagePlacedTurretSystem {
         if (damage > 0) damage(server, state.id(), damage);
     }
 
-    public static synchronized int disableRandomActiveTurret(int ticks) {
-        List<TurretState> candidates = TURRETS.values().stream()
+    public static synchronized TurretState nearestActiveTurret(Vec3 origin, double range) {
+        if (origin == null || range <= 0.0) return null;
+        double squared = range * range;
+        return TURRETS.values().stream()
                 .filter(TurretState::active)
-                .sorted(Comparator.comparingInt(TurretState::id))
-                .toList();
-        if (candidates.isEmpty()) return -1;
-        TurretState selected = candidates.get(Math.floorMod(disableCursor++, candidates.size()));
+                .filter(state -> Vec3.atCenterOf(state.pos()).distanceToSqr(origin) <= squared)
+                .min(Comparator.comparingDouble(state -> Vec3.atCenterOf(state.pos()).distanceToSqr(origin)))
+                .orElse(null);
+    }
+
+    public static synchronized int disableNearestActiveTurret(Vec3 origin, double range, int ticks) {
+        TurretState selected = nearestActiveTurret(origin, range);
+        if (selected == null) return -1;
         DISABLED_TICKS.put(selected.id(), Math.max(DISABLED_TICKS.getOrDefault(selected.id(), 0), Math.max(1, ticks)));
         return selected.id();
     }

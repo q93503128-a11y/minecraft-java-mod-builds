@@ -1,0 +1,81 @@
+status=PASS
+run_id=32086997406
+trigger_head=c88ed5a21ee68af2b800c3abf7f7ba06f00d400f
+
+head_before=c88ed5a21ee68af2b800c3abf7f7ba06f00d400f
+run_id=32086997406
+=== APPLY FOLLOW-UP ===
+[PASS] tower hunters now own one coherent nearest-placed-turret objective
+[PASS] bombard targeting may arc over fortress cover while direct-fire turrets retain LOS
+apply_exit=0
+=== REGRESSION ===
+[PASS] version is v0.18.13-alpha.1
+[PASS] raid enemies own authoritative wave metadata before entity join
+[PASS] attack plan no longer parses gameplay state from display names
+[PASS] downed players are excluded from generic raid pursuit and archetype abilities
+[PASS] structure pressure is staggered per attacker instead of one global burst tick
+[PASS] tower hunter owns one coherent nearest placed-turret objective
+[PASS] turret pressure layer no longer fights raid navigation ownership
+[PASS] tower hunter disrupts real placed turrets instead of retired fixed tower kinds
+[PASS] legacy duplicate research bonus firing path is retired
+[PASS] bombard is a delayed snapshot-position shell with real impact resolution
+[PASS] bombard can arc over cover while direct-fire turrets still require LOS
+[PASS] automated defense visuals use synchronized procedural mesh actors
+[PASS] mesh renderer has turret_ballista_shot
+[PASS] mesh renderer has turret_repeater_shot
+[PASS] mesh renderer has turret_piercer_shot
+[PASS] mesh renderer has turret_flame_shot
+[PASS] mesh renderer has turret_frost_shot
+[PASS] mesh renderer has turret_chain_shot
+[PASS] mesh renderer has turret_bombard_arc
+[PASS] mesh renderer has turret_bombard_impact
+[PASS] mesh renderer has turret_nullifier_shot
+[PASS] mesh renderer has turret_antiair_shot
+[PASS] mesh renderer has turret_beacon_pulse
+[PASS] mesh renderer has merc_ranger_shot
+[PASS] mesh renderer has merc_bastion_guard
+[PASS] mesh renderer has merc_striker_pressure
+[PASS] mesh renderer has merc_medic_pulse
+[PASS] mesh renderer has siege_structure_impact
+[PASS] turret straight-line particle spam is replaced by mesh shot plus impact feedback
+[PASS] four mercenary roles expose synchronized combat feedback
+[PASS] v0.18.13 siege integration contracts complete
+[PASS] version is v0.18.12-alpha.1
+[PASS] turret LOS starts outside its own three-block visual column
+[PASS] anti-air targeting chooses nearest valid airborne target
+[PASS] chain turret visuals arc from target to target rather than starburst from tower
+[PASS] mercenary deployment uses authoritative saved class map instead of display-name parsing
+[PASS] support mercenaries suppress melee wandering without cancelling rally return
+[PASS] breach colossus can attack the north gate and phase two really attacks faster
+[PASS] siege boss abilities telegraph before breach ritual and duel impacts
+[PASS] elite instant effects now expose readable pre-cast telegraphs
+[PASS] elite pursuit chooses the nearest player instead of player-list order
+[PASS] boss aspects ignore downed targets and telegraph lethal pulses
+[PASS] stormcaller warning and damage share one fixed dodgeable strike point
+[PASS] direct-fire turret and ranger LOS blocks wall-through acquisition and damage
+[PASS] bombard retains its intentional indirect-fire acquisition exception
+[PASS] tower hunters approach at range but damage turrets only at physical attack distance
+[PASS] piercer has a real armored-target damage niche
+[PASS] turret placement/visual/cleanup owns a matching three-block footprint
+[PASS] only the actual mercenary killer receives mercenary progression
+[PASS] all four mercenary classes retain distinct active battlefield behavior
+[PASS] tracking ricochet locks only inside a forward aim cone
+[PASS] homing uses smooth predictive steering and live target reacquisition
+[PASS] ricochet hops sequentially through unique line-of-sight targets
+[PASS] secondary hits preserve player kill ownership without double scaling or recursion
+[PASS] skill description and bounded damage/chain scaling match runtime
+[PASS] Seven segment HP pools project localized 5-block no-drop wall breaches
+[PASS] Day-driven scoutable multi-front routing uses safe terrain-height spawn resolution
+[PASS] 1/2/3/4-player enemy scaling remains 100/130/160/190%
+[PASS] Ten deployable destructible turrets use split placement/management views
+[PASS] Failed-night retry/new-game restores authoritative segment/turret snapshots and visuals
+[PASS] Mercenary rally doctrine, five elite roles and three boss structures are wired
+[PASS] Weapon families and 2/3-piece sets affect runtime combat and re-equip without stacking
+[PASS] Inventory side panel stays outside vanilla inventory or safely hides at impossible widths
+[PASS] Legacy fixed-tower production routes redirect to phase-2 siege command
+[PASS] v0.18.8 early-solo, full-death-risk and debris contracts remain
+[PASS] Downed players receive no hidden structure-damage protection
+[PASS] Early difficulty curve and +30% multiplayer enemy scaling remain intact
+[PASS] Legacy screens are unreachable and narrow-screen overflow guards remain wired
+[PASS] Equipment tooltip avoids client/server smithy desync and raid debris suppression remains active
+tests_exit=0

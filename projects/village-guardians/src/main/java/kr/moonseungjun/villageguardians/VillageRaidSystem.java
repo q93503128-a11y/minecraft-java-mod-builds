@@ -354,6 +354,18 @@ public final class VillageRaidSystem {
                 VillageBossAspectSystem.tick(level, server, mob, abilityTicks);
             }
 
+            if (archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER) {
+                VillagePlacedTurretSystem.TurretState turret =
+                        VillagePlacedTurretSystem.nearestActiveTurret(mob.position(), 48.0);
+                if (turret != null) {
+                    Vec3 turretCenter = Vec3.atCenterOf(turret.pos());
+                    mob.setTarget(null);
+                    mob.getLookControl().setLookAt(turretCenter.x, turretCenter.y + 1.0, turretCenter.z);
+                    mob.getNavigation().moveTo(turretCenter.x, turretCenter.y, turretCenter.z, 1.14);
+                    continue;
+                }
+            }
+
             ServerPlayer nearbyPlayer = gatePassable
                     && !VillageEnemyArchetypeSystem.ignoresNearbyPlayersUntilInside(archetype)
                     ? nearestPriorityPlayer(server, mob)

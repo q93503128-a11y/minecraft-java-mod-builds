@@ -151,7 +151,7 @@ public final class VillageEnemyArchetypeSystem {
             }
             case TOWER_HUNTER -> {
                 if (!abilityReady(mob, globalTicks, 180)) return;
-                int disabledId = VillagePlacedTurretSystem.disableRandomActiveTurret(20 * 7);
+                int disabledId = VillagePlacedTurretSystem.disableNearestActiveTurret(mob.position(), 48.0, 20 * 7);
                 if (disabledId < 0) return;
                 spawnAura(level, mob, archetype, 20);
                 server.getPlayerList().broadcastSystemMessage(
