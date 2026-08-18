@@ -46,6 +46,9 @@ jobs:
           grep -F 'public static final int RESIDENCE_REVISION = 2;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenExteriorResidenceBuilder.java
           grep -F 'public static final int FLOOR_REVISION = 1;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredNewFloorManager.java
           grep -F 'public static final int EXPECTED_CANDIDATES = 116;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanNewFloorStructuralApprovalCatalog.java
+          grep -F 'public static final int INTERIOR_REVISION = 2;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanInteriorBuilder.java
+          grep -F 'public static final int EXPECTED_PLANS = 233;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredGroundPlanCatalog.java
+          grep -F 'EXPECTED_GROUND_ONLY_BUILDINGS = 0' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanResidenceResolver.java
           mkdir -p ../../logs
           gradle --no-daemon clean classes --stacktrace --console=plain \
             2>&1 | tee ../../logs/exterior-inventory-compile.log
@@ -72,9 +75,11 @@ jobs:
             fi
             if grep -Fq 'LK_ERDEN_KINGDOM_EXTERIOR_PASS revision=2 nodes=18 producers=15 wharves=3' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_EXTERIOR_INVENTORY_PASS revision=2 nodes=15 containers=15' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' ../../logs/exterior-inventory-server.log \
-              && grep -Fq 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' ../../logs/exterior-inventory-server.log \
-              && grep -Fq 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_GROUND_MATERIALIZER_PASS' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_UPPER_WORK_ACTIVITY_PASS' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/exterior-inventory-server.log \
@@ -95,10 +100,12 @@ jobs:
           cat ../../logs/exterior-inventory-server.log
           test "$passed" -eq 1
           grep -F 'LK_ERDEN_EXTERIOR_TICKETS_PASS revision=1 anchors=178 released=178 explicit_release=true persistent_forced_chunks=false' ../../logs/exterior-inventory-server.log
+          grep -F 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' ../../logs/exterior-inventory-server.log | grep -F 'source_floor_reused=true' | grep -F 'source_blocks_cut=0'
+          grep -F 'LK_ERDEN_AUTHORED_GROUND_MATERIALIZER_PASS' ../../logs/exterior-inventory-server.log | grep -F 'source_air_fixtures=true' | grep -F 'source_blocks_cut=0'
+          grep -F 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS' ../../logs/exterior-inventory-server.log | grep -F 'authored_ground=true' | grep -F 'synthetic_room=false' | grep -F 'source_blocks_cut=0'
           grep -F 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' ../../logs/exterior-inventory-server.log
           grep -F 'source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false' ../../logs/exterior-inventory-server.log
-          grep -F 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' ../../logs/exterior-inventory-server.log
-          grep -F 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' ../../logs/exterior-inventory-server.log
+          grep -F 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' ../../logs/exterior-inventory-server.log
           grep -F 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' ../../logs/exterior-inventory-server.log
           grep -F 'LK_ERDEN_UPPER_WORK_ACTIVITY_PASS' ../../logs/exterior-inventory-server.log
           grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/exterior-inventory-server.log
@@ -124,6 +131,11 @@ jobs:
           test "$visible_resources" -ge 6
           test "$captured_nodes" -eq 15
           test "$verified_nodes" -eq 15
+
+          if grep -Fq 'ground_only_candidates=77' ../../logs/exterior-inventory-server.log; then
+            echo 'Legacy Erden ground-only residence marker reappeared.' >&2
+            exit 1
+          fi
 
           if grep -Eqi 'Unsupported exterior resource|Unknown Erden supply role|Invalid Erden exterior residence|Exception loading level|watchdog|Item debris remained|authored new-floor verification failed' ../../logs/exterior-inventory-server.log; then
             exit 1
