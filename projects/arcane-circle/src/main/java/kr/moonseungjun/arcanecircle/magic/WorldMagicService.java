@@ -108,6 +108,9 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
+        // Etherealness is a true maintained 7C self-state. Its server duration scales with power,
+        // so the release geometry must live for that same authored duration instead of AURA's 28 ticks.
+        if ("etherealness".equals(spell.id())) duration = Math.max(duration, 360 + (int) cast.power());
         send(player, encode("release", player, spell, cast.fusion(), cast.ingredients().size(), center, target,
                 direction, cast.range(), cast.power(), 1.0, duration, impactTicks, snapshot.barrageSeed()));
     }
@@ -154,6 +157,18 @@ public final class WorldMagicService {
         PLAYER_CHARGE_SEEDS.remove(caster.getUUID());
         NPC_CHARGE_SEEDS.remove(caster.getUUID());
         send(caster, "kind=stop;caster=" + caster.getUUID());
+    }
+
+    /** Cancels one already-released spell without killing unrelated maintained magic. */
+    public static void cancelRelease(LivingEntity caster, String spellId) {
+        if (caster == null || spellId == null || spellId.isBlank()) return;
+        send(caster, "kind=cancel;caster=" + caster.getUUID() + ";spell=" + spellId);
+    }
+
+    /** Hard lifecycle boundary used on logout/respawn/dimension change. */
+    public static void clearVisuals(LivingEntity caster) {
+        if (caster == null) return;
+        send(caster, "kind=clear;caster=" + caster.getUUID());
     }
 
     public static void clearAll() {

@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.44";
+    public static final String VERSION = "0.12.1-alpha.45";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -105,8 +105,9 @@ public final class ArcaneCircle {
         if (event.getEntity() instanceof ServerPlayer player) {
             ArcaneLightService.clear(player);
             ArcaneFieldService.clear(player.getUUID());
-            SpellGameplayService.clear(player.getUUID());
+            SpellGameplayService.clear(player);
             WorldMagicService.stop(player);
+            WorldMagicService.clearVisuals(player);
         }
         SpellCastingService.clearSession(event.getEntity().getUUID());
         ArcaneNoticeService.clear(event.getEntity().getUUID());
@@ -118,10 +119,11 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ArcaneLightService.clear(player);
         ArcaneFieldService.clear(player.getUUID());
-        SpellGameplayService.clear(player.getUUID());
+        SpellGameplayService.clear(player);
         SpellCastingService.clearSession(player.getUUID());
         SpellKineticsService.clear(player.getUUID());
         WorldMagicService.stop(player);
+            WorldMagicService.clearVisuals(player);
         MagicWorldService.onRespawn(player);
         ArcaneNetwork.sync(player);
     }
@@ -130,10 +132,11 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ArcaneLightService.clear(player);
         ArcaneFieldService.clear(player.getUUID());
-        SpellGameplayService.clear(player.getUUID());
+        SpellGameplayService.clear(player);
         SpellCastingService.clearSession(player.getUUID());
         SpellKineticsService.clear(player.getUUID());
         WorldMagicService.stop(player);
+            WorldMagicService.clearVisuals(player);
         ArcaneNetwork.sync(player);
     }
 

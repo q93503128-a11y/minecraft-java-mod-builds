@@ -4,6 +4,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneDamage;
 import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
 import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
+import kr.moonseungjun.arcanecircle.magic.WorldMagicService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -52,6 +53,8 @@ public final class NpcMeteorBarrageService {
             if (!(rawCaster instanceof Mob caster) || !caster.isAlive()
                     || ArcaneFieldService.blocksCasting(caster)
                     || !barrage.targetSnapshot().validFor(caster)) {
+                if (rawCaster instanceof LivingEntity livingCaster)
+                    WorldMagicService.cancelRelease(livingCaster, "meteor_swarm");
                 iterator.remove();
                 continue;
             }

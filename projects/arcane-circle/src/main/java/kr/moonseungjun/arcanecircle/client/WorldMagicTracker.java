@@ -10,7 +10,7 @@ import kr.moonseungjun.arcanecircle.network.WorldMagicPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.context.ContextKey;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ExtractLevelRenderStateEvent;
 import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
@@ -28,13 +28,14 @@ public final class WorldMagicTracker {
             Identifier.fromNamespaceAndPath(ArcaneCircle.MOD_ID, "world_magic_cinematic_v4"));
     private static final Map<UUID, Visual> CHARGES = new HashMap<>();
     private static final List<Visual> RELEASES = new ArrayList<>();
-    private static final int MAX_VISUALS = 10;
+    private static final int MAX_VISUALS = 32;
     private static final int MAX_FRAME = 14500;
     private static final int MAX_ENTRY = 4000;
     private static final double MAX_DISTANCE_SQR = 224.0 * 224.0;
     private static final double DETAIL_DISTANCE_SQR = 96.0 * 96.0;
     private static final double SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0;
     private static final long CHARGE_TTL = 2_250_000_000L;
+    private static Object LAST_LEVEL;
 
     record CasterPoseSnapshot(int family, float progress, boolean release) {}
     private WorldMagicTracker() {}
@@ -54,11 +55,22 @@ public final class WorldMagicTracker {
     }
 
     public static void accept(WorldMagicPayload payload) {
+        syncLevelIdentity();
         Map<String,String> values=parse(payload.state());
         String kind=values.getOrDefault("kind","");
         UUID caster;
         try{caster=UUID.fromString(values.getOrDefault("caster",""));}catch(Exception ignored){return;}
         if("stop".equals(kind)){CHARGES.remove(caster);return;}
+        if("clear".equals(kind)){
+            CHARGES.remove(caster);
+            RELEASES.removeIf(v->v.caster.equals(caster));
+            return;
+        }
+        if("cancel".equals(kind)){
+            String spellId=values.getOrDefault("spell","");
+            RELEASES.removeIf(v->v.caster.equals(caster)&&v.spell.id().equals(spellId));
+            return;
+        }
 
         SpellDefinition spell=SpellCatalog.spell(values.getOrDefault("spell","")).orElse(null);
         if(spell==null)return;
@@ -87,7 +99,9 @@ public final class WorldMagicTracker {
             return;
         }
         if("release".equals(kind)){
-            while(RELEASES.size()>=MAX_VISUALS)RELEASES.removeFirst();
+            if(singletonRelease(spell))
+                RELEASES.removeIf(v->v.caster.equals(caster)&&v.spell.id().equals(spell.id()));
+            evictForCapacity();
             boolean attached=followsCaster(spell);
             Vec3 attachOffset=attached?attachmentOffset(caster,spell,center):Vec3.ZERO;
             RELEASES.add(new Visual(caster,spell,fusion,ingredients,center,target,direction,range,power,1,
@@ -97,9 +111,11 @@ public final class WorldMagicTracker {
     }
 
     public static void onExtract(ExtractLevelRenderStateEvent event) {
+        syncLevelIdentity();
         long now=System.nanoTime();
         CHARGES.values().removeIf(v->v.expiresAt<now);
-        RELEASES.removeIf(v->v.expiresAt<now);
+        RELEASES.removeIf(v->v.expiresAt<now
+                ||(v.attached&&findLiving(v.caster)==null&&now-v.startedAt>500_000_000L));
         if(CHARGES.isEmpty()&&RELEASES.isEmpty())return;
         List<RenderEntry> entries=new ArrayList<>();
         for(Visual v:CHARGES.values()){
@@ -202,20 +218,40 @@ public final class WorldMagicTracker {
 
     private static boolean followsCaster(SpellDefinition spell){
         if("time_stop".equals(spell.id()))return false;
-        if("antimagic_field".equals(spell.id()))return true;
+        if("antimagic_field".equals(spell.id())||"control_weather".equals(spell.id()))return true;
+        SpellPresentationProfile.SigilStyle sigil=SpellPresentationProfile.profile(spell).sigil();
+        return sigil==SpellPresentationProfile.SigilStyle.BODY_HALO
+                ||sigil==SpellPresentationProfile.SigilStyle.FEET_RUNE;
+    }
+
+    private static boolean singletonRelease(SpellDefinition spell){
+        if(followsCaster(spell)||"time_stop".equals(spell.id()))return true;
         return switch(spell.id()){
-            case "shield","mage_armor","mirror_image","invisibility","blur","haste",
-                    "protection_from_energy","greater_invisibility","stoneskin","freedom_of_movement",
-                    "true_seeing","fire_shield","solar_guard","shapechange","foresight","fly",
-                    "feather_fall","simulacrum","clone" -> true;
+            case "grease","web","slow","sleet_storm","cloudkill","insect_plague",
+                    "incendiary_cloud","winter_domain","wall_of_fire","wall_of_force",
+                    "wind_wall","wall_of_ice","prismatic_wall" -> true;
             default -> false;
         };
     }
 
+    private static void evictForCapacity(){
+        while(RELEASES.size()>=MAX_VISUALS){
+            int victim=-1;
+            for(int i=0;i<RELEASES.size();i++){
+                Visual v=RELEASES.get(i);
+                if(v.expiresAt-v.startedAt<4_000_000_000L){victim=i;break;}
+            }
+            if(victim<0)victim=0;
+            RELEASES.remove(victim);
+        }
+    }
+
     private static Vec3 attachmentOffset(UUID caster,SpellDefinition spell,Vec3 originalCenter){
-        Player player=findPlayer(caster);
-        if(player!=null)return originalCenter.subtract(player.position());
-        SpellPresentationProfile.SigilStyle sigil=SpellPresentationProfile.profile(spell).sigil();
+        SpellPresentationProfile.Profile profile=SpellPresentationProfile.profile(spell);
+        if("control_weather".equals(spell.id()))return new Vec3(0,profile.skyHeight(),0);
+        LivingEntity entity=findLiving(caster);
+        if(entity!=null)return originalCenter.subtract(entity.position());
+        SpellPresentationProfile.SigilStyle sigil=profile.sigil();
         if(sigil==SpellPresentationProfile.SigilStyle.BODY_HALO)return new Vec3(0,1.0,0);
         if(sigil==SpellPresentationProfile.SigilStyle.FEET_RUNE||"antimagic_field".equals(spell.id()))return new Vec3(0,.055,0);
         return Vec3.ZERO;
@@ -223,18 +259,27 @@ public final class WorldMagicTracker {
 
     private static Vec3 renderCenter(Visual visual){
         if(visual.attached){
-            Player player=findPlayer(visual.caster);
-            if(player!=null)return player.position().add(visual.attachOffset);
+            LivingEntity entity=findLiving(visual.caster);
+            if(entity!=null)return entity.position().add(visual.attachOffset);
         }
         return visual.center;
     }
 
-    private static Player findPlayer(UUID id){
+    private static LivingEntity findLiving(UUID id){
         Minecraft minecraft=Minecraft.getInstance();
         if(minecraft.player!=null&&minecraft.player.getUUID().equals(id))return minecraft.player;
-        if(minecraft.level==null)return null;
-        for(Player player:minecraft.level.players())if(player.getUUID().equals(id))return player;
-        return null;
+        if(minecraft.level==null||minecraft.player==null)return null;
+        return minecraft.level.getEntitiesOfClass(LivingEntity.class,
+                        minecraft.player.getBoundingBox().inflate(224.0), value->value.getUUID().equals(id)).stream()
+                .findFirst().orElse(null);
+    }
+
+    private static void syncLevelIdentity(){
+        Object current=Minecraft.getInstance().level;
+        if(current==LAST_LEVEL)return;
+        CHARGES.clear();
+        RELEASES.clear();
+        LAST_LEVEL=current;
     }
 
     private static float releaseOpacity(Visual visual,long now){

@@ -6,9 +6,11 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -145,6 +147,7 @@ public final class SpellKineticsService {
         List<PendingCast> queue = PENDING.computeIfAbsent(player.getUUID(), ignored -> new ArrayList<>());
         while (queue.size() >= MAX_PENDING_PER_PLAYER) {
             PendingCast dropped = queue.removeFirst();
+            WorldMagicService.cancelRelease(player, dropped.cast().spell().id());
             SpellCastingService.finishKineticCast(player, dropped.cast(), dropped.growthSnapshot(),
                     dropped.anyExecuted());
         }
@@ -155,9 +158,7 @@ public final class SpellKineticsService {
         List<PendingCast> casts = PENDING.get(player.getUUID());
         if (casts == null || casts.isEmpty()) return;
         if (!player.isAlive() || player.isSpectator() || ArcaneFieldService.blocksCasting(player)) {
-            casts.clear();
-            PENDING.remove(player.getUUID());
-            WorldMagicService.stop(player);
+            cancel(player);
             return;
         }
 
@@ -166,6 +167,7 @@ public final class SpellKineticsService {
         while (iterator.hasNext()) {
             PendingCast pending = iterator.next();
             if (!pending.targetSnapshot().validFor(player)) {
+                WorldMagicService.cancelRelease(player, pending.cast().spell().id());
                 iterator.remove();
                 continue;
             }
@@ -201,6 +203,16 @@ public final class SpellKineticsService {
             }
         }
         if (casts.isEmpty()) PENDING.remove(player.getUUID());
+    }
+
+    public static void cancel(ServerPlayer player) {
+        List<PendingCast> casts=PENDING.remove(player.getUUID());
+        if(casts!=null&&!casts.isEmpty()){
+            Set<String> spellIds=new HashSet<>();
+            for(PendingCast pending:casts)spellIds.add(pending.cast().spell().id());
+            for(String spellId:spellIds)WorldMagicService.cancelRelease(player,spellId);
+        }
+        WorldMagicService.stop(player);
     }
 
     public static void clear(UUID playerId) {

@@ -11,9 +11,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.44' in gradle
-assert 'VERSION = "0.12.1-alpha.44"' in main
-assert '"version": "0.12.1-alpha.44"' in index
+assert 'mod_version=0.12.1-alpha.45' in gradle
+assert 'VERSION = "0.12.1-alpha.45"' in main
+assert '"version": "0.12.1-alpha.45"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -158,7 +158,7 @@ assert 'targetEntity(player)' not in fusion
 field=text(magic/'ArcaneFieldService.java')
 for token in ['TIME_STOP_TICKS = 120','ANTIMAGIC_TICKS = 240','activateAntimagic','activateTimeStop','fulfillWish',
 'blocksCasting','setNoAi(true)','wasNoAi','restoreFrozenLevel','suppressMagicEffects','cleanseHarmful',
-'SpellKineticsService.clear','clearFusion','SpellGameplayService.blocksCasting(caster)','SpellGameplayService.clear(entity.getUUID())']:
+'SpellKineticsService.clear','clearFusion','SpellGameplayService.blocksCasting(caster)','SpellGameplayService.clear(entity)']:
     assert token in field, token
 assert 'removeAllEffects' not in field
 harmful=field[field.index('private static void cleanseHarmful'):field.index('private static void restoreFrozenLevel')]
@@ -360,3 +360,47 @@ print('alpha44_entity_attached_persistent_vfx=PASS')
 print('alpha44_priority_distance_lod=PASS')
 print('alpha44_staged_high_circle_charge=PASS')
 print('alpha44_release_fade=PASS')
+
+
+# Alpha.45 manual full-audit lifecycle consistency.
+tracker=text(client/'WorldMagicTracker.java')
+for token in ['MAX_VISUALS = 32','LAST_LEVEL','syncLevelIdentity','singletonRelease','evictForCapacity',
+              '"cancel".equals(kind)','"clear".equals(kind)','getEntitiesOfClass(LivingEntity.class',
+              'SigilStyle.BODY_HALO','SigilStyle.FEET_RUNE','"control_weather".equals(spell.id())',
+              'DETAIL_DISTANCE_SQR = 96.0 * 96.0','SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0']:
+    assert token in tracker, token
+world_magic=text(magic/'WorldMagicService.java')
+for token in ['cancelRelease(LivingEntity caster, String spellId)','clearVisuals(LivingEntity caster)',
+              '"kind=cancel;caster="','"kind=clear;caster="','"etherealness".equals(spell.id())',
+              '360 + (int) cast.power()']:
+    assert token in world_magic, token
+buff=text(magic/'ArcaneBuffRuntime.java')
+for token in ['WorldMagicService.cancelRelease(player, "invisibility")',
+              'WorldMagicService.cancelRelease(living, state.spellId)']:
+    assert token in buff, token
+field=text(magic/'ArcaneFieldService.java')
+for token in ['if (removed != null) applyTimeStop(removed.level())','SpellGameplayService.clear(entity)',
+              'SpellKineticsService.cancel(player)']:
+    assert token in field, token
+kinetics=text(magic/'SpellKineticsService.java')
+for token in ['public static void cancel(ServerPlayer player)','Set<String> spellIds=new HashSet<>()',
+              'WorldMagicService.cancelRelease(player, pending.cast().spell().id())']:
+    assert token in kinetics, token
+gameplay=text(magic/'SpellGameplayService.java')
+for token in ['public static void clear(LivingEntity subject)','Set<String> own=new HashSet<>()',
+              'WorldMagicService.cancelRelease(player, "mirror_image")','WorldMagicService.cancelRelease(player, death.kind())',
+              'SpellKineticsService.cancel(player)']:
+    assert token in gameplay, token
+npc=text(world/'ArcaneMageService.java'); npc_barrage=text(world/'NpcMeteorBarrageService.java')
+assert 'ArcaneFieldService.blocksCasting(caster)' in npc and 'WorldMagicService.cancelRelease(caster, cast.spellId())' in npc
+assert 'WorldMagicService.cancelRelease(livingCaster, "meteor_swarm")' in npc_barrage
+overhaul=text(client/'ArcaneSpellVisualOverhaul.java')
+assert '"etherealness", "fire_shield"' in overhaul
+assert main.count('SpellGameplayService.clear(player);') >= 3
+assert main.count('WorldMagicService.clearVisuals(player);') >= 3
+print('alpha45_manual_lifecycle_audit=PASS')
+print('persistent_visual_singleton=PASS')
+print('blocked_release_cancel=PASS')
+print('overlapping_time_stop=PASS')
+print('npc_charge_block=PASS')
+print('etherealness_visual_lifetime=PASS')

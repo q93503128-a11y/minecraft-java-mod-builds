@@ -1,6 +1,7 @@
 package kr.moonseungjun.arcanecircle.world;
 
 import kr.moonseungjun.arcanecircle.magic.ArcaneDamage;
+import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.RpgScaleService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
@@ -211,6 +212,12 @@ public final class ArcaneMageService {
                                     MageProfile profile, long now, boolean hostile) {
         NpcCast cast = CASTS.get(caster.getUUID());
         if (cast == null) return false;
+        if (ArcaneFieldService.blocksCasting(caster)) {
+            CASTS.remove(caster.getUUID());
+            if (cast.released()) WorldMagicService.cancelRelease(caster, cast.spellId());
+            WorldMagicService.stop(caster);
+            return false;
+        }
         Entity rawTarget = level.getEntity(cast.targetId());
         LivingEntity target = rawTarget instanceof LivingEntity living ? living : fallbackTarget;
         if (target == null || !target.isAlive() || caster.distanceToSqr(target) > 48.0 * 48.0) {

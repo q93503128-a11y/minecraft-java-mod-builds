@@ -161,6 +161,7 @@ public final class ArcaneBuffRuntime {
             player.removeEffect(MobEffects.INVISIBILITY);
             event.setCanceled(true);
             chime(player, 1.55F);
+            WorldMagicService.cancelRelease(player, "invisibility");
             return true;
         }
 
@@ -259,7 +260,15 @@ public final class ArcaneBuffRuntime {
     }
 
     public static void clear(UUID playerId) {
-        STATES.keySet().removeIf(key -> key.playerId().equals(playerId));
+        Iterator<Map.Entry<BuffKey, State>> iterator = STATES.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<BuffKey, State> entry = iterator.next();
+            if (!entry.getKey().playerId().equals(playerId)) continue;
+            State state = entry.getValue();
+            Entity raw = state.level.getEntity(playerId);
+            if (raw instanceof LivingEntity living) WorldMagicService.cancelRelease(living, state.spellId);
+            iterator.remove();
+        }
     }
 
     public static void clearAll() { STATES.clear(); }

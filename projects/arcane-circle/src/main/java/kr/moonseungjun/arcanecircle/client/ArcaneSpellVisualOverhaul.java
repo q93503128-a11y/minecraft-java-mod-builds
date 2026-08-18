@@ -41,7 +41,7 @@ final class ArcaneSpellVisualOverhaul {
             "shield", "feather_fall", "mage_armor", "mirror_image", "invisibility", "blur", "fly", "haste",
             "protection_from_energy", "greater_invisibility", "resilient_sphere", "stoneskin",
             "freedom_of_movement", "true_seeing", "globe_of_invulnerability", "simulacrum", "clone",
-            "fire_shield", "solar_guard", "shapechange", "foresight");
+            "etherealness", "fire_shield", "solar_guard", "shapechange", "foresight");
     private static final Set<String> SUSTAINED_DEBUFFS = Set.of(
             "sleep", "slow", "hold_person", "hold_monster", "dominate_person", "dominate_monster",
             "flesh_to_stone", "mass_suggestion", "forcecage", "maze", "true_polymorph",

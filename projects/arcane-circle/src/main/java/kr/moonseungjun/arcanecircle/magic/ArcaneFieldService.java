@@ -87,7 +87,9 @@ public final class ArcaneFieldService {
     public static void clear(UUID ownerId) {
         ANTIMAGIC.remove(ownerId);
         TimeField removed = TIME_FIELDS.remove(ownerId);
-        if (removed != null) restoreFrozenLevel(removed.level());
+        // Recompute all remaining fields immediately. Restoring the whole level here gave a second
+        // active Time Stop a one-tick hole whenever another owner left or changed dimension.
+        if (removed != null) applyTimeStop(removed.level());
     }
 
     public static void clearAll() {
@@ -170,7 +172,7 @@ public final class ArcaneFieldService {
         for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, box,
                 value -> value.isAlive() && !value.isRemoved()
                         && owner.position().distanceToSqr(value.position()) <= radius * radius)) {
-            SpellGameplayService.clear(entity.getUUID());
+            SpellGameplayService.clear(entity);
             suppressMagicEffects(entity);
             if (entity instanceof ServerPlayer player) {
                 if (player == owner) {
@@ -228,8 +230,7 @@ public final class ArcaneFieldService {
     private static void suppressPlayerCasting(ServerPlayer player) {
         if (!SpellCastingService.chargingSpell(player).isBlank()) SpellCastingService.cancelCharge(player, false);
         clearFusion(player);
-        SpellKineticsService.clear(player.getUUID());
-        WorldMagicService.stop(player);
+        SpellKineticsService.cancel(player);
     }
 
     private static void clearFusion(ServerPlayer player) {

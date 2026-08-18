@@ -27,6 +27,7 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -183,7 +184,10 @@ public final class SpellGameplayService {
         MirrorState mirror = MIRRORS.get(id);
         if (mirror != null && mirror.expiresAt() > now && mirror.charges() > 0) {
             int remaining = mirror.charges() - 1;
-            if (remaining <= 0) MIRRORS.remove(id); else MIRRORS.put(id, new MirrorState(remaining, mirror.expiresAt()));
+            if (remaining <= 0) {
+                MIRRORS.remove(id);
+                WorldMagicService.cancelRelease(player, "mirror_image");
+            } else MIRRORS.put(id, new MirrorState(remaining, mirror.expiresAt()));
             event.setCanceled(true);
             ((ServerLevel) player.level()).playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
                     SoundSource.PLAYERS, .8F, 1.7F);
@@ -197,6 +201,7 @@ public final class SpellGameplayService {
         float effectivePool = player.getHealth() + player.getAbsorptionAmount();
         if (death != null && death.expiresAt() > now && event.getAmount() >= effectivePool - .001F) {
             DEATH_WARDS.remove(id);
+            WorldMagicService.cancelRelease(player, death.kind());
             event.setCanceled(true);
             float restored = "clone".equals(death.kind()) ? player.getMaxHealth() : Math.max(1.0F, player.getMaxHealth() * .48F);
             player.setHealth(restored);
@@ -219,6 +224,29 @@ public final class SpellGameplayService {
                 } finally { RETALIATING.set(false); }
             }
         }
+    }
+
+    /** Clears gameplay state and cancels the matching maintained world-geometry releases. */
+    public static void clear(LivingEntity subject) {
+        if(subject==null)return;
+        UUID id=subject.getUUID();
+        Set<String> own=new HashSet<>();
+        if(FLIGHT.containsKey(id))own.add("fly");
+        if(MIRRORS.containsKey(id))own.add("mirror_image");
+        ReductionWard reduction=REDUCTION.get(id); if(reduction!=null)own.add(reduction.kind());
+        if(FIRE_SHIELDS.containsKey(id))own.add("fire_shield");
+        DeathWard death=DEATH_WARDS.get(id); if(death!=null)own.add(death.kind());
+        if(WEATHER.containsKey(id))own.add("control_weather");
+        for(ZoneState zone:ZONES)if(zone.ownerId.equals(id))own.add(zone.spellId);
+        for(ControlState state:CONTROLS.values()){
+            if(state.ownerId().equals(id))own.add(state.kind());
+            else if(state.targetId().equals(id)){
+                Entity rawOwner=state.level().getEntity(state.ownerId());
+                if(rawOwner instanceof LivingEntity livingOwner)WorldMagicService.cancelRelease(livingOwner,state.kind());
+            }
+        }
+        clear(id);
+        for(String spellId:own)WorldMagicService.cancelRelease(subject,spellId);
     }
 
     public static void clear(UUID id) {
@@ -382,7 +410,7 @@ public final class SpellGameplayService {
 
     private static void tickFlight(ServerLevel level, long now) { Iterator<Map.Entry<UUID, FlightState>> iterator = FLIGHT.entrySet().iterator(); while (iterator.hasNext()) { FlightState state = iterator.next().getValue(); if (state.level() != level) continue; Entity raw = level.getEntity(state.playerId()); if (!(raw instanceof ServerPlayer player) || !player.isAlive() || now >= state.expiresAt()) { revokeFlight(state); iterator.remove(); continue; } if (!player.getAbilities().mayfly) { player.getAbilities().mayfly = true; player.onUpdateAbilities(); } } }
     private static void revokeFlight(FlightState state) { Entity raw = state.level().getEntity(state.playerId()); if (!(raw instanceof ServerPlayer player) || player.isCreative() || player.isSpectator()) return; if (player.getItemBySlot(EquipmentSlot.FEET).getItem() == ModItems.RIFT_BOOTS.get()) return; player.getAbilities().flying = false; player.getAbilities().mayfly = false; player.onUpdateAbilities(); }
-    private static void tickControls(ServerLevel level, long now) { Iterator<Map.Entry<UUID, ControlState>> iterator = CONTROLS.entrySet().iterator(); while (iterator.hasNext()) { ControlState state = iterator.next().getValue(); if (state.level() != level) continue; Entity raw = level.getEntity(state.targetId()); if (!(raw instanceof LivingEntity target) || !target.isAlive() || now >= state.expiresAt()) { restoreControl(state); iterator.remove(); continue; } target.setDeltaMovement(Vec3.ZERO); target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 5, 255, true, false)); target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 5, 5, true, false)); if (target instanceof Mob mob) { mob.setNoAi(true); WorldMagicService.stop(mob); } else if (target instanceof ServerPlayer player) { if (!SpellCastingService.chargingSpell(player).isBlank()) SpellCastingService.cancelCharge(player, false); if (!SpellCastingService.pendingFusion(player).isEmpty()) SpellCastingService.clearFusion(player, false); SpellKineticsService.clear(player.getUUID()); WorldMagicService.stop(player); } } }
+    private static void tickControls(ServerLevel level, long now) { Iterator<Map.Entry<UUID, ControlState>> iterator = CONTROLS.entrySet().iterator(); while (iterator.hasNext()) { ControlState state = iterator.next().getValue(); if (state.level() != level) continue; Entity raw = level.getEntity(state.targetId()); if (!(raw instanceof LivingEntity target) || !target.isAlive() || now >= state.expiresAt()) { restoreControl(state); iterator.remove(); continue; } target.setDeltaMovement(Vec3.ZERO); target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 5, 255, true, false)); target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 5, 5, true, false)); if (target instanceof Mob mob) { mob.setNoAi(true); WorldMagicService.stop(mob); } else if (target instanceof ServerPlayer player) { if (!SpellCastingService.chargingSpell(player).isBlank()) SpellCastingService.cancelCharge(player, false); if (!SpellCastingService.pendingFusion(player).isEmpty()) SpellCastingService.clearFusion(player, false); SpellKineticsService.cancel(player); } } }
     private static void restoreControl(ControlState state) { Entity raw = state.level().getEntity(state.targetId()); if (!(raw instanceof LivingEntity target)) return; if (target instanceof Mob mob) mob.setNoAi(state.wasNoAi()); if (!Double.isNaN(state.oldScale())) { AttributeInstance scale = target.getAttribute(Attributes.SCALE); if (scale != null) scale.setBaseValue(state.oldScale()); } }
 
     private static void tickZones(ServerLevel level, long now) { Iterator<ZoneState> iterator = ZONES.iterator(); while (iterator.hasNext()) { ZoneState zone = iterator.next(); if (zone.level != level) continue; Entity ownerRaw = level.getEntity(zone.ownerId); if (!(ownerRaw instanceof ServerPlayer owner) || !owner.isAlive() || now >= zone.expiresAt) { iterator.remove(); continue; } if (now < zone.nextPulse) continue; zone.nextPulse = now + pulseInterval(zone.spellId); if (zone.halfWidth > 0.0) pulseWall(owner, zone); else pulseArea(owner, zone); } }
