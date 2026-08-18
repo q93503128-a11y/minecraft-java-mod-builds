@@ -6,11 +6,10 @@ import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 /**
  * Casting pose hook retained for compatibility with the regalia renderer.
  *
- * Alpha.34 deliberately draws no synthetic player-body geometry here.  The previous implementation
- * built filled-box arms, straps and blade-like quads after the vanilla player render.  Those quads
- * were not attached to the avatar skeleton and appeared as large black/white wedges in third person.
- * Actual casting presentation belongs to ArcaneSigilDirector / SpellCinematicDirector; robe motion
- * can still consume the casting-family state extracted by ArcaneGearRenderer.
+ * This hook deliberately draws no synthetic player-body geometry.  Filled-box limbs, straps and
+ * blade-like quads are not attached to the avatar skeleton and create third-person artifacts.
+ * Actual spell presentation is owned exclusively by the explicit ManualSpellVisuals registry;
+ * robe motion may still consume the manually assigned casting-family state.
  */
 final class ArcaneCastingPerformance {
     private ArcaneCastingPerformance() {}
