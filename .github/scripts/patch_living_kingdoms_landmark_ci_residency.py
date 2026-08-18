@@ -1,4 +1,5 @@
 from pathlib import Path
+from runpy import run_path
 
 path = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenLandmarkInteriorManager.java')
 text = path.read_text(encoding='utf-8')
@@ -29,4 +30,5 @@ replace_once(
     'landmark bounded ci residency')
 
 path.write_text(text, encoding='utf-8')
-print('Living Kingdoms landmark CI residency patch applied')
+run_path('.github/scripts/patch_living_kingdoms_upper_route_ground_ci.py')
+print('Living Kingdoms landmark and upper-route predecessor CI residency patches applied')
