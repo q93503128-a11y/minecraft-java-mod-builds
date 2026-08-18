@@ -31,6 +31,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: One-shot alpha.44 deep VFX migration
+        if: ${{ hashFiles('.github/scripts/run_vfx44_patch.py') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/run_vfx44_patch.py
+          grep -q '^mod_version=0.12.1-alpha.44$' projects/arcane-circle/gradle.properties
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/scripts/run_vfx44_patch.py .github/workflows/tmp-vfx44.yml
+          git checkout HEAD^ -- .github/workflows/build-arcane-circle.yml
+          git add -A projects/arcane-circle .github/scripts/run_vfx44_patch.py .github/workflows/tmp-vfx44.yml .github/workflows/build-arcane-circle.yml
+          git commit -m 'feat(arcane-circle): deepen alpha.44 VFX lifecycle and staging'
+          pushed=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            if git rebase origin/main; then
+              if git push origin HEAD:main; then pushed=1; break; fi
+            else
+              git rebase --abort || true
+            fi
+            sleep $((attempt * 2))
+          done
+          test "$pushed" -eq 1
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
