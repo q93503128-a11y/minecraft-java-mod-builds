@@ -16,14 +16,13 @@ def main() -> None:
     traits = read("VillageWaveTrait.java")
     enemies = read("VillageEnemyArchetypeSystem.java")
     warfront = read("VillageWarfrontSystem.java")
-    towers = read("VillageTowerSpecializationSystem.java")
-    tower_data = read("VillageTowerProgressData.java")
-    tower_combat = read("VillageDefenseSystem.java")
-    tower_builder = read("VillageDefenseTowerBuilder.java")
+    turrets = read("VillagePlacedTurretSystem.java")
+    research = read("VillageDefenseResearchSystem.java")
+    siege_ui = read("VillageSiegeCommandUi.java")
     ability = read("VillageRoleAbilitySystem.java")
     effects = read("VillageSkillEffectSystem.java")
+    defense_effects = read("VillageDefenseEffectSystem.java")
     role_skills = read("VillageRoleSkillSystem.java")
-    ui = read("VillageUiService.java")
     notices = (ROOT / "src/main/resources/META-INF/villageguardians/THIRD_PARTY_NOTICES.txt").read_text(encoding="utf-8")
 
     for trait in (
@@ -44,8 +43,9 @@ def main() -> None:
         assert archetype + "(" in enemies
     assert "structureDamageMultiplier" in enemies
     assert "tickAbility" in enemies
-    assert "disableRandomInstalledTower" in enemies
-    assert "ACTIVE_ARCHETYPES" in raid
+    assert "disableNearestActiveTurret" in enemies
+    assert "VillageTowerSpecializationSystem.disableRandomInstalledTower" not in enemies
+    assert "ACTIVE_ARCHETYPES" in raid and "ACTIVE_WAVES" in raid
     assert "VillageEnemyArchetypeSystem.create" in raid
     assert "VillageEnemyArchetypeSystem.tickAbility" in raid
     assert "VillageEnemyArchetypeSystem.onStructureHit" in raid
@@ -56,24 +56,27 @@ def main() -> None:
     assert "VillageWarfrontSystem.bonusBossCount" in raid
     assert "VillageWarfrontSystem.rewardMultiplier" in raid
 
-    assert "VillageTowerProgressData.TYPE" in towers
-    assert "MAX_BRANCH_RANK = 3" in towers
-    assert towers.count("TowerKind.BALLISTA") >= 3
-    assert towers.count("TowerKind.FLAME") >= 3
-    assert towers.count("TowerKind.FROST") >= 3
-    assert towers.count("TowerKind.ARCANE") >= 3
-    assert "branches" in tower_data and "ranks" in tower_data
-    for branch in (
-        "BALLISTA_TITAN", "BALLISTA_PIERCE", "BALLISTA_SPLIT",
-        "FLAME_INFERNO", "FLAME_BLAST", "FLAME_MELT",
-        "FROST_DEEP", "FROST_SHATTER", "FROST_BLIZZARD",
-        "ARCANE_CHAIN", "ARCANE_NULL", "ARCANE_OVERCHARGE",
+    # 0.18.9+ production defense ownership belongs to ten player-placed turret roles.
+    for turret in (
+        "BALLISTA", "REPEATER", "PIERCER", "FLAME", "FROST",
+        "CHAIN", "BOMBARD", "NULLIFIER", "ANTI_AIR", "BEACON"
     ):
-        assert branch + "(" in towers
-        assert branch in tower_combat or branch in tower_builder
-    assert "tower_branch:" in ui and "tower_upgrade:" in ui
-    assert "openTowerDetail" in ui
-    assert "rebuildTowerVisual" in ui
+        assert turret + "(" in turrets
+    assert "VillageDefenseResearchSystem.towerDamageMultiplier()" in turrets
+    assert "1.0f + level(Branch.TOWER) * 0.10f" in research
+    assert "nearestActiveTurret" in turrets and "disableNearestActiveTurret" in turrets
+    assert "siege_turret_catalog" in siege_ui and "siege_turret_list" in siege_ui
+    assert "기존 성루는 관측 구조물이며 실전 화력은 직접 배치 포탑이 담당" in siege_ui
+    assert not (JAVA / "VillageTowerResearchBonusSystem.java").exists()
+
+    # Automated defense presentation uses the same synchronized procedural-mesh actor pipeline as player skills.
+    for token in (
+        "turret_ballista_shot", "turret_repeater_shot", "turret_piercer_shot",
+        "turret_flame_shot", "turret_frost_shot", "turret_chain_shot",
+        "turret_bombard_arc", "turret_nullifier_shot", "turret_antiair_shot",
+        "turret_beacon_pulse", "merc_ranger_shot", "merc_medic_pulse"
+    ):
+        assert token in defense_effects
 
     assert "VillageRoleAbilitySystem.cast" in role_skills
     assert role_skills.count("case ") >= 20
@@ -100,7 +103,8 @@ def main() -> None:
     print("[PASS] Twelve readable wave traits include deterministic counters and previews")
     print("[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs")
     print("[PASS] Five-day milestone sieges and endless warfront tiers remain scalable")
-    print("[PASS] Twelve persistent tower branches alter combat and physical tower silhouettes")
+    print("[PASS] Ten player-placed turret roles own production combat and tower research scaling")
+    print("[PASS] Automated defenses and mercenaries use synchronized procedural-mesh feedback")
     print("[PASS] Twenty active skills combine real gameplay with dedicated procedural-mesh scenes")
     print("[PASS] CC0 fantasy visual references are documented without untracked binaries")
 
