@@ -18,8 +18,18 @@ required = {
     "kr/moonseungjun/arcanecircle/magic/WorldMagicService.class",
     "kr/moonseungjun/arcanecircle/magic/ArcaneLightService.class",
     "kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class",
-    "kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class",
-    "kr/moonseungjun/arcanecircle/client/ArcaneSigilDirector.class",
+    "kr/moonseungjun/arcanecircle/client/ManualSpellVisuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualSpellVisuals$Context.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle1Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle2Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle3Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle4Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle5Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle6Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle7Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle8Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualCircle9Visuals.class",
+    "kr/moonseungjun/arcanecircle/client/ManualFusionVisuals.class",
     "kr/moonseungjun/arcanecircle/client/GrimoireScreen.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneHud.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneRegaliaRenderer.class",
@@ -58,10 +68,19 @@ with zipfile.ZipFile(jar) as archive:
     ]
     if forbidden:
         raise SystemExit(f"forbidden survival/development entries: {forbidden[:8]}")
-    retired = ['CodexVisualLanguage', 'ArcaneSigilDetailGrammar', 'LowCircleVisualIdentity', 'MidCircleVisualIdentity', 'FifthCircleVisualIdentity', 'SixthCircleVisualIdentity', 'ArchmageVisualIdentity', 'RangeReactivePresentation', 'SpellVisualSignature', 'CastingSilhouetteRenderer', 'RobeRegaliaRenderer', 'SignatureGeometry', 'SpellSigilService']
+    retired = [
+        'CodexVisualLanguage', 'ArcaneSigilDetailGrammar', 'LowCircleVisualIdentity',
+        'MidCircleVisualIdentity', 'FifthCircleVisualIdentity', 'SixthCircleVisualIdentity',
+        'ArchmageVisualIdentity', 'RangeReactivePresentation', 'SpellVisualSignature',
+        'CastingSilhouetteRenderer', 'RobeRegaliaRenderer', 'SignatureGeometry', 'SpellSigilService',
+        'ArcaneSigilDirector', 'SpellCinematicDirector', 'ArcaneSpellVisualOverhaul'
+    ]
     leaked = [n for n in names if any(n.endswith('/'+c+'.class') or ('/'+c+'$') in n for c in retired)]
     if leaked:
-        raise SystemExit(f"retired presentation bytecode leaked: {sorted(leaked)}")
+        raise SystemExit(f"retired/automatic presentation bytecode leaked: {sorted(leaked)}")
+    manual_classes = [n for n in names if n.startswith('kr/moonseungjun/arcanecircle/client/Manual') and n.endswith('.class')]
+    if len(manual_classes) < 11:
+        raise SystemExit(f"manual presentation bytecode incomplete: {manual_classes}")
     index = json.loads(archive.read("data/arcanecircle/spell_catalog/index.json"))
     version = index.get("version")
     if not isinstance(version, str) or not version:
@@ -78,4 +97,5 @@ digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 checksum = jar.with_name(jar.name + ".sha256")
 checksum.write_text(f"{digest}  {jar.name}\n", encoding="utf-8")
 print(f"Arcane Circle v0.12.1 JAR verification: PASS ({len(names)} entries)")
+print(f"manual_presentation_classes={len(manual_classes)}")
 print(f"SHA-256: {digest}")
