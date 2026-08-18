@@ -74,9 +74,14 @@ def main() -> None:
             and "VillageBossEffectSystem.stormWarning" in aspect
             and "Vec3 strike = STORM_WARNINGS.remove(mob.getUUID())" in aspect)
 
+    require("boss presence kinds are composed dynamically from doctrine ids",
+            '"boss_presence_" + doctrine.name().toLowerCase' in effects
+            and '"boss_phase_two_" + doctrine.name().toLowerCase' in effects
+            and "renderBossPresence" in mesh
+            and "breach_colossus" in mesh
+            and "bone_hierophant" in mesh)
     for token in (
-        "boss_presence_breach_colossus", "boss_presence_bone_hierophant", "boss_presence_black_marshal",
-        "boss_phase_two_", "boss_phase_two_burst", "boss_breach_warning", "boss_breach_windup",
+        "boss_phase_two_burst", "boss_breach_warning", "boss_breach_windup",
         "boss_breach_impact", "boss_ritual_warning", "boss_ritual_impact", "boss_duel_mark",
         "boss_duel_impact", "boss_bloodbound_warning", "boss_bloodbound_impact", "boss_storm_warning"):
         require(f"boss procedural presentation includes {token}", token in effects or token in mesh)

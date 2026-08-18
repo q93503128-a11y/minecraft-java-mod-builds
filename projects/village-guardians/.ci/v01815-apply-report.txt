@@ -1,13 +1,14 @@
-status=FAIL
-run_id=32089359544
-trigger_head=ac8d842640acc5b497f7ef04363cee469b580320
+status=PASS
+run_id=32089451990
+trigger_head=81c663139704ac5a9118fc529eaf624946b7f073
 
-head_before=ac8d842640acc5b497f7ef04363cee469b580320
-run_id=32089359544
+head_before=81c663139704ac5a9118fc529eaf624946b7f073
+run_id=32089451990
 === APPLY ===
 [PASS] applied v0.18.15 boss identity and cast-state patch
 apply_exit=0
 [PASS] v0.18.12 boss telegraph regression migrated to fixed cast-state semantics
+[PASS] v0.18.15 dynamic boss presence contract matches runtime doctrine composition
 prepare_exit=0
 === COMPLETE CONTRACT SET ===
 === tools/test_rpg_balance.py ===
@@ -186,12 +187,18 @@ defense_xp_multiplier=1.5
 [PASS] black marshal mark cannot jump to another player between warning and impact
 [PASS] bloodbound drain warning and damage share one fixed world-space center
 [PASS] stormcaller keeps fixed dodgeable ground point and now uses mesh warning
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01815_boss_identity.py", line 93, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01815_boss_identity.py", line 82, in main
-    require(f"boss procedural presentation includes {token}", token in effects or token in mesh)
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01815_boss_identity.py", line 14, in require
-    raise AssertionError(label)
-AssertionError: boss procedural presentation includes boss_presence_breach_colossus
-tests_exit=1
+[PASS] boss presence kinds are composed dynamically from doctrine ids
+[PASS] boss procedural presentation includes boss_phase_two_burst
+[PASS] boss procedural presentation includes boss_breach_warning
+[PASS] boss procedural presentation includes boss_breach_windup
+[PASS] boss procedural presentation includes boss_breach_impact
+[PASS] boss procedural presentation includes boss_ritual_warning
+[PASS] boss procedural presentation includes boss_ritual_impact
+[PASS] boss procedural presentation includes boss_duel_mark
+[PASS] boss procedural presentation includes boss_duel_impact
+[PASS] boss procedural presentation includes boss_bloodbound_warning
+[PASS] boss procedural presentation includes boss_bloodbound_impact
+[PASS] boss procedural presentation includes boss_storm_warning
+[PASS] boss presentation follows live owners and rotates with boss facing
+[PASS] v0.18.15 boss identity and cast-state contracts complete
+tests_exit=0

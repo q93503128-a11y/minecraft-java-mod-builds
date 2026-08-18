@@ -118,6 +118,7 @@ public final class VillageSkillEffectEntity extends Entity {
     }
 
     private boolean tracksOwnerLook() {
+        if (kind().startsWith("boss_presence_") || kind().startsWith("boss_phase_two_")) return true;
         return switch (kind()) {
             case "ranger_focus", "ranger_energy_charge", "warden_charge_cast",
                     "warden_fortress", "warden_aegis" -> true;
@@ -126,7 +127,8 @@ public final class VillageSkillEffectEntity extends Entity {
     }
 
     private boolean followsOwner() {
-        if (kind().startsWith("elite_aura_")) return true;
+        if (kind().startsWith("elite_aura_") || kind().startsWith("boss_presence_")
+                || kind().startsWith("boss_phase_two_") || "boss_duel_mark".equals(kind())) return true;
         return switch (kind()) {
             case "vanguard_spin", "vanguard_rally", "vanguard_blade_charge",
                     "vanguard_slam_charge", "ranger_rapid", "ranger_focus",

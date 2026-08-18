@@ -27,7 +27,7 @@ def main() -> None:
     guardians = read("VillageGuardians.java")
     research = read("VillageDefenseResearchSystem.java")
 
-    require("version is v0.18.13-alpha.1", "mod_version=0.18.14-alpha.1" in props)
+    require("version is v0.18.13-alpha.1", "mod_version=0.18.15-alpha.1" in props)
 
     require("raid enemies own authoritative wave metadata before entity join",
             "ACTIVE_WAVES" in raid

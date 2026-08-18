@@ -9,6 +9,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,10 +20,20 @@ import java.util.UUID;
 public final class VillageSiegeBossSystem {
     private static final Map<UUID, BossDoctrine> ACTIVE = new HashMap<>();
     private static final HashSet<UUID> PHASE_TWO = new HashSet<>();
+    private static final Map<UUID, BreachCast> BREACH_CASTS = new HashMap<>();
+    private static final Map<UUID, RitualCast> RITUAL_CASTS = new HashMap<>();
+    private static final Map<UUID, DuelCast> DUEL_CASTS = new HashMap<>();
     private static int ticks;
     private VillageSiegeBossSystem() {}
 
-    public static void reset() { ACTIVE.clear(); PHASE_TWO.clear(); ticks = 0; }
+    public static void reset() {
+        ACTIVE.clear();
+        PHASE_TWO.clear();
+        BREACH_CASTS.clear();
+        RITUAL_CASTS.clear();
+        DUEL_CASTS.clear();
+        ticks = 0;
+    }
 
     public static void tick(MinecraftServer server) {
         if (server == null || !VillageRaidSystem.isActive()) return;
@@ -33,7 +44,14 @@ public final class VillageSiegeBossSystem {
         if (ticks % 20 == 1) discover(level, center);
         for (UUID id : new HashSet<>(ACTIVE.keySet())) {
             var entity = level.getEntity(id);
-            if (!(entity instanceof Mob mob) || !mob.isAlive()) { ACTIVE.remove(id); PHASE_TWO.remove(id); continue; }
+            if (!(entity instanceof Mob mob) || !mob.isAlive()) {
+                ACTIVE.remove(id);
+                PHASE_TWO.remove(id);
+                BREACH_CASTS.remove(id);
+                RITUAL_CASTS.remove(id);
+                DUEL_CASTS.remove(id);
+                continue;
+            }
             if (!PHASE_TWO.contains(id) && mob.getHealth() <= mob.getMaxHealth() * 0.50f) {
                 PHASE_TWO.add(id);
                 enterPhaseTwo(server, mob, ACTIVE.get(id));
@@ -47,8 +65,14 @@ public final class VillageSiegeBossSystem {
     }
 
     public static String previewBossMechanic(int day) {
-        BossDoctrine doctrine = BossDoctrine.values()[Math.floorMod(day, BossDoctrine.values().length)];
-        return doctrine.displayName() + " · " + doctrine.description();
+        return "혼성 보스 교리 · 파성 거신 / 사령 결속자 / 검은 결투원수";
+    }
+
+    private static BossDoctrine doctrineFor(
+            int day, int wave, VillageEnemyArchetypeSystem.Archetype type) {
+        int salt = type == null ? 0 : type.ordinal();
+        BossDoctrine[] values = BossDoctrine.values();
+        return values[Math.floorMod(day * 5 + wave * 3 + salt, values.length)];
     }
 
     private static void discover(ServerLevel level, BlockPos center) {
@@ -57,7 +81,7 @@ public final class VillageSiegeBossSystem {
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area, value -> value.isAlive())) {
             VillageEnemyArchetypeSystem.Archetype type = VillageRaidSystem.archetypeOf(mob);
             if (type == null || !VillageEnemyArchetypeSystem.isBoss(type) || ACTIVE.containsKey(mob.getUUID())) continue;
-            BossDoctrine doctrine = BossDoctrine.values()[Math.floorMod(VillageCouncilState.currentDay(), BossDoctrine.values().length)];
+            BossDoctrine doctrine = doctrineFor(VillageCouncilState.currentDay(), VillageRaidSystem.waveOf(mob), type);
             ACTIVE.put(mob.getUUID(), doctrine);
             Component old = mob.getCustomName();
             mob.setCustomName(Component.literal("§4[" + doctrine.displayName() + "] §f"
@@ -68,6 +92,8 @@ public final class VillageSiegeBossSystem {
             } else if (doctrine == BossDoctrine.BLACK_MARSHAL) {
                 mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 60 * 30, 1));
             }
+            VillageBossAspectSystem.Aspect aspect = VillageBossAspectSystem.aspectOf(mob);
+            if (aspect != null) VillageBossEffectSystem.presence(level, mob, aspect, doctrine);
         }
     }
 
@@ -75,10 +101,7 @@ public final class VillageSiegeBossSystem {
         mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 20 * 60 * 30, 1));
         mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 60 * 30, 1));
         if (mob.level() instanceof ServerLevel level) {
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
-                    mob.getX(), mob.getY() + 1.2, mob.getZ(), 42, 1.6, 1.0, 1.6, 0.08);
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
-                    mob.getX(), mob.getY() + 0.8, mob.getZ(), 5, 0.8, 0.4, 0.8, 0.02);
+            VillageBossEffectSystem.phaseTwo(level, mob, doctrine);
         }
         server.getPlayerList().broadcastSystemMessage(Component.literal(
                 "§4[보스 2페이즈] §f" + doctrine.displayName() + "의 전투 방식이 격화됩니다. · "
@@ -92,26 +115,24 @@ public final class VillageSiegeBossSystem {
         if (!VillageSiegeSegmentSystem.breached(segment)) {
             mob.setTarget(null);
             mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.18);
-            if (!VillageSiegeSegmentSystem.touching(segment, mob.blockPosition())) return;
+            boolean touching = VillageSiegeSegmentSystem.touching(segment, mob.blockPosition());
             boolean phaseTwo = PHASE_TWO.contains(mob.getUUID());
             int interval = phaseTwo ? 30 : 45;
             int offset = Math.floorMod(mob.getUUID().hashCode(), interval);
             int phase = Math.floorMod(ticks - offset, interval);
             ServerLevel level = server.overworld();
-            if (phase == interval - 10) {
-                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
-                        target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5,
-                        18, 1.2, 0.5, 1.2, 0.03);
-                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
-                        mob.getX(), mob.getY() + 1.1, mob.getZ(), 14, 0.6, 0.6, 0.6, 0.03);
+            if (phase == interval - 10 && touching) {
+                BreachCast cast = new BreachCast(segment, target.immutable(), ticks + 10);
+                BREACH_CASTS.put(mob.getUUID(), cast);
+                VillageBossEffectSystem.breachWarning(level, mob, Vec3.atCenterOf(cast.impact()), 10);
             }
             if (phase == 0) {
+                BreachCast cast = BREACH_CASTS.remove(mob.getUUID());
+                if (!touching || cast == null || cast.dueTick() > ticks) return;
                 mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                 int damage = phaseTwo ? 72 : 48;
-                VillageSiegeSegmentSystem.damage(server, segment, damage, mob.blockPosition());
-                level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
-                        target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5,
-                        5, 1.0, 0.5, 1.0, 0.02);
+                VillageSiegeSegmentSystem.damage(server, cast.segment(), damage, cast.impact());
+                VillageBossEffectSystem.breachImpact(level, Vec3.atCenterOf(cast.impact()), 3.4);
             }
         }
     }
@@ -120,19 +141,21 @@ public final class VillageSiegeBossSystem {
         int offset = Math.floorMod(boss.getUUID().hashCode(), 120);
         int phase = Math.floorMod(ticks - offset, 120);
         if (phase == 100) {
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
-                    boss.getX(), boss.getY() + 1.3, boss.getZ(), 30, 2.4, 1.0, 2.4, 0.04);
+            Vec3 center = boss.position();
+            RITUAL_CASTS.put(boss.getUUID(), new RitualCast(center, ticks + 20));
+            VillageBossEffectSystem.ritualWarning(level, center, 15.0, 20);
             return;
         }
         if (phase != 0) return;
-        for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, boss.position(), 15.0, 20, boss.getUUID())) {
+        RitualCast cast = RITUAL_CASTS.remove(boss.getUUID());
+        if (cast == null || cast.dueTick() > ticks) return;
+        for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, cast.center(), 15.0, 20, boss.getUUID())) {
             ally.heal(PHASE_TWO.contains(boss.getUUID()) ? 10.0f : 6.0f);
             ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100,
                     PHASE_TWO.contains(boss.getUUID()) ? 2 : 1));
             ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 100, 0));
         }
-        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
-                boss.getX(), boss.getY() + 1.2, boss.getZ(), 30, 2.0, 0.8, 2.0, 0.04);
+        VillageBossEffectSystem.ritualImpact(level, cast.center(), 15.0);
     }
 
     private static void tickDuel(MinecraftServer server, Mob boss) {
@@ -141,20 +164,29 @@ public final class VillageSiegeBossSystem {
                 .filter(player -> player.level() == boss.level() && player.isAlive() && !player.isSpectator()
                         && !VillageRespawnSystem.isDowned(player) && player.distanceToSqr(boss) <= 42.0 * 42.0)
                 .min(java.util.Comparator.comparingDouble(boss::distanceToSqr)).orElse(null);
-        if (target == null) return;
-        boss.setTarget(target);
-        boss.getNavigation().moveTo(target, PHASE_TWO.contains(boss.getUUID()) ? 1.58 : 1.34);
+        if (target != null) {
+            boss.setTarget(target);
+            boss.getNavigation().moveTo(target, PHASE_TWO.contains(boss.getUUID()) ? 1.58 : 1.34);
+        }
         ServerLevel level = server.overworld();
-        if (ticks % 105 == 70) {
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
-                    target.getX(), target.getY() + 1.0, target.getZ(), 12, 0.6, 0.8, 0.6, 0.02);
+        if (ticks % 105 == 70 && target != null) {
+            DUEL_CASTS.put(boss.getUUID(), new DuelCast(target.getUUID(), ticks + 35));
+            VillageBossEffectSystem.duelMark(level, target, 35);
         }
         if (ticks % 105 == 0) {
-            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 70, 1));
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
-                    target.getX(), target.getY() + 0.8, target.getZ(), 16, 0.5, 0.5, 0.5, 0.04);
+            DuelCast cast = DUEL_CASTS.remove(boss.getUUID());
+            if (cast == null || cast.dueTick() > ticks) return;
+            var marked = level.getEntity(cast.target());
+            if (!(marked instanceof ServerPlayer victim) || !victim.isAlive() || victim.isSpectator()
+                    || VillageRespawnSystem.isDowned(victim) || victim.distanceToSqr(boss) > 48.0 * 48.0) return;
+            victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 70, 1));
+            VillageBossEffectSystem.duelImpact(level, victim);
         }
     }
+
+    private record BreachCast(VillageSiegeSegmentSystem.Segment segment, BlockPos impact, int dueTick) {}
+    private record RitualCast(Vec3 center, int dueTick) {}
+    private record DuelCast(UUID target, int dueTick) {}
 
     public enum BossDoctrine {
         BREACH_COLOSSUS("파성 거신", "성벽 구역을 직접 목표로 삼고 50% 이하에서 파쇄 주기가 빨라집니다.",

@@ -36,6 +36,14 @@ public final class VillageSkillMeshLibrary {
             renderTurretWreck(pose, out, basis, age, state.kind, state.extra);
             return;
         }
+        if (state.kind.startsWith("boss_presence_")) {
+            renderBossPresence(pose, out, basis, age, state.kind, state.extra, false);
+            return;
+        }
+        if (state.kind.startsWith("boss_phase_two_")) {
+            renderBossPresence(pose, out, basis, age, state.kind, state.extra, true);
+            return;
+        }
 
         switch (state.kind) {
             case "vanguard_spin" -> renderVanguardSpin(pose, out, basis, age, progress);
@@ -111,6 +119,18 @@ public final class VillageSkillMeshLibrary {
             case "elite_firebrand_impact" -> renderEliteZone(pose, out, basis, age, progress, state.extra, 0);
             case "elite_plague_warning" -> renderEliteZone(pose, out, basis, age, progress, state.extra, 1);
             case "elite_plague_impact" -> renderEliteZone(pose, out, basis, age, progress, state.extra, 2);
+
+            case "boss_phase_two_burst" -> renderBossZone(pose, out, basis, age, progress, state.extra, 0);
+            case "boss_breach_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 1);
+            case "boss_breach_windup" -> renderPath(pose, out, state, age, progress, 0xFFB35E, true);
+            case "boss_breach_impact" -> renderBossZone(pose, out, basis, age, progress, state.extra, 2);
+            case "boss_ritual_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 3);
+            case "boss_ritual_impact" -> renderBossZone(pose, out, basis, age, progress, state.extra, 4);
+            case "boss_duel_mark" -> renderBossDuelMark(pose, out, basis, age, progress);
+            case "boss_duel_impact" -> renderBossZone(pose, out, basis, age, progress, state.extra, 5);
+            case "boss_bloodbound_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 6);
+            case "boss_bloodbound_impact" -> renderBossZone(pose, out, basis, age, progress, state.extra, 7);
+            case "boss_storm_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 8);
             default -> renderFallbackRune(pose, out, basis, age, progress);
         }
     }
@@ -912,6 +932,102 @@ public final class VillageSkillMeshLibrary {
             }
         } else if (style == 2) {
             sphere(pose, out, Vec3.ZERO, Math.max(0.3, visibleRadius * 0.22), 8, 12, withAlpha(color, 80));
+        }
+    }
+
+    private static void renderBossPresence(
+            PoseStack.Pose pose, VertexConsumer out, Basis b, double age,
+            String kind, String aspectName, boolean phaseTwo) {
+        int aspect = switch (aspectName == null ? "" : aspectName) {
+            case "berserker" -> 0;
+            case "bulwark" -> 1;
+            case "bloodbound" -> 2;
+            case "stormcaller" -> 3;
+            case "warleader" -> 4;
+            case "wallbreaker" -> 5;
+            default -> -1;
+        };
+        int color = switch (aspect) {
+            case 0 -> rgba(255, 72, 52, phaseTwo ? 225 : 165);
+            case 1 -> rgba(242, 207, 112, phaseTwo ? 220 : 160);
+            case 2 -> rgba(210, 49, 86, phaseTwo ? 225 : 165);
+            case 3 -> rgba(96, 191, 255, phaseTwo ? 230 : 170);
+            case 4 -> rgba(255, 153, 61, phaseTwo ? 225 : 165);
+            case 5 -> rgba(194, 172, 143, phaseTwo ? 225 : 165);
+            default -> rgba(199, 102, 255, phaseTwo ? 220 : 155);
+        };
+        double amp = phaseTwo ? 1.22 : 1.0;
+        double pulse = 0.94 + 0.06 * Math.sin(age * (phaseTwo ? 0.22 : 0.13));
+        ring(pose, out, b, 1.28 * amp * pulse, 0.08, 0.07, 72, color, age * 0.018);
+        ring(pose, out, b, 0.94 * amp, 2.15, 0.055, 56, withAlpha(color, 125), -age * 0.026);
+
+        if (kind.contains("breach_colossus")) {
+            for (int side : new int[]{-1, 1}) {
+                spike(pose, out, b.local(side * 0.74, 0.18, 0.0),
+                        b.local(side * 1.22, 1.44 * amp, 0.18), 0.11 * amp, color);
+            }
+            prism(pose, out, b.local(-0.72, 0.15, 0.68), b.local(0.72, 0.15, 0.68), 0.10, withAlpha(color, 150));
+        } else if (kind.contains("bone_hierophant")) {
+            for (int i = 0; i < 4; i++) {
+                double a = age * 0.012 + i * TAU / 4.0;
+                Vec3 base = b.local(Math.cos(a) * 0.88, 0.25, Math.sin(a) * 0.88);
+                crystal(pose, out, base, 1.10 * amp, 0.16, color);
+            }
+        } else {
+            for (int side : new int[]{-1, 1}) {
+                prism(pose, out, b.local(side * 0.62, 0.56, -0.22),
+                        b.local(-side * 0.18, 2.16 * amp, 0.78), 0.065, color);
+            }
+            slashArc(pose, out, b, age * 0.018, 1.10 * amp, 1.12, 0.96, 0.055, withAlpha(color, 145));
+        }
+
+        if (phaseTwo) {
+            jaggedBolt(pose, out, b.local(-0.9, 0.18, 0.0), b.local(0.9, 2.55, 0.12),
+                    8, 0.035, withAlpha(color, 190), (long) age / 3L + 551L);
+        }
+    }
+
+    private static void renderBossDuelMark(
+            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {
+        int color = rgba(255, 76, 83, (int) (205 * (1.0 - progress * 0.55)));
+        double radius = 0.82 + 0.08 * Math.sin(age * 0.25);
+        ring(pose, out, b, radius, 0.05, 0.07, 48, color, age * 0.04);
+        for (int side : new int[]{-1, 1}) {
+            prism(pose, out, b.local(side * 0.45, 0.28, -0.22),
+                    b.local(-side * 0.22, 1.90, 0.28), 0.045, color);
+        }
+    }
+
+    private static void renderBossZone(
+            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress,
+            String encodedRadius, int style) {
+        double radius = 4.0;
+        try { radius = Double.parseDouble(encodedRadius); }
+        catch (NumberFormatException ignored) {}
+        radius = Math.max(0.8, radius);
+        int base = switch (style) {
+            case 1, 2 -> rgba(255, 157, 67, 220);
+            case 3, 4 -> rgba(128, 220, 255, 205);
+            case 5 -> rgba(255, 72, 82, 225);
+            case 6, 7 -> rgba(207, 48, 86, 220);
+            case 8 -> rgba(103, 198, 255, 220);
+            default -> rgba(255, 94, 67, 220);
+        };
+        boolean warning = style == 1 || style == 3 || style == 6 || style == 8;
+        double visible = warning ? radius : 0.35 + radius * Math.min(1.0, progress * 2.2);
+        int alpha = warning
+                ? (int) (115 + 65 * (0.5 + 0.5 * Math.sin(age * 0.28)))
+                : (int) (220 * (1.0 - progress * 0.74));
+        int color = withAlpha(base, alpha);
+        ring(pose, out, b, visible, 0.055, warning ? 0.11 : 0.20, 80, color, age * 0.014);
+        ring(pose, out, b, visible * 0.72, 0.06, 0.045, 60, withAlpha(color, Math.max(30, alpha - 55)), -age * 0.022);
+        if (warning) {
+            for (int i = 0; i < 8; i++) {
+                double a = i * TAU / 8.0 + age * 0.004;
+                chevron(pose, out, b, a, radius * 0.90, 0.06, 0.46, withAlpha(color, Math.max(45, alpha - 20)));
+            }
+        } else {
+            sphere(pose, out, Vec3.ZERO, Math.max(0.28, visible * 0.20), 8, 12, withAlpha(color, 70));
         }
     }
 

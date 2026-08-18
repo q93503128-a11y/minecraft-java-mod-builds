@@ -24,7 +24,7 @@ def main() -> None:
     elite = read("VillageEnemyEliteSystem.java")
     aspect = read("VillageBossAspectSystem.java")
 
-    require("version is v0.18.12-alpha.1", "mod_version=0.18.14-alpha.1" in props)
+    require("version is v0.18.12-alpha.1", "mod_version=0.18.15-alpha.1" in props)
 
     require("turret LOS starts outside its own three-block visual column",
             "private static Vec3 turretMuzzle" in turret
@@ -55,11 +55,16 @@ def main() -> None:
             "segment == VillageSiegeSegmentSystem.Segment.NORTH_GATE" not in boss
             and "int interval = phaseTwo ? 30 : 45;" in boss
             and "파쇄 주기 45→30틱" in boss)
-    require("siege boss abilities telegraph before breach ritual and duel impacts",
-            "phase == interval - 10" in boss
-            and "phase == 100" in boss
-            and "ticks % 105 == 70" in boss
-            and "ParticleTypes.EXPLOSION" in boss)
+    require("siege boss telegraphs and impacts share explicit delayed cast state",
+            "BREACH_CASTS" in boss
+            and "RITUAL_CASTS" in boss
+            and "DUEL_CASTS" in boss
+            and "BreachCast" in boss
+            and "RitualCast" in boss
+            and "DuelCast" in boss
+            and "VillageBossEffectSystem.breachWarning" in boss
+            and "VillageBossEffectSystem.ritualWarning" in boss
+            and "VillageBossEffectSystem.duelMark" in boss)
 
     require("elite telegraphs remain readable and share fixed delayed cast state with their impacts",
             "GRAPPLE_MOTIONS" in elite

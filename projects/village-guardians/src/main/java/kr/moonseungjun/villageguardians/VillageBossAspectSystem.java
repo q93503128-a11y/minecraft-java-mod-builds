@@ -24,14 +24,20 @@ public final class VillageBossAspectSystem {
     private static final int LONG = 20 * 60 * 30;
     private static final Map<UUID, Aspect> ACTIVE = new HashMap<>();
     private static final Map<UUID, Vec3> STORM_WARNINGS = new HashMap<>();
+    private static final Map<UUID, Vec3> BLOOD_WARNINGS = new HashMap<>();
 
     private VillageBossAspectSystem() {}
 
-    public static void reset() { ACTIVE.clear(); STORM_WARNINGS.clear(); }
+    public static void reset() { ACTIVE.clear(); STORM_WARNINGS.clear(); BLOOD_WARNINGS.clear(); }
     public static void forget(UUID id) {
         if (id == null) return;
         ACTIVE.remove(id);
         STORM_WARNINGS.remove(id);
+        BLOOD_WARNINGS.remove(id);
+    }
+
+    public static Aspect aspectOf(Mob mob) {
+        return mob == null ? null : ACTIVE.get(mob.getUUID());
     }
 
     public static Aspect preview(int day, int wave, int bossIndex) {
@@ -81,18 +87,22 @@ public final class VillageBossAspectSystem {
             }
             case BLOODBOUND -> {
                 if (globalTicks % 100 == 85) {
-                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
-                            mob.getX(), mob.getY() + 1.0, mob.getZ(), 18, 1.0, 0.7, 1.0, 0.03);
+                    Vec3 center = mob.position();
+                    BLOOD_WARNINGS.put(mob.getUUID(), center);
+                    VillageBossEffectSystem.bloodboundWarning(level, center, 11.0, 15);
                     return;
                 }
                 if (globalTicks % 100 != 0) return;
+                Vec3 center = BLOOD_WARNINGS.remove(mob.getUUID());
+                if (center == null) return;
                 float healed = 0.0f;
-                for (ServerPlayer player : nearbyPlayers(server, mob, 11.0)) {
+                for (ServerPlayer player : nearbyPlayersAt(server, level, center, 11.0)) {
                     player.hurtServer(level, level.damageSources().magic(), 3.5f + VillageCouncilState.currentDay() * 0.16f);
                     player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 70, 0));
                     healed += 4.0f;
                 }
                 if (healed > 0.0f) mob.heal(Math.min(22.0f, healed));
+                VillageBossEffectSystem.bloodboundImpact(level, center, 11.0);
             }
             case STORMCALLER -> {
                 if (globalTicks % 80 == 65) {
@@ -101,9 +111,7 @@ public final class VillageBossAspectSystem {
                     if (warning != null) {
                         Vec3 warningPos = warning.position();
                         STORM_WARNINGS.put(mob.getUUID(), warningPos);
-                        level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
-                                warningPos.x, warningPos.y + 0.15, warningPos.z,
-                                24, 0.9, 0.08, 0.9, 0.025);
+                        VillageBossEffectSystem.stormWarning(level, warningPos, 2.4, 15);
                     } else {
                         STORM_WARNINGS.remove(mob.getUUID());
                     }
@@ -148,11 +156,17 @@ public final class VillageBossAspectSystem {
     }
 
     private static java.util.List<ServerPlayer> nearbyPlayers(MinecraftServer server, Mob mob, double radius) {
+        if (!(mob.level() instanceof ServerLevel level)) return java.util.List.of();
+        return nearbyPlayersAt(server, level, mob.position(), radius);
+    }
+
+    private static java.util.List<ServerPlayer> nearbyPlayersAt(
+            MinecraftServer server, ServerLevel level, Vec3 center, double radius) {
         double squared = radius * radius;
         return server.getPlayerList().getPlayers().stream()
-                .filter(player -> player.level() == mob.level() && player.isAlive()
+                .filter(player -> player.level() == level && player.isAlive()
                         && !player.isSpectator() && !VillageRespawnSystem.isDowned(player)
-                        && player.distanceToSqr(mob) <= squared)
+                        && player.position().distanceToSqr(center) <= squared)
                 .toList();
     }
 
