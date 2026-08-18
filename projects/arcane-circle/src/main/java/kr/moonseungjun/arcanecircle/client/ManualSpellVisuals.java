@@ -136,7 +136,7 @@ final class ManualSpellVisuals {
     static int prismaticColor(int layer){int[] c={0xFFFF2348,0xFFFF8A24,0xFFFFE63B,0xFF39EE77,0xFF35A9FF,0xFF7657FF,0xFFE055FF};return c[Math.floorMod(layer,c.length)];}
 
     static ArcaneWorldMesh prismaticWallLayer(Vec3 direction,Vec3 target,double range,double age,double elapsed,int layer){
-        ArcaneWorldMesh.Builder m=ArcaneWorldMesh.builder(260);
+        ArcaneWorldMesh.Builder m=ArcaneWorldMesh.builder(340);
         ArcaneWorldMesh.Basis face=ArcaneWorldMesh.Basis.facing(flat(direction));
         double width=Math.max(15.0,range*.54), panel=width/7.0;
         double x0=-width*.5+layer*panel,x1=x0+panel;
@@ -145,9 +145,11 @@ final class ManualSpellVisuals {
         Vec3 a=target.add(face.right().scale(x0)),b=target.add(face.right().scale(x1)),up=new Vec3(0,height,0);
         m.face(a,b,b.add(up),a.add(up),1.12F,(float)(.34*fade));
         m.line(a,a.add(up),1.04F);m.line(b,b.add(up),1.04F);m.line(a.add(up),b.add(up),.82F);
-        Vec3 c=a.add(b).scale(.5).add(0,height*.48,0);
-        m.diamond(face,c,panel*.22,elapsed*(layer%2==0?.22:-.18),1.16F,(float)(.24*fade));
-        m.runeGlyph(face,c,panel*.12,0x901+layer*131,-elapsed*.07,.48F);
+        Vec3 center=a.add(b).scale(.5).add(0,height*.48,0),low=center.add(0,-height*.30,0),high=center.add(0,height*.32,0);
+        m.diamond(face,center,panel*.22,elapsed*(layer%2==0?.22:-.18),1.16F,(float)(.24*fade));m.runeGlyph(face,center,panel*.12,0x901+layer*131,-elapsed*.07,.48F);
+        m.polygon(face,low,panel*.18,3+(layer%3),layer*.31+elapsed*.04,.34F);m.polygon(face,high,panel*.16,4+(layer%2),-layer*.27-elapsed*.035,.32F);
+        m.runeGlyph(face,low,panel*.075,0xA01+layer*173,layer*.4,.30F);m.runeGlyph(face,high,panel*.070,0xB01+layer*179,-layer*.3,.28F);
+        m.line(a.add(0,height*.16,0),b.add(0,height*.84,0),.22F);m.line(b.add(0,height*.16,0),a.add(0,height*.84,0),.22F);
         return m.build();
     }
 

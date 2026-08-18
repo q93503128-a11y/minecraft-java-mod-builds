@@ -10,9 +10,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.40' in gradle
-assert 'VERSION = "0.12.1-alpha.40"' in main
-assert '"version": "0.12.1-alpha.40"' in index
+assert 'mod_version=0.12.1-alpha.41' in gradle
+assert 'VERSION = "0.12.1-alpha.41"' in main
+assert '"version": "0.12.1-alpha.41"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -49,6 +49,15 @@ for token in ['Un-authored spell visual','Un-authored casting pose','Un-authored
     assert token in manual, token
 for old in ['ArcaneSigilDirector.java','SpellCinematicDirector.java','ArcaneSpellVisualOverhaul.java']:
     assert not (client/old).exists(), old
+
+# Alpha.41 manual high-circle audit: actual spell-specific structures, not generic rank decorators.
+for token in ['for(int depth=0;depth<6;depth++)','Four broken square corridors','spin=c.release()?0.0:t*.012',
+              'Four execution bars snap shut','spin=c.release()?0.0:t*.006','Three mutually tilted nightmare eyes',
+              'Four possible future trajectories','Six receding frames','Seven parallel world-sheets']:
+    assert token in combined, token
+for token in ['m.polygon(face,low','m.polygon(face,high','m.line(a.add(0,height*.16,0),b.add(0,height*.84,0)']:
+    assert token in manual, token
+assert '## Alpha.41 hand-authored visual audit' in text(root/'PROJECT.md')
 
 # 3P artifact regression: no synthetic player body/filled-box overlay may return.
 casting=text(client/'ArcaneCastingPerformance.java')

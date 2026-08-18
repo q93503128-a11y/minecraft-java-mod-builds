@@ -57,3 +57,10 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - Long-lived buffs and debuffs keep a spell-authored state silhouette for the authoritative mechanic lifetime. 6C+ status magic additionally carries compact persistent authority instead of holding the enormous cast circle on screen.
 - High-circle hard controls/prisons keep floor/top seals, cross-plane restraints and high-circle rune satellites while active. `sleep` and `mass_suggestion` visual lifetimes now follow their real 140/160 tick control windows.
 - Time Stop, Wish and Power Word Kill have dedicated dense 9C release geometry instead of relying on a generic afterimage.
+
+## Alpha.41 hand-authored visual audit
+- High-circle presentation is reviewed spell-by-spell; no rank/school/form decorator may substitute for authored composition.
+- Antimagic Field uses broken null circuits, Maze uses broken square corridors, and Time Stop freezes its own clock geometry after release.
+- Plane Shift, Teleport, Demiplane and Gate deliberately use different spatial-depth grammars.
+- Power Word Kill uses compact execution closure; Wish uses a three-tier nine-contract reality lattice; Foresight keeps visible branching future trajectories.
+- Prismatic Wall panels own upper/lower sub-seals and crossed internal lattice while retaining the authoritative 14-second lifetime.
