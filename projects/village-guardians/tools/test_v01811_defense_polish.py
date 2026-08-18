@@ -19,9 +19,11 @@ def main() -> None:
 
     assert "mod_version=0.18.13-alpha.1" in props
 
-    # Static defenses and ranger mercenaries must not acquire/fire through blocks.
+    # Direct-fire defenses and ranger mercenaries must not acquire/fire through blocks.
+    # BOMBARD is deliberately the only indirect-fire acquisition exception in v0.18.13.
     assert "ClipContext.Block.COLLIDER" in los and "HitResult.Type.MISS" in los
-    assert ".filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob))" in turret
+    assert "state.type() == TurretType.BOMBARD" in turret
+    assert "nearby.stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob))" in turret
     assert "if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;" in turret and "turretMuzzle" in turret
     assert ".filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))" in merc
 
@@ -58,7 +60,8 @@ def main() -> None:
     for token in ("BASTION", "STRIKER", "RANGER", "MEDIC"):
         assert token in merc
 
-    print("[PASS] turret and ranger LOS blocks wall-through acquisition and damage")
+    print("[PASS] direct-fire turret and ranger LOS blocks wall-through acquisition and damage")
+    print("[PASS] bombard retains its intentional indirect-fire acquisition exception")
     print("[PASS] tower hunters approach at range but damage turrets only at physical attack distance")
     print("[PASS] piercer has a real armored-target damage niche")
     print("[PASS] turret placement/visual/cleanup owns a matching three-block footprint")
