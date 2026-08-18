@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 
@@ -60,13 +61,13 @@ public final class VillageBossEffectSystem {
         pulse(level, "boss_ritual_impact", center, radius, 30);
     }
 
-    public static void duelMark(ServerLevel level, Mob target, int duration) {
+    public static void duelMark(ServerLevel level, LivingEntity target, int duration) {
         if (level == null || target == null) return;
         VillageSkillEffectEntity.spawn(level, target, "boss_duel_mark", target.position(),
                 horizontal(target.getLookAngle()), Math.max(12, duration), 0.0f, "");
     }
 
-    public static void duelImpact(ServerLevel level, Mob target) {
+    public static void duelImpact(ServerLevel level, LivingEntity target) {
         if (level == null || target == null) return;
         pulse(level, "boss_duel_impact", target.position(), 2.2, 18);
     }
