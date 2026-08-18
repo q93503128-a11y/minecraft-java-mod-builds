@@ -45,7 +45,32 @@ final class ManualCircle9Visuals {
                 Vec3 base=c.release()?c.target():Vec3.ZERO;double h=6.0+2.0*p,w=3.0+.65*p;Vec3 center=base.add(0,h*.52,0);m.polygon(f,center,w,12,t*.008,.54F);m.polygon(f,center,w*.82,8,-t*.010+.12,.44F);m.runeChords(f,center,w*.64,12,5,t*.007,.34F);m.circle(x,center,w*.50,52,.28F);m.circle(z,center,w*.62,58,.32F);for(int i=0;i<9;i++){double a=i*Math.PI*2/9;Vec3 node=center.add(f.point(a,w*.90));m.circle(f,node,.18,18,.28F);m.runeGlyph(f,node,.10,0x9908+i*197,-a,.24F);m.line(node,center.add(f.point(a+.06*(i%2==0?1:-1),w*.52)),.22F);}m.polygon(g,base.add(0,.04,0),w*.92,12,-t*.007,.40F);m.runeChords(g,base.add(0,.045,0),w*.70,12,5,t*.006,.28F);m.brokenBand(g,base.add(0,.05,0),w*.98,w*1.10,72,9,1.04F,.09F);m.line(base.add(f.right().scale(-w)),base.add(f.right().scale(-w)).add(0,h,0),.56F);m.line(base.add(f.right().scale(w)),base.add(f.right().scale(w)).add(0,h,0),.56F);
             }
             case "foresight" -> {
-                Vec3 base=c.release()?c.target():Vec3.ZERO,eye=base.add(0,2.15,0);double r=1.62+.26*p;m.circle(f,eye,r,58,.50F);m.polygon(f,eye,r*.80,9,t*.008,.40F);m.runeChords(f,eye,r*.58,9,4,-t*.010,.34F);m.runeGlyph(f,eye,r*.24,0x9909,t*.012,.40F);m.polygon(g,base.add(0,.04,0),1.72,12,-t*.006,.42F);m.runeChords(g,base.add(0,.045,0),1.36,12,5,t*.005,.30F);m.circle(x,base.add(0,1.05,0),1.08,48,.28F);m.circle(z,base.add(0,1.05,0),1.30,52,.30F);for(int i=0;i<9;i++){double a=i*Math.PI*2/9-t*.008;Vec3 node=base.add(g.point(a,1.58)).add(0,.32+.20*(i%4),0);m.runeGlyph(f,node,.12,0x9919+i*199,-a,.24F);m.line(node,eye,.18F);}if(c.release()){double future=.18+.06*Math.sin(t*2.1);for(int i=0;i<4;i++){double a=t*.18+i*Math.PI/2;Vec3 a0=base.add(g.point(a,1.05)),a1=base.add(g.point(a+.future,1.52)).add(0,.18,0);m.line(a0,a1,.24F);}}
+                Vec3 base=c.release()?c.target():Vec3.ZERO;
+                Vec3 eye=base.add(0,2.15,0);
+                double r=1.62+.26*p;
+                m.circle(f,eye,r,58,.50F);
+                m.polygon(f,eye,r*.80,9,t*.008,.40F);
+                m.runeChords(f,eye,r*.58,9,4,-t*.010,.34F);
+                m.runeGlyph(f,eye,r*.24,0x9909,t*.012,.40F);
+                m.polygon(g,base.add(0,.04,0),1.72,12,-t*.006,.42F);
+                m.runeChords(g,base.add(0,.045,0),1.36,12,5,t*.005,.30F);
+                m.circle(x,base.add(0,1.05,0),1.08,48,.28F);
+                m.circle(z,base.add(0,1.05,0),1.30,52,.30F);
+                for(int i=0;i<9;i++){
+                    double a=i*Math.PI*2/9-t*.008;
+                    Vec3 node=base.add(g.point(a,1.58)).add(0,.32+.20*(i%4),0);
+                    m.runeGlyph(f,node,.12,0x9919+i*199,-a,.24F);
+                    m.line(node,eye,.18F);
+                }
+                if(c.release()){
+                    double futureOffset=.18+.06*Math.sin(t*2.1);
+                    for(int i=0;i<4;i++){
+                        double a=t*.18+i*Math.PI/2;
+                        Vec3 a0=base.add(g.point(a,1.05));
+                        Vec3 a1=base.add(g.point(a+futureOffset,1.52)).add(0,.18,0);
+                        m.line(a0,a1,.24F);
+                    }
+                }
             }
             default -> throw new IllegalStateException("Circle9 visual missing: "+id);
         }
