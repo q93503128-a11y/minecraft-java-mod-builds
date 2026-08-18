@@ -43,6 +43,7 @@ public final class ErdenUrbanLifeManager {
     private static final int UPPER_CLEAR_HEIGHT = 3;
     private static final int PROCESS_BUDGET = 1;
     private static final int ROUTINE_INTERVAL = 40;
+    private static final int CI_AUTHORED_HOME_CHUNK_RADIUS = 3;
     private static final Set<String> HABITABLE_ROLES = Set.of(
             "tenement", "shop", "bakery", "inn",
             "stable", "guard_post", "bathhouse", "warehouse"
@@ -78,11 +79,11 @@ public final class ErdenUrbanLifeManager {
         List<ExternalUrbanFabricBuilder.UrbanEntrance> entrances =
                 ExternalUrbanFabricBuilder.entrances();
         logPlanOnce(entrances);
-        requestCiSampleChunks(level);
 
         ErdenUrbanLifeSavedData life = level.getDataStorage()
                 .computeIfAbsent(ErdenUrbanLifeSavedData.TYPE);
         ensureCitizenAssignments(level, life, entrances);
+        requestCiSampleChunks(level, life);
         // Legacy synthetic upper records remain readable, but fresh worlds never create them.
         runCitizenRoutines(level, life);
         verifyCiIfReady(level, life);
@@ -106,6 +107,17 @@ public final class ErdenUrbanLifeManager {
     public static int assignmentCount(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(ErdenUrbanLifeSavedData.TYPE)
                 .assignments().size();
+    }
+
+    static boolean managesCitizenId(String citizenId) {
+        for (CitizenPlan citizen : CITIZENS) {
+            if (citizen.id().equals(citizenId)) return true;
+        }
+        return false;
+    }
+
+    static AABB managedCitizenBounds(ServerLevel level) {
+        return capitalBounds(level);
     }
 
     private static void reset(MinecraftServer server) {
@@ -136,14 +148,38 @@ public final class ErdenUrbanLifeManager {
                 HABITABLE_ROLES.size(), CITIZENS.size());
     }
 
-    private static void requestCiSampleChunks(ServerLevel level) {
+    private static void requestCiSampleChunks(
+            ServerLevel level,
+            ErdenUrbanLifeSavedData life) {
         if (ciChunksRequested
                 || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
-        ExternalUrbanFabricBuilder.UrbanEntrance sample = syntheticCiSample();
-        if (sample == null) {
-            throw new IllegalStateException("Erden urban-life CI has no synthetic fallback sample");
+        ExternalUrbanFabricBuilder.UrbanEntrance groundSample = syntheticCiSample();
+        if (groundSample == null) {
+            throw new IllegalStateException("Erden urban-life CI has no ground-only sample");
         }
-        Bounds bounds = room(sample, 0).bounds();
+        requestBounds(level, room(groundSample, 0).bounds());
+
+        ExternalUrbanFabricBuilder.UrbanEntrance authoredHome = authoredHomeSample(life.assignments());
+        if (authoredHome == null) {
+            throw new IllegalStateException("Erden urban-life CI has no assigned authored-upper home");
+        }
+        int centerChunkX = Math.floorDiv(authoredHome.x(), 16);
+        int centerChunkZ = Math.floorDiv(authoredHome.z(), 16);
+        for (int chunkX = centerChunkX - CI_AUTHORED_HOME_CHUNK_RADIUS;
+             chunkX <= centerChunkX + CI_AUTHORED_HOME_CHUNK_RADIUS; chunkX++) {
+            for (int chunkZ = centerChunkZ - CI_AUTHORED_HOME_CHUNK_RADIUS;
+                 chunkZ <= centerChunkZ + CI_AUTHORED_HOME_CHUNK_RADIUS; chunkZ++) {
+                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+            }
+        }
+        ciChunksRequested = true;
+        LivingKingdoms.LOGGER.info(
+                "Requested Erden urban-life CI samples ground_only_role={} authored_home_role={} authored_home={},{} authored_radius_chunks={} deterministic_assignment=true",
+                groundSample.role(), authoredHome.role(), authoredHome.x(), authoredHome.z(),
+                CI_AUTHORED_HOME_CHUNK_RADIUS);
+    }
+
+    private static void requestBounds(ServerLevel level, Bounds bounds) {
         for (int chunkX = Math.floorDiv(bounds.minX, 16);
              chunkX <= Math.floorDiv(bounds.maxX, 16); chunkX++) {
             for (int chunkZ = Math.floorDiv(bounds.minZ, 16);
@@ -151,7 +187,6 @@ public final class ErdenUrbanLifeManager {
                 ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
             }
         }
-        ciChunksRequested = true;
     }
 
     private static ExternalUrbanFabricBuilder.UrbanEntrance syntheticCiSample() {
@@ -164,6 +199,16 @@ public final class ErdenUrbanLifeManager {
         for (ExternalUrbanFabricBuilder.UrbanEntrance entrance
                 : ExternalUrbanFabricBuilder.entrances()) {
             if (!ErdenUrbanAuthoredUpperRouteManager.isEligible(entrance)) return entrance;
+        }
+        return null;
+    }
+
+    private static ExternalUrbanFabricBuilder.UrbanEntrance authoredHomeSample(
+            List<ErdenUrbanLifeSavedData.Assignment> assignments) {
+        for (ErdenUrbanLifeSavedData.Assignment assignment : assignments) {
+            ExternalUrbanFabricBuilder.UrbanEntrance home =
+                    findEntrance(assignment.homeX(), assignment.homeZ());
+            if (home != null && ErdenUrbanAuthoredUpperRouteManager.isEligible(home)) return home;
         }
         return null;
     }
@@ -302,7 +347,8 @@ public final class ErdenUrbanLifeManager {
             ServerLevel level,
             ErdenUrbanLifeSavedData life,
             List<ExternalUrbanFabricBuilder.UrbanEntrance> entrances) {
-        if (life.assignments().size() == EXPECTED_CITIZEN_ASSIGNMENTS) {
+        if (life.assignments().size() == EXPECTED_CITIZEN_ASSIGNMENTS
+                && hasAuthoredHomeAssignment(life.assignments())) {
             logAssignmentsOnce(life.assignments());
             return;
         }
@@ -322,8 +368,9 @@ public final class ErdenUrbanLifeManager {
                         "No Erden workplace available for " + citizen.id + " role=" + citizen.workRole);
             }
             usedWorkplaces.add(entranceKey(workplace.x(), workplace.z()));
-            ExternalUrbanFabricBuilder.UrbanEntrance home = nearestEntrance(
-                    entrances, "tenement", workplace.x(), workplace.z(), usedHomes);
+            ExternalUrbanFabricBuilder.UrbanEntrance home = assignments.isEmpty()
+                    ? nearestAuthoredEntrance(entrances, "tenement", workplace.x(), workplace.z(), usedHomes)
+                    : nearestEntrance(entrances, "tenement", workplace.x(), workplace.z(), usedHomes);
             if (home == null) {
                 throw new IllegalStateException("No Erden home available for " + citizen.id);
             }
@@ -333,8 +380,16 @@ public final class ErdenUrbanLifeManager {
                     home.x(), home.z(),
                     workplace.x(), workplace.z(), citizen.workRole));
         }
+        if (!hasAuthoredHomeAssignment(assignments)) {
+            throw new IllegalStateException("Erden citizen assignments failed to retain an authored-upper home");
+        }
         life.replaceAssignments(List.copyOf(assignments));
         logAssignmentsOnce(assignments);
+    }
+
+    private static boolean hasAuthoredHomeAssignment(
+            List<ErdenUrbanLifeSavedData.Assignment> assignments) {
+        return authoredHomeSample(assignments) != null;
     }
 
     private static ExternalUrbanFabricBuilder.UrbanEntrance nearestEntrance(
@@ -351,6 +406,21 @@ public final class ErdenUrbanLifeManager {
                 .orElse(null);
     }
 
+    private static ExternalUrbanFabricBuilder.UrbanEntrance nearestAuthoredEntrance(
+            List<ExternalUrbanFabricBuilder.UrbanEntrance> entrances,
+            String role,
+            int x,
+            int z,
+            Set<Long> excluded) {
+        return entrances.stream()
+                .filter(entrance -> entrance.role().equals(role))
+                .filter(ErdenUrbanAuthoredUpperRouteManager::isEligible)
+                .filter(entrance -> !excluded.contains(entranceKey(entrance.x(), entrance.z())))
+                .min(Comparator.comparingLong(entrance -> distanceSquared(
+                        x, z, entrance.x(), entrance.z())))
+                .orElse(null);
+    }
+
     private static void logAssignmentsOnce(List<ErdenUrbanLifeSavedData.Assignment> assignments) {
         if (assignmentsLogged) return;
         if (assignments.size() != EXPECTED_CITIZEN_ASSIGNMENTS) {
@@ -358,9 +428,12 @@ public final class ErdenUrbanLifeManager {
                     "Expected " + EXPECTED_CITIZEN_ASSIGNMENTS
                             + " Erden citizen assignments, found " + assignments.size());
         }
+        if (!hasAuthoredHomeAssignment(assignments)) {
+            throw new IllegalStateException("Erden citizen assignment log has no authored-upper home");
+        }
         assignmentsLogged = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden citizen home-work assignments citizens={} unique_homes=true unique_workplaces=true routines=home,work authored_target_priority=true",
+                "Prepared Erden citizen home-work assignments citizens={} unique_homes=true unique_workplaces=true routines=home,work authored_target_priority=true authored_home_assignment=true",
                 assignments.size());
     }
 
