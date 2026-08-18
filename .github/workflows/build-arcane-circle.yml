@@ -24,7 +24,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply alpha.45 source fixes and restore canonical workflow
+      - name: Apply alpha.45 source fixes only
         shell: bash
         run: |
           set -euo pipefail
@@ -36,7 +36,7 @@ jobs:
           s=p.read_text(encoding='utf-8')
 
           old="""canonical = subprocess.check_output(\n    ['git', 'show', 'HEAD^:.github/workflows/build-arcane-circle.yml'], text=True\n)\nwrite(WORKFLOW, canonical)\n"""
-          new="""backup = ROOT / '.canonical-vfx45-workflow.txt'\ncanonical = backup.read_text(encoding='utf-8')\nwrite(WORKFLOW, canonical)\nbackup.unlink()\n"""
+          new="""backup = ROOT / '.canonical-vfx45-workflow.txt'\nbackup.unlink()\n"""
           if old not in s:
               raise SystemExit('canonical restore anchor missing')
           s=s.replace(old,new,1)
@@ -48,6 +48,12 @@ jobs:
           if old_search not in s or old_repl not in s:
               raise SystemExit('lifecycle-clear patch anchor missing')
           s=s.replace(old_search,new_search,1).replace(old_repl,new_repl,1)
+
+          old_add="subprocess.run(['git', 'add', '-A', 'projects/arcane-circle', str(WORKFLOW), str(SELF)], check=True)"
+          new_add="subprocess.run(['git', 'add', '-A', 'projects/arcane-circle', str(SELF)], check=True)"
+          if old_add not in s:
+              raise SystemExit('git-add workflow anchor missing')
+          s=s.replace(old_add,new_add,1)
           p.write_text(s,encoding='utf-8')
           PY
           python3 .github/scripts/manual-vfx45.py
