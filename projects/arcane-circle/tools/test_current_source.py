@@ -10,9 +10,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.38' in gradle
-assert 'VERSION = "0.12.1-alpha.38"' in main
-assert '"version": "0.12.1-alpha.38"' in index
+assert 'mod_version=0.12.1-alpha.39' in gradle
+assert 'VERSION = "0.12.1-alpha.39"' in main
+assert '"version": "0.12.1-alpha.39"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -228,6 +228,19 @@ for token in ['put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 
     assert token in presentation, token
 assert 'case "prismatic_wall" -> 280;' in gameplay
 assert '14초 지속 7색 장벽' in summary
+
+# Alpha.39 grand-sigil / persistent status identity.
+for token in ['SIGIL_BUDGET = 1900','SUSTAINED_DEBUFFS = Set.of','grandScaleArchitecture',
+              'geometrySides','tessellated sectors','persistentAuthorityMantle','persistentControlMantle',
+              'debuffMantle','runeChords','nine independent formulae are complete mini-circles']:
+    assert token in overhaul, token
+for token in ['case "sleep" -> 140','case "mass_suggestion" -> 160']:
+    assert token in gameplay, token
+assert 'if ((persistentBuff || persistentDebuff) && spell.circle() >= 6)' in overhaul
+assert 'if (spell.circle() >= 6 && r >= 3.25) grandScaleArchitecture' in overhaul
+for token in ['m.polygon(g, hub, r * .43, 12','m.star(g, center.add(0, .05, 0), r * .74',
+              'm.runeChords(face, c, r * .46, 8, 3']:
+    assert token in overhaul, token
 
 # Active-tree hygiene: history is the archive.
 repo=root.parents[1]

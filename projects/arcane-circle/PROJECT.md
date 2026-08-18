@@ -48,3 +48,12 @@ alpha.28부터 모든 주문은 `ArcaneSigilDirector`의 주문별 술식 마법
 - Meteor Swarm uses 16 independently seeded deep crater events with fractured rims. Fire Storm's six columns can devastate six real impact zones. Earthquake uses a dense epicenter plus eight irregular secondary foci. World Sunder uses a long/deep thirteen-point meandering cut. Arcane Annihilation bores a thick deletion corridor from safely in front of the caster to the locked endpoint.
 - Catastrophe visuals use anticipation -> convergence/collapse -> primary impact -> secondary shock/fracture. Meteor Swarm keeps a sky authority crown alive across the barrage; Fire Storm has a contracting sky lattice and six synchronized columns; Delayed Blast Fireball visibly compresses before detonation; Arcane Annihilation owns a multi-gate beam body; World Sunder/Earthquake draw multiple fault bands and lifted debris accents.
 - Catastrophe charge formulae add a dedicated authority layer on top of the 6C+ hierarchy: broken outer seals, converging anchors, a cross-plane lock ring and final vertical authority pylons. This is restricted to the genuinely destructive spells so high-circle support/control magic keeps a different silhouette.
+
+
+## Alpha.39 grand-sigil + persistent-status presentation contracts
+
+- Compact/low-circle formulae are intentionally left readable and light. Large 6C+ formulae add `grandScaleArchitecture`: nested polygon locks, tessellated sector webs, chord lattices and satellite sub-formulae. Radius growth must increase information density, not merely enlarge a circle.
+- 7C uses an independently authored second ritual plane; 8C adds a connected gyroscopic/polyhedral cage; 9C uses nine complete satellite formulae wired back to a multi-plane authority core.
+- Long-lived buffs and debuffs keep a spell-authored state silhouette for the authoritative mechanic lifetime. 6C+ status magic additionally carries compact persistent authority instead of holding the enormous cast circle on screen.
+- High-circle hard controls/prisons keep floor/top seals, cross-plane restraints and high-circle rune satellites while active. `sleep` and `mass_suggestion` visual lifetimes now follow their real 140/160 tick control windows.
+- Time Stop, Wish and Power Word Kill have dedicated dense 9C release geometry instead of relying on a generic afterimage.

@@ -122,6 +122,8 @@ public final class SpellGameplayService {
             case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS;
             case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS;
             case "feather_fall" -> 120;
+            case "sleep" -> 140;
+            case "mass_suggestion" -> 160;
             case "mirror_image" -> 260;
             case "blur" -> 360;
             case "fly" -> 600;
