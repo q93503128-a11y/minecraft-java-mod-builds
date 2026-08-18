@@ -114,7 +114,23 @@ def patch_build() -> None:
     path.write_text(s, encoding='utf-8')
 
 
+def patch_physical_economy() -> None:
+    path = ROOT / 'validate-living-kingdoms-physical-economy.yml'
+    s = path.read_text(encoding='utf-8')
+    s = replace_required(s, '# revision: 4', '# revision: 5', 'physical economy audit revision')
+    condition = "            if grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' \"$LOG_FILE\" \\\n"
+    condition_new = ("            if grep -Fq 'Requested Erden physical-economy authored interior CI samples sites=3' \"$LOG_FILE\" \\\n"
+                     "              && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' \"$LOG_FILE\" \\\n")
+    s = replace_required(s, condition, condition_new, 'physical economy authored sample gate')
+    prep = "          grep -F 'Prepared Erden physical economy sites=156 warehouses=15 wallets=77 container_resources=8' \"$LOG_FILE\"\n"
+    prep_new = ("          grep -F 'Requested Erden physical-economy authored interior CI samples sites=3' \"$LOG_FILE\" | grep -F 'bounded_plan_chunks=true' | grep -F 'persistent_forced_chunks=false'\n"
+                + prep)
+    s = replace_required(s, prep, prep_new, 'physical economy authored sample proof')
+    path.write_text(s, encoding='utf-8')
+
+
 patch_residence()
 patch_inventory()
 patch_build()
+patch_physical_economy()
 print('Aligned Living Kingdoms authored interior audit contracts')
