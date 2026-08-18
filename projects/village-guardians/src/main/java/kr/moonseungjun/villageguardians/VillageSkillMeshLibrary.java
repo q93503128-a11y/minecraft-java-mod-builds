@@ -824,7 +824,7 @@ public final class VillageSkillMeshLibrary {
         int level = 1;
         boolean disabled = false;
         if (extra != null && !extra.isBlank()) {
-            String[] parts = extra.split("\|", -1);
+            String[] parts = extra.split("\\|", -1);
             try { level = Math.max(1, Math.min(5, Integer.parseInt(parts[0]))); }
             catch (NumberFormatException ignored) {}
             disabled = parts.length > 1 && "1".equals(parts[1]);
