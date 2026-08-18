@@ -1,0 +1,609 @@
+name: Temporary VFX44 patch
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-vfx44.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply alpha.44 lifecycle and authored-timeline pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root=Path('projects/arcane-circle')
+          client=root/'src/main/java/kr/moonseungjun/arcanecircle/client'
+          magic=root/'src/main/java/kr/moonseungjun/arcanecircle/magic'
+
+          def read(p): return p.read_text(encoding='utf-8')
+          def write(p,s): p.write_text(s,encoding='utf-8')
+          def replace_once(s,old,new,label):
+              if old not in s: raise SystemExit(f'missing replacement anchor: {label}')
+              if s.count(old)!=1: raise SystemExit(f'non-unique replacement anchor {label}: {s.count(old)}')
+              return s.replace(old,new,1)
+          def replace_method(s, signature, new_body):
+              start=s.find(signature)
+              if start<0: raise SystemExit(f'missing method: {signature}')
+              nxt=s.find('\n    private static void ', start+len(signature))
+              if nxt<0: raise SystemExit(f'no next method after: {signature}')
+              return s[:start]+new_body.rstrip()+"\n"+s[nxt:]
+
+          # Version contract.
+          p=root/'gradle.properties'; s=read(p); s=s.replace('mod_version=0.12.1-alpha.43','mod_version=0.12.1-alpha.44'); write(p,s)
+          p=root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java'; s=read(p); s=s.replace('VERSION = "0.12.1-alpha.43"','VERSION = "0.12.1-alpha.44"'); write(p,s)
+          p=root/'src/main/resources/data/arcanecircle/spell_catalog/index.json'; s=read(p); s=s.replace('"version": "0.12.1-alpha.43"','"version": "0.12.1-alpha.44"'); write(p,s)
+
+          # WorldMagicService: attach long-lived self magic to the caster and expose lifecycle pulses.
+          p=magic/'WorldMagicService.java'; s=read(p)
+          old='''    private static void send(LivingEntity caster, String state) {
+        if (!(caster.level() instanceof ServerLevel level)) return;
+        PacketDistributor.sendToPlayersNear(level, null, caster.getX(), caster.getY(), caster.getZ(),
+                160.0, new WorldMagicPayload(state));
+    }
+
+    private static String encode(String kind, LivingEntity caster, SpellDefinition spell, boolean fusion,
+                                 int ingredientCount, Vec3 center, Vec3 target, Vec3 direction, double range,
+                                 double power, double progress, int duration, int impactTicks, long seed) {
+        return String.format(Locale.ROOT,
+                "kind=%s;caster=%s;spell=%s;fusion=%d;ingredients=%d;x=%.5f;y=%.5f;z=%.5f;tx=%.5f;ty=%.5f;tz=%.5f;dx=%.5f;dy=%.5f;dz=%.5f;range=%.4f;power=%.4f;progress=%.4f;duration=%d;impact=%d;seed=%d",
+                kind, caster.getUUID(), spell.id(), fusion ? 1 : 0, ingredientCount,
+                center.x, center.y, center.z, target.x, target.y, target.z,
+                direction.x, direction.y, direction.z, range, power, progress, duration, impactTicks, seed);
+    }
+'''
+          new='''    public static void endPersistent(LivingEntity caster, String spellId) {
+        if (caster == null || spellId == null || spellId.isBlank()) return;
+        send(caster, "kind=end;caster=" + caster.getUUID() + ";spell=" + spellId);
+    }
+
+    public static void pulsePersistent(LivingEntity caster, String spellId, int strength) {
+        if (caster == null || spellId == null || spellId.isBlank()) return;
+        send(caster, "kind=pulse;caster=" + caster.getUUID() + ";spell=" + spellId
+                + ";strength=" + Math.max(1, Math.min(4, strength)));
+    }
+
+    private static void send(LivingEntity caster, String state) {
+        if (!(caster.level() instanceof ServerLevel level)) return;
+        PacketDistributor.sendToPlayersNear(level, null, caster.getX(), caster.getY(), caster.getZ(),
+                160.0, new WorldMagicPayload(state));
+    }
+
+    private static boolean followsCasterVisual(String kind, SpellDefinition spell) {
+        if (!"release".equals(kind)) return false;
+        if ("time_stop".equals(spell.id())) return false;
+        if ("antimagic_field".equals(spell.id())) return true;
+        if (SpellGameplayService.visualDurationTicks(spell.id()) <= 30) return false;
+        SpellPresentationProfile.SigilStyle sigil = SpellPresentationProfile.profile(spell).sigil();
+        return sigil == SpellPresentationProfile.SigilStyle.BODY_HALO
+                || sigil == SpellPresentationProfile.SigilStyle.FEET_RUNE;
+    }
+
+    private static String encode(String kind, LivingEntity caster, SpellDefinition spell, boolean fusion,
+                                 int ingredientCount, Vec3 center, Vec3 target, Vec3 direction, double range,
+                                 double power, double progress, int duration, int impactTicks, long seed) {
+        boolean attached = followsCasterVisual(kind, spell);
+        int attach = attached ? caster.getId() : -1;
+        Vec3 attachOffset = attached ? center.subtract(caster.position()) : Vec3.ZERO;
+        return String.format(Locale.ROOT,
+                "kind=%s;caster=%s;spell=%s;fusion=%d;ingredients=%d;x=%.5f;y=%.5f;z=%.5f;tx=%.5f;ty=%.5f;tz=%.5f;dx=%.5f;dy=%.5f;dz=%.5f;range=%.4f;power=%.4f;progress=%.4f;duration=%d;impact=%d;seed=%d;attach=%d;ox=%.5f;oy=%.5f;oz=%.5f",
+                kind, caster.getUUID(), spell.id(), fusion ? 1 : 0, ingredientCount,
+                center.x, center.y, center.z, target.x, target.y, target.z,
+                direction.x, direction.y, direction.z, range, power, progress, duration, impactTicks, seed,
+                attach, attachOffset.x, attachOffset.y, attachOffset.z);
+    }
+'''
+          s=replace_once(s,old,new,'WorldMagicService encode')
+          write(p,s)
+
+          # ArcaneBuffRuntime: state changes now drive client pulses, and early clearing collapses VFX.
+          p=magic/'ArcaneBuffRuntime.java'; s=read(p)
+          s=replace_once(s,
+'''            event.setCanceled(true);
+            chime(player, 1.72F);
+            return true;''',
+'''            event.setCanceled(true);
+            chime(player, 1.72F);
+            WorldMagicService.pulsePersistent(player, "foresight", 4);
+            return true;''','foresight pulse')
+          s=replace_once(s,
+'''            event.setCanceled(true);
+            chime(player, 1.92F);
+            return true;''',
+'''            event.setCanceled(true);
+            chime(player, 1.92F);
+            WorldMagicService.pulsePersistent(player, "greater_invisibility", 3);
+            return true;''','greater invis pulse')
+          s=replace_once(s,
+'''            player.removeEffect(MobEffects.INVISIBILITY);
+            event.setCanceled(true);
+            chime(player, 1.55F);
+            return true;''',
+'''            player.removeEffect(MobEffects.INVISIBILITY);
+            event.setCanceled(true);
+            chime(player, 1.55F);
+            WorldMagicService.endPersistent(player, "invisibility");
+            return true;''','invisibility end')
+          s=replace_once(s,
+'''            amount -= (float) Math.max(3.0, 2.0 + shield.power * .18);
+            chime(player, 1.35F + shield.charges * .12F);''',
+'''            amount -= (float) Math.max(3.0, 2.0 + shield.power * .18);
+            chime(player, 1.35F + shield.charges * .12F);
+            WorldMagicService.pulsePersistent(player, "shield", 3);''','shield pulse')
+          s=replace_once(s,
+'''            multiplier = Math.min(multiplier, .55);
+        }
+        State armor''',
+'''            multiplier = Math.min(multiplier, .55);
+            WorldMagicService.pulsePersistent(player, "protection_from_energy", 3);
+        }
+        State armor''','energy pulse')
+          s=replace_once(s,
+'''                if (armor.nextChargeAt <= now) armor.nextChargeAt = now + rechargeInterval("mage_armor");
+            }
+        }
+        State stone''',
+'''                if (armor.nextChargeAt <= now) armor.nextChargeAt = now + rechargeInterval("mage_armor");
+                WorldMagicService.pulsePersistent(player, "mage_armor", 3);
+            }
+        }
+        State stone''','armor pulse')
+          s=replace_once(s,
+'''            chime(player, 1.18F);
+        }
+
+        float resolved''',
+'''            chime(player, 1.18F);
+            WorldMagicService.pulsePersistent(player, "solar_guard", 4);
+        }
+
+        float resolved''','solar pulse')
+          s=replace_once(s,
+'''                state.charges++;
+                state.nextChargeAt = now + interval;
+            }''',
+'''                state.charges++;
+                state.nextChargeAt = now + interval;
+                WorldMagicService.pulsePersistent(player, state.spellId, 1);
+            }''','recharge pulse')
+          s=replace_once(s,
+'''    public static void clear(UUID playerId) {
+        STATES.keySet().removeIf(key -> key.playerId().equals(playerId));
+    }
+''',
+'''    public static void clear(UUID playerId) {
+        Iterator<Map.Entry<BuffKey, State>> iterator = STATES.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<BuffKey, State> entry = iterator.next();
+            if (!entry.getKey().playerId().equals(playerId)) continue;
+            State state = entry.getValue();
+            Entity raw = state.level.getEntity(playerId);
+            if (raw instanceof LivingEntity living && living.isAlive())
+                WorldMagicService.endPersistent(living, state.spellId);
+            iterator.remove();
+        }
+    }
+''','buff clear lifecycle')
+          write(p,s)
+
+          # ArcaneWorldMesh: distance LOD keeps authority lines before detail and supports dissolve opacity.
+          p=client/'ArcaneWorldMesh.java'; s=read(p)
+          start=s.index('    int size(){return segments.size()+faces.size()*2;}')
+          end=s.index('    private static void vertex(',start)
+          end2=s.index('\n',s.index('}',end))+1
+          replacement='''    int size(){return size(0);}
+    int size(int lod){
+        int kept=0;
+        for(int i=0;i<segments.size();i++)if(keepSegment(segments.get(i),i,lod))kept++;
+        for(int i=0;i<faces.size();i++)if(keepFace(faces.get(i),i,lod))kept+=2;
+        return kept;
+    }
+
+    void submit(PoseStack poseStack,SubmitNodeCollector collector,int argb,float windowScale){
+        submit(poseStack,collector,argb,windowScale,0,1.0F);
+    }
+    void submit(PoseStack poseStack,SubmitNodeCollector collector,int argb,float windowScale,int lod,float opacity){
+        if(faces.isEmpty()&&segments.isEmpty())return;
+        float alpha=Math.max(0.0F,Math.min(1.0F,opacity));
+        if(alpha<=.01F)return;
+        if(!faces.isEmpty())collector.submitCustomGeometry(poseStack,RenderTypes.debugFilledBox(),(pose,out)->{
+            for(int i=0;i<faces.size();i++){
+                Face face=faces.get(i);if(!keepFace(face,i,lod))continue;
+                int color=tone(argb,face.brightness,face.alpha*alpha);
+                vertex(out,pose,face.a,color);vertex(out,pose,face.b,color);vertex(out,pose,face.c,color);vertex(out,pose,face.d,color);
+            }
+        });
+        if(!segments.isEmpty()){
+            submitLines(poseStack,collector,argb,windowScale*4.60F,.58,.34,lod,alpha);
+            submitLines(poseStack,collector,argb,windowScale*2.20F,.82,.76,lod,alpha);
+            submitLines(poseStack,collector,argb,windowScale*.78F,.98,1.0,lod,alpha);
+        }
+    }
+    private void submitLines(PoseStack stack,SubmitNodeCollector collector,int argb,float scale,double passBrightness,double passAlpha,int lod,float opacity){collector.submitCustomGeometry(stack,RenderTypes.lines(),(pose,out)->{for(int i=0;i<segments.size();i++){Segment s=segments.get(i);if(!keepSegment(s,i,lod))continue;Vec3 d=s.end.subtract(s.start);if(d.lengthSqr()<1e-8)continue;Vec3 n=d.normalize();float w=Math.max(lineFloor,s.width*scale*lineScale);int color=tone(argb,passBrightness*s.brightness,passAlpha*s.alpha*opacity);out.addVertex(pose,(float)s.start.x,(float)s.start.y,(float)s.start.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);out.addVertex(pose,(float)s.end.x,(float)s.end.y,(float)s.end.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);}});}
+    private static boolean keepSegment(Segment s,int index,int lod){
+        if(lod<=0)return true;
+        if(lod==1)return s.width>=.60F||s.alpha>=.52F||(index&1)==0;
+        return s.width>=.95F||(s.width>=.60F&&(index&1)==0)||(s.alpha>=.72F&&index%3==0);
+    }
+    private static boolean keepFace(Face f,int index,int lod){
+        if(lod<=0)return true;
+        if(lod==1)return f.brightness>=.92F||(index&1)==0;
+        return f.brightness>=1.05F&&index%3==0;
+    }
+    private static void vertex(VertexConsumer out,PoseStack.Pose pose,Vec3 v,int color){out.addVertex(pose,(float)v.x,(float)v.y,(float)v.z).setColor(color);}
+'''
+          s=s[:start]+replacement+s[end2:]
+          write(p,s)
+
+          # ArcaneSpellVisualOverhaul: short reactive state event, separate from the long maintenance loop.
+          p=client/'ArcaneSpellVisualOverhaul.java'; s=read(p)
+          anchor='    static ArcaneWorldMesh prismaticWallLayer(SpellDefinition spell, Vec3 direction, Vec3 targetOffset,'
+          idx=s.index(anchor)
+          reactive='''    static ArcaneWorldMesh reactivePulse(SpellDefinition spell, Vec3 targetOffset, double age, int strength) {
+        ArcaneWorldMesh.Builder m = ArcaneWorldMesh.detailBuilder(420);
+        double q = clamp(age, 0.0, 1.0);
+        double fade = 1.0 - smooth(q);
+        if (fade <= .02) return m.build();
+        double force = .72 + Math.max(1, Math.min(4, strength)) * .10;
+        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
+        ArcaneWorldMesh.Basis front = ArcaneWorldMesh.Basis.facing(new Vec3(0, 0, 1));
+        Vec3 c = targetOffset;
+        float major = (float) (.92 * fade);
+        float detail = (float) (.46 * fade);
+        switch (spell.id()) {
+            case "shield", "mage_armor", "protection_from_energy", "solar_guard" -> {
+                double r = (.78 + q * .72) * force;
+                m.polygon(g, c.add(0, .06, 0), r, spell.id().equals("solar_guard") ? 8 : 6,
+                        q * .42, 1.18F);
+                m.circle(front, c.add(0, 1.05, 0), r * .58, 34, .72F);
+                for (int i = 0; i < 4; i++) {
+                    double a = Math.PI / 4.0 + i * Math.PI / 2.0;
+                    m.line(c.add(g.point(a, r * .62)).add(0, .30, 0),
+                            c.add(g.point(a, r)).add(0, .78, 0), i == 0 ? 1.18F : .58F,
+                            i == 0 ? .98F : .66F, i == 0 ? major : detail);
+                }
+            }
+            case "foresight" -> {
+                Vec3 eye = c.add(0, 2.05, 0);
+                m.arc(front, eye, .82 + q * .34, .10, Math.PI * .82, 28, 1.18F);
+                m.arc(front, eye, .82 + q * .34, Math.PI + .10, Math.PI * .82, 28, 1.18F);
+                for (int lane = -1; lane <= 1; lane++)
+                    m.line(c.add(lane * .18, .18, 0), c.add(lane * .52, .55, 2.0 + q * 1.5),
+                            lane == 0 ? 1.18F : .52F, lane == 0 ? .96F : .58F, lane == 0 ? major : detail);
+            }
+            case "greater_invisibility", "invisibility" -> {
+                for (int i = 0; i < 4; i++) {
+                    double y = .32 + i * .42;
+                    m.arc(g, c.add(0, y, 0), .72 + i * .11 + q * .34,
+                            i * .72 + q * .65, Math.PI * (1.15 - q * .34), 24,
+                            i == 0 ? 1.02F : .52F);
+                }
+            }
+            default -> m.brokenBand(g, c.add(0, .05, 0), .72 + q * .42, .86 + q * .55,
+                    42, 6, 1.04F, (float) (.14 * fade));
+        }
+        return m.build();
+    }
+
+'''
+          s=s[:idx]+reactive+s[idx:]
+          write(p,s)
+
+          # WorldMagicTracker: mutable lifecycle, entity attachment, priority, fade, and distance LOD.
+          p=client/'WorldMagicTracker.java'; s=read(p)
+          s=s.replace('import net.minecraft.world.phys.Vec3;','import net.minecraft.world.entity.Entity;\nimport net.minecraft.world.phys.Vec3;')
+          s=s.replace('import java.util.ArrayList;','import java.util.ArrayList;\nimport java.util.Comparator;')
+          a=s.index('    public static void accept(WorldMagicPayload payload) {')
+          b=s.index('    public static void onExtract(ExtractLevelRenderStateEvent event) {',a)
+          accept='''    public static void accept(WorldMagicPayload payload) {
+        Map<String,String> values=parse(payload.state());
+        String kind=values.getOrDefault("kind","");
+        UUID caster;
+        try{caster=UUID.fromString(values.getOrDefault("caster",""));}catch(Exception ignored){return;}
+        if("stop".equals(kind)){CHARGES.remove(caster);return;}
+        if("end".equals(kind)||"pulse".equals(kind)){
+            String spellId=values.getOrDefault("spell","");
+            long now=System.nanoTime();
+            for(Visual visual:RELEASES){
+                if(!visual.caster.equals(caster)||!visual.spell.id().equals(spellId))continue;
+                if("end".equals(kind))visual.beginEnd(now);
+                else visual.pulse(now,Math.max(1,integer(values,"strength",1)));
+            }
+            return;
+        }
+
+        SpellDefinition spell=SpellCatalog.spell(values.getOrDefault("spell","")).orElse(null);
+        if(spell==null)return;
+        boolean fusion=integer(values,"fusion",0)!=0;
+        int ingredients=Math.max(0,integer(values,"ingredients",0));
+        Vec3 center=new Vec3(decimal(values,"x",0),decimal(values,"y",0),decimal(values,"z",0));
+        Vec3 direction=safeDirection(new Vec3(decimal(values,"dx",0),decimal(values,"dy",0),decimal(values,"dz",1)));
+        double range=Math.max(.1,decimal(values,"range",spell.range()));
+        Vec3 target=new Vec3(decimal(values,"tx",center.x+direction.x*range),
+                decimal(values,"ty",center.y+direction.y*range),decimal(values,"tz",center.z+direction.z*range));
+        double power=Math.max(.1,decimal(values,"power",Math.max(.1,spell.power())));
+        double progress=clamp(decimal(values,"progress",1),0,1);
+        int duration=Math.max(3,integer(values,"duration",10));
+        if("time_stop".equals(spell.id()))duration=ArcaneFieldService.TIME_STOP_TICKS;
+        else if("antimagic_field".equals(spell.id()))duration=ArcaneFieldService.ANTIMAGIC_TICKS;
+        int impactTicks=Math.max(0,integer(values,"impact",0));
+        long seed=longValue(values,"seed",0L);
+        double impactAge=clamp(impactTicks/(double)Math.max(1,duration),.04,.92);
+        int attachEntityId=integer(values,"attach",-1);
+        Vec3 attachOffset=new Vec3(decimal(values,"ox",0),decimal(values,"oy",0),decimal(values,"oz",0));
+        long now=System.nanoTime();
+
+        if("charge".equals(kind)){
+            Visual previous=CHARGES.get(caster);
+            long started=previous!=null&&previous.spell.id().equals(spell.id())?previous.startedAt:now;
+            CHARGES.put(caster,new Visual(caster,spell,fusion,ingredients,center,target,direction,range,power,
+                    progress,started,now+CHARGE_TTL,false,0,seed,-1,Vec3.ZERO));
+            return;
+        }
+        if("release".equals(kind)){
+            while(RELEASES.size()>=MAX_VISUALS)RELEASES.removeFirst();
+            RELEASES.add(new Visual(caster,spell,fusion,ingredients,center,target,direction,range,power,1,
+                    now,now+duration*50_000_000L,true,impactAge,seed,attachEntityId,attachOffset));
+            CHARGES.remove(caster);
+        }
+    }
+
+'''
+          s=s[:a]+accept+s[b:]
+          a=s.index('    public static void onExtract(ExtractLevelRenderStateEvent event) {')
+          b=s.index('    public static void onSubmit(SubmitCustomGeometryEvent event) {',a)
+          extract='''    public static void onExtract(ExtractLevelRenderStateEvent event) {
+        long now=System.nanoTime();
+        CHARGES.values().removeIf(v->v.expiresAt<now);
+        RELEASES.removeIf(v->v.expiresAt<now);
+        if(CHARGES.isEmpty()&&RELEASES.isEmpty())return;
+        List<RenderEntry> entries=new ArrayList<>();
+        for(Visual v:CHARGES.values()){
+            Vec3 center=renderCenter(v);
+            int color=SpellCinematicDirector.color(v.spell);
+            if(!ArcaneSpellVisualOverhaul.replacesBaseSigil(v.spell)){
+                ArcaneWorldMesh sigilMesh=MeteorBarragePattern.withSeed(v.seed,
+                        ()->ArcaneSigilDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.fusion,v.startedAt));
+                entries.add(new RenderEntry(center,sigilMesh,color,42,1.0F));
+            }
+            ArcaneWorldMesh authoredSigil=MeteorBarragePattern.withSeed(v.seed,
+                    ()->ArcaneSpellVisualOverhaul.chargeSigil(v.spell,v.direction,v.progress,v.range,v.startedAt));
+            if(authoredSigil.size()>0)entries.add(new RenderEntry(center,authoredSigil,color,58,1.0F));
+            if(!ArcaneSpellVisualOverhaul.replacesBaseChargeBody(v.spell)){
+                ArcaneWorldMesh cinematicMesh=MeteorBarragePattern.withSeed(v.seed,
+                        ()->SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt));
+                entries.add(new RenderEntry(center,cinematicMesh,color,52,1.0F));
+            }
+            ArcaneWorldMesh authoredBody=MeteorBarragePattern.withSeed(v.seed,
+                    ()->ArcaneSpellVisualOverhaul.chargeBody(v.spell,v.direction,targetOffset(v),v.progress,v.range,v.startedAt));
+            if(authoredBody.size()>0)entries.add(new RenderEntry(center,authoredBody,color,64,1.0F));
+            if(v.spell.circle()>=7){
+                ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
+                        ()->AuthoredHighCircleTimeline.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.startedAt,v.seed));
+                if(timeline.size()>0)entries.add(new RenderEntry(center,timeline,color,94,1.0F));
+            }
+        }
+        for(Visual v:RELEASES){
+            double age=clamp((now-v.startedAt)/(double)Math.max(1L,v.expiresAt-v.startedAt),0,1);
+            double durationSeconds=Math.max(.05,(v.expiresAt-v.startedAt)/1_000_000_000.0);
+            double elapsedSeconds=Math.max(0.0,(now-v.startedAt)/1_000_000_000.0);
+            float opacity=releaseOpacity(v,now);
+            Vec3 center=renderCenter(v);
+            int color=SpellCinematicDirector.color(v.spell);
+            if(!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseSigil(v.spell)){
+                ArcaneWorldMesh echo=MeteorBarragePattern.withSeed(v.seed,
+                        ()->ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt));
+                if(echo.size()>0)entries.add(new RenderEntry(center,echo,ArcaneSigilDirector.releaseEchoColor(color,age),36,opacity));
+            }
+            if(!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseRelease(v.spell)){
+                ArcaneWorldMesh releaseMesh=MeteorBarragePattern.withSeed(v.seed,
+                        ()->SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
+                                age,v.impactAge,v.fusion,v.ingredients));
+                entries.add(new RenderEntry(center,releaseMesh,color,70,opacity));
+            }
+            ArcaneWorldMesh authoredRelease=MeteorBarragePattern.withSeed(v.seed,
+                    ()->ArcaneSpellVisualOverhaul.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
+                            age,elapsedSeconds,durationSeconds,v.seed));
+            if(authoredRelease.size()>0)entries.add(new RenderEntry(center,authoredRelease,color,82,opacity));
+            if(v.spell.circle()>=7){
+                ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
+                        ()->AuthoredHighCircleTimeline.release(v.spell,v.direction,targetOffset(v),v.range,
+                                age,v.impactAge,elapsedSeconds,durationSeconds,v.seed));
+                if(timeline.size()>0)entries.add(new RenderEntry(center,timeline,color,100,opacity));
+            }
+            if(v.pulseStartedAt>0&&now-v.pulseStartedAt<720_000_000L){
+                double pulseAge=clamp((now-v.pulseStartedAt)/720_000_000.0,0,1);
+                ArcaneWorldMesh pulse=ArcaneSpellVisualOverhaul.reactivePulse(v.spell,targetOffset(v),pulseAge,v.pulseStrength);
+                if(pulse.size()>0)entries.add(new RenderEntry(center,pulse,color,112,opacity));
+            }
+            if("prismatic_wall".equals(v.spell.id())){
+                for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(center,
+                        ArcaneSpellVisualOverhaul.prismaticWallLayer(v.spell,v.direction,targetOffset(v),v.range,
+                                age,elapsedSeconds,layer),SpellCinematicDirector.prismaticColor(layer),96,opacity));
+            }else if("prismatic_spray".equals(v.spell.id())){
+                for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(center,
+                        SpellCinematicDirector.prismaticAccent(v.spell,v.direction,targetOffset(v),v.range,age,layer),
+                        SpellCinematicDirector.prismaticColor(layer),88,opacity));
+            }
+        }
+        entries.sort(Comparator.comparingInt(RenderEntry::priority).reversed());
+        event.getRenderState().setRenderData(DATA_KEY,List.copyOf(entries));
+    }
+
+'''
+          s=s[:a]+extract+s[b:]
+          a=s.index('    public static void onSubmit(SubmitCustomGeometryEvent event) {')
+          b=s.index('    private static Vec3 targetOffset(Visual visual)',a)
+          submit='''    public static void onSubmit(SubmitCustomGeometryEvent event) {
+        List<RenderEntry> entries=event.getLevelRenderState().getRenderData(DATA_KEY);
+        if(entries==null||entries.isEmpty())return;
+        Vec3 camera=event.getLevelRenderState().cameraRenderState.pos;
+        float base=Minecraft.getInstance().gameRenderer.gameRenderState().windowRenderState.appropriateLineWidth;
+        float scale=Math.max(.72F,base*.82F);
+        int used=0;
+        for(RenderEntry entry:entries){
+            if(used>=MAX_FRAME)break;
+            Vec3 offset=entry.center.subtract(camera);
+            double distanceSqr=offset.lengthSqr();
+            if(distanceSqr>MAX_DISTANCE_SQR)continue;
+            int lod=distanceSqr>160.0*160.0?2:distanceSqr>96.0*96.0?1:0;
+            int cost=entry.mesh.size(lod);
+            if(cost<=0||cost>MAX_ENTRY||used+cost>MAX_FRAME)continue;
+            event.getPoseStack().pushPose();
+            event.getPoseStack().translate(offset.x,offset.y,offset.z);
+            entry.mesh.submit(event.getPoseStack(),event.getSubmitNodeCollector(),entry.argb,scale,lod,entry.opacity);
+            event.getPoseStack().popPose();
+            used+=cost;
+        }
+    }
+
+    private static Vec3 renderCenter(Visual visual){
+        if(visual.attachEntityId>=0&&Minecraft.getInstance().level!=null){
+            Entity entity=Minecraft.getInstance().level.getEntity(visual.attachEntityId);
+            if(entity!=null&&!entity.isRemoved())return entity.position().add(visual.attachOffset);
+        }
+        return visual.center;
+    }
+
+    private static float releaseOpacity(Visual visual,long now){
+        if(visual.endingAt>0){
+            return (float)clamp((visual.expiresAt-now)/450_000_000.0,0,1);
+        }
+        long remaining=Math.max(0L,visual.expiresAt-now);
+        long total=Math.max(1L,visual.expiresAt-visual.startedAt);
+        long window=Math.min(750_000_000L,Math.max(220_000_000L,total/12L));
+        return remaining>=window?1.0F:(float)smooth(remaining/(double)window);
+    }
+
+    private static double smooth(double value){double t=clamp(value,0,1);return t*t*(3.0-2.0*t);}
+
+'''
+          s=s[:a]+submit+s[b:]
+          old='''    private record Visual(UUID caster, SpellDefinition spell, boolean fusion, int ingredients,
+                          Vec3 center, Vec3 target, Vec3 direction, double range, double power, double progress,
+                          long startedAt, long expiresAt, boolean release, double impactAge, long seed) {}
+    private record RenderEntry(Vec3 center, ArcaneWorldMesh mesh, int argb) {}
+'''
+          new='''    private static final class Visual {
+        final UUID caster; final SpellDefinition spell; final boolean fusion; final int ingredients;
+        final Vec3 center,target,direction; final double range,power,progress; final long startedAt;
+        long expiresAt; final boolean release; final double impactAge; final long seed;
+        final int attachEntityId; final Vec3 attachOffset;
+        long endingAt=-1L; long pulseStartedAt=-1L; int pulseStrength=1;
+        Visual(UUID caster,SpellDefinition spell,boolean fusion,int ingredients,Vec3 center,Vec3 target,
+               Vec3 direction,double range,double power,double progress,long startedAt,long expiresAt,
+               boolean release,double impactAge,long seed,int attachEntityId,Vec3 attachOffset){
+            this.caster=caster;this.spell=spell;this.fusion=fusion;this.ingredients=ingredients;
+            this.center=center;this.target=target;this.direction=direction;this.range=range;this.power=power;
+            this.progress=progress;this.startedAt=startedAt;this.expiresAt=expiresAt;this.release=release;
+            this.impactAge=impactAge;this.seed=seed;this.attachEntityId=attachEntityId;this.attachOffset=attachOffset;
+        }
+        void beginEnd(long now){if(endingAt<0)endingAt=now;expiresAt=Math.min(expiresAt,now+450_000_000L);}
+        void pulse(long now,int strength){pulseStartedAt=now;pulseStrength=Math.max(1,Math.min(4,strength));}
+    }
+    private record RenderEntry(Vec3 center, ArcaneWorldMesh mesh, int argb, int priority, float opacity) {}
+'''
+          s=replace_once(s,old,new,'tracker records')
+          write(p,s)
+
+          # Hand-authored staging: reveal high-circle topology in acts instead of showing the final diagram at frame one.
+          p=client/'AuthoredHighCircleTimeline.java'; s=read(p)
+          s=replace_method(s,'    private static void planeShift(ArcaneWorldMesh.Builder m, Vec3 direction, double p, double t, boolean release) {','''    private static void planeShift(ArcaneWorldMesh.Builder m, Vec3 direction, double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis f=ArcaneWorldMesh.Basis.facing(direction); double r=1.55,spin=release?0:t*.025;
+        int[] order={0,-1,1,-2,2,-3,3}; int visible=release?7:Math.max(1,Math.min(7,1+(int)Math.floor(p*6.8)));
+        for(int idx=0;idx<visible;idx++){int layer=order[idx];double d=layer*.14;Vec3 c=f.normal().scale(d).add(0,.92,0);poly(m,f,c,r*(1-Math.abs(layer)*.045),7,spin+layer*.13,layer==0?MAJOR:DETAIL,layer==0?.82F:.30F);}
+        if(release||p>.56)for(int i=0;i<7;i++){double a=i*Math.PI*2/7;line(m,f.point(a,r*.94).add(f.normal().scale(-.42)).add(0,.92,0),f.point(a+.08,r*.72).add(f.normal().scale(.42)).add(0,.92,0),MID,.44F);}
+    }''')
+          s=replace_method(s,'    private static void antimagic(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {','''    private static void antimagic(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground(),x=ArcaneWorldMesh.Basis.facing(new Vec3(1,0,0));double spin=release?0:t*.018,r=3.0,open=release?1.0:Math.max(.18,p);
+        arc(m,g,Vec3.ZERO,r,.18+spin,Math.PI*1.28*open,46,MAJOR,.72F);
+        if(release||p>.32)arc(m,g,Vec3.ZERO,r*.72,-2.3-spin,Math.PI*.78*Math.min(1,(p+.20)),32,MID,.48F);
+        if(release||p>.58)arc(m,g,new Vec3(0,.85,0),r*.44,.9,Math.PI*1.05*Math.min(1,(p+.12)),28,DETAIL,.30F);
+        int spokes=release?8:Math.max(1,(int)Math.floor(p*8));for(int i=0;i<spokes;i++){double a=i*Math.PI/4;Vec3 out=g.point(a,r*.90);line(m,out,g.point(a+.16*(i%2==0?1:-1),r*.22),i%2==0?MID:DETAIL,i%2==0?.42F:.26F);}
+        if(release){double scan=(t*.62)%(Math.PI*2);arc(m,x,new Vec3(0,.92,0),r*.54,scan,Math.PI*.46,22,MID,.30F);}
+    }''')
+          s=replace_method(s,'    private static void meteorSwarm(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t, boolean release, double age) {','''    private static void meteorSwarm(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t, boolean release, double age) {
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();Vec3 sky=target.add(0,22,0);double r=7.8;
+        ring(m,g,sky,r,84,MAJOR,.62F);
+        if(release||p>.28)ring(m,g,sky,r*.66,60,DETAIL,.26F);
+        int ticks=release?16:Math.max(4,Math.min(16,4+(int)Math.floor(Math.max(0,p-.38)/.62*12)));
+        for(int i=0;i<ticks;i++){double a=i*Math.PI/8;Vec3 tick=sky.add(g.point(a,r*.92));line(m,tick,sky.add(g.point(a,r*(i%4==0?.72:.82))),i%4==0?MAJOR:DETAIL,i%4==0?.62F:.24F);if(i%4==0)marker(m,g,tick,.20,MID,.38F);}
+        if(release){double sweep=(t*1.72)%(Math.PI*2);line(m,sky,sky.add(g.point(sweep,r*.62)),MID,.40F);}
+    }''')
+          s=replace_method(s,'    private static void shapechange(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {','''    private static void shapechange(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground(),f=ArcaneWorldMesh.Basis.facing(new Vec3(0,0,1));
+        int visible=release?7:Math.max(1,Math.min(7,1+(int)Math.floor(p*6.8)));double breathe=release?.92+.08*Math.sin(t*1.30):1.0;
+        for(int layer=0;layer<visible;layer++){double y=.16+layer*.28,rr=(.46+layer*.10+.04*Math.sin(t+layer))*breathe;poly(m,g,new Vec3(0,y,0),rr,3+(layer%5),t*(layer%2==0?.06:-.05)+layer*.21,layer%3==0?MID:DETAIL,layer%3==0?.44F:.26F);}
+        if(release||p>.64){Vec3 shoulder=new Vec3(0,1.34,0);for(int side:new int[]{-1,1}){Vec3 root=shoulder.add(f.right().scale(side*.24)),tip=root.add(f.right().scale(side*.86*breathe)).add(0,.18,0);line(m,root,tip,MAJOR,.66F);for(int k=0;k<3;k++)line(m,tip,tip.add(f.right().scale(side*(.22+.09*k))).add(f.up().scale(.16-.10*k)),DETAIL,.28F);}}
+    }''')
+          s=replace_method(s,'    private static void timeStop(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {','''    private static void timeStop(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground(),x=ArcaneWorldMesh.Basis.facing(new Vec3(1,0,0));double r=4.2,spin=release?0:t*.018;
+        ring(m,g,Vec3.ZERO,r,88,MAJOR,.74F);
+        if(release||p>.24)poly(m,g,Vec3.ZERO,r*.82,12,spin,MID,.50F);
+        if(release||p>.46)ring(m,g,Vec3.ZERO,r*.58,62,DETAIL,.28F);
+        int ticks=release?12:Math.max(3,Math.min(12,(int)Math.floor(p*12)));for(int i=0;i<ticks;i++){double a=i*Math.PI/6;line(m,g.point(a,r*.80),g.point(a,r),i%3==0?MAJOR:DETAIL,i%3==0?.62F:.24F);}
+        Vec3 hub=new Vec3(0,1.48,0);if(release||p>.58){ring(m,x,hub,r*.32,48,MID,.40F);double hand=release?-.72:-Math.PI/2+t*.09;line(m,hub,hub.add(g.point(hand,r*.28)),MAJOR,.82F);line(m,hub,hub.add(g.point(release?1.92:-Math.PI/2-t*.18,r*.19)),MID,.52F);}
+        if(release||p>.80){ArcaneWorldMesh.Basis z=ArcaneWorldMesh.Basis.facing(new Vec3(0,0,1));ring(m,z,hub,r*.23,34,DETAIL,.26F);for(int i=0;i<4;i++){double a=Math.PI/4+i*Math.PI/2;line(m,g.point(a,r*.52),g.point(a,r*.52).add(0,1.55,0),DETAIL,.24F);}}
+    }''')
+          s=replace_method(s,'    private static void wish(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {','''    private static void wish(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();double r=3.45;Vec3 mid=new Vec3(0,2.15,0),top=new Vec3(0,4.15,0);
+        poly(m,g,Vec3.ZERO,r,9,t*.008,MAJOR,.70F);
+        if(release||p>.30)poly(m,g,mid,r*.52,9,-t*.006,MID,.44F);
+        if(release||p>.56)poly(m,g,top,r*.66,9,t*.005+.13,MID,.48F);
+        if(release||p>.62){int links=release?9:Math.max(1,Math.min(9,1+(int)Math.floor((p-.62)/.38*8)));for(int i=0;i<links;i++){double a=i*Math.PI*2/9;Vec3 low=g.point(a,r*.88).add(0,.42+.18*(i%3),0),m0=mid.add(g.point(a+.06*(i%2==0?1:-1),r*.42)),hi=top.add(g.point(a,r*.52));marker(m,g,low,.14,DETAIL,.30F);line(m,low,m0,MID,.38F);line(m,m0,hi,DETAIL,.30F);}}
+        if(release||p>.82)ring(m,g,top,r*.28,36,DETAIL,.28F);
+        if(release){double contract=.18+.12*(.5+.5*Math.sin(t*1.25));for(int i=0;i<3;i++){double a=i*Math.PI*2/3;line(m,top.add(g.point(a,r*.26)),mid.add(g.point(a+.18,r*contract)),MAJOR,.48F);}}
+    }''')
+          s=replace_method(s,'    private static void gate(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target, double p, double t, boolean release) {','''    private static void gate(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target, double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis f=ArcaneWorldMesh.Basis.facing(flat(direction));Vec3 base=direction.scale(2.4).add(0,3.0,0);double r=3.0;
+        int frames=release?7:Math.max(1,Math.min(7,1+(int)Math.floor(p*6.8)));for(int d=0;d<frames;d++){Vec3 c=base.add(f.normal().scale(d*.25));double rr=r*(1-d*.078);poly(m,f,c,rr,12-d%2*4,t*(d%2==0?.008:-.007)+d*.12,d==0?MAJOR:DETAIL,d==0?.82F:.28F);}
+        if(release||p>.56)for(int i=0;i<4;i++){double a=Math.PI/4+i*Math.PI/2;line(m,base.add(f.point(a,r*.90)),base.add(f.normal().scale(1.55)).add(f.point(a,r*.44)),MID,.38F);}
+        if((release||p>.82)&&target.lengthSqr()>4)line(m,base,target.add(0,2.6,0),DETAIL,.24F);
+    }''')
+          s=replace_method(s,'    private static void foresight(ArcaneWorldMesh.Builder m, Vec3 direction, double p, double t, boolean release) {','''    private static void foresight(ArcaneWorldMesh.Builder m, Vec3 direction, double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis f=ArcaneWorldMesh.Basis.facing(direction),g=ArcaneWorldMesh.Basis.ground();Vec3 eye=new Vec3(0,2.0,0);double r=.88;
+        arc(m,f,eye,r,.10,Math.PI*.82,32,MAJOR,.68F);if(release||p>.20)arc(m,f,eye,r,Math.PI+.10,Math.PI*.82,32,MAJOR,.68F);if(release||p>.34)ring(m,f,eye,.25,22,MID,.48F);
+        Vec3 origin=new Vec3(0,.08,0);int lanes=release?4:Math.max(1,Math.min(4,1+(int)Math.floor(Math.max(0,p-.42)/.58*3)));if(release||p>.42)for(int lane=0;lane<lanes;lane++){double side=(lane-1.5)*.28;Vec3 a=origin.add(f.right().scale(side*.25)),b=direction.scale(1.4).add(f.right().scale(side)).add(0,.32+.16*lane,0),c=direction.scale(3.0).add(f.right().scale(side*(1.5+(lane%2)*.35))).add(0,.50+.10*lane,0);line(m,a,b,lane==1?MID:DETAIL,lane==1?.46F:.26F);line(m,b,c,lane==1?MAJOR:DETAIL,lane==1?.62F:.24F);line(m,c,eye,DETAIL,.20F);}
+        if(release||p>.72)ring(m,g,Vec3.ZERO,1.22,48,DETAIL,.28F);
+        if(release){double beat=.5+.5*Math.sin(t*Math.PI*2/3.0);if(beat>.90)ring(m,f,eye,.34+(beat-.90)*2.2,26,DETAIL,.22F);}
+    }''')
+          s=replace_method(s,'    private static void worldSunder(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target, double range, double p, double t, boolean release, double age, long seed) {','''    private static void worldSunder(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target, double range, double p, double t, boolean release, double age, long seed) {
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();Vec3 flat=flat(direction);double length=Math.max(24,Math.min(62,range*.78));double grow=release?clamp(t/1.15,0,1):(.12+.72*p);
+        Vec3 origin=target.subtract(flat.scale(length*.42)),prev=origin;int visible=release?13:Math.max(2,Math.min(13,2+(int)Math.floor(p*11)));
+        for(int i=0;i<visible;i++){double q=i/12.0;Vec3 along=origin.add(flat.scale(length*q));Vec3 side=new Vec3(-flat.z,0,flat.x).scale(Math.sin(i*1.73+(seed&15)*.03)*(1.1+.18*(i%3)));Vec3 node=along.add(side);if(i>0)line(m,prev,node,i%3==0?MAJOR:MID,i%3==0?.78F:.46F);if(release&&q<=grow)line(m,node,node.add(0,1.0+.24*(i%4),0),i%3==0?MID:DETAIL,i%3==0?.42F:.24F);marker(m,g,node,.13+(i%3)*.02,DETAIL,.26F);prev=node;}
+        if(release||p>.72)ring(m,g,target,2.2,42,DETAIL,.24F);
+    }''')
+          write(p,s)
+
+          # Project note and audit contract.
+          p=root/'PROJECT.md'; s=read(p)
+          marker='## Alpha.44 deep VFX lifecycle pass'
+          if marker not in s:
+              s+='''\n\n## Alpha.44 deep VFX lifecycle pass\n- Long-lived BODY_HALO/FEET_RUNE effects and Antimagic Field are attached to their live caster instead of being stranded at the release coordinate. Time Stop remains deliberately world-fixed because its authoritative gameplay center is fixed.\n- Maintained ArcaneBuffRuntime states emit compact reactive client pulses on hit interception/recharge and emit an early-end event when suppression consumes them.\n- Release visuals dissolve at natural expiry and on early cancellation.\n- World geometry now has 96/160-block LOD tiers and render entries are priority-sorted, so major high-circle silhouettes survive frame-budget pressure before fine construction strokes.\n- Selected 7C-9C authored diagrams now assemble in explicit acts during charge instead of revealing the finished formula immediately; persistent loops use elapsed-time beats rather than whole-duration normalized age where appropriate.\n- Alpha.42 low-circle sigils remain the baseline; Alpha.43 authored spell ownership remains additive for 7C-9C.\n'''
+          write(p,s)
+
+          p=root/'tools/test_current_source.py'; s=read(p)
+          s=s.replace('mod_version=0.12.1-alpha.43','mod_version=0.12.1-alpha.44')
+          s=s.replace('VERSION = "0.12.1-alpha.43"','VERSION = "0.12.1-alpha.44"')
+          s=s.replace('"version": "0.12.1-alpha.43"','"version": "0.12.1-alpha.44"')
+          audit_marker='# Alpha.44 lifecycle / LOD / state-reactive VFX contract.'
+          if audit_marker not in s:
+              s+='''\n\n# Alpha.44 lifecycle / LOD / state-reactive VFX contract.\nworld_magic=text(magic/'WorldMagicService.java'); tracker=text(client/'WorldMagicTracker.java')\nmesh=text(client/'ArcaneWorldMesh.java'); overhaul=text(client/'ArcaneSpellVisualOverhaul.java'); buff=text(magic/'ArcaneBuffRuntime.java')\ntimeline=text(client/'AuthoredHighCircleTimeline.java')\nfor token in ['endPersistent','pulsePersistent','followsCasterVisual','attach=%d;ox=%.5f;oy=%.5f;oz=%.5f']:\n    assert token in world_magic, token\nfor token in ['kind,"end"','kind,"pulse"','renderCenter','releaseOpacity','attachEntityId','entries.sort(Comparator.comparingInt(RenderEntry::priority).reversed())','distanceSqr>160.0*160.0','distanceSqr>96.0*96.0','mesh.size(lod)']:\n    assert token in tracker, token\nfor token in ['int size(int lod)','keepSegment','keepFace','int lod,float opacity']:\n    assert token in mesh, token\nassert 'reactivePulse' in overhaul\nassert buff.count('WorldMagicService.pulsePersistent') >= 6\nassert 'WorldMagicService.endPersistent(player, "invisibility")' in buff\nassert 'WorldMagicService.endPersistent(living, state.spellId)' in buff\nfor token in ['int[] order={0,-1,1,-2,2,-3,3}','clamp(t/1.15,0,1)','int frames=release?7','int visible=release?7','t*Math.PI*2/3.0']:\n    assert token in timeline, token\nassert 'if (spell.circle() < 7 || !AUTHORED.contains(spell.id()))' in timeline\nprint('alpha44_entity_attached_persistent_vfx=PASS')\nprint('alpha44_priority_lod=PASS')\nprint('alpha44_reactive_buff_vfx=PASS')\nprint('alpha44_staged_high_circle_timeline=PASS')\n'''
+          write(p,s)
+          PY
+          git diff --check
+          git status --short
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/arcane-circle
+          git commit -m 'feat(arcane-circle): deepen alpha.44 VFX lifecycle and staging'
+          git pull --rebase origin main
+          git push origin HEAD:main
