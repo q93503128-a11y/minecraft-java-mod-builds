@@ -83,19 +83,18 @@ public final class ErdenUrbanLifeManager {
         ErdenUrbanLifeSavedData life = level.getDataStorage()
                 .computeIfAbsent(ErdenUrbanLifeSavedData.TYPE);
         ensureCitizenAssignments(level, life, entrances);
-        completeOneUpperFloor(level, life, entrances);
+        // Legacy synthetic upper records remain readable, but fresh worlds never create them.
         runCitizenRoutines(level, life);
         verifyCiIfReady(level, life);
 
-        int complete = life.completedUpperFloorCount(UPPER_FLOOR_REVISION);
         int authoredEligible = ErdenUrbanAuthoredUpperRouteManager.eligibleCount();
-        int syntheticRequired = entrances.size() - authoredEligible;
-        if (!completionLogged && complete >= syntheticRequired) {
+        int groundOnly = ErdenUrbanResidenceResolver.groundOnlyBuildingCount();
+        if (!completionLogged && ErdenUrbanInteriorBuilder.completedCount(level) == entrances.size()) {
             completionLogged = true;
             LivingKingdoms.LOGGER.info(
-                    "Completed Erden walkable upper floors buildings={} synthetic_completed={} synthetic_required={} authored_upper_buildings={} stairs=true role_spaces={} revision={}",
-                    entrances.size(), complete, syntheticRequired, authoredEligible,
-                    HABITABLE_ROLES.size(), UPPER_FLOOR_REVISION);
+                    "Completed Erden residence modes buildings={} authored_upper_buildings={} ground_only_buildings={} fresh_synthetic_upper_created=0 legacy_synthetic_records={} role_spaces={} revision={}",
+                    entrances.size(), authoredEligible, groundOnly,
+                    life.completedUpperFloorCount(UPPER_FLOOR_REVISION), HABITABLE_ROLES.size(), UPPER_FLOOR_REVISION);
         }
     }
 
@@ -132,7 +131,7 @@ public final class ErdenUrbanLifeManager {
         int authoredEligible = ErdenUrbanAuthoredUpperRouteManager.eligibleCount();
         planLogged = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden upper-floor conversions buildings={} synthetic_candidates={} authored_candidates={} stair_steps=4 role_spaces={} citizen_assignments={}",
+                "Prepared Erden residence modes buildings={} ground_only_candidates={} authored_upper_candidates={} fresh_synthetic_upper_created=0 role_spaces={} citizen_assignments={}",
                 entrances.size(), entrances.size() - authoredEligible, authoredEligible,
                 HABITABLE_ROLES.size(), CITIZENS.size());
     }
@@ -415,25 +414,10 @@ public final class ErdenUrbanLifeManager {
         ExternalUrbanFabricBuilder.UrbanEntrance entrance = findEntrance(x, z);
         if (entrance == null) return null;
 
-        // A completed authored route always wins. This is also the non-destructive migration path:
-        // old synthetic blocks may remain in a legacy save, while citizen destinations immediately
-        // switch to the real source upper room once its route verifies.
-        BlockPos authoredTarget =
-                ErdenUrbanAuthoredUpperRouteManager.verifiedUpperTarget(level, entrance);
-        if (authoredTarget != null) {
-            return new Target(authoredTarget.getX(), authoredTarget.getY(), authoredTarget.getZ());
-        }
-
-        long key = entranceKey(x, z);
-        if (!life.isUpperFloorComplete(key, UPPER_FLOOR_REVISION)) return null;
-        int doorY = findLowestDoorY(level, x, z);
-        if (doorY == Integer.MIN_VALUE) return null;
-        Room room = room(entrance, doorY - 1);
-        Point point = workplace ? room.point(0, 3) : room.point(0, 7);
-        int y = workplace
-                ? room.floorY + 1
-                : room.floorY + UPPER_FLOOR_OFFSET + 1;
-        return new Target(point.x, y, point.z);
+        BlockPos resolved = workplace
+                ? ErdenUrbanResidenceResolver.resolveWorkTarget(level, entrance)
+                : ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, 1);
+        return resolved == null ? null : new Target(resolved.getX(), resolved.getY(), resolved.getZ());
     }
 
     private static ExternalUrbanFabricBuilder.UrbanEntrance findEntrance(int x, int z) {
@@ -458,15 +442,18 @@ public final class ErdenUrbanLifeManager {
         if (ciPassed) return;
         ExternalUrbanFabricBuilder.UrbanEntrance sample = syntheticCiSample();
         if (sample == null) return;
-        if (!life.isUpperFloorComplete(
-                entranceKey(sample.x(), sample.z()), UPPER_FLOOR_REVISION)) return;
         if (life.assignments().size() != EXPECTED_CITIZEN_ASSIGNMENTS) return;
-        int doorY = findLowestDoorY(level, sample.x(), sample.z());
-        if (doorY == Integer.MIN_VALUE) return;
-        verifyUpperFloor(level, room(sample, doorY - 1));
+        if (!ErdenUrbanResidenceResolver.isGroundOnly(sample)
+                || !ErdenUrbanResidenceResolver.isResidenceReady(level, sample)) return;
+        BlockPos target = ErdenUrbanResidenceResolver.resolveHomeTarget(level, sample, 1);
+        if (target == null) return;
+        ErdenUrbanResidenceResolver.verifyTargetOrThrow(level, target, "ground-only-ci");
+        if (life.isUpperFloorComplete(entranceKey(sample.x(), sample.z()), UPPER_FLOOR_REVISION)) {
+            throw new IllegalStateException("Fresh Erden ground-only building was falsely marked synthetic upper-complete");
+        }
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=true stairs=true upper_role={} assignments={} routines=true synthetic_fallback=true",
+                "LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true upper_role={} assignments={} routines=true synthetic_fallback=false fresh_synthetic_upper_created=0",
                 sample.role(), life.assignments().size());
     }
 
@@ -476,38 +463,24 @@ public final class ErdenUrbanLifeManager {
         if (authoredCiPassed
                 || life.assignments().size() != EXPECTED_CITIZEN_ASSIGNMENTS) return;
         for (ErdenUrbanLifeSavedData.Assignment assignment : life.assignments()) {
-            ExternalUrbanFabricBuilder.UrbanEntrance workplace =
-                    findEntrance(assignment.workX(), assignment.workZ());
-            if (workplace == null
-                    || !ErdenUrbanAuthoredUpperRouteManager.isEligible(workplace)
-                    || !ErdenUrbanAuthoredUpperRouteManager.isCompleted(level, workplace)) {
-                continue;
-            }
-            BlockPos authored =
-                    ErdenUrbanAuthoredUpperRouteManager.verifiedUpperTarget(level, workplace);
+            ExternalUrbanFabricBuilder.UrbanEntrance home = findEntrance(assignment.homeX(), assignment.homeZ());
+            if (home == null || !ErdenUrbanAuthoredUpperRouteManager.isEligible(home)
+                    || !ErdenUrbanAuthoredUpperRouteManager.isCompleted(level, home)) continue;
+            BlockPos authored = ErdenUrbanAuthoredUpperRouteManager.verifiedUpperTarget(level, home);
             if (authored == null) continue;
-
-            ErdenUrbanAuthoredUpperRouteManager.verifyOrThrow(level, workplace);
-            Target resolved = resolveTarget(level, life, assignment, true);
-            if (resolved == null
-                    || resolved.x != authored.getX()
-                    || resolved.y != authored.getY()
-                    || resolved.z != authored.getZ()) {
-                throw new IllegalStateException(
-                        "Erden authored resident routine did not resolve to verified upper target citizen="
-                                + assignment.citizenName());
+            ErdenUrbanAuthoredUpperRouteManager.verifyOrThrow(level, home);
+            Target resolved = resolveTarget(level, life, assignment, false);
+            if (resolved == null || resolved.y != authored.getY()) {
+                throw new IllegalStateException("Erden authored home routine did not resolve to verified upper level citizen=" + assignment.citizenName());
             }
-            if (life.isUpperFloorComplete(
-                    entranceKey(workplace.x(), workplace.z()), UPPER_FLOOR_REVISION)) {
-                throw new IllegalStateException(
-                        "Fresh Erden authored-route workplace was falsely marked synthetic-complete role="
-                                + workplace.role());
+            if (life.isUpperFloorComplete(entranceKey(home.x(), home.z()), UPPER_FLOOR_REVISION)) {
+                throw new IllegalStateException("Fresh Erden authored home was falsely marked synthetic-complete role=" + home.role());
             }
-            verifyRuntimeTargetGeometry(level, authored);
+            verifyRuntimeTargetGeometry(level, new BlockPos(resolved.x, resolved.y, resolved.z));
             authoredCiPassed = true;
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_URBAN_AUTHORED_HOME_PASS citizen={} role={} authored_upper=true synthetic_upper_required=false route_verified=true resident_target_verified=true runtime_geometry_verified=true source_blocks_cut=0 routine=work",
-                    assignment.citizenName(), workplace.role());
+                    "LK_ERDEN_URBAN_AUTHORED_HOME_PASS citizen={} role={} authored_upper=true synthetic_upper_required=false route_verified=true resident_target_verified=true runtime_geometry_verified=true source_blocks_cut=0 routine=home",
+                    assignment.citizenName(), home.role());
             return;
         }
     }

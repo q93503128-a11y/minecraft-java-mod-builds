@@ -348,34 +348,25 @@ public final class ErdenPopulationManager {
             ErdenPopulationSavedData population) {
         if (level.getGameTime() % SPAWN_INTERVAL != 0L) return;
         Map<String, Villager> existing = loadedResidentsByName(level, population);
-        ErdenUrbanLifeSavedData urbanLife = level.getDataStorage()
-                .computeIfAbsent(ErdenUrbanLifeSavedData.TYPE);
         int spawned = 0;
         for (ErdenPopulationSavedData.Household household : population.households()) {
             if (spawned >= SPAWN_BUDGET) break;
             if (!level.hasChunk(household.homeX() >> 4, household.homeZ() >> 4)) continue;
-            long homeKey = positionKey(household.homeX(), household.homeZ());
-            if (!urbanLife.isUpperFloorComplete(
-                    homeKey, ErdenUrbanLifeManager.UPPER_FLOOR_REVISION)) continue;
             ExternalUrbanFabricBuilder.UrbanEntrance entrance = findEntrance(
                     household.homeX(), household.homeZ());
-            if (entrance == null) continue;
-            int doorY = findLowestDoorY(level, household.homeX(), household.homeZ());
-            if (doorY == Integer.MIN_VALUE) continue;
-            Room room = room(entrance, doorY - 1);
+            if (entrance == null || !ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)) continue;
             for (ErdenPopulationSavedData.Resident resident : household.residents()) {
                 if (spawned >= SPAWN_BUDGET) break;
                 if (population.isDead(resident.id()) || existing.containsKey(resident.name())) continue;
-                if (spawnResident(level, room, resident)) {
-                    spawned++;
-                }
+                BlockPos target = ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, resident.bedSlot());
+                if (target != null && spawnResident(level, target, resident)) spawned++;
             }
         }
     }
 
     private static boolean spawnResident(
             ServerLevel level,
-            Room home,
+            BlockPos target,
             ErdenPopulationSavedData.Resident resident) {
         EntityType<?> villagerType = BuiltInRegistries.ENTITY_TYPE
                 .getOptional(VILLAGER_ID).orElse(null);
@@ -385,10 +376,8 @@ public final class ErdenPopulationManager {
         }
         Entity created = villagerType.create(level, EntitySpawnReason.COMMAND);
         if (!(created instanceof Villager villager)) return false;
-        Point point = home.point(resident.bedSlot() - 1, 4 + resident.bedSlot());
-        int preferredY = home.floorY + 6;
-        int standingY = safeStandingY(level, point.x, preferredY, point.z);
-        villager.setPos(point.x + 0.5D, standingY, point.z + 0.5D);
+        int standingY = safeStandingY(level, target.getX(), target.getY(), target.getZ());
+        villager.setPos(target.getX() + 0.5D, standingY, target.getZ() + 0.5D);
         villager.setCustomName(Component.literal(resident.name()));
         villager.setCustomNameVisible(false);
         villager.setPersistenceRequired();
@@ -440,27 +429,10 @@ public final class ErdenPopulationManager {
         if (!level.hasChunk(x >> 4, z >> 4)) return null;
         ExternalUrbanFabricBuilder.UrbanEntrance entrance = findEntrance(x, z);
         if (entrance == null) return null;
-        long key = positionKey(x, z);
-        if (workplace) {
-            ErdenUrbanInteriorSavedData interiors = level.getDataStorage()
-                    .computeIfAbsent(ErdenUrbanInteriorSavedData.TYPE);
-            if (!interiors.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) return null;
-        } else {
-            ErdenUrbanLifeSavedData urbanLife = level.getDataStorage()
-                    .computeIfAbsent(ErdenUrbanLifeSavedData.TYPE);
-            if (!urbanLife.isUpperFloorComplete(
-                    key, ErdenUrbanLifeManager.UPPER_FLOOR_REVISION)) return null;
-        }
-        int doorY = findLowestDoorY(level, x, z);
-        if (doorY == Integer.MIN_VALUE) return null;
-        Room room = room(entrance, doorY - 1);
-        Point point = workplace
-                ? room.point(0, 3)
-                : room.point(0, 4 + reference.resident.bedSlot());
-        return new Target(
-                point.x,
-                workplace ? room.floorY + 1 : room.floorY + 6,
-                point.z);
+        BlockPos target = workplace
+                ? ErdenUrbanResidenceResolver.resolveWorkTarget(level, entrance)
+                : ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, reference.resident.bedSlot());
+        return target == null ? null : new Target(target.getX(), target.getY(), target.getZ());
     }
 
     private static void requestCiChunks(
@@ -501,11 +473,8 @@ public final class ErdenPopulationManager {
                 || population.lastProcessedDay() < 0L
                 || population.households().isEmpty()) return;
         ErdenPopulationSavedData.Household sample = population.households().getFirst();
-        ErdenUrbanLifeSavedData urbanLife = level.getDataStorage()
-                .computeIfAbsent(ErdenUrbanLifeSavedData.TYPE);
-        if (!urbanLife.isUpperFloorComplete(
-                positionKey(sample.homeX(), sample.homeZ()),
-                ErdenUrbanLifeManager.UPPER_FLOOR_REVISION)) return;
+        ExternalUrbanFabricBuilder.UrbanEntrance sampleHome = findEntrance(sample.homeX(), sample.homeZ());
+        if (sampleHome == null || !ErdenUrbanResidenceResolver.isResidenceReady(level, sampleHome)) return;
         Set<String> sampleNames = new HashSet<>();
         for (ErdenPopulationSavedData.Resident resident : sample.residents()) {
             sampleNames.add(resident.name());
@@ -520,7 +489,7 @@ public final class ErdenPopulationManager {
         }
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households={} residents={} workers={} dependents={} spawned_sample={} ledger=true shortages={} shifts=true ownership=true",
+                "LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households={} residents={} workers={} dependents={} spawned_sample={} ledger=true shortages={} shifts=true ownership=true residence_mode=verified_upper_or_ground",
                 EXPECTED_HOUSEHOLDS, EXPECTED_RESIDENTS, EXPECTED_WORKERS,
                 EXPECTED_DEPENDENTS, spawned, population.totalShortage());
     }
