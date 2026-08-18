@@ -60,8 +60,12 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Apply bounded CI residency repair
-        run: python .github/scripts/patch_living_kingdoms_ci_residency.py
+      - name: Apply bounded CI residency repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/patch_living_kingdoms_ci_residency.py
+          python .github/scripts/patch_living_kingdoms_landmark_ci_residency.py
 
       - name: Java 25 clean compile
         working-directory: ${{ env.PROJECT_DIR }}
@@ -70,7 +74,7 @@ jobs:
           set -euo pipefail
           gradle --no-daemon clean classes --stacktrace --console=plain
 
-      - name: Fresh world economy citadel and upper-route regression
+      - name: Fresh world complete residency regression
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -93,6 +97,8 @@ jobs:
             if grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$log" \
               && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log" \
               && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' "$log" \
+              && grep -Fq 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' "$log" \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$log" \
               && grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' "$log" \
               && grep -Fq 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' "$log"; then
               passed=1
@@ -104,15 +110,17 @@ jobs:
             fi
             sleep 1
           done
-          tail -n 500 ../../logs/living-kingdoms-ci-residency-server.log
+          tail -n 700 ../../logs/living-kingdoms-ci-residency-server.log
           test "$passed" -eq 1
-          grep -F 'Requested Erden physical-economy authored interior CI samples sites=3' ../../logs/living-kingdoms-ci-residency-server.log
+          grep -F 'Requested Erden physical-economy authored interior CI samples sites=3' ../../logs/living-kingdoms-ci-residency-server.log | grep -F 'loaded_lease=true'
           grep -F 'Requested Erden authored upper-route CI sample' ../../logs/living-kingdoms-ci-residency-server.log | grep -F 'loaded_lease=true'
-          grep -F 'loaded_lease=true' ../../logs/living-kingdoms-ci-residency-server.log
+          grep -F 'Retained Erden landmark CI sample' ../../logs/living-kingdoms-ci-residency-server.log | grep -F 'refreshed_until_verification=true' | grep -F 'loaded_lease=true' | grep -F 'persistent_forced_chunks=false'
           grep -F 'refreshed_until_verification=true' ../../logs/living-kingdoms-ci-residency-server.log
           grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/living-kingdoms-ci-residency-server.log
           grep -F 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' ../../logs/living-kingdoms-ci-residency-server.log
           grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/living-kingdoms-ci-residency-server.log | grep -F 'source_blocks_cut=0' | grep -F 'source_air_only=true'
+          grep -F 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' ../../logs/living-kingdoms-ci-residency-server.log | grep -F 'facade_replaced=false' | grep -F 'loaded_only=true'
+          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/living-kingdoms-ci-residency-server.log | grep -F 'shortages=0'
           ! grep -Fq 'ground_only_candidates=77' ../../logs/living-kingdoms-ci-residency-server.log
 
       - name: Commit verified source repair
@@ -126,7 +134,8 @@ jobs:
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanInteriorBuilder.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCitadelInteriorManager.java \
-            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredUpperRouteManager.java
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredUpperRouteManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenLandmarkInteriorManager.java
           git commit -m 'fix(living-kingdoms): retain authored CI routes through verification'
           for attempt in 1 2 3 4 5; do
             git pull --rebase origin main && git push origin HEAD:main && exit 0
