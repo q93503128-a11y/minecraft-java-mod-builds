@@ -10,7 +10,6 @@ on:
 permissions:
   contents: write
 
-# Explicit trigger after canonical build 738 proved the typo is still present on main.
 jobs:
   fix:
     runs-on: ubuntu-24.04
@@ -40,14 +39,18 @@ jobs:
               s=s.replace(typo,'ExternalUrbanFabricBuilder.UrbanFragmentSnapshot',1)
           old='''        List<BedPlan> beds = localBeds.stream()\n                .map(bed -> new BedPlan(\n                        worldCell(placement, snapshot, doorY, bed.foot()),\n                        worldCell(placement, snapshot, doorY, bed.head())))\n                .toList();\n        List<FixturePlan> fixtures = localFixtures.stream()\n                .map(fixture -> new FixturePlan(\n                        fixture.kind(),\n                        worldCell(placement, snapshot, doorY, fixture.cell())))\n                .toList();\n'''
           new='''        final int plannedDoorY = doorY;\n        List<BedPlan> beds = localBeds.stream()\n                .map(bed -> new BedPlan(\n                        worldCell(placement, snapshot, plannedDoorY, bed.foot()),\n                        worldCell(placement, snapshot, plannedDoorY, bed.head())))\n                .toList();\n        List<FixturePlan> fixtures = localFixtures.stream()\n                .map(fixture -> new FixturePlan(\n                        fixture.kind(),\n                        worldCell(placement, snapshot, plannedDoorY, fixture.cell())))\n                .toList();\n'''
-          if s.count(old)!=1: raise SystemExit(f'lambda block count {s.count(old)}')
-          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          if old in s:
+              if s.count(old)!=1: raise SystemExit(f'lambda block count {s.count(old)}')
+              s=s.replace(old,new,1)
+          elif 'final int plannedDoorY = doorY;' not in s:
+              raise SystemExit('ground plan lambda correction target missing')
+          p.write_text(s,encoding='utf-8')
 
           wf=Path('.github/workflows/patch-living-kingdoms-door-semantics-v2.yml')
           w=wf.read_text(encoding='utf-8')
-          marker='# rerun-after-ground-plan-compile-fix\n'
-          if marker not in w: w += '\n'+marker
-          else: w=w.replace(marker,'# rerun-after-ground-plan-compile-fix-2\n',1)
+          marker='# retrigger-from-ground-plan-compile-v2'
+          if marker not in w: w += '\n'+marker+'\n'
+          else: w=w.replace(marker,marker+'-again',1)
           wf.write_text(w,encoding='utf-8')
           PY
           git diff --check
@@ -74,3 +77,4 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+# registered rerun trigger
