@@ -1,0 +1,46 @@
+name: Align Living Kingdoms authored interior audits
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanInteriorBuilder.java'
+      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCitadelInteriorManager.java'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Align canonical authored interior contracts
+        run: |
+          set -euo pipefail
+          python .github/scripts/align_living_kingdoms_authored_audits.py
+          ! grep -Fq 'ground_only_candidates=77' .github/workflows/audit-living-kingdoms-residence-modes.yml
+          ! grep -Fq 'ground_only_candidates=77' .github/workflows/audit-living-kingdoms-exterior-inventory.yml
+          ! grep -Fq 'ground_only_candidates=77' .github/workflows/build-living-kingdoms.yml
+          grep -Fq 'authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0' .github/workflows/audit-living-kingdoms-residence-modes.yml
+          grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' .github/workflows/audit-living-kingdoms-exterior-inventory.yml
+          grep -Fq 'ErdenUrbanAuthoredGroundPlanCatalog ErdenUrbanAuthoredGroundMaterializer ErdenUrbanResidenceResolver' .github/workflows/build-living-kingdoms.yml
+      - name: Commit aligned canonical audits
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            .github/workflows/audit-living-kingdoms-residence-modes.yml \
+            .github/workflows/audit-living-kingdoms-exterior-inventory.yml \
+            .github/workflows/build-living-kingdoms.yml
+          git commit -m 'ci(living-kingdoms): align audits with fully authored urban interiors' || exit 0
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((attempt * 2))
+          done
+          exit 1
