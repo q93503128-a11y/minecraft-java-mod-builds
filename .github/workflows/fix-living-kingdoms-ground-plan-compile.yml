@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
 
+# Explicit trigger after canonical build 738 proved the typo is still present on main.
 jobs:
   fix:
     runs-on: ubuntu-24.04
