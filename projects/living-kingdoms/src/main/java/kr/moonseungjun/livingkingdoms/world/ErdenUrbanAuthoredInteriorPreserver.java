@@ -84,8 +84,6 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
 
         ErdenUrbanInteriorSavedData ground = level.getDataStorage()
                 .computeIfAbsent(ErdenUrbanInteriorSavedData.TYPE);
-        ErdenUrbanLifeSavedData upper = level.getDataStorage()
-                .computeIfAbsent(ErdenUrbanLifeSavedData.TYPE);
         int restoredThisTick = 0;
         for (ExternalUrbanFabricBuilder.UrbanEntrance entrance
                 : ExternalUrbanFabricBuilder.entrances()) {
@@ -95,7 +93,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
             Snapshot snapshot = SNAPSHOTS.get(key);
             if (snapshot == null) continue;
             if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)
-                    || !upper.isUpperFloorComplete(key, ErdenUrbanLifeManager.UPPER_FLOOR_REVISION)) {
+                    || !ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)) {
                 continue;
             }
             if (!snapshotChunksReady(level, snapshot)) continue;
