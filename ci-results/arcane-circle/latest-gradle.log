@@ -1,5 +1,30 @@
+Arcane Circle current-source audit: PASS
+target_snapshot_parity=PASS
+seeded_meteor_barrage=PASS
+destruction_tick_budget=PASS
+destruction_drop_budget=PASS
+world_sunder_fissure=PASS
+npc_meteor_scheduler=PASS
+non_homing_target_seal=PASS
+sustained_antimagic=PASS
+authoritative_time_stop=PASS
+wish_preserves_beneficial_effects=PASS
+grimoire_effect_summaries=PASS
+persistent_spell_runtime=PASS
+hard_control_restore=PASS
+controlled_flight=PASS
+death_substitution=PASS
+actual_weather_control=PASS
+persistent_wall_collision=PASS
+visual_lifetime_parity=PASS
+third_person_fake_geometry=absent
+prismatic_white_frame=absent
+retired_visual_stack=absent
+gameplay_content=preserved
+source_mutation=disabled
+legacy_arcane_tooling=absent
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 126, in <module>
-    assert token in tracker, token
-           ^^^^^^^^^^^^^^^^
-AssertionError: MAX_FRAME = 12000
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 309, in <module>
+    dispatched=set(re.findall(r'case "([a-z0-9_]+)"',draw_block))
+                   ^^
+NameError: name 're' is not defined. Did you forget to import 're'?
