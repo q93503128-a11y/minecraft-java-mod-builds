@@ -29,6 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 projects/village-guardians/tools/apply_v01813_siege_integration.py
+          python3 projects/village-guardians/tools/prepare_v01813_contracts.py
           python3 projects/village-guardians/tools/test_v01813_siege_integration.py
           python3 projects/village-guardians/tools/test_v01812_quality_audit.py
           python3 projects/village-guardians/tools/test_v01811_defense_polish.py
