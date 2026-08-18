@@ -3,6 +3,8 @@ package kr.moonseungjun.livingkingdoms.world;
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
@@ -83,10 +85,10 @@ public final class ErdenUrbanAuthoredGroundMaterializer {
             ServerLevel level,
             String role,
             ErdenUrbanAuthoredGroundPlanCatalog.BedPlan bed) {
-        Block block = switch (role) {
-            case "inn" -> Blocks.RED_BED;
-            case "guard_post" -> Blocks.GRAY_BED;
-            default -> Blocks.WHITE_BED;
+        BedBlock block = switch (role) {
+            case "inn" -> bed("red_bed");
+            case "guard_post" -> bed("gray_bed");
+            default -> bed("white_bed");
         };
         Direction facing = direction(bed.foot(), bed.head());
         requireAirOr(level, bed.foot(), block);
@@ -101,6 +103,15 @@ public final class ErdenUrbanAuthoredGroundMaterializer {
                 .setValue(HorizontalDirectionalBlock.FACING, facing);
         level.setBlockAndUpdate(bed.foot(), foot);
         level.setBlockAndUpdate(bed.head(), head);
+    }
+
+    private static BedBlock bed(String path) {
+        Block block = BuiltInRegistries.BLOCK.getValue(
+                Identifier.fromNamespaceAndPath("minecraft", path));
+        if (!(block instanceof BedBlock bed)) {
+            throw new IllegalStateException("Missing Minecraft bed block minecraft:" + path);
+        }
+        return bed;
     }
 
     private static void placeFixture(
