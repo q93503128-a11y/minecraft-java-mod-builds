@@ -28,4 +28,14 @@ jobs:
         run: |
           set -euo pipefail
           test -f .github/scripts/manual-vfx45.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/manual-vfx45.py')
+          s=p.read_text(encoding='utf-8')
+          old="""canonical = subprocess.check_output(\n    ['git', 'show', 'HEAD^:.github/workflows/build-arcane-circle.yml'], text=True\n)\nwrite(WORKFLOW, canonical)\n"""
+          new="""canonical = None\nfor depth in range(1, 12):\n    ref = 'HEAD' + '^' * depth + ':.github/workflows/build-arcane-circle.yml'\n    probe = subprocess.run(['git', 'show', ref], text=True, capture_output=True)\n    if probe.returncode == 0 and 'Java 25 - current Arcane Circle' in probe.stdout:\n        canonical = probe.stdout\n        break\nif canonical is None:\n    raise SystemExit('canonical Arcane workflow not found in recent parents')\nwrite(WORKFLOW, canonical)\n"""
+          if old not in s:
+              raise SystemExit('manual-vfx45 canonical restore anchor missing')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
           python3 .github/scripts/manual-vfx45.py
