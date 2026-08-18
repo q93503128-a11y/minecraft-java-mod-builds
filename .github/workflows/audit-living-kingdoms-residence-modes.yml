@@ -39,17 +39,11 @@ jobs:
           set -euo pipefail
           root="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world"
           mkdir -p logs
-          grep -F 'EXPECTED_GROUND_ONLY_BUILDINGS = 77' "$root/ErdenUrbanResidenceResolver.java"
+          grep -F 'EXPECTED_GROUND_ONLY_BUILDINGS = 0' "$root/ErdenUrbanResidenceResolver.java"
           grep -F 'residence_mode=verified_upper_or_ground' "$root/ErdenPopulationManager.java"
-          grep -F 'fresh_synthetic_upper_created=0' "$root/ErdenUrbanLifeManager.java"
-          grep -F 'ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)' "$root/ErdenUrbanAuthoredInteriorPreserver.java"
-          grep -F 'LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS' "$root/ErdenUrbanAuthoredInteriorPreserver.java"
+          grep -F 'synthetic_upper_created=0' "$root/ErdenUrbanLifeManager.java"
           if grep -Fq 'urbanLife.isUpperFloorComplete' "$root/ErdenPopulationManager.java"; then
             echo 'Population manager still depends on legacy synthetic upper completion.' >&2
-            exit 1
-          fi
-          if grep -Fq 'upper.isUpperFloorComplete' "$root/ErdenUrbanAuthoredInteriorPreserver.java"; then
-            echo 'Interior preservation still depends on legacy synthetic upper completion.' >&2
             exit 1
           fi
           (cd "$PROJECT_DIR" && gradle --no-daemon clean classes --stacktrace --console=plain) 2>&1 | tee logs/residence-compile.log
@@ -67,9 +61,10 @@ jobs:
               cat logs/residence-server.log
               exit 1
             fi
-            if grep -Fq 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' logs/residence-server.log \
-              && grep -Fq 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log \
-              && grep -Fq 'LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS' logs/residence-server.log \
+            if grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' logs/residence-server.log \
+              && grep -Fq 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' logs/residence-server.log \
+              && grep -Fq 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS' logs/residence-server.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_GROUND_MATERIALIZER_PASS' logs/residence-server.log \
               && grep -Fq 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' logs/residence-server.log \
               && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' logs/residence-server.log \
               && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log \
@@ -86,17 +81,22 @@ jobs:
 
           if [ "$passed" -ne 1 ]; then
             echo 'Residence audit timed out; reached markers:' >&2
-            grep -E 'Prepared Erden residence modes|LK_URBAN_LIFE_DIAGNOSTIC_PASS|LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS|LK_ERDEN_AUTHORED_NEW_FLOOR_PASS|LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS|LK_ERDEN_POPULATION_DIAGNOSTIC_PASS|Rolled back Erden authored interior restoration' logs/residence-server.log || true
+            grep -E 'Prepared Erden residence modes|LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS|LK_ERDEN_AUTHORED_GROUND_MATERIALIZER_PASS|LK_URBAN_INTERIOR_DIAGNOSTIC_PASS|LK_ERDEN_AUTHORED_NEW_FLOOR_PASS|LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS|LK_ERDEN_POPULATION_DIAGNOSTIC_PASS|Rolled back Erden authored interior restoration' logs/residence-server.log || true
             tail -n 250 logs/residence-server.log
             exit 1
           fi
 
-          grep -F 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' logs/residence-server.log
-          grep -F 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log | grep -F 'synthetic_fallback=false' | grep -F 'fresh_synthetic_upper_created=0'
-          grep -F 'LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS' logs/residence-server.log | grep -F 'role_aware_navigation=true' | grep -F 'rollback_count=0'
+          grep -F 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' logs/residence-server.log | grep -F 'source_floor_reused=true' | grep -F 'source_blocks_cut=0'
+          grep -F 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' logs/residence-server.log
+          grep -F 'LK_ERDEN_AUTHORED_GROUND_MATERIALIZER_PASS' logs/residence-server.log | grep -F 'source_floor_reused=true' | grep -F 'source_air_fixtures=true' | grep -F 'source_blocks_cut=0'
+          grep -F 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS' logs/residence-server.log | grep -F 'authored_ground=true' | grep -F 'synthetic_room=false' | grep -F 'source_blocks_cut=0'
           grep -F 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' logs/residence-server.log | grep -F 'source_blocks_cut=0' | grep -F 'synthetic_floor_required=false'
           grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' logs/residence-server.log | grep -F 'source_blocks_cut=0' | grep -F 'source_air_only=true'
           grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log | grep -F 'shortages=0' | grep -F 'residence_mode=verified_upper_or_ground'
+          if grep -Fq 'ground_only_candidates=77' logs/residence-server.log; then
+            echo 'Legacy Erden ground-only residence marker reappeared.' >&2
+            exit 1
+          fi
           if grep -Fq 'Rolled back Erden authored interior restoration' logs/residence-server.log; then
             grep -F 'Rolled back Erden authored interior restoration' logs/residence-server.log
             exit 1
@@ -105,7 +105,7 @@ jobs:
             echo 'Legacy synthetic upper construction unexpectedly completed on a fresh world.' >&2
             exit 1
           fi
-          echo 'LK_ERDEN_RESIDENCE_MODES_AUDIT_PASS source_catalog_buildings=233 authored_upper=156 ground_only=77 fresh_synthetic_upper=0 population=231 workers=154 loaded_restore_sample=true loaded_restore_rollbacks=0 authored_upper_source_blocks_cut=0 forced_citywide=false' | tee logs/residence-pass.txt
+          echo 'LK_ERDEN_RESIDENCE_MODES_AUDIT_PASS source_catalog_buildings=233 authored_ground=233 authored_upper=233 ground_only=0 synthetic_upper=0 population=231 workers=154 legacy_preserver=false loaded_restore_rollbacks=0 source_blocks_cut=0 forced_citywide=false' | tee logs/residence-pass.txt
 
       - name: Upload residence audit logs
         if: always()
