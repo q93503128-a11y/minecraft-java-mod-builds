@@ -122,7 +122,7 @@ for token in ['replacesBaseSigil','portalPair','risingPortal','risingPrison','pr
     assert token in overhaul, token
 for token in ['ArcaneSpellVisualOverhaul.chargeSigil','ArcaneSpellVisualOverhaul.chargeBody',
               'ArcaneSpellVisualOverhaul.release','ArcaneSpellVisualOverhaul.prismaticWallLayer',
-              'MAX_FRAME = 12000','MAX_ENTRY = 3400']:
+              'MAX_FRAME = 14500','MAX_ENTRY = 4000']:
     assert token in tracker, token
 assert 'case PORTAL_GATE -> caster.position().add(0.0, 0.055, 0.0);' in world_magic
 assert 'case "prismatic_wall" -> 280;' in gameplay
