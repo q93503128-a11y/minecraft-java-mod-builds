@@ -24,7 +24,7 @@ for name in retired: assert not (client/name).exists(), name
 tracker=text(client/'WorldMagicTracker.java')
 for token in ['SpellCinematicDirector.charge','SpellCinematicDirector.release','SpellCinematicDirector.castingFamily',
 'ArcaneSigilDirector.charge','ArcaneSigilDirector.releaseEcho','MeteorBarragePattern.withSeed','longValue(values,"seed",0L)',
-'MAX_FRAME = 12000','MAX_ENTRY = 3400']:
+'MAX_FRAME = 14500','MAX_ENTRY = 4000']:
     assert token in tracker, token
 assert tracker.count('!"prismatic_wall".equals(v.spell.id())') >= 2
 
