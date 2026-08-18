@@ -242,15 +242,16 @@ public final class ErdenUrbanGroundOnlyFunctionalPlanCatalog {
                     + placement.role());
         }
 
+        final int plannedDoorY = doorY;
         List<BedPlan> beds = localBeds.stream()
                 .map(bed -> new BedPlan(
-                        worldCell(placement, snapshot, doorY, bed.foot()),
-                        worldCell(placement, snapshot, doorY, bed.head())))
+                        worldCell(placement, snapshot, plannedDoorY, bed.foot()),
+                        worldCell(placement, snapshot, plannedDoorY, bed.head())))
                 .toList();
         List<FixturePlan> fixtures = localFixtures.stream()
                 .map(fixture -> new FixturePlan(
                         fixture.kind(),
-                        worldCell(placement, snapshot, doorY, fixture.cell())))
+                        worldCell(placement, snapshot, plannedDoorY, fixture.cell())))
                 .toList();
         return new PlacementPlan(
                 placement.role(), placement.fragmentKey(), placement.entrance(),
@@ -397,7 +398,7 @@ public final class ErdenUrbanGroundOnlyFunctionalPlanCatalog {
     }
 
     private static int resolveFeetY(
-            ExternalUrbanFabricBuilder.UranFragmentSnapshot snapshot,
+            ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot,
             Map<Long, ExternalUrbanFabricBuilder.UrbanSourceBlock> blocks,
             int x, int z, int preferredY) {
         for (int offset : FEET_OFFSETS) {
