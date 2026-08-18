@@ -1,0 +1,175 @@
+name: Patch Living Kingdoms doorway semantics v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-door-semantics-v2.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: living-kingdoms-door-semantics-v2
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  verify-and-apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply source-only doorway semantics candidate
+        id: candidate
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p logs
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ground = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanGroundOnlyFunctionalPlanCatalog.java')
+          g = ground.read_text(encoding='utf-8')
+          typo = 'ExternalUrbanFabricBuilder.UranFragmentSnapshot'
+          if typo in g:
+              if g.count(typo) != 1:
+                  raise SystemExit(f'ground plan typo count drifted: {g.count(typo)}')
+              g = g.replace(typo, 'ExternalUrbanFabricBuilder.UrbanFragmentSnapshot', 1)
+              ground.write_text(g, encoding='utf-8')
+
+          p = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java')
+          s = p.read_text(encoding='utf-8')
+
+          def rep(old, new, label):
+              global s
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              s = s.replace(old, new, 1)
+
+          rep('''                    int reachable = fragmentReachableCells(candidate);\n                    if (reachable > bestReachable) {\n''',
+              '''                    int reachable = fragmentInteriorReachableCells(candidate);\n                    if (reachable > bestReachable) {\n''', 'castle selection score')
+
+          rep('''                int reachable = fragmentReachableCells(fragment);\n                candidates++;\n                LivingKingdoms.LOGGER.info(\n                        "LK_ERDEN_CROP_WINDOW_CANDIDATE resource={} door={},{} crop_side={} fragment={}x{} entrance_local={},{} resolved_side={} reachable={} source_only=true world_reads=false mutations=0",\n                        CASTLE_HOUSE, door.x, door.z, side, fragment.width, fragment.length,\n                        fragment.entranceX, fragment.entranceZ, fragment.exteriorSide, reachable);\n                if (reachable > bestReachable) {\n                    bestReachable = reachable;\n''',
+              '''                int rawReachable = fragmentReachableCells(fragment);\n                int reachable = fragmentInteriorReachableCells(fragment);\n                candidates++;\n                LivingKingdoms.LOGGER.info(\n                        "LK_ERDEN_CROP_WINDOW_CANDIDATE resource={} door={},{} crop_side={} fragment={}x{} entrance_local={},{} resolved_side={} raw_reachable={} interior_reachable={} source_only=true world_reads=false mutations=0",\n                        CASTLE_HOUSE, door.x, door.z, side, fragment.width, fragment.length,\n                        fragment.entranceX, fragment.entranceZ, fragment.exteriorSide,\n                        rawReachable, reachable);\n                if (reachable > bestReachable) {\n                    bestReachable = reachable;\n''', 'crop audit score')
+
+          anchor = '''    private static long walkKey(int x, int y, int z) {\n        return ((long)(x & 0xffff) << 48) ^ ((long)(y & 0xffff) << 32) ^ (z & 0xffffffffL);\n    }\n'''
+          helper = '''    private static int fragmentInteriorReachableCells(FacadeFragment fragment) {\n        Map<Long, BuildingBlock> blocks = fragmentBlockMap(fragment);\n        int doorY = Integer.MAX_VALUE;\n        for (int y = 0; y < fragment.height; y++) {\n            BuildingBlock block = blocks.get(localKey(fragment.entranceX, y, fragment.entranceZ));\n            if (block != null && block.state.getBlock() instanceof DoorBlock) {\n                doorY = y;\n                break;\n            }\n        }\n        if (doorY == Integer.MAX_VALUE) return 0;\n        return sourceInteriorComponentSize(\n                blocks, fragment.entranceX, doorY, fragment.entranceZ,\n                fragment.width, fragment.length, fragment.exteriorSide);\n    }\n\n    private static int sourceInteriorComponentSize(\n            Map<Long, BuildingBlock> blocks,\n            int doorX, int doorY, int doorZ,\n            int width, int length, FrontSide exteriorSide) {\n        record Walk(int x, int y, int z) {}\n        int seedY = sourceWalkableFeetY(blocks, doorX, doorZ, doorY);\n        if (seedY == Integer.MIN_VALUE) return 0;\n        java.util.ArrayDeque<Walk> pending = new java.util.ArrayDeque<>();\n        java.util.HashSet<Long> visited = new java.util.HashSet<>();\n        pending.add(new Walk(doorX, seedY, doorZ));\n        visited.add(walkKey(doorX, seedY, doorZ));\n        int[][] directions = {{1,0},{-1,0},{0,1},{0,-1}};\n        while (!pending.isEmpty()) {\n            Walk current = pending.removeFirst();\n            for (int[] direction : directions) {\n                int x = current.x() + direction[0];\n                int z = current.z() + direction[1];\n                if (x < 0 || x >= width || z < 0 || z >= length) continue;\n                if (!sourceInteriorSide(doorX, doorZ, x, z, exteriorSide)) continue;\n                int y = sourceWalkableFeetY(blocks, x, z, current.y());\n                if (y == Integer.MIN_VALUE || Math.abs(y - current.y()) > 1) continue;\n                long key = walkKey(x, y, z);\n                if (visited.add(key)) pending.addLast(new Walk(x, y, z));\n            }\n        }\n        return visited.size();\n    }\n\n    private static boolean sourceInteriorSide(\n            int doorX, int doorZ, int x, int z, FrontSide exteriorSide) {\n        return switch (exteriorSide) {\n            case NORTH -> z >= doorZ;\n            case SOUTH -> z <= doorZ;\n            case WEST -> x >= doorX;\n            case EAST -> x <= doorX;\n        };\n    }\n\n'''+anchor
+          rep(anchor, helper, 'interior component helpers')
+
+          old_semantics = '''    /**\n     * Imported structures frequently contain doors whose nearest crop edge is not the side one can\n     * actually leave through. Probe the two sides of the door plane using the source blocks and\n     * retain the side that has a real supported, body-clear run. This is decided before rotation,\n     * so every repeated urban placement inherits the same authored doorway semantics.\n     */\n    private static FrontSide sourceExteriorSide(\n            Map<Long, BuildingBlock> blocks,\n            int x, int doorY, int z,\n            int width, int length,\n            FrontSide fallback,\n            BlockState doorState) {\n        if (!(doorState.getBlock() instanceof DoorBlock)\n                || !doorState.hasProperty(DoorBlock.FACING)) {\n            return fallback;\n        }\n        Direction facing = doorState.getValue(DoorBlock.FACING);\n        FrontSide first = frontSide(facing);\n        FrontSide second = frontSide(facing.getOpposite());\n        int firstRun = sourceClearRun(blocks, x, doorY, z, first);\n        int secondRun = sourceClearRun(blocks, x, doorY, z, second);\n        if (firstRun != secondRun) return firstRun > secondRun ? first : second;\n\n        int firstEdge = edgeDistance(x, z, width, length, first);\n        int secondEdge = edgeDistance(x, z, width, length, second);\n        if (firstEdge != secondEdge) return firstEdge < secondEdge ? first : second;\n        if (fallback == first || fallback == second) return fallback;\n        return first;\n    }\n'''
+          new_semantics = '''    /**\n     * Determine which side of a retained source door is really outside. A long supported clear run\n     * is generally the room side, not the exterior. Test both legal door directions and label as\n     * exterior the side whose opposite half contains the larger connected authored walkable area.\n     */\n    private static FrontSide sourceExteriorSide(\n            Map<Long, BuildingBlock> blocks,\n            int x, int doorY, int z,\n            int width, int length,\n            FrontSide fallback,\n            BlockState doorState) {\n        if (!(doorState.getBlock() instanceof DoorBlock)\n                || !doorState.hasProperty(DoorBlock.FACING)) {\n            return fallback;\n        }\n        Direction facing = doorState.getValue(DoorBlock.FACING);\n        FrontSide first = frontSide(facing);\n        FrontSide second = frontSide(facing.getOpposite());\n        int firstInterior = sourceInteriorComponentSize(\n                blocks, x, doorY, z, width, length, first);\n        int secondInterior = sourceInteriorComponentSize(\n                blocks, x, doorY, z, width, length, second);\n        if (firstInterior != secondInterior) {\n            return firstInterior > secondInterior ? first : second;\n        }\n        int firstEdge = edgeDistance(x, z, width, length, first);\n        int secondEdge = edgeDistance(x, z, width, length, second);\n        if (firstEdge != secondEdge) return firstEdge < secondEdge ? first : second;\n        if (fallback == first || fallback == second) return fallback;\n        return first;\n    }\n'''
+          rep(old_semantics, new_semantics, 'door semantics')
+
+          rep('"LK_ERDEN_CASTLE_HOUSE_CROP_SELECTED reachable={} crop_side={}',
+              '"LK_ERDEN_CASTLE_HOUSE_CROP_SELECTED interior_reachable={} crop_side={}',
+              'selected marker')
+          rep('"LK_ERDEN_CROP_WINDOW_AUDIT resource={} candidates={} current_reachable=11 best_reachable={}',
+              '"LK_ERDEN_CROP_WINDOW_AUDIT resource={} candidates={} best_interior_reachable={}',
+              'audit marker')
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          git diff --check
+          (cd "$PROJECT_DIR" && gradle --no-daemon clean classes --stacktrace --console=plain) 2>&1 | tee logs/compile.log
+
+          rm -rf "$PROJECT_DIR/run/world" "$PROJECT_DIR/run/living_realm" "$PROJECT_DIR/run/livingkingdoms-door-v2-world"
+          mkdir -p "$PROJECT_DIR/run"
+          printf 'level-name=livingkingdoms-door-v2-world\npause-when-empty-seconds=0\n' > "$PROJECT_DIR/run/server.properties"
+          printf 'eula=true\n' > "$PROJECT_DIR/run/eula.txt"
+          (cd "$PROJECT_DIR" && gradle --no-daemon runServer --stacktrace --console=plain) > logs/server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          seen=0
+          for attempt in $(seq 1 150); do
+            if grep -Fq 'LK_ERDEN_CASTLE_HOUSE_CROP_SELECTED interior_reachable=' logs/server.log \
+              && grep -Fq 'LK_ERDEN_FRAGMENT_TOPOLOGY fragment=/data/livingkingdoms/structures/external/fantasy_castle_house.schem#0' logs/server.log; then
+              seen=1; break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          grep -E 'LK_ERDEN_CASTLE_HOUSE_CROP_SELECTED|LK_ERDEN_CROP_WINDOW_AUDIT|LK_ERDEN_FRAGMENT_TOPOLOGY fragment=/data/livingkingdoms/structures/external/fantasy_castle_house|Prepared exact Erden placed-fragment topology catalog|Prepared Erden authored upper-route|LK_ERDEN_GROUND_VOID|IllegalStateException' logs/server.log || true
+          test "$seen" -eq 1
+          selected="$(grep -F 'LK_ERDEN_CASTLE_HOUSE_CROP_SELECTED interior_reachable=' logs/server.log | tail -1)"
+          topology="$(grep -F 'LK_ERDEN_FRAGMENT_TOPOLOGY fragment=/data/livingkingdoms/structures/external/fantasy_castle_house.schem#0' logs/server.log | tail -1)"
+          test -n "$selected"
+          test -n "$topology"
+          selected_count="$(sed -E 's/.*interior_reachable=([0-9]+).*/\1/' <<<"$selected")"
+          topology_count="$(sed -E 's/.*reachable=([0-9]+).*/\1/' <<<"$topology")"
+          test "$selected_count" -ge 500
+          test "$topology_count" -ge 500
+          grep -F 'Prepared exact Erden placed-fragment topology catalog buildings=233' logs/server.log
+          grep -F 'Prepared Erden continuous urban fabric plots=233 entrances=233' logs/server.log
+          echo "LK_ERDEN_DOOR_SEMANTICS_V2_PASS selected_interior=$selected_count topology_reachable=$topology_count plots=233" | tee logs/pass.txt
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-door-semantics-v2-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Commit verified correction
+        if: steps.candidate.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java" \
+                  "$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanGroundOnlyFunctionalPlanCatalog.java"
+          git rm -f .github/workflows/patch-living-kingdoms-door-semantics-v2.yml
+          git rm -f .github/workflows/patch-living-kingdoms-door-semantics.yml || true
+          git rm -f .github/workflows/fix-living-kingdoms-ground-plan-typo.yml || true
+          git commit -m 'fix(living-kingdoms): correct authored doorway interior semantics'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Record failed candidate
+        if: steps.candidate.outcome != 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-door-semantics-v2.json <<EOF
+          {"run_id":"${{ github.run_id }}","run_number":"${{ github.run_number }}","commit_sha":"${{ github.sha }}","job_status":"failure"}
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/living-kingdoms-door-semantics-v2.json
+          git commit -m "Record failed Living Kingdoms doorway semantics v2 ${{ github.run_number }} [skip ci]"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then break; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+
+      - name: Enforce result
+        if: always()
+        run: test '${{ steps.candidate.outcome }}' = 'success'
