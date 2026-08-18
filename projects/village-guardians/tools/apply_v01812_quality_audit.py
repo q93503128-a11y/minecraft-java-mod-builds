@@ -20,7 +20,9 @@ def replace_all_existing(path: Path, old: str, new: str) -> None:
 
 
 def main() -> None:
-    replace_once(ROOT / "gradle.properties", "mod_version=0.18.11-alpha.1", "mod_version=0.18.12-alpha.1")
+    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
+    if "mod_version=0.18.12-alpha.1" not in props:
+        raise SystemExit("expected v0.18.12 source version")
     for test in (ROOT / "tools").glob("test_*.py"):
         replace_all_existing(test, "mod_version=0.18.11-alpha.1", "mod_version=0.18.12-alpha.1")
 
@@ -60,49 +62,6 @@ def main() -> None:
     replace_once(deploy,
 '''    private static VillageMercenarySystem.MercenaryClass classFromName(IronGolem golem) {\n        Component name = golem.getCustomName();\n        if (name == null) return null;\n        String plain = ChatFormatting.stripFormatting(name.getString());\n        if (plain == null) return null;\n        for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {\n            if (plain.startsWith(kind.displayName())) return kind;\n        }\n        return null;\n    }\n\n''', "")
 
-    boss = JAVA / "VillageSiegeBossSystem.java"
-    replace_once(boss,
-'''        server.getPlayerList().broadcastSystemMessage(Component.literal(\n                "§4[보스 2페이즈] §f" + doctrine.displayName() + "의 전투 방식이 격화됩니다. · "\n                        + doctrine.phaseTwo()), false);''',
-'''        if (mob.level() instanceof ServerLevel level) {\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,\n                    mob.getX(), mob.getY() + 1.2, mob.getZ(), 42, 1.6, 1.0, 1.6, 0.08);\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,\n                    mob.getX(), mob.getY() + 0.8, mob.getZ(), 5, 0.8, 0.4, 0.8, 0.02);\n        }\n        server.getPlayerList().broadcastSystemMessage(Component.literal(\n                "§4[보스 2페이즈] §f" + doctrine.displayName() + "의 전투 방식이 격화됩니다. · "\n                        + doctrine.phaseTwo()), false);''')
-    replace_once(boss,
-'''        VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);\n        if (segment == VillageSiegeSegmentSystem.Segment.NORTH_GATE && front == VillageAttackPlanSystem.Front.NORTH) return;\n        BlockPos target = VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition());\n        if (!VillageSiegeSegmentSystem.breached(segment)) {\n            mob.setTarget(null);\n            mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.18);\n            if (ticks % 45 == 0 && VillageSiegeSegmentSystem.touching(segment, mob.blockPosition())) {\n                int damage = PHASE_TWO.contains(mob.getUUID()) ? 72 : 48;\n                VillageSiegeSegmentSystem.damage(server, segment, damage, mob.blockPosition());\n            }\n        }''',
-'''        VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);\n        BlockPos target = VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition());\n        if (!VillageSiegeSegmentSystem.breached(segment)) {\n            mob.setTarget(null);\n            mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.18);\n            if (!VillageSiegeSegmentSystem.touching(segment, mob.blockPosition())) return;\n            boolean phaseTwo = PHASE_TWO.contains(mob.getUUID());\n            int interval = phaseTwo ? 30 : 45;\n            int offset = Math.floorMod(mob.getUUID().hashCode(), interval);\n            int phase = Math.floorMod(ticks - offset, interval);\n            ServerLevel level = server.overworld();\n            if (phase == interval - 10) {\n                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,\n                        target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5,\n                        18, 1.2, 0.5, 1.2, 0.03);\n                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,\n                        mob.getX(), mob.getY() + 1.1, mob.getZ(), 14, 0.6, 0.6, 0.6, 0.03);\n            }\n            if (phase == 0) {\n                mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);\n                int damage = phaseTwo ? 72 : 48;\n                VillageSiegeSegmentSystem.damage(server, segment, damage, mob.blockPosition());\n                level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,\n                        target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5,\n                        5, 1.0, 0.5, 1.0, 0.02);\n            }\n        }''')
-    replace_once(boss,
-'''    private static void tickRitual(ServerLevel level, Mob boss) {\n        if (ticks % 120 != Math.floorMod(boss.getUUID().hashCode(), 120)) return;\n        for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, boss.position(), 15.0, 20, boss.getUUID())) {''',
-'''    private static void tickRitual(ServerLevel level, Mob boss) {\n        int offset = Math.floorMod(boss.getUUID().hashCode(), 120);\n        int phase = Math.floorMod(ticks - offset, 120);\n        if (phase == 100) {\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,\n                    boss.getX(), boss.getY() + 1.3, boss.getZ(), 30, 2.4, 1.0, 2.4, 0.04);\n            return;\n        }\n        if (phase != 0) return;\n        for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, boss.position(), 15.0, 20, boss.getUUID())) {''')
-    replace_once(boss,
-'''        boss.setTarget(target);\n        boss.getNavigation().moveTo(target, PHASE_TWO.contains(boss.getUUID()) ? 1.58 : 1.34);\n        if (ticks % 105 == 0) target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 70, 1));''',
-'''        boss.setTarget(target);\n        boss.getNavigation().moveTo(target, PHASE_TWO.contains(boss.getUUID()) ? 1.58 : 1.34);\n        ServerLevel level = server.overworld();\n        if (ticks % 105 == 70) {\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,\n                    target.getX(), target.getY() + 1.0, target.getZ(), 12, 0.6, 0.8, 0.6, 0.02);\n        }\n        if (ticks % 105 == 0) {\n            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 70, 1));\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,\n                    target.getX(), target.getY() + 0.8, target.getZ(), 16, 0.5, 0.5, 0.5, 0.04);\n        }''')
-    replace_once(boss,
-'''        BREACH_COLOSSUS("파성 거신", "성벽 구역을 직접 목표로 삼고 50% 이하에서 파쇄 주기가 빨라집니다.",\n                "성벽 파쇄 피해 50% 증가"),''',
-'''        BREACH_COLOSSUS("파성 거신", "성벽 구역을 직접 목표로 삼고 50% 이하에서 파쇄 주기가 빨라집니다.",\n                "파쇄 주기 45→30틱 · 파쇄 피해 50% 증가"),''')
-
-    elite = JAVA / "VillageEnemyEliteSystem.java"
-    replace_once(elite,
-'''    private static void grappler(ServerLevel level, Mob mob) {\n        if (ticks % 100 != Math.floorMod(mob.getUUID().hashCode(), 100)) return;\n        VillageAttackPlanSystem.Front front = VillageAttackPlanSystem.frontOf(mob.getUUID());''',
-'''    private static void grappler(ServerLevel level, Mob mob) {\n        int offset = Math.floorMod(mob.getUUID().hashCode(), 100);\n        int phase = Math.floorMod(ticks - offset, 100);\n        VillageAttackPlanSystem.Front front = VillageAttackPlanSystem.frontOf(mob.getUUID());''')
-    replace_once(elite,
-'''        BlockPos wall = VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition());\n        if (mob.blockPosition().distSqr(wall) > 144.0) return;\n        BlockPos inside = VillageSiegeSegmentSystem.insideApproach(segment);''',
-'''        BlockPos wall = VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition());\n        if (mob.blockPosition().distSqr(wall) > 144.0) return;\n        if (phase == 88) {\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,\n                    wall.getX() + 0.5, wall.getY() + 1.0, wall.getZ() + 0.5, 12, 0.7, 0.6, 0.7, 0.03);\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,\n                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 8, 0.35, 0.5, 0.35, 0.02);\n            return;\n        }\n        if (phase != 0) return;\n        BlockPos inside = VillageSiegeSegmentSystem.insideApproach(segment);''')
-    replace_once(elite,
-'''    private static void firebrand(ServerLevel level, MinecraftServer server, Mob mob) {\n        if (ticks % 100 != Math.floorMod(mob.getUUID().hashCode(), 100)) return;\n        for (ServerPlayer player : nearbyPlayers(server, mob, 10.0)) {\n            player.setRemainingFireTicks(Math.max(player.getRemainingFireTicks(), 70));\n            player.hurtServer(level, level.damageSources().magic(), 2.5f + VillageCouncilState.currentDay() * 0.12f);\n        }\n        level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME, mob.getX(), mob.getY() + 1.0, mob.getZ(),\n                20, 1.0, 0.5, 1.0, 0.04);\n    }''',
-'''    private static void firebrand(ServerLevel level, MinecraftServer server, Mob mob) {\n        int offset = Math.floorMod(mob.getUUID().hashCode(), 100);\n        int phase = Math.floorMod(ticks - offset, 100);\n        if (phase == 82) {\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,\n                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 16, 0.8, 0.5, 0.8, 0.03);\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,\n                    mob.getX(), mob.getY() + 0.8, mob.getZ(), 10, 0.6, 0.4, 0.6, 0.02);\n            return;\n        }\n        if (phase != 0) return;\n        for (ServerPlayer player : nearbyPlayers(server, mob, 10.0)) {\n            player.setRemainingFireTicks(Math.max(player.getRemainingFireTicks(), 70));\n            player.hurtServer(level, level.damageSources().magic(), 2.5f + VillageCouncilState.currentDay() * 0.12f);\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,\n                    player.getX(), player.getY() + 0.8, player.getZ(), 10, 0.35, 0.55, 0.35, 0.03);\n        }\n        level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,\n                mob.getX(), mob.getY() + 1.0, mob.getZ(), 3, 0.8, 0.4, 0.8, 0.02);\n    }''')
-    replace_once(elite,
-'''        ServerPlayer target = nearbyPlayers(server, mob, 28.0).stream().findFirst().orElse(null);''',
-'''        ServerPlayer target = nearbyPlayers(server, mob, 28.0).stream()\n                .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);''')
-    replace_once(elite,
-'''            mob.getNavigation().moveTo(target, 1.48);\n            mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 45, 0));''',
-'''            mob.getNavigation().moveTo(target, 1.48);\n            mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 45, 0));\n            if (mob.level() instanceof ServerLevel level) {\n                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,\n                        mob.getX(), mob.getY() + 0.8, mob.getZ(), 10, 0.35, 0.5, 0.35, 0.03);\n            }''')
-    replace_once(elite,
-'''    private static void plague(MinecraftServer server, Mob mob) {\n        if (ticks % 120 != Math.floorMod(mob.getUUID().hashCode(), 120)) return;\n        for (ServerPlayer player : nearbyPlayers(server, mob, 9.0)) {\n            player.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 1));\n            player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));\n        }\n    }''',
-'''    private static void plague(MinecraftServer server, Mob mob) {\n        int offset = Math.floorMod(mob.getUUID().hashCode(), 120);\n        int phase = Math.floorMod(ticks - offset, 120);\n        if (!(mob.level() instanceof ServerLevel level)) return;\n        if (phase == 100) {\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,\n                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 20, 1.4, 0.6, 1.4, 0.04);\n            return;\n        }\n        if (phase != 0) return;\n        for (ServerPlayer player : nearbyPlayers(server, mob, 9.0)) {\n            player.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 1));\n            player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));\n            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,\n                    player.getX(), player.getY() + 0.7, player.getZ(), 9, 0.4, 0.5, 0.4, 0.03);\n        }\n    }''')
-    replace_once(elite,
-'''        ServerPlayer target = nearbyPlayers(server, mob, 24.0).stream().findFirst().orElse(null);''',
-'''        ServerPlayer target = nearbyPlayers(server, mob, 24.0).stream()\n                .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);''')
-    replace_once(elite,
-'''            mob.getNavigation().moveTo(target, 1.62);\n            mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 55, 1));''',
-'''            mob.getNavigation().moveTo(target, 1.62);\n            mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 55, 1));\n            if (mob.level() instanceof ServerLevel level) {\n                level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,\n                        mob.getX(), mob.getY() + 0.9, mob.getZ(), 12, 0.45, 0.55, 0.45, 0.04);\n            }''')
-
     aspect = JAVA / "VillageBossAspectSystem.java"
     replace_once(aspect,
 '''            case BLOODBOUND -> {\n                if (globalTicks % 100 != 0) return;''',
@@ -114,9 +73,16 @@ def main() -> None:
 '''                .filter(player -> player.level() == mob.level() && player.isAlive()\n                        && !player.isSpectator() && player.distanceToSqr(mob) <= squared)''',
 '''                .filter(player -> player.level() == mob.level() && player.isAlive()\n                        && !player.isSpectator() && !VillageRespawnSystem.isDowned(player)\n                        && player.distanceToSqr(mob) <= squared)''')
 
-    (ROOT / ".build-trigger-v01812").write_text(
-        "Village Guardians v0.18.12-alpha.1 manual quality audit acceptance\n", encoding="utf-8")
-    print("[OK] v0.18.12 quality audit patch applied")
+    # v0.18.11's LOS assertions reference the old self-blocking muzzle local; preserve the intent with the new helper.
+    old_test = ROOT / "tools/test_v01811_defense_polish.py"
+    replace_all_existing(old_test,
+        'assert ".filter(mob -> VillageDefenseLineOfSight.hasLine(level, muzzle, mob))" in turret',
+        'assert ".filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob))" in turret')
+    replace_all_existing(old_test,
+        'assert "if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;" in turret',
+        'assert "if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;" in turret and "turretMuzzle" in turret')
+
+    print("[OK] remaining v0.18.12 manual-audit fixes applied")
 
 
 if __name__ == "__main__":
