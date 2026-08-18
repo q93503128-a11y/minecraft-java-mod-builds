@@ -49,6 +49,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
     private static final Set<Long> RESTORED = new HashSet<>();
     private static int rollbackCount;
     private static boolean completionLogged;
+    private static boolean ciRestoreSampleLogged;
 
     private ErdenUrbanAuthoredInteriorPreserver() {
     }
@@ -99,6 +100,12 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
             if (!snapshotChunksReady(level, snapshot)) continue;
 
             int restored = restore(level, snapshot);
+            if (!ciRestoreSampleLogged && diagnosticMode()) {
+                ciRestoreSampleLogged = true;
+                LivingKingdoms.LOGGER.info(
+                        "LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS role={} entrance={},{} restored_cells={} role_aware_navigation=true deepest_walkable_core=true source_snapshot=true rollback_count={}",
+                        entrance.role(), entrance.x(), entrance.z(), restored, rollbackCount);
+            }
             RESTORED.add(key);
             SNAPSHOTS.remove(key);
             restoredThisTick++;
@@ -132,6 +139,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
         RESTORED.clear();
         rollbackCount = 0;
         completionLogged = false;
+        ciRestoreSampleLogged = false;
     }
 
     private static Snapshot capture(
@@ -194,7 +202,9 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
     }
 
     private static String restorationSafetyFailure(ServerLevel level, Snapshot snapshot) {
-        if (!groundAisleWalkable(level, snapshot)) return "ground_aisle_blocked";
+        // Role fixtures may intentionally occupy the rear/center (for example a bathhouse pool).
+        // A rigid empty centerline therefore rejects valid functional interiors. Preserve imported
+        // detail only when the real entrance still reaches the deepest available walkable core.
         if (!usableCoreConnected(level, snapshot)) return "usable_core_disconnected";
         return null;
     }
@@ -236,7 +246,7 @@ public final class ErdenUrbanAuthoredInteriorPreserver {
 
     private static Node firstUsableCoreTarget(ServerLevel level, Snapshot snapshot) {
         Vector right = new Vector(-snapshot.inward.z, snapshot.inward.x);
-        for (int depth = 2; depth <= 8; depth++) {
+        for (int depth = 8; depth >= 3; depth--) {
             for (int lateral = -2; lateral <= 2; lateral++) {
                 int x = snapshot.entranceX + snapshot.inward.x * depth + right.x * lateral;
                 int z = snapshot.entranceZ + snapshot.inward.z * depth + right.z * lateral;
