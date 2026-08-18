@@ -38,6 +38,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenLivingEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenTransportManager;
+import kr.moonseungjun.livingkingdoms.world.ExternalUrbanFabricBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredInteriorPreserver;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredInteriorSurvey;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredNewFloorManager;
@@ -125,6 +126,7 @@ public final class LivingKingdoms {
         ErdenUrbanAuthoredNewFloorManager.bootstrap();
         ErdenUrbanAuthoredUpperRouteManager.bootstrap();
         ErdenUrbanGroundVoidOpportunityCatalog.bootstrap();
+        ExternalUrbanFabricBuilder.auditFixedFootprintCropCandidates();
         OriginProfileManager.initialize(event.getServer());
         StarterRealmDiagnostics.runIfRequested(event.getServer());
     }

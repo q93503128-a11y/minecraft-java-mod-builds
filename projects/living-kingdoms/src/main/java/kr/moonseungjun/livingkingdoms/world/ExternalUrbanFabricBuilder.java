@@ -195,6 +195,93 @@ public final class ExternalUrbanFabricBuilder {
         return Map.copyOf(result);
     }
 
+    /** Source-only audit of fixed-size crop direction candidates. Never mutates placements or world blocks. */
+    public static void auditFixedFootprintCropCandidates() {
+        SourceTemplate source = template(CASTLE_HOUSE);
+        List<BuildingBlock> doors = findEntranceBlocks(source.blocks, source.width, source.length);
+        int bestReachable = 0;
+        FrontSide bestSide = null;
+        int bestDoorX = -1;
+        int bestDoorZ = -1;
+        int candidates = 0;
+        for (BuildingBlock door : doors) {
+            for (FrontSide side : FrontSide.values()) {
+                int depth = Math.min(38, side.horizontal ? source.width : source.length);
+                if (edgeDistance(door.x, door.z, source.width, source.length, side) >= depth) continue;
+                FacadeFragment fragment = cropFragment(
+                        source.blocks, door, side, source.width, source.height, source.length);
+                if (!containsRealEntrance(fragment)) continue;
+                int reachable = fragmentReachableCells(fragment);
+                candidates++;
+                LivingKingdoms.LOGGER.info(
+                        "LK_ERDEN_CROP_WINDOW_CANDIDATE resource={} door={},{} crop_side={} fragment={}x{} entrance_local={},{} resolved_side={} reachable={} source_only=true world_reads=false mutations=0",
+                        CASTLE_HOUSE, door.x, door.z, side, fragment.width, fragment.length,
+                        fragment.entranceX, fragment.entranceZ, fragment.exteriorSide, reachable);
+                if (reachable > bestReachable) {
+                    bestReachable = reachable;
+                    bestSide = side;
+                    bestDoorX = door.x;
+                    bestDoorZ = door.z;
+                }
+            }
+        }
+        LivingKingdoms.LOGGER.info(
+                "LK_ERDEN_CROP_WINDOW_AUDIT resource={} candidates={} current_reachable=11 best_reachable={} best_side={} best_door={},{} same_footprint=true source_only=true world_reads=false mutations=0",
+                CASTLE_HOUSE, candidates, bestReachable, bestSide, bestDoorX, bestDoorZ);
+    }
+
+    private static boolean containsRealEntrance(FacadeFragment fragment) {
+        int y = lowestDoorY(fragmentBlockMap(fragment), fragment.entranceX, 64, fragment.entranceZ);
+        if (y >= 64) {
+            for (int testY = 0; testY < fragment.height; testY++) {
+                BuildingBlock b = fragmentBlockMap(fragment).get(localKey(fragment.entranceX, testY, fragment.entranceZ));
+                if (b != null && b.state.getBlock() instanceof DoorBlock) return true;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private static Map<Long, BuildingBlock> fragmentBlockMap(FacadeFragment fragment) {
+        Map<Long, BuildingBlock> map = new HashMap<>();
+        for (BuildingBlock block : fragment.blocks) map.put(localKey(block.x, block.y, block.z), block);
+        return map;
+    }
+
+    private static int fragmentReachableCells(FacadeFragment fragment) {
+        Map<Long, BuildingBlock> blocks = fragmentBlockMap(fragment);
+        int doorY = Integer.MAX_VALUE;
+        for (int y = 0; y < fragment.height; y++) {
+            BuildingBlock block = blocks.get(localKey(fragment.entranceX, y, fragment.entranceZ));
+            if (block != null && block.state.getBlock() instanceof DoorBlock) { doorY = y; break; }
+        }
+        if (doorY == Integer.MAX_VALUE) return 0;
+        record Walk(int x, int y, int z) {}
+        java.util.ArrayDeque<Walk> queue = new java.util.ArrayDeque<>();
+        java.util.HashSet<Long> visited = new java.util.HashSet<>();
+        int seedY = sourceWalkableFeetY(blocks, fragment.entranceX, fragment.entranceZ, doorY);
+        if (seedY == Integer.MIN_VALUE) return 0;
+        queue.add(new Walk(fragment.entranceX, seedY, fragment.entranceZ));
+        visited.add(walkKey(fragment.entranceX, seedY, fragment.entranceZ));
+        int[][] dirs = {{1,0},{-1,0},{0,1},{0,-1}};
+        while (!queue.isEmpty()) {
+            Walk current = queue.removeFirst();
+            for (int[] d : dirs) {
+                int nx=current.x()+d[0], nz=current.z()+d[1];
+                if (nx<0 || nx>=fragment.width || nz<0 || nz>=fragment.length) continue;
+                int ny=sourceWalkableFeetY(blocks,nx,nz,current.y());
+                if (ny==Integer.MIN_VALUE || Math.abs(ny-current.y())>1) continue;
+                long key=walkKey(nx,ny,nz);
+                if (visited.add(key)) queue.addLast(new Walk(nx,ny,nz));
+            }
+        }
+        return visited.size();
+    }
+
+    private static long walkKey(int x, int y, int z) {
+        return ((long)(x & 0xffff) << 48) ^ ((long)(y & 0xffff) << 32) ^ (z & 0xffffffffL);
+    }
+
     private static String fragmentKey(String resource, FacadeFragment fragment) {
         SourceTemplate source = template(resource);
         for (int index = 0; index < source.fragments.size(); index++) {
