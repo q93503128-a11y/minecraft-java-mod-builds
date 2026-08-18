@@ -1,4 +1,5 @@
 name: Fix Living Kingdoms castle-house crop semantics
+# Second push intentionally triggers this workflow after it already exists on default branch.
 
 on:
   push:
