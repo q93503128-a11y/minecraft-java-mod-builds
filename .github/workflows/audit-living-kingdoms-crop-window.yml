@@ -39,7 +39,7 @@ jobs:
           found=0
           for i in $(seq 1 180); do
             if grep -Fq 'LK_ERDEN_CROP_WINDOW_AUDIT' logs/crop-window-server.log \
-              && grep -Fq 'LK_ERDEN_GROUND_VOID_SURVEY placements=77' logs/crop-window-server.log; then
+              && grep -Fq 'LK_ERDEN_AUTHORED_GROUND_SURVEY placements=233' logs/crop-window-server.log; then
               found=1; break
             fi
             if grep -Eqi 'IllegalStateException|Exception caught during firing event|BUILD FAILED' logs/crop-window-server.log; then cat logs/crop-window-server.log; exit 1; fi
@@ -55,8 +55,12 @@ jobs:
           grep -F 'LK_ERDEN_FRAGMENT_TOPOLOGY' logs/crop-window-server.log \
             | grep -F 'fantasy_castle_house.schem#0' \
             | grep -F 'classification=AUTHORED_GROUND_ONLY'
-          grep -F 'LK_ERDEN_GROUND_VOID_SURVEY placements=77' logs/crop-window-server.log \
-            | grep -F 'usable_placements=77'
+          grep -F 'Prepared exact Erden placed-fragment topology catalog buildings=233' logs/crop-window-server.log \
+            | grep -F 'classifications={AUTHORED_GROUND_ONLY=233}'
+          grep -F 'Prepared Erden zero-cut source-air route plans fragments=3 buildings=233' logs/crop-window-server.log \
+            | grep -F 'classifications={ZERO_CUT_ROUTE=233}'
+          grep -F 'LK_ERDEN_AUTHORED_GROUND_SURVEY placements=233' logs/crop-window-server.log \
+            | grep -F 'usable_placements=233'
           grep -F 'LK_ERDEN_CROP_WINDOW_AUDIT' logs/crop-window-server.log \
             | grep -F 'best_side=NORTH' \
             | tee logs/crop-window-pass.txt
@@ -71,11 +75,11 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           outcome='${{ steps.audit.outcome }}'
           if [ "$outcome" = success ]; then
             git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git commit -m 'fix(living-kingdoms): restore castle-house authored interiors'
             for attempt in 1 2 3 4 5; do git fetch origin main; if git rebase origin/main && git push origin HEAD:main; then break; fi; git rebase --abort 2>/dev/null || true; sleep $((attempt*2)); done
           fi
