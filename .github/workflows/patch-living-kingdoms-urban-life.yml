@@ -1,4 +1,4 @@
-name: Patch Living Kingdoms urban life mapping
+name: Patch Living Kingdoms residence modes registered trigger
 
 on:
   push:
@@ -12,39 +12,46 @@ permissions:
 
 jobs:
   patch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Correct smithing workstation mapping
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Apply residence mode migration
+        run: python3 .github/scripts/patch_living_kingdoms_residence_modes.py
+      - name: Audit migrated source
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanLifeManager.java')
-          text = path.read_text(encoding='utf-8')
-          old = 'Blocks.WEAPONSMITH_TABLE'
-          new = 'Blocks.SMITHING_TABLE'
-          count = text.count(old)
-          if count != 1:
-              raise SystemExit(f'Expected one workstation mapping target, found {count}')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
-      - name: Commit correction and remove patch workflow
+          set -euo pipefail
+          grep -F 'EXPECTED_GROUND_ONLY_BUILDINGS = 77' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanResidenceResolver.java
+          grep -F 'fresh_synthetic_upper_created=0' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanLifeManager.java
+          grep -F 'residence_mode=verified_upper_or_ground' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java
+          git diff --check
+      - name: Java 25 clean compile
+        working-directory: projects/living-kingdoms
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Commit product change and clean triggers
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/patch-living-kingdoms-urban-life.yml
-          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanLifeManager.java
-          git commit -m 'Correct Erden guard post smithing workstation'
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanResidenceResolver.java \
+                  projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java \
+                  projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanLifeManager.java
+          git rm -f .github/scripts/patch_living_kingdoms_residence_modes.py \
+                    .github/workflows/patch-living-kingdoms-residence-modes.yml \
+                    .github/workflows/patch-living-kingdoms-urban-life.yml
+          git commit -m 'fix(living-kingdoms): resolve real upper and ground residences'
           for attempt in 1 2 3 4 5; do
-            if git pull --rebase origin main && git push origin HEAD:main; then
-              exit 0
-            fi
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort 2>/dev/null || true
             sleep $((attempt * 2))
           done
           exit 1
-
-# registered trigger
