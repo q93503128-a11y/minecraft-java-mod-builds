@@ -46,11 +46,25 @@ public final class ErdenUrbanResidenceResolver {
     }
 
     public static BlockPos resolveHomeTarget(ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance, int bedSlot) {
-        BlockPos authored = ErdenUrbanAuthoredUpperRouteManager.verifiedUpperTarget(level, entrance);
-        if (authored != null) return nearbyWalkable(level, authored, bedSlot);
+        BlockPos upper = resolveUpperActivityTarget(level, entrance, bedSlot);
+        if (upper != null) return upper;
         if (ErdenUrbanAuthoredUpperRouteManager.isEligible(entrance)) return null;
         if (!isResidenceReady(level, entrance)) return null;
         return groundTarget(level, entrance, 4 + Math.floorMod(bedSlot, 3));
+    }
+
+    /**
+     * Resolves a walkable point on a verified authored upper level. This never synthesizes a floor and
+     * never falls back to the ground floor, so callers can safely use it for optional multi-storey activity.
+     */
+    public static BlockPos resolveUpperActivityTarget(
+            ServerLevel level,
+            ExternalUrbanFabricBuilder.UrbanEntrance entrance,
+            int slot) {
+        if (!ErdenUrbanAuthoredUpperRouteManager.isEligible(entrance)
+                || !ErdenUrbanAuthoredUpperRouteManager.isCompleted(level, entrance)) return null;
+        BlockPos authored = ErdenUrbanAuthoredUpperRouteManager.verifiedUpperTarget(level, entrance);
+        return authored == null ? null : nearbyWalkable(level, authored, slot);
     }
 
     public static BlockPos resolveWorkTarget(ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
