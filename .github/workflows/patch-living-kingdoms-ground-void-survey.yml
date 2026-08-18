@@ -17,8 +17,11 @@ jobs:
         with: { distribution: temurin, java-version: '25' }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '9.2.1' }
-      - name: Hook survey
+      - name: Hook and compile survey
+        id: apply
+        continue-on-error: true
         run: |
+          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           p=Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java')
@@ -32,17 +35,44 @@ jobs:
           PY
           grep -F 'ErdenUrbanGroundVoidOpportunityCatalog.bootstrap();' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
           git diff --check
-      - name: Java 25 clean compile
-        working-directory: projects/living-kingdoms
-        run: gradle --no-daemon clean classes --stacktrace --console=plain
-      - name: Commit and clean
+          (cd projects/living-kingdoms && gradle --no-daemon clean classes --stacktrace --console=plain)
+      - name: Commit product change
+        if: steps.apply.outcome == 'success'
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanGroundVoidOpportunityCatalog.java
-          git rm .github/workflows/patch-living-kingdoms-ground-void-survey.yml
           git commit -m 'feat(living-kingdoms): audit no-cut ground interior voids'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt*2))
+          done
+          exit 1
+      - name: Record hook result
+        if: always()
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-ground-void-hook.json <<EOF
+          {
+            "run_id": "${{ github.run_id }}",
+            "run_number": "${{ github.run_number }}",
+            "commit_sha": "${{ github.sha }}",
+            "job_status": "${{ steps.apply.outcome }}"
+          }
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/build-pointers/living-kingdoms-ground-void-hook.json
+          git commit -m "Record Living Kingdoms ground void hook ${{ github.run_number }} [skip ci]" || exit 0
           for attempt in 1 2 3 4 5; do git fetch origin main; if git rebase origin/main && git push origin HEAD:main; then exit 0; fi; git rebase --abort 2>/dev/null || true; sleep $((attempt*2)); done
           exit 1
-# registered trigger
+      - name: Enforce hook result
+        if: always()
+        run: test '${{ steps.apply.outcome }}' = 'success'
