@@ -80,12 +80,21 @@ public final class VillageEnemyEliteSystem {
     }
 
     private static void grappler(ServerLevel level, Mob mob) {
-        if (ticks % 100 != Math.floorMod(mob.getUUID().hashCode(), 100)) return;
+        int offset = Math.floorMod(mob.getUUID().hashCode(), 100);
+        int phase = Math.floorMod(ticks - offset, 100);
         VillageAttackPlanSystem.Front front = VillageAttackPlanSystem.frontOf(mob.getUUID());
         if (front == VillageAttackPlanSystem.Front.NORTH) return;
         VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);
         BlockPos wall = VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition());
         if (mob.blockPosition().distSqr(wall) > 144.0) return;
+        if (phase == 88) {
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
+                    wall.getX() + 0.5, wall.getY() + 1.0, wall.getZ() + 0.5, 12, 0.7, 0.6, 0.7, 0.03);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
+                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 8, 0.35, 0.5, 0.35, 0.02);
+            return;
+        }
+        if (phase != 0) return;
         BlockPos inside = VillageSiegeSegmentSystem.insideApproach(segment);
         if (level.getBlockState(inside).isAir() && level.getBlockState(inside.above()).isAir()) {
             mob.snapTo(inside.getX() + 0.5, inside.getY(), inside.getZ() + 0.5);
@@ -95,40 +104,71 @@ public final class VillageEnemyEliteSystem {
     }
 
     private static void firebrand(ServerLevel level, MinecraftServer server, Mob mob) {
-        if (ticks % 100 != Math.floorMod(mob.getUUID().hashCode(), 100)) return;
+        int offset = Math.floorMod(mob.getUUID().hashCode(), 100);
+        int phase = Math.floorMod(ticks - offset, 100);
+        if (phase == 82) {
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 16, 0.8, 0.5, 0.8, 0.03);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+                    mob.getX(), mob.getY() + 0.8, mob.getZ(), 10, 0.6, 0.4, 0.6, 0.02);
+            return;
+        }
+        if (phase != 0) return;
         for (ServerPlayer player : nearbyPlayers(server, mob, 10.0)) {
             player.setRemainingFireTicks(Math.max(player.getRemainingFireTicks(), 70));
             player.hurtServer(level, level.damageSources().magic(), 2.5f + VillageCouncilState.currentDay() * 0.12f);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+                    player.getX(), player.getY() + 0.8, player.getZ(), 10, 0.35, 0.55, 0.35, 0.03);
         }
-        level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME, mob.getX(), mob.getY() + 1.0, mob.getZ(),
-                20, 1.0, 0.5, 1.0, 0.04);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
+                mob.getX(), mob.getY() + 1.0, mob.getZ(), 3, 0.8, 0.4, 0.8, 0.02);
     }
 
     private static void assassin(MinecraftServer server, Mob mob) {
         if (ticks % 40 != 0) return;
-        ServerPlayer target = nearbyPlayers(server, mob, 28.0).stream().findFirst().orElse(null);
+        ServerPlayer target = nearbyPlayers(server, mob, 28.0).stream()
+                .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
         if (target != null) {
             mob.setTarget(target);
             mob.getNavigation().moveTo(target, 1.48);
             mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 45, 0));
+            if (mob.level() instanceof ServerLevel level) {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
+                        mob.getX(), mob.getY() + 0.8, mob.getZ(), 10, 0.35, 0.5, 0.35, 0.03);
+            }
         }
     }
 
     private static void plague(MinecraftServer server, Mob mob) {
-        if (ticks % 120 != Math.floorMod(mob.getUUID().hashCode(), 120)) return;
+        int offset = Math.floorMod(mob.getUUID().hashCode(), 120);
+        int phase = Math.floorMod(ticks - offset, 120);
+        if (!(mob.level() instanceof ServerLevel level)) return;
+        if (phase == 100) {
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
+                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 20, 1.4, 0.6, 1.4, 0.04);
+            return;
+        }
+        if (phase != 0) return;
         for (ServerPlayer player : nearbyPlayers(server, mob, 9.0)) {
             player.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 1));
             player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+                    player.getX(), player.getY() + 0.7, player.getZ(), 9, 0.4, 0.5, 0.4, 0.03);
         }
     }
 
     private static void shock(MinecraftServer server, Mob mob) {
         if (ticks % 70 != Math.floorMod(mob.getUUID().hashCode(), 70)) return;
-        ServerPlayer target = nearbyPlayers(server, mob, 24.0).stream().findFirst().orElse(null);
+        ServerPlayer target = nearbyPlayers(server, mob, 24.0).stream()
+                .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
         if (target != null) {
             mob.setTarget(target);
             mob.getNavigation().moveTo(target, 1.62);
             mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 55, 1));
+            if (mob.level() instanceof ServerLevel level) {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+                        mob.getX(), mob.getY() + 0.9, mob.getZ(), 12, 0.45, 0.55, 0.45, 0.04);
+            }
         }
     }
 
