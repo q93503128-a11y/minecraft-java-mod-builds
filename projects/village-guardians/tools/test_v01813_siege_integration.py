@@ -93,6 +93,11 @@ def main() -> None:
         "merc_bastion_guard", "merc_striker_pressure", "merc_medic_pulse",
         "siege_structure_impact"):
         require(f"mesh renderer has {token}", token in mesh)
+    require("defense mesh fades preserve packed ARGB channels",
+            "private static int withAlpha(int color, int alpha)" in mesh
+            and "(color & 0x00FFFFFF) | (clampInt(alpha) << 24)" in mesh
+            and "color & 0xFFFFFF00" not in mesh
+            and "rgba((color >> 24)" not in mesh)
 
     require("turret straight-line particle spam is replaced by mesh shot plus impact feedback",
             "VillageDefenseEffectSystem.turretShot" in turret
