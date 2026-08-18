@@ -25,11 +25,15 @@ def main() -> None:
 
     require("version is v0.18.15-alpha.1", "mod_version=0.18.15-alpha.1" in props)
 
-    require("boss doctrines diversify by day wave and actual boss archetype",
+    require("boss doctrines genuinely diversify by day wave and actual boss archetype",
             "doctrineFor(" in boss
             and "VillageRaidSystem.waveOf(mob)" in boss
+            and "day * 5 + wave * 2 + salt" in boss
+            and "wave * 3" not in boss
             and "type.ordinal()" in boss
             and "혼성 보스 교리" in boss)
+    doctrine_cycle = {(10 * 5 + wave * 2 + 7) % 3 for wave in (1, 2, 3)}
+    require("three consecutive waves can cover all three doctrine slots", len(doctrine_cycle) == 3)
     require("boss presence combines aspect and siege doctrine in one persistent owner-follow silhouette",
             "VillageBossAspectSystem.aspectOf(mob)" in boss
             and "VillageBossEffectSystem.presence" in boss

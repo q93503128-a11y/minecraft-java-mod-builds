@@ -72,7 +72,7 @@ public final class VillageSiegeBossSystem {
             int day, int wave, VillageEnemyArchetypeSystem.Archetype type) {
         int salt = type == null ? 0 : type.ordinal();
         BossDoctrine[] values = BossDoctrine.values();
-        return values[Math.floorMod(day * 5 + wave * 3 + salt, values.length)];
+        return values[Math.floorMod(day * 5 + wave * 2 + salt, values.length)];
     }
 
     private static void discover(ServerLevel level, BlockPos center) {
@@ -112,7 +112,11 @@ public final class VillageSiegeBossSystem {
         VillageAttackPlanSystem.Front front = VillageAttackPlanSystem.frontOf(mob.getUUID());
         VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);
         BlockPos target = VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition());
-        if (!VillageSiegeSegmentSystem.breached(segment)) {
+        if (VillageSiegeSegmentSystem.breached(segment)) {
+            BREACH_CASTS.remove(mob.getUUID());
+            return;
+        }
+        {
             mob.setTarget(null);
             mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.18);
             boolean touching = VillageSiegeSegmentSystem.touching(segment, mob.blockPosition());

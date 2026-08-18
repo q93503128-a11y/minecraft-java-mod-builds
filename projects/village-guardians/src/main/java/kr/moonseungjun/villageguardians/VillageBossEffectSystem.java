@@ -28,9 +28,11 @@ public final class VillageBossEffectSystem {
             Mob boss,
             VillageSiegeBossSystem.BossDoctrine doctrine) {
         if (level == null || boss == null || doctrine == null) return;
+        VillageBossAspectSystem.Aspect aspect = VillageBossAspectSystem.aspectOf(boss);
+        String aspectId = aspect == null ? "" : aspect.name().toLowerCase(Locale.ROOT);
         VillageSkillEffectEntity.spawn(level, boss,
                 "boss_phase_two_" + doctrine.name().toLowerCase(Locale.ROOT),
-                boss.position(), horizontal(boss.getLookAngle()), 20 * 60 * 30, 0.0f, "");
+                boss.position(), horizontal(boss.getLookAngle()), 20 * 60 * 30, 0.0f, aspectId);
         VillageSkillEffectEntity.spawn(level, null, "boss_phase_two_burst", boss.position(),
                 new Vec3(0.0, 0.0, 1.0), 28, 0.0f, "5.0");
     }

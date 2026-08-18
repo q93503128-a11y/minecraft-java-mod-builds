@@ -1,0 +1,205 @@
+status=PASS
+run_id=32089686899
+trigger_head=ebb8bf653e6fc387848c1da2d2096575f8b717bf
+
+head_before=ebb8bf653e6fc387848c1da2d2096575f8b717bf
+run_id=32089686899
+=== APPLY DOCTRINE FIX ===
+[PASS] boss doctrine selection now genuinely varies with wave modulo three
+[PASS] phase-two overlay preserves the boss aspect identity color
+[PASS] completed breach segments discard stale pending breach casts
+apply_exit=0
+[PASS] boss doctrine regression now proves wave input is mathematically effective
+prepare_exit=0
+=== tools/test_rpg_balance.py ===
+PASS: slowed RPG balance contract
+test_xp_3000=level_7_xp_131
+level30 attack=x2.415
+level30 incoming=61.4%
+level30 bonus_health=20
+total_xp_to_level30=94685
+=== tools/test_village_zone.py ===
+PASS: expanded village territory contract
+radius=96
+defense_xp_multiplier=1.5
+=== tools/test_progression_loop.py ===
+[PASS] Village progression upgrade costs are monotonic
+[PASS] Smithy, personal forge, and wall upgrades improve combat
+[PASS] Daily bread scales from 3 to 13
+[PASS] Center-to-north-gate avenue contains no buildings
+[PASS] Max storehouse+barracks doubles raid supplies
+=== tools/test_progression_depth.py ===
+[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs
+[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration
+[PASS] Emergency barrier, momentum and party recovery are wired into combat
+[PASS] Defense research expands from 9 to 15 upgrades
+[PASS] Skill trees fit overview spacing and the current categorized shop uses safe detail-first actions
+=== tools/test_fortress_layout.py ===
+[PASS] Compact buildings stay inside the fortress without overlap
+[PASS] Every facility entrance faces and reaches the central road or plaza
+[PASS] Town hall remains at least twice a normal facility after resizing
+[PASS] Closed gate spans the complete tower opening without side slits
+[PASS] Wall top has a flat three-block center walkway and planned rail openings
+[PASS] Wall stairs connect directly to the landing
+[PASS] Return destination is inside the plaza and clear of the bell and buildings
+=== tools/test_runtime_safety.py ===
+[PASS] Modal screens suppress vanilla HUD/chat/title and stay inside the hotbar-safe viewport
+[PASS] Production routing uses current town/shop/action/relic/wave surfaces only
+[PASS] Town hall exposes explicit facility function, repair and upgrade controls
+[PASS] Quick chat, fusion, relic and tactical dossier safeguards remain wired
+[PASS] Existing progression, building, shop, loot, mercenary, research and raid contracts remain wired
+=== tools/test_ui_layout_contract.py ===
+[PASS] Modal safe area reserves 38-56 GUI pixels for the vanilla hotbar
+[PASS] Town hall and facility-detail panels remain fully inside the safe viewport
+[PASS] Victory and quick-chat dedicated layouts remain wired
+=== tools/test_action_layout.py ===
+[PASS] Retired screens cannot re-enter production client routing
+[PASS] Town-hall function/repair/upgrade buttons stay inside narrow detail panes
+[PASS] Short narrow action screens choose side-by-side layout instead of crushed vertical panes
+[PASS] Shop detail/list panes stay valid on short GUI heights and narrow widths
+[PASS] Result modal and active shop/command surfaces use current safe-area UI language
+[PASS] Growth trees retain anchored popovers without legacy footer panels
+=== tools/test_enemy_content.py ===
+[PASS] Twelve readable wave traits include deterministic counters and previews
+[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs
+[PASS] Five-day milestone sieges and endless warfront tiers remain scalable
+[PASS] Ten player-placed turret roles own production combat and tower research scaling
+[PASS] Automated defenses and mercenaries use synchronized procedural-mesh feedback
+[PASS] Twenty active skills combine real gameplay with dedicated procedural-mesh scenes
+[PASS] CC0 fantasy visual references are documented without untracked binaries
+=== tools/test_v0188_risk_ui_cleanup.py ===
+[PASS] Downed players receive no hidden structure-damage protection
+[PASS] Early difficulty curve and +30% multiplayer enemy scaling remain intact
+[PASS] Legacy screens are unreachable and narrow-screen overflow guards remain wired
+[PASS] Equipment tooltip avoids client/server smithy desync and raid debris suppression remains active
+=== tools/test_v0189_siege_phase2.py ===
+[PASS] Seven segment HP pools project localized 5-block no-drop wall breaches
+[PASS] Day-driven scoutable multi-front routing uses safe terrain-height spawn resolution
+[PASS] 1/2/3/4-player enemy scaling remains 100/130/160/190%
+[PASS] Ten deployable destructible turrets use split placement/management views
+[PASS] Failed-night retry/new-game restores authoritative segment/turret snapshots and visuals
+[PASS] Mercenary rally doctrine, five elite roles and three boss structures are wired
+[PASS] Weapon families and 2/3-piece sets affect runtime combat and re-equip without stacking
+[PASS] Inventory side panel stays outside vanilla inventory or safely hides at impossible widths
+[PASS] Legacy fixed-tower production routes redirect to phase-2 siege command
+[PASS] v0.18.8 early-solo, full-death-risk and debris contracts remain
+=== tools/test_v01810_ranger_ricochet.py ===
+[PASS] tracking ricochet locks only inside a forward aim cone
+[PASS] homing uses smooth predictive steering and live target reacquisition
+[PASS] ricochet hops sequentially through unique line-of-sight targets
+[PASS] secondary hits preserve player kill ownership without double scaling or recursion
+[PASS] skill description and bounded damage/chain scaling match runtime
+=== tools/test_v01811_defense_polish.py ===
+[PASS] direct-fire turret and ranger LOS blocks wall-through acquisition and damage
+[PASS] bombard retains its intentional indirect-fire acquisition exception
+[PASS] tower hunters approach at range but damage turrets only at physical attack distance
+[PASS] piercer has a real armored-target damage niche
+[PASS] turret placement/visual/cleanup owns a matching three-block footprint
+[PASS] only the actual mercenary killer receives mercenary progression
+[PASS] all four mercenary classes retain distinct active battlefield behavior
+=== tools/test_v01812_quality_audit.py ===
+[PASS] version is v0.18.12-alpha.1
+[PASS] turret LOS starts outside its own three-block visual column
+[PASS] anti-air targeting chooses nearest valid airborne target
+[PASS] chain turret visuals arc from target to target rather than starburst from tower
+[PASS] mercenary deployment uses authoritative saved class map instead of display-name parsing
+[PASS] support mercenaries suppress melee wandering without cancelling rally return
+[PASS] breach colossus can attack the north gate and phase two really attacks faster
+[PASS] siege boss telegraphs and impacts share explicit delayed cast state
+[PASS] elite telegraphs remain readable and share fixed delayed cast state with their impacts
+[PASS] elite pursuit chooses the nearest player instead of player-list order
+[PASS] boss aspects ignore downed targets and telegraph lethal pulses
+[PASS] stormcaller warning and damage share one fixed dodgeable strike point
+=== tools/test_v01813_siege_integration.py ===
+[PASS] version is v0.18.13-alpha.1
+[PASS] raid enemies own authoritative wave metadata before entity join
+[PASS] attack plan no longer parses gameplay state from display names
+[PASS] downed players are excluded from generic raid pursuit and archetype abilities
+[PASS] structure pressure is staggered per attacker instead of one global burst tick
+[PASS] tower hunter owns one coherent nearest placed-turret objective
+[PASS] turret pressure layer no longer fights raid navigation ownership
+[PASS] tower hunter disrupts real placed turrets instead of retired fixed tower kinds
+[PASS] legacy duplicate research bonus firing path is retired
+[PASS] bombard is a delayed snapshot-position shell with real impact resolution
+[PASS] bombard can arc over cover while direct-fire turrets still require LOS
+[PASS] automated defense visuals use synchronized procedural mesh actors
+[PASS] mesh renderer has turret_ballista_shot
+[PASS] mesh renderer has turret_repeater_shot
+[PASS] mesh renderer has turret_piercer_shot
+[PASS] mesh renderer has turret_flame_shot
+[PASS] mesh renderer has turret_frost_shot
+[PASS] mesh renderer has turret_chain_shot
+[PASS] mesh renderer has turret_bombard_arc
+[PASS] mesh renderer has turret_bombard_impact
+[PASS] mesh renderer has turret_nullifier_shot
+[PASS] mesh renderer has turret_antiair_shot
+[PASS] mesh renderer has turret_beacon_pulse
+[PASS] mesh renderer has merc_ranger_shot
+[PASS] mesh renderer has merc_bastion_guard
+[PASS] mesh renderer has merc_striker_pressure
+[PASS] mesh renderer has merc_medic_pulse
+[PASS] mesh renderer has siege_structure_impact
+[PASS] defense mesh fades preserve packed ARGB channels
+[PASS] turret straight-line particle spam is replaced by mesh shot plus impact feedback
+[PASS] four mercenary roles expose synchronized combat feedback
+[PASS] v0.18.13 siege integration contracts complete
+=== tools/test_v01814_persistent_presentation.py ===
+[PASS] version is v0.18.14-alpha.1
+[PASS] turret gameplay state remains SavedData while visual actors are runtime-only
+[PASS] active turrets use invisible collision shells plus mesh bodies
+[PASS] wrecks and dismantles retire turret actors instead of leaving ghosts
+[PASS] turret actors are self-healed and can aim independently of the collision footprint
+[PASS] failed-night and new-game persistence changes immediately rebuild runtime turrets and wall visuals
+[PASS] mesh library renders turret_body_ballista
+[PASS] mesh library renders turret_body_repeater
+[PASS] mesh library renders turret_body_piercer
+[PASS] mesh library renders turret_body_flame
+[PASS] mesh library renders turret_body_frost
+[PASS] mesh library renders turret_body_chain
+[PASS] mesh library renders turret_body_bombard
+[PASS] mesh library renders turret_body_nullifier
+[PASS] mesh library renders turret_body_anti_air
+[PASS] mesh library renders turret_body_beacon
+[PASS] mesh library renders turret_wreck_
+[PASS] turret level and disruption state alter the visible body
+[PASS] owner-follow presentation actors die when their owning mob disappears
+[PASS] elite presentation has elite_aura_grappler
+[PASS] elite presentation has elite_aura_firebrand
+[PASS] elite presentation has elite_aura_assassin
+[PASS] elite presentation has elite_aura_plague_weaver
+[PASS] elite presentation has elite_aura_shock_rider
+[PASS] elite presentation has elite_grapple_line
+[PASS] elite presentation has elite_firebrand_throw
+[PASS] elite presentation has elite_firebrand_impact
+[PASS] elite presentation has elite_plague_warning
+[PASS] elite presentation has elite_plague_impact
+[PASS] grappler traversal is a timed arc rather than one-frame wall teleport
+[PASS] firebrand warning snapshots a dodgeable impact point and resolves later
+[PASS] plague warning and impact share one fixed danger zone
+[PASS] v0.18.14 persistent presentation contracts complete
+=== tools/test_v01815_boss_identity.py ===
+[PASS] version is v0.18.15-alpha.1
+[PASS] boss doctrines genuinely diversify by day wave and actual boss archetype
+[PASS] three consecutive waves can cover all three doctrine slots
+[PASS] boss presence combines aspect and siege doctrine in one persistent owner-follow silhouette
+[PASS] phase two adds a persistent readable boss layer plus transition burst
+[PASS] breach colossus warning and wall damage consume one fixed cast snapshot
+[PASS] bone hierophant ritual uses one fixed world-space zone from warning through buff resolution
+[PASS] black marshal mark cannot jump to another player between warning and impact
+[PASS] bloodbound drain warning and damage share one fixed world-space center
+[PASS] stormcaller keeps fixed dodgeable ground point and now uses mesh warning
+[PASS] boss presence kinds are composed dynamically from doctrine ids
+[PASS] boss procedural presentation includes boss_phase_two_burst
+[PASS] boss procedural presentation includes boss_breach_warning
+[PASS] boss procedural presentation includes boss_breach_windup
+[PASS] boss procedural presentation includes boss_breach_impact
+[PASS] boss procedural presentation includes boss_ritual_warning
+[PASS] boss procedural presentation includes boss_ritual_impact
+[PASS] boss procedural presentation includes boss_duel_mark
+[PASS] boss procedural presentation includes boss_duel_impact
+[PASS] boss procedural presentation includes boss_bloodbound_warning
+[PASS] boss procedural presentation includes boss_bloodbound_impact
+[PASS] boss procedural presentation includes boss_storm_warning
+[PASS] boss presentation follows live owners and rotates with boss facing
+[PASS] v0.18.15 boss identity and cast-state contracts complete
+tests_exit=0
