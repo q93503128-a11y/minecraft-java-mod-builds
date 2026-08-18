@@ -6,8 +6,8 @@ Minecraft Java 26.2에서 낮 동안 마을을 준비하고, 밤에는 실제 �
 - NeoForge `26.2.0.37-beta` 이상 26.2.x
 - Java `25`
 - Gradle `9.2.1`
-- 현재 소스 버전 `0.18.15-alpha.1`
-- 목표 JAR `villageguardians-0.18.15-alpha.1.jar`
+- 현재 소스 버전 `0.18.16-alpha.1`
+- 목표 JAR `villageguardians-0.18.16-alpha.1.jar`
 
 ## 핵심 루프
 
@@ -118,6 +118,21 @@ Minecraft Java 26.2에서 낮 동안 마을을 준비하고, 밤에는 실제 �
 - 수호병은 근거리 적의 시선을 끌고 억제하며, 공격병은 가시 목표를 적극 압박하고, 궁수는 LOS 원거리 지원, 의무병은 회복에 집중한다.
 - 궁수·의무병의 바닐라 철골렘 근접 추격을 억제했고, 성벽 배치 경로 생성이 실패하면 성 내부 안전 거점으로 fallback한다.
 - Java 25 + Gradle 9.2.1 + NeoForge 26.2 실제 clean build와 JAR 검증을 통과했다. 최종 acceptance run은 `31583212244`다.
+
+## 0.18.16 Defense HUD·Presentation Pass
+
+모바일 디펜스 게임의 정보 우선순위를 참고하되 특정 게임의 UI를 복제하지 않고, 전투 중 필요한 정보가 한눈에 읽히도록 HUD와 방어 자산 피드백을 통합했다.
+
+- 기존 좌상단 텍스트 박스를 `VillageDefenseHudFrame` 기반 21필드 authoritative 전투 프레임으로 교체했다. 날짜·페이즈·레벨·직업·주화·보급·웨이브·남은 적·다음 웨이브 시간·전장 특성을 사람이 읽는 문자열에서 다시 파싱하지 않는다.
+- 상단 command ribbon은 날짜/페이즈, 현재 웨이브·남은 적, 주화·보급을 우선순위대로 분리하고 좁은 GUI에서는 compact 2열 배치로 전환한다.
+- 실제 `ACTIVE_ENEMIES`와 전선 할당을 집계해 북문/서측/동측/후방 4개 압박도를 즉시 표시한다. 색과 길이는 적 수에 따라 단계적으로 변한다.
+- 7개 성벽 Segment와 성벽을 제외한 실제 시설 HP를 직접 비교해 가장 약한 방어선을 상시 표시한다. 25% 이하에서는 별도 위험 경보가 뜬다.
+- 시설 BossBar는 2.5초 순환 목록을 폐기하고 실제 피격 직후만 `피격/주의/긴급` 상태로 잠깐 나타나는 emergency alert로 축소했다. 전체 방어 비교는 상시 HUD가 담당한다.
+- 스킬 HUD는 텍스트 두 줄 대신 두 개 ability card로 바꿔 `READY`, 남은 초, 준비 진행 상태가 핫바 위에서 바로 읽힌다. 기존보다 위로 올려 바닐라 핫바와의 충돌 여유도 늘렸다.
+- 회관/지휘 화면은 `VillageDefenseUiTheme`의 저채도 패널, semantic cyan/gold/amber/red/green 팔레트를 공유해 서로 다른 메뉴가 하나의 게임 UI처럼 보이도록 통일했다.
+- 포탑 유효 배치 미리보기, 설치 완료, 수리, 강화에 각각 synchronized procedural mesh 피드백을 추가했다. 성벽 Segment가 실제 돌파될 때도 붉은 확장 링과 지면 균열형 breach alarm이 발생한다.
+- 낡은 runtime safety 테스트가 스킬 HUD의 정확한 `guiHeight()-98` 숫자를 성공 조건으로 고정하던 부분을 제거하고, 더 안전한 `-112` ability-card baseline과 카드 렌더 경로를 검증하도록 이관했다.
+- 최종 acceptance run `32094533863` / built head `c41c8cde89bc1dea524156e61480e1f302a406a6`에서 전체 deterministic/UI/interaction/0.18.8~0.18.16 회귀, Java 25 + NeoForge clean build, JAR verifier, artifact upload가 모두 성공했다. 최종 JAR SHA-256은 `62c1e69fba813828a7b59761bb3320daaca8097e7ce5bcff47b092cc8c918b2b`, 크기는 `955045` bytes다.
 
 ## 0.18.15 보스 Identity·고정 Cast State
 

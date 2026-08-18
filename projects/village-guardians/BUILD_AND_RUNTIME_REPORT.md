@@ -2,17 +2,32 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.15-alpha.1`
+- Current source version: `0.18.16-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.15-alpha.1.jar`
-- Final acceptance Actions run: `32089737176`
-- Final acceptance head: `b52f8cd63f643db2b759c5db48985f0bab03b710`
-- Final JAR SHA-256: `6a37f758510ba5ee20ec20d607dd9696a60e15f160961587a43b4042632497e4`
-- Final JAR size: `940741` bytes
+- Target JAR: `villageguardians-0.18.16-alpha.1.jar`
+- Final acceptance Actions run: `32094533863`
+- Final acceptance head: `c41c8cde89bc1dea524156e61480e1f302a406a6`
+- Final JAR SHA-256: `62c1e69fba813828a7b59761bb3320daaca8097e7ce5bcff47b092cc8c918b2b`
+- Final JAR size: `955045` bytes
+
+## 0.18.16 Defense HUD·Presentation 감사
+
+- `VillageDefenseHudFrame`을 추가해 기존 styled status string 대신 21개 고정 필드로 메인 HUD 데이터를 전달한다. server state가 단일 정본이며 클라이언트는 표시만 담당한다.
+- `VillageRaidSystem.RaidHudSnapshot`이 현재 wave/max wave, active enemy count, next-wave seconds, trait와 북/서/동/후방 압박 수를 실제 `ACTIVE_ENEMIES`에서 계산한다.
+- `VillageMainHudOverlay`를 responsive command ribbon + weakest-defense integrity card + four-front pressure pips 구조로 재작성했다.
+- `VillageSkillHudOverlay`는 두 개 ability card와 READY/cooldown state, active-effect chip을 사용하고 바닐라 hotbar 위 안전 여백을 확대했다.
+- `VillageStructureHud`의 순환식 BossBar를 제거하고 실제 시설 피해 직후만 보이는 emergency alert로 바꿨다.
+- `VillageDefenseUiTheme`을 추가해 command center와 town hall을 같은 저채도 surface/semantic accent 체계로 통일했다.
+- 포탑 배치/설치/수리/강화와 실제 성벽 돌파에 `VillageDefenseEffectSystem` → `VillageSkillEffectEntity` → `VillageSkillMeshLibrary` synchronized procedural mesh feedback을 연결했다.
+- 첫 apply run에서 오래된 runtime test의 `guiHeight()-98` 고정 좌표 계약이 새 ability-card HUD를 실패시켰고, 실제 안전성이 더 높은 `-112` baseline + card renderer 계약으로 이관했다.
+- apply/회귀 run `32094444642`에서 core runtime/UI/interaction 계약과 0.18.8~0.18.16 회귀가 모두 PASS했다.
+- 최종 Actions run `32094533863`: Java 25 setup PASS, deterministic contracts PASS, NeoForge clean build PASS, runtime JAR verify PASS, artifact upload PASS.
+- Actions artifact를 별도 다운로드해 ZIP/JAR CRC, `neoforge.mods.toml`, manifest, `VillageDefenseHudFrame`, `VillageDefenseUiTheme`, `VillageMainHudOverlay`, `VillageSkillHudOverlay`, `VillageStructureHud`, `VillageDefenseEffectSystem`, `VillageRaidSystem$RaidHudSnapshot`, `VillageSkillMeshLibrary`, `VillageCommandCenterScreen`, `VillageTownHallGridScreen` 포함을 재검증했다.
+- 최종 JAR SHA-256 `62c1e69fba813828a7b59761bb3320daaca8097e7ce5bcff47b092cc8c918b2b`, 크기 `955045` bytes.
 
 ## 0.18.15 보스 Presentation·Cast 정합 감사
 
