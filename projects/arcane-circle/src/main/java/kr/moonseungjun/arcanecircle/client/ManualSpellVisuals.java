@@ -111,22 +111,27 @@ final class ManualSpellVisuals {
     }
 
     static int color(String id) {
-        return switch (id) {
-            case "fire_bolt","scorching_ray","fireball","wall_of_fire","flame_strike","delayed_blast_fireball","fire_storm","incendiary_cloud","meteor_swarm","burning_hands","fire_shield","steam_burst","phoenix_requiem" -> 0xFFFF321A;
-            case "ray_of_frost","sleet_storm","ice_storm","cone_of_cold","freezing_sphere","simulacrum","ice_knife","wall_of_ice","frost_step","winter_domain" -> 0xFF31D9FF;
-            case "feather_fall","thunderwave","gust_of_wind","levitate","fly","control_weather","wind_wall" -> 0xFF3DFFC4;
-            case "shield","mage_armor","web","hold_person","protection_from_energy","resilient_sphere","stoneskin","wall_of_force","hold_monster","globe_of_invulnerability","flesh_to_stone","forcecage","antimagic_field","prismatic_wall","thunder_cage","astral_prison" -> 0xFFAA5CFF;
-            case "vampiric_touch","blight","freedom_of_movement","cloudkill","mass_cure_wounds","insect_plague","move_earth","sunbeam","circle_of_death","finger_of_death","clone","earthquake","sunburst","power_word_kill","shapechange","true_polymorph","solar_guard" -> 0xFF4AFF72;
-            case "misty_step","blink","dimension_door","passwall","etherealness","plane_shift","reverse_gravity","teleport","demiplane","maze","time_stop","gate","teleportation_circle","void_lance","world_sunder" -> 0xFFE052FF;
-            case "prismatic_spray","chromatic_orb" -> 0xFFFFFFFF;
-            case "disintegrate" -> 0xFF6BFF22;
-            case "sunbeam","sunburst","true_seeing","foresight","solar_guard" -> 0xFFFFE55A;
-            case "circle_of_death","finger_of_death","power_word_kill","eyebite" -> 0xFFFF224E;
-            case "phantasmal_killer","weird","feeblemind" -> 0xFFFF36D7;
-            case "flesh_to_stone" -> 0xFFD4DAE8;
-            default -> 0xFF5B78FF;
-        };
-    }
+    return switch (id) {
+        case "fire_bolt","scorching_ray","fireball","wall_of_fire","flame_strike","delayed_blast_fireball","fire_storm","incendiary_cloud","meteor_swarm","burning_hands","fire_shield","steam_burst","phoenix_requiem" -> 0xFFFF321A;
+        case "ray_of_frost","sleet_storm","ice_storm","cone_of_cold","freezing_sphere","simulacrum","ice_knife","wall_of_ice","frost_step","winter_domain" -> 0xFF31D9FF;
+        case "feather_fall","thunderwave","gust_of_wind","levitate","fly","control_weather","wind_wall" -> 0xFF3DFFC4;
+        case "shield","mage_armor","web","hold_person","protection_from_energy","resilient_sphere","stoneskin","wall_of_force","hold_monster","globe_of_invulnerability","forcecage","antimagic_field","prismatic_wall","thunder_cage","astral_prison" -> 0xFFAA5CFF;
+        case "vampiric_touch","blight","freedom_of_movement","cloudkill","mass_cure_wounds","insect_plague","clone","shapechange","true_polymorph" -> 0xFF4AFF72;
+        case "misty_step","blink","dimension_door","passwall","etherealness","plane_shift","reverse_gravity","teleport","demiplane","maze","gate","teleportation_circle","void_lance" -> 0xFFE052FF;
+        case "magic_missile","light","grease","sleep","mirror_image","invisibility","shatter","blur","haste","dispel_magic","slow","greater_invisibility","confusion","telekinesis","dominate_person","mass_suggestion","dominate_monster","counterspell","arcane_hand" -> 0xFF5B78FF;
+        case "lightning_bolt","chain_lightning" -> 0xFF78B8FF;
+        case "prismatic_spray","chromatic_orb" -> 0xFFFFFFFF;
+        case "disintegrate" -> 0xFF6BFF22;
+        case "sunbeam","sunburst","true_seeing","foresight","solar_guard" -> 0xFFFFE55A;
+        case "circle_of_death","finger_of_death","power_word_kill","eyebite" -> 0xFFFF224E;
+        case "phantasmal_killer","weird","feeblemind" -> 0xFFFF36D7;
+        case "flesh_to_stone" -> 0xFFD4DAE8;
+        case "time_stop" -> 0xFF64EFFF;
+        case "wish" -> 0xFFF4A8FF;
+        case "move_earth","earthquake","world_sunder" -> 0xFFFFA43B;
+        default -> throw new IllegalStateException("Un-authored spell color: "+id);
+    };
+}
 
     static int prismaticColor(int layer){int[] c={0xFFFF2348,0xFFFF8A24,0xFFFFE63B,0xFF39EE77,0xFF35A9FF,0xFF7657FF,0xFFE055FF};return c[Math.floorMod(layer,c.length)];}
 
