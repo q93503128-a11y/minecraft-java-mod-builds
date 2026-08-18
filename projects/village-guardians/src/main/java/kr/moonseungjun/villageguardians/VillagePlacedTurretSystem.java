@@ -51,7 +51,11 @@ public final class VillagePlacedTurretSystem {
                 if (state != null) TURRETS.put(id, state);
             } catch (NumberFormatException ignored) { }
         });
-        if (server != null) rebuildVisuals(server.overworld());
+        if (server != null) {
+            ServerLevel level = server.overworld();
+            VillageTurretPresentationSystem.initialize(level, states());
+            rebuildVisuals(level);
+        }
     }
 
     public static synchronized int count() { return TURRETS.size(); }
@@ -154,7 +158,7 @@ public final class VillagePlacedTurretSystem {
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
         VillageSiegePersistence.removeString(PREFIX + id);
         DISABLED_TICKS.remove(id);
-        if (player.level() instanceof ServerLevel level) clearVisual(level, state.pos());
+        if (player.level() instanceof ServerLevel level) clearVisual(level, state);
         int refund = Math.max(20, state.type().installCost() / 3 + (state.level() - 1) * 25);
         VillageProgressionSystem.addCoins(player, refund, "포탑 철거 환급");
         return state.type().displayName() + " #" + id + " 철거 완료 · 주화 " + refund + " 환급";
@@ -182,13 +186,14 @@ public final class VillagePlacedTurretSystem {
     public static void tick(MinecraftServer server) {
         if (server == null) return;
         tickDisruptions();
+        ServerLevel level = server.overworld();
+        VillageTurretPresentationSystem.tick(level, states());
         if (!VillageRaidSystem.isActive()) {
             PENDING_BOMBARDS.clear();
             DISABLED_TICKS.clear();
-                return;
+            return;
         }
         combatTicks++;
-        ServerLevel level = server.overworld();
         resolveBombards(level);
         List<TurretState> snapshot = states();
         for (TurretState state : snapshot) {
@@ -220,6 +225,8 @@ public final class VillagePlacedTurretSystem {
                     .orElse(target);
         }
         if (target == null) return;
+        VillageTurretPresentationSystem.aim(level, state,
+                target.position().add(0.0, target.getBbHeight() * 0.55, 0.0));
         float damage = (state.type().damage() + (state.level() - 1) * state.type().damage() * 0.16f)
                 * VillageDefenseResearchSystem.towerDamageMultiplier();
         switch (state.type()) {
@@ -434,27 +441,20 @@ public final class VillagePlacedTurretSystem {
         if (!state.active()) { buildWreck(level, state); return; }
         Block base = state.level() >= 4 ? Blocks.POLISHED_BLACKSTONE_BRICK_WALL : Blocks.STONE_BRICK_WALL;
         VillageFortressTerrain.set(level, state.pos(), base);
-        VillageFortressTerrain.set(level, state.pos().above(), state.type().visual());
-        VillageFortressTerrain.set(level, state.pos().above(2), turretCap(state.type()));
-    }
-    private static Block turretCap(TurretType type) {
-        return switch (type) {
-            case BALLISTA, REPEATER, PIERCER -> Blocks.IRON_BARS;
-            case FLAME -> Blocks.SOUL_LANTERN;
-            case FROST -> Blocks.BLUE_ICE;
-            case CHAIN -> Blocks.REDSTONE_LAMP;
-            case BOMBARD -> Blocks.HEAVY_CORE;
-            case NULLIFIER -> Blocks.END_ROD;
-            case ANTI_AIR -> Blocks.IRON_BARS;
-            case BEACON -> Blocks.SEA_LANTERN;
-        };
+        // Collision and raycast footprint stay physical; the visible machinery is a synchronized procedural mesh actor.
+        VillageFortressTerrain.set(level, state.pos().above(), Blocks.BARRIER);
+        VillageFortressTerrain.set(level, state.pos().above(2), Blocks.BARRIER);
+        VillageTurretPresentationSystem.show(level, state);
     }
     private static void buildWreck(ServerLevel level, TurretState state) {
         VillageFortressTerrain.set(level, state.pos(), Blocks.CRACKED_STONE_BRICKS);
         VillageFortressTerrain.set(level, state.pos().above(), Blocks.AIR);
         VillageFortressTerrain.set(level, state.pos().above(2), Blocks.AIR);
+        VillageTurretPresentationSystem.show(level, state);
     }
-    private static void clearVisual(ServerLevel level, BlockPos pos) {
+    private static void clearVisual(ServerLevel level, TurretState state) {
+        VillageTurretPresentationSystem.remove(level, state.id());
+        BlockPos pos = state.pos();
         VillageFortressTerrain.set(level, pos, Blocks.AIR);
         VillageFortressTerrain.set(level, pos.above(), Blocks.AIR);
         VillageFortressTerrain.set(level, pos.above(2), Blocks.AIR);

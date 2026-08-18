@@ -95,7 +95,11 @@ public final class VillageSkillEffectEntity extends Entity {
             Vec3 horizontal = new Vec3(look.x, 0.0, look.z);
             if (horizontal.lengthSqr() > 1.0E-6) setDirection(horizontal.normalize());
         }
-        if (followsOwner() && owner != null && owner.isAlive()) {
+        if (followsOwner()) {
+            if (owner == null || !owner.isAlive()) {
+                discard();
+                return;
+            }
             if (tracksOwnerLook()) {
                 Vec3 look = owner.getLookAngle();
                 if (kind().startsWith("warden_")) look = new Vec3(look.x, 0.0, look.z);
@@ -122,6 +126,7 @@ public final class VillageSkillEffectEntity extends Entity {
     }
 
     private boolean followsOwner() {
+        if (kind().startsWith("elite_aura_")) return true;
         return switch (kind()) {
             case "vanguard_spin", "vanguard_rally", "vanguard_blade_charge",
                     "vanguard_slam_charge", "ranger_rapid", "ranger_focus",

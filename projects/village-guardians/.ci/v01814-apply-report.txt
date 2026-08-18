@@ -1,9 +1,9 @@
-status=FAIL
-run_id=32088361229
-trigger_head=9b01ba27a2e23062423cb5157bfc59a1ade10ecc
+status=PASS
+run_id=32088427772
+trigger_head=a4ae73197d749eff5b7b73e586b247f1c7c20224
 
-head_before=9b01ba27a2e23062423cb5157bfc59a1ade10ecc
-run_id=32088361229
+head_before=a4ae73197d749eff5b7b73e586b247f1c7c20224
+run_id=32088427772
 === APPLY ===
 [PASS] applied v0.18.14 persistent presentation patch
 apply_exit=0
@@ -109,12 +109,74 @@ defense_xp_multiplier=1.5
 [PASS] support mercenaries suppress melee wandering without cancelling rally return
 [PASS] breach colossus can attack the north gate and phase two really attacks faster
 [PASS] siege boss abilities telegraph before breach ritual and duel impacts
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 86, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 64, in main
-    require("elite instant effects now expose readable pre-cast telegraphs",
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 14, in require
-    raise AssertionError(label)
-AssertionError: elite instant effects now expose readable pre-cast telegraphs
-tests_exit=1
+[PASS] elite telegraphs remain readable and share fixed delayed cast state with their impacts
+[PASS] elite pursuit chooses the nearest player instead of player-list order
+[PASS] boss aspects ignore downed targets and telegraph lethal pulses
+[PASS] stormcaller warning and damage share one fixed dodgeable strike point
+=== tools/test_v01813_siege_integration.py ===
+[PASS] version is v0.18.13-alpha.1
+[PASS] raid enemies own authoritative wave metadata before entity join
+[PASS] attack plan no longer parses gameplay state from display names
+[PASS] downed players are excluded from generic raid pursuit and archetype abilities
+[PASS] structure pressure is staggered per attacker instead of one global burst tick
+[PASS] tower hunter owns one coherent nearest placed-turret objective
+[PASS] turret pressure layer no longer fights raid navigation ownership
+[PASS] tower hunter disrupts real placed turrets instead of retired fixed tower kinds
+[PASS] legacy duplicate research bonus firing path is retired
+[PASS] bombard is a delayed snapshot-position shell with real impact resolution
+[PASS] bombard can arc over cover while direct-fire turrets still require LOS
+[PASS] automated defense visuals use synchronized procedural mesh actors
+[PASS] mesh renderer has turret_ballista_shot
+[PASS] mesh renderer has turret_repeater_shot
+[PASS] mesh renderer has turret_piercer_shot
+[PASS] mesh renderer has turret_flame_shot
+[PASS] mesh renderer has turret_frost_shot
+[PASS] mesh renderer has turret_chain_shot
+[PASS] mesh renderer has turret_bombard_arc
+[PASS] mesh renderer has turret_bombard_impact
+[PASS] mesh renderer has turret_nullifier_shot
+[PASS] mesh renderer has turret_antiair_shot
+[PASS] mesh renderer has turret_beacon_pulse
+[PASS] mesh renderer has merc_ranger_shot
+[PASS] mesh renderer has merc_bastion_guard
+[PASS] mesh renderer has merc_striker_pressure
+[PASS] mesh renderer has merc_medic_pulse
+[PASS] mesh renderer has siege_structure_impact
+[PASS] defense mesh fades preserve packed ARGB channels
+[PASS] turret straight-line particle spam is replaced by mesh shot plus impact feedback
+[PASS] four mercenary roles expose synchronized combat feedback
+[PASS] v0.18.13 siege integration contracts complete
+=== tools/test_v01814_persistent_presentation.py ===
+[PASS] version is v0.18.14-alpha.1
+[PASS] turret gameplay state remains SavedData while visual actors are runtime-only
+[PASS] active turrets use invisible collision shells plus mesh bodies
+[PASS] wrecks and dismantles retire turret actors instead of leaving ghosts
+[PASS] turret actors are self-healed and can aim independently of the collision footprint
+[PASS] mesh library renders turret_body_ballista
+[PASS] mesh library renders turret_body_repeater
+[PASS] mesh library renders turret_body_piercer
+[PASS] mesh library renders turret_body_flame
+[PASS] mesh library renders turret_body_frost
+[PASS] mesh library renders turret_body_chain
+[PASS] mesh library renders turret_body_bombard
+[PASS] mesh library renders turret_body_nullifier
+[PASS] mesh library renders turret_body_anti_air
+[PASS] mesh library renders turret_body_beacon
+[PASS] mesh library renders turret_wreck_
+[PASS] turret level and disruption state alter the visible body
+[PASS] owner-follow presentation actors die when their owning mob disappears
+[PASS] elite presentation has elite_aura_grappler
+[PASS] elite presentation has elite_aura_firebrand
+[PASS] elite presentation has elite_aura_assassin
+[PASS] elite presentation has elite_aura_plague_weaver
+[PASS] elite presentation has elite_aura_shock_rider
+[PASS] elite presentation has elite_grapple_line
+[PASS] elite presentation has elite_firebrand_throw
+[PASS] elite presentation has elite_firebrand_impact
+[PASS] elite presentation has elite_plague_warning
+[PASS] elite presentation has elite_plague_impact
+[PASS] grappler traversal is a timed arc rather than one-frame wall teleport
+[PASS] firebrand warning snapshots a dodgeable impact point and resolves later
+[PASS] plague warning and impact share one fixed danger zone
+[PASS] v0.18.14 persistent presentation contracts complete
+tests_exit=0

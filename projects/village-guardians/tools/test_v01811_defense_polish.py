@@ -17,7 +17,7 @@ def main() -> None:
     deploy = read("VillageMercenaryDeploymentSystem.java")
     guardians = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.13-alpha.1" in props
+    assert "mod_version=0.18.14-alpha.1" in props
 
     # Direct-fire defenses and ranger mercenaries must not acquire/fire through blocks.
     # BOMBARD is deliberately the only indirect-fire acquisition exception in v0.18.13.
@@ -42,7 +42,7 @@ def main() -> None:
 
     # Turrets have a compact three-block silhouette and matching placement/cleanup contract.
     assert "pos.above(2)" in turret and "포탑 공간 3블록" in turret
-    assert "turretCap" in turret and "POLISHED_BLACKSTONE_BRICK_WALL" in turret
+    assert "Blocks.BARRIER" in turret and "VillageTurretPresentationSystem.show" in turret
 
     # Mercenary progression belongs only to the actual killing mercenary.
     assert "awardKillExperience(Mob killer)" in merc
