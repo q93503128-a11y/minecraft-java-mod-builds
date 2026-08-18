@@ -11,9 +11,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.43' in gradle
-assert 'VERSION = "0.12.1-alpha.43"' in main
-assert '"version": "0.12.1-alpha.43"' in index
+assert 'mod_version=0.12.1-alpha.44' in gradle
+assert 'VERSION = "0.12.1-alpha.44"' in main
+assert '"version": "0.12.1-alpha.44"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -284,7 +284,6 @@ print('gameplay_content=preserved')
 print('source_mutation=disabled')
 print('legacy_arcane_tooling=absent')
 
-
 # Alpha.42 presentation regression recovery.
 for name in ['ArcaneSigilDirector.java','SpellCinematicDirector.java','ArcaneSpellVisualOverhaul.java']:
     assert (client/name).exists(), name
@@ -296,7 +295,6 @@ for token in ['formulaFrame','m.circle(basis,Vec3.ZERO,outer','inscriptionRing',
 tracker=text(client/'WorldMagicTracker.java')
 for token in ['ArcaneSigilDirector.charge','SpellCinematicDirector.charge','ArcaneSpellVisualOverhaul.chargeSigil']:
     assert token in tracker, token
-
 
 # Alpha.43 reference-informed high-circle authored timeline.
 timeline_path=client/'AuthoredHighCircleTimeline.java'
@@ -330,3 +328,35 @@ for token in ['formulaFrame(mesh, spell, profile','m.circle(basis,Vec3.ZERO,oute
 assert 'ManualSpellVisuals' not in tracker
 print('alpha43_high_circle_authored_timeline=PASS')
 print('alpha42_low_circle_sigil_baseline=preserved')
+
+# Alpha.44 deep lifecycle/staging pass: preserve the alpha.43 core while making long effects live in world-time.
+maintenance_path=client/'HighCircleMaintenanceOverlay.java'
+assert maintenance_path.exists()
+maintenance=text(maintenance_path)
+for token in ['REPLACED_CHARGE = Set.of','"plane_shift"','"antimagic_field"','"meteor_swarm"','"shapechange"',
+              '"time_stop"','"wish"','"gate"','"foresight"','"world_sunder"',
+              'int[] order = {0, -1, 1, -2, 2, -3, 3}','clamp(t / 1.15, 0.0, 1.0)',
+              't * Math.PI * 2.0 / 3.0','seeingHeartbeat','solarHeartbeat']:
+    assert token in maintenance, token
+assert maintenance.count('case "') >= 19
+for token in ['world_magic_cinematic_v4','HighCircleMaintenanceOverlay.charge','HighCircleMaintenanceOverlay.release',
+              'HighCircleMaintenanceOverlay.replacesChargeTimeline','DETAIL_DISTANCE_SQR = 96.0 * 96.0',
+              'SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0',
+              'entries.sort(Comparator.comparingInt(RenderEntry::priority).reversed())','releaseOpacity','withOpacity',
+              'followsCaster','if("time_stop".equals(spell.id()))return false;',
+              'if("antimagic_field".equals(spell.id()))return true;','findPlayer(UUID id)',
+              'if(distanceSqr>SILHOUETTE_DISTANCE_SQR&&entry.priority<90)continue;',
+              'if(distanceSqr>DETAIL_DISTANCE_SQR&&entry.priority<58)continue;']:
+    assert token in tracker, token
+staged_block=tracker[tracker.index('if(v.spell.circle()>=7){'):tracker.index('for(Visual v:RELEASES)')]
+assert 'if(!HighCircleMaintenanceOverlay.replacesChargeTimeline(v.spell))' in staged_block
+assert staged_block.index('HighCircleMaintenanceOverlay.replacesChargeTimeline') < staged_block.index('AuthoredHighCircleTimeline.charge')
+for attached_id in ['shield','mage_armor','haste','greater_invisibility','true_seeing','solar_guard','shapechange','foresight','fly']:
+    assert f'"{attached_id}"' in tracker, attached_id
+# Do not replace the alpha.43 mesh renderer with another global pass: alpha.44 LOD is layer-level and safer pre-live-test.
+assert 'int size(int lod)' not in mesh
+assert 'void submit(PoseStack poseStack,SubmitNodeCollector collector,int argb,float windowScale,int lod' not in mesh
+print('alpha44_entity_attached_persistent_vfx=PASS')
+print('alpha44_priority_distance_lod=PASS')
+print('alpha44_staged_high_circle_charge=PASS')
+print('alpha44_release_fade=PASS')
