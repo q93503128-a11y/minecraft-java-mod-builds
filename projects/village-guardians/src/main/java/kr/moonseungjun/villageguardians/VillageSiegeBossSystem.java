@@ -74,6 +74,12 @@ public final class VillageSiegeBossSystem {
     private static void enterPhaseTwo(MinecraftServer server, Mob mob, BossDoctrine doctrine) {
         mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 20 * 60 * 30, 1));
         mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 60 * 30, 1));
+        if (mob.level() instanceof ServerLevel level) {
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                    mob.getX(), mob.getY() + 1.2, mob.getZ(), 42, 1.6, 1.0, 1.6, 0.08);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
+                    mob.getX(), mob.getY() + 0.8, mob.getZ(), 5, 0.8, 0.4, 0.8, 0.02);
+        }
         server.getPlayerList().broadcastSystemMessage(Component.literal(
                 "§4[보스 2페이즈] §f" + doctrine.displayName() + "의 전투 방식이 격화됩니다. · "
                         + doctrine.phaseTwo()), false);
@@ -82,20 +88,43 @@ public final class VillageSiegeBossSystem {
     private static void tickBreach(MinecraftServer server, Mob mob) {
         VillageAttackPlanSystem.Front front = VillageAttackPlanSystem.frontOf(mob.getUUID());
         VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);
-        if (segment == VillageSiegeSegmentSystem.Segment.NORTH_GATE && front == VillageAttackPlanSystem.Front.NORTH) return;
         BlockPos target = VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition());
         if (!VillageSiegeSegmentSystem.breached(segment)) {
             mob.setTarget(null);
             mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.18);
-            if (ticks % 45 == 0 && VillageSiegeSegmentSystem.touching(segment, mob.blockPosition())) {
-                int damage = PHASE_TWO.contains(mob.getUUID()) ? 72 : 48;
+            if (!VillageSiegeSegmentSystem.touching(segment, mob.blockPosition())) return;
+            boolean phaseTwo = PHASE_TWO.contains(mob.getUUID());
+            int interval = phaseTwo ? 30 : 45;
+            int offset = Math.floorMod(mob.getUUID().hashCode(), interval);
+            int phase = Math.floorMod(ticks - offset, interval);
+            ServerLevel level = server.overworld();
+            if (phase == interval - 10) {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+                        target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5,
+                        18, 1.2, 0.5, 1.2, 0.03);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
+                        mob.getX(), mob.getY() + 1.1, mob.getZ(), 14, 0.6, 0.6, 0.6, 0.03);
+            }
+            if (phase == 0) {
+                mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                int damage = phaseTwo ? 72 : 48;
                 VillageSiegeSegmentSystem.damage(server, segment, damage, mob.blockPosition());
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
+                        target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5,
+                        5, 1.0, 0.5, 1.0, 0.02);
             }
         }
     }
 
     private static void tickRitual(ServerLevel level, Mob boss) {
-        if (ticks % 120 != Math.floorMod(boss.getUUID().hashCode(), 120)) return;
+        int offset = Math.floorMod(boss.getUUID().hashCode(), 120);
+        int phase = Math.floorMod(ticks - offset, 120);
+        if (phase == 100) {
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
+                    boss.getX(), boss.getY() + 1.3, boss.getZ(), 30, 2.4, 1.0, 2.4, 0.04);
+            return;
+        }
+        if (phase != 0) return;
         for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, boss.position(), 15.0, 20, boss.getUUID())) {
             ally.heal(PHASE_TWO.contains(boss.getUUID()) ? 10.0f : 6.0f);
             ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100,
@@ -115,12 +144,21 @@ public final class VillageSiegeBossSystem {
         if (target == null) return;
         boss.setTarget(target);
         boss.getNavigation().moveTo(target, PHASE_TWO.contains(boss.getUUID()) ? 1.58 : 1.34);
-        if (ticks % 105 == 0) target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 70, 1));
+        ServerLevel level = server.overworld();
+        if (ticks % 105 == 70) {
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
+                    target.getX(), target.getY() + 1.0, target.getZ(), 12, 0.6, 0.8, 0.6, 0.02);
+        }
+        if (ticks % 105 == 0) {
+            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 70, 1));
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
+                    target.getX(), target.getY() + 0.8, target.getZ(), 16, 0.5, 0.5, 0.5, 0.04);
+        }
     }
 
     public enum BossDoctrine {
         BREACH_COLOSSUS("파성 거신", "성벽 구역을 직접 목표로 삼고 50% 이하에서 파쇄 주기가 빨라집니다.",
-                "성벽 파쇄 피해 50% 증가"),
+                "파쇄 주기 45→30틱 · 파쇄 피해 50% 증가"),
         BONE_HIEROPHANT("사령 결속자", "주변 공성 병력에 반복 보호막·회복 의식을 걸어 우선 처치가 필요합니다.",
                 "의식 회복량과 보호막 단계 증가"),
         BLACK_MARSHAL("검은 결투원수", "시설보다 살아 있는 수호자를 추격하는 결투형 지휘관입니다.",
