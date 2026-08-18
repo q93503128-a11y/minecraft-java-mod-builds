@@ -1,14 +1,15 @@
-status=FAIL
-run_id=32086640299
-trigger_head=3dae42d3c915c45857de342e85f4dcd174fbccef
+status=PASS
+run_id=32086723485
+trigger_head=7941d9d509c8a5ddb141007eed54cdb6401c0f16
 
-head_before=3dae42d3c915c45857de342e85f4dcd174fbccef
-run_id=32086640299
+head_before=7941d9d509c8a5ddb141007eed54cdb6401c0f16
+run_id=32086723485
 === APPLY ===
 [PASS] applied v0.18.13 siege integration patch
 apply_exit=0
 === CONTRACT MIGRATION ===
 [PASS] v0.18.9 turret regression now rejects retired duplicate research firing
+[PASS] v0.18.12 chain regression now requires shared mesh/damage hop coordinates
 migrate_exit=0
 === REGRESSION ===
 [PASS] version is v0.18.13-alpha.1
@@ -42,12 +43,38 @@ migrate_exit=0
 [PASS] version is v0.18.12-alpha.1
 [PASS] turret LOS starts outside its own three-block visual column
 [PASS] anti-air targeting chooses nearest valid airborne target
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 84, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 37, in main
-    require("chain turret visuals arc from target to target rather than starburst from tower",
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01812_quality_audit.py", line 14, in require
-    raise AssertionError(label)
-AssertionError: chain turret visuals arc from target to target rather than starburst from tower
-tests_exit=1
+[PASS] chain turret visuals arc from target to target rather than starburst from tower
+[PASS] mercenary deployment uses authoritative saved class map instead of display-name parsing
+[PASS] support mercenaries suppress melee wandering without cancelling rally return
+[PASS] breach colossus can attack the north gate and phase two really attacks faster
+[PASS] siege boss abilities telegraph before breach ritual and duel impacts
+[PASS] elite instant effects now expose readable pre-cast telegraphs
+[PASS] elite pursuit chooses the nearest player instead of player-list order
+[PASS] boss aspects ignore downed targets and telegraph lethal pulses
+[PASS] stormcaller warning and damage share one fixed dodgeable strike point
+[PASS] turret and ranger LOS blocks wall-through acquisition and damage
+[PASS] tower hunters approach at range but damage turrets only at physical attack distance
+[PASS] piercer has a real armored-target damage niche
+[PASS] turret placement/visual/cleanup owns a matching three-block footprint
+[PASS] only the actual mercenary killer receives mercenary progression
+[PASS] all four mercenary classes retain distinct active battlefield behavior
+[PASS] tracking ricochet locks only inside a forward aim cone
+[PASS] homing uses smooth predictive steering and live target reacquisition
+[PASS] ricochet hops sequentially through unique line-of-sight targets
+[PASS] secondary hits preserve player kill ownership without double scaling or recursion
+[PASS] skill description and bounded damage/chain scaling match runtime
+[PASS] Seven segment HP pools project localized 5-block no-drop wall breaches
+[PASS] Day-driven scoutable multi-front routing uses safe terrain-height spawn resolution
+[PASS] 1/2/3/4-player enemy scaling remains 100/130/160/190%
+[PASS] Ten deployable destructible turrets use split placement/management views
+[PASS] Failed-night retry/new-game restores authoritative segment/turret snapshots and visuals
+[PASS] Mercenary rally doctrine, five elite roles and three boss structures are wired
+[PASS] Weapon families and 2/3-piece sets affect runtime combat and re-equip without stacking
+[PASS] Inventory side panel stays outside vanilla inventory or safely hides at impossible widths
+[PASS] Legacy fixed-tower production routes redirect to phase-2 siege command
+[PASS] v0.18.8 early-solo, full-death-risk and debris contracts remain
+[PASS] Downed players receive no hidden structure-damage protection
+[PASS] Early difficulty curve and +30% multiplayer enemy scaling remain intact
+[PASS] Legacy screens are unreachable and narrow-screen overflow guards remain wired
+[PASS] Equipment tooltip avoids client/server smithy desync and raid debris suppression remains active
+tests_exit=0

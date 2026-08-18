@@ -1,6 +1,5 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -11,6 +10,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +41,7 @@ public final class VillageAttackPlanSystem {
         if (level == null || mob == null || !VillageRaidSystem.isRaidEnemy(mob)
                 || ACTIVE_FRONTS.containsKey(mob.getUUID())) return;
         int day = VillageCouncilState.currentDay();
-        int wave = parseWave(mob);
+        int wave = VillageRaidSystem.waveOf(mob);
         int key = day * 100 + wave;
         int index = JOIN_INDEX.getOrDefault(key, 0);
         JOIN_INDEX.put(key, index + 1);
@@ -99,15 +99,19 @@ public final class VillageAttackPlanSystem {
             mob.setTarget(null);
             mob.getLookControl().setLookAt(target.getX() + 0.5, target.getY() + 1.2, target.getZ() + 0.5);
             mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.10);
-            if (attackTicks % 30 == 0 && VillageSiegeSegmentSystem.touching(segment, mob.blockPosition())) {
+            if (Math.floorMod(attackTicks + id.hashCode(), 30) == 0
+                    && VillageSiegeSegmentSystem.touching(segment, mob.blockPosition())) {
                 VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(mob);
                 if (archetype == null) archetype = VillageEnemyArchetypeSystem.Archetype.GRUNT;
                 int raw = Math.max(1, Math.round((7.0f + day * 0.65f)
                         * VillageEnemyArchetypeSystem.structureDamageMultiplier(archetype)
                         * VillageWarfrontSystem.structureDamageMultiplier(day)
                         * VillageDifficultyTuning.earlyStructureMultiplier(day)
-                        * condition(day, parseWave(mob)).structureMultiplier()));
+                        * condition(day, VillageRaidSystem.waveOf(mob)).structureMultiplier()));
                 VillageSiegeSegmentSystem.damage(server, segment, raw, mob.blockPosition());
+                VillageDefenseEffectSystem.structureImpact(level,
+                        Vec3.atCenterOf(VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition())),
+                        VillageEnemyArchetypeSystem.isBoss(archetype) || archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER);
                 VillageEnemyArchetypeSystem.onStructureHit(level, mob, archetype);
                 mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             }
@@ -249,21 +253,6 @@ public final class VillageAttackPlanSystem {
     private static boolean insideFortress(BlockPos center, BlockPos pos) {
         int r = VillageWorldSystem.FORTRESS_RADIUS - 4;
         return Math.abs(pos.getX() - center.getX()) < r && Math.abs(pos.getZ() - center.getZ()) < r;
-    }
-
-    private static int parseWave(Mob mob) {
-        Component name = mob.getCustomName();
-        if (name == null) return Math.max(1, VillageRaidSystem.previewMaxWaves(VillageCouncilState.currentDay()));
-        String text = ChatFormatting.stripFormatting(name.getString());
-        if (text == null) return 1;
-        int marker = text.indexOf("웨이브 ");
-        if (marker < 0) return Math.max(1, VillageRaidSystem.previewMaxWaves(VillageCouncilState.currentDay()));
-        int start = marker + 4;
-        int end = start;
-        while (end < text.length() && Character.isDigit(text.charAt(end))) end++;
-        if (end <= start) return 1;
-        try { return Math.max(1, Integer.parseInt(text.substring(start, end))); }
-        catch (NumberFormatException ignored) { return 1; }
     }
 
     private static String warStage(int day) {

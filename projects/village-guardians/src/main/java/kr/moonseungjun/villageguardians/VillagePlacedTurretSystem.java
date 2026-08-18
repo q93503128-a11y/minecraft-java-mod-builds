@@ -20,6 +20,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -31,14 +32,20 @@ public final class VillagePlacedTurretSystem {
     private static final String PREFIX = "turret_";
     private static final Map<Integer, TurretState> TURRETS = new LinkedHashMap<>();
     private static final Map<UUID, PendingPlacement> PENDING = new HashMap<>();
+    private static final Map<Integer, Integer> DISABLED_TICKS = new HashMap<>();
+    private static final List<PendingBombard> PENDING_BOMBARDS = new ArrayList<>();
     private static int combatTicks;
+    private static int disableCursor;
 
     private VillagePlacedTurretSystem() {}
 
     public static synchronized void initializeServer(MinecraftServer server) {
         TURRETS.clear();
         PENDING.clear();
+        DISABLED_TICKS.clear();
+        PENDING_BOMBARDS.clear();
         combatTicks = 0;
+        disableCursor = 0;
         VillageSiegePersistence.stringsWithPrefix(PREFIX).forEach((key, value) -> {
             try {
                 int id = Integer.parseInt(key.substring(PREFIX.length()));
@@ -148,6 +155,7 @@ public final class VillagePlacedTurretSystem {
         TurretState state = TURRETS.remove(id);
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
         VillageSiegePersistence.removeString(PREFIX + id);
+        DISABLED_TICKS.remove(id);
         if (player.level() instanceof ServerLevel level) clearVisual(level, state.pos());
         int refund = Math.max(20, state.type().installCost() / 3 + (state.level() - 1) * 25);
         VillageProgressionSystem.addCoins(player, refund, "포탑 철거 환급");
@@ -174,13 +182,22 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static void tick(MinecraftServer server) {
-        if (server == null || !VillageRaidSystem.isActive()) return;
+        if (server == null) return;
+        tickDisruptions();
+        if (!VillageRaidSystem.isActive()) {
+            PENDING_BOMBARDS.clear();
+            DISABLED_TICKS.clear();
+            disableCursor = 0;
+            return;
+        }
         combatTicks++;
         ServerLevel level = server.overworld();
+        resolveBombards(level);
         List<TurretState> snapshot = states();
         for (TurretState state : snapshot) {
             if (!state.active()) continue;
             enemyPressure(level, server, state);
+            if (isDisabled(state.id())) continue;
             if (!state.active() || state.type() == TurretType.BEACON) {
                 if (state.type() == TurretType.BEACON && combatTicks % 60 == 0) supportPulse(level, server, state);
                 continue;
@@ -214,15 +231,13 @@ public final class VillagePlacedTurretSystem {
                 Vec3 arcStart = turretMuzzle(state, target);
                 for (Mob mob : chain) {
                     if (!VillageDefenseLineOfSight.hasLine(level, arcStart, mob)) continue;
+                    Vec3 arcEnd = mob.position().add(0, mob.getBbHeight() * 0.55, 0);
+                    VillageDefenseEffectSystem.turretShot(level, TurretType.CHAIN, arcStart, arcEnd);
                     hitFrom(level, arcStart, mob, damage * 0.78f, ParticleTypes.ELECTRIC_SPARK);
-                    arcStart = mob.position().add(0, mob.getBbHeight() * 0.55, 0);
+                    arcStart = arcEnd;
                 }
             }
-            case BOMBARD -> {
-                List<Mob> splash = VillageRaidSystem.activeEnemiesNear(level, target.position(), 4.5,
-                        4 + state.level(), null);
-                for (Mob mob : splash) hit(level, state, mob, damage * 0.72f, ParticleTypes.EXPLOSION);
-            }
+            case BOMBARD -> queueBombard(level, state, target, damage);
             case FLAME -> {
                 hit(level, state, target, damage, ParticleTypes.FLAME);
                 target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 80 + state.level() * 30));
@@ -263,19 +278,41 @@ public final class VillagePlacedTurretSystem {
 
     private static void hit(ServerLevel level, TurretState state, Mob target, float damage,
                             net.minecraft.core.particles.ParticleOptions particle) {
-        hitFrom(level, turretMuzzle(state, target), target, damage, particle);
+        Vec3 start = turretMuzzle(state, target);
+        Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
+        VillageDefenseEffectSystem.turretShot(level, state.type(), start, end);
+        hitFrom(level, start, target, damage, particle);
     }
 
     private static void hitFrom(ServerLevel level, Vec3 start, Mob target, float damage,
                                 net.minecraft.core.particles.ParticleOptions particle) {
         if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;
         Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
-        for (int i = 0; i <= 8; i++) {
-            Vec3 point = start.lerp(end, i / 8.0);
-            level.sendParticles(particle, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-        }
-        level.sendParticles(particle, end.x, end.y, end.z, 5, 0.18, 0.22, 0.18, 0.02);
+        level.sendParticles(particle, end.x, end.y, end.z, 4, 0.18, 0.22, 0.18, 0.02);
         target.hurtServer(level, level.damageSources().magic(), damage);
+    }
+
+    private static void queueBombard(ServerLevel level, TurretState state, Mob target, float damage) {
+        Vec3 start = turretMuzzle(state, target);
+        Vec3 impact = target.position();
+        VillageDefenseEffectSystem.turretShot(level, TurretType.BOMBARD, start, impact);
+        PENDING_BOMBARDS.add(new PendingBombard(combatTicks + 12, impact,
+                4.5 + state.level() * 0.15, 4 + state.level(), damage * 0.72f));
+    }
+
+    private static void resolveBombards(ServerLevel level) {
+        Iterator<PendingBombard> iterator = PENDING_BOMBARDS.iterator();
+        while (iterator.hasNext()) {
+            PendingBombard shot = iterator.next();
+            if (shot.dueTick() > combatTicks) continue;
+            iterator.remove();
+            for (Mob mob : VillageRaidSystem.activeEnemiesNear(level, shot.impact(), shot.radius(), shot.limit(), null)) {
+                mob.hurtServer(level, level.damageSources().magic(), shot.damage());
+            }
+            VillageDefenseEffectSystem.bombardImpact(level, shot.impact(), shot.radius());
+            level.sendParticles(ParticleTypes.EXPLOSION, shot.impact().x, shot.impact().y + 0.2, shot.impact().z,
+                    5, 0.65, 0.22, 0.65, 0.03);
+        }
     }
 
     private static void supportPulse(ServerLevel level, MinecraftServer server, TurretState state) {
@@ -288,8 +325,10 @@ public final class VillagePlacedTurretSystem {
                 player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 70, 0, false, true, true));
             }
         }
+        Vec3 center = Vec3.atCenterOf(state.pos());
+        VillageDefenseEffectSystem.beaconPulse(level, center, radius);
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, state.pos().getX() + 0.5, state.pos().getY() + 1.5,
-                state.pos().getZ() + 0.5, 12, 1.2, 0.8, 1.2, 0.04);
+                state.pos().getZ() + 0.5, 8, 0.9, 0.55, 0.9, 0.03);
     }
 
     private static void enemyPressure(ServerLevel level, MinecraftServer server, TurretState state) {
@@ -313,6 +352,33 @@ public final class VillagePlacedTurretSystem {
             }
         }
         if (damage > 0) damage(server, state.id(), damage);
+    }
+
+    public static synchronized int disableRandomActiveTurret(int ticks) {
+        List<TurretState> candidates = TURRETS.values().stream()
+                .filter(TurretState::active)
+                .sorted(Comparator.comparingInt(TurretState::id))
+                .toList();
+        if (candidates.isEmpty()) return -1;
+        TurretState selected = candidates.get(Math.floorMod(disableCursor++, candidates.size()));
+        DISABLED_TICKS.put(selected.id(), Math.max(DISABLED_TICKS.getOrDefault(selected.id(), 0), Math.max(1, ticks)));
+        return selected.id();
+    }
+
+    public static synchronized boolean isDisabled(int id) {
+        return DISABLED_TICKS.getOrDefault(id, 0) > 0;
+    }
+
+    public static synchronized int disabledSeconds(int id) {
+        return Math.max(0, (DISABLED_TICKS.getOrDefault(id, 0) + 19) / 20);
+    }
+
+    private static synchronized void tickDisruptions() {
+        for (int id : new ArrayList<>(DISABLED_TICKS.keySet())) {
+            int remaining = DISABLED_TICKS.getOrDefault(id, 0);
+            if (remaining <= 1 || !TURRETS.containsKey(id)) DISABLED_TICKS.remove(id);
+            else DISABLED_TICKS.put(id, remaining - 1);
+        }
     }
 
     public static synchronized void damage(MinecraftServer server, int id, int damage) {
@@ -411,11 +477,14 @@ public final class VillagePlacedTurretSystem {
 
     public record TurretState(int id, TurretType type, BlockPos pos, int level, int hp, boolean active) {
         public String summary() {
+            String state = active ? "가동" : "파괴";
+            if (active && isDisabled(id)) state += " · §5교란 " + disabledSeconds(id) + "초";
             return type.displayName() + " #" + id + " · Lv." + level + " · HP " + hp + "/" + maxHp(this)
-                    + " · " + (active ? "가동" : "파괴");
+                    + " · " + state;
         }
     }
     private record PendingPlacement(TurretType type, BlockPos preview) {}
+    private record PendingBombard(int dueTick, Vec3 impact, double radius, int limit, float damage) {}
 
     public enum TurretType {
         BALLISTA("ballista", "중쇠뇌", 28, 44, 58, 300, 180, Blocks.DISPENSER, "단일 고화력"),

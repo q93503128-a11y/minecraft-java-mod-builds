@@ -97,7 +97,7 @@ def main() -> None:
     council = read("VillageCouncilState.java")
     world = read("VillageWorldSystem.java")
 
-    assert "mod_version=0.18.12-alpha.1" in props
+    assert "mod_version=0.18.13-alpha.1" in props
 
     # Segment durability owns combat HP, not individual wall blocks. North gate remains save-compatible.
     for token in ("NORTH_WEST", "NORTH_GATE", "NORTH_EAST", "WEST", "EAST", "SOUTH_WEST", "SOUTH_EAST"):
@@ -146,7 +146,7 @@ def main() -> None:
     assert "siege_turret_list" in local
     assert "VillageDefenseSystem.tick" not in guardians
     assert "VillagePlacedTurretSystem.tick" in guardians
-    assert "VillageTowerResearchBonusSystem.tick" in guardians
+    assert "VillageTowerResearchBonusSystem" not in guardians
 
     # Failed-night retry/new-game state must not leak segment/turret damage.
     assert "captureNightSnapshot" in persistence and "restoreNightSnapshot" in persistence

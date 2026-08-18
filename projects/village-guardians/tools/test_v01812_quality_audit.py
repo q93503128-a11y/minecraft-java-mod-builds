@@ -24,7 +24,7 @@ def main() -> None:
     elite = read("VillageEnemyEliteSystem.java")
     aspect = read("VillageBossAspectSystem.java")
 
-    require("version is v0.18.12-alpha.1", "mod_version=0.18.12-alpha.1" in props)
+    require("version is v0.18.12-alpha.1", "mod_version=0.18.13-alpha.1" in props)
 
     require("turret LOS starts outside its own three-block visual column",
             "private static Vec3 turretMuzzle" in turret
@@ -37,7 +37,9 @@ def main() -> None:
     require("chain turret visuals arc from target to target rather than starburst from tower",
             "Vec3 arcStart = turretMuzzle(state, target);" in turret
             and "hitFrom(level, arcStart, mob" in turret
-            and "arcStart = mob.position().add" in turret)
+            and "Vec3 arcEnd = mob.position().add" in turret
+            and "VillageDefenseEffectSystem.turretShot(level, TurretType.CHAIN, arcStart, arcEnd)" in turret
+            and "arcStart = arcEnd" in turret)
 
     require("mercenary deployment uses authoritative saved class map instead of display-name parsing",
             "public static synchronized MercenaryClass classOf(Mob mob)" in merc

@@ -67,6 +67,23 @@ public final class VillageSkillMeshLibrary {
             case "warden_taunt" -> renderTaunt(pose, out, basis, age, progress);
             case "warden_fortress" -> renderFortress(pose, out, basis, age, progress, true);
             case "warden_aegis" -> renderFortress(pose, out, basis, age, progress, false);
+
+            case "turret_ballista_shot" -> renderDefenseShot(pose, out, state, age, progress, 0);
+            case "turret_repeater_shot" -> renderDefenseShot(pose, out, state, age, progress, 1);
+            case "turret_piercer_shot" -> renderDefenseShot(pose, out, state, age, progress, 2);
+            case "turret_flame_shot" -> renderDefenseShot(pose, out, state, age, progress, 3);
+            case "turret_frost_shot" -> renderDefenseShot(pose, out, state, age, progress, 4);
+            case "turret_chain_shot" -> renderDefenseShot(pose, out, state, age, progress, 5);
+            case "turret_bombard_arc" -> renderBombardArc(pose, out, state, age, progress);
+            case "turret_bombard_impact" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 0);
+            case "turret_nullifier_shot" -> renderDefenseShot(pose, out, state, age, progress, 6);
+            case "turret_antiair_shot" -> renderDefenseShot(pose, out, state, age, progress, 7);
+            case "turret_beacon_pulse" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 1);
+            case "merc_ranger_shot" -> renderDefenseShot(pose, out, state, age, progress, 8);
+            case "merc_bastion_guard" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 2);
+            case "merc_striker_pressure" -> renderDefenseShot(pose, out, state, age, progress, 9);
+            case "merc_medic_pulse" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 3);
+            case "siege_structure_impact" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 4);
             default -> renderFallbackRune(pose, out, basis, age, progress);
         }
     }
@@ -561,6 +578,106 @@ public final class VillageSkillMeshLibrary {
     }
 
     private record EffectMeta(double radius, int rank) {}
+
+    private static void renderDefenseShot(
+            PoseStack.Pose pose, VertexConsumer out, VillageSkillEffectRenderState state,
+            double age, double progress, int style) {
+        Vec3 origin = new Vec3(state.x, state.y, state.z);
+        List<Vec3> points = parsePoints(state.extra, origin);
+        if (points.size() < 2) return;
+        Vec3 a = points.get(0).subtract(origin);
+        Vec3 z = points.get(1).subtract(origin);
+        Vec3 delta = z.subtract(a);
+        if (delta.lengthSqr() < 1.0E-6) return;
+        Basis b = Basis.from(delta);
+        double travel = clamp(progress * 1.18, 0.0, 1.0);
+        Vec3 center = a.lerp(z, travel);
+        int color = switch (style) {
+            case 2 -> rgba(255, 235, 180, 230);
+            case 3 -> rgba(255, 92, 34, 220);
+            case 4 -> rgba(121, 220, 255, 225);
+            case 5 -> rgba(126, 208, 255, 230);
+            case 6 -> rgba(207, 135, 255, 225);
+            case 7 -> rgba(255, 214, 109, 230);
+            case 8 -> rgba(151, 224, 255, 230);
+            case 9 -> rgba(255, 151, 63, 210);
+            default -> rgba(234, 239, 224, 225);
+        };
+        double fade = 1.0 - progress * 0.58;
+        if (style == 3) {
+            Vec3 back = center.subtract(b.forward.scale(1.55));
+            braidedBeam(pose, out, back, center.add(b.forward.scale(0.45)), age, 0.18,
+                    rgba(255, 103, 35, (int) (210 * fade)));
+            sphere(pose, out, center, 0.24, 7, 10, color);
+        } else if (style == 5 || style == 6) {
+            braidedBeam(pose, out, a, z, age * (style == 5 ? 1.8 : 0.7),
+                    style == 5 ? 0.10 : 0.13,
+                    (color & 0xFFFFFF00) | (int) (205 * fade));
+        } else if (style == 9) {
+            prism(pose, out, center.subtract(b.forward.scale(1.0)), center.add(b.forward.scale(0.35)),
+                    0.10, color);
+        } else {
+            double length = style == 2 ? 2.05 : style == 7 ? 1.65 : style == 1 ? 0.72 : 1.25;
+            double thickness = style == 2 ? 0.105 : style == 1 ? 0.045 : 0.07;
+            customArrow(pose, out, b, center, length, thickness, color);
+            prism(pose, out, center.subtract(b.forward.scale(length * 1.15)),
+                    center.subtract(b.forward.scale(length * 0.25)), thickness * 0.45,
+                    rgba((color >> 24) & 255, (color >> 16) & 255, (color >> 8) & 255, (int) (120 * fade)));
+        }
+    }
+
+    private static void renderBombardArc(
+            PoseStack.Pose pose, VertexConsumer out, VillageSkillEffectRenderState state,
+            double age, double progress) {
+        Vec3 origin = new Vec3(state.x, state.y, state.z);
+        List<Vec3> points = parsePoints(state.extra, origin);
+        if (points.size() < 2) return;
+        Vec3 a = points.get(0).subtract(origin);
+        Vec3 z = points.get(1).subtract(origin);
+        double horizontal = Math.hypot(z.x - a.x, z.z - a.z);
+        Vec3 control = a.lerp(z, 0.5).add(0.0, Math.max(4.5, horizontal * 0.16), 0.0);
+        Vec3 previous = a;
+        for (int i = 1; i <= 18; i++) {
+            double t = i / 18.0;
+            Vec3 current = bezier(a, control, z, t);
+            prism(pose, out, previous, current, 0.045,
+                    rgba(255, 137, 58, (int) (110 * (1.0 - progress * 0.6))));
+            previous = current;
+        }
+        Vec3 shell = bezier(a, control, z, clamp(progress * 1.05, 0.0, 1.0));
+        sphere(pose, out, shell, 0.24, 8, 12, rgba(255, 202, 93, 235));
+        sphere(pose, out, shell, 0.11, 7, 10, rgba(255, 245, 191, 245));
+    }
+
+    private static Vec3 bezier(Vec3 a, Vec3 control, Vec3 z, double t) {
+        double u = 1.0 - t;
+        return a.scale(u * u).add(control.scale(2.0 * u * t)).add(z.scale(t * t));
+    }
+
+    private static void renderDefensePulse(
+            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress,
+            String encodedRadius, int style) {
+        double maxRadius = 4.0;
+        try { maxRadius = Double.parseDouble(encodedRadius); }
+        catch (NumberFormatException ignored) {}
+        maxRadius = Math.max(0.8, maxRadius);
+        double radius = 0.35 + progress * maxRadius;
+        int color = switch (style) {
+            case 1 -> rgba(115, 235, 182, (int) (200 * (1.0 - progress)));
+            case 2 -> rgba(108, 186, 255, (int) (210 * (1.0 - progress)));
+            case 3 -> rgba(255, 223, 126, (int) (205 * (1.0 - progress)));
+            case 4 -> rgba(255, 111, 67, (int) (220 * (1.0 - progress)));
+            default -> rgba(255, 165, 72, (int) (220 * (1.0 - progress)));
+        };
+        ring(pose, out, b, radius, 0.06, style == 4 ? 0.18 : 0.11, 64, color, age * 0.015);
+        if (style == 2 || style == 3) {
+            ring(pose, out, b, radius * 0.64, 0.82, 0.06, 48, color, -age * 0.025);
+        }
+        if (style == 0 || style == 4) {
+            sphere(pose, out, Vec3.ZERO, Math.max(0.22, radius * 0.32), 8, 12,
+                    (color & 0xFFFFFF00) | Math.max(20, (int) (90 * (1.0 - progress))));
+        }
+    }
 
     private static void renderFallbackRune(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, double progress) {

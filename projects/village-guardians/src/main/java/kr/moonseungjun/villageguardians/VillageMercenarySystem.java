@@ -217,11 +217,14 @@ public final class VillageMercenarySystem {
     private static void bastionControl(ServerLevel level, IronGolem mercenary, int rank) {
         double radius = 4.5 + rank * 0.55;
         Vec3 eye = mercenary.position().add(0, 1.8, 0);
+        boolean engaged = false;
         for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), radius, 5 + rank, null)) {
             if (!VillageDefenseLineOfSight.hasLine(level, eye, enemy)) continue;
             enemy.setTarget(mercenary);
             enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 28 + rank * 5, 0));
+            engaged = true;
         }
+        if (engaged) VillageDefenseEffectSystem.mercenaryGuardPulse(level, mercenary.position(), radius);
     }
 
     private static void strikerPressure(ServerLevel level, IronGolem mercenary, int rank) {
@@ -229,6 +232,8 @@ public final class VillageMercenarySystem {
         if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.position().add(0, 1.8, 0), target)) return;
         mercenary.setTarget(target);
         mercenary.getNavigation().moveTo(target, 1.18 + rank * 0.025);
+        VillageDefenseEffectSystem.mercenaryStrikerPressure(level, mercenary.position().add(0, 1.2, 0),
+                target.position().add(0, target.getBbHeight() * 0.5, 0));
     }
 
     private static void rangedAttack(ServerLevel level, IronGolem mercenary, int rank) {
@@ -240,10 +245,8 @@ public final class VillageMercenarySystem {
         if (target == null) return;
         float damage = (3.0f + rank * 1.3f) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
         Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
-        for (int i = 0; i <= 10; i++) {
-            Vec3 point = start.lerp(end, i / 10.0);
-            level.sendParticles(ParticleTypes.CRIT, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-        }
+        VillageDefenseEffectSystem.mercenaryRangerShot(level, start, end);
+        level.sendParticles(ParticleTypes.CRIT, end.x, end.y, end.z, 4, 0.14, 0.18, 0.14, 0.02);
         target.hurtServer(level, level.damageSources().mobAttack(mercenary), damage);
     }
 
@@ -259,8 +262,9 @@ public final class VillageMercenarySystem {
             if (player.level() == level && player.distanceToSqr(medic) <= radiusSquared
                     && !VillageRespawnSystem.isDowned(player)) player.heal(amount * 0.65f);
         }
+        VillageDefenseEffectSystem.mercenaryHealPulse(level, medic.position(), 8.0 + rank);
         level.sendParticles(ParticleTypes.HEART, medic.getX(), medic.getY() + 1.4, medic.getZ(),
-                4 + rank, 0.7, 0.5, 0.7, 0.02);
+                3 + rank, 0.55, 0.4, 0.55, 0.02);
     }
 
     private static void applyClassPassives(IronGolem mercenary, MercenaryClass kind, int rank) {

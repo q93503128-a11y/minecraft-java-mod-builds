@@ -31,6 +31,7 @@ import java.util.UUID;
 public final class VillageRaidSystem {
     private static final Set<UUID> ACTIVE_ENEMIES = new HashSet<>();
     private static final Map<UUID, VillageEnemyArchetypeSystem.Archetype> ACTIVE_ARCHETYPES = new HashMap<>();
+    private static final Map<UUID, Integer> ACTIVE_WAVES = new HashMap<>();
     private static final int FIRST_WAVE_COUNTDOWN_TICKS = 240;
     private static final int BETWEEN_WAVE_TICKS = 120;
     private static final int FORCED_NEXT_WAVE_TICKS = 20 * 60;
@@ -152,6 +153,11 @@ public final class VillageRaidSystem {
 
     public static VillageEnemyArchetypeSystem.Archetype archetypeOf(Mob mob) {
         return mob == null ? null : ACTIVE_ARCHETYPES.get(mob.getUUID());
+    }
+
+    public static int waveOf(Mob mob) {
+        if (mob == null) return Math.max(1, wave);
+        return Math.max(1, ACTIVE_WAVES.getOrDefault(mob.getUUID(), Math.max(1, wave)));
     }
 
     public static VillageWaveTrait currentTrait() { return currentTrait; }
@@ -278,9 +284,11 @@ public final class VillageRaidSystem {
             mob.addTag(RAID_ENEMY_TAG);
             VillageWorldSystem.markAllowedGameMob(mob);
             server.getScoreboard().addPlayerToTeam(mob.getScoreboardName(), raidTeam);
+            // Register authoritative combat metadata before addFreshEntity fires EntityJoinLevelEvent.
+            ACTIVE_ARCHETYPES.put(mob.getUUID(), spawned.archetype());
+            ACTIVE_WAVES.put(mob.getUUID(), wave);
             if (level.addFreshEntity(mob)) {
                 ACTIVE_ENEMIES.add(mob.getUUID());
-                ACTIVE_ARCHETYPES.put(mob.getUUID(), spawned.archetype());
             } else {
                 releaseEnemy(server, mob.getUUID(), mob);
             }
@@ -327,10 +335,8 @@ public final class VillageRaidSystem {
 
     private static void directEnemies(MinecraftServer server) {
         ServerLevel level = server.overworld();
-        structureAttackTicks++;
+        structureAttackTicks = Math.floorMod(structureAttackTicks + 1, STRUCTURE_ATTACK_INTERVAL);
         abilityTicks++;
-        boolean attackTick = structureAttackTicks >= STRUCTURE_ATTACK_INTERVAL;
-        if (attackTick) structureAttackTicks = 0;
 
         BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
         boolean gatePassable = VillageWorldSystem.isNorthGatePassable(level)
@@ -372,6 +378,7 @@ public final class VillageRaidSystem {
             BlockPos target = VillageFortressBuildings.attackPoint(villageCenter, targetBuilding, mob.blockPosition());
             mob.getLookControl().setLookAt(target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5);
             mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.08);
+            boolean attackTick = Math.floorMod(structureAttackTicks + id.hashCode(), STRUCTURE_ATTACK_INTERVAL) == 0;
             if (attackTick && VillageFortressBuildings.isTouchingStructure(
                     villageCenter, targetBuilding, mob.blockPosition())) {
                 mob.swing(InteractionHand.MAIN_HAND);
@@ -385,6 +392,8 @@ public final class VillageRaidSystem {
                 int damage = Math.max(1, Math.round((7 + wave * 2 + Math.min(24, day)
                         + (VillageEnemyArchetypeSystem.isBoss(archetype) ? 18 : 0)) * multiplier));
                 VillageProgressionSystem.damageBuilding(server, targetBuilding, damage);
+                VillageDefenseEffectSystem.structureImpact(level, Vec3.atCenterOf(target),
+                        VillageEnemyArchetypeSystem.isBoss(archetype) || archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER);
                 VillageEnemyArchetypeSystem.onStructureHit(level, mob, archetype);
             }
         }
@@ -394,7 +403,8 @@ public final class VillageRaidSystem {
         ServerPlayer chosen = null;
         double chosenDistance = PLAYER_PRIORITY_RANGE * PLAYER_PRIORITY_RANGE;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()) continue;
+            if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()
+                    || VillageRespawnSystem.isDowned(player)) continue;
             if (VillageLocationRules.isEnemyIgnoredElevation(player)
                     || Math.abs(player.getY() - mob.getY()) > 3.5) continue;
             double distance = player.distanceToSqr(mob);
@@ -521,6 +531,7 @@ public final class VillageRaidSystem {
 
     private static void releaseEnemy(MinecraftServer server, UUID uuid, Entity entity) {
         ACTIVE_ARCHETYPES.remove(uuid);
+        ACTIVE_WAVES.remove(uuid);
         VillageBossAspectSystem.forget(uuid);
         VillageWorldSystem.unmarkAllowedGameMob(uuid);
         VillageHealthDisplaySystem.forgetEnemy(uuid);
@@ -534,6 +545,7 @@ public final class VillageRaidSystem {
     private static void clearState() {
         ACTIVE_ENEMIES.clear();
         ACTIVE_ARCHETYPES.clear();
+        ACTIVE_WAVES.clear();
         VillageBossAspectSystem.reset();
         active = false;
         wave = 0;

@@ -20,7 +20,7 @@ def main() -> None:
     rpg = read("VillageRpgSystem.java")
     technique = read("VillageCombatTechniqueSystem.java")
 
-    assert "mod_version=0.18.12-alpha.1" in props
+    assert "mod_version=0.18.13-alpha.1" in props
 
     # Initial lock uses a real forward cone instead of accepting almost any target in front.
     assert "to.normalize().dot(look) >= 0.62" in ability

@@ -151,10 +151,12 @@ public final class VillageEnemyArchetypeSystem {
             }
             case TOWER_HUNTER -> {
                 if (!abilityReady(mob, globalTicks, 180)) return;
-                VillageTowerSpecializationSystem.disableRandomInstalledTower(20 * 7);
+                int disabledId = VillagePlacedTurretSystem.disableRandomActiveTurret(20 * 7);
+                if (disabledId < 0) return;
                 spawnAura(level, mob, archetype, 20);
                 server.getPlayerList().broadcastSystemMessage(
-                        Component.literal("§5[탑 교란] §f탑 사냥꾼이 방어탑 하나를 7초간 정지시켰습니다."), false);
+                        Component.literal("§5[포탑 교란] §f탑 사냥꾼이 배치 포탑 #" + disabledId
+                                + "의 사격 회로를 7초간 마비시켰습니다."), false);
             }
             case SIEGE_BEAST -> {
                 if (!abilityReady(mob, globalTicks, 100)) return;
@@ -406,6 +408,7 @@ public final class VillageEnemyArchetypeSystem {
                 .filter(player -> player.level() == mob.level()
                         && player.isAlive()
                         && !player.isSpectator()
+                        && !VillageRespawnSystem.isDowned(player)
                         && player.distanceToSqr(mob) <= squared)
                 .toList();
     }

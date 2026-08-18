@@ -17,7 +17,7 @@ def main() -> None:
     deploy = read("VillageMercenaryDeploymentSystem.java")
     guardians = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.12-alpha.1" in props
+    assert "mod_version=0.18.13-alpha.1" in props
 
     # Static defenses and ranger mercenaries must not acquire/fire through blocks.
     assert "ClipContext.Block.COLLIDER" in los and "HitResult.Type.MISS" in los
