@@ -1,0 +1,45 @@
+name: Temporary Arcane Circle alpha39 overhaul
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-arcane-alpha39.yml'
+      - '.github/scripts/tmp_arcane_alpha39.py'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply alpha39 visual overhaul
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/tmp_arcane_alpha39.py
+          git rm -f .github/workflows/tmp-arcane-alpha39.yml
+          git rm -f .github/scripts/tmp_arcane_alpha39.py
+          git diff --check
+      - name: Commit to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(arcane-circle): deepen grand sigils and persistent high-circle status VFX'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
