@@ -27,6 +27,31 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Record live repair run
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-ci-residency.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "in_progress",
+            "log_artifact_id": ""
+          }
+          EOF
+          git add .github/build-pointers/living-kingdoms-ci-residency.json
+          git commit -m "Record Living Kingdoms CI residency repair $GITHUB_RUN_NUMBER start" || true
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
