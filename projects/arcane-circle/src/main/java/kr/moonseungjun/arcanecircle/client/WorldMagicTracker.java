@@ -122,9 +122,11 @@ public final class WorldMagicTracker {
                     ()->ArcaneSpellVisualOverhaul.chargeBody(v.spell,v.direction,targetOffset(v),v.progress,v.range,v.startedAt));
             if(authoredBody.size()>0)entries.add(new RenderEntry(center,authoredBody,color,64,1.0F));
             if(v.spell.circle()>=7){
-                ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
-                        ()->AuthoredHighCircleTimeline.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.startedAt,v.seed));
-                if(timeline.size()>0)entries.add(new RenderEntry(center,timeline,color,94,1.0F));
+                if(!HighCircleMaintenanceOverlay.replacesChargeTimeline(v.spell)){
+                    ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
+                            ()->AuthoredHighCircleTimeline.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.startedAt,v.seed));
+                    if(timeline.size()>0)entries.add(new RenderEntry(center,timeline,color,94,1.0F));
+                }
                 ArcaneWorldMesh staging=HighCircleMaintenanceOverlay.charge(v.spell,v.direction,targetOffset(v),v.progress,v.startedAt,v.seed);
                 if(staging.size()>0)entries.add(new RenderEntry(center,staging,color,102,1.0F));
             }
