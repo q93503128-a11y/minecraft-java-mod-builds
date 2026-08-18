@@ -56,7 +56,8 @@ def main() -> None:
     assert "VillageRelicSystem.initializeServer" in guardians
     assert "VillageMercenarySystem.initializeServer" in guardians
     assert "VillageMercenarySystem.tick" in guardians
-    assert "VillageTowerResearchBonusSystem.tick" in guardians
+    assert "VillagePlacedTurretSystem.tick" in guardians
+    assert "VillageTowerResearchBonusSystem" not in guardians
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
     assert "if (!mob.isPersistenceRequired()) event.setCanceled(true)" in guardians
 
