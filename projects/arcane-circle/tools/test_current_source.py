@@ -10,9 +10,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.42' in gradle
-assert 'VERSION = "0.12.1-alpha.42"' in main
-assert '"version": "0.12.1-alpha.42"' in index
+assert 'mod_version=0.12.1-alpha.43' in gradle
+assert 'VERSION = "0.12.1-alpha.43"' in main
+assert '"version": "0.12.1-alpha.43"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -295,3 +295,37 @@ for token in ['formulaFrame','m.circle(basis,Vec3.ZERO,outer','inscriptionRing',
 tracker=text(client/'WorldMagicTracker.java')
 for token in ['ArcaneSigilDirector.charge','SpellCinematicDirector.charge','ArcaneSpellVisualOverhaul.chargeSigil']:
     assert token in tracker, token
+
+
+# Alpha.43 reference-informed high-circle authored timeline.
+timeline_path=client/'AuthoredHighCircleTimeline.java'
+assert timeline_path.exists()
+timeline=text(timeline_path)
+expected_high_circle={
+'delayed_blast_fireball','etherealness','finger_of_death','fire_storm','forcecage','plane_shift','prismatic_spray','reverse_gravity','simulacrum','teleport','void_lance','winter_domain',
+'antimagic_field','clone','control_weather','demiplane','dominate_monster','earthquake','feeblemind','incendiary_cloud','maze','sunburst','astral_prison','phoenix_requiem',
+'meteor_swarm','power_word_kill','prismatic_wall','shapechange','time_stop','true_polymorph','weird','wish','gate','foresight','world_sunder'}
+draw_block=timeline[timeline.index('switch (id) {'):timeline.index('// 7th circle')]
+dispatched=set(re.findall(r'case "([a-z0-9_]+)"',draw_block))
+assert len(expected_high_circle)==35
+assert dispatched==expected_high_circle, (sorted(expected_high_circle-dispatched), sorted(dispatched-expected_high_circle))
+for token in ['spell.circle() < 7','detailBuilder(CHARGE_BUDGET)','detailBuilder(RELEASE_BUDGET)',
+              'case "time_stop"','case "power_word_kill"','case "maze"','case "gate"','case "world_sunder"',
+              'private static final float MAJOR','private static void squareCorridor']:
+    assert token in timeline, token
+mesh=text(client/'ArcaneWorldMesh.java')
+for token in ['detailBuilder(int budget)','record Segment(Vec3 start,Vec3 end,float width,float brightness,float alpha)',
+              'Builder line(Vec3 a,Vec3 b,float width,float brightness,float alpha)',
+              'passBrightness*s.brightness','passAlpha*s.alpha']:
+    assert token in mesh, token
+tracker=text(client/'WorldMagicTracker.java')
+for token in ['if(v.spell.circle()>=7)','AuthoredHighCircleTimeline.charge','AuthoredHighCircleTimeline.release',
+              'MAX_FRAME = 14500','MAX_ENTRY = 4000']:
+    assert token in tracker, token
+# The alpha.42 low-circle frame is mandatory; this gate prevents another alpha.40 regression.
+sigil=text(client/'ArcaneSigilDirector.java')
+for token in ['formulaFrame(mesh, spell, profile','m.circle(basis,Vec3.ZERO,outer','inscriptionRing','schoolFormula']:
+    assert token in sigil, token
+assert 'ManualSpellVisuals' not in tracker
+print('alpha43_high_circle_authored_timeline=PASS')
+print('alpha42_low_circle_sigil_baseline=preserved')

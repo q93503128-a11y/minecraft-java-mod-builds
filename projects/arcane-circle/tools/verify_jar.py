@@ -18,6 +18,7 @@ required = {
     "kr/moonseungjun/arcanecircle/magic/WorldMagicService.class",
     "kr/moonseungjun/arcanecircle/magic/ArcaneLightService.class",
     "kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class",
+    "kr/moonseungjun/arcanecircle/client/AuthoredHighCircleTimeline.class",
     "kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneSigilDirector.class",
     "kr/moonseungjun/arcanecircle/client/GrimoireScreen.class",

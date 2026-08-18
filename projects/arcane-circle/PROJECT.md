@@ -77,3 +77,11 @@ alpha.42는 alpha.40~41의 manual-only replacement를 품질 회귀로 폐기한
 - Alpha.39 layered presentation is the visual baseline again: `ArcaneSigilDirector` supplies the readable formula frame, `SpellCinematicDirector` supplies the physical event, and `ArcaneSpellVisualOverhaul` supplies spell-specific/high-circle/status refinements.
 - Circle 1 must retain a visible compact magic-circle frame; manual refinement must never delete a working lower-circle sigil merely to satisfy a hand-authored architecture rule.
 - Future hand refinement is additive/replacement per spell only after visual comparison; it may not globally replace the proven presentation stack.
+
+
+## Alpha.43 reference-informed high-circle VFX
+- Alpha.42 remains the immutable low/mid-circle visual baseline. Circles 1-5 keep the existing `ArcaneSigilDirector` formula frame and are not routed through the new overlay.
+- Public source from Ars Nouveau, Iron's Spells 'n Spellbooks and Hex Casting was studied for architectural lessons only: temporal VFX state, spell-owned client presentation, and stroke hierarchy. No external code, texture, model, shader or asset is copied into Arcane Circle.
+- `AuthoredHighCircleTimeline` explicitly owns all 35 circle-7/8/9 direct/fusion spells. Each spell has a hand-authored temporal/spatial composition layered after the proven alpha.42 sigil/cinematic/overhaul stack.
+- `ArcaneWorldMesh` supports per-segment brightness/alpha while the legacy `line(a,b,width)` path remains visually identical. High-circle overlays use major/mid/detail strokes so added geometry reads as hierarchy instead of a uniform neon wireframe.
+- Charge, release/impact and maintained-state moments are allowed to use different geometry. High-circle refinement must increase staging, depth and readable silhouette before raw line count.

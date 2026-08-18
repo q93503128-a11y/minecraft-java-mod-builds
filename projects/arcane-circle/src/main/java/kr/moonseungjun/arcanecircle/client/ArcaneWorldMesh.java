@@ -24,14 +24,14 @@ final class ArcaneWorldMesh {
             for(Face face:faces){int color=tone(argb,face.brightness,face.alpha);vertex(out,pose,face.a,color);vertex(out,pose,face.b,color);vertex(out,pose,face.c,color);vertex(out,pose,face.d,color);}
         });
         if(!segments.isEmpty()){
-            // Three edge passes create a saturated halo + readable mid edge + white-hot colored core.
-            // This keeps the effect punchy without relying on thousands of vanilla particles.
-            submitLines(poseStack,collector,tone(argb,.58,.34),windowScale*4.60F);
-            submitLines(poseStack,collector,tone(argb,.82,.76),windowScale*2.20F);
-            submitLines(poseStack,collector,tone(argb,.98,1.0),windowScale*.78F);
+            // Three passes remain the alpha.42 baseline. Per-segment brightness/alpha only lets
+            // high-circle authored overlays distinguish authority strokes from construction detail.
+            submitLines(poseStack,collector,argb,windowScale*4.60F,.58,.34);
+            submitLines(poseStack,collector,argb,windowScale*2.20F,.82,.76);
+            submitLines(poseStack,collector,argb,windowScale*.78F,.98,1.0);
         }
     }
-    private void submitLines(PoseStack stack,SubmitNodeCollector collector,int color,float scale){collector.submitCustomGeometry(stack,RenderTypes.lines(),(pose,out)->{for(Segment s:segments){Vec3 d=s.end.subtract(s.start);if(d.lengthSqr()<1e-8)continue;Vec3 n=d.normalize();float w=Math.max(lineFloor,s.width*scale*lineScale);out.addVertex(pose,(float)s.start.x,(float)s.start.y,(float)s.start.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);out.addVertex(pose,(float)s.end.x,(float)s.end.y,(float)s.end.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);}});}
+    private void submitLines(PoseStack stack,SubmitNodeCollector collector,int argb,float scale,double passBrightness,double passAlpha){collector.submitCustomGeometry(stack,RenderTypes.lines(),(pose,out)->{for(Segment s:segments){Vec3 d=s.end.subtract(s.start);if(d.lengthSqr()<1e-8)continue;Vec3 n=d.normalize();float w=Math.max(lineFloor,s.width*scale*lineScale);int color=tone(argb,passBrightness*s.brightness,passAlpha*s.alpha);out.addVertex(pose,(float)s.start.x,(float)s.start.y,(float)s.start.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);out.addVertex(pose,(float)s.end.x,(float)s.end.y,(float)s.end.z).setColor(color).setNormal(pose,(float)n.x,(float)n.y,(float)n.z).setLineWidth(w);}});}
     private static void vertex(VertexConsumer out,PoseStack.Pose pose,Vec3 v,int color){out.addVertex(pose,(float)v.x,(float)v.y,(float)v.z).setColor(color);}
     private static final double VIVID_SATURATION=2.05;
     private static final double FACE_ALPHA_BOOST=1.78;
@@ -49,14 +49,16 @@ final class ArcaneWorldMesh {
     private static int clamp(int v){return Math.max(0,Math.min(255,v));}
     static Builder builder(int budget){return new Builder(budget,1.0F,.72F);}
     static Builder fineBuilder(int budget){return new Builder(budget,.46F,.34F);}
-    record Segment(Vec3 start,Vec3 end,float width){}
+    static Builder detailBuilder(int budget){return new Builder(budget,.36F,.18F);}
+    record Segment(Vec3 start,Vec3 end,float width,float brightness,float alpha){}
     record Face(Vec3 a,Vec3 b,Vec3 c,Vec3 d,float brightness,float alpha){}
 
     static final class Builder{
         private final int budget;private final float lineScale,lineFloor;private final List<Segment> segments=new ArrayList<>();private final List<Face> faces=new ArrayList<>();
         Builder(int budget,float lineScale,float lineFloor){this.budget=Math.max(8,budget);this.lineScale=Math.max(.1F,lineScale);this.lineFloor=Math.max(.1F,lineFloor);}
         int size(){return segments.size()+faces.size()*2;}boolean full(){return size()>=budget;}ArcaneWorldMesh build(){return new ArcaneWorldMesh(segments,faces,lineScale,lineFloor);}
-        Builder line(Vec3 a,Vec3 b,float width){if(!full()&&a!=null&&b!=null&&a.distanceToSqr(b)>1e-8)segments.add(new Segment(a,b,width));return this;}
+        Builder line(Vec3 a,Vec3 b,float width){return line(a,b,width,1.0F,1.0F);}
+        Builder line(Vec3 a,Vec3 b,float width,float brightness,float alpha){if(!full()&&a!=null&&b!=null&&a.distanceToSqr(b)>1e-8)segments.add(new Segment(a,b,width,Math.max(.08F,brightness),Math.max(.02F,Math.min(1.0F,alpha))));return this;}
         Builder face(Vec3 a,Vec3 b,Vec3 c,Vec3 d,float brightness,float alpha){if(!full())faces.add(new Face(a,b,c,d,brightness,alpha));return this;}
         Builder triangle(Vec3 a,Vec3 b,Vec3 c,float brightness,float alpha){return face(a,b,c,c,brightness,alpha);}
         Builder polyline(List<Vec3> p,float width,boolean closed){if(p==null||p.size()<2)return this;for(int i=1;i<p.size()&&!full();i++)line(p.get(i-1),p.get(i),width);if(closed&&!full())line(p.getLast(),p.getFirst(),width);return this;}
