@@ -8,9 +8,9 @@
 - Source audit: `tools/test_current_source.py`
 - JAR audit: `tools/verify_jar.py`
 
-게임 데이터·마력·숙련·시전·네트워크·판정은 서버 권위다. 0초 시전도 ready-hold 후 release 발동을 유지한다. 현재 presentation 정본은 `ManualSpellVisuals`, `ManualCircle1Visuals`~`ManualCircle9Visuals`, `ManualFusionVisuals`, `WorldMagicTracker`, `ArcaneRegaliaRenderer`다. `ArcaneCastingPerformance`는 호환 훅만 남기고 별도 플레이어 신체 지오메트리를 그리지 않는다. 구형 자동 presentation director와 버전별 migration/apply/fix 도구는 active tree에 두지 않는다.
+게임 데이터·마력·숙련·시전·네트워크·판정은 서버 권위다. 0초 시전도 ready-hold 후 release 발동을 유지한다. 현재 presentation 정본은 `ArcaneSigilDirector`, `SpellCinematicDirector`, `ArcaneSpellVisualOverhaul`, `WorldMagicTracker`, `ArcaneRegaliaRenderer`다. `ArcaneCastingPerformance`는 호환 훅만 남기고 별도 플레이어 신체 지오메트리를 그리지 않는다. 구형 자동 presentation director와 버전별 migration/apply/fix 도구는 active tree에 두지 않는다.
 
-alpha.40부터 모든 109개 주문은 주문 ID별 수동 authored presentation만 사용한다. 학교·폼·써클을 보고 최종 마법진/연출을 자동 조합하는 fallback은 금지하며, 공통 코드는 선·원·다각형·룬·빔 같은 drawing primitive에만 사용한다. 지팡이 시전시간 배율은 직접 주문과 융합 주문의 시전 계산 및 하한에 실제로 참여한다.
+alpha.42는 alpha.40~41의 manual-only replacement를 품질 회귀로 폐기한다. alpha.39의 검증된 layered sigil + cinematic + spell-overhaul presentation을 기준선으로 복구하고, 이후 수동 개선은 이 기준선을 제거하지 않은 채 주문별로 진행한다. 지팡이 시전시간 배율은 직접 주문과 융합 주문의 시전 계산 및 하한에 실제로 참여한다.
 
 ## Alpha.34 runtime contracts
 
@@ -70,3 +70,10 @@ alpha.40부터 모든 109개 주문은 주문 ID별 수동 authored presentation
 - Power Word Kill uses compact execution closure; Wish uses a three-tier nine-contract reality lattice; Foresight keeps visible branching future trajectories.
 - Shapechange uses self combat-form anatomy accents while True Polymorph uses a vertically stitched target rewrite lattice, so the two transformation spells no longer share the same silhouette.
 - Prismatic Wall panels own upper/lower sub-seals and crossed internal lattice while retaining the authoritative 14-second lifetime.
+
+
+## Alpha.42 presentation quality rollback
+- Alpha.40/41 manual-only visuals are retired because they removed the readable base sigil and degraded the full presentation into sparse wireframe geometry.
+- Alpha.39 layered presentation is the visual baseline again: `ArcaneSigilDirector` supplies the readable formula frame, `SpellCinematicDirector` supplies the physical event, and `ArcaneSpellVisualOverhaul` supplies spell-specific/high-circle/status refinements.
+- Circle 1 must retain a visible compact magic-circle frame; manual refinement must never delete a working lower-circle sigil merely to satisfy a hand-authored architecture rule.
+- Future hand refinement is additive/replacement per spell only after visual comparison; it may not globally replace the proven presentation stack.

@@ -10,54 +10,36 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.41' in gradle
-assert 'VERSION = "0.12.1-alpha.41"' in main
-assert '"version": "0.12.1-alpha.41"' in index
+assert 'mod_version=0.12.1-alpha.42' in gradle
+assert 'VERSION = "0.12.1-alpha.42"' in main
+assert '"version": "0.12.1-alpha.42"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
 'MidCircleVisualIdentity.java','FifthCircleVisualIdentity.java','SixthCircleVisualIdentity.java',
 'ArchmageVisualIdentity.java','RangeReactivePresentation.java','SpellVisualSignature.java',
-'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java','SignatureGeometry.java',
-'ArcaneSigilDirector.java','SpellCinematicDirector.java','ArcaneSpellVisualOverhaul.java']
+'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java','SignatureGeometry.java']
 for name in retired: assert not (client/name).exists(), name
 
 tracker=text(client/'WorldMagicTracker.java')
-for token in ['ManualSpellVisuals.charge','ManualSpellVisuals.release','ManualSpellVisuals.castingFamily',
-              'ManualSpellVisuals.color','MAX_FRAME = 14000','MAX_ENTRY = 4000','world_magic_manual_v4']:
+for token in ['SpellCinematicDirector.charge','SpellCinematicDirector.release','SpellCinematicDirector.castingFamily',
+'ArcaneSigilDirector.charge','ArcaneSigilDirector.releaseEcho','MeteorBarragePattern.withSeed','longValue(values,"seed",0L)',
+'MAX_FRAME = 12000','MAX_ENTRY = 3400']:
     assert token in tracker, token
-for forbidden in ['SpellCinematicDirector.','ArcaneSigilDirector.','ArcaneSpellVisualOverhaul.']:
-    assert forbidden not in tracker, forbidden
+assert tracker.count('!"prismatic_wall".equals(v.spell.id())') >= 2
 
-# Manual-only presentation registry: every catalog spell must be explicitly dispatched.
-import re
-manual=text(client/'ManualSpellVisuals.java')
-circle_files=[client/f'ManualCircle{i}Visuals.java' for i in range(1,10)]
-manual_files=circle_files+[client/'ManualFusionVisuals.java']
-for path in manual_files: assert path.exists(), path.name
-catalog_source=text(magic/'SpellCatalog.java')
-catalog_ids=set(re.findall(r'(?:add|addFusion)\("([a-z0-9_]+)"',catalog_source))
-dispatch=manual[manual.index('private static void draw'):manual.index('static int castingFamily')]
-dispatch_ids=set(re.findall(r'"([a-z0-9_]+)"',dispatch))
-assert len(catalog_ids)==109, len(catalog_ids)
-assert dispatch_ids==catalog_ids, sorted(catalog_ids-dispatch_ids)
-combined=manual+'\n'.join(text(path) for path in manual_files)
-for forbidden in ['spell.school()','switch(s.form())','profile.motion()','profile.sigil()',
-                  'highCircleCrown','grandScaleArchitecture','combustionFormula','frostFormula','arcaneFormula']:
-    assert forbidden not in combined, forbidden
-for token in ['Un-authored spell visual','Un-authored casting pose','Un-authored spell color']:
-    assert token in manual, token
-for old in ['ArcaneSigilDirector.java','SpellCinematicDirector.java','ArcaneSpellVisualOverhaul.java']:
-    assert not (client/old).exists(), old
+sigil=text(client/'ArcaneSigilDirector.java')
+for token in ['formulaFrame','schoolFormula','geometricDepth','anchorFormula','skyRitual','meteorRitual','inscriptionRing','sigilRangeScale','meteor_swarm','fusionFormula']:
+    assert token in sigil, token
 
-# Alpha.41 manual high-circle audit: actual spell-specific structures, not generic rank decorators.
-for token in ['for(int depth=0;depth<6;depth++)','Four broken square corridors','spin=c.release()?0.0:t*.012',
-              'Four execution bars snap shut','spin=c.release()?0.0:t*.006','Three mutually tilted nightmare eyes',
-              'Four possible future trajectories','Six receding frames','Seven parallel world-sheets']:
-    assert token in combined, token
-for token in ['m.polygon(face,low','m.polygon(face,high','m.line(a.add(0,height*.16,0),b.add(0,height*.84,0)']:
-    assert token in manual, token
-assert '## Alpha.41 hand-authored visual audit' in text(root/'PROJECT.md')
+director=text(client/'SpellCinematicDirector.java')
+for token in ['enum Form','NEEDLE','ORB','VOLLEY','RAY','CONE','FIELD','WALL','GATE','PRISON','SKY','WEATHER','AURA',
+'MARK','SHIFT','TRANSFORM','CLOCK','TERRAIN','DOMAIN','meteorSwarm','executionWord','chainLightning','fireStorm',
+'worldFault','phoenix','delayedCataclysm','annihilationBeam','meteorShardImpact','SpellMetrics.effectRadius','SpellMetrics.wallWidth','SpellMetrics.waveLength','SpellMetrics.waveEndRadius',
+'MeteorBarragePattern.count()','s.impactTick()','prismaticWallFrame','case "power_word_kill"']:
+    assert token in director, token
+assert 'double[][] o={{-10,-10},{10,-10},{-10,10},{10,10}}' not in director
+assert 'fallHeight=42.0' not in director
 
 # 3P artifact regression: no synthetic player body/filled-box overlay may return.
 casting=text(client/'ArcaneCastingPerformance.java')
@@ -132,12 +114,22 @@ for token in ['case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS','case "an
 'case "prismatic_wall" -> 280','case "control_weather" -> 400']:
     assert token in audit_duration, token
 
-# Manual presentation still preserves authoritative target/lifetime contracts.
-presentation=text(magic/'SpellPresentationProfile.java')
-assert 'SpellGameplayService.visualDurationTicks(spell.id())' in presentation
-assert 'return visual.target.subtract(visual.center);' in tracker
+# Alpha.37 presentation contract: spell-authored layers, upward portals/prisons and durable prism wall.
+overhaul=text(client/'ArcaneSpellVisualOverhaul.java')
+for token in ['replacesBaseSigil','portalPair','risingPortal','risingPrison','prismaticWallLayer',
+              'temporalAstrolabe','wishCrown','executionFormula','tectonicFormula','materialWall',
+              'fieldAtmosphere','skyConvergence','impactFormula','terrainLift']:
+    assert token in overhaul, token
+for token in ['ArcaneSpellVisualOverhaul.chargeSigil','ArcaneSpellVisualOverhaul.chargeBody',
+              'ArcaneSpellVisualOverhaul.release','ArcaneSpellVisualOverhaul.prismaticWallLayer',
+              'MAX_FRAME = 12000','MAX_ENTRY = 3400']:
+    assert token in tracker, token
+assert 'case PORTAL_GATE -> caster.position().add(0.0, 0.055, 0.0);' in world_magic
 assert 'case "prismatic_wall" -> 280;' in gameplay
 assert '14초 지속 7색 장벽' in summary
+assert 'age < .90' in overhaul and 'elapsedSeconds / .30' in overhaul
+assert 'return visual.target.subtract(visual.center);' in tracker
+assert 'visual.direction.scale(Math.max(1,visual.range))' not in tracker
 
 # Destruction budgets/classification and catastrophe-shaped terrain impact.
 destruction=text(magic/'DestructiveMagicService.java')
@@ -206,12 +198,12 @@ for token in ['case "feather_fall" -> 120','case "mirror_image" -> 260','case "b
               'case "fly" -> 600','case "simulacrum" -> 1200','case "clone" -> 1800',
               'case "globe_of_invulnerability" -> 520','case "fire_shield" -> 620']:
     assert token in gameplay, token
-for token in ['"feather_fall"','"fly"','"simulacrum"','"clone"']:
-    assert token in combined, token
+for token in ['"feather_fall"','"fly"','"simulacrum"','"clone"','persistentBuff']:
+    assert token in overhaul, token
 assert 'armor.nextChargeAt = now + rechargeInterval("mage_armor")' in buff
 assert 'solar.nextChargeAt = now + rechargeInterval("solar_guard")' in buff
 
-# Non-potion buff mechanics remain authoritative while their visuals are spell-authored manually.
+# Alpha.37 non-potion buff identity + 3D high-circle authority.
 buff=text(magic/'ArcaneBuffRuntime.java')
 for token in ['durationTicks','onIncomingDamage','castTimeMultiplier','adjustCooldownTicks',
               'protection_from_energy','greater_invisibility','freedom_of_movement','true_seeing',
@@ -220,16 +212,35 @@ for token in ['durationTicks','onIncomingDamage','castTimeMultiplier','adjustCoo
 for token in ['ArcaneBuffRuntime.apply','ArcaneBuffRuntime.tick','ArcaneBuffRuntime.onIncomingDamage',
               'ArcaneBuffRuntime.clear','ArcaneBuffRuntime.clearAll']:
     assert token in gameplay, token
-for token in ['case "feather_fall" -> 120','case "mirror_image" -> 260','case "blur" -> 360',
-              'case "fly" -> 600','case "simulacrum" -> 1200','case "clone" -> 1800',
-              'case "globe_of_invulnerability" -> 520','case "fire_shield" -> 620',
-              'case "sleep" -> 140','case "mass_suggestion" -> 160']:
-    assert token in gameplay, token
 for token in ['ArcaneBuffRuntime.castTimeMultiplier(player)','ArcaneBuffRuntime.adjustCooldownTicks(player']:
     assert token in casting_service, token
+for token in ['BUFFS = Set.of','buffMantle','highCircleCrown','Basis.fromNormal',
+              'nine independent formulae are complete mini-circles','spell.circle() >= 9','age < .90']:
+    assert token in overhaul, token
 assert 'ArcaneBuffRuntime.apply(player, "solar_guard", power, range)' in fusion
-assert 'armor.nextChargeAt = now + rechargeInterval("mage_armor")' in buff
-assert 'solar.nextChargeAt = now + rechargeInterval("solar_guard")' in buff
+assert 'CATASTROPHIC = Set.of' in overhaul and 'catastrophicAuthority' in overhaul
+for token in ['delayedCataclysm','annihilationBeam','meteorShardImpact','crownFade']:
+    assert token in director, token
+for token in ['put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 22.00',
+              'put("earthquake", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 15.50',
+              'put("world_sunder", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 18.00',
+              'put("arcane_annihilation", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 2.80']:
+    assert token in presentation, token
+assert 'case "prismatic_wall" -> 280;' in gameplay
+assert '14초 지속 7색 장벽' in summary
+
+# Alpha.39 grand-sigil / persistent status identity.
+for token in ['SIGIL_BUDGET = 1900','SUSTAINED_DEBUFFS = Set.of','grandScaleArchitecture',
+              'geometrySides','tessellated sectors','persistentAuthorityMantle','persistentControlMantle',
+              'debuffMantle','runeChords','nine independent formulae are complete mini-circles']:
+    assert token in overhaul, token
+for token in ['case "sleep" -> 140','case "mass_suggestion" -> 160']:
+    assert token in gameplay, token
+assert 'if ((persistentBuff || persistentDebuff) && spell.circle() >= 6)' in overhaul
+assert 'if (spell.circle() >= 6 && r >= 3.25) grandScaleArchitecture' in overhaul
+for token in ['m.polygon(g, hub, r * .43, 12','m.star(g, center.add(0, .05, 0), r * .74',
+              'm.runeChords(face, c, r * .46, 8, 3']:
+    assert token in overhaul, token
 
 # Active-tree hygiene: history is the archive.
 repo=root.parents[1]
@@ -271,3 +282,16 @@ print('retired_visual_stack=absent')
 print('gameplay_content=preserved')
 print('source_mutation=disabled')
 print('legacy_arcane_tooling=absent')
+
+
+# Alpha.42 presentation regression recovery.
+for name in ['ArcaneSigilDirector.java','SpellCinematicDirector.java','ArcaneSpellVisualOverhaul.java']:
+    assert (client/name).exists(), name
+for name in ['ManualSpellVisuals.java','ManualFusionVisuals.java']+[f'ManualCircle{i}Visuals.java' for i in range(1,10)]:
+    assert not (client/name).exists(), name
+sigil=text(client/'ArcaneSigilDirector.java')
+for token in ['formulaFrame','m.circle(basis,Vec3.ZERO,outer','inscriptionRing','schoolFormula','geometricDepth','anchorFormula']:
+    assert token in sigil, token
+tracker=text(client/'WorldMagicTracker.java')
+for token in ['ArcaneSigilDirector.charge','SpellCinematicDirector.charge','ArcaneSpellVisualOverhaul.chargeSigil']:
+    assert token in tracker, token
