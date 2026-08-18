@@ -1,7 +1,7 @@
 {
-  "run_id": "32093799567",
-  "run_number": "220",
-  "commit_sha": "59f5940cdc38728c25119886ded77c91b1f4ad42",
+  "run_id": "32093849653",
+  "run_number": "221",
+  "commit_sha": "90e7057eab0fd21a85d61c72e0fce5ec7e1d00eb",
   "job_status": "cancelled",
-  "log_artifact_id": "9309251050"
+  "log_artifact_id": ""
 }
