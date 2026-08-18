@@ -1,0 +1,33 @@
+name: Finalize Village Guardians v0.18.12 Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.docs-trigger-v01812'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Finalize canonical docs
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin main
+          python3 projects/village-guardians/tools/finalize_v01812_docs.py
+          git add projects/village-guardians/README.md projects/village-guardians/BUILD_AND_RUNTIME_REPORT.md
+          git commit -m 'docs(village): finalize v0.18.12 manual quality audit'
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          exit 1
