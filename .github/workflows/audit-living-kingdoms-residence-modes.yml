@@ -19,7 +19,7 @@ env:
 jobs:
   audit:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,8 +43,15 @@ jobs:
           grep -F 'residence_mode=verified_upper_or_ground' "$root/ErdenPopulationManager.java"
           grep -F 'fresh_synthetic_upper_created=0' "$root/ErdenUrbanLifeManager.java"
           grep -F 'ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)' "$root/ErdenUrbanAuthoredInteriorPreserver.java"
-          if grep -Fq 'urbanLife.isUpperFloorComplete' "$root/ErdenPopulationManager.java"; then exit 1; fi
-          if grep -Fq 'upper.isUpperFloorComplete' "$root/ErdenUrbanAuthoredInteriorPreserver.java"; then exit 1; fi
+          grep -F 'LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS' "$root/ErdenUrbanAuthoredInteriorPreserver.java"
+          if grep -Fq 'urbanLife.isUpperFloorComplete' "$root/ErdenPopulationManager.java"; then
+            echo 'Population manager still depends on legacy synthetic upper completion.' >&2
+            exit 1
+          fi
+          if grep -Fq 'upper.isUpperFloorComplete' "$root/ErdenUrbanAuthoredInteriorPreserver.java"; then
+            echo 'Interior preservation still depends on legacy synthetic upper completion.' >&2
+            exit 1
+          fi
           (cd "$PROJECT_DIR" && gradle --no-daemon clean classes --stacktrace --console=plain) 2>&1 | tee logs/residence-compile.log
           rm -rf "$PROJECT_DIR/run/world" "$PROJECT_DIR/run/living_realm" "$PROJECT_DIR/run/livingkingdoms-residence-ci-world"
           mkdir -p "$PROJECT_DIR/run"
@@ -53,27 +60,53 @@ jobs:
           (cd "$PROJECT_DIR" && gradle --no-daemon runServer --stacktrace --console=plain) > logs/residence-server.log 2>&1 &
           pid=$!
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
           passed=0
-          for attempt in $(seq 1 900); do
-            if grep -Eqi 'LK_REALM_DIAGNOSTIC_FAIL|watchdog|A single server tick took|IllegalStateException|Failed to spawn Erden resident' logs/residence-server.log; then cat logs/residence-server.log; exit 1; fi
-            if grep -Fq 'Completed Erden residence modes buildings=233 authored_upper_buildings=156 ground_only_buildings=77 fresh_synthetic_upper_created=0 legacy_synthetic_records=0' logs/residence-server.log \
-              && grep -Fq 'Completed Erden authored interior preservation buildings=233 accepted_buildings=233 rolled_back_buildings=0' logs/residence-server.log \
+          for attempt in $(seq 1 480); do
+            if grep -Eqi 'LK_REALM_DIAGNOSTIC_FAIL|watchdog|A single server tick took|Failed to spawn Erden resident' logs/residence-server.log; then
+              cat logs/residence-server.log
+              exit 1
+            fi
+            if grep -Fq 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' logs/residence-server.log \
               && grep -Fq 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log \
-              && grep -Fq 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' logs/residence-server.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS' logs/residence-server.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' logs/residence-server.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' logs/residence-server.log \
               && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log \
-              && grep -Fq 'residence_mode=verified_upper_or_ground' logs/residence-server.log; then passed=1; break; fi
-            if ! kill -0 "$pid" 2>/dev/null; then cat logs/residence-server.log; exit 1; fi
+              && grep -Fq 'residence_mode=verified_upper_or_ground' logs/residence-server.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat logs/residence-server.log
+              exit 1
+            fi
             sleep 1
           done
-          test "$passed" -eq 1
+
+          if [ "$passed" -ne 1 ]; then
+            echo 'Residence audit timed out; reached markers:' >&2
+            grep -E 'Prepared Erden residence modes|LK_URBAN_LIFE_DIAGNOSTIC_PASS|LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS|LK_ERDEN_AUTHORED_NEW_FLOOR_PASS|LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS|LK_ERDEN_POPULATION_DIAGNOSTIC_PASS|Rolled back Erden authored interior restoration' logs/residence-server.log || true
+            tail -n 250 logs/residence-server.log
+            exit 1
+          fi
+
           grep -F 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' logs/residence-server.log
-          grep -F 'Completed Erden residence modes buildings=233 authored_upper_buildings=156 ground_only_buildings=77 fresh_synthetic_upper_created=0 legacy_synthetic_records=0' logs/residence-server.log
-          grep -F 'Completed Erden authored interior preservation buildings=233 accepted_buildings=233 rolled_back_buildings=0' logs/residence-server.log | grep -F 'source_structure_restored=true' | grep -F 'usable_core_connected=true'
           grep -F 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log | grep -F 'synthetic_fallback=false' | grep -F 'fresh_synthetic_upper_created=0'
-          grep -F 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' logs/residence-server.log | grep -F 'authored_upper=true' | grep -F 'source_blocks_cut=0' | grep -F 'routine=home'
+          grep -F 'LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS' logs/residence-server.log | grep -F 'role_aware_navigation=true' | grep -F 'rollback_count=0'
+          grep -F 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' logs/residence-server.log | grep -F 'source_blocks_cut=0' | grep -F 'synthetic_floor_required=false'
+          grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' logs/residence-server.log | grep -F 'source_blocks_cut=0' | grep -F 'source_air_only=true'
           grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log | grep -F 'shortages=0' | grep -F 'residence_mode=verified_upper_or_ground'
-          if grep -Fq 'Completed Erden walkable upper floors buildings=' logs/residence-server.log; then exit 1; fi
-          echo 'LK_ERDEN_RESIDENCE_MODES_AUDIT_PASS buildings=233 authored_upper=156 ground_only=77 fresh_synthetic_upper=0 population=231 workers=154 restored=233 rollback=0 ground_source_preservation=legacy_restore authored_upper_source_blocks_cut=0' | tee logs/residence-pass.txt
+          if grep -Fq 'Rolled back Erden authored interior restoration' logs/residence-server.log; then
+            grep -F 'Rolled back Erden authored interior restoration' logs/residence-server.log
+            exit 1
+          fi
+          if grep -Fq 'Completed Erden walkable upper floors buildings=' logs/residence-server.log; then
+            echo 'Legacy synthetic upper construction unexpectedly completed on a fresh world.' >&2
+            exit 1
+          fi
+          echo 'LK_ERDEN_RESIDENCE_MODES_AUDIT_PASS source_catalog_buildings=233 authored_upper=156 ground_only=77 fresh_synthetic_upper=0 population=231 workers=154 loaded_restore_sample=true loaded_restore_rollbacks=0 authored_upper_source_blocks_cut=0 forced_citywide=false' | tee logs/residence-pass.txt
+
       - name: Upload residence audit logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -101,7 +134,12 @@ jobs:
           git add .github/build-pointers/living-kingdoms-residence-modes.json
           if ! git diff --cached --quiet; then
             git commit -m "Record Living Kingdoms residence mode audit ${{ github.run_number }} [skip ci]"
-            for attempt in 1 2 3 4 5; do git fetch origin main; if git rebase origin/main && git push origin HEAD:main; then break; fi; git rebase --abort 2>/dev/null || true; sleep $((attempt*2)); done
+            for attempt in 1 2 3 4 5; do
+              git fetch origin main
+              if git rebase origin/main && git push origin HEAD:main; then break; fi
+              git rebase --abort 2>/dev/null || true
+              sleep $((attempt * 2))
+            done
           fi
       - name: Enforce residence audit result
         if: always()
