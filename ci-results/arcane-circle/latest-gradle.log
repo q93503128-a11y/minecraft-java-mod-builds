@@ -1,5 +1,3 @@
-Downloading https://services.gradle.org/distributions/gradle-9.2.1-bin.zip
-............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
 
@@ -12,11 +10,11 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.39s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.67s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
 [1m*** Started working on [4mdownloadClient[0m[0m
+[1m*** Started working on [4mdownloadServer[0m[0m
  [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
  [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
@@ -27,13 +25,10 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.16s
+Total runtime: 2.14s
 
 
-> Task :compileJava
-Note: Some input files use or override a deprecated API.
-Note: Recompile with -Xlint:deprecation for details.
-
+> Task :compileJava FROM-CACHE
 > Task :generateModMetadata
 > Task :generateSpellbookResources
 > Task :generateStaffTextures
@@ -48,9 +43,7 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :test NO-SOURCE
 > Task :check UP-TO-DATE
 > Task :build
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787032387728.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787034793467.json
 
-[Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/reports/problems/problems-report.html
-
-BUILD SUCCESSFUL in 38s
-8 actionable tasks: 7 executed, 1 up-to-date
+BUILD SUCCESSFUL in 21s
+8 actionable tasks: 6 executed, 1 from cache, 1 up-to-date
