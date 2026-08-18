@@ -1,17 +1,14 @@
-name: Align Living Kingdoms authored interior audits
+name: Finalize Living Kingdoms authored interiors
 
 on:
   push:
     branches: [main]
     paths:
-      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java'
-      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanInteriorBuilder.java'
-      - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCitadelInteriorManager.java'
       - '.github/workflows/align-living-kingdoms-authored-audits.yml'
   workflow_dispatch:
 
 concurrency:
-  group: living-kingdoms-authored-interior-alignment
+  group: living-kingdoms-authored-interior-finalize
   cancel-in-progress: true
 
 permissions:
@@ -21,36 +18,12 @@ env:
   PROJECT_DIR: projects/living-kingdoms
 
 jobs:
-  align:
+  finalize:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Record live alignment run
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          mkdir -p .github/build-pointers
-          cat > .github/build-pointers/living-kingdoms-authored-alignment.json <<EOF
-          {
-            "run_id": "$GITHUB_RUN_ID",
-            "run_number": "$GITHUB_RUN_NUMBER",
-            "commit_sha": "$GITHUB_SHA",
-            "job_status": "in_progress"
-          }
-          EOF
-          git add .github/build-pointers/living-kingdoms-authored-alignment.json
-          git commit -m "Record Living Kingdoms authored alignment $GITHUB_RUN_NUMBER start" || true
-          for attempt in 1 2 3 4 5; do
-            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
-            git rebase --abort 2>/dev/null || true
-            sleep $((attempt * 2))
-          done
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -59,7 +32,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Remove obsolete preserver and align canonical contracts
+      - name: Remove obsolete runtime preserver
         shell: bash
         run: |
           set -euo pipefail
@@ -67,103 +40,28 @@ jobs:
           if [ -f projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java ]; then
             git rm projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java
           fi
-          python .github/scripts/align_living_kingdoms_authored_audits.py
-          python .github/scripts/strip_living_kingdoms_preserver_audit_refs.py
-
           ! grep -Fq 'ErdenUrbanAuthoredInteriorPreserver' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
           ! test -f projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java
-          ! grep -Fq 'ErdenUrbanAuthoredInteriorPreserver.java' .github/workflows/audit-living-kingdoms-residence-modes.yml
-          ! grep -Fq 'ground_only_candidates=77' .github/workflows/audit-living-kingdoms-residence-modes.yml
-          ! grep -Fq 'ground_only_candidates=77' .github/workflows/audit-living-kingdoms-exterior-inventory.yml
-          ! grep -Fq 'ground_only_candidates=77' .github/workflows/build-living-kingdoms.yml
           grep -Fq 'authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0' .github/workflows/audit-living-kingdoms-residence-modes.yml
           grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' .github/workflows/audit-living-kingdoms-exterior-inventory.yml
-          grep -Fq 'ErdenUrbanAuthoredGroundPlanCatalog ErdenUrbanAuthoredGroundMaterializer ErdenUrbanResidenceResolver' .github/workflows/build-living-kingdoms.yml
-          grep -Fq 'Requested Erden physical-economy authored interior CI samples sites=3' .github/workflows/validate-living-kingdoms-physical-economy.yml
+          grep -Fq 'loaded_lease=true' .github/workflows/validate-living-kingdoms-physical-economy.yml
 
-      - name: Java 25 compile without legacy preserver
+      - name: Java 25 clean compile without legacy preserver
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: gradle --no-daemon clean classes --stacktrace --console=plain
 
-      - name: Prepare verified consolidation commit object
-        id: candidate
+      - name: Commit verified source cleanup
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          git fetch origin main
-          export BASE_COMMIT="$(git rev-parse origin/main)"
-          export BASE_TREE="$(git rev-parse "${BASE_COMMIT}^{tree}")"
-          python3 - <<'PY'
-          import json
-          import os
-          import urllib.request
-          from pathlib import Path
-
-          repo = os.environ['GH_REPOSITORY']
-          token = os.environ['GH_TOKEN']
-          base_commit = os.environ['BASE_COMMIT']
-          base_tree = os.environ['BASE_TREE']
-          paths = [
-              'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java',
-              '.github/workflows/audit-living-kingdoms-residence-modes.yml',
-              '.github/workflows/audit-living-kingdoms-exterior-inventory.yml',
-              '.github/workflows/build-living-kingdoms.yml',
-              '.github/workflows/validate-living-kingdoms-physical-economy.yml',
-          ]
-          deleted = 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java'
-
-          def post(endpoint, payload):
-              request = urllib.request.Request(
-                  f'https://api.github.com/repos/{repo}{endpoint}',
-                  data=json.dumps(payload).encode('utf-8'),
-                  method='POST',
-                  headers={
-                      'Authorization': f'Bearer {token}',
-                      'Accept': 'application/vnd.github+json',
-                      'X-GitHub-Api-Version': '2022-11-28',
-                      'User-Agent': 'living-kingdoms-authored-alignment',
-                      'Content-Type': 'application/json',
-                  },
-              )
-              with urllib.request.urlopen(request) as response:
-                  return json.load(response)
-
-          entries = [
-              {
-                  'path': path,
-                  'mode': '100644',
-                  'type': 'blob',
-                  'content': Path(path).read_text(encoding='utf-8'),
-              }
-              for path in paths
-          ]
-          entries.append({'path': deleted, 'mode': '100644', 'type': 'blob', 'sha': None})
-          tree = post('/git/trees', {'base_tree': base_tree, 'tree': entries})
-          commit = post('/git/commits', {
-              'message': 'refactor(living-kingdoms): consolidate fully authored urban interiors',
-              'tree': tree['sha'],
-              'parents': [base_commit],
-          })
-          result = {
-              'run_id': os.environ['GITHUB_RUN_ID'],
-              'run_number': os.environ['GITHUB_RUN_NUMBER'],
-              'base_commit': base_commit,
-              'tree_sha': tree['sha'],
-              'candidate_commit': commit['sha'],
-              'verified_java25': True,
-              'legacy_preserver': False,
-          }
-          Path('alignment-candidate.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
-          print('LK_AUTHORED_ALIGNMENT_CANDIDATE ' + json.dumps(result, sort_keys=True))
-          PY
-
-      - name: Upload verified alignment candidate
-        uses: actions/upload-artifact@v4
-        with:
-          name: living-kingdoms-authored-alignment-${{ github.run_number }}
-          path: alignment-candidate.json
-          retention-days: 14
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms
+          git commit -m 'refactor(living-kingdoms): remove obsolete authored interior preserver' || exit 0
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
