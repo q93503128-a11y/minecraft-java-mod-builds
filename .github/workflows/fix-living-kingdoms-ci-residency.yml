@@ -106,6 +106,7 @@ jobs:
           tail -n 500 ../../logs/living-kingdoms-ci-residency-server.log
           test "$passed" -eq 1
           grep -F 'Requested Erden physical-economy authored interior CI samples sites=3' ../../logs/living-kingdoms-ci-residency-server.log
+          grep -F 'loaded_lease=true' ../../logs/living-kingdoms-ci-residency-server.log
           grep -F 'refreshed_until_verification=true' ../../logs/living-kingdoms-ci-residency-server.log
           grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/living-kingdoms-ci-residency-server.log
           grep -F 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' ../../logs/living-kingdoms-ci-residency-server.log
@@ -118,6 +119,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCapitalStreamingBuilder.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanInteriorBuilder.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCitadelInteriorManager.java
