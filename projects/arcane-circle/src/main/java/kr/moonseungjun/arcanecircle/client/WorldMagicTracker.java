@@ -5,15 +5,18 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
+import kr.moonseungjun.arcanecircle.magic.SpellPresentationProfile;
 import kr.moonseungjun.arcanecircle.network.WorldMagicPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.context.ContextKey;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ExtractLevelRenderStateEvent;
 import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,13 +25,15 @@ import java.util.UUID;
 /** Runtime bridge between server-authoritative spell events and the cinematic director. */
 public final class WorldMagicTracker {
     private static final ContextKey<List<RenderEntry>> DATA_KEY = new ContextKey<>(
-            Identifier.fromNamespaceAndPath(ArcaneCircle.MOD_ID, "world_magic_cinematic_v3"));
+            Identifier.fromNamespaceAndPath(ArcaneCircle.MOD_ID, "world_magic_cinematic_v4"));
     private static final Map<UUID, Visual> CHARGES = new HashMap<>();
     private static final List<Visual> RELEASES = new ArrayList<>();
     private static final int MAX_VISUALS = 10;
     private static final int MAX_FRAME = 14500;
     private static final int MAX_ENTRY = 4000;
     private static final double MAX_DISTANCE_SQR = 224.0 * 224.0;
+    private static final double DETAIL_DISTANCE_SQR = 96.0 * 96.0;
+    private static final double SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0;
     private static final long CHARGE_TTL = 2_250_000_000L;
 
     record CasterPoseSnapshot(int family, float progress, boolean release) {}
@@ -67,7 +72,6 @@ public final class WorldMagicTracker {
         double power=Math.max(.1,decimal(values,"power",Math.max(.1,spell.power())));
         double progress=clamp(decimal(values,"progress",1),0,1);
         int duration=Math.max(3,integer(values,"duration",10));
-        // Sustained field visuals must live exactly as long as their authoritative server field.
         if("time_stop".equals(spell.id()))duration=ArcaneFieldService.TIME_STOP_TICKS;
         else if("antimagic_field".equals(spell.id()))duration=ArcaneFieldService.ANTIMAGIC_TICKS;
         int impactTicks=Math.max(0,integer(values,"impact",0));
@@ -79,13 +83,15 @@ public final class WorldMagicTracker {
             Visual previous=CHARGES.get(caster);
             long started=previous!=null&&previous.spell.id().equals(spell.id())?previous.startedAt:now;
             CHARGES.put(caster,new Visual(caster,spell,fusion,ingredients,center,target,direction,range,power,
-                    progress,started,now+CHARGE_TTL,false,0,seed));
+                    progress,started,now+CHARGE_TTL,false,0,seed,false,Vec3.ZERO));
             return;
         }
         if("release".equals(kind)){
             while(RELEASES.size()>=MAX_VISUALS)RELEASES.removeFirst();
+            boolean attached=followsCaster(spell);
+            Vec3 attachOffset=attached?attachmentOffset(caster,spell,center):Vec3.ZERO;
             RELEASES.add(new Visual(caster,spell,fusion,ingredients,center,target,direction,range,power,1,
-                    now,now+duration*50_000_000L,true,impactAge,seed));
+                    now,now+duration*50_000_000L,true,impactAge,seed,attached,attachOffset));
             CHARGES.remove(caster);
         }
     }
@@ -97,65 +103,74 @@ public final class WorldMagicTracker {
         if(CHARGES.isEmpty()&&RELEASES.isEmpty())return;
         List<RenderEntry> entries=new ArrayList<>();
         for(Visual v:CHARGES.values()){
+            Vec3 center=renderCenter(v);
             int color=SpellCinematicDirector.color(v.spell);
             if(!ArcaneSpellVisualOverhaul.replacesBaseSigil(v.spell)){
                 ArcaneWorldMesh sigilMesh=MeteorBarragePattern.withSeed(v.seed,
                         ()->ArcaneSigilDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.fusion,v.startedAt));
-                entries.add(new RenderEntry(v.center,sigilMesh,color));
+                entries.add(new RenderEntry(center,sigilMesh,color,42,1.0F));
             }
             ArcaneWorldMesh authoredSigil=MeteorBarragePattern.withSeed(v.seed,
                     ()->ArcaneSpellVisualOverhaul.chargeSigil(v.spell,v.direction,v.progress,v.range,v.startedAt));
-            if(authoredSigil.size()>0)entries.add(new RenderEntry(v.center,authoredSigil,color));
+            if(authoredSigil.size()>0)entries.add(new RenderEntry(center,authoredSigil,color,58,1.0F));
             if(!ArcaneSpellVisualOverhaul.replacesBaseChargeBody(v.spell)){
                 ArcaneWorldMesh cinematicMesh=MeteorBarragePattern.withSeed(v.seed,
                         ()->SpellCinematicDirector.charge(v.spell,v.direction,targetOffset(v),v.range,v.power,v.progress,v.fusion,v.startedAt));
-                entries.add(new RenderEntry(v.center,cinematicMesh,color));
+                entries.add(new RenderEntry(center,cinematicMesh,color,52,1.0F));
             }
             ArcaneWorldMesh authoredBody=MeteorBarragePattern.withSeed(v.seed,
                     ()->ArcaneSpellVisualOverhaul.chargeBody(v.spell,v.direction,targetOffset(v),v.progress,v.range,v.startedAt));
-            if(authoredBody.size()>0)entries.add(new RenderEntry(v.center,authoredBody,color));
+            if(authoredBody.size()>0)entries.add(new RenderEntry(center,authoredBody,color,64,1.0F));
             if(v.spell.circle()>=7){
                 ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
                         ()->AuthoredHighCircleTimeline.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.startedAt,v.seed));
-                if(timeline.size()>0)entries.add(new RenderEntry(v.center,timeline,color));
+                if(timeline.size()>0)entries.add(new RenderEntry(center,timeline,color,94,1.0F));
+                ArcaneWorldMesh staging=HighCircleMaintenanceOverlay.charge(v.spell,v.direction,targetOffset(v),v.progress,v.startedAt,v.seed);
+                if(staging.size()>0)entries.add(new RenderEntry(center,staging,color,102,1.0F));
             }
         }
         for(Visual v:RELEASES){
             double age=clamp((now-v.startedAt)/(double)Math.max(1L,v.expiresAt-v.startedAt),0,1);
             double durationSeconds=Math.max(.05,(v.expiresAt-v.startedAt)/1_000_000_000.0);
-            double elapsedSeconds=age*durationSeconds;
+            double elapsedSeconds=Math.max(0.0,(now-v.startedAt)/1_000_000_000.0);
+            float opacity=releaseOpacity(v,now);
+            Vec3 center=renderCenter(v);
             int color=SpellCinematicDirector.color(v.spell);
             if(!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseSigil(v.spell)){
                 ArcaneWorldMesh echo=MeteorBarragePattern.withSeed(v.seed,
                         ()->ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt));
-                if(echo.size()>0)entries.add(new RenderEntry(v.center,echo,ArcaneSigilDirector.releaseEchoColor(color,age)));
+                if(echo.size()>0)entries.add(new RenderEntry(center,echo,ArcaneSigilDirector.releaseEchoColor(color,age),36,opacity));
             }
             if(!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseRelease(v.spell)){
                 ArcaneWorldMesh releaseMesh=MeteorBarragePattern.withSeed(v.seed,
                         ()->SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
                                 age,v.impactAge,v.fusion,v.ingredients));
-                entries.add(new RenderEntry(v.center,releaseMesh,color));
+                entries.add(new RenderEntry(center,releaseMesh,color,70,opacity));
             }
             ArcaneWorldMesh authoredRelease=MeteorBarragePattern.withSeed(v.seed,
                     ()->ArcaneSpellVisualOverhaul.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
                             age,elapsedSeconds,durationSeconds,v.seed));
-            if(authoredRelease.size()>0)entries.add(new RenderEntry(v.center,authoredRelease,color));
+            if(authoredRelease.size()>0)entries.add(new RenderEntry(center,authoredRelease,color,82,opacity));
             if(v.spell.circle()>=7){
                 ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
                         ()->AuthoredHighCircleTimeline.release(v.spell,v.direction,targetOffset(v),v.range,
                                 age,v.impactAge,elapsedSeconds,durationSeconds,v.seed));
-                if(timeline.size()>0)entries.add(new RenderEntry(v.center,timeline,color));
+                if(timeline.size()>0)entries.add(new RenderEntry(center,timeline,color,100,opacity));
+                ArcaneWorldMesh maintenance=HighCircleMaintenanceOverlay.release(v.spell,v.direction,targetOffset(v),
+                        elapsedSeconds,durationSeconds,v.seed);
+                if(maintenance.size()>0)entries.add(new RenderEntry(center,maintenance,color,108,opacity));
             }
             if("prismatic_wall".equals(v.spell.id())){
-                for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(v.center,
+                for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(center,
                         ArcaneSpellVisualOverhaul.prismaticWallLayer(v.spell,v.direction,targetOffset(v),v.range,
-                                age,elapsedSeconds,layer),SpellCinematicDirector.prismaticColor(layer)));
+                                age,elapsedSeconds,layer),SpellCinematicDirector.prismaticColor(layer),96,opacity));
             }else if("prismatic_spray".equals(v.spell.id())){
-                for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(v.center,
+                for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(center,
                         SpellCinematicDirector.prismaticAccent(v.spell,v.direction,targetOffset(v),v.range,age,layer),
-                        SpellCinematicDirector.prismaticColor(layer)));
+                        SpellCinematicDirector.prismaticColor(layer),88,opacity));
             }
         }
+        entries.sort(Comparator.comparingInt(RenderEntry::priority).reversed());
         event.getRenderState().setRenderData(DATA_KEY,List.copyOf(entries));
     }
 
@@ -168,21 +183,72 @@ public final class WorldMagicTracker {
         int used=0;
         for(RenderEntry entry:entries){
             if(used>=MAX_FRAME)break;
-            int cost=entry.mesh.size();if(cost<=0||cost>MAX_ENTRY||used+cost>MAX_FRAME)continue;
             Vec3 offset=entry.center.subtract(camera);
-            if(offset.lengthSqr()>MAX_DISTANCE_SQR)continue;
+            double distanceSqr=offset.lengthSqr();
+            if(distanceSqr>MAX_DISTANCE_SQR)continue;
+            if(distanceSqr>SILHOUETTE_DISTANCE_SQR&&entry.priority<90)continue;
+            if(distanceSqr>DETAIL_DISTANCE_SQR&&entry.priority<58)continue;
+            int cost=entry.mesh.size();
+            if(cost<=0||cost>MAX_ENTRY||used+cost>MAX_FRAME)continue;
             event.getPoseStack().pushPose();
             event.getPoseStack().translate(offset.x,offset.y,offset.z);
-            entry.mesh.submit(event.getPoseStack(),event.getSubmitNodeCollector(),entry.argb,scale);
+            entry.mesh.submit(event.getPoseStack(),event.getSubmitNodeCollector(),withOpacity(entry.argb,entry.opacity),scale);
             event.getPoseStack().popPose();
             used+=cost;
         }
     }
 
+    private static boolean followsCaster(SpellDefinition spell){
+        if("time_stop".equals(spell.id()))return false;
+        if("antimagic_field".equals(spell.id()))return true;
+        return switch(spell.id()){
+            case "shield","mage_armor","mirror_image","invisibility","blur","haste",
+                    "protection_from_energy","greater_invisibility","stoneskin","freedom_of_movement",
+                    "true_seeing","fire_shield","solar_guard","shapechange","foresight","fly",
+                    "feather_fall","simulacrum","clone" -> true;
+            default -> false;
+        };
+    }
+
+    private static Vec3 attachmentOffset(UUID caster,SpellDefinition spell,Vec3 originalCenter){
+        Player player=findPlayer(caster);
+        if(player!=null)return originalCenter.subtract(player.position());
+        SpellPresentationProfile.SigilStyle sigil=SpellPresentationProfile.profile(spell).sigil();
+        if(sigil==SpellPresentationProfile.SigilStyle.BODY_HALO)return new Vec3(0,1.0,0);
+        if(sigil==SpellPresentationProfile.SigilStyle.FEET_RUNE||"antimagic_field".equals(spell.id()))return new Vec3(0,.055,0);
+        return Vec3.ZERO;
+    }
+
+    private static Vec3 renderCenter(Visual visual){
+        if(visual.attached){
+            Player player=findPlayer(visual.caster);
+            if(player!=null)return player.position().add(visual.attachOffset);
+        }
+        return visual.center;
+    }
+
+    private static Player findPlayer(UUID id){
+        Minecraft minecraft=Minecraft.getInstance();
+        if(minecraft.player!=null&&minecraft.player.getUUID().equals(id))return minecraft.player;
+        if(minecraft.level==null)return null;
+        for(Player player:minecraft.level.players())if(player.getUUID().equals(id))return player;
+        return null;
+    }
+
+    private static float releaseOpacity(Visual visual,long now){
+        long remaining=Math.max(0L,visual.expiresAt-now);
+        long total=Math.max(1L,visual.expiresAt-visual.startedAt);
+        long window=Math.min(750_000_000L,Math.max(220_000_000L,total/12L));
+        return remaining>=window?1.0F:(float)smooth(remaining/(double)window);
+    }
+
+    private static int withOpacity(int argb,float opacity){
+        int alpha=(argb>>>24)&255;
+        int next=(int)Math.round(alpha*clamp(opacity,0,1));
+        return (Math.max(0,Math.min(255,next))<<24)|(argb&0x00FFFFFF);
+    }
+
     private static Vec3 targetOffset(Visual visual){
-        // A zero offset is meaningful: TARGET/BODY/FEET spells are rendered around the same
-        // authoritative point that owns the effect.  The old fallback displaced those visuals
-        // forward by the entire range and was especially obvious on prisons, self auras and marks.
         return visual.target.subtract(visual.center);
     }
     private static Map<String,String> parse(String state){Map<String,String> result=new HashMap<>();for(String part:state.split(";")){int i=part.indexOf('=');if(i>0)result.put(part.substring(0,i),part.substring(i+1));}return result;}
@@ -191,9 +257,11 @@ public final class WorldMagicTracker {
     private static double decimal(Map<String,String> values,String key,double fallback){try{return Double.parseDouble(values.getOrDefault(key,Double.toString(fallback)));}catch(Exception ignored){return fallback;}}
     private static Vec3 safeDirection(Vec3 value){return value==null||value.lengthSqr()<1.0E-8?new Vec3(0,0,1):value.normalize();}
     private static double clamp(double value,double min,double max){return Math.max(min,Math.min(max,value));}
+    private static double smooth(double value){double t=clamp(value,0,1);return t*t*(3.0-2.0*t);}
 
     private record Visual(UUID caster, SpellDefinition spell, boolean fusion, int ingredients,
                           Vec3 center, Vec3 target, Vec3 direction, double range, double power, double progress,
-                          long startedAt, long expiresAt, boolean release, double impactAge, long seed) {}
-    private record RenderEntry(Vec3 center, ArcaneWorldMesh mesh, int argb) {}
+                          long startedAt, long expiresAt, boolean release, double impactAge, long seed,
+                          boolean attached, Vec3 attachOffset) {}
+    private record RenderEntry(Vec3 center, ArcaneWorldMesh mesh, int argb, int priority, float opacity) {}
 }
