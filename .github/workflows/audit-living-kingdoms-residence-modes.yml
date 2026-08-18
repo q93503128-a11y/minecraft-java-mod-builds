@@ -121,3 +121,4 @@ jobs:
       - name: Enforce residence audit result
         if: always()
         run: test '${{ steps.residence.outcome }}' = 'success'
+# trigger 2026-08-18 residence modes verification
