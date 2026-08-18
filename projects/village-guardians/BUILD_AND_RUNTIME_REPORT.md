@@ -2,17 +2,29 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.13-alpha.1`
+- Current source version: `0.18.14-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.13-alpha.1.jar`
-- Final acceptance Actions run: `32087562708`
-- Final acceptance head: `cabf1c597cb70744f631bee44f6ed5a7561f2c06`
-- Final JAR SHA-256: `c6d96eff852929f90fa11e888a6ebbc714252f0f47914f34e4e8852a539d2f2a`
-- Final JAR size: `915862` bytes
+- Target JAR: `villageguardians-0.18.14-alpha.1.jar`
+- Final acceptance Actions run: `32088820912`
+- Final acceptance head: `bbdc4b1b7ecd90c02952bcbc400fc50fbe34a1e5`
+- Final JAR SHA-256: `9aef5f25c469d5023306dfd22345af4e9f0e4aaf4b72d3666ac33bb6861b9357`
+- Final JAR size: `931551` bytes
+
+## 0.18.14 지속형 Presentation·복구 감사
+
+- `VillageTurretPresentationSystem`을 추가해 실제 포탑 SavedData와 runtime-only mesh actor를 분리했다. actor 누락은 1초 주기로 재생성되며 철거/잔해/재초기화에서는 정리된다.
+- 활성 포탑 상부는 invisible `BARRIER` collision shell, 실제 보이는 기계는 10종 전용 procedural mesh가 담당한다. 포탑 목표 방향, 레벨, 교란 상태가 시각적으로 반영된다.
+- `VillageEnemyEffectSystem`과 elite owner-follow actor를 추가해 다섯 정예 교리의 지속 식별 silhouette를 만들었다.
+- Grappler는 18틱 Bézier traversal, Firebrand는 18틱 fixed-point projectile, Plague Weaver는 20틱 fixed danger-zone cast로 바뀌어 텔레그래프와 판정 좌표가 일치한다.
+- 실패한 밤/새 게임 복구에서 persistence state를 `VillagePlacedTurretSystem.reloadAfterPersistenceChange`로 runtime state·collision shell·mesh actor에 즉시 재투영하고 `VillageSiegeSegmentSystem.restoreAllVisuals`로 성벽 projection도 즉시 동기화한다.
+- 신규 presentation parser에서 Java 정규식 escape 오타를 1차 clean build가 발견했다. 수정 후 전체 17개 pre-build contract를 다시 통과하고 2차 Java 25 clean build가 성공했다.
+- Actions run `32088820912`: deterministic contracts PASS, Java 25/NeoForge clean build PASS, runtime JAR verification PASS, artifact upload PASS.
+- Actions artifact를 별도 다운로드해 ZIP/JAR CRC, mod metadata/manifest, `VillageTurretPresentationSystem`, `VillageEnemyEffectSystem`, `VillageEnemyEliteSystem` 상태기계 inner class, `VillagePlacedTurretSystem`, `VillageSkillEffectEntity`, `VillageSkillMeshLibrary$TurretPresentation`, `VillageCouncilState` 포함을 재검증했다.
+- 최종 JAR SHA-256 `9aef5f25c469d5023306dfd22345af4e9f0e4aaf4b72d3666ac33bb6861b9357`, 크기 `931551` bytes.
 
 ## 0.18.13 공성 통합·수동 감사
 

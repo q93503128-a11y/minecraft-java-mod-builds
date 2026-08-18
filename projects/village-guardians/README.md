@@ -6,8 +6,8 @@ Minecraft Java 26.2에서 낮 동안 마을을 준비하고, 밤에는 실제 �
 - NeoForge `26.2.0.37-beta` 이상 26.2.x
 - Java `25`
 - Gradle `9.2.1`
-- 현재 소스 버전 `0.18.13-alpha.1`
-- 목표 JAR `villageguardians-0.18.13-alpha.1.jar`
+- 현재 소스 버전 `0.18.14-alpha.1`
+- 목표 JAR `villageguardians-0.18.14-alpha.1.jar`
 
 ## 핵심 루프
 
@@ -118,6 +118,22 @@ Minecraft Java 26.2에서 낮 동안 마을을 준비하고, 밤에는 실제 �
 - 수호병은 근거리 적의 시선을 끌고 억제하며, 공격병은 가시 목표를 적극 압박하고, 궁수는 LOS 원거리 지원, 의무병은 회복에 집중한다.
 - 궁수·의무병의 바닐라 철골렘 근접 추격을 억제했고, 성벽 배치 경로 생성이 실패하면 성 내부 안전 거점으로 fallback한다.
 - Java 25 + Gradle 9.2.1 + NeoForge 26.2 실제 clean build와 JAR 검증을 통과했다. 최종 acceptance run은 `31583212244`다.
+
+## 0.18.14 포탑·정예 Presentation 실체화
+
+0.18.13의 공격 연출에 이어, 이번에는 전장에 계속 남아 있는 방어 자산과 정예 자체가 임시 구현처럼 보이는 문제를 수동 감사했다.
+
+- 포탑의 게임 상태·HP·레벨·배치 위치는 기존 SavedData `TurretState`가 계속 정본이다. 외형만 no-save `VillageSkillEffectEntity` actor로 분리해 표시층 손실이 저장 손실로 이어지지 않는다.
+- 포탑 상부의 바닐라 식별 블록을 제거하고 3블록 충돌 footprint는 보이지 않는 `BARRIER` 셸로 유지한다. 실제 보이는 본체는 `VillageTurretPresentationSystem`이 10종 전용 procedural mesh로 생성한다.
+- 중쇠뇌·연사포·철갑포·화염기·서리기·전격탑·투석포·억제탑·대공포·지원 봉화가 서로 다른 몸체와 포신/코어를 가지며, 목표 방향으로 실제 본체가 회전한다. 레벨이 오르면 체급·링·장식이 커지고 교란 중에는 에너지 감소와 적색 경고 링이 보인다.
+- 포탑 파괴 시 상부 충돌 셸을 제거하고 실제 무너진 잔해 mesh를 표시하며, 철거·복구·재시작 시 actor가 남지 않도록 runtime actor map을 재검증한다.
+- 갈고리병은 더 이상 성벽 앞에서 한 프레임 `snapTo`로 내부 순간이동하지 않는다. 18틱 Bézier 포물선 이동과 갈고리 선을 실제 월드 위치에 보여주며 성벽을 넘는다.
+- 화염 투척병은 시전자 주변 즉발 범위 피해가 아니라, 18틱 전에 플레이어 위치를 스냅샷으로 고정해 실제 투척체 궤적을 보여준 뒤 그 지점 약 3.6블록에 착탄한다. 플레이어가 벗어나면 회피할 수 있다.
+- 역병술사는 9블록 위험지대를 20틱 먼저 고정 표시하고 같은 지점에서 독·약화를 발동한다. 경고와 실제 판정 위치가 일치한다.
+- 다섯 정예 교리는 지속 owner-follow aura를 가져 멀리서도 역할이 읽히며, 소유 몹이 죽거나 사라지면 actor도 즉시 폐기되어 유령 연출이 남지 않는다.
+- 패배 후 같은 날 재도전/처음부터 재시작에서 SavedData만 되돌리고 메모리 포탑·충돌 셸·mesh actor·성벽 외형을 즉시 재투영하지 않던 복구 경계를 발견했다. `reloadAfterPersistenceChange`와 성벽 visual restore를 재시작 흐름에 연결했다.
+- 첫 Java 25 컴파일에서 신규 presentation extra 파서의 `\|` 정규식 escaping 오류를 실제 compiler로 발견해 수정했고, 동일한 잘못된 한-backslash 패턴이 Java 트리에 남지 않는 검사도 추가했다.
+- 최종 acceptance run `32088820912` / built head `bbdc4b1b7ecd90c02952bcbc400fc50fbe34a1e5`에서 전체 계약, Java 25 clean build, JAR verifier, artifact upload가 모두 성공했다. 최종 JAR SHA-256 `9aef5f25c469d5023306dfd22345af4e9f0e4aaf4b72d3666ac33bb6861b9357`, 크기 `931551` bytes다.
 
 ## 0.18.13 공성 방어 통합·연출 고도화
 
