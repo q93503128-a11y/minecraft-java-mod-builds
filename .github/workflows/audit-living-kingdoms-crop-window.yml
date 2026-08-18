@@ -18,16 +18,18 @@ jobs:
         with: { distribution: temurin, java-version: '25' }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '9.2.1' }
-      - name: Apply crop candidate audit
+      - name: Apply and verify crop semantics repair
         id: audit
         continue-on-error: true
         run: |
           set -euo pipefail
           python3 .github/scripts/patch_living_kingdoms_crop_window_audit.py
           grep -F 'auditFixedFootprintCropCandidates();' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+          grep -F 'fragmentInteriorSide(fragment, nx, nz)' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java
+          grep -F 'withExteriorSide(' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java
           git diff --check
           (cd projects/living-kingdoms && gradle --no-daemon clean classes --stacktrace --console=plain)
-          rm -rf projects/living-kingdoms/run/livingkingdoms-crop-window-ci-world
+          rm -rf projects/living-kingdoms/run/world projects/living-kingdoms/run/living_realm projects/living-kingdoms/run/livingkingdoms-crop-window-ci-world
           mkdir -p projects/living-kingdoms/run logs
           printf 'level-name=livingkingdoms-crop-window-ci-world\npause-when-empty-seconds=0\n' > projects/living-kingdoms/run/server.properties
           printf 'eula=true\n' > projects/living-kingdoms/run/eula.txt
@@ -36,14 +38,28 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
           found=0
           for i in $(seq 1 180); do
-            if grep -Fq 'LK_ERDEN_CROP_WINDOW_AUDIT' logs/crop-window-server.log; then found=1; break; fi
+            if grep -Fq 'LK_ERDEN_CROP_WINDOW_AUDIT' logs/crop-window-server.log \
+              && grep -Fq 'LK_ERDEN_GROUND_VOID_SURVEY placements=77' logs/crop-window-server.log; then
+              found=1; break
+            fi
             if grep -Eqi 'IllegalStateException|Exception caught during firing event|BUILD FAILED' logs/crop-window-server.log; then cat logs/crop-window-server.log; exit 1; fi
             if ! kill -0 "$pid" 2>/dev/null; then cat logs/crop-window-server.log; exit 1; fi
             sleep 1
           done
+          cat logs/crop-window-server.log
           test "$found" -eq 1
-          grep -F 'LK_ERDEN_CROP_WINDOW_CANDIDATE' logs/crop-window-server.log
-          grep -F 'LK_ERDEN_CROP_WINDOW_AUDIT' logs/crop-window-server.log | tee logs/crop-window-pass.txt
+          grep -F 'LK_ERDEN_CASTLE_HOUSE_CROP_SELECTED' logs/crop-window-server.log \
+            | grep -F 'crop_side=NORTH' \
+            | grep -F 'resolved_side=NORTH' \
+            | grep -E 'reachable=([3-9][0-9]{2}|[1-9][0-9]{3,})'
+          grep -F 'LK_ERDEN_FRAGMENT_TOPOLOGY' logs/crop-window-server.log \
+            | grep -F 'fantasy_castle_house.schem#0' \
+            | grep -F 'classification=AUTHORED_GROUND_ONLY'
+          grep -F 'LK_ERDEN_GROUND_VOID_SURVEY placements=77' logs/crop-window-server.log \
+            | grep -F 'usable_placements=77'
+          grep -F 'LK_ERDEN_CROP_WINDOW_AUDIT' logs/crop-window-server.log \
+            | grep -F 'best_side=NORTH' \
+            | tee logs/crop-window-pass.txt
       - name: Upload crop audit
         if: always()
         uses: actions/upload-artifact@v4
@@ -51,7 +67,7 @@ jobs:
           name: living-kingdoms-crop-window-${{ github.run_number }}
           path: logs/
           retention-days: 30
-      - name: Record pointer and commit diagnostic only on success
+      - name: Record pointer and commit repair only on success
         if: always()
         run: |
           set -euo pipefail
@@ -60,7 +76,7 @@ jobs:
             git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'audit(living-kingdoms): measure fixed crop windows'
+            git commit -m 'fix(living-kingdoms): restore castle-house authored interiors'
             for attempt in 1 2 3 4 5; do git fetch origin main; if git rebase origin/main && git push origin HEAD:main; then break; fi; git rebase --abort 2>/dev/null || true; sleep $((attempt*2)); done
           fi
           git fetch origin main
