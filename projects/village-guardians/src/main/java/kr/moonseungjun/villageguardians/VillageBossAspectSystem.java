@@ -23,11 +23,16 @@ import java.util.UUID;
 public final class VillageBossAspectSystem {
     private static final int LONG = 20 * 60 * 30;
     private static final Map<UUID, Aspect> ACTIVE = new HashMap<>();
+    private static final Map<UUID, Vec3> STORM_WARNINGS = new HashMap<>();
 
     private VillageBossAspectSystem() {}
 
-    public static void reset() { ACTIVE.clear(); }
-    public static void forget(UUID id) { if (id != null) ACTIVE.remove(id); }
+    public static void reset() { ACTIVE.clear(); STORM_WARNINGS.clear(); }
+    public static void forget(UUID id) {
+        if (id == null) return;
+        ACTIVE.remove(id);
+        STORM_WARNINGS.remove(id);
+    }
 
     public static Aspect preview(int day, int wave, int bossIndex) {
         Aspect[] values = Aspect.values();
@@ -94,27 +99,33 @@ public final class VillageBossAspectSystem {
                     ServerPlayer warning = nearbyPlayers(server, mob, 18.0).stream()
                             .min(Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
                     if (warning != null) {
+                        Vec3 warningPos = warning.position();
+                        STORM_WARNINGS.put(mob.getUUID(), warningPos);
                         level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
-                                warning.getX(), warning.getY() + 0.15, warning.getZ(),
-                                18, 0.8, 0.08, 0.8, 0.03);
+                                warningPos.x, warningPos.y + 0.15, warningPos.z,
+                                24, 0.9, 0.08, 0.9, 0.025);
+                    } else {
+                        STORM_WARNINGS.remove(mob.getUUID());
                     }
                     return;
                 }
                 if (globalTicks % 80 != 0) return;
-                ServerPlayer target = nearbyPlayers(server, mob, 18.0).stream()
-                        .min(Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
-                if (target == null) return;
-                Vec3 strike = target.position().add(
-                        (mob.getRandom().nextDouble() - 0.5) * 2.0, 0.0,
-                        (mob.getRandom().nextDouble() - 0.5) * 2.0);
+                Vec3 strike = STORM_WARNINGS.remove(mob.getUUID());
+                if (strike == null) return;
                 var lightning = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.EVENT);
                 if (lightning != null) {
                     lightning.setVisualOnly(true);
                     lightning.setPos(strike.x, strike.y, strike.z);
                     level.addFreshEntity(lightning);
                 }
-                target.hurtServer(level, level.damageSources().magic(),
-                        4.5f + VillageCouncilState.currentDay() * 0.20f);
+                double impactRadiusSquared = 2.4 * 2.4;
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    if (player.level() != level || !player.isAlive() || player.isSpectator()
+                            || VillageRespawnSystem.isDowned(player)
+                            || player.position().distanceToSqr(strike) > impactRadiusSquared) continue;
+                    player.hurtServer(level, level.damageSources().magic(),
+                            4.5f + VillageCouncilState.currentDay() * 0.20f);
+                }
             }
             case WARLEADER -> {
                 if (globalTicks % 120 != 0) return;
@@ -149,7 +160,7 @@ public final class VillageBossAspectSystem {
         BERSERKER("광전", "짧은 주기로 공격력과 이동 속도가 폭증합니다."),
         BULWARK("철벽", "자신과 주변 병력에게 보호막과 저항을 반복 부여합니다."),
         BLOODBOUND("혈계", "주변 수호자의 생명력을 흡수해 스스로 회복합니다."),
-        STORMCALLER("뇌광", "주변 수호자 위치에 마법 번개를 반복 호출합니다."),
+        STORMCALLER("뇌광", "표시된 지점에 잠시 뒤 번개가 떨어집니다. 경고 지점에서 벗어나면 피할 수 있습니다."),
         WARLEADER("군령", "주변 적 병력의 공격력과 이동 속도를 강화합니다."),
         WALLBREAKER("파성", "시설에 가하는 피해가 크게 증가합니다.");
 
