@@ -83,14 +83,14 @@ public final class ArcaneCircle {
     }
 
     private void grantStarterStaffOnce(ServerPlayer player, MagicPlayerData data) {
-        if (!data.claimStarterStaffOnce(player)) return;
+        if (!data.claimStarterStaff(player)) return;
         giveOrDrop(player, new ItemStack(ModItems.NOVICE_STAFF.get()));
         player.sendSystemMessage(Component.literal(
                 "§5[마도구 지원] §f견습 마도봉을 지급했습니다. 주 손이나 보조 손에 들면 효과가 적용됩니다."));
     }
 
     private void grantStarterPrimerOnce(ServerPlayer player, MagicPlayerData data) {
-        if (!data.claimStarterPrimerOnce(player)) return;
+        if (!data.claimStarterPrimer(player)) return;
         giveOrDrop(player, new ItemStack(ModItems.BEGINNER_GRIMOIRE.get()));
         player.sendSystemMessage(Component.literal(
                 "§5[마법 교육 지원] §f초심자 마도서를 지급했습니다. 우클릭해 소모하면 1써클 주문 5종을 익힙니다."));
