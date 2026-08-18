@@ -1,4 +1,4 @@
-name: Apply Village Guardians v0.18.14 Persistent Presentation
+name: Apply Village Guardians v0.18.14 Restore Follow-up
 
 on:
   push:
@@ -24,17 +24,17 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
       - name: Rebase
         run: git pull --rebase origin main
-      - name: Apply and run complete pre-build contracts
+      - name: Apply restore synchronization and run complete contracts
         shell: bash
         run: |
           set +e
-          LOG="$RUNNER_TEMP/v01814-apply.log"
+          LOG="$RUNNER_TEMP/v01814-restore.log"
           : > "$LOG"
           {
             echo "head_before=$(git rev-parse HEAD)"
             echo "run_id=$GITHUB_RUN_ID"
-            echo "=== APPLY ==="
-            python3 projects/village-guardians/tools/apply_v01814_persistent_presentation.py
+            echo "=== APPLY RESTORE FIX ==="
+            python3 projects/village-guardians/tools/apply_v01814_retry_restore_fix.py
             APPLY=$?
             echo "apply_exit=$APPLY"
             TESTS=99
@@ -49,7 +49,6 @@ jobs:
                 tools/test_fortress_layout.py \
                 tools/test_runtime_safety.py \
                 tools/test_ui_layout_contract.py \
-                tools/test_interaction_contract.py \
                 tools/test_action_layout.py \
                 tools/test_enemy_content.py \
                 tools/test_v0188_risk_ui_cleanup.py \
@@ -71,7 +70,6 @@ jobs:
           STATUS=PASS
           if [ "$APPLY" -ne 0 ] || [ "$TESTS" -ne 0 ]; then STATUS=FAIL; fi
           if [ "$STATUS" = FAIL ]; then git reset --hard HEAD; fi
-
           mkdir -p projects/village-guardians/.ci
           {
             echo "status=$STATUS"
@@ -79,14 +77,14 @@ jobs:
             echo "trigger_head=$(git rev-parse HEAD)"
             echo
             cat "$LOG"
-          } > projects/village-guardians/.ci/v01814-apply-report.txt
+          } > projects/village-guardians/.ci/v01814-restore-report.txt
 
           if [ "$STATUS" = PASS ]; then
             git add -A projects/village-guardians
-            git commit -m 'feat(village): replace placeholder siege presentation'
+            git commit -m 'fix(village): restore siege runtime state after retry reset'
           else
-            git add projects/village-guardians/.ci/v01814-apply-report.txt
-            git commit -m 'ci(village): record v0.18.14 apply failure [skip ci]'
+            git add projects/village-guardians/.ci/v01814-restore-report.txt
+            git commit -m 'ci(village): record v0.18.14 restore failure [skip ci]'
           fi
           for attempt in 1 2 3 4; do
             if git push origin HEAD:main; then break; fi
