@@ -7,7 +7,12 @@ on:
       - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenAuthoritativeEconomyManager.java'
       - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanInteriorBuilder.java'
       - 'projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCitadelInteriorManager.java'
+      - '.github/workflows/align-living-kingdoms-authored-audits.yml'
   workflow_dispatch:
+
+concurrency:
+  group: living-kingdoms-authored-interior-alignment
+  cancel-in-progress: true
 
 permissions:
   contents: write
