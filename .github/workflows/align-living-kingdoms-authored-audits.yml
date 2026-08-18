@@ -29,6 +29,7 @@ jobs:
           grep -Fq 'authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0' .github/workflows/audit-living-kingdoms-residence-modes.yml
           grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' .github/workflows/audit-living-kingdoms-exterior-inventory.yml
           grep -Fq 'ErdenUrbanAuthoredGroundPlanCatalog ErdenUrbanAuthoredGroundMaterializer ErdenUrbanResidenceResolver' .github/workflows/build-living-kingdoms.yml
+          grep -Fq 'Requested Erden physical-economy authored interior CI samples sites=3' .github/workflows/validate-living-kingdoms-physical-economy.yml
       - name: Commit aligned canonical audits
         run: |
           set -euo pipefail
@@ -37,7 +38,8 @@ jobs:
           git add \
             .github/workflows/audit-living-kingdoms-residence-modes.yml \
             .github/workflows/audit-living-kingdoms-exterior-inventory.yml \
-            .github/workflows/build-living-kingdoms.yml
+            .github/workflows/build-living-kingdoms.yml \
+            .github/workflows/validate-living-kingdoms-physical-economy.yml
           git commit -m 'ci(living-kingdoms): align audits with fully authored urban interiors' || exit 0
           for attempt in 1 2 3 4 5; do
             git pull --rebase origin main && git push origin HEAD:main && exit 0
