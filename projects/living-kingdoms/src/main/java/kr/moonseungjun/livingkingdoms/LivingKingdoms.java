@@ -246,6 +246,7 @@ public final class LivingKingdoms {
         if (FantasyWorldRules.handleDefeat(event)) return;
         if (event.getEntity() instanceof Villager villager
                 && villager.level() instanceof ServerLevel level) {
+            StarterNpcManager.markDeadIfStarter(level, villager);
             ErdenPopulationManager.markDeadIfResident(level, villager);
             ErdenCapitalLifecycleManager.markDeadIfLifecycleResident(level, villager);
             ErdenExteriorWorkforceManager.markDeadIfWorker(level, villager);
