@@ -127,10 +127,10 @@ public final class ErdenUrbanUpperWorkActivityManager {
 
         for (Villager villager : villagers) {
             ErdenUrbanLifeSavedData.Assignment assignment = byName.get(villager.getName().getString());
-            ActivitySite site = secondaryActivitySite(assignment);
+            ExternalUrbanFabricBuilder.UrbanEntrance site = secondaryActivitySite(assignment);
             if (site == null) continue;
             BlockPos target = ErdenUrbanResidenceResolver.resolveUpperActivityTarget(
-                    level, site.entrance(), Math.floorMod(assignment.citizenId().hashCode(), 9));
+                    level, site, Math.floorMod(assignment.citizenId().hashCode(), 9));
             if (target == null || !routeLoaded(level, villager.blockPosition(), target)) continue;
             if (villager.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 4.0D) {
                 villager.getNavigation().moveTo(
