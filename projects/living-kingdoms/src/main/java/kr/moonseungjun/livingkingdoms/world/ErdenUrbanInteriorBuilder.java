@@ -114,20 +114,31 @@ public final class ErdenUrbanInteriorBuilder {
 
     private static void requestCiSampleChunks(ServerLevel level) {
         if (ciChunksRequested || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
-        ExternalUrbanFabricBuilder.UrbanEntrance entrance = ExternalUrbanFabricBuilder.diagnosticEntrance();
+        requestPlanChunksForCi(level, ExternalUrbanFabricBuilder.diagnosticEntrance());
+        ciChunksRequested = true;
+    }
+
+    static void requestPlanChunksForCi(
+            ServerLevel level,
+            ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+        if (!"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
         ErdenUrbanAuthoredGroundPlanCatalog.PlacementPlan plan =
                 ErdenUrbanAuthoredGroundPlanCatalog.plan(entrance);
-        if (plan == null) throw new IllegalStateException("Missing authored urban CI plan");
+        if (plan == null) {
+            throw new IllegalStateException(
+                    "Missing authored urban CI plan role=" + entrance.role()
+                            + " entrance=" + entrance.x() + "," + entrance.z());
+        }
         for (BlockPos pos : planPositions(plan)) {
             int centerChunkX = pos.getX() >> 4;
             int centerChunkZ = pos.getZ() >> 4;
             for (int chunkX = centerChunkX - 1; chunkX <= centerChunkX + 1; chunkX++) {
                 for (int chunkZ = centerChunkZ - 1; chunkZ <= centerChunkZ + 1; chunkZ++) {
                     ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                    ErdenCapitalStreamingBuilder.retainDiagnosticChunk(level, chunkX, chunkZ);
                 }
             }
         }
-        ciChunksRequested = true;
     }
 
     private static List<BlockPos> planPositions(

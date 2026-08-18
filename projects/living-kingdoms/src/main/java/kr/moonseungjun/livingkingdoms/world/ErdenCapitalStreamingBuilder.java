@@ -110,6 +110,22 @@ public final class ErdenCapitalStreamingBuilder {
         enqueuePriority(level, packed);
     }
 
+    /**
+     * Keeps one already-built capital cell resident for a bounded diagnostic window. Unlike
+     * {@link #requestChunk(ServerLevel, int, int)}, this intentionally still adds a transient
+     * ticket after construction is complete. Callers must be diagnostic-only and refresh only
+     * while their real world-state proof is incomplete; the PORTAL ticket expires after refreshes
+     * stop and never creates a persistent forced chunk.
+     */
+    static void retainDiagnosticChunk(ServerLevel level, int chunkX, int chunkZ) {
+        ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
+        if (!intersectsCapital(chunk)) {
+            throw new IllegalArgumentException(
+                    "Diagnostic chunk is outside the Erden capital: " + chunkX + "," + chunkZ);
+        }
+        level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 0);
+    }
+
     public static boolean isChunkBuilt(ServerLevel level, int chunkX, int chunkZ) {
         return level.getDataStorage().computeIfAbsent(ErdenCapitalChunkSavedData.TYPE)
                 .isBuilt(pack(chunkX, chunkZ), CAPITAL_REVISION);

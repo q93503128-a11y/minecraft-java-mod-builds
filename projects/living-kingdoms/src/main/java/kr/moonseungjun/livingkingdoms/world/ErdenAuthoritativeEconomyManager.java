@@ -61,6 +61,8 @@ public final class ErdenAuthoritativeEconomyManager {
     private static MinecraftServer activeServer;
     private static boolean planLogged;
     private static boolean ciPassed;
+    private static long lastCiChunkRefreshTick = Long.MIN_VALUE;
+    private static int lastCiPendingSamples = -1;
     private static int lastFulfilledHouseholds;
     private static long lastReserveLoggedDay = Long.MIN_VALUE;
 
@@ -80,6 +82,7 @@ public final class ErdenAuthoritativeEconomyManager {
                 .computeIfAbsent(ErdenPhysicalEconomySavedData.TYPE);
         ensureEconomy(economy, population);
         logPlanOnce(economy);
+        refreshCiSampleChunks(level, economy);
 
         if (level.getGameTime() % SYNC_INTERVAL == 0L) {
             captureLoadedContainers(level, economy);
@@ -138,6 +141,8 @@ public final class ErdenAuthoritativeEconomyManager {
         activeServer = server;
         planLogged = false;
         ciPassed = false;
+        lastCiChunkRefreshTick = Long.MIN_VALUE;
+        lastCiPendingSamples = -1;
         lastFulfilledHouseholds = 0;
         lastReserveLoggedDay = Long.MIN_VALUE;
     }
@@ -727,6 +732,63 @@ public final class ErdenAuthoritativeEconomyManager {
             }
         }
         container.setChanged();
+    }
+
+    private static void refreshCiSampleChunks(
+            ServerLevel level,
+            ErdenPhysicalEconomySavedData economy) {
+        if (ciPassed
+                || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+        long tick = level.getGameTime();
+        if (lastCiChunkRefreshTick != Long.MIN_VALUE
+                && tick - lastCiChunkRefreshTick < 40L) return;
+        lastCiChunkRefreshTick = tick;
+
+        List<ExternalUrbanFabricBuilder.UrbanEntrance> samples = ciEntrances();
+        if (samples.size() != 3) {
+            throw new IllegalStateException(
+                    "Erden physical-economy CI expected three authored sample sites, found "
+                            + samples.size());
+        }
+
+        boolean firstRefresh = lastCiPendingSamples < 0;
+        int pending = 0;
+        List<String> statuses = new ArrayList<>();
+        for (ExternalUrbanFabricBuilder.UrbanEntrance entrance : samples) {
+            ErdenPhysicalEconomySavedData.SiteState site = findSite(
+                    economy.sites(), entrance.x(), entrance.z());
+            boolean ready = site != null && isSiteReady(level, site);
+            Container container = ready ? primaryContainer(level, site) : null;
+            long visible = 0L;
+            if (container != null) {
+                for (ResourceItem resource : PHYSICAL_RESOURCES) {
+                    visible += countItem(container, resource.item);
+                }
+            }
+            boolean materialized = site != null && site.materialized();
+            boolean complete = materialized && container != null && visible > 0L;
+            if (!complete) {
+                ErdenUrbanInteriorBuilder.requestPlanChunksForCi(level, entrance);
+                pending++;
+            }
+            statuses.add(
+                    "%s@%d,%d:ready=%s,materialized=%s,container=%s,visible=%d".formatted(
+                            entrance.role(), entrance.x(), entrance.z(), ready, materialized,
+                            container != null, visible));
+        }
+
+        if (firstRefresh) {
+            LivingKingdoms.LOGGER.info(
+                    "Requested Erden physical-economy authored interior CI samples sites={} roles={} bounded_plan_chunks=true refresh_ticks=40 loaded_lease=true persistent_forced_chunks=false",
+                    samples.size(),
+                    samples.stream().map(ExternalUrbanFabricBuilder.UrbanEntrance::role).toList());
+        }
+        if (pending != lastCiPendingSamples) {
+            LivingKingdoms.LOGGER.info(
+                    "Refreshed Erden physical-economy authored interior CI samples pending={} sites={} bounded_plan_chunks=true refresh_ticks=40 loaded_lease=true persistent_forced_chunks=false",
+                    pending, statuses);
+            lastCiPendingSamples = pending;
+        }
     }
 
     private static void verifyCiIfReady(

@@ -156,14 +156,22 @@ public final class ErdenCitadelInteriorManager {
     private static void retainCitadelForCi(
             ServerLevel level,
             RealmSiteLayoutSavedData.RealmSite site) {
-        if (ciTicketHeld || !ciMode()) return;
-        ciTicketCenter = new ChunkPos(site.centerX() >> 4, site.centerZ() >> 4);
+        if (!ciMode()) return;
+        ChunkPos requestedCenter = new ChunkPos(site.centerX() >> 4, site.centerZ() >> 4);
+        if (ciTicketHeld && ciTicketCenter != null && !ciTicketCenter.equals(requestedCenter)) {
+            releaseCiTicket(level);
+        }
+        ciTicketCenter = requestedCenter;
+        // PORTAL tickets are transient. Refresh the same bounded ticket every zoning pass so a
+        // long fresh-world audit cannot lose the final zone after the ticket timeout expires.
         level.getChunkSource().addTicketAndLoadWithRadius(
                 TicketType.PORTAL, ciTicketCenter, CI_CHUNK_RADIUS);
+        if (!ciTicketHeld) {
+            LivingKingdoms.LOGGER.info(
+                    "Retained Erden citadel for CI zoning audit centre_chunk={},{} radius={} transient_ticket=portal refreshed_until_verification=true forced_chunks=false synchronous_get_chunk=false",
+                    ciTicketCenter.x(), ciTicketCenter.z(), CI_CHUNK_RADIUS);
+        }
         ciTicketHeld = true;
-        LivingKingdoms.LOGGER.info(
-                "Retained Erden citadel for CI zoning audit centre_chunk={},{} radius={} transient_ticket=portal forced_chunks=false synchronous_get_chunk=false",
-                ciTicketCenter.x(), ciTicketCenter.z(), CI_CHUNK_RADIUS);
     }
 
     private static void releaseCiTicket(ServerLevel level) {
