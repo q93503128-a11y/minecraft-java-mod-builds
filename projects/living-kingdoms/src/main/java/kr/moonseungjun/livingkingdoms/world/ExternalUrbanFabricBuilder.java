@@ -199,6 +199,8 @@ public final class ExternalUrbanFabricBuilder {
     public static void auditFixedFootprintCropCandidates() {
         SourceTemplate source = template(CASTLE_HOUSE);
         List<BuildingBlock> doors = findEntranceBlocks(source.blocks, source.width, source.length);
+        int currentReachable = source.fragments.isEmpty()
+                ? 0 : fragmentReachableCells(source.fragments.getFirst());
         int bestReachable = 0;
         FrontSide bestSide = null;
         int bestDoorX = -1;
@@ -208,8 +210,9 @@ public final class ExternalUrbanFabricBuilder {
             for (FrontSide side : FrontSide.values()) {
                 int depth = Math.min(38, side.horizontal ? source.width : source.length);
                 if (edgeDistance(door.x, door.z, source.width, source.length, side) >= depth) continue;
-                FacadeFragment fragment = cropFragment(
-                        source.blocks, door, side, source.width, source.height, source.length);
+                FacadeFragment fragment = withExteriorSide(
+                        cropFragment(source.blocks, door, side,
+                                source.width, source.height, source.length), side);
                 if (!containsRealEntrance(fragment)) continue;
                 int reachable = fragmentReachableCells(fragment);
                 candidates++;
@@ -226,8 +229,8 @@ public final class ExternalUrbanFabricBuilder {
             }
         }
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_CROP_WINDOW_AUDIT resource={} candidates={} current_reachable=11 best_reachable={} best_side={} best_door={},{} same_footprint=true source_only=true world_reads=false mutations=0",
-                CASTLE_HOUSE, candidates, bestReachable, bestSide, bestDoorX, bestDoorZ);
+                "LK_ERDEN_CROP_WINDOW_AUDIT resource={} candidates={} current_reachable={} best_reachable={} best_side={} best_door={},{} same_footprint=true source_only=true world_reads=false mutations=0",
+                CASTLE_HOUSE, candidates, currentReachable, bestReachable, bestSide, bestDoorX, bestDoorZ);
     }
 
     private static boolean containsRealEntrance(FacadeFragment fragment) {
@@ -269,6 +272,7 @@ public final class ExternalUrbanFabricBuilder {
             for (int[] d : dirs) {
                 int nx=current.x()+d[0], nz=current.z()+d[1];
                 if (nx<0 || nx>=fragment.width || nz<0 || nz>=fragment.length) continue;
+                if (!fragmentInteriorSide(fragment, nx, nz)) continue;
                 int ny=sourceWalkableFeetY(blocks,nx,nz,current.y());
                 if (ny==Integer.MIN_VALUE || Math.abs(ny-current.y())>1) continue;
                 long key=walkKey(nx,ny,nz);
@@ -276,6 +280,21 @@ public final class ExternalUrbanFabricBuilder {
             }
         }
         return visited.size();
+    }
+
+    private static boolean fragmentInteriorSide(FacadeFragment fragment, int x, int z) {
+        return switch (fragment.exteriorSide) {
+            case NORTH -> z >= fragment.entranceZ;
+            case SOUTH -> z <= fragment.entranceZ;
+            case WEST -> x >= fragment.entranceX;
+            case EAST -> x <= fragment.entranceX;
+        };
+    }
+
+    private static FacadeFragment withExteriorSide(FacadeFragment fragment, FrontSide exteriorSide) {
+        if (fragment.exteriorSide == exteriorSide) return fragment;
+        return new FacadeFragment(fragment.width, fragment.height, fragment.length,
+                fragment.blocks, fragment.entranceX, fragment.entranceZ, exteriorSide);
     }
 
     private static long walkKey(int x, int y, int z) {
@@ -668,8 +687,9 @@ public final class ExternalUrbanFabricBuilder {
                 for (FrontSide cropSide : FrontSide.values()) {
                     int depth = Math.min(38, cropSide.horizontal ? width : length);
                     if (edgeDistance(entrance.x, entrance.z, width, length, cropSide) >= depth) continue;
-                    FacadeFragment candidate = cropFragment(
-                            sourceBlocks, entrance, cropSide, width, height, length);
+                    FacadeFragment candidate = withExteriorSide(
+                            cropFragment(sourceBlocks, entrance, cropSide, width, height, length),
+                            cropSide);
                     if (candidate.blocks.size() < 500 || !containsRealEntrance(candidate)) continue;
                     int reachable = fragmentReachableCells(candidate);
                     if (reachable > bestReachable) {
