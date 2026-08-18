@@ -74,6 +74,8 @@ jobs:
               && grep -Fq 'LK_ERDEN_EXTERIOR_INVENTORY_PASS revision=2 nodes=15 containers=15' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' ../../logs/exterior-inventory-server.log \
+              && grep -Fq 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'LK_ERDEN_FULL_INTERIOR_EXPANSION_PASS buildings=40' ../../logs/exterior-inventory-server.log \
               && grep -Fq 'residence_mode=verified_upper_or_ground' ../../logs/exterior-inventory-server.log \
@@ -95,6 +97,8 @@ jobs:
           grep -F 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' ../../logs/exterior-inventory-server.log
           grep -F 'source_blocks_cut=0 source_air_floor=true structural_approval=true zero_cut_route=true synthetic_floor_required=false' ../../logs/exterior-inventory-server.log
           grep -F 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' ../../logs/exterior-inventory-server.log
+          grep -F 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' ../../logs/exterior-inventory-server.log
+          grep -F 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' ../../logs/exterior-inventory-server.log
           grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/exterior-inventory-server.log
           grep -F 'LK_ERDEN_FULL_INTERIOR_EXPANSION_PASS buildings=40' ../../logs/exterior-inventory-server.log
           grep -F 'residence_mode=verified_upper_or_ground' ../../logs/exterior-inventory-server.log
