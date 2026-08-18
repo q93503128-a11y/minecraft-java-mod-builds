@@ -1,0 +1,53 @@
+name: Patch Living Kingdoms residence-aware preservation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-living-kingdoms-preserver-residence.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '25' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '9.2.1' }
+      - name: Make authored interior preservation residence-aware
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java')
+          s=p.read_text()
+          old='''            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)\n                    || !upper.isUpperFloorComplete(key, ErdenUrbanLifeManager.UPPER_FLOOR_REVISION)) {\n                continue;\n            }'''
+          new='''            if (!ground.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)\n                    || !ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)) {\n                continue;\n            }'''
+          if old not in s: raise SystemExit('preserver legacy upper gate not found')
+          s=s.replace(old,new,1)
+          s=s.replace('''        ErdenUrbanLifeSavedData upper = level.getDataStorage()\n                .computeIfAbsent(ErdenUrbanLifeSavedData.TYPE);\n''','',1)
+          p.write_text(s)
+          PY
+          grep -F 'ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java
+          if grep -Fq 'upper.isUpperFloorComplete' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java; then exit 1; fi
+          git diff --check
+      - name: Java 25 clean compile
+        working-directory: projects/living-kingdoms
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Commit fix
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java
+          git rm .github/workflows/patch-living-kingdoms-preserver-residence.yml
+          git commit -m 'fix(living-kingdoms): restore authored interiors by residence readiness'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt*2))
+          done
+          exit 1
