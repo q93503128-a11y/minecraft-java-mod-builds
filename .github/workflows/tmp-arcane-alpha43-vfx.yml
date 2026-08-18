@@ -1,0 +1,32 @@
+name: Temporary Arcane alpha.43 reference-informed VFX refinement
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-arcane-alpha43-vfx.yml'
+      - '.github/scripts/tmp-arcane-alpha43-vfx.py'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply alpha.43 authored timeline refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin main
+          python3 .github/scripts/tmp-arcane-alpha43-vfx.py
+          rm -f .github/scripts/tmp-arcane-alpha43-vfx.py
+          rm -f .github/workflows/tmp-arcane-alpha43-vfx.yml
+          git add -A
+          git commit -m 'feat(arcane): add reference-informed high-circle authored timelines'
+          git push origin main
