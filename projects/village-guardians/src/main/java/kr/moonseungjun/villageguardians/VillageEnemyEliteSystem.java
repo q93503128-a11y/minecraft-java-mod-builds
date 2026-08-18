@@ -9,6 +9,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,10 +19,19 @@ import java.util.UUID;
 /** Qualitative elite mutations: infiltration, area denial, assassination, plague and shock cavalry. */
 public final class VillageEnemyEliteSystem {
     private static final Map<UUID, EliteDoctrine> ACTIVE = new HashMap<>();
+    private static final Map<UUID, GrappleMotion> GRAPPLE_MOTIONS = new HashMap<>();
+    private static final Map<UUID, FirebrandCast> FIREBRAND_CASTS = new HashMap<>();
+    private static final Map<UUID, PlagueCast> PLAGUE_CASTS = new HashMap<>();
     private static int ticks;
     private VillageEnemyEliteSystem() {}
 
-    public static void reset() { ACTIVE.clear(); ticks = 0; }
+    public static void reset() {
+        ACTIVE.clear();
+        GRAPPLE_MOTIONS.clear();
+        FIREBRAND_CASTS.clear();
+        PLAGUE_CASTS.clear();
+        ticks = 0;
+    }
 
     public static void tick(MinecraftServer server) {
         if (server == null || !VillageRaidSystem.isActive()) return;
@@ -32,13 +42,24 @@ public final class VillageEnemyEliteSystem {
         if (ticks % 20 == 1) discover(level, center);
         for (UUID id : new HashSet<>(ACTIVE.keySet())) {
             var entity = level.getEntity(id);
-            if (!(entity instanceof Mob mob) || !mob.isAlive()) { ACTIVE.remove(id); continue; }
+            if (!(entity instanceof Mob mob) || !mob.isAlive()) {
+                ACTIVE.remove(id);
+                GRAPPLE_MOTIONS.remove(id);
+                FIREBRAND_CASTS.remove(id);
+                PLAGUE_CASTS.remove(id);
+                continue;
+            }
+            GrappleMotion motion = GRAPPLE_MOTIONS.get(id);
+            if (motion != null) {
+                tickGrapple(level, mob, motion);
+                continue;
+            }
             EliteDoctrine doctrine = ACTIVE.get(id);
             switch (doctrine) {
                 case GRAPPLER -> grappler(level, mob);
                 case FIREBRAND -> firebrand(level, server, mob);
                 case ASSASSIN -> assassin(server, mob);
-                case PLAGUE_WEAVER -> plague(server, mob);
+                case PLAGUE_WEAVER -> plague(level, server, mob);
                 case SHOCK_RIDER -> shock(server, mob);
             }
         }
@@ -75,7 +96,10 @@ public final class VillageEnemyEliteSystem {
             if (doctrine == EliteDoctrine.SHOCK_RIDER || doctrine == EliteDoctrine.ASSASSIN) {
                 mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 60 * 30, 1));
             }
-            if (doctrine == EliteDoctrine.GRAPPLER) mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 20 * 60 * 30, 0));
+            if (doctrine == EliteDoctrine.GRAPPLER) {
+                mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 20 * 60 * 30, 0));
+            }
+            VillageEnemyEffectSystem.eliteAura(level, mob, doctrine);
         }
     }
 
@@ -87,41 +111,67 @@ public final class VillageEnemyEliteSystem {
         VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);
         BlockPos wall = VillageSiegeSegmentSystem.attackPoint(segment, mob.blockPosition());
         if (mob.blockPosition().distSqr(wall) > 144.0) return;
+        BlockPos inside = VillageSiegeSegmentSystem.insideApproach(segment);
+        Vec3 end = new Vec3(inside.getX() + 0.5, inside.getY(), inside.getZ() + 0.5);
+        if (mob.position().distanceToSqr(end) <= 36.0) return;
+        if (!level.getBlockState(inside).isAir() || !level.getBlockState(inside.above()).isAir()) return;
         if (phase == 88) {
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
-                    wall.getX() + 0.5, wall.getY() + 1.0, wall.getZ() + 0.5, 12, 0.7, 0.6, 0.7, 0.03);
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
-                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 8, 0.35, 0.5, 0.35, 0.02);
+            VillageEnemyEffectSystem.grappleLine(level, mob, mob.position().add(0.0, 1.0, 0.0),
+                    end.add(0.0, 1.0, 0.0), 30);
             return;
         }
         if (phase != 0) return;
-        BlockPos inside = VillageSiegeSegmentSystem.insideApproach(segment);
-        if (level.getBlockState(inside).isAir() && level.getBlockState(inside.above()).isAir()) {
-            mob.snapTo(inside.getX() + 0.5, inside.getY(), inside.getZ() + 0.5);
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
-                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 18, 0.5, 0.7, 0.5, 0.04);
+        mob.setTarget(null);
+        mob.getNavigation().stop();
+        mob.setNoGravity(true);
+        GRAPPLE_MOTIONS.put(mob.getUUID(), new GrappleMotion(mob.position(), end, ticks, 18));
+    }
+
+    private static void tickGrapple(ServerLevel level, Mob mob, GrappleMotion motion) {
+        double progress = (ticks - motion.startTick()) / (double) Math.max(1, motion.duration());
+        if (progress >= 1.0) {
+            mob.snapTo(motion.end().x, motion.end().y, motion.end().z);
+            mob.setDeltaMovement(Vec3.ZERO);
+            mob.setNoGravity(false);
+            GRAPPLE_MOTIONS.remove(mob.getUUID());
+            return;
         }
+        double t = Math.max(0.0, Math.min(1.0, progress));
+        Vec3 control = motion.start().lerp(motion.end(), 0.5).add(0.0,
+                Math.max(4.0, motion.start().distanceTo(motion.end()) * 0.18), 0.0);
+        Vec3 point = bezier(motion.start(), control, motion.end(), t);
+        mob.setTarget(null);
+        mob.getNavigation().stop();
+        mob.setDeltaMovement(Vec3.ZERO);
+        mob.snapTo(point.x, point.y, point.z);
+    }
+
+    private static Vec3 bezier(Vec3 start, Vec3 control, Vec3 end, double t) {
+        double u = 1.0 - t;
+        return start.scale(u * u).add(control.scale(2.0 * u * t)).add(end.scale(t * t));
     }
 
     private static void firebrand(ServerLevel level, MinecraftServer server, Mob mob) {
         int offset = Math.floorMod(mob.getUUID().hashCode(), 100);
         int phase = Math.floorMod(ticks - offset, 100);
         if (phase == 82) {
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
-                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 16, 0.8, 0.5, 0.8, 0.03);
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
-                    mob.getX(), mob.getY() + 0.8, mob.getZ(), 10, 0.6, 0.4, 0.6, 0.02);
+            ServerPlayer target = nearbyPlayers(server, mob, 14.0).stream()
+                    .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
+            if (target == null) return;
+            Vec3 impact = target.position();
+            FIREBRAND_CASTS.put(mob.getUUID(), new FirebrandCast(impact, ticks + 18));
+            VillageEnemyEffectSystem.firebrandThrow(level, mob, impact, 18);
             return;
         }
         if (phase != 0) return;
-        for (ServerPlayer player : nearbyPlayers(server, mob, 10.0)) {
+        FirebrandCast cast = FIREBRAND_CASTS.remove(mob.getUUID());
+        if (cast == null || cast.dueTick() > ticks) return;
+        double radius = 3.6;
+        for (ServerPlayer player : nearbyPlayersAt(server, level, cast.impact(), radius)) {
             player.setRemainingFireTicks(Math.max(player.getRemainingFireTicks(), 70));
             player.hurtServer(level, level.damageSources().magic(), 2.5f + VillageCouncilState.currentDay() * 0.12f);
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
-                    player.getX(), player.getY() + 0.8, player.getZ(), 10, 0.35, 0.55, 0.35, 0.03);
         }
-        level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
-                mob.getX(), mob.getY() + 1.0, mob.getZ(), 3, 0.8, 0.4, 0.8, 0.02);
+        VillageEnemyEffectSystem.firebrandImpact(level, cast.impact(), radius);
     }
 
     private static void assassin(MinecraftServer server, Mob mob) {
@@ -132,29 +182,27 @@ public final class VillageEnemyEliteSystem {
             mob.setTarget(target);
             mob.getNavigation().moveTo(target, 1.48);
             mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 45, 0));
-            if (mob.level() instanceof ServerLevel level) {
-                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
-                        mob.getX(), mob.getY() + 0.8, mob.getZ(), 10, 0.35, 0.5, 0.35, 0.03);
-            }
         }
     }
 
-    private static void plague(MinecraftServer server, Mob mob) {
+    private static void plague(ServerLevel level, MinecraftServer server, Mob mob) {
         int offset = Math.floorMod(mob.getUUID().hashCode(), 120);
         int phase = Math.floorMod(ticks - offset, 120);
-        if (!(mob.level() instanceof ServerLevel level)) return;
+        double radius = 9.0;
         if (phase == 100) {
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
-                    mob.getX(), mob.getY() + 1.0, mob.getZ(), 20, 1.4, 0.6, 1.4, 0.04);
+            Vec3 center = mob.position();
+            PLAGUE_CASTS.put(mob.getUUID(), new PlagueCast(center, ticks + 20));
+            VillageEnemyEffectSystem.plagueWarning(level, mob, center, radius, 20);
             return;
         }
         if (phase != 0) return;
-        for (ServerPlayer player : nearbyPlayers(server, mob, 9.0)) {
+        PlagueCast cast = PLAGUE_CASTS.remove(mob.getUUID());
+        if (cast == null || cast.dueTick() > ticks) return;
+        for (ServerPlayer player : nearbyPlayersAt(server, level, cast.center(), radius)) {
             player.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 1));
             player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
-                    player.getX(), player.getY() + 0.7, player.getZ(), 9, 0.4, 0.5, 0.4, 0.03);
         }
+        VillageEnemyEffectSystem.plagueImpact(level, cast.center(), radius);
     }
 
     private static void shock(MinecraftServer server, Mob mob) {
@@ -165,19 +213,25 @@ public final class VillageEnemyEliteSystem {
             mob.setTarget(target);
             mob.getNavigation().moveTo(target, 1.62);
             mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 55, 1));
-            if (mob.level() instanceof ServerLevel level) {
-                level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
-                        mob.getX(), mob.getY() + 0.9, mob.getZ(), 12, 0.45, 0.55, 0.45, 0.04);
-            }
         }
     }
 
     private static java.util.List<ServerPlayer> nearbyPlayers(MinecraftServer server, Mob mob, double radius) {
+        return nearbyPlayersAt(server, (ServerLevel) mob.level(), mob.position(), radius);
+    }
+
+    private static java.util.List<ServerPlayer> nearbyPlayersAt(
+            MinecraftServer server, ServerLevel level, Vec3 center, double radius) {
         double squared = radius * radius;
         return server.getPlayerList().getPlayers().stream()
-                .filter(player -> player.level() == mob.level() && player.isAlive() && !player.isSpectator()
-                        && !VillageRespawnSystem.isDowned(player) && player.distanceToSqr(mob) <= squared).toList();
+                .filter(player -> player.level() == level && player.isAlive() && !player.isSpectator()
+                        && !VillageRespawnSystem.isDowned(player)
+                        && player.position().distanceToSqr(center) <= squared).toList();
     }
+
+    private record GrappleMotion(Vec3 start, Vec3 end, int startTick, int duration) {}
+    private record FirebrandCast(Vec3 impact, int dueTick) {}
+    private record PlagueCast(Vec3 center, int dueTick) {}
 
     public enum EliteDoctrine {
         GRAPPLER("갈고리병"), FIREBRAND("화염 투척병"), ASSASSIN("침투 암살자"),
