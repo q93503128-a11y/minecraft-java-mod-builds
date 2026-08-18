@@ -1,0 +1,7 @@
+status=FAIL
+run_id=32087291882
+head_sha=48ae461d106dca1480c8cd4933337e6dc2aef8e2
+version=0.18.13-alpha.1
+
+=== gradle log tail ===
+Gradle log was not created; failure occurred before or outside clean build.
