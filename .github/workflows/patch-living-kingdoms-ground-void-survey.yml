@@ -27,6 +27,11 @@ jobs:
           from pathlib import Path
           p=Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java')
           s=p.read_text()
+          import_anchor='import kr.moonseungjun.livingkingdoms.world.ErdenUrbanFullInteriorExpansionManager;\n'
+          import_line='import kr.moonseungjun.livingkingdoms.world.ErdenUrbanGroundVoidOpportunityCatalog;\n'
+          if import_line not in s:
+              if import_anchor not in s: raise SystemExit('import anchor missing')
+              s=s.replace(import_anchor,import_anchor+import_line,1)
           anchor='        ErdenUrbanAuthoredUpperRouteManager.bootstrap();\n'
           line='        ErdenUrbanGroundVoidOpportunityCatalog.bootstrap();\n'
           if line not in s:
@@ -34,6 +39,7 @@ jobs:
               s=s.replace(anchor,anchor+line,1)
           p.write_text(s)
           PY
+          grep -F 'import kr.moonseungjun.livingkingdoms.world.ErdenUrbanGroundVoidOpportunityCatalog;' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
           grep -F 'ErdenUrbanGroundVoidOpportunityCatalog.bootstrap();' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
           git diff --check
           (cd projects/living-kingdoms && gradle --no-daemon clean classes --stacktrace --console=plain)
