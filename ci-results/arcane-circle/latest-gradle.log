@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 28, in <module>
-    assert token in tracker, token
-           ^^^^^^^^^^^^^^^^
-AssertionError: SpellCinematicDirector.charge
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 230, in <module>
+    for token in retired_tokens: assert token not in body, f'{token} in {path.relative_to(root)}'
+                                        ^^^^^^^^^^^^^^^^^
+AssertionError: ArcaneSigilDirector in src/main/java/kr/moonseungjun/arcanecircle/client/ArcaneCastingPerformance.java
