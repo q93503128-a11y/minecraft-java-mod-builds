@@ -17,12 +17,12 @@ def main() -> None:
     deploy = read("VillageMercenaryDeploymentSystem.java")
     guardians = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.11-alpha.1" in props
+    assert "mod_version=0.18.12-alpha.1" in props
 
     # Static defenses and ranger mercenaries must not acquire/fire through blocks.
     assert "ClipContext.Block.COLLIDER" in los and "HitResult.Type.MISS" in los
-    assert ".filter(mob -> VillageDefenseLineOfSight.hasLine(level, muzzle, mob))" in turret
-    assert "if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;" in turret
+    assert ".filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob))" in turret
+    assert "if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;" in turret and "turretMuzzle" in turret
     assert ".filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))" in merc
 
     # Tower hunters can approach from their search radius, but physical HP damage is short-range.

@@ -193,15 +193,15 @@ public final class VillagePlacedTurretSystem {
 
     private static void fire(ServerLevel level, TurretState state) {
         double range = state.type().range() + (state.level() - 1) * 2.5;
-        Vec3 muzzle = Vec3.atCenterOf(state.pos().above());
         List<Mob> candidates = VillageRaidSystem.activeEnemiesNear(level, Vec3.atCenterOf(state.pos()), range, 12, null)
-                .stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, muzzle, mob)).toList();
+                .stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob)).toList();
         if (candidates.isEmpty()) return;
         Mob target = candidates.stream().min(Comparator.comparingDouble(mob -> mob.distanceToSqr(Vec3.atCenterOf(state.pos())))).orElse(null);
         if (state.type() == TurretType.ANTI_AIR) {
             double baseY = VillageCouncilState.villageCenter().map(BlockPos::getY).orElse(state.pos().getY());
             target = candidates.stream().filter(mob -> mob.getY() > baseY + 6.0)
-                    .findFirst().orElse(target);
+                    .min(Comparator.comparingDouble(mob -> mob.distanceToSqr(Vec3.atCenterOf(state.pos()))))
+                    .orElse(target);
         }
         if (target == null) return;
         float damage = (state.type().damage() + (state.level() - 1) * state.type().damage() * 0.16f)
@@ -211,7 +211,12 @@ public final class VillagePlacedTurretSystem {
             case CHAIN -> {
                 List<Mob> chain = VillageRaidSystem.activeEnemiesNear(level, target.position(), 7.5,
                         2 + state.level() / 2, null);
-                for (Mob mob : chain) hit(level, state, mob, damage * 0.78f, ParticleTypes.ELECTRIC_SPARK);
+                Vec3 arcStart = turretMuzzle(state, target);
+                for (Mob mob : chain) {
+                    if (!VillageDefenseLineOfSight.hasLine(level, arcStart, mob)) continue;
+                    hitFrom(level, arcStart, mob, damage * 0.78f, ParticleTypes.ELECTRIC_SPARK);
+                    arcStart = mob.position().add(0, mob.getBbHeight() * 0.55, 0);
+                }
             }
             case BOMBARD -> {
                 List<Mob> splash = VillageRaidSystem.activeEnemiesNear(level, target.position(), 4.5,
@@ -246,15 +251,30 @@ public final class VillagePlacedTurretSystem {
         };
     }
 
+    private static Vec3 turretMuzzle(TurretState state, Mob target) {
+        Vec3 capCenter = Vec3.atCenterOf(state.pos().above(2));
+        Vec3 delta = target.position().subtract(capCenter);
+        double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
+        if (horizontal < 1.0e-4) {
+            return new Vec3(capCenter.x, state.pos().getY() + 3.05, capCenter.z);
+        }
+        return capCenter.add(delta.x / horizontal * 0.72, 0.22, delta.z / horizontal * 0.72);
+    }
+
     private static void hit(ServerLevel level, TurretState state, Mob target, float damage,
                             net.minecraft.core.particles.ParticleOptions particle) {
-        Vec3 start = Vec3.atCenterOf(state.pos().above());
+        hitFrom(level, turretMuzzle(state, target), target, damage, particle);
+    }
+
+    private static void hitFrom(ServerLevel level, Vec3 start, Mob target, float damage,
+                                net.minecraft.core.particles.ParticleOptions particle) {
         if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;
         Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
-        for (int i = 0; i <= 7; i++) {
-            Vec3 point = start.lerp(end, i / 7.0);
+        for (int i = 0; i <= 8; i++) {
+            Vec3 point = start.lerp(end, i / 8.0);
             level.sendParticles(particle, point.x, point.y, point.z, 1, 0, 0, 0, 0);
         }
+        level.sendParticles(particle, end.x, end.y, end.z, 5, 0.18, 0.22, 0.18, 0.02);
         target.hurtServer(level, level.damageSources().magic(), damage);
     }
 

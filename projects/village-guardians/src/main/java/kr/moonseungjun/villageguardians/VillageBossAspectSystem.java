@@ -75,6 +75,11 @@ public final class VillageBossAspectSystem {
                 }
             }
             case BLOODBOUND -> {
+                if (globalTicks % 100 == 85) {
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                            mob.getX(), mob.getY() + 1.0, mob.getZ(), 18, 1.0, 0.7, 1.0, 0.03);
+                    return;
+                }
                 if (globalTicks % 100 != 0) return;
                 float healed = 0.0f;
                 for (ServerPlayer player : nearbyPlayers(server, mob, 11.0)) {
@@ -85,6 +90,16 @@ public final class VillageBossAspectSystem {
                 if (healed > 0.0f) mob.heal(Math.min(22.0f, healed));
             }
             case STORMCALLER -> {
+                if (globalTicks % 80 == 65) {
+                    ServerPlayer warning = nearbyPlayers(server, mob, 18.0).stream()
+                            .min(Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
+                    if (warning != null) {
+                        level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+                                warning.getX(), warning.getY() + 0.15, warning.getZ(),
+                                18, 0.8, 0.08, 0.8, 0.03);
+                    }
+                    return;
+                }
                 if (globalTicks % 80 != 0) return;
                 ServerPlayer target = nearbyPlayers(server, mob, 18.0).stream()
                         .min(Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
@@ -125,7 +140,8 @@ public final class VillageBossAspectSystem {
         double squared = radius * radius;
         return server.getPlayerList().getPlayers().stream()
                 .filter(player -> player.level() == mob.level() && player.isAlive()
-                        && !player.isSpectator() && player.distanceToSqr(mob) <= squared)
+                        && !player.isSpectator() && !VillageRespawnSystem.isDowned(player)
+                        && player.distanceToSqr(mob) <= squared)
                 .toList();
     }
 

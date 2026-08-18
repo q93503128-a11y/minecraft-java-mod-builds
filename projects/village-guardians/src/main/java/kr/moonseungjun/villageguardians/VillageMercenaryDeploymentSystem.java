@@ -1,6 +1,5 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -75,7 +74,7 @@ public final class VillageMercenaryDeploymentSystem {
     }
 
     public static void tick(MinecraftServer server) {
-        if (server == null || ++ticks < 20) return;
+        if (server == null || ++ticks < 5) return;
         ticks = 0;
         for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {
             moveClass(server, kind, deployment(kind), false);
@@ -92,14 +91,16 @@ public final class VillageMercenaryDeploymentSystem {
         AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96,
                 VillageWorldSystem.BATTLEFIELD_RADIUS);
         for (IronGolem golem : level.getEntitiesOfClass(IronGolem.class, area,
-                mob -> classFromName(mob) == kind && mob.isAlive())) {
+                mob -> VillageMercenarySystem.classOf(mob) == kind && mob.isAlive())) {
             double leash = switch (kind) {
                 case BASTION -> 18.0;
                 case STRIKER -> 34.0;
                 case RANGER -> 22.0;
                 case MEDIC -> 15.0;
             };
-            if (force || !VillageRaidSystem.isActive() || golem.blockPosition().distSqr(rally) > leash * leash) {
+            boolean returningToRally = force || !VillageRaidSystem.isActive()
+                    || golem.blockPosition().distSqr(rally) > leash * leash;
+            if (returningToRally) {
                 boolean accepted = golem.getNavigation().moveTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5,
                         kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 1.18 : 1.02);
                 if (!accepted && zone == Deployment.WALL) {
@@ -117,6 +118,7 @@ public final class VillageMercenaryDeploymentSystem {
             } else if (kind == VillageMercenarySystem.MercenaryClass.RANGER
                     || kind == VillageMercenarySystem.MercenaryClass.MEDIC) {
                 golem.setTarget(null);
+                if (!returningToRally) golem.getNavigation().stop();
             }
         }
     }
@@ -136,17 +138,6 @@ public final class VillageMercenaryDeploymentSystem {
             case RANGER -> true;
             case MEDIC -> zone != Deployment.WALL;
         };
-    }
-
-    private static VillageMercenarySystem.MercenaryClass classFromName(IronGolem golem) {
-        Component name = golem.getCustomName();
-        if (name == null) return null;
-        String plain = ChatFormatting.stripFormatting(name.getString());
-        if (plain == null) return null;
-        for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {
-            if (plain.startsWith(kind.displayName())) return kind;
-        }
-        return null;
     }
 
     private static void send(ServerPlayer player, String screenId, String title, String body,

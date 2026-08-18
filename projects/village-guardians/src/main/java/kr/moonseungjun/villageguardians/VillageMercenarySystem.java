@@ -283,8 +283,13 @@ public final class VillageMercenarySystem {
         }
     }
 
+    public static synchronized MercenaryClass classOf(Mob mob) {
+        return mob == null ? null : CLASSES.get(mob.getUUID());
+    }
+
     private static synchronized MercenaryClass mercenaryClass(Mob mob) {
-        return CLASSES.getOrDefault(mob.getUUID(), MercenaryClass.BASTION);
+        MercenaryClass kind = classOf(mob);
+        return kind == null ? MercenaryClass.BASTION : kind;
     }
 
     private static synchronized int rank(Mob mob) {
