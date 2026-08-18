@@ -1,0 +1,77 @@
+name: Audit Living Kingdoms fixed crop windows
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/.crop-window-trigger'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '25' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '9.2.1' }
+      - name: Apply crop candidate audit
+        id: audit
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/patch_living_kingdoms_crop_window_audit.py
+          grep -F 'auditFixedFootprintCropCandidates();' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+          git diff --check
+          (cd projects/living-kingdoms && gradle --no-daemon clean classes --stacktrace --console=plain)
+          rm -rf projects/living-kingdoms/run/livingkingdoms-crop-window-ci-world
+          mkdir -p projects/living-kingdoms/run logs
+          printf 'level-name=livingkingdoms-crop-window-ci-world\npause-when-empty-seconds=0\n' > projects/living-kingdoms/run/server.properties
+          printf 'eula=true\n' > projects/living-kingdoms/run/eula.txt
+          (cd projects/living-kingdoms && gradle --no-daemon runServer --stacktrace --console=plain) > logs/crop-window-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          found=0
+          for i in $(seq 1 180); do
+            if grep -Fq 'LK_ERDEN_CROP_WINDOW_AUDIT' logs/crop-window-server.log; then found=1; break; fi
+            if grep -Eqi 'IllegalStateException|Exception caught during firing event|BUILD FAILED' logs/crop-window-server.log; then cat logs/crop-window-server.log; exit 1; fi
+            if ! kill -0 "$pid" 2>/dev/null; then cat logs/crop-window-server.log; exit 1; fi
+            sleep 1
+          done
+          test "$found" -eq 1
+          grep -F 'LK_ERDEN_CROP_WINDOW_CANDIDATE' logs/crop-window-server.log
+          grep -F 'LK_ERDEN_CROP_WINDOW_AUDIT' logs/crop-window-server.log | tee logs/crop-window-pass.txt
+      - name: Upload crop audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-crop-window-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+      - name: Record pointer and commit diagnostic only on success
+        if: always()
+        run: |
+          set -euo pipefail
+          outcome='${{ steps.audit.outcome }}'
+          if [ "$outcome" = success ]; then
+            git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ExternalUrbanFabricBuilder.java projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'audit(living-kingdoms): measure fixed crop windows'
+            for attempt in 1 2 3 4 5; do git fetch origin main; if git rebase origin/main && git push origin HEAD:main; then break; fi; git rebase --abort 2>/dev/null || true; sleep $((attempt*2)); done
+          fi
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-crop-window.json <<EOF
+          {"run_id":"${{ github.run_id }}","run_number":"${{ github.run_number }}","commit_sha":"${{ github.sha }}","job_status":"$outcome"}
+          EOF
+          git add .github/build-pointers/living-kingdoms-crop-window.json
+          git commit -m "Record Living Kingdoms crop window audit ${{ github.run_number }} [skip ci]" || true
+          git push origin HEAD:main || true
+      - name: Enforce audit
+        if: always()
+        run: test '${{ steps.audit.outcome }}' = 'success'
