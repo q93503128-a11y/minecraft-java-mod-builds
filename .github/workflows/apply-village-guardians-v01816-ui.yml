@@ -37,8 +37,14 @@ jobs:
             python3 projects/village-guardians/tools/apply_v01816_mobile_defense_ui.py
             APPLY=$?
             echo "apply_exit=$APPLY"
-            TESTS=99
+            PREP=99
             if [ "$APPLY" -eq 0 ]; then
+              python3 projects/village-guardians/tools/prepare_v01816_ui_contracts.py
+              PREP=$?
+            fi
+            echo "prepare_exit=$PREP"
+            TESTS=99
+            if [ "$APPLY" -eq 0 ] && [ "$PREP" -eq 0 ]; then
               echo "=== COMPLETE CONTRACT SET ==="
               TESTS=0
               for test in \
@@ -69,9 +75,10 @@ jobs:
           } >> "$LOG" 2>&1
 
           APPLY=$(grep '^apply_exit=' "$LOG" | tail -1 | cut -d= -f2)
+          PREP=$(grep '^prepare_exit=' "$LOG" | tail -1 | cut -d= -f2)
           TESTS=$(grep '^tests_exit=' "$LOG" | tail -1 | cut -d= -f2)
           STATUS=PASS
-          if [ "$APPLY" -ne 0 ] || [ "$TESTS" -ne 0 ]; then STATUS=FAIL; fi
+          if [ "$APPLY" -ne 0 ] || [ "$PREP" -ne 0 ] || [ "$TESTS" -ne 0 ]; then STATUS=FAIL; fi
           if [ "$STATUS" = FAIL ]; then git reset --hard HEAD; fi
 
           mkdir -p projects/village-guardians/.ci
