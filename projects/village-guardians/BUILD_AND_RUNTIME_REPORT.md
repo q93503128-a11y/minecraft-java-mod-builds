@@ -2,17 +2,32 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.12-alpha.1`
+- Current source version: `0.18.13-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.12-alpha.1.jar`
-- Final acceptance Actions run: `32083991529`
-- Final acceptance head: `dba4f47c4a4f79f9a36d9ee492762d6a49e76cfc`
-- Final JAR SHA-256: `2597579386b3a77c9a2423d70f560c03b710ee3ce91d6aeecf7662c7bd50cacd`
-- Final JAR size: `908845` bytes
+- Target JAR: `villageguardians-0.18.13-alpha.1.jar`
+- Final acceptance Actions run: `32087562708`
+- Final acceptance head: `cabf1c597cb70744f631bee44f6ed5a7561f2c06`
+- Final JAR SHA-256: `c6d96eff852929f90fa11e888a6ebbc714252f0f47914f34e4e8852a539d2f2a`
+- Final JAR size: `915862` bytes
+
+## 0.18.13 공성 통합·수동 감사
+
+- `VillageRaidSystem`에 UUID별 `ACTIVE_WAVES`를 추가하고 entity join 전에 archetype/wave 메타데이터를 등록한다. 보스·정예 전선은 더 이상 커스텀 표시 이름에 의존하지 않는다.
+- 일반 플레이어 우선 추격과 적 병과 범위 능력에서 downed 플레이어를 제외했다.
+- 시설 및 측·후방 Segment 공격 주기를 공격자 UUID로 stagger하여 동일 30틱 순간에 모든 적의 구조물 피해가 몰리지 않게 했다.
+- `VillageTowerResearchBonusSystem`을 제거하고 실제 배치 포탑 본체의 연구 배율만 유지했다. 구형 고정 성루 전문화는 실전 포탑 화력/교란의 소유자가 아니다.
+- 탑 사냥꾼은 48블록 내 가장 가까운 실제 배치 포탑을 전용 목표로 추적하고, 같은 근접 전선의 포탑을 7초 교란한다. 포탑 피해 해결 레이어는 경로 AI를 덮어쓰지 않는다.
+- 10종 포탑 및 4종 용병 연출을 `VillageDefenseEffectSystem` → `VillageSkillEffectEntity` → `VillageSkillMeshLibrary` 동기화 procedural mesh 경로로 통합했다.
+- 광역 투석포는 12틱 snapshot-position 곡사 포격이며 직접 사격용 LOS 필터의 유일한 의도적 예외다. 착탄 전 궤적과 착탄 지점이 보이고, 실제 피해는 도착 시점 주변 적에게 적용된다.
+- mesh ARGB 페이드가 색상 채널을 훼손하던 문제를 `withAlpha`로 교정했다.
+- `tools/test_enemy_content.py`, `tools/test_runtime_safety.py` 등 오래된 core 계약을 현행 배치 포탑 소유권으로 이관했다. 완전한 pre-build 16개 테스트 세트와 0.18.8~0.18.13 회귀가 PASS했다.
+- Actions run `32087562708`에서 Java 25 설정 PASS, deterministic contracts PASS, NeoForge clean build PASS, JAR verifier PASS, artifact upload PASS, acceptance metadata 기록 PASS.
+- Actions artifact를 별도 다운로드해 ZIP/JAR CRC, `neoforge.mods.toml`, manifest, `VillageDefenseEffectSystem`, `VillagePlacedTurretSystem`, `VillageRaidSystem`, `VillageEnemyArchetypeSystem`, `VillageMercenarySystem`, `VillageSkillMeshLibrary` 클래스 포함을 다시 검증했다.
+- 최종 JAR SHA-256 `c6d96eff852929f90fa11e888a6ebbc714252f0f47914f34e4e8852a539d2f2a`, 크기 `915862` bytes.
 
 ## 0.18.12 수동 품질 감사
 
