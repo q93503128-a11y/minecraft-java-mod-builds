@@ -29,6 +29,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record live build run
+        shell: bash
+        run: |
+          set -euo pipefail
+          pointer_file="$(mktemp)"
+          printf '{\n  "run_id": "%s",\n  "run_number": "%s",\n  "commit_sha": "%s",\n  "job_status": "in_progress",\n  "log_artifact_id": "",\n  "build_artifact_id": ""\n}\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_NUMBER" "$GITHUB_SHA" > "$pointer_file"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout -B living-kingdoms-live-pointer origin/main
+            mkdir -p .github/build-pointers
+            cp "$pointer_file" .github/build-pointers/living-kingdoms.json
+            git add .github/build-pointers/living-kingdoms.json
+            if git diff --cached --quiet; then break; fi
+            git commit -m "Record Living Kingdoms build $GITHUB_RUN_NUMBER start [skip ci]"
+            if git push origin HEAD:main; then break; fi
+            sleep $((attempt * 2))
+          done
+          git checkout --detach "$GITHUB_SHA"
 
       - uses: actions/setup-java@v5
         with:
@@ -45,6 +69,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ../../logs ../../deliverables
+          test ! -f src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java
+          ! grep -Fq 'ErdenUrbanAuthoredInteriorPreserver' src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+          grep -F 'EXPECTED_GROUND_ONLY_BUILDINGS = 0' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanResidenceResolver.java
+          grep -F 'public static final int EXPECTED_PLANS = 233;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredGroundPlanCatalog.java
           gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee ../../logs/clean-build.log
           grep -F 'Verified Kenney CC0 UI asset fantasy_panel.png' ../../logs/clean-build.log
           for asset in medieval_castle medieval_manor all_in_one_house fantasy_castle_house village_church; do
@@ -77,6 +105,10 @@ jobs:
             if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log \
               && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' ../../logs/server-smoke.log \
               && grep -Fq 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' ../../logs/server-smoke.log \
+              && grep -Fq 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/server-smoke.log \
               && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/server-smoke.log \
               && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/server-smoke.log \
               && grep -Fq 'purchase_outcomes=77' ../../logs/server-smoke.log \
@@ -103,10 +135,15 @@ jobs:
           grep -F 'loaded_only=true' ../../logs/server-smoke.log
           grep -F 'Released Erden citadel CI zoning ticket' ../../logs/server-smoke.log
           grep -F 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' ../../logs/server-smoke.log | grep -F 'source_floor_reused=true' | grep -F 'source_blocks_cut=0'
+          grep -F 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' ../../logs/server-smoke.log
+          grep -F 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS' ../../logs/server-smoke.log | grep -F 'authored_ground=true' | grep -F 'synthetic_room=false' | grep -F 'source_blocks_cut=0'
+          grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/server-smoke.log | grep -F 'source_blocks_cut=0'
           grep -F 'Prepared Erden household population households=77 residents=231 workers=154 dependents=77 owned_homes=77 assigned_workplaces=154 vacancies=2 shifts=early,late,night' ../../logs/server-smoke.log
           grep -F 'Processed Erden household economy day=' ../../logs/server-smoke.log
           grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3 ledger=true shortages=0 shifts=true ownership=true' ../../logs/server-smoke.log
 
+          grep -F 'Requested Erden physical-economy authored interior CI samples sites=3' ../../logs/server-smoke.log | grep -F 'bounded_plan_chunks=true' | grep -F 'loaded_lease=true' | grep -F 'persistent_forced_chunks=false'
           grep -F 'Prepared Erden physical economy sites=156 warehouses=15 wallets=77 container_resources=8' ../../logs/server-smoke.log
           grep -F 'Processed Erden physical economy day=' ../../logs/server-smoke.log
           grep -F 'failed_households=' ../../logs/server-smoke.log
@@ -188,6 +225,10 @@ jobs:
           test "$(grep -c 'Verified streamed capital sample role=' ../../logs/server-smoke.log)" -eq 6
           test "$(grep -c 'Verified cleaned Erden citadel' ../../logs/server-smoke.log)" -eq 1
 
+          if grep -Fq 'ground_only_candidates=77' ../../logs/server-smoke.log; then
+            echo 'Legacy Erden ground-only residence marker reappeared.' >&2
+            exit 1
+          fi
           if grep -Eq 'silvana_forest|kardum_league|woodland_mansion|deepslate_mega_base|Relocated four Erden town houses' ../../logs/server-smoke.log; then
             echo 'Inactive kingdom or legacy repair path ran.' >&2
             exit 1
@@ -240,6 +281,7 @@ jobs:
           for class in \
             ErdenCapitalStreamingBuilder ExternalDistrictBuildingBuilder ExternalUrbanFabricBuilder \
             ErdenUrbanInfrastructureBuilder ErdenUrbanInteriorBuilder ErdenUrbanLifeManager \
+            ErdenUrbanAuthoredGroundPlanCatalog ErdenUrbanAuthoredGroundMaterializer ErdenUrbanResidenceResolver \
             ErdenUrbanMicroInfillManager ErdenUrbanMicroInfillSavedData \
             ErdenCitadelInteriorManager ErdenCitadelInteriorSavedData \
             ErdenLandmarkInteriorManager ErdenLandmarkInteriorSavedData \
@@ -257,6 +299,10 @@ jobs:
           done
           grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/StructurelessNoiseChunkGenerator.class' logs/jar-entries.txt
 
+          if grep -Fxq 'kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.class' logs/jar-entries.txt; then
+            echo 'Obsolete ErdenUrbanAuthoredInteriorPreserver was packaged.' >&2
+            exit 1
+          fi
           if grep -Eq 'woodland_mansion|deepslate_mega_base|(^|/)(tools|\.github)/|\.java$' logs/jar-entries.txt; then
             exit 1
           fi
@@ -270,6 +316,10 @@ jobs:
           - Java 25 clean build: PASS
           - Fresh Erden world server test: PASS
           - Client startup and graphical UI diagnostics: PASS
+          - Fully authored urban ground coverage: 233 / 233 PASS
+          - Authored upper coverage: 233 / 233 PASS
+          - Legacy ground-only fallback: 0 PASS
+          - Legacy authored interior preserver packaged: NO
           - Streamed 2.4 x 1.8 km capital and external structure audit: PASS
           - Citadel government zones and audience-hall traversal: PASS
           - District landmark functional interiors: PASS
