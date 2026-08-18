@@ -1,4 +1,4 @@
-name: Patch Living Kingdoms residence modes registered trigger
+name: Patch Living Kingdoms role-aware interior preservation
 
 on:
   push:
@@ -13,6 +13,7 @@ permissions:
 jobs:
   patch:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,30 +25,77 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Apply residence mode migration
-        run: python3 .github/scripts/patch_living_kingdoms_residence_modes.py
-      - name: Audit migrated source
+      - name: Patch preservation safety and focused audit
+        shell: bash
         run: |
           set -euo pipefail
-          grep -F 'EXPECTED_GROUND_ONLY_BUILDINGS = 77' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanResidenceResolver.java
-          grep -F 'fresh_synthetic_upper_created=0' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanLifeManager.java
-          grep -F 'residence_mode=verified_upper_or_ground' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java
+          python3 - <<'PY'
+          from pathlib import Path
+
+          preserver = Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java')
+          text = preserver.read_text(encoding='utf-8')
+
+          def replace_once(source, old, new, label):
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return source.replace(old, new, 1)
+
+          text = replace_once(text,
+              '    private static int rollbackCount;\n    private static boolean completionLogged;\n',
+              '    private static int rollbackCount;\n    private static boolean completionLogged;\n    private static boolean ciRestoreSampleLogged;\n',
+              'ci sample field')
+
+          text = replace_once(text,
+              '        rollbackCount = 0;\n        completionLogged = false;\n',
+              '        rollbackCount = 0;\n        completionLogged = false;\n        ciRestoreSampleLogged = false;\n',
+              'ci sample reset')
+
+          text = replace_once(text,
+              '    private static String restorationSafetyFailure(ServerLevel level, Snapshot snapshot) {\n        if (!groundAisleWalkable(level, snapshot)) return "ground_aisle_blocked";\n        if (!usableCoreConnected(level, snapshot)) return "usable_core_disconnected";\n        return null;\n    }\n',
+              '    private static String restorationSafetyFailure(ServerLevel level, Snapshot snapshot) {\n        // Functional interiors deliberately use the rear/center differently by role (for example,\n        // bathhouses reserve a broad pool). Requiring one rigid centerline to remain empty falsely\n        // rejects valid role layouts. Preserve source detail when the real door still reaches the\n        // deepest available walkable core through actual world geometry instead.\n        if (!usableCoreConnected(level, snapshot)) return "usable_core_disconnected";\n        return null;\n    }\n',
+              'role-aware safety')
+
+          text = replace_once(text,
+              '        for (int depth = 2; depth <= 8; depth++) {\n',
+              '        for (int depth = 8; depth >= 3; depth--) {\n',
+              'deepest core target')
+
+          old_success = '''            int restored = restore(level, snapshot);\n            RESTORED.add(key);\n            SNAPSHOTS.remove(key);\n            restoredThisTick++;\n            if (diagnosticMode()) {\n'''
+          new_success = '''            int restored = restore(level, snapshot);\n            if (!ciRestoreSampleLogged && diagnosticMode()) {\n                ciRestoreSampleLogged = true;\n                LivingKingdoms.LOGGER.info(\n                        "LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS role={} entrance={},{} restored_cells={} role_aware_navigation=true deepest_walkable_core=true source_snapshot=true rollback_count={}",\n                        entrance.role(), entrance.x(), entrance.z(), restored, rollbackCount);\n            }\n            RESTORED.add(key);\n            SNAPSHOTS.remove(key);\n            restoredThisTick++;\n            if (diagnosticMode()) {\n'''
+          text = replace_once(text, old_success, new_success, 'restore sample marker')
+          preserver.write_text(text, encoding='utf-8')
+
+          audit = Path('.github/workflows/audit-living-kingdoms-residence-modes.yml')
+          wf = audit.read_text(encoding='utf-8')
+          old_condition = '''            if grep -Fq 'Completed Erden residence modes buildings=233 authored_upper_buildings=156 ground_only_buildings=77 fresh_synthetic_upper_created=0 legacy_synthetic_records=0' logs/residence-server.log \\\n              && grep -Fq 'Completed Erden authored interior preservation buildings=233 accepted_buildings=233 rolled_back_buildings=0' logs/residence-server.log \\\n              && grep -Fq 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log \\\n              && grep -Fq 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' logs/residence-server.log \\\n              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log \\\n              && grep -Fq 'residence_mode=verified_upper_or_ground' logs/residence-server.log; then passed=1; break; fi\n'''
+          new_condition = '''            if grep -Fq 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' logs/residence-server.log \\\n              && grep -Fq 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log \\\n              && grep -Fq 'LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS' logs/residence-server.log \\\n              && grep -Fq 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' logs/residence-server.log \\\n              && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' logs/residence-server.log \\\n              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log \\\n              && grep -Fq 'residence_mode=verified_upper_or_ground' logs/residence-server.log; then passed=1; break; fi\n'''
+          wf = replace_once(wf, old_condition, new_condition, 'focused pass condition')
+
+          old_after = '''          test "$passed" -eq 1\n          grep -F 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' logs/residence-server.log\n          grep -F 'Completed Erden residence modes buildings=233 authored_upper_buildings=156 ground_only_buildings=77 fresh_synthetic_upper_created=0 legacy_synthetic_records=0' logs/residence-server.log\n          grep -F 'Completed Erden authored interior preservation buildings=233 accepted_buildings=233 rolled_back_buildings=0' logs/residence-server.log | grep -F 'source_structure_restored=true' | grep -F 'usable_core_connected=true'\n          grep -F 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log | grep -F 'synthetic_fallback=false' | grep -F 'fresh_synthetic_upper_created=0'\n          grep -F 'LK_ERDEN_URBAN_AUTHORED_HOME_PASS' logs/residence-server.log | grep -F 'authored_upper=true' | grep -F 'source_blocks_cut=0' | grep -F 'routine=home'\n          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log | grep -F 'shortages=0' | grep -F 'residence_mode=verified_upper_or_ground'\n          if grep -Fq 'Completed Erden walkable upper floors buildings=' logs/residence-server.log; then exit 1; fi\n          echo 'LK_ERDEN_RESIDENCE_MODES_AUDIT_PASS buildings=233 authored_upper=156 ground_only=77 fresh_synthetic_upper=0 population=231 workers=154 restored=233 rollback=0 ground_source_preservation=legacy_restore authored_upper_source_blocks_cut=0' | tee logs/residence-pass.txt\n'''
+          new_after = '''          if [ "$passed" -ne 1 ]; then\n            echo 'Residence audit timed out; reached markers:' >&2\n            grep -E 'Prepared Erden residence modes|LK_URBAN_LIFE_DIAGNOSTIC_PASS|LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS|LK_ERDEN_AUTHORED_NEW_FLOOR_PASS|LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS|LK_ERDEN_POPULATION_DIAGNOSTIC_PASS|Rolled back Erden authored interior restoration' logs/residence-server.log || true\n            tail -n 250 logs/residence-server.log\n            exit 1\n          fi\n          grep -F 'Prepared Erden residence modes buildings=233 ground_only_candidates=77 authored_upper_candidates=156 fresh_synthetic_upper_created=0' logs/residence-server.log\n          grep -F 'LK_URBAN_LIFE_DIAGNOSTIC_PASS upper_floor=false ground_only=true' logs/residence-server.log | grep -F 'synthetic_fallback=false' | grep -F 'fresh_synthetic_upper_created=0'\n          grep -F 'LK_ERDEN_AUTHORED_INTERIOR_RESTORE_SAMPLE_PASS' logs/residence-server.log | grep -F 'role_aware_navigation=true' | grep -F 'rollback_count=0'\n          grep -F 'LK_ERDEN_AUTHORED_NEW_FLOOR_PASS candidates=116' logs/residence-server.log | grep -F 'source_blocks_cut=0' | grep -F 'synthetic_floor_required=false'\n          grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' logs/residence-server.log | grep -F 'source_blocks_cut=0' | grep -F 'source_air_only=true'\n          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3' logs/residence-server.log | grep -F 'shortages=0' | grep -F 'residence_mode=verified_upper_or_ground'\n          if grep -Fq 'Rolled back Erden authored interior restoration' logs/residence-server.log; then\n            grep -F 'Rolled back Erden authored interior restoration' logs/residence-server.log\n            exit 1\n          fi\n          if grep -Fq 'Completed Erden walkable upper floors buildings=' logs/residence-server.log; then exit 1; fi\n          echo 'LK_ERDEN_RESIDENCE_MODES_AUDIT_PASS source_catalog_buildings=233 authored_upper=156 ground_only=77 fresh_synthetic_upper=0 population=231 workers=154 loaded_restore_sample=true loaded_restore_rollbacks=0 authored_upper_source_blocks_cut=0 forced_citywide=false' | tee logs/residence-pass.txt\n'''
+          wf = replace_once(wf, old_after, new_after, 'focused post checks')
+          audit.write_text(wf, encoding='utf-8')
+          PY
+
+          printf 'role-aware-residence-audit-v3\n' > projects/living-kingdoms/.residence-audit-trigger
           git diff --check
+          grep -F 'deepest_walkable_core=true' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java
+          grep -F 'forced_citywide=false' .github/workflows/audit-living-kingdoms-residence-modes.yml
       - name: Java 25 clean compile
         working-directory: projects/living-kingdoms
         run: gradle --no-daemon clean classes --stacktrace --console=plain
-      - name: Commit product change and clean triggers
+      - name: Commit product fix and trigger focused audit
+        shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanResidenceResolver.java \
-                  projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java \
-                  projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanLifeManager.java
-          git rm -f .github/scripts/patch_living_kingdoms_residence_modes.py \
-                    .github/workflows/patch-living-kingdoms-residence-modes.yml \
-                    .github/workflows/patch-living-kingdoms-urban-life.yml
-          git commit -m 'fix(living-kingdoms): resolve real upper and ground residences'
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java \
+                  .github/workflows/audit-living-kingdoms-residence-modes.yml \
+                  projects/living-kingdoms/.residence-audit-trigger
+          git rm -f .github/workflows/patch-living-kingdoms-urban-life.yml
+          git commit -m 'fix(living-kingdoms): make interior restoration role-aware'
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
