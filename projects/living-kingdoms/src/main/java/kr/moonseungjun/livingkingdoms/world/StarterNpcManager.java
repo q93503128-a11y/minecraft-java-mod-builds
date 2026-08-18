@@ -25,6 +25,8 @@ import java.util.List;
 public final class StarterNpcManager {
     private static final String DONE_PREFIX = "done:";
     private static final Identifier VILLAGER_ID = Identifier.fromNamespaceAndPath("minecraft", "villager");
+    private static final List<String> HOMELANDS = List.of(
+            "erden_kingdom", "silvana_forest", "kardum_league");
 
     private StarterNpcManager() {
     }
@@ -34,17 +36,19 @@ public final class StarterNpcManager {
         if (realm == null || !RealmSitePlanner.isBuilt(realm, profile.homelandId())) return;
 
         StarterNpcLifeSavedData life = realm.getDataStorage().computeIfAbsent(StarterNpcLifeSavedData.TYPE);
-        List<NpcDefinition> definitions = definitions(realm, profile.homelandId());
         if (life.requiresSpawnTrackingMigration()) {
-            life.migratePreviouslyManaged(definitions.stream()
+            List<String> previouslyManaged = HOMELANDS.stream()
+                    .flatMap(homelandId -> definitions(realm, homelandId).stream())
                     .filter(definition -> !life.isDead(definition.id()))
                     .map(NpcDefinition::id)
-                    .toList());
+                    .toList();
+            life.migratePreviouslyManaged(previouslyManaged);
             LivingKingdoms.LOGGER.info(
-                    "Migrated named citizen spawn tracking homeland={} citizens={} revision={}",
-                    profile.homelandId(), definitions.size(), StarterNpcLifeSavedData.SPAWN_TRACKING_REVISION);
+                    "Migrated named citizen spawn tracking homelands=all citizens={} revision={}",
+                    previouslyManaged.size(), StarterNpcLifeSavedData.SPAWN_TRACKING_REVISION);
         }
 
+        List<NpcDefinition> definitions = definitions(realm, profile.homelandId());
         for (NpcDefinition definition : definitions) {
             if (life.isDead(definition.id())) continue;
             Villager existing = findExisting(realm, definition);
@@ -190,7 +194,7 @@ public final class StarterNpcManager {
 
     private static NpcDefinition definitionByVillager(ServerLevel level, Villager villager) {
         String name = villager.getName().getString();
-        for (String homelandId : List.of("erden_kingdom", "silvana_forest", "kardum_league")) {
+        for (String homelandId : HOMELANDS) {
             for (NpcDefinition definition : definitions(level, homelandId)) {
                 if (definition.name().equals(name)) return definition;
             }
