@@ -612,7 +612,7 @@ public final class VillageSkillMeshLibrary {
         } else if (style == 5 || style == 6) {
             braidedBeam(pose, out, a, z, age * (style == 5 ? 1.8 : 0.7),
                     style == 5 ? 0.10 : 0.13,
-                    (color & 0xFFFFFF00) | (int) (205 * fade));
+                    withAlpha(color, (int) (205 * fade)));
         } else if (style == 9) {
             prism(pose, out, center.subtract(b.forward.scale(1.0)), center.add(b.forward.scale(0.35)),
                     0.10, color);
@@ -622,7 +622,7 @@ public final class VillageSkillMeshLibrary {
             customArrow(pose, out, b, center, length, thickness, color);
             prism(pose, out, center.subtract(b.forward.scale(length * 1.15)),
                     center.subtract(b.forward.scale(length * 0.25)), thickness * 0.45,
-                    rgba((color >> 24) & 255, (color >> 16) & 255, (color >> 8) & 255, (int) (120 * fade)));
+                    withAlpha(color, (int) (120 * fade)));
         }
     }
 
@@ -675,7 +675,7 @@ public final class VillageSkillMeshLibrary {
         }
         if (style == 0 || style == 4) {
             sphere(pose, out, Vec3.ZERO, Math.max(0.22, radius * 0.32), 8, 12,
-                    (color & 0xFFFFFF00) | Math.max(20, (int) (90 * (1.0 - progress))));
+                    withAlpha(color, Math.max(20, (int) (90 * (1.0 - progress)))));
         }
     }
 
@@ -1233,6 +1233,10 @@ public final class VillageSkillMeshLibrary {
 
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private static int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | (clampInt(alpha) << 24);
     }
 
     private static int rgba(int r, int g, int b, int a) {
