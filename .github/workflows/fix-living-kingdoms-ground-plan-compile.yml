@@ -1,0 +1,75 @@
+name: Fix Living Kingdoms ground plan compile and rerun door audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-living-kingdoms-ground-plan-compile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Correct source compile issues
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanGroundOnlyFunctionalPlanCatalog.java')
+          s=p.read_text(encoding='utf-8')
+          typo='ExternalUrbanFabricBuilder.UranFragmentSnapshot'
+          if typo in s:
+              if s.count(typo)!=1: raise SystemExit(f'typo count {s.count(typo)}')
+              s=s.replace(typo,'ExternalUrbanFabricBuilder.UrbanFragmentSnapshot',1)
+          old='''        List<BedPlan> beds = localBeds.stream()\n                .map(bed -> new BedPlan(\n                        worldCell(placement, snapshot, doorY, bed.foot()),\n                        worldCell(placement, snapshot, doorY, bed.head())))\n                .toList();\n        List<FixturePlan> fixtures = localFixtures.stream()\n                .map(fixture -> new FixturePlan(\n                        fixture.kind(),\n                        worldCell(placement, snapshot, doorY, fixture.cell())))\n                .toList();\n'''
+          new='''        final int plannedDoorY = doorY;\n        List<BedPlan> beds = localBeds.stream()\n                .map(bed -> new BedPlan(\n                        worldCell(placement, snapshot, plannedDoorY, bed.foot()),\n                        worldCell(placement, snapshot, plannedDoorY, bed.head())))\n                .toList();\n        List<FixturePlan> fixtures = localFixtures.stream()\n                .map(fixture -> new FixturePlan(\n                        fixture.kind(),\n                        worldCell(placement, snapshot, plannedDoorY, fixture.cell())))\n                .toList();\n'''
+          if s.count(old)!=1: raise SystemExit(f'lambda block count {s.count(old)}')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+
+          wf=Path('.github/workflows/patch-living-kingdoms-door-semantics-v2.yml')
+          w=wf.read_text(encoding='utf-8')
+          marker='# rerun-after-ground-plan-compile-fix\n'
+          if marker not in w: w += '\n'+marker
+          else: w=w.replace(marker,'# rerun-after-ground-plan-compile-fix-2\n',1)
+          wf.write_text(w,encoding='utf-8')
+          PY
+          git diff --check
+          ! grep -Fq 'UranFragmentSnapshot' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanGroundOnlyFunctionalPlanCatalog.java
+          grep -F 'final int plannedDoorY = doorY;' projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanGroundOnlyFunctionalPlanCatalog.java
+      - name: Java 25 clean compile
+        working-directory: projects/living-kingdoms
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+      - name: Commit correction and retrigger v2
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanGroundOnlyFunctionalPlanCatalog.java \
+                  .github/workflows/patch-living-kingdoms-door-semantics-v2.yml
+          git rm -f .github/workflows/fix-living-kingdoms-ground-plan-typo.yml || true
+          git rm .github/workflows/fix-living-kingdoms-ground-plan-compile.yml
+          git commit -m 'fix(living-kingdoms): compile zero-cut ground interior plan'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
