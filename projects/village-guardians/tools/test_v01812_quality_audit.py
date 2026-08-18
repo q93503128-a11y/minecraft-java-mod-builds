@@ -61,12 +61,15 @@ def main() -> None:
             and "ticks % 105 == 70" in boss
             and "ParticleTypes.EXPLOSION" in boss)
 
-    require("elite instant effects now expose readable pre-cast telegraphs",
-            "phase == 88" in elite
-            and "phase == 82" in elite
-            and "phase == 100" in elite
-            and "ParticleTypes.ENCHANT" in elite
-            and "ParticleTypes.SMOKE" in elite)
+    require("elite telegraphs remain readable and share fixed delayed cast state with their impacts",
+            "GRAPPLE_MOTIONS" in elite
+            and "FIREBRAND_CASTS" in elite
+            and "PLAGUE_CASTS" in elite
+            and "VillageEnemyEffectSystem.grappleLine" in elite
+            and "VillageEnemyEffectSystem.firebrandThrow" in elite
+            and "VillageEnemyEffectSystem.firebrandImpact" in elite
+            and "VillageEnemyEffectSystem.plagueWarning" in elite
+            and "VillageEnemyEffectSystem.plagueImpact" in elite)
     require("elite pursuit chooses the nearest player instead of player-list order",
             elite.count("min(java.util.Comparator.comparingDouble(mob::distanceToSqr))") >= 2)
 
