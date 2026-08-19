@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   repair:
@@ -18,22 +17,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Record repair start
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git fetch origin main
-          git checkout -B living-kingdoms-watchdog-repair-pointer origin/main
-          mkdir -p .github/build-pointers
-          printf '{\n  "run_id": "%s",\n  "commit_sha": "%s",\n  "status": "repair_started"\n}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > .github/build-pointers/living-kingdoms-client-watchdog-repair.json
-          git add .github/build-pointers/living-kingdoms-client-watchdog-repair.json
-          git commit -m 'Record Living Kingdoms client watchdog repair start [skip ci]' || true
-          git push origin HEAD:main || true
-          git checkout --detach "$GITHUB_SHA"
-
-      - name: Patch canonical graphical client watchdog
+      - name: Stage patched canonical workflow as ordinary blob
         shell: bash
         run: |
           set -euo pipefail
@@ -41,24 +25,18 @@ jobs:
           grep -Fq 'CLIENT_AUDIT_OUTCOME=$outcome' .github/workflows/build-living-kingdoms.yml
           grep -Fq 'need_graphics=0' .github/workflows/build-living-kingdoms.yml
           grep -Fq 'client_pgid=' .github/workflows/build-living-kingdoms.yml
+
+          mkdir -p .github/staged
+          cp .github/workflows/build-living-kingdoms.yml .github/staged/living-kingdoms-build-workflow.yml.txt
+          git restore .github/workflows/build-living-kingdoms.yml
+
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/workflows/build-living-kingdoms.yml
-          if git diff --cached --quiet; then
-            echo 'Canonical graphical client watchdog already installed.'
-          else
-            git commit -m 'ci(living-kingdoms): bound graphical client setup and smoke process group'
-            for attempt in 1 2 3 4 5; do
-              if git pull --rebase origin main && git push origin HEAD:main; then break; fi
-              git rebase --abort 2>/dev/null || true
-              sleep $((attempt * 2))
-            done
-          fi
-
-      - name: Dispatch canonical build
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh workflow run build-living-kingdoms.yml --ref main
+          git add .github/staged/living-kingdoms-build-workflow.yml.txt
+          git commit -m 'ci(living-kingdoms): stage bounded canonical workflow blob'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
