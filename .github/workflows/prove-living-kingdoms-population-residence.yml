@@ -188,3 +188,5 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+
+# trigger: full-authored-first-household-residence-v1
