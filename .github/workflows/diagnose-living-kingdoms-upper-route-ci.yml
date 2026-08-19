@@ -160,3 +160,5 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+
+# trigger: upper-route-state-diagnostics-v1
