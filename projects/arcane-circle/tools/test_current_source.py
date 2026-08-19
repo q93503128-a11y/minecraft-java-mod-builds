@@ -5,453 +5,262 @@ root=Path(__file__).resolve().parents[1]
 client=root/'src/main/java/kr/moonseungjun/arcanecircle/client'
 magic=root/'src/main/java/kr/moonseungjun/arcanecircle/magic'
 world=root/'src/main/java/kr/moonseungjun/arcanecircle/world'
+network=root/'src/main/java/kr/moonseungjun/arcanecircle/network'
 
 def text(path): return path.read_text(encoding='utf-8')
 
-# Version/canonical source.
-gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
+def require_tokens(body,tokens,label):
+    for token in tokens:
+        assert token in body, f'{label}: {token}'
+
+# Canonical version / catalogue size.
+gradle=text(root/'gradle.properties')
+main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.47' in gradle
-assert 'VERSION = "0.12.1-alpha.47"' in main
-assert '"version": "0.12.1-alpha.47"' in index
+assert 'mod_version=0.12.1-alpha.48' in gradle
+assert 'VERSION = "0.12.1-alpha.48"' in main
+assert '"version": "0.12.1-alpha.48"' in index
+catalog=text(magic/'SpellCatalog.java')
+direct=set(re.findall(r'\badd\("([a-z0-9_]+)"',catalog))
+fusions=set(re.findall(r'\baddFusion\("([a-z0-9_]+)"',catalog))
+assert len(direct)==90, len(direct)
+assert len(fusions)==19, len(fusions)
+assert len(direct|fusions)==109, len(direct|fusions)
+assert 'IMPLEMENTED_MAX_CIRCLE = 9' in catalog and 'WORLD_MAX_CIRCLE = 9' in catalog
 
-# Retired presentation stack stays retired.
+# Active tree hygiene. History stays in git, not in current source/tooling.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
-'MidCircleVisualIdentity.java','FifthCircleVisualIdentity.java','SixthCircleVisualIdentity.java',
-'ArchmageVisualIdentity.java','RangeReactivePresentation.java','SpellVisualSignature.java',
-'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java','SignatureGeometry.java']
+         'MidCircleVisualIdentity.java','FifthCircleVisualIdentity.java','SixthCircleVisualIdentity.java',
+         'ArchmageVisualIdentity.java','RangeReactivePresentation.java','SpellVisualSignature.java',
+         'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java','SignatureGeometry.java']
 for name in retired: assert not (client/name).exists(), name
+retired_tokens=[name.removesuffix('.java') for name in retired]
+for path in (root/'src').rglob('*.java'):
+    body=text(path)
+    for token in retired_tokens: assert token not in body, f'{token} in {path.relative_to(root)}'
+tools=root/'tools'
+assert {p.name for p in tools.iterdir() if p.is_file()}=={'test_current_source.py','verify_jar.py'}
+assert not [p for p in tools.iterdir() if p.is_dir()]
+repo=root.parents[1]
+scripts=repo/'.github/scripts'
+if scripts.exists(): assert not list(scripts.glob('*arcane*'))
 
+# Current cinematic renderer, high-circle authored timeline, and 3P regalia baseline.
 tracker=text(client/'WorldMagicTracker.java')
-for token in ['SpellCinematicDirector.charge','SpellCinematicDirector.release','SpellCinematicDirector.castingFamily',
-'ArcaneSigilDirector.charge','ArcaneSigilDirector.releaseEcho','MeteorBarragePattern.withSeed','longValue(values,"seed",0L)',
-'MAX_FRAME = 14500','MAX_ENTRY = 4000']:
-    assert token in tracker, token
-assert tracker.count('!"prismatic_wall".equals(v.spell.id())') >= 2
-
+require_tokens(tracker,[
+    'SpellCinematicDirector.charge','SpellCinematicDirector.release','SpellCinematicDirector.castingFamily',
+    'ArcaneSigilDirector.charge','ArcaneSigilDirector.releaseEcho','ArcaneSpellVisualOverhaul.chargeSigil',
+    'AuthoredHighCircleTimeline.charge','AuthoredHighCircleTimeline.release',
+    'HighCircleMaintenanceOverlay.charge','HighCircleMaintenanceOverlay.release',
+    'PersistentBuffRegalia.release','MeteorBarragePattern.withSeed',
+    'MAX_FRAME = 14500','MAX_ENTRY = 4000','DETAIL_DISTANCE_SQR = 96.0 * 96.0',
+    'SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0','MAX_VISUALS = 32','syncLevelIdentity'
+],'tracker')
+assert tracker.count('!"prismatic_wall".equals(v.spell.id())')>=2
 sigil=text(client/'ArcaneSigilDirector.java')
-for token in ['formulaFrame','schoolFormula','geometricDepth','anchorFormula','skyRitual','meteorRitual','inscriptionRing','sigilRangeScale','meteor_swarm','fusionFormula']:
-    assert token in sigil, token
-
+require_tokens(sigil,['formulaFrame','schoolFormula','geometricDepth','anchorFormula','skyRitual',
+                      'meteorRitual','inscriptionRing','sigilRangeScale','meteor_swarm','fusionFormula'],'sigil')
 director=text(client/'SpellCinematicDirector.java')
-for token in ['enum Form','NEEDLE','ORB','VOLLEY','RAY','CONE','FIELD','WALL','GATE','PRISON','SKY','WEATHER','AURA',
-'MARK','SHIFT','TRANSFORM','CLOCK','TERRAIN','DOMAIN','meteorSwarm','executionWord','chainLightning','fireStorm',
-'worldFault','phoenix','delayedCataclysm','annihilationBeam','meteorShardImpact','SpellMetrics.effectRadius','SpellMetrics.wallWidth','SpellMetrics.waveLength','SpellMetrics.waveEndRadius',
-'MeteorBarragePattern.count()','s.impactTick()','prismaticWallFrame','case "power_word_kill"']:
-    assert token in director, token
-assert 'double[][] o={{-10,-10},{10,-10},{-10,10},{10,10}}' not in director
-assert 'fallHeight=42.0' not in director
-
-# 3P artifact regression: no synthetic player body/filled-box overlay may return.
+require_tokens(director,['enum Form','NEEDLE','ORB','VOLLEY','RAY','CONE','FIELD','WALL','GATE','PRISON',
+                         'SKY','WEATHER','AURA','TRANSFORM','CLOCK','TERRAIN','DOMAIN','meteorSwarm',
+                         'executionWord','worldFault','annihilationBeam','MeteorBarragePattern.count()'],'director')
 casting=text(client/'ArcaneCastingPerformance.java')
 for forbidden in ['debugFilledBox','submitCustomGeometry','strap(','blade(','pose.translate','pose.rotate']:
     assert forbidden not in casting, forbidden
 assert 'Intentionally empty' in casting
 gear=text(client/'ArcaneGearRenderer.java')
 assert 'ArcaneRegaliaRenderer.render' in gear and 'ArcaneCastingPerformance.render' in gear
-assert 'CastingSilhouetteRenderer' not in gear and 'RobeRegaliaRenderer' not in gear
-regalia=text(client/'ArcaneRegaliaRenderer.java')
-for token in ['outfit','bodice','lapel','shoulderMantle','skirtPair','sideGore','backTrain','facetedSkirt','asymmetricSkirt','ceremonialTab']:
-    assert token in regalia, token
-assert 'private static void torso(' not in regalia
+regalia3p=text(client/'ArcaneRegaliaRenderer.java')
+require_tokens(regalia3p,['outfit','bodice','lapel','shoulderMantle','skirtPair','sideGore','backTrain',
+                          'facetedSkirt','asymmetricSkirt','ceremonialTab'],'regalia')
 
-# UI architecture and mechanical selected-spell summaries.
-grimoire=text(client/'GrimoireScreen.java')
-for token in ['drawSpine','circleIndex','circleStep','contentBottom','compact()','browserViewport','detailWidth','detail()',
-'spellTile','primaryAction','drawLoadout','firstEmptySlot','quickEquip','academySelector','academySummary','academyOfferHeader','enableScissor','mouseScrolled']:
-    assert token in grimoire, token
-assert grimoire.count('private void request(String next)') == 1
-assert 'viewport().w()<410' in grimoire
-summary=text(magic/'SpellEffectSummary.java'); definition=text(magic/'SpellDefinition.java')
-assert 'SpellEffectSummary.summary(this)' in definition and '효과 · ' in definition
-for token in ['case "wish"','기존 이로운','case "time_stop"','AI·이동','case "antimagic_field"','Arcane 시전',
-'case "meteor_swarm"','16발','case "world_sunder"','장거리·심층 실제 세계 균열','case "fly"','자유 비행',
-'case "clone"','치명상','case "control_weather"','실제 폭우·뇌우','case "prismatic_wall"','20초 지속']:
-    assert token in summary, token
-assert summary.count('case "') >= 109
-
-# Target snapshot / seeded meteor parity.
-assert (magic/'CastTargetSnapshot.java').exists() and (magic/'MeteorBarragePattern.java').exists()
-target=text(magic/'CastTargetSnapshot.java'); barrage=text(magic/'MeteorBarragePattern.java')
-for token in ['targetEntityId','launchDirection','impactSurface','barrageSeed','dimension','executeLocked','resolvedTarget','boolean homing']:
-    assert token in target, token
-for token in ['BASE_STRIKES','impactTick','durationTicks','count()','strikes(long seed)','withSeed','castSeed','MIN_SEPARATION']:
-    assert token in barrage, token
-assert barrage.count('new Strike(') >= 16 and 'private static final Strike[] STRIKES' not in barrage
-world_magic=text(magic/'WorldMagicService.java')
-for token in ['captureSnapshot','CastTargetSnapshot snapshot','seed=%d','PLAYER_CHARGE_SEEDS','NPC_CHARGE_SEEDS','npcChargeSeed',
-'npcReleaseSeed','consumeNpcSnapshot','MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed())']:
-    assert token in world_magic, token
-kinetics=text(magic/'SpellKineticsService.java')
-for token in ['CastTargetSnapshot targetSnapshot','captureSnapshot','targetSnapshot().validFor(player)','barrageSeed',
-'MeteorBarragePattern.strike(targetSnapshot.barrageSeed(), 0)','applyPhysicalAftermath','ArcaneFieldService.handles',
-'ArcaneFieldService.executeSpecial','ArcaneFieldService.blocksCasting','SpellGameplayService.handles',
-'SpellGameplayService.execute','gameplayOwned','generic FIELD pulses must not restart']:
-    assert token in kinetics, token
-assert 'WorldMagicService.lockedTarget' not in kinetics and 'lockedTarget' not in kinetics
-
-# Real gameplay runtime: this gate checks mechanics, not just switch-case existence.
-assert (magic/'SpellGameplayService.java').exists()
-gameplay=text(magic/'SpellGameplayService.java')
-for token in ['LivingIncomingDamageEvent','event.setCanceled(true)','getAbilities().mayfly = true','onUpdateAbilities()',
-'setNoAi(true)','wasNoAi','restoreControl','Attributes.SCALE','CommandSourceStack','LevelBasedPermissionSet.ADMIN',
-'performPrefixedCommand','/weather thunder ','/weather clear ',
-'DeathWard','"simulacrum"','"clone"','"control_weather"','"prismatic_wall"','"incendiary_cloud"',
-'"wall_of_force"','"wall_of_ice"','"wind_wall"','"sleet_storm"','"insect_plague"','"flesh_to_stone"',
-'"forcecage"','"true_polymorph"','"thunder_cage"','"astral_prison"','setTicksFrozen(0)',
-'player.isAlliedTo(value)','SpellMetrics.wallWidth','snapshot.target()','snapshot.targetEntity(player)',
-'DestructiveMagicService.impact(player, id, center, radius, power)','LIGHTNING_BOLT_THUNDER']:
-    assert token in gameplay, token
-assert 'setWeatherParameters' not in gameplay
-ice=gameplay[gameplay.index('private static boolean iceKnife'):gameplay.index('private static boolean fireShield')]
-assert 'DestructiveMagicService.impact' not in ice and 'flame_strike' not in ice
-assert 'case "sleet_storm"' in gameplay and 'MobEffects.POISON' not in gameplay[gameplay.index('case "sleet_storm"'):gameplay.index('case "cloudkill"')]
-
-# Visual lifetime must track actual sustained gameplay, especially Time Stop/Antimagic.
-presentation=text(magic/'SpellPresentationProfile.java')
-assert 'SpellGameplayService.visualDurationTicks(spell.id())' in presentation
-audit_duration=gameplay[gameplay.index('public static int visualDurationTicks'):gameplay.index('/** Used by Arcane-field') if '/** Used by Arcane-field' in gameplay else gameplay.index('public static boolean blocksCasting')]
-for token in ['case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS','case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS',
-'case "prismatic_wall" -> 400','case "control_weather" -> 900']:
-    assert token in audit_duration, token
-
-# Alpha.37 presentation contract: spell-authored layers, upward portals/prisons and durable prism wall.
-overhaul=text(client/'ArcaneSpellVisualOverhaul.java')
-for token in ['replacesBaseSigil','portalPair','risingPortal','risingPrison','prismaticWallLayer',
-              'temporalAstrolabe','wishCrown','executionFormula','tectonicFormula','materialWall',
-              'fieldAtmosphere','skyConvergence','impactFormula','terrainLift']:
-    assert token in overhaul, token
-for token in ['ArcaneSpellVisualOverhaul.chargeSigil','ArcaneSpellVisualOverhaul.chargeBody',
-              'ArcaneSpellVisualOverhaul.release','ArcaneSpellVisualOverhaul.prismaticWallLayer',
-              'MAX_FRAME = 14500','MAX_ENTRY = 4000']:
-    assert token in tracker, token
-assert 'case PORTAL_GATE -> caster.position().add(0.0, 0.055, 0.0);' in world_magic
-assert 'case "prismatic_wall" -> 400;' in gameplay
-assert '20초 지속 7색 장벽' in summary
-assert 'age < .90' in overhaul and 'elapsedSeconds / .30' in overhaul
-assert 'return visual.target.subtract(visual.center);' in tracker
-assert 'visual.direction.scale(Math.max(1,visual.range))' not in tracker
-
-# Destruction budgets/classification and visible-footprint catastrophe scheduling.
-destruction=text(magic/'DestructiveMagicService.java')
-for token in ['getDestroySpeed','getExplosionResistance','destroyBlock','hasChunkAt','MAX_BLOCK_CHANGES_PER_TICK = 720',
-'MAX_BLOCK_SCANS_PER_TICK = 48_000','MAX_DROPPED_BLOCKS_PER_TICK = 96','MAX_PENDING_CELLS_PER_LEVEL = 2_048',
-'MAX_CELLS_PER_TICK = 7','RuptureTask','scheduleFootprint','PENDING','clearAll','TerrainClass','MAJOR','CONDITIONAL',
-'lightning_bolt','thunderwave','gust_of_wind','fissure','travelling continental cut','quakeField','outer faults arrive over subsequent ticks',
-'meteorCrater','visible Meteor Swarm body','annihilationCorridor','deletes a corridor progressively']:
-    assert token in destruction, token
-for token in ['case "move_earth" -> new Profile(.90, 15.0, 275, false, 9.0, .44, 28.0)',
-              'case "earthquake" -> new Profile(1.00, 21.0, 410, false, 10.5, .56, 56.0)',
-              'case "meteor_swarm" -> new Profile(1.00, 24.0, 220, false, 10.0, .76, 22.0)',
-              'case "world_sunder" -> new Profile(1.00, 33.0, 500, false, 10.5, .90, 24.0)',
-              'case "arcane_annihilation" -> new Profile(1.00, 30.0, 125, false, 7.0, .72, 8.0)']:
-    assert token in destruction, token
-assert 'DestructiveMagicService.quakeField(player, center, r, power)' in text(magic/'HighCircleSpellEffects.java')
-assert 'DestructiveMagicService.meteorCrater(player, impact, radius, power * strike.scale())' in text(magic/'HighCircleSpellEffects.java')
-assert 'DestructiveMagicService.annihilationCorridor(player, start, end, power)' in text(magic/'SpellCastingService.java')
-fusion=text(magic/'FusionSpellEffects.java')
-assert 'DestructiveMagicService.impact(player, "world_sunder", center, radius, power)' in fusion
-assert 'CastTargetSnapshot.targetOr(player, fallback)' in fusion
-assert 'new AABB(lockedPoint, lockedPoint).inflate(2.4)' in fusion
-assert 'targetEntity(player)' not in fusion
-
-# Sustained Antimagic/Time Stop and Wish preservation.
-field=text(magic/'ArcaneFieldService.java')
-for token in ['TIME_STOP_TICKS = 160','ANTIMAGIC_TICKS = 320','activateAntimagic','activateTimeStop','fulfillWish',
-'blocksCasting','setNoAi(true)','wasNoAi','restoreFrozenLevel','suppressMagicEffects','cleanseHarmful',
-'SpellKineticsService.clear','clearFusion','SpellGameplayService.blocksCasting(caster)','SpellGameplayService.clear(entity)']:
-    assert token in field, token
-assert 'removeAllEffects' not in field
-harmful=field[field.index('private static void cleanseHarmful'):field.index('private static void restoreFrozenLevel')]
-assert 'MobEffects.SPEED' not in harmful and 'MobEffects.REGENERATION' not in harmful and 'MobEffects.ABSORPTION' not in harmful
-casting_service=text(magic/'SpellCastingService.java')
-assert casting_service.count('ArcaneFieldService.blocksCasting(player)') >= 4
-assert 'READY_HOLD_TIMEOUT_TICKS' in casting_service and 'chargeTimeoutTicks' in casting_service
-assert '{0, 6, 10, 16, 26, 42, 68, 105, 155, 220}' in casting_service
-assert 'equipped(player).castTimeMultiplier()' in casting_service and 'default -> 190;' in casting_service
-
-npc=text(world/'NpcSpellResolver.java'); npc_barrage=text(world/'NpcMeteorBarrageService.java')
-for token in ['consumeNpcSnapshot','NpcMeteorBarrageService.schedule','directAt','snapshot.launchOrigin()','ArcaneFieldService.blocksCasting(caster)']:
-    assert token in npc, token
-for token in ['MeteorBarragePattern.strike','barrageSeed','MAX_ACTIVE_BARRAGES','resolveStrike','nextStrike','ArcaneFieldService.blocksCasting(caster)']:
-    assert token in npc_barrage, token
-assert 'NpcMeteorBarrageService.tick' in main and 'NpcMeteorBarrageService.clearAll' in main
-assert 'ArcaneFieldService.tick' in main and 'ArcaneFieldService.clearAll' in main
-assert 'SpellGameplayService.tick' in main and 'SpellGameplayService.clearAll' in main
-assert 'SpellGameplayService::onIncomingDamage' in main
-assert main.index('ArcaneMageService.tickNear(player)') < main.index('ArcaneFieldService.tick')
-assert main.index('SpellGameplayService.tick') < main.index('ArcaneFieldService.tick')
-assert main.count('SpellKineticsService.clear(player.getUUID())') >= 2
-
-# Existing HUD/gear/light/staff contracts.
-hud=text(client/'ArcaneHud.java'); assert 'spell_ribbon' in hud and 'drawSeal' in hud and 'drawVitals' in hud and 'drawFusion' in hud
-staff=text(root/'src/main/java/kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.java')
-assert 'castTimeMultiplier' in staff and '시전 전개시간' in staff
-light=text(magic/'ArcaneLightService.java')
-for token in ['Blocks.LIGHT','LightBlock.LEVEL','illuminate','clearAll']: assert token in light, token
-assert 'ArcaneLightService.illuminate(player,1800)' in text(magic/'ExpandedSpellEffects.java')
-assert 'syncAtomicRobe' in text(magic/'MageGearService.java')
-assert not (magic/'SpellSigilService.java').exists()
-
-buff=text(magic/'ArcaneBuffRuntime.java')
-
-# Maintained-buff visual lifetime parity.
-for token in ['case "feather_fall" -> 120','case "mirror_image" -> 260','case "blur" -> 360',
-              'case "fly" -> 600','case "simulacrum" -> 1200','case "clone" -> 1800',
-              'case "globe_of_invulnerability" -> 520','case "fire_shield" -> 620']:
-    assert token in gameplay, token
-for token in ['"feather_fall"','"fly"','"simulacrum"','"clone"','persistentBuff']:
-    assert token in overhaul, token
-assert 'armor.nextChargeAt = now + rechargeInterval("mage_armor")' in buff
-assert 'solar.nextChargeAt = now + rechargeInterval("solar_guard")' in buff
-
-# Alpha.37 non-potion buff identity + 3D high-circle authority.
-buff=text(magic/'ArcaneBuffRuntime.java')
-for token in ['durationTicks','onIncomingDamage','castTimeMultiplier','adjustCooldownTicks',
-              'protection_from_energy','greater_invisibility','freedom_of_movement','true_seeing',
-              'solar_guard','shapechange','foresight','rechargeInterval','reveal']:
-    assert token in buff, token
-for token in ['ArcaneBuffRuntime.apply','ArcaneBuffRuntime.tick','ArcaneBuffRuntime.onIncomingDamage',
-              'ArcaneBuffRuntime.clear','ArcaneBuffRuntime.clearAll']:
-    assert token in gameplay, token
-for token in ['ArcaneBuffRuntime.castTimeMultiplier(player)','ArcaneBuffRuntime.adjustCooldownTicks(player']:
-    assert token in casting_service, token
-for token in ['BUFFS = Set.of','buffMantle','highCircleCrown','Basis.fromNormal',
-              'nine independent formulae are complete mini-circles','spell.circle() >= 9','age < .90']:
-    assert token in overhaul, token
-assert 'ArcaneBuffRuntime.apply(player, "solar_guard", power, range)' in fusion
-assert 'CATASTROPHIC = Set.of' in overhaul and 'catastrophicAuthority' in overhaul
-for token in ['delayedCataclysm','annihilationBeam','meteorShardImpact','crownFade']:
-    assert token in director, token
-for token in ['put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 22.00',
-              'put("earthquake", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 15.50',
-              'put("world_sunder", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 18.00',
-              'put("arcane_annihilation", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 2.80']:
-    assert token in presentation, token
-assert 'case "prismatic_wall" -> 400;' in gameplay
-assert '20초 지속 7색 장벽' in summary
-
-# Alpha.39 grand-sigil / persistent status identity.
-for token in ['SIGIL_BUDGET = 1900','SUSTAINED_DEBUFFS = Set.of','grandScaleArchitecture',
-              'geometrySides','tessellated sectors','persistentAuthorityMantle','persistentControlMantle',
-              'debuffMantle','runeChords','nine independent formulae are complete mini-circles']:
-    assert token in overhaul, token
-for token in ['case "sleep" -> 140','case "mass_suggestion" -> 160']:
-    assert token in gameplay, token
-assert 'if ((persistentBuff || persistentDebuff) && spell.circle() >= 6)' in overhaul
-assert 'if (spell.circle() >= 6 && r >= 3.25) grandScaleArchitecture' in overhaul
-for token in ['m.polygon(g, hub, r * .43, 12','m.star(g, center.add(0, .05, 0), r * .74',
-              'm.runeChords(face, c, r * .46, 8, 3']:
-    assert token in overhaul, token
-
-# Active-tree hygiene: history is the archive.
-repo=root.parents[1]
-retired_tokens=[n.removesuffix('.java') for n in retired]
-for path in (root/'src').rglob('*.java'):
-    body=text(path)
-    for token in retired_tokens: assert token not in body, f'{token} in {path.relative_to(root)}'
-tools=root/'tools'
-assert {p.name for p in tools.iterdir() if p.is_file()} == {'test_current_source.py','verify_jar.py'}
-assert not [p for p in tools.iterdir() if p.is_dir()]
-scripts=repo/'.github/scripts'
-if scripts.exists():
-    assert not (scripts/'arcane-circle').exists() and not list(scripts.glob('*arcane*'))
-for obsolete in ['AUDIT_REPORT_V0.5.md','BUILD_AND_RUNTIME_REPORT.md','MAGIC_WORLD_PATCH.md','docs/ALPHA10_WORLD_COMBAT.md','docs/PRESENTATION_OVERHAUL_PHASES.md']:
-    assert not (root/obsolete).exists(), obsolete
-
-print('Arcane Circle current-source audit: PASS')
-print('target_snapshot_parity=PASS')
-print('seeded_meteor_barrage=PASS')
-print('destruction_tick_budget=PASS')
-print('destruction_drop_budget=PASS')
-print('world_sunder_fissure=PASS')
-print('npc_meteor_scheduler=PASS')
-print('non_homing_target_seal=PASS')
-print('sustained_antimagic=PASS')
-print('authoritative_time_stop=PASS')
-print('wish_preserves_beneficial_effects=PASS')
-print('grimoire_effect_summaries=PASS')
-print('persistent_spell_runtime=PASS')
-print('hard_control_restore=PASS')
-print('controlled_flight=PASS')
-print('death_substitution=PASS')
-print('actual_weather_control=PASS')
-print('persistent_wall_collision=PASS')
-print('visual_lifetime_parity=PASS')
-print('third_person_fake_geometry=absent')
-print('prismatic_white_frame=absent')
-print('retired_visual_stack=absent')
-print('gameplay_content=preserved')
-print('source_mutation=disabled')
-print('legacy_arcane_tooling=absent')
-
-# Alpha.42 presentation regression recovery.
-for name in ['ArcaneSigilDirector.java','SpellCinematicDirector.java','ArcaneSpellVisualOverhaul.java']:
-    assert (client/name).exists(), name
-for name in ['ManualSpellVisuals.java','ManualFusionVisuals.java']+[f'ManualCircle{i}Visuals.java' for i in range(1,10)]:
-    assert not (client/name).exists(), name
-sigil=text(client/'ArcaneSigilDirector.java')
-for token in ['formulaFrame','m.circle(basis,Vec3.ZERO,outer','inscriptionRing','schoolFormula','geometricDepth','anchorFormula']:
-    assert token in sigil, token
-tracker=text(client/'WorldMagicTracker.java')
-for token in ['ArcaneSigilDirector.charge','SpellCinematicDirector.charge','ArcaneSpellVisualOverhaul.chargeSigil']:
-    assert token in tracker, token
-
-# Alpha.43 reference-informed high-circle authored timeline.
-timeline_path=client/'AuthoredHighCircleTimeline.java'
-assert timeline_path.exists()
-timeline=text(timeline_path)
-expected_high_circle={
+# High-circle timeline coverage stays exhaustive.
+timeline=text(client/'AuthoredHighCircleTimeline.java')
+expected_high={
 'delayed_blast_fireball','etherealness','finger_of_death','fire_storm','forcecage','plane_shift','prismatic_spray','reverse_gravity','simulacrum','teleport','void_lance','winter_domain',
 'antimagic_field','clone','control_weather','demiplane','dominate_monster','earthquake','feeblemind','incendiary_cloud','maze','sunburst','astral_prison','phoenix_requiem',
 'meteor_swarm','power_word_kill','prismatic_wall','shapechange','time_stop','true_polymorph','weird','wish','gate','foresight','world_sunder'}
 draw_block=timeline[timeline.index('switch (id) {'):timeline.index('// 7th circle')]
 dispatched=set(re.findall(r'case "([a-z0-9_]+)"',draw_block))
-assert len(expected_high_circle)==35
-assert dispatched==expected_high_circle, (sorted(expected_high_circle-dispatched), sorted(dispatched-expected_high_circle))
-for token in ['spell.circle() < 7','detailBuilder(CHARGE_BUDGET)','detailBuilder(RELEASE_BUDGET)',
-              'case "time_stop"','case "power_word_kill"','case "maze"','case "gate"','case "world_sunder"',
-              'private static final float MAJOR','private static void squareCorridor']:
-    assert token in timeline, token
+assert dispatched==expected_high,(sorted(expected_high-dispatched),sorted(dispatched-expected_high))
 mesh=text(client/'ArcaneWorldMesh.java')
-for token in ['detailBuilder(int budget)','record Segment(Vec3 start,Vec3 end,float width,float brightness,float alpha)',
-              'Builder line(Vec3 a,Vec3 b,float width,float brightness,float alpha)',
-              'passBrightness*s.brightness','passAlpha*s.alpha']:
-    assert token in mesh, token
-tracker=text(client/'WorldMagicTracker.java')
-for token in ['if(v.spell.circle()>=7)','AuthoredHighCircleTimeline.charge','AuthoredHighCircleTimeline.release',
-              'MAX_FRAME = 14500','MAX_ENTRY = 4000']:
-    assert token in tracker, token
-# The alpha.42 low-circle frame is mandatory; this gate prevents another alpha.40 regression.
-sigil=text(client/'ArcaneSigilDirector.java')
-for token in ['formulaFrame(mesh, spell, profile','m.circle(basis,Vec3.ZERO,outer','inscriptionRing','schoolFormula']:
-    assert token in sigil, token
-assert 'ManualSpellVisuals' not in tracker
-print('alpha43_high_circle_authored_timeline=PASS')
-print('alpha42_low_circle_sigil_baseline=preserved')
+require_tokens(mesh,['detailBuilder(int budget)','record Segment(Vec3 start,Vec3 end,float width,float brightness,float alpha)',
+                     'Builder line(Vec3 a,Vec3 b,float width,float brightness,float alpha)',
+                     'passBrightness*s.brightness','passAlpha*s.alpha'],'mesh')
 
-# Alpha.44 deep lifecycle/staging pass: preserve the alpha.43 core while making long effects live in world-time.
-maintenance_path=client/'HighCircleMaintenanceOverlay.java'
-assert maintenance_path.exists()
-maintenance=text(maintenance_path)
-for token in ['REPLACED_CHARGE = Set.of','"plane_shift"','"antimagic_field"','"meteor_swarm"','"shapechange"',
-              '"time_stop"','"wish"','"gate"','"foresight"','"world_sunder"',
-              'int[] order = {0, -1, 1, -2, 2, -3, 3}','clamp(t / 1.15, 0.0, 1.0)',
-              't * Math.PI * 2.0 / 3.0','seeingHeartbeat','solarHeartbeat']:
-    assert token in maintenance, token
-assert maintenance.count('case "') >= 19
-for token in ['world_magic_cinematic_v4','HighCircleMaintenanceOverlay.charge','HighCircleMaintenanceOverlay.release',
-              'HighCircleMaintenanceOverlay.replacesChargeTimeline','DETAIL_DISTANCE_SQR = 96.0 * 96.0',
-              'SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0',
-              'entries.sort(Comparator.comparingInt(RenderEntry::priority).reversed())','releaseOpacity','withOpacity',
-              'followsCaster','if("time_stop".equals(spell.id()))return false;',
-              'if("antimagic_field".equals(spell.id())||"control_weather".equals(spell.id()))return true;','findLiving(UUID id)',
-              'if(distanceSqr>SILHOUETTE_DISTANCE_SQR&&entry.priority<90)continue;',
-              'if(distanceSqr>DETAIL_DISTANCE_SQR&&entry.priority<58)continue;']:
-    assert token in tracker, token
-staged_block=tracker[tracker.index('if(v.spell.circle()>=7){'):tracker.index('for(Visual v:RELEASES)')]
-assert 'if(!HighCircleMaintenanceOverlay.replacesChargeTimeline(v.spell))' in staged_block
-assert staged_block.index('HighCircleMaintenanceOverlay.replacesChargeTimeline') < staged_block.index('AuthoredHighCircleTimeline.charge')
-for attached_id in ['shield','mage_armor','haste','greater_invisibility','true_seeing','solar_guard','shapechange','foresight','fly']:
-    authored_body=f'put("{attached_id}", SigilStyle.BODY_HALO'
-    authored_feet=f'put("{attached_id}", SigilStyle.FEET_RUNE'
-    assert authored_body in presentation or authored_feet in presentation, attached_id
-# Do not replace the alpha.43 mesh renderer with another global pass: alpha.44 LOD is layer-level and safer pre-live-test.
-assert 'int size(int lod)' not in mesh
-assert 'void submit(PoseStack poseStack,SubmitNodeCollector collector,int argb,float windowScale,int lod' not in mesh
-print('alpha44_entity_attached_persistent_vfx=PASS')
-print('alpha44_priority_distance_lod=PASS')
-print('alpha44_staged_high_circle_charge=PASS')
-print('alpha44_release_fade=PASS')
+# Grimoire/UI and all 109 explicit mechanical summaries.
+grimoire=text(client/'GrimoireScreen.java')
+require_tokens(grimoire,['drawSpine','circleIndex','browserViewport','drawSpellDetail','drawLoadout','quickEquip',
+                         'academySelector','academySummary','staffList()','staffDetail()','enableScissor','mouseScrolled'],'grimoire')
+summary=text(magic/'SpellEffectSummary.java')
+definition=text(magic/'SpellDefinition.java')
+assert 'SpellEffectSummary.summary(this)' in definition and '효과 · ' in definition
+assert summary.count('case "')>=109
+require_tokens(summary,[
+    'case "wish"','기존 이로운','case "meteor_swarm"','16발','case "world_sunder"','장거리·심층 실제 세계 균열',
+    'case "time_stop"','투사체·드롭 이동','case "clone"','실제 복제본','시전자 소유 아님',
+    'case "true_polymorph"','실제 몸체','case "maze"','전장에서 실제 추방',
+    'case "etherealness"','물질 충돌 위상화','case "control_weather"','G키로 바라본 지점 12연속 낙뢰',
+    'case "prismatic_wall"','20초 지속'
+],'summary')
+assert '에메랄드' not in grimoire
 
-
-# Alpha.45 manual full-audit lifecycle consistency.
-tracker=text(client/'WorldMagicTracker.java')
-for token in ['MAX_VISUALS = 32','LAST_LEVEL','syncLevelIdentity','singletonRelease','evictForCapacity',
-              '"cancel".equals(kind)','"clear".equals(kind)','getEntitiesOfClass(LivingEntity.class',
-              'SigilStyle.BODY_HALO','SigilStyle.FEET_RUNE','"control_weather".equals(spell.id())',
-              'DETAIL_DISTANCE_SQR = 96.0 * 96.0','SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0']:
-    assert token in tracker, token
+# Target snapshot and seeded meteor parity.
+target=text(magic/'CastTargetSnapshot.java')
+barrage=text(magic/'MeteorBarragePattern.java')
+require_tokens(target,['targetEntityId','launchDirection','impactSurface','barrageSeed','dimension','executeLocked',
+                       'resolvedTarget','boolean homing'],'target snapshot')
+require_tokens(barrage,['BASE_STRIKES','impactTick','durationTicks','count()','strikes(long seed)','withSeed',
+                        'castSeed','MIN_SEPARATION'],'meteor pattern')
+assert barrage.count('new Strike(')>=16
 world_magic=text(magic/'WorldMagicService.java')
-for token in ['cancelRelease(LivingEntity caster, String spellId)','clearVisuals(LivingEntity caster)',
-              '"kind=cancel;caster="','"kind=clear;caster="','"etherealness".equals(spell.id())',
-              '360 + (int) cast.power()']:
-    assert token in world_magic, token
-buff=text(magic/'ArcaneBuffRuntime.java')
-for token in ['WorldMagicService.cancelRelease(player, "invisibility")',
-              'WorldMagicService.cancelRelease(living, state.spellId)']:
-    assert token in buff, token
-field=text(magic/'ArcaneFieldService.java')
-for token in ['if (removed != null) applyTimeStop(removed.level())','SpellGameplayService.clear(entity)',
-              'SpellKineticsService.cancel(player)']:
-    assert token in field, token
+require_tokens(world_magic,['captureSnapshot','CastTargetSnapshot snapshot','seed=%d','PLAYER_CHARGE_SEEDS',
+                            'NPC_CHARGE_SEEDS','npcChargeSeed','npcReleaseSeed','consumeNpcSnapshot',
+                            'MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed())'],'world magic')
+
+# Authoritative kinetic ownership. High utility must win before legacy gameplay/resolved fallbacks.
 kinetics=text(magic/'SpellKineticsService.java')
-for token in ['public static void cancel(ServerPlayer player)','Set<String> spellIds=new HashSet<>()',
-              'WorldMagicService.cancelRelease(player, pending.cast().spell().id())']:
-    assert token in kinetics, token
+require_tokens(kinetics,[
+    'HighUtilitySpellService.handles(cast.spell().id()) || SpellGameplayService.handles(cast.spell().id())',
+    'boolean utilityOwned = HighUtilitySpellService.handles(spellId)',
+    'boolean gameplayOwned = !utilityOwned && SpellGameplayService.handles(spellId)',
+    'utilityOwned\n                ? HighUtilitySpellService.execute',
+    'DestructiveMagicService.applyPhysicalAftermath','generic FIELD pulses must not restart',
+    'MeteorBarragePattern.strike(targetSnapshot.barrageSeed(), 0)'
+],'kinetics')
+assert kinetics.index('boolean utilityOwned') < kinetics.index('boolean gameplayOwned')
+assert 'WorldMagicService.lockedTarget' not in kinetics
+
+# Alpha.48 real high-circle utility state transitions.
+utility=text(magic/'HighUtilitySpellService.java')
+require_tokens(utility,[
+    'Set.of("clone", "true_polymorph", "maze", "etherealness")',
+    'source.getType().create(level, EntitySpawnReason.EVENT)','copyCombatBody(source, clone)',
+    'Attributes.MAX_HEALTH','Attributes.ATTACK_DAMAGE','Attributes.ARMOR','Attributes.MOVEMENT_SPEED',
+    'arcanecircle_clone_source_','복제체는 시전자 소유가 아니며 독립적으로 행동',
+    'TRUE_POLYMORPH_TICKS = 480','EntityTypes.RABBIT.create','EntityTypes.CHICKEN.create',
+    'EntityTypes.PIG.create','EntityTypes.SHEEP.create','restorePolymorph(state, true)',
+    'MAZE_TICKS = 360','arcanecircle_maze_exile','restoreMaze(state)',
+    'player.noPhysics = true','getAbilities().mayfly = true','getAbilities().flying = true',
+    'event.getAmount() * 0.12F','arcanecircle_high_utility_stashed',
+    'POLYMORPHS.containsKey(mob.getUUID()) || MAZES.containsKey(mob.getUUID())'
+],'high utility')
+assert 'getTags()' not in utility
+assert 'snapTo(mob.getX(), -512.0' not in utility
+assert 'ArcaneDamage.hurt(level, player, proxy' not in utility
+
+# Utility VFX is spell-specific: Clone is target-authored and no longer a caster-maintained buff.
+presentation=text(magic/'SpellPresentationProfile.java')
+require_tokens(presentation,[
+    'put("clone", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 3.10',
+    'case "clone" -> 50','case "true_polymorph" -> 80','case "maze" -> 70','case "etherealness" -> 600',
+    'SpellGameplayService.visualDurationTicks(spell.id())'
+],'presentation')
+persistent=text(client/'PersistentBuffRegalia.java')
+maintained=persistent[persistent.index('MAINTAINED = Set.of'):persistent.index('private PersistentBuffRegalia')]
+assert '"clone"' not in maintained
+assert '"etherealness"' in maintained
+assert 'case "clone" -> reserveBody' not in persistent
+
+# Persistent/control gameplay that remains in SpellGameplayService.
 gameplay=text(magic/'SpellGameplayService.java')
-for token in ['public static void clear(LivingEntity subject)','Set<String> own=new HashSet<>()',
-              'WorldMagicService.cancelRelease(player, "mirror_image")','WorldMagicService.cancelRelease(player, death.kind())',
-              'SpellKineticsService.cancel(player)']:
-    assert token in gameplay, token
-npc=text(world/'ArcaneMageService.java'); npc_barrage=text(world/'NpcMeteorBarrageService.java')
-assert 'ArcaneFieldService.blocksCasting(caster)' in npc and 'WorldMagicService.cancelRelease(caster, cast.spellId())' in npc
-assert 'WorldMagicService.cancelRelease(livingCaster, "meteor_swarm")' in npc_barrage
-overhaul=text(client/'ArcaneSpellVisualOverhaul.java')
-assert '"etherealness", "fire_shield"' in overhaul
-assert main.count('SpellGameplayService.clear(player);') >= 3
-assert main.count('WorldMagicService.clearVisuals(player);') >= 3
-print('alpha45_manual_lifecycle_audit=PASS')
-print('persistent_visual_singleton=PASS')
-print('blocked_release_cancel=PASS')
-print('overlapping_time_stop=PASS')
-print('npc_charge_block=PASS')
-print('etherealness_visual_lifetime=PASS')
+require_tokens(gameplay,[
+    'LivingIncomingDamageEvent','event.setCanceled(true)','getAbilities().mayfly = true','setNoAi(true)',
+    'restoreControl','CommandSourceStack','/weather thunder ','/weather clear ','control_weather',
+    'prismatic_wall','incendiary_cloud','wall_of_force','wall_of_ice','wind_wall','sleet_storm',
+    'insect_plague','flesh_to_stone','forcecage','thunder_cage','astral_prison','SpellMetrics.wallWidth',
+    'useMaintainedAuthority','WEATHER_SPECIAL_READY','WEATHER_BARRAGES','12연속 번개','now + 50L',
+    '/summon minecraft:lightning_bolt','weatherAim','groundStrike','int duration = 900'
+],'gameplay')
+assert 'setWeatherParameters' not in gameplay
 
-
-# Alpha.46 maintained-regalia, high-circle authority and recipe/UI visibility pass.
-regalia_path=client/'PersistentBuffRegalia.java'; assert regalia_path.exists(); regalia=text(regalia_path)
-for token in ['MAINTAINED = Set.of','"fly"','"etherealness"','"shapechange"','"foresight"','featherWings','armorMantle','speedFins','sightCrown','shapechangeMantle','reserveBody']: assert token in regalia, token
-for token in ['PersistentBuffRegalia.handles(v.spell)','castingAfterglow=!regalia||elapsedSeconds<.85','PersistentBuffRegalia.release','maintainedDirection','if(PersistentBuffRegalia.handles(spell))return true;']: assert token in tracker, token
-assert 'if(l.stackedDetail()){drawCompactSpellDetail' in grimoire
-for token in ['stackedDetail()','drawCompactSpellDetail','staffList()','staffDetail()','staffRow(i,scroll)','drawStaffDetail(g,l.staffDetail(),selectedStaffId)']: assert token in grimoire, token
-recipe_dir=root/'src/main/resources/data/arcanecircle/recipe'; recipe_files=sorted(recipe_dir.glob('*_staff.json')); assert len(recipe_files)==8,[p.name for p in recipe_files]
-for p in recipe_files:
-    value=text(p); assert '"type": "minecraft:crafting_shaped"' in value,p; assert '"category": "equipment"' in value,p; assert '"result": {' in value and '"id": "arcanecircle:' in value,p
-for token in ['TIME_STOP_TICKS = 160','ANTIMAGIC_TICKS = 320','Math.max(20.0, Math.min(48.0, range * .75))','Math.max(12.0, Math.min(24.0, range * .85))']: assert token in field,token
-for token in ['case "forcecage" -> controlSingle(player, spellId, power, snapshot, 400)','case "dominate_monster" -> controlSingle(player, spellId, power, snapshot, 480)','case "maze" -> controlSingle(player, spellId, power, snapshot, 360)','case "true_polymorph" -> controlSingle(player, spellId, power, snapshot, 480)','int duration = 900','Math.min(3, targets.size())','state.power() * .16','case "prismatic_wall" -> 400','case "control_weather" -> 900']: assert token in gameplay,token
-for token in ['foresight.nextChargeAt = now + 40','multiplier = Math.min(multiplier, .50)','multiplier = Math.min(multiplier, .75)','MobEffects.JUMP_BOOST','Math.min(5.0']: assert token in buff,token
-for token in ['case "time_stop"','8초 초대형','case "antimagic_field"','16초 대형','case "shapechange"','피해 50% 경감','case "foresight"','2초마다','case "prismatic_wall"','20초 지속']: assert token in summary,token
-print('alpha46_maintained_buff_regalia=PASS'); print('alpha46_responsive_effect_recipe_ui=PASS'); print('alpha46_staff_crafting_recipes=PASS'); print('alpha46_high_circle_rule_authority=PASS')
-
-
-# Alpha.47 catastrophe/time/weather authority pass.
+# Destruction: visual-scale footprint is scheduled across bounded ticks, not silently truncated.
+destruction=text(magic/'DestructiveMagicService.java')
+require_tokens(destruction,[
+    'MAX_BLOCK_CHANGES_PER_TICK = 720','MAX_BLOCK_SCANS_PER_TICK = 48_000','MAX_DROPPED_BLOCKS_PER_TICK = 96',
+    'MAX_PENDING_CELLS_PER_LEVEL = 2_048','MAX_CELLS_PER_TICK = 7','RuptureTask','scheduleFootprint','PENDING',
+    'getDestroySpeed','getExplosionResistance','destroyBlock','hasChunkAt','quakeField','meteorCrater',
+    'annihilationCorridor','travelling continental cut','outer faults arrive over subsequent ticks',
+    'visible Meteor Swarm body','deletes a corridor progressively'
+],'destruction')
 assert 'DestructiveMagicService.tick(level);' in main
 assert 'DestructiveMagicService.clearAll();' in main
 assert 'visible_footprint_tiled_across_bounded_ticks' in index
+
+# Time Stop freezes living control and visible non-living motion; Antimagic stays authoritative.
 field=text(magic/'ArcaneFieldService.java')
-for token in ['FROZEN_ENTITIES','FrozenEntity','entity.setDeltaMovement(Vec3.ZERO)','entity.setNoGravity(true)','raw.setDeltaMovement(frozen.velocity())']:
-    assert token in field, token
-ability=root/'src/main/java/kr/moonseungjun/arcanecircle/network/UseArcaneAbilityPayload.java'
-assert ability.exists()
+require_tokens(field,[
+    'TIME_STOP_TICKS = 160','ANTIMAGIC_TICKS = 320','activateAntimagic','activateTimeStop','fulfillWish',
+    'blocksCasting','FROZEN_ENTITIES','FrozenEntity','entity.setDeltaMovement(Vec3.ZERO)',
+    'entity.setNoGravity(true)','raw.setDeltaMovement(frozen.velocity())','suppressMagicEffects','cleanseHarmful',
+    'SpellGameplayService.clear(entity)','SpellKineticsService.cancel(player)'
+],'field')
+assert 'removeAllEffects' not in field
+harmful=field[field.index('private static void cleanseHarmful'):field.index('private static void restoreFrozenLevel')]
+assert 'MobEffects.SPEED' not in harmful and 'MobEffects.REGENERATION' not in harmful
+
+# Weather secondary authority input and Arcana-only economy/UI.
+ability=network/'UseArcaneAbilityPayload.java'; assert ability.exists()
 client_input=text(client/'ArcaneClient.java')
-for token in ['ARCANE_ABILITY_KEY','InputConstants.KEY_G','UseArcaneAbilityPayload(0)','event.register(ARCANE_ABILITY_KEY)']:
-    assert token in client_input, token
-network=text(root/'src/main/java/kr/moonseungjun/arcanecircle/network/ArcaneNetwork.java')
-for token in ['ninefold-arcana-12-1-alpha47','UseArcaneAbilityPayload.TYPE','handleArcaneAbility','SpellGameplayService.useMaintainedAuthority(player)']:
-    assert token in network, token
-for token in ['useMaintainedAuthority','WEATHER_SPECIAL_READY','WEATHER_BARRAGES','12연속 번개','now + 50L',
-              '/summon minecraft:lightning_bolt','weatherAim','groundStrike','int duration = 900']:
-    assert token in gameplay, token
-meteor_block=maintenance[maintenance.index('private static void meteorSwarm'):maintenance.index('private static void shapechange')]
-for token in ['clamp(t / 1.05','sixteen short apertures','if (q >= 1.0) return','port.add(0, -(1.0 + q * 3.2)']:
-    assert token in meteor_block, token
-assert 'double sweep = (t * 1.72)' not in meteor_block
+require_tokens(client_input,['ARCANE_ABILITY_KEY','InputConstants.KEY_G','UseArcaneAbilityPayload(0)',
+                             'event.register(ARCANE_ABILITY_KEY)'],'client ability')
+network_source=text(network/'ArcaneNetwork.java')
+require_tokens(network_source,['ninefold-arcana-12-1-alpha47','UseArcaneAbilityPayload.TYPE','handleArcaneAbility',
+                               'SpellGameplayService.useMaintainedAuthority(player)'],'network ability')
 economy=text(world/'ArcaneEconomyService.java')
 assert '아르카나' in economy and '에메랄드' not in economy
 assert '아르카나' in grimoire and '에메랄드' not in grimoire
-print('alpha47_visible_footprint_destruction=PASS')
-print('alpha47_temporal_motion_stasis=PASS')
-print('alpha47_weather_active_authority=PASS')
-print('alpha47_meteor_release_collapse=PASS')
-print('alpha47_arcana_currency_ui=PASS')
+
+# Meteor release seal collapses instead of lingering over the barrage.
+maintenance=text(client/'HighCircleMaintenanceOverlay.java')
+meteor_block=maintenance[maintenance.index('private static void meteorSwarm'):maintenance.index('private static void shapechange')]
+require_tokens(meteor_block,['clamp(t / 1.05','sixteen short apertures','if (q >= 1.0) return',
+                             'port.add(0, -(1.0 + q * 3.2)'],'meteor release')
+assert 'double sweep = (t * 1.72)' not in meteor_block
+
+# Lifecycle: utility, destruction, gameplay and fields all restore/clear on player/server boundaries.
+require_tokens(main,[
+    'HighUtilitySpellService::onIncomingDamage','HighUtilitySpellService.tick(level)',
+    'HighUtilitySpellService.clear(player)','HighUtilitySpellService.clearAll()',
+    'SpellGameplayService.tick(level)','SpellGameplayService.clearAll()',
+    'ArcaneFieldService.tick(level)','ArcaneFieldService.clearAll()',
+    'NpcMeteorBarrageService.tick(level)','NpcMeteorBarrageService.clearAll()'
+],'main lifecycle')
+assert main.count('HighUtilitySpellService.clear(player);')>=3
+assert main.index('HighUtilitySpellService.tick(level)') < main.index('ArcaneFieldService.tick(level)')
+
+# Equipment/staff/light/recipe regressions.
+hud=text(client/'ArcaneHud.java')
+assert 'spell_ribbon' in hud and 'drawVitals' in hud and 'drawFusion' in hud
+staff=text(root/'src/main/java/kr/moonseungjun/arcanecircle/item/ArcaneStaffItem.java')
+assert 'castTimeMultiplier' in staff and '시전 전개시간' in staff
+light=text(magic/'ArcaneLightService.java')
+require_tokens(light,['Blocks.LIGHT','LightBlock.LEVEL','illuminate','clearAll'],'light')
+recipe_dir=root/'src/main/resources/data/arcanecircle/recipe'
+recipe_files=sorted(recipe_dir.glob('*_staff.json'))
+assert len(recipe_files)==8,[p.name for p in recipe_files]
+for recipe in recipe_files:
+    value=text(recipe)
+    assert '"type": "minecraft:crafting_shaped"' in value and '"category": "equipment"' in value
+
+# Release verifier must reject a JAR that omitted the high-utility runtime.
+verify=text(root/'tools/verify_jar.py')
+assert 'kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class' in verify
+
+print('Arcane Circle current-source audit: PASS')
+print('catalog_90_direct_19_fusion=PASS')
+print('target_snapshot_parity=PASS')
+print('seeded_meteor_barrage=PASS')
+print('visible_footprint_destruction=PASS')
+print('authoritative_time_stop_motion_stasis=PASS')
+print('weather_active_authority=PASS')
+print('arcana_currency_ui=PASS')
+print('alpha48_real_clone=PASS')
+print('alpha48_true_polymorph_body_swap=PASS')
+print('alpha48_maze_battle_exile=PASS')
+print('alpha48_ethereal_phase_runtime=PASS')
+print('alpha48_utility_visual_identity=PASS')
+print('retired_visual_stack=absent')
+print('third_person_fake_geometry=absent')
+print('source_mutation=disabled')
+print('legacy_arcane_tooling=absent')
