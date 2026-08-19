@@ -28,6 +28,7 @@ required = {
     "kr/moonseungjun/arcanecircle/network/WorldMagicPayload.class",
     "kr/moonseungjun/arcanecircle/magic/WorldMagicService.class",
     "kr/moonseungjun/arcanecircle/magic/ArcaneLightService.class",
+    "kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class",
     "kr/moonseungjun/arcanecircle/client/WorldMagicTracker.class",
     "kr/moonseungjun/arcanecircle/client/AuthoredHighCircleTimeline.class",
     "kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class",
