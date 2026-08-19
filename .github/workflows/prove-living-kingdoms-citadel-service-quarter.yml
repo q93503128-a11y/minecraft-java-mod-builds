@@ -1,0 +1,108 @@
+name: Prove Living Kingdoms citadel service quarter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prove-living-kingdoms-citadel-service-quarter.yml'
+      - '.github/living-kingdoms-citadel-service-quarter-trigger'
+  workflow_dispatch:
+
+concurrency:
+  group: living-kingdoms-citadel-service-quarter
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply compact service-quarter rule
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/patch_living_kingdoms_citadel_service_quarter.py
+          file="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCitadelInteriorManager.java"
+          grep -Fq 'case "guard_command", "service_quarter" -> 3;' "$file"
+
+      - name: Java 25 clean compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+
+      - name: Fresh-world citadel proof
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-citadel-service-quarter-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-citadel-service-quarter-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/living-kingdoms-citadel-service-quarter-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          outcome=timeout
+          for attempt in $(seq 1 420); do
+            log=../../logs/living-kingdoms-citadel-service-quarter-server.log
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' "$log" || grep -Eqi 'watchdog|IllegalStateException|Exception loading level' "$log"; then
+              outcome=fatal
+              break
+            fi
+            if grep -Fq 'Completed Erden citadel zone=service_quarter' "$log" && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log"; then
+              outcome=pass
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then outcome=server_exit; break; fi
+            sleep 1
+          done
+          log=../../logs/living-kingdoms-citadel-service-quarter-server.log
+          echo "PROOF_OUTCOME=$outcome"
+          grep -E 'Completed Erden citadel zone=|LK_ERDEN_CITADEL_ZONE_WAIT|LK_ERDEN_CITADEL_INTERIOR_PASS' "$log" | tail -n 120 || true
+          test "$outcome" = pass
+          grep -F 'Completed Erden citadel zone=service_quarter' "$log" | grep -F 'fixtures=3' | grep -F 'required=3' | grep -F 'facade_replaced=false'
+          grep -F 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log" | grep -F 'audience_reachable=true' | grep -F 'facade_replaced=false' | grep -F 'loaded_only=true'
+
+      - name: Promote verified citadel rule
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenCitadelInteriorManager.java
+          git commit -m 'fix(living-kingdoms): complete compact citadel service quarter'
+          git reset --hard HEAD
+          git clean -fd
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload citadel proof log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-citadel-service-quarter-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
