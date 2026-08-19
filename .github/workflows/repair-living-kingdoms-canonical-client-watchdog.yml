@@ -3,9 +3,6 @@ name: Repair Living Kingdoms canonical client watchdog
 on:
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/repair-living-kingdoms-canonical-client-watchdog.yml'
-      - '.github/triggers/living-kingdoms-client-watchdog.txt'
   workflow_dispatch:
 
 permissions:
@@ -14,11 +11,27 @@ permissions:
 
 jobs:
   repair:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Record repair start
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git checkout -B living-kingdoms-watchdog-repair-pointer origin/main
+          mkdir -p .github/build-pointers
+          printf '{\n  "run_id": "%s",\n  "commit_sha": "%s",\n  "status": "repair_started"\n}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > .github/build-pointers/living-kingdoms-client-watchdog-repair.json
+          git add .github/build-pointers/living-kingdoms-client-watchdog-repair.json
+          git commit -m 'Record Living Kingdoms client watchdog repair start [skip ci]' || true
+          git push origin HEAD:main || true
+          git checkout --detach "$GITHUB_SHA"
 
       - name: Patch canonical graphical client watchdog
         shell: bash
