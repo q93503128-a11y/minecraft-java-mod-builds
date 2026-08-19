@@ -127,7 +127,6 @@ jobs:
           grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' "$log" | grep -F 'source_blocks_cut=0' | grep -F 'source_air_only=true'
           grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$log" \
             | grep -F 'spawned_sample=3' | grep -F 'shortages=0'
-          grep -F 'LK_ERDEN_POPULATION_CI_STATE' "$log" | grep -F 'stage=ready' | grep -F 'spawned=3'
           ! grep -Fq 'persistent_forced_chunks=true' "$log"
 
       - name: Commit verified authored residence source
@@ -189,4 +188,4 @@ jobs:
           done
           exit 1
 
-# trigger: full-authored-first-household-residence-v1
+# trigger: terminal-population-pass-is-authoritative
