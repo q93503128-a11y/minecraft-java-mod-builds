@@ -135,13 +135,20 @@ jobs:
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          # Do not commit the diagnostic-only PopulationManager modification.
+          # Do not commit diagnostic/proof-only source edits. Only the three runtime fixes below
+          # are promoted after the fresh-world proof has succeeded.
           git checkout -- projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java
           git add \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredGroundPlanCatalog.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredUpperRouteManager.java \
             projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationCiChunkRetainer.java
           git commit -m 'fix(living-kingdoms): complete authored household residence routes'
+          # The proof applies additional diagnostic-only patches (landmark/economy/citadel etc.).
+          # After the intended three files are safely committed, discard every remaining
+          # unstaged/untracked proof-only change so pull --rebase can operate on a clean tree.
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
           for attempt in 1 2 3 4 5; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort 2>/dev/null || true
@@ -188,4 +195,4 @@ jobs:
           done
           exit 1
 
-# trigger: terminal-population-pass-is-authoritative
+# trigger: clean-proof-tree-before-promotion
