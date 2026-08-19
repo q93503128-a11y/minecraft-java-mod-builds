@@ -154,29 +154,39 @@ public final class WorldMagicTracker {
             float opacity=releaseOpacity(v,now);
             Vec3 center=renderCenter(v);
             int color=SpellCinematicDirector.color(v.spell);
-            if(!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseSigil(v.spell)){
+            boolean regalia=PersistentBuffRegalia.handles(v.spell);
+            boolean castingAfterglow=!regalia||elapsedSeconds<.85;
+            Vec3 presentationDirection=regalia?maintainedDirection(v):v.direction;
+            if(castingAfterglow&&!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseSigil(v.spell)){
                 ArcaneWorldMesh echo=MeteorBarragePattern.withSeed(v.seed,
                         ()->ArcaneSigilDirector.releaseEcho(v.spell,v.direction,targetOffset(v),v.range,age,v.fusion,v.startedAt));
                 if(echo.size()>0)entries.add(new RenderEntry(center,echo,ArcaneSigilDirector.releaseEchoColor(color,age),36,opacity));
             }
-            if(!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseRelease(v.spell)){
+            if(castingAfterglow&&!"prismatic_wall".equals(v.spell.id())&&!ArcaneSpellVisualOverhaul.replacesBaseRelease(v.spell)){
                 ArcaneWorldMesh releaseMesh=MeteorBarragePattern.withSeed(v.seed,
                         ()->SpellCinematicDirector.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
                                 age,v.impactAge,v.fusion,v.ingredients));
                 entries.add(new RenderEntry(center,releaseMesh,color,70,opacity));
             }
-            ArcaneWorldMesh authoredRelease=MeteorBarragePattern.withSeed(v.seed,
-                    ()->ArcaneSpellVisualOverhaul.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
-                            age,elapsedSeconds,durationSeconds,v.seed));
-            if(authoredRelease.size()>0)entries.add(new RenderEntry(center,authoredRelease,color,82,opacity));
-            if(v.spell.circle()>=7){
-                ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
-                        ()->AuthoredHighCircleTimeline.release(v.spell,v.direction,targetOffset(v),v.range,
-                                age,v.impactAge,elapsedSeconds,durationSeconds,v.seed));
-                if(timeline.size()>0)entries.add(new RenderEntry(center,timeline,color,100,opacity));
-                ArcaneWorldMesh maintenance=HighCircleMaintenanceOverlay.release(v.spell,v.direction,targetOffset(v),
-                        elapsedSeconds,durationSeconds,v.seed);
-                if(maintenance.size()>0)entries.add(new RenderEntry(center,maintenance,color,108,opacity));
+            if(castingAfterglow){
+                ArcaneWorldMesh authoredRelease=MeteorBarragePattern.withSeed(v.seed,
+                        ()->ArcaneSpellVisualOverhaul.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
+                                age,elapsedSeconds,durationSeconds,v.seed));
+                if(authoredRelease.size()>0)entries.add(new RenderEntry(center,authoredRelease,color,82,opacity));
+                if(v.spell.circle()>=7){
+                    ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
+                            ()->AuthoredHighCircleTimeline.release(v.spell,v.direction,targetOffset(v),v.range,
+                                    age,v.impactAge,elapsedSeconds,durationSeconds,v.seed));
+                    if(timeline.size()>0)entries.add(new RenderEntry(center,timeline,color,100,opacity));
+                    ArcaneWorldMesh maintenance=HighCircleMaintenanceOverlay.release(v.spell,v.direction,targetOffset(v),
+                            elapsedSeconds,durationSeconds,v.seed);
+                    if(maintenance.size()>0)entries.add(new RenderEntry(center,maintenance,color,108,opacity));
+                }
+            }
+            if(regalia){
+                ArcaneWorldMesh maintained=MeteorBarragePattern.withSeed(v.seed,
+                        ()->PersistentBuffRegalia.release(v.spell,presentationDirection,elapsedSeconds,durationSeconds,v.seed));
+                if(maintained.size()>0)entries.add(new RenderEntry(center,maintained,color,116,opacity));
             }
             if("prismatic_wall".equals(v.spell.id())){
                 for(int layer=0;layer<7;layer++)entries.add(new RenderEntry(center,
@@ -218,6 +228,7 @@ public final class WorldMagicTracker {
 
     private static boolean followsCaster(SpellDefinition spell){
         if("time_stop".equals(spell.id()))return false;
+        if(PersistentBuffRegalia.handles(spell))return true;
         if("antimagic_field".equals(spell.id())||"control_weather".equals(spell.id()))return true;
         SpellPresentationProfile.SigilStyle sigil=SpellPresentationProfile.profile(spell).sigil();
         return sigil==SpellPresentationProfile.SigilStyle.BODY_HALO
@@ -244,6 +255,16 @@ public final class WorldMagicTracker {
             if(victim<0)victim=0;
             RELEASES.remove(victim);
         }
+    }
+
+    private static Vec3 maintainedDirection(Visual visual){
+        LivingEntity entity=findLiving(visual.caster);
+        if(entity!=null){
+            Vec3 look=entity.getLookAngle();
+            Vec3 flat=new Vec3(look.x,0.0,look.z);
+            if(flat.lengthSqr()>1.0E-8)return flat.normalize();
+        }
+        return visual.direction;
     }
 
     private static Vec3 attachmentOffset(UUID caster,SpellDefinition spell,Vec3 originalCenter){

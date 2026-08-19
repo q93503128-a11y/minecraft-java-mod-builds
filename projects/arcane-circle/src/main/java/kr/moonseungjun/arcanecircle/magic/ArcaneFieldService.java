@@ -30,8 +30,8 @@ import java.util.WeakHashMap;
  * deleting the player's beneficial buffs.
  */
 public final class ArcaneFieldService {
-    public static final int TIME_STOP_TICKS = 120;
-    public static final int ANTIMAGIC_TICKS = 240;
+    public static final int TIME_STOP_TICKS = 160;
+    public static final int ANTIMAGIC_TICKS = 320;
 
     private static final Map<UUID, AntimagicField> ANTIMAGIC = new HashMap<>();
     private static final Map<UUID, TimeField> TIME_FIELDS = new HashMap<>();
@@ -102,10 +102,10 @@ public final class ArcaneFieldService {
 
     private static boolean activateAntimagic(ServerPlayer player, double range) {
         ServerLevel level = (ServerLevel) player.level();
-        double radius = Math.max(9.0, Math.min(18.0, range * .75));
+        double radius = Math.max(12.0, Math.min(24.0, range * .85));
         ANTIMAGIC.put(player.getUUID(), new AntimagicField(level, player.getUUID(), radius,
                 level.getGameTime() + ANTIMAGIC_TICKS));
-        ArcaneNoticeService.push(player, Component.literal("§5[반마법장] §f12.0초 · 반경 "
+        ArcaneNoticeService.push(player, Component.literal("§5[반마법장] §f" + one(ANTIMAGIC_TICKS / 20.0) + "초 · 반경 "
                 + one(radius) + " · 상태효과와 Arcane 시전을 지속 억제"), 100);
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE,
                 SoundSource.PLAYERS, 1.0F, .72F);
@@ -116,10 +116,10 @@ public final class ArcaneFieldService {
     private static boolean activateTimeStop(ServerPlayer player, double range, CastTargetSnapshot snapshot) {
         ServerLevel level = (ServerLevel) player.level();
         Vec3 center = snapshot != null && snapshot.validFor(player) ? snapshot.target() : player.position();
-        double radius = Math.max(16.0, Math.min(40.0, range * .65));
+        double radius = Math.max(20.0, Math.min(48.0, range * .75));
         TIME_FIELDS.put(player.getUUID(), new TimeField(level, player.getUUID(), center, radius,
                 level.getGameTime() + TIME_STOP_TICKS));
-        ArcaneNoticeService.push(player, Component.literal("§b[시간 정지] §f6.0초 · 반경 "
+        ArcaneNoticeService.push(player, Component.literal("§b[시간 정지] §f" + one(TIME_STOP_TICKS / 20.0) + "초 · 반경 "
                 + one(radius) + " · 비아군의 AI·이동·Arcane 시전 정지"), 100);
         level.playSound(null, BlockPos.containing(center), SoundEvents.BEACON_POWER_SELECT,
                 SoundSource.PLAYERS, 1.15F, .54F);

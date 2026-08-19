@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.45",
+  "version": "0.12.1-alpha.46",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -48,7 +48,7 @@
     "CROWN"
   ],
   "source_policy": "CC-BY SRD spell roles plus public-domain ceremonial geometry; no proprietary setting material",
-  "crafting_progression": false,
+  "crafting_progression": true,
   "villager_currency": false,
   "visual_core": "world_geometry_no_particles",
   "fusion_casting": "charged_release",

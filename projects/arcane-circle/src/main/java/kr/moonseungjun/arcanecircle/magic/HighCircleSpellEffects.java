@@ -221,8 +221,8 @@ public final class HighCircleSpellEffects {
         if (target.isEmpty()) return false;
         Mob mob = target.get();
         line(level(player), player.getEyePosition(), mob.getEyePosition(), ParticleTypes.SOUL_FIRE_FLAME, 90);
-        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (power * 1.45));
-        mob.addEffect(new MobEffectInstance(MobEffects.WITHER, 300, 4));
+        mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), (float) (power * 1.75));
+        mob.addEffect(new MobEffectInstance(MobEffects.WITHER, 420, 5));
         return true;
     }
 
@@ -365,8 +365,8 @@ public final class HighCircleSpellEffects {
         Optional<Mob> target = target(player, range);
         if (target.isEmpty()) return false;
         Mob mob = target.get();
-        double threshold = Math.max(60.0, power * 0.85);
-        float damage = mob.getHealth() <= threshold ? mob.getHealth() + mob.getMaxHealth() + 10.0F : (float) (power * 0.65);
+        double threshold = Math.max(90.0, power * 1.05);
+        float damage = mob.getHealth() <= threshold ? mob.getHealth() + mob.getMaxHealth() + 10.0F : (float) (power * 0.90);
         mob.hurtServer(level(player), level(player).damageSources().playerAttack(player), damage);
         burst(level(player), mob.getEyePosition(), ParticleTypes.SOUL, 200, 1.4);
         return true;

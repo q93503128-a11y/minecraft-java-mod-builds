@@ -125,14 +125,20 @@ public final class ArcaneBuffRuntime {
                 notice(player, "§6[솔라 가드] §f4장의 태양 방패가 재충전되며 타격자를 불태우고 밀어냅니다.");
             }
             case "shapechange" -> {
-                player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration, 3, true, false));
-                player.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 2, true, false));
-                notice(player, "§d[셰이프체인지] §f90초 동안 변이 육체가 피해를 흘리고 자체 재생합니다.");
+                player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration, 5, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 3, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, duration, 3, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, 2, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, 10, true, false));
+                notice(player, "§d[셰이프체인지] §f90초 동안 초월 육체가 절반의 피해를 흘리고 강하게 재생·가속합니다.");
             }
             case "foresight" -> {
                 player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, duration, 0, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 3, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, 1, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.LUCK, duration, 4, true, false));
                 state.nextChargeAt = now;
-                notice(player, "§e[포사이트] §f120초 동안 3초마다 다음 치명 궤적 하나를 미리 읽어 완전히 회피합니다.");
+                notice(player, "§e[포사이트] §f120초 동안 2초마다 다음 궤적을 완전 회피하고, 틈의 피해도 예지로 줄입니다.");
             }
             default -> { }
         }
@@ -142,7 +148,7 @@ public final class ArcaneBuffRuntime {
     public static boolean onIncomingDamage(ServerPlayer player, LivingIncomingDamageEvent event, long now) {
         State foresight = active(player, "foresight", now);
         if (foresight != null && now >= foresight.nextChargeAt) {
-            foresight.nextChargeAt = now + 60;
+            foresight.nextChargeAt = now + 40;
             event.setCanceled(true);
             chime(player, 1.72F);
             return true;
@@ -197,7 +203,8 @@ public final class ArcaneBuffRuntime {
             flat = Math.max(flat, 1.35 + stone.power * .015);
         }
         State shape = active(player, "shapechange", now);
-        if (shape != null) multiplier = Math.min(multiplier, .65);
+        if (shape != null) multiplier = Math.min(multiplier, .50);
+        if (foresight != null) multiplier = Math.min(multiplier, .75);
         State solar = active(player, "solar_guard", now);
         if (solar != null && solar.charges > 0) {
             solar.charges--;
@@ -234,7 +241,7 @@ public final class ArcaneBuffRuntime {
             if ("freedom_of_movement".equals(state.spellId) && now % 5L == 0L) cleanseMovement(player);
             if ("true_seeing".equals(state.spellId) && now % 10L == 0L) reveal(level, player, state.radius);
             if ("shapechange".equals(state.spellId) && now % 20L == 0L)
-                player.heal((float) Math.max(.45, .25 + state.power * .004));
+                player.heal((float) Math.min(5.0, Math.max(1.0, .60 + state.power * .006)));
             int max = maxCharges(state.spellId);
             int interval = rechargeInterval(state.spellId);
             if (max > 0 && interval > 0 && state.charges < max && now >= state.nextChargeAt) {

@@ -80,40 +80,40 @@ public final class SpellEffectSummary {
             case "circle_of_death" -> "고정 목표 지점 대형 광역 피해";
 
             // 7C
-            case "delayed_blast_fireball" -> "지연 후 고정 목표 대형 화염 폭발 · 화상·강한 지형 파괴";
+            case "delayed_blast_fireball" -> "지연 후 초대형 화염 폭발 · 증폭 피해·장기 화상·강한 지형 파괴";
             case "etherealness" -> "저항·투명화·느린 낙하로 생존력 대폭 강화";
             case "finger_of_death" -> "강한 단일 피해 · 장시간 위더";
-            case "fire_storm" -> "고정 목표 주변 7지점 화염 폭격 · 화상·지형 파괴";
-            case "forcecage" -> "조준 대상을 15초간 AI·이동·Arcane 시전 완전 봉쇄";
+            case "fire_storm" -> "대범위 7지점 연쇄 화염 폭격 · 증폭 피해·장기 화상·지형 파괴";
+            case "forcecage" -> "조준 대상을 20초간 AI·이동·Arcane 시전 완전 봉쇄";
             case "plane_shift" -> "장거리 안전 지점으로 고등 공간 이동";
             case "prismatic_spray" -> "전방 7색 광역 피해 · 무작위 강한 상태 이상";
-            case "reverse_gravity" -> "고정 목표 범위 피해 · 강한 상승/공중 부양";
+            case "reverse_gravity" -> "대범위 피해 · 11초간 초강제 상승/공중 부양";
             case "simulacrum" -> "60초 내 다음 치명상을 대리체가 대신 받고 생존";
             case "teleport" -> "매우 먼 안전 지점으로 순간이동";
 
             // 8C
-            case "antimagic_field" -> "12초 이동형 반마법장 · 버프/지속마법 제거 + Arcane 시전 차단";
+            case "antimagic_field" -> "16초 대형 이동 반마법장 · 버프/지속마법 제거 + Arcane 시전 완전 차단";
             case "clone" -> "체력 완전 회복 · 90초 내 다음 치명상을 클론이 대신 받음";
-            case "control_weather" -> "20초 실제 폭우·뇌우 · 주변 적 주기적 번개 피해/둔화";
+            case "control_weather" -> "30초 실제 폭우·뇌우 지배 · 최대 6대상 연속 낙뢰 피해/강한 둔화";
             case "demiplane" -> "고등 공간 회로로 매우 먼 안전 지점 이동";
-            case "dominate_monster" -> "조준 대상 AI·이동·Arcane 시전을 18초간 완전 봉쇄";
-            case "earthquake" -> "고정 목표 지면 대규모 피해·띄우기 · 강한 실제 지형 파괴";
+            case "dominate_monster" -> "조준 대상 AI·이동·Arcane 시전을 24초간 완전 봉쇄";
+            case "earthquake" -> "초대형 지면 피해·강제 띄우기 · 8써클급 광역 실제 지형 붕괴";
             case "feeblemind" -> "단일 피해 · 장시간 약화·실명";
             case "incendiary_cloud" -> "12초 지속 소이 구름 · 반복 화염 피해·화상";
-            case "maze" -> "조준 대상을 12초간 완전 격리 상태 + 실명·혼란";
-            case "sunburst" -> "고정 목표 초대형 태양광 폭발 · 광역 피해·화상·실명";
+            case "maze" -> "조준 대상을 18초간 완전 격리 상태 + 실명·혼란";
+            case "sunburst" -> "초대형 태양광 폭발 · 증폭 광역 피해·장기 화상·강한 실명";
 
             // 9C
             case "meteor_swarm" -> "16발 시드형 연속 폭격 · 개별 피해·화상·대형 충돌구 지형 파괴";
-            case "power_word_kill" -> "약해진 대상 즉사급 처형 · 그 외에는 대형 단일 피해";
-            case "prismatic_wall" -> "14초 지속 7색 장벽 · 수명 90%까지 선명 유지 · 반복 피해·상태이상·통과 저지";
-            case "shapechange" -> "90초 변이 육체 · 35%급 피해 경감 + 자체 재생 + 전투 신체 강화";
-            case "time_stop" -> "6초 고정 시간장 · 주변 비아군 AI·이동·Arcane 시전 정지";
-            case "true_polymorph" -> "대상 피해 · 15초 축소 변형 + AI·이동·Arcane 시전 봉쇄";
-            case "weird" -> "고정 목표 대형 정신 피해 · 실명·위더·둔화";
+            case "power_word_kill" -> "높은 처형 임계치 이하 대상 즉사급 명령 · 실패해도 9써클 대형 단일 피해";
+            case "prismatic_wall" -> "20초 지속 7색 장벽 · 반복 피해·상태이상·강제 통과 저지";
+            case "shapechange" -> "90초 초월 육체 · 피해 50% 경감 + 강한 자체 재생·근력·속도·도약 강화";
+            case "time_stop" -> "8초 초대형 고정 시간장 · 주변 비아군 AI·이동·Arcane 시전 완전 정지";
+            case "true_polymorph" -> "대상 피해 · 24초 축소 변형 + AI·이동·Arcane 시전 완전 봉쇄";
+            case "weird" -> "초대형 정신 붕괴 · 35초 증폭 피해·실명·고단계 위더·둔화";
             case "wish" -> "체력·마력 완전 회복 · 해로운 상태 제거 · 기존 이로운 버프 보존 · 소원 외 주문 쿨 초기화";
             case "gate" -> "최상급 장거리 공간 이동";
-            case "foresight" -> "120초 예지 · 3초마다 다음 피격 1회 완전 회피 + 예지 시야";
+            case "foresight" -> "120초 예지 · 2초마다 다음 피격 완전 회피 + 사이 피해 25% 경감 + 예지 시야";
 
             // Fusion
             case "burning_hands" -> "전방 화염 충격파 피해·넉백·화상";

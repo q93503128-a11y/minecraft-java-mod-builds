@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " N ",
+    "EH ",
+    " S "
+  ],
+  "key": {
+    "N": "minecraft:nether_star",
+    "E": "minecraft:echo_shard",
+    "H": "minecraft:netherite_block",
+    "S": "arcanecircle:sage_staff"
+  },
+  "result": {
+    "count": 1,
+    "id": "arcanecircle:archmage_staff"
+  }
+}

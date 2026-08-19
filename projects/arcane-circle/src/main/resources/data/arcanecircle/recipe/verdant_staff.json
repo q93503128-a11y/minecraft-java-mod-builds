@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " E ",
+    " A ",
+    " N "
+  ],
+  "key": {
+    "E": "minecraft:emerald_block",
+    "A": "minecraft:golden_apple",
+    "N": "arcanecircle:novice_staff"
+  },
+  "result": {
+    "count": 1,
+    "id": "arcanecircle:verdant_staff"
+  }
+}

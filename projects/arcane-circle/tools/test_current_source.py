@@ -11,9 +11,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.45' in gradle
-assert 'VERSION = "0.12.1-alpha.45"' in main
-assert '"version": "0.12.1-alpha.45"' in index
+assert 'mod_version=0.12.1-alpha.46' in gradle
+assert 'VERSION = "0.12.1-alpha.46"' in main
+assert '"version": "0.12.1-alpha.46"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -112,7 +112,7 @@ presentation=text(magic/'SpellPresentationProfile.java')
 assert 'SpellGameplayService.visualDurationTicks(spell.id())' in presentation
 audit_duration=gameplay[gameplay.index('public static int visualDurationTicks'):gameplay.index('/** Used by Arcane-field') if '/** Used by Arcane-field' in gameplay else gameplay.index('public static boolean blocksCasting')]
 for token in ['case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS','case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS',
-'case "prismatic_wall" -> 280','case "control_weather" -> 400']:
+'case "prismatic_wall" -> 400','case "control_weather" -> 600']:
     assert token in audit_duration, token
 
 # Alpha.37 presentation contract: spell-authored layers, upward portals/prisons and durable prism wall.
@@ -126,8 +126,8 @@ for token in ['ArcaneSpellVisualOverhaul.chargeSigil','ArcaneSpellVisualOverhaul
               'MAX_FRAME = 14500','MAX_ENTRY = 4000']:
     assert token in tracker, token
 assert 'case PORTAL_GATE -> caster.position().add(0.0, 0.055, 0.0);' in world_magic
-assert 'case "prismatic_wall" -> 280;' in gameplay
-assert '14초 지속 7색 장벽' in summary
+assert 'case "prismatic_wall" -> 400;' in gameplay
+assert '20초 지속 7색 장벽' in summary
 assert 'age < .90' in overhaul and 'elapsedSeconds / .30' in overhaul
 assert 'return visual.target.subtract(visual.center);' in tracker
 assert 'visual.direction.scale(Math.max(1,visual.range))' not in tracker
@@ -156,7 +156,7 @@ assert 'targetEntity(player)' not in fusion
 
 # Sustained Antimagic/Time Stop and Wish preservation.
 field=text(magic/'ArcaneFieldService.java')
-for token in ['TIME_STOP_TICKS = 120','ANTIMAGIC_TICKS = 240','activateAntimagic','activateTimeStop','fulfillWish',
+for token in ['TIME_STOP_TICKS = 160','ANTIMAGIC_TICKS = 320','activateAntimagic','activateTimeStop','fulfillWish',
 'blocksCasting','setNoAi(true)','wasNoAi','restoreFrozenLevel','suppressMagicEffects','cleanseHarmful',
 'SpellKineticsService.clear','clearFusion','SpellGameplayService.blocksCasting(caster)','SpellGameplayService.clear(entity)']:
     assert token in field, token
@@ -227,8 +227,8 @@ for token in ['put("meteor_swarm", SigilStyle.SKY_RITUAL, MotionStyle.SKY_DROP, 
               'put("world_sunder", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 18.00',
               'put("arcane_annihilation", SigilStyle.FRONT_LANCE, MotionStyle.BEAM, 2.80']:
     assert token in presentation, token
-assert 'case "prismatic_wall" -> 280;' in gameplay
-assert '14초 지속 7색 장벽' in summary
+assert 'case "prismatic_wall" -> 400;' in gameplay
+assert '20초 지속 7색 장벽' in summary
 
 # Alpha.39 grand-sigil / persistent status identity.
 for token in ['SIGIL_BUDGET = 1900','SUSTAINED_DEBUFFS = Set.of','grandScaleArchitecture',
@@ -406,3 +406,19 @@ print('blocked_release_cancel=PASS')
 print('overlapping_time_stop=PASS')
 print('npc_charge_block=PASS')
 print('etherealness_visual_lifetime=PASS')
+
+
+# Alpha.46 maintained-regalia, high-circle authority and recipe/UI visibility pass.
+regalia_path=client/'PersistentBuffRegalia.java'; assert regalia_path.exists(); regalia=text(regalia_path)
+for token in ['MAINTAINED = Set.of','"fly"','"etherealness"','"shapechange"','"foresight"','featherWings','armorMantle','speedFins','sightCrown','shapechangeMantle','reserveBody']: assert token in regalia, token
+for token in ['PersistentBuffRegalia.handles(v.spell)','castingAfterglow=!regalia||elapsedSeconds<.85','PersistentBuffRegalia.release','maintainedDirection','if(PersistentBuffRegalia.handles(spell))return true;']: assert token in tracker, token
+assert 'if(l.stackedDetail()){drawCompactSpellDetail' in grimoire
+for token in ['stackedDetail()','drawCompactSpellDetail','staffList()','staffDetail()','staffRow(i,scroll)','drawStaffDetail(g,l.staffDetail(),selectedStaffId)']: assert token in grimoire, token
+recipe_dir=root/'src/main/resources/data/arcanecircle/recipe'; recipe_files=sorted(recipe_dir.glob('*_staff.json')); assert len(recipe_files)==8,[p.name for p in recipe_files]
+for p in recipe_files:
+    value=text(p); assert '"type": "minecraft:crafting_shaped"' in value,p; assert '"category": "equipment"' in value,p; assert '"result": {' in value and '"id": "arcanecircle:' in value,p
+for token in ['TIME_STOP_TICKS = 160','ANTIMAGIC_TICKS = 320','Math.max(20.0, Math.min(48.0, range * .75))','Math.max(12.0, Math.min(24.0, range * .85))']: assert token in field,token
+for token in ['case "forcecage" -> controlSingle(player, spellId, power, snapshot, 400)','case "dominate_monster" -> controlSingle(player, spellId, power, snapshot, 480)','case "maze" -> controlSingle(player, spellId, power, snapshot, 360)','case "true_polymorph" -> controlSingle(player, spellId, power, snapshot, 480)','int duration = 600','Math.min(6, targets.size())','state.power() * .24','case "prismatic_wall" -> 400','case "control_weather" -> 600']: assert token in gameplay,token
+for token in ['foresight.nextChargeAt = now + 40','multiplier = Math.min(multiplier, .50)','multiplier = Math.min(multiplier, .75)','MobEffects.JUMP_BOOST','Math.min(5.0']: assert token in buff,token
+for token in ['case "time_stop"','8초 초대형','case "antimagic_field"','16초 대형','case "shapechange"','피해 50% 경감','case "foresight"','2초마다','case "prismatic_wall"','20초 지속']: assert token in summary,token
+print('alpha46_maintained_buff_regalia=PASS'); print('alpha46_responsive_effect_recipe_ui=PASS'); print('alpha46_staff_crafting_recipes=PASS'); print('alpha46_high_circle_rule_authority=PASS')

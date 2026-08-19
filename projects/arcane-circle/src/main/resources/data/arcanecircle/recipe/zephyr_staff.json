@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " P ",
+    " B ",
+    " N "
+  ],
+  "key": {
+    "P": "minecraft:phantom_membrane",
+    "B": "minecraft:breeze_rod",
+    "N": "arcanecircle:novice_staff"
+  },
+  "result": {
+    "count": 1,
+    "id": "arcanecircle:zephyr_staff"
+  }
+}
