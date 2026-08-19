@@ -1,0 +1,2 @@
+Living Kingdoms canonical client watchdog repair trigger.
+Reason: run 758 completed clean build + full fresh-server audit, but never created client-smoke.log before cancellation. Apply bounded graphical prerequisite setup and process-group cleanup, then dispatch canonical build.
