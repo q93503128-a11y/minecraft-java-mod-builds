@@ -1,10 +1,10 @@
 status=failure
-source_sha=0c1ce84ce68fda505f830a2cbcbab40657693743
-run_id=32219797510
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32219797510
+source_sha=6533d4e2a635526709ad79b26d6dc14bee07ff90
+run_id=32220120939
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32220120939
 java=25
 gradle=9.2.1
-version=0.12.1-alpha.46
+version=0.12.1-alpha.47
 source_mutation=disabled
 presentation_phase=current-cinematic-ui-vfx-regalia
 retired_visual_stack=absent
