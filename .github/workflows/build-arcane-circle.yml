@@ -36,7 +36,10 @@ jobs:
           marker='write(CLIENT / "PersistentBuffRegalia.java", regalia)\n'
           end=s.index(marker,start)+len(marker)
           replacement='if not (CLIENT / "PersistentBuffRegalia.java").exists():\n    raise SystemExit("pre-created PersistentBuffRegalia.java missing")\n\n'
-          p.write_text(s[:start]+replacement+s[end:],encoding='utf-8')
+          s=s[:start]+replacement+s[end:]
+          s=s.replace('state.nextChargeAt = now + 60;', 'foresight.nextChargeAt = now + 60;')
+          s=s.replace('state.nextChargeAt = now + 40', 'foresight.nextChargeAt = now + 40')
+          p.write_text(s,encoding='utf-8')
           PY
           python3 .github/scripts/tmp_arcane_alpha46.py 2>&1 | tee /tmp/arcane-alpha46-migration.log
       - name: Record migration failure
