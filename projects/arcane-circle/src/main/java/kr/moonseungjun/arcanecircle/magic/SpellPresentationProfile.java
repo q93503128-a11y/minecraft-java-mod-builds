@@ -188,7 +188,7 @@ public final class SpellPresentationProfile {
         put("void_lance", SigilStyle.FRONT_LANCE, MotionStyle.LANCE, 1.55, 6, 2, 72, 0, 1.60, 0);
         put("winter_domain", SigilStyle.QUAD_ARRAY, MotionStyle.FIELD, 9.40, 6, 12, 0, 0, 1.72, 2);
         put("antimagic_field", SigilStyle.GROUND_SEAL, MotionStyle.FIELD, 7.00, 6, 10, 0, 0, 1.42, 0);
-        put("clone", SigilStyle.BODY_HALO, MotionStyle.AURA, 2.80, 6, 3, 0, 0, 1.38, 0);
+        put("clone", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 3.10, 6, 6, 0, 0, 1.48, 3);
         put("control_weather", SigilStyle.SKY_RITUAL, MotionStyle.STORM, 18.00, 6, 10, 0, 26, 2.02, 8);
         put("demiplane", SigilStyle.PORTAL_GATE, MotionStyle.PORTAL, 6.80, 6, 8, 0, 0, 1.78, 0);
         put("dominate_monster", SigilStyle.TARGET_SEAL, MotionStyle.TARGET_BURST, 3.10, 6, 8, 0, 0, 1.48, 2);
@@ -259,6 +259,14 @@ public final class SpellPresentationProfile {
     }
 
     public static int releaseDurationTicks(SpellDefinition spell, double distance) {
+        int highUtilityDuration = switch (spell.id()) {
+            case "clone" -> 50;
+            case "true_polymorph" -> 80;
+            case "maze" -> 70;
+            case "etherealness" -> 600;
+            default -> 0;
+        };
+        if (highUtilityDuration > 0) return highUtilityDuration;
         int gameplayDuration = SpellGameplayService.visualDurationTicks(spell.id());
         if (gameplayDuration > 0) return gameplayDuration;
         if ("meteor_swarm".equals(spell.id())) return MeteorBarragePattern.durationTicks();
