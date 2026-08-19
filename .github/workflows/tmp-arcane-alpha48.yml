@@ -1,0 +1,32 @@
+name: Temporary Arcane alpha48 integration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-arcane-alpha48.yml'
+      - '.github/scripts/tmp_arcane_alpha48.py'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply alpha.48 integration
+        run: python3 .github/scripts/tmp_arcane_alpha48.py
+      - name: Commit integrated source and remove temporary applicator
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/scripts/tmp_arcane_alpha48.py .github/workflows/tmp-arcane-alpha48.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'feat(arcane-circle): implement alpha.48 high utility identity'
+          git push origin HEAD:main
