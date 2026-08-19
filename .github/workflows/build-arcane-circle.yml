@@ -4,13 +4,70 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/arcane-alpha46-ready'
+      - 'projects/arcane-circle/**'
+      - '.github/scripts/tmp_arcane_alpha46.py'
+      - '.github/workflows/build-arcane-circle.yml'
 
 permissions:
   contents: write
 
+concurrency:
+  group: arcane-circle-main
+  cancel-in-progress: true
+
 jobs:
-  paused:
+  migrate:
+    name: One-shot alpha.46 regalia and authority migration
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - run: echo 'alpha.46 staging paused while source payload is replaced safely'
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply reviewed alpha.46 source migration
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/tmp_arcane_alpha46.py')
+          s=p.read_text(encoding='utf-8')
+          start=s.index('regalia = base64.b64decode("')
+          marker='write(CLIENT / "PersistentBuffRegalia.java", regalia)\n'
+          end=s.index(marker,start)+len(marker)
+          replacement='if not (CLIENT / "PersistentBuffRegalia.java").exists():\n    raise SystemExit("pre-created PersistentBuffRegalia.java missing")\n\n'
+          p.write_text(s[:start]+replacement+s[end:],encoding='utf-8')
+          PY
+          python3 .github/scripts/tmp_arcane_alpha46.py 2>&1 | tee /tmp/arcane-alpha46-migration.log
+      - name: Record migration failure
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p ci-results/arcane-circle
+            cp /tmp/arcane-alpha46-migration.log ci-results/arcane-circle/latest-gradle.log || true
+            cat > ci-results/arcane-circle/status.txt <<STATUS
+          status=migration_failure
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          java=not_run
+          gradle=not_run
+          version=0.12.1-alpha.45
+          source_mutation=not_committed
+          presentation_phase=alpha46-regalia-authority-migration
+          retired_visual_stack=absent
+          legacy_arcane_tooling=absent
+          repository_cleanup=pending
+          STATUS
+            git add ci-results/arcane-circle
+            git commit -m "Record Arcane alpha.46 migration failure for ${GITHUB_SHA::7} [skip ci]" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
