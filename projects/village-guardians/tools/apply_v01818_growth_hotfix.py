@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
@@ -116,5 +117,24 @@ text = text.replace(
     '    assert "Math.min(MAX_LEVEL, LEVELS.getOrDefault(uuid, 1))" in merc\n',
 )
 write(test, text)
+
+# Current canonical regression tests must track the current source version while preserving their feature contracts.
+for name in (
+    "test_v0189_siege_phase2.py",
+    "test_v01810_ranger_ricochet.py",
+    "test_v01811_defense_polish.py",
+    "test_v01812_quality_audit.py",
+    "test_v01813_siege_integration.py",
+    "test_v01814_persistent_presentation.py",
+    "test_v01815_boss_identity.py",
+    "test_v01816_mobile_defense_ui.py",
+):
+    path = ROOT / "tools" / name
+    if not path.exists():
+        continue
+    source = read(path)
+    source = re.sub(r'mod_version=0\.18\.\d+(?:-alpha\.\d+)?',
+                    'mod_version=0.18.18-alpha.1', source)
+    write(path, source)
 
 print("[PASS] v0.18.18 audit hotfix applied")
