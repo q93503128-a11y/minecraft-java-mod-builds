@@ -6,6 +6,7 @@ import kr.moonseungjun.arcanecircle.network.CommitFusionPayload;
 import kr.moonseungjun.arcanecircle.network.QueueFusionPayload;
 import kr.moonseungjun.arcanecircle.network.ReleaseCastPayload;
 import kr.moonseungjun.arcanecircle.network.RequestGrimoirePayload;
+import kr.moonseungjun.arcanecircle.network.UseArcaneAbilityPayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -17,6 +18,9 @@ import java.util.Arrays;
 public final class ArcaneClient {
     private static final KeyMapping GRIMOIRE_KEY = new KeyMapping(
             "key.arcanecircle.grimoire", InputConstants.KEY_C, KeyMapping.Category.MISC);
+    /** Secondary authority of maintained high-circle spells (Control Weather first). */
+    private static final KeyMapping ARCANE_ABILITY_KEY = new KeyMapping(
+            "key.arcanecircle.arcane_ability", InputConstants.KEY_G, KeyMapping.Category.MISC);
     private static final KeyMapping[] SLOT_KEYS = {
             new KeyMapping("key.arcanecircle.slot_1", InputConstants.KEY_1, KeyMapping.Category.MISC),
             new KeyMapping("key.arcanecircle.slot_2", InputConstants.KEY_2, KeyMapping.Category.MISC),
@@ -35,6 +39,7 @@ public final class ArcaneClient {
 
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(GRIMOIRE_KEY);
+        event.register(ARCANE_ABILITY_KEY);
         for (KeyMapping key : SLOT_KEYS) event.register(key);
     }
 
@@ -64,6 +69,7 @@ public final class ArcaneClient {
         }
         if (minecraft.gui.screen() != null) {
             while (GRIMOIRE_KEY.consumeClick()) {}
+            while (ARCANE_ABILITY_KEY.consumeClick()) {}
             drainSlotClicks();
             if (primarySlot >= 0 || fusionChord) {
                 ClientPacketDistributor.sendToServer(new CommitFusionPayload(1));
@@ -74,6 +80,9 @@ public final class ArcaneClient {
         while (GRIMOIRE_KEY.consumeClick()) {
             ClientPacketDistributor.sendToServer(new RequestGrimoirePayload("atlas"));
         }
+        while (ARCANE_ABILITY_KEY.consumeClick()) {
+            ClientPacketDistributor.sendToServer(new UseArcaneAbilityPayload(0));
+        }
 
         boolean[] down = new boolean[SLOT_KEYS.length];
         boolean[] pressed = new boolean[SLOT_KEYS.length];
@@ -81,13 +90,9 @@ public final class ArcaneClient {
             down[slot] = SLOT_KEYS[slot].isDown();
             boolean clicked = false;
             while (SLOT_KEYS[slot].consumeClick()) clicked = true;
-            // consumeClick preserves a very short tap even when GLFW reports the key as
-            // already released by the next client tick.
             pressed[slot] = clicked || (down[slot] && !SLOT_WAS_DOWN[slot]);
         }
 
-        // Process new presses first. This lets a secondary key join the chord even on the
-        // same tick that the primary key is released.
         for (int slot = 0; slot < SLOT_KEYS.length; slot++) {
             if (!pressed[slot]) continue;
             if (primarySlot < 0) {
@@ -134,6 +139,7 @@ public final class ArcaneClient {
 
     private static void drainClicks() {
         while (GRIMOIRE_KEY.consumeClick()) {}
+        while (ARCANE_ABILITY_KEY.consumeClick()) {}
         drainSlotClicks();
     }
 
