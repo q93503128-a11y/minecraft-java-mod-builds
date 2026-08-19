@@ -2,6 +2,8 @@ name: Build Village Guardians v0.18.18 Growth
 
 on:
   workflow_dispatch:
+  issues:
+    types: [opened]
   push:
     branches: [main]
     paths:
@@ -9,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  issues: read
 
 env:
   PROJECT_DIR: projects/village-guardians
@@ -17,6 +20,7 @@ env:
 
 jobs:
   build:
+    if: github.event_name != 'issues' || github.event.issue.title == 'Village Guardians v0.18.18 final acceptance'
     name: Java 25 / NeoForge 26.2 growth acceptance
     runs-on: ubuntu-latest
     timeout-minutes: 90
