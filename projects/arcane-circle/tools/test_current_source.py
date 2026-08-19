@@ -11,9 +11,9 @@ def text(path): return path.read_text(encoding='utf-8')
 # Version/canonical source.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.46' in gradle
-assert 'VERSION = "0.12.1-alpha.46"' in main
-assert '"version": "0.12.1-alpha.46"' in index
+assert 'mod_version=0.12.1-alpha.47' in gradle
+assert 'VERSION = "0.12.1-alpha.47"' in main
+assert '"version": "0.12.1-alpha.47"' in index
 
 # Retired presentation stack stays retired.
 retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
@@ -112,7 +112,7 @@ presentation=text(magic/'SpellPresentationProfile.java')
 assert 'SpellGameplayService.visualDurationTicks(spell.id())' in presentation
 audit_duration=gameplay[gameplay.index('public static int visualDurationTicks'):gameplay.index('/** Used by Arcane-field') if '/** Used by Arcane-field' in gameplay else gameplay.index('public static boolean blocksCasting')]
 for token in ['case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS','case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS',
-'case "prismatic_wall" -> 400','case "control_weather" -> 600']:
+'case "prismatic_wall" -> 400','case "control_weather" -> 900']:
     assert token in audit_duration, token
 
 # Alpha.37 presentation contract: spell-authored layers, upward portals/prisons and durable prism wall.
@@ -132,18 +132,19 @@ assert 'age < .90' in overhaul and 'elapsedSeconds / .30' in overhaul
 assert 'return visual.target.subtract(visual.center);' in tracker
 assert 'visual.direction.scale(Math.max(1,visual.range))' not in tracker
 
-# Destruction budgets/classification and catastrophe-shaped terrain impact.
+# Destruction budgets/classification and visible-footprint catastrophe scheduling.
 destruction=text(magic/'DestructiveMagicService.java')
 for token in ['getDestroySpeed','getExplosionResistance','destroyBlock','hasChunkAt','MAX_BLOCK_CHANGES_PER_TICK = 720',
-'MAX_BLOCK_SCANS_PER_TICK = 48_000','MAX_DROPPED_BLOCKS_PER_TICK = 96','dropChangesRemaining','TerrainClass','MAJOR','CONDITIONAL',
-'lightning_bolt','thunderwave','gust_of_wind','fissure','thirteen-point cut','case "world_sunder" -> fissure',
-'quakeField','eight uneven secondary foci','meteorCrater','deep bowl','annihilationCorridor','true deletion corridor']:
+'MAX_BLOCK_SCANS_PER_TICK = 48_000','MAX_DROPPED_BLOCKS_PER_TICK = 96','MAX_PENDING_CELLS_PER_LEVEL = 2_048',
+'MAX_CELLS_PER_TICK = 7','RuptureTask','scheduleFootprint','PENDING','clearAll','TerrainClass','MAJOR','CONDITIONAL',
+'lightning_bolt','thunderwave','gust_of_wind','fissure','travelling continental cut','quakeField','outer faults arrive over subsequent ticks',
+'meteorCrater','visible Meteor Swarm body','annihilationCorridor','deletes a corridor progressively']:
     assert token in destruction, token
-for token in ['case "move_earth" -> new Profile(.78, 14.0, 260, false, 12.0, .44)',
-              'case "earthquake" -> new Profile(1.00, 19.5, 380, false, 18.0, .52)',
-              'case "meteor_swarm" -> new Profile(1.00, 22.5, 190, false, 10.0, .72)',
-              'case "world_sunder" -> new Profile(1.00, 31.0, 480, false, 15.0, .82)',
-              'case "arcane_annihilation" -> new Profile(1.00, 28.0, 110, false, 3.8, .70)']:
+for token in ['case "move_earth" -> new Profile(.90, 15.0, 275, false, 9.0, .44, 28.0)',
+              'case "earthquake" -> new Profile(1.00, 21.0, 410, false, 10.5, .56, 56.0)',
+              'case "meteor_swarm" -> new Profile(1.00, 24.0, 220, false, 10.0, .76, 22.0)',
+              'case "world_sunder" -> new Profile(1.00, 33.0, 500, false, 10.5, .90, 24.0)',
+              'case "arcane_annihilation" -> new Profile(1.00, 30.0, 125, false, 7.0, .72, 8.0)']:
     assert token in destruction, token
 assert 'DestructiveMagicService.quakeField(player, center, r, power)' in text(magic/'HighCircleSpellEffects.java')
 assert 'DestructiveMagicService.meteorCrater(player, impact, radius, power * strike.scale())' in text(magic/'HighCircleSpellEffects.java')
@@ -418,7 +419,39 @@ recipe_dir=root/'src/main/resources/data/arcanecircle/recipe'; recipe_files=sort
 for p in recipe_files:
     value=text(p); assert '"type": "minecraft:crafting_shaped"' in value,p; assert '"category": "equipment"' in value,p; assert '"result": {' in value and '"id": "arcanecircle:' in value,p
 for token in ['TIME_STOP_TICKS = 160','ANTIMAGIC_TICKS = 320','Math.max(20.0, Math.min(48.0, range * .75))','Math.max(12.0, Math.min(24.0, range * .85))']: assert token in field,token
-for token in ['case "forcecage" -> controlSingle(player, spellId, power, snapshot, 400)','case "dominate_monster" -> controlSingle(player, spellId, power, snapshot, 480)','case "maze" -> controlSingle(player, spellId, power, snapshot, 360)','case "true_polymorph" -> controlSingle(player, spellId, power, snapshot, 480)','int duration = 600','Math.min(6, targets.size())','state.power() * .24','case "prismatic_wall" -> 400','case "control_weather" -> 600']: assert token in gameplay,token
+for token in ['case "forcecage" -> controlSingle(player, spellId, power, snapshot, 400)','case "dominate_monster" -> controlSingle(player, spellId, power, snapshot, 480)','case "maze" -> controlSingle(player, spellId, power, snapshot, 360)','case "true_polymorph" -> controlSingle(player, spellId, power, snapshot, 480)','int duration = 900','Math.min(3, targets.size())','state.power() * .16','case "prismatic_wall" -> 400','case "control_weather" -> 900']: assert token in gameplay,token
 for token in ['foresight.nextChargeAt = now + 40','multiplier = Math.min(multiplier, .50)','multiplier = Math.min(multiplier, .75)','MobEffects.JUMP_BOOST','Math.min(5.0']: assert token in buff,token
 for token in ['case "time_stop"','8초 초대형','case "antimagic_field"','16초 대형','case "shapechange"','피해 50% 경감','case "foresight"','2초마다','case "prismatic_wall"','20초 지속']: assert token in summary,token
 print('alpha46_maintained_buff_regalia=PASS'); print('alpha46_responsive_effect_recipe_ui=PASS'); print('alpha46_staff_crafting_recipes=PASS'); print('alpha46_high_circle_rule_authority=PASS')
+
+
+# Alpha.47 catastrophe/time/weather authority pass.
+assert 'DestructiveMagicService.tick(level);' in main
+assert 'DestructiveMagicService.clearAll();' in main
+assert 'visible_footprint_tiled_across_bounded_ticks' in index
+field=text(magic/'ArcaneFieldService.java')
+for token in ['FROZEN_ENTITIES','FrozenEntity','entity.setDeltaMovement(Vec3.ZERO)','entity.setNoGravity(true)','raw.setDeltaMovement(frozen.velocity())']:
+    assert token in field, token
+ability=root/'src/main/java/kr/moonseungjun/arcanecircle/network/UseArcaneAbilityPayload.java'
+assert ability.exists()
+client_input=text(client/'ArcaneClient.java')
+for token in ['ARCANE_ABILITY_KEY','InputConstants.KEY_G','UseArcaneAbilityPayload(0)','event.register(ARCANE_ABILITY_KEY)']:
+    assert token in client_input, token
+network=text(root/'src/main/java/kr/moonseungjun/arcanecircle/network/ArcaneNetwork.java')
+for token in ['ninefold-arcana-12-1-alpha47','UseArcaneAbilityPayload.TYPE','handleArcaneAbility','SpellGameplayService.useMaintainedAuthority(player)']:
+    assert token in network, token
+for token in ['useMaintainedAuthority','WEATHER_SPECIAL_READY','WEATHER_BARRAGES','12연속 번개','now + 50L',
+              '/summon minecraft:lightning_bolt','weatherAim','groundStrike','int duration = 900']:
+    assert token in gameplay, token
+meteor_block=maintenance[maintenance.index('private static void meteorSwarm'):maintenance.index('private static void shapechange')]
+for token in ['clamp(t / 1.05','sixteen short apertures','if (q >= 1.0) return','port.add(0, -(1.0 + q * 3.2)']:
+    assert token in meteor_block, token
+assert 'double sweep = (t * 1.72)' not in meteor_block
+economy=text(world/'ArcaneEconomyService.java')
+assert '아르카나' in economy and '에메랄드' not in economy
+assert '아르카나' in grimoire and '에메랄드' not in grimoire
+print('alpha47_visible_footprint_destruction=PASS')
+print('alpha47_temporal_motion_stasis=PASS')
+print('alpha47_weather_active_authority=PASS')
+print('alpha47_meteor_release_collapse=PASS')
+print('alpha47_arcana_currency_ui=PASS')
