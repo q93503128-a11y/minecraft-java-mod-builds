@@ -53,9 +53,9 @@ public final class SpellKineticsService {
         int presentationImpactDelay = SpellPresentationProfile.impactDelayTicks(cast.spell(),
                 WorldMagicService.kineticDistance(player, cast.spell(), cast.range(), targetSnapshot));
 
-        // Persistent/control/defensive spells execute exactly once at the authored impact moment.
-        // Their own runtime then owns every later tick; generic FIELD pulses must not restart them.
-        if (SpellGameplayService.handles(cast.spell().id())) {
+        // Dedicated persistent/control/utility runtimes execute exactly once at the authored impact.
+        // Their own state machine owns every later tick; generic FIELD pulses must not restart them.
+        if (HighUtilitySpellService.handles(cast.spell().id()) || SpellGameplayService.handles(cast.spell().id())) {
             if (presentationImpactDelay > 1) {
                 enqueue(player, new PendingCast(cast, growthSnapshot, targetSnapshot,
                         clock(player) + presentationImpactDelay, 0, 1, cast.power(), false, 0));
@@ -133,11 +133,13 @@ public final class SpellKineticsService {
     private static boolean executeLocked(ServerPlayer player, CastTargetSnapshot targetSnapshot,
                                          String spellId, double range, double power) {
         if (ArcaneFieldService.blocksCasting(player)) return false;
-        boolean gameplayOwned = SpellGameplayService.handles(spellId);
-        boolean executed = targetSnapshot.executeLocked(player, () -> gameplayOwned
-                ? SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)
+        boolean utilityOwned = HighUtilitySpellService.handles(spellId);
+        boolean gameplayOwned = !utilityOwned && SpellGameplayService.handles(spellId);
+        boolean executed = targetSnapshot.executeLocked(player, () -> utilityOwned
+                ? HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)
+                : gameplayOwned ? SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)
                 : SpellCastingService.executeResolved(player, spellId, range, power));
-        if (executed && !gameplayOwned) {
+        if (executed && !utilityOwned && !gameplayOwned) {
             DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
         }
         return executed;
