@@ -129,10 +129,14 @@ public final class ErdenCitadelInteriorManager {
     }
 
     private static int requiredFixtures(Zone zone) {
-        // The verified guard-command room is deliberately compact. Its first three fixtures are
-        // the role-defining target, anvil and grindstone; storage is optional rather than a reason
-        // to reject an otherwise complete command room.
-        return "guard_command".equals(zone.id) ? 3 : MIN_ZONE_FIXTURES;
+        // The imported citadel has two deliberately compact working rooms. Their first three
+        // fixtures are the role-defining workstations; storage/utility furniture is optional and
+        // must not justify carving or spilling furniture through authored walls just to reach a
+        // generic four-fixture quota.
+        return switch (zone.id) {
+            case "guard_command", "service_quarter" -> 3;
+            default -> MIN_ZONE_FIXTURES;
+        };
     }
 
     private static void reset(MinecraftServer server) {
