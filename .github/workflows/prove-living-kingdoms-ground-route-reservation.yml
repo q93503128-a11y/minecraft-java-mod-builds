@@ -1,0 +1,121 @@
+name: Prove Living Kingdoms ground-route reservation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prove-living-kingdoms-ground-route-reservation.yml'
+      - '.github/living-kingdoms-ground-route-proof-trigger'
+  workflow_dispatch:
+
+concurrency:
+  group: living-kingdoms-ground-route-proof
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply bounded residency and ground-route reservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/patch_living_kingdoms_ci_residency.py
+          python .github/scripts/patch_living_kingdoms_landmark_ci_residency.py
+          python .github/scripts/patch_living_kingdoms_population_ci_retainer.py
+          python .github/scripts/patch_living_kingdoms_ground_route_reservation.py
+          root="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world"
+          grep -Fq 'reservedRouteColumns' "$root/ErdenUrbanAuthoredGroundPlanCatalog.java"
+          grep -Fq 'ErdenUrbanSourceAirRoutePlanner.plan(placement.fragmentKey())' "$root/ErdenUrbanAuthoredGroundPlanCatalog.java"
+          ! grep -Fq 'setChunkForced' "$root/ErdenPopulationCiChunkRetainer.java"
+
+      - name: Java 25 clean compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+
+      - name: Fresh-world upper-route and population proof
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-ground-route-proof-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-ground-route-proof-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/living-kingdoms-ground-route-proof-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          passed=0
+          for attempt in $(seq 1 600); do
+            log=../../logs/living-kingdoms-ground-route-proof-server.log
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' "$log" \
+              || grep -Eqi 'watchdog|A single server tick took|IllegalStateException|Exception loading level' "$log"; then
+              cat "$log"
+              exit 1
+            fi
+            if grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' "$log" \
+              && grep -Fq 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' "$log" \
+              && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' "$log" \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$log"; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat "$log"
+              exit 1
+            fi
+            sleep 1
+          done
+          tail -n 700 ../../logs/living-kingdoms-ground-route-proof-server.log
+          test "$passed" -eq 1
+          grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/living-kingdoms-ground-route-proof-server.log \
+            | grep -F 'source_blocks_cut=0' | grep -F 'source_air_only=true'
+          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/living-kingdoms-ground-route-proof-server.log \
+            | grep -F 'spawned_sample=3' | grep -F 'shortages=0'
+          grep -F 'Requested Erden authored upper-route CI sample' ../../logs/living-kingdoms-ground-route-proof-server.log \
+            | grep -F 'refreshed_until_verification=true' | grep -F 'loaded_lease=true' \
+            | grep -F 'persistent_forced_chunks=false'
+
+      - name: Commit verified route-aware ground plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredGroundPlanCatalog.java
+          git commit -m 'fix(living-kingdoms): reserve authored upper routes from ground furniture'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload proof log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-ground-route-proof-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
