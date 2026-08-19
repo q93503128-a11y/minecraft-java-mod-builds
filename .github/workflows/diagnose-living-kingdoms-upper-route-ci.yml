@@ -69,10 +69,12 @@ jobs:
           python .github/scripts/patch_living_kingdoms_landmark_ci_residency.py
           python .github/scripts/patch_living_kingdoms_population_ci_retainer.py
           python .github/scripts/patch_living_kingdoms_ground_route_reservation.py
+          python .github/scripts/patch_living_kingdoms_upper_route_support_clearance.py
           python .github/scripts/patch_living_kingdoms_upper_route_ci_diagnostics.py
           root="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world"
           grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_CI_STATE' "$root/ErdenUrbanAuthoredUpperRouteManager.java"
           grep -Fq 'reservedRouteColumns' "$root/ErdenUrbanAuthoredGroundPlanCatalog.java"
+          grep -Fq 'if (stair == null && sourceFloorAir' "$root/ErdenUrbanAuthoredUpperRouteManager.java"
           ! grep -Fq 'setChunkForced' "$root/ErdenPopulationCiChunkRetainer.java"
 
       - name: Java 25 clean compile
@@ -161,4 +163,4 @@ jobs:
           done
           exit 1
 
-# trigger: upper-route-state-diagnostics-v1
+# trigger: upper-route-state-diagnostics-v2-support-clearance
