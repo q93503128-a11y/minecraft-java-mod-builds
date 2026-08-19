@@ -283,7 +283,11 @@ jobs:
               outcome=pass
               break
             fi
-            if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|IllegalStateException' "$log"; then
+            # Do not classify a generic IllegalStateException as fatal here. Headless Linux
+            # clients legitimately emit one when OpenAL has no audio device, after which
+            # Minecraft disables sound and continues rendering. Only product-specific or
+            # graphical startup failure signatures are early-fatal.
+            if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|Could not initialize GLFW|Failed to create window' "$log"; then
               outcome=fatal
               break
             fi
