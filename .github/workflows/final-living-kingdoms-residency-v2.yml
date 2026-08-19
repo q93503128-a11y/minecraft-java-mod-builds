@@ -1,0 +1,195 @@
+name: Final Living Kingdoms residency v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/final-living-kingdoms-residency-v2.yml'
+      - '.github/living-kingdoms-final-residency-v2-trigger'
+  workflow_dispatch:
+
+concurrency:
+  group: living-kingdoms-final-residency-v2
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  final-residency:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record live final residency v2 run
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-final-residency-v2.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "in_progress",
+            "log_artifact_id": ""
+          }
+          EOF
+          git add .github/build-pointers/living-kingdoms-final-residency-v2.json
+          git commit -m "Record Living Kingdoms final residency v2 $GITHUB_RUN_NUMBER start [skip ci]" || true
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Verify current authored residency source and patch landmark lease
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/patch_living_kingdoms_landmark_ci_residency.py
+          root="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world"
+          grep -Fq 'authored_ground_plan=true refreshed_until_verification=true' "$root/ErdenUrbanAuthoredUpperRouteManager.java"
+          grep -Fq 'if (stair == null && sourceFloorAir' "$root/ErdenUrbanAuthoredUpperRouteManager.java"
+          grep -Fq 'ErdenUrbanSourceAirRoutePlanner.plan(placement.fragmentKey())' "$root/ErdenUrbanAuthoredGroundPlanCatalog.java"
+          grep -Fq 'buildingPlacementsForDiagnostics()' "$root/ErdenPopulationCiChunkRetainer.java"
+          grep -Fq 'ErdenUrbanInteriorBuilder.requestPlanChunksForCi(level, placement.entrance());' "$root/ErdenPopulationCiChunkRetainer.java"
+          grep -Fq 'retainDiagnosticChunk' "$root/ErdenPopulationCiChunkRetainer.java"
+          grep -Fq 'loaded_lease=true' "$root/ErdenAuthoritativeEconomyManager.java"
+          grep -Fq 'refreshed_until_verification=true' "$root/ErdenCitadelInteriorManager.java"
+          grep -Fq 'refreshed_until_verification=true' "$root/ErdenLandmarkInteriorManager.java"
+          ! grep -R -Fq 'setChunkForced' "$root/ErdenPopulationCiChunkRetainer.java" "$root/ErdenUrbanAuthoredUpperRouteManager.java"
+          ! test -f "$root/ErdenUrbanAuthoredInteriorPreserver.java"
+
+      - name: Java 25 clean compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+
+      - name: Fresh-world complete authored residency proof
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-final-residency-v2-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-final-residency-v2-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/living-kingdoms-final-residency-v2-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 900); do
+            log=../../logs/living-kingdoms-final-residency-v2-server.log
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' "$log" \
+              || grep -Eqi 'watchdog|A single server tick took|IllegalStateException|Exception loading level' "$log"; then
+              cat "$log"
+              exit 1
+            fi
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' "$log" \
+              && grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' "$log" \
+              && grep -Fq 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' "$log" \
+              && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' "$log" \
+              && grep -Fq 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' "$log" \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$log" \
+              && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$log" \
+              && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log"; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat "$log"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          log=../../logs/living-kingdoms-final-residency-v2-server.log
+          tail -n 1000 "$log"
+          test "$passed" -eq 1
+          grep -F 'Requested Erden physical-economy authored interior CI samples sites=3' "$log" | grep -F 'loaded_lease=true' | grep -F 'persistent_forced_chunks=false'
+          grep -F 'Requested Erden authored upper-route CI sample' "$log" | grep -F 'authored_ground_plan=true' | grep -F 'refreshed_until_verification=true' | grep -F 'loaded_lease=true' | grep -F 'persistent_forced_chunks=false'
+          grep -F 'Retained Erden landmark CI sample' "$log" | grep -F 'refreshed_until_verification=true' | grep -F 'loaded_lease=true' | grep -F 'persistent_forced_chunks=false'
+          grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' "$log" | grep -F 'source_blocks_cut=0' | grep -F 'source_air_only=true'
+          grep -F 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' "$log" | grep -F 'facade_replaced=false' | grep -F 'loaded_only=true'
+          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$log" | grep -F 'spawned_sample=3' | grep -F 'shortages=0'
+          grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' "$log" | grep -F 'purchase_outcomes=77' | grep -F 'containers=3'
+          grep -F 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log" | grep -F 'facade_replaced=false' | grep -F 'loaded_only=true'
+          ! grep -Fq 'ground_only_candidates=77' "$log"
+          ! grep -Fq 'persistent_forced_chunks=true' "$log"
+
+      - name: Promote verified landmark residency source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenLandmarkInteriorManager.java
+          git commit -m 'fix(living-kingdoms): refresh landmark CI lease through verification' || true
+          git reset --hard HEAD
+          git clean -fd
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload final residency v2 log
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-final-residency-v2-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Record final residency v2 result
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-final-residency-v2.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-final-residency-v2.json
+            git commit -m "Record Living Kingdoms final residency v2 $GITHUB_RUN_NUMBER [skip ci]" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
