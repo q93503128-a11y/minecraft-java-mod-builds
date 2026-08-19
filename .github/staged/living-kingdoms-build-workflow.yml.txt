@@ -1,0 +1,444 @@
+name: Build Living Kingdoms
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/build-living-kingdoms.yml'
+
+concurrency:
+  group: living-kingdoms-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  OUTPUT_JAR: livingkingdoms-0.1.0-alpha.12.jar
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '1'
+
+jobs:
+  build:
+    name: Java 25 / NeoForge 26.2 complete Erden audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record live build run
+        shell: bash
+        run: |
+          set -euo pipefail
+          pointer_file="$(mktemp)"
+          printf '{\n  "run_id": "%s",\n  "run_number": "%s",\n  "commit_sha": "%s",\n  "job_status": "in_progress",\n  "log_artifact_id": "",\n  "build_artifact_id": ""\n}\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_NUMBER" "$GITHUB_SHA" > "$pointer_file"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout -B living-kingdoms-live-pointer origin/main
+            mkdir -p .github/build-pointers
+            cp "$pointer_file" .github/build-pointers/living-kingdoms.json
+            git add .github/build-pointers/living-kingdoms.json
+            if git diff --cached --quiet; then break; fi
+            git commit -m "Record Living Kingdoms build $GITHUB_RUN_NUMBER start [skip ci]"
+            if git push origin HEAD:main; then break; fi
+            sleep $((attempt * 2))
+          done
+          git checkout --detach "$GITHUB_SHA"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Clean build and licensed asset audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../../logs ../../deliverables
+          test ! -f src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.java
+          ! grep -Fq 'ErdenUrbanAuthoredInteriorPreserver' src/main/java/kr/moonseungjun/livingkingdoms/LivingKingdoms.java
+          grep -F 'EXPECTED_GROUND_ONLY_BUILDINGS = 0' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanResidenceResolver.java
+          grep -F 'public static final int EXPECTED_PLANS = 233;' src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredGroundPlanCatalog.java
+          gradle --no-daemon clean build --stacktrace --console=plain 2>&1 | tee ../../logs/clean-build.log
+          grep -F 'Verified Kenney CC0 UI asset fantasy_panel.png' ../../logs/clean-build.log
+          for asset in medieval_castle medieval_manor all_in_one_house fantasy_castle_house village_church; do
+            grep -F "Verified Schemcraft CC-BY-4.0 structure ${asset}.schem" ../../logs/clean-build.log
+          done
+          if grep -Eq 'woodland_mansion|deepslate_mega_base' ../../logs/clean-build.log; then
+            echo 'Inactive kingdom asset was packaged.' >&2
+            exit 1
+          fi
+
+      - name: Fresh dedicated server complete Erden audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-ci-world
+          mkdir -p run
+          printf 'level-name=livingkingdoms-ci-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain > ../../logs/server-smoke.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          passed=0
+          for attempt in $(seq 1 900); do
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' ../../logs/server-smoke.log; then
+              cat ../../logs/server-smoke.log
+              exit 1
+            fi
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' ../../logs/server-smoke.log \
+              && grep -Fq 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/server-smoke.log \
+              && grep -Fq 'purchase_outcomes=77' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_LIVING_ECONOMY_PASS revision=1 households=77 shops=50' ../../logs/server-smoke.log \
+              && grep -Fq 'LK_ERDEN_TRANSPORT_PASS revision=2 manifests=' ../../logs/server-smoke.log; then
+              passed=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat ../../logs/server-smoke.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          cat ../../logs/server-smoke.log
+          test "$passed" -eq 1
+
+          grep -F 'LK_REALM_DIAGNOSTIC_PASS regions=1 residences=1' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' ../../logs/server-smoke.log
+          grep -F 'audience_reachable=true' ../../logs/server-smoke.log
+          grep -F 'enclosed=true' ../../logs/server-smoke.log
+          grep -F 'facade_replaced=false' ../../logs/server-smoke.log
+          grep -F 'loaded_only=true' ../../logs/server-smoke.log
+          grep -F 'Released Erden citadel CI zoning ticket' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_LANDMARK_INTERIOR_PASS role=' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_AUTHORED_GROUND_FUNCTIONAL_PLAN_PASS placements=233' ../../logs/server-smoke.log | grep -F 'source_floor_reused=true' | grep -F 'source_blocks_cut=0'
+          grep -F 'Prepared Erden residence modes buildings=233 authored_ground_candidates=233 authored_upper_candidates=233 ground_only_candidates=0 synthetic_upper_created=0' ../../logs/server-smoke.log
+          grep -F 'LK_URBAN_INTERIOR_DIAGNOSTIC_PASS' ../../logs/server-smoke.log | grep -F 'authored_ground=true' | grep -F 'synthetic_room=false' | grep -F 'source_blocks_cut=0'
+          grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' ../../logs/server-smoke.log | grep -F 'source_blocks_cut=0'
+          grep -F 'Prepared Erden household population households=77 residents=231 workers=154 dependents=77 owned_homes=77 assigned_workplaces=154 vacancies=2 shifts=early,late,night' ../../logs/server-smoke.log
+          grep -F 'Processed Erden household economy day=' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154 dependents=77 spawned_sample=3 ledger=true shortages=0 shifts=true ownership=true' ../../logs/server-smoke.log
+
+          grep -F 'Requested Erden physical-economy authored interior CI samples sites=3' ../../logs/server-smoke.log | grep -F 'bounded_plan_chunks=true' | grep -F 'loaded_lease=true' | grep -F 'persistent_forced_chunks=false'
+          grep -F 'Prepared Erden physical economy sites=156 warehouses=15 wallets=77 container_resources=8' ../../logs/server-smoke.log
+          grep -F 'Processed Erden physical economy day=' ../../logs/server-smoke.log
+          grep -F 'failed_households=' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_PHYSICAL_ECONOMY_PASS sites=156 warehouses=15 wallets=77' ../../logs/server-smoke.log
+          grep -F 'purchase_outcomes=77' ../../logs/server-smoke.log
+          grep -F 'purchase_failures=' ../../logs/server-smoke.log
+          grep -F 'authoritative_transport=true' ../../logs/server-smoke.log
+          grep -F 'containers=3' ../../logs/server-smoke.log
+
+          grep -F 'LK_ERDEN_LIVING_ECONOMY_PASS revision=1 households=77 shops=50' ../../logs/server-smoke.log
+          grep -F 'purchase_successes=' ../../logs/server-smoke.log
+          grep -F 'schedules=true' ../../logs/server-smoke.log
+          grep -F 'holidays=7' ../../logs/server-smoke.log
+          grep -F 'dynamic_prices=true' ../../logs/server-smoke.log
+          grep -F 'stockouts_persist=true' ../../logs/server-smoke.log
+          grep -F 'shopping_routines=true' ../../logs/server-smoke.log
+          grep -F 'success_path=true' ../../logs/server-smoke.log
+          grep -F 'closed_path=true' ../../logs/server-smoke.log
+          grep -F 'stockout_path=true' ../../logs/server-smoke.log
+          grep -F 'unaffordable_path=true' ../../logs/server-smoke.log
+
+          grep -F 'Reconciled Erden bakery reserves day=' ../../logs/server-smoke.log
+          grep -F 'reserve_bread=42' ../../logs/server-smoke.log
+          grep -F 'conserved=true' ../../logs/server-smoke.log
+          grep -F 'transport_accounted=true' ../../logs/server-smoke.log
+
+          grep -F 'Prepared Erden road manifests day=' ../../logs/server-smoke.log
+          grep -F 'modeled_travel_ticks=' ../../logs/server-smoke.log
+          grep -F 'unloaded_routes=aggregate' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_TRANSPORT_PASS revision=2 manifests=' ../../logs/server-smoke.log
+          grep -F 'route_planning=true' ../../logs/server-smoke.log
+          grep -F 'loaded_obstacle_checks=true' ../../logs/server-smoke.log
+          grep -F 'persistent_jobs=true' ../../logs/server-smoke.log
+          grep -F 'authoritative_escrow=true' ../../logs/server-smoke.log
+          grep -F 'aggregate_fallback=true' ../../logs/server-smoke.log
+          grep -F 'LK_ERDEN_ESCROW_AUDIT_PASS' ../../logs/server-smoke.log
+          grep -F 'departure=true' ../../logs/server-smoke.log
+          grep -F 'unloading=true' ../../logs/server-smoke.log
+          grep -F 'destination_credit=true' ../../logs/server-smoke.log
+          grep -F 'cargo_conserved=true' ../../logs/server-smoke.log
+
+          grep -F 'metre_scale=true' ../../logs/server-smoke.log
+          grep -F 'structureless_generator=true' ../../logs/server-smoke.log
+          grep -F 'vanilla_structures_blocked=true' ../../logs/server-smoke.log
+          grep -F 'cleaned_citadel_part=true' ../../logs/server-smoke.log
+          grep -F 'streamed_capital=true' ../../logs/server-smoke.log
+          grep -F 'streamed_samples=10' ../../logs/server-smoke.log
+          grep -F 'district_landmarks=16' ../../logs/server-smoke.log
+          grep -F 'residential_blocks=24' ../../logs/server-smoke.log
+          grep -F 'building_entrances=' ../../logs/server-smoke.log
+          grep -F 'civic_service_nodes=20' ../../logs/server-smoke.log
+          grep -F 'access_paths=true' ../../logs/server-smoke.log
+          grep -F 'drainage=true' ../../logs/server-smoke.log
+          grep -F 'terrain_integrated_roads=true' ../../logs/server-smoke.log
+          grep -F 'external_wall_parts=true' ../../logs/server-smoke.log
+          grep -F 'debris_zero=true' ../../logs/server-smoke.log
+          grep -F 'capital_revision=4' ../../logs/server-smoke.log
+          grep -F 'layout_revision=15' ../../logs/server-smoke.log
+          grep -F 'Verified Erden urban infrastructure well=true fire_cistern=true royal_culvert=true' ../../logs/server-smoke.log
+
+          fabric_line="$(grep -F 'Prepared Erden continuous urban fabric plots=' ../../logs/server-smoke.log | tail -1)"
+          test -n "$fabric_line"
+          fabric_plots="$(sed -E 's/.*plots=([0-9]+).*/\1/' <<<"$fabric_line")"
+          fabric_entrances="$(sed -E 's/.*entrances=([0-9]+).*/\1/' <<<"$fabric_line")"
+          facade_styles="$(sed -E 's/.*facade_styles=([0-9]+).*/\1/' <<<"$fabric_line")"
+          test "$fabric_plots" -ge 180
+          test "$fabric_entrances" -eq "$fabric_plots"
+          test "$facade_styles" -ge 3
+          for role in tenement shop bakery inn stable guard_post bathhouse warehouse; do
+            grep -Eq "${role}=[1-9][0-9]*" <<<"$fabric_line"
+          done
+          {
+            echo "FABRIC_PLOTS=$fabric_plots"
+            echo "FABRIC_ENTRANCES=$fabric_entrances"
+            echo "FACADE_STYLES=$facade_styles"
+          } >> "$GITHUB_ENV"
+
+          test "$(grep -c 'Loaded external structure /data/livingkingdoms/structures/external/' ../../logs/server-smoke.log)" -ge 5
+          test "$(grep -c 'Verified streamed capital sample role=' ../../logs/server-smoke.log)" -eq 6
+          test "$(grep -c 'Verified cleaned Erden citadel' ../../logs/server-smoke.log)" -eq 1
+
+          if grep -Fq 'ground_only_candidates=77' ../../logs/server-smoke.log; then
+            echo 'Legacy Erden ground-only residence marker reappeared.' >&2
+            exit 1
+          fi
+          if grep -Eq 'silvana_forest|kardum_league|woodland_mansion|deepslate_mega_base|Relocated four Erden town houses' ../../logs/server-smoke.log; then
+            echo 'Inactive kingdom or legacy repair path ran.' >&2
+            exit 1
+          fi
+          if grep -Eqi 'Failed to load datapacks|Could not parse|Exception loading level|Unknown external schematic block|Unable to load external structure|Unable to furnish Erden citadel|Unable to furnish Erden landmark|Invalid Erden population plan|No Erden workplace remains|Failed to spawn Erden resident|Initial Erden household economy has shortages|Invalid Erden physical economy|Expected 156 Erden economy sites|Unsupported Erden economy role|Item debris remained around Erden|Erden cargo dispatch context was not closed|Erden escrow audit failed|living economy.*failed|watchdog' ../../logs/server-smoke.log; then
+            exit 1
+          fi
+
+      - name: Graphical UI and client startup audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          log=../../logs/client-smoke.log
+          : > "$log"
+
+          # Hosted images normally already contain the graphical smoke prerequisites. Do not
+          # perform an unbounded apt refresh on every canonical run; only install when missing,
+          # and bound both network/package operations so CI cannot hang before runClient starts.
+          need_graphics=0
+          command -v xvfb-run >/dev/null 2>&1 || need_graphics=1
+          ldconfig -p 2>/dev/null | grep -Fq 'libGL.so.1' || need_graphics=1
+          if [ "$need_graphics" -eq 1 ]; then
+            sudo timeout --signal=TERM --kill-after=10s 120s \
+              apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update -qq
+            sudo timeout --signal=TERM --kill-after=10s 120s \
+              apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 \
+              install -y --no-install-recommends xvfb libgl1-mesa-dri >/dev/null
+          fi
+          command -v xvfb-run >/dev/null
+
+          # The in-game diagnostics complete by client tick 216. Run the whole Xvfb/Gradle
+          # launcher beneath a dedicated session, watch the authoritative PASS markers, then
+          # terminate every descendant once proof is complete. This avoids Gradle/Xvfb orphan
+          # processes holding the Actions step open after the Minecraft JVM has already exited.
+          setsid bash -c "exec xvfb-run -a -s '-screen 0 1280x720x24' gradle --no-daemon runClient --stacktrace --console=plain" \
+            > "$log" 2>&1 &
+          client_launcher=$!
+          sleep 1
+          client_pgid="$(ps -o pgid= -p "$client_launcher" 2>/dev/null | tr -d ' ' || true)"
+          if [ -z "$client_pgid" ]; then
+            client_pgid="$client_launcher"
+          fi
+
+          outcome=timeout
+          for attempt in $(seq 1 240); do
+            if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
+              && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
+              && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then
+              outcome=pass
+              break
+            fi
+            if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|IllegalStateException' "$log"; then
+              outcome=fatal
+              break
+            fi
+            if ! kill -0 "$client_launcher" 2>/dev/null; then
+              outcome=client_exit
+              break
+            fi
+            sleep 1
+          done
+
+          # Close the dedicated process group regardless of outcome; PASS is defined by the
+          # graphical diagnostic markers, not by whether Gradle elects to linger afterward.
+          kill -TERM -- "-$client_pgid" 2>/dev/null || true
+          sleep 3
+          kill -KILL -- "-$client_pgid" 2>/dev/null || true
+          wait "$client_launcher" 2>/dev/null || true
+
+          # Cover the narrow race where the client exited immediately after flushing all markers.
+          if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
+            && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
+            && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then
+            outcome=pass
+          fi
+
+          cat "$log"
+          echo "CLIENT_AUDIT_OUTCOME=$outcome"
+          test "$outcome" = pass
+          grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log"
+          grep -F 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log"
+          grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"
+          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms' "$log"; then
+            exit 1
+          fi
+
+      - name: Package internal alpha.12 checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t jars < <(find "$PROJECT_DIR/build/libs" -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' | sort)
+          test "${#jars[@]}" -eq 1
+          cp "${jars[0]}" "deliverables/$OUTPUT_JAR"
+          JAR="deliverables/$OUTPUT_JAR"
+          unzip -t "$JAR" | tee logs/jar-test.log
+          unzip -Z1 "$JAR" | tee logs/jar-entries.txt
+          test "$(sort logs/jar-entries.txt | uniq -d | wc -l)" -eq 0
+
+          for asset in medieval_castle medieval_manor all_in_one_house fantasy_castle_house village_church; do
+            grep -Fx "data/livingkingdoms/structures/external/${asset}.schem" logs/jar-entries.txt
+          done
+          grep -Fx 'assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt' logs/jar-entries.txt
+
+          for class in \
+            ErdenCapitalStreamingBuilder ExternalDistrictBuildingBuilder ExternalUrbanFabricBuilder \
+            ErdenUrbanInfrastructureBuilder ErdenUrbanInteriorBuilder ErdenUrbanLifeManager \
+            ErdenUrbanAuthoredGroundPlanCatalog ErdenUrbanAuthoredGroundMaterializer ErdenUrbanResidenceResolver \
+            ErdenUrbanMicroInfillManager ErdenUrbanMicroInfillSavedData \
+            ErdenCitadelInteriorManager ErdenCitadelInteriorSavedData \
+            ErdenLandmarkInteriorManager ErdenLandmarkInteriorSavedData \
+            ErdenPopulationManager ErdenPopulationSavedData \
+            ErdenAuthoritativeEconomyManager ErdenPhysicalEconomySavedData \
+            ErdenLivingEconomyManager ErdenLivingEconomySavedData ErdenCargoEscrowManager \
+            ErdenCargoEscrowAudit ErdenTransportManager ErdenTransportSavedData \
+            ErdenBakeryReserveManager ErdenPopulationCiChunkRetainer ErdenDiagnosticDebrisSettler \
+            ErdenKingdomExteriorBuilder ErdenKingdomSupplyManager ErdenKingdomSupplySavedData \
+            ErdenExteriorWorkforceManager ErdenExteriorWorkforceSavedData \
+            ErdenExteriorLifecycleManager ErdenExteriorLifecycleSavedData \
+            ErdenExteriorEstateManager ErdenExteriorEstateSavedData \
+            ErdenExteriorResidenceCatalog ErdenExteriorResidenceBuilder ErdenExteriorResidenceSavedData; do
+            grep -Fx "kr/moonseungjun/livingkingdoms/world/${class}.class" logs/jar-entries.txt
+          done
+          grep -Fx 'kr/moonseungjun/livingkingdoms/worldgen/StructurelessNoiseChunkGenerator.class' logs/jar-entries.txt
+
+          if grep -Fxq 'kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredInteriorPreserver.class' logs/jar-entries.txt; then
+            echo 'Obsolete ErdenUrbanAuthoredInteriorPreserver was packaged.' >&2
+            exit 1
+          fi
+          if grep -Eq 'woodland_mansion|deepslate_mega_base|(^|/)(tools|\.github)/|\.java$' logs/jar-entries.txt; then
+            exit 1
+          fi
+          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.12"'
+          test "$(unzip -p "$JAR" assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt | grep -c 'Author: BuildSchem')" -eq 5
+          sha256sum "$JAR" | tee "deliverables/$OUTPUT_JAR.sha256" logs/jar-sha256.txt
+
+          cat > deliverables/BUILD_AND_RUNTIME_REPORT.md <<EOF
+          # Living Kingdoms internal Erden checkpoint
+          - Commit: $GITHUB_SHA
+          - Java 25 clean build: PASS
+          - Fresh Erden world server test: PASS
+          - Client startup and graphical UI diagnostics: PASS
+          - Fully authored urban ground coverage: 233 / 233 PASS
+          - Authored upper coverage: 233 / 233 PASS
+          - Legacy ground-only fallback: 0 PASS
+          - Legacy authored interior preserver packaged: NO
+          - Streamed 2.4 x 1.8 km capital and external structure audit: PASS
+          - Citadel government zones and audience-hall traversal: PASS
+          - District landmark functional interiors: PASS
+          - Household population, ownership and routines: PASS
+          - Physical worksite inventory and authoritative cargo settlement: PASS
+          - Exterior workforce, lifecycle, property and residence systems packaged: PASS
+          - Kingdom producer and wharf supply chain packaged: PASS
+          - Shop hours, seven-day holidays and stock-based prices: PASS
+          - Household purchase outcomes preserved for all 77 households: PASS
+          - Success, closure, stockout and affordability paths: PASS
+          - Bakery reserve and cargo conservation: PASS
+          - Construction debris: ZERO
+          - Public user test build: NOT RELEASED
+          EOF
+
+      - name: Upload logs
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-build-logs-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Upload internal checkpoint
+        id: upload_build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-internal-alpha.12-${{ github.run_number }}
+          path: deliverables/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish build pointer
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+          BUILD_ID: ${{ steps.upload_build.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          pointer_file="$(mktemp)"
+          printf '{\n  "run_id": "%s",\n  "run_number": "%s",\n  "commit_sha": "%s",\n  "job_status": "%s",\n  "log_artifact_id": "%s",\n  "build_artifact_id": "%s"\n}\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_NUMBER" "$GITHUB_SHA" "$JOB_STATUS" "$LOG_ID" "$BUILD_ID" \
+            > "$pointer_file"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout -B living-kingdoms-pointer-publish origin/main
+            mkdir -p .github/build-pointers
+            cp "$pointer_file" .github/build-pointers/living-kingdoms.json
+            git add .github/build-pointers/living-kingdoms.json
+            if git diff --cached --quiet; then
+              exit 0
+            fi
+            git commit -m "Record Living Kingdoms build $GITHUB_RUN_NUMBER"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1
