@@ -22,18 +22,21 @@ def main() -> None:
     bestiary = read("VillageEnemyBestiary.java")
     relic = read("VillageRelicChoiceConfirmScreen.java")
     tooltip = read("VillageEquipmentTooltipClient.java")
+    controller = read("VillageUiController.java")
+    consumables = read("VillageConsumableSystem.java")
 
     assert 'action.startsWith("facility:")' in local
     assert "VillageUiController.openBuilding(player, building)" in local
-    assert 'case "buy_arrows"' in local and 'case "buy_food"' in local
+    assert 'case "buy_arrows"' in local
     assert "VillageUiController.openEquipmentShop(player)" in local
 
     assert 'SALE_ONLY_PREFIX = "[판매용]"' in trading
     assert "name.startsWith(SALE_ONLY_PREFIX)" in trading
     sale_only = trading.split("private static boolean isSaleOnlyLoot", 1)[1].split("private static int unitValue", 1)[0]
     assert 'NAMED_PRICES.containsKey(name)' not in sale_only
-    for useful in ("수호 화살", "전투 건량", "마을 배급빵"):
+    for useful in ("수호 화살", "마을 배급 식량"):
         assert useful in trading
+    assert "전투 건량" not in trading
 
     assert 'case "town_hall" -> new VillageTownHallGridScreen(payload)' in client
     assert 'case "equipment_shop" -> new VillageShopCatalogScreen(payload)' in client
@@ -56,9 +59,15 @@ def main() -> None:
                 "CONSUMABLE(\"소모품\"", "SALE(\"판매\""):
         assert tab in shop
     assert 'action.equals("open_item_sell")' in shop
-    assert 'action.equals("buy_arrows")' in shop and 'action.equals("buy_food")' in shop
+    assert 'action.equals("buy_arrows")' in shop
+    assert 'action.equals("claim_bread")' in shop
+    assert 'action.startsWith("consumable:")' in shop
+    assert 'action.equals("buy_food")' not in shop
     assert 'action.equals("sell_loot")' in shop
     assert "VillageConfirmScreen" in shop
+    assert '"consumable:" + consumable.id()' in controller
+    for supply in ("BANDAGE", "CLEANSER", "STIMULANT", "AEGIS_TONIC", "ARCANE_CATALYST", "FIELD_REPAIR_KIT"):
+        assert supply in consumables
 
     assert '"facility_info".equals(rawActions[i])' in action
     for prefix in ("sell_item:", "forge_enhance:", "hire_mercenary:", "defense_research:", "research_skill_unlock:"):
@@ -83,6 +92,7 @@ def main() -> None:
     print("[PASS] Facility cards route to explicit function/repair/upgrade controls")
     print("[PASS] Unknown and legacy menu payloads use the current detail-first surface")
     print("[PASS] Bulk junk sale cannot sweep named combat supplies")
+    print("[PASS] Shop exposes daily ration, arrows and tactical consumables without duplicate paid food")
     print("[PASS] Shop/bestiary/relic interaction safeguards remain wired")
     print("[PASS] Equipment tooltip uses item-local stats without unsynchronised smithy state")
 
