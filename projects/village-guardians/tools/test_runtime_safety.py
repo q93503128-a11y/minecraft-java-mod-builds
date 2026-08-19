@@ -123,7 +123,7 @@ def main() -> None:
         assert key in keys
     assert "GLFW_KEY_U" not in keys and "CALLER" not in keys
 
-    assert "claim_bread" not in controller
+    assert 'case "claim_bread"' in controller
     assert "VillageUiService.openBuilding" not in building_router
     assert "VillageUiController.openBuilding" in building_router
     local_body = controller.split("public static void openBuilding", 1)[1].split("public static void openMercenaryCommand", 1)[0]
@@ -176,7 +176,7 @@ def main() -> None:
     assert "getTags()" not in mercenary
     assert "setPersistenceRequired" in mercenary
     assert "awardKillExperience" in mercenary
-    assert "Lv.5" in mercenary
+    assert "MAX_LEVEL = 60" in mercenary
 
     assert "offerToParty" in relic
     assert "relic_select:" in relic
