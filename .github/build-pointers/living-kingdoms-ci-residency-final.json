@@ -2,6 +2,6 @@
   "run_id": "32214540854",
   "run_number": "3",
   "commit_sha": "83bfd2a2525a561c50ec3f0ba9d2fd60e5560066",
-  "job_status": "in_progress",
+  "job_status": "failure",
   "log_artifact_id": ""
 }
