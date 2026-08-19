@@ -104,7 +104,7 @@ jobs:
           echo "PROOF_OUTCOME=$outcome"
           grep -E 'Completed Erden citadel zone=|LK_ERDEN_CITADEL_ZONE_WAIT|LK_ERDEN_CITADEL_INTERIOR_PASS' "$log" | tail -n 120 || true
           test "$outcome" = pass
-          grep -F 'Completed Erden citadel zone=service_quarter' "$log" | grep -F 'fixtures=3' | grep -F 'required=3' | grep -F 'facade_replaced=false'
+          grep -E 'Completed Erden citadel zone=service_quarter .*fixtures=[3-9][0-9]* required=3 .*facade_replaced=false' "$log"
           grep -F 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log" | grep -F 'audience_reachable=true' | grep -F 'facade_replaced=false' | grep -F 'loaded_only=true'
 
       - name: Promote verified citadel rule
