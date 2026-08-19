@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/repair-living-kingdoms-canonical-client-watchdog.yml'
+      - '.github/triggers/living-kingdoms-client-watchdog.txt'
   workflow_dispatch:
 
 permissions:
@@ -25,15 +26,21 @@ jobs:
           set -euo pipefail
           python .github/scripts/patch_living_kingdoms_canonical_client_watchdog.py
           grep -Fq 'CLIENT_AUDIT_OUTCOME=$outcome' .github/workflows/build-living-kingdoms.yml
+          grep -Fq 'need_graphics=0' .github/workflows/build-living-kingdoms.yml
+          grep -Fq 'client_pgid=' .github/workflows/build-living-kingdoms.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/workflows/build-living-kingdoms.yml
-          git commit -m 'ci(living-kingdoms): bound graphical client smoke process group'
-          for attempt in 1 2 3 4 5; do
-            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
-            git rebase --abort 2>/dev/null || true
-            sleep $((attempt * 2))
-          done
+          if git diff --cached --quiet; then
+            echo 'Canonical graphical client watchdog already installed.'
+          else
+            git commit -m 'ci(living-kingdoms): bound graphical client setup and smoke process group'
+            for attempt in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+              git rebase --abort 2>/dev/null || true
+              sleep $((attempt * 2))
+            done
+          fi
 
       - name: Dispatch canonical build
         shell: bash
@@ -42,5 +49,3 @@ jobs:
         run: |
           set -euo pipefail
           gh workflow run build-living-kingdoms.yml --ref main
-
-# trigger: bounded-client-watchdog-repair-v1
