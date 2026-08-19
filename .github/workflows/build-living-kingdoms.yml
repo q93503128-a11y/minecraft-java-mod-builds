@@ -244,20 +244,77 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends xvfb libgl1-mesa-dri >/dev/null
-          set +e
-          timeout 360s xvfb-run -a -s '-screen 0 1280x720x24' \
-            gradle --no-daemon runClient --stacktrace --console=plain \
-            > ../../logs/client-smoke.log 2>&1
-          status=$?
-          set -e
-          cat ../../logs/client-smoke.log
-          test "$status" -eq 0
-          grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' ../../logs/client-smoke.log
-          grep -F 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' ../../logs/client-smoke.log
-          grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' ../../logs/client-smoke.log
-          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms' ../../logs/client-smoke.log; then
+          log=../../logs/client-smoke.log
+          : > "$log"
+
+          # Hosted images normally already contain the graphical smoke prerequisites. Do not
+          # perform an unbounded apt refresh on every canonical run; only install when missing,
+          # and bound both network/package operations so CI cannot hang before runClient starts.
+          need_graphics=0
+          command -v xvfb-run >/dev/null 2>&1 || need_graphics=1
+          ldconfig -p 2>/dev/null | grep -Fq 'libGL.so.1' || need_graphics=1
+          if [ "$need_graphics" -eq 1 ]; then
+            sudo timeout --signal=TERM --kill-after=10s 120s \
+              apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update -qq
+            sudo timeout --signal=TERM --kill-after=10s 120s \
+              apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 \
+              install -y --no-install-recommends xvfb libgl1-mesa-dri >/dev/null
+          fi
+          command -v xvfb-run >/dev/null
+
+          # The in-game diagnostics complete by client tick 216. Run the whole Xvfb/Gradle
+          # launcher beneath a dedicated session, watch the authoritative PASS markers, then
+          # terminate every descendant once proof is complete. This avoids Gradle/Xvfb orphan
+          # processes holding the Actions step open after the Minecraft JVM has already exited.
+          setsid bash -c "exec xvfb-run -a -s '-screen 0 1280x720x24' gradle --no-daemon runClient --stacktrace --console=plain" \
+            > "$log" 2>&1 &
+          client_launcher=$!
+          sleep 1
+          client_pgid="$(ps -o pgid= -p "$client_launcher" 2>/dev/null | tr -d ' ' || true)"
+          if [ -z "$client_pgid" ]; then
+            client_pgid="$client_launcher"
+          fi
+
+          outcome=timeout
+          for attempt in $(seq 1 240); do
+            if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
+              && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
+              && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then
+              outcome=pass
+              break
+            fi
+            if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|IllegalStateException' "$log"; then
+              outcome=fatal
+              break
+            fi
+            if ! kill -0 "$client_launcher" 2>/dev/null; then
+              outcome=client_exit
+              break
+            fi
+            sleep 1
+          done
+
+          # Close the dedicated process group regardless of outcome; PASS is defined by the
+          # graphical diagnostic markers, not by whether Gradle elects to linger afterward.
+          kill -TERM -- "-$client_pgid" 2>/dev/null || true
+          sleep 3
+          kill -KILL -- "-$client_pgid" 2>/dev/null || true
+          wait "$client_launcher" 2>/dev/null || true
+
+          # Cover the narrow race where the client exited immediately after flushing all markers.
+          if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
+            && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
+            && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then
+            outcome=pass
+          fi
+
+          cat "$log"
+          echo "CLIENT_AUDIT_OUTCOME=$outcome"
+          test "$outcome" = pass
+          grep -F 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log"
+          grep -F 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log"
+          grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"
+          if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms' "$log"; then
             exit 1
           fi
 
