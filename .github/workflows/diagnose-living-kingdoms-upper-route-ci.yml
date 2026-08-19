@@ -1,0 +1,162 @@
+name: Diagnose Living Kingdoms upper-route CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diagnose-living-kingdoms-upper-route-ci.yml'
+      - '.github/living-kingdoms-upper-route-diagnostic-trigger'
+  workflow_dispatch:
+
+concurrency:
+  group: living-kingdoms-upper-route-diagnostic
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record live diagnostic run
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-upper-route-diagnostic.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "in_progress",
+            "log_artifact_id": ""
+          }
+          EOF
+          git add .github/build-pointers/living-kingdoms-upper-route-diagnostic.json
+          git commit -m "Record Living Kingdoms upper-route diagnostic $GITHUB_RUN_NUMBER start [skip ci]" || true
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply current bounded fixes and route diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/patch_living_kingdoms_ci_residency.py
+          python .github/scripts/patch_living_kingdoms_landmark_ci_residency.py
+          python .github/scripts/patch_living_kingdoms_population_ci_retainer.py
+          python .github/scripts/patch_living_kingdoms_ground_route_reservation.py
+          python .github/scripts/patch_living_kingdoms_upper_route_ci_diagnostics.py
+          root="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world"
+          grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_CI_STATE' "$root/ErdenUrbanAuthoredUpperRouteManager.java"
+          grep -Fq 'reservedRouteColumns' "$root/ErdenUrbanAuthoredGroundPlanCatalog.java"
+          ! grep -Fq 'setChunkForced' "$root/ErdenPopulationCiChunkRetainer.java"
+
+      - name: Java 25 clean compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+
+      - name: Run bounded fresh-world diagnostic
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-upper-route-diagnostic-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-upper-route-diagnostic-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/living-kingdoms-upper-route-diagnostic-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          outcome=timeout
+          for attempt in $(seq 1 360); do
+            log=../../logs/living-kingdoms-upper-route-diagnostic-server.log
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' "$log" \
+              || grep -Eqi 'watchdog|A single server tick took|IllegalStateException|Exception loading level' "$log"; then
+              outcome=fatal
+              break
+            fi
+            if grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' "$log" \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$log"; then
+              outcome=pass
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              outcome=server_exit
+              break
+            fi
+            sleep 1
+          done
+
+          log=../../logs/living-kingdoms-upper-route-diagnostic-server.log
+          echo "DIAGNOSTIC_OUTCOME=$outcome" | tee ../../logs/living-kingdoms-upper-route-diagnostic-summary.txt
+          grep -E 'LK_ERDEN_AUTHORED_UPPER_ROUTE_CI_STATE|Requested Erden authored upper-route CI sample|LK_ERDEN_AUTHORED_GROUND_MATERIALIZER_PASS|LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS|LK_ERDEN_POPULATION_DIAGNOSTIC_PASS|Unable to activate authored Erden urban interior' "$log" \
+            | tail -n 300 | tee -a ../../logs/living-kingdoms-upper-route-diagnostic-summary.txt || true
+          tail -n 300 "$log" >> ../../logs/living-kingdoms-upper-route-diagnostic-summary.txt
+          if [ "$outcome" = fatal ] || [ "$outcome" = server_exit ]; then
+            exit 1
+          fi
+
+      - name: Upload diagnostic log
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-upper-route-diagnostic-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Record diagnostic result
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-upper-route-diagnostic.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-upper-route-diagnostic.json
+            git commit -m "Record Living Kingdoms upper-route diagnostic $GITHUB_RUN_NUMBER [skip ci]" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
