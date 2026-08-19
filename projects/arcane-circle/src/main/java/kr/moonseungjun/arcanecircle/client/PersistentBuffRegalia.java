@@ -15,7 +15,7 @@ final class PersistentBuffRegalia {
             "shield", "feather_fall", "light", "mage_armor", "mirror_image", "invisibility",
             "blur", "fly", "haste", "protection_from_energy", "greater_invisibility",
             "resilient_sphere", "stoneskin", "freedom_of_movement", "true_seeing",
-            "globe_of_invulnerability", "simulacrum", "clone", "fire_shield", "solar_guard",
+            "globe_of_invulnerability", "simulacrum", "fire_shield", "solar_guard",
             "etherealness", "shapechange", "foresight");
 
     private PersistentBuffRegalia() {}
@@ -68,7 +68,6 @@ final class PersistentBuffRegalia {
             case "true_seeing" -> sightCrown(b, forward, right, up, back, t, false);
             case "foresight" -> sightCrown(b, forward, right, up, back, t, true);
             case "simulacrum" -> reserveBody(b, forward, right, up, back, t, false);
-            case "clone" -> reserveBody(b, forward, right, up, back, t, true);
             case "shapechange" -> shapechangeMantle(b, forward, right, up, back, t);
             case "light" -> shoulderWisp(b, forward, right, up, back, t);
             default -> armorMantle(b, forward, right, up, back, 4, .48, .92, t);
