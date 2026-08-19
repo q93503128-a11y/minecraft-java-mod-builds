@@ -47,6 +47,9 @@ final class VillageActionDescriptions {
         if (action.startsWith("gear:")) {
             return label + "\n수호 주화로 장비를 구매합니다. 강한 상품은 방어 일수에 따라 입고됩니다.";
         }
+        if (action.startsWith("consumable:")) {
+            return label + "\n수호 주화로 전투 소모품을 구매합니다. 전투 중 우클릭해 사용하며 종류별 재사용 대기시간이 있습니다.";
+        }
         if (action.startsWith("funding:")) {
             return label + "\n개인 수호 주화를 공동 보급품으로 전환해 시설 수리와 강화에 사용합니다.";
         }
@@ -74,13 +77,12 @@ final class VillageActionDescriptions {
             case "open_tower_control" -> "마을 회관에서 성벽과 네 종류 방어탑을 관리합니다.";
             case "open_funding" -> "마을 회관에서 개인 수호 주화로 공동 보급품을 조달합니다.";
             case "return_village" -> "전투 중이 아닐 때 마을 중앙 광장으로 귀환합니다.";
-            case "claim_bread" -> "오늘의 무료 식량을 받습니다.";
+            case "claim_bread" -> "오늘의 무료 배급 식량을 받습니다. 일반 식량 구매는 이 배급으로 통합되었습니다.";
             case "buy_arrows" -> label + "\n수호 주화로 화살 묶음을 구매합니다.";
-            case "buy_food" -> label + "\n수호 주화로 전투 식량을 구매합니다.";
             case "sell_loot" -> "판매용으로 표시된 잡템만 안전하게 일괄 정산합니다.";
             case "open_item_sell" -> "보유한 게임 전용 장비·소모품·잡템을 하나씩 선택해 판매합니다.";
             case "open_forge_enhancement" -> "보유한 등급 장비를 선택해 개별 강화합니다.";
-            case "open_equipment_shop" -> "장비·방어구와 식량·화살 상점을 엽니다. 장비 재고는 매일 바뀝니다.";
+            case "open_equipment_shop" -> "장비·방어구·화살·전투 소모품 상점을 엽니다. 일반 식량은 일일 배급으로 통합됐고 장비 재고는 매일 바뀝니다.";
             case "forge_upgrade", "smithy_forge_upgrade" -> label + "\n강화할 등급 장비를 직접 선택합니다.";
             case "forge_combine" -> label + "\n같은 종류·같은 등급 장비 세 개를 직접 골라 상위 등급 하나로 합성합니다.";
             case "skill_learn" -> label + "\n수호 주화로 연구 단계를 높여 기술 피해와 재사용 효율을 강화합니다.";
@@ -116,7 +118,6 @@ final class VillageActionDescriptions {
                 || action.startsWith("gear:")
                 || action.startsWith("funding:")
                 || action.equals("buy_arrows")
-                || action.equals("buy_food")
                 || action.equals("sell_loot")
                 || action.equals("forge_upgrade")
                 || action.equals("smithy_forge_upgrade")
@@ -150,7 +151,7 @@ final class VillageActionDescriptions {
         if (action.equals("smithy_forge_upgrade") || action.equals("forge_upgrade")) return "장비 강화";
         if (action.equals("forge_combine") || action.equals("open_fusion")) return "장비 합성";
         if (action.startsWith("open_")) return "열기";
-        if (action.startsWith("buy_")) return "구매";
+        if (action.startsWith("buy_") || action.startsWith("consumable:")) return "구매";
         if (action.equals("sell_loot")) return "판매";
         if (action.startsWith("restart_")) return "재시작";
         if (action.equals("return_village")) return "귀환";

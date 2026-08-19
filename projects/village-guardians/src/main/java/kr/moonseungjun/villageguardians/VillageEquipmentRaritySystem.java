@@ -18,7 +18,7 @@ import java.util.Set;
 /** Graded game equipment, three-item fusion and per-item smithy enhancement. */
 public final class VillageEquipmentRaritySystem {
     private static final int MAIN_INVENTORY_SLOTS = 36;
-    private static final int MAX_ENHANCEMENT = 5;
+    private static final int MAX_ENHANCEMENT = 30;
     private static final List<Item> EARLY_ITEMS = List.of(
             Items.IRON_SWORD, Items.BOW, Items.SHIELD, Items.IRON_CHESTPLATE, Items.CROSSBOW);
     private static final List<Item> LATE_ITEMS = List.of(
@@ -106,13 +106,13 @@ public final class VillageEquipmentRaritySystem {
 
     public static List<EnhancementCandidate> enhancementCandidates(ServerPlayer player) {
         List<EnhancementCandidate> result = new ArrayList<>();
-        int maximum = maximumEnhancement();
         int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());
         for (int slot = 0; slot < limit; slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
             Rarity rarity = rarityOf(stack);
             if (rarity == null || !isUpgradeable(stack.getItem())) continue;
             int current = enhancementLevel(stack);
+            int maximum = maximumEnhancement(stack);
             result.add(new EnhancementCandidate(slot, baseDisplayName(stack), rarity.displayName(),
                     current, maximum, enhancementCost(stack), stack.getItem().toString(),
                     enhancementEffectSummary(stack, current),
@@ -131,7 +131,7 @@ public final class VillageEquipmentRaritySystem {
         Rarity rarity = rarityOf(stack);
         if (rarity == null || !isUpgradeable(stack.getItem())) return "게임 전용 등급 장비만 강화할 수 있습니다.";
         int current = enhancementLevel(stack);
-        int maximum = maximumEnhancement();
+        int maximum = maximumEnhancement(stack);
         if (current >= maximum) {
             return "현재 대장간에서는 " + baseDisplayName(stack) + "을(를) 더 강화할 수 없습니다. 최대 +" + maximum;
         }
@@ -151,17 +151,17 @@ public final class VillageEquipmentRaritySystem {
         int safe = Math.max(0, enhancement);
         Item item = stack.getItem();
         if (isMelee(item) || isProjectile(item)) {
-            float value = 1.0f + rarity.powerStep() * 0.055f + safe * 0.045f;
+            float value = 1.0f + rarity.powerStep() * 0.055f + enhancementAttackBonus(safe);
             String type = isMelee(item) ? "근접" : "원거리";
             return String.format(java.util.Locale.ROOT, "%s 피해 x%.3f (+%.1f%%)",
                     type, value, (value - 1.0f) * 100.0f);
         }
         if (isArmor(item) || item == Items.SHIELD) {
-            float reduction = rarity.powerStep() * 0.012f + safe * 0.008f;
+            float reduction = rarity.powerStep() * 0.012f + enhancementDefenseBonus(safe);
             return String.format(java.util.Locale.ROOT, "장비 단독 피해 감소 %.1f%%", reduction * 100.0f);
         }
         if (item == Items.BLAZE_ROD) {
-            float value = 1.0f + rarity.powerStep() * 0.035f + safe * 0.03f;
+            float value = 1.0f + rarity.powerStep() * 0.035f + enhancementSkillBonus(safe);
             return String.format(java.util.Locale.ROOT, "직업 기술 효과 x%.3f (+%.1f%%)",
                     value, (value - 1.0f) * 100.0f);
         }
@@ -169,24 +169,42 @@ public final class VillageEquipmentRaritySystem {
     }
 
     public static int maximumEnhancement() {
-        return Math.min(MAX_ENHANCEMENT, Math.max(1, VillageProgressionSystem.smithyLevel() + 1));
+        return MAX_ENHANCEMENT;
+    }
+
+    public static int maximumEnhancement(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !isUpgradeable(stack.getItem())) return 0;
+        int smithy = VillageProgressionSystem.smithyLevel();
+        int forgeCap = switch (smithy) {
+            case 0 -> 1;
+            case 1 -> 4;
+            case 2 -> 7;
+            case 3 -> 10;
+            case 4 -> 14;
+            default -> 18;
+        };
+        int endlessBonus = Math.max(0, (VillageCouncilState.currentDay() - 10) / 2);
+        return Math.min(hardEnhancementCap(stack.getItem()), forgeCap + endlessBonus);
     }
 
     public static int enhancementCost(ItemStack stack) {
         Rarity rarity = rarityOf(stack);
-        return 65 + enhancementLevel(stack) * 85 + (rarity == null ? 0 : rarity.powerStep() * 25);
+        int current = enhancementLevel(stack);
+        int masterwork = Math.max(0, current - 10);
+        return 70 + current * 90 + masterwork * masterwork * 9
+                + (rarity == null ? 0 : rarity.powerStep() * 30);
     }
 
     public static float meleeMultiplier(ItemStack stack) {
         Rarity rarity = rarityOf(stack);
         if (rarity == null || !isMelee(stack.getItem())) return 1.0f;
-        return 1.0f + rarity.powerStep() * 0.055f + enhancementLevel(stack) * 0.045f;
+        return 1.0f + rarity.powerStep() * 0.055f + enhancementAttackBonus(enhancementLevel(stack));
     }
 
     public static float projectileMultiplier(ItemStack stack) {
         Rarity rarity = rarityOf(stack);
         if (rarity == null || !isProjectile(stack.getItem())) return 1.0f;
-        return 1.0f + rarity.powerStep() * 0.055f + enhancementLevel(stack) * 0.045f;
+        return 1.0f + rarity.powerStep() * 0.055f + enhancementAttackBonus(enhancementLevel(stack));
     }
 
     public static float incomingMultiplier(ServerPlayer player) {
@@ -195,14 +213,14 @@ public final class VillageEquipmentRaritySystem {
                 EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
             reduction += rarityReduction(player.getItemBySlot(slot));
         }
-        return Math.max(0.68f, 1.0f - reduction);
+        return Math.max(0.58f, 1.0f - reduction);
     }
 
     public static float skillMultiplier(ServerPlayer player) {
         ItemStack main = player.getMainHandItem();
         ItemStack off = player.getOffhandItem();
-        float mainBonus = rarityStep(main) * 0.035f + enhancementLevel(main) * 0.03f;
-        float offBonus = rarityStep(off) * 0.035f + enhancementLevel(off) * 0.03f;
+        float mainBonus = rarityStep(main) * 0.035f + enhancementSkillBonus(enhancementLevel(main));
+        float offBonus = rarityStep(off) * 0.035f + enhancementSkillBonus(enhancementLevel(off));
         return 1.0f + Math.max(mainBonus, offBonus);
     }
 
@@ -292,7 +310,41 @@ public final class VillageEquipmentRaritySystem {
     private static float rarityReduction(ItemStack stack) {
         Rarity rarity = rarityOf(stack);
         if (rarity == null || !(isArmor(stack.getItem()) || stack.getItem() == Items.SHIELD)) return 0.0f;
-        return rarity.powerStep() * 0.012f + enhancementLevel(stack) * 0.008f;
+        return rarity.powerStep() * 0.012f + enhancementDefenseBonus(enhancementLevel(stack));
+    }
+
+    private static float enhancementAttackBonus(int level) {
+        int safe = Math.max(0, level);
+        int early = Math.min(10, safe);
+        int master = Math.min(10, Math.max(0, safe - 10));
+        int apex = Math.max(0, safe - 20);
+        return early * 0.040f + master * 0.0225f + apex * 0.0125f;
+    }
+
+    private static float enhancementSkillBonus(int level) {
+        int safe = Math.max(0, level);
+        int early = Math.min(10, safe);
+        int master = Math.min(10, Math.max(0, safe - 10));
+        int apex = Math.max(0, safe - 20);
+        return early * 0.030f + master * 0.0175f + apex * 0.010f;
+    }
+
+    private static float enhancementDefenseBonus(int level) {
+        int safe = Math.max(0, level);
+        int early = Math.min(10, safe);
+        int master = Math.min(10, Math.max(0, safe - 10));
+        return early * 0.0060f + master * 0.0035f;
+    }
+
+    private static int hardEnhancementCap(Item item) {
+        if (item == Items.MACE || item == Items.IRON_SWORD || item == Items.DIAMOND_SWORD || item == Items.NETHERITE_SWORD) return 30;
+        if (item == Items.IRON_AXE || item == Items.DIAMOND_AXE || item == Items.NETHERITE_AXE) return 28;
+        if (item == Items.TRIDENT || item == Items.BLAZE_ROD) return 26;
+        if (item == Items.BOW) return 25;
+        if (item == Items.CROSSBOW) return 24;
+        if (item == Items.SHIELD) return 22;
+        if (isArmor(item)) return 20;
+        return 0;
     }
 
     private static int rarityStep(ItemStack stack) {
@@ -307,7 +359,8 @@ public final class VillageEquipmentRaritySystem {
 
     private static boolean isMelee(Item item) {
         return item == Items.IRON_SWORD || item == Items.DIAMOND_SWORD || item == Items.NETHERITE_SWORD
-                || item == Items.IRON_AXE || item == Items.DIAMOND_AXE || item == Items.NETHERITE_AXE;
+                || item == Items.IRON_AXE || item == Items.DIAMOND_AXE || item == Items.NETHERITE_AXE
+                || item == Items.MACE;
     }
 
     private static boolean isProjectile(Item item) {
@@ -325,6 +378,7 @@ public final class VillageEquipmentRaritySystem {
         if (item == Items.BOW) return "수호 장궁";
         if (item == Items.CROSSBOW) return "수호 쇠뇌";
         if (item == Items.TRIDENT) return "성문 수호창";
+        if (item == Items.MACE) return "공성 전투망치";
         if (item == Items.SHIELD) return "수호 방패";
         if (item == Items.BLAZE_ROD) return "비전 집중봉";
         if (item == Items.IRON_SWORD || item == Items.DIAMOND_SWORD || item == Items.NETHERITE_SWORD) return "수호검";

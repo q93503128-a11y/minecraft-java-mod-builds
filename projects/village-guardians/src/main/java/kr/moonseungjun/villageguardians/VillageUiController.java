@@ -185,11 +185,17 @@ public final class VillageUiController {
                     available ? "구매 가능" : status, available ? "available" : "locked"));
         }
         int arrows = 16 + VillageProgressionSystem.storehouseLevel() * 4;
-        int food = 5 + VillageProgressionSystem.storehouseLevel() * 2;
-        addShop(actions, labels, "buy_arrows", "other", "화살 " + arrows + "개", "주화 14",
+        addShop(actions, labels, "claim_bread", "consumable", "오늘의 배급 식량", "무료",
+                "하루 1회 기본 허기 회복 식량 · 접속 시 자동 지급, 놓쳤다면 여기서 수령", "하루 1회", true);
+        addShop(actions, labels, "buy_arrows", "consumable", "화살 " + arrows + "개", "주화 14",
                 "원거리 전투 보급", "구매 가능", true);
-        addShop(actions, labels, "buy_food", "other", "전투 식량 " + food + "개", "주화 18",
-                "허기 회복용 익힌 소고기", "구매 가능", true);
+        for (VillageConsumableSystem.Consumable consumable : VillageConsumableSystem.catalog()) {
+            boolean available = VillageConsumableSystem.unlocked(consumable);
+            addShop(actions, labels, "consumable:" + consumable.id(), "consumable",
+                    consumable.displayName() + " ×" + VillageConsumableSystem.bundleCount(consumable),
+                    "주화 " + VillageConsumableSystem.effectiveCost(consumable), consumable.description(),
+                    VillageConsumableSystem.status(consumable), available);
+        }
         actions.add("open_item_sell");
         labels.add("shop_utility|보유품 선택 판매");
         actions.add("sell_loot");
@@ -238,7 +244,7 @@ public final class VillageUiController {
                     + "\n강화 후 수치: " + candidate.nextEffect());
         }
         send(player, "building", "장비 강화",
-                "강화할 장비를 직접 선택합니다. 대장간 레벨이 오르면 가능한 최대 강화 단계가 증가합니다.",
+                "강화할 장비를 직접 선택합니다. 대장간 레벨과 방어 일수가 장기 강화 한도를 열며 장비 계열별 최종 상한이 다릅니다.",
                 actions, labels);
     }
 
@@ -471,6 +477,16 @@ public final class VillageUiController {
                     VillageEquipmentShop.purchase(player, action.substring(5)), "open_equipment_shop");
             return true;
         }
+        if (action.startsWith("consumable:")) {
+            if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+                player.sendSystemMessage(Component.literal("§c전투 소모품 구매는 창고 단말기 근처에서만 가능합니다."));
+            } else {
+                openResult(player, "전투 소모품 구매 결과",
+                        VillageConsumableSystem.purchase(player, action.substring("consumable:".length())),
+                        "open_equipment_shop");
+            }
+            return true;
+        }
         if (action.startsWith("fusion_combine:")) {
             if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {
                 player.sendSystemMessage(Component.literal("§c장비 합성은 대장간 단말기 근처에서만 가능합니다."));
@@ -645,11 +661,11 @@ public final class VillageUiController {
                             "open_equipment_shop");
                 }
             }
-            case "buy_food" -> {
+            case "claim_bread" -> {
                 if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
-                    player.sendSystemMessage(Component.literal("§c식량 구매는 창고 단말기 근처에서만 가능합니다."));
+                    player.sendSystemMessage(Component.literal("§c배급 식량 수령은 창고 단말기 근처에서만 가능합니다."));
                 } else {
-                    openResult(player, "식량 구매 결과", VillageProgressionSystem.buyFood(player),
+                    openResult(player, "배급 식량", VillageProgressionSystem.claimDailyBread(player),
                             "open_equipment_shop");
                 }
             }
@@ -690,11 +706,11 @@ public final class VillageUiController {
         return switch (building) {
             case WALLS -> "현장에서는 정찰만 확인합니다. 수리·강화·포탑 건설은 회관에서 진행합니다.";
             case SMITHY -> "등급 장비를 하나씩 선택해 강화하고, 같은 종류·등급·강화 단계 장비 세 개를 합성합니다.";
-            case SKILL_HALL -> "직업 기술과 용병·포탑 방어 연구를 담당합니다.";
+            case SKILL_HALL -> "직업 기술과 용병·포탑 방어 연구를 담당합니다. 연구소 레벨마다 기술 위력·지속시간이 +5% 상승하고 재사용 효율도 개선됩니다.";
             case INFIRMARY -> "낮 동안 마을 안 플레이어의 체력을 항상 완전히 회복하고, 레벨별 전투 버프를 제공합니다.";
             case BARRACKS -> "다음 밤 적 정찰과 용병 고용, 모든 경험치 획득량 증가 패시브를 담당합니다. 현재 XP +"
                     + (VillageProgressionSystem.experienceMultiplierPercent() - 100) + "%";
-            case STOREHOUSE -> "장비·식량·화살 구매와 전리품 판매를 담당합니다.";
+            case STOREHOUSE -> "일일 배급 식량·화살·전투 소모품·장비 구매와 전리품 판매를 담당합니다.";
             case TOWN_HALL -> "직업 배치와 모든 시설 수리·강화·건설을 담당합니다.";
         };
     }
@@ -706,14 +722,14 @@ public final class VillageUiController {
             case WALLS -> "최대 내구도 " + (1200 + safe * 350) + " · 포탑 설치 단계 " + safe;
             case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 마을 장비 공격 보정 +" + (safe * 4)
                     + "% · 개인 장비 강화·등급 합성";
-            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 직업 기술·마을 방어 연구";
+            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 기술 위력 +" + (safe * 5) + "% · 지속 +" + (safe * 5) + "% · 재사용 효율 +" + safe + "초 · 마을 방어 연구";
             case INFIRMARY -> "최대 내구도 " + (520 + safe * 110) + " · 낮 동안 체력 완전 회복"
                     + (safe >= 1 ? " · 피해 저항" : "")
                     + (safe >= 2 ? " · 이동 속도" : "")
                     + (safe >= 3 ? " · 공격력" : "")
                     + (safe >= 4 ? " · 재생" : "")
                     + (safe >= 5 ? " · 보호막" : "");
-            case STOREHOUSE -> "최대 내구도 " + (560 + safe * 120) + " · 상품·보유품 판매·전리품 정산";
+            case STOREHOUSE -> "최대 내구도 " + (560 + safe * 120) + " · 일일 배급·전투 소모품·상품·전리품 정산";
             case BARRACKS -> "최대 내구도 " + (620 + safe * 130) + " · 모든 XP +" + (safe * 10)
                     + "% · 기본 용병 정원 " + (1 + safe / 2);
         };

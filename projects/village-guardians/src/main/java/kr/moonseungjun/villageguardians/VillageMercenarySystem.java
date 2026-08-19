@@ -25,6 +25,7 @@ import java.util.UUID;
 
 /** Persistent classed mercenaries backed by world SavedData rather than removed entity tag APIs. */
 public final class VillageMercenarySystem {
+    public static final int MAX_LEVEL = 60;
     private static final Map<UUID, MercenaryClass> CLASSES = new LinkedHashMap<>();
     private static final Map<UUID, Integer> LEVELS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> KILLS = new LinkedHashMap<>();
@@ -46,7 +47,7 @@ public final class VillageMercenarySystem {
             if (kind != null) CLASSES.put(uuid, kind);
         }));
         savedData.levels().forEach((key, value) -> parseUuid(key,
-                uuid -> LEVELS.put(uuid, Math.max(1, Math.min(5, value)))));
+                uuid -> LEVELS.put(uuid, Math.max(1, Math.min(MAX_LEVEL, value)))));
         savedData.kills().forEach((key, value) -> parseUuid(key,
                 uuid -> KILLS.put(uuid, Math.max(0, value))));
         sanitize();
@@ -174,7 +175,8 @@ public final class VillageMercenarySystem {
         UUID uuid = mercenary.getUUID();
         int kills = KILLS.getOrDefault(uuid, 0) + 1;
         int currentRank = LEVELS.getOrDefault(uuid, 1);
-        int nextRank = Math.min(5, 1 + kills / 8);
+        int nextRank = currentRank;
+        while (nextRank < MAX_LEVEL && kills >= killsRequiredForLevel(nextRank + 1)) nextRank++;
         KILLS.put(uuid, kills);
         if (nextRank > currentRank) {
             LEVELS.put(uuid, nextRank);
@@ -197,7 +199,7 @@ public final class VillageMercenarySystem {
         return "용병 " + count(level) + " / " + capacity()
                 + " · 용병 교리 Lv."
                 + VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.MERCENARY)
-                + " · 적 처치 경험으로 최대 Lv.5까지 성장";
+                + " · 적 처치 경험으로 최대 Lv." + MAX_LEVEL + "까지 장기 성장";
     }
 
     public static int capacity() {
@@ -215,35 +217,39 @@ public final class VillageMercenarySystem {
     }
 
     private static void bastionControl(ServerLevel level, IronGolem mercenary, int rank) {
-        double radius = 4.5 + rank * 0.55;
+        double radius = 4.5 + Math.min(6.5, rank * 0.11);
+        int limit = 5 + Math.min(10, rank / 5);
         Vec3 eye = mercenary.position().add(0, 1.8, 0);
         boolean engaged = false;
-        for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), radius, 5 + rank, null)) {
+        for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), radius, limit, null)) {
             if (!VillageDefenseLineOfSight.hasLine(level, eye, enemy)) continue;
             enemy.setTarget(mercenary);
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 28 + rank * 5, 0));
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 28 + Math.min(90, rank * 2), 0));
             engaged = true;
         }
         if (engaged) VillageDefenseEffectSystem.mercenaryGuardPulse(level, mercenary.position(), radius);
     }
 
     private static void strikerPressure(ServerLevel level, IronGolem mercenary, int rank) {
-        Mob target = VillageRaidSystem.nearestActiveEnemy(level, mercenary.blockPosition(), 22.0 + rank * 2.0);
+        double range = 22.0 + Math.min(30.0, rank * 0.50);
+        Mob target = VillageRaidSystem.nearestActiveEnemy(level, mercenary.blockPosition(), range);
         if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.position().add(0, 1.8, 0), target)) return;
         mercenary.setTarget(target);
-        mercenary.getNavigation().moveTo(target, 1.18 + rank * 0.025);
+        mercenary.getNavigation().moveTo(target, 1.18 + Math.min(0.35, rank * 0.006));
         VillageDefenseEffectSystem.mercenaryStrikerPressure(level, mercenary.position().add(0, 1.2, 0),
                 target.position().add(0, target.getBbHeight() * 0.5, 0));
     }
 
     private static void rangedAttack(ServerLevel level, IronGolem mercenary, int rank) {
         Vec3 start = mercenary.position().add(0, 1.8, 0);
-        Mob target = VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), 42.0 + rank * 3.0, 18, null)
+        double range = 42.0 + Math.min(48.0, rank * 0.80);
+        Mob target = VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), range,
+                        18 + Math.min(18, rank / 3), null)
                 .stream().filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))
                 .min(java.util.Comparator.comparingDouble(mercenary::distanceToSqr)).orElse(null);
         mercenary.setTarget(null);
         if (target == null) return;
-        float damage = (3.0f + rank * 1.3f) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
+        float damage = 4.3f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
         Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
         VillageDefenseEffectSystem.mercenaryRangerShot(level, start, end);
         level.sendParticles(ParticleTypes.CRIT, end.x, end.y, end.z, 4, 0.14, 0.18, 0.14, 0.02);
@@ -251,39 +257,55 @@ public final class VillageMercenarySystem {
     }
 
     private static void healAllies(ServerLevel level, MinecraftServer server, IronGolem medic, int rank) {
-        float amount = 1.5f + rank * 0.8f;
-        AABB area = medic.getBoundingBox().inflate(8.0 + rank);
+        float amount = 2.3f * mercenaryPower(rank);
+        double radius = 8.0 + Math.min(13.0, rank * 0.22);
+        AABB area = medic.getBoundingBox().inflate(radius);
         for (IronGolem ally : level.getEntitiesOfClass(IronGolem.class, area,
-                entity -> isMercenary(entity.getUUID()) && entity.isAlive())) {
-            ally.heal(amount);
-        }
-        double radiusSquared = (8.0 + rank) * (8.0 + rank);
+                entity -> isMercenary(entity.getUUID()) && entity.isAlive())) ally.heal(amount);
+        double radiusSquared = radius * radius;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() == level && player.distanceToSqr(medic) <= radiusSquared
                     && !VillageRespawnSystem.isDowned(player)) player.heal(amount * 0.65f);
         }
-        VillageDefenseEffectSystem.mercenaryHealPulse(level, medic.position(), 8.0 + rank);
+        VillageDefenseEffectSystem.mercenaryHealPulse(level, medic.position(), radius);
         level.sendParticles(ParticleTypes.HEART, medic.getX(), medic.getY() + 1.4, medic.getZ(),
-                3 + rank, 0.55, 0.4, 0.55, 0.02);
+                3 + Math.min(10, rank / 5), 0.55, 0.4, 0.55, 0.02);
+    }
+
+    private static float mercenaryPower(int rank) {
+        int safe = Math.max(1, Math.min(MAX_LEVEL, rank));
+        int veteran = Math.min(19, safe - 1);
+        int elite = Math.max(0, safe - 20);
+        return 1.0f + veteran * 0.05f + elite * 0.025f;
+    }
+
+    private static int killsRequiredForLevel(int level) {
+        int n = Math.max(0, Math.min(MAX_LEVEL - 1, level - 1));
+        return n * 6 + (n * n) / 2;
     }
 
     private static void applyClassPassives(IronGolem mercenary, MercenaryClass kind, int rank) {
         int duration = 20 * 60 * 60;
+        int healthTier = Math.min(4, Math.max(0, (rank - 1) / 12));
+        if (healthTier > 0) {
+            mercenary.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, duration, healthTier - 1, false, false));
+        }
         if (kind == MercenaryClass.BASTION) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration,
-                    Math.min(2, rank / 2), false, false));
+                    Math.min(2, rank / 20), false, false));
             mercenary.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration,
-                    Math.min(3, rank - 1), false, false));
+                    Math.min(3, Math.max(0, rank / 12)), false, false));
         } else if (kind == MercenaryClass.STRIKER) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration,
-                    Math.min(2, rank / 2), false, false));
+                    Math.min(2, rank / 20), false, false));
             mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration,
-                    Math.min(1, rank / 3), false, false));
+                    Math.min(1, rank / 30), false, false));
         } else if (kind == MercenaryClass.RANGER) {
-            mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 0, false, false));
+            mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration,
+                    rank >= 35 ? 1 : 0, false, false));
         } else if (kind == MercenaryClass.MEDIC) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration,
-                    Math.min(1, rank / 3), false, false));
+                    rank >= 30 ? 1 : 0, false, false));
         }
     }
 
@@ -321,7 +343,7 @@ public final class VillageMercenarySystem {
                     MercenaryClass kind = MercenaryClass.fromId(parts[0]);
                     if (kind == null) return;
                     try {
-                        int level = Math.max(1, Math.min(5, Integer.parseInt(parts[1])));
+                        int level = Math.max(1, Math.min(MAX_LEVEL, Integer.parseInt(parts[1])));
                         int kills = Math.max(0, Integer.parseInt(parts[2]));
                         NIGHT_SNAPSHOT.add(new MercenarySnapshot(kind, level, kills));
                     } catch (NumberFormatException ignored) {

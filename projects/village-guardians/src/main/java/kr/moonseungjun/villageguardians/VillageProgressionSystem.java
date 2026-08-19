@@ -260,6 +260,14 @@ public final class VillageProgressionSystem {
         return 1.0f + skillRank(player) * 0.08f;
     }
 
+    public static synchronized float skillHallPowerMultiplier() {
+        return isOperational(Building.SKILL_HALL) ? 1.0f + skillHallLevel * 0.05f : 1.0f;
+    }
+
+    public static synchronized float skillHallDurationMultiplier() {
+        return isOperational(Building.SKILL_HALL) ? 1.0f + skillHallLevel * 0.05f : 1.0f;
+    }
+
     public static synchronized float wallDamageMultiplier() {
         if (!isOperational(Building.WALLS)) {
             return 1.0f;
@@ -268,11 +276,13 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized int skillDurationBonusTicks(ServerPlayer player) {
-        return barracksLevel * 40 + skillRank(player) * 60;
+        return skillHallLevel * 30 + skillRank(player) * 60;
     }
 
     public static synchronized int skillCooldownReductionSeconds(ServerPlayer player) {
-        return barracksLevel * 2 + skillRank(player);
+        int research = isOperational(Building.SKILL_HALL) ? skillHallLevel : 0;
+        int barracksSupport = isOperational(Building.BARRACKS) ? barracksLevel / 2 : 0;
+        return Math.min(7, research + barracksSupport + skillRank(player) / 2);
     }
 
     public static synchronized int raidRewardMultiplierPercent() {
@@ -313,17 +323,17 @@ public final class VillageProgressionSystem {
         int day = VillageCouncilState.currentDay();
         int lastClaimed = CLAIM_DAYS.getOrDefault(player.getUUID(), 0);
         if (lastClaimed >= day) {
-            return "오늘의 빵 보급은 이미 받았습니다.";
+            return "오늘의 배급 식량은 이미 받았습니다.";
         }
         int count = 3 + storehouseLevel * 2;
         ItemStack bread = Items.BREAD.getDefaultInstance();
         bread.setCount(count);
         bread.set(DataComponents.CUSTOM_NAME,
-                Component.literal("마을 배급빵").withStyle(ChatFormatting.GOLD));
+                Component.literal("마을 배급 식량").withStyle(ChatFormatting.GOLD));
         giveOrDrop(player, bread);
         CLAIM_DAYS.put(player.getUUID(), day);
         persist();
-        return "오늘의 빵 " + count + "개를 받았습니다.";
+        return "오늘의 배급 식량 " + count + "개를 받았습니다.";
     }
 
     public static synchronized void grantDailyBreadOnLogin(ServerPlayer player) {
@@ -353,20 +363,7 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized String buyFood(ServerPlayer player) {
-        if (!isOperational(Building.STOREHOUSE)) {
-            return "상점·보급소가 파괴되어 상점을 이용할 수 없습니다.";
-        }
-        int count = 5 + storehouseLevel * 2;
-        int cost = 18;
-        if (!spendCoins(player, cost)) {
-            return "수호 주화가 부족합니다. 전투 식량 가격: " + cost;
-        }
-        ItemStack food = Items.COOKED_BEEF.getDefaultInstance();
-        food.setCount(count);
-        food.set(DataComponents.CUSTOM_NAME,
-                Component.literal("전투 건량").withStyle(ChatFormatting.GOLD));
-        giveOrDrop(player, food);
-        return "전투 식량 " + count + "개 구매 완료 | 남은 주화 " + coins(player);
+        return "유료 일반 식량은 일일 배급 식량으로 통합되었습니다. 상점의 전투 소모품을 이용하세요.";
     }
 
     public static synchronized String improveForgeRank(ServerPlayer player) {

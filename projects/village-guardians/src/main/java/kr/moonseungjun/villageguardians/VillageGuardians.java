@@ -51,6 +51,7 @@ public final class VillageGuardians {
         VillageSiegePersistence.initializeServer(event.getServer());
         VillagePlacedTurretSystem.initializeServer(event.getServer());
         VillageRoleAbilitySystem.reset();
+        VillageConsumableSystem.resetTransientState();
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
@@ -121,6 +122,7 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (VillageConsumableSystem.handleItemInteraction(event)) return;
         VillageStarterKit.handleItemInteraction(event);
     }
 

@@ -26,6 +26,7 @@ final class VillageFortressTerrain {
         terraform(level, center, groundY);
         buildRoads(level, center, groundY);
         buildWalls(level, center, groundY);
+        buildDefenderGalleries(level, center, groundY);
         buildTower(level, center.offset(-WALL_RADIUS, 0, -WALL_RADIUS), groundY);
         buildTower(level, center.offset(WALL_RADIUS, 0, -WALL_RADIUS), groundY);
         buildTower(level, center.offset(-WALL_RADIUS, 0, WALL_RADIUS), groundY);
@@ -40,6 +41,7 @@ final class VillageFortressTerrain {
     static void rebuildNorthGate(ServerLevel level, BlockPos center) {
         int groundY = center.getY() - 1;
         buildNorthGate(level, center, groundY);
+        buildDefenderGalleries(level, center, groundY);
         clearMainAvenue(level, center, groundY);
         buildWallAccess(level, center, groundY);
         buildGateControl(level, center, groundY);
@@ -203,6 +205,14 @@ final class VillageFortressTerrain {
                     set(level, new BlockPos(center.getX() + dx, groundY + y, z), material);
                 }
             }
+            if (Math.floorMod(dx, 6) == 0) {
+                for (int offset = 0; offset < WALL_THICKNESS; offset++) {
+                    int z = center.getZ() + startZ + offset;
+                    set(level, new BlockPos(center.getX() + dx, groundY + 3, z), Blocks.AIR);
+                }
+                int stepZ = center.getZ() + (north ? startZ + WALL_THICKNESS : startZ - 1);
+                set(level, new BlockPos(center.getX() + dx, groundY + 1, stepZ), Blocks.STONE_BRICKS);
+            }
             if (Math.floorMod(dx, 3) != 1) {
                 int outerZ = center.getZ() + (north ? startZ : startZ + WALL_THICKNESS - 1);
                 int innerZ = center.getZ() + (north ? startZ + WALL_THICKNESS - 1 : startZ);
@@ -221,11 +231,47 @@ final class VillageFortressTerrain {
                     set(level, new BlockPos(x, groundY + y, center.getZ() + dz), material);
                 }
             }
+            if (Math.floorMod(dz, 6) == 0) {
+                for (int offset = 0; offset < WALL_THICKNESS; offset++) {
+                    int x = center.getX() + startX + offset;
+                    set(level, new BlockPos(x, groundY + 3, center.getZ() + dz), Blocks.AIR);
+                }
+                int stepX = center.getX() + (startX < 0 ? startX + WALL_THICKNESS : startX - 1);
+                set(level, new BlockPos(stepX, groundY + 1, center.getZ() + dz), Blocks.STONE_BRICKS);
+            }
             if (Math.floorMod(dz, 3) != 1) {
                 int outerX = center.getX() + (startX < 0 ? startX : startX + WALL_THICKNESS - 1);
                 int innerX = center.getX() + (startX < 0 ? startX + WALL_THICKNESS - 1 : startX);
                 set(level, new BlockPos(outerX, groundY + WALL_TOP_Y + 1, center.getZ() + dz), Blocks.STONE_BRICKS);
                 set(level, new BlockPos(innerX, groundY + WALL_TOP_Y + 1, center.getZ() + dz), Blocks.STONE_BRICKS);
+            }
+        }
+    }
+
+    private static void buildDefenderGalleries(ServerLevel level, BlockPos center, int groundY) {
+        int floorY = groundY + WALL_TOP_Y;
+        for (int offset = -WALL_RADIUS; offset <= WALL_RADIUS; offset++) {
+            boolean murderHole = Math.floorMod(offset, 4) == 0;
+            for (int outward = 0; outward <= 2; outward++) {
+                if (outward == 2 && murderHole) continue;
+                set(level, new BlockPos(center.getX() + offset, floorY,
+                        center.getZ() - WALL_RADIUS - outward), Blocks.STONE_BRICKS);
+                set(level, new BlockPos(center.getX() + offset, floorY,
+                        center.getZ() + WALL_RADIUS + outward), Blocks.STONE_BRICKS);
+                set(level, new BlockPos(center.getX() - WALL_RADIUS - outward, floorY,
+                        center.getZ() + offset), Blocks.STONE_BRICKS);
+                set(level, new BlockPos(center.getX() + WALL_RADIUS + outward, floorY,
+                        center.getZ() + offset), Blocks.STONE_BRICKS);
+            }
+            if (!murderHole) {
+                set(level, new BlockPos(center.getX() + offset, floorY + 1,
+                        center.getZ() - WALL_RADIUS - 2), Blocks.STONE_BRICK_WALL);
+                set(level, new BlockPos(center.getX() + offset, floorY + 1,
+                        center.getZ() + WALL_RADIUS + 2), Blocks.STONE_BRICK_WALL);
+                set(level, new BlockPos(center.getX() - WALL_RADIUS - 2, floorY + 1,
+                        center.getZ() + offset), Blocks.STONE_BRICK_WALL);
+                set(level, new BlockPos(center.getX() + WALL_RADIUS + 2, floorY + 1,
+                        center.getZ() + offset), Blocks.STONE_BRICK_WALL);
             }
         }
     }

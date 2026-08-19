@@ -145,6 +145,28 @@ public final class VillagePlacedTurretSystem {
         return PENDING.remove(player.getUUID()) == null ? "진행 중인 포탑 배치가 없습니다." : "포탑 배치를 취소했습니다.";
     }
 
+    public static synchronized String fieldRepairNearest(ServerPlayer player, int amount) {
+        if (player == null || !(player.level() instanceof ServerLevel level)) return "";
+        double rangeSquared = 12.0 * 12.0;
+        TurretState target = TURRETS.values().stream()
+                .filter(TurretState::active)
+                .filter(state -> state.hp() > 0 && state.hp() < maxHp(state))
+                .filter(state -> player.position().distanceToSqr(Vec3.atCenterOf(state.pos())) <= rangeSquared)
+                .min(Comparator.comparingDouble(state ->
+                        player.position().distanceToSqr(Vec3.atCenterOf(state.pos()))))
+                .orElse(null);
+        if (target == null) return "";
+        int repairedHp = Math.min(maxHp(target), target.hp() + Math.max(1, amount));
+        TurretState repaired = new TurretState(target.id(), target.type(), target.pos(), target.level(), repairedHp, true);
+        TURRETS.put(target.id(), repaired);
+        persist(repaired);
+        buildVisual(level, repaired);
+        VillageDefenseEffectSystem.turretRepairPulse(level,
+                Vec3.atCenterOf(repaired.pos()).add(0.0, -0.35, 0.0));
+        return "응급 포탑 수리 키트 사용 · " + repaired.type().displayName() + " #" + repaired.id()
+                + " HP " + target.hp() + " → " + repairedHp;
+    }
+
     public static synchronized String repair(ServerPlayer player, int id) {
         if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 수리할 수 없습니다.";
         TurretState state = TURRETS.get(id);

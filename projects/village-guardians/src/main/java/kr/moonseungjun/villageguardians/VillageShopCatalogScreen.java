@@ -173,12 +173,12 @@ public final class VillageShopCatalogScreen extends Screen {
 
     private String guidance(OfferCard card) {
         if (card.action().equals("sell_loot")) {
-            return "[판매용] 전리품과 구형 바닐라 잡템만 일괄 정산합니다. 수호 화살·전투 건량·마을 배급빵은 제외됩니다.";
+            return "[판매용] 전리품과 구형 바닐라 잡템만 일괄 정산합니다. 수호 화살·마을 배급 식량·전투 소모품은 제외됩니다.";
         }
         if (card.action().equals("open_item_sell")) {
             return "개별 판매 화면에서 실제 판매 대상을 직접 고른 뒤 다시 실행합니다.";
         }
-        if (card.action().equals("buy_arrows") || card.action().equals("buy_food")) {
+        if (card.action().equals("buy_arrows") || card.action().equals("claim_bread") || card.action().startsWith("consumable:")) {
             return "반복 구매용 보급품입니다. 실행 버튼을 누르면 별도 확인창 없이 즉시 구매하고 상점을 갱신합니다.";
         }
         return "주화가 소모되는 장비 구매는 마지막 확인창에서 한 번 더 검토할 수 있습니다.";
@@ -187,6 +187,7 @@ public final class VillageShopCatalogScreen extends Screen {
     private String actionLabel(OfferCard card) {
         if (!card.available()) return "이용 불가";
         if (card.action().equals("open_item_sell")) return "판매 목록 열기";
+        if (card.action().equals("claim_bread")) return "수령";
         if (card.action().equals("sell_loot")) return "일괄 정산";
         return "구매";
     }
@@ -243,7 +244,7 @@ public final class VillageShopCatalogScreen extends Screen {
 
     private void execute(OfferCard card) {
         String action = card.action();
-        if (action.equals("open_item_sell") || action.equals("buy_arrows") || action.equals("buy_food")) {
+        if (action.equals("open_item_sell") || action.equals("buy_arrows") || action.equals("claim_bread") || action.startsWith("consumable:")) {
             ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
             return;
         }

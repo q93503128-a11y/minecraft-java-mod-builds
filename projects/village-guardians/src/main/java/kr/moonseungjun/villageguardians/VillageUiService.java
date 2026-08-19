@@ -452,7 +452,6 @@ public final class VillageUiService {
                     + player.blockPosition().getZ() + "로 모여 주세요.");
             case "claim_bread" -> actAndReopen(player, () -> VillageProgressionSystem.claimDailyBread(player), VillageProgressionSystem.Building.STOREHOUSE);
             case "buy_arrows" -> actAndReopen(player, () -> VillageProgressionSystem.buyArrows(player), VillageProgressionSystem.Building.STOREHOUSE);
-            case "buy_food" -> actAndReopen(player, () -> VillageProgressionSystem.buyFood(player), VillageProgressionSystem.Building.STOREHOUSE);
             case "sell_loot" -> actAndReopen(player, () -> VillageTradingSystem.sellMonsterDrops(player), VillageProgressionSystem.Building.STOREHOUSE);
             case "forge_upgrade" -> actAndReopen(player, () -> VillageProgressionSystem.improveForgeRank(player), VillageProgressionSystem.Building.SMITHY);
             case "skill_learn" -> actAndReopen(player, () -> VillageProgressionSystem.learnNextSkill(player), VillageProgressionSystem.Building.SKILL_HALL);
@@ -507,8 +506,7 @@ public final class VillageUiService {
                 add(actions, labels,
                         "claim_bread", "오늘의 무료 빵 받기|하루 한 번 식량 보급",
                         "buy_arrows", "화살 " + arrows + "개 · 주화 14|원거리 전투 보급",
-                        "buy_food", "전투 식량 " + food + "개 · 주화 18|허기 회복용 익힌 소고기",
-                        "sell_loot", "몬스터 전리품 일괄 판매|판매 가능한 전리품을 주화로 교환",
+                                                "sell_loot", "몬스터 전리품 일괄 판매|판매 가능한 전리품을 주화로 교환",
                         "open_equipment_shop", "성장 장비 상점|레벨과 방어 일수별 장비 구매");
             }
             case BARRACKS -> add(actions, labels,
@@ -539,7 +537,7 @@ public final class VillageUiService {
             case WALLS -> "최대 내구도 " + (1200 + safe * 350) + " · 방어탑 설치 단계 " + safe
                     + (server == null ? "" : " · " + VillageDefenseSystem.status(server.overworld()));
             case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 장비 강화 피해 보정 " + (safe * 4) + "%";
-            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 공용 전술·직업 성장·기술 장착 연구 기반";
+            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 기술 위력/지속 +" + (safe * 5) + "% · 공용 전술·직업 연구";
             case INFIRMARY -> "최대 내구도 " + (520 + safe * 110) + " · 즉시 치료량 "
                     + Math.round((6.0f + safe * 4.0f) / 2.0f) + "칸";
             case STOREHOUSE -> "최대 내구도 " + (560 + safe * 120) + " · 일일 식량·성장 장비·습격 보상 강화";

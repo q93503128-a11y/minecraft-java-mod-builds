@@ -37,8 +37,7 @@ public final class VillageTradingSystem {
         NAMED_PRICES.put("[판매용] 전쟁 주술봉 파편", 22);
         // Useful supplies keep a manual resale value, but must never be swept by the bulk junk action.
         NAMED_PRICES.put("수호 화살", 1);
-        NAMED_PRICES.put("전투 건량", 3);
-        NAMED_PRICES.put("마을 배급빵", 2);
+        NAMED_PRICES.put("마을 배급 식량", 2);
     }
 
     private VillageTradingSystem() {}

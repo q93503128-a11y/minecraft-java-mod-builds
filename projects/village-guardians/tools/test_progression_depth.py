@@ -64,7 +64,7 @@ def main() -> None:
     assert "VillageUiSafeArea.screen" in shop_ui
     assert "VillageConfirmScreen" in shop_ui
     assert "ChatFormatting.stripFormatting" in shop_ui
-    assert 'action.equals("buy_arrows")' in shop_ui and 'action.equals("buy_food")' in shop_ui
+    assert 'action.equals("buy_arrows")' in shop_ui and 'action.startsWith("consumable:")' in shop_ui
     assert 'action.equals("open_item_sell")' in shop_ui and 'action.equals("sell_loot")' in shop_ui
 
     print("[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs")
