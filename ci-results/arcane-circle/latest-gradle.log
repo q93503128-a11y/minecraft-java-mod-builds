@@ -1,1 +1,5 @@
-projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/ArcaneBuffRuntime.java: expected one anchor, got 0: 'state.nextChargeAt = now + 60;'
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 70, in <module>
+    assert token in summary, token
+           ^^^^^^^^^^^^^^^^
+AssertionError: 14초 지속
