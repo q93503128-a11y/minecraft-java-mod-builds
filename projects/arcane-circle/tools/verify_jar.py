@@ -10,6 +10,17 @@ jar = Path(sys.argv[1])
 if not jar.is_file():
     raise SystemExit(f"missing JAR: {jar}")
 
+staff_recipes = {
+    "data/arcanecircle/recipe/aegis_staff.json",
+    "data/arcanecircle/recipe/archmage_staff.json",
+    "data/arcanecircle/recipe/ember_staff.json",
+    "data/arcanecircle/recipe/glacial_staff.json",
+    "data/arcanecircle/recipe/rift_staff.json",
+    "data/arcanecircle/recipe/sage_staff.json",
+    "data/arcanecircle/recipe/verdant_staff.json",
+    "data/arcanecircle/recipe/zephyr_staff.json",
+}
+
 required = {
     "META-INF/neoforge.mods.toml",
     "META-INF/THIRD_PARTY_NOTICES.md",
@@ -21,6 +32,7 @@ required = {
     "kr/moonseungjun/arcanecircle/client/AuthoredHighCircleTimeline.class",
     "kr/moonseungjun/arcanecircle/client/SpellCinematicDirector.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneSigilDirector.class",
+    "kr/moonseungjun/arcanecircle/client/PersistentBuffRegalia.class",
     "kr/moonseungjun/arcanecircle/client/GrimoireScreen.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneHud.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneRegaliaRenderer.class",
@@ -40,7 +52,7 @@ required = {
     "assets/arcanecircle/items/spellbook_meteor_swarm.json",
     "assets/arcanecircle/items/spellbook_wish.json",
     "assets/arcanecircle/items/spellbook_gate.json",
-}
+} | staff_recipes
 
 with zipfile.ZipFile(jar) as archive:
     names = archive.namelist()
@@ -50,10 +62,12 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit(f"missing required entries: {missing}")
     if len(names) != len(name_set):
         raise SystemExit("duplicate ZIP entries")
+    packaged_staff_recipes = {name for name in name_set if name.startswith("data/arcanecircle/recipe/") and name.endswith("_staff.json")}
+    if packaged_staff_recipes != staff_recipes:
+        raise SystemExit(f"staff recipe set mismatch: {sorted(packaged_staff_recipes)}")
     forbidden = [
         name for name in names
-        if name.startswith("data/arcanecircle/recipe/")
-        or "villager_trade" in name
+        if "villager_trade" in name
         or name.endswith(".java")
         or name.startswith(("tools/", ".github/"))
     ]
@@ -71,6 +85,8 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit(f"JAR/version mismatch: {jar.name} vs {version}")
     if index.get("implemented_circles") != list(range(1, 10)) or index.get("direct_spells") != 90:
         raise SystemExit("JAR catalogue is not the full 1-9 circle world")
+    if index.get("crafting_progression") is not True:
+        raise SystemExit("staff crafting progression is not enabled")
     notice = archive.read("META-INF/THIRD_PARTY_NOTICES.md").decode("utf-8")
     if "Creative Commons Attribution 4.0" not in notice:
         raise SystemExit("SRD attribution missing from JAR")
@@ -78,5 +94,5 @@ with zipfile.ZipFile(jar) as archive:
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 checksum = jar.with_name(jar.name + ".sha256")
 checksum.write_text(f"{digest}  {jar.name}\n", encoding="utf-8")
-print(f"Arcane Circle v0.12.1 JAR verification: PASS ({len(names)} entries)")
+print(f"Arcane Circle v0.12.1 JAR verification: PASS ({len(names)} entries, {len(staff_recipes)} staff recipes)")
 print(f"SHA-256: {digest}")
