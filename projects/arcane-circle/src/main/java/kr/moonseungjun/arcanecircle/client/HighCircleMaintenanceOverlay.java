@@ -113,9 +113,30 @@ final class HighCircleMaintenanceOverlay {
         ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
         Vec3 sky = target.add(0, 22, 0);
         double r = 7.8;
+        if (release) {
+            // The casting seal does not remain as a rotating HUD-like target marker. It fractures
+            // into sixteen short apertures, then disappears so the falling meteor bodies dominate.
+            double q = clamp(t / 1.05, 0.0, 1.0);
+            if (q >= 1.0) return;
+            double fadeRadius = r * (1.0 - q * .16);
+            for (int quadrant = 0; quadrant < 4; quadrant++) {
+                double a = quadrant * Math.PI / 2.0 + .10 + q * .08;
+                m.arc(g, sky, fadeRadius, a, Math.PI * (.34 - q * .10), 18,
+                        quadrant == 0 ? 1.04F : .42F);
+            }
+            for (int i = 0; i < 16; i++) {
+                double a = i * Math.PI / 8.0;
+                Vec3 port = sky.add(g.point(a, r * (.70 + .18 * (i % 4) / 3.0)));
+                double size = .24 * (1.0 - q * .62);
+                m.diamond(g, port, Math.max(.07, size), a, 1.08F, (float) (.20 * (1.0 - q)));
+                m.line(port, port.add(0, -(1.0 + q * 3.2), 0), i % 4 == 0 ? .78F : .28F,
+                        i % 4 == 0 ? 1.0F : .72F, (float) (.70 * (1.0 - q)));
+            }
+            return;
+        }
         m.circle(g, sky, r, 84, 1.14F);
-        if (release || p > .28) m.circle(g, sky, r * .66, 60, .44F);
-        int ticks = release ? 16 : Math.max(4, Math.min(16,
+        if (p > .28) m.circle(g, sky, r * .66, 60, .44F);
+        int ticks = Math.max(4, Math.min(16,
                 4 + (int) Math.floor(Math.max(0.0, p - .38) / .62 * 12.0)));
         for (int i = 0; i < ticks; i++) {
             double a = i * Math.PI / 8.0;
@@ -123,10 +144,6 @@ final class HighCircleMaintenanceOverlay {
             Vec3 inner = sky.add(g.point(a, r * (i % 4 == 0 ? .72 : .82)));
             m.line(outer, inner, i % 4 == 0 ? 1.02F : .34F);
             if (i % 4 == 0) m.diamond(g, outer, .20, a, 1.08F, .18F);
-        }
-        if (release) {
-            double sweep = (t * 1.72) % (Math.PI * 2.0);
-            m.line(sky, sky.add(g.point(sweep, r * .62)), .78F);
         }
     }
 

@@ -20,7 +20,9 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -64,6 +66,8 @@ public final class SpellGameplayService {
     private static final Map<UUID, ControlState> CONTROLS = new HashMap<>();
     private static final List<ZoneState> ZONES = new ArrayList<>();
     private static final Map<UUID, WeatherState> WEATHER = new HashMap<>();
+    private static final Map<UUID, Long> WEATHER_SPECIAL_READY = new HashMap<>();
+    private static final Map<UUID, WeatherBarrage> WEATHER_BARRAGES = new HashMap<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
     private static final ThreadLocal<Boolean> RETALIATING = ThreadLocal.withInitial(() -> false);
 
@@ -143,7 +147,7 @@ public final class SpellGameplayService {
             case "incendiary_cloud" -> 240;
             case "prismatic_wall" -> 400;
             case "winter_domain" -> 240;
-            case "control_weather" -> 600;
+            case "control_weather" -> 900;
             case "hold_person" -> 180;
             case "hold_monster" -> 300;
             case "forcecage" -> 400;
@@ -177,6 +181,29 @@ public final class SpellGameplayService {
         tickZones(level, now);
         tickWeather(level, now);
         cleanupPersonalStates(now);
+    }
+
+    /** Secondary G-key authority of a maintained spell. Currently Control Weather owns it. */
+    public static boolean useMaintainedAuthority(ServerPlayer player) {
+        if (player == null || !player.isAlive()) return false;
+        WeatherState state = WEATHER.get(player.getUUID());
+        long now = ((ServerLevel) player.level()).getGameTime();
+        if (state == null || state.level() != player.level() || !state.active()) {
+            ArcaneNoticeService.push(player, Component.literal("§7[보조 권능] §f현재 G키로 발동할 유지형 권능이 없습니다."), 35);
+            return false;
+        }
+        long ready = WEATHER_SPECIAL_READY.getOrDefault(player.getUUID(), 0L);
+        if (now < ready) {
+            ArcaneNoticeService.push(player, Component.literal("§9[천후 지배] §f낙뢰 회로 재정렬 "
+                    + one((ready - now) / 20.0) + "초"), 28);
+            return false;
+        }
+        Vec3 center = weatherAim(player, Math.min(52.0, Math.max(28.0, state.radius())));
+        WEATHER_SPECIAL_READY.put(player.getUUID(), now + 50L);
+        WEATHER_BARRAGES.put(player.getUUID(), new WeatherBarrage(state.level(), player.getUUID(), center,
+                state.power(), 12, now));
+        ArcaneNoticeService.push(player, Component.literal("§b[천후 지배 · 낙뢰 명령] §f바라본 지점에 12연속 번개를 호출합니다. §7재사용 2.5초"), 70);
+        return true;
     }
 
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
@@ -258,6 +285,8 @@ public final class SpellGameplayService {
         MIRRORS.remove(id); REDUCTION.remove(id); FIRE_SHIELDS.remove(id); DEATH_WARDS.remove(id);
         ArcaneBuffRuntime.clear(id);
         WeatherState weather = WEATHER.remove(id);
+        WEATHER_SPECIAL_READY.remove(id);
+        WEATHER_BARRAGES.remove(id);
         if (weather != null && WEATHER.values().stream().noneMatch(state -> state.level() == weather.level() && state.active())) {
             setWeather(weather.level(), false, 100);
         }
@@ -275,7 +304,8 @@ public final class SpellGameplayService {
         for (ControlState state : CONTROLS.values()) restoreControl(state);
         FLIGHT.clear(); MIRRORS.clear(); REDUCTION.clear(); FIRE_SHIELDS.clear(); DEATH_WARDS.clear();
         ArcaneBuffRuntime.clearAll();
-        CONTROLS.clear(); ZONES.clear(); WEATHER.clear(); LAST_TICK.clear();
+        CONTROLS.clear(); ZONES.clear(); WEATHER.clear(); WEATHER_SPECIAL_READY.clear();
+        WEATHER_BARRAGES.clear(); LAST_TICK.clear();
     }
 
     private static boolean startZone(ServerPlayer player, String id, double range, double power, CastTargetSnapshot snapshot) {
@@ -406,7 +436,18 @@ public final class SpellGameplayService {
     private static boolean trueSeeing(ServerPlayer player, double range) { ServerLevel level = (ServerLevel) player.level(); int duration = 1200; player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, duration, 0)); double radius = Math.max(20.0, range); for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(radius), value -> value.isAlive() && value != player)) { entity.removeEffect(MobEffects.INVISIBILITY); entity.addEffect(new MobEffectInstance(MobEffects.GLOWING, duration, 0)); } ArcaneNoticeService.push(player, Component.literal("§e[진실의 시야] §f60초 동안 주변 투명화를 벗기고 생명체를 표시합니다."), 65); return true; }
     private static boolean simulacrum(ServerPlayer player, double power) { ServerLevel level = (ServerLevel) player.level(); DEATH_WARDS.put(player.getUUID(), new DeathWard("simulacrum", level.getGameTime() + 1200)); player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 1200, 8 + (int) (power / 45.0))); player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 1200, 1)); ArcaneNoticeService.push(player, Component.literal("§b[시뮬라크럼] §f60초 안의 다음 치명상을 얼음 대리체가 대신 받습니다."), 80); return true; }
     private static boolean cloneWard(ServerPlayer player, double power) { ServerLevel level = (ServerLevel) player.level(); player.setHealth(player.getMaxHealth()); DEATH_WARDS.put(player.getUUID(), new DeathWard("clone", level.getGameTime() + 1800)); player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 1800, 12 + (int) (power / 45.0))); player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 1800, 2)); ArcaneNoticeService.push(player, Component.literal("§6[클론] §f90초 안의 다음 치명상을 클론이 대신 받고 체력을 완전히 복구합니다."), 90); return true; }
-    private static boolean controlWeather(ServerPlayer player, double range, double power) { ServerLevel level = (ServerLevel) player.level(); int duration = 600; setWeather(level, true, duration); WEATHER.put(player.getUUID(), new WeatherState(level, player.getUUID(), Math.max(28.0, range * .72), power, level.getGameTime() + duration, level.getGameTime())); ArcaneNoticeService.push(player, Component.literal("§9[기후 조종] §f30초간 실제 폭우·뇌우를 지배하고 주변 적을 연속 낙뢰로 타격합니다."), 90); return true; }
+    private static boolean controlWeather(ServerPlayer player, double range, double power) {
+        ServerLevel level = (ServerLevel) player.level();
+        int duration = 900;
+        setWeather(level, true, duration);
+        WEATHER.put(player.getUUID(), new WeatherState(level, player.getUUID(), Math.max(32.0, range * .82),
+                power, level.getGameTime() + duration, level.getGameTime()));
+        WEATHER_SPECIAL_READY.put(player.getUUID(), level.getGameTime());
+        WEATHER_BARRAGES.remove(player.getUUID());
+        ArcaneNoticeService.push(player, Component.literal("§9[기후 조종] §f45초간 실제 폭우·뇌우를 지배합니다. "
+                + "§bG키§f를 누르면 바라본 지점에 12연속 낙뢰를 명령합니다."), 110);
+        return true;
+    }
     private static boolean shapechange(ServerPlayer player) { ServerLevel level = (ServerLevel) player.level(); int duration = 1800; REDUCTION.put(player.getUUID(), stronger(REDUCTION.get(player.getUUID()), new ReductionWard("shapechange", level.getGameTime() + duration, .35))); player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration, 5)); player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, 3)); player.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 3)); player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, duration, 3)); player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, 2)); player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, 12)); return true; }
     private static boolean foresight(ServerPlayer player) { ServerLevel level = (ServerLevel) player.level(); int duration = 2400; REDUCTION.put(player.getUUID(), stronger(REDUCTION.get(player.getUUID()), new ReductionWard("foresight", level.getGameTime() + duration, .38))); player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, duration, 0)); player.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 4)); player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, 2)); player.addEffect(new MobEffectInstance(MobEffects.LUCK, duration, 4)); player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, 8)); return true; }
 
@@ -424,7 +465,70 @@ public final class SpellGameplayService {
     private static void pulseWall(ServerPlayer owner, ZoneState zone) { Vec3 right = new Vec3(-zone.direction.z, 0.0, zone.direction.x); AABB box = new AABB(zone.center, zone.center).inflate(zone.halfWidth + 2.0, 6.0, zone.halfWidth + 2.0); for (LivingEntity target : zone.level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(owner, value))) { Vec3 delta = target.position().subtract(zone.center); double lateral = Math.abs(delta.dot(right)), depth = delta.dot(zone.direction); if (lateral > zone.halfWidth + target.getBbWidth() || Math.abs(depth) > 1.6 + target.getBbWidth()) continue; switch (zone.spellId) { case "wall_of_fire" -> { ArcaneDamage.hurt(zone.level, owner, target, (float) (zone.power * .16)); target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 100)); } case "wall_of_force" -> pushFromWall(target, zone, depth, 1.25); case "wind_wall" -> pushFromWall(target, zone, depth, .92); case "wall_of_ice" -> { ArcaneDamage.hurt(zone.level, owner, target, (float) (zone.power * .10)); target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + 90)); target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 50, 4)); pushFromWall(target, zone, depth, .38); } case "prismatic_wall" -> { ArcaneDamage.hurt(zone.level, owner, target, (float) (zone.power * .13)); target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 45, 6)); int roll = Math.floorMod(target.getUUID().hashCode() + (int) zone.level.getGameTime() / 10, 3); target.addEffect(new MobEffectInstance(roll == 0 ? MobEffects.BLINDNESS : roll == 1 ? MobEffects.WEAKNESS : MobEffects.WITHER, 45, 2)); pushFromWall(target, zone, depth, .72); } default -> { } } } }
     private static void pushFromWall(LivingEntity target, ZoneState zone, double depth, double strength) { double sign = depth >= 0.0 ? 1.0 : -1.0; target.push(zone.direction.x * strength * sign, .12, zone.direction.z * strength * sign); }
 
-    private static void tickWeather(ServerLevel level, long now) { boolean hadState = false; Iterator<Map.Entry<UUID, WeatherState>> iterator = WEATHER.entrySet().iterator(); while (iterator.hasNext()) { WeatherState state = iterator.next().getValue(); if (state.level() != level) continue; hadState = true; Entity raw = level.getEntity(state.ownerId()); if (!(raw instanceof ServerPlayer owner) || !owner.isAlive() || now >= state.expiresAt()) { iterator.remove(); continue; } if (now < state.nextPulse()) continue; WEATHER.put(state.ownerId(), new WeatherState(level, state.ownerId(), state.radius(), state.power(), state.expiresAt(), now + 15)); List<LivingEntity> targets = enemies(owner, owner.position(), state.radius(), state.radius() * .78); int strikes = Math.min(6, targets.size()); for (int i = 0; i < strikes; i++) { LivingEntity target = targets.get(Math.floorMod(i * 7 + (int) now, targets.size())); ArcaneDamage.hurt(level, owner, target, (float) (state.power() * .24)); target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 45, 3)); level.playSound(null, target.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.WEATHER, .72F, 1.18F + i * .055F); } } boolean activeNow = WEATHER.values().stream().anyMatch(state -> state.level() == level && state.active()); if (hadState && !activeNow) setWeather(level, false, 100); }
+    private static void tickWeather(ServerLevel level, long now) {
+        boolean hadState = false;
+        Iterator<Map.Entry<UUID, WeatherState>> iterator = WEATHER.entrySet().iterator();
+        while (iterator.hasNext()) {
+            WeatherState state = iterator.next().getValue();
+            if (state.level() != level) continue;
+            hadState = true;
+            Entity raw = level.getEntity(state.ownerId());
+            if (!(raw instanceof ServerPlayer owner) || !owner.isAlive() || now >= state.expiresAt()) {
+                WEATHER_SPECIAL_READY.remove(state.ownerId());
+                WEATHER_BARRAGES.remove(state.ownerId());
+                iterator.remove();
+                continue;
+            }
+            if (now < state.nextPulse()) continue;
+            WEATHER.put(state.ownerId(), new WeatherState(level, state.ownerId(), state.radius(), state.power(),
+                    state.expiresAt(), now + 20));
+            // Passive storm pressure remains useful without stealing the identity of the active G-key barrage.
+            List<LivingEntity> targets = enemies(owner, owner.position(), state.radius(), state.radius() * .78);
+            int pulses = Math.min(3, targets.size());
+            for (int i = 0; i < pulses; i++) {
+                LivingEntity target = targets.get(Math.floorMod(i * 7 + (int) now, targets.size()));
+                ArcaneDamage.hurt(level, owner, target, (float) (state.power() * .16));
+                target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 35, 2));
+                level.playSound(null, target.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER,
+                        SoundSource.WEATHER, .54F, 1.22F + i * .05F);
+            }
+        }
+
+        Iterator<Map.Entry<UUID, WeatherBarrage>> barrages = WEATHER_BARRAGES.entrySet().iterator();
+        while (barrages.hasNext()) {
+            Map.Entry<UUID, WeatherBarrage> entry = barrages.next();
+            WeatherBarrage barrage = entry.getValue();
+            if (barrage.level() != level) continue;
+            WeatherState authority = WEATHER.get(barrage.ownerId());
+            Entity raw = level.getEntity(barrage.ownerId());
+            if (!(raw instanceof ServerPlayer owner) || !owner.isAlive() || authority == null || !authority.active()) {
+                barrages.remove();
+                continue;
+            }
+            if (now < barrage.nextStrike()) continue;
+            int batch = Math.min(2, barrage.remaining());
+            for (int j = 0; j < batch; j++) {
+                int index = 12 - barrage.remaining() + j;
+                double angle = index * 2.399963229728653 + (barrage.ownerId().hashCode() & 31) * .03;
+                double distance = index == 0 ? 0.0 : 1.8 + (index % 4) * 1.35;
+                Vec3 requested = barrage.center().add(Math.cos(angle) * distance, 0.0, Math.sin(angle) * distance);
+                Vec3 strike = groundStrike(level, requested);
+                summonLightning(level, strike);
+                for (LivingEntity target : enemies(owner, strike, 3.4, 6.0)) {
+                    ArcaneDamage.hurt(level, owner, target, (float) (barrage.power() * .44));
+                    target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 45, 3));
+                }
+            }
+            int remaining = barrage.remaining() - batch;
+            if (remaining <= 0) barrages.remove();
+            else entry.setValue(new WeatherBarrage(level, barrage.ownerId(), barrage.center(), barrage.power(),
+                    remaining, now + 2));
+        }
+
+        boolean activeNow = WEATHER.values().stream().anyMatch(state -> state.level() == level && state.active());
+        if (hadState && !activeNow) setWeather(level, false, 100);
+    }
+
     private static void cleanupPersonalStates(long now) { MIRRORS.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= now || entry.getValue().charges() <= 0); REDUCTION.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= now); FIRE_SHIELDS.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= now); DEATH_WARDS.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= now); }
     private static int pulseInterval(String id) { return switch (id) { case "grease", "web", "slow", "wall_of_force", "wind_wall" -> 5; default -> 10; }; }
     private static LivingEntity lockedTarget(ServerPlayer player, CastTargetSnapshot snapshot) { return snapshot.targetEntity(player).filter(value -> enemy(player, value)).orElse(null); }
@@ -434,6 +538,32 @@ public final class SpellGameplayService {
     private static ReductionWard stronger(ReductionWard old, ReductionWard next) { if (old == null) return next; if (old.reduction() >= next.reduction()) return new ReductionWard(old.kind(), Math.max(old.expiresAt(), next.expiresAt()), old.reduction()); return next.expiresAt() >= old.expiresAt() ? next : new ReductionWard(next.kind(), old.expiresAt(), next.reduction()); }
     private static String displayName(String id) { return SpellCatalog.spell(id).map(SpellDefinition::name).orElse(id); }
     private static String one(double value) { return String.format(java.util.Locale.ROOT, "%.1f", value); }
+
+    private static Vec3 weatherAim(ServerPlayer player, double range) {
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 start = player.getEyePosition();
+        Vec3 end = start.add(player.getLookAngle().normalize().scale(Math.max(8.0, range)));
+        HitResult hit = level.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, player));
+        Vec3 result = hit.getType() == HitResult.Type.MISS ? end : hit.getLocation();
+        return groundStrike(level, result);
+    }
+
+    private static Vec3 groundStrike(ServerLevel level, Vec3 requested) {
+        BlockPos pos = BlockPos.containing(requested);
+        int steps = 0;
+        while (steps++ < 48 && pos.getY() > level.getMinY() + 1 && level.getBlockState(pos).isAir()) pos = pos.below();
+        return new Vec3(pos.getX() + .5, pos.getY() + 1.05, pos.getZ() + .5);
+    }
+
+    private static void summonLightning(ServerLevel level, Vec3 at) {
+        CommandSourceStack source = new CommandSourceStack(CommandSource.NULL, Vec3.ZERO, new Vec2(0.0F, 0.0F),
+                level, LevelBasedPermissionSet.ADMIN, "ArcaneCircle", Component.literal("ArcaneCircle"),
+                level.getServer(), null);
+        String command = String.format(java.util.Locale.ROOT, "/summon minecraft:lightning_bolt %.2f %.2f %.2f",
+                at.x, at.y, at.z);
+        level.getServer().getCommands().performPrefixedCommand(source, command);
+    }
 
     private static void setWeather(ServerLevel level, boolean thunder, int durationTicks) {
         CommandSourceStack source = new CommandSourceStack(
@@ -458,6 +588,7 @@ public final class SpellGameplayService {
     private record DeathWard(String kind, long expiresAt) {}
     private record ControlState(ServerLevel level, UUID ownerId, UUID targetId, String kind, long expiresAt, boolean wasNoAi, double oldScale) { boolean active() { return level.getGameTime() < expiresAt; } }
     private record WeatherState(ServerLevel level, UUID ownerId, double radius, double power, long expiresAt, long nextPulse) { boolean active() { return level.getGameTime() < expiresAt; } }
+    private record WeatherBarrage(ServerLevel level, UUID ownerId, Vec3 center, double power, int remaining, long nextStrike) {}
     private static final class ZoneState {
         private final ServerLevel level; private final UUID ownerId; private final String spellId; private final Vec3 center; private final Vec3 direction; private final double radius; private final double halfWidth; private final long expiresAt; private final double power; private long nextPulse;
         private ZoneState(ServerLevel level, UUID ownerId, String spellId, Vec3 center, Vec3 direction, double radius, double halfWidth, long expiresAt, double power, long nextPulse) { this.level = level; this.ownerId = ownerId; this.spellId = spellId; this.center = center; this.direction = direction; this.radius = radius; this.halfWidth = halfWidth; this.expiresAt = expiresAt; this.power = power; this.nextPulse = nextPulse; }

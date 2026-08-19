@@ -36,6 +36,7 @@ public final class ArcaneFieldService {
     private static final Map<UUID, AntimagicField> ANTIMAGIC = new HashMap<>();
     private static final Map<UUID, TimeField> TIME_FIELDS = new HashMap<>();
     private static final Map<UUID, FrozenMob> FROZEN_MOBS = new HashMap<>();
+    private static final Map<UUID, FrozenEntity> FROZEN_ENTITIES = new HashMap<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
 
     private ArcaneFieldService() {}
@@ -94,7 +95,9 @@ public final class ArcaneFieldService {
 
     public static void clearAll() {
         for (FrozenMob frozen : FROZEN_MOBS.values()) restore(frozen);
+        for (FrozenEntity frozen : FROZEN_ENTITIES.values()) restore(frozen);
         FROZEN_MOBS.clear();
+        FROZEN_ENTITIES.clear();
         ANTIMAGIC.clear();
         TIME_FIELDS.clear();
         LAST_TICK.clear();
@@ -189,6 +192,7 @@ public final class ArcaneFieldService {
 
     private static void applyTimeStop(ServerLevel level) {
         Set<UUID> shouldRemainFrozen = new HashSet<>();
+        Set<UUID> shouldRemainFrozenEntities = new HashSet<>();
         for (TimeField field : TIME_FIELDS.values()) {
             if (field.level() != level || !field.active()) continue;
             Entity rawOwner = level.getEntity(field.ownerId());
@@ -216,6 +220,17 @@ public final class ArcaneFieldService {
                 target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 5, 255, true, false));
                 suppressPlayerCasting(target);
             }
+
+            // Projectiles, dropped items and other visible non-living motion stop in place too.
+            for (Entity entity : level.getEntitiesOfClass(Entity.class, box,
+                    value -> !value.isRemoved() && !(value instanceof LivingEntity)
+                            && field.center().distanceToSqr(value.position()) <= radius * radius)) {
+                shouldRemainFrozenEntities.add(entity.getUUID());
+                FROZEN_ENTITIES.computeIfAbsent(entity.getUUID(), ignored ->
+                        new FrozenEntity(level, entity.getUUID(), entity.getDeltaMovement(), entity.isNoGravity()));
+                entity.setDeltaMovement(Vec3.ZERO);
+                entity.setNoGravity(true);
+            }
         }
 
         Iterator<Map.Entry<UUID, FrozenMob>> iterator = FROZEN_MOBS.entrySet().iterator();
@@ -224,6 +239,13 @@ public final class ArcaneFieldService {
             if (frozen.level() != level || shouldRemainFrozen.contains(frozen.entityId())) continue;
             restore(frozen);
             iterator.remove();
+        }
+        Iterator<Map.Entry<UUID, FrozenEntity>> moving = FROZEN_ENTITIES.entrySet().iterator();
+        while (moving.hasNext()) {
+            FrozenEntity frozen = moving.next().getValue();
+            if (frozen.level() != level || shouldRemainFrozenEntities.contains(frozen.entityId())) continue;
+            restore(frozen);
+            moving.remove();
         }
     }
 
@@ -288,6 +310,13 @@ public final class ArcaneFieldService {
         if (raw instanceof Mob mob && mob.isAlive() && !mob.isRemoved()) mob.setNoAi(frozen.wasNoAi());
     }
 
+    private static void restore(FrozenEntity frozen) {
+        Entity raw = frozen.level().getEntity(frozen.entityId());
+        if (raw == null || raw.isRemoved()) return;
+        raw.setNoGravity(frozen.wasNoGravity());
+        raw.setDeltaMovement(frozen.velocity());
+    }
+
     private static String one(double value) {
         return String.format(java.util.Locale.ROOT, "%.1f", value);
     }
@@ -301,4 +330,5 @@ public final class ArcaneFieldService {
     }
 
     private record FrozenMob(ServerLevel level, UUID entityId, boolean wasNoAi) {}
+    private record FrozenEntity(ServerLevel level, UUID entityId, Vec3 velocity, boolean wasNoGravity) {}
 }
