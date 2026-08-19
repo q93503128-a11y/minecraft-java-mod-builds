@@ -39,9 +39,9 @@ helper = r'''    private static void logCiStateIfNeeded(
         boolean completed = data.isCompleted(ciRouteKey, ROUTE_REVISION);
         String stage;
         if (!groundComplete) {
-            stage = "ground_incomplete";
+            stage = "ground_incomplete:" + groundPlanChunkStates(level, route);
         } else if (!routeChunksReady) {
-            stage = "route_chunks_not_ready";
+            stage = "route_chunks_not_ready:" + routeChunkStates(level, route);
         } else if (!doorPresent) {
             stage = "door_missing:" + doorState;
         } else if (!prepared) {
@@ -55,6 +55,55 @@ helper = r'''    private static void logCiStateIfNeeded(
                 "LK_ERDEN_AUTHORED_UPPER_ROUTE_CI_STATE role={} entrance={},{} ground_complete={} chunks_ready={} door_present={} prepared={} completed={} stage={} tick={} persistent_forced_chunks=false",
                 route.role(), route.entranceX(), route.entranceZ(), groundComplete,
                 routeChunksReady, doorPresent, prepared, completed, stage, tick);
+    }
+
+    private static String groundPlanChunkStates(ServerLevel level, PlacementRoute route) {
+        ExternalUrbanFabricBuilder.UrbanEntrance entrance =
+                ExternalUrbanFabricBuilder.entrances().stream()
+                        .filter(candidate -> candidate.x() == route.entranceX()
+                                && candidate.z() == route.entranceZ())
+                        .findFirst()
+                        .orElse(null);
+        if (entrance == null) return "entrance_missing";
+        ErdenUrbanAuthoredGroundPlanCatalog.PlacementPlan plan =
+                ErdenUrbanAuthoredGroundPlanCatalog.plan(entrance);
+        if (plan == null) return "plan_missing";
+        java.util.ArrayList<BlockPos> positions = new java.util.ArrayList<>();
+        positions.addAll(plan.residentTargets());
+        positions.add(plan.workTarget());
+        if (plan.primaryContainer() != null) positions.add(plan.primaryContainer());
+        for (ErdenUrbanAuthoredGroundPlanCatalog.BedPlan bed : plan.beds()) {
+            positions.add(bed.foot());
+            positions.add(bed.head());
+        }
+        for (ErdenUrbanAuthoredGroundPlanCatalog.FixturePlan fixture : plan.fixtures()) {
+            positions.add(fixture.pos());
+        }
+        java.util.LinkedHashSet<Long> chunks = new java.util.LinkedHashSet<>();
+        for (BlockPos pos : positions) {
+            int chunkX = pos.getX() >> 4;
+            int chunkZ = pos.getZ() >> 4;
+            chunks.add(((long) chunkX << 32) ^ (chunkZ & 0xffffffffL));
+        }
+        java.util.ArrayList<String> states = new java.util.ArrayList<>();
+        for (long packed : chunks) {
+            int chunkX = (int) (packed >> 32);
+            int chunkZ = (int) packed;
+            states.add(ErdenCapitalStreamingBuilder.diagnosticChunkState(level, chunkX, chunkZ));
+        }
+        return states.toString();
+    }
+
+    private static String routeChunkStates(ServerLevel level, PlacementRoute route) {
+        java.util.ArrayList<String> states = new java.util.ArrayList<>();
+        for (int chunkX = Math.floorDiv(route.bounds().minX(), 16);
+             chunkX <= Math.floorDiv(route.bounds().maxX(), 16); chunkX++) {
+            for (int chunkZ = Math.floorDiv(route.bounds().minZ(), 16);
+                 chunkZ <= Math.floorDiv(route.bounds().maxZ(), 16); chunkZ++) {
+                states.add(ErdenCapitalStreamingBuilder.diagnosticChunkState(level, chunkX, chunkZ));
+            }
+        }
+        return states.toString();
     }
 
     private static String prepareFailureReason(
@@ -121,6 +170,8 @@ if 'LK_ERDEN_AUTHORED_UPPER_ROUTE_CI_STATE' not in text:
     raise SystemExit('upper-route diagnostic state marker missing')
 if 'prepareFailureReason' not in text or 'verifyFailureReason' not in text:
     raise SystemExit('upper-route failure-reason helpers missing')
+if 'groundPlanChunkStates' not in text or 'diagnosticChunkState' not in text:
+    raise SystemExit('upper-route predecessor chunk-state diagnostics missing')
 
 path.write_text(text, encoding='utf-8')
-print('Living Kingdoms upper-route CI stage diagnostics installed')
+print('Living Kingdoms upper-route CI stage and predecessor chunk diagnostics installed')
