@@ -369,8 +369,8 @@ public final class HighUtilitySpellService {
 
     private static Mob targetMob(ServerPlayer player, CastTargetSnapshot snapshot) {
         LivingEntity target = snapshot.targetEntity(player).orElse(null);
-        return target instanceof Mob mob && mob.isAlive() && !mob.isRemoved()
-                && !mob.getTags().contains("arcanecircle_high_utility_stashed") ? mob : null;
+        if (!(target instanceof Mob mob) || !mob.isAlive() || mob.isRemoved()) return null;
+        return POLYMORPHS.containsKey(mob.getUUID()) || MAZES.containsKey(mob.getUUID()) ? null : mob;
     }
 
     private static String one(double value) {
