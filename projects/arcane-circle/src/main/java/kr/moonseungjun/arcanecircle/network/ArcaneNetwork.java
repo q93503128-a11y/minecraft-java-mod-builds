@@ -7,6 +7,7 @@ import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
+import kr.moonseungjun.arcanecircle.magic.SpellGameplayService;
 import kr.moonseungjun.arcanecircle.world.ArcaneEconomyService;
 import kr.moonseungjun.arcanecircle.world.ArcaneQuestData;
 import kr.moonseungjun.arcanecircle.world.ArcaneEncounterData;
@@ -27,7 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha12";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha47";
     private static final Set<String> PAGES = Set.of(
             "atlas", "recipes", "staffs", "core", "academy", "quests", "sync");
 
@@ -42,6 +43,7 @@ public final class ArcaneNetwork {
         registrar.playToServer(ReleaseCastPayload.TYPE, ReleaseCastPayload.STREAM_CODEC, ArcaneNetwork::handleReleaseCast);
         registrar.playToServer(QueueFusionPayload.TYPE, QueueFusionPayload.STREAM_CODEC, ArcaneNetwork::handleQueueFusion);
         registrar.playToServer(CommitFusionPayload.TYPE, CommitFusionPayload.STREAM_CODEC, ArcaneNetwork::handleCommitFusion);
+        registrar.playToServer(UseArcaneAbilityPayload.TYPE, UseArcaneAbilityPayload.STREAM_CODEC, ArcaneNetwork::handleArcaneAbility);
         registrar.playToServer(EquipSpellPayload.TYPE, EquipSpellPayload.STREAM_CODEC, ArcaneNetwork::handleEquip);
         registrar.playToServer(PurchaseAcademyItemPayload.TYPE, PurchaseAcademyItemPayload.STREAM_CODEC,
                 ArcaneNetwork::handlePurchase);
@@ -95,6 +97,17 @@ public final class ArcaneNetwork {
         else {
             SpellCastingService.clearFusion(player, true);
             SpellCastingService.cancelCharge(player, true);
+        }
+        context.reply(snapshot(player, "sync"));
+    }
+
+    private static void handleArcaneAbility(UseArcaneAbilityPayload payload, IPayloadContext context) {
+        ServerPlayer player = requirePlayer(context);
+        if (player == null) return;
+        if (payload.action() != 0) {
+            ArcaneNoticeService.push(player, Component.literal("§c[권능] §f알 수 없는 보조 권능 요청입니다."));
+        } else {
+            SpellGameplayService.useMaintainedAuthority(player);
         }
         context.reply(snapshot(player, "sync"));
     }
@@ -256,7 +269,6 @@ public final class ArcaneNetwork {
                 .append(';').append(prefix).append("_desc=").append(quest.description())
                 .append(';').append(prefix).append("_affiliation=").append(quest.affiliation().name());
     }
-
 
     private static String factionSnapshot(ServerPlayer player) {
         ArcaneEncounterData data = ArcaneEncounterData.get(((ServerLevel) player.level()).getServer());
