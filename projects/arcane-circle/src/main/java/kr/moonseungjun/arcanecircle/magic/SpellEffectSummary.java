@@ -81,7 +81,7 @@ public final class SpellEffectSummary {
 
             // 7C
             case "delayed_blast_fireball" -> "지연 후 초대형 화염 폭발 · 증폭 피해·장기 화상·강한 지형 파괴";
-            case "etherealness" -> "저항·투명화·느린 낙하로 생존력 대폭 강화";
+            case "etherealness" -> "물질 충돌 위상화 + 자유 비행 · 일반 피해 88% 경감 · 종료 시 안전 낙하";
             case "finger_of_death" -> "강한 단일 피해 · 장시간 위더";
             case "fire_storm" -> "대범위 7지점 연쇄 화염 폭격 · 증폭 피해·장기 화상·지형 파괴";
             case "forcecage" -> "조준 대상을 20초간 AI·이동·Arcane 시전 완전 봉쇄";
@@ -93,14 +93,14 @@ public final class SpellEffectSummary {
 
             // 8C
             case "antimagic_field" -> "16초 대형 이동 반마법장 · 버프/지속마법 제거 + Arcane 시전 완전 차단";
-            case "clone" -> "체력 완전 회복 · 90초 내 다음 치명상을 클론이 대신 받음";
-            case "control_weather" -> "30초 실제 폭우·뇌우 지배 · 최대 6대상 연속 낙뢰 피해/강한 둔화";
+            case "clone" -> "조준한 비플레이어 생명체의 실제 복제본 생성 · 장비/기초 전투체급 복제 · 시전자 소유 아님";
+            case "control_weather" -> "45초 실제 폭우·뇌우 지배 · G키로 바라본 지점 12연속 낙뢰 명령 · 재사용 2.5초";
             case "demiplane" -> "고등 공간 회로로 매우 먼 안전 지점 이동";
             case "dominate_monster" -> "조준 대상 AI·이동·Arcane 시전을 24초간 완전 봉쇄";
             case "earthquake" -> "초대형 지면 피해·강제 띄우기 · 8써클급 광역 실제 지형 붕괴";
             case "feeblemind" -> "단일 피해 · 장시간 약화·실명";
             case "incendiary_cloud" -> "12초 지속 소이 구름 · 반복 화염 피해·화상";
-            case "maze" -> "조준 대상을 18초간 완전 격리 상태 + 실명·혼란";
+            case "maze" -> "조준 생명체를 18초간 전장에서 실제 추방 · 종료 시 원래 전장으로 귀환";
             case "sunburst" -> "초대형 태양광 폭발 · 증폭 광역 피해·장기 화상·강한 실명";
 
             // 9C
@@ -108,8 +108,8 @@ public final class SpellEffectSummary {
             case "power_word_kill" -> "높은 처형 임계치 이하 대상 즉사급 명령 · 실패해도 9써클 대형 단일 피해";
             case "prismatic_wall" -> "20초 지속 7색 장벽 · 반복 피해·상태이상·강제 통과 저지";
             case "shapechange" -> "90초 초월 육체 · 피해 50% 경감 + 강한 자체 재생·근력·속도·도약 강화";
-            case "time_stop" -> "8초 초대형 고정 시간장 · 주변 비아군 AI·이동·Arcane 시전 완전 정지";
-            case "true_polymorph" -> "대상 피해 · 24초 축소 변형 + AI·이동·Arcane 시전 완전 봉쇄";
+            case "time_stop" -> "8초 초대형 고정 시간장 · 주변 비아군 AI·이동·투사체·드롭 이동·Arcane 시전 정지";
+            case "true_polymorph" -> "조준 생명체의 실제 몸체를 24초간 다른 생물로 교체 · 변신체가 쓰러지면 원형이 부상 상태로 복귀";
             case "weird" -> "초대형 정신 붕괴 · 35초 증폭 피해·실명·고단계 위더·둔화";
             case "wish" -> "체력·마력 완전 회복 · 해로운 상태 제거 · 기존 이로운 버프 보존 · 소원 외 주문 쿨 초기화";
             case "gate" -> "최상급 장거리 공간 이동";
