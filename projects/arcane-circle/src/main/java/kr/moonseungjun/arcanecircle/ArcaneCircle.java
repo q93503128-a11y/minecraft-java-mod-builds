@@ -5,6 +5,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneLightService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
+import kr.moonseungjun.arcanecircle.magic.DestructiveMagicService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.RpgScaleService;
@@ -35,7 +36,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.46";
+    public static final String VERSION = "0.12.1-alpha.47";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -142,19 +143,21 @@ public final class ArcaneCircle {
 
     private void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ServerLevel level = (ServerLevel) player.level();
         SpellCastingService.tickCharge(player);
         ArcaneLightService.tick(player);
         SpellKineticsService.tick(player);
         MagicWorldService.tick(player);
         ArcaneEncounterService.tick(player);
         MageGearService.tickMovement(player);
-        NpcMeteorBarrageService.tick((ServerLevel) player.level());
+        NpcMeteorBarrageService.tick(level);
+        DestructiveMagicService.tick(level);
         if (player.tickCount % 10 == 0) MageGearService.tick(player);
         if (player.tickCount % 4 == 0) ArcaneMageService.tickNear(player);
-        SpellGameplayService.tick((ServerLevel) player.level());
+        SpellGameplayService.tick(level);
         // Run field suppression last: Antimagic/Time Stop must win the current server tick.
-        ArcaneFieldService.tick((ServerLevel) player.level());
-        MagicPlayerData data = MagicPlayerData.get(((ServerLevel) player.level()).getServer());
+        ArcaneFieldService.tick(level);
+        MagicPlayerData data = MagicPlayerData.get(level.getServer());
         if (player.tickCount % 10 == 0) data.regenerate(player);
         if (player.tickCount % 5 == 0) ArcaneNetwork.sync(player);
     }
@@ -163,6 +166,7 @@ public final class ArcaneCircle {
         ArcaneLightService.clearAll(event.getServer());
         SpellGameplayService.clearAll();
         ArcaneFieldService.clearAll();
+        DestructiveMagicService.clearAll();
         SpellCastingService.clearAllSessions();
         SpellKineticsService.clearAll();
         NpcMeteorBarrageService.clearAll();
