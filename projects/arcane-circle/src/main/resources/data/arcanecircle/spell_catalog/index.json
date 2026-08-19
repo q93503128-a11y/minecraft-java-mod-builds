@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.46",
+  "version": "0.12.1-alpha.47",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -66,9 +66,13 @@
     "voxel_boolean_unions": 0,
     "charge_primitive_cap": 1400,
     "release_primitive_cap": 2600,
-    "frame_primitive_cap": 9000,
-    "charge_progress_steps": 20
+    "frame_primitive_cap": 14500,
+    "charge_progress_steps": 20,
+    "terrain_block_changes_per_tick": 720,
+    "terrain_scans_per_tick": 48000
   },
+  "catastrophe_destruction": "visible_footprint_tiled_across_bounded_ticks",
+  "maintained_authority_key": "G",
   "mage_residents": true,
   "mage_entity_circles": [
     1,
