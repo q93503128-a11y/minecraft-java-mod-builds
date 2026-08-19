@@ -61,7 +61,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Apply bounded residency and ground-route reservation
+      - name: Apply bounded residency and route-clearance repairs
         shell: bash
         run: |
           set -euo pipefail
@@ -69,9 +69,12 @@ jobs:
           python .github/scripts/patch_living_kingdoms_landmark_ci_residency.py
           python .github/scripts/patch_living_kingdoms_population_ci_retainer.py
           python .github/scripts/patch_living_kingdoms_ground_route_reservation.py
+          python .github/scripts/patch_living_kingdoms_upper_route_support_clearance.py
           root="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world"
           grep -Fq 'reservedRouteColumns' "$root/ErdenUrbanAuthoredGroundPlanCatalog.java"
           grep -Fq 'ErdenUrbanSourceAirRoutePlanner.plan(placement.fragmentKey())' "$root/ErdenUrbanAuthoredGroundPlanCatalog.java"
+          grep -Fq 'if (stair == null && sourceFloorAir' "$root/ErdenUrbanAuthoredUpperRouteManager.java"
+          grep -Fq 'if (stair == null && floor.isAir()) return false;' "$root/ErdenUrbanAuthoredUpperRouteManager.java"
           ! grep -Fq 'setChunkForced' "$root/ErdenPopulationCiChunkRetainer.java"
 
       - name: Java 25 clean compile
@@ -122,14 +125,16 @@ jobs:
             | grep -F 'refreshed_until_verification=true' | grep -F 'loaded_lease=true' \
             | grep -F 'persistent_forced_chunks=false'
 
-      - name: Commit verified route-aware ground plan
+      - name: Commit verified route-aware authored interiors
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredGroundPlanCatalog.java
-          git commit -m 'fix(living-kingdoms): reserve authored upper routes from ground furniture'
+          git add \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredGroundPlanCatalog.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredUpperRouteManager.java
+          git commit -m 'fix(living-kingdoms): keep upper-route switchback headroom clear'
           for attempt in 1 2 3 4 5; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort 2>/dev/null || true
