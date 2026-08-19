@@ -30,13 +30,15 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 
 /**
- * High-circle utility spells whose fiction requires a real state transition rather than another
- * potion-effect bundle. Each spell is authored explicitly here; there is no school/circle fallback.
+ * Explicit high-circle utility state transitions. These spells are intentionally not represented
+ * by generic potion/control aliases: Clone creates another creature, True Polymorph swaps the
+ * target's active body, Maze removes the target from combat, and Etherealness phases the caster.
  */
 public final class HighUtilitySpellService {
     private static final Set<String> HANDLED = Set.of("clone", "true_polymorph", "maze", "etherealness");
     private static final int TRUE_POLYMORPH_TICKS = 480;
     private static final int MAZE_TICKS = 360;
+
     private static final Map<UUID, EtherealState> ETHEREAL = new HashMap<>();
     private static final Map<UUID, PolymorphState> POLYMORPHS = new HashMap<>();
     private static final Map<UUID, MazeState> MAZES = new HashMap<>();
@@ -52,8 +54,8 @@ public final class HighUtilitySpellService {
                                   CastTargetSnapshot snapshot) {
         if (player == null || snapshot == null || !snapshot.validFor(player)) return false;
         return switch (spellId) {
-            case "clone" -> cloneCreature(player, snapshot, power);
-            case "true_polymorph" -> truePolymorph(player, snapshot, power);
+            case "clone" -> cloneCreature(player, snapshot);
+            case "true_polymorph" -> truePolymorph(player, snapshot);
             case "maze" -> maze(player, snapshot);
             case "etherealness" -> etherealness(player, power);
             default -> false;
@@ -98,17 +100,16 @@ public final class HighUtilitySpellService {
         LAST_TICK.clear();
     }
 
-    private static boolean cloneCreature(ServerPlayer player, CastTargetSnapshot snapshot, double power) {
+    private static boolean cloneCreature(ServerPlayer player, CastTargetSnapshot snapshot) {
         Mob source = targetMob(player, snapshot);
-        if (source == null || source instanceof ServerPlayer) return false;
+        if (source == null) return false;
         ServerLevel level = (ServerLevel) player.level();
         Entity rawClone = source.getType().create(level, EntitySpawnReason.EVENT);
         if (!(rawClone instanceof Mob clone)) return false;
 
         Vec3 look = player.getLookAngle();
         Vec3 right = new Vec3(-look.z, 0.0, look.x);
-        if (right.lengthSqr() < 1.0E-8) right = new Vec3(1.0, 0.0, 0.0);
-        else right = right.normalize();
+        right = right.lengthSqr() < 1.0E-8 ? new Vec3(1.0, 0.0, 0.0) : right.normalize();
         Vec3 spawn = source.position().add(right.scale(1.8));
         clone.snapTo(spawn.x, spawn.y, spawn.z, source.getYRot(), source.getXRot());
         clone.finalizeSpawn(level, level.getCurrentDifficultyAt(source.blockPosition()), EntitySpawnReason.EVENT, null);
@@ -153,7 +154,7 @@ public final class HighUtilitySpellService {
         to.setBaseValue(value);
     }
 
-    private static boolean truePolymorph(ServerPlayer player, CastTargetSnapshot snapshot, double power) {
+    private static boolean truePolymorph(ServerPlayer player, CastTargetSnapshot snapshot) {
         Mob original = targetMob(player, snapshot);
         if (original == null) return false;
         PolymorphState existing = POLYMORPHS.remove(original.getUUID());
@@ -175,10 +176,9 @@ public final class HighUtilitySpellService {
         PolymorphState state = new PolymorphState(level, player.getUUID(), original.getUUID(), proxy.getUUID(),
                 anchor, original.getYRot(), original.getXRot(), original.getHealth(), expiresAt,
                 original.isInvisible(), original.isInvulnerable(), original.isNoGravity(), original.isSilent(),
-                original.isNoAi());
+                original.isNoAi(), original.noPhysics);
         POLYMORPHS.put(original.getUUID(), state);
         stash(original);
-        ArcaneDamage.hurt(level, player, proxy, (float) Math.max(0.0, power * .08));
         level.playSound(null, proxy.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
                 SoundSource.PLAYERS, 1.0F, .58F);
         ArcaneNoticeService.push(player, Component.literal("§d[완전한 변신] §f대상의 실제 몸체를 "
@@ -187,8 +187,7 @@ public final class HighUtilitySpellService {
     }
 
     private static Mob createPolymorphBody(ServerLevel level, Mob original) {
-        int form = Math.floorMod(original.getUUID().hashCode(), 4);
-        return switch (form) {
+        return switch (Math.floorMod(original.getUUID().hashCode(), 4)) {
             case 0 -> EntityTypes.RABBIT.create(level, EntitySpawnReason.EVENT);
             case 1 -> EntityTypes.CHICKEN.create(level, EntitySpawnReason.EVENT);
             case 2 -> EntityTypes.PIG.create(level, EntitySpawnReason.EVENT);
@@ -204,7 +203,8 @@ public final class HighUtilitySpellService {
         ServerLevel level = (ServerLevel) player.level();
         MazeState state = new MazeState(level, player.getUUID(), target.getUUID(), target.position(),
                 target.getYRot(), target.getXRot(), level.getGameTime() + MAZE_TICKS,
-                target.isInvisible(), target.isInvulnerable(), target.isNoGravity(), target.isSilent(), target.isNoAi());
+                target.isInvisible(), target.isInvulnerable(), target.isNoGravity(), target.isSilent(),
+                target.isNoAi(), target.noPhysics);
         MAZES.put(target.getUUID(), state);
         target.addTag("arcanecircle_maze_exile");
         stash(target);
@@ -271,8 +271,7 @@ public final class HighUtilitySpellService {
         Iterator<Map.Entry<UUID, MazeState>> iterator = MAZES.entrySet().iterator();
         while (iterator.hasNext()) {
             MazeState state = iterator.next().getValue();
-            if (state.level != level) continue;
-            if (now < state.expiresAt) continue;
+            if (state.level != level || now < state.expiresAt) continue;
             restoreMaze(state);
             iterator.remove();
         }
@@ -282,7 +281,6 @@ public final class HighUtilitySpellService {
         player.noPhysics = true;
         player.setNoGravity(true);
         player.setInvisible(true);
-        player.setDeltaMovement(player.getDeltaMovement().multiply(1.0, .88, 1.0));
         player.getAbilities().mayfly = true;
         player.getAbilities().flying = true;
         player.onUpdateAbilities();
@@ -310,7 +308,7 @@ public final class HighUtilitySpellService {
             proxy.discard();
         }
         restoreMobFlags(original, state.oldInvisible, state.oldInvulnerable, state.oldNoGravity,
-                state.oldSilent, state.oldNoAi);
+                state.oldSilent, state.oldNoAi, state.oldNoPhysics);
         Vec3 pos = state.lastPosition == null ? state.anchor : state.lastPosition;
         original.snapTo(pos.x, pos.y, pos.z, state.lastYRot, state.lastXRot);
         original.setDeltaMovement(Vec3.ZERO);
@@ -323,7 +321,7 @@ public final class HighUtilitySpellService {
         Entity raw = state.level.getEntity(state.targetId);
         if (!(raw instanceof Mob target)) return;
         restoreMobFlags(target, state.oldInvisible, state.oldInvulnerable, state.oldNoGravity,
-                state.oldSilent, state.oldNoAi);
+                state.oldSilent, state.oldNoAi, state.oldNoPhysics);
         target.removeTag("arcanecircle_maze_exile");
         target.snapTo(state.anchor.x, state.anchor.y, state.anchor.z, state.yRot, state.xRot);
         target.setDeltaMovement(Vec3.ZERO);
@@ -348,17 +346,20 @@ public final class HighUtilitySpellService {
 
     private static void stash(Mob mob) {
         mob.setNoAi(true);
+        mob.noPhysics = true;
+        mob.addTag("arcanecircle_high_utility_stashed");
         mob.setInvisible(true);
         mob.setInvulnerable(true);
         mob.setSilent(true);
         mob.setNoGravity(true);
         mob.setDeltaMovement(Vec3.ZERO);
         mob.setPersistenceRequired();
-        mob.snapTo(mob.getX(), -512.0, mob.getZ(), mob.getYRot(), mob.getXRot());
     }
 
     private static void restoreMobFlags(Mob mob, boolean invisible, boolean invulnerable,
-                                        boolean noGravity, boolean silent, boolean noAi) {
+                                        boolean noGravity, boolean silent, boolean noAi, boolean noPhysics) {
+        mob.noPhysics = noPhysics;
+        mob.removeTag("arcanecircle_high_utility_stashed");
         mob.setInvisible(invisible);
         mob.setInvulnerable(invulnerable);
         mob.setNoGravity(noGravity);
@@ -368,7 +369,8 @@ public final class HighUtilitySpellService {
 
     private static Mob targetMob(ServerPlayer player, CastTargetSnapshot snapshot) {
         LivingEntity target = snapshot.targetEntity(player).orElse(null);
-        return target instanceof Mob mob && mob.isAlive() && !mob.isRemoved() ? mob : null;
+        return target instanceof Mob mob && mob.isAlive() && !mob.isRemoved()
+                && !mob.getTags().contains("arcanecircle_high_utility_stashed") ? mob : null;
     }
 
     private static String one(double value) {
@@ -407,8 +409,6 @@ public final class HighUtilitySpellService {
         private final UUID originalId;
         private final UUID proxyId;
         private final Vec3 anchor;
-        private final float originalYRot;
-        private final float originalXRot;
         private final float originalHealth;
         private final long expiresAt;
         private final boolean oldInvisible;
@@ -416,6 +416,7 @@ public final class HighUtilitySpellService {
         private final boolean oldNoGravity;
         private final boolean oldSilent;
         private final boolean oldNoAi;
+        private final boolean oldNoPhysics;
         private Vec3 lastPosition;
         private float lastYRot;
         private float lastXRot;
@@ -423,14 +424,12 @@ public final class HighUtilitySpellService {
         private PolymorphState(ServerLevel level, UUID ownerId, UUID originalId, UUID proxyId,
                                Vec3 anchor, float yRot, float xRot, float originalHealth, long expiresAt,
                                boolean oldInvisible, boolean oldInvulnerable, boolean oldNoGravity,
-                               boolean oldSilent, boolean oldNoAi) {
+                               boolean oldSilent, boolean oldNoAi, boolean oldNoPhysics) {
             this.level = level;
             this.ownerId = ownerId;
             this.originalId = originalId;
             this.proxyId = proxyId;
             this.anchor = anchor;
-            this.originalYRot = yRot;
-            this.originalXRot = xRot;
             this.originalHealth = originalHealth;
             this.expiresAt = expiresAt;
             this.oldInvisible = oldInvisible;
@@ -438,6 +437,7 @@ public final class HighUtilitySpellService {
             this.oldNoGravity = oldNoGravity;
             this.oldSilent = oldSilent;
             this.oldNoAi = oldNoAi;
+            this.oldNoPhysics = oldNoPhysics;
             this.lastPosition = anchor;
             this.lastYRot = yRot;
             this.lastXRot = xRot;
@@ -457,10 +457,11 @@ public final class HighUtilitySpellService {
         private final boolean oldNoGravity;
         private final boolean oldSilent;
         private final boolean oldNoAi;
+        private final boolean oldNoPhysics;
 
         private MazeState(ServerLevel level, UUID ownerId, UUID targetId, Vec3 anchor, float yRot,
                           float xRot, long expiresAt, boolean oldInvisible, boolean oldInvulnerable,
-                          boolean oldNoGravity, boolean oldSilent, boolean oldNoAi) {
+                          boolean oldNoGravity, boolean oldSilent, boolean oldNoAi, boolean oldNoPhysics) {
             this.level = level;
             this.ownerId = ownerId;
             this.targetId = targetId;
@@ -473,6 +474,7 @@ public final class HighUtilitySpellService {
             this.oldNoGravity = oldNoGravity;
             this.oldSilent = oldSilent;
             this.oldNoAi = oldNoAi;
+            this.oldNoPhysics = oldNoPhysics;
         }
     }
 }
