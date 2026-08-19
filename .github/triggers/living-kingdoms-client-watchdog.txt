@@ -1,2 +1,0 @@
-Living Kingdoms canonical client watchdog repair trigger v2.
-Run 758 proved Java 25 clean build and the complete fresh-server Erden audit, but the graphical step never created client-smoke.log. Install the bounded prerequisite setup + process-group watchdog, record a repair pointer, and dispatch a fresh canonical build.
