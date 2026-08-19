@@ -1,0 +1,190 @@
+name: Prove Living Kingdoms population residence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prove-living-kingdoms-population-residence.yml'
+      - '.github/living-kingdoms-population-residence-proof-trigger'
+  workflow_dispatch:
+
+concurrency:
+  group: living-kingdoms-population-residence-proof
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+  LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_CLIENT_TEST: '0'
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record live population proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-population-residence-proof.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "in_progress",
+            "log_artifact_id": ""
+          }
+          EOF
+          git add .github/build-pointers/living-kingdoms-population-residence-proof.json
+          git commit -m "Record Living Kingdoms population residence proof $GITHUB_RUN_NUMBER start [skip ci]" || true
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply verified route repair and full residence diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/patch_living_kingdoms_ci_residency.py
+          python .github/scripts/patch_living_kingdoms_upper_route_ground_ci.py
+          python .github/scripts/patch_living_kingdoms_landmark_ci_residency.py
+          python .github/scripts/patch_living_kingdoms_population_ci_retainer.py
+          python .github/scripts/patch_living_kingdoms_ground_route_reservation.py
+          python .github/scripts/patch_living_kingdoms_upper_route_support_clearance.py
+          python .github/scripts/patch_living_kingdoms_population_ci_full_residence.py
+          python .github/scripts/patch_living_kingdoms_population_ci_diagnostics.py
+          root="$PROJECT_DIR/src/main/java/kr/moonseungjun/livingkingdoms/world"
+          grep -Fq 'if (stair == null && sourceFloorAir' "$root/ErdenUrbanAuthoredUpperRouteManager.java"
+          grep -Fq 'buildingPlacementsForDiagnostics()' "$root/ErdenPopulationCiChunkRetainer.java"
+          grep -Fq 'LK_ERDEN_POPULATION_CI_STATE' "$root/ErdenPopulationManager.java"
+          ! grep -Fq 'setChunkForced' "$root/ErdenPopulationCiChunkRetainer.java"
+
+      - name: Java 25 clean compile
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: gradle --no-daemon clean classes --stacktrace --console=plain
+
+      - name: Fresh-world first-household residence proof
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world run/living_realm run/livingkingdoms-population-residence-proof-world
+          mkdir -p run ../../logs
+          printf 'level-name=livingkingdoms-population-residence-proof-world\npause-when-empty-seconds=0\n' > run/server.properties
+          printf 'eula=true\n' > run/eula.txt
+          gradle --no-daemon runServer --stacktrace --console=plain \
+            > ../../logs/living-kingdoms-population-residence-proof-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+
+          outcome=timeout
+          for attempt in $(seq 1 600); do
+            log=../../logs/living-kingdoms-population-residence-proof-server.log
+            if grep -Fq 'LK_REALM_DIAGNOSTIC_FAIL' "$log" \
+              || grep -Eqi 'watchdog|A single server tick took|IllegalStateException|Exception loading level' "$log"; then
+              outcome=fatal
+              break
+            fi
+            if grep -Fq 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' "$log" \
+              && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$log"; then
+              outcome=pass
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              outcome=server_exit
+              break
+            fi
+            sleep 1
+          done
+
+          log=../../logs/living-kingdoms-population-residence-proof-server.log
+          echo "PROOF_OUTCOME=$outcome" | tee ../../logs/living-kingdoms-population-residence-proof-summary.txt
+          grep -E 'LK_ERDEN_POPULATION_CI_STATE|LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS|LK_ERDEN_POPULATION_DIAGNOSTIC_PASS|LK_ERDEN_AUTHORED_GROUND_MATERIALIZER_PASS|Requested Erden authored upper-route CI sample' "$log" \
+            | tail -n 500 | tee -a ../../logs/living-kingdoms-population-residence-proof-summary.txt || true
+          tail -n 500 "$log" >> ../../logs/living-kingdoms-population-residence-proof-summary.txt
+          test "$outcome" = pass
+          grep -F 'LK_ERDEN_AUTHORED_UPPER_ROUTE_PASS' "$log" | grep -F 'source_blocks_cut=0' | grep -F 'source_air_only=true'
+          grep -F 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' "$log" \
+            | grep -F 'spawned_sample=3' | grep -F 'shortages=0'
+          grep -F 'LK_ERDEN_POPULATION_CI_STATE' "$log" | grep -F 'stage=ready' | grep -F 'spawned=3'
+          ! grep -Fq 'persistent_forced_chunks=true' "$log"
+
+      - name: Commit verified authored residence source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          # Do not commit the diagnostic-only PopulationManager modification.
+          git checkout -- projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationManager.java
+          git add \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredGroundPlanCatalog.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenUrbanAuthoredUpperRouteManager.java \
+            projects/living-kingdoms/src/main/java/kr/moonseungjun/livingkingdoms/world/ErdenPopulationCiChunkRetainer.java
+          git commit -m 'fix(living-kingdoms): complete authored household residence routes'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload population proof log
+        id: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-population-residence-proof-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Record population proof result
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-population-residence-proof.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-population-residence-proof.json
+            git commit -m "Record Living Kingdoms population residence proof $GITHUB_RUN_NUMBER [skip ci]" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
