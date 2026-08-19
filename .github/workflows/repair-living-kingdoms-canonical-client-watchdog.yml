@@ -42,3 +42,5 @@ jobs:
         run: |
           set -euo pipefail
           gh workflow run build-living-kingdoms.yml --ref main
+
+# trigger: bounded-client-watchdog-repair-v1
