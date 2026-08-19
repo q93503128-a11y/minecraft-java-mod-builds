@@ -31,6 +31,33 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: One-shot alpha.48 source integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          applied=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git fetch origin main
+            git reset --hard origin/main
+            if ! test -f .github/scripts/tmp_arcane_alpha48.py; then
+              applied=1
+              break
+            fi
+            python3 .github/scripts/tmp_arcane_alpha48.py
+            rm -f .github/scripts/tmp_arcane_alpha48.py
+            git add projects/arcane-circle .github/scripts/tmp_arcane_alpha48.py
+            git diff --cached --check
+            git commit -m 'feat(arcane-circle): implement alpha.48 high utility identity'
+            if git push origin HEAD:main; then
+              applied=1
+              break
+            fi
+            sleep $((attempt * 2))
+          done
+          test "$applied" -eq 1
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -159,4 +186,4 @@ jobs:
           done
           test "$recorded" -eq 1
 
-# Canonical Arcane workflow: all historical build/migration workflows are intentionally removed.
+# TEMPORARY alpha.48 migration hook. Restore canonical source-mutation-disabled workflow immediately after integration.
