@@ -30,3 +30,5 @@ jobs:
           git diff --cached --check
           git commit -m 'feat(arcane-circle): implement alpha.48 high utility identity'
           git push origin HEAD:main
+
+# explicit alpha48 trigger
