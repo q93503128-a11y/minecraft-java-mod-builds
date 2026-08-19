@@ -28,3 +28,5 @@ jobs:
           git diff --cached --check
           git commit -m 'test(arcane-circle): audit alpha.47 catastrophe authority'
           git push origin HEAD:main
+
+# trigger alpha47-audit
