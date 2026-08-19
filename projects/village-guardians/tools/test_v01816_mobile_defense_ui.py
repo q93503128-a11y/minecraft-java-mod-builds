@@ -31,7 +31,7 @@ def main() -> None:
     segment = read("VillageSiegeSegmentSystem.java")
     mesh = read("VillageSkillMeshLibrary.java")
 
-    require("version is v0.18.16-alpha.1", "mod_version=0.18.16-alpha.1" in props)
+    require("version is v0.18.16-alpha.1", "mod_version=0.18.18-alpha.1" in props)
     require("main HUD uses a structured fixed-field frame rather than styled human-text parsing",
             "record VillageDefenseHudFrame" in frame
             and "FIELD_COUNT = 21" in frame

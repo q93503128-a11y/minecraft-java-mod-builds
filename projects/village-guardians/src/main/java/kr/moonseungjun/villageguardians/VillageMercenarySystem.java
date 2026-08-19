@@ -390,7 +390,7 @@ public final class VillageMercenarySystem {
         LEVELS.keySet().removeIf(uuid -> !CLASSES.containsKey(uuid));
         KILLS.keySet().removeIf(uuid -> !CLASSES.containsKey(uuid));
         for (UUID uuid : CLASSES.keySet()) {
-            LEVELS.put(uuid, Math.max(1, Math.min(5, LEVELS.getOrDefault(uuid, 1))));
+            LEVELS.put(uuid, Math.max(1, Math.min(MAX_LEVEL, LEVELS.getOrDefault(uuid, 1))));
             KILLS.put(uuid, Math.max(0, KILLS.getOrDefault(uuid, 0)));
         }
     }

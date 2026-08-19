@@ -15,6 +15,10 @@ def main():
         assert key in consumable
     assert "VillagePlacedTurretSystem.fieldRepairNearest" in consumable
     assert "ARCANE_SURGE_UNTIL" in consumable and "1.20f" in consumable
+    identity = read("VillageConsumableIdentity.java")
+    assert "villageguardians_consumable_id" in identity
+    assert "VillageConsumableIdentity.stamp(stack, consumable.id())" in consumable
+    assert "Consumable.fromId(VillageConsumableIdentity.id(stack))" in consumable
 
     progression = read("VillageProgressionSystem.java")
     assert 'Component.literal("마을 배급 식량")' in progression
@@ -35,6 +39,8 @@ def main():
     assert "killsRequiredForLevel" in merc and "mercenaryPower" in merc
     assert "42.0 + Math.min(48.0, rank * 0.80)" in merc
     assert "8.0 + Math.min(13.0, rank * 0.22)" in merc
+    assert "Math.min(5, LEVELS.getOrDefault" not in merc
+    assert "Math.min(MAX_LEVEL, LEVELS.getOrDefault(uuid, 1))" in merc
 
     fortress = read("VillageFortressTerrain.java")
     assert "buildDefenderGalleries" in fortress

@@ -71,6 +71,7 @@ public final class VillageConsumableSystem {
         stack.setCount(bundleCount(consumable));
         stack.set(DataComponents.CUSTOM_NAME,
                 Component.literal(consumable.displayName()).withStyle(consumable.color()));
+        VillageConsumableIdentity.stamp(stack, consumable.id());
         if (!player.addItem(stack)) player.drop(stack, false);
         return consumable.displayName() + " ×" + stack.getCount() + " 구매 완료 | 남은 주화 "
                 + VillageProgressionSystem.coins(player);
@@ -169,13 +170,8 @@ public final class VillageConsumableSystem {
 
     private static Consumable match(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
-        Component custom = stack.get(DataComponents.CUSTOM_NAME);
-        if (custom == null) return null;
-        String plain = ChatFormatting.stripFormatting(custom.getString());
-        for (Consumable consumable : Consumable.values()) {
-            if (stack.getItem() == consumable.item() && consumable.displayName().equals(plain)) return consumable;
-        }
-        return null;
+        Consumable consumable = Consumable.fromId(VillageConsumableIdentity.id(stack));
+        return consumable != null && stack.getItem() == consumable.item() ? consumable : null;
     }
 
     public enum Consumable {
