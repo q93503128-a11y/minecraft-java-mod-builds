@@ -55,6 +55,7 @@ public final class ErdenLandmarkInteriorManager {
     private static boolean ciSamplePassed;
     private static boolean ciSampleTicketHeld;
     private static ChunkPos ciSampleTicketCenter;
+    private static long lastCiChunkRefreshTick = Long.MIN_VALUE;
 
     private ErdenLandmarkInteriorManager() {
     }
@@ -114,6 +115,7 @@ public final class ErdenLandmarkInteriorManager {
         ciSamplePassed = false;
         ciSampleTicketHeld = false;
         ciSampleTicketCenter = null;
+        lastCiChunkRefreshTick = Long.MIN_VALUE;
     }
 
     private static List<ExternalDistrictBuildingBuilder.BuildingEntrance> landmarkEntrances() {
@@ -228,11 +230,19 @@ public final class ErdenLandmarkInteriorManager {
     private static void requestCiSampleChunks(
             ServerLevel level,
             List<ExternalDistrictBuildingBuilder.BuildingEntrance> landmarks) {
-        if (ciChunksRequested
-                || landmarks.isEmpty()
-                || !ciMode()) return;
+        if (landmarks.isEmpty() || !ciMode() || ciSamplePassed) return;
+        long tick = level.getGameTime();
+        if (lastCiChunkRefreshTick != Long.MIN_VALUE
+                && tick - lastCiChunkRefreshTick < 40L) return;
+        lastCiChunkRefreshTick = tick;
+
         ExternalDistrictBuildingBuilder.BuildingEntrance sample = landmarks.getFirst();
-        ciSampleTicketCenter = new ChunkPos(sample.x() >> 4, sample.z() >> 4);
+        ChunkPos requestedCenter = new ChunkPos(sample.x() >> 4, sample.z() >> 4);
+        if (ciSampleTicketHeld && ciSampleTicketCenter != null
+                && !ciSampleTicketCenter.equals(requestedCenter)) {
+            releaseCiSampleTicket(level);
+        }
+        ciSampleTicketCenter = requestedCenter;
         level.getChunkSource().addTicketAndLoadWithRadius(
                 TicketType.PORTAL, ciSampleTicketCenter, CI_SAMPLE_TICKET_RADIUS);
         ciSampleTicketHeld = true;
@@ -248,14 +258,17 @@ public final class ErdenLandmarkInteriorManager {
                         && chunkZ * 16 >= ErdenCapitalStreamingBuilder.NORTH_WALL_Z - 16
                         && chunkZ * 16 <= ErdenCapitalStreamingBuilder.SOUTH_WALL_Z + 16) {
                     ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                    ErdenCapitalStreamingBuilder.retainDiagnosticChunk(level, chunkX, chunkZ);
                 }
             }
         }
+        if (!ciChunksRequested) {
+            LivingKingdoms.LOGGER.info(
+                    "Retained Erden landmark CI sample role={} chunk={},{} radius={} transient_ticket=portal refreshed_until_verification=true loaded_lease=true refresh_ticks=40 persistent_forced_chunks=false synchronous_get_chunk=false",
+                    sample.role(), ciSampleTicketCenter.x(), ciSampleTicketCenter.z(),
+                    CI_SAMPLE_TICKET_RADIUS);
+        }
         ciChunksRequested = true;
-        LivingKingdoms.LOGGER.info(
-                "Retained Erden landmark CI sample role={} chunk={},{} radius={} transient_ticket=portal synchronous_get_chunk=false",
-                sample.role(), ciSampleTicketCenter.x(), ciSampleTicketCenter.z(),
-                CI_SAMPLE_TICKET_RADIUS);
     }
 
     private static void verifyCiSampleIfNeeded(
