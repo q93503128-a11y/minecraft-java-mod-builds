@@ -1,0 +1,168 @@
+name: Apply Village Guardians v0.18.17 UI Rollback
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.apply-v01817-ui-rollback'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin main
+      - name: Restore pre-0.18.16 UI and keep world presentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=b899b03ce80fe57b5524494e8a20d2025e60d7a0
+          ROOT=projects/village-guardians
+          JAVA=$ROOT/src/main/java/kr/moonseungjun/villageguardians
+
+          for file in \
+            VillageCommandCenterScreen.java \
+            VillageHudSystem.java \
+            VillageMainHudOverlay.java \
+            VillageRaidSystem.java \
+            VillageSkillHudOverlay.java \
+            VillageStructureHud.java \
+            VillageTownHallGridScreen.java; do
+            git show "$BASE:$JAVA/$file" > "$JAVA/$file"
+          done
+          git show "$BASE:$ROOT/tools/test_runtime_safety.py" > "$ROOT/tools/test_runtime_safety.py"
+          rm -f "$JAVA/VillageDefenseHudFrame.java" "$JAVA/VillageDefenseUiTheme.java"
+          rm -f "$ROOT/tools/test_v01816_mobile_defense_ui.py"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('projects/village-guardians')
+          props = root / 'gradle.properties'
+          text = props.read_text(encoding='utf-8')
+          text = text.replace('mod_version=0.18.16-alpha.1', 'mod_version=0.18.17-alpha.1')
+          props.write_text(text, encoding='utf-8')
+          for path in root.glob('tools/test_v018*.py'):
+              text = path.read_text(encoding='utf-8')
+              text = text.replace('mod_version=0.18.16-alpha.1', 'mod_version=0.18.17-alpha.1')
+              path.write_text(text, encoding='utf-8')
+          PY
+
+          cat > "$ROOT/tools/test_v01817_ui_rollback.py" <<'PY'
+          #!/usr/bin/env python3
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          JAVA = ROOT / 'src/main/java/kr/moonseungjun/villageguardians'
+
+          def read(name):
+              return (JAVA / name).read_text(encoding='utf-8')
+
+          def require(label, cond):
+              if not cond:
+                  raise AssertionError(label)
+              print('[PASS]', label)
+
+          props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
+          main_hud = read('VillageMainHudOverlay.java')
+          skill_hud = read('VillageSkillHudOverlay.java')
+          structure = read('VillageStructureHud.java')
+          hud_system = read('VillageHudSystem.java')
+          command = read('VillageCommandCenterScreen.java')
+          town = read('VillageTownHallGridScreen.java')
+          effects = read('VillageDefenseEffectSystem.java')
+          turret = read('VillagePlacedTurretSystem.java')
+          segment = read('VillageSiegeSegmentSystem.java')
+          mesh = read('VillageSkillMeshLibrary.java')
+          raid = read('VillageRaidSystem.java')
+
+          require('version is v0.18.17-alpha.1', 'mod_version=0.18.17-alpha.1' in props)
+          require('0.18.16 structured defense HUD frame is removed',
+                  not (JAVA / 'VillageDefenseHudFrame.java').exists()
+                  and 'VillageDefenseHudFrame' not in hud_system
+                  and 'VillageDefenseHudFrame' not in main_hud)
+          require('0.18.16 centralized defense UI theme is removed',
+                  not (JAVA / 'VillageDefenseUiTheme.java').exists()
+                  and 'VillageDefenseUiTheme' not in command
+                  and 'VillageDefenseUiTheme' not in town)
+          require('main HUD is restored to the previous compact text surface',
+                  'split(" §8│ ")' in main_hud
+                  and 'renderWideTop' not in main_hud
+                  and 'renderFrontPressure' not in main_hud)
+          require('skill HUD is restored to the previous compact two-line layout',
+                  'graphics.guiHeight() - 98' in skill_hud
+                  and 'abilityCard' not in skill_hud
+                  and 'READY' not in skill_hud)
+          require('facility durability boss bar rotation is restored',
+                  'CYCLE_INTERVAL_TICKS' in structure
+                  and 'nextBuilding' in structure
+                  and 'DAMAGE_FOCUS_TICKS' not in structure)
+          require('raid HUD-only snapshot code is removed',
+                  'record RaidHudSnapshot' not in raid
+                  and 'hudSnapshot()' not in raid)
+          require('0.18.16 world-space turret presentation is preserved',
+                  'turretPlacementPreview' in effects
+                  and 'turretDeployPulse' in effects
+                  and 'turretRepairPulse' in effects
+                  and 'turretUpgradePulse' in effects
+                  and 'VillageDefenseEffectSystem.turretPlacementPreview' in turret
+                  and 'VillageDefenseEffectSystem.turretDeployPulse' in turret)
+          require('0.18.16 breach alarm presentation is preserved',
+                  'breachAlarm' in effects
+                  and 'VillageDefenseEffectSystem.breachAlarm' in segment
+                  and 'defense_breach_alarm' in mesh)
+          print('[PASS] v0.18.17 UI rollback keeps world presentation while restoring the prior UI')
+          PY
+
+          python3 "$ROOT/tools/test_v01817_ui_rollback.py"
+
+      - name: Run complete regression contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd projects/village-guardians
+          for test in \
+            tools/test_rpg_balance.py \
+            tools/test_village_zone.py \
+            tools/test_progression_loop.py \
+            tools/test_progression_depth.py \
+            tools/test_fortress_layout.py \
+            tools/test_runtime_safety.py \
+            tools/test_ui_layout_contract.py \
+            tools/test_interaction_contract.py \
+            tools/test_action_layout.py \
+            tools/test_enemy_content.py \
+            tools/test_v0188_risk_ui_cleanup.py \
+            tools/test_v0189_siege_phase2.py \
+            tools/test_v01810_ranger_ricochet.py \
+            tools/test_v01811_defense_polish.py \
+            tools/test_v01812_quality_audit.py \
+            tools/test_v01813_siege_integration.py \
+            tools/test_v01814_persistent_presentation.py \
+            tools/test_v01815_boss_identity.py \
+            tools/test_v01817_ui_rollback.py; do
+            echo "=== $test ==="
+            python3 "$test"
+          done
+      - name: Commit rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f projects/village-guardians/.apply-v01817-ui-rollback
+          git add -A projects/village-guardians
+          git commit -m 'revert(village): restore pre-defense-pass UI while keeping presentation'
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          exit 1
