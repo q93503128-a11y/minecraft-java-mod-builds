@@ -4,16 +4,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-import java.util.HashSet;
-import java.util.Set;
-
 /** Keeps only population and physical-economy sample buildings loaded during headless diagnostics. */
 public final class ErdenPopulationCiChunkRetainer {
     private static final boolean ENABLED =
             "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
     private static final int RETAIN_INTERVAL_TICKS = 5;
-    private static final Set<Long> RETAINED_CHUNKS = new HashSet<>();
-
     private static MinecraftServer activeServer;
 
     private ErdenPopulationCiChunkRetainer() {
@@ -24,7 +19,6 @@ public final class ErdenPopulationCiChunkRetainer {
                 || event.getServer().getTickCount() % RETAIN_INTERVAL_TICKS != 0) return;
         if (activeServer != event.getServer()) {
             activeServer = event.getServer();
-            RETAINED_CHUNKS.clear();
         }
         ServerLevel level = event.getServer().getLevel(StarterRealmManager.REALM_KEY);
         if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
@@ -44,55 +38,34 @@ public final class ErdenPopulationCiChunkRetainer {
     }
 
     private static void retainBuilding(ServerLevel level, int x, int z) {
-        ExternalUrbanFabricBuilder.UrbanEntrance entrance = null;
-        for (ExternalUrbanFabricBuilder.UrbanEntrance candidate
-                : ExternalUrbanFabricBuilder.entrances()) {
-            if (candidate.x() == x && candidate.z() == z) {
-                entrance = candidate;
+        ExternalUrbanFabricBuilder.UrbanBuildingPlacement placement = null;
+        for (ExternalUrbanFabricBuilder.UrbanBuildingPlacement candidate
+                : ExternalUrbanFabricBuilder.buildingPlacementsForDiagnostics()) {
+            if (candidate.entrance().x() == x && candidate.entrance().z() == z) {
+                placement = candidate;
                 break;
             }
         }
-        if (entrance == null) return;
+        if (placement == null) return;
 
-        int deltaX = entrance.roadX() - entrance.x();
-        int deltaZ = entrance.roadZ() - entrance.z();
-        int inwardX;
-        int inwardZ;
-        if (Math.abs(deltaX) >= Math.abs(deltaZ)) {
-            inwardX = deltaX >= 0 ? -1 : 1;
-            inwardZ = 0;
-        } else {
-            inwardX = 0;
-            inwardZ = deltaZ >= 0 ? -1 : 1;
-        }
-        int rightX = -inwardZ;
-        int rightZ = inwardX;
-        int minX = x;
-        int maxX = x;
-        int minZ = z;
-        int maxZ = z;
-        for (int lateral : new int[]{-3, 3}) {
-            for (int forward : new int[]{1, 9}) {
-                int blockX = x + inwardX * forward + rightX * lateral;
-                int blockZ = z + inwardZ * forward + rightZ * lateral;
-                minX = Math.min(minX, blockX);
-                maxX = Math.max(maxX, blockX);
-                minZ = Math.min(minZ, blockZ);
-                maxZ = Math.max(maxZ, blockZ);
-            }
-        }
-        for (int chunkX = Math.floorDiv(minX, 16);
-             chunkX <= Math.floorDiv(maxX, 16); chunkX++) {
-            for (int chunkZ = Math.floorDiv(minZ, 16);
-                 chunkZ <= Math.floorDiv(maxZ, 16); chunkZ++) {
+        // Population readiness is defined by the authored ground plan plus its verified upper
+        // residence. Retaining only the old 7x9 doorway room can leave most of a 34x38 source
+        // fragment unloaded forever in headless CI. Refresh the actual placement footprint with
+        // one chunk of halo, and explicitly refresh all authored-ground plan chunks. These are
+        // transient PORTAL leases only; no persistent forced chunk state is written.
+        ErdenUrbanInteriorBuilder.requestPlanChunksForCi(level, placement.entrance());
+        int minChunkX = Math.floorDiv(placement.minX(), 16) - 1;
+        int maxChunkX = Math.floorDiv(placement.maxX(), 16) + 1;
+        int minChunkZ = Math.floorDiv(placement.minZ(), 16) - 1;
+        int maxChunkZ = Math.floorDiv(placement.maxZ(), 16) + 1;
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
                 if (!ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ)) {
                     ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
                 }
-                long key = ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
-                if (RETAINED_CHUNKS.add(key)) {
-                    level.setChunkForced(chunkX, chunkZ, true);
-                }
+                ErdenCapitalStreamingBuilder.retainDiagnosticChunk(level, chunkX, chunkZ);
             }
         }
     }
+
 }

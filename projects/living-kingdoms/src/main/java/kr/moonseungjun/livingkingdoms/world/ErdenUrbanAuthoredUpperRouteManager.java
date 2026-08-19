@@ -49,6 +49,7 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
     private static boolean ciChunksRequested;
     private static boolean ciPassed;
     private static long ciRouteKey = Long.MIN_VALUE;
+    private static long lastCiChunkRefreshTick = Long.MIN_VALUE;
 
     private ErdenUrbanAuthoredUpperRouteManager() {
     }
@@ -231,6 +232,7 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
         ciChunksRequested = false;
         ciPassed = false;
         ciRouteKey = Long.MIN_VALUE;
+        lastCiChunkRefreshTick = Long.MIN_VALUE;
     }
 
     private static PlacementRoute transformAndValidate(
@@ -392,7 +394,11 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
                     node.local().x(), floorLocalY, node.local().z()));
             BlockPos floorPos = new BlockPos(
                     node.world().x(), node.world().y() - 1, node.world().z());
-            if (sourceFloorAir && level.getBlockState(floorPos).isAir()) {
+            // A stair block is itself the walkable surface. Adding a synthetic full support
+            // beneath every stair can occupy the head cell of a lower switchback segment when
+            // the source-air route passes under itself two metres below. Keep stair undersides
+            // open; only flat air-foot nodes need an authored support floor.
+            if (stair == null && sourceFloorAir && level.getBlockState(floorPos).isAir()) {
                 level.setBlock(floorPos, support.defaultBlockState(), UPDATE_FLAGS);
             }
         }
@@ -418,7 +424,12 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
 
             BlockState floor = level.getBlockState(new BlockPos(
                     node.world().x(), node.world().y() - 1, node.world().z()));
-            if (floor.isAir() || !floor.getFluidState().isEmpty()) return false;
+            // Flat air-foot nodes require a real floor. A stair node does not: the stair in the
+            // feet cell is already its collision/walking surface, and forcing a block below it
+            // can destroy the headroom of a lower switchback segment. Fluids below either form
+            // are still rejected.
+            if (!floor.getFluidState().isEmpty()) return false;
+            if (stair == null && floor.isAir()) return false;
         }
 
         RouteNode endpoint = route.nodes().getLast();
@@ -578,8 +589,13 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
     }
 
     private static void requestCiSampleChunks(ServerLevel level) {
-        if (ciChunksRequested
+        if (ciPassed
                 || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+        long tick = level.getGameTime();
+        if (lastCiChunkRefreshTick != Long.MIN_VALUE
+                && tick - lastCiChunkRefreshTick < 40L) return;
+        lastCiChunkRefreshTick = tick;
+
         PlacementRoute sample = ROUTES.values().stream()
                 .filter(route -> {
                     ExternalUrbanFabricBuilder.UrbanEntrance diagnostic =
@@ -589,14 +605,34 @@ public final class ErdenUrbanAuthoredUpperRouteManager {
                 })
                 .findFirst()
                 .orElseGet(() -> ROUTES.values().iterator().next());
+        ExternalUrbanFabricBuilder.UrbanEntrance sampleEntrance =
+                ExternalUrbanFabricBuilder.entrances().stream()
+                        .filter(entrance -> entrance.x() == sample.entranceX()
+                                && entrance.z() == sample.entranceZ())
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Missing Erden authored upper-route CI entrance "
+                                        + sample.entranceX() + "," + sample.entranceZ()));
+
+        // Ground materialization is a hard predecessor for the upper route. Refresh the complete
+        // authored-ground placement lease and the route body together until the real-world route
+        // proof succeeds. These are transient PORTAL leases only; once ciPassed becomes true no
+        // further refresh occurs and the chunks naturally unload.
+        ErdenUrbanInteriorBuilder.requestPlanChunksForCi(level, sampleEntrance);
         for (int chunkX = Math.floorDiv(sample.bounds().minX(), 16);
              chunkX <= Math.floorDiv(sample.bounds().maxX(), 16); chunkX++) {
             for (int chunkZ = Math.floorDiv(sample.bounds().minZ(), 16);
                  chunkZ <= Math.floorDiv(sample.bounds().maxZ(), 16); chunkZ++) {
                 ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                ErdenCapitalStreamingBuilder.retainDiagnosticChunk(level, chunkX, chunkZ);
             }
         }
         ciRouteKey = sample.entranceKey();
+        if (!ciChunksRequested) {
+            LivingKingdoms.LOGGER.info(
+                    "Requested Erden authored upper-route CI sample role={} entrance={},{} bounded_route_chunks=true authored_ground_plan=true refreshed_until_verification=true refresh_ticks=40 loaded_lease=true persistent_forced_chunks=false",
+                    sample.role(), sample.entranceX(), sample.entranceZ());
+        }
         ciChunksRequested = true;
     }
 

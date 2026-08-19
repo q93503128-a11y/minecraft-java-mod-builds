@@ -158,6 +158,31 @@ public final class ErdenUrbanAuthoredGroundPlanCatalog {
         }
 
         Set<Long> reserved = new HashSet<>();
+        ErdenUrbanSourceAirRoutePlanner.RoutePlan upperAccessRoute =
+                ErdenUrbanSourceAirRoutePlanner.plan(placement.fragmentKey());
+        if (upperAccessRoute == null
+                || upperAccessRoute.classification()
+                != ErdenUrbanSourceAirRoutePlanner.RouteClassification.ZERO_CUT_ROUTE
+                || upperAccessRoute.path().isEmpty()) {
+            throw new IllegalStateException(
+                    "Authored-ground plan has no zero-cut upper access route fragment="
+                            + placement.fragmentKey());
+        }
+        int reservedRouteColumns = 0;
+        for (ErdenUrbanSourceAirRoutePlanner.Node node : upperAccessRoute.path()) {
+            // Ground furniture is one block tall. Reserve every route column whose feet/head body
+            // can intersect that furniture at the authored ground band. This keeps beds, barrels,
+            // work targets and resident targets out of the staircase's immutable source-air lane.
+            if (Math.abs(node.y() - groundY) <= 1
+                    && reserved.add(columnKey(node.x(), node.z()))) {
+                reservedRouteColumns++;
+            }
+        }
+        if (reservedRouteColumns == 0) {
+            throw new IllegalStateException(
+                    "Authored-ground plan reserved no upper-route ground columns fragment="
+                            + placement.fragmentKey() + " ground_y=" + groundY);
+        }
         List<LocalBed> beds = new ArrayList<>();
         int bedCount = switch (placement.role()) {
             case "tenement" -> 3;
