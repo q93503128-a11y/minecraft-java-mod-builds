@@ -28,6 +28,31 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Record live ground-route proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          mkdir -p .github/build-pointers
+          cat > .github/build-pointers/living-kingdoms-ground-route-proof.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "in_progress",
+            "log_artifact_id": ""
+          }
+          EOF
+          git add .github/build-pointers/living-kingdoms-ground-route-proof.json
+          git commit -m "Record Living Kingdoms ground-route proof $GITHUB_RUN_NUMBER start [skip ci]" || true
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -113,9 +138,40 @@ jobs:
           exit 1
 
       - name: Upload proof log
+        id: upload_logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: living-kingdoms-ground-route-proof-${{ github.run_number }}
           path: logs/
           retention-days: 30
+
+      - name: Record ground-route proof result
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LOG_ARTIFACT_ID: ${{ steps.upload_logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout --detach origin/main
+            mkdir -p .github/build-pointers
+            cat > .github/build-pointers/living-kingdoms-ground-route-proof.json <<EOF
+          {
+            "run_id": "$GITHUB_RUN_ID",
+            "run_number": "$GITHUB_RUN_NUMBER",
+            "commit_sha": "$GITHUB_SHA",
+            "job_status": "$JOB_STATUS",
+            "log_artifact_id": "$LOG_ARTIFACT_ID"
+          }
+          EOF
+            git add .github/build-pointers/living-kingdoms-ground-route-proof.json
+            git commit -m "Record Living Kingdoms ground-route proof $GITHUB_RUN_NUMBER [skip ci]" || exit 0
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
