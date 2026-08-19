@@ -1,3 +1,0 @@
-status=FAIL
-run_id=32223324109
-head_sha=f50c8bb9d8872e35afdf265466b34ae92d022a70
