@@ -20,7 +20,7 @@ def kenneyUiAssets = [
         [output: 'button_pressed.png', source: "${kenneyAssetRoot}/ui-pack/PNG/button_rectangleDepressed.png", blob: 'd9492b4e48b28823c81b3bc08a1b31156f68c79c'],
         [output: 'hud_panel_brown.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/panel_brown.png", blob: '3e967c361edf770c1a54e0558ff68102ad5e6976'],
         [output: 'minimap_ring_brown_detail.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_ring_brown_detail.png", blob: 'c09659401f7abe506447b56ca56b5137eab9f697'],
-        [output: 'hud_button_brown.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/button_brown.png", blob: '73c062e9213a5a10c506e93b71b272c8ea2aec4b'],
+        [output: 'hud_button_brown.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/button_brown.png", blob: '73c062e9213a5a10c506e93b71b272c8ea2aec4'],
         [output: 'hud_progress_red.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/progress_red.png", blob: '570310fff678b3720e8fe4b23f570894d242a492'],
         [output: 'hud_progress_green.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/progress_green.png", blob: '9d7c584007202d94ddcd4a9fc415ad8ca768e17f'],
         [output: 'minimap_arrow.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_arrow_a.png", blob: 'd3999611a2608d9953db7ebdd1cda9c293c47b09']
@@ -40,7 +40,9 @@ def establishedExternalStructureAssets = [
 def urbanExpansionStructureAssets = [
         [output: 'player_castle_house.schem', slug: 'ultimate-player-favorite-castle-house-survival-base', title: 'Ultimate Player Favorite Castle House Survival Base'],
         [output: 'medieval_tavern_inn.schem', slug: 'ultimate-medieval-tavern-inn-survival-base', title: 'Ultimate Medieval Tavern Inn Survival Base'],
-        [output: 'medieval_market_hall.schem', slug: 'ultimate-medieval-market-hall-survival-base', title: 'Ultimate Medieval Market Hall Survival Base'],
+        // The runtime resource path remains stable while this slot is replaced by a topology-safe
+        // independent town-hall source. Attribution records the actual downloaded source/title.
+        [output: 'medieval_market_hall.schem', slug: 'ultimate-medieval-town-hall-survival-base', title: 'Ultimate Medieval Town Hall Survival Base'],
         [output: 'medieval_horse_stable.schem', slug: 'ultimate-medieval-horse-stable-survival-base', title: 'Ultimate Medieval Horse Stable Survival Base']
 ]
 def externalStructureAssets = establishedExternalStructureAssets + urbanExpansionStructureAssets
