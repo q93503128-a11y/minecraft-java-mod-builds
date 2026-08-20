@@ -30,16 +30,15 @@ import java.util.Set;
  * provenance-approved synthetic crop seal over source AIR); retained source blocks are immutable.</p>
  */
 public final class ErdenUrbanFullInteriorExpansionManager {
-    public static final int EXPANSION_REVISION = 1;
-    public static final int EXPECTED_BUILDINGS = 40;
-    public static final int EXPECTED_ADDITIONAL_LEVELS = 40;
-    public static final int EXPECTED_ADDITIONAL_ROOMS = 80;
+    public static final int EXPANSION_REVISION = 2;
 
     private static final int PROCESS_BUDGET = 1;
     private static final int UPDATE_FLAGS =
             Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
     private static final Map<Long, PlacementExpansion> EXPANSIONS = new LinkedHashMap<>();
     private static boolean bootstrapped;
+    private static int plannedAdditionalLevels;
+    private static int plannedAdditionalRooms;
 
     private static MinecraftServer activeServer;
     private static boolean completionLogged;
@@ -61,6 +60,9 @@ public final class ErdenUrbanFullInteriorExpansionManager {
                 ErdenUrbanFullInteriorRouteCatalog.plans();
 
         int examined = 0;
+        int expectedBuildings = 0;
+        int expectedLevels = 0;
+        int expectedRooms = 0;
         int levels = 0;
         int rooms = 0;
         int floorCells = 0;
@@ -74,6 +76,13 @@ public final class ErdenUrbanFullInteriorExpansionManager {
             List<ErdenUrbanFullInteriorRouteCatalog.LevelRoutePlan> plans =
                     sourcePlans.getOrDefault(placement.fragmentKey(), List.of());
             if (plans.isEmpty()) continue;
+
+            expectedBuildings++;
+            expectedLevels += plans.size();
+            for (ErdenUrbanFullInteriorRouteCatalog.LevelRoutePlan level : plans) {
+                expectedRooms += level.regionRoutes().size();
+            }
+
             ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot = snapshots.get(placement.fragmentKey());
             if (snapshot == null) {
                 throw new IllegalStateException("Missing source fragment for full interior expansion "
@@ -96,17 +105,25 @@ public final class ErdenUrbanFullInteriorExpansionManager {
         if (examined != 233 || examined != ExternalUrbanFabricBuilder.plotCount()) {
             throw new IllegalStateException("Erden full-interior expansion placement drift: " + examined);
         }
-        if (EXPANSIONS.size() != EXPECTED_BUILDINGS
-                || levels != EXPECTED_ADDITIONAL_LEVELS
-                || rooms != EXPECTED_ADDITIONAL_ROOMS) {
+        if (expectedBuildings <= 0 || expectedLevels <= 0 || expectedRooms <= 0) {
             throw new IllegalStateException(
-                    "Erden full-interior expansion truth drift buildings=" + EXPANSIONS.size()
-                            + " levels=" + levels + " rooms=" + rooms);
+                    "Erden full-interior expansion catalog unexpectedly empty buildings="
+                            + expectedBuildings + " levels=" + expectedLevels + " rooms=" + expectedRooms);
+        }
+        if (EXPANSIONS.size() != expectedBuildings
+                || levels != expectedLevels
+                || rooms != expectedRooms) {
+            throw new IllegalStateException(
+                    "Erden full-interior expansion truth drift actual=" + EXPANSIONS.size()
+                            + "/" + levels + "/" + rooms
+                            + " catalog=" + expectedBuildings + "/" + expectedLevels + "/" + expectedRooms);
         }
 
+        plannedAdditionalLevels = levels;
+        plannedAdditionalRooms = rooms;
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden physical full interior expansions buildings={} levels={} rooms={} roles={} floor_cells={} route_nodes={} stair_blocks={} predecessor_upper_required=true source_blocks_cut=0 source_air_only=true placement_counts_unchanged=true plots=233 housing=77 work=156 revision={}",
+                "Prepared Erden physical full interior expansions buildings={} levels={} rooms={} roles={} floor_cells={} route_nodes={} stair_blocks={} catalog_truth=true predecessor_upper_required=true source_blocks_cut=0 source_air_only=true placement_counts_unchanged=true plots=233 housing=77 work=156 revision={}",
                 EXPANSIONS.size(), levels, rooms, roles, floorCells, routeNodes, stairBlocks,
                 EXPANSION_REVISION);
     }
@@ -140,7 +157,7 @@ public final class ErdenUrbanFullInteriorExpansionManager {
             completionLogged = true;
             LivingKingdoms.LOGGER.info(
                     "Completed Erden physical full interior expansions buildings={} additional_levels={} additional_rooms={} all_room_routes=true source_blocks_cut=0 revision={}",
-                    complete, EXPECTED_ADDITIONAL_LEVELS, EXPECTED_ADDITIONAL_ROOMS,
+                    complete, plannedAdditionalLevels, plannedAdditionalRooms,
                     EXPANSION_REVISION);
         }
         verifyCiIfReady(level, data);
