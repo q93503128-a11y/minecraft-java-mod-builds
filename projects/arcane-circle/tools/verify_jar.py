@@ -30,6 +30,7 @@ required = {
     "kr/moonseungjun/arcanecircle/magic/ArcaneLightService.class",
     "kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class",
     "kr/moonseungjun/arcanecircle/magic/HighControlSpellService.class",
+    "kr/moonseungjun/arcanecircle/magic/HighWardSpellService.class",
     "kr/moonseungjun/arcanecircle/magic/PlanarSpellData.class",
     "kr/moonseungjun/arcanecircle/magic/PlanarSpellService.class",
     "kr/moonseungjun/arcanecircle/magic/SimulacrumService.class",
@@ -93,6 +94,9 @@ with zipfile.ZipFile(jar) as archive:
     control = index.get("high_control_identity", [])
     if set(control) != {"behavioral_mass_suggestion","physical_forcecage","temporary_dominate_monster","spellbreaking_feeblemind"}:
         raise SystemExit(f"alpha.50 high control metadata mismatch: {control}")
+    ward = index.get("high_ward_identity", [])
+    if set(ward) != {"globe_blocks_hostile_circle_1_to_5_spells","circle_6_plus_and_physical_pass_through","player_and_npc_cast_interception"}:
+        raise SystemExit(f"alpha.51 high ward metadata mismatch: {ward}")
     notice = archive.read("META-INF/THIRD_PARTY_NOTICES.md").decode("utf-8")
     if "Creative Commons Attribution 4.0" not in notice:
         raise SystemExit("SRD attribution missing from JAR")
@@ -103,4 +107,5 @@ checksum.write_text(f"{digest}  {jar.name}\n", encoding="utf-8")
 print(f"Arcane Circle v0.12.1 JAR verification: PASS ({len(names)} entries, {len(staff_recipes)} staff recipes)")
 print("alpha49_high_utility_runtime=PASS")
 print("alpha50_high_control_runtime=PASS")
+print("alpha51_high_ward_runtime=PASS")
 print(f"SHA-256: {digest}")
