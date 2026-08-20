@@ -18,6 +18,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Record post-audit run id
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p projects/village-guardians/.ci
+          printf 'status=RUNNING\nrun_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > projects/village-guardians/.ci/v01819-postaudit-running.txt
+          git add projects/village-guardians/.ci/v01819-postaudit-running.txt
+          git commit -m 'ci(village): record v0.18.19 post-audit start [skip ci]'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -73,11 +89,31 @@ jobs:
           set -euo pipefail
           rm -f projects/village-guardians/tools/apply_v01819_postaudit.py
           rm -f projects/village-guardians/.ci/v01819-integration-running.txt projects/village-guardians/.ci/v01819-integration-failure.txt
+          rm -f projects/village-guardians/.ci/v01819-postaudit-running.txt projects/village-guardians/.ci/v01819-postaudit-failure.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A projects/village-guardians
           git diff --cached --check
           git commit -m 'fix(village): preserve research upgrade continuity'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
+      - name: Record post-audit failure
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p projects/village-guardians/.ci
+          rm -f projects/village-guardians/.ci/v01819-postaudit-running.txt
+          printf 'status=FAIL\nrun_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > projects/village-guardians/.ci/v01819-postaudit-failure.txt
+          git add -A projects/village-guardians/.ci
+          git commit -m 'ci(village): record v0.18.19 post-audit failure [skip ci]'
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then exit 0; fi
             git pull --rebase origin main
