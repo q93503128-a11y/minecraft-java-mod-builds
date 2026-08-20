@@ -14,9 +14,9 @@ def require(body,tokens,label):
 # Canonical version and complete spell world.
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.50' in gradle
-assert 'VERSION = "0.12.1-alpha.50"' in main
-assert '"version": "0.12.1-alpha.50"' in index
+assert 'mod_version=0.12.1-alpha.51' in gradle
+assert 'VERSION = "0.12.1-alpha.51"' in main
+assert '"version": "0.12.1-alpha.51"' in index
 catalog=text(magic/'SpellCatalog.java')
 direct=set(re.findall(r'\badd\("([a-z0-9_]+)"',catalog)); fusions=set(re.findall(r'\baddFusion\("([a-z0-9_]+)"',catalog))
 assert len(direct)==90 and len(fusions)==19 and len(direct|fusions)==109,(len(direct),len(fusions))
@@ -32,7 +32,7 @@ assert not [p for p in tools.iterdir() if p.is_dir()]
 repo=root.parents[1]; scripts=repo/'.github/scripts'
 if scripts.exists(): assert not list(scripts.glob('*arcane*'))
 
-# Current world-geometry presentation baseline remains intact; alpha.50 does not replace it with generic particles.
+# Current world-geometry presentation baseline remains intact; alpha.51 does not replace it with generic particles.
 tracker=text(client/'WorldMagicTracker.java')
 require(tracker,['SpellCinematicDirector.charge','ArcaneSigilDirector.charge','AuthoredHighCircleTimeline.charge',
                  'HighCircleMaintenanceOverlay.charge','PersistentBuffRegalia.release','MAX_FRAME = 14500','MAX_ENTRY = 4000',
@@ -42,7 +42,7 @@ timeline=text(client/'AuthoredHighCircleTimeline.java')
 for spell in ['plane_shift','simulacrum','demiplane','clone','maze','true_polymorph','meteor_swarm','time_stop','wish','gate']:
     assert f'case "{spell}"' in timeline,spell
 
-# Grimoire mechanical text must describe actual alpha.48/49/50 behavior, not old aliases.
+# Grimoire mechanical text must describe actual alpha.48-51 behavior, not old aliases.
 summary=text(magic/'SpellEffectSummary.java'); assert summary.count('case "')>=109
 require(summary,[
     'case "clone"','실제 복제본','case "true_polymorph"','실제 몸체','case "maze"','전장에서 실제 추방',
@@ -50,7 +50,8 @@ require(summary,[
     'case "simulacrum"','체력 50%/전투력 약 72%','웅크린 채 G','case "demiplane"','보존되는 개인 주머니방',
     '내부 블록/물품 유지','case "control_weather"','G키로 바라본 지점 12연속 낙뢰','case "time_stop"','투사체·드롭 이동',
     'case "mass_suggestion"','전투 이탈 명령','실제로 멀어지며','case "forcecage"','AI/공격/시전은 유지','실제로 넘지 못하게 감금',
-    'case "dominate_monster"','임시 전투 대리체','비전투 시 추종','case "feeblemind"','Arcane 시전 봉쇄','AI 자체는 계속 움직임'
+    'case "dominate_monster"','임시 전투 대리체','비전투 시 추종','case "feeblemind"','Arcane 시전 봉쇄','AI 자체는 계속 움직임',
+    'case "globe_of_invulnerability"','적대 1~5써클 Arcane 주문을 경계면에서 소거','6써클 이상/물리 공격은 통과'
 ],'summary')
 assert '60초 내 다음 치명상을 대리체가 대신 받고 생존' not in summary
 assert 'case "demiplane" -> "고등 공간 회로로 매우 먼 안전 지점 이동"' not in summary
@@ -58,6 +59,7 @@ assert 'case "plane_shift" -> "장거리 안전 지점으로 고등 공간 이�
 assert 'case "mass_suggestion" -> "넓은 범위 적의 AI·이동·Arcane 시전을 8초간 일괄 봉쇄"' not in summary
 assert 'case "forcecage" -> "조준 대상을 20초간 AI·이동·Arcane 시전 완전 봉쇄"' not in summary
 assert 'case "dominate_monster" -> "조준 대상 AI·이동·Arcane 시전을 24초간 완전 봉쇄"' not in summary
+assert 'case "globe_of_invulnerability" -> "26초 흡수·저항 + 들어오는 피해 70% 감소"' not in summary
 
 # Alpha.48 real body/state transitions stay authoritative.
 utility=text(magic/'HighUtilitySpellService.java')
@@ -76,7 +78,6 @@ require(planar,[
     'p.isShiftKeyDown()','if (result.size() >= 9) break','x /= 8.0; z /= 8.0','x *= 8.0; z *= 8.0',
     'player.teleportTo(level','Set.<Relative>of()','findSafeVertical','ServerLevel.END_SPAWN_POINT'
 ],'plane shift')
-# Bounded safe search: perimeter calls vertical-only helper, never recursively calls findSafe.
 find_block=planar[planar.index('private static Optional<BlockPos> findSafe('):planar.index('private static Optional<BlockPos> findSafeVertical(')]
 assert find_block.count('findSafe(')==1 and 'findSafeVertical' in find_block
 
@@ -113,18 +114,41 @@ assert 'setNoAi(true)' not in control
 require(index,['"high_control_identity"','"behavioral_mass_suggestion"','"physical_forcecage"',
                '"temporary_dominate_monster"','"spellbreaking_feeblemind"'],'alpha50 metadata')
 
+# Alpha.51 Globe: spell-vs-spell barrier, not generic damage reduction.
+ward_path=magic/'HighWardSpellService.java'; assert ward_path.exists(); ward=text(ward_path)
+require(ward,[
+    'GLOBE_TICKS = 520','MAX_BLOCKED_CIRCLE = 5','BASE_RADIUS = 6.0',
+    'public static boolean intercepts(LivingEntity caster, SpellDefinition spell',
+    'SpellPresentationProfile.MotionStyle motion','SpellMetrics.effectRadius','SpellMetrics.wallWidth',
+    'SpellMetrics.waveEndRadius','segmentDistanceSqr','WorldMagicService.cancelRelease(caster, spell.id())',
+    'owner == caster || owner.isAlliedTo(caster)','caster.position().distanceToSqr(center)',
+    '6써클 이상 주문과 물리 공격은 그대로 통과','public static void clear(LivingEntity subject)','public static void clearAll()'
+],'alpha51 high ward')
+assert '.70' not in ward and 'ReductionWard' not in ward and 'onIncomingDamage' not in ward
+require(index,['"high_ward_identity"','"globe_blocks_hostile_circle_1_to_5_spells"',
+               '"circle_6_plus_and_physical_pass_through"','"player_and_npc_cast_interception"'],'alpha51 metadata')
+
 # Dedicated routing must win before old resolved/generic gameplay fallbacks.
 kinetics=text(magic/'SpellKineticsService.java')
 require(kinetics,[
     'PlanarSpellService.handles(cast.spell().id())','SimulacrumService.handles(cast.spell().id())',
-    'HighControlSpellService.handles(cast.spell().id())','boolean planarOwned = PlanarSpellService.handles(spellId)',
-    'boolean simulacrumOwned = !planarOwned','boolean controlOwned = !planarOwned && !simulacrumOwned && !utilityOwned',
+    'HighWardSpellService.handles(cast.spell().id())','HighControlSpellService.handles(cast.spell().id())',
+    'HighWardSpellService.intercepts(player, spell, targetSnapshot, range)',
+    'boolean planarOwned = PlanarSpellService.handles(spellId)','boolean simulacrumOwned = !planarOwned',
+    'boolean wardOwned = !planarOwned && !simulacrumOwned && !utilityOwned','boolean controlOwned = !planarOwned',
     'PlanarSpellService.execute(player, spellId)','SimulacrumService.execute(player, targetSnapshot)',
     'HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)',
+    'HighWardSpellService.execute(player, spellId, range, power, targetSnapshot)',
     'HighControlSpellService.execute(player, spellId, range, power, targetSnapshot)',
     'SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)'
 ],'kinetic ownership')
-assert kinetics.index('boolean planarOwned') < kinetics.index('boolean simulacrumOwned') < kinetics.index('boolean utilityOwned') < kinetics.index('boolean controlOwned') < kinetics.index('boolean gameplayOwned')
+assert kinetics.index('boolean planarOwned') < kinetics.index('boolean simulacrumOwned') < kinetics.index('boolean utilityOwned') < kinetics.index('boolean wardOwned') < kinetics.index('boolean controlOwned') < kinetics.index('boolean gameplayOwned')
+
+# NPC authored casts cross the same globe interception path before damage resolution.
+npc=text(world/'NpcSpellResolver.java')
+require(npc,['import kr.moonseungjun.arcanecircle.magic.HighWardSpellService;',
+             'if (HighWardSpellService.intercepts(caster, spell, snapshot, range)) return false;'],'npc globe')
+assert npc.index('HighWardSpellService.intercepts') < npc.index('if ("meteor_swarm".equals(spell.id()))')
 
 # Contextual G authority: Demiplane exit > crouch+G Simulacrum > ordinary maintained/weather authority.
 network_source=text(network/'ArcaneNetwork.java')
@@ -132,19 +156,22 @@ require(network_source,['ninefold-arcana-12-1-alpha49','PlanarSpellService.useAu
                         'SimulacrumService.useAuthority(player)','SpellGameplayService.useMaintainedAuthority(player)'],'network authority')
 assert network_source.index('PlanarSpellService.useAuthority') < network_source.index('SimulacrumService.useAuthority') < network_source.index('SpellGameplayService.useMaintainedAuthority')
 
-# Central casting suppression and Antimagic must recognize/clear alpha.50 control state.
+# Central casting suppression and Antimagic recognize/clear dedicated control and ward state.
 field=text(magic/'ArcaneFieldService.java')
-require(field,['HighControlSpellService.blocksCasting(caster)','HighControlSpellService.clear(entity)',
+require(field,['HighControlSpellService.blocksCasting(caster)','HighWardSpellService.clear(entity)','HighControlSpellService.clear(entity)',
                'TIME_STOP_TICKS = 160','ANTIMAGIC_TICKS = 320','FROZEN_ENTITIES','FrozenEntity'],'field')
 
-# Main lifecycle prevents orphan copies/control states; Planar saved anchors intentionally survive normal logout/dimension transitions.
+# Main lifecycle prevents orphan copies/control/ward states; Planar saved anchors intentionally survive normal cleanup.
 require(main,['SimulacrumService.tick(level)','SimulacrumService.clear(player)','SimulacrumService.clearAll()',
-              'HighUtilitySpellService.tick(level)','HighControlSpellService.tick(level)','HighControlSpellService.clear(player)',
+              'HighUtilitySpellService.tick(level)','HighWardSpellService.tick(level)','HighWardSpellService.clear(player)',
+              'HighWardSpellService.clearAll()','HighControlSpellService.tick(level)','HighControlSpellService.clear(player)',
               'HighControlSpellService.clearAll()','ArcaneFieldService.tick(level)','DestructiveMagicService.tick(level)'],'main lifecycle')
 assert main.count('SimulacrumService.clear(player);')>=3
+assert main.count('HighWardSpellService.clear(player);')>=3
 assert main.count('HighControlSpellService.clear(player);')>=3
+assert main.index('HighWardSpellService.tick(level)') < main.index('ArcaneFieldService.tick(level)')
 assert main.index('HighControlSpellService.tick(level)') < main.index('ArcaneFieldService.tick(level)')
-assert 'PlanarSpellData' not in main  # do not accidentally erase persistent return anchors on dimension-change cleanup
+assert 'PlanarSpellData' not in main
 
 # Existing major mechanics remain present.
 gameplay=text(magic/'SpellGameplayService.java')
@@ -154,7 +181,8 @@ assert 'visible_footprint_tiled_across_bounded_ticks' in index
 
 # Jar verifier must require every dedicated runtime class.
 verify=text(root/'tools/verify_jar.py')
-for entry in ['HighUtilitySpellService.class','PlanarSpellData.class','PlanarSpellService.class','SimulacrumService.class','HighControlSpellService.class']:
+for entry in ['HighUtilitySpellService.class','PlanarSpellData.class','PlanarSpellService.class','SimulacrumService.class',
+              'HighControlSpellService.class','HighWardSpellService.class']:
     assert entry in verify,entry
 
 print('Arcane Circle current-source audit: PASS')
@@ -168,6 +196,9 @@ print('alpha50_behavioral_mass_suggestion=PASS')
 print('alpha50_physical_forcecage=PASS')
 print('alpha50_temporary_dominate_monster=PASS')
 print('alpha50_spellbreaking_feeblemind=PASS')
+print('alpha51_globe_spell_interception=PASS')
+print('alpha51_globe_npc_parity=PASS')
+print('alpha51_antimagic_dispels_globe=PASS')
 print('bounded_planar_safe_search=PASS')
 print('seeded_meteor_and_destruction=preserved')
 print('authoritative_time_stop=preserved')
