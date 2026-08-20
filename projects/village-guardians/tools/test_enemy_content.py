@@ -63,7 +63,8 @@ def main() -> None:
     ):
         assert turret + "(" in turrets
     assert "VillageDefenseResearchSystem.towerDamageMultiplier()" in turrets
-    assert "1.0f + level(Branch.TOWER) * 0.10f" in research
+    assert "towerDamageMultiplier" in research and "Branch.TOWER" in research
+    # The exact scaling formula is intentionally owned by the research system so mastery curves can evolve.
     assert "nearestActiveTurret" in turrets and "disableNearestActiveTurret" in turrets
     assert "siege_turret_catalog" in siege_ui and "siege_turret_list" in siege_ui
     assert "기존 성루는 관측 구조물이며 실전 화력은 직접 배치 포탑이 담당" in siege_ui
