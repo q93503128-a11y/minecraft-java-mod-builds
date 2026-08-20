@@ -1304,6 +1304,7 @@ public final class ExternalUrbanFabricBuilder {
 
     private static BlockState parseState(String specification) {
         String originalId = blockId(specification);
+        if (isSkippedSourceBlock(originalId)) return Blocks.AIR.defaultBlockState();
         String id = LEGACY_BLOCK_IDS.getOrDefault(originalId, originalId);
         Identifier key = Identifier.parse(id);
         Block block = BuiltInRegistries.BLOCK.getValue(key);
