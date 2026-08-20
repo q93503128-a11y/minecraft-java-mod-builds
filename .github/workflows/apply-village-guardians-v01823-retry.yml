@@ -1,0 +1,175 @@
+name: Apply Village Guardians v0.18.23 Defense Consolidation Retry
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  EXPECTED_JAR: villageguardians-0.18.23-alpha.1.jar
+
+jobs:
+  integrate:
+    if: github.event.issue.title == 'Village Guardians v0.18.23 defense consolidation retry'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record integration run
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${PROJECT_DIR}/.ci"
+          printf 'status=RUNNING\nrun_id=%s\nbase_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "${PROJECT_DIR}/.ci/v01823-running.txt"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "${PROJECT_DIR}/.ci/v01823-running.txt"
+          git commit -m 'ci(village): record v0.18.23 retry start [skip ci]'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+
+      - name: Apply consolidation patch and final ownership cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "${PROJECT_DIR}/tools/apply_v01823_defense_consolidation.py"
+          sed -i '/VillageTowerSpecializationSystem\.resetForNewGame();/d' \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java"
+          rm "${PROJECT_DIR}/tools/apply_v01823_defense_consolidation.py"
+          git diff --check
+
+      - name: Source ownership audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          java = Path('projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians')
+          retired = ('VillageTowerSpecializationSystem', 'VillageTowerProgressData')
+          hits = []
+          for path in java.glob('*.java'):
+              text = path.read_text(encoding='utf-8')
+              for token in retired:
+                  if token in text:
+                      hits.append(f'{path.name}: {token}')
+          if hits:
+              raise SystemExit('retired tower ownership still referenced: ' + ', '.join(hits))
+          print('[PASS] retired fixed-tower progression has no Java ownership references')
+          PY
+
+      - name: Run canonical regression contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in \
+            tools/test_rpg_balance.py \
+            tools/test_village_zone.py \
+            tools/test_progression_loop.py \
+            tools/test_progression_depth.py \
+            tools/test_fortress_layout.py \
+            tools/test_runtime_safety.py \
+            tools/test_ui_layout_contract.py \
+            tools/test_interaction_contract.py \
+            tools/test_action_layout.py \
+            tools/test_enemy_content.py \
+            tools/test_v0188_risk_ui_cleanup.py \
+            tools/test_v0189_siege_phase2.py \
+            tools/test_v01810_ranger_ricochet.py \
+            tools/test_v01811_defense_polish.py \
+            tools/test_v01812_quality_audit.py \
+            tools/test_v01813_siege_integration.py \
+            tools/test_v01814_persistent_presentation.py \
+            tools/test_v01815_boss_identity.py \
+            tools/test_v01818_growth_consumables.py \
+            tools/test_v01819_research_mercenary_presentation.py \
+            tools/test_v01820_mercenary_roster.py \
+            tools/test_v01820_roster_ui_consistency.py \
+            tools/test_v01821_raid_lifecycle_presentation.py \
+            tools/test_v01822_ui_rollback.py \
+            tools/test_v01823_defense_consolidation.py; do
+            test -f "$test" || continue
+            echo "=== $test ==="
+            python3 "$test"
+          done
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Clean NeoForge build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+
+      - name: Verify runtime JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/${EXPECTED_JAR}"
+          python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jar = Path('build/libs/villageguardians-0.18.23-alpha.1.jar')
+          with zipfile.ZipFile(jar) as zf:
+              names = set(zf.namelist())
+          prefix = 'kr/moonseungjun/villageguardians/'
+          assert prefix + 'VillageTowerSpecializationSystem.class' not in names
+          assert prefix + 'VillageTowerProgressData.class' not in names
+          for required in ('VillagePlacedTurretSystem.class', 'VillageDefenseSystem.class', 'VillageDefenseTowerBuilder.class', 'VillageSiegeCommandUi.class'):
+              assert prefix + required in names, required
+          print('[PASS] JAR defense ownership is consolidated')
+          PY
+
+      - name: Upload integration JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.18.23-alpha.1-integration
+          path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit verified source
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          mkdir -p "${PROJECT_DIR}/.ci"
+          cat > "${PROJECT_DIR}/.ci/v01823-integration.txt" <<EOF
+          version=0.18.23-alpha.1
+          run_id=${GITHUB_RUN_ID}
+          base_sha=${GITHUB_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          EOF
+          rm -f "${PROJECT_DIR}/.ci/v01823-running.txt"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- "${PROJECT_DIR}"
+          git diff --cached --check
+          git commit -m 'refactor(village): consolidate production defense ownership'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
