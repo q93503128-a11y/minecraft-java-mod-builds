@@ -40,6 +40,7 @@ required = {
     "kr/moonseungjun/arcanecircle/client/ArcaneSigilDirector.class",
     "kr/moonseungjun/arcanecircle/client/PersistentBuffRegalia.class",
     "kr/moonseungjun/arcanecircle/client/GrimoireScreen.class",
+    "kr/moonseungjun/arcanecircle/client/PrimaryGrimoireScreen.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneHud.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneRegaliaRenderer.class",
     "kr/moonseungjun/arcanecircle/client/ArcaneCastingPerformance.class",
@@ -97,6 +98,12 @@ with zipfile.ZipFile(jar) as archive:
     ward = index.get("high_ward_identity", [])
     if set(ward) != {"globe_blocks_hostile_circle_1_to_5_spells","circle_6_plus_and_physical_pass_through","player_and_npc_cast_interception"}:
         raise SystemExit(f"alpha.51 high ward metadata mismatch: {ward}")
+    if index.get("grimoire_effect_compendium") is not True:
+        raise SystemExit("alpha.52 effect compendium metadata missing")
+    if index.get("spell_contract_audit") != "109_explicit_summaries_and_runtime_routes":
+        raise SystemExit("alpha.52 109-spell audit metadata missing")
+    if set(index.get("copy_source_targeting", [])) != {"simulacrum_target_28","clone_target_32"}:
+        raise SystemExit("alpha.52 copy-source targeting metadata mismatch")
     notice = archive.read("META-INF/THIRD_PARTY_NOTICES.md").decode("utf-8")
     if "Creative Commons Attribution 4.0" not in notice:
         raise SystemExit("SRD attribution missing from JAR")
@@ -108,4 +115,6 @@ print(f"Arcane Circle v0.12.1 JAR verification: PASS ({len(names)} entries, {len
 print("alpha49_high_utility_runtime=PASS")
 print("alpha50_high_control_runtime=PASS")
 print("alpha51_high_ward_runtime=PASS")
+print("alpha52_readable_grimoire=PASS")
+print("alpha52_109_spell_contract_audit=PASS")
 print(f"SHA-256: {digest}")
