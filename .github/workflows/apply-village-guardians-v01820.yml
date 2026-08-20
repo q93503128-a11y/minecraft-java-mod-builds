@@ -45,7 +45,29 @@ jobs:
         with:
           gradle-version: '9.2.1'
       - name: Apply v0.18.20 source patch
-        run: python3 projects/village-guardians/tools/apply_v01820_mercenary_roster.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 projects/village-guardians/tools/apply_v01820_mercenary_roster.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageMercenarySystem.java')
+          text = path.read_text(encoding='utf-8')
+          old = '''        if (!(mob instanceof IronGolem)) return false;
+          if (CLASSES.containsKey(mob.getUUID())) return recognize(mob);'''
+          new = '''        if (!(mob instanceof IronGolem golem)) return false;
+          if (CLASSES.containsKey(mob.getUUID())) return recognize(mob);'''
+          if old not in text:
+              raise SystemExit('legacy migration type anchor missing')
+          text = text.replace(old, new, 1)
+          old = '''        applyClassPassives(mob, kind, 1);
+          refreshName(mob);'''
+          new = '''        applyClassPassives(golem, kind, 1);
+          refreshName(golem);'''
+          if old not in text:
+              raise SystemExit('legacy migration passive anchor missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
       - name: Canonical deterministic regression suite
         working-directory: projects/village-guardians
         shell: bash
