@@ -30,7 +30,7 @@ def main() -> None:
     mesh = read("VillageSkillMeshLibrary.java")
     merc = read("VillageMercenarySystem.java")
     research = read("VillageDefenseResearchSystem.java")
-    consumables = read("VillageCombatConsumableSystem.java")
+    consumables = read("VillageConsumableSystem.java")
 
     require("version is v0.18.22-alpha.1", "mod_version=0.18.22-alpha.1" in props)
 
@@ -100,7 +100,8 @@ def main() -> None:
     require("post-0.18.16 progression systems survive the rollback",
             "MAX_LEVEL = 60" in merc
             and "MAX_LEVEL = 10" in research
-            and "VillageCombatConsumableSystem" in consumables)
+            and all(token in consumables for token in (
+                "BANDAGE", "CLEANSER", "STIMULANT", "AEGIS_TONIC", "ARCANE_CATALYST", "FIELD_REPAIR_KIT")))
 
     rejected = ROOT / "tools/test_v01816_mobile_defense_ui.py"
     require("rejected v0.18.16 mobile-defense UI test is retired", not rejected.exists())
