@@ -58,8 +58,10 @@ public final class ArcaneFieldService {
     public static boolean blocksCasting(LivingEntity caster) {
         if (caster == null || !caster.isAlive()) return false;
         if (SpellGameplayService.blocksCasting(caster)) return true;
-        if (SecondCircleSpellService.blocksCasting(caster)) return true;
-        if (ThirdCircleSpellService.blocksCasting(caster)) return true;
+        boolean movementFree = FourthCircleSpellService.hasFreedom(caster);
+        if (!movementFree && SecondCircleSpellService.blocksCasting(caster)) return true;
+        if (!movementFree && ThirdCircleSpellService.blocksCasting(caster)) return true;
+        if (FourthCircleSpellService.blocksCasting(caster)) return true;
         if (HighControlSpellService.blocksCasting(caster)) return true;
         for (AntimagicField field : ANTIMAGIC.values()) {
             if (!field.active() || field.level() != caster.level()) continue;
@@ -178,6 +180,7 @@ public final class ArcaneFieldService {
             SpellGameplayService.clear(entity);
             SecondCircleSpellService.clear(entity);
             ThirdCircleSpellService.clear(entity);
+            FourthCircleSpellService.clear(entity);
             HighWardSpellService.clear(entity);
             HighControlSpellService.clear(entity);
             suppressMagicEffects(entity);
