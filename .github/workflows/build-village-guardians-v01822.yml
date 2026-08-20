@@ -2,16 +2,9 @@ name: Build Village Guardians v0.18.22 UI Rollback
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'projects/village-guardians/.build-trigger-v01822'
-  issues:
-    types: [opened]
 
 permissions:
-  contents: write
-  issues: read
+  contents: read
 
 env:
   PROJECT_DIR: projects/village-guardians
@@ -20,32 +13,12 @@ env:
 
 jobs:
   build:
-    if: github.event_name != 'issues' || github.event.issue.title == 'Village Guardians v0.18.22 final docs cleanup'
     name: Java 25 / NeoForge 26.2 accepted UI rollback
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Record cleanup run when requested
-        if: github.event_name == 'issues'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          mkdir -p "${PROJECT_DIR}/.ci"
-          printf 'status=RUNNING\nrun_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "${PROJECT_DIR}/.ci/v01822-docs-running.txt"
-          git add "${PROJECT_DIR}/.ci/v01822-docs-running.txt"
-          git commit -m 'ci(village): record v0.18.22 docs cleanup start [skip ci]'
-          for attempt in 1 2 3 4 5; do
-            if git push origin HEAD:main; then exit 0; fi
-            git pull --rebase origin main
-            sleep $((attempt * 2))
-          done
-          exit 1
       - name: Set up Java 25
         uses: actions/setup-java@v5
         with:
@@ -106,33 +79,3 @@ jobs:
           path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
           if-no-files-found: error
           retention-days: 30
-      - name: Finalize canonical docs when staged
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -f projects/village-guardians/tools/finalize_v01822_docs.py ]; then
-            python3 projects/village-guardians/tools/finalize_v01822_docs.py
-          fi
-          rm -f projects/village-guardians/tools/finalize_v01822_docs.py
-          rm -f projects/village-guardians/.docs-trigger-v01822
-          rm -f projects/village-guardians/.ci/v01822-integration-running.txt
-          rm -f projects/village-guardians/.ci/v01822-docs-running.txt
-          rm -f projects/village-guardians/.apply-v01822-ui-rollback
-          rm -f .github/workflows/apply-village-guardians-v01822.yml
-          rm -f .github/workflows/finalize-village-guardians-v01822.yml
-      - name: Commit docs cleanup
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -f "${PROJECT_DIR}/.build-trigger-v01822"
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A -- projects/village-guardians .github/workflows
-          git diff --cached --check
-          git commit -m 'docs(village): finalize v0.18.22 UI rollback' || exit 0
-          for attempt in 1 2 3 4 5 6; do
-            if git push origin HEAD:main; then exit 0; fi
-            git pull --rebase origin main
-            sleep $((attempt * 2))
-          done
-          exit 1
