@@ -40,9 +40,9 @@ def establishedExternalStructureAssets = [
 def urbanExpansionStructureAssets = [
         [output: 'player_castle_house.schem', slug: 'ultimate-player-favorite-castle-house-survival-base', title: 'Ultimate Player Favorite Castle House Survival Base'],
         [output: 'medieval_tavern_inn.schem', slug: 'ultimate-medieval-tavern-inn-survival-base', title: 'Ultimate Medieval Tavern Inn Survival Base'],
-        // Keep the runtime slot stable while evaluating a purpose-built merchant/trading hall.
+        // Keep the runtime market/warehouse slot stable while evaluating a connected storage hall.
         // Attribution always records the actual downloaded source/title.
-        [output: 'medieval_market_hall.schem', slug: 'ultimate-villager-trading-hall-survival-base', title: 'Ultimate Villager Trading Hall Survival Base'],
+        [output: 'medieval_market_hall.schem', slug: 'ultimate-mega-storage-hall-survival-base', title: 'Ultimate Mega Storage Hall Survival Base'],
         [output: 'medieval_horse_stable.schem', slug: 'ultimate-medieval-horse-stable-survival-base', title: 'Ultimate Medieval Horse Stable Survival Base']
 ]
 def externalStructureAssets = establishedExternalStructureAssets + urbanExpansionStructureAssets
