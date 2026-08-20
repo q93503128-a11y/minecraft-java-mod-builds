@@ -53,20 +53,13 @@ jobs:
           from pathlib import Path
           path = Path('projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageMercenarySystem.java')
           text = path.read_text(encoding='utf-8')
-          old = '''        if (!(mob instanceof IronGolem)) return false;
-          if (CLASSES.containsKey(mob.getUUID())) return recognize(mob);'''
-          new = '''        if (!(mob instanceof IronGolem golem)) return false;
-          if (CLASSES.containsKey(mob.getUUID())) return recognize(mob);'''
-          if old not in text:
-              raise SystemExit('legacy migration type anchor missing')
-          text = text.replace(old, new, 1)
-          old = '''        applyClassPassives(mob, kind, 1);
-          refreshName(mob);'''
-          new = '''        applyClassPassives(golem, kind, 1);
-          refreshName(golem);'''
-          if old not in text:
-              raise SystemExit('legacy migration passive anchor missing')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          type_old = 'if (!(mob instanceof IronGolem)) return false;'
+          passive_old = 'applyClassPassives(mob, kind, 1);'
+          if type_old not in text or passive_old not in text:
+              raise SystemExit('legacy migration type/passive anchor missing')
+          text = text.replace(type_old, 'if (!(mob instanceof IronGolem golem)) return false;', 1)
+          text = text.replace(passive_old, 'applyClassPassives(golem, kind, 1);', 1)
+          path.write_text(text, encoding='utf-8')
           PY
       - name: Canonical deterministic regression suite
         working-directory: projects/village-guardians
