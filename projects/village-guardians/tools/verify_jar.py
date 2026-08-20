@@ -25,8 +25,8 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageDoorSystem.class",
     "kr/moonseungjun/villageguardians/VillageDefenseSystem.class",
     "kr/moonseungjun/villageguardians/VillageDefenseTowerBuilder.class",
-    "kr/moonseungjun/villageguardians/VillageTowerProgressData.class",
-    "kr/moonseungjun/villageguardians/VillageTowerSpecializationSystem.class",
+    "kr/moonseungjun/villageguardians/VillagePlacedTurretSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSiegeCommandUi.class",
     "kr/moonseungjun/villageguardians/VillageWaveTrait.class",
     "kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.class",
     "kr/moonseungjun/villageguardians/VillageWarfrontSystem.class",
@@ -81,6 +81,8 @@ OBSOLETE_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSkillEffectSystem$DisplayAccess.class",
     "kr/moonseungjun/villageguardians/VillageTownHallScreen.class",
     "kr/moonseungjun/villageguardians/VillageShopScreen.class",
+    "kr/moonseungjun/villageguardians/VillageTowerProgressData.class",
+    "kr/moonseungjun/villageguardians/VillageTowerSpecializationSystem.class",
 }
 
 
@@ -160,7 +162,7 @@ def main() -> None:
     print("[PASS] Roof signatures migrate to front-facing facade marks")
     print("[PASS] Ten regular enemy roles, four bosses and twelve wave traits are present")
     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
-    print("[PASS] Twelve persistent tower branches alter attacks and world silhouettes")
+    print("[PASS] Ten player-placed turret roles own production combat; retired fixed-tower specialization classes are absent")
     print("[PASS] Twenty active skills use the non-particle custom-mesh effect engine")
     print("[PASS] Obsolete display and generic visual facades are not bundled")
     print("[PASS] CC0 visual references are documented without untracked binaries")
