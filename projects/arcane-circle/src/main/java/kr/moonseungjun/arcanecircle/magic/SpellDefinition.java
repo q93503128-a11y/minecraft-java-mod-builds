@@ -43,6 +43,8 @@ public record SpellDefinition(
 
     /** Detailed, testable mechanics belong in the dedicated effect compendium. */
     public String effectSummary() {
+        String firstCircle = FirstCircleSpellSummary.summary(id);
+        if (!firstCircle.isBlank()) return firstCircle;
         String effect = SpellEffectSummary.summary(this);
         return effect == null ? "" : effect;
     }
