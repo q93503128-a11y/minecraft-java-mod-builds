@@ -22,16 +22,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-/** High-circle space magic with actual cross-dimension and persistent pocket-space behavior. */
 public final class PlanarSpellService {
     private static final Set<String> HANDLED = Set.of("plane_shift", "demiplane");
     private static final int ROOM_HALF = 10;
     private static final int ROOM_FLOOR_Y = 224;
-
     private PlanarSpellService() {}
 
     public static boolean handles(String id) { return HANDLED.contains(id); }
-
     public static boolean execute(ServerPlayer player, String id) {
         return switch (id) {
             case "plane_shift" -> planeShift(player);
@@ -40,75 +37,71 @@ public final class PlanarSpellService {
         };
     }
 
-    /** G is also an emergency exit for invited players who do not know the spell themselves. */
     public static boolean useAuthority(ServerPlayer player) {
         if (!isDemiplaneBackend(player)) return false;
-        PlanarSpellData data = PlanarSpellData.get(player.serverLevel().getServer());
-        if (data.anchor(player).isEmpty()) return false;
-        return returnFromDemiplane(player, data);
+        PlanarSpellData data = PlanarSpellData.get(level(player).getServer());
+        return data.anchor(player).isPresent() && returnFromDemiplane(player, data);
     }
 
     private static boolean planeShift(ServerPlayer caster) {
-        ServerLevel origin = caster.serverLevel();
+        ServerLevel origin = level(caster);
         ResourceKey<Level> targetKey = attunedPlane(caster);
         if (origin.dimension().equals(targetKey)) {
-            ArcaneNoticeService.push(caster, Component.literal(
-                    "§c[플레인 시프트] §f이미 그 평면에 있습니다. §7위를 보면 엔드, 아래를 보면 네더, 수평은 오버월드에 조율됩니다."), 90);
+            ArcaneNoticeService.push(caster, Component.literal("§c[플레인 시프트] §f이미 그 평면에 있습니다. §7위를 보면 엔드, 아래를 보면 네더, 수평은 오버월드입니다."), 90);
             return false;
         }
         MinecraftServer server = origin.getServer();
         ServerLevel target = server.getLevel(targetKey);
         if (target == null) return false;
-
         List<ServerPlayer> party = consentingParty(caster, origin);
-        Vec3 casterDestination = mappedDestination(caster, origin, target);
-        Optional<BlockPos> safeCaster = findSafe(target, casterDestination, targetKey == Level.END ? 80 : 48);
-        if (safeCaster.isEmpty()) {
+        Optional<BlockPos> first = findSafe(target, mappedDestination(caster, origin, target), targetKey.equals(Level.END) ? 80 : 48);
+        if (first.isEmpty()) {
             ArcaneNoticeService.push(caster, Component.literal("§c[플레인 시프트] §f도착 평면에서 안전한 착지점을 찾지 못했습니다."), 70);
             return false;
         }
-        Vec3 originCaster = caster.position();
-        BlockPos center = safeCaster.get();
+        Vec3 start = caster.position();
+        BlockPos center = first.get();
         int moved = 0;
         for (ServerPlayer member : party) {
-            Vec3 offset = member.position().subtract(originCaster);
-            Vec3 desired = new Vec3(center.getX() + .5 + offset.x, center.getY(), center.getZ() + .5 + offset.z);
-            Optional<BlockPos> safe = findSafe(target, desired, 12);
+            Vec3 offset = member.position().subtract(start);
+            Optional<BlockPos> safe = findSafe(target, new Vec3(center.getX() + .5 + offset.x, center.getY(), center.getZ() + .5 + offset.z), 12);
             if (safe.isEmpty()) continue;
-            BlockPos pos = safe.get();
-            if (teleport(member, target, pos.getX() + .5, pos.getY(), pos.getZ() + .5, member.getYRot(), member.getXRot())) moved++;
+            BlockPos p = safe.get();
+            if (teleport(member, target, p.getX() + .5, p.getY(), p.getZ() + .5, member.getYRot(), member.getXRot())) moved++;
         }
         if (moved == 0) return false;
         target.playSound(null, center, SoundEvents.PORTAL_TRAVEL, SoundSource.PLAYERS, 1.0F, .72F);
         ArcaneNoticeService.push(caster, Component.literal("§5[플레인 시프트] §f" + planeName(targetKey)
-                + "으로 존재 평면을 전환했습니다. §7주변에서 웅크린 플레이어도 동행: " + Math.max(0, moved - 1) + "명"), 100);
+                + "으로 존재 평면을 전환했습니다. §7웅크린 동행자 " + Math.max(0, moved - 1) + "명"), 100);
         return true;
     }
 
     private static boolean demiplane(ServerPlayer caster) {
-        MinecraftServer server = caster.serverLevel().getServer();
+        ServerLevel origin = level(caster);
+        MinecraftServer server = origin.getServer();
         PlanarSpellData data = PlanarSpellData.get(server);
         if (isDemiplaneBackend(caster) && data.anchor(caster).isPresent()) return returnFromDemiplane(caster, data);
+        if (!PlanarSpellData.canRemember(caster)) {
+            ArcaneNoticeService.push(caster, Component.literal("§c[데미플레인] §f오버월드·네더·엔드에서만 귀환점을 고정할 수 있습니다."), 90);
+            return false;
+        }
         ServerLevel pocket = server.getLevel(Level.END);
         if (pocket == null) return false;
         BlockPos center = roomCenter(caster.getUUID());
         ensureRoom(pocket, center);
-
-        List<ServerPlayer> party = consentingParty(caster, caster.serverLevel());
+        List<ServerPlayer> party = consentingParty(caster, origin);
         Vec3 base = new Vec3(center.getX() + .5, ROOM_FLOOR_Y + 2.0, center.getZ() + .5);
         int moved = 0;
         for (int i = 0; i < party.size(); i++) {
             ServerPlayer member = party.get(i);
             data.remember(member);
-            double angle = i * Math.PI * 2.0 / Math.max(1, party.size());
-            double radius = i == 0 ? 0.0 : 2.2;
-            if (teleport(member, pocket, base.x + Math.cos(angle) * radius, base.y,
-                    base.z + Math.sin(angle) * radius, member.getYRot(), member.getXRot())) moved++;
+            double a = i * Math.PI * 2.0 / Math.max(1, party.size());
+            double r = i == 0 ? 0.0 : 2.2;
+            if (teleport(member, pocket, base.x + Math.cos(a) * r, base.y, base.z + Math.sin(a) * r, member.getYRot(), member.getXRot())) moved++;
         }
         if (moved == 0) return false;
         pocket.playSound(null, center.above(2), SoundEvents.END_PORTAL_SPAWN, SoundSource.PLAYERS, .75F, 1.18F);
-        ArcaneNoticeService.push(caster, Component.literal("§5[데미플레인] §f개인 주머니 공간을 열었습니다. "
-                + "§7이 방에 둔 블록과 물품은 다음 시전에도 그대로 남습니다. G키 또는 재시전으로 귀환할 수 있습니다."), 120);
+        ArcaneNoticeService.push(caster, Component.literal("§5[데미플레인] §f개인 주머니 공간을 열었습니다. §7이 방에 둔 블록과 물품은 다음 시전에도 그대로 남습니다. G키 또는 재시전으로 귀환할 수 있습니다."), 120);
         return true;
     }
 
@@ -118,18 +111,19 @@ public final class PlanarSpellService {
         Identifier id = Identifier.tryParse(anchor.dimension());
         if (id == null) return false;
         ResourceKey<Level> key = ResourceKey.create(Registries.DIMENSION, id);
-        ServerLevel target = player.serverLevel().getServer().getLevel(key);
+        ServerLevel target = level(player).getServer().getLevel(key);
         if (target == null) return false;
         Optional<BlockPos> safe = findSafe(target, new Vec3(anchor.x(), anchor.y(), anchor.z()), 16);
         if (safe.isEmpty()) return false;
-        BlockPos pos = safe.get();
-        boolean moved = teleport(player, target, pos.getX() + .5, pos.getY(), pos.getZ() + .5, anchor.yaw(), anchor.pitch());
-        if (!moved) return false;
+        BlockPos p = safe.get();
+        if (!teleport(player, target, p.getX() + .5, p.getY(), p.getZ() + .5, anchor.yaw(), anchor.pitch())) return false;
         data.clear(player);
-        target.playSound(null, pos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, .9F, .82F);
+        target.playSound(null, p, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, .9F, .82F);
         ArcaneNoticeService.push(player, Component.literal("§d[데미플레인] §f기억된 귀환점으로 돌아왔습니다."), 70);
         return true;
     }
+
+    private static ServerLevel level(ServerPlayer player) { return (ServerLevel) player.level(); }
 
     private static ResourceKey<Level> attunedPlane(ServerPlayer player) {
         double vertical = player.getLookAngle().y;
@@ -139,17 +133,16 @@ public final class PlanarSpellService {
     }
 
     private static String planeName(ResourceKey<Level> key) {
-        if (key == Level.NETHER) return "네더 평면";
-        if (key == Level.END) return "엔드 평면";
+        if (key.equals(Level.NETHER)) return "네더 평면";
+        if (key.equals(Level.END)) return "엔드 평면";
         return "오버월드 물질계";
     }
 
     private static Vec3 mappedDestination(ServerPlayer player, ServerLevel origin, ServerLevel target) {
-        double x = player.getX();
-        double z = player.getZ();
-        if (origin.dimension() == Level.OVERWORLD && target.dimension() == Level.NETHER) { x /= 8.0; z /= 8.0; }
-        else if (origin.dimension() == Level.NETHER && target.dimension() == Level.OVERWORLD) { x *= 8.0; z *= 8.0; }
-        if (target.dimension() == Level.END) return new Vec3(ServerLevel.END_SPAWN_POINT.getX(), 80, ServerLevel.END_SPAWN_POINT.getZ());
+        double x = player.getX(), z = player.getZ();
+        if (origin.dimension().equals(Level.OVERWORLD) && target.dimension().equals(Level.NETHER)) { x /= 8.0; z /= 8.0; }
+        else if (origin.dimension().equals(Level.NETHER) && target.dimension().equals(Level.OVERWORLD)) { x *= 8.0; z *= 8.0; }
+        if (target.dimension().equals(Level.END)) return new Vec3(ServerLevel.END_SPAWN_POINT.getX(), 80, ServerLevel.END_SPAWN_POINT.getZ());
         double y = Math.max(target.getMinY() + 8, Math.min(target.getMaxY() - 8, player.getY()));
         return new Vec3(x, y, z);
     }
@@ -174,14 +167,12 @@ public final class PlanarSpellService {
     private static Optional<BlockPos> findSafe(ServerLevel level, Vec3 desired, int verticalSearch) {
         Optional<BlockPos> direct = findSafeVertical(level, desired, verticalSearch);
         if (direct.isPresent()) return direct;
-        int x = (int) Math.floor(desired.x);
-        int z = (int) Math.floor(desired.z);
-        int startY = (int) Math.floor(Math.max(level.getMinY() + 2, Math.min(level.getMaxY() - 3, desired.y)));
+        int x = (int)Math.floor(desired.x), z = (int)Math.floor(desired.z);
+        int y = (int)Math.floor(Math.max(level.getMinY() + 2, Math.min(level.getMaxY() - 3, desired.y)));
         for (int radius = 1; radius <= 8; radius++) {
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
                 if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-                Optional<BlockPos> safe = findSafeVertical(level,
-                        new Vec3(x + dx, startY, z + dz), Math.min(12, verticalSearch));
+                Optional<BlockPos> safe = findSafeVertical(level, new Vec3(x + dx, y, z + dz), Math.min(12, verticalSearch));
                 if (safe.isPresent()) return safe;
             }
         }
@@ -189,50 +180,39 @@ public final class PlanarSpellService {
     }
 
     private static Optional<BlockPos> findSafeVertical(ServerLevel level, Vec3 desired, int verticalSearch) {
-        int x = (int) Math.floor(desired.x);
-        int z = (int) Math.floor(desired.z);
-        int startY = (int) Math.floor(Math.max(level.getMinY() + 2, Math.min(level.getMaxY() - 3, desired.y)));
-        for (int d = 0; d <= verticalSearch; d++) {
-            int[] ys = d == 0 ? new int[]{startY} : new int[]{startY + d, startY - d};
-            for (int y : ys) {
-                if (y <= level.getMinY() + 1 || y >= level.getMaxY() - 2) continue;
-                BlockPos feet = new BlockPos(x, y, z);
-                if (level.getBlockState(feet.below()).blocksMotion()
-                        && level.getBlockState(feet).isAir()
-                        && level.getBlockState(feet.above()).isAir()) return Optional.of(feet);
+        int x=(int)Math.floor(desired.x), z=(int)Math.floor(desired.z);
+        int startY=(int)Math.floor(Math.max(level.getMinY()+2,Math.min(level.getMaxY()-3,desired.y)));
+        for(int d=0;d<=verticalSearch;d++){
+            int[] ys=d==0?new int[]{startY}:new int[]{startY+d,startY-d};
+            for(int y:ys){
+                if(y<=level.getMinY()+1||y>=level.getMaxY()-2)continue;
+                BlockPos feet=new BlockPos(x,y,z);
+                if(level.getBlockState(feet.below()).blocksMotion()&&level.getBlockState(feet).isAir()&&level.getBlockState(feet.above()).isAir())return Optional.of(feet);
             }
         }
         return Optional.empty();
     }
 
     private static BlockPos roomCenter(UUID id) {
-        int gx = Math.floorMod((int) (id.getMostSignificantBits() ^ (id.getMostSignificantBits() >>> 32)), 90_000);
-        int gz = Math.floorMod((int) (id.getLeastSignificantBits() ^ (id.getLeastSignificantBits() >>> 32)), 90_000);
-        return new BlockPos(4_000_000 + gx * 240, ROOM_FLOOR_Y, 4_000_000 + gz * 240);
+        int gx=Math.floorMod((int)(id.getMostSignificantBits()^(id.getMostSignificantBits()>>>32)),90_000);
+        int gz=Math.floorMod((int)(id.getLeastSignificantBits()^(id.getLeastSignificantBits()>>>32)),90_000);
+        return new BlockPos(4_000_000+gx*240,ROOM_FLOOR_Y,4_000_000+gz*240);
     }
 
     private static boolean isDemiplaneBackend(ServerPlayer player) {
-        return player.level().dimension() == Level.END && player.getY() >= ROOM_FLOOR_Y - 1
-                && player.getX() > 3_500_000 && player.getZ() > 3_500_000;
+        return player.level().dimension().equals(Level.END)&&player.getY()>=ROOM_FLOOR_Y-1&&player.getX()>3_500_000&&player.getZ()>3_500_000;
     }
 
     private static void ensureRoom(ServerLevel level, BlockPos center) {
-        BlockPos marker = center.below();
-        if (level.getBlockState(marker).is(Blocks.BEDROCK)) return;
-        for (int dx = -ROOM_HALF; dx <= ROOM_HALF; dx++) {
-            for (int dz = -ROOM_HALF; dz <= ROOM_HALF; dz++) {
-                for (int dy = 0; dy <= 12; dy++) {
-                    BlockPos p = center.offset(dx, dy, dz);
-                    boolean shell = Math.abs(dx) == ROOM_HALF || Math.abs(dz) == ROOM_HALF || dy == 0 || dy == 12;
-                    if (shell) level.setBlockAndUpdate(p, Blocks.BEDROCK.defaultBlockState());
-                    else if (dy == 1) level.setBlockAndUpdate(p, Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
-                    else level.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
-                }
-            }
+        BlockPos marker=center.below();
+        if(level.getBlockState(marker).is(Blocks.BEDROCK))return;
+        for(int dx=-ROOM_HALF;dx<=ROOM_HALF;dx++)for(int dz=-ROOM_HALF;dz<=ROOM_HALF;dz++)for(int dy=0;dy<=12;dy++){
+            BlockPos p=center.offset(dx,dy,dz);boolean shell=Math.abs(dx)==ROOM_HALF||Math.abs(dz)==ROOM_HALF||dy==0||dy==12;
+            if(shell)level.setBlockAndUpdate(p,Blocks.BEDROCK.defaultBlockState());
+            else if(dy==1)level.setBlockAndUpdate(p,Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
+            else level.setBlockAndUpdate(p,Blocks.AIR.defaultBlockState());
         }
-        for (int sx : new int[]{-7, 7}) for (int sz : new int[]{-7, 7}) {
-            level.setBlockAndUpdate(center.offset(sx, 11, sz), Blocks.SEA_LANTERN.defaultBlockState());
-        }
-        level.setBlockAndUpdate(marker, Blocks.BEDROCK.defaultBlockState());
+        for(int sx:new int[]{-7,7})for(int sz:new int[]{-7,7})level.setBlockAndUpdate(center.offset(sx,11,sz),Blocks.SEA_LANTERN.defaultBlockState());
+        level.setBlockAndUpdate(marker,Blocks.BEDROCK.defaultBlockState());
     }
 }
