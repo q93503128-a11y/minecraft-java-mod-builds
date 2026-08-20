@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 17, in <module>
-    assert 'mod_version=0.12.1-alpha.51' in gradle
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 55, in <module>
+    assert not missing_runtime, f'spells without explicit runtime ownership: {missing_runtime}'
+           ^^^^^^^^^^^^^^^^^^^
+AssertionError: spells without explicit runtime ownership: ['blink', 'fireball']
