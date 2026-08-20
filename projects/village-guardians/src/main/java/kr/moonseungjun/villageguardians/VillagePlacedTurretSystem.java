@@ -95,9 +95,8 @@ public final class VillagePlacedTurretSystem {
 
     public static String selectPlacement(ServerPlayer player, TurretType type) {
         if (type == null) return "알 수 없는 포탑 계열입니다.";
-        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
-            return "포탑 배치는 낮 정비 시간에만 가능합니다.";
-        }
+        String blocked = maintenanceBlockReason("배치");
+        if (blocked != null) return blocked;
         if (count() >= capacity()) return "포탑 설치 한도입니다. 현재 " + count() + " / " + capacity();
         PENDING.put(player.getUUID(), new PendingPlacement(type, null));
         return type.displayName() + " 배치 모드 시작 · 설치할 바닥을 우클릭하면 위치를 미리 검증하고, 같은 위치를 다시 우클릭하면 확정합니다.";
@@ -172,7 +171,8 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String repair(ServerPlayer player, int id) {
-        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 수리할 수 없습니다.";
+        String blocked = maintenanceBlockReason("수리");
+        if (blocked != null) return blocked;
         TurretState state = TURRETS.get(id);
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
         int maximum = maxHp(state);
@@ -190,29 +190,35 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String upgrade(ServerPlayer player, int id) {
-        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 강화할 수 없습니다.";
+        String blocked = maintenanceBlockReason("강화");
+        if (blocked != null) return blocked;
         TurretState state = TURRETS.get(id);
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
         if (!state.active()) return "파괴된 포탑은 먼저 수리해야 합니다.";
         if (state.level() >= 5) return "포탑이 최고 레벨입니다.";
         int cost = 130 + state.level() * 110;
         if (!VillageProgressionSystem.spendCoins(player, cost)) return "강화 주화가 부족합니다. 필요 " + cost;
+        int oldMaximum = maxHp(state);
+        int missingHp = Math.max(0, oldMaximum - Math.min(oldMaximum, state.hp()));
         int newLevel = state.level() + 1;
         TurretState upgradedBase = new TurretState(id, state.type(), state.pos(), newLevel,
                 state.type().baseHp() + (newLevel - 1) * 70, true);
-        TurretState upgraded = new TurretState(id, state.type(), state.pos(), newLevel,
-                maxHp(upgradedBase), true);
+        int newMaximum = maxHp(upgradedBase);
+        int newHp = Math.max(1, Math.min(newMaximum, newMaximum - missingHp));
+        TurretState upgraded = new TurretState(id, state.type(), state.pos(), newLevel, newHp, true);
         TURRETS.put(id, upgraded); persist(upgraded);
         if (player.level() instanceof ServerLevel level) {
             buildVisual(level, upgraded);
             VillageDefenseEffectSystem.turretUpgradePulse(level,
                     Vec3.atCenterOf(upgraded.pos()).add(0.0, -0.35, 0.0), newLevel);
         }
-        return state.type().displayName() + " #" + id + " Lv." + newLevel + " 강화 완료";
+        return state.type().displayName() + " #" + id + " Lv." + newLevel + " 강화 완료 · HP "
+                + newHp + "/" + newMaximum + " (기존 손상 유지)";
     }
 
     public static synchronized String dismantle(ServerPlayer player, int id) {
-        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 철거할 수 없습니다.";
+        String blocked = maintenanceBlockReason("철거");
+        if (blocked != null) return blocked;
         TurretState state = TURRETS.remove(id);
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
         VillageSiegePersistence.removeString(PREFIX + id);
@@ -224,7 +230,8 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String repairAll(ServerPlayer player) {
-        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 일괄 수리할 수 없습니다.";
+        String blocked = maintenanceBlockReason("일괄 수리");
+        if (blocked != null) return blocked;
         int repaired = 0;
         int totalCost = 0;
         List<TurretState> damaged = TURRETS.values().stream()
@@ -474,8 +481,19 @@ public final class VillagePlacedTurretSystem {
         }
     }
 
+    private static String maintenanceBlockReason(String action) {
+        if (VillageProgressionSystem.isGameOver()) {
+            return "게임 오버 상태에서는 포탑 " + action + "을(를) 실행할 수 없습니다. 재시작을 먼저 선택하세요.";
+        }
+        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
+            return "포탑 " + action + "은(는) 낮 정비 시간에만 가능합니다.";
+        }
+        return null;
+    }
+
     private static String invalidReason(ServerLevel level, BlockPos pos, int ignoredId) {
-        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) return "낮 정비 시간에만 설치할 수 있습니다.";
+        String blocked = maintenanceBlockReason("배치");
+        if (blocked != null) return blocked;
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return "마을 중심이 설정되지 않았습니다.";
         int dx = pos.getX() - center.getX();

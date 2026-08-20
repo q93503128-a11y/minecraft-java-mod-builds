@@ -110,7 +110,7 @@ public final class VillageSiegeCommandUi {
                 "siege_turret_dismantle:" + id, "siege_turret_list");
         List<String> labels = List.of(
                 "수리|HP 0의 잔해도 다시 가동 상태로 복구",
-                "강화|Lv.5까지 HP·피해·사거리·공격 주기 강화",
+                "강화|Lv.5까지 HP·피해·사거리·공격 주기 강화 · 현재 손상분은 유지",
                 "철거|블록 드롭 없이 철거하고 일부 주화 환급",
                 "설치 포탑 목록|다른 포탑 관리로 돌아가기");
         send(player, "tower_detail", state.type().displayName() + " #" + id,

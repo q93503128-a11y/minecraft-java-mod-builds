@@ -98,7 +98,8 @@ public final class VillageSiegeSegmentSystem {
 
     public static String repair(ServerPlayer player, Segment segment) {
         if (segment == null) return "알 수 없는 방어 구역입니다.";
-        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 성벽 구역을 수리할 수 없습니다.";
+        String blocked = maintenanceBlockReason("수리");
+        if (blocked != null) return blocked;
         if (segment == Segment.NORTH_GATE) {
             return VillageProgressionSystem.repair(player, VillageProgressionSystem.Building.WALLS);
         }
@@ -118,7 +119,8 @@ public final class VillageSiegeSegmentSystem {
 
     public static String upgrade(ServerPlayer player, Segment segment) {
         if (segment == null) return "알 수 없는 방어 구역입니다.";
-        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 성벽 구역을 강화할 수 없습니다.";
+        String blocked = maintenanceBlockReason("강화");
+        if (blocked != null) return blocked;
         if (segment == Segment.NORTH_GATE) {
             return VillageProgressionSystem.upgrade(player, VillageProgressionSystem.Building.WALLS);
         }
@@ -135,6 +137,16 @@ public final class VillageSiegeSegmentSystem {
                 Math.min(newMax, currentHp(segment) + Math.max(0, newMax - oldMax)));
         return segment.displayName() + " 구역 강화 " + (current + 1)
                 + "단계 완료 · 최대 HP " + newMax + " · 방어 등급 " + defenseGrade(segment);
+    }
+
+    private static String maintenanceBlockReason(String action) {
+        if (VillageProgressionSystem.isGameOver()) {
+            return "게임 오버 상태에서는 성벽 " + action + "을(를) 실행할 수 없습니다. 재시작을 먼저 선택하세요.";
+        }
+        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
+            return "성벽 " + action + "은(는) 낮 정비 시간에만 가능합니다.";
+        }
+        return null;
     }
 
     public static BlockPos attackPoint(Segment segment, BlockPos attacker) {

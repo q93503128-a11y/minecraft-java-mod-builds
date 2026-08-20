@@ -13,6 +13,11 @@ public final class VillageLocalActionSystem {
     public static boolean handle(ServerPlayer player, String action) {
         if (player == null || action == null) return false;
 
+        if (requiresSiegeCommandAccess(action) && !VillageLocationRules.isNearTownHall(player)) {
+            player.sendSystemMessage(Component.literal("§c성벽·포탑 관리 동작은 마을 회관 지휘대 근처에서만 실행할 수 있습니다."));
+            return true;
+        }
+
         if (action.startsWith("facility:")) {
             VillageProgressionSystem.Building building = VillageProgressionSystem.Building.fromId(
                     action.substring("facility:".length()));
@@ -148,6 +153,16 @@ public final class VillageLocalActionSystem {
             }
             default -> { return false; }
         }
+    }
+
+    private static boolean requiresSiegeCommandAccess(String action) {
+        return action.equals("siege_turret_repair_all")
+                || action.startsWith("siege_segment_repair:")
+                || action.startsWith("siege_segment_upgrade:")
+                || action.startsWith("siege_turret_select:")
+                || action.startsWith("siege_turret_repair:")
+                || action.startsWith("siege_turret_upgrade:")
+                || action.startsWith("siege_turret_dismantle:");
     }
 
     private static int parseInt(String value, int fallback) {

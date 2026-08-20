@@ -10,7 +10,6 @@ def read(name: str) -> str:
 
 
 def main() -> None:
-    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
     guardians = read("VillageGuardians.java")
     defense = read("VillageDefenseSystem.java")
     tower_builder = read("VillageDefenseTowerBuilder.java")
@@ -18,8 +17,6 @@ def main() -> None:
     local = read("VillageLocalActionSystem.java")
     service = read("VillageUiService.java")
     commands = read("VillageCommands.java")
-
-    assert "mod_version=0.18.23-alpha.1" in props
 
     # Retired fixed-corner progression must be physically absent from production source.
     assert not (JAVA / "VillageTowerSpecializationSystem.java").exists()
