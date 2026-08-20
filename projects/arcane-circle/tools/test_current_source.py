@@ -148,7 +148,7 @@ assert kinetics.index('boolean planarOwned') < kinetics.index('boolean simulacru
 npc=text(world/'NpcSpellResolver.java')
 require(npc,['import kr.moonseungjun.arcanecircle.magic.HighWardSpellService;',
              'if (HighWardSpellService.intercepts(caster, spell, snapshot, range)) return false;'],'npc globe')
-assert npc.index('HighWardSpellService.intercepts') < npc.index('if ("meteor_swarm".equals(spell.id()))')
+assert npc.index('HighWardSpellService.intercepts') < npc.rindex('if ("meteor_swarm".equals(spell.id()))')
 
 # Contextual G authority: Demiplane exit > crouch+G Simulacrum > ordinary maintained/weather authority.
 network_source=text(network/'ArcaneNetwork.java')
