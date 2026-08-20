@@ -264,10 +264,10 @@ public final class ExternalUrbanFabricBuilder {
     }
 
     /**
-     * Proves that a resolved facade side is a real exit rather than a fallback direction. A door
-     * sitting directly on the retained crop edge is already an exterior opening; otherwise at least
-     * one supported walkable source step must exist on the resolved exterior side. Cut-face seals are
-     * present in the candidate block map, so a sealed synthetic boundary cannot satisfy this proof.
+     * Proves that a resolved facade side is a real exit rather than a fallback direction. Prefer a
+     * supported source walk; if the source exterior surface was intentionally removed as terrain,
+     * accept only a body-clear route all the way to the unsealed crop edge. Cut-face seals remain in
+     * the candidate map, so a synthetic/clipped boundary cannot satisfy this proof.
      */
     private static int fragmentExteriorExitProof(FacadeFragment fragment) {
         Map<Long, BuildingBlock> blocks = fragmentBlockMap(fragment);
@@ -283,6 +283,10 @@ public final class ExternalUrbanFabricBuilder {
         int clearRun = sourceClearRun(
                 blocks, fragment.entranceX, doorY, fragment.entranceZ, fragment.exteriorSide);
         if (clearRun > 0) return clearRun;
+        int terrainEgress = sourceBodyClearToEdge(
+                blocks, fragment.entranceX, doorY, fragment.entranceZ,
+                fragment.exteriorSide, fragment.width, fragment.length);
+        if (terrainEgress > 0) return terrainEgress;
         return edgeDistance(
                 fragment.entranceX, fragment.entranceZ,
                 fragment.width, fragment.length, fragment.exteriorSide) <= 1 ? 1 : 0;
@@ -1002,6 +1006,30 @@ public final class ExternalUrbanFabricBuilder {
             clear++;
         }
         return clear;
+    }
+
+    /**
+     * Proves an exterior door reaches the real unsealed crop boundary when its original outdoor
+     * dirt/grass support was intentionally removed from the retained structure. This ignores only
+     * floor support; walls, fences and crop-face seals still block the proof.
+     */
+    private static int sourceBodyClearToEdge(
+            Map<Long, BuildingBlock> blocks,
+            int x, int feetY, int z,
+            FrontSide side, int width, int length) {
+        int steps = edgeDistance(x, z, width, length, side);
+        if (steps <= 1) return 1;
+        int stepX = side == FrontSide.EAST ? 1 : side == FrontSide.WEST ? -1 : 0;
+        int stepZ = side == FrontSide.SOUTH ? 1 : side == FrontSide.NORTH ? -1 : 0;
+        for (int depth = 1; depth <= steps; depth++) {
+            int testX = x + stepX * depth;
+            int testZ = z + stepZ * depth;
+            if (!sourceBodyPassable(blocks.get(localKey(testX, feetY, testZ)))
+                    || !sourceBodyPassable(blocks.get(localKey(testX, feetY + 1, testZ)))) {
+                return 0;
+            }
+        }
+        return steps;
     }
 
     private static int sourceWalkableFeetY(
