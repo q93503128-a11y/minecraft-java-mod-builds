@@ -6,6 +6,7 @@ import kr.moonseungjun.arcanecircle.ArcaneCircle;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
@@ -51,11 +52,27 @@ public final class PlanarSpellData extends SavedData {
 
     private List<ReturnAnchor> entries() { return List.copyOf(returns.values()); }
 
+    /** Demiplane currently binds to the three canonical Minecraft planes it can actually traverse. */
+    public static boolean canRemember(ServerPlayer player) {
+        return player.level().dimension().equals(Level.OVERWORLD)
+                || player.level().dimension().equals(Level.NETHER)
+                || player.level().dimension().equals(Level.END);
+    }
+
     public void remember(ServerPlayer player) {
+        String dimension = dimensionId(player);
+        if (dimension == null) return;
         returns.put(player.getUUID().toString(), new ReturnAnchor(
-                player.getUUID().toString(), player.level().dimension().location().toString(),
+                player.getUUID().toString(), dimension,
                 player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot()));
         setDirty();
+    }
+
+    private static String dimensionId(ServerPlayer player) {
+        if (player.level().dimension().equals(Level.OVERWORLD)) return "minecraft:overworld";
+        if (player.level().dimension().equals(Level.NETHER)) return "minecraft:the_nether";
+        if (player.level().dimension().equals(Level.END)) return "minecraft:the_end";
+        return null;
     }
 
     public Optional<ReturnAnchor> anchor(ServerPlayer player) {
