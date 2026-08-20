@@ -265,6 +265,31 @@ public final class ExternalUrbanFabricBuilder {
         return map;
     }
 
+    /**
+     * Proves that a resolved facade side is a real exit rather than a fallback direction. A door
+     * sitting directly on the retained crop edge is already an exterior opening; otherwise at least
+     * one supported walkable source step must exist on the resolved exterior side. Cut-face seals are
+     * present in the candidate block map, so a sealed synthetic boundary cannot satisfy this proof.
+     */
+    private static int fragmentExteriorExitProof(FacadeFragment fragment) {
+        Map<Long, BuildingBlock> blocks = fragmentBlockMap(fragment);
+        int doorY = Integer.MAX_VALUE;
+        for (int y = 0; y < fragment.height; y++) {
+            BuildingBlock block = blocks.get(localKey(fragment.entranceX, y, fragment.entranceZ));
+            if (block != null && block.state.getBlock() instanceof DoorBlock) {
+                doorY = y;
+                break;
+            }
+        }
+        if (doorY == Integer.MAX_VALUE) return 0;
+        int clearRun = sourceClearRun(
+                blocks, fragment.entranceX, doorY, fragment.entranceZ, fragment.exteriorSide);
+        if (clearRun > 0) return clearRun;
+        return edgeDistance(
+                fragment.entranceX, fragment.entranceZ,
+                fragment.width, fragment.length, fragment.exteriorSide) <= 1 ? 1 : 0;
+    }
+
     private static int fragmentReachableCells(FacadeFragment fragment) {
         Map<Long, BuildingBlock> blocks = fragmentBlockMap(fragment);
         int doorY = Integer.MAX_VALUE;
@@ -707,6 +732,7 @@ public final class ExternalUrbanFabricBuilder {
             BuildingBlock bestEntrance = null;
             FrontSide bestCropSide = null;
             int bestReachable = -1;
+            int bestExitProof = 0;
             int candidateCount = 0;
             Set<Long> testedDoorColumns = new LinkedHashSet<>();
             for (BuildingBlock entrance : candidates) {
@@ -717,15 +743,15 @@ public final class ExternalUrbanFabricBuilder {
                     if (edgeDistance(entrance.x, entrance.z, width, length, cropSide) >= depth) continue;
                     FacadeFragment candidate = cropFragment(
                             sourceBlocks, entrance, cropSide, width, height, length);
-                    if (candidate.blocks.size() < 500
-                            || !containsRealEntrance(candidate)
-                            || candidate.exteriorSide != cropSide) {
-                        continue;
-                    }
+                    if (candidate.blocks.size() < 500 || !containsRealEntrance(candidate)) continue;
+                    int exitProof = fragmentExteriorExitProof(candidate);
+                    if (exitProof <= 0) continue;
                     int reachable = fragmentReachableCells(candidate);
                     candidateCount++;
-                    if (reachable > bestReachable) {
+                    if (reachable > bestReachable
+                            || reachable == bestReachable && exitProof > bestExitProof) {
                         bestReachable = reachable;
+                        bestExitProof = exitProof;
                         bestFragment = candidate;
                         bestEntrance = entrance;
                         bestCropSide = cropSide;
@@ -740,8 +766,8 @@ public final class ExternalUrbanFabricBuilder {
                                 + " candidate_columns=" + testedDoorColumns.size());
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_INDEPENDENT_URBAN_SOURCE_SELECTED resource={} reachable={} crop_side={} source_door={},{} fragment={}x{} entrance_local={},{} resolved_side={} candidates={} candidate_columns={} same_footprint=true source_blocks_cut=0 source_only=true world_reads=false mutations=0",
-                    resource, bestReachable, bestCropSide,
+                    "LK_ERDEN_INDEPENDENT_URBAN_SOURCE_SELECTED resource={} reachable={} exit_proof={} crop_side={} source_door={},{} fragment={}x{} entrance_local={},{} resolved_side={} candidates={} candidate_columns={} same_footprint=true source_blocks_cut=0 source_only=true world_reads=false mutations=0",
+                    resource, bestReachable, bestExitProof, bestCropSide,
                     bestEntrance.x, bestEntrance.z,
                     bestFragment.width, bestFragment.length,
                     bestFragment.entranceX, bestFragment.entranceZ,
