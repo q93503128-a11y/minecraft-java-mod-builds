@@ -11,17 +11,13 @@ def body(source: str, start: str, end: str) -> str:
     return source.split(start, 1)[1].split(end, 1)[0]
 
 def main() -> None:
-    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
     local = read("VillageLocalActionSystem.java")
     placed = read("VillagePlacedTurretSystem.java")
     segment = read("VillageSiegeSegmentSystem.java")
     ui = read("VillageSiegeCommandUi.java")
     network = read("VillageNetwork.java")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     v23 = (ROOT / "tools/test_v01823_defense_consolidation.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.24-alpha.1" in props
-    assert "0.18.24-alpha.1" in readme and "villageguardians-0.18.24-alpha.1.jar" in readme
     assert 'assert "mod_version=0.18.23-alpha.1" in props' not in v23
 
     # Client actions are untrusted strings; mutations must be re-authorized server-side at packet execution time.

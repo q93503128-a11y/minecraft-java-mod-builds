@@ -106,9 +106,10 @@ public final class VillageAttackPlanSystem {
             Front front = ACTIVE_FRONTS.getOrDefault(id, Front.NORTH);
             if (front == Front.NORTH) continue;
             VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);
-            if (insideFortress(center, mob.blockPosition())) continue;
+            if (isInsideFortress(mob.blockPosition())) continue;
             if (VillageSiegeSegmentSystem.breached(segment)) {
                 BlockPos inside = VillageSiegeSegmentSystem.insideApproach(segment);
+                mob.setTarget(null);
                 mob.getNavigation().moveTo(inside.getX() + 0.5, inside.getY(), inside.getZ() + 0.5, 1.18);
                 continue;
             }
@@ -136,6 +137,27 @@ public final class VillageAttackPlanSystem {
     }
 
     public static Front frontOf(UUID uuid) { return ACTIVE_FRONTS.getOrDefault(uuid, Front.NORTH); }
+
+    public static boolean isInsideFortress(BlockPos pos) {
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (center == null || pos == null) return false;
+        int r = VillageWorldSystem.FORTRESS_RADIUS - 4;
+        return Math.abs(pos.getX() - center.getX()) < r && Math.abs(pos.getZ() - center.getZ()) < r;
+    }
+
+    public static boolean ownsExteriorRouting(UUID uuid, BlockPos pos) {
+        return frontOf(uuid) != Front.NORTH && !isInsideFortress(pos);
+    }
+
+    public static boolean hasBreachedEntry(UUID uuid) {
+        Front front = frontOf(uuid);
+        if (front == Front.NORTH) return false;
+        return VillageSiegeSegmentSystem.breached(VillageSiegeSegmentSystem.primarySideFor(front));
+    }
+
+    public static boolean hasInteriorAccess(UUID uuid, BlockPos pos) {
+        return isInsideFortress(pos) || hasBreachedEntry(uuid);
+    }
 
     public static AttackPlan preview(int day, int wave, int count) {
         Map<Front, Integer> counts = new java.util.LinkedHashMap<>();
@@ -283,11 +305,6 @@ public final class VillageAttackPlanSystem {
             }
         }
         return desired;
-    }
-
-    private static boolean insideFortress(BlockPos center, BlockPos pos) {
-        int r = VillageWorldSystem.FORTRESS_RADIUS - 4;
-        return Math.abs(pos.getX() - center.getX()) < r && Math.abs(pos.getZ() - center.getZ()) < r;
     }
 
     private static String warStage(int day) {

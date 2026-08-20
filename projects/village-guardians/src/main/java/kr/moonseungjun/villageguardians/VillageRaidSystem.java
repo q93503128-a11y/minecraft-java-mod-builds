@@ -351,6 +351,13 @@ public final class VillageRaidSystem {
                 VillageBossAspectSystem.tick(level, server, mob, abilityTicks);
             }
 
+            // Side/rear exterior movement is owned by VillageAttackPlanSystem on the same server tick.
+            // Do not briefly retarget these mobs toward the north gate, a player, or a placed turret first.
+            if (VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())) {
+                mob.setTarget(null);
+                continue;
+            }
+
             if (archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER) {
                 VillagePlacedTurretSystem.TurretState turret =
                         VillagePlacedTurretSystem.nearestActiveTurret(mob.position(), 48.0);
@@ -363,7 +370,9 @@ public final class VillageRaidSystem {
                 }
             }
 
-            ServerPlayer nearbyPlayer = gatePassable
+            boolean fortressAccess = gatePassable
+                    || VillageAttackPlanSystem.hasInteriorAccess(id, mob.blockPosition());
+            ServerPlayer nearbyPlayer = fortressAccess
                     && !VillageEnemyArchetypeSystem.ignoresNearbyPlayersUntilInside(archetype)
                     ? nearestPriorityPlayer(server, mob)
                     : null;
@@ -382,7 +391,7 @@ public final class VillageRaidSystem {
             }
 
             VillageProgressionSystem.Building targetBuilding = chooseTarget(
-                    villageCenter, mob.blockPosition(), gatePassable, archetype);
+                    villageCenter, mob.blockPosition(), fortressAccess, archetype);
             if (targetBuilding == null || villageCenter == null) continue;
             BlockPos target = VillageFortressBuildings.attackPoint(villageCenter, targetBuilding, mob.blockPosition());
             mob.getLookControl().setLookAt(target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5);
