@@ -60,6 +60,7 @@ public final class ArcaneFieldService {
     public static boolean blocksCasting(LivingEntity caster) {
         if (caster == null || !caster.isAlive()) return false;
         if (SpellGameplayService.blocksCasting(caster)) return true;
+        if (HighControlSpellService.blocksCasting(caster)) return true;
         for (AntimagicField field : ANTIMAGIC.values()) {
             if (!field.active() || field.level() != caster.level()) continue;
             Entity owner = field.level().getEntity(field.ownerId());
@@ -176,6 +177,7 @@ public final class ArcaneFieldService {
                 value -> value.isAlive() && !value.isRemoved()
                         && owner.position().distanceToSqr(value.position()) <= radius * radius)) {
             SpellGameplayService.clear(entity);
+            HighControlSpellService.clear(entity);
             suppressMagicEffects(entity);
             if (entity instanceof ServerPlayer player) {
                 if (player == owner) {
@@ -195,7 +197,7 @@ public final class ArcaneFieldService {
         Set<UUID> shouldRemainFrozenEntities = new HashSet<>();
         for (TimeField field : TIME_FIELDS.values()) {
             if (field.level() != level || !field.active()) continue;
-            Entity rawOwner = level.getEntity(field.ownerId());
+            Entity rawOwner = field.level().getEntity(field.ownerId());
             if (!(rawOwner instanceof ServerPlayer owner) || !owner.isAlive()) continue;
             double radius = field.radius();
             AABB box = new AABB(field.center(), field.center()).inflate(radius, radius * .75, radius);

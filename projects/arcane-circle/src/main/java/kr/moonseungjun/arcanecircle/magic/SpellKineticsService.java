@@ -52,7 +52,8 @@ public final class SpellKineticsService {
                 WorldMagicService.kineticDistance(player, cast.spell(), cast.range(), targetSnapshot));
 
         if (PlanarSpellService.handles(cast.spell().id()) || SimulacrumService.handles(cast.spell().id())
-                || HighUtilitySpellService.handles(cast.spell().id()) || SpellGameplayService.handles(cast.spell().id())) {
+                || HighUtilitySpellService.handles(cast.spell().id()) || HighControlSpellService.handles(cast.spell().id())
+                || SpellGameplayService.handles(cast.spell().id())) {
             if (presentationImpactDelay > 1) {
                 enqueue(player, new PendingCast(cast, growthSnapshot, targetSnapshot,
                         clock(player) + presentationImpactDelay, 0, 1, cast.power(), false, 0));
@@ -129,14 +130,17 @@ public final class SpellKineticsService {
         boolean planarOwned = PlanarSpellService.handles(spellId);
         boolean simulacrumOwned = !planarOwned && SimulacrumService.handles(spellId);
         boolean utilityOwned = !planarOwned && !simulacrumOwned && HighUtilitySpellService.handles(spellId);
-        boolean gameplayOwned = !planarOwned && !simulacrumOwned && !utilityOwned && SpellGameplayService.handles(spellId);
+        boolean controlOwned = !planarOwned && !simulacrumOwned && !utilityOwned && HighControlSpellService.handles(spellId);
+        boolean gameplayOwned = !planarOwned && !simulacrumOwned && !utilityOwned && !controlOwned
+                && SpellGameplayService.handles(spellId);
         boolean executed = targetSnapshot.executeLocked(player, () -> planarOwned
                 ? PlanarSpellService.execute(player, spellId)
                 : simulacrumOwned ? SimulacrumService.execute(player, targetSnapshot)
                 : utilityOwned ? HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)
+                : controlOwned ? HighControlSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : gameplayOwned ? SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)
                 : SpellCastingService.executeResolved(player, spellId, range, power));
-        if (executed && !planarOwned && !simulacrumOwned && !utilityOwned && !gameplayOwned) {
+        if (executed && !planarOwned && !simulacrumOwned && !utilityOwned && !controlOwned && !gameplayOwned) {
             DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
         }
         return executed;

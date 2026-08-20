@@ -65,7 +65,7 @@ public final class SpellEffectSummary {
             // 6C
             case "disintegrate" -> "직선 분해 피해 · 광선 경로 실제 블록 파괴";
             case "globe_of_invulnerability" -> "26초 흡수·저항 + 들어오는 피해 70% 감소";
-            case "mass_suggestion" -> "넓은 범위 적의 AI·이동·Arcane 시전을 8초간 일괄 봉쇄";
+            case "mass_suggestion" -> "8초 · 범위 적에게 전투 이탈 명령 · 공격을 끊고 조준 지점에서 실제로 멀어지며 Arcane 시전 억제";
             case "move_earth" -> "고정 목표 지면 광역 피해·띄우기 · 조건부 지형 파괴";
             case "sunbeam" -> "직선 태양광 피해 · 실명";
             case "true_seeing" -> "60초 · 주변 은신을 주기적으로 벗기고 생명체를 계속 추적 표시";
@@ -78,7 +78,7 @@ public final class SpellEffectSummary {
             case "etherealness" -> "물질 충돌 위상화 + 자유 비행 · 일반 피해 88% 경감 · 종료 시 안전 낙하";
             case "finger_of_death" -> "강한 단일 피해 · 장시간 위더";
             case "fire_storm" -> "대범위 7지점 연쇄 화염 폭격 · 증폭 피해·장기 화상·지형 파괴";
-            case "forcecage" -> "조준 대상을 20초간 AI·이동·Arcane 시전 완전 봉쇄";
+            case "forcecage" -> "20초 · 대상 AI/공격/시전은 유지하지만 약 6m 고정 역장 경계를 실제로 넘지 못하게 감금";
             case "plane_shift" -> "실제 차원 이동 · 시선 위=엔드/아래=네더/수평=오버월드 · 5.5m 내 웅크린 플레이어 최대 8명 동행";
             case "prismatic_spray" -> "전방 7색 광역 피해 · 무작위 강한 상태 이상";
             case "reverse_gravity" -> "대범위 피해 · 11초간 초강제 상승/공중 부양";
@@ -89,9 +89,9 @@ public final class SpellEffectSummary {
             case "clone" -> "조준한 비플레이어 생명체의 실제 복제본 생성 · 장비/기초 전투체급 복제 · 시전자 소유 아님";
             case "control_weather" -> "45초 실제 폭우·뇌우 지배 · G키로 바라본 지점 12연속 낙뢰 명령 · 재사용 2.5초";
             case "demiplane" -> "보존되는 개인 주머니방 생성·재접속 · 내부 블록/물품 유지 · G 또는 재시전으로 기억된 귀환점 복귀";
-            case "dominate_monster" -> "조준 대상 AI·이동·Arcane 시전을 24초간 완전 봉쇄";
+            case "dominate_monster" -> "24초 · 조준 괴물을 임시 전투 대리체로 지배 · 시전자 공격 중지·주변 위협 공격·비전투 시 추종 · 적대 Arcane 시전 봉쇄";
             case "earthquake" -> "초대형 지면 피해·강제 띄우기 · 8써클급 광역 실제 지형 붕괴";
-            case "feeblemind" -> "단일 피해 · 장시간 약화·실명";
+            case "feeblemind" -> "단일 정신 피해 + 35초 Arcane 시전 봉쇄·공격/행동 약화 · 몸과 AI 자체는 계속 움직임";
             case "incendiary_cloud" -> "12초 지속 소이 구름 · 반복 화염 피해·화상";
             case "maze" -> "조준 생명체를 18초간 전장에서 실제 추방 · 종료 시 원래 전장으로 귀환";
             case "sunburst" -> "초대형 태양광 폭발 · 증폭 광역 피해·장기 화상·강한 실명";
