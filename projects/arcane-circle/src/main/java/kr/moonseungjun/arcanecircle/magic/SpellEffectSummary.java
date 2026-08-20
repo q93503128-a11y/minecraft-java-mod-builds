@@ -18,7 +18,6 @@ public final class SpellEffectSummary {
             case "sleep" -> "조준 범위 적의 AI·이동을 7초간 정지 + 암흑";
             case "thunderwave" -> "전방 충격파 피해·넉백 · 취약 블록 파손";
             case "mage_armor" -> "36초 · 4장 재생형 아케인 플레이트가 소모·재충전되며 피해 분산";
-
             // 2C
             case "scorching_ray" -> "세 갈래 화염 광선 피해 · 화상";
             case "misty_step" -> "가까운 안전 지점으로 순간이동";
@@ -30,7 +29,6 @@ public final class SpellEffectSummary {
             case "shatter" -> "목표 지점 진동 피해 · 약한 블록 파괴 및 제한 드롭";
             case "blur" -> "18초 동안 이동 강화 + 들어오는 피해 32% 감소";
             case "levitate" -> "상승 후 느린 낙하 상태 부여";
-
             // 3C
             case "fireball" -> "착탄 범위 화염 피해·화상 · 주변 지형 일부 파괴";
             case "lightning_bolt" -> "직선 관통 번개 피해 · 경로의 약한 블록만 파손";
@@ -42,7 +40,6 @@ public final class SpellEffectSummary {
             case "protection_from_energy" -> "30초 · 5중 공명막이 강한 충격을 흡수하고 전투 중 재충전";
             case "sleet_storm" -> "9초 지속 냉기 폭풍 · 반복 피해·동결·둔화, 중독 없음";
             case "blink" -> "조준 방향의 안전 지점으로 공간 도약";
-
             // 4C
             case "wall_of_fire" -> "10초 지속 화염 장벽 · 접촉 적 반복 피해·화상";
             case "ice_storm" -> "고정한 목표 지점 냉기 폭격 · 광역 피해·동결";
@@ -54,7 +51,6 @@ public final class SpellEffectSummary {
             case "blight" -> "강한 단일 생명 피해 · 약화";
             case "freedom_of_movement" -> "26초 · 둔화·속박·동결·강제 부양을 지속적으로 정화 + 이동 강화";
             case "phantasmal_killer" -> "단일 대상 정신 피해 · 공포성 약화 상태";
-
             // 5C
             case "cone_of_cold" -> "넓은 전방 냉기 피해 · 강한 동결";
             case "wall_of_force" -> "12초 지속 역장벽 · 접근/통과 시 지속적으로 밀어냄";
@@ -66,7 +62,6 @@ public final class SpellEffectSummary {
             case "passwall" -> "조준 방향의 먼 안전 지점으로 공간 통과";
             case "dominate_person" -> "조준 대상의 AI·이동·Arcane 시전을 13초간 봉쇄";
             case "insect_plague" -> "11초 지속 벌레 떼 · 반복 피해·약화";
-
             // 6C
             case "disintegrate" -> "직선 분해 피해 · 광선 경로 실제 블록 파괴";
             case "globe_of_invulnerability" -> "26초 흡수·저항 + 들어오는 피해 70% 감소";
@@ -78,31 +73,28 @@ public final class SpellEffectSummary {
             case "eyebite" -> "단일 피해 · 약화와 공포성 둔화";
             case "flesh_to_stone" -> "단일 피해 · 18초 AI·이동·Arcane 시전 완전 석화";
             case "circle_of_death" -> "고정 목표 지점 대형 광역 피해";
-
             // 7C
             case "delayed_blast_fireball" -> "지연 후 초대형 화염 폭발 · 증폭 피해·장기 화상·강한 지형 파괴";
             case "etherealness" -> "물질 충돌 위상화 + 자유 비행 · 일반 피해 88% 경감 · 종료 시 안전 낙하";
             case "finger_of_death" -> "강한 단일 피해 · 장시간 위더";
             case "fire_storm" -> "대범위 7지점 연쇄 화염 폭격 · 증폭 피해·장기 화상·지형 파괴";
             case "forcecage" -> "조준 대상을 20초간 AI·이동·Arcane 시전 완전 봉쇄";
-            case "plane_shift" -> "장거리 안전 지점으로 고등 공간 이동";
+            case "plane_shift" -> "실제 차원 이동 · 시선 위=엔드/아래=네더/수평=오버월드 · 5.5m 내 웅크린 플레이어 최대 8명 동행";
             case "prismatic_spray" -> "전방 7색 광역 피해 · 무작위 강한 상태 이상";
             case "reverse_gravity" -> "대범위 피해 · 11초간 초강제 상승/공중 부양";
-            case "simulacrum" -> "60초 내 다음 치명상을 대리체가 대신 받고 생존";
+            case "simulacrum" -> "조준 생명체의 반실체 복제체 생성 · 체력 50%/전투력 약 72% · 웅크린 채 G로 추종·수호·집중공격 명령";
             case "teleport" -> "매우 먼 안전 지점으로 순간이동";
-
             // 8C
             case "antimagic_field" -> "16초 대형 이동 반마법장 · 버프/지속마법 제거 + Arcane 시전 완전 차단";
             case "clone" -> "조준한 비플레이어 생명체의 실제 복제본 생성 · 장비/기초 전투체급 복제 · 시전자 소유 아님";
             case "control_weather" -> "45초 실제 폭우·뇌우 지배 · G키로 바라본 지점 12연속 낙뢰 명령 · 재사용 2.5초";
-            case "demiplane" -> "고등 공간 회로로 매우 먼 안전 지점 이동";
+            case "demiplane" -> "보존되는 개인 주머니방 생성·재접속 · 내부 블록/물품 유지 · G 또는 재시전으로 기억된 귀환점 복귀";
             case "dominate_monster" -> "조준 대상 AI·이동·Arcane 시전을 24초간 완전 봉쇄";
             case "earthquake" -> "초대형 지면 피해·강제 띄우기 · 8써클급 광역 실제 지형 붕괴";
             case "feeblemind" -> "단일 피해 · 장시간 약화·실명";
             case "incendiary_cloud" -> "12초 지속 소이 구름 · 반복 화염 피해·화상";
             case "maze" -> "조준 생명체를 18초간 전장에서 실제 추방 · 종료 시 원래 전장으로 귀환";
             case "sunburst" -> "초대형 태양광 폭발 · 증폭 광역 피해·장기 화상·강한 실명";
-
             // 9C
             case "meteor_swarm" -> "16발 시드형 연속 폭격 · 개별 피해·화상·대형 충돌구 지형 파괴";
             case "power_word_kill" -> "높은 처형 임계치 이하 대상 즉사급 명령 · 실패해도 9써클 대형 단일 피해";
@@ -114,7 +106,6 @@ public final class SpellEffectSummary {
             case "wish" -> "체력·마력 완전 회복 · 해로운 상태 제거 · 기존 이로운 버프 보존 · 소원 외 주문 쿨 초기화";
             case "gate" -> "최상급 장거리 공간 이동";
             case "foresight" -> "120초 예지 · 2초마다 다음 피격 완전 회피 + 사이 피해 25% 경감 + 예지 시야";
-
             // Fusion
             case "burning_hands" -> "전방 화염 충격파 피해·넉백·화상";
             case "ice_knife" -> "냉기 투사체/파열 피해·동결 · 지형은 파괴하지 않음";
