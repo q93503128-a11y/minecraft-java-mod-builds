@@ -1,52 +1,15 @@
 {
-  "version": "0.12.1-alpha.48",
+  "version": "0.12.1-alpha.49",
   "world": "Ninefold Arcane Dominion",
-  "implemented_circles": [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9
-  ],
+  "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
   "fusion_spells": 19,
   "world_max_circle": 9,
   "economy": "single persistent Arcana wallet",
-  "survival_replacement": [
-    "vanilla hunger",
-    "vanilla survival respawn",
-    "magic progression",
-    "arcana economy"
-  ],
-  "academy": [
-    "central rotunda",
-    "four faculties",
-    "library",
-    "shop",
-    "training arena"
-  ],
-  "faculties": [
-    "ARCANE",
-    "DIVINE",
-    "OCCULT",
-    "PRIMAL"
-  ],
-  "sigil_families": [
-    "LANCE",
-    "STAR",
-    "HEX",
-    "PORTAL",
-    "EYE",
-    "SEAL",
-    "CLOCK",
-    "SPIRAL",
-    "STORM",
-    "CROWN"
-  ],
+  "survival_replacement": ["vanilla hunger","vanilla survival respawn","magic progression","arcana economy"],
+  "academy": ["central rotunda","four faculties","library","shop","training arena"],
+  "faculties": ["ARCANE","DIVINE","OCCULT","PRIMAL"],
+  "sigil_families": ["LANCE","STAR","HEX","PORTAL","EYE","SEAL","CLOCK","SPIRAL","STORM","CROWN"],
   "source_policy": "CC-BY SRD spell roles plus public-domain ceremonial geometry; no proprietary setting material",
   "crafting_progression": true,
   "villager_currency": false,
@@ -54,14 +17,7 @@
   "fusion_casting": "charged_release",
   "particle_core_calls": 0,
   "release_geometry": "bounded_primitive_batches",
-  "signature_models": [
-    "meteor",
-    "tornado",
-    "portal",
-    "force_cage",
-    "barrier_wall",
-    "barrier_dome"
-  ],
+  "signature_models": ["meteor","tornado","portal","force_cage","barrier_wall","barrier_dome"],
   "performance_guard": {
     "voxel_boolean_unions": 0,
     "charge_primitive_cap": 1400,
@@ -74,74 +30,23 @@
   "catastrophe_destruction": "visible_footprint_tiled_across_bounded_ticks",
   "maintained_authority_key": "G",
   "mage_residents": true,
-  "mage_entity_circles": [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9
-  ],
+  "mage_entity_circles": [1,2,3,4,5,6,7,8,9],
   "mage_currency": "arcana",
   "commission_currency": "arcana",
-  "arcana_uses": [
-    "faculty",
-    "spellbooks",
-    "staves",
-    "mage_services"
-  ],
-  "circle_hierarchy": {
-    "6": "grand_archmage",
-    "7": "transcendent",
-    "8": "mythic",
-    "9": "world_unique_final_boss"
-  },
-  "natural_circle_weights": {
-    "1": 59000,
-    "2": 25000,
-    "3": 10000,
-    "4": 4000,
-    "5": 1500,
-    "6": 400,
-    "7": 80,
-    "8": 20,
-    "9": 0
-  },
-  "affiliations": [
-    "UNBOUND",
-    "ARCANE",
-    "DIVINE",
-    "OCCULT",
-    "PRIMAL"
-  ],
-  "affiliation_display": {
-    "ARCANE": "왕국 마도연맹",
-    "DIVINE": "백은 성약",
-    "OCCULT": "녹월 결사",
-    "PRIMAL": "재의 밀약"
-  },
-  "mage_roles": [
-    "WANDERER",
-    "HOUSEHOLD",
-    "LICENSED",
-    "WARDEN",
-    "SCHOLAR",
-    "VILLAIN"
-  ],
+  "arcana_uses": ["faculty","spellbooks","staves","mage_services"],
+  "circle_hierarchy": {"6":"grand_archmage","7":"transcendent","8":"mythic","9":"world_unique_final_boss"},
+  "natural_circle_weights": {"1":59000,"2":25000,"3":10000,"4":4000,"5":1500,"6":400,"7":80,"8":20,"9":0},
+  "affiliations": ["UNBOUND","ARCANE","DIVINE","OCCULT","PRIMAL"],
+  "affiliation_display": {"ARCANE":"왕국 마도연맹","DIVINE":"백은 성약","OCCULT":"녹월 결사","PRIMAL":"재의 밀약"},
+  "mage_roles": ["WANDERER","HOUSEHOLD","LICENSED","WARDEN","SCHOLAR","VILLAIN"],
   "spell_damage_attribution": "caster_bound",
   "fusion_ui": "circle_hierarchy",
   "fusion_input": "number_key_chord",
   "fusion_power_floor": "125_percent_of_strongest_source_or_145_percent_for_triple",
-  "mage_gear": [
-    "hat",
-    "two_slot_robe",
-    "boots"
-  ],
+  "mage_gear": ["hat","two_slot_robe","boots"],
   "feather_fall_ticks": 120,
   "robe_equipment": "atomic_chest_and_visual_hem",
   "cast_release": "hold_to_release_even_when_cast_time_is_zero",
-  "visual_identity": "per_spell_fingerprint_and_high_circle_signature"
+  "visual_identity": "per_spell_fingerprint_and_high_circle_signature",
+  "high_utility_identity": ["cross_dimension_plane_shift","persistent_demiplane_room","commandable_simulacrum"]
 }
