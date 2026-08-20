@@ -30,8 +30,6 @@ public final class SpellKineticsService {
         CastTargetSnapshot targetSnapshot = WorldMagicService.captureSnapshot(player, cast.spell(), cast.range());
         WorldMagicService.release(player, cast, targetSnapshot);
 
-        // These spells own sustained server state. Treating them as generic FIELD pulses was the
-        // reason Time Stop and Antimagic Field behaved like short potion bursts instead of spells.
         if (ArcaneFieldService.handles(cast.spell().id())) {
             boolean executed = targetSnapshot.executeLocked(player,
                     () -> ArcaneFieldService.executeSpecial(player, cast.spell().id(),
@@ -53,16 +51,14 @@ public final class SpellKineticsService {
         int presentationImpactDelay = SpellPresentationProfile.impactDelayTicks(cast.spell(),
                 WorldMagicService.kineticDistance(player, cast.spell(), cast.range(), targetSnapshot));
 
-        // Dedicated persistent/control/utility runtimes execute exactly once at the authored impact.
-        // Their own state machine owns every later tick; generic FIELD pulses must not restart them.
-        if (HighUtilitySpellService.handles(cast.spell().id()) || SpellGameplayService.handles(cast.spell().id())) {
+        if (PlanarSpellService.handles(cast.spell().id()) || SimulacrumService.handles(cast.spell().id())
+                || HighUtilitySpellService.handles(cast.spell().id()) || SpellGameplayService.handles(cast.spell().id())) {
             if (presentationImpactDelay > 1) {
                 enqueue(player, new PendingCast(cast, growthSnapshot, targetSnapshot,
                         clock(player) + presentationImpactDelay, 0, 1, cast.power(), false, 0));
                 return true;
             }
-            boolean executed = executeLocked(player, targetSnapshot, cast.spell().id(),
-                    cast.range(), cast.power());
+            boolean executed = executeLocked(player, targetSnapshot, cast.spell().id(), cast.range(), cast.power());
             SpellCastingService.finishKineticCast(player, cast, growthSnapshot, executed);
             return executed;
         }
@@ -73,16 +69,14 @@ public final class SpellKineticsService {
                         clock(player) + presentationImpactDelay, 0, 1, cast.power(), false, 0));
                 return true;
             }
-            boolean executed = executeLocked(player, targetSnapshot, cast.spell().id(),
-                    cast.range(), cast.power());
+            boolean executed = executeLocked(player, targetSnapshot, cast.spell().id(), cast.range(), cast.power());
             SpellCastingService.finishKineticCast(player, cast, growthSnapshot, executed);
             return executed;
         }
 
         if (mode == SpellArchetype.Mode.PROJECTILE) {
             if (presentationImpactDelay <= 1) {
-                boolean executed = executeLocked(player, targetSnapshot, cast.spell().id(),
-                        cast.range(), cast.power());
+                boolean executed = executeLocked(player, targetSnapshot, cast.spell().id(), cast.range(), cast.power());
                 SpellCastingService.finishKineticCast(player, cast, growthSnapshot, executed);
                 return executed;
             }
@@ -124,7 +118,6 @@ public final class SpellKineticsService {
             SpellCastingService.finishKineticCast(player, cast, growthSnapshot, first);
             return first;
         }
-
         enqueue(player, new PendingCast(cast, growthSnapshot, targetSnapshot,
                 clock(player) + interval, interval, remaining, pulsePower, first, 1));
         return true;
@@ -133,13 +126,17 @@ public final class SpellKineticsService {
     private static boolean executeLocked(ServerPlayer player, CastTargetSnapshot targetSnapshot,
                                          String spellId, double range, double power) {
         if (ArcaneFieldService.blocksCasting(player)) return false;
-        boolean utilityOwned = HighUtilitySpellService.handles(spellId);
-        boolean gameplayOwned = !utilityOwned && SpellGameplayService.handles(spellId);
-        boolean executed = targetSnapshot.executeLocked(player, () -> utilityOwned
-                ? HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)
+        boolean planarOwned = PlanarSpellService.handles(spellId);
+        boolean simulacrumOwned = !planarOwned && SimulacrumService.handles(spellId);
+        boolean utilityOwned = !planarOwned && !simulacrumOwned && HighUtilitySpellService.handles(spellId);
+        boolean gameplayOwned = !planarOwned && !simulacrumOwned && !utilityOwned && SpellGameplayService.handles(spellId);
+        boolean executed = targetSnapshot.executeLocked(player, () -> planarOwned
+                ? PlanarSpellService.execute(player, spellId)
+                : simulacrumOwned ? SimulacrumService.execute(player, targetSnapshot)
+                : utilityOwned ? HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)
                 : gameplayOwned ? SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)
                 : SpellCastingService.executeResolved(player, spellId, range, power));
-        if (executed && !utilityOwned && !gameplayOwned) {
+        if (executed && !planarOwned && !simulacrumOwned && !utilityOwned && !gameplayOwned) {
             DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
         }
         return executed;
@@ -150,8 +147,7 @@ public final class SpellKineticsService {
         while (queue.size() >= MAX_PENDING_PER_PLAYER) {
             PendingCast dropped = queue.removeFirst();
             WorldMagicService.cancelRelease(player, dropped.cast().spell().id());
-            SpellCastingService.finishKineticCast(player, dropped.cast(), dropped.growthSnapshot(),
-                    dropped.anyExecuted());
+            SpellCastingService.finishKineticCast(player, dropped.cast(), dropped.growthSnapshot(), dropped.anyExecuted());
         }
         queue.add(pending);
     }
@@ -163,7 +159,6 @@ public final class SpellKineticsService {
             cancel(player);
             return;
         }
-
         long now = clock(player);
         Iterator<PendingCast> iterator = casts.iterator();
         while (iterator.hasNext()) {
@@ -174,7 +169,6 @@ public final class SpellKineticsService {
                 continue;
             }
             if (now < pending.nextTick()) continue;
-
             boolean meteor = "meteor_swarm".equals(pending.cast().spell().id());
             boolean executed;
             if (meteor) {
@@ -188,7 +182,6 @@ public final class SpellKineticsService {
                 executed = executeLocked(player, pending.targetSnapshot(), pending.cast().spell().id(),
                         pending.cast().range(), pending.pulsePower());
             }
-
             int remaining = pending.remainingPulses() - 1;
             boolean any = pending.anyExecuted() || executed;
             if (remaining <= 0) {
@@ -217,17 +210,9 @@ public final class SpellKineticsService {
         WorldMagicService.stop(player);
     }
 
-    public static void clear(UUID playerId) {
-        PENDING.remove(playerId);
-    }
-
-    public static void clearAll() {
-        PENDING.clear();
-    }
-
-    private static long clock(ServerPlayer player) {
-        return ((ServerLevel) player.level()).getServer().overworld().getGameTime();
-    }
+    public static void clear(UUID playerId) { PENDING.remove(playerId); }
+    public static void clearAll() { PENDING.clear(); }
+    private static long clock(ServerPlayer player) { return ((ServerLevel) player.level()).getServer().overworld().getGameTime(); }
 
     private static final class PendingCast {
         private final MagicPlayerData.CastPreparation cast;
@@ -240,44 +225,23 @@ public final class SpellKineticsService {
         private boolean anyExecuted;
         private int pulseIndex;
 
-        private PendingCast(MagicPlayerData.CastPreparation cast,
-                            CombatGrowthService.Snapshot growthSnapshot,
-                            CastTargetSnapshot targetSnapshot,
-                            long nextTick, int interval, int remainingPulses,
+        private PendingCast(MagicPlayerData.CastPreparation cast, CombatGrowthService.Snapshot growthSnapshot,
+                            CastTargetSnapshot targetSnapshot, long nextTick, int interval, int remainingPulses,
                             double pulsePower, boolean anyExecuted, int pulseIndex) {
-            this.cast = cast;
-            this.growthSnapshot = growthSnapshot;
-            this.targetSnapshot = targetSnapshot;
-            this.nextTick = nextTick;
-            this.interval = interval;
-            this.remainingPulses = remainingPulses;
-            this.pulsePower = pulsePower;
-            this.anyExecuted = anyExecuted;
-            this.pulseIndex = pulseIndex;
+            this.cast=cast; this.growthSnapshot=growthSnapshot; this.targetSnapshot=targetSnapshot;
+            this.nextTick=nextTick; this.interval=interval; this.remainingPulses=remainingPulses;
+            this.pulsePower=pulsePower; this.anyExecuted=anyExecuted; this.pulseIndex=pulseIndex;
         }
-
-        MagicPlayerData.CastPreparation cast() { return cast; }
-        CombatGrowthService.Snapshot growthSnapshot() { return growthSnapshot; }
-        CastTargetSnapshot targetSnapshot() { return targetSnapshot; }
-        long nextTick() { return nextTick; }
-        int interval() { return interval; }
-        int remainingPulses() { return remainingPulses; }
-        double pulsePower() { return pulsePower; }
-        boolean anyExecuted() { return anyExecuted; }
-        int pulseIndex() { return pulseIndex; }
-
-        void advance(long next, int remaining, boolean executed) {
-            this.nextTick = next;
-            this.remainingPulses = remaining;
-            this.anyExecuted = executed;
-            this.pulseIndex++;
-        }
-
-        void advanceMeteor(long next, int remaining, boolean executed, int index) {
-            this.nextTick = next;
-            this.remainingPulses = remaining;
-            this.anyExecuted = executed;
-            this.pulseIndex = index;
-        }
+        MagicPlayerData.CastPreparation cast(){return cast;}
+        CombatGrowthService.Snapshot growthSnapshot(){return growthSnapshot;}
+        CastTargetSnapshot targetSnapshot(){return targetSnapshot;}
+        long nextTick(){return nextTick;}
+        int interval(){return interval;}
+        int remainingPulses(){return remainingPulses;}
+        double pulsePower(){return pulsePower;}
+        boolean anyExecuted(){return anyExecuted;}
+        int pulseIndex(){return pulseIndex;}
+        void advance(long next,int remaining,boolean executed){nextTick=next;remainingPulses=remaining;anyExecuted=executed;pulseIndex++;}
+        void advanceMeteor(long next,int remaining,boolean executed,int index){nextTick=next;remainingPulses=remaining;anyExecuted=executed;pulseIndex=index;}
     }
 }
