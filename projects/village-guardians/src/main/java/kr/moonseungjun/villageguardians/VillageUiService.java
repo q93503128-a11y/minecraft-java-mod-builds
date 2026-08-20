@@ -588,7 +588,7 @@ public final class VillageUiService {
                     + Math.round((6.0f + safe * 4.0f) / 2.0f) + "칸";
             case STOREHOUSE -> "최대 내구도 " + (560 + safe * 120) + " · 일일 식량·성장 장비·습격 보상 강화";
             case BARRACKS -> "최대 내구도 " + (620 + safe * 130) + " · 훈련 XP " + (30 + safe * 18)
-                    + " · 용병 정원 " + (1 + safe / 2);
+                    + " · 용병 정원 " + (1 + safe / 2 + VillageDefenseResearchSystem.mercenaryCapacityBonus());
         };
     }
 
