@@ -88,9 +88,7 @@ public final class PlanarSpellService {
     private static boolean demiplane(ServerPlayer caster) {
         MinecraftServer server = caster.serverLevel().getServer();
         PlanarSpellData data = PlanarSpellData.get(server);
-        if (isDemiplaneBackend(caster) && data.anchor(caster).isPresent()) {
-            return returnFromDemiplane(caster, data);
-        }
+        if (isDemiplaneBackend(caster) && data.anchor(caster).isPresent()) return returnFromDemiplane(caster, data);
         ServerLevel pocket = server.getLevel(Level.END);
         if (pocket == null) return false;
         BlockPos center = roomCenter(caster.getUUID());
@@ -101,8 +99,7 @@ public final class PlanarSpellService {
         int moved = 0;
         for (int i = 0; i < party.size(); i++) {
             ServerPlayer member = party.get(i);
-            PlanarSpellData memberData = PlanarSpellData.get(server);
-            memberData.remember(member);
+            data.remember(member);
             double angle = i * Math.PI * 2.0 / Math.max(1, party.size());
             double radius = i == 0 ? 0.0 : 2.2;
             if (teleport(member, pocket, base.x + Math.cos(angle) * radius, base.y,
@@ -175,6 +172,23 @@ public final class PlanarSpellService {
     }
 
     private static Optional<BlockPos> findSafe(ServerLevel level, Vec3 desired, int verticalSearch) {
+        Optional<BlockPos> direct = findSafeVertical(level, desired, verticalSearch);
+        if (direct.isPresent()) return direct;
+        int x = (int) Math.floor(desired.x);
+        int z = (int) Math.floor(desired.z);
+        int startY = (int) Math.floor(Math.max(level.getMinY() + 2, Math.min(level.getMaxY() - 3, desired.y)));
+        for (int radius = 1; radius <= 8; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                Optional<BlockPos> safe = findSafeVertical(level,
+                        new Vec3(x + dx, startY, z + dz), Math.min(12, verticalSearch));
+                if (safe.isPresent()) return safe;
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<BlockPos> findSafeVertical(ServerLevel level, Vec3 desired, int verticalSearch) {
         int x = (int) Math.floor(desired.x);
         int z = (int) Math.floor(desired.z);
         int startY = (int) Math.floor(Math.max(level.getMinY() + 2, Math.min(level.getMaxY() - 3, desired.y)));
@@ -186,13 +200,6 @@ public final class PlanarSpellService {
                 if (level.getBlockState(feet.below()).blocksMotion()
                         && level.getBlockState(feet).isAir()
                         && level.getBlockState(feet.above()).isAir()) return Optional.of(feet);
-            }
-        }
-        for (int radius = 1; radius <= 8; radius++) {
-            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
-                if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-                Optional<BlockPos> safe = findSafe(level, new Vec3(x + dx, startY, z + dz), Math.min(12, verticalSearch));
-                if (safe.isPresent()) return safe;
             }
         }
         return Optional.empty();
