@@ -27,9 +27,9 @@ def kenneyUiAssets = [
 ]
 
 // Every structure below is BuildSchem CC BY 4.0. The legacy attribution file remains stable for
-// the five established structures; the four new Erden street-fabric sources get their own complete
-// attribution file so existing packaging audits remain backward compatible while source provenance
-// stays explicit.
+// the five established structures; the three accepted Erden street-fabric candidates get their own
+// complete attribution file so existing packaging audits stay backward compatible and provenance
+// remains explicit.
 def establishedExternalStructureAssets = [
         [output: 'medieval_castle.schem', slug: 'ultimate-medieval-survival-castle-mansion', title: 'Ultimate Medieval Survival Castle Mansion'],
         [output: 'medieval_manor.schem', slug: 'ultimate-medieval-manor-survival-base', title: 'Ultimate Medieval Manor Survival Base'],
@@ -40,9 +40,6 @@ def establishedExternalStructureAssets = [
 def urbanExpansionStructureAssets = [
         [output: 'player_castle_house.schem', slug: 'ultimate-player-favorite-castle-house-survival-base', title: 'Ultimate Player Favorite Castle House Survival Base'],
         [output: 'medieval_tavern_inn.schem', slug: 'ultimate-medieval-tavern-inn-survival-base', title: 'Ultimate Medieval Tavern Inn Survival Base'],
-        // Keep the runtime market/warehouse slot stable while evaluating a smaller connected barn
-        // whose central threshing floor can act as a covered goods hall. Attribution records source.
-        [output: 'medieval_market_hall.schem', slug: 'ultimate-medieval-barn-survival-base', title: 'Ultimate Medieval Barn Survival Base'],
         [output: 'medieval_horse_stable.schem', slug: 'ultimate-medieval-horse-stable-survival-base', title: 'Ultimate Medieval Horse Stable Survival Base']
 ]
 def externalStructureAssets = establishedExternalStructureAssets + urbanExpansionStructureAssets
