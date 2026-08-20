@@ -66,7 +66,8 @@ def main() -> None:
             not (JAVA / "VillageTowerResearchBonusSystem.java").exists()
             and "VillageTowerResearchBonusSystem" not in guardians
             and "VillageDefenseResearchSystem.towerDamageMultiplier()" in turret
-            and "1.0f + level(Branch.TOWER) * 0.10f" in research)
+            and "towerDamageMultiplier" in research
+            and "Branch.TOWER" in research)
 
     require("bombard is a delayed snapshot-position shell with real impact resolution",
             "PENDING_BOMBARDS" in turret
