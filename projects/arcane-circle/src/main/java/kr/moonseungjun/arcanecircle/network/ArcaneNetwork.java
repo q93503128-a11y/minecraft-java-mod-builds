@@ -5,6 +5,8 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
+import kr.moonseungjun.arcanecircle.magic.PlanarSpellService;
+import kr.moonseungjun.arcanecircle.magic.SimulacrumService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellGameplayService;
@@ -28,7 +30,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ArcaneNetwork {
-    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha47";
+    public static final String PROTOCOL_VERSION = "ninefold-arcana-12-1-alpha49";
     private static final Set<String> PAGES = Set.of(
             "atlas", "recipes", "staffs", "core", "academy", "quests", "sync");
 
@@ -106,6 +108,10 @@ public final class ArcaneNetwork {
         if (player == null) return;
         if (payload.action() != 0) {
             ArcaneNoticeService.push(player, Component.literal("§c[권능] §f알 수 없는 보조 권능 요청입니다."));
+        } else if (PlanarSpellService.useAuthority(player)) {
+            // Inside a Demiplane, G is always the emergency return authority.
+        } else if (SimulacrumService.useAuthority(player)) {
+            // Simulacrum consumes only crouch+G, leaving ordinary G available to maintained weather.
         } else {
             SpellGameplayService.useMaintainedAuthority(player);
         }
