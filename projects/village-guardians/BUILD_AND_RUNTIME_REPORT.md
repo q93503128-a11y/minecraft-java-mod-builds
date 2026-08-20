@@ -2,17 +2,30 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.20-alpha.1`
+- Current source version: `0.18.21-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.20-alpha.1.jar`
-- Final acceptance Actions run: `32330475890`
-- Final acceptance head: `00a9ca1f4350d6dd431a4bd7ed2d6be817c50d7d`
-- Final JAR SHA-256: `8349e946556c23d45694274397989ff1212fb2998c204eab0967a0a6ff04d55c`
-- Final JAR size: `976814` bytes
+- Target JAR: `villageguardians-0.18.21-alpha.1.jar`
+- Final acceptance Actions run: `32332392760`
+- Final acceptance head: `cb5268807406a982bc39e038cdbf5b59526e0f8c`
+- Final JAR SHA-256: `f39d02ef247387a669991cc6cc4dfb2c67a6f6949134fd4c1db0f720cfa5ab7e`
+- Final JAR size: `971022` bytes
+
+## 0.18.21 습격 정본 판정·수명주기·다전선 Presentation 감사
+
+- `VillageRaidSystem.isRaidEnemy`에서 커스텀 이름의 `웨이브`/보스 표시명 fallback을 제거했다. 실제 습격 적은 `ACTIVE_ENEMIES`, `ACTIVE_ARCHETYPES`, `ACTIVE_WAVES`, 내부 `villageguardians_raid_enemy` tag 중 하나로만 판정된다.
+- `releaseEnemy`가 `VillageAttackPlanSystem`, `VillageEnemyEliteSystem`, `VillageSiegeBossSystem`, `VillageBossAspectSystem`의 해당 UUID 상태를 즉시 제거한다. 사망/누락된 적의 전선·정예 지연 시전·보스 시전이 다음 웨이브까지 남지 않는다.
+- `clearState`는 승리와 게임오버에서 전선, 정예 교리, grapple/firebrand/plague cast, 보스 doctrine/phase-two/breach/ritual/duel cast를 즉시 비운다. AttackPlan cleanup은 현재 phase를 `lastPhase`에 저장해 게임오버 NIGHT를 새 밤 진입으로 잘못 감지하지 않는다.
+- `VillageDefenseEffectSystem`과 `VillageSkillMeshLibrary`에 `raid_front_warning` / `raid_front_arrival`을 추가했다. 야간 전 위험 전선과 실제 웨이브 사용 전선을 회전 링·chevron·수직 신호로 표시하며 주공/별동대 강도를 구분한다. 기존 smoke/flame은 보조 분위기 피드백만 담당한다.
+- 더 이상 서버 tick에서 호출되지 않던 `VillageDefenseSystem`의 `TOWER_TICKS`와 `fireBallista/fireFlame/fireFrost/fireArcane` 고정 성루 전투 구현을 완전히 제거했다. 컴파일된 최종 class에서도 해당 심볼이 없음을 독립 확인했다.
+- 통합 게이트 과정에서 `test_v0189_siege_phase2.py`, `test_v01818_growth_consumables.py` 등 과거 회귀가 최신 버전 문자열을 고정해 새 릴리스를 거짓 실패시키는 문제를 확인했다. 구 버전 테스트들의 `mod_version=0.18.x-alpha.1` 리터럴 고정을 기능 계약 검사로 이관했고, 최신 `test_v01821_raid_lifecycle_presentation.py`만 현재 정확한 버전을 확인한다.
+- 검증된 런타임 소스 commit은 `04a9c9c2d9b0996f781f334475399291de49ac65`다. 통합 게이트에서 canonical regressions, Java 25 clean NeoForge build, runtime JAR verifier를 모두 통과했다.
+- 최종 acceptance Actions run `32332392760`은 deterministic contracts, Java 25 setup, NeoForge clean build, runtime JAR verifier, artifact upload, acceptance metadata 기록을 모두 PASS했다. acceptance head는 `cb5268807406a982bc39e038cdbf5b59526e0f8c`다.
+- Actions artifact `9393481896`를 별도 다운로드해 ZIP/JAR CRC, `neoforge.mods.toml`의 mod version/NeoForge/Minecraft 범위, manifest, `VillageRaidSystem`, `VillageAttackPlanSystem`, `VillageEnemyEliteSystem`, `VillageSiegeBossSystem`, `VillageDefenseSystem`, `VillageDefenseEffectSystem`, `VillageSkillMeshLibrary` 포함을 독립 재검증했다. Artifact digest는 `sha256:4fb0f10652991ddccb846609c8e842e9025eba9560b17a5b3a2c4fd544ee219a`다.
+- 최종 JAR SHA-256 `f39d02ef247387a669991cc6cc4dfb2c67a6f6949134fd4c1db0f720cfa5ab7e`, 크기 `971022` bytes.
 
 ## 0.18.20 용병 명부·병영 경제·레거시 이관 감사
 
