@@ -1,0 +1,363 @@
+name: Build Village Guardians v0.18.25 Multi-front Routing Integrity
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  BUILD_VERSION: 0.18.25-alpha.1
+  EXPECTED_JAR: villageguardians-0.18.25-alpha.1.jar
+
+jobs:
+  build:
+    if: github.event_name != 'issues' || github.event.issue.title == 'Village Guardians v0.18.25 multi-front routing integrity'
+    name: Java 25 / NeoForge 26.2 multi-front routing acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply v0.18.25 routing patch
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('.')
+          java = root / 'src/main/java/kr/moonseungjun/villageguardians'
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {count}: {old[:100]!r}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # Release head and historical-test ownership.
+          props = root / 'gradle.properties'
+          replace_once(props, 'mod_version=0.18.24-alpha.1', 'mod_version=0.18.25-alpha.1')
+
+          v24 = root / 'tools/test_v01824_defense_action_integrity.py'
+          replace_once(v24, '    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")\n', '')
+          replace_once(v24, '    readme = (ROOT / "README.md").read_text(encoding="utf-8")\n', '')
+          replace_once(v24, '    assert "mod_version=0.18.24-alpha.1" in props\n    assert "0.18.24-alpha.1" in readme and "villageguardians-0.18.24-alpha.1.jar" in readme\n', '')
+
+          # Multi-front routing must remain the owner of side/rear enemies until they are inside.
+          attack = java / 'VillageAttackPlanSystem.java'
+          replace_once(
+              attack,
+              '            VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);\n'
+              '            if (insideFortress(center, mob.blockPosition())) continue;\n'
+              '            if (VillageSiegeSegmentSystem.breached(segment)) {\n'
+              '                BlockPos inside = VillageSiegeSegmentSystem.insideApproach(segment);\n'
+              '                mob.getNavigation().moveTo(inside.getX() + 0.5, inside.getY(), inside.getZ() + 0.5, 1.18);\n'
+              '                continue;\n'
+              '            }\n',
+              '            VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);\n'
+              '            if (isInsideFortress(mob.blockPosition())) continue;\n'
+              '            if (VillageSiegeSegmentSystem.breached(segment)) {\n'
+              '                BlockPos inside = VillageSiegeSegmentSystem.insideApproach(segment);\n'
+              '                mob.setTarget(null);\n'
+              '                mob.getNavigation().moveTo(inside.getX() + 0.5, inside.getY(), inside.getZ() + 0.5, 1.18);\n'
+              '                continue;\n'
+              '            }\n'
+          )
+          replace_once(
+              attack,
+              '    public static Front frontOf(UUID uuid) { return ACTIVE_FRONTS.getOrDefault(uuid, Front.NORTH); }\n\n',
+              '    public static Front frontOf(UUID uuid) { return ACTIVE_FRONTS.getOrDefault(uuid, Front.NORTH); }\n\n'
+              '    public static boolean isInsideFortress(BlockPos pos) {\n'
+              '        BlockPos center = VillageCouncilState.villageCenter().orElse(null);\n'
+              '        if (center == null || pos == null) return false;\n'
+              '        int r = VillageWorldSystem.FORTRESS_RADIUS - 4;\n'
+              '        return Math.abs(pos.getX() - center.getX()) < r && Math.abs(pos.getZ() - center.getZ()) < r;\n'
+              '    }\n\n'
+              '    public static boolean ownsExteriorRouting(UUID uuid, BlockPos pos) {\n'
+              '        return frontOf(uuid) != Front.NORTH && !isInsideFortress(pos);\n'
+              '    }\n\n'
+              '    public static boolean hasBreachedEntry(UUID uuid) {\n'
+              '        Front front = frontOf(uuid);\n'
+              '        if (front == Front.NORTH) return false;\n'
+              '        return VillageSiegeSegmentSystem.breached(VillageSiegeSegmentSystem.primarySideFor(front));\n'
+              '    }\n\n'
+              '    public static boolean hasInteriorAccess(UUID uuid, BlockPos pos) {\n'
+              '        return isInsideFortress(pos) || hasBreachedEntry(uuid);\n'
+              '    }\n\n'
+          )
+          replace_once(
+              attack,
+              '    private static boolean insideFortress(BlockPos center, BlockPos pos) {\n'
+              '        int r = VillageWorldSystem.FORTRESS_RADIUS - 4;\n'
+              '        return Math.abs(pos.getX() - center.getX()) < r && Math.abs(pos.getZ() - center.getZ()) < r;\n'
+              '    }\n\n',
+              ''
+          )
+
+          # Generic raid navigation must not fight the exterior side/rear route owner.
+          raid = java / 'VillageRaidSystem.java'
+          replace_once(
+              raid,
+              '            if (VillageEnemyArchetypeSystem.isBoss(archetype)) {\n'
+              '                VillageBossAspectSystem.tick(level, server, mob, abilityTicks);\n'
+              '            }\n\n'
+              '            if (archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER) {\n',
+              '            if (VillageEnemyArchetypeSystem.isBoss(archetype)) {\n'
+              '                VillageBossAspectSystem.tick(level, server, mob, abilityTicks);\n'
+              '            }\n\n'
+              '            // Side/rear exterior movement is owned by VillageAttackPlanSystem on the same server tick.\n'
+              '            // Do not briefly retarget these mobs toward the north gate, a player, or a placed turret first.\n'
+              '            if (VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())) {\n'
+              '                mob.setTarget(null);\n'
+              '                continue;\n'
+              '            }\n\n'
+              '            if (archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER) {\n'
+          )
+          replace_once(
+              raid,
+              '            ServerPlayer nearbyPlayer = gatePassable\n'
+              '                    && !VillageEnemyArchetypeSystem.ignoresNearbyPlayersUntilInside(archetype)\n',
+              '            boolean fortressAccess = gatePassable\n'
+              '                    || VillageAttackPlanSystem.hasInteriorAccess(id, mob.blockPosition());\n'
+              '            ServerPlayer nearbyPlayer = fortressAccess\n'
+              '                    && !VillageEnemyArchetypeSystem.ignoresNearbyPlayersUntilInside(archetype)\n'
+          )
+          replace_once(
+              raid,
+              '            VillageProgressionSystem.Building targetBuilding = chooseTarget(\n'
+              '                    villageCenter, mob.blockPosition(), gatePassable, archetype);\n',
+              '            VillageProgressionSystem.Building targetBuilding = chooseTarget(\n'
+              '                    villageCenter, mob.blockPosition(), fortressAccess, archetype);\n'
+          )
+
+          # The old global north-gate priority pass must never overwrite a side/rear route or pull an infiltrator back outside.
+          gate = java / 'VillageGatePrioritySystem.java'
+          replace_once(
+              gate,
+              '            if (!mob.isAlive() || !VillageRaidSystem.isActiveEnemy(mob.getUUID())) {\n'
+              '                continue;\n'
+              '            }\n'
+              '            boolean raidLogicHadChosenPlayer = mob.getTarget() instanceof ServerPlayer;\n',
+              '            if (!mob.isAlive() || !VillageRaidSystem.isActiveEnemy(mob.getUUID())) {\n'
+              '                continue;\n'
+              '            }\n'
+              '            if (VillageAttackPlanSystem.frontOf(mob.getUUID()) != VillageAttackPlanSystem.Front.NORTH\n'
+              '                    || VillageAttackPlanSystem.isInsideFortress(mob.blockPosition())) {\n'
+              '                continue;\n'
+              '            }\n'
+              '            boolean raidLogicHadChosenPlayer = mob.getTarget() instanceof ServerPlayer;\n'
+          )
+
+          readme = root / 'README.md'
+          replace_once(readme, '- 현재 소스 버전 `0.18.24-alpha.1`', '- 현재 소스 버전 `0.18.25-alpha.1`')
+          replace_once(readme, '- 목표 JAR `villageguardians-0.18.24-alpha.1.jar`', '- 목표 JAR `villageguardians-0.18.25-alpha.1.jar`')
+          marker = '## 0.18.24 방어 관리 권한·경제 정합\n'
+          insert = '''## 0.18.25 다전선 경로 소유권·돌파 후 침입 정합\n\n- 후반 별동대가 측면/후방 전선에 배치돼도 매 틱 마지막에 `VillageGatePrioritySystem`이 모든 적을 북문으로 다시 끌어오던 충돌을 제거했다. 북문 우선 경로는 실제 `NORTH` 전선의 외부 적에게만 적용된다.\n- 측면·후방 적은 성벽 밖에 있는 동안 `VillageAttackPlanSystem`이 이동 경로를 단독 소유한다. 일반 습격 AI와 탑 사냥꾼의 목표 선택이 먼저 북문·플레이어·포탑으로 방향을 바꿨다가 다시 되돌아오는 경로 싸움을 없앴다.\n- 해당 구역이 돌파되면 별동대는 기존 전투 목표를 지우고 실제 돌파구 안쪽 접근점으로 진입한다. 내부에 들어온 뒤에는 북문이 멀쩡해도 이미 확보한 측면 진입권을 인정해 플레이어·포탑·가까운 내부 시설을 정상 공격한다.\n- 갈고리/침투 등 다른 메커니즘으로 성 안에 먼저 들어온 적도 위치 자체를 내부 진입권으로 인정하므로 북문으로 되돌아 나가지 않는다.\n\n'''
+          replace_once(readme, marker, insert + marker)
+
+          test = root / 'tools/test_v01825_multifront_routing_integrity.py'
+          test.write_text(r'''#!/usr/bin/env python3
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
+
+          def read(name: str) -> str:
+              return (JAVA / name).read_text(encoding="utf-8")
+
+          def main() -> None:
+              props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
+              readme = (ROOT / "README.md").read_text(encoding="utf-8")
+              attack = read("VillageAttackPlanSystem.java")
+              raid = read("VillageRaidSystem.java")
+              gate = read("VillageGatePrioritySystem.java")
+              guardians = read("VillageGuardians.java")
+              old = (ROOT / "tools/test_v01824_defense_action_integrity.py").read_text(encoding="utf-8")
+
+              assert "mod_version=0.18.25-alpha.1" in props
+              assert "0.18.25-alpha.1" in readme and "villageguardians-0.18.25-alpha.1.jar" in readme
+              assert 'assert "mod_version=0.18.24-alpha.1" in props' not in old
+
+              # Attack-plan ownership is explicit and exposes the two facts generic raid AI needs.
+              for token in (
+                  "public static boolean isInsideFortress(BlockPos pos)",
+                  "public static boolean ownsExteriorRouting(UUID uuid, BlockPos pos)",
+                  "public static boolean hasBreachedEntry(UUID uuid)",
+                  "public static boolean hasInteriorAccess(UUID uuid, BlockPos pos)",
+                  "frontOf(uuid) != Front.NORTH && !isInsideFortress(pos)",
+                  "isInsideFortress(pos) || hasBreachedEntry(uuid)",
+              ):
+                  assert token in attack
+              breached = attack.split("if (VillageSiegeSegmentSystem.breached(segment)) {", 1)[1].split("continue;", 1)[0]
+              assert "mob.setTarget(null);" in breached
+              assert "insideApproach(segment)" in breached
+
+              # Generic raid navigation yields while a side/rear attacker is still outside.
+              assert "VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())" in raid
+              exterior_guard = raid.split("VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())", 1)[1].split("if (archetype ==", 1)[0]
+              assert "mob.setTarget(null);" in exterior_guard and "continue;" in exterior_guard
+              assert "boolean fortressAccess = gatePassable" in raid
+              assert "VillageAttackPlanSystem.hasInteriorAccess(id, mob.blockPosition())" in raid
+              assert "ServerPlayer nearbyPlayer = fortressAccess" in raid
+              assert "villageCenter, mob.blockPosition(), fortressAccess, archetype" in raid
+
+              # Last-in-tick north-gate priority is scoped so it cannot overwrite multi-front routing.
+              assert "VillageAttackPlanSystem.frontOf(mob.getUUID()) != VillageAttackPlanSystem.Front.NORTH" in gate
+              assert "VillageAttackPlanSystem.isInsideFortress(mob.blockPosition())" in gate
+              assert guardians.index("VillageAttackPlanSystem.tick(event.getServer())") < guardians.index("VillageGatePrioritySystem.tick(event.getServer())")
+
+              print("[PASS] side/rear exterior attackers have one navigation owner")
+              print("[PASS] global north-gate priority cannot collapse multi-front assaults")
+              print("[PASS] breached side/rear attackers clear stale targets and route through the breach")
+              print("[PASS] infiltrated or breached attackers recognize interior access even while north gate survives")
+              print("[PASS] historical v0.18.24 regression is version-independent")
+              print("[PASS] v0.18.25 multi-front routing integrity contract complete")
+
+          if __name__ == "__main__":
+              main()
+          '''.replace('          ', ''), encoding='utf-8')
+          PY
+
+      - name: Run canonical deterministic contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          for test in \
+            tools/test_rpg_balance.py \
+            tools/test_village_zone.py \
+            tools/test_progression_loop.py \
+            tools/test_progression_depth.py \
+            tools/test_fortress_layout.py \
+            tools/test_runtime_safety.py \
+            tools/test_ui_layout_contract.py \
+            tools/test_interaction_contract.py \
+            tools/test_action_layout.py \
+            tools/test_enemy_content.py \
+            tools/test_v0188_risk_ui_cleanup.py \
+            tools/test_v0189_siege_phase2.py \
+            tools/test_v01810_ranger_ricochet.py \
+            tools/test_v01811_defense_polish.py \
+            tools/test_v01812_quality_audit.py \
+            tools/test_v01813_siege_integration.py \
+            tools/test_v01814_persistent_presentation.py \
+            tools/test_v01815_boss_identity.py \
+            tools/test_v01818_growth_consumables.py \
+            tools/test_v01819_research_mercenary_presentation.py \
+            tools/test_v01820_mercenary_roster.py \
+            tools/test_v01820_roster_ui_consistency.py \
+            tools/test_v01821_raid_lifecycle_presentation.py \
+            tools/test_v01822_ui_rollback.py \
+            tools/test_v01823_defense_consolidation.py \
+            tools/test_v01824_defense_action_integrity.py \
+            tools/test_v01825_multifront_routing_integrity.py; do
+            test -f "$test" || continue
+            echo "=== $test ==="
+            python3 "$test"
+          done
+
+      - name: Clean NeoForge build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
+
+      - name: Verify runtime JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/${EXPECTED_JAR}"
+          python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jar = Path('build/libs/villageguardians-0.18.25-alpha.1.jar')
+          with zipfile.ZipFile(jar) as zf:
+              names = set(zf.namelist())
+              toml = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
+          prefix = 'kr/moonseungjun/villageguardians/'
+          for cls in ('VillageAttackPlanSystem.class', 'VillageRaidSystem.class', 'VillageGatePrioritySystem.class', 'VillageSiegeSegmentSystem.class'):
+              assert prefix + cls in names, cls
+          assert prefix + 'VillageTowerSpecializationSystem.class' not in names
+          assert '0.18.25-alpha.1' in toml
+          print('[PASS] final JAR contains the consolidated multi-front routing runtime')
+          PY
+
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-${{ env.BUILD_VERSION }}
+          path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit verified source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            "${PROJECT_DIR}/gradle.properties" \
+            "${PROJECT_DIR}/README.md" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageAttackPlanSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageGatePrioritySystem.java" \
+            "${PROJECT_DIR}/tools/test_v01824_defense_action_integrity.py" \
+            "${PROJECT_DIR}/tools/test_v01825_multifront_routing_integrity.py"
+          git diff --cached --check
+          git commit -m 'fix(village): preserve multi-front siege routing [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Record final acceptance metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          mkdir -p "${PROJECT_DIR}/.ci"
+          cat > "${PROJECT_DIR}/.ci/v01825-final.txt" <<EOF
+          version=${BUILD_VERSION}
+          run_id=${GITHUB_RUN_ID}
+          source_sha=${SOURCE_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          EOF
+          git add "${PROJECT_DIR}/.ci/v01825-final.txt"
+          git diff --cached --check
+          git commit -m 'ci(village): record v0.18.25 acceptance [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
