@@ -64,7 +64,7 @@ public final class SpellEffectSummary {
             case "insect_plague" -> "11초 지속 벌레 떼 · 반복 피해·약화";
             // 6C
             case "disintegrate" -> "직선 분해 피해 · 광선 경로 실제 블록 파괴";
-            case "globe_of_invulnerability" -> "26초 흡수·저항 + 들어오는 피해 70% 감소";
+            case "globe_of_invulnerability" -> "26초 · 반경 약 6m · 외부에서 들어오는 적대 1~5써클 Arcane 주문을 경계면에서 소거 · 6써클 이상/물리 공격은 통과";
             case "mass_suggestion" -> "8초 · 범위 적에게 전투 이탈 명령 · 공격을 끊고 조준 지점에서 실제로 멀어지며 Arcane 시전 억제";
             case "move_earth" -> "고정 목표 지면 광역 피해·띄우기 · 조건부 지형 파괴";
             case "sunbeam" -> "직선 태양광 피해 · 실명";
