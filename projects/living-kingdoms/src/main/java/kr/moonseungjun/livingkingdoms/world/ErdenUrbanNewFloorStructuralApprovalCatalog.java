@@ -20,8 +20,7 @@ import java.util.Map;
  * reads immutable fragment snapshots only; it never loads world chunks or places a block.</p>
  */
 public final class ErdenUrbanNewFloorStructuralApprovalCatalog {
-    public static final int CATALOG_REVISION = 1;
-    public static final int EXPECTED_CANDIDATES = 116;
+    public static final int CATALOG_REVISION = 2;
 
     private static final int MIN_STRUCTURAL_AREA = 24;
     private static final int MIN_ROOM_SPAN = 4;
@@ -46,6 +45,17 @@ public final class ErdenUrbanNewFloorStructuralApprovalCatalog {
                 ErdenUrbanUpperRoomOpportunityCatalog.profiles();
         Map<String, ErdenUrbanSourceAirRoutePlanner.RoutePlan> routes =
                 ErdenUrbanSourceAirRoutePlanner.plans();
+
+        int expectedRouteCandidates = 0;
+        for (ExternalUrbanFabricBuilder.UrbanBuildingPlacement placement
+                : ExternalUrbanFabricBuilder.buildingPlacementsForDiagnostics()) {
+            ErdenUrbanSourceAirRoutePlanner.RoutePlan route = routes.get(placement.fragmentKey());
+            if (route != null
+                    && route.targetMode()
+                    == ErdenUrbanUpperRoomOpportunityCatalog.FloorMode.NEW_AUTHORED_FLOOR) {
+                expectedRouteCandidates++;
+            }
+        }
 
         Map<String, FragmentAssessment> fragmentAssessments = new LinkedHashMap<>();
         int candidatePlacements = 0;
@@ -81,7 +91,12 @@ public final class ErdenUrbanNewFloorStructuralApprovalCatalog {
                     placement.role(), placement.fragmentKey(),
                     placement.entrance().x(), placement.entrance().z(),
                     fragment, decision);
-            PLACEMENTS.put(entranceKey(placement.entrance().x(), placement.entrance().z()), approval);
+            PlacementApproval old = PLACEMENTS.put(
+                    entranceKey(placement.entrance().x(), placement.entrance().z()), approval);
+            if (old != null) {
+                throw new IllegalStateException("Duplicate Erden new-floor approval entrance "
+                        + placement.entrance().x() + "," + placement.entrance().z());
+            }
             decisions.merge(decision, 1, Integer::sum);
         }
 
@@ -89,9 +104,13 @@ public final class ErdenUrbanNewFloorStructuralApprovalCatalog {
             throw new IllegalStateException("Erden functional plot count drifted during new-floor audit: "
                     + ExternalUrbanFabricBuilder.plotCount());
         }
-        if (candidatePlacements != EXPECTED_CANDIDATES || PLACEMENTS.size() != EXPECTED_CANDIDATES) {
-            throw new IllegalStateException("Erden AUTHOR_NEW_FLOOR_IN_VOID candidate drift: expected="
-                    + EXPECTED_CANDIDATES + " actual=" + candidatePlacements
+        if (expectedRouteCandidates <= 0) {
+            throw new IllegalStateException("Erden new-floor route truth unexpectedly empty");
+        }
+        if (candidatePlacements != expectedRouteCandidates
+                || PLACEMENTS.size() != expectedRouteCandidates) {
+            throw new IllegalStateException("Erden AUTHOR_NEW_FLOOR_IN_VOID candidate drift: route_truth="
+                    + expectedRouteCandidates + " opportunity=" + candidatePlacements
                     + " unique=" + PLACEMENTS.size());
         }
 
@@ -106,11 +125,11 @@ public final class ErdenUrbanNewFloorStructuralApprovalCatalog {
 
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_NEW_FLOOR_APPROVAL_PASS candidates={} classified={} decisions={} roles={} approved={} needs_authored_access={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true plots=233 housing=77 work=156 revision={}",
+                "LK_ERDEN_NEW_FLOOR_APPROVAL_PASS candidates={} classified={} decisions={} roles={} approved={} needs_authored_access={} route_truth={} source_blocks_cut=0 source_only=true world_reads=false mutations=0 placement_counts_unchanged=true plots=233 housing=77 work=156 revision={}",
                 candidatePlacements, PLACEMENTS.size(), decisions, candidateRoles,
                 decisions.getOrDefault(Decision.APPROVED_FOR_AUTHORING, 0),
                 decisions.getOrDefault(Decision.NEEDS_AUTHORED_ACCESS, 0),
-                CATALOG_REVISION);
+                expectedRouteCandidates, CATALOG_REVISION);
     }
 
     public static Map<Long, PlacementApproval> placements() {
