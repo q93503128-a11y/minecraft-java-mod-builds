@@ -3,6 +3,7 @@ package kr.moonseungjun.arcanecircle.world;
 import kr.moonseungjun.arcanecircle.magic.ArcaneDamage;
 import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
+import kr.moonseungjun.arcanecircle.magic.HighWardSpellService;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import kr.moonseungjun.arcanecircle.magic.SpellMetrics;
 import kr.moonseungjun.arcanecircle.magic.SpellPresentationProfile;
@@ -38,6 +39,7 @@ final class NpcSpellResolver {
         CastTargetSnapshot snapshot = WorldMagicService.consumeNpcSnapshot(caster, spell.id())
                 .orElseGet(() -> WorldMagicService.captureSnapshot(caster, target, spell, range));
         if (!snapshot.validFor(caster)) return false;
+        if (HighWardSpellService.intercepts(caster, spell, snapshot, range)) return false;
         if ("meteor_swarm".equals(spell.id())) {
             return NpcMeteorBarrageService.schedule(level, caster, snapshot, range, power);
         }
