@@ -32,55 +32,16 @@ public final class VillageDefenseSystem {
     }
 
     public static boolean recognizeDefenseMob(Mob mob) {
-        Component name = mob.getCustomName();
-        if (!(mob instanceof IronGolem) || name == null || !MERCENARY_NAME.equals(name.getString())) return false;
-        VillageWorldSystem.markAllowedGameMob(mob);
-        mob.setPersistenceRequired();
-        return true;
+        return VillageMercenarySystem.adoptLegacy(mob);
     }
 
+    /** Compatibility facade: production hiring is owned by VillageMercenarySystem. */
     public static int mercenaryHireCost() {
-        return 140 + VillageProgressionSystem.barracksLevel() * 35;
+        return VillageMercenarySystem.hireCost(VillageMercenarySystem.MercenaryClass.BASTION);
     }
 
     public static String hireMercenary(ServerPlayer player) {
-        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.BARRACKS)) {
-            return "병영이 파괴되어 용병을 고용할 수 없습니다.";
-        }
-        if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 용병을 고용할 수 없습니다.";
-        int cap = mercenaryCapacity(level.getServer());
-        int current = countMercenaries(level);
-        if (current >= cap) return "용병 정원이 가득 찼습니다. 현재 " + current + " / " + cap;
-        int cost = mercenaryHireCost();
-        if (!VillageProgressionSystem.spendCoins(player, cost)) {
-            return "용병 계약에 수호 주화 " + cost + "이 필요합니다. 현재 "
-                    + VillageProgressionSystem.coins(player);
-        }
-
-        IronGolem golem = EntityTypes.IRON_GOLEM.create(level, EntitySpawnReason.EVENT);
-        if (golem == null) {
-            VillageProgressionSystem.addCoins(player, cost, "용병 계약 취소 환불");
-            return "용병을 소환하지 못해 주화를 돌려드렸습니다.";
-        }
-        BlockPos barracks = VillageWorldSystem.buildingCenter(VillageProgressionSystem.Building.BARRACKS);
-        BlockPos spawn = findSpawn(level, barracks);
-        golem.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
-        golem.setCustomName(Component.literal(MERCENARY_NAME));
-        golem.setCustomNameVisible(true);
-        golem.setPlayerCreated(true);
-        golem.setPersistenceRequired();
-        if (VillageCouncilState.roleOf(player.getUUID()).orElse(null) == VillageRole.WARDEN) {
-            golem.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, -1, 0));
-            golem.addEffect(new MobEffectInstance(MobEffects.STRENGTH, -1, 0));
-        }
-        VillageWorldSystem.markAllowedGameMob(golem);
-        if (!level.addFreshEntity(golem)) {
-            VillageWorldSystem.unmarkAllowedGameMob(golem.getUUID());
-            VillageProgressionSystem.addCoins(player, cost, "용병 배치 실패 환불");
-            return "용병 배치에 실패해 주화를 돌려드렸습니다.";
-        }
-        return "용병 고용 완료 | 주화 " + cost + " 사용 | 현재 " + (current + 1) + " / " + cap
-                + " · 사망하지 않는 한 저장과 재접속 후에도 유지됩니다.";
+        return VillageMercenarySystem.hire(player, VillageMercenarySystem.MercenaryClass.BASTION);
     }
 
     public static String status(ServerLevel level) {
@@ -89,7 +50,7 @@ public final class VillageDefenseSystem {
             if (!towers.isEmpty()) towers.append(" | ");
             towers.append(kind.displayName()).append(' ').append(VillageTowerSpecializationSystem.summary(kind));
         }
-        return towers + " | 용병 " + countMercenaries(level) + " / " + mercenaryCapacity(level.getServer());
+        return towers + " | " + VillageMercenarySystem.status(level.getServer());
     }
 
     public static void tick(MinecraftServer server) {

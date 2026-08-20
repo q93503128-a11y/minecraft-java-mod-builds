@@ -224,6 +224,7 @@ public final class VillageActionDetailScreen extends Screen {
                 || action.startsWith("sell_item:")
                 || action.startsWith("forge_enhance:")
                 || action.startsWith("hire_mercenary:")
+                || action.startsWith("retire_mercenary:")
                 || action.startsWith("defense_research:")
                 || action.startsWith("research_skill_unlock:");
     }

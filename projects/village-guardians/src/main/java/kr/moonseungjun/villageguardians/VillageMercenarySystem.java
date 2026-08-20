@@ -26,6 +26,7 @@ import java.util.UUID;
 /** Persistent classed mercenaries backed by world SavedData rather than removed entity tag APIs. */
 public final class VillageMercenarySystem {
     public static final int MAX_LEVEL = 60;
+    private static final String LEGACY_MERCENARY_NAME = "마을 용병";
     private static final Map<UUID, MercenaryClass> CLASSES = new LinkedHashMap<>();
     private static final Map<UUID, Integer> LEVELS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> KILLS = new LinkedHashMap<>();
@@ -69,9 +70,32 @@ public final class VillageMercenarySystem {
         return true;
     }
 
+    /** One-time migration for generic pre-class mercenaries created by the retired barracks path. */
+    public static synchronized boolean adoptLegacy(Mob mob) {
+        if (!(mob instanceof IronGolem golem)) return false;
+        if (CLASSES.containsKey(mob.getUUID())) return recognize(mob);
+        Component name = mob.getCustomName();
+        if (name == null || !LEGACY_MERCENARY_NAME.equals(name.getString())) return false;
+        UUID uuid = mob.getUUID();
+        MercenaryClass kind = MercenaryClass.BASTION;
+        CLASSES.put(uuid, kind);
+        LEVELS.put(uuid, 1);
+        KILLS.put(uuid, 0);
+        mob.setPersistenceRequired();
+        VillageWorldSystem.markAllowedGameMob(mob);
+        applyClassPassives(golem, kind, 1);
+        refreshName(mob);
+        persist();
+        return true;
+    }
+
     public static int hireCost(MercenaryClass kind) {
         if (kind == null) return 0;
-        return 150 + kind.ordinal() * 35 + VillageProgressionSystem.barracksLevel() * 25;
+        int barracks = Math.max(0, VillageProgressionSystem.barracksLevel());
+        int base = 150 + kind.ordinal() * 35;
+        int discount = Math.max(0, barracks - 1) * 10;
+        int floor = 110 + kind.ordinal() * 30;
+        return Math.max(floor, base - discount);
     }
 
     public static synchronized String hire(ServerPlayer player, MercenaryClass kind) {
@@ -81,7 +105,7 @@ public final class VillageMercenarySystem {
         }
         if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 고용할 수 없습니다.";
         int cap = capacity();
-        int current = count(level);
+        int current = rosterCount();
         if (current >= cap) return "용병 정원이 가득 찼습니다. 현재 " + current + " / " + cap;
         int cost = hireCost(kind);
         if (!VillageProgressionSystem.spendCoins(player, cost)) {
@@ -210,7 +234,8 @@ public final class VillageMercenarySystem {
     public static String status(MinecraftServer server) {
         if (server == null) return "용병 상태를 확인할 수 없습니다.";
         ServerLevel level = server.overworld();
-        return "용병 " + count(level) + " / " + capacity()
+        return "용병 명부 " + rosterCount() + " / " + capacity()
+                + " · 현재 로드 " + loadedCount(level)
                 + " · 용병 교리 Lv."
                 + VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.MERCENARY)
                 + " · 적 처치 경험으로 최대 Lv." + MAX_LEVEL + "까지 장기 성장";
@@ -221,13 +246,52 @@ public final class VillageMercenarySystem {
                 + VillageDefenseResearchSystem.mercenaryCapacityBonus();
     }
 
-    private static synchronized int count(ServerLevel level) {
-        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null) return 0;
-        AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96,
-                VillageWorldSystem.BATTLEFIELD_RADIUS);
-        return level.getEntitiesOfClass(IronGolem.class, area,
-                entity -> isMercenary(entity.getUUID())).size();
+    /** Authoritative saved roster size. Hiring capacity must never depend on current chunk/AABB loading. */
+    public static synchronized int rosterCount() {
+        return CLASSES.size();
+    }
+
+    public static synchronized int loadedCount(ServerLevel level) {
+        if (level == null) return 0;
+        int count = 0;
+        for (UUID uuid : CLASSES.keySet()) {
+            var entity = level.getEntity(uuid);
+            if (entity instanceof IronGolem golem && golem.isAlive()) count++;
+        }
+        return count;
+    }
+
+    public static synchronized List<RosterEntry> rosterEntries(MinecraftServer server) {
+        if (server == null) return List.of();
+        ServerLevel level = server.overworld();
+        List<RosterEntry> result = new ArrayList<>();
+        CLASSES.forEach((uuid, kind) -> {
+            var entity = level.getEntity(uuid);
+            boolean loaded = entity instanceof IronGolem golem && golem.isAlive();
+            result.add(new RosterEntry(uuid, kind, LEVELS.getOrDefault(uuid, 1),
+                    KILLS.getOrDefault(uuid, 0), loaded));
+        });
+        return List.copyOf(result);
+    }
+
+    public static synchronized String retire(ServerPlayer player, UUID uuid) {
+        if (player == null || uuid == null) return "퇴역할 용병을 찾을 수 없습니다.";
+        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
+            return "용병 퇴역은 낮 정비 시간에만 가능합니다.";
+        }
+        MercenaryClass kind = CLASSES.get(uuid);
+        if (kind == null) return "이미 명부에서 제외된 용병입니다.";
+        if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 용병을 퇴역시킬 수 없습니다.";
+        var entity = level.getEntity(uuid);
+        if (!(entity instanceof IronGolem mercenary) || !mercenary.isAlive()) {
+            return "해당 용병이 현재 로드되지 않았습니다. 용병이 있는 구역을 불러온 뒤 다시 시도하세요.";
+        }
+        int rank = LEVELS.getOrDefault(uuid, 1);
+        VillageMercenaryPresentationSystem.remove(level, uuid);
+        mercenary.discard();
+        VillageWorldSystem.unmarkAllowedGameMob(uuid);
+        unregister(uuid);
+        return kind.displayName() + " Lv." + rank + " 퇴역 완료 · 고용비는 환불되지 않습니다.";
     }
 
     private static void bastionControl(ServerLevel level, IronGolem mercenary, int rank) {
@@ -424,6 +488,8 @@ public final class VillageMercenarySystem {
         try { consumer.accept(UUID.fromString(value)); }
         catch (IllegalArgumentException ignored) { }
     }
+
+    public record RosterEntry(UUID uuid, MercenaryClass kind, int level, int kills, boolean loaded) {}
 
     public enum MercenaryClass {
         BASTION("bastion", "방벽 수호병", "높은 생존력과 저지력으로 성문과 시설 앞을 버팁니다."),

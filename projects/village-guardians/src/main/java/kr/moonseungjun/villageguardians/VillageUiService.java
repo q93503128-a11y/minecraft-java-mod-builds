@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 public final class VillageUiService {
@@ -215,6 +216,30 @@ public final class VillageUiService {
                         + VillageProgressionSystem.coins(player), actions, labels);
     }
 
+    public static void openMercenaryRoster(ServerPlayer player) {
+        if (!requireManagementAccess(player, VillageProgressionSystem.Building.BARRACKS,
+                "용병 명부는 병영 또는 마을 회관에서만 관리할 수 있습니다.")) return;
+        MinecraftServer server = player.level().getServer();
+        if (server == null) return;
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {
+            int cost = VillageMercenarySystem.hireCost(kind);
+            actions.add("hire_mercenary:" + kind.id());
+            labels.add("고용 · " + kind.displayName() + " · " + cost + "주화|" + kind.description());
+        }
+        for (VillageMercenarySystem.RosterEntry entry : VillageMercenarySystem.rosterEntries(server)) {
+            if (!entry.loaded()) continue;
+            actions.add("retire_mercenary:" + entry.uuid());
+            labels.add("퇴역 · " + entry.kind().displayName() + " Lv." + entry.level()
+                    + "|누적 훈련 진척 " + entry.kills() + " · 환불 없음");
+        }
+        String body = VillageMercenarySystem.status(server)
+                + " · 병영 Lv." + VillageProgressionSystem.barracksLevel()
+                + " · 퇴역은 현재 로드된 용병만 가능";
+        send(player, "mercenary_roster", "용병 명부", body, actions, labels);
+    }
+
     public static void openVoteForAll(MinecraftServer server, String proposerName) {
         String body = proposerName + " 님이 다음 시간 단계 진행을 제안했습니다.\n현재 제 "
                 + VillageCouncilState.currentDay() + "일 " + VillageCouncilState.currentPhase().koreanName() + "입니다.";
@@ -387,6 +412,27 @@ public final class VillageUiService {
             openSkillTree(player);
             return;
         }
+        if (action.startsWith("hire_mercenary:")) {
+            if (!requireManagementAccess(player, VillageProgressionSystem.Building.BARRACKS,
+                    "용병 고용은 병영 또는 마을 회관에서만 가능합니다.")) return;
+            VillageMercenarySystem.MercenaryClass kind = VillageMercenarySystem.MercenaryClass.fromId(action.substring(16));
+            player.sendSystemMessage(Component.literal("§b" + VillageMercenarySystem.hire(player, kind)));
+            openMercenaryRoster(player);
+            return;
+        }
+        if (action.startsWith("retire_mercenary:")) {
+            if (!requireManagementAccess(player, VillageProgressionSystem.Building.BARRACKS,
+                    "용병 퇴역은 병영 또는 마을 회관에서만 가능합니다.")) return;
+            try {
+                UUID uuid = UUID.fromString(action.substring(17));
+                player.sendSystemMessage(Component.literal("§e" + VillageMercenarySystem.retire(player, uuid)));
+            } catch (IllegalArgumentException ignored) {
+                player.sendSystemMessage(Component.literal("§c잘못된 용병 식별자입니다."));
+            }
+            openMercenaryRoster(player);
+            return;
+        }
+
         if (action.startsWith("gear:")) {
             player.sendSystemMessage(Component.literal("§e" + VillageEquipmentShop.purchase(player, action.substring(5))));
             openEquipmentShop(player);
@@ -458,7 +504,7 @@ public final class VillageUiService {
             case "use_skill" -> player.sendSystemMessage(Component.literal("§b" + VillageRpgSystem.useRoleSkill(player, 0)));
             case "use_infirmary" -> actAndReopen(player, () -> VillageProgressionSystem.useInfirmary(player), VillageProgressionSystem.Building.INFIRMARY);
             case "train" -> actAndReopen(player, () -> VillageProgressionSystem.train(player), VillageProgressionSystem.Building.BARRACKS);
-            case "hire_mercenary" -> actAndReopen(player, () -> VillageDefenseSystem.hireMercenary(player), VillageProgressionSystem.Building.BARRACKS);
+            case "open_mercenary_roster", "hire_mercenary" -> openMercenaryRoster(player);
             case "tower_status" -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageDefenseSystem.status(server.overworld())));
                 openTowerControl(player);
@@ -511,8 +557,8 @@ public final class VillageUiService {
             }
             case BARRACKS -> add(actions, labels,
                     "train", "전투 훈련 · XP " + (30 + VillageProgressionSystem.barracksLevel() * 18) + "|3분 재사용 대기시간",
-                    "hire_mercenary", "용병 고용 · 주화 " + VillageDefenseSystem.mercenaryHireCost()
-                            + "|사망 전까지 저장·재접속 후에도 유지");
+                    "open_mercenary_roster", "용병 명부 · " + VillageMercenarySystem.rosterCount() + " / "
+                            + VillageMercenarySystem.capacity() + "|4병과 고용·현재 용병 확인·개별 퇴역");
         }
     }
 

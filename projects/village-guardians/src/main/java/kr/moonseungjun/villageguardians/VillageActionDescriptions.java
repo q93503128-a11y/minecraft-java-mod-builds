@@ -50,6 +50,12 @@ final class VillageActionDescriptions {
         if (action.startsWith("consumable:")) {
             return label + "\n수호 주화로 전투 소모품을 구매합니다. 전투 중 우클릭해 사용하며 종류별 재사용 대기시간이 있습니다.";
         }
+        if (action.startsWith("hire_mercenary:")) {
+            return label + "\n선택한 병과의 영구 용병을 고용합니다. 병영 강화는 고용비를 올리지 않고 단계적으로 할인합니다.";
+        }
+        if (action.startsWith("retire_mercenary:")) {
+            return label + "\n현재 로드된 용병을 명부에서 영구 퇴역시킵니다. 고용비는 환불되지 않습니다.";
+        }
         if (action.startsWith("funding:")) {
             return label + "\n개인 수호 주화를 공동 보급품으로 전환해 시설 수리와 강화에 사용합니다.";
         }
@@ -87,7 +93,7 @@ final class VillageActionDescriptions {
             case "forge_combine" -> label + "\n같은 종류·같은 등급 장비 세 개를 직접 골라 상위 등급 하나로 합성합니다.";
             case "skill_learn" -> label + "\n수호 주화로 연구 단계를 높여 기술 피해와 재사용 효율을 강화합니다.";
             case "train" -> label + "\n병영 레벨에 따라 모든 경험치 획득량이 자동으로 증가합니다.";
-            case "hire_mercenary" -> label + "\n수호 주화로 영구 용병을 고용합니다. 사망 전까지 저장과 재접속 후에도 유지됩니다.";
+            case "open_mercenary_roster", "hire_mercenary" -> "4병과 용병의 고용 비용·현재 명부·레벨을 확인하고 퇴역을 관리합니다.";
             case "tower_status" -> "활성화된 방어탑 종류와 현재 용병 수·정원을 확인합니다.";
             case "wall_status_local" -> "현재 성벽 내구도를 확인합니다. 시설 수리·강화는 회관에서 진행합니다.";
             case "use_infirmary" -> "의무소는 낮 동안 체력을 완전히 회복하고 단계별 전투 버프를 자동 제공합니다.";
@@ -124,7 +130,8 @@ final class VillageActionDescriptions {
                 || action.equals("forge_combine")
                 || action.equals("skill_learn")
                 || action.equals("train")
-                || action.equals("hire_mercenary")
+                || action.startsWith("hire_mercenary:")
+                || action.startsWith("retire_mercenary:")
                 || action.equals("return_village")
                 || action.startsWith("restart_");
     }
@@ -142,6 +149,8 @@ final class VillageActionDescriptions {
         if (action.startsWith("tower_branch:")) return "분기 적용";
         if (action.startsWith("tower_upgrade:")) return "분기 강화";
         if (action.startsWith("funding:")) return "보급 조달";
+        if (action.startsWith("hire_mercenary:")) return "용병 고용";
+        if (action.startsWith("retire_mercenary:")) return "용병 퇴역";
         if (action.startsWith("gear:")) return "장비 구매";
         if (action.startsWith("forge_enhance:")) return "장비 강화";
         if (action.startsWith("test_cast:")) return "시험 시전";
