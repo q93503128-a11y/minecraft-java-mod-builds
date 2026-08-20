@@ -31,6 +31,7 @@ required = {
     "kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class",
     "kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class",
     "kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class",
+    "kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.class",
     "kr/moonseungjun/arcanecircle/magic/FirstCircleSpellSummary.class",
     "kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class",
     "kr/moonseungjun/arcanecircle/magic/HighControlSpellService.class",
@@ -89,8 +90,8 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit("catalog version missing")
     if jar.name != f"arcanecircle-{version}.jar":
         raise SystemExit(f"JAR/version mismatch: {jar.name} vs {version}")
-    if version != "0.12.1-alpha.55":
-        raise SystemExit(f"unexpected alpha.55 package version: {version}")
+    if version != "0.12.1-alpha.56":
+        raise SystemExit(f"unexpected alpha.56 package version: {version}")
     if index.get("implemented_circles") != list(range(1, 10)) or index.get("direct_spells") != 90 or index.get("fusion_spells") != 19:
         raise SystemExit("JAR catalogue is not the full 1-9 circle world")
     if index.get("crafting_progression") is not True:
@@ -110,6 +111,7 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit("alpha.52 109-spell audit metadata missing")
     if set(index.get("copy_source_targeting", [])) != {"simulacrum_target_28","clone_target_32"}:
         raise SystemExit("alpha.52 copy-source targeting metadata mismatch")
+
     expected_first = {
         "magic_missile_locked_salvo","fire_bolt_nonhoming_impact","single_beam_ray_of_frost",
         "reactive_shield","lifecycle_safe_feather_fall","refcounted_real_light",
@@ -117,6 +119,7 @@ with zipfile.ZipFile(jar) as archive:
     }
     if set(index.get("first_circle_deep_audit", [])) != expected_first or index.get("first_circle_npc_parity") is not True:
         raise SystemExit("alpha.53 first-circle metadata mismatch")
+
     expected_second = {
         "timed_three_ray_scorching_salvo","safe_misty_step","persistent_web_field",
         "direct_attack_mirror_images","aggro_breaking_invisibility","line_force_gust",
@@ -124,15 +127,26 @@ with zipfile.ZipFile(jar) as archive:
     }
     if set(index.get("second_circle_deep_audit", [])) != expected_second or index.get("second_circle_npc_parity") is not True:
         raise SystemExit("alpha.54 second-circle metadata mismatch")
+
     expected_third = {
         "falloff_fireball_blast","piercing_lightning_line","lifecycle_real_flight","arcane_tempo_haste",
         "custom_state_dispel_magic","actual_damage_vampiric_drain","persistent_slow_field",
         "energy_only_recharging_ward","casting_break_sleet_storm","safe_long_blink"
     }
-    if set(index.get("third_circle_deep_audit", [])) != expected_third:
-        raise SystemExit(f"alpha.55 third-circle audit metadata mismatch: {sorted(index.get('third_circle_deep_audit', []))}")
-    if index.get("third_circle_npc_parity") is not True:
-        raise SystemExit("alpha.55 third-circle NPC parity metadata missing")
+    if set(index.get("third_circle_deep_audit", [])) != expected_third or index.get("third_circle_npc_parity") is not True:
+        raise SystemExit("alpha.55 third-circle metadata mismatch")
+
+    expected_fourth = {
+        "persistent_fire_wall","five_pulse_ice_storm","combat_greater_invisibility",
+        "two_way_resilient_sphere","companion_dimension_door","physical_only_stoneskin",
+        "decision_scramble_confusion","anti_heal_blight","movement_control_freedom",
+        "forced_flee_phantasmal_killer"
+    }
+    if set(index.get("fourth_circle_deep_audit", [])) != expected_fourth:
+        raise SystemExit(f"alpha.56 fourth-circle audit metadata mismatch: {sorted(index.get('fourth_circle_deep_audit', []))}")
+    if index.get("fourth_circle_npc_parity") is not True:
+        raise SystemExit("alpha.56 fourth-circle NPC parity metadata missing")
+
     notice = archive.read("META-INF/THIRD_PARTY_NOTICES.md").decode("utf-8")
     if "Creative Commons Attribution 4.0" not in notice:
         raise SystemExit("SRD attribution missing from JAR")
@@ -149,6 +163,7 @@ print("alpha52_109_spell_contract_audit=PASS")
 print("alpha53_first_circle_deep_runtime=PASS")
 print("alpha54_second_circle_deep_runtime=PASS")
 print("alpha55_third_circle_deep_runtime=PASS")
-print("alpha55_third_circle_npc_parity=PASS")
-print("alpha55_energy_selective_protection=PASS")
+print("alpha56_fourth_circle_deep_runtime=PASS")
+print("alpha56_fourth_circle_npc_parity=PASS")
+print("alpha56_two_way_sphere_and_physical_stoneskin=PASS")
 print(f"SHA-256: {digest}")
