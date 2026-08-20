@@ -15,13 +15,13 @@ import java.util.Map;
  * <p>This deliberately does not treat the aggregate planned-room counter as a quality target. The
  * counter includes connectivity regions detected in imported source floors, so adding a legitimate
  * facade crop can change it without adding or deleting any physical room. Instead this audit proves
- * that every one of the 233 placements maps to a real retained fragment, entrance, source-floor
- * topology and full-interior plan, then exposes the weighted contribution of every fragment variant.
- * A multi-crop source also receives a counterfactual against its first retained crop so a room-count
- * delta can be explained rather than hidden or padded.</p>
+ * that every one of the 233 placements maps to a real retained fragment, entrance, source-floor or
+ * source-air-authored upper topology and full-interior plan, then exposes the weighted contribution
+ * of every fragment variant. A multi-crop source also receives a counterfactual against its first
+ * retained crop so a room-count delta can be explained rather than hidden or padded.</p>
  */
 public final class ErdenUrbanInteriorTopologyAudit {
-    public static final int AUDIT_REVISION = 1;
+    public static final int AUDIT_REVISION = 2;
     private static final int EXPECTED_BUILDINGS = 233;
 
     private static boolean bootstrapped;
@@ -109,15 +109,16 @@ public final class ErdenUrbanInteriorTopologyAudit {
                 throw new IllegalStateException("Erden planned-room accounting drifted fragment=" + fragmentKey
                         + " catalog=" + plan.plannedRooms() + " regions=" + accountedRooms);
             }
-            if (existingCells <= 0 || existingRegions <= 0 || plan.existingLevels().isEmpty()) {
-                throw new IllegalStateException("Erden retained facade has no usable source upper interior fragment="
-                        + fragmentKey + " cells=" + existingCells + " regions=" + existingRegions);
+            if (accountedRooms <= 0 || existingCells + authoredCells <= 0) {
+                throw new IllegalStateException("Erden retained facade has no usable upper interior fragment="
+                        + fragmentKey + " existing_cells=" + existingCells
+                        + " authored_cells=" + authoredCells + " regions=" + accountedRooms);
             }
             for (ErdenUrbanFullInteriorPlanCatalog.PlannedLevel level : plan.existingLevels()) {
-                if (level.feetY() <= plan.groundFeetY()) {
-                    throw new IllegalStateException("Erden source upper floor is not above ground fragment="
-                            + fragmentKey + " ground=" + plan.groundFeetY() + " floor=" + level.feetY());
-                }
+                verifyUpperLevel(fragmentKey, plan.groundFeetY(), level);
+            }
+            for (ErdenUrbanFullInteriorPlanCatalog.PlannedLevel level : plan.selectedAuthoredLevels()) {
+                verifyUpperLevel(fragmentKey, plan.groundFeetY(), level);
             }
 
             int routeRooms = fragmentRoutes.stream()
@@ -188,10 +189,21 @@ public final class ErdenUrbanInteriorTopologyAudit {
 
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_INTERIOR_TOPOLOGY_PASS revision={} fragments={} buildings={} facade_styles={} weighted_planned_regions={} weighted_existing_regions={} weighted_existing_cells={} weighted_authored_regions={} weighted_authored_cells={} every_style_placed=true region_accounting=true real_entrances=true ground_references=true source_only=true world_reads=false mutations=0 source_blocks_cut=0",
+                "LK_ERDEN_INTERIOR_TOPOLOGY_PASS revision={} fragments={} buildings={} facade_styles={} weighted_planned_regions={} weighted_existing_regions={} weighted_existing_cells={} weighted_authored_regions={} weighted_authored_cells={} every_style_placed=true region_accounting=true real_entrances=true ground_references=true source_or_authored_upper=true source_only=true world_reads=false mutations=0 source_blocks_cut=0",
                 AUDIT_REVISION, snapshots.size(), buildings, ExternalUrbanFabricBuilder.facadeStyleCount(),
                 weightedPlannedRooms, weightedExistingRegions, weightedExistingCells,
                 weightedAuthoredRegions, weightedAuthoredCells);
+    }
+
+    private static void verifyUpperLevel(
+            String fragmentKey,
+            int groundFeetY,
+            ErdenUrbanFullInteriorPlanCatalog.PlannedLevel level) {
+        if (level.feetY() <= groundFeetY || level.usableCells() <= 0 || level.regions().isEmpty()) {
+            throw new IllegalStateException("Erden upper interior level is invalid fragment=" + fragmentKey
+                    + " ground=" + groundFeetY + " floor=" + level.feetY()
+                    + " cells=" + level.usableCells() + " regions=" + level.regions().size());
+        }
     }
 
     private static int retainedEntranceDoorY(ExternalUrbanFabricBuilder.UrbanFragmentSnapshot snapshot) {
