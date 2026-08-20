@@ -42,15 +42,13 @@ public final class ExternalUrbanFabricBuilder {
             "/data/livingkingdoms/structures/external/player_castle_house.schem";
     private static final String TAVERN_INN =
             "/data/livingkingdoms/structures/external/medieval_tavern_inn.schem";
-    private static final String MARKET_HALL =
-            "/data/livingkingdoms/structures/external/medieval_market_hall.schem";
     private static final String HORSE_STABLE =
             "/data/livingkingdoms/structures/external/medieval_horse_stable.schem";
     private static final List<String> URBAN_RESOURCES = List.of(
             HOUSE, CASTLE_HOUSE, MANOR,
-            PLAYER_CASTLE_HOUSE, TAVERN_INN, MARKET_HALL, HORSE_STABLE);
+            PLAYER_CASTLE_HOUSE, TAVERN_INN, HORSE_STABLE);
     private static final Set<String> INDEPENDENT_URBAN_SOURCES = Set.of(
-            PLAYER_CASTLE_HOUSE, TAVERN_INN, MARKET_HALL, HORSE_STABLE);
+            PLAYER_CASTLE_HOUSE, TAVERN_INN, HORSE_STABLE);
 
     private static final int MIN_COMPONENT_BLOCKS = 24;
     private static final int MAX_ROAD_SEARCH = 72;
@@ -446,13 +444,13 @@ public final class ExternalUrbanFabricBuilder {
     private static String chooseResource(UrbanRole role, int hash) {
         return switch (role) {
             case TENEMENT -> selectResource(hash, HOUSE, CASTLE_HOUSE, PLAYER_CASTLE_HOUSE);
-            case SHOP -> selectResource(hash, HOUSE, MARKET_HALL, PLAYER_CASTLE_HOUSE);
+            case SHOP -> selectResource(hash, HOUSE, PLAYER_CASTLE_HOUSE);
             case BAKERY -> selectResource(hash, HOUSE, PLAYER_CASTLE_HOUSE);
             case INN -> selectResource(hash, MANOR, CASTLE_HOUSE, TAVERN_INN);
             case STABLE -> selectResource(hash, MANOR, HORSE_STABLE);
             case GUARD_POST -> selectResource(hash, MANOR, CASTLE_HOUSE, PLAYER_CASTLE_HOUSE);
             case BATHHOUSE -> MANOR;
-            case WAREHOUSE -> selectResource(hash, HOUSE, MARKET_HALL);
+            case WAREHOUSE -> HOUSE;
         };
     }
 
