@@ -11,7 +11,7 @@ public final class SpellArchetype {
             "void_lance");
 
     private static final Set<String> CHANNELS = Set.of(
-            "lightning_arc", "mana_lance", "chain_bolt", "arcane_annihilation", "ray_of_frost");
+            "lightning_arc", "mana_lance", "chain_bolt", "arcane_annihilation");
 
     private static final Set<String> FIELDS = Set.of(
             "frost_nova", "phoenix_field", "blizzard_field", "thunder_prison",
