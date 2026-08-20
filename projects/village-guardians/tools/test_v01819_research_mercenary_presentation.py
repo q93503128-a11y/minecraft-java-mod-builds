@@ -28,7 +28,11 @@ def main():
     assert abs((1 + curve(10, .12, .05)) - 1.85) < 1e-6
     assert abs((1 + curve(5, .10, .04)) - 1.50) < 1e-6
     assert abs((1 + curve(10, .10, .04)) - 1.70) < 1e-6
-    assert (5 + 1) // 2 == 3 and min(5, (10 + 1) // 2) == 5
+    # Capacity must not regress any v0.18.18 research level: 0/1/2/3/3/3, then mastery grows to 5.
+    capacity = lambda level: min(5, min(3, level) + max(0, level - 4) // 2)
+    assert [capacity(level) for level in range(0, 6)] == [0, 1, 2, 3, 3, 3]
+    assert capacity(6) == 4 and capacity(8) == 5 and capacity(10) == 5
+    assert "mercenaryCapacityAt" in research
 
     merc = read("VillageMercenarySystem.java")
     presentation = read("VillageMercenaryPresentationSystem.java")
@@ -36,6 +40,10 @@ def main():
     assert "VillageDefenseResearchSystem.mercenaryHealingMultiplier()" in merc
     assert "VillageMercenaryPresentationSystem.ensure(level, mercenary, kind, rank)" in merc
     assert "VillageMercenaryPresentationSystem.remove" in merc
+    reset_block = merc.split("public static void reset()", 1)[1].split("}", 1)[0]
+    assert "VillageMercenaryPresentationSystem.reset()" not in reset_block
+    init_prefix = merc.split("public static synchronized void initializeServer", 1)[1].split("public static void reset()", 1)[0]
+    assert "VillageMercenaryPresentationSystem.reset();" in init_prefix
     for kind in ("bastion", "striker", "ranger", "medic"):
         assert '"mercenary_presence_" + kind.id()' in presentation
     for milestone in ("safe >= 20", "safe >= 40", "safe >= 60"):
@@ -54,6 +62,10 @@ def main():
     assert "VillageDefenseResearchSystem.towerDurabilityMultiplier()" in turret
     assert "maxHp(upgradedBase)" in turret
     assert "state = new TurretState(id, state.type(), state.pos(), state.level(), maxHp(state), true);" in turret
+    assert "RESEARCH_DURABILITY_MIGRATION" in turret and "migrateLegacyResearchDurability()" in turret
+    assert turret.count("migrateLegacyResearchDurability();") >= 2
+    assert "applyResearchDurabilityUpgrade(ServerLevel level, float previousMultiplier)" in turret
+    assert "healthRatio" in turret and "previousTowerDurability" in research
 
     consumable = read("VillageConsumableSystem.java")
     assert "VillageDefenseResearchSystem.consumableCostMultiplier()" in consumable

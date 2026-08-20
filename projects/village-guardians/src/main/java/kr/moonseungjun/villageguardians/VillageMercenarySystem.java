@@ -39,6 +39,7 @@ public final class VillageMercenarySystem {
     public static synchronized void initializeServer(MinecraftServer server) {
         savedData = server.overworld().getDataStorage().computeIfAbsent(VillageMercenaryData.TYPE);
         snapshotData = server.overworld().getDataStorage().computeIfAbsent(VillageMercenarySnapshotData.TYPE);
+        VillageMercenaryPresentationSystem.reset();
         CLASSES.clear();
         LEVELS.clear();
         KILLS.clear();
@@ -58,7 +59,6 @@ public final class VillageMercenarySystem {
 
     public static void reset() {
         tickCounter = 0;
-        VillageMercenaryPresentationSystem.reset();
     }
 
     public static synchronized boolean recognize(Mob mob) {

@@ -1,6 +1,7 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.EnumMap;
@@ -43,8 +44,12 @@ public final class VillageDefenseResearchSystem {
             return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.coins(player);
         }
         String before = branch.description(current);
+        float previousTowerDurability = branch == Branch.TOWER ? towerDurabilityMultiplier() : 1.0f;
         LEVELS.put(branch, current + 1);
         persist();
+        if (branch == Branch.TOWER && player.level() instanceof ServerLevel level) {
+            VillagePlacedTurretSystem.applyResearchDurabilityUpgrade(level, previousTowerDurability);
+        }
         String after = branch.description(current + 1);
         return branch.displayName() + " Lv." + (current + 1) + " 연구 완료"
                 + "\n이전: " + before + "\n현재: " + after;
@@ -69,8 +74,15 @@ public final class VillageDefenseResearchSystem {
         return 1 + level(Branch.MERCENARY) / 4;
     }
 
+    private static int mercenaryCapacityAt(int researchLevel) {
+        int safe = Math.max(0, Math.min(MAX_LEVEL, researchLevel));
+        int foundation = Math.min(3, safe);
+        int mastery = Math.max(0, safe - 4) / 2;
+        return Math.min(5, foundation + mastery);
+    }
+
     public static int mercenaryCapacityBonus() {
-        return Math.min(5, (level(Branch.MERCENARY) + 1) / 2);
+        return mercenaryCapacityAt(level(Branch.MERCENARY));
     }
 
     public static float towerDamageMultiplier() {
@@ -136,7 +148,7 @@ public final class VillageDefenseResearchSystem {
         public String description(int value) {
             int safe = Math.max(0, Math.min(MAX_LEVEL, value));
             return switch (this) {
-                case MERCENARY -> "정원 +" + Math.min(5, (safe + 1) / 2)
+                case MERCENARY -> "정원 +" + mercenaryCapacityAt(safe)
                         + " · 피해 +" + percent(1.0f + curve(safe, 0.12f, 0.05f)) + "%"
                         + " · 치유 +" + percent(1.0f + curve(safe, 0.04f, 0.025f)) + "%"
                         + " · 처치 훈련 진척 ×" + (1 + safe / 4);

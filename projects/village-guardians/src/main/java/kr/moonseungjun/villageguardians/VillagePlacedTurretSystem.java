@@ -30,6 +30,7 @@ import java.util.UUID;
 /** Player-placed, destructible defense emplacements. Fixed corner towers are no longer the combat ownership model. */
 public final class VillagePlacedTurretSystem {
     private static final String PREFIX = "turret_";
+    private static final String RESEARCH_DURABILITY_MIGRATION = "v01819_turret_durability_migrated";
     private static final Map<Integer, TurretState> TURRETS = new LinkedHashMap<>();
     private static final Map<UUID, PendingPlacement> PENDING = new HashMap<>();
     private static final Map<Integer, Integer> DISABLED_TICKS = new HashMap<>();
@@ -51,6 +52,7 @@ public final class VillagePlacedTurretSystem {
                 if (state != null) TURRETS.put(id, state);
             } catch (NumberFormatException ignored) { }
         });
+        migrateLegacyResearchDurability();
         if (server != null) {
             ServerLevel level = server.overworld();
             VillageTurretPresentationSystem.initialize(level, states());
@@ -75,6 +77,7 @@ public final class VillagePlacedTurretSystem {
                 if (state != null) TURRETS.put(id, state);
             } catch (NumberFormatException ignored) { }
         });
+        migrateLegacyResearchDurability();
         VillageTurretPresentationSystem.initialize(level, states());
         rebuildVisuals(level);
     }
@@ -496,9 +499,52 @@ public final class VillagePlacedTurretSystem {
         return null;
     }
 
+    private static int legacyBaseMaxHp(TurretState state) {
+        return state.type().baseHp() + (state.level() - 1) * 70;
+    }
+
     private static int maxHp(TurretState state) {
-        int base = state.type().baseHp() + (state.level() - 1) * 70;
+        int base = legacyBaseMaxHp(state);
         return Math.max(base, Math.round(base * VillageDefenseResearchSystem.towerDurabilityMultiplier()));
+    }
+
+    /** One-time v0.18.18 save migration: turrets that were full before research durability remain full. */
+    private static synchronized void migrateLegacyResearchDurability() {
+        if (VillageSiegePersistence.getInt(RESEARCH_DURABILITY_MIGRATION, 0) != 0) return;
+        for (TurretState state : new ArrayList<>(TURRETS.values())) {
+            int legacyMax = legacyBaseMaxHp(state);
+            int researchedMax = maxHp(state);
+            int migratedHp = state.hp();
+            if (state.active() && state.hp() >= legacyMax) migratedHp = researchedMax;
+            else migratedHp = Math.min(researchedMax, Math.max(0, state.hp()));
+            if (migratedHp != state.hp()) {
+                TurretState migrated = new TurretState(state.id(), state.type(), state.pos(),
+                        state.level(), migratedHp, state.active() && migratedHp > 0);
+                TURRETS.put(state.id(), migrated);
+                persist(migrated);
+            }
+        }
+        VillageSiegePersistence.putInt(RESEARCH_DURABILITY_MIGRATION, 1);
+    }
+
+    /** Preserve each active turret's health ratio when tower-durability research increases. */
+    public static synchronized void applyResearchDurabilityUpgrade(ServerLevel level, float previousMultiplier) {
+        if (level == null) return;
+        float oldMultiplier = Math.max(1.0f, previousMultiplier);
+        for (TurretState state : new ArrayList<>(TURRETS.values())) {
+            if (!state.active() || state.hp() <= 0) continue;
+            int base = legacyBaseMaxHp(state);
+            int oldMax = Math.max(base, Math.round(base * oldMultiplier));
+            int newMax = maxHp(state);
+            if (newMax <= oldMax) continue;
+            float healthRatio = Math.max(0.0f, Math.min(1.0f, state.hp() / (float) oldMax));
+            int newHp = Math.max(1, Math.min(newMax, Math.round(newMax * healthRatio)));
+            TurretState updated = new TurretState(state.id(), state.type(), state.pos(),
+                    state.level(), newHp, true);
+            TURRETS.put(state.id(), updated);
+            persist(updated);
+            buildVisual(level, updated);
+        }
     }
 
     private static void rebuildVisuals(ServerLevel level) { for (TurretState state : TURRETS.values()) buildVisual(level, state); }
