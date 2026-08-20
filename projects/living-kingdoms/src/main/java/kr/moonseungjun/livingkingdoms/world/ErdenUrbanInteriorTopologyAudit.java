@@ -18,10 +18,13 @@ import java.util.Map;
  * that every one of the 233 placements maps to a real retained fragment, entrance, source-floor or
  * source-air-authored upper topology and full-interior plan, then exposes the weighted contribution
  * of every fragment variant. A multi-crop source also receives a counterfactual against its first
- * retained crop so a room-count delta can be explained rather than hidden or padded.</p>
+ * retained crop so a room-count delta can be explained rather than hidden or padded. Variants from
+ * one source must retain at least half of the best variant's usable upper-interior capacity and may
+ * lose at most one planned connectivity region, preventing visual diversity from hollowing out the
+ * playable interior.</p>
  */
 public final class ErdenUrbanInteriorTopologyAudit {
-    public static final int AUDIT_REVISION = 2;
+    public static final int AUDIT_REVISION = 3;
     private static final int EXPECTED_BUILDINGS = 233;
 
     private static boolean bootstrapped;
@@ -167,6 +170,28 @@ public final class ErdenUrbanInteriorTopologyAudit {
             int actualWeightedRooms = variants.stream()
                     .mapToInt(metric -> metric.placements() * metric.plannedRooms()).sum();
             int firstVariantCounterfactual = totalPlacements * baseline.plannedRooms();
+            int maxUpperCells = variants.stream().mapToInt(FragmentMetrics::upperCells).max().orElseThrow();
+            int minUpperCells = variants.stream().mapToInt(FragmentMetrics::upperCells).min().orElseThrow();
+            int maxPlannedRooms = variants.stream().mapToInt(FragmentMetrics::plannedRooms).max().orElseThrow();
+            int minPlannedRooms = variants.stream().mapToInt(FragmentMetrics::plannedRooms).min().orElseThrow();
+            for (FragmentMetrics variant : variants) {
+                if ((long) variant.upperCells() * 2L < maxUpperCells) {
+                    throw new IllegalStateException("Erden facade variant lost the majority of usable upper interior"
+                            + " resource=" + entry.getKey() + " fragment=" + variant.fragmentKey()
+                            + " cells=" + variant.upperCells() + " best=" + maxUpperCells);
+                }
+                if (variant.plannedRooms() < maxPlannedRooms - 1) {
+                    throw new IllegalStateException("Erden facade variant connectivity collapsed resource="
+                            + entry.getKey() + " fragment=" + variant.fragmentKey()
+                            + " regions=" + variant.plannedRooms() + " best=" + maxPlannedRooms);
+                }
+            }
+            int minUpperCapacityPercent = maxUpperCells <= 0
+                    ? 100 : (int) ((long) minUpperCells * 100L / maxUpperCells);
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_INTERIOR_TOPOLOGY_VARIANT_QUALITY resource={} variants={} max_upper_cells={} min_upper_cells={} min_upper_capacity_percent={} max_planned_regions={} min_planned_regions={} majority_capacity_retained=true region_variance_bounded=true source_only=true world_reads=false mutations=0 source_blocks_cut=0",
+                    entry.getKey(), variants.size(), maxUpperCells, minUpperCells,
+                    minUpperCapacityPercent, maxPlannedRooms, minPlannedRooms);
             LivingKingdoms.LOGGER.info(
                     "LK_ERDEN_INTERIOR_TOPOLOGY_VARIANTS resource={} variants={} total_placements={} placement_counts={} entrance_ground={} existing_levels={} existing_cells={} existing_regions={} planned_rooms_each={} first_variant_counterfactual_rooms={} actual_weighted_rooms={} room_delta={} source_only=true world_reads=false mutations=0 source_blocks_cut=0",
                     entry.getKey(), variants.size(), totalPlacements,
@@ -189,7 +214,7 @@ public final class ErdenUrbanInteriorTopologyAudit {
 
         bootstrapped = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_INTERIOR_TOPOLOGY_PASS revision={} fragments={} buildings={} facade_styles={} weighted_planned_regions={} weighted_existing_regions={} weighted_existing_cells={} weighted_authored_regions={} weighted_authored_cells={} every_style_placed=true region_accounting=true real_entrances=true ground_references=true source_or_authored_upper=true source_only=true world_reads=false mutations=0 source_blocks_cut=0",
+                "LK_ERDEN_INTERIOR_TOPOLOGY_PASS revision={} fragments={} buildings={} facade_styles={} weighted_planned_regions={} weighted_existing_regions={} weighted_existing_cells={} weighted_authored_regions={} weighted_authored_cells={} every_style_placed=true region_accounting=true real_entrances=true ground_references=true source_or_authored_upper=true variant_quality_guard=true source_only=true world_reads=false mutations=0 source_blocks_cut=0",
                 AUDIT_REVISION, snapshots.size(), buildings, ExternalUrbanFabricBuilder.facadeStyleCount(),
                 weightedPlannedRooms, weightedExistingRegions, weightedExistingCells,
                 weightedAuthoredRegions, weightedAuthoredCells);
@@ -238,5 +263,8 @@ public final class ErdenUrbanInteriorTopologyAudit {
             int routeNodes,
             List<String> existingLevels,
             List<String> authoredLevels) {
+        int upperCells() {
+            return existingCells + authoredCells;
+        }
     }
 }
