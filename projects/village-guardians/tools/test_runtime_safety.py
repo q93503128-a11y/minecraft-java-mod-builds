@@ -61,15 +61,17 @@ def main() -> None:
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
     assert "if (!mob.isPersistenceRequired()) event.setCanceled(true)" in guardians
 
-    # HUD collision contract: persistent status never uses vanilla action bar and modal screens own a hotbar-safe viewport.
+    # HUD collision contract: persistent status never uses vanilla action bar and the accepted
+    # low-profile skill strip stays safely above the hotbar while modal screens own a safe viewport.
     assert "ClientboundSetActionBarTextPacket" not in hud_system
     assert "VillageNetwork.sendMainHud(player, text)" in hud_system
     assert "MainHudPayload" in network and '"main_hud"' in network
     assert "VillageMainHudOverlay.accept(payload)" in client_ui
     assert "minecraft.gui.screen() != null" in main_hud
     assert "minecraft.gui.screen() != null" in skill_hud
-    assert "graphics.guiHeight() - 112" in skill_hud
-    assert "abilityCard" in skill_hud
+    assert "graphics.guiHeight() - 98" in skill_hud
+    assert "VillageQuickChatSafeScreen.drawDiamond" in skill_hud
+    assert "abilityCard" not in skill_hud
     assert "bottomReserve" not in safe_area
     assert "bottomPadding" in safe_area and "height - bottomPadding" in safe_area
     assert "RenderGuiLayerEvent.Pre" in hud_suppressor
