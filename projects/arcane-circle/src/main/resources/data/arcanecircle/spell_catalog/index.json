@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.55",
+  "version": "0.12.1-alpha.56",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -71,5 +71,11 @@
     "arcane_tempo_haste","custom_state_dispel_magic","actual_damage_vampiric_drain",
     "persistent_slow_field","energy_only_recharging_ward","casting_break_sleet_storm","safe_long_blink"
   ],
-  "third_circle_npc_parity": true
+  "third_circle_npc_parity": true,
+  "fourth_circle_deep_audit": [
+    "persistent_fire_wall","five_pulse_ice_storm","combat_greater_invisibility",
+    "two_way_resilient_sphere","companion_dimension_door","physical_only_stoneskin",
+    "decision_scramble_confusion","anti_heal_blight","movement_control_freedom","forced_flee_phantasmal_killer"
+  ],
+  "fourth_circle_npc_parity": true
 }
