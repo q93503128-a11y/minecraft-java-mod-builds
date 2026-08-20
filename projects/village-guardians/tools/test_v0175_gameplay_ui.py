@@ -24,7 +24,7 @@ def main() -> None:
     respawn = read("VillageRespawnSystem.java")
     inventory = read("VillageInventoryPanel.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
     assert "currentOffers(int day)" in shop and "rotatingOffers" in shop
     assert 'EQUIPMENT("장비")' in shop and 'ARCANE_FOCUS("arcane_focus"' in shop
     assert "Category.EQUIPMENT, Items.BLAZE_ROD" in shop

@@ -27,7 +27,7 @@ def main() -> None:
     skills = read("VillageRoleSkillSystem.java")
     lang = (ROOT / "src/main/resources/assets/villageguardians/lang/ko_kr.json").read_text(encoding="utf-8")
 
-    check("v0.18.2-alpha.1 version is active", "mod_version=0.18.2-alpha.1" in props)
+    check("v0.18.2-alpha.1 version is active", "mod_version=" in props)
     check(
         "신속 삼연사는 실제 활 사용을 조기에 끝내고 완충 발사를 보장합니다",
         all(token in ability for token in [

@@ -135,15 +135,11 @@ public final class VillageRaidSystem {
 
     public static boolean isRaidEnemy(Entity entity) {
         if (entity == null) return false;
-        if (ACTIVE_ENEMIES.contains(entity.getUUID()) || ACTIVE_ARCHETYPES.containsKey(entity.getUUID())) return true;
-        Component name = entity.getCustomName();
-        if (name == null) return false;
-        String text = name.getString();
-        if (text.contains("웨이브 ")) return true;
-        for (VillageEnemyArchetypeSystem.Archetype archetype : VillageEnemyArchetypeSystem.Archetype.values()) {
-            if (VillageEnemyArchetypeSystem.isBoss(archetype) && text.contains(archetype.displayName())) return true;
-        }
-        return false;
+        UUID uuid = entity.getUUID();
+        return ACTIVE_ENEMIES.contains(uuid)
+                || ACTIVE_ARCHETYPES.containsKey(uuid)
+                || ACTIVE_WAVES.containsKey(uuid)
+                || entity.entityTags().contains(RAID_ENEMY_TAG);
     }
 
     public static boolean isBossEnemy(Mob mob) {
@@ -308,6 +304,7 @@ public final class VillageRaidSystem {
         int bossCount = Math.min(count, VillageWarfrontSystem.bonusBossCount(day, wave, maxWaves));
         int before = ACTIVE_ENEMIES.size();
         PlayerTeam raidTeam = ensureRaidTeam(server);
+        VillageAttackPlanSystem.renderWaveArrival(level, day, wave, count);
 
         for (int index = 0; index < count; index++) {
             boolean boss = index < bossCount;
@@ -587,6 +584,9 @@ public final class VillageRaidSystem {
     private static void releaseEnemy(MinecraftServer server, UUID uuid, Entity entity) {
         ACTIVE_ARCHETYPES.remove(uuid);
         ACTIVE_WAVES.remove(uuid);
+        VillageAttackPlanSystem.forget(uuid);
+        VillageEnemyEliteSystem.forget(uuid);
+        VillageSiegeBossSystem.forget(uuid);
         VillageBossAspectSystem.forget(uuid);
         VillageWorldSystem.unmarkAllowedGameMob(uuid);
         VillageHealthDisplaySystem.forgetEnemy(uuid);
@@ -601,6 +601,9 @@ public final class VillageRaidSystem {
         ACTIVE_ENEMIES.clear();
         ACTIVE_ARCHETYPES.clear();
         ACTIVE_WAVES.clear();
+        VillageAttackPlanSystem.clearRaidState();
+        VillageEnemyEliteSystem.clearRaidState();
+        VillageSiegeBossSystem.clearRaidState();
         VillageBossAspectSystem.reset();
         active = false;
         wave = 0;

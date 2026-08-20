@@ -37,6 +37,19 @@ public final class VillageAttackPlanSystem {
         lastPhase = null;
     }
 
+    /** Clears one finished raid without fabricating a new NIGHT transition on game-over. */
+    public static void clearRaidState() {
+        ACTIVE_FRONTS.clear();
+        JOIN_INDEX.clear();
+        attackTicks = 0;
+        warningTicks = 0;
+        lastPhase = VillageCouncilState.currentPhase();
+    }
+
+    public static void forget(UUID uuid) {
+        if (uuid != null) ACTIVE_FRONTS.remove(uuid);
+    }
+
     public static void onRaidEnemyJoin(ServerLevel level, Mob mob) {
         if (level == null || mob == null || !VillageRaidSystem.isRaidEnemy(mob)
                 || ACTIVE_FRONTS.containsKey(mob.getUUID())) return;
@@ -58,6 +71,10 @@ public final class VillageAttackPlanSystem {
     public static void tick(MinecraftServer server) {
         if (server == null) return;
         VillageTimePhase phase = VillageCouncilState.currentPhase();
+        if (VillageProgressionSystem.isGameOver()) {
+            clearRaidState();
+            return;
+        }
         int day = VillageCouncilState.currentDay();
         if (phase == VillageTimePhase.NIGHT && lastPhase != VillageTimePhase.NIGHT) {
             warningTicks = 240;
@@ -209,16 +226,34 @@ public final class VillageAttackPlanSystem {
         int players = Math.max(1, level.getServer().getPlayerList().getPlayerCount());
         VillageWaveTrait trait = VillageWaveTrait.select(day, 1);
         int count = VillageRaidSystem.previewWaveCount(day, 1, players, trait);
-        Map<Front, Boolean> used = new HashMap<>();
-        for (int i = 0; i < count; i++) used.put(frontForIndex(day, 1, i), true);
+        Map<Front, Boolean> used = usedFronts(day, 1, count);
         AttackPlan plan = preview(day, 1, count);
         for (Front front : used.keySet()) {
             BlockPos pos = safeSpawn(level, spawnOrigin(front, 0));
+            boolean main = front == plan.main();
+            VillageDefenseEffectSystem.raidFrontWarning(level, Vec3.atCenterOf(pos), main);
             level.sendParticles(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5,
-                    front == plan.main() ? 28 : 14, 2.2, 1.0, 2.2, 0.04);
-            level.sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 0.4, pos.getZ() + 0.5,
-                    8, 1.4, 0.25, 1.4, 0.02);
+                    main ? 14 : 7, 1.8, 0.8, 1.8, 0.035);
+            level.sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 0.35, pos.getZ() + 0.5,
+                    main ? 5 : 3, 1.0, 0.18, 1.0, 0.015);
         }
+    }
+
+    /** Strong synchronized arrival marker for every front actually used by the new wave. */
+    public static void renderWaveArrival(ServerLevel level, int day, int wave, int count) {
+        if (level == null || count <= 0) return;
+        Map<Front, Boolean> used = usedFronts(day, wave, count);
+        AttackPlan plan = preview(day, wave, count);
+        for (Front front : used.keySet()) {
+            BlockPos pos = safeSpawn(level, spawnOrigin(front, 0));
+            VillageDefenseEffectSystem.raidFrontArrival(level, Vec3.atCenterOf(pos), front == plan.main());
+        }
+    }
+
+    private static Map<Front, Boolean> usedFronts(int day, int wave, int count) {
+        Map<Front, Boolean> used = new HashMap<>();
+        for (int i = 0; i < Math.max(0, count); i++) used.put(frontForIndex(day, wave, i), true);
+        return used;
     }
 
     private static BlockPos spawnOrigin(Front front, int index) {

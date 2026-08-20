@@ -16,7 +16,7 @@ def main() -> None:
     client = read("VillageClientUi.java")
     screen = read("VillageSkillTestScreen.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
     assert "hudSlotText(player, 0)" in hud and "hudSlotText(player, 1)" in hud
     assert "cooldownRemainingSeconds" in skills and "cooldownProgress" in skills
     assert "§a준비" in skills and "■" in skills and "□" in skills

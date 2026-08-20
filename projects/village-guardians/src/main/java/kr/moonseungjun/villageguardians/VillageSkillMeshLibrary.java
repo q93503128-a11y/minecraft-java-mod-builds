@@ -106,6 +106,8 @@ public final class VillageSkillMeshLibrary {
             case "defense_repair_pulse" -> renderDefenseMaintenance(pose, out, basis, age, progress, 2);
             case "turret_upgrade_burst" -> renderDefenseMaintenance(pose, out, basis, age, progress, 3);
             case "defense_breach_alarm" -> renderDefenseMaintenance(pose, out, basis, age, progress, 4);
+            case "raid_front_warning" -> renderRaidFrontSignal(pose, out, basis, age, progress, state.extra, false);
+            case "raid_front_arrival" -> renderRaidFrontSignal(pose, out, basis, age, progress, state.extra, true);
 
             case "turret_body_ballista" -> renderTurretBody(pose, out, basis, age, state.extra, 0);
             case "turret_body_repeater" -> renderTurretBody(pose, out, basis, age, state.extra, 1);
@@ -141,6 +143,37 @@ public final class VillageSkillMeshLibrary {
             case "boss_bloodbound_impact" -> renderBossZone(pose, out, basis, age, progress, state.extra, 7);
             case "boss_storm_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 8);
             default -> renderFallbackRune(pose, out, basis, age, progress);
+        }
+    }
+
+    private static void renderRaidFrontSignal(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, String extra, boolean arrival) {
+        boolean main = "1".equals(extra);
+        double fade = Math.max(0.0, 1.0 - progress);
+        double pulse = 0.82 + Math.sin(age * 0.18) * 0.12;
+        int primary = main
+                ? rgba(238, 76, 70, (int) ((arrival ? 235 : 190) * Math.max(0.35, fade)))
+                : rgba(222, 146, 72, (int) ((arrival ? 210 : 165) * Math.max(0.35, fade)));
+        int secondary = main
+                ? rgba(255, 174, 105, (int) (150 * Math.max(0.25, fade)))
+                : rgba(242, 202, 126, (int) (125 * Math.max(0.25, fade)));
+        double radius = (main ? 2.7 : 2.05) * pulse + (arrival ? progress * 1.8 : 0.0);
+        ring(pose, out, b, radius, 0.06, arrival ? 0.14 : 0.09, 56, primary, age * 0.035);
+        ring(pose, out, b, radius * 0.67, 0.09, 0.055, 44, secondary, -age * 0.05);
+        int markers = main ? 8 : 5;
+        for (int i = 0; i < markers; i++) {
+            double a = i * TAU / markers + (arrival ? -age * 0.018 : age * 0.025);
+            chevron(pose, out, b, a, radius * 0.88, 0.12 + (arrival ? progress * 0.55 : 0.0),
+                    main ? 0.38 : 0.30, primary);
+        }
+        if (arrival) {
+            verticalPillar(pose, out, b, main ? 0.52 : 0.38, 3.8 * fade + 0.55, primary);
+            ring(pose, out, b, Math.max(0.6, radius * (1.18 + progress * 0.28)), 0.04, 0.05,
+                    48, withAlpha(secondary, Math.max(18, (int) (110 * fade))), -age * 0.025);
+        } else {
+            verticalPillar(pose, out, b, main ? 0.20 : 0.14, main ? 2.1 : 1.55,
+                    withAlpha(primary, main ? 110 : 82));
         }
     }
 

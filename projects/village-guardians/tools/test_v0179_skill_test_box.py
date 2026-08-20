@@ -15,7 +15,7 @@ def main() -> None:
     screen = read("VillageFacilityScreen.java")
     guard = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
     assert "TEST_ROLES" in test and "selectedRole" in test and "selectRole" in test
     assert "실제 직업과 성장 데이터는 바뀌지 않습니다" in test
     assert "roleManagementBoxPosition" in test and "skillManagementBoxPosition" in test

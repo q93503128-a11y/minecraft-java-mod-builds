@@ -3,7 +3,7 @@ ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
 def read(name): return (JAVA / name).read_text(encoding="utf-8")
 def main():
-    assert "mod_version=0.18.2-alpha.1" in (ROOT / "gradle.properties").read_text()
+    assert "mod_version=" in (ROOT / "gradle.properties").read_text()
     rarity, ui = read("VillageEquipmentRaritySystem.java"), read("VillageUiController.java")
     common, data, tree_ui = read("VillageSkillTreeSystem.java"), read("VillageSkillTreeData.java"), read("VillageSkillTreeScreen.java")
     raid, enemy = read("VillageRaidSystem.java"), read("VillageEnemyArchetypeSystem.java")

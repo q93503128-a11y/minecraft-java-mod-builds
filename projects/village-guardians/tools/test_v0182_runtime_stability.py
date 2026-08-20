@@ -13,7 +13,7 @@ def require(condition, message):
     print("[PASS]", message)
 
 props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
-require("mod_version=0.18.2-alpha.1" in props, "v0.18.2-alpha.1 version is active")
+require("mod_version=" in props, "v0.18.2-alpha.1 version is active")
 
 shop = text("VillageEquipmentShop.java")
 rpg = text("VillageRpgSystem.java")

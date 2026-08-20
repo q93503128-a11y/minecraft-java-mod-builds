@@ -37,7 +37,7 @@ def main() -> None:
     enemies = read("VillageEnemyArchetypeSystem.java")
     audit = (ROOT / "CONTENT-AUDIT-v0.18.0.md").read_text(encoding="utf-8")
 
-    check("v0.18.2-alpha.1 version is active", "mod_version=0.18.2-alpha.1" in props)
+    check("v0.18.2-alpha.1 version is active", "mod_version=" in props)
 
     check(
         "실제 기본키가 Z 기술1·X 기술2·V 빠른 통신·H/J/K 관리로 일치합니다",

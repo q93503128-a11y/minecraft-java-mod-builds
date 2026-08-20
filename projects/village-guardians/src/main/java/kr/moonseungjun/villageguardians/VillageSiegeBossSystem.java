@@ -27,12 +27,25 @@ public final class VillageSiegeBossSystem {
     private VillageSiegeBossSystem() {}
 
     public static void reset() {
+        clearRaidState();
+    }
+
+    public static void clearRaidState() {
         ACTIVE.clear();
         PHASE_TWO.clear();
         BREACH_CASTS.clear();
         RITUAL_CASTS.clear();
         DUEL_CASTS.clear();
         ticks = 0;
+    }
+
+    public static void forget(UUID uuid) {
+        if (uuid == null) return;
+        ACTIVE.remove(uuid);
+        PHASE_TWO.remove(uuid);
+        BREACH_CASTS.remove(uuid);
+        RITUAL_CASTS.remove(uuid);
+        DUEL_CASTS.remove(uuid);
     }
 
     public static void tick(MinecraftServer server) {

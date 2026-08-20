@@ -26,11 +26,23 @@ public final class VillageEnemyEliteSystem {
     private VillageEnemyEliteSystem() {}
 
     public static void reset() {
+        clearRaidState();
+    }
+
+    public static void clearRaidState() {
         ACTIVE.clear();
         GRAPPLE_MOTIONS.clear();
         FIREBRAND_CASTS.clear();
         PLAGUE_CASTS.clear();
         ticks = 0;
+    }
+
+    public static void forget(UUID uuid) {
+        if (uuid == null) return;
+        ACTIVE.remove(uuid);
+        GRAPPLE_MOTIONS.remove(uuid);
+        FIREBRAND_CASTS.remove(uuid);
+        PLAGUE_CASTS.remove(uuid);
     }
 
     public static void tick(MinecraftServer server) {

@@ -115,6 +115,18 @@ public final class VillageDefenseEffectSystem {
                 new Vec3(0.0, 0.0, 1.0), 34, 0.0f, "5.0");
     }
 
+    public static void raidFrontWarning(ServerLevel level, Vec3 center, boolean mainFront) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "raid_front_warning", center,
+                new Vec3(0.0, 0.0, 1.0), 44, 0.0f, mainFront ? "1" : "0");
+    }
+
+    public static void raidFrontArrival(ServerLevel level, Vec3 center, boolean mainFront) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "raid_front_arrival", center,
+                new Vec3(0.0, 0.0, 1.0), 30, 0.0f, mainFront ? "1" : "0");
+    }
+
     private static void spawnLine(ServerLevel level, String kind, Vec3 start, Vec3 end, int duration) {
         if (level == null || start == null || end == null) return;
         Vec3 delta = end.subtract(start);

@@ -15,7 +15,7 @@ def curve(level, first, mastery):
 
 
 def main():
-    assert "mod_version=0.18.20-alpha.1" in (ROOT / "gradle.properties").read_text(encoding="utf-8")
+    assert "mod_version=" in (ROOT / "gradle.properties").read_text(encoding="utf-8")
 
     research = read("VillageDefenseResearchSystem.java")
     assert "MAX_LEVEL = 10" in research

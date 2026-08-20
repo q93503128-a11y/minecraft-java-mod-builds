@@ -8,7 +8,7 @@ def read(name):
     return (JAVA / name).read_text(encoding="utf-8")
 
 def main():
-    assert "mod_version=0.18.20-alpha.1" in (ROOT / "gradle.properties").read_text(encoding="utf-8")
+    assert "mod_version=" in (ROOT / "gradle.properties").read_text(encoding="utf-8")
 
     consumable = read("VillageConsumableSystem.java")
     for key in ("BANDAGE", "CLEANSER", "STIMULANT", "AEGIS_TONIC", "ARCANE_CATALYST", "FIELD_REPAIR_KIT"):

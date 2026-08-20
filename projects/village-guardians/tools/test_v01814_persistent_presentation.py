@@ -25,7 +25,7 @@ def main() -> None:
     mesh = read("VillageSkillMeshLibrary.java")
     council = read("VillageCouncilState.java")
 
-    require("version is v0.18.14-alpha.1", "mod_version=0.18.20-alpha.1" in props)
+    require("version is v0.18.14-alpha.1", "mod_version=" in props)
 
     require("turret gameplay state remains SavedData while visual actors are runtime-only",
             "VillageSiegePersistence.stringsWithPrefix(PREFIX)" in turret

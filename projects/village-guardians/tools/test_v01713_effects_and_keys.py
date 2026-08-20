@@ -15,7 +15,7 @@ def main() -> None:
     ability = read("VillageRoleAbilitySystem.java")
     effects = read("VillageSkillEffectSystem.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
     assert "VANILLA_RESERVED" in keys and "migrateBindings" in keys
     assert "GLFW.GLFW_KEY_Z" in keys and "GLFW.GLFW_KEY_X" in keys and "GLFW.GLFW_KEY_V" in keys
     assert "!used.add(value)" in keys

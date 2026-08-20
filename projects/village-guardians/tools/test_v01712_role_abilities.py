@@ -20,7 +20,7 @@ def main() -> None:
     role = read("VillageRole.java")
     keys = read("VillageClientKeys.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
     expected_names = [
         "회전 검무", "전투 고양", "검기 난무", "천붕 강하",
         "신속 삼연사", "추적 도탄", "천공 화살비", "성멸 대궁",

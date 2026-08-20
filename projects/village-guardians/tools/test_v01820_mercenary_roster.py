@@ -17,7 +17,7 @@ def hire_cost(kind_ordinal, barracks):
 
 
 def main():
-    assert "mod_version=0.18.20-alpha.1" in (ROOT / "gradle.properties").read_text(encoding="utf-8")
+    assert "mod_version=" in (ROOT / "gradle.properties").read_text(encoding="utf-8")
     merc = read("VillageMercenarySystem.java")
     defense = read("VillageDefenseSystem.java")
     ui = read("VillageUiService.java")

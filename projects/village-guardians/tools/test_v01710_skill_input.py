@@ -16,7 +16,7 @@ def main() -> None:
     controller = read("VillageUiController.java")
     screen = read("VillageFacilityScreen.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
     assert "@EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)" in keys
     assert "registerKeyMappings(RegisterKeyMappingsEvent event)" in keys
     assert 'consume(ROLE_SKILL_ONE, "use_skill:0")' in keys

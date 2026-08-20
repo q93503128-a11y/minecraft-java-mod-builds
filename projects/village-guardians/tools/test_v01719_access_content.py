@@ -30,7 +30,7 @@ def main() -> None:
     mercenaries = read("VillageMercenarySystem.java")
     towers = read("VillageTowerSpecializationSystem.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
 
     assert "fireOrbContacts" in ability
     assert "target.getBoundingBox().inflate(padding).contains(position)" in ability

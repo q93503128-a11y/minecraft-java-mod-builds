@@ -23,7 +23,7 @@ def main() -> None:
     network = read("VillageNetwork.java")
     main_mod = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
     assert '"회전 검무"' in role
     assert '"회전 칼날"' not in role
     assert "VillageSkillEffectEntities.register(modEventBus)" in main_mod

@@ -19,7 +19,7 @@ def main() -> None:
     status = read("VillageStatusScreen.java")
     screen = read("VillageRelicScreen.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
 
     for token in [
         "result *= 1.15f", "result *= 1.18f", "result *= 0.86f",

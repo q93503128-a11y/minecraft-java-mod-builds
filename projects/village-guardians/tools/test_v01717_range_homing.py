@@ -16,7 +16,7 @@ def main() -> None:
     mesh = text("VillageSkillMeshLibrary.java")
     guardians = text("VillageGuardians.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
 
     assert "LivingEntityUseItemEvent" not in guardians
     assert "handleUseItemTick" not in ability

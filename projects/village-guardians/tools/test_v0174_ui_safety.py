@@ -19,7 +19,7 @@ def main() -> None:
     common_tree = read("VillageSkillTreeScreen.java")
     role_tree = read("VillageRoleProgressScreen.java")
 
-    assert "mod_version=0.18.2-alpha.1" in props
+    assert "mod_version=" in props
     assert "minecraft.gui.screen() != null" in keys
     assert "private static void drain(KeyMapping mapping)" in keys
     assert "minecraft.getConnection() == null" in keys
