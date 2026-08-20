@@ -39,7 +39,7 @@ public final class SimulacrumService {
             return false;
         }
         removeOwned(caster.getUUID(), true);
-        ServerLevel level = caster.serverLevel();
+        ServerLevel level = (ServerLevel) caster.level();
         Entity created = source.getType().create(level, EntitySpawnReason.EVENT);
         if (!(created instanceof Mob copy)) return false;
 
@@ -159,9 +159,10 @@ public final class SimulacrumService {
     }
 
     private static Optional<Mob> lookTarget(ServerPlayer owner, double range) {
+        ServerLevel level = (ServerLevel) owner.level();
         Vec3 eye = owner.getEyePosition();
         Vec3 look = owner.getLookAngle().normalize();
-        return owner.serverLevel().getEntitiesOfClass(Mob.class,
+        return level.getEntitiesOfClass(Mob.class,
                         owner.getBoundingBox().expandTowards(look.scale(range)).inflate(2.5),
                         m -> m.isAlive() && !owner.isAlliedTo(m) && !isArcaneCopy(m.getUUID()))
                 .stream().filter(m -> {
@@ -169,7 +170,7 @@ public final class SimulacrumService {
                     double projection = to.dot(look);
                     return projection >= 0.0 && projection <= range
                             && to.subtract(look.scale(projection)).length() <= Math.max(1.4, m.getBbWidth() + .9);
-                }).min(Comparator.comparingDouble(m -> m.distanceToSqr(owner)));
+                }).min(Comparator.comparingDouble((Mob m) -> m.distanceToSqr(owner)));
     }
 
     private static boolean isArcaneCopy(UUID entityId) {
