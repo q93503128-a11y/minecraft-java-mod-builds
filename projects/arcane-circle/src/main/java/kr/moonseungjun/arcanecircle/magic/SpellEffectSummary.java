@@ -34,23 +34,23 @@ public final class SpellEffectSummary {
             case "lightning_bolt" -> "고정 직선 관통 번개 · 경로의 복수 대상 타격 + 약한 지형 파손";
             case "fly" -> "30초 실제 자유 비행 · 종료 시 기존 비행 권한 복원 + 안전 낙하";
             case "haste" -> "30초 · 마법진 전개 28% 단축 + 주문 재사용 대기 15% 단축 + 이동 가속";
-            case "dispel_magic" -> "조준 대상의 유지형 강화·제어 마법 제거 · 대상이 없으면 자신의 해로운 상태 정화";
+            case "dispel_magic" -> "조준 대상의 1~3써클 유지형 강화·제어 마법 제거 · 대상이 없으면 자신의 해로운 상태 정화";
             case "vampiric_touch" -> "근거리 생명력 흡수 · 실제로 잃게 한 체력/흡수량의 60%만큼 회복";
             case "slow" -> "9초 지속 시간왜곡 영역 · 적 이동·공격 행동을 반복적으로 둔화";
             case "protection_from_energy" -> "30초 · 5중 공명막이 Arcane/화염/투사체성 충격만 45% 경감 · 3.5초마다 재충전";
             case "sleet_storm" -> "9초 진눈깨비 영역 · 반복 냉기 피해·동결·암흑·미끄럼 + 내부 적대 Arcane 시전 방해";
             case "blink" -> "최대 약 20m 안전 공간 도약 · 착지 후 2초 위상 저항";
             // 4C
-            case "wall_of_fire" -> "10초 지속 화염 장벽 · 접촉 적 반복 피해·화상";
-            case "ice_storm" -> "고정한 목표 지점 냉기 폭격 · 광역 피해·동결";
-            case "greater_invisibility" -> "39초 상급 위상 은신 · 4초마다 다음 피격 1회 완전 회피";
-            case "resilient_sphere" -> "20초 구형 역장 · 흡수 + 들어오는 피해 82% 감소";
-            case "dimension_door" -> "더 먼 안전 지점으로 즉시 공간 이동";
-            case "stoneskin" -> "38초 석질 장갑 · 큰 타격의 비율 피해와 고정 피해를 동시에 경감";
-            case "confusion" -> "범위 적의 행동 능력을 둔화·약화시키는 정신 교란";
-            case "blight" -> "강한 단일 생명 피해 · 약화";
-            case "freedom_of_movement" -> "26초 · 둔화·속박·동결·강제 부양을 지속적으로 정화 + 이동 강화";
-            case "phantasmal_killer" -> "단일 대상 정신 피해 · 공포성 약화 상태";
+            case "wall_of_fire" -> "12초 실제 화염 장벽 · 벽을 스치거나 통과하는 적에게 반복 피해·연소";
+            case "ice_storm" -> "고정 목표에 5회 연속 우박 폭격 · 반복 냉기 피해·동결·이동 압박";
+            case "greater_invisibility" -> "39초 전투 투명화 · 공격해도 유지 + 적대 추적 지속 해제 + 직접 공격 45% 빗나감";
+            case "resilient_sphere" -> "20초 완전 격리막 · 안팎의 피해 모두 차단 · 내부 Arcane 시전 불가";
+            case "dimension_door" -> "최대 약 36m 안전 공간 이동 · 3m 내 웅크린 플레이어 1명 동행 가능";
+            case "stoneskin" -> "38초 · 적이 가하는 비마법 물리 공격만 50% 경감 · 화염/Arcane/환경 피해는 통과";
+            case "confusion" -> "12초 범위 정신 교란 · 매초 행동이 정지/배회/오인공격/비틀림 중 하나로 바뀌며 Arcane 시전도 간헐 방해";
+            case "blight" -> "단일 생명 쇠퇴 · 8초 추가 흡수 피해 + 받는 치유량 80% 감소";
+            case "freedom_of_movement" -> "26초 · 둔화/속박/동결/강제부양 지속 정화 + 하위 이동 제어의 Arcane 시전 봉쇄 무시";
+            case "phantasmal_killer" -> "11초 단일 공포 환상 · 대상이 시전자에게서 실제로 도주하며 주기적 정신 피해";
             // 5C
             case "cone_of_cold" -> "넓은 전방 냉기 피해 · 강한 동결";
             case "wall_of_force" -> "12초 지속 역장벽 · 접근/통과 시 지속적으로 밀어냄";
