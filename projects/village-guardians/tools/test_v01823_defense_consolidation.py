@@ -46,12 +46,15 @@ def main() -> None:
     assert "VillagePlacedTurretSystem.capacity()" in defense
 
     # Old clients/actions may arrive, but they can only redirect to current siege command UI.
+    # The old screen-id token may remain in generic facility-layout compatibility classification;
+    # what is forbidden is any callable specialization/detail or coin-mutating branch path.
     assert "action.equals(\"open_tower_control\")" in local
     assert "action.startsWith(\"tower_branch:\")" in local
     assert "VillageSiegeCommandUi.open(player);" in local
     assert "public static void openTowerControl(ServerPlayer player)" in service
     assert "VillageSiegeCommandUi.open(player);" in service
-    assert "tower_detail" not in service
+    assert "public static void openTowerDetail" not in service
+    assert 'send(player, "tower_detail"' not in service
     assert "purchaseBranch" not in service and "upgradeBranch" not in service
 
     # Command entry points must no longer create legacy menu/status surfaces.
