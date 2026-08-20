@@ -100,8 +100,7 @@ public final class FirstCircleSpellService {
                 yield true;
             }
             case "grease" -> {
-                addGrease(level, caster.getUUID(), snapshot.target(),
-                        SpellMetrics.effectRadius("grease", range, 1));
+                addGrease(level, caster.getUUID(), snapshot.target(), SpellMetrics.effectRadius("grease", range, 1));
                 yield true;
             }
             case "sleep" -> sleepNpc(level, caster, designatedTarget, power);
@@ -130,6 +129,15 @@ public final class FirstCircleSpellService {
         if (state != null) restoreSleep(state);
     }
 
+    /** Dispel Magic wakes a sleeping subject without deleting fields that subject happens to own. */
+    public static boolean dispel(LivingEntity subject) {
+        if (subject == null) return false;
+        SleepState state = SLEEP.remove(subject.getUUID());
+        if (state == null) return false;
+        restoreSleep(state);
+        return true;
+    }
+
     public static void clear(LivingEntity owner) {
         if (owner != null) clear(owner.getUUID());
     }
@@ -156,8 +164,6 @@ public final class FirstCircleSpellService {
     private static boolean magicMissile(ServerPlayer player, double power, CastTargetSnapshot snapshot) {
         LivingEntity target = snapshot.targetEntity(player).orElse(null);
         if (!enemy(player, target)) return false;
-        // Three visible darts are one locked salvo mechanically so vanilla hurt-invulnerability
-        // cannot discard the second/third dart in the same impact tick.
         return ArcaneDamage.hurt((ServerLevel) player.level(), player, target, (float) power);
     }
 
@@ -191,8 +197,7 @@ public final class FirstCircleSpellService {
     }
 
     private static boolean grease(ServerPlayer player, double range, CastTargetSnapshot snapshot) {
-        addGrease((ServerLevel) player.level(), player.getUUID(), snapshot.target(),
-                SpellMetrics.effectRadius("grease", range, 1));
+        addGrease((ServerLevel) player.level(), player.getUUID(), snapshot.target(), SpellMetrics.effectRadius("grease", range, 1));
         return true;
     }
 
@@ -202,8 +207,7 @@ public final class FirstCircleSpellService {
         double radius = Math.max(3.5, SpellMetrics.effectRadius("sleep", range, 1));
         int affected = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(center, center).inflate(radius, Math.max(3.5, radius * .65), radius),
-                value -> enemy(player, value))) {
+                new AABB(center, center).inflate(radius, Math.max(3.5, radius * .65), radius), value -> enemy(player, value))) {
             if (!sleepEligible(target, power)) continue;
             putToSleep(level, player.getUUID(), target, power);
             affected++;
@@ -217,11 +221,9 @@ public final class FirstCircleSpellService {
         return true;
     }
 
-    private static boolean thunderwave(ServerPlayer player, double range, double power,
-                                       CastTargetSnapshot snapshot) {
+    private static boolean thunderwave(ServerPlayer player, double range, double power, CastTargetSnapshot snapshot) {
         boolean hit = thunderwave((ServerLevel) player.level(), player, range, power, snapshot);
         DestructiveMagicService.applyPhysicalAftermath(player, "thunderwave", snapshot, range, power);
-        // Empty-space casts still own the visible/physical wave and may break fragile terrain.
         return hit || snapshot.validFor(player);
     }
 
@@ -231,11 +233,9 @@ public final class FirstCircleSpellService {
         Vec3 direction = horizontal(snapshot.launchDirection());
         double length = SpellMetrics.waveLength(range);
         double endRadius = SpellMetrics.waveEndRadius("thunderwave", range, 1);
-        AABB box = new AABB(origin, origin.add(direction.scale(length)))
-                .inflate(endRadius + 1.5, 4.0, endRadius + 1.5);
+        AABB box = new AABB(origin, origin.add(direction.scale(length))).inflate(endRadius + 1.5, 4.0, endRadius + 1.5);
         boolean hit = false;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
-                value -> enemy(caster, value))) {
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(caster, value))) {
             if (!insideWave(origin, direction, target, length, endRadius)) continue;
             if (damage(level, caster, target, power)) hit = true;
             Vec3 away = horizontal(target.position().subtract(origin));
@@ -254,16 +254,13 @@ public final class FirstCircleSpellService {
     }
 
     private static LivingEntity impactTarget(ServerLevel level, LivingEntity caster, Vec3 impact, double radius) {
-        return level.getEntitiesOfClass(LivingEntity.class,
-                        new AABB(impact, impact).inflate(radius), value -> enemy(caster, value)).stream()
-                .min(java.util.Comparator.comparingDouble(value -> value.getEyePosition().distanceToSqr(impact)))
-                .orElse(null);
+        return level.getEntitiesOfClass(LivingEntity.class, new AABB(impact, impact).inflate(radius), value -> enemy(caster, value)).stream()
+                .min(java.util.Comparator.comparingDouble(value -> value.getEyePosition().distanceToSqr(impact))).orElse(null);
     }
 
     private static void addGrease(ServerLevel level, UUID ownerId, Vec3 center, double radius) {
         long now = level.getGameTime();
-        GREASE.add(new GreaseZone(level, ownerId, center,
-                Math.max(2.5, Math.min(8.0, radius)), now + GREASE_TICKS, now));
+        GREASE.add(new GreaseZone(level, ownerId, center, Math.max(2.5, Math.min(8.0, radius)), now + GREASE_TICKS, now));
     }
 
     private static void tickGrease(ServerLevel level, long now) {
@@ -279,8 +276,7 @@ public final class FirstCircleSpellService {
             if (now < zone.nextPulse) continue;
             zone.nextPulse = now + GREASE_PULSE;
             AABB box = new AABB(zone.center, zone.center).inflate(zone.radius, 3.2, zone.radius);
-            for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
-                    value -> enemy(owner, value))) {
+            for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(owner, value))) {
                 double angle = Math.toRadians(Math.floorMod(target.getUUID().hashCode() + (int) now * 23, 360));
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 12, 1, true, false));
                 target.push(Math.cos(angle) * .10, 0.0, Math.sin(angle) * .10);
@@ -296,8 +292,7 @@ public final class FirstCircleSpellService {
     private static void putToSleep(ServerLevel level, UUID ownerId, LivingEntity target, double power) {
         long now = level.getGameTime();
         SleepState previous = SLEEP.get(target.getUUID());
-        boolean wasNoAi = previous != null ? previous.wasNoAi
-                : target instanceof Mob mob && mob.isNoAi();
+        boolean wasNoAi = previous != null ? previous.wasNoAi : target instanceof Mob mob && mob.isNoAi();
         long expires = Math.max(previous == null ? 0L : previous.expiresAt, now + SLEEP_TICKS);
         SleepState state = new SleepState(level, ownerId, target, wasNoAi, expires,
                 Math.min(40.0, Math.max(24.0, 20.0 + Math.max(0.0, power) * 2.0)));
@@ -313,8 +308,7 @@ public final class FirstCircleSpellService {
             LivingEntity target = state.target;
             Entity ownerRaw = level.getEntity(state.ownerId);
             if (!(ownerRaw instanceof LivingEntity owner) || !owner.isAlive()
-                    || !target.isAlive() || target.isRemoved() || target.level() != level
-                    || now >= state.expiresAt) {
+                    || !target.isAlive() || target.isRemoved() || target.level() != level || now >= state.expiresAt) {
                 restoreSleep(state);
                 iterator.remove();
                 continue;
@@ -343,8 +337,7 @@ public final class FirstCircleSpellService {
         if (target instanceof Mob mob) mob.setNoAi(state.wasNoAi);
     }
 
-    private static boolean insideWave(Vec3 origin, Vec3 direction, LivingEntity target,
-                                      double length, double endRadius) {
+    private static boolean insideWave(Vec3 origin, Vec3 direction, LivingEntity target, double length, double endRadius) {
         Vec3 point = target.position().add(0.0, target.getBbHeight() * .45, 0.0);
         Vec3 relative = point.subtract(origin);
         double projection = relative.x * direction.x + relative.z * direction.z;
@@ -366,39 +359,18 @@ public final class FirstCircleSpellService {
     }
 
     private static final class GreaseZone {
-        final ServerLevel level;
-        final UUID ownerId;
-        final Vec3 center;
-        final double radius;
-        final long expiresAt;
-        long nextPulse;
-
+        final ServerLevel level; final UUID ownerId; final Vec3 center; final double radius; final long expiresAt; long nextPulse;
         GreaseZone(ServerLevel level, UUID ownerId, Vec3 center, double radius, long expiresAt, long nextPulse) {
-            this.level = level;
-            this.ownerId = ownerId;
-            this.center = center;
-            this.radius = radius;
-            this.expiresAt = expiresAt;
-            this.nextPulse = nextPulse;
+            this.level = level; this.ownerId = ownerId; this.center = center; this.radius = radius;
+            this.expiresAt = expiresAt; this.nextPulse = nextPulse;
         }
     }
 
     private static final class SleepState {
-        final ServerLevel level;
-        final UUID ownerId;
-        final LivingEntity target;
-        final boolean wasNoAi;
-        final long expiresAt;
-        final double healthLimit;
-
-        SleepState(ServerLevel level, UUID ownerId, LivingEntity target, boolean wasNoAi,
-                   long expiresAt, double healthLimit) {
-            this.level = level;
-            this.ownerId = ownerId;
-            this.target = target;
-            this.wasNoAi = wasNoAi;
-            this.expiresAt = expiresAt;
-            this.healthLimit = healthLimit;
+        final ServerLevel level; final UUID ownerId; final LivingEntity target; final boolean wasNoAi; final long expiresAt; final double healthLimit;
+        SleepState(ServerLevel level, UUID ownerId, LivingEntity target, boolean wasNoAi, long expiresAt, double healthLimit) {
+            this.level = level; this.ownerId = ownerId; this.target = target; this.wasNoAi = wasNoAi;
+            this.expiresAt = expiresAt; this.healthLimit = healthLimit;
         }
     }
 }

@@ -53,6 +53,7 @@ public final class SpellKineticsService {
 
         if (FirstCircleSpellService.handles(cast.spell().id())
                 || SecondCircleSpellService.handles(cast.spell().id())
+                || ThirdCircleSpellService.handles(cast.spell().id())
                 || PlanarSpellService.handles(cast.spell().id()) || SimulacrumService.handles(cast.spell().id())
                 || HighUtilitySpellService.handles(cast.spell().id()) || HighWardSpellService.handles(cast.spell().id())
                 || HighControlSpellService.handles(cast.spell().id()) || SpellGameplayService.handles(cast.spell().id())) {
@@ -134,19 +135,22 @@ public final class SpellKineticsService {
 
         boolean firstCircleOwned = FirstCircleSpellService.handles(spellId);
         boolean secondCircleOwned = !firstCircleOwned && SecondCircleSpellService.handles(spellId);
-        boolean planarOwned = !firstCircleOwned && !secondCircleOwned && PlanarSpellService.handles(spellId);
-        boolean simulacrumOwned = !firstCircleOwned && !secondCircleOwned && !planarOwned && SimulacrumService.handles(spellId);
-        boolean utilityOwned = !firstCircleOwned && !secondCircleOwned && !planarOwned && !simulacrumOwned
+        boolean thirdCircleOwned = !firstCircleOwned && !secondCircleOwned && ThirdCircleSpellService.handles(spellId);
+        boolean planarOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && PlanarSpellService.handles(spellId);
+        boolean simulacrumOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !planarOwned
+                && SimulacrumService.handles(spellId);
+        boolean utilityOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !planarOwned && !simulacrumOwned
                 && HighUtilitySpellService.handles(spellId);
-        boolean wardOwned = !firstCircleOwned && !secondCircleOwned && !planarOwned && !simulacrumOwned && !utilityOwned
-                && HighWardSpellService.handles(spellId);
-        boolean controlOwned = !firstCircleOwned && !secondCircleOwned && !planarOwned && !simulacrumOwned && !utilityOwned
-                && !wardOwned && HighControlSpellService.handles(spellId);
-        boolean gameplayOwned = !firstCircleOwned && !secondCircleOwned && !planarOwned && !simulacrumOwned && !utilityOwned
-                && !wardOwned && !controlOwned && SpellGameplayService.handles(spellId);
+        boolean wardOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !planarOwned && !simulacrumOwned
+                && !utilityOwned && HighWardSpellService.handles(spellId);
+        boolean controlOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !planarOwned && !simulacrumOwned
+                && !utilityOwned && !wardOwned && HighControlSpellService.handles(spellId);
+        boolean gameplayOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !planarOwned && !simulacrumOwned
+                && !utilityOwned && !wardOwned && !controlOwned && SpellGameplayService.handles(spellId);
         boolean executed = targetSnapshot.executeLocked(player, () -> firstCircleOwned
                 ? FirstCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : secondCircleOwned ? SecondCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
+                : thirdCircleOwned ? ThirdCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : planarOwned ? PlanarSpellService.execute(player, spellId)
                 : simulacrumOwned ? SimulacrumService.execute(player, targetSnapshot)
                 : utilityOwned ? HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)
@@ -154,8 +158,8 @@ public final class SpellKineticsService {
                 : controlOwned ? HighControlSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : gameplayOwned ? SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)
                 : SpellCastingService.executeResolved(player, spellId, range, power));
-        if (executed && !firstCircleOwned && !secondCircleOwned && !planarOwned && !simulacrumOwned && !utilityOwned
-                && !wardOwned && !controlOwned && !gameplayOwned) {
+        if (executed && !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !planarOwned
+                && !simulacrumOwned && !utilityOwned && !wardOwned && !controlOwned && !gameplayOwned) {
             DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
         }
         return executed;

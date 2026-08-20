@@ -42,9 +42,7 @@ public final class ArcaneFieldService {
     private ArcaneFieldService() {}
 
     public static boolean handles(String spellId) {
-        return "antimagic_field".equals(spellId)
-                || "time_stop".equals(spellId)
-                || "wish".equals(spellId);
+        return "antimagic_field".equals(spellId) || "time_stop".equals(spellId) || "wish".equals(spellId);
     }
 
     public static boolean executeSpecial(ServerPlayer player, String spellId, double range,
@@ -61,6 +59,7 @@ public final class ArcaneFieldService {
         if (caster == null || !caster.isAlive()) return false;
         if (SpellGameplayService.blocksCasting(caster)) return true;
         if (SecondCircleSpellService.blocksCasting(caster)) return true;
+        if (ThirdCircleSpellService.blocksCasting(caster)) return true;
         if (HighControlSpellService.blocksCasting(caster)) return true;
         for (AntimagicField field : ANTIMAGIC.values()) {
             if (!field.active() || field.level() != caster.level()) continue;
@@ -90,8 +89,6 @@ public final class ArcaneFieldService {
     public static void clear(UUID ownerId) {
         ANTIMAGIC.remove(ownerId);
         TimeField removed = TIME_FIELDS.remove(ownerId);
-        // Recompute all remaining fields immediately. Restoring the whole level here gave a second
-        // active Time Stop a one-tick hole whenever another owner left or changed dimension.
         if (removed != null) applyTimeStop(removed.level());
     }
 
@@ -177,8 +174,10 @@ public final class ArcaneFieldService {
         for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, box,
                 value -> value.isAlive() && !value.isRemoved()
                         && owner.position().distanceToSqr(value.position()) <= radius * radius)) {
+            FirstCircleSpellService.dispel(entity);
             SpellGameplayService.clear(entity);
             SecondCircleSpellService.clear(entity);
+            ThirdCircleSpellService.clear(entity);
             HighWardSpellService.clear(entity);
             HighControlSpellService.clear(entity);
             suppressMagicEffects(entity);
@@ -226,7 +225,6 @@ public final class ArcaneFieldService {
                 suppressPlayerCasting(target);
             }
 
-            // Projectiles, dropped items and other visible non-living motion stop in place too.
             for (Entity entity : level.getEntitiesOfClass(Entity.class, box,
                     value -> !value.isRemoved() && !(value instanceof LivingEntity)
                             && field.center().distanceToSqr(value.position()) <= radius * radius)) {
@@ -300,16 +298,6 @@ public final class ArcaneFieldService {
         player.removeEffect(MobEffects.HUNGER);
     }
 
-    private static void restoreFrozenLevel(ServerLevel level) {
-        Iterator<Map.Entry<UUID, FrozenMob>> iterator = FROZEN_MOBS.entrySet().iterator();
-        while (iterator.hasNext()) {
-            FrozenMob frozen = iterator.next().getValue();
-            if (frozen.level() != level) continue;
-            restore(frozen);
-            iterator.remove();
-        }
-    }
-
     private static void restore(FrozenMob frozen) {
         Entity raw = frozen.level().getEntity(frozen.entityId());
         if (raw instanceof Mob mob && mob.isAlive() && !mob.isRemoved()) mob.setNoAi(frozen.wasNoAi());
@@ -322,18 +310,14 @@ public final class ArcaneFieldService {
         raw.setDeltaMovement(frozen.velocity());
     }
 
-    private static String one(double value) {
-        return String.format(java.util.Locale.ROOT, "%.1f", value);
-    }
+    private static String one(double value) { return String.format(java.util.Locale.ROOT, "%.1f", value); }
 
     private record AntimagicField(ServerLevel level, UUID ownerId, double radius, long expiresAt) {
         boolean active() { return level.getGameTime() < expiresAt; }
     }
-
     private record TimeField(ServerLevel level, UUID ownerId, Vec3 center, double radius, long expiresAt) {
         boolean active() { return level.getGameTime() < expiresAt; }
     }
-
     private record FrozenMob(ServerLevel level, UUID entityId, boolean wasNoAi) {}
     private record FrozenEntity(ServerLevel level, UUID entityId, Vec3 velocity, boolean wasNoGravity) {}
 }

@@ -1,4 +1,4 @@
-# Arcane Circle — 109 Spell Audit Queue (alpha.54)
+# Arcane Circle — 109 Spell Audit Queue (alpha.55)
 
 이 문서는 주문을 묶어서 '대충 동작'으로 보지 않고 하나씩 추적하기 위한 정본 감사 큐다.
 
@@ -10,39 +10,31 @@
 - **V — Visual/gameplay contract**: 보이는 위치·범위·타이밍과 실제 판정이 일치하는지 확인한다.
 - **D — Deep behavior**: 지속상태, 해제, 사망/로그아웃/차원이동, NPC parity까지 수동 코드검사한다.
 
-alpha.52에서 S/R 전 109종을 강제하고 복제계 타깃 오류를 고쳤다. alpha.53부터 T/V/D를 실제 주문 순서대로 닫는다.
+alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 순서대로 닫고 있다.
 
 ## alpha.53 — 1써클 deep pass
 
-1써클 10종은 전용 `FirstCircleSpellService`를 통해 오래된 generic effect보다 먼저 실행된다.
-
-- `magic_missile`: 시전 순간 포착한 생명체를 유지하는 3발 합산 salvo. 일반 비유도 탄환과 분리.
-- `fire_bolt`: 보이는 착탄점에 맞는 비유도 화염탄. 피해 후 화상.
-- `ray_of_frost`: generic CHANNEL에서 제거. 단발 beam + 동결/둔화.
-- `shield`: 기존 2장 반응 방벽 런타임을 정본으로 유지.
-- `feather_fall`: 시전 즉시 누적 fall distance를 지우고 6초 안정 낙하.
-- `light`: 실제 LightBlock 5점을 따라다니게 유지. 중첩 광원은 refcount로 공유.
-- `grease`: 8초 유지형 slip field.
-- `sleep`: weak-only 체급 제한 + 최대 7초 수면 + wake-on-hit + 기존 noAI 상태 복원.
-- `thunderwave`: 고정한 전방 부채꼴 판정과 넉백, 같은 snapshot의 취약 지형 파손.
-- `mage_armor`: 4장 재생 플레이트의 소모/재충전 피해 분산.
-- NPC 마법사도 1써클 10종을 generic direct damage로 처리하지 않는다.
+`FirstCircleSpellService`가 10종을 전용 소유한다. Magic Missile locked salvo, Fire Bolt 비유도 착탄, 단발 Ray of Frost, 반응형 Shield, 안전 Feather Fall, refcount 실제 Light, Grease slip field, weak-only/wake-on-hit Sleep, 물리 Thunderwave, 재생 Mage Armor를 유지한다. NPC도 같은 1써클 전용 경로를 사용한다.
 
 ## alpha.54 — 2써클 deep pass
 
-2써클 10종은 전용 `SecondCircleSpellService`가 1써클 다음 우선순위로 소유한다. 플레이어와 NPC가 같은 역할 계약을 사용한다.
+`SecondCircleSpellService`가 10종을 전용 소유한다. Scorching Ray timed 3-hit, 안전 Misty Step, Web 지속장, direct-attack Mirror/Invisibility/Blur, 실제 Gust, 체급 제한 Hold Person, 단일 중심 Shatter, rise→safe descent Levitate를 유지한다. NPC도 같은 역할 경로를 사용한다.
 
-- `scorching_ray`: 0.5초 간격 3회 실제 타격으로 vanilla hurt interval을 피하며 3광선 의미를 살림.
-- `misty_step`: 가까운 안전 착지점을 서버에서 탐색하는 실제 단거리 이동. NPC도 전투 재배치에 사용.
-- `web`: 11초 유지 이동 억제 영역.
-- `mirror_image`: 환영 3체는 **hostile direct attack**만 대신 받고 낙하·화염·익사 같은 환경 피해는 막지 않음.
-- `invisibility`: 주변 적대 추적을 끊고 첫 hostile direct attack 1회를 흘린 뒤 해제.
-- `gust_of_wind`: 전방 직선 실제 넉백 + 거미줄/불/횃불 등 바람에 취약한 오브젝트 제거.
-- `hold_person`: 일반 체급에만 9초 속박. 대형/보스급은 2써클로 봉쇄하지 못하며 Arcane 시전도 함께 끊김.
-- `shatter`: 피해와 취약 블록 파괴가 동일한 고정 목표 중심을 공유.
-- `blur`: 모든 피해 감쇄를 폐기하고 18초 동안 hostile direct attack만 **35% miss** 판정.
-- `levitate`: 실제 상승 구간 뒤 느린 하강, 종료 후 안전 낙하 보호.
-- logout/respawn/dimension/antimagic/server stop에서 상태를 정리하며 NPC도 동일 전용 경로를 사용한다.
+## alpha.55 — 3써클 deep pass
+
+`ThirdCircleSpellService`가 3써클 10종을 전용 소유하고 NPC도 generic damage보다 먼저 같은 역할 경로를 사용한다.
+
+- `fireball`: 고정 snapshot 착탄점에 중심부가 더 강한 falloff 폭발 + 화상 + 같은 중심의 실제 지형 파괴.
+- `lightning_bolt`: 고정 직선의 복수 대상 관통 타격 + 같은 경로의 약한 지형 파손.
+- `fly`: 플레이어는 실제 mayfly/flying 권한을 얻고 기존 권한을 저장·복원한다. NPC도 no-gravity 공중 전투를 사용하며 종료 시 중력을 복원한다.
+- `haste`: 기존 정본인 Arcane 시전시간 28% 단축 / 쿨다운 15% 단축을 전용 3써클 경로에서 유지한다.
+- `dispel_magic`: 단순 포션 삭제가 아니라 Sleep/2C/3C/지속 강화·제어·고써클 ward/control 등 커스텀 유지 상태를 실제 해제한다.
+- `vampiric_touch`: 표기 피해가 아니라 대상이 실제로 잃은 체력+흡수량을 측정해 그 60%만 actual-damage drain으로 회복한다.
+- `slow`: 9초 persistent tempo field. 이동뿐 아니라 공격/행동 속도 계열을 반복 압박한다.
+- `protection_from_energy`: 일반 피해 감소가 아니다. Arcane/화염/투사체성 충격만 45% 줄이는 **energy-only** 5중 공명막이며 3.5초마다 재충전한다.
+- `sleet_storm`: 냉기·동결·암흑·미끄럼 압박과 함께 영역 안 적대 마도사의 Arcane 시전을 끊는 **casting denial** 지대다.
+- `blink`: Misty Step보다 먼 최대 약 20m endpoint-safe 공간 도약 + 착지 직후 2초 위상 저항.
+- logout/respawn/dimension/antimagic/server stop에서 3써클 상태를 정리한다.
 
 ## Direct spells — deep audit order
 
@@ -68,16 +60,16 @@ alpha.52에서 S/R 전 109종을 강제하고 복제계 타깃 오류를 고쳤�
 | 2 | `shatter` | PASS | PASS | alpha.54 PASS · single impact center |
 | 2 | `blur` | PASS | PASS | alpha.54 PASS · 35% direct attack miss |
 | 2 | `levitate` | PASS | PASS | alpha.54 PASS · rise + safe descent |
-| 3 | `fireball` | PASS | PASS | next |
-| 3 | `lightning_bolt` | PASS | PASS | next |
-| 3 | `fly` | PASS | PASS | next |
-| 3 | `haste` | PASS | PASS | next |
-| 3 | `dispel_magic` | PASS | PASS | next |
-| 3 | `vampiric_touch` | PASS | PASS | next |
-| 3 | `slow` | PASS | PASS | next |
-| 3 | `protection_from_energy` | PASS | PASS | next |
-| 3 | `sleet_storm` | PASS | PASS | next |
-| 3 | `blink` | PASS | PASS | next |
+| 3 | `fireball` | PASS | PASS | alpha.55 PASS · falloff blast + terrain |
+| 3 | `lightning_bolt` | PASS | PASS | alpha.55 PASS · penetrating line + terrain |
+| 3 | `fly` | PASS | PASS | alpha.55 PASS · lifecycle-safe real flight |
+| 3 | `haste` | PASS | PASS | alpha.55 PASS · Arcane tempo accelerator |
+| 3 | `dispel_magic` | PASS | PASS | alpha.55 PASS · custom-state dispel |
+| 3 | `vampiric_touch` | PASS | PASS | alpha.55 PASS · actual-damage drain |
+| 3 | `slow` | PASS | PASS | alpha.55 PASS · persistent tempo field |
+| 3 | `protection_from_energy` | PASS | PASS | alpha.55 PASS · energy-only 5-charge ward |
+| 3 | `sleet_storm` | PASS | PASS | alpha.55 PASS · cold field + casting denial |
+| 3 | `blink` | PASS | PASS | alpha.55 PASS · safe long jump + phase guard |
 | 4 | `wall_of_fire` | PASS | PASS | next |
 | 4 | `ice_storm` | PASS | PASS | next |
 | 4 | `greater_invisibility` | PASS | PASS | next |
@@ -165,4 +157,4 @@ alpha.52에서 S/R 전 109종을 강제하고 복제계 타깃 오류를 고쳤�
 
 ## CI enforcement
 
-`tools/test_current_source.py`는 109종 카탈로그/효과 요약/실행 경로 일치, 1·2써클 전용 권한 순서, NPC parity, direct-attack illusion 계약, lifecycle/antimagic cleanup, 그리고 alpha.49~53의 기존 고써클·1써클 계약 회귀를 실패 조건으로 둔다.
+`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1·2·3써클 전용 권한 순서, NPC parity, 3써클 energy-only 보호막/실제 피해 흡혈/Sleet casting denial/lifecycle cleanup, 그리고 alpha.49~54 고써클·하위써클 계약 회귀를 실패 조건으로 둔다.

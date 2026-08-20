@@ -30,16 +30,16 @@ public final class SpellEffectSummary {
             case "blur" -> "18초 · 적대 직접 공격이 35% 확률로 빗나감 · 환경 피해에는 적용되지 않음";
             case "levitate" -> "약 3초 실제 상승 후 부드러운 하강 · 종료 시 추가 안전 낙하";
             // 3C
-            case "fireball" -> "착탄 범위 화염 피해·화상 · 주변 지형 일부 파괴";
-            case "lightning_bolt" -> "직선 관통 번개 피해 · 경로의 약한 블록만 파손";
-            case "fly" -> "30초 동안 자유 비행 허용 · 종료 시 안전하게 비행 해제";
+            case "fireball" -> "고정 착탄점 화염 폭발 · 중심부 강한 피해/거리 감쇠 + 화상 + 주변 지형 일부 파괴";
+            case "lightning_bolt" -> "고정 직선 관통 번개 · 경로의 복수 대상 타격 + 약한 지형 파손";
+            case "fly" -> "30초 실제 자유 비행 · 종료 시 기존 비행 권한 복원 + 안전 낙하";
             case "haste" -> "30초 · 마법진 전개 28% 단축 + 주문 재사용 대기 15% 단축 + 이동 가속";
-            case "dispel_magic" -> "조준 대상의 마법성 강화 상태 또는 자신의 해로운 효과 해제";
-            case "vampiric_touch" -> "단일 피해 · 준 피해 일부를 체력으로 흡수";
-            case "slow" -> "9초 지속 영역 · 적 이동·전투 능력을 반복 감소";
-            case "protection_from_energy" -> "30초 · 5중 공명막이 강한 충격을 흡수하고 전투 중 재충전";
-            case "sleet_storm" -> "9초 지속 냉기 폭풍 · 반복 피해·동결·둔화, 중독 없음";
-            case "blink" -> "조준 방향의 안전 지점으로 공간 도약";
+            case "dispel_magic" -> "조준 대상의 유지형 강화·제어 마법 제거 · 대상이 없으면 자신의 해로운 상태 정화";
+            case "vampiric_touch" -> "근거리 생명력 흡수 · 실제로 잃게 한 체력/흡수량의 60%만큼 회복";
+            case "slow" -> "9초 지속 시간왜곡 영역 · 적 이동·공격 행동을 반복적으로 둔화";
+            case "protection_from_energy" -> "30초 · 5중 공명막이 Arcane/화염/투사체성 충격만 45% 경감 · 3.5초마다 재충전";
+            case "sleet_storm" -> "9초 진눈깨비 영역 · 반복 냉기 피해·동결·암흑·미끄럼 + 내부 적대 Arcane 시전 방해";
+            case "blink" -> "최대 약 20m 안전 공간 도약 · 착지 후 2초 위상 저항";
             // 4C
             case "wall_of_fire" -> "10초 지속 화염 장벽 · 접촉 적 반복 피해·화상";
             case "ice_storm" -> "고정한 목표 지점 냉기 폭격 · 광역 피해·동결";

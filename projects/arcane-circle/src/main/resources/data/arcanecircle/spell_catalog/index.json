@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.54",
+  "version": "0.12.1-alpha.55",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -55,29 +55,21 @@
   "spell_contract_audit": "109_explicit_summaries_and_runtime_routes",
   "copy_source_targeting": ["simulacrum_target_28","clone_target_32"],
   "first_circle_deep_audit": [
-    "magic_missile_locked_salvo",
-    "fire_bolt_nonhoming_impact",
-    "single_beam_ray_of_frost",
-    "reactive_shield",
-    "lifecycle_safe_feather_fall",
-    "refcounted_real_light",
-    "persistent_grease_slip",
-    "weak_target_damage_wake_sleep",
-    "physical_thunderwave",
-    "regenerating_mage_armor"
+    "magic_missile_locked_salvo","fire_bolt_nonhoming_impact","single_beam_ray_of_frost",
+    "reactive_shield","lifecycle_safe_feather_fall","refcounted_real_light",
+    "persistent_grease_slip","weak_target_damage_wake_sleep","physical_thunderwave","regenerating_mage_armor"
   ],
   "first_circle_npc_parity": true,
   "second_circle_deep_audit": [
-    "timed_three_ray_scorching_salvo",
-    "safe_misty_step",
-    "persistent_web_field",
-    "direct_attack_mirror_images",
-    "aggro_breaking_invisibility",
-    "line_force_gust",
-    "restricted_hold_person",
-    "single_center_shatter",
-    "direct_attack_blur",
-    "rise_safe_descent_levitate"
+    "timed_three_ray_scorching_salvo","safe_misty_step","persistent_web_field",
+    "direct_attack_mirror_images","aggro_breaking_invisibility","line_force_gust",
+    "restricted_hold_person","single_center_shatter","direct_attack_blur","rise_safe_descent_levitate"
   ],
-  "second_circle_npc_parity": true
+  "second_circle_npc_parity": true,
+  "third_circle_deep_audit": [
+    "falloff_fireball_blast","piercing_lightning_line","lifecycle_real_flight",
+    "arcane_tempo_haste","custom_state_dispel_magic","actual_damage_vampiric_drain",
+    "persistent_slow_field","energy_only_recharging_ward","casting_break_sleet_storm","safe_long_blink"
+  ],
+  "third_circle_npc_parity": true
 }

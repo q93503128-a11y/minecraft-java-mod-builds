@@ -30,6 +30,7 @@ required = {
     "kr/moonseungjun/arcanecircle/magic/ArcaneLightService.class",
     "kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class",
     "kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class",
+    "kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class",
     "kr/moonseungjun/arcanecircle/magic/FirstCircleSpellSummary.class",
     "kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class",
     "kr/moonseungjun/arcanecircle/magic/HighControlSpellService.class",
@@ -88,8 +89,8 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit("catalog version missing")
     if jar.name != f"arcanecircle-{version}.jar":
         raise SystemExit(f"JAR/version mismatch: {jar.name} vs {version}")
-    if version != "0.12.1-alpha.54":
-        raise SystemExit(f"unexpected alpha.54 package version: {version}")
+    if version != "0.12.1-alpha.55":
+        raise SystemExit(f"unexpected alpha.55 package version: {version}")
     if index.get("implemented_circles") != list(range(1, 10)) or index.get("direct_spells") != 90 or index.get("fusion_spells") != 19:
         raise SystemExit("JAR catalogue is not the full 1-9 circle world")
     if index.get("crafting_progression") is not True:
@@ -109,28 +110,29 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit("alpha.52 109-spell audit metadata missing")
     if set(index.get("copy_source_targeting", [])) != {"simulacrum_target_28","clone_target_32"}:
         raise SystemExit("alpha.52 copy-source targeting metadata mismatch")
-    first = set(index.get("first_circle_deep_audit", []))
     expected_first = {
         "magic_missile_locked_salvo","fire_bolt_nonhoming_impact","single_beam_ray_of_frost",
         "reactive_shield","lifecycle_safe_feather_fall","refcounted_real_light",
-        "persistent_grease_slip","weak_target_damage_wake_sleep","physical_thunderwave",
-        "regenerating_mage_armor"
+        "persistent_grease_slip","weak_target_damage_wake_sleep","physical_thunderwave","regenerating_mage_armor"
     }
-    if first != expected_first:
-        raise SystemExit(f"alpha.53 first-circle audit metadata mismatch: {sorted(first)}")
-    if index.get("first_circle_npc_parity") is not True:
-        raise SystemExit("alpha.53 first-circle NPC parity metadata missing")
-    second = set(index.get("second_circle_deep_audit", []))
+    if set(index.get("first_circle_deep_audit", [])) != expected_first or index.get("first_circle_npc_parity") is not True:
+        raise SystemExit("alpha.53 first-circle metadata mismatch")
     expected_second = {
         "timed_three_ray_scorching_salvo","safe_misty_step","persistent_web_field",
         "direct_attack_mirror_images","aggro_breaking_invisibility","line_force_gust",
-        "restricted_hold_person","single_center_shatter","direct_attack_blur",
-        "rise_safe_descent_levitate"
+        "restricted_hold_person","single_center_shatter","direct_attack_blur","rise_safe_descent_levitate"
     }
-    if second != expected_second:
-        raise SystemExit(f"alpha.54 second-circle audit metadata mismatch: {sorted(second)}")
-    if index.get("second_circle_npc_parity") is not True:
-        raise SystemExit("alpha.54 second-circle NPC parity metadata missing")
+    if set(index.get("second_circle_deep_audit", [])) != expected_second or index.get("second_circle_npc_parity") is not True:
+        raise SystemExit("alpha.54 second-circle metadata mismatch")
+    expected_third = {
+        "falloff_fireball_blast","piercing_lightning_line","lifecycle_real_flight","arcane_tempo_haste",
+        "custom_state_dispel_magic","actual_damage_vampiric_drain","persistent_slow_field",
+        "energy_only_recharging_ward","casting_break_sleet_storm","safe_long_blink"
+    }
+    if set(index.get("third_circle_deep_audit", [])) != expected_third:
+        raise SystemExit(f"alpha.55 third-circle audit metadata mismatch: {sorted(index.get('third_circle_deep_audit', []))}")
+    if index.get("third_circle_npc_parity") is not True:
+        raise SystemExit("alpha.55 third-circle NPC parity metadata missing")
     notice = archive.read("META-INF/THIRD_PARTY_NOTICES.md").decode("utf-8")
     if "Creative Commons Attribution 4.0" not in notice:
         raise SystemExit("SRD attribution missing from JAR")
@@ -145,7 +147,8 @@ print("alpha51_high_ward_runtime=PASS")
 print("alpha52_readable_grimoire=PASS")
 print("alpha52_109_spell_contract_audit=PASS")
 print("alpha53_first_circle_deep_runtime=PASS")
-print("alpha53_first_circle_npc_parity=PASS")
 print("alpha54_second_circle_deep_runtime=PASS")
-print("alpha54_second_circle_npc_parity=PASS")
+print("alpha55_third_circle_deep_runtime=PASS")
+print("alpha55_third_circle_npc_parity=PASS")
+print("alpha55_energy_selective_protection=PASS")
 print(f"SHA-256: {digest}")
