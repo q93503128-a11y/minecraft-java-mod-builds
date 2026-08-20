@@ -26,15 +26,24 @@ def kenneyUiAssets = [
         [output: 'minimap_arrow.png', source: "${kenneyAssetRoot}/ui-pack-adventure/PNG/Default/minimap_arrow_a.png", blob: 'd3999611a2608d9953db7ebdd1cda9c293c47b09']
 ]
 
-// Every structure below is BuildSchem CC BY 4.0. The castle supplies the inner citadel and wall
-// modules; the remaining independent buildings become functional district landmarks and compounds.
-def externalStructureAssets = [
+// Every structure below is BuildSchem CC BY 4.0. The legacy attribution file remains stable for
+// the five established structures; the four new Erden street-fabric sources get their own complete
+// attribution file so existing packaging audits remain backward compatible while source provenance
+// stays explicit.
+def establishedExternalStructureAssets = [
         [output: 'medieval_castle.schem', slug: 'ultimate-medieval-survival-castle-mansion', title: 'Ultimate Medieval Survival Castle Mansion'],
         [output: 'medieval_manor.schem', slug: 'ultimate-medieval-manor-survival-base', title: 'Ultimate Medieval Manor Survival Base'],
         [output: 'all_in_one_house.schem', slug: 'ultimate-all-in-one-survival-house', title: 'Ultimate All In One Survival House'],
         [output: 'fantasy_castle_house.schem', slug: 'ultimate-fantasy-starter-castle-house', title: 'Ultimate Fantasy Starter Castle House'],
         [output: 'village_church.schem', slug: 'ultimate-medieval-village-church-survival-base', title: 'Ultimate Medieval Village Church Survival Base']
 ]
+def urbanExpansionStructureAssets = [
+        [output: 'player_castle_house.schem', slug: 'ultimate-player-favorite-castle-house-survival-base', title: 'Ultimate Player Favorite Castle House Survival Base'],
+        [output: 'medieval_tavern_inn.schem', slug: 'ultimate-medieval-tavern-inn-survival-base', title: 'Ultimate Medieval Tavern Inn Survival Base'],
+        [output: 'medieval_market_hall.schem', slug: 'ultimate-medieval-market-hall-survival-base', title: 'Ultimate Medieval Market Hall Survival Base'],
+        [output: 'medieval_horse_stable.schem', slug: 'ultimate-medieval-horse-stable-survival-base', title: 'Ultimate Medieval Horse Stable Survival Base']
+]
+def externalStructureAssets = establishedExternalStructureAssets + urbanExpansionStructureAssets
 
 def prepareKenneyUiAssets = tasks.register('prepareKenneyUiAssets') {
     inputs.property('sourceCommit', kenneyAssetCommit)
@@ -70,33 +79,37 @@ def prepareExternalStructures = tasks.register('prepareExternalStructures') {
         externalResourcesDir.map { it.file("data/livingkingdoms/structures/external/${asset.output}") }
     })
     outputs.file(externalResourcesDir.map { it.file('assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt') })
+    outputs.file(externalResourcesDir.map { it.file('assets/livingkingdoms/licenses/ERDEN_URBAN_EXPANSION_CC_BY_4_0.txt') })
     doLast {
-        def attribution = new StringBuilder('Living Kingdoms external structure attribution\n\n')
-        attribution.append('License: Creative Commons Attribution 4.0 International\n')
-        attribution.append('https://creativecommons.org/licenses/by/4.0/\n\n')
-        attribution.append('Use inside Living Kingdoms: terrain-cleaned, rotated and adapted Erden architecture parts and functional district buildings.\n\n')
+        def establishedAttribution = new StringBuilder('Living Kingdoms external structure attribution\n\n')
+        def expansionAttribution = new StringBuilder('Living Kingdoms Erden urban expansion structure attribution\n\n')
+        for (builder in [establishedAttribution, expansionAttribution]) {
+            builder.append('License: Creative Commons Attribution 4.0 International\n')
+                    .append('https://creativecommons.org/licenses/by/4.0/\n\n')
+                    .append('Use inside Living Kingdoms: terrain-cleaned, rotated and adapted Erden architecture parts and functional district buildings.\n\n')
+        }
         externalStructureAssets.each { asset ->
             URI source = new URI("https://www.schemcraft.com/schematics/${asset.slug}/download")
             byte[] archive = null
-  Exception downloadFailure = null
-  for (int attempt = 1; attempt <= 5 && archive == null; attempt++) {
-      try {
-          def connection = source.toURL().openConnection()
-          connection.setConnectTimeout(15000)
-          connection.setReadTimeout(60000)
-          archive = connection.getInputStream().withCloseable { it.readAllBytes() }
-          downloadFailure = null
-      } catch (Exception failure) {
-          downloadFailure = failure
-          if (attempt < 5) {
-              logger.warn("Schemcraft download attempt {}/5 failed for {}: {}", attempt, asset.slug, failure.toString())
-              Thread.sleep(attempt * 2000L)
-          }
-      }
-  }
-  if (archive == null) {
-      throw new GradleException("Failed to download external structure ${asset.slug} after 5 attempts", downloadFailure)
-  }
+            Exception downloadFailure = null
+            for (int attempt = 1; attempt <= 5 && archive == null; attempt++) {
+                try {
+                    def connection = source.toURL().openConnection()
+                    connection.setConnectTimeout(15000)
+                    connection.setReadTimeout(60000)
+                    archive = connection.getInputStream().withCloseable { it.readAllBytes() }
+                    downloadFailure = null
+                } catch (Exception failure) {
+                    downloadFailure = failure
+                    if (attempt < 5) {
+                        logger.warn("Schemcraft download attempt {}/5 failed for {}: {}", attempt, asset.slug, failure.toString())
+                        Thread.sleep(attempt * 2000L)
+                    }
+                }
+            }
+            if (archive == null) {
+                throw new GradleException("Failed to download external structure ${asset.slug} after 5 attempts", downloadFailure)
+            }
             byte[] schematic = null
             new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(archive)).withCloseable { zip ->
                 java.util.zip.ZipEntry entry
@@ -115,14 +128,19 @@ def prepareExternalStructures = tasks.register('prepareExternalStructures') {
             target.bytes = schematic
             String sha256 = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance('SHA-256').digest(schematic))
             logger.lifecycle("Verified Schemcraft CC-BY-4.0 structure ${asset.output}: sha256=${sha256}, bytes=${schematic.length}")
+            def attribution = urbanExpansionStructureAssets.contains(asset)
+                    ? expansionAttribution : establishedAttribution
             attribution.append("${asset.title}\n")
                     .append("Author: BuildSchem\n")
                     .append("Source: https://www.schemcraft.com/schematics/${asset.slug}\n")
                     .append("Downloaded asset SHA-256: ${sha256}\n\n")
         }
-        File license = externalResourcesDir.get().file('assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt').asFile
-        license.parentFile.mkdirs()
-        license.setText(attribution.toString(), 'UTF-8')
+        File establishedLicense = externalResourcesDir.get().file('assets/livingkingdoms/licenses/EXTERNAL_STRUCTURES_CC_BY_4_0.txt').asFile
+        establishedLicense.parentFile.mkdirs()
+        establishedLicense.setText(establishedAttribution.toString(), 'UTF-8')
+        File expansionLicense = externalResourcesDir.get().file('assets/livingkingdoms/licenses/ERDEN_URBAN_EXPANSION_CC_BY_4_0.txt').asFile
+        expansionLicense.parentFile.mkdirs()
+        expansionLicense.setText(expansionAttribution.toString(), 'UTF-8')
     }
 }
 
