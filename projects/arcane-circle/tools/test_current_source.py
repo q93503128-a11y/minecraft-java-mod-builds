@@ -96,7 +96,8 @@ npc=text(world/'NpcSpellResolver.java')
 need(npc,'FirstCircleSpellService.handles(spell.id())',
      'FirstCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot)',
      'HighWardSpellService.intercepts(caster, spell, snapshot, range)')
-assert npc.index('FirstCircleSpellService.handles') < npc.index('"meteor_swarm".equals(spell.id())')
+npc_execute=npc[npc.index('static boolean execute('):]
+assert npc_execute.index('FirstCircleSpellService.handles') < npc_execute.index('"meteor_swarm".equals(spell.id())')
 
 # Target snapshot still carries the aimed creature for clone/simulacrum.
 world_magic=text(magic/'WorldMagicService.java')
