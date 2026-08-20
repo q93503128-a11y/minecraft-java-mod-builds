@@ -16,10 +16,35 @@ public record SpellDefinition(
         String description,
         List<String> fusionSources
 ) {
-    /** Grimoire text is mechanical and testable rather than a vague lore-only sentence. */
+    /**
+     * Copy-source spells used to be authored as BODY/0-range self magic even after their runtime
+     * became target-based. Keep the saved/catalog schema stable while exposing the corrected
+     * effective targeting contract to every caster, VFX and UI caller.
+     */
+    public double range() {
+        return switch (id) {
+            case "simulacrum" -> 28.0;
+            case "clone" -> 32.0;
+            default -> range;
+        };
+    }
+
+    public SigilAnchor sigilAnchor() {
+        return switch (id) {
+            case "simulacrum", "clone" -> SigilAnchor.TARGET;
+            default -> sigilAnchor;
+        };
+    }
+
+    /** Short authored identity/lore text belongs on normal browsing surfaces. */
     public String description() {
+        return description;
+    }
+
+    /** Detailed, testable mechanics belong in the dedicated effect compendium. */
+    public String effectSummary() {
         String effect = SpellEffectSummary.summary(this);
-        return effect == null || effect.isBlank() ? description : "효과 · " + effect;
+        return effect == null ? "" : effect;
     }
 
     public enum School {
