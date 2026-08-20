@@ -1,0 +1,127 @@
+name: Apply Village Guardians v0.18.21 Raid Lifecycle
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  integrate:
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.title == 'Village Guardians v0.18.21 raid lifecycle integration'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record integration run id
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p projects/village-guardians/.ci
+          printf 'status=RUNNING\nrun_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > projects/village-guardians/.ci/v01821-integration-running.txt
+          git add projects/village-guardians/.ci/v01821-integration-running.txt
+          git commit -m 'ci(village): record v0.18.21 integration start [skip ci]'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Apply v0.18.21 source patch
+        run: python3 projects/village-guardians/tools/apply_v01821_raid_lifecycle_presentation.py
+      - name: Canonical deterministic regression suite
+        working-directory: projects/village-guardians
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          for test in \
+            tools/test_rpg_balance.py \
+            tools/test_village_zone.py \
+            tools/test_progression_loop.py \
+            tools/test_progression_depth.py \
+            tools/test_fortress_layout.py \
+            tools/test_runtime_safety.py \
+            tools/test_ui_layout_contract.py \
+            tools/test_interaction_contract.py \
+            tools/test_action_layout.py \
+            tools/test_enemy_content.py \
+            tools/test_v0188_risk_ui_cleanup.py \
+            tools/test_v0189_siege_phase2.py \
+            tools/test_v01810_ranger_ricochet.py \
+            tools/test_v01811_defense_polish.py \
+            tools/test_v01812_quality_audit.py \
+            tools/test_v01813_siege_integration.py \
+            tools/test_v01814_persistent_presentation.py \
+            tools/test_v01815_boss_identity.py \
+            tools/test_v01816_mobile_defense_ui.py \
+            tools/test_v01818_growth_consumables.py \
+            tools/test_v01819_research_mercenary_presentation.py \
+            tools/test_v01820_mercenary_roster.py \
+            tools/test_v01820_roster_ui_consistency.py \
+            tools/test_v01821_raid_lifecycle_presentation.py; do
+            test -f "$test" || continue
+            echo "=== $test ==="
+            python3 "$test"
+          done
+      - name: Java 25 clean NeoForge build
+        working-directory: projects/village-guardians
+        run: gradle --no-daemon --no-configuration-cache -Pmod_version=0.18.21-alpha.1 clean build --stacktrace --console=plain
+      - name: Verify built runtime JAR
+        working-directory: projects/village-guardians
+        run: |
+          set -euo pipefail
+          test -f build/libs/villageguardians-0.18.21-alpha.1.jar
+          python3 tools/verify_jar.py build/libs/villageguardians-0.18.21-alpha.1.jar
+      - name: Commit verified source to main
+        run: |
+          set -euo pipefail
+          rm -f projects/village-guardians/tools/apply_v01821_raid_lifecycle_presentation.py
+          rm -f projects/village-guardians/.ci/v01821-integration-running.txt projects/village-guardians/.ci/v01821-integration-failure.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/village-guardians
+          git diff --cached --check
+          git commit -m 'fix(village): harden raid lifecycle and front signals'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
+      - name: Record integration failure
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p projects/village-guardians/.ci
+          rm -f projects/village-guardians/.ci/v01821-integration-running.txt
+          printf 'status=FAIL\nrun_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > projects/village-guardians/.ci/v01821-integration-failure.txt
+          git add -A projects/village-guardians/.ci
+          git commit -m 'ci(village): record v0.18.21 integration failure [skip ci]' || exit 0
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
