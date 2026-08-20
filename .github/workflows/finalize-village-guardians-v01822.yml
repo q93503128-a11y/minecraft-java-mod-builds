@@ -5,12 +5,16 @@ on:
     branches: [main]
     paths:
       - 'projects/village-guardians/.docs-trigger-v01822'
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
+  issues: read
 
 jobs:
   finalize:
+    if: github.event_name == 'push' || github.event.issue.title == 'Village Guardians v0.18.22 docs finalize'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
