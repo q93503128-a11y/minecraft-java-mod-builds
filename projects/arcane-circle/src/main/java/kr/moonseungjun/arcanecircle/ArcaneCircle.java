@@ -8,6 +8,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
 import kr.moonseungjun.arcanecircle.magic.DestructiveMagicService;
 import kr.moonseungjun.arcanecircle.magic.HighControlSpellService;
 import kr.moonseungjun.arcanecircle.magic.HighUtilitySpellService;
+import kr.moonseungjun.arcanecircle.magic.HighWardSpellService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.RpgScaleService;
@@ -39,7 +40,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.50";
+    public static final String VERSION = "0.12.1-alpha.51";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -112,6 +113,7 @@ public final class ArcaneCircle {
             ArcaneFieldService.clear(player.getUUID());
             SimulacrumService.clear(player);
             HighUtilitySpellService.clear(player);
+            HighWardSpellService.clear(player);
             HighControlSpellService.clear(player);
             SpellGameplayService.clear(player);
             WorldMagicService.stop(player);
@@ -129,6 +131,7 @@ public final class ArcaneCircle {
         ArcaneFieldService.clear(player.getUUID());
         SimulacrumService.clear(player);
         HighUtilitySpellService.clear(player);
+        HighWardSpellService.clear(player);
         HighControlSpellService.clear(player);
         SpellGameplayService.clear(player);
         SpellCastingService.clearSession(player.getUUID());
@@ -145,6 +148,7 @@ public final class ArcaneCircle {
         ArcaneFieldService.clear(player.getUUID());
         SimulacrumService.clear(player);
         HighUtilitySpellService.clear(player);
+        HighWardSpellService.clear(player);
         HighControlSpellService.clear(player);
         SpellGameplayService.clear(player);
         SpellCastingService.clearSession(player.getUUID());
@@ -170,6 +174,7 @@ public final class ArcaneCircle {
         SpellGameplayService.tick(level);
         SimulacrumService.tick(level);
         HighUtilitySpellService.tick(level);
+        HighWardSpellService.tick(level);
         HighControlSpellService.tick(level);
         // Run field suppression last: Antimagic/Time Stop must win the current server tick.
         ArcaneFieldService.tick(level);
@@ -183,6 +188,7 @@ public final class ArcaneCircle {
         SpellGameplayService.clearAll();
         SimulacrumService.clearAll();
         HighUtilitySpellService.clearAll();
+        HighWardSpellService.clearAll();
         HighControlSpellService.clearAll();
         ArcaneFieldService.clearAll();
         DestructiveMagicService.clearAll();
