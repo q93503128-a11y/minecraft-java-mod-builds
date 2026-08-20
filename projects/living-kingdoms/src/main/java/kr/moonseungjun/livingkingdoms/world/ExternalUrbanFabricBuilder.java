@@ -674,16 +674,23 @@ public final class ExternalUrbanFabricBuilder {
                 ? List.of(new BuildingBlock(width / 2, 1, 0, Blocks.OAK_DOOR.defaultBlockState()))
                 : entrances;
 
-        // The fantasy starter castle exposes several real doors. A nearest-edge crop retained a
-        // nearly sealed 11-cell slice even though the same licensed source has an 802-cell interior
-        // within the exact same 34x38 urban footprint. Choose the largest real doorway-connected
-        // component before any world placement; no imported block is edited by this selection.
+        // The fantasy starter castle exposes several real doors. Retain only doorway columns that
+        // prove a large fixed-footprint interior, then keep at most the two strongest distinct crops.
+        // This preserves the no-cut source contract while allowing repeated city lots to vary their
+        // actual facade/interior geometry instead of cloning one crop hundreds of times.
         if (CASTLE_HOUSE.equals(resource) && !entrances.isEmpty()) {
-            FacadeFragment best = null;
-            int bestReachable = -1;
-            BuildingBlock bestEntrance = null;
-            FrontSide bestCropSide = null;
+            record CropOption(
+                    FacadeFragment fragment,
+                    int reachable,
+                    BuildingBlock entrance,
+                    FrontSide cropSide) {
+            }
+
+            List<CropOption> options = new ArrayList<>();
+            Set<Long> testedDoorColumns = new LinkedHashSet<>();
             for (BuildingBlock entrance : candidates) {
+                long doorColumn = ((long) entrance.x << 32) ^ (entrance.z & 0xffffffffL);
+                if (!testedDoorColumns.add(doorColumn)) continue;
                 for (FrontSide cropSide : FrontSide.values()) {
                     int depth = Math.min(38, cropSide.horizontal ? width : length);
                     if (edgeDistance(entrance.x, entrance.z, width, length, cropSide) >= depth) continue;
@@ -692,23 +699,59 @@ public final class ExternalUrbanFabricBuilder {
                             cropSide);
                     if (candidate.blocks.size() < 500 || !containsRealEntrance(candidate)) continue;
                     int reachable = fragmentReachableCells(candidate);
-                    if (reachable > bestReachable) {
-                        best = candidate;
-                        bestReachable = reachable;
-                        bestEntrance = entrance;
-                        bestCropSide = cropSide;
+                    if (reachable >= 500) {
+                        options.add(new CropOption(candidate, reachable, entrance, cropSide));
                     }
                 }
             }
-            if (best == null || bestReachable < 500) {
+            options.sort((left, right) -> {
+                int byReachable = Integer.compare(right.reachable(), left.reachable());
+                if (byReachable != 0) return byReachable;
+                int byX = Integer.compare(left.entrance().x, right.entrance().x);
+                if (byX != 0) return byX;
+                int byZ = Integer.compare(left.entrance().z, right.entrance().z);
+                if (byZ != 0) return byZ;
+                return Integer.compare(left.cropSide().ordinal(), right.cropSide().ordinal());
+            });
+            if (options.isEmpty() || options.getFirst().reachable() < 500) {
+                int bestReachable = options.isEmpty() ? -1 : options.getFirst().reachable();
                 throw new IllegalStateException(
                         "No usable fixed-footprint castle-house crop; best_reachable=" + bestReachable);
             }
+
+            CropOption best = options.getFirst();
+            int minimumVariantReachable = Math.max(
+                    500, (int) Math.ceil(best.reachable() * 0.95D));
+            List<FacadeFragment> selected = new ArrayList<>();
+            for (CropOption option : options) {
+                if (option.reachable() < minimumVariantReachable) break;
+                selected.add(option.fragment());
+                LivingKingdoms.LOGGER.info(
+                        "LK_ERDEN_CASTLE_HOUSE_CROP_VARIANT_SELECTED index={} reachable={} crop_side={} source_door={},{} fragment={}x{} entrance_local={},{} resolved_side={} same_footprint=true source_only=true world_reads=false mutations=0",
+                        selected.size() - 1, option.reachable(), option.cropSide(),
+                        option.entrance().x, option.entrance().z,
+                        option.fragment().width, option.fragment().length,
+                        option.fragment().entranceX, option.fragment().entranceZ,
+                        option.fragment().exteriorSide);
+                if (selected.size() >= 2) break;
+            }
+            if (selected.isEmpty()) {
+                throw new IllegalStateException(
+                        "Castle-house crop quality threshold removed every candidate");
+            }
+
+            // Preserve the legacy single-best diagnostic for existing CI consumers.
             LivingKingdoms.LOGGER.info(
                     "LK_ERDEN_CASTLE_HOUSE_CROP_SELECTED reachable={} crop_side={} source_door={},{} fragment={}x{} entrance_local={},{} resolved_side={} same_footprint=true source_only=true world_reads=false mutations=0",
-                    bestReachable, bestCropSide, bestEntrance.x, bestEntrance.z,
-                    best.width, best.length, best.entranceX, best.entranceZ, best.exteriorSide);
-            return List.of(best);
+                    best.reachable(), best.cropSide(), best.entrance().x, best.entrance().z,
+                    best.fragment().width, best.fragment().length,
+                    best.fragment().entranceX, best.fragment().entranceZ,
+                    best.fragment().exteriorSide);
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_CASTLE_HOUSE_CROP_VARIANTS_READY variants={} best_reachable={} minimum_reachable={} candidate_columns={} max_variants=2 source_blocks_cut=0 source_only=true world_reads=false mutations=0",
+                    selected.size(), best.reachable(), minimumVariantReachable,
+                    testedDoorColumns.size());
+            return List.copyOf(selected);
         }
 
         LinkedHashSet<FrontSide> usedSides = new LinkedHashSet<>();
