@@ -1,0 +1,122 @@
+name: Build Village Guardians v0.18.22 UI Rollback
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.build-trigger-v01822'
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  BUILD_VERSION: 0.18.22-alpha.1
+  EXPECTED_JAR: villageguardians-0.18.22-alpha.1.jar
+
+jobs:
+  build:
+    name: Java 25 / NeoForge 26.2 accepted UI rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Run canonical deterministic contract tests
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          for test in \
+            tools/test_rpg_balance.py \
+            tools/test_village_zone.py \
+            tools/test_progression_loop.py \
+            tools/test_progression_depth.py \
+            tools/test_fortress_layout.py \
+            tools/test_runtime_safety.py \
+            tools/test_ui_layout_contract.py \
+            tools/test_interaction_contract.py \
+            tools/test_action_layout.py \
+            tools/test_enemy_content.py \
+            tools/test_v0188_risk_ui_cleanup.py \
+            tools/test_v0189_siege_phase2.py \
+            tools/test_v01810_ranger_ricochet.py \
+            tools/test_v01811_defense_polish.py \
+            tools/test_v01812_quality_audit.py \
+            tools/test_v01813_siege_integration.py \
+            tools/test_v01814_persistent_presentation.py \
+            tools/test_v01815_boss_identity.py \
+            tools/test_v01818_growth_consumables.py \
+            tools/test_v01819_research_mercenary_presentation.py \
+            tools/test_v01820_mercenary_roster.py \
+            tools/test_v01820_roster_ui_consistency.py \
+            tools/test_v01821_raid_lifecycle_presentation.py \
+            tools/test_v01822_ui_rollback.py; do
+            test -f "$test" || continue
+            echo "=== $test ==="
+            python3 "$test"
+          done
+
+      - name: Clean NeoForge build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
+
+      - name: Verify runtime JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/${EXPECTED_JAR}"
+          python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-${{ env.BUILD_VERSION }}
+          path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Record acceptance metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          mkdir -p "${PROJECT_DIR}/.ci"
+          cat > "${PROJECT_DIR}/.ci/v01822-final.txt" <<EOF
+          version=${BUILD_VERSION}
+          run_id=${GITHUB_RUN_ID}
+          head_sha=${GITHUB_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          EOF
+          rm -f "${PROJECT_DIR}/.build-trigger-v01822"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "${PROJECT_DIR}/.ci/v01822-final.txt" "${PROJECT_DIR}/.build-trigger-v01822"
+          git commit -m 'ci(village): record v0.18.22 acceptance [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
