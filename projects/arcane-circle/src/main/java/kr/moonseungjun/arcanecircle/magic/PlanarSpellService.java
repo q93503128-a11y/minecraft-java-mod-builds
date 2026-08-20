@@ -200,7 +200,8 @@ public final class PlanarSpellService {
     }
 
     private static boolean isDemiplaneBackend(ServerPlayer player) {
-        return player.level().dimension().equals(Level.END)&&player.getY()>=ROOM_FLOOR_Y-1&&player.getX()>3_500_000&&player.getZ()>3_500_000;
+        return player.level().dimension().equals(Level.END) && player.getY() >= ROOM_FLOOR_Y - 1
+                && player.getX() > 3_500_000 && player.getZ() > 3_500_000;
     }
 
     private static void ensureRoom(ServerLevel level, BlockPos center) {
