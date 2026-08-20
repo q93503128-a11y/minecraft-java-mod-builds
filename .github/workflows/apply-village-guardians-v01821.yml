@@ -45,7 +45,11 @@ jobs:
         with:
           gradle-version: '9.2.1'
       - name: Apply v0.18.21 source patch
-        run: python3 projects/village-guardians/tools/apply_v01821_raid_lifecycle_presentation.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 projects/village-guardians/tools/apply_v01821_raid_lifecycle_presentation.py
+          python3 projects/village-guardians/tools/migrate_v01821_historical_version_contracts.py
       - name: Canonical deterministic regression suite
         working-directory: projects/village-guardians
         shell: bash
@@ -94,6 +98,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -f projects/village-guardians/tools/apply_v01821_raid_lifecycle_presentation.py
+          rm -f projects/village-guardians/tools/migrate_v01821_historical_version_contracts.py
           rm -f projects/village-guardians/.ci/v01821-integration-running.txt projects/village-guardians/.ci/v01821-integration-failure.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
