@@ -1,0 +1,48 @@
+name: Finalize Village Guardians v0.18.22 Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/village-guardians/.docs-trigger-v01822'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Finalize canonical docs and cleanup temporary integration files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 projects/village-guardians/tools/finalize_v01822_docs.py
+          rm -f projects/village-guardians/tools/finalize_v01822_docs.py
+          rm -f projects/village-guardians/.docs-trigger-v01822
+          rm -f projects/village-guardians/.ci/v01822-integration-running.txt
+          rm -f projects/village-guardians/.apply-v01822-ui-rollback
+          rm -f .github/workflows/apply-village-guardians-v01822.yml
+          rm -f .github/workflows/finalize-village-guardians-v01822.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- \
+            projects/village-guardians/README.md \
+            projects/village-guardians/BUILD_AND_RUNTIME_REPORT.md \
+            projects/village-guardians/tools/finalize_v01822_docs.py \
+            projects/village-guardians/.docs-trigger-v01822 \
+            projects/village-guardians/.ci/v01822-integration-running.txt \
+            projects/village-guardians/.apply-v01822-ui-rollback \
+            .github/workflows/apply-village-guardians-v01822.yml \
+            .github/workflows/finalize-village-guardians-v01822.yml
+          git diff --cached --check
+          git commit -m 'docs(village): finalize v0.18.22 UI rollback'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
