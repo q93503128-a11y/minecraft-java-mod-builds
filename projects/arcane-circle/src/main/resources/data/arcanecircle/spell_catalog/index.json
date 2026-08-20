@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.51",
+  "version": "0.12.1-alpha.52",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -50,5 +50,8 @@
   "visual_identity": "per_spell_fingerprint_and_high_circle_signature",
   "high_utility_identity": ["cross_dimension_plane_shift","persistent_demiplane_room","commandable_simulacrum"],
   "high_control_identity": ["behavioral_mass_suggestion","physical_forcecage","temporary_dominate_monster","spellbreaking_feeblemind"],
-  "high_ward_identity": ["globe_blocks_hostile_circle_1_to_5_spells","circle_6_plus_and_physical_pass_through","player_and_npc_cast_interception"]
+  "high_ward_identity": ["globe_blocks_hostile_circle_1_to_5_spells","circle_6_plus_and_physical_pass_through","player_and_npc_cast_interception"],
+  "grimoire_effect_compendium": true,
+  "spell_contract_audit": "109_explicit_summaries_and_runtime_routes",
+  "copy_source_targeting": ["simulacrum_target_28","clone_target_32"]
 }
