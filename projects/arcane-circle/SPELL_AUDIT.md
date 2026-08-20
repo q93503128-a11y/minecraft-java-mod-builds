@@ -1,4 +1,4 @@
-# Arcane Circle — 109 Spell Audit Queue (alpha.55)
+# Arcane Circle — 109 Spell Audit Queue (alpha.56)
 
 이 문서는 주문을 묶어서 '대충 동작'으로 보지 않고 하나씩 추적하기 위한 정본 감사 큐다.
 
@@ -26,15 +26,30 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 - `fireball`: 고정 snapshot 착탄점에 중심부가 더 강한 falloff 폭발 + 화상 + 같은 중심의 실제 지형 파괴.
 - `lightning_bolt`: 고정 직선의 복수 대상 관통 타격 + 같은 경로의 약한 지형 파손.
-- `fly`: 플레이어는 실제 mayfly/flying 권한을 얻고 기존 권한을 저장·복원한다. NPC도 no-gravity 공중 전투를 사용하며 종료 시 중력을 복원한다.
-- `haste`: 기존 정본인 Arcane 시전시간 28% 단축 / 쿨다운 15% 단축을 전용 3써클 경로에서 유지한다.
-- `dispel_magic`: 단순 포션 삭제가 아니라 Sleep/2C/3C/지속 강화·제어·고써클 ward/control 등 커스텀 유지 상태를 실제 해제한다.
-- `vampiric_touch`: 표기 피해가 아니라 대상이 실제로 잃은 체력+흡수량을 측정해 그 60%만 actual-damage drain으로 회복한다.
-- `slow`: 9초 persistent tempo field. 이동뿐 아니라 공격/행동 속도 계열을 반복 압박한다.
-- `protection_from_energy`: 일반 피해 감소가 아니다. Arcane/화염/투사체성 충격만 45% 줄이는 **energy-only** 5중 공명막이며 3.5초마다 재충전한다.
-- `sleet_storm`: 냉기·동결·암흑·미끄럼 압박과 함께 영역 안 적대 마도사의 Arcane 시전을 끊는 **casting denial** 지대다.
-- `blink`: Misty Step보다 먼 최대 약 20m endpoint-safe 공간 도약 + 착지 직후 2초 위상 저항.
-- logout/respawn/dimension/antimagic/server stop에서 3써클 상태를 정리한다.
+- `fly`: 실제 자유 비행 권한과 NPC 공중 전투를 갖고 lifecycle에서 원래 중력/비행 권한으로 복구.
+- `haste`: Arcane 시전시간 28% 단축 / 쿨다운 15% 단축.
+- `dispel_magic`: 유지형 마법 상태와 해로운 상태를 해제하는 전용 경로.
+- `vampiric_touch`: 실제로 잃게 한 체력+흡수량을 측정해 60% 회복.
+- `slow`: 9초 persistent tempo field.
+- `protection_from_energy`: Arcane/화염/투사체성 충격만 45% 줄이는 energy-only 5중 공명막.
+- `sleet_storm`: 냉기·동결·암흑·미끄럼 + 내부 적대 Arcane casting denial.
+- `blink`: 최대 약 20m endpoint-safe 공간 도약 + 착지 직후 위상 저항.
+
+## alpha.56 — 4써클 deep pass
+
+`FourthCircleSpellService`가 4써클 10종을 전용 소유한다. 플레이어와 NPC가 같은 역할 계약을 사용하며, 일반 피해감소/포션 묶음으로 뭉개던 효과를 전략 주문으로 분리했다.
+
+- `wall_of_fire`: 12초 동안 고정된 실제 선형 장벽을 유지하고, 벽을 스치거나 통과하는 적만 반복 피해·연소시킨다.
+- `ice_storm`: 오래 붙는 generic 냉기장이 아니라 고정 목표에 5회의 실제 우박 폭격이 이어진다.
+- `greater_invisibility`: 공격해도 해제되지 않는 전투 은신. 적대 추적을 계속 끊고 hostile direct attack은 45% miss 판정을 받는다.
+- `resilient_sphere`: **two-way isolation**. 구체 내부 대상은 외부 피해를 받지 않고, 내부에서 외부로 가하는 피해도 차단되며 Arcane 시전 역시 봉쇄된다.
+- `dimension_door`: 최대 약 36m 안전 도약. 3m 이내에서 웅크린 플레이어 1명을 동행시켜 Misty Step/Blink와 역할을 분리한다.
+- `stoneskin`: 범용 피해감소가 아니다. 적이 가하는 **physical-only** 비마법 공격만 50% 경감하고 Arcane·화염·환경 피해는 통과한다.
+- `confusion`: 12초 동안 매초 정지/배회/오인 공격/비틀림 중 하나로 의사결정을 섞고 Arcane 시전도 간헐적으로 끊는다. NoAI로 굳히지 않는다.
+- `blight`: 초기 생명 피해 후 8초 추가 drain과 **anti-heal** 80%를 건다.
+- `freedom_of_movement`: 26초 동안 둔화·속박·동결·강제부양을 지속 정화하고 2~3써클 이동 제어의 시전 봉쇄를 무시한다. Antimagic/Time Stop/고써클 제어/Resilient Sphere는 그대로 우선한다.
+- `phantasmal_killer`: 단순 약화가 아니라 11초 동안 대상이 시전자에게서 실제로 **forced flee**하며 주기적 정신 피해를 받는다.
+- logout/respawn/dimension/antimagic/server stop에서 4써클 유지 상태를 정리하며 NPC도 같은 전용 경로를 사용한다.
 
 ## Direct spells — deep audit order
 
@@ -70,16 +85,16 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 | 3 | `protection_from_energy` | PASS | PASS | alpha.55 PASS · energy-only 5-charge ward |
 | 3 | `sleet_storm` | PASS | PASS | alpha.55 PASS · cold field + casting denial |
 | 3 | `blink` | PASS | PASS | alpha.55 PASS · safe long jump + phase guard |
-| 4 | `wall_of_fire` | PASS | PASS | next |
-| 4 | `ice_storm` | PASS | PASS | next |
-| 4 | `greater_invisibility` | PASS | PASS | next |
-| 4 | `resilient_sphere` | PASS | PASS | next |
-| 4 | `dimension_door` | PASS | PASS | next |
-| 4 | `stoneskin` | PASS | PASS | next |
-| 4 | `confusion` | PASS | PASS | next |
-| 4 | `blight` | PASS | PASS | next |
-| 4 | `freedom_of_movement` | PASS | PASS | next |
-| 4 | `phantasmal_killer` | PASS | PASS | next |
+| 4 | `wall_of_fire` | PASS | PASS | alpha.56 PASS · persistent crossing wall |
+| 4 | `ice_storm` | PASS | PASS | alpha.56 PASS · five-pulse hail barrage |
+| 4 | `greater_invisibility` | PASS | PASS | alpha.56 PASS · combat veil/aggro break |
+| 4 | `resilient_sphere` | PASS | PASS | alpha.56 PASS · two-way isolation |
+| 4 | `dimension_door` | PASS | PASS | alpha.56 PASS · safe companion transport |
+| 4 | `stoneskin` | PASS | PASS | alpha.56 PASS · physical-only reduction |
+| 4 | `confusion` | PASS | PASS | alpha.56 PASS · decision scramble |
+| 4 | `blight` | PASS | PASS | alpha.56 PASS · anti-heal life decay |
+| 4 | `freedom_of_movement` | PASS | PASS | alpha.56 PASS · maintained control immunity |
+| 4 | `phantasmal_killer` | PASS | PASS | alpha.56 PASS · forced flee fear |
 | 5 | `cone_of_cold` | PASS | PASS | next |
 | 5 | `wall_of_force` | PASS | PASS | next |
 | 5 | `cloudkill` | PASS | PASS | next |
@@ -157,4 +172,4 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 ## CI enforcement
 
-`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1·2·3써클 전용 권한 순서, NPC parity, 3써클 energy-only 보호막/실제 피해 흡혈/Sleet casting denial/lifecycle cleanup, 그리고 alpha.49~54 고써클·하위써클 계약 회귀를 실패 조건으로 둔다.
+`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1·2·3·4써클 전용 권한 순서와 NPC parity, 4써클 two-way isolation/physical-only Stoneskin/decision scramble/anti-heal/forced flee/Freedom 우선순위 및 lifecycle cleanup, 그리고 alpha.49~55의 기존 계약 회귀를 실패 조건으로 둔다.
