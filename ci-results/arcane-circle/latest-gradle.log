@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 18, in <module>
-    assert 'VERSION = "0.12.1-alpha.50"' in main
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 17, in <module>
+    assert 'mod_version=0.12.1-alpha.50' in gradle
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
