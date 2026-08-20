@@ -2,17 +2,29 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.21-alpha.1`
+- Current source version: `0.18.22-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.21-alpha.1.jar`
-- Final acceptance Actions run: `32332392760`
-- Final acceptance head: `cb5268807406a982bc39e038cdbf5b59526e0f8c`
-- Final JAR SHA-256: `f39d02ef247387a669991cc6cc4dfb2c67a6f6949134fd4c1db0f720cfa5ab7e`
-- Final JAR size: `971022` bytes
+- Target JAR: `villageguardians-0.18.22-alpha.1.jar`
+- Final acceptance Actions run: `32338345420`
+- Final acceptance head: `f27a50b1c7fd1632fb4443b908c8e83d73846885`
+- Final JAR SHA-256: `cd7712bacac503748ff0a03e3f6a76f5ae90df6d9322fea674e156225e67f990`
+- Final JAR size: `958353` bytes
+
+## 0.18.22 UI 롤백 완결 · 후속 시스템 보존 감사
+
+- 사용자 화면 평가에서 기각된 0.18.16 중앙 집중형 Defense HUD를 실제 정본에서 제거했다. `VillageMainHudOverlay`, `VillageHudSystem`, `VillageSkillHudOverlay`, `VillageStructureHud`는 승인된 pre-defense-pass 동작을 복원했고, Command Center/Town Hall은 최신 기능을 유지한 채 기존 로컬 팔레트로 복귀했다.
+- `VillageDefenseHudFrame.java`, `VillageDefenseUiTheme.java`, HUD 전용 `VillageRaidSystem.RaidHudSnapshot`, 기각 UI를 다시 요구하던 `test_v01816_mobile_defense_ui.py`를 제거했다.
+- 반대로 `VillageDefenseEffectSystem`의 turret placement/deploy/repair/upgrade, breach alarm, 0.18.21 front warning/arrival과 포탑·용병·보스 절차 메시 Presentation은 그대로 유지했다. 즉 UI 외형 롤백이 월드 전투 Presentation 롤백으로 번지지 않았다.
+- 0.18.18 장기 강화·전투 소모품·성벽 전투 갤러리·Lv.60 용병, 0.18.19 Lv.10 연구·포탑 내구/사거리·용병 Presentation, 0.18.20 4병과 명부/레거시 이관, 0.18.21 authoritative raid lifecycle/directional signal 회귀를 전부 재검사했다.
+- 통합 중 `test_runtime_safety.py`가 기각 UI의 `guiHeight()-112`와 `abilityCard`를 영구 요구하던 오류를 발견해 승인 UI의 `guiHeight()-98` 저프로필 안전 계약으로 수정했다. 신규 0.18.22 테스트의 잘못된 소모품 클래스명도 실제 소유자 `VillageConsumableSystem`으로 교정했다.
+- 검증된 런타임 롤백 source commit은 `2c4c97ff7335e16d063bc7e2f1202f5322c5bafc`다. integration run `32338131966`에서 canonical regressions, Java 25 clean NeoForge build, runtime JAR verifier가 모두 PASS했다.
+- 최종 acceptance Actions run `32338345420`은 deterministic contracts, Java 25 setup, clean build, runtime JAR verifier, artifact upload, acceptance metadata 기록을 모두 PASS했다. acceptance head는 `f27a50b1c7fd1632fb4443b908c8e83d73846885`다.
+- Actions artifact `9395435283`을 별도 다운로드해 ZIP/JAR CRC, `neoforge.mods.toml`의 0.18.22/NeoForge/Minecraft 범위, manifest, `VillageMainHudOverlay`, `VillageSkillHudOverlay`, `VillageStructureHud`, `VillageConsumableSystem`, `VillageDefenseResearchSystem`, `VillageMercenarySystem`, `VillageDefenseEffectSystem` 포함과 rejected frame/theme class 부재를 독립 재검증했다. Artifact digest는 `sha256:a0044850a650cf315ff96b0bd5c298d32fb2267c9a243af3933dabebbc299c2d`다.
+- 최종 JAR SHA-256 `cd7712bacac503748ff0a03e3f6a76f5ae90df6d9322fea674e156225e67f990`, 크기 `958353` bytes.
 
 ## 0.18.21 습격 정본 판정·수명주기·다전선 Presentation 감사
 

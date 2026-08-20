@@ -6,13 +6,22 @@ Minecraft Java 26.2에서 낮 동안 마을을 준비하고, 밤에는 실제 �
 - NeoForge `26.2.0.37-beta` 이상 26.2.x
 - Java `25`
 - Gradle `9.2.1`
-- 현재 소스 버전 `0.18.21-alpha.1`
-- 목표 JAR `villageguardians-0.18.21-alpha.1.jar`
+- 현재 소스 버전 `0.18.22-alpha.1`
+- 목표 JAR `villageguardians-0.18.22-alpha.1.jar`
 
 ## 핵심 루프
 
 낮 정비 → 장비·성장·시설·포탑·용병 준비 → 다음 밤 정찰 → 공성전 → 피해 복구·강화 → 다음 날짜로 진행한다.
 
+
+## 0.18.22 승인된 UI 복원 · 후속 기능 보존
+
+- 0.18.16에서 도입됐지만 실제 화면 평가에서 기각된 중앙 집중형 Defense HUD frame/theme을 제거하고, 승인됐던 0.18.15 계열의 작고 낮은 전투 HUD 언어로 복원했다.
+- 메인 HUD는 좌상단 2줄 컴팩트 상태 카드로, 스킬 HUD는 바닐라 핫바 위의 낮은 2슬롯 표시로 돌아갔다. 시설 내구도 BossBar도 긴급 경보 전용이 아니라 습격 중 손상 시설 우선/순환 표시 방식으로 복구했다.
+- `VillageDefenseHudFrame`과 `VillageDefenseUiTheme`은 런타임 소스와 최종 JAR에서 물리적으로 제거했다. 회관/시설 화면은 0.18.18~0.18.21에 추가된 기능을 유지하면서 자체 로컬 팔레트를 사용한다.
+- UI만 되돌렸으며 포탑 설치/배치/수리/강화 피드백, 성벽 돌파 경보, 용병/포탑 절차 메시, `raid_front_warning`/`raid_front_arrival` 등 월드 Presentation은 그대로 유지한다.
+- 장비 +30 장기 강화/무기별 상한, 전투 소모품, 연구 Lv.10, 용병 Lv.60·4병과 명부, 성벽 사격구·보행로, 습격 UUID 수명주기 등 0.18.18~0.18.21 시스템의 회귀를 모두 다시 검사했다.
+- 기존 `test_runtime_safety.py`에 남아 있던 기각 UI의 `-112 + abilityCard` 강제 조건을 승인 UI의 `-98 + 저프로필 diamond slot` 안전 계약으로 수정했고, 기각된 `test_v01816_mobile_defense_ui.py` 자체는 제거했다.
 
 ## 0.18.21 습격 수명주기·다전선 신호 정합
 
