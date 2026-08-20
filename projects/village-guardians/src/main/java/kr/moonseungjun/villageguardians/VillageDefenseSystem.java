@@ -7,15 +7,14 @@ import net.minecraft.world.entity.Mob;
 /**
  * Compatibility/status facade for the defense layer.
  *
- * Production combat is owned exclusively by VillagePlacedTurretSystem. The old fixed-corner
- * tower firing loop was retired in phase 2 and is intentionally absent here so it cannot be
- * accidentally re-entered by a future server-tick registration.
+ * Production combat is owned exclusively by VillagePlacedTurretSystem. Fixed corner towers are
+ * fortress architecture only; the retired global four-tower specialization state is not read.
  */
 public final class VillageDefenseSystem {
     private VillageDefenseSystem() {}
 
     public static void reset() {
-        VillageTowerSpecializationSystem.resetTransientState();
+        // All production defense runtime state is reset by its owning systems.
     }
 
     public static boolean recognizeDefenseMob(Mob mob) {
@@ -32,11 +31,9 @@ public final class VillageDefenseSystem {
     }
 
     public static String status(ServerLevel level) {
-        StringBuilder towers = new StringBuilder();
-        for (VillageTowerSpecializationSystem.TowerKind kind : VillageTowerSpecializationSystem.TowerKind.values()) {
-            if (!towers.isEmpty()) towers.append(" | ");
-            towers.append(kind.displayName()).append(' ').append(VillageTowerSpecializationSystem.summary(kind));
-        }
-        return towers + " | " + VillageMercenarySystem.status(level.getServer());
+        return "배치 포탑 " + VillagePlacedTurretSystem.activeCount() + "/"
+                + VillagePlacedTurretSystem.count() + "기 가동 · 설치 "
+                + VillagePlacedTurretSystem.count() + "/" + VillagePlacedTurretSystem.capacity()
+                + " | " + VillageMercenarySystem.status(level.getServer());
     }
 }

@@ -50,12 +50,12 @@ public final class VillageCommands {
     }
 
     private static int openMenu(CommandSourceStack source) throws CommandSyntaxException {
-        VillageUiService.openDashboard(source.getPlayerOrException());
+        VillageUiController.openDashboard(source.getPlayerOrException());
         return 1;
     }
 
     private static int openStats(CommandSourceStack source) throws CommandSyntaxException {
-        VillageUiService.openPlayerStatus(source.getPlayerOrException());
+        VillageUiController.openStatus(source.getPlayerOrException());
         return 1;
     }
 

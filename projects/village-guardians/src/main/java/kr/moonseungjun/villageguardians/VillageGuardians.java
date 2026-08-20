@@ -43,7 +43,6 @@ public final class VillageGuardians {
         VillageProgressionSystem.initializeServer(event.getServer());
         VillageSkillTreeSystem.initializeServer(event.getServer());
         VillageRoleSkillSystem.initializeServer(event.getServer());
-        VillageTowerSpecializationSystem.initializeServer(event.getServer());
         VillageDefenseResearchSystem.initializeServer(event.getServer());
         VillageRelicSystem.initializeServer(event.getServer());
         VillageMercenarySystem.initializeServer(event.getServer());

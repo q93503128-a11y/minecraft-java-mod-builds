@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
+/** Fixed corner towers are fortress architecture/observation landmarks, not combat emplacements. */
 final class VillageDefenseTowerBuilder {
     private VillageDefenseTowerBuilder() {}
 
@@ -53,19 +54,6 @@ final class VillageDefenseTowerBuilder {
         lineX(level, base, -3, 3, 4, 0, Blocks.DARK_OAK_FENCE);
         lineZ(level, base, -2, 2, 4, 0, Blocks.IRON_BARS);
         set(level, base.offset(0, 5, -2), Blocks.END_ROD);
-        VillageTowerSpecializationSystem.Branch branch = VillageTowerSpecializationSystem.branch(
-                VillageTowerSpecializationSystem.TowerKind.BALLISTA);
-        int rank = VillageTowerSpecializationSystem.rank(VillageTowerSpecializationSystem.TowerKind.BALLISTA);
-        if (branch == VillageTowerSpecializationSystem.Branch.BALLISTA_TITAN) {
-            lineZ(level, base, -3, 2 + rank, 5, 0, Blocks.IRON_BLOCK);
-            set(level, base.offset(0, 5, -3), Blocks.ANVIL);
-        } else if (branch == VillageTowerSpecializationSystem.Branch.BALLISTA_PIERCE) {
-            for (int z = -3; z <= 2 + rank; z++) set(level, base.offset(0, 5, z), Blocks.END_ROD);
-        } else if (branch == VillageTowerSpecializationSystem.Branch.BALLISTA_SPLIT) {
-            for (int x = -1; x <= 1; x++) {
-                lineZ(level, base, -3, 1 + rank, 5, x, Blocks.END_ROD);
-            }
-        }
     }
 
     private static void buildFlame(ServerLevel level, BlockPos base) {
@@ -74,23 +62,6 @@ final class VillageDefenseTowerBuilder {
         set(level, base.offset(0, 5, 0), Blocks.CAMPFIRE);
         set(level, base.offset(1, 4, 0), Blocks.IRON_BARS);
         set(level, base.offset(-1, 4, 0), Blocks.IRON_BARS);
-        VillageTowerSpecializationSystem.Branch branch = VillageTowerSpecializationSystem.branch(
-                VillageTowerSpecializationSystem.TowerKind.FLAME);
-        int rank = VillageTowerSpecializationSystem.rank(VillageTowerSpecializationSystem.TowerKind.FLAME);
-        if (branch == VillageTowerSpecializationSystem.Branch.FLAME_INFERNO) {
-            for (int x = -rank; x <= rank; x++) {
-                set(level, base.offset(x, 1, -2), Blocks.MAGMA_BLOCK);
-                set(level, base.offset(x, 1, 2), Blocks.MAGMA_BLOCK);
-            }
-            set(level, base.offset(0, 6, 0), Blocks.SOUL_CAMPFIRE);
-        } else if (branch == VillageTowerSpecializationSystem.Branch.FLAME_BLAST) {
-            set(level, base.offset(0, 6, 0), Blocks.REDSTONE_LAMP);
-            set(level, base.offset(1, 5, 0), Blocks.BRICKS);
-            set(level, base.offset(-1, 5, 0), Blocks.BRICKS);
-        } else if (branch == VillageTowerSpecializationSystem.Branch.FLAME_MELT) {
-            column(level, base, 0, 0, 5, 5 + rank, Blocks.MAGMA_BLOCK);
-            set(level, base.offset(0, 6 + rank, 0), Blocks.SEA_LANTERN);
-        }
     }
 
     private static void buildFrost(ServerLevel level, BlockPos base) {
@@ -99,24 +70,6 @@ final class VillageDefenseTowerBuilder {
         set(level, base.offset(0, 4, 0), Blocks.SEA_LANTERN);
         set(level, base.offset(1, 3, 0), Blocks.AMETHYST_CLUSTER);
         set(level, base.offset(-1, 3, 0), Blocks.AMETHYST_CLUSTER);
-        VillageTowerSpecializationSystem.Branch branch = VillageTowerSpecializationSystem.branch(
-                VillageTowerSpecializationSystem.TowerKind.FROST);
-        int rank = VillageTowerSpecializationSystem.rank(VillageTowerSpecializationSystem.TowerKind.FROST);
-        if (branch == VillageTowerSpecializationSystem.Branch.FROST_DEEP) {
-            column(level, base, 0, 0, 5, 5 + rank, Blocks.BLUE_ICE);
-            set(level, base.offset(0, 6 + rank, 0), Blocks.SEA_LANTERN);
-        } else if (branch == VillageTowerSpecializationSystem.Branch.FROST_SHATTER) {
-            for (int x = -2; x <= 2; x += 2) {
-                set(level, base.offset(x, 2 + rank, 0), Blocks.AMETHYST_CLUSTER);
-                set(level, base.offset(0, 2 + rank, x), Blocks.AMETHYST_CLUSTER);
-            }
-        } else if (branch == VillageTowerSpecializationSystem.Branch.FROST_BLIZZARD) {
-            for (int x = -2; x <= 2; x += 2) {
-                set(level, base.offset(x, 4, 0), Blocks.SEA_LANTERN);
-                set(level, base.offset(0, 4, x), Blocks.SEA_LANTERN);
-            }
-            set(level, base.offset(0, 5 + rank, 0), Blocks.PACKED_ICE);
-        }
     }
 
     private static void buildArcane(ServerLevel level, BlockPos base) {
@@ -127,29 +80,6 @@ final class VillageDefenseTowerBuilder {
         set(level, base.offset(-2, 2, 0), Blocks.CRYING_OBSIDIAN);
         set(level, base.offset(0, 2, 2), Blocks.CRYING_OBSIDIAN);
         set(level, base.offset(0, 2, -2), Blocks.CRYING_OBSIDIAN);
-        VillageTowerSpecializationSystem.Branch branch = VillageTowerSpecializationSystem.branch(
-                VillageTowerSpecializationSystem.TowerKind.ARCANE);
-        int rank = VillageTowerSpecializationSystem.rank(VillageTowerSpecializationSystem.TowerKind.ARCANE);
-        if (branch == VillageTowerSpecializationSystem.Branch.ARCANE_CHAIN) {
-            for (int x = -2; x <= 2; x += 2) {
-                set(level, base.offset(x, 5, 0), Blocks.END_ROD);
-                set(level, base.offset(0, 5, x), Blocks.END_ROD);
-            }
-        } else if (branch == VillageTowerSpecializationSystem.Branch.ARCANE_NULL) {
-            ring(level, base, 3, 4 + rank, Blocks.CRYING_OBSIDIAN);
-            set(level, base.offset(0, 5 + rank, 0), Blocks.SCULK_CATALYST);
-        } else if (branch == VillageTowerSpecializationSystem.Branch.ARCANE_OVERCHARGE) {
-            column(level, base, 0, 0, 4, 4 + rank, Blocks.AMETHYST_BLOCK);
-            set(level, base.offset(0, 5 + rank, 0), Blocks.BEACON);
-        }
-    }
-
-    private static void ring(ServerLevel level, BlockPos base, int radius, int y, Block material) {
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
-                if (Math.abs(x) == radius || Math.abs(z) == radius) set(level, base.offset(x, y, z), material);
-            }
-        }
     }
 
     private static void platform(ServerLevel level, BlockPos base, Block material) {

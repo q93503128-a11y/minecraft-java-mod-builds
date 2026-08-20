@@ -540,7 +540,6 @@ public final class VillageProgressionSystem {
             VillageSkillTreeSystem.resetForNewGame();
             VillageRoleSkillSystem.resetForNewGame();
             VillageDefenseResearchSystem.resetForNewGame();
-            VillageTowerSpecializationSystem.resetForNewGame();
             VillageRelicSystem.resetForNewGame();
             VillageMercenarySystem.resetForNewGame(server);
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
