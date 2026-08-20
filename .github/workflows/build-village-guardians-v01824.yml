@@ -1,0 +1,433 @@
+name: Build Village Guardians v0.18.24 Defense Action Integrity
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  BUILD_VERSION: 0.18.24-alpha.1
+  EXPECTED_JAR: villageguardians-0.18.24-alpha.1.jar
+
+jobs:
+  build:
+    if: github.event_name != 'issues' || github.event.issue.title == 'Village Guardians v0.18.24 defense action integrity'
+    name: Java 25 / NeoForge 26.2 defense integrity acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply v0.18.24 integrity patch
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('.')
+          java = root / 'src/main/java/kr/moonseungjun/villageguardians'
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {count}: {old[:80]!r}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # Version + historical test decoupling.
+          props = root / 'gradle.properties'
+          replace_once(props, 'mod_version=0.18.23-alpha.1', 'mod_version=0.18.24-alpha.1')
+
+          v23 = root / 'tools/test_v01823_defense_consolidation.py'
+          replace_once(v23, '    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")\n', '')
+          replace_once(v23, '    assert "mod_version=0.18.23-alpha.1" in props\n\n', '')
+
+          # Server-authoritative action locality: mutating siege actions must be revalidated when the packet arrives.
+          local = java / 'VillageLocalActionSystem.java'
+          replace_once(
+              local,
+              '        if (player == null || action == null) return false;\n\n',
+              '        if (player == null || action == null) return false;\n\n'
+              '        if (requiresSiegeCommandAccess(action) && !VillageLocationRules.isNearTownHall(player)) {\n'
+              '            player.sendSystemMessage(Component.literal("§c성벽·포탑 관리 동작은 마을 회관 지휘대 근처에서만 실행할 수 있습니다."));\n'
+              '            return true;\n'
+              '        }\n\n'
+          )
+          replace_once(
+              local,
+              '    private static int parseInt(String value, int fallback) {\n',
+              '    private static boolean requiresSiegeCommandAccess(String action) {\n'
+              '        return action.equals("siege_turret_repair_all")\n'
+              '                || action.startsWith("siege_segment_repair:")\n'
+              '                || action.startsWith("siege_segment_upgrade:")\n'
+              '                || action.startsWith("siege_turret_select:")\n'
+              '                || action.startsWith("siege_turret_repair:")\n'
+              '                || action.startsWith("siege_turret_upgrade:")\n'
+              '                || action.startsWith("siege_turret_dismantle:");\n'
+              '    }\n\n'
+              '    private static int parseInt(String value, int fallback) {\n'
+          )
+
+          # Turret maintenance is day-only/game-over-safe. Emergency consumable field repair remains available in combat.
+          placed = java / 'VillagePlacedTurretSystem.java'
+          replace_once(
+              placed,
+              '        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {\n'
+              '            return "포탑 배치는 낮 정비 시간에만 가능합니다.";\n'
+              '        }\n',
+              '        String blocked = maintenanceBlockReason("배치");\n'
+              '        if (blocked != null) return blocked;\n'
+          )
+          replace_once(
+              placed,
+              '    public static synchronized String repair(ServerPlayer player, int id) {\n'
+              '        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 수리할 수 없습니다.";\n',
+              '    public static synchronized String repair(ServerPlayer player, int id) {\n'
+              '        String blocked = maintenanceBlockReason("수리");\n'
+              '        if (blocked != null) return blocked;\n'
+          )
+          replace_once(
+              placed,
+              '    public static synchronized String upgrade(ServerPlayer player, int id) {\n'
+              '        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 강화할 수 없습니다.";\n',
+              '    public static synchronized String upgrade(ServerPlayer player, int id) {\n'
+              '        String blocked = maintenanceBlockReason("강화");\n'
+              '        if (blocked != null) return blocked;\n'
+          )
+          replace_once(
+              placed,
+              '        int newLevel = state.level() + 1;\n'
+              '        TurretState upgradedBase = new TurretState(id, state.type(), state.pos(), newLevel,\n'
+              '                state.type().baseHp() + (newLevel - 1) * 70, true);\n'
+              '        TurretState upgraded = new TurretState(id, state.type(), state.pos(), newLevel,\n'
+              '                maxHp(upgradedBase), true);\n',
+              '        int oldMaximum = maxHp(state);\n'
+              '        int missingHp = Math.max(0, oldMaximum - Math.min(oldMaximum, state.hp()));\n'
+              '        int newLevel = state.level() + 1;\n'
+              '        TurretState upgradedBase = new TurretState(id, state.type(), state.pos(), newLevel,\n'
+              '                state.type().baseHp() + (newLevel - 1) * 70, true);\n'
+              '        int newMaximum = maxHp(upgradedBase);\n'
+              '        int newHp = Math.max(1, Math.min(newMaximum, newMaximum - missingHp));\n'
+              '        TurretState upgraded = new TurretState(id, state.type(), state.pos(), newLevel, newHp, true);\n'
+          )
+          replace_once(
+              placed,
+              '        return state.type().displayName() + " #" + id + " Lv." + newLevel + " 강화 완료";\n',
+              '        return state.type().displayName() + " #" + id + " Lv." + newLevel + " 강화 완료 · HP "\n'
+              '                + newHp + "/" + newMaximum + " (기존 손상 유지)";\n'
+          )
+          replace_once(
+              placed,
+              '    public static synchronized String dismantle(ServerPlayer player, int id) {\n'
+              '        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 철거할 수 없습니다.";\n',
+              '    public static synchronized String dismantle(ServerPlayer player, int id) {\n'
+              '        String blocked = maintenanceBlockReason("철거");\n'
+              '        if (blocked != null) return blocked;\n'
+          )
+          replace_once(
+              placed,
+              '    public static synchronized String repairAll(ServerPlayer player) {\n'
+              '        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 포탑을 일괄 수리할 수 없습니다.";\n',
+              '    public static synchronized String repairAll(ServerPlayer player) {\n'
+              '        String blocked = maintenanceBlockReason("일괄 수리");\n'
+              '        if (blocked != null) return blocked;\n'
+          )
+          replace_once(
+              placed,
+              '    private static String invalidReason(ServerLevel level, BlockPos pos, int ignoredId) {\n'
+              '        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) return "낮 정비 시간에만 설치할 수 있습니다.";\n',
+              '    private static String maintenanceBlockReason(String action) {\n'
+              '        if (VillageProgressionSystem.isGameOver()) {\n'
+              '            return "게임 오버 상태에서는 포탑 " + action + "을(를) 실행할 수 없습니다. 재시작을 먼저 선택하세요.";\n'
+              '        }\n'
+              '        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {\n'
+              '            return "포탑 " + action + "은(는) 낮 정비 시간에만 가능합니다.";\n'
+              '        }\n'
+              '        return null;\n'
+              '    }\n\n'
+              '    private static String invalidReason(ServerLevel level, BlockPos pos, int ignoredId) {\n'
+              '        String blocked = maintenanceBlockReason("배치");\n'
+              '        if (blocked != null) return blocked;\n'
+          )
+
+          # Segment maintenance receives the same phase/game-over invariant, including the north-gate delegation path.
+          segment = java / 'VillageSiegeSegmentSystem.java'
+          replace_once(
+              segment,
+              '    public static String repair(ServerPlayer player, Segment segment) {\n'
+              '        if (segment == null) return "알 수 없는 방어 구역입니다.";\n'
+              '        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 성벽 구역을 수리할 수 없습니다.";\n',
+              '    public static String repair(ServerPlayer player, Segment segment) {\n'
+              '        if (segment == null) return "알 수 없는 방어 구역입니다.";\n'
+              '        String blocked = maintenanceBlockReason("수리");\n'
+              '        if (blocked != null) return blocked;\n'
+          )
+          replace_once(
+              segment,
+              '    public static String upgrade(ServerPlayer player, Segment segment) {\n'
+              '        if (segment == null) return "알 수 없는 방어 구역입니다.";\n'
+              '        if (VillageRaidSystem.isRaidLocked()) return "습격 중에는 성벽 구역을 강화할 수 없습니다.";\n',
+              '    public static String upgrade(ServerPlayer player, Segment segment) {\n'
+              '        if (segment == null) return "알 수 없는 방어 구역입니다.";\n'
+              '        String blocked = maintenanceBlockReason("강화");\n'
+              '        if (blocked != null) return blocked;\n'
+          )
+          replace_once(
+              segment,
+              '    public static BlockPos attackPoint(Segment segment, BlockPos attacker) {\n',
+              '    private static String maintenanceBlockReason(String action) {\n'
+              '        if (VillageProgressionSystem.isGameOver()) {\n'
+              '            return "게임 오버 상태에서는 성벽 " + action + "을(를) 실행할 수 없습니다. 재시작을 먼저 선택하세요.";\n'
+              '        }\n'
+              '        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {\n'
+              '            return "성벽 " + action + "은(는) 낮 정비 시간에만 가능합니다.";\n'
+              '        }\n'
+              '        return null;\n'
+              '    }\n\n'
+              '    public static BlockPos attackPoint(Segment segment, BlockPos attacker) {\n'
+          )
+
+          ui = java / 'VillageSiegeCommandUi.java'
+          replace_once(
+              ui,
+              '                "강화|Lv.5까지 HP·피해·사거리·공격 주기 강화",\n',
+              '                "강화|Lv.5까지 HP·피해·사거리·공격 주기 강화 · 현재 손상분은 유지",\n'
+          )
+
+          # Bring README release head back in sync and record both consolidation and the integrity pass.
+          readme = root / 'README.md'
+          replace_once(readme, '- 현재 소스 버전 `0.18.22-alpha.1`', '- 현재 소스 버전 `0.18.24-alpha.1`')
+          replace_once(readme, '- 목표 JAR `villageguardians-0.18.22-alpha.1.jar`', '- 목표 JAR `villageguardians-0.18.24-alpha.1.jar`')
+          marker = '## 0.18.22 승인된 UI 복원 · 후속 기능 보존\n'
+          insert = '''## 0.18.24 방어 관리 권한·경제 정합\n\n- 성벽·포탑의 수리·강화·철거·배치 선택은 UI를 어디서 열었는지가 아니라 서버가 액션 패킷을 받는 순간 다시 회관 지휘대 근접 여부를 검증한다. 화면을 연 뒤 멀리 이동하거나 임의 액션 패킷을 보내도 원격으로 주화와 방어 상태를 바꿀 수 없다.\n- 포탑/성벽의 일반 관리 작업은 게임 오버 상태와 야간/습격 중에는 거부되며 낮 정비 시간에만 가능하다. 전투 중 사용하도록 만든 응급 포탑 수리 키트의 근거리 현장 수리는 이 제한에서 제외한다.\n- 손상된 포탑을 강화할 때 새 최대 HP로 즉시 완전 회복되던 경제 우회가 제거됐다. 강화는 기존 손상 HP를 그대로 남긴 채 새 최대 HP만 늘려 수리 비용을 우회하지 못한다.\n- 이전 릴리스 회귀 테스트가 현재 버전 문자열을 고정하지 않도록 0.18.23 테스트를 기능 계약으로 정리했고 README의 현재 버전/JAR 표기도 정본과 다시 맞췄다.\n\n## 0.18.23 방어 시스템 소유권 통합\n\n- 구형 `VillageTowerSpecializationSystem`과 `VillageTowerProgressData`를 생산 런타임에서 제거했다.\n- 고정 4개 성루는 요새 건축/관측 랜드마크로만 남기고, 실전 자동 방어 화력과 성장·내구도·저장 소유권은 10계열 `VillagePlacedTurretSystem`으로 단일화했다.\n- 오래된 성루 메뉴/분기 액션은 현재 공성 지휘 UI로만 안전하게 리다이렉트하고 `/vg menu`, `/vg stats`도 현행 UI 컨트롤러를 사용한다.\n\n'''
+          replace_once(readme, marker, insert + marker)
+
+          test = root / 'tools/test_v01824_defense_action_integrity.py'
+          test.write_text(r'''#!/usr/bin/env python3
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
+
+          def read(name: str) -> str:
+              return (JAVA / name).read_text(encoding="utf-8")
+
+          def body(source: str, start: str, end: str) -> str:
+              return source.split(start, 1)[1].split(end, 1)[0]
+
+          def main() -> None:
+              props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
+              local = read("VillageLocalActionSystem.java")
+              placed = read("VillagePlacedTurretSystem.java")
+              segment = read("VillageSiegeSegmentSystem.java")
+              ui = read("VillageSiegeCommandUi.java")
+              network = read("VillageNetwork.java")
+              readme = (ROOT / "README.md").read_text(encoding="utf-8")
+              v23 = (ROOT / "tools/test_v01823_defense_consolidation.py").read_text(encoding="utf-8")
+
+              assert "mod_version=0.18.24-alpha.1" in props
+              assert "0.18.24-alpha.1" in readme and "villageguardians-0.18.24-alpha.1.jar" in readme
+              assert 'assert "mod_version=0.18.23-alpha.1" in props' not in v23
+
+              # Client actions are untrusted strings; mutations must be re-authorized server-side at packet execution time.
+              assert "VillageUiActionPayload" in network and "VillageLocalActionSystem.handle(player, payload.action())" in network
+              assert "requiresSiegeCommandAccess(action)" in local
+              assert "VillageLocationRules.isNearTownHall(player)" in local
+              for token in (
+                  'action.equals("siege_turret_repair_all")',
+                  'action.startsWith("siege_segment_repair:")',
+                  'action.startsWith("siege_segment_upgrade:")',
+                  'action.startsWith("siege_turret_select:")',
+                  'action.startsWith("siege_turret_repair:")',
+                  'action.startsWith("siege_turret_upgrade:")',
+                  'action.startsWith("siege_turret_dismantle:")',
+              ):
+                  assert token in local
+
+              # Persistent defense maintenance is day-only and blocked after game over.
+              assert 'private static String maintenanceBlockReason(String action)' in placed
+              assert 'VillageProgressionSystem.isGameOver()' in placed
+              assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in placed
+              for signature in (
+                  'public static String selectPlacement',
+                  'public static synchronized String repair(ServerPlayer player, int id)',
+                  'public static synchronized String upgrade(ServerPlayer player, int id)',
+                  'public static synchronized String dismantle(ServerPlayer player, int id)',
+                  'public static synchronized String repairAll(ServerPlayer player)',
+              ):
+                  chunk = body(placed, signature, '\n    }')
+                  assert 'maintenanceBlockReason(' in chunk
+
+              # Emergency consumable field repair intentionally remains a combat action.
+              field = body(placed, 'public static synchronized String fieldRepairNearest', '\n    }')
+              assert 'maintenanceBlockReason(' not in field
+
+              # Upgrade cannot be used as a free full repair anymore.
+              upgrade = body(placed, 'public static synchronized String upgrade(ServerPlayer player, int id)', '\n    }')
+              for token in ('oldMaximum', 'missingHp', 'newMaximum', 'newHp', '기존 손상 유지'):
+                  assert token in upgrade
+              assert 'maxHp(upgradedBase), true' not in upgrade
+
+              assert 'private static String maintenanceBlockReason(String action)' in segment
+              assert segment.count('String blocked = maintenanceBlockReason(') >= 2
+              assert 'VillageProgressionSystem.isGameOver()' in segment
+              assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in segment
+              assert '현재 손상분은 유지' in ui
+
+              print('[PASS] siege mutation packets revalidate town-hall locality server-side')
+              print('[PASS] persistent wall/turret maintenance is day-only and game-over safe')
+              print('[PASS] emergency field repair remains usable as a combat consumable')
+              print('[PASS] turret upgrades preserve existing damage instead of granting a free full repair')
+              print('[PASS] release/version documentation and historical test ownership are current')
+              print('[PASS] v0.18.24 defense action integrity contract complete')
+
+          if __name__ == "__main__":
+              main()
+          '''.replace('          ', ''), encoding='utf-8')
+          PY
+
+      - name: Run canonical deterministic contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          for test in \
+            tools/test_rpg_balance.py \
+            tools/test_village_zone.py \
+            tools/test_progression_loop.py \
+            tools/test_progression_depth.py \
+            tools/test_fortress_layout.py \
+            tools/test_runtime_safety.py \
+            tools/test_ui_layout_contract.py \
+            tools/test_interaction_contract.py \
+            tools/test_action_layout.py \
+            tools/test_enemy_content.py \
+            tools/test_v0188_risk_ui_cleanup.py \
+            tools/test_v0189_siege_phase2.py \
+            tools/test_v01810_ranger_ricochet.py \
+            tools/test_v01811_defense_polish.py \
+            tools/test_v01812_quality_audit.py \
+            tools/test_v01813_siege_integration.py \
+            tools/test_v01814_persistent_presentation.py \
+            tools/test_v01815_boss_identity.py \
+            tools/test_v01818_growth_consumables.py \
+            tools/test_v01819_research_mercenary_presentation.py \
+            tools/test_v01820_mercenary_roster.py \
+            tools/test_v01820_roster_ui_consistency.py \
+            tools/test_v01821_raid_lifecycle_presentation.py \
+            tools/test_v01822_ui_rollback.py \
+            tools/test_v01823_defense_consolidation.py \
+            tools/test_v01824_defense_action_integrity.py; do
+            test -f "$test" || continue
+            echo "=== $test ==="
+            python3 "$test"
+          done
+
+      - name: Clean NeoForge build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
+
+      - name: Verify runtime JAR and source ownership
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/${EXPECTED_JAR}"
+          python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jar = Path('build/libs/villageguardians-0.18.24-alpha.1.jar')
+          with zipfile.ZipFile(jar) as zf:
+              names = set(zf.namelist())
+              toml = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
+          prefix = 'kr/moonseungjun/villageguardians/'
+          assert prefix + 'VillagePlacedTurretSystem.class' in names
+          assert prefix + 'VillageSiegeSegmentSystem.class' in names
+          assert prefix + 'VillageLocalActionSystem.class' in names
+          assert prefix + 'VillageTowerSpecializationSystem.class' not in names
+          assert prefix + 'VillageTowerProgressData.class' not in names
+          assert '0.18.24-alpha.1' in toml
+          print('[PASS] final JAR contains v0.18.24 defense integrity runtime and no retired tower ownership')
+          PY
+
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-${{ env.BUILD_VERSION }}
+          path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit verified source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            "${PROJECT_DIR}/gradle.properties" \
+            "${PROJECT_DIR}/README.md" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageLocalActionSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillagePlacedTurretSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageSiegeSegmentSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageSiegeCommandUi.java" \
+            "${PROJECT_DIR}/tools/test_v01823_defense_consolidation.py" \
+            "${PROJECT_DIR}/tools/test_v01824_defense_action_integrity.py"
+          git diff --cached --check
+          git commit -m 'fix(village): harden defense management integrity [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Record final acceptance metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          mkdir -p "${PROJECT_DIR}/.ci"
+          cat > "${PROJECT_DIR}/.ci/v01824-final.txt" <<EOF
+          version=${BUILD_VERSION}
+          run_id=${GITHUB_RUN_ID}
+          source_sha=${SOURCE_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          EOF
+          git add "${PROJECT_DIR}/.ci/v01824-final.txt"
+          git diff --cached --check
+          git commit -m 'ci(village): record v0.18.24 acceptance [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
