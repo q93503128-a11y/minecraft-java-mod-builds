@@ -20,7 +20,10 @@ public final class ClientNetworkHandlers {
 
     private static void handleSnapshot(GrimoireSnapshotPayload payload, IPayloadContext context) {
         ArcaneClientState.update(payload.snapshot());
-        if (!"sync".equals(payload.page())) {
+        if ("sync".equals(payload.page())) return;
+        if ("atlas".equals(payload.page()) || "academy".equals(payload.page())) {
+            Minecraft.getInstance().gui.setScreen(new PrimaryGrimoireScreen(payload.page()));
+        } else {
             Minecraft.getInstance().gui.setScreen(new GrimoireScreen(payload.page()));
         }
     }
