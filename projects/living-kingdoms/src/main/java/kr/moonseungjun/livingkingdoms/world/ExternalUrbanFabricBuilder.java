@@ -38,11 +38,25 @@ public final class ExternalUrbanFabricBuilder {
             "/data/livingkingdoms/structures/external/all_in_one_house.schem";
     private static final String CASTLE_HOUSE =
             "/data/livingkingdoms/structures/external/fantasy_castle_house.schem";
+    private static final String PLAYER_CASTLE_HOUSE =
+            "/data/livingkingdoms/structures/external/player_castle_house.schem";
+    private static final String TAVERN_INN =
+            "/data/livingkingdoms/structures/external/medieval_tavern_inn.schem";
+    private static final String MARKET_HALL =
+            "/data/livingkingdoms/structures/external/medieval_market_hall.schem";
+    private static final String HORSE_STABLE =
+            "/data/livingkingdoms/structures/external/medieval_horse_stable.schem";
+    private static final List<String> URBAN_RESOURCES = List.of(
+            HOUSE, CASTLE_HOUSE, MANOR,
+            PLAYER_CASTLE_HOUSE, TAVERN_INN, MARKET_HALL, HORSE_STABLE);
+    private static final Set<String> INDEPENDENT_URBAN_SOURCES = Set.of(
+            PLAYER_CASTLE_HOUSE, TAVERN_INN, MARKET_HALL, HORSE_STABLE);
 
     private static final int MIN_COMPONENT_BLOCKS = 24;
     private static final int MAX_ROAD_SEARCH = 72;
     private static final int ACCESS_HALF_WIDTH = 1;
     private static final int SOURCE_EXIT_PROBE = 4;
+    private static final int MIN_INDEPENDENT_SOURCE_REACHABLE = 160;
     private static final Map<String, SourceTemplate> TEMPLATE_CACHE = new HashMap<>();
     private static final Map<String, String> LEGACY_BLOCK_IDS = Map.of(
             "minecraft:chain", "minecraft:iron_chain",
@@ -114,7 +128,7 @@ public final class ExternalUrbanFabricBuilder {
 
     public static int facadeStyleCount() {
         int count = 0;
-        for (String resource : List.of(HOUSE, CASTLE_HOUSE, MANOR)) {
+        for (String resource : URBAN_RESOURCES) {
             count += template(resource).fragments.size();
         }
         return count;
@@ -177,7 +191,7 @@ public final class ExternalUrbanFabricBuilder {
     /** Returns each retained cropped fragment once; block states are immutable and source-only. */
     public static Map<String, UrbanFragmentSnapshot> fragmentSnapshotsForDiagnostics() {
         Map<String, UrbanFragmentSnapshot> result = new LinkedHashMap<>();
-        for (String resource : List.of(HOUSE, CASTLE_HOUSE, MANOR)) {
+        for (String resource : URBAN_RESOURCES) {
             SourceTemplate source = template(resource);
             for (int index = 0; index < source.fragments.size(); index++) {
                 FacadeFragment fragment = source.fragments.get(index);
@@ -327,13 +341,15 @@ public final class ExternalUrbanFabricBuilder {
                         .toList();
                 cachedEntrances = List.copyOf(entrances);
                 EnumMap<UrbanRole, Integer> counts = new EnumMap<>(UrbanRole.class);
+                Map<String, Integer> resources = new LinkedHashMap<>();
                 for (UrbanPlacement placement : result) {
                     counts.merge(placement.role, 1, Integer::sum);
+                    resources.merge(placement.resource, 1, Integer::sum);
                 }
                 cachedRoleCounts = Map.copyOf(counts);
                 LivingKingdoms.LOGGER.info(
-                        "Prepared Erden continuous urban fabric plots={} entrances={} facade_styles={} roles={}",
-                        result.size(), entrances.size(), facadeStyleCount(), roleCountsForDiagnostics()
+                        "Prepared Erden continuous urban fabric plots={} entrances={} facade_styles={} roles={} resources={}",
+                        result.size(), entrances.size(), facadeStyleCount(), roleCountsForDiagnostics(), resources
                 );
             }
             return result;
@@ -404,11 +420,19 @@ public final class ExternalUrbanFabricBuilder {
 
     private static String chooseResource(UrbanRole role, int hash) {
         return switch (role) {
-            case TENEMENT -> (hash & 1) == 0 ? HOUSE : CASTLE_HOUSE;
-            case SHOP, BAKERY, WAREHOUSE -> HOUSE;
-            case INN, STABLE, GUARD_POST -> (hash & 2) == 0 ? MANOR : CASTLE_HOUSE;
+            case TENEMENT -> selectResource(hash, HOUSE, CASTLE_HOUSE, PLAYER_CASTLE_HOUSE);
+            case SHOP -> selectResource(hash, HOUSE, MARKET_HALL, PLAYER_CASTLE_HOUSE);
+            case BAKERY -> selectResource(hash, HOUSE, PLAYER_CASTLE_HOUSE);
+            case INN -> selectResource(hash, MANOR, CASTLE_HOUSE, TAVERN_INN);
+            case STABLE -> selectResource(hash, MANOR, HORSE_STABLE);
+            case GUARD_POST -> selectResource(hash, MANOR, CASTLE_HOUSE, PLAYER_CASTLE_HOUSE);
             case BATHHOUSE -> MANOR;
+            case WAREHOUSE -> selectResource(hash, HOUSE, MARKET_HALL);
         };
+    }
+
+    private static String selectResource(int hash, String... resources) {
+        return resources[Math.floorMod(hash >>> 5, resources.length)];
     }
 
     private static UrbanPlacement choosePlacement(int centerX, int centerZ,
@@ -673,6 +697,57 @@ public final class ExternalUrbanFabricBuilder {
         List<BuildingBlock> candidates = entrances.isEmpty()
                 ? List.of(new BuildingBlock(width / 2, 1, 0, Blocks.OAK_DOOR.defaultBlockState()))
                 : entrances;
+
+        if (INDEPENDENT_URBAN_SOURCES.contains(resource)) {
+            if (entrances.isEmpty()) {
+                throw new IllegalStateException(
+                        "Independent Erden urban source has no retained real door: " + resource);
+            }
+            FacadeFragment bestFragment = null;
+            BuildingBlock bestEntrance = null;
+            FrontSide bestCropSide = null;
+            int bestReachable = -1;
+            int candidateCount = 0;
+            Set<Long> testedDoorColumns = new LinkedHashSet<>();
+            for (BuildingBlock entrance : candidates) {
+                long doorColumn = ((long) entrance.x << 32) ^ (entrance.z & 0xffffffffL);
+                if (!testedDoorColumns.add(doorColumn)) continue;
+                for (FrontSide cropSide : FrontSide.values()) {
+                    int depth = Math.min(38, cropSide.horizontal ? width : length);
+                    if (edgeDistance(entrance.x, entrance.z, width, length, cropSide) >= depth) continue;
+                    FacadeFragment candidate = cropFragment(
+                            sourceBlocks, entrance, cropSide, width, height, length);
+                    if (candidate.blocks.size() < 500
+                            || !containsRealEntrance(candidate)
+                            || candidate.exteriorSide != cropSide) {
+                        continue;
+                    }
+                    int reachable = fragmentReachableCells(candidate);
+                    candidateCount++;
+                    if (reachable > bestReachable) {
+                        bestReachable = reachable;
+                        bestFragment = candidate;
+                        bestEntrance = entrance;
+                        bestCropSide = cropSide;
+                    }
+                }
+            }
+            if (bestFragment == null || bestReachable < MIN_INDEPENDENT_SOURCE_REACHABLE) {
+                throw new IllegalStateException(
+                        "No usable fixed-footprint independent Erden source crop resource=" + resource
+                                + " best_reachable=" + bestReachable
+                                + " required=" + MIN_INDEPENDENT_SOURCE_REACHABLE
+                                + " candidate_columns=" + testedDoorColumns.size());
+            }
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_INDEPENDENT_URBAN_SOURCE_SELECTED resource={} reachable={} crop_side={} source_door={},{} fragment={}x{} entrance_local={},{} resolved_side={} candidates={} candidate_columns={} same_footprint=true source_blocks_cut=0 source_only=true world_reads=false mutations=0",
+                    resource, bestReachable, bestCropSide,
+                    bestEntrance.x, bestEntrance.z,
+                    bestFragment.width, bestFragment.length,
+                    bestFragment.entranceX, bestFragment.entranceZ,
+                    bestFragment.exteriorSide, candidateCount, testedDoorColumns.size());
+            return List.of(bestFragment);
+        }
 
         // The fantasy starter castle exposes several real doors. Retain only doorway columns that
         // prove a large fixed-footprint interior, then keep at most the two strongest distinct crops.
