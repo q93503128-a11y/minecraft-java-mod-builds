@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'projects/village-guardians/.docs-trigger-v01822'
+      - '.github/workflows/finalize-village-guardians-v01822.yml'
   issues:
     types: [opened]
 
