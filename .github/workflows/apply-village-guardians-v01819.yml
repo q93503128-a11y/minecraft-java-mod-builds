@@ -19,6 +19,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Record integration run id
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p projects/village-guardians/.ci
+          printf 'status=RUNNING\nrun_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > projects/village-guardians/.ci/v01819-integration-running.txt
+          git add projects/village-guardians/.ci/v01819-integration-running.txt
+          git commit -m 'ci(village): record v0.18.19 integration start [skip ci]'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
       - name: Set up Java 25
         uses: actions/setup-java@v5
         with:
@@ -75,6 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -f projects/village-guardians/tools/apply_v01819_research_mercenary.py
+          rm -f projects/village-guardians/.ci/v01819-integration-running.txt
           rm -f projects/village-guardians/.ci/v01819-integration-failure.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -96,8 +113,9 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           mkdir -p projects/village-guardians/.ci
+          rm -f projects/village-guardians/.ci/v01819-integration-running.txt
           printf 'status=FAIL\nrun_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > projects/village-guardians/.ci/v01819-integration-failure.txt
-          git add projects/village-guardians/.ci/v01819-integration-failure.txt
+          git add -A projects/village-guardians/.ci
           git commit -m 'ci(village): record v0.18.19 integration failure [skip ci]'
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then exit 0; fi
