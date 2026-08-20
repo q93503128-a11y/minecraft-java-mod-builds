@@ -1,1 +1,0 @@
-The integration workflow must pass canonical regression tests, Java 25 clean build, and runtime JAR verification before source commit.
