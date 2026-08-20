@@ -33,7 +33,11 @@ def externalStructureAssets = [
         [output: 'medieval_manor.schem', slug: 'ultimate-medieval-manor-survival-base', title: 'Ultimate Medieval Manor Survival Base'],
         [output: 'all_in_one_house.schem', slug: 'ultimate-all-in-one-survival-house', title: 'Ultimate All In One Survival House'],
         [output: 'fantasy_castle_house.schem', slug: 'ultimate-fantasy-starter-castle-house', title: 'Ultimate Fantasy Starter Castle House'],
-        [output: 'village_church.schem', slug: 'ultimate-medieval-village-church-survival-base', title: 'Ultimate Medieval Village Church Survival Base']
+        [output: 'village_church.schem', slug: 'ultimate-medieval-village-church-survival-base', title: 'Ultimate Medieval Village Church Survival Base'],
+        [output: 'player_castle_house.schem', slug: 'ultimate-player-favorite-castle-house-survival-base', title: 'Ultimate Player Favorite Castle House Survival Base'],
+        [output: 'medieval_tavern_inn.schem', slug: 'ultimate-medieval-tavern-inn-survival-base', title: 'Ultimate Medieval Tavern Inn Survival Base'],
+        [output: 'medieval_market_hall.schem', slug: 'ultimate-medieval-market-hall-survival-base', title: 'Ultimate Medieval Market Hall Survival Base'],
+        [output: 'medieval_horse_stable.schem', slug: 'ultimate-medieval-horse-stable-survival-base', title: 'Ultimate Medieval Horse Stable Survival Base']
 ]
 
 def prepareKenneyUiAssets = tasks.register('prepareKenneyUiAssets') {
