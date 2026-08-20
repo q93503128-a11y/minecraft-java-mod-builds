@@ -56,7 +56,10 @@ public final class VillageMercenarySystem {
         tickCounter = 0;
     }
 
-    public static void reset() { tickCounter = 0; }
+    public static void reset() {
+        tickCounter = 0;
+        VillageMercenaryPresentationSystem.reset();
+    }
 
     public static synchronized boolean recognize(Mob mob) {
         if (!(mob instanceof IronGolem) || !CLASSES.containsKey(mob.getUUID())) return false;
@@ -107,6 +110,7 @@ public final class VillageMercenarySystem {
             VillageProgressionSystem.addCoins(player, cost, "용병 배치 실패 환불");
             return "용병 배치에 실패해 주화를 돌려드렸습니다.";
         }
+        VillageMercenaryPresentationSystem.ensure(level, mercenary, kind, 1);
         return kind.displayName() + " 고용 완료 · Lv.1 · 현재 " + (current + 1) + " / " + cap
                 + " · 사망하지 않는 한 저장과 재접속 후에도 유지됩니다.";
     }
@@ -131,7 +135,11 @@ public final class VillageMercenarySystem {
             CLASSES.put(mob.getUUID(), snapshot.kind()); LEVELS.put(mob.getUUID(), snapshot.level());
             KILLS.put(mob.getUUID(), snapshot.kills()); applyClassPassives(mob, snapshot.kind(), snapshot.level());
             refreshName(mob); VillageWorldSystem.markAllowedGameMob(mob);
-            if (!level.addFreshEntity(mob)) { unregister(mob.getUUID()); VillageWorldSystem.unmarkAllowedGameMob(mob.getUUID()); }
+            if (!level.addFreshEntity(mob)) {
+                unregister(mob.getUUID()); VillageWorldSystem.unmarkAllowedGameMob(mob.getUUID());
+            } else {
+                VillageMercenaryPresentationSystem.ensure(level, mob, snapshot.kind(), snapshot.level());
+            }
             index++;
         }
         persist();
@@ -142,9 +150,11 @@ public final class VillageMercenarySystem {
     }
     private static void discardCurrent(MinecraftServer server) {
         for (UUID uuid : new java.util.HashSet<>(CLASSES.keySet())) {
+            VillageMercenaryPresentationSystem.remove(server.overworld(), uuid);
             var entity = server.overworld().getEntity(uuid); if (entity != null) entity.discard();
             VillageWorldSystem.unmarkAllowedGameMob(uuid);
         }
+        VillageMercenaryPresentationSystem.reset();
     }
 
     public static void tick(MinecraftServer server) {
@@ -161,6 +171,7 @@ public final class VillageMercenarySystem {
             MercenaryClass kind = mercenaryClass(mercenary);
             int rank = rank(mercenary);
             applyClassPassives(mercenary, kind, rank);
+            VillageMercenaryPresentationSystem.ensure(level, mercenary, kind, rank);
             if (!VillageRaidSystem.isActive()) continue;
             if (kind == MercenaryClass.BASTION) bastionControl(level, mercenary, rank);
             else if (kind == MercenaryClass.STRIKER) strikerPressure(level, mercenary, rank);
@@ -173,7 +184,8 @@ public final class VillageMercenarySystem {
         if (!(killer instanceof IronGolem mercenary) || !isMercenary(mercenary.getUUID())
                 || !(mercenary.level() instanceof ServerLevel level)) return;
         UUID uuid = mercenary.getUUID();
-        int kills = KILLS.getOrDefault(uuid, 0) + 1;
+        int kills = KILLS.getOrDefault(uuid, 0)
+                + VillageDefenseResearchSystem.mercenaryTrainingProgressPerKill();
         int currentRank = LEVELS.getOrDefault(uuid, 1);
         int nextRank = currentRank;
         while (nextRank < MAX_LEVEL && kills >= killsRequiredForLevel(nextRank + 1)) nextRank++;
@@ -190,7 +202,9 @@ public final class VillageMercenarySystem {
     }
 
     public static synchronized void handleDeath(Mob mob) {
-        if (mob != null && isMercenary(mob.getUUID())) unregister(mob.getUUID());
+        if (mob == null || !isMercenary(mob.getUUID())) return;
+        if (mob.level() instanceof ServerLevel level) VillageMercenaryPresentationSystem.remove(level, mob.getUUID());
+        unregister(mob.getUUID());
     }
 
     public static String status(MinecraftServer server) {
@@ -257,7 +271,7 @@ public final class VillageMercenarySystem {
     }
 
     private static void healAllies(ServerLevel level, MinecraftServer server, IronGolem medic, int rank) {
-        float amount = 2.3f * mercenaryPower(rank);
+        float amount = 2.3f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryHealingMultiplier();
         double radius = 8.0 + Math.min(13.0, rank * 0.22);
         AABB area = medic.getBoundingBox().inflate(radius);
         for (IronGolem ally : level.getEntitiesOfClass(IronGolem.class, area,

@@ -40,7 +40,8 @@ public final class VillageConsumableSystem {
 
     public static int effectiveCost(Consumable consumable) {
         if (consumable == null) return 0;
-        return Math.max(12, consumable.baseCost() - VillageProgressionSystem.storehouseLevel() * 2);
+        int storehousePrice = Math.max(12, consumable.baseCost() - VillageProgressionSystem.storehouseLevel() * 2);
+        return Math.max(10, Math.round(storehousePrice * VillageDefenseResearchSystem.consumableCostMultiplier()));
     }
 
     public static int bundleCount(Consumable consumable) {
@@ -157,8 +158,9 @@ public final class VillageConsumableSystem {
                 yield "비전 촉진제 사용 · 20초간 직업 기술 피해·치유 +20%";
             }
             case FIELD_REPAIR_KIT -> {
+                int baseRepair = 70 + VillageProgressionSystem.storehouseLevel() * 15;
                 String repaired = VillagePlacedTurretSystem.fieldRepairNearest(player,
-                        70 + VillageProgressionSystem.storehouseLevel() * 15);
+                        Math.round(baseRepair * VillageDefenseResearchSystem.fieldRepairMultiplier()));
                 if (repaired.isBlank()) {
                     player.sendSystemMessage(Component.literal("§e12블록 안에 수리가 필요한 가동 포탑이 없어 키트를 사용하지 않았습니다."));
                     yield "";

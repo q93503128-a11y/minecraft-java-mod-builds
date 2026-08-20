@@ -44,7 +44,7 @@ def main() -> None:
     assert "VillagePersonalCombatSystem.handleIncomingDamage" in rpg
     assert "VillagePersonalCombatSystem.reset" in rpg
 
-    assert "MAX_LEVEL = 5" in research
+    assert "MAX_LEVEL = 10" in research
     assert "VillageDefenseResearchSystem.MAX_LEVEL" in research_data
     assert '"/" + VillageDefenseResearchSystem.MAX_LEVEL' in controller
 
@@ -70,7 +70,7 @@ def main() -> None:
     print("[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs")
     print("[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration")
     print("[PASS] Emergency barrier, momentum and party recovery are wired into combat")
-    print("[PASS] Defense research expands from 9 to 15 upgrades")
+    print("[PASS] Defense research now provides 30 save-compatible long-term upgrades")
     print("[PASS] Skill trees fit overview spacing and the current categorized shop uses safe detail-first actions")
 
 

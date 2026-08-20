@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class VillageDefenseResearchSystem {
-    public static final int MAX_LEVEL = 5;
+    public static final int MAX_LEVEL = 10;
     private static final EnumMap<Branch, Integer> LEVELS = new EnumMap<>(Branch.class);
     private static VillageDefenseResearchData savedData;
 
@@ -30,7 +30,8 @@ public final class VillageDefenseResearchSystem {
 
     public static synchronized int upgradeCost(Branch branch) {
         int current = level(branch);
-        return 180 + branch.ordinal() * 40 + current * 220;
+        int mastery = Math.max(0, current - 4);
+        return 180 + branch.ordinal() * 40 + current * 220 + mastery * 180;
     }
 
     public static synchronized String upgrade(ServerPlayer player, Branch branch) {
@@ -46,27 +47,58 @@ public final class VillageDefenseResearchSystem {
         persist();
         String after = branch.description(current + 1);
         return branch.displayName() + " Lv." + (current + 1) + " 연구 완료"
-                + "\n현재 수치: " + before + "\n강화 후 수치: " + after;
+                + "\n이전: " + before + "\n현재: " + after;
+    }
+
+    private static float curve(int level, float firstFive, float masteryFive) {
+        int safe = Math.max(0, Math.min(MAX_LEVEL, level));
+        int foundation = Math.min(5, safe);
+        int mastery = Math.max(0, safe - 5);
+        return foundation * firstFive + mastery * masteryFive;
     }
 
     public static float mercenaryDamageMultiplier() {
-        return 1.0f + level(Branch.MERCENARY) * 0.12f;
+        return 1.0f + curve(level(Branch.MERCENARY), 0.12f, 0.05f);
+    }
+
+    public static float mercenaryHealingMultiplier() {
+        return 1.0f + curve(level(Branch.MERCENARY), 0.04f, 0.025f);
+    }
+
+    public static int mercenaryTrainingProgressPerKill() {
+        return 1 + level(Branch.MERCENARY) / 4;
     }
 
     public static int mercenaryCapacityBonus() {
-        return Math.min(3, level(Branch.MERCENARY));
+        return Math.min(5, (level(Branch.MERCENARY) + 1) / 2);
     }
 
     public static float towerDamageMultiplier() {
-        return 1.0f + level(Branch.TOWER) * 0.10f;
+        return 1.0f + curve(level(Branch.TOWER), 0.10f, 0.04f);
+    }
+
+    public static float towerRangeMultiplier() {
+        return 1.0f + curve(level(Branch.TOWER), 0.01f, 0.015f);
+    }
+
+    public static float towerDurabilityMultiplier() {
+        return 1.0f + curve(level(Branch.TOWER), 0.025f, 0.035f);
     }
 
     public static float equipmentDropBonus() {
-        return level(Branch.LOGISTICS) * 0.03f;
+        return curve(level(Branch.LOGISTICS), 0.03f, 0.01f);
     }
 
     public static float lootValueMultiplier() {
-        return 1.0f + level(Branch.LOGISTICS) * 0.10f;
+        return 1.0f + curve(level(Branch.LOGISTICS), 0.10f, 0.04f);
+    }
+
+    public static float consumableCostMultiplier() {
+        return Math.max(0.75f, 1.0f - level(Branch.LOGISTICS) * 0.025f);
+    }
+
+    public static float fieldRepairMultiplier() {
+        return 1.0f + curve(level(Branch.LOGISTICS), 0.04f, 0.03f);
     }
 
     public static synchronized void resetForNewGame() {
@@ -79,6 +111,10 @@ public final class VillageDefenseResearchSystem {
         Map<String, Integer> values = new java.util.LinkedHashMap<>();
         LEVELS.forEach((branch, level) -> values.put(branch.id(), level));
         savedData.replace(values);
+    }
+
+    private static int percent(float multiplier) {
+        return Math.max(0, Math.round((multiplier - 1.0f) * 100.0f));
     }
 
     public enum Branch {
@@ -97,11 +133,20 @@ public final class VillageDefenseResearchSystem {
         public String id() { return id; }
         public String displayName() { return displayName; }
 
-        public String description(int level) {
+        public String description(int value) {
+            int safe = Math.max(0, Math.min(MAX_LEVEL, value));
             return switch (this) {
-                case MERCENARY -> "용병 정원 +" + Math.min(3, level) + " · 용병 피해 +" + (level * 12) + "%";
-                case TOWER -> "모든 방어탑 피해 +" + (level * 10) + "%";
-                case LOGISTICS -> "장비 드랍률과 전리품 판매가치 강화 · 현재 판매 +" + (level * 10) + "%";
+                case MERCENARY -> "정원 +" + Math.min(5, (safe + 1) / 2)
+                        + " · 피해 +" + percent(1.0f + curve(safe, 0.12f, 0.05f)) + "%"
+                        + " · 치유 +" + percent(1.0f + curve(safe, 0.04f, 0.025f)) + "%"
+                        + " · 처치 훈련 진척 ×" + (1 + safe / 4);
+                case TOWER -> "피해 +" + percent(1.0f + curve(safe, 0.10f, 0.04f)) + "%"
+                        + " · 사거리 +" + percent(1.0f + curve(safe, 0.01f, 0.015f)) + "%"
+                        + " · 내구 +" + percent(1.0f + curve(safe, 0.025f, 0.035f)) + "%";
+                case LOGISTICS -> "장비 드랍 보너스 +"
+                        + Math.round(curve(safe, 0.03f, 0.01f) * 100.0f) + "%p"
+                        + " · 판매 +" + percent(1.0f + curve(safe, 0.10f, 0.04f)) + "%"
+                        + " · 전투 소모품 할인 " + Math.round((1.0f - Math.max(0.75f, 1.0f - safe * 0.025f)) * 100.0f) + "%";
             };
         }
 

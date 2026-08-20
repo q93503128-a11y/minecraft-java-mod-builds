@@ -131,6 +131,7 @@ public final class VillagePlacedTurretSystem {
         VillageSiegePersistence.putInt("next_turret_id", id + 1);
         TurretState state = new TurretState(id, pending.type(), candidate.immutable(), 1,
                 pending.type().baseHp(), true);
+        state = new TurretState(id, state.type(), state.pos(), state.level(), maxHp(state), true);
         synchronized (VillagePlacedTurretSystem.class) { TURRETS.put(id, state); persist(state); }
         buildVisual(level, state);
         VillageDefenseEffectSystem.turretDeployPulse(level,
@@ -194,8 +195,10 @@ public final class VillagePlacedTurretSystem {
         int cost = 130 + state.level() * 110;
         if (!VillageProgressionSystem.spendCoins(player, cost)) return "강화 주화가 부족합니다. 필요 " + cost;
         int newLevel = state.level() + 1;
-        TurretState upgraded = new TurretState(id, state.type(), state.pos(), newLevel,
+        TurretState upgradedBase = new TurretState(id, state.type(), state.pos(), newLevel,
                 state.type().baseHp() + (newLevel - 1) * 70, true);
+        TurretState upgraded = new TurretState(id, state.type(), state.pos(), newLevel,
+                maxHp(upgradedBase), true);
         TURRETS.put(id, upgraded); persist(upgraded);
         if (player.level() instanceof ServerLevel level) {
             buildVisual(level, upgraded);
@@ -268,7 +271,8 @@ public final class VillagePlacedTurretSystem {
     }
 
     private static void fire(ServerLevel level, TurretState state) {
-        double range = state.type().range() + (state.level() - 1) * 2.5;
+        double range = (state.type().range() + (state.level() - 1) * 2.5)
+                * VillageDefenseResearchSystem.towerRangeMultiplier();
         List<Mob> nearby = VillageRaidSystem.activeEnemiesNear(level, Vec3.atCenterOf(state.pos()), range, 12, null);
         List<Mob> candidates = state.type() == TurretType.BOMBARD
                 ? nearby
@@ -379,7 +383,8 @@ public final class VillagePlacedTurretSystem {
     }
 
     private static void supportPulse(ServerLevel level, MinecraftServer server, TurretState state) {
-        double radius = state.type().range() + state.level() * 2.0;
+        double radius = (state.type().range() + state.level() * 2.0)
+                * VillageDefenseResearchSystem.towerRangeMultiplier();
         double squared = radius * radius;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() == level && player.distanceToSqr(Vec3.atCenterOf(state.pos())) <= squared
@@ -491,7 +496,10 @@ public final class VillagePlacedTurretSystem {
         return null;
     }
 
-    private static int maxHp(TurretState state) { return state.type().baseHp() + (state.level() - 1) * 70; }
+    private static int maxHp(TurretState state) {
+        int base = state.type().baseHp() + (state.level() - 1) * 70;
+        return Math.max(base, Math.round(base * VillageDefenseResearchSystem.towerDurabilityMultiplier()));
+    }
 
     private static void rebuildVisuals(ServerLevel level) { for (TurretState state : TURRETS.values()) buildVisual(level, state); }
     private static void buildVisual(ServerLevel level, TurretState state) {

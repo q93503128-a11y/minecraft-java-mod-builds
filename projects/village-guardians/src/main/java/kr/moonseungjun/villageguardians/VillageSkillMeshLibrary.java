@@ -96,6 +96,10 @@ public final class VillageSkillMeshLibrary {
             case "merc_bastion_guard" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 2);
             case "merc_striker_pressure" -> renderDefenseShot(pose, out, state, age, progress, 9);
             case "merc_medic_pulse" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 3);
+            case "mercenary_presence_bastion" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 0);
+            case "mercenary_presence_striker" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 1);
+            case "mercenary_presence_ranger" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 2);
+            case "mercenary_presence_medic" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 3);
             case "siege_structure_impact" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 4);
             case "turret_placement_preview" -> renderDefenseMaintenance(pose, out, basis, age, progress, 0);
             case "turret_deploy_pulse" -> renderDefenseMaintenance(pose, out, basis, age, progress, 1);
@@ -901,6 +905,71 @@ public final class VillageSkillMeshLibrary {
     }
 
     private record TurretPresentation(int level, boolean disabled) {}
+
+    private static void renderMercenaryPresence(
+            PoseStack.Pose pose, VertexConsumer out, Basis b, double age, String encodedTier, int style) {
+        int tier = 0;
+        try { tier = Math.max(0, Math.min(3, Integer.parseInt(encodedTier == null ? "0" : encodedTier))); }
+        catch (NumberFormatException ignored) {}
+        double scale = 1.0 + tier * 0.085;
+        double pulse = 0.96 + 0.04 * Math.sin(age * 0.10);
+        int color = switch (style) {
+            case 0 -> rgba(112, 190, 255, 150 + tier * 12);
+            case 1 -> rgba(255, 119, 72, 150 + tier * 12);
+            case 2 -> rgba(137, 226, 156, 150 + tier * 12);
+            default -> rgba(255, 224, 135, 150 + tier * 12);
+        };
+        int pale = withAlpha(color, 92 + tier * 10);
+        ring(pose, out, b, 0.78 * scale * pulse, 0.035, 0.038, 44, pale, age * 0.010);
+
+        if (style == 0) {
+            Vec3 shieldCenter = b.local(0.0, 1.10, 0.78 * scale);
+            curvedShield(pose, out, b, shieldCenter, 1.32 * scale, 1.72 * scale, 0.30,
+                    withAlpha(color, 92 + tier * 12));
+            shieldFrame(pose, out, b, shieldCenter.add(b.forward.scale(0.035)),
+                    1.32 * scale, 1.72 * scale, 0.30, color);
+            for (int side : new int[]{-1, 1}) {
+                prism(pose, out, b.local(side * 0.58 * scale, 0.55, 0.15),
+                        b.local(side * 0.70 * scale, 1.65 * scale, 0.26), 0.075 + tier * 0.01, color);
+            }
+        } else if (style == 1) {
+            prism(pose, out, b.local(-0.62 * scale, 0.52, -0.06),
+                    b.local(0.58 * scale, 1.74 * scale, 0.64), 0.065 + tier * 0.012, color);
+            prism(pose, out, b.local(0.62 * scale, 0.52, -0.06),
+                    b.local(-0.58 * scale, 1.74 * scale, 0.64), 0.065 + tier * 0.012, color);
+            for (int i = 0; i < 2 + tier; i++) {
+                slashArc(pose, out, b, age * 0.018 + i * TAU / (2.0 + tier),
+                        0.84 + i * 0.08, 0.88 + i * 0.10, 0.58, 0.035, pale);
+            }
+        } else if (style == 2) {
+            prism(pose, out, b.local(-0.48 * scale, 0.46, -0.42),
+                    b.local(-0.48 * scale, 1.82 * scale, -0.30), 0.09, pale);
+            int arrows = 2 + tier;
+            for (int i = 0; i < arrows; i++) {
+                customArrow(pose, out, b, b.local(-0.50 * scale + i * 0.14, 1.44 + i * 0.10, -0.38),
+                        0.86 + tier * 0.06, 0.035, color);
+            }
+            ringVertical(pose, out, b, 0.62 * scale, 1.12, 0.032, 42, pale, -age * 0.012);
+        } else {
+            verticalPillarAt(pose, out, b, b.local(0.56 * scale, 0.34, 0.02),
+                    0.07 + tier * 0.008, 1.66 * scale, color);
+            crystal(pose, out, b.local(0.56 * scale, 2.03 * scale, 0.02),
+                    0.42 + tier * 0.06, 0.15 + tier * 0.015, color);
+            ring(pose, out, b, 0.66 * scale, 1.94 * scale, 0.038, 46,
+                    pale, age * 0.020);
+            if (tier >= 2) ring(pose, out, b, 0.46 * scale, 1.48 * scale, 0.028, 38,
+                    withAlpha(color, 78), -age * 0.026);
+        }
+
+        if (tier >= 1) {
+            ring(pose, out, b, (0.92 + tier * 0.10) * scale, 0.09, 0.026, 48,
+                    withAlpha(color, 70 + tier * 10), -age * 0.014);
+        }
+        if (tier >= 3) {
+            crystal(pose, out, b.local(0.0, 1.50, 0.18), 0.34, 0.115,
+                    withAlpha(color, 130));
+        }
+    }
 
     private static void renderEliteAura(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, int style) {

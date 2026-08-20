@@ -24,7 +24,7 @@ def main() -> None:
     elite = read("VillageEnemyEliteSystem.java")
     aspect = read("VillageBossAspectSystem.java")
 
-    require("version is v0.18.12-alpha.1", "mod_version=0.18.18-alpha.1" in props)
+    require("version is v0.18.12-alpha.1", "mod_version=0.18.19-alpha.1" in props)
 
     require("turret LOS starts outside its own three-block visual column",
             "private static Vec3 turretMuzzle" in turret
