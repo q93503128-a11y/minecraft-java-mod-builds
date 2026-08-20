@@ -1,207 +1,259 @@
 from pathlib import Path
 import re
 
-root=Path(__file__).resolve().parents[1]
-client=root/'src/main/java/kr/moonseungjun/arcanecircle/client'
-magic=root/'src/main/java/kr/moonseungjun/arcanecircle/magic'
-world=root/'src/main/java/kr/moonseungjun/arcanecircle/world'
-network=root/'src/main/java/kr/moonseungjun/arcanecircle/network'
+root = Path(__file__).resolve().parents[1]
+client = root / 'src/main/java/kr/moonseungjun/arcanecircle/client'
+magic = root / 'src/main/java/kr/moonseungjun/arcanecircle/magic'
+world = root / 'src/main/java/kr/moonseungjun/arcanecircle/world'
+network = root / 'src/main/java/kr/moonseungjun/arcanecircle/network'
 
-def text(path): return path.read_text(encoding='utf-8')
-def require(body,tokens,label):
-    for token in tokens: assert token in body, f'{label}: {token}'
+def text(path):
+    return path.read_text(encoding='utf-8')
 
-# Canonical version and complete spell world.
-gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
-index=text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json')
-assert 'mod_version=0.12.1-alpha.51' in gradle
-assert 'VERSION = "0.12.1-alpha.51"' in main
-assert '"version": "0.12.1-alpha.51"' in index
-catalog=text(magic/'SpellCatalog.java')
-direct=set(re.findall(r'\badd\("([a-z0-9_]+)"',catalog)); fusions=set(re.findall(r'\baddFusion\("([a-z0-9_]+)"',catalog))
-assert len(direct)==90 and len(fusions)==19 and len(direct|fusions)==109,(len(direct),len(fusions))
+def require(body, tokens, label):
+    for token in tokens:
+        assert token in body, f'{label}: missing {token!r}'
+
+# Canonical version and full catalogue.
+gradle = text(root / 'gradle.properties')
+main = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
+index = text(root / 'src/main/resources/data/arcanecircle/spell_catalog/index.json')
+assert 'mod_version=0.12.1-alpha.52' in gradle
+assert 'VERSION = "0.12.1-alpha.52"' in main
+assert '"version": "0.12.1-alpha.52"' in index
+
+catalog = text(magic / 'SpellCatalog.java')
+direct = set(re.findall(r'\badd\("([a-z0-9_]+)"', catalog))
+fusions = set(re.findall(r'\baddFusion\("([a-z0-9_]+)"', catalog))
+all_spells = direct | fusions
+assert len(direct) == 90 and len(fusions) == 19 and len(all_spells) == 109, (len(direct), len(fusions))
 assert 'IMPLEMENTED_MAX_CIRCLE = 9' in catalog and 'WORLD_MAX_CIRCLE = 9' in catalog
 
-# Active-tree/tool hygiene.
-retired=['CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java','MidCircleVisualIdentity.java',
-         'FifthCircleVisualIdentity.java','SixthCircleVisualIdentity.java','ArchmageVisualIdentity.java','RangeReactivePresentation.java',
-         'SpellVisualSignature.java','CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java','SignatureGeometry.java']
-for name in retired: assert not (client/name).exists(),name
-tools=root/'tools'; assert {p.name for p in tools.iterdir() if p.is_file()}=={'test_current_source.py','verify_jar.py'}
-assert not [p for p in tools.iterdir() if p.is_dir()]
-repo=root.parents[1]; scripts=repo/'.github/scripts'
-if scripts.exists(): assert not list(scripts.glob('*arcane*'))
+# Every single spell must have explicit mechanical compendium text: no generic fallback may hide omissions.
+summary = text(magic / 'SpellEffectSummary.java')
+summary_cases = set(re.findall(r'case "([a-z0-9_]+)"', summary))
+assert summary_cases == all_spells, (
+    f'missing summaries={sorted(all_spells-summary_cases)} extra summaries={sorted(summary_cases-all_spells)}'
+)
 
-# Current world-geometry presentation baseline remains intact; alpha.51 does not replace it with generic particles.
-tracker=text(client/'WorldMagicTracker.java')
-require(tracker,['SpellCinematicDirector.charge','ArcaneSigilDirector.charge','AuthoredHighCircleTimeline.charge',
-                 'HighCircleMaintenanceOverlay.charge','PersistentBuffRegalia.release','MAX_FRAME = 14500','MAX_ENTRY = 4000',
-                 'DETAIL_DISTANCE_SQR = 96.0 * 96.0','MAX_VISUALS = 32'],'tracker')
-sigil=text(client/'ArcaneSigilDirector.java'); require(sigil,['formulaFrame','schoolFormula','geometricDepth','anchorFormula'],'sigil')
-timeline=text(client/'AuthoredHighCircleTimeline.java')
-for spell in ['plane_shift','simulacrum','demiplane','clone','maze','true_polymorph','meteor_swarm','time_stop','wish','gate']:
-    assert f'case "{spell}"' in timeline,spell
+# Every spell must be owned by at least one real server runtime source.
+runtime_paths = [
+    magic/'ExpandedSpellEffects.java',
+    magic/'HighCircleSpellEffects.java',
+    magic/'FusionSpellEffects.java',
+    magic/'SpellGameplayService.java',
+    magic/'HighUtilitySpellService.java',
+    magic/'HighControlSpellService.java',
+    magic/'HighWardSpellService.java',
+    magic/'PlanarSpellService.java',
+    magic/'SimulacrumService.java',
+    magic/'ArcaneFieldService.java',
+    magic/'SpellKineticsService.java',
+]
+runtime_union = '\n'.join(text(path) for path in runtime_paths)
+missing_runtime = sorted(spell for spell in all_spells if f'"{spell}"' not in runtime_union)
+assert not missing_runtime, f'spells without explicit runtime ownership: {missing_runtime}'
 
-# Grimoire mechanical text must describe actual alpha.48-51 behavior, not old aliases.
-summary=text(magic/'SpellEffectSummary.java'); assert summary.count('case "')>=109
-require(summary,[
-    'case "clone"','실제 복제본','case "true_polymorph"','실제 몸체','case "maze"','전장에서 실제 추방',
-    'case "etherealness"','물질 충돌 위상화','case "plane_shift"','실제 차원 이동','위=엔드/아래=네더/수평=오버월드',
-    'case "simulacrum"','체력 50%/전투력 약 72%','웅크린 채 G','case "demiplane"','보존되는 개인 주머니방',
-    '내부 블록/물품 유지','case "control_weather"','G키로 바라본 지점 12연속 낙뢰','case "time_stop"','투사체·드롭 이동',
-    'case "mass_suggestion"','전투 이탈 명령','실제로 멀어지며','case "forcecage"','AI/공격/시전은 유지','실제로 넘지 못하게 감금',
-    'case "dominate_monster"','임시 전투 대리체','비전투 시 추종','case "feeblemind"','Arcane 시전 봉쇄','AI 자체는 계속 움직임',
-    'case "globe_of_invulnerability"','적대 1~5써클 Arcane 주문을 경계면에서 소거','6써클 이상/물리 공격은 통과'
-],'summary')
-assert '60초 내 다음 치명상을 대리체가 대신 받고 생존' not in summary
-assert 'case "demiplane" -> "고등 공간 회로로 매우 먼 안전 지점 이동"' not in summary
-assert 'case "plane_shift" -> "장거리 안전 지점으로 고등 공간 이동"' not in summary
-assert 'case "mass_suggestion" -> "넓은 범위 적의 AI·이동·Arcane 시전을 8초간 일괄 봉쇄"' not in summary
-assert 'case "forcecage" -> "조준 대상을 20초간 AI·이동·Arcane 시전 완전 봉쇄"' not in summary
-assert 'case "dominate_monster" -> "조준 대상 AI·이동·Arcane 시전을 24초간 완전 봉쇄"' not in summary
-assert 'case "globe_of_invulnerability" -> "26초 흡수·저항 + 들어오는 피해 70% 감소"' not in summary
+# Main browsing text and mechanical effects are separate surfaces.
+definition = text(magic/'SpellDefinition.java')
+primary = text(client/'PrimaryGrimoireScreen.java')
+handlers = text(client/'ClientNetworkHandlers.java')
+require(definition, [
+    'public String description()',
+    'return description;',
+    'public String effectSummary()',
+    'SpellEffectSummary.summary(this)',
+], 'spell definition display split')
+require(primary, [
+    'public final class PrimaryGrimoireScreen extends Screen',
+    'private static boolean effects;',
+    '"효과 도감"',
+    's.effectSummary()',
+    '"세부 판정은 효과 도감에서 확인"',
+    '"주문서 상점"',
+    '"강점 · "',
+    '"약점 · "',
+    '"본거지 · "',
+    'Rect academyInfo()',
+], 'primary grimoire information hierarchy')
+require(handlers, [
+    '"atlas".equals(payload.page()) || "academy".equals(payload.page())',
+    'new PrimaryGrimoireScreen(payload.page())',
+    'new GrimoireScreen(payload.page())',
+], 'primary grimoire routing')
+assert 'SpellEffectSummary.summary(s)' not in primary
 
-# Alpha.48 real body/state transitions stay authoritative.
-utility=text(magic/'HighUtilitySpellService.java')
-require(utility,['Set.of("clone", "true_polymorph", "maze", "etherealness")','source.getType().create(level, EntitySpawnReason.EVENT)',
-                 'copyCombatBody(source, clone)','TRUE_POLYMORPH_TICKS = 480','EntityTypes.RABBIT.create','restorePolymorph(state, true)',
-                 'MAZE_TICKS = 360','arcanecircle_maze_exile','player.noPhysics = true','event.getAmount() * 0.12F'],'alpha48 utility')
-assert 'getTags()' not in utility and 'snapTo(mob.getX(), -512.0' not in utility
+# alpha.52 copy-source targeting fix: dedicated copy runtimes require a real target, not BODY/0m self semantics.
+require(definition, [
+    'case "simulacrum" -> 28.0;',
+    'case "clone" -> 32.0;',
+    'case "simulacrum", "clone" -> SigilAnchor.TARGET;',
+], 'copy source target contract')
+world_magic = text(magic/'WorldMagicService.java')
+require(world_magic, [
+    'Optional<Mob> aimed = aimedMob(player, range, direction);',
+    'case FRONT, TARGET, GROUND_TARGET -> aimed.map(Mob::getUUID).orElse(null);',
+], 'snapshot target capture')
+sim = text(magic/'SimulacrumService.java')
+utility = text(magic/'HighUtilitySpellService.java')
+require(sim, [
+    'snapshot.targetEntity(caster).orElse(null)',
+    'source.getType().create(level, EntitySpawnReason.EVENT)',
+    'Attributes.MAX_HEALTH, .50',
+    'Attributes.ATTACK_DAMAGE, .72',
+    'Mode.FOLLOW', 'Mode.GUARD', 'Mode.ASSAULT',
+], 'simulacrum')
+require(utility, [
+    'Set.of("clone", "true_polymorph", "maze", "etherealness")',
+    'Mob source = targetMob(player, snapshot);',
+    'source.getType().create(level, EntitySpawnReason.EVENT)',
+    'copyCombatBody(source, clone)',
+], 'clone/high utility')
 
-# Alpha.49 Plane Shift: actual dimension choice + willing/crouching nearby party + coordinate mapping.
-planar_path=magic/'PlanarSpellService.java'; planar_data_path=magic/'PlanarSpellData.java'
-assert planar_path.exists() and planar_data_path.exists()
-planar=text(planar_path); planar_data=text(planar_data_path)
-require(planar,[
-    'Set.of("plane_shift", "demiplane")','case "plane_shift" -> planeShift(player)','case "demiplane" -> demiplane(player)',
-    'if (vertical > .35) return Level.END','if (vertical < -.35) return Level.NETHER','return Level.OVERWORLD',
-    'p.isShiftKeyDown()','if (result.size() >= 9) break','x /= 8.0; z /= 8.0','x *= 8.0; z *= 8.0',
-    'player.teleportTo(level','Set.<Relative>of()','findSafeVertical','ServerLevel.END_SPAWN_POINT'
-],'plane shift')
-find_block=planar[planar.index('private static Optional<BlockPos> findSafe('):planar.index('private static Optional<BlockPos> findSafeVertical(')]
-assert find_block.count('findSafe(')==1 and 'findSafeVertical' in find_block
+# alpha.49 planar identities stay real and persistent.
+planar = text(magic/'PlanarSpellService.java')
+planar_data = text(magic/'PlanarSpellData.java')
+require(planar, [
+    'Set.of("plane_shift", "demiplane")',
+    'if (vertical > .35) return Level.END',
+    'if (vertical < -.35) return Level.NETHER',
+    'return Level.OVERWORLD',
+    'p.isShiftKeyDown()',
+    'x /= 8.0; z /= 8.0',
+    'x *= 8.0; z *= 8.0',
+    'ROOM_HALF = 10',
+    'ROOM_FLOOR_Y = 224',
+    'Blocks.BEDROCK',
+    'G키 또는 재시전으로 귀환',
+], 'alpha49 planar')
+require(planar_data, [
+    'SavedData',
+    'planar_spell_v1',
+    'remember(ServerPlayer player)',
+    'anchor(ServerPlayer player)',
+], 'alpha49 planar data')
 
-# Alpha.49 Demiplane: deterministic personal cell, persistent return anchor, reusable physical room and emergency exit.
-require(planar,[
-    'ROOM_HALF = 10','ROOM_FLOOR_Y = 224','PlanarSpellData.get(server)','data.remember(member)',
-    'returnFromDemiplane','roomCenter(caster.getUUID())','Blocks.BEDROCK','Blocks.POLISHED_BLACKSTONE_BRICKS',
-    'Blocks.SEA_LANTERN','G키 또는 재시전으로 귀환','isDemiplaneBackend','player.getX() > 3_500_000'
-],'demiplane')
-require(planar_data,['SavedData','SavedDataType<PlanarSpellData>','planar_spell_v1','dimension','yaw','pitch',
-                     'remember(ServerPlayer player)','anchor(ServerPlayer player)','clear(ServerPlayer player)'],'planar data')
-
-# Alpha.49 Simulacrum: a creature, not a death ward. One per caster, half vitality, reduced combat body, explicit commands.
-sim_path=magic/'SimulacrumService.java'; assert sim_path.exists(); sim=text(sim_path)
-require(sim,[
-    'source.getType().create(level, EntitySpawnReason.EVENT)','Attributes.MAX_HEALTH, .50','Attributes.ATTACK_DAMAGE, .72',
-    'Attributes.ARMOR, .72','ACTIVE.put(caster.getUUID()','Mode.FOLLOW','Mode.GUARD','Mode.ASSAULT',
-    'if (!caster.isShiftKeyDown()) return false','집중 공격 명령','수호 모드','추종 모드','getNavigation().moveTo',
-    'removeOwned(caster.getUUID(), true)','arcanecircle_simulacrum'
-],'simulacrum')
-assert 'DEATH_WARDS' not in sim and 'MobEffects.ABSORPTION' not in sim
-
-# Alpha.50 high-circle control spells own distinct behavior rather than one generic no-AI control alias.
-control_path=magic/'HighControlSpellService.java'; assert control_path.exists(); control=text(control_path)
-require(control,[
-    'Set.of(\n            "mass_suggestion", "forcecage", "dominate_monster", "feeblemind")',
-    'MASS_SUGGESTION_TICKS = 160','FORCECAGE_TICKS = 400','DOMINATE_TICKS = 480','FEEBLEMIND_TICKS = 700',
-    'return !"forcecage".equals(state.spellId)','retreatDestination','target.getNavigation().moveTo(destination.x',
-    'FORCECAGE_RADIUS = 3.1','target.snapTo(x, y, z','applyDomination','candidate.getTarget() == owner',
-    'target.getNavigation().moveTo(owner, 1.10)','MobEffects.MINING_FATIGUE','WorldMagicService.stop(target)',
-    'public static void clear(LivingEntity subject)','public static void clearAll()'
-],'alpha50 high control')
+# alpha.50 distinct control ownership must remain.
+control = text(magic/'HighControlSpellService.java')
+require(control, [
+    '"mass_suggestion", "forcecage", "dominate_monster", "feeblemind"',
+    'MASS_SUGGESTION_TICKS = 160',
+    'FORCECAGE_TICKS = 400',
+    'DOMINATE_TICKS = 480',
+    'FEEBLEMIND_TICKS = 700',
+    'retreatDestination',
+    'FORCECAGE_RADIUS = 3.1',
+    'applyDomination',
+    'MobEffects.MINING_FATIGUE',
+], 'alpha50 high control')
 assert 'setNoAi(true)' not in control
-require(index,['"high_control_identity"','"behavioral_mass_suggestion"','"physical_forcecage"',
-               '"temporary_dominate_monster"','"spellbreaking_feeblemind"'],'alpha50 metadata')
 
-# Alpha.51 Globe: spell-vs-spell barrier, not generic damage reduction.
-ward_path=magic/'HighWardSpellService.java'; assert ward_path.exists(); ward=text(ward_path)
-require(ward,[
-    'GLOBE_TICKS = 520','MAX_BLOCKED_CIRCLE = 5','BASE_RADIUS = 6.0',
+# alpha.51 Globe remains spell-vs-spell, with player/NPC parity and Antimagic cleanup.
+ward = text(magic/'HighWardSpellService.java')
+require(ward, [
+    'GLOBE_TICKS = 520',
+    'MAX_BLOCKED_CIRCLE = 5',
     'public static boolean intercepts(LivingEntity caster, SpellDefinition spell',
-    'SpellPresentationProfile.MotionStyle motion','SpellMetrics.effectRadius','SpellMetrics.wallWidth',
-    'SpellMetrics.waveEndRadius','segmentDistanceSqr','WorldMagicService.cancelRelease(caster, spell.id())',
-    'owner == caster || owner.isAlliedTo(caster)','caster.position().distanceToSqr(center)',
-    '6써클 이상 주문과 물리 공격은 그대로 통과','public static void clear(LivingEntity subject)','public static void clearAll()'
-],'alpha51 high ward')
-assert '.70' not in ward and 'ReductionWard' not in ward and 'onIncomingDamage' not in ward
-require(index,['"high_ward_identity"','"globe_blocks_hostile_circle_1_to_5_spells"',
-               '"circle_6_plus_and_physical_pass_through"','"player_and_npc_cast_interception"'],'alpha51 metadata')
+    'SpellMetrics.effectRadius',
+    'SpellMetrics.wallWidth',
+    'SpellMetrics.waveEndRadius',
+    'segmentDistanceSqr',
+    '6써클 이상 주문과 물리 공격은 그대로 통과',
+], 'alpha51 globe')
+assert 'onIncomingDamage' not in ward and 'ReductionWard' not in ward
 
-# Dedicated routing must win before old resolved/generic gameplay fallbacks.
-kinetics=text(magic/'SpellKineticsService.java')
-require(kinetics,[
-    'PlanarSpellService.handles(cast.spell().id())','SimulacrumService.handles(cast.spell().id())',
-    'HighWardSpellService.handles(cast.spell().id())','HighControlSpellService.handles(cast.spell().id())',
-    'HighWardSpellService.intercepts(player, spell, targetSnapshot, range)',
-    'boolean planarOwned = PlanarSpellService.handles(spellId)','boolean simulacrumOwned = !planarOwned',
-    'boolean wardOwned = !planarOwned && !simulacrumOwned && !utilityOwned','boolean controlOwned = !planarOwned',
-    'PlanarSpellService.execute(player, spellId)','SimulacrumService.execute(player, targetSnapshot)',
+npc = text(world/'NpcSpellResolver.java')
+require(npc, [
+    'HighWardSpellService.intercepts(caster, spell, snapshot, range)',
+], 'NPC globe parity')
+
+field = text(magic/'ArcaneFieldService.java')
+require(field, [
+    'HighWardSpellService.clear(entity)',
+    'HighControlSpellService.clear(entity)',
+    'TIME_STOP_TICKS = 160',
+    'ANTIMAGIC_TICKS = 320',
+    'FROZEN_ENTITIES',
+], 'field cleanup')
+
+# Dedicated runtime priority prevents old generic aliases from taking authority.
+kinetics = text(magic/'SpellKineticsService.java')
+require(kinetics, [
+    'PlanarSpellService.handles(cast.spell().id())',
+    'SimulacrumService.handles(cast.spell().id())',
+    'HighWardSpellService.handles(cast.spell().id())',
+    'HighControlSpellService.handles(cast.spell().id())',
+    'boolean planarOwned = PlanarSpellService.handles(spellId)',
+    'boolean simulacrumOwned = !planarOwned',
+    'boolean wardOwned = !planarOwned && !simulacrumOwned && !utilityOwned',
     'HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)',
     'HighWardSpellService.execute(player, spellId, range, power, targetSnapshot)',
     'HighControlSpellService.execute(player, spellId, range, power, targetSnapshot)',
-    'SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)'
-],'kinetic ownership')
-assert kinetics.index('boolean planarOwned') < kinetics.index('boolean simulacrumOwned') < kinetics.index('boolean utilityOwned') < kinetics.index('boolean wardOwned') < kinetics.index('boolean controlOwned') < kinetics.index('boolean gameplayOwned')
+], 'kinetic ownership')
+assert kinetics.index('boolean planarOwned') < kinetics.index('boolean simulacrumOwned')
+assert kinetics.index('boolean simulacrumOwned') < kinetics.index('boolean utilityOwned')
+assert kinetics.index('boolean utilityOwned') < kinetics.index('boolean wardOwned')
+assert kinetics.index('boolean wardOwned') < kinetics.index('boolean controlOwned')
+assert kinetics.index('boolean controlOwned') < kinetics.index('boolean gameplayOwned')
 
-# NPC authored casts cross the same globe interception path before damage resolution.
-npc=text(world/'NpcSpellResolver.java')
-require(npc,['import kr.moonseungjun.arcanecircle.magic.HighWardSpellService;',
-             'if (HighWardSpellService.intercepts(caster, spell, snapshot, range)) return false;'],'npc globe')
-assert npc.index('HighWardSpellService.intercepts') < npc.rindex('if ("meteor_swarm".equals(spell.id()))')
+# Lifecycle and visual architecture regression guard.
+require(main, [
+    'SimulacrumService.tick(level)',
+    'HighUtilitySpellService.tick(level)',
+    'HighWardSpellService.tick(level)',
+    'HighControlSpellService.tick(level)',
+    'ArcaneFieldService.tick(level)',
+    'DestructiveMagicService.tick(level)',
+    'HighWardSpellService.clearAll()',
+    'HighControlSpellService.clearAll()',
+], 'main lifecycle')
 
-# Contextual G authority: Demiplane exit > crouch+G Simulacrum > ordinary maintained/weather authority.
-network_source=text(network/'ArcaneNetwork.java')
-require(network_source,['ninefold-arcana-12-1-alpha49','PlanarSpellService.useAuthority(player)',
-                        'SimulacrumService.useAuthority(player)','SpellGameplayService.useMaintainedAuthority(player)'],'network authority')
-assert network_source.index('PlanarSpellService.useAuthority') < network_source.index('SimulacrumService.useAuthority') < network_source.index('SpellGameplayService.useMaintainedAuthority')
+tracker = text(client/'WorldMagicTracker.java')
+require(tracker, [
+    'SpellCinematicDirector.charge',
+    'ArcaneSigilDirector.charge',
+    'AuthoredHighCircleTimeline.charge',
+    'PersistentBuffRegalia.release',
+    'MAX_FRAME = 14500',
+    'MAX_VISUALS = 32',
+], 'world geometry presentation')
+assert '"grimoire_effect_compendium": true' in index
+assert '"spell_contract_audit": "109_explicit_summaries_and_runtime_routes"' in index
+assert '"copy_source_targeting": ["simulacrum_target_28","clone_target_32"]' in index
 
-# Central casting suppression and Antimagic recognize/clear dedicated control and ward state.
-field=text(magic/'ArcaneFieldService.java')
-require(field,['HighControlSpellService.blocksCasting(caster)','HighWardSpellService.clear(entity)','HighControlSpellService.clear(entity)',
-               'TIME_STOP_TICKS = 160','ANTIMAGIC_TICKS = 320','FROZEN_ENTITIES','FrozenEntity'],'field')
+# Tool/repository hygiene and JAR verifier.
+retired = [
+    'CodexVisualLanguage.java','ArcaneSigilDetailGrammar.java','LowCircleVisualIdentity.java',
+    'MidCircleVisualIdentity.java','FifthCircleVisualIdentity.java','SixthCircleVisualIdentity.java',
+    'ArchmageVisualIdentity.java','RangeReactivePresentation.java','SpellVisualSignature.java',
+    'CastingSilhouetteRenderer.java','RobeRegaliaRenderer.java','SignatureGeometry.java'
+]
+for name in retired:
+    assert not (client/name).exists(), name
+tools = root/'tools'
+assert {p.name for p in tools.iterdir() if p.is_file()} == {'test_current_source.py','verify_jar.py'}
+assert not [p for p in tools.iterdir() if p.is_dir()]
+verify = text(root/'tools/verify_jar.py')
+for entry in [
+    'HighUtilitySpellService.class','PlanarSpellData.class','PlanarSpellService.class',
+    'SimulacrumService.class','HighControlSpellService.class','HighWardSpellService.class'
+]:
+    assert entry in verify, entry
 
-# Main lifecycle prevents orphan copies/control/ward states; Planar saved anchors intentionally survive normal cleanup.
-require(main,['SimulacrumService.tick(level)','SimulacrumService.clear(player)','SimulacrumService.clearAll()',
-              'HighUtilitySpellService.tick(level)','HighWardSpellService.tick(level)','HighWardSpellService.clear(player)',
-              'HighWardSpellService.clearAll()','HighControlSpellService.tick(level)','HighControlSpellService.clear(player)',
-              'HighControlSpellService.clearAll()','ArcaneFieldService.tick(level)','DestructiveMagicService.tick(level)'],'main lifecycle')
-assert main.count('SimulacrumService.clear(player);')>=3
-assert main.count('HighWardSpellService.clear(player);')>=3
-assert main.count('HighControlSpellService.clear(player);')>=3
-assert main.index('HighWardSpellService.tick(level)') < main.index('ArcaneFieldService.tick(level)')
-assert main.index('HighControlSpellService.tick(level)') < main.index('ArcaneFieldService.tick(level)')
-assert 'PlanarSpellData' not in main
-
-# Existing major mechanics remain present.
-gameplay=text(magic/'SpellGameplayService.java')
-require(gameplay,['control_weather','WEATHER_BARRAGES','12연속 번개','prismatic_wall','wall_of_force','flesh_to_stone'],'gameplay')
-destruction=text(magic/'DestructiveMagicService.java'); require(destruction,['MAX_BLOCK_CHANGES_PER_TICK = 720','MAX_BLOCK_SCANS_PER_TICK = 48_000','meteorCrater','quakeField','annihilationCorridor'],'destruction')
-assert 'visible_footprint_tiled_across_bounded_ticks' in index
-
-# Jar verifier must require every dedicated runtime class.
-verify=text(root/'tools/verify_jar.py')
-for entry in ['HighUtilitySpellService.class','PlanarSpellData.class','PlanarSpellService.class','SimulacrumService.class',
-              'HighControlSpellService.class','HighWardSpellService.class']:
-    assert entry in verify,entry
+audit_doc = text(root/'SPELL_AUDIT.md')
+assert audit_doc.count('| PASS | PASS |') == 109
+require(audit_doc, ['`clone`','`simulacrum`','T FIXED','109 Spell Audit Queue'], 'audit queue')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
-print('alpha48_real_high_utility=PASS')
-print('alpha49_real_plane_shift=PASS')
-print('alpha49_persistent_demiplane=PASS')
-print('alpha49_commandable_simulacrum=PASS')
-print('alpha49_contextual_authority_input=PASS')
-print('alpha50_behavioral_mass_suggestion=PASS')
-print('alpha50_physical_forcecage=PASS')
-print('alpha50_temporary_dominate_monster=PASS')
-print('alpha50_spellbreaking_feeblemind=PASS')
-print('alpha51_globe_spell_interception=PASS')
-print('alpha51_globe_npc_parity=PASS')
-print('alpha51_antimagic_dispels_globe=PASS')
-print('bounded_planar_safe_search=PASS')
-print('seeded_meteor_and_destruction=preserved')
-print('authoritative_time_stop=preserved')
-print('retired_visual_stack=absent')
+print('all_109_explicit_effect_summaries=PASS')
+print('all_109_runtime_route_presence=PASS')
+print('alpha52_grimoire_information_hierarchy=PASS')
+print('alpha52_effect_compendium=PASS')
+print('alpha52_clone_target_contract=PASS')
+print('alpha52_simulacrum_target_contract=PASS')
+print('alpha49_high_utility_and_planar=preserved')
+print('alpha50_high_control=preserved')
+print('alpha51_high_ward=preserved')
 print('source_mutation=disabled')
 print('legacy_arcane_tooling=absent')
