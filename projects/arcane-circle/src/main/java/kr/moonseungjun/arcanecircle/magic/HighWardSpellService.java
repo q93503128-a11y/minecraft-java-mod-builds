@@ -59,7 +59,7 @@ public final class HighWardSpellService {
 
         ServerLevel level = (ServerLevel) caster.level();
         long now = level.getGameTime();
-        SpellPresentationProfile.Motion motion = SpellPresentationProfile.profile(spell).motion();
+        SpellPresentationProfile.MotionStyle motion = SpellPresentationProfile.profile(spell).motion();
         for (GlobeState state : GLOBES.values()) {
             if (state.level != level || now >= state.expiresAt) continue;
             Entity rawOwner = level.getEntity(state.ownerId);
@@ -89,7 +89,7 @@ public final class HighWardSpellService {
         return false;
     }
 
-    private static boolean crossesBoundary(SpellDefinition spell, SpellPresentationProfile.Motion motion,
+    private static boolean crossesBoundary(SpellDefinition spell, SpellPresentationProfile.MotionStyle motion,
                                            CastTargetSnapshot snapshot, double range,
                                            Vec3 globeCenter, double globeRadius) {
         Vec3 target = snapshot.target();
