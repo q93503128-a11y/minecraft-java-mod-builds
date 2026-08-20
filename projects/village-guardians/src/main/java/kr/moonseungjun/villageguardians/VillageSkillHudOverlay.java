@@ -12,11 +12,17 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-/** Defense-game style ability cards anchored safely above the vanilla hotbar. */
+/** Low-profile combat skill HUD. It never renders over menus or the vanilla hotbar zone.
+ * Minecraft 26.2 moved the legacy minecraft.screen != null check to gui.screen().
+ */
 @EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)
 public final class VillageSkillHudOverlay {
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(
             VillageGuardians.MOD_ID, "skill_status_hud");
+    private static final int TEXT = 0xFFF4F7F8;
+    private static final int MUTED = 0xFF9DAAB1;
+    private static final int ACCENT = 0xFF52D9C2;
+    private static final int LINE = 0xAA426775;
     private static String text = "";
     private static long expiresAt;
 
@@ -40,105 +46,39 @@ public final class VillageSkillHudOverlay {
 
         Font font = minecraft.font;
         String[] sections = text.split(" §8│ ", -1);
-        int cardCount = Math.min(2, sections.length);
-        if (cardCount <= 0) return;
-
+        int primaryCount = Math.min(2, sections.length);
         int centerX = graphics.guiWidth() / 2;
-        int cardHeight = 34;
-        int gap = graphics.guiWidth() < 420 ? 5 : 8;
-        int cardWidth = Math.min(138, Math.max(92, (graphics.guiWidth() - 52) / 2));
-        int totalWidth = cardCount * cardWidth + Math.max(0, cardCount - 1) * gap;
+        int y = Math.max(54, graphics.guiHeight() - 98);
+        int gap = 16;
+        int itemWidth = Math.min(128, Math.max(84, (graphics.guiWidth() - 78) / 3));
+        int totalWidth = primaryCount * itemWidth + Math.max(0, primaryCount - 1) * gap;
         int startX = centerX - totalWidth / 2;
-        int y = Math.max(48, graphics.guiHeight() - 112);
+
+        for (int index = 0; index < primaryCount; index++) {
+            int left = startX + index * (itemWidth + gap);
+            String value = fit(font, plain(sections[index]), itemWidth - 18);
+            int diamondX = left + 6;
+            VillageQuickChatSafeScreen.drawDiamond(graphics, diamondX, y + 5, 5, 0xDD18323A);
+            VillageQuickChatSafeScreen.drawDiamondOutline(graphics, diamondX, y + 5, 5, ACCENT);
+            graphics.text(font, value, left + 16, y, TEXT, true);
+            graphics.fill(left + 15, y + 12, left + itemWidth, y + 13, LINE);
+            graphics.fill(left + 15, y + 12, left + 35, y + 14, ACCENT);
+        }
 
         if (sections.length > 2) {
             StringBuilder active = new StringBuilder();
             for (int index = 2; index < sections.length; index++) {
-                String part = plain(sections[index]);
-                if (part.isBlank()) continue;
                 if (!active.isEmpty()) active.append(" · ");
-                active.append(part);
+                active.append(plain(sections[index]));
             }
-            if (!active.isEmpty()) {
-                String chip = fit(font, active.toString(), Math.max(80, totalWidth - 18));
-                int chipWidth = Math.min(totalWidth, font.width(chip) + 22);
-                int chipLeft = centerX - chipWidth / 2;
-                graphics.fill(chipLeft, y - 19, chipLeft + chipWidth, y - 5, 0xD70E1A20);
-                graphics.fill(chipLeft, y - 19, chipLeft + 3, y - 5, VillageDefenseUiTheme.CYAN);
-                graphics.centeredText(font, chip, centerX, y - 15, VillageDefenseUiTheme.CYAN);
-            }
+            String fitted = fit(font, active.toString(), Math.max(80, graphics.guiWidth() - 60));
+            graphics.centeredText(font, fitted, centerX, y - 17, ACCENT);
         }
 
-        for (int index = 0; index < cardCount; index++) {
-            abilityCard(graphics, font, startX + index * (cardWidth + gap), y,
-                    cardWidth, cardHeight, sections[index], index);
+        if (primaryCount == 0) {
+            graphics.centeredText(font, fit(font, plain(text), Math.max(80, graphics.guiWidth() - 40)),
+                    centerX, y, MUTED);
         }
-    }
-
-    private static void abilityCard(
-            GuiGraphicsExtractor graphics,
-            Font font,
-            int left,
-            int top,
-            int width,
-            int height,
-            String formatted,
-            int slot) {
-        String value = plain(formatted);
-        boolean empty = value.contains("비어 있음");
-        boolean ready = !empty && value.contains("준비");
-        int seconds = cooldownSeconds(value);
-        int accent = empty ? VillageDefenseUiTheme.MUTED
-                : ready ? VillageDefenseUiTheme.GREEN
-                : seconds <= 3 ? VillageDefenseUiTheme.AMBER
-                : slot == 0 ? VillageDefenseUiTheme.CYAN : VillageDefenseUiTheme.BLUE;
-
-        VillageDefenseUiTheme.card(graphics, left, top, left + width, top + height, accent, ready);
-        String slotLabel = slot == 0 ? "능력 1" : "능력 2";
-        graphics.text(font, slotLabel, left + 9, top + 5, accent, true);
-
-        String name = skillName(value);
-        graphics.text(font, fit(font, name, width - 18), left + 9, top + 17,
-                empty ? VillageDefenseUiTheme.MUTED : VillageDefenseUiTheme.TEXT, false);
-
-        String state = empty ? "EMPTY" : ready ? "READY" : seconds > 0 ? seconds + "s" : "WAIT";
-        graphics.text(font, state, left + width - font.width(state) - 7, top + 5, accent, true);
-
-        graphics.fill(left + 8, top + height - 5, left + width - 7, top + height - 2,
-                VillageDefenseUiTheme.TRACK);
-        if (ready) {
-            graphics.fill(left + 8, top + height - 5, left + width - 7, top + height - 2, accent);
-        } else if (!empty && seconds > 0) {
-            int fillWidth = Math.max(4, (width - 15) * Math.max(0, 10 - Math.min(10, seconds)) / 10);
-            graphics.fill(left + 8, top + height - 5, left + 8 + fillWidth, top + height - 2, accent);
-        }
-    }
-
-    private static String skillName(String value) {
-        if (value == null || value.isBlank()) return "비어 있음";
-        String cleaned = value.replace("준비", "").replace("비어 있음", "비어 있음").trim();
-        int firstSpace = cleaned.indexOf(' ');
-        if (firstSpace >= 0 && firstSpace + 1 < cleaned.length()) cleaned = cleaned.substring(firstSpace + 1).trim();
-        int seconds = cleaned.indexOf("초");
-        if (seconds > 0) {
-            int start = seconds - 1;
-            while (start >= 0 && Character.isDigit(cleaned.charAt(start))) start--;
-            cleaned = (cleaned.substring(0, start + 1) + cleaned.substring(seconds + 1)).trim();
-        }
-        int bar = cleaned.indexOf('■');
-        if (bar >= 0) cleaned = cleaned.substring(0, bar).trim();
-        return cleaned.isBlank() ? "비어 있음" : cleaned;
-    }
-
-    private static int cooldownSeconds(String value) {
-        if (value == null) return 0;
-        int marker = value.indexOf("초");
-        if (marker <= 0) return 0;
-        int start = marker - 1;
-        while (start >= 0 && Character.isDigit(value.charAt(start))) start--;
-        if (start + 1 >= marker) return 0;
-        try { return Integer.parseInt(value.substring(start + 1, marker)); }
-        catch (NumberFormatException ignored) { return 0; }
     }
 
     private static String plain(String value) {
@@ -147,7 +87,7 @@ public final class VillageSkillHudOverlay {
     }
 
     private static String fit(Font font, String value, int maximumWidth) {
-        if (maximumWidth <= 0 || value == null) return "";
+        if (maximumWidth <= 0) return "";
         if (font.width(value) <= maximumWidth) return value;
         String suffix = "…";
         int end = value.length();

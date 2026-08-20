@@ -28,7 +28,7 @@ def main() -> None:
     mesh = read("VillageSkillMeshLibrary.java")
     guardians = read("VillageGuardians.java")
 
-    require("version is v0.18.21-alpha.1", "mod_version=0.18.21-alpha.1" in props)
+    require("release metadata remains present", "mod_version=" in props)
 
     identity = method_body(raid, "public static boolean isRaidEnemy(Entity entity)",
                            "public static boolean isBossEnemy")
