@@ -177,6 +177,7 @@ public final class ArcaneFieldService {
                 value -> value.isAlive() && !value.isRemoved()
                         && owner.position().distanceToSqr(value.position()) <= radius * radius)) {
             SpellGameplayService.clear(entity);
+            HighWardSpellService.clear(entity);
             HighControlSpellService.clear(entity);
             suppressMagicEffects(entity);
             if (entity instanceof ServerPlayer player) {
