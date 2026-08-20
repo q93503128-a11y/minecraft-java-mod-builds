@@ -6,9 +6,12 @@ on:
     branches: [main]
     paths:
       - 'projects/village-guardians/.build-trigger-v01822'
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
+  issues: read
 
 env:
   PROJECT_DIR: projects/village-guardians
@@ -17,6 +20,7 @@ env:
 
 jobs:
   build:
+    if: github.event_name != 'issues' || github.event.issue.title == 'Village Guardians v0.18.22 final docs cleanup'
     name: Java 25 / NeoForge 26.2 accepted UI rollback
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -25,18 +29,32 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+      - name: Record cleanup run when requested
+        if: github.event_name == 'issues'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p "${PROJECT_DIR}/.ci"
+          printf 'status=RUNNING\nrun_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "${PROJECT_DIR}/.ci/v01822-docs-running.txt"
+          git add "${PROJECT_DIR}/.ci/v01822-docs-running.txt"
+          git commit -m 'ci(village): record v0.18.22 docs cleanup start [skip ci]'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
       - name: Set up Java 25
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
-
       - name: Set up Gradle 9.2.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-
       - name: Run canonical deterministic contract tests
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -69,14 +87,11 @@ jobs:
             tools/test_v01821_raid_lifecycle_presentation.py \
             tools/test_v01822_ui_rollback.py; do
             test -f "$test" || continue
-            echo "=== $test ==="
             python3 "$test"
           done
-
       - name: Clean NeoForge build
         working-directory: ${{ env.PROJECT_DIR }}
         run: gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
-
       - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -84,7 +99,6 @@ jobs:
           set -euo pipefail
           test -f "build/libs/${EXPECTED_JAR}"
           python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
-
       - name: Upload verified JAR
         uses: actions/upload-artifact@v4
         with:
@@ -92,49 +106,35 @@ jobs:
           path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
           if-no-files-found: error
           retention-days: 30
-
       - name: Finalize canonical docs when staged
-        if: ${{ hashFiles('projects/village-guardians/tools/finalize_v01822_docs.py') != '' }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 projects/village-guardians/tools/finalize_v01822_docs.py
+          if [ -f projects/village-guardians/tools/finalize_v01822_docs.py ]; then
+            python3 projects/village-guardians/tools/finalize_v01822_docs.py
+          fi
           rm -f projects/village-guardians/tools/finalize_v01822_docs.py
           rm -f projects/village-guardians/.docs-trigger-v01822
           rm -f projects/village-guardians/.ci/v01822-integration-running.txt
+          rm -f projects/village-guardians/.ci/v01822-docs-running.txt
           rm -f projects/village-guardians/.apply-v01822-ui-rollback
           rm -f .github/workflows/apply-village-guardians-v01822.yml
           rm -f .github/workflows/finalize-village-guardians-v01822.yml
-
-      - name: Record acceptance metadata and cleanup
+      - name: Commit docs cleanup
         shell: bash
         run: |
           set -euo pipefail
-          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
-          SHA=$(sha256sum "$JAR" | awk '{print $1}')
-          SIZE=$(stat -c%s "$JAR")
-          mkdir -p "${PROJECT_DIR}/.ci"
-          if [ ! -f "${PROJECT_DIR}/.ci/v01822-final.txt" ]; then
-            cat > "${PROJECT_DIR}/.ci/v01822-final.txt" <<EOF
-          version=${BUILD_VERSION}
-          run_id=${GITHUB_RUN_ID}
-          head_sha=${GITHUB_SHA}
-          jar_name=${EXPECTED_JAR}
-          jar_sha256=${SHA}
-          jar_size=${SIZE}
-          EOF
-          fi
           rm -f "${PROJECT_DIR}/.build-trigger-v01822"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A -- \
-            "${PROJECT_DIR}/.ci/v01822-final.txt" \
-            "${PROJECT_DIR}/.build-trigger-v01822" \
             "${PROJECT_DIR}/README.md" \
             "${PROJECT_DIR}/BUILD_AND_RUNTIME_REPORT.md" \
             "${PROJECT_DIR}/tools/finalize_v01822_docs.py" \
             "${PROJECT_DIR}/.docs-trigger-v01822" \
+            "${PROJECT_DIR}/.build-trigger-v01822" \
             "${PROJECT_DIR}/.ci/v01822-integration-running.txt" \
+            "${PROJECT_DIR}/.ci/v01822-docs-running.txt" \
             "${PROJECT_DIR}/.apply-v01822-ui-rollback" \
             .github/workflows/apply-village-guardians-v01822.yml \
             .github/workflows/finalize-village-guardians-v01822.yml
