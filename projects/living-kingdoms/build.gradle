@@ -27,7 +27,7 @@ def kenneyUiAssets = [
 ]
 
 // Every structure below is BuildSchem CC BY 4.0. The legacy attribution file remains stable for
-// the five established structures; the three accepted Erden street-fabric candidates get their own
+// the five established structures; the two accepted Erden street-fabric sources get their own
 // complete attribution file so existing packaging audits stay backward compatible and provenance
 // remains explicit.
 def establishedExternalStructureAssets = [
@@ -39,8 +39,7 @@ def establishedExternalStructureAssets = [
 ]
 def urbanExpansionStructureAssets = [
         [output: 'player_castle_house.schem', slug: 'ultimate-player-favorite-castle-house-survival-base', title: 'Ultimate Player Favorite Castle House Survival Base'],
-        [output: 'medieval_tavern_inn.schem', slug: 'ultimate-medieval-tavern-inn-survival-base', title: 'Ultimate Medieval Tavern Inn Survival Base'],
-        [output: 'medieval_horse_stable.schem', slug: 'ultimate-medieval-horse-stable-survival-base', title: 'Ultimate Medieval Horse Stable Survival Base']
+        [output: 'medieval_tavern_inn.schem', slug: 'ultimate-medieval-tavern-inn-survival-base', title: 'Ultimate Medieval Tavern Inn Survival Base']
 ]
 def externalStructureAssets = establishedExternalStructureAssets + urbanExpansionStructureAssets
 
