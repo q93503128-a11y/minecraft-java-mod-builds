@@ -1,0 +1,36 @@
+name: Finalize Village Guardians v0.18.19 Docs
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  finalize:
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.title == 'Village Guardians v0.18.19 docs finalize'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Finalize README and build report
+        run: python3 projects/village-guardians/tools/finalize_v01819_docs.py
+      - name: Commit documentation
+        run: |
+          set -euo pipefail
+          rm -f projects/village-guardians/tools/finalize_v01819_docs.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/village-guardians
+          git diff --cached --check
+          git commit -m 'docs(village): finalize v0.18.19 research growth'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
