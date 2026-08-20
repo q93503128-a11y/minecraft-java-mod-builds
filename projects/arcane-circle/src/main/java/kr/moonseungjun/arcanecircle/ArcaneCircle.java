@@ -13,6 +13,7 @@ import kr.moonseungjun.arcanecircle.magic.HighWardSpellService;
 import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.MageGearService;
 import kr.moonseungjun.arcanecircle.magic.RpgScaleService;
+import kr.moonseungjun.arcanecircle.magic.SecondCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.SimulacrumService;
 import kr.moonseungjun.arcanecircle.magic.SpellCastingService;
 import kr.moonseungjun.arcanecircle.magic.SpellGameplayService;
@@ -41,7 +42,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.53";
+    public static final String VERSION = "0.12.1-alpha.54";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -57,6 +58,7 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(MageGearService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneVitalityService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(FirstCircleSpellService::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(SecondCircleSpellService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(HighUtilitySpellService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(SpellGameplayService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneMageService::onIncomingDamage);
@@ -113,6 +115,7 @@ public final class ArcaneCircle {
         if (event.getEntity() instanceof ServerPlayer player) {
             ArcaneLightService.clear(player);
             FirstCircleSpellService.clear(player);
+            SecondCircleSpellService.clear(player);
             ArcaneFieldService.clear(player.getUUID());
             SimulacrumService.clear(player);
             HighUtilitySpellService.clear(player);
@@ -132,6 +135,7 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ArcaneLightService.clear(player);
         FirstCircleSpellService.clear(player);
+        SecondCircleSpellService.clear(player);
         ArcaneFieldService.clear(player.getUUID());
         SimulacrumService.clear(player);
         HighUtilitySpellService.clear(player);
@@ -151,6 +155,7 @@ public final class ArcaneCircle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ArcaneLightService.clear(player);
         FirstCircleSpellService.clear(player);
+        SecondCircleSpellService.clear(player);
         ArcaneFieldService.clear(player.getUUID());
         SimulacrumService.clear(player);
         HighUtilitySpellService.clear(player);
@@ -172,6 +177,7 @@ public final class ArcaneCircle {
         ArcaneLightService.tick(player);
         SpellKineticsService.tick(player);
         FirstCircleSpellService.tick(level);
+        SecondCircleSpellService.tick(level);
         MagicWorldService.tick(player);
         ArcaneEncounterService.tick(player);
         MageGearService.tickMovement(player);
@@ -194,6 +200,7 @@ public final class ArcaneCircle {
     private void onServerStopped(ServerStoppedEvent event) {
         ArcaneLightService.clearAll(event.getServer());
         FirstCircleSpellService.clearAll();
+        SecondCircleSpellService.clearAll();
         SpellGameplayService.clearAll();
         SimulacrumService.clearAll();
         HighUtilitySpellService.clearAll();

@@ -1,4 +1,4 @@
-# Arcane Circle — 109 Spell Audit Queue (alpha.53)
+# Arcane Circle — 109 Spell Audit Queue (alpha.54)
 
 이 문서는 주문을 묶어서 '대충 동작'으로 보지 않고 하나씩 추적하기 위한 정본 감사 큐다.
 
@@ -20,38 +20,54 @@ alpha.52에서 S/R 전 109종을 강제하고 복제계 타깃 오류를 고쳤�
 - `fire_bolt`: 보이는 착탄점에 맞는 비유도 화염탄. 피해 후 화상.
 - `ray_of_frost`: generic CHANNEL에서 제거. 단발 beam + 동결/둔화.
 - `shield`: 기존 2장 반응 방벽 런타임을 정본으로 유지.
-- `feather_fall`: 시전 즉시 누적 fall distance를 지우고 6초 안정 낙하. respawn/dimension lifecycle에서 잔존 상태 제거.
-- `light`: 실제 LightBlock 5점을 따라다니게 유지. 멀티플레이 중첩 광원은 **refcount**로 공유해 한 플레이어의 종료가 다른 플레이어 광원을 지우지 않음.
-- `grease`: 8초 유지형 slip field. 짧은 반복 둔화와 횡미끄러짐을 서버가 갱신.
-- `sleep`: 보스급까지 무조건 정지하던 기존 alias를 폐기. **weak-only** 체급 제한 + 최대 7초 수면 + **wake-on-hit** + 기존 noAI 상태 복원.
-- `thunderwave`: 고정한 전방 부채꼴 판정과 넉백, 그리고 같은 snapshot을 쓰는 취약 지형 파손.
-- `mage_armor`: 4장 재생 플레이트의 소모/재충전 피해 분산을 정본으로 유지.
-- NPC 마법사도 이 10종을 generic direct damage로 처리하지 않고 전용 1써클 경로를 사용한다.
+- `feather_fall`: 시전 즉시 누적 fall distance를 지우고 6초 안정 낙하.
+- `light`: 실제 LightBlock 5점을 따라다니게 유지. 중첩 광원은 refcount로 공유.
+- `grease`: 8초 유지형 slip field.
+- `sleep`: weak-only 체급 제한 + 최대 7초 수면 + wake-on-hit + 기존 noAI 상태 복원.
+- `thunderwave`: 고정한 전방 부채꼴 판정과 넉백, 같은 snapshot의 취약 지형 파손.
+- `mage_armor`: 4장 재생 플레이트의 소모/재충전 피해 분산.
+- NPC 마법사도 1써클 10종을 generic direct damage로 처리하지 않는다.
+
+## alpha.54 — 2써클 deep pass
+
+2써클 10종은 전용 `SecondCircleSpellService`가 1써클 다음 우선순위로 소유한다. 플레이어와 NPC가 같은 역할 계약을 사용한다.
+
+- `scorching_ray`: 0.5초 간격 3회 실제 타격으로 vanilla hurt interval을 피하며 3광선 의미를 살림.
+- `misty_step`: 가까운 안전 착지점을 서버에서 탐색하는 실제 단거리 이동. NPC도 전투 재배치에 사용.
+- `web`: 11초 유지 이동 억제 영역.
+- `mirror_image`: 환영 3체는 **hostile direct attack**만 대신 받고 낙하·화염·익사 같은 환경 피해는 막지 않음.
+- `invisibility`: 주변 적대 추적을 끊고 첫 hostile direct attack 1회를 흘린 뒤 해제.
+- `gust_of_wind`: 전방 직선 실제 넉백 + 거미줄/불/횃불 등 바람에 취약한 오브젝트 제거.
+- `hold_person`: 일반 체급에만 9초 속박. 대형/보스급은 2써클로 봉쇄하지 못하며 Arcane 시전도 함께 끊김.
+- `shatter`: 피해와 취약 블록 파괴가 동일한 고정 목표 중심을 공유.
+- `blur`: 모든 피해 감쇄를 폐기하고 18초 동안 hostile direct attack만 **35% miss** 판정.
+- `levitate`: 실제 상승 구간 뒤 느린 하강, 종료 후 안전 낙하 보호.
+- logout/respawn/dimension/antimagic/server stop에서 상태를 정리하며 NPC도 동일 전용 경로를 사용한다.
 
 ## Direct spells — deep audit order
 
 | Circle | Spell | S | R | T/V/D |
 |---:|---|:---:|:---:|---|
-| 1 | `magic_missile` | PASS | PASS | alpha.53 PASS · locked 3-dart salvo |
-| 1 | `fire_bolt` | PASS | PASS | alpha.53 PASS · non-homing visible impact |
-| 1 | `ray_of_frost` | PASS | PASS | alpha.53 PASS · single beam, no channel alias |
-| 1 | `shield` | PASS | PASS | alpha.53 PASS · 2 reactive barriers |
-| 1 | `feather_fall` | PASS | PASS | alpha.53 PASS · fall reset + lifecycle clear |
-| 1 | `light` | PASS | PASS | alpha.53 PASS · real light + overlap refcount |
-| 1 | `grease` | PASS | PASS | alpha.53 PASS · persistent slip pulses |
-| 1 | `sleep` | PASS | PASS | alpha.53 PASS · weak-only + wake-on-hit + AI restore |
-| 1 | `thunderwave` | PASS | PASS | alpha.53 PASS · cone + locked physical aftermath |
-| 1 | `mage_armor` | PASS | PASS | alpha.53 PASS · 4 regenerating plates |
-| 2 | `scorching_ray` | PASS | PASS | next |
-| 2 | `misty_step` | PASS | PASS | next |
-| 2 | `web` | PASS | PASS | next |
-| 2 | `mirror_image` | PASS | PASS | next |
-| 2 | `invisibility` | PASS | PASS | next |
-| 2 | `gust_of_wind` | PASS | PASS | next |
-| 2 | `hold_person` | PASS | PASS | next |
-| 2 | `shatter` | PASS | PASS | next |
-| 2 | `blur` | PASS | PASS | next |
-| 2 | `levitate` | PASS | PASS | next |
+| 1 | `magic_missile` | PASS | PASS | alpha.53 PASS · locked salvo |
+| 1 | `fire_bolt` | PASS | PASS | alpha.53 PASS · non-homing impact |
+| 1 | `ray_of_frost` | PASS | PASS | alpha.53 PASS · single beam |
+| 1 | `shield` | PASS | PASS | alpha.53 PASS · reactive barriers |
+| 1 | `feather_fall` | PASS | PASS | alpha.53 PASS · safe fall |
+| 1 | `light` | PASS | PASS | alpha.53 PASS · refcount real light |
+| 1 | `grease` | PASS | PASS | alpha.53 PASS · slip field |
+| 1 | `sleep` | PASS | PASS | alpha.53 PASS · weak-only/wake-on-hit |
+| 1 | `thunderwave` | PASS | PASS | alpha.53 PASS · cone + terrain |
+| 1 | `mage_armor` | PASS | PASS | alpha.53 PASS · regenerating plates |
+| 2 | `scorching_ray` | PASS | PASS | alpha.54 PASS · timed 3-hit salvo |
+| 2 | `misty_step` | PASS | PASS | alpha.54 PASS · safe short teleport |
+| 2 | `web` | PASS | PASS | alpha.54 PASS · persistent restraint field |
+| 2 | `mirror_image` | PASS | PASS | alpha.54 PASS · direct attack only |
+| 2 | `invisibility` | PASS | PASS | alpha.54 PASS · aggro break + first direct dodge |
+| 2 | `gust_of_wind` | PASS | PASS | alpha.54 PASS · line force + fragile terrain |
+| 2 | `hold_person` | PASS | PASS | alpha.54 PASS · restricted hard control |
+| 2 | `shatter` | PASS | PASS | alpha.54 PASS · single impact center |
+| 2 | `blur` | PASS | PASS | alpha.54 PASS · 35% direct attack miss |
+| 2 | `levitate` | PASS | PASS | alpha.54 PASS · rise + safe descent |
 | 3 | `fireball` | PASS | PASS | next |
 | 3 | `lightning_bolt` | PASS | PASS | next |
 | 3 | `fly` | PASS | PASS | next |
@@ -149,15 +165,4 @@ alpha.52에서 S/R 전 109종을 강제하고 복제계 타깃 오류를 고쳤�
 
 ## CI enforcement
 
-`tools/test_current_source.py`가 다음을 실패 조건으로 둔다.
-
-- direct 90 + fusion 19 = 정확히 109종
-- 카탈로그 ID 집합과 `SpellEffectSummary`의 명시적 case 집합이 정확히 동일
-- 109개 각 ID가 실제 서버 런타임 소유 파일들 중 하나에 존재
-- alpha.53 1써클 10종 모두 전용 서버 권한 경로를 먼저 사용
-- `ray_of_frost`가 CHANNEL cadence로 회귀하지 않음
-- `sleep`의 weak-only / wake-on-hit / AI restore 계약 유지
-- `light`의 실제 LightBlock 공유 refcount 유지
-- NPC 1써클 전용 경로 유지
-- 사망/로그아웃/차원이동에서 1써클 지속 상태가 잔존하지 않음
-- alpha.49~52 Plane Shift/Demiplane/Simulacrum/고써클 제어/Globe/효과 도감/복제 타깃 계약 회귀 금지
+`tools/test_current_source.py`는 109종 카탈로그/효과 요약/실행 경로 일치, 1·2써클 전용 권한 순서, NPC parity, direct-attack illusion 계약, lifecycle/antimagic cleanup, 그리고 alpha.49~53의 기존 고써클·1써클 계약 회귀를 실패 조건으로 둔다.

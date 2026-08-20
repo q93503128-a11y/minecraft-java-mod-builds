@@ -29,6 +29,7 @@ required = {
     "kr/moonseungjun/arcanecircle/magic/WorldMagicService.class",
     "kr/moonseungjun/arcanecircle/magic/ArcaneLightService.class",
     "kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class",
+    "kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class",
     "kr/moonseungjun/arcanecircle/magic/FirstCircleSpellSummary.class",
     "kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class",
     "kr/moonseungjun/arcanecircle/magic/HighControlSpellService.class",
@@ -87,8 +88,8 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit("catalog version missing")
     if jar.name != f"arcanecircle-{version}.jar":
         raise SystemExit(f"JAR/version mismatch: {jar.name} vs {version}")
-    if version != "0.12.1-alpha.53":
-        raise SystemExit(f"unexpected alpha.53 package version: {version}")
+    if version != "0.12.1-alpha.54":
+        raise SystemExit(f"unexpected alpha.54 package version: {version}")
     if index.get("implemented_circles") != list(range(1, 10)) or index.get("direct_spells") != 90 or index.get("fusion_spells") != 19:
         raise SystemExit("JAR catalogue is not the full 1-9 circle world")
     if index.get("crafting_progression") is not True:
@@ -119,6 +120,17 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit(f"alpha.53 first-circle audit metadata mismatch: {sorted(first)}")
     if index.get("first_circle_npc_parity") is not True:
         raise SystemExit("alpha.53 first-circle NPC parity metadata missing")
+    second = set(index.get("second_circle_deep_audit", []))
+    expected_second = {
+        "timed_three_ray_scorching_salvo","safe_misty_step","persistent_web_field",
+        "direct_attack_mirror_images","aggro_breaking_invisibility","line_force_gust",
+        "restricted_hold_person","single_center_shatter","direct_attack_blur",
+        "rise_safe_descent_levitate"
+    }
+    if second != expected_second:
+        raise SystemExit(f"alpha.54 second-circle audit metadata mismatch: {sorted(second)}")
+    if index.get("second_circle_npc_parity") is not True:
+        raise SystemExit("alpha.54 second-circle NPC parity metadata missing")
     notice = archive.read("META-INF/THIRD_PARTY_NOTICES.md").decode("utf-8")
     if "Creative Commons Attribution 4.0" not in notice:
         raise SystemExit("SRD attribution missing from JAR")
@@ -134,4 +146,6 @@ print("alpha52_readable_grimoire=PASS")
 print("alpha52_109_spell_contract_audit=PASS")
 print("alpha53_first_circle_deep_runtime=PASS")
 print("alpha53_first_circle_npc_parity=PASS")
+print("alpha54_second_circle_deep_runtime=PASS")
+print("alpha54_second_circle_npc_parity=PASS")
 print(f"SHA-256: {digest}")

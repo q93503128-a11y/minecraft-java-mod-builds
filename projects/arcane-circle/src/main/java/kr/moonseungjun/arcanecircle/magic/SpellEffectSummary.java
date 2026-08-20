@@ -19,16 +19,16 @@ public final class SpellEffectSummary {
             case "thunderwave" -> "전방 충격파 피해·넉백 · 취약 블록 파손";
             case "mage_armor" -> "36초 · 4장 재생형 아케인 플레이트가 소모·재충전되며 피해 분산";
             // 2C
-            case "scorching_ray" -> "세 갈래 화염 광선 피해 · 화상";
-            case "misty_step" -> "가까운 안전 지점으로 순간이동";
-            case "web" -> "11초 지속 거미줄 영역 · 반복 강한 둔화·약화";
-            case "mirror_image" -> "13초 내 다음 3회의 공격을 환영이 대신 받음";
-            case "invisibility" -> "21초 투명화 · 첫 피격 궤적 1회를 은신막이 완전 회피 후 해제";
-            case "gust_of_wind" -> "직선 강풍으로 적 밀치기 · 매우 약한 블록 파손";
-            case "hold_person" -> "조준 대상 AI·이동·Arcane 시전을 9초간 완전 속박";
-            case "shatter" -> "목표 지점 진동 피해 · 약한 블록 파괴 및 제한 드롭";
-            case "blur" -> "18초 동안 이동 강화 + 들어오는 피해 32% 감소";
-            case "levitate" -> "상승 후 느린 낙하 상태 부여";
+            case "scorching_ray" -> "0.5초 간격으로 이어지는 실제 3연속 화염 광선 · 각 타격 화상";
+            case "misty_step" -> "조준 방향 12m 이내에서 실제 안전 착지점을 찾아 단거리 순간이동";
+            case "web" -> "11초 지속 거미줄 영역 · 수평 이동을 강하게 붙잡고 반복 둔화·약화";
+            case "mirror_image" -> "13초 · 환영 3체가 적대 직접 공격 3회를 대신 받음 · 환경 피해는 그대로 받음";
+            case "invisibility" -> "21초 투명화 · 주변 적대 추적 해제 + 첫 적대 직접 공격 1회 회피 후 은신 해제";
+            case "gust_of_wind" -> "전방 직선 강풍으로 적을 실제 밀어냄 · 거미줄/불/횃불 같은 취약 오브젝트 제거";
+            case "hold_person" -> "일반 체급 대상만 9초 이동·공격·Arcane 시전 속박 · 보스급/대형 대상은 면역";
+            case "shatter" -> "조준 지점 하나를 기준으로 진동 피해와 유리·얼음 등 취약 블록 파괴를 동시 적용";
+            case "blur" -> "18초 · 적대 직접 공격이 35% 확률로 빗나감 · 환경 피해에는 적용되지 않음";
+            case "levitate" -> "약 3초 실제 상승 후 부드러운 하강 · 종료 시 추가 안전 낙하";
             // 3C
             case "fireball" -> "착탄 범위 화염 피해·화상 · 주변 지형 일부 파괴";
             case "lightning_bolt" -> "직선 관통 번개 피해 · 경로의 약한 블록만 파손";

@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.53",
+  "version": "0.12.1-alpha.54",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -66,5 +66,18 @@
     "physical_thunderwave",
     "regenerating_mage_armor"
   ],
-  "first_circle_npc_parity": true
+  "first_circle_npc_parity": true,
+  "second_circle_deep_audit": [
+    "timed_three_ray_scorching_salvo",
+    "safe_misty_step",
+    "persistent_web_field",
+    "direct_attack_mirror_images",
+    "aggro_breaking_invisibility",
+    "line_force_gust",
+    "restricted_hold_person",
+    "single_center_shatter",
+    "direct_attack_blur",
+    "rise_safe_descent_levitate"
+  ],
+  "second_circle_npc_parity": true
 }

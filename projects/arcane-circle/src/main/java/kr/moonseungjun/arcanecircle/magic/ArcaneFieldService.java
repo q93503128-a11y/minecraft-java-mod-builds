@@ -60,6 +60,7 @@ public final class ArcaneFieldService {
     public static boolean blocksCasting(LivingEntity caster) {
         if (caster == null || !caster.isAlive()) return false;
         if (SpellGameplayService.blocksCasting(caster)) return true;
+        if (SecondCircleSpellService.blocksCasting(caster)) return true;
         if (HighControlSpellService.blocksCasting(caster)) return true;
         for (AntimagicField field : ANTIMAGIC.values()) {
             if (!field.active() || field.level() != caster.level()) continue;
@@ -177,6 +178,7 @@ public final class ArcaneFieldService {
                 value -> value.isAlive() && !value.isRemoved()
                         && owner.position().distanceToSqr(value.position()) <= radius * radius)) {
             SpellGameplayService.clear(entity);
+            SecondCircleSpellService.clear(entity);
             HighWardSpellService.clear(entity);
             HighControlSpellService.clear(entity);
             suppressMagicEffects(entity);
