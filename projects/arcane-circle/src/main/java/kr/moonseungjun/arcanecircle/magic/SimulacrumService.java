@@ -65,11 +65,12 @@ public final class SimulacrumService {
                 caster.position(), null, 0L));
         level.playSound(null, copy.blockPosition(), SoundEvents.GLASS_PLACE, SoundSource.PLAYERS, 1.0F, .72F);
         ArcaneNoticeService.push(caster, Component.literal("§b[시뮬라크럼] §f" + source.getName().getString()
-                + "의 반실체 얼음 복제체를 만들었습니다. §7최대 체력 50%, 전투력 약 72%, G키로 명령합니다."), 100);
+                + "의 반실체 얼음 복제체를 만들었습니다. §7최대 체력 50%, 전투력 약 72%, 웅크린 채 G키로 명령합니다."), 100);
         return true;
     }
 
     public static boolean useAuthority(ServerPlayer caster) {
+        if (!caster.isShiftKeyDown()) return false;
         State state = ACTIVE.get(caster.getUUID());
         if (state == null || state.level != caster.level()) return false;
         Entity raw = state.level.getEntity(state.entityId);
@@ -104,8 +105,7 @@ public final class SimulacrumService {
         if (previous != null && previous == now) return;
         Iterator<Map.Entry<UUID, State>> it = ACTIVE.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<UUID, State> entry = it.next();
-            State state = entry.getValue();
+            State state = it.next().getValue();
             if (state.level != level) continue;
             Entity rawCopy = level.getEntity(state.entityId);
             Entity rawOwner = level.getEntity(state.ownerId);
@@ -119,22 +119,19 @@ public final class SimulacrumService {
                 copy.getNavigation().stop();
                 continue;
             }
-
             LivingEntity target = resolveTarget(state, owner, copy, now);
             if (target != null) copy.setTarget(target);
             else if (copy.getTarget() == owner || (copy.getTarget() != null && owner.isAlliedTo(copy.getTarget()))) copy.setTarget(null);
-
             if (state.mode == Mode.GUARD) {
-                if (copy.position().distanceToSqr(state.guard) > 36.0) copy.getNavigation().moveTo(state.guard.x, state.guard.y, state.guard.z, 1.05);
+                if (copy.position().distanceToSqr(state.guard) > 36.0)
+                    copy.getNavigation().moveTo(state.guard.x, state.guard.y, state.guard.z, 1.05);
             } else if (target == null && copy.distanceToSqr(owner) > 20.0) {
                 copy.getNavigation().moveTo(owner, 1.12);
             }
         }
     }
 
-    public static void clear(ServerPlayer owner) {
-        if (owner != null) removeOwned(owner.getUUID(), false);
-    }
+    public static void clear(ServerPlayer owner) { if (owner != null) removeOwned(owner.getUUID(), false); }
 
     public static void clearAll() {
         for (State state : ACTIVE.values()) {
@@ -157,8 +154,7 @@ public final class SimulacrumService {
         double radius = state.mode == Mode.GUARD ? 13.0 : 18.0;
         return state.level.getEntitiesOfClass(LivingEntity.class,
                         new AABB(center, center).inflate(radius, radius * .7, radius),
-                        e -> e.isAlive() && e != owner && e != copy && !owner.isAlliedTo(e)
-                                && !isArcaneCopy(e.getUUID()))
+                        e -> e.isAlive() && e != owner && e != copy && !owner.isAlliedTo(e) && !isArcaneCopy(e.getUUID()))
                 .stream().min(Comparator.comparingDouble(e -> e.distanceToSqr(copy))).orElse(null);
     }
 
@@ -177,8 +173,7 @@ public final class SimulacrumService {
     }
 
     private static boolean isArcaneCopy(UUID entityId) {
-        if (ACTIVE.values().stream().anyMatch(s -> s.entityId.equals(entityId))) return true;
-        return false;
+        return ACTIVE.values().stream().anyMatch(s -> s.entityId.equals(entityId));
     }
 
     private static void scaleAttribute(Mob source, Mob copy,
