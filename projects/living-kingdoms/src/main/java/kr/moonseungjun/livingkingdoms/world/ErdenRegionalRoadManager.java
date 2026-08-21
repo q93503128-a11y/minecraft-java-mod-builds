@@ -171,7 +171,7 @@ public final class ErdenRegionalRoadManager {
         ErdenRegionalRoadNetwork.Waystation station = ErdenRegionalRoadNetwork.waystations().getFirst();
         int shelterX = station.x() + 5;
         int shelterZ = station.z() - 4;
-        int shelterY = ErdenRegionalRoadBuilder.surfaceY(shelterX, shelterZ);
+        int shelterY = ErdenRegionalRoadBuilder.waystationFloorY(station, shelterX, shelterZ);
         boolean physicalWaystation = level.getBlockState(
                 new BlockPos(shelterX, shelterY + 1, shelterZ)).is(Blocks.BARREL)
                 && level.getBlockState(new BlockPos(shelterX, shelterY + 4, shelterZ)).is(Blocks.LANTERN);
