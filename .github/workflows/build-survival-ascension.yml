@@ -9,7 +9,7 @@ on:
       - '.github/workflows/build-survival-ascension.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: survival-ascension-main
@@ -17,6 +17,7 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/survival-ascension
+  CI_RESULT_DIR: ci-results/survival-ascension
 
 jobs:
   build:
@@ -26,6 +27,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v5
         with:
@@ -113,3 +116,48 @@ jobs:
             survival-ascension-jar-verify.log
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Record canonical CI result
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/survival-ascension-result
+          mkdir -p /tmp/survival-ascension-result
+          cat > /tmp/survival-ascension-result/status.txt <<STATUS
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          version=${MOD_VERSION:-unknown}
+          minecraft=26.2
+          neoforge=26.2.0.38-beta
+          java=25
+          gradle=9.2.1
+          STATUS
+          if test -f "$GITHUB_WORKSPACE/survival-ascension-audit.log"; then
+            cp "$GITHUB_WORKSPACE/survival-ascension-audit.log" /tmp/survival-ascension-result/latest-audit.log
+          fi
+          if test -f "$GITHUB_WORKSPACE/survival-ascension-gradle.log"; then
+            cp "$GITHUB_WORKSPACE/survival-ascension-gradle.log" /tmp/survival-ascension-result/latest-gradle.log
+          fi
+          if test -f "$GITHUB_WORKSPACE/survival-ascension-jar-verify.log"; then
+            cp "$GITHUB_WORKSPACE/survival-ascension-jar-verify.log" /tmp/survival-ascension-result/latest-jar-verify.log
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          recorded=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$CI_RESULT_DIR"
+            mkdir -p "$CI_RESULT_DIR"
+            cp -a /tmp/survival-ascension-result/. "$CI_RESULT_DIR/"
+            git add -A "$CI_RESULT_DIR"
+            if git diff --cached --quiet; then recorded=1; break; fi
+            git commit -m "Record Survival Ascension ${MOD_VERSION:-unknown} CI result for ${GITHUB_SHA::7} [skip ci]"
+            if git push origin HEAD:main; then recorded=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$recorded" -eq 1
