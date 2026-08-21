@@ -256,6 +256,15 @@ public final class ErdenKingdomSupplySavedData extends SavedData {
         setDirty();
     }
 
+    /** Adds production that originates outside the legacy 18 supply nodes and dispatches it atomically. */
+    public void addProducedShipment(ShipmentState shipment) {
+        shipments.add(shipment);
+        totalProduced += shipment.amount();
+        totalDispatched += shipment.amount();
+        if (shipment.openingConvoy()) openingConvoys++;
+        setDirty();
+    }
+
     public void replaceShipment(ShipmentState replacement) {
         for (int index = 0; index < shipments.size(); index++) {
             if (!shipments.get(index).id().equals(replacement.id())) continue;
