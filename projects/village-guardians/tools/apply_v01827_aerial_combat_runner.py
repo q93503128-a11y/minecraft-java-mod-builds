@@ -13,8 +13,8 @@ original = module.replace_once
 
 
 def normalized_replace(text: str, old: str, new: str, label: str) -> str:
-    # The authored patch source contains Java string literals with \\n. Python evaluates those
-    # escapes while importing the patch module, so reconstruct only those two anchors exactly.
+    # Importing the authored patch evaluates Java backslash-n literals inside Python strings.
+    # Reconstruct only the two affected Java source anchors exactly.
     if label == "intel air detail":
         old = '                    + "\\n" + direction\n                    + "\\n공성 병과: "\n'
         new = ('                    + "\\n" + direction\n'
