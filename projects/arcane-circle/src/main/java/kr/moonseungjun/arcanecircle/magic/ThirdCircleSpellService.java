@@ -354,6 +354,7 @@ public final class ThirdCircleSpellService {
         FifthCircleSpellService.clear(target);
         SixthCircleSpellService.clear(target);
         SeventhCircleSpellService.clear(target);
+        EighthCircleSpellService.clear(target);
         SpellGameplayService.clear(target);
         HighWardSpellService.clear(target);
         HighControlSpellService.clear(target);
