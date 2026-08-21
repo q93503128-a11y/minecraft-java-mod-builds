@@ -3,6 +3,7 @@ package kr.moonseungjun.livingkingdoms.world;
 import kr.moonseungjun.livingkingdoms.world.ExternalUrbanFabricBuilder.UrbanFragmentSnapshot;
 import kr.moonseungjun.livingkingdoms.world.ExternalUrbanFabricBuilder.UrbanSourceBlock;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
@@ -42,19 +43,19 @@ public final class ErdenRegionalSettlementAudit {
         int fieldY = surfaceY(p.fieldX, p.fieldZ);
         int buildingY = surfaceY(p.buildingCenterX, p.buildingCenterZ);
 
-        boolean physicalSquare = level.getBlockState(p.wellX, wellY, p.wellZ).is(Blocks.WATER);
-        boolean physicalRoad = level.getBlockState(p.roadX, roadY, p.roadZ).is(Blocks.PACKED_MUD);
-        boolean physicalField = level.getBlockState(p.fieldX, fieldY, p.fieldZ).is(Blocks.FARMLAND)
-                && level.getBlockState(p.fieldX, fieldY + 1, p.fieldZ).is(Blocks.WHEAT);
-        boolean physicalDoor = level.getBlockState(p.doorX, buildingY + p.doorLocalY, p.doorZ)
-                .getBlock() instanceof DoorBlock;
+        boolean physicalSquare = level.getBlockState(new BlockPos(p.wellX, wellY, p.wellZ)).is(Blocks.WATER);
+        boolean physicalRoad = level.getBlockState(new BlockPos(p.roadX, roadY, p.roadZ)).is(Blocks.PACKED_MUD);
+        boolean physicalField = level.getBlockState(new BlockPos(p.fieldX, fieldY, p.fieldZ)).is(Blocks.FARMLAND)
+                && level.getBlockState(new BlockPos(p.fieldX, fieldY + 1, p.fieldZ)).is(Blocks.WHEAT);
+        boolean physicalDoor = level.getBlockState(new BlockPos(
+                p.doorX, buildingY + p.doorLocalY, p.doorZ)).getBlock() instanceof DoorBlock;
 
         ChunkPos doorChunk = new ChunkPos(p.doorX >> 4, p.doorZ >> 4);
         int structural = 0;
         for (int x = doorChunk.getMinBlockX(); x <= doorChunk.getMinBlockX() + 15; x++) {
             for (int z = doorChunk.getMinBlockZ(); z <= doorChunk.getMinBlockZ() + 15; z++) {
                 for (int y = buildingY; y <= buildingY + p.fragmentHeight; y++) {
-                    var state = level.getBlockState(x, y, z);
+                    var state = level.getBlockState(new BlockPos(x, y, z));
                     if (state.isAir() || state.is(Blocks.WATER) || state.is(Blocks.FARMLAND)
                             || state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT)
                             || state.is(Blocks.PACKED_MUD) || state.is(Blocks.DIRT_PATH)) continue;
