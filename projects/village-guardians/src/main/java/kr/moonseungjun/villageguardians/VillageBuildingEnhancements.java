@@ -9,6 +9,9 @@ import net.minecraft.world.level.block.Blocks;
 final class VillageBuildingEnhancements {
     private static final int WALL_RADIUS = VillageWorldSystem.FORTRESS_RADIUS;
     private static final int WALL_TOP_Y = 9;
+    private static final int WALL_EMPLACEMENT_LANE = 34;
+    private static final int WALL_EMPLACEMENT_INSET = 7;
+    private static final int WALL_EMPLACEMENT_HALF = 2;
 
     private VillageBuildingEnhancements() {
     }
@@ -97,6 +100,69 @@ final class VillageBuildingEnhancements {
             placeRailing(level, new BlockPos(westInner, railY, z));
             placeRailing(level, new BlockPos(eastOuter, railY, z));
             placeRailing(level, new BlockPos(eastInner, railY, z));
+        }
+        buildWallTopEmplacements(level, center);
+    }
+
+    /** True only for the authored 3x3 placement cores inside the eight wall-top pads. */
+    static boolean isWallTopEmplacement(BlockPos center, BlockPos candidate) {
+        if (center == null || candidate == null || candidate.getY() != center.getY() + WALL_TOP_Y) return false;
+        int dx = candidate.getX() - center.getX();
+        int dz = candidate.getZ() - center.getZ();
+        int inset = WALL_RADIUS - WALL_EMPLACEMENT_INSET;
+        boolean northSouth = Math.abs(Math.abs(dx) - WALL_EMPLACEMENT_LANE) <= 1
+                && Math.abs(Math.abs(dz) - inset) <= 1;
+        boolean eastWest = Math.abs(Math.abs(dz) - WALL_EMPLACEMENT_LANE) <= 1
+                && Math.abs(Math.abs(dx) - inset) <= 1;
+        return northSouth || eastWest;
+    }
+
+    private static void buildWallTopEmplacements(ServerLevel level, BlockPos center) {
+        int floorY = center.getY() - 1 + WALL_TOP_Y;
+        int inset = WALL_RADIUS - WALL_EMPLACEMENT_INSET;
+        for (int lane : new int[]{-WALL_EMPLACEMENT_LANE, WALL_EMPLACEMENT_LANE}) {
+            buildEmplacementPad(level,
+                    new BlockPos(center.getX() + lane, floorY, center.getZ() - inset), Direction.NORTH);
+            buildEmplacementPad(level,
+                    new BlockPos(center.getX() + lane, floorY, center.getZ() + inset), Direction.SOUTH);
+            buildEmplacementPad(level,
+                    new BlockPos(center.getX() - inset, floorY, center.getZ() + lane), Direction.WEST);
+            buildEmplacementPad(level,
+                    new BlockPos(center.getX() + inset, floorY, center.getZ() + lane), Direction.EAST);
+        }
+    }
+
+    /**
+     * Five-by-five inward platform with a three-wide opening to the wall walk.
+     * The centre chiseled brick is the obvious turret anchor; the 3x3 core is placement-valid.
+     */
+    private static void buildEmplacementPad(ServerLevel level, BlockPos padCenter, Direction outward) {
+        Direction sideways = outward.getClockWise();
+        for (int forward = -WALL_EMPLACEMENT_HALF; forward <= WALL_EMPLACEMENT_HALF; forward++) {
+            for (int side = -WALL_EMPLACEMENT_HALF; side <= WALL_EMPLACEMENT_HALF; side++) {
+                BlockPos floor = padCenter.relative(outward, forward).relative(sideways, side);
+                set(level, floor, forward == 0 && side == 0 ? Blocks.CHISELED_STONE_BRICKS : Blocks.STONE_BRICKS);
+                for (int clear = 1; clear <= 3; clear++) set(level, floor.above(clear), Blocks.AIR);
+            }
+        }
+
+        // U-shaped guard rail on the village-facing and side edges; the wall-facing edge stays open.
+        for (int side = -WALL_EMPLACEMENT_HALF; side <= WALL_EMPLACEMENT_HALF; side++) {
+            placeRailing(level, padCenter.relative(outward, -WALL_EMPLACEMENT_HALF)
+                    .relative(sideways, side).above());
+        }
+        for (int forward = -WALL_EMPLACEMENT_HALF + 1; forward <= WALL_EMPLACEMENT_HALF - 1; forward++) {
+            placeRailing(level, padCenter.relative(outward, forward)
+                    .relative(sideways, -WALL_EMPLACEMENT_HALF).above());
+            placeRailing(level, padCenter.relative(outward, forward)
+                    .relative(sideways, WALL_EMPLACEMENT_HALF).above());
+        }
+
+        // The reinforced inner parapet sits exactly three blocks outward from the pad centre.
+        // Clear three cells so players can walk directly between the gallery and the emplacement.
+        BlockPos galleryOpening = padCenter.relative(outward, WALL_EMPLACEMENT_HALF + 1);
+        for (int side = -1; side <= 1; side++) {
+            set(level, galleryOpening.relative(sideways, side).above(), Blocks.AIR);
         }
     }
 

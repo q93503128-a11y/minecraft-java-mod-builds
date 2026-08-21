@@ -53,7 +53,8 @@ public final class VillageWorldSystem {
         boolean firstBuild = !level.getBlockState(center.below(2)).is(Blocks.LODESTONE);
         boolean visualRevisionMissing = !level.getBlockState(center.below(4)).is(Blocks.RESPAWN_ANCHOR)
                 || !level.getBlockState(center.below(5)).is(Blocks.AMETHYST_BLOCK)
-                || !level.getBlockState(center.below(6)).is(Blocks.LAPIS_BLOCK);
+                || !level.getBlockState(center.below(6)).is(Blocks.LAPIS_BLOCK)
+                || !level.getBlockState(center.below(7)).is(Blocks.EMERALD_BLOCK);
         if (!firstBuild && !visualRevisionMissing) return;
 
         generationInProgress = true;
@@ -63,7 +64,7 @@ public final class VillageWorldSystem {
                 VillageProgressionSystem.restoreFacilitiesForMigration();
             } else {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 정비] §f지붕 표식을 제거하고 출입구 정면 문양으로 교체합니다."));
+                        "§6[마을 정비] §f성벽 상부 포좌와 보행로 연결부를 최신 방어 배치로 갱신합니다."));
             }
             buildAll(level, center);
             if (!firstBuild) {
@@ -77,7 +78,7 @@ public final class VillageWorldSystem {
             VillagePlacedTurretSystem.initializeServer(server);
             purgeUnauthorizedVillageMobs(server);
             player.sendSystemMessage(Component.literal(
-                    "§a[마을 준비 완료] §f건물 지붕이 복구되고 정면 문양과 방어탑이 적용됐습니다."));
+                    "§a[마을 준비 완료] §f시설과 성벽 상부 포좌, 방어탑이 최신 상태로 적용됐습니다."));
         } finally {
             generationInProgress = false;
         }
@@ -243,6 +244,7 @@ public final class VillageWorldSystem {
         if (center == null) return;
         if (building == VillageProgressionSystem.Building.WALLS) {
             VillageFortressTerrain.rebuildNorthGate(level, center);
+            VillageBuildingEnhancements.reinforceWallRailings(level, center);
             VillageDefenseTowerBuilder.build(level, center);
         } else {
             VillageFortressBuildings.rebuild(level, center, building);
@@ -267,6 +269,7 @@ public final class VillageWorldSystem {
         VillageBuildingSignatures.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
         // 26.2 exposes Blocks.COPPER_BLOCK as a weathering collection, so the migration marker uses a stable block.
+        VillageFortressTerrain.set(level, center.below(7), Blocks.EMERALD_BLOCK);
         VillageFortressTerrain.set(level, center.below(6), Blocks.LAPIS_BLOCK);
         VillageFortressTerrain.set(level, center.below(5), Blocks.AMETHYST_BLOCK);
         VillageFortressTerrain.set(level, center.below(4), Blocks.RESPAWN_ANCHOR);

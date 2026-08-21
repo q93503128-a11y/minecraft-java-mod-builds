@@ -99,7 +99,7 @@ public final class VillagePlacedTurretSystem {
         if (blocked != null) return blocked;
         if (count() >= capacity()) return "포탑 설치 한도입니다. 현재 " + count() + " / " + capacity();
         PENDING.put(player.getUUID(), new PendingPlacement(type, null));
-        return type.displayName() + " 배치 모드 시작 · 설치할 바닥을 우클릭하면 위치를 미리 검증하고, 같은 위치를 다시 우클릭하면 확정합니다.";
+        return type.displayName() + " 배치 모드 시작 · 지상 방어구역 또는 성벽 상부의 문양 포좌 바닥을 우클릭하면 위치를 미리 검증하고, 같은 위치를 다시 우클릭하면 확정합니다.";
     }
 
     public static boolean handlePlacementClick(PlayerInteractEvent.RightClickBlock event) {
@@ -121,7 +121,11 @@ public final class VillagePlacedTurretSystem {
             PENDING.put(player.getUUID(), new PendingPlacement(pending.type(), candidate.immutable()));
             VillageDefenseEffectSystem.turretPlacementPreview(level,
                     Vec3.atCenterOf(candidate).add(0.0, -0.45, 0.0), pending.type());
-            player.sendSystemMessage(Component.literal("§a[배치 미리보기] §f유효한 위치입니다. 같은 블록을 다시 우클릭해 확정하세요."));
+            BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
+            boolean wallTop = VillageBuildingEnhancements.isWallTopEmplacement(villageCenter, candidate);
+            player.sendSystemMessage(Component.literal("§a[배치 미리보기] §f"
+                    + (wallTop ? "성벽 상부 포좌" : "유효한 지상 위치")
+                    + "입니다. 같은 블록을 다시 우클릭해 확정하세요."));
             return true;
         }
         int cost = pending.type().installCost();
@@ -592,10 +596,16 @@ public final class VillagePlacedTurretSystem {
         if (center == null) return "마을 중심이 설정되지 않았습니다.";
         int dx = pos.getX() - center.getX();
         int dz = pos.getZ() - center.getZ();
+        boolean wallEmplacement = VillageBuildingEnhancements.isWallTopEmplacement(center, pos);
+        if (!wallEmplacement && Math.abs(pos.getY() - center.getY()) > 2) {
+            return "일반 포탑은 마을 지면에 설치해야 합니다. 높은 위치는 지정된 성벽 포좌만 사용할 수 있습니다.";
+        }
         int r = VillageWorldSystem.FORTRESS_RADIUS - 2;
-        if ((long) dx * dx + (long) dz * dz > (long) r * r) return "마을 방어구역 안에 배치해야 합니다.";
-        if (Math.abs(dx) <= 7 && dz >= -72 && dz <= 40) return "주 통행로를 막을 수 없습니다.";
-        if (dz <= -54 && Math.abs(dx) <= 28) return "북문 진입로 도배 방지를 위해 성문 앞에는 설치할 수 없습니다.";
+        if (!wallEmplacement && (long) dx * dx + (long) dz * dz > (long) r * r) {
+            return "마을 방어구역 안에 배치해야 합니다.";
+        }
+        if (!wallEmplacement && Math.abs(dx) <= 7 && dz >= -72 && dz <= 40) return "주 통행로를 막을 수 없습니다.";
+        if (!wallEmplacement && dz <= -54 && Math.abs(dx) <= 28) return "북문 진입로 도배 방지를 위해 성문 앞에는 설치할 수 없습니다.";
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
             BlockPos buildingPos = VillageWorldSystem.buildingCenter(building);
             if (buildingPos != null && buildingPos.distSqr(pos) < 100.0) return "건물 출입구와 운영 공간을 막을 수 없습니다.";
