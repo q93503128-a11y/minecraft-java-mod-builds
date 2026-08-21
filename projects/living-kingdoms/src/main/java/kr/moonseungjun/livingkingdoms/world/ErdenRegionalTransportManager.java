@@ -2,6 +2,7 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -28,7 +29,6 @@ public final class ErdenRegionalTransportManager {
     private static final int TICK_INTERVAL = 10;
     private static final int PHYSICAL_RADIUS = 224;
     private static final int MAX_REGIONAL_PHYSICAL_JOBS = 6;
-    private static final long PHYSICAL_ARRIVAL_GRACE = 1_200L;
     private static final int MAX_CAPITAL_SEARCH = 120_000;
     private static final int MAX_CAPITAL_ROUTE_POINTS = 320;
     private static final String LOCAL_PREFIX = "regional_local:";
@@ -68,61 +68,54 @@ public final class ErdenRegionalTransportManager {
         reconcileLocal(level, regional, transport);
         reconcileSupply(level, regional, capital, supply, transport);
         if (!level.players().isEmpty()) {
-            materializeLocal(level, regional, transport);
-            materializeSupply(level, capital, supply, transport);
+            int[] physicalSlots = {physicalAuthoritativeCount(level, transport)};
+            materializeLocal(level, regional, transport, physicalSlots);
+            materializeSupply(level, capital, supply, transport, physicalSlots);
         }
+        refreshPhysicalLabels(level, transport);
         verifyCi(level);
-    }
-
-    /** Called by the regional economy only when a due shipment currently has a visible physical courier. */
-    public static boolean shouldDeferLocalArrival(
-            ServerLevel level,
-            ErdenRegionalEconomySavedData.TradeShipment shipment) {
-        if (level.getGameTime() > shipment.arrivalTick() + PHYSICAL_ARRIVAL_GRACE) return false;
-        ErdenTransportSavedData.DeliveryJob job = findJob(
-                level.getDataStorage().computeIfAbsent(ErdenTransportSavedData.TYPE),
-                localJobId(shipment.id()));
-        return activePhysicalJob(level, job);
-    }
-
-    /** Called by kingdom supply so an observed regional wagon is not silently delivered through it. */
-    public static boolean shouldDeferSupplyArrival(
-            ServerLevel level,
-            ErdenKingdomSupplySavedData.ShipmentState shipment) {
-        if (!shipment.sourceId().startsWith("regional:")
-                || level.getGameTime() > shipment.arrivalTick() + PHYSICAL_ARRIVAL_GRACE) return false;
-        ErdenTransportSavedData.DeliveryJob job = findJob(
-                level.getDataStorage().computeIfAbsent(ErdenTransportSavedData.TYPE),
-                supplyJobId(shipment.id()));
-        return activePhysicalJob(level, job);
     }
 
     private static void materializeLocal(
             ServerLevel level,
             ErdenRegionalEconomySavedData regional,
-            ErdenTransportSavedData transport) {
-        int active = authoritativeActiveCount(transport);
-        if (active >= MAX_REGIONAL_PHYSICAL_JOBS) return;
+            ErdenTransportSavedData transport,
+            int[] physicalSlots) {
         List<ErdenRegionalEconomySavedData.TradeShipment> shipments = regional.tradeShipments().stream()
                 .filter(shipment -> shipment.status().equals("in_transit"))
                 .sorted(Comparator.comparingLong(ErdenRegionalEconomySavedData.TradeShipment::departureTick)
                         .thenComparing(ErdenRegionalEconomySavedData.TradeShipment::id))
                 .toList();
         for (ErdenRegionalEconomySavedData.TradeShipment shipment : shipments) {
-            if (active >= MAX_REGIONAL_PHYSICAL_JOBS) break;
-            if (findJob(transport, localJobId(shipment.id())) != null) continue;
             long now = level.getGameTime();
             if (now < shipment.departureTick() || now >= shipment.arrivalTick()) continue;
             List<ErdenTransportSavedData.RoutePoint> route = ErdenRegionalRoadNetwork.route(
                     shipment.sourceId(), shipment.targetId());
-            int index = modeledIndex(route.size(), shipment.departureTick(), shipment.arrivalTick(), now);
-            if (route.size() < 2 || !nearPlayer(level, route, index) || !pointReady(level, route.get(index))) continue;
+            if (route.size() < 2) continue;
+            ErdenTransportSavedData.DeliveryJob existing = findJob(transport, localJobId(shipment.id()));
+            int modeled = modeledIndex(route.size(), shipment.departureTick(), shipment.arrivalTick(), now);
+            int index = existing == null ? modeled : Math.max(existing.waypointIndex(), modeled);
+            index = Math.min(index, route.size() - 1);
+            if (!nearPlayer(level, route, index) || !pointReady(level, route.get(index))) continue;
+
+            if (existing != null) {
+                if (existing.terminal() || activePhysicalJob(level, existing)
+                        || physicalSlots[0] >= MAX_REGIONAL_PHYSICAL_JOBS) continue;
+                transport.replaceJob(existing.withAttemptAndRoute(
+                        existing.attempts(), route, index, now, existing.travelTicks()).withoutEntities());
+                physicalSlots[0]++;
+                LivingKingdoms.LOGGER.info(
+                        "Resynchronized regional trade wagon shipment={} waypoint={}/{} aggregate_catchup=true no_teleport_of_loaded_entity=true",
+                        shipment.id(), index, route.size());
+                continue;
+            }
+            if (physicalSlots[0] >= MAX_REGIONAL_PHYSICAL_JOBS) break;
             ErdenTransportSavedData.DeliveryJob job = authoritativeJob(
                     localJobId(shipment.id()), shipment.sourceId(), shipment.targetId(),
                     shipment.resource(), shipment.amount(), shipment.departureTick(), shipment.arrivalTick(),
                     route, index, now);
             transport.addJob(job);
-            active++;
+            physicalSlots[0]++;
             LivingKingdoms.LOGGER.info(
                     "Materialized regional trade wagon shipment={} {}->{} resource={} amount={} waypoint={}/{} aggregate_catchup=true",
                     shipment.id(), shipment.sourceId(), shipment.targetId(), shipment.resource(), shipment.amount(),
@@ -134,9 +127,8 @@ public final class ErdenRegionalTransportManager {
             ServerLevel level,
             ErdenPhysicalEconomySavedData capital,
             ErdenKingdomSupplySavedData supply,
-            ErdenTransportSavedData transport) {
-        int active = authoritativeActiveCount(transport);
-        if (active >= MAX_REGIONAL_PHYSICAL_JOBS) return;
+            ErdenTransportSavedData transport,
+            int[] physicalSlots) {
         List<ErdenKingdomSupplySavedData.ShipmentState> shipments = supply.shipments().stream()
                 .filter(shipment -> shipment.status().equals("in_transit"))
                 .filter(shipment -> shipment.sourceId().startsWith("regional:"))
@@ -144,22 +136,37 @@ public final class ErdenRegionalTransportManager {
                         .thenComparing(ErdenKingdomSupplySavedData.ShipmentState::id))
                 .toList();
         for (ErdenKingdomSupplySavedData.ShipmentState shipment : shipments) {
-            if (active >= MAX_REGIONAL_PHYSICAL_JOBS) break;
-            if (findJob(transport, supplyJobId(shipment.id())) != null) continue;
             long now = level.getGameTime();
             if (now < shipment.departureTick() || now >= shipment.arrivalTick()) continue;
             String settlementId = shipment.sourceId().substring("regional:".length());
             ErdenPhysicalEconomySavedData.SiteState warehouse = findSite(capital, shipment.warehouseId());
             if (warehouse == null) continue;
             List<ErdenTransportSavedData.RoutePoint> route = routeToWarehouse(level, settlementId, warehouse);
-            int index = modeledIndex(route.size(), shipment.departureTick(), shipment.arrivalTick(), now);
-            if (route.size() < 2 || !nearPlayer(level, route, index) || !pointReady(level, route.get(index))) continue;
+            if (route.size() < 2) continue;
+            ErdenTransportSavedData.DeliveryJob existing = findJob(transport, supplyJobId(shipment.id()));
+            int modeled = modeledIndex(route.size(), shipment.departureTick(), shipment.arrivalTick(), now);
+            int index = existing == null ? modeled : Math.max(existing.waypointIndex(), modeled);
+            index = Math.min(index, route.size() - 1);
+            if (!nearPlayer(level, route, index) || !pointReady(level, route.get(index))) continue;
+
+            if (existing != null) {
+                if (existing.terminal() || activePhysicalJob(level, existing)
+                        || physicalSlots[0] >= MAX_REGIONAL_PHYSICAL_JOBS) continue;
+                transport.replaceJob(existing.withAttemptAndRoute(
+                        existing.attempts(), route, index, now, existing.travelTicks()).withoutEntities());
+                physicalSlots[0]++;
+                LivingKingdoms.LOGGER.info(
+                        "Resynchronized regional kingdom wagon shipment={} waypoint={}/{} aggregate_catchup=true no_teleport_of_loaded_entity=true",
+                        shipment.id(), index, route.size());
+                continue;
+            }
+            if (physicalSlots[0] >= MAX_REGIONAL_PHYSICAL_JOBS) break;
             ErdenTransportSavedData.DeliveryJob job = authoritativeJob(
                     supplyJobId(shipment.id()), shipment.sourceId(), shipment.warehouseId(),
                     shipment.resource(), shipment.amount(), shipment.departureTick(), shipment.arrivalTick(),
                     route, index, now);
             transport.addJob(job);
-            active++;
+            physicalSlots[0]++;
             LivingKingdoms.LOGGER.info(
                     "Materialized regional kingdom wagon shipment={} {}->{} resource={} amount={} waypoint={}/{} capital_handoff=physical",
                     shipment.id(), shipment.sourceId(), shipment.warehouseId(), shipment.resource(), shipment.amount(),
@@ -274,7 +281,24 @@ public final class ErdenRegionalTransportManager {
             ErdenTransportSavedData transport,
             ErdenTransportSavedData.DeliveryJob job) {
         discardEntities(level, job);
+        transport.recordAuthoritativeReturn(job.amount());
         transport.replaceJob(job.withStatus("returned", level.getGameTime()).withoutEntities());
+    }
+
+    private static void refreshPhysicalLabels(ServerLevel level, ErdenTransportSavedData transport) {
+        for (ErdenTransportSavedData.DeliveryJob job : transport.jobs()) {
+            if (!job.authoritative() || job.terminal()) continue;
+            Entity porter = resolveEntity(level, job.porterUuid());
+            Entity cart = resolveEntity(level, job.cartUuid());
+            if (porter != null) {
+                porter.setCustomName(Component.literal("에르덴 장거리 마부"));
+                porter.setCustomNameVisible(false);
+            }
+            if (cart != null) {
+                cart.setCustomName(Component.literal("에르덴 장거리 화물 수레"));
+                cart.setCustomNameVisible(false);
+            }
+        }
     }
 
     private static boolean activePhysicalJob(ServerLevel level, ErdenTransportSavedData.DeliveryJob job) {
@@ -282,10 +306,12 @@ public final class ErdenRegionalTransportManager {
         return resolveEntity(level, job.porterUuid()) != null || resolveEntity(level, job.cartUuid()) != null;
     }
 
-    private static int authoritativeActiveCount(ErdenTransportSavedData transport) {
+    private static int physicalAuthoritativeCount(
+            ServerLevel level,
+            ErdenTransportSavedData transport) {
         int count = 0;
         for (ErdenTransportSavedData.DeliveryJob job : transport.jobs()) {
-            if (job.authoritative() && !job.terminal()) count++;
+            if (activePhysicalJob(level, job)) count++;
         }
         return count;
     }
@@ -584,7 +610,7 @@ public final class ErdenRegionalTransportManager {
 
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_REGIONAL_LOGISTICS_PASS revision={} corridors={} waystations={} local_route_points={} capital_route=true authoritative_escrow=true loaded_projection=true navigation_only=true observed_blockage_can_delay=true aggregate_when_unloaded=true persistent_forced_chunks=false",
+                "LK_ERDEN_REGIONAL_LOGISTICS_PASS revision={} corridors={} waystations={} local_route_points={} capital_route=true authoritative_escrow=true loaded_projection=true reobservation_resync=true navigation_only=true observed_blockage_delays_or_returns=true aggregate_when_unloaded=true return_accounting=true persistent_forced_chunks=false",
                 LOGISTICS_REVISION,
                 ErdenRegionalRoadNetwork.CORRIDOR_COUNT,
                 ErdenRegionalRoadNetwork.WAYSTATION_COUNT,
