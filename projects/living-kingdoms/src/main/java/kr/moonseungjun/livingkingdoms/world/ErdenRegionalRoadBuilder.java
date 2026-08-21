@@ -33,6 +33,12 @@ public final class ErdenRegionalRoadBuilder {
         return (int) Math.round(AuthoredContinentDensity.surfaceHeight(x, z));
     }
 
+    static int waystationFloorY(ErdenRegionalRoadNetwork.Waystation station, int x, int z) {
+        int baseY = surfaceY(station.x(), station.z());
+        int naturalY = surfaceY(x, z);
+        return Math.max(naturalY - 2, Math.min(naturalY + 2, baseY));
+    }
+
     private static void addRoadSurface(
             IncrementalWorldEditPlan plan,
             ServerLevel level,
@@ -69,7 +75,7 @@ public final class ErdenRegionalRoadBuilder {
             for (int z = Math.max(chunk.getMinBlockZ(), station.z() - STATION_HALF_Z);
                  z <= Math.min(chunk.getMinBlockZ() + 15, station.z() + STATION_HALF_Z); z++) {
                 int naturalY = surfaceY(x, z);
-                int targetY = Math.max(naturalY - 2, Math.min(naturalY + 2, baseY));
+                int targetY = waystationFloorY(station, x, z);
                 if (targetY > naturalY) {
                     plan.addFill(x, naturalY, z, x, targetY - 1, z, Blocks.DIRT);
                 }
@@ -82,7 +88,7 @@ public final class ErdenRegionalRoadBuilder {
         // Open roadside shelter: roof + posts, never a sealed box that blocks the carriageway.
         int shelterX = station.x() + 5;
         int shelterZ = station.z() - 4;
-        int shelterY = surfaceY(shelterX, shelterZ);
+        int shelterY = waystationFloorY(station, shelterX, shelterZ);
         for (int dx : new int[]{-3, 3}) {
             for (int dz : new int[]{-2, 2}) {
                 for (int dy = 1; dy <= 4; dy++) {
@@ -103,7 +109,7 @@ public final class ErdenRegionalRoadBuilder {
         // Hitching rail on the opposite side keeps the main five-to-seven metre road clear.
         int railX = station.x() - 6;
         int railZ = station.z() + 4;
-        int railY = surfaceY(railX, railZ);
+        int railY = waystationFloorY(station, railX, railZ);
         for (int dx = -2; dx <= 2; dx++) {
             setIfInChunk(plan, chunk, railX + dx, railY + 1, railZ, Blocks.OAK_FENCE);
         }
