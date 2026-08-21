@@ -1,1 +1,0 @@
-v0.18.29 battlefield readability acceptance staged; issue-triggered runner is authoritative.
