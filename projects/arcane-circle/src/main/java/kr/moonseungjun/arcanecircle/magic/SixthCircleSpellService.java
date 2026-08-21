@@ -14,10 +14,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -30,8 +28,8 @@ import java.util.WeakHashMap;
  * owns a narrow material-breaking ray, NPC Globes reproduce the same lower-circle interception
  * contract as player Globes, NPC Mass Suggestion maintains real retreat behavior, Move Earth is a
  * broad physical upheaval, Sunbeam is a wide piercing radiant line, NPC True Seeing repeatedly
- * reveals hidden life, Freezing Sphere is a fixed radial cryogenic burst, Eyebite inflicts a long
- * fear/weakness curse, NPC Flesh to Stone is a maintained casting-blocking petrification, and
+ * reveals hidden life, Freezing Sphere is a fixed radial cryogenic burst, Eyebite maintains a long
+ * fear/weakness retreat, NPC Flesh to Stone is a maintained casting-blocking petrification, and
  * Circle of Death preferentially executes weak ordinary enemies instead of acting as a flat blast.
  */
 public final class SixthCircleSpellService {
@@ -49,6 +47,7 @@ public final class SixthCircleSpellService {
     private static final Map<UUID, NpcGlobe> NPC_GLOBES = new HashMap<>();
     private static final Map<UUID, RetreatState> NPC_SUGGESTIONS = new HashMap<>();
     private static final Map<UUID, TrueSightState> NPC_TRUE_SIGHT = new HashMap<>();
+    private static final Map<UUID, FearState> EYEBITE_FEAR = new HashMap<>();
     private static final Map<UUID, PetrifyState> NPC_PETRIFY = new HashMap<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
 
@@ -96,12 +95,14 @@ public final class SixthCircleSpellService {
         };
     }
 
-    /** NPC petrification and suggestion are maintained control states and therefore block casting. */
+    /** Maintained suggestion, Eyebite fear and petrification prevent Arcane casting. */
     public static boolean blocksCasting(LivingEntity caster) {
         if (caster == null || !caster.isAlive() || !(caster.level() instanceof ServerLevel level)) return false;
         long now = level.getGameTime();
         RetreatState suggestion = NPC_SUGGESTIONS.get(caster.getUUID());
         if (suggestion != null && suggestion.level == level && suggestion.expiresAt > now) return true;
+        FearState fear = EYEBITE_FEAR.get(caster.getUUID());
+        if (fear != null && fear.level == level && fear.expiresAt > now) return true;
         PetrifyState stone = NPC_PETRIFY.get(caster.getUUID());
         return stone != null && stone.level == level && stone.expiresAt > now;
     }
@@ -138,6 +139,7 @@ public final class SixthCircleSpellService {
         tickNpcGlobes(level, now);
         tickSuggestions(level, now);
         tickTrueSight(level, now);
+        tickEyebiteFear(level, now);
         tickPetrify(level, now);
     }
 
@@ -154,6 +156,13 @@ public final class SixthCircleSpellService {
             restoreSuggestion(state);
             suggestions.remove();
         }
+        Iterator<Map.Entry<UUID, FearState>> fears = EYEBITE_FEAR.entrySet().iterator();
+        while (fears.hasNext()) {
+            FearState state = fears.next().getValue();
+            if (!state.ownerId.equals(id) && !state.targetId.equals(id)) continue;
+            restoreFear(state);
+            fears.remove();
+        }
         Iterator<Map.Entry<UUID, PetrifyState>> stones = NPC_PETRIFY.entrySet().iterator();
         while (stones.hasNext()) {
             PetrifyState state = stones.next().getValue();
@@ -165,10 +174,12 @@ public final class SixthCircleSpellService {
 
     public static void clearAll() {
         for (RetreatState state : NPC_SUGGESTIONS.values()) restoreSuggestion(state);
+        for (FearState state : EYEBITE_FEAR.values()) restoreFear(state);
         for (PetrifyState state : NPC_PETRIFY.values()) restorePetrify(state);
         NPC_GLOBES.clear();
         NPC_SUGGESTIONS.clear();
         NPC_TRUE_SIGHT.clear();
+        EYEBITE_FEAR.clear();
         NPC_PETRIFY.clear();
         LAST_TICK.clear();
     }
@@ -257,17 +268,53 @@ public final class SixthCircleSpellService {
         target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, EYEBITE_TICKS, 0, true, false));
         target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, EYEBITE_TICKS, 3, true, false));
         if (target instanceof Mob mob) {
-            mob.setTarget(null);
-            Vec3 away = horizontal(mob.position().subtract(caster.position()));
-            Vec3 destination = mob.position().add(away.scale(16.0));
-            mob.getNavigation().moveTo(destination.x, destination.y, destination.z, 1.22);
-            WorldMagicService.stop(mob);
+            FearState previous = EYEBITE_FEAR.remove(mob.getUUID());
+            if (previous != null) restoreFear(previous);
+            UUID oldTarget = mob.getTarget() == null ? null : mob.getTarget().getUUID();
+            FearState state = new FearState(level, caster.getUUID(), mob.getUUID(), oldTarget,
+                    level.getGameTime() + EYEBITE_TICKS);
+            EYEBITE_FEAR.put(mob.getUUID(), state);
+            applyFear(caster, mob, level.getGameTime());
         }
         if (caster instanceof ServerPlayer player) {
             ArcaneNoticeService.push(player, Component.literal(
-                    "§5[사악한 눈] §f대상을 장시간 공포·쇠약에 빠뜨리고 즉시 전투 거리를 벌리게 합니다."), 72);
+                    "§5[사악한 눈] §f18초 공포·쇠약을 새겼습니다. §7비플레이어 대상은 효과가 끝날 때까지 시전자에게서 강제로 도주합니다."), 78);
         }
         return true;
+    }
+
+    private static void tickEyebiteFear(ServerLevel level, long now) {
+        Iterator<Map.Entry<UUID, FearState>> iterator = EYEBITE_FEAR.entrySet().iterator();
+        while (iterator.hasNext()) {
+            FearState state = iterator.next().getValue();
+            if (state.level != level) continue;
+            Entity rawOwner = level.getEntity(state.ownerId);
+            Entity rawTarget = level.getEntity(state.targetId);
+            if (!(rawOwner instanceof LivingEntity owner) || !owner.isAlive()
+                    || !(rawTarget instanceof Mob target) || !target.isAlive() || target.isRemoved()
+                    || now >= state.expiresAt) {
+                restoreFear(state);
+                iterator.remove();
+                continue;
+            }
+            applyFear(owner, target, now);
+        }
+    }
+
+    private static void applyFear(LivingEntity owner, Mob target, long now) {
+        target.setTarget(null);
+        WorldMagicService.stop(target);
+        if (now % 5L != 0L) return;
+        Vec3 away = horizontal(target.position().subtract(owner.position()));
+        Vec3 destination = target.position().add(away.scale(14.0));
+        target.getNavigation().moveTo(destination.x, destination.y, destination.z, 1.22);
+    }
+
+    private static void restoreFear(FearState state) {
+        Entity raw = state.level.getEntity(state.targetId);
+        if (!(raw instanceof Mob target) || !target.isAlive() || target.isRemoved()) return;
+        target.getNavigation().stop();
+        target.setTarget(resolveOldTarget(state.level, state.oldTargetId));
     }
 
     private static boolean circleOfDeath(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
@@ -523,6 +570,8 @@ public final class SixthCircleSpellService {
     private record RetreatState(ServerLevel level, UUID ownerId, UUID targetId, UUID oldTargetId,
                                 Vec3 destination, long expiresAt) {}
     private record TrueSightState(ServerLevel level, UUID ownerId, double radius, long expiresAt) {}
+    private record FearState(ServerLevel level, UUID ownerId, UUID targetId, UUID oldTargetId,
+                             long expiresAt) {}
     private record PetrifyState(ServerLevel level, UUID ownerId, UUID targetId, UUID oldTargetId,
                                 long expiresAt) {}
 }
