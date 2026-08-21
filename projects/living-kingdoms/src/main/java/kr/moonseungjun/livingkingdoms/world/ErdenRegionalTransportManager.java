@@ -27,6 +27,7 @@ import java.util.UUID;
 public final class ErdenRegionalTransportManager {
     public static final int LOGISTICS_REVISION = 1;
     private static final int TICK_INTERVAL = 10;
+    private static final int CI_VERIFY_INTERVAL = 40;
     private static final int PHYSICAL_RADIUS = 224;
     private static final int MAX_REGIONAL_PHYSICAL_JOBS = 6;
     private static final int MAX_CAPITAL_SEARCH = 120_000;
@@ -49,7 +50,7 @@ public final class ErdenRegionalTransportManager {
         ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);
         if (level == null || !RealmSitePlanner.isBuilt(level, "erden_kingdom")) return;
         if (level.getGameTime() % TICK_INTERVAL != 0L) {
-            verifyCi(level);
+            if (level.getGameTime() % CI_VERIFY_INTERVAL == 0L) verifyCi(level);
             return;
         }
 
@@ -73,7 +74,7 @@ public final class ErdenRegionalTransportManager {
             materializeSupply(level, capital, supply, transport, physicalSlots);
         }
         refreshPhysicalLabels(level, transport);
-        verifyCi(level);
+        if (level.getGameTime() % CI_VERIFY_INTERVAL == 0L) verifyCi(level);
     }
 
     private static void materializeLocal(
