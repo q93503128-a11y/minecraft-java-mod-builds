@@ -1,4 +1,4 @@
-# Arcane Circle — 109 Spell Audit Queue (alpha.58)
+# Arcane Circle — 109 Spell Audit Queue (alpha.59)
 
 이 문서는 주문을 묶어서 '대충 동작'으로 보지 않고 하나씩 추적하기 위한 정본 감사 큐다.
 
@@ -22,7 +22,7 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 ## alpha.55 — 3써클 deep pass
 
-`ThirdCircleSpellService`가 3써클 10종을 전용 소유하고 NPC도 generic damage보다 먼저 같은 역할 경로를 사용한다. Fireball/Lightning은 고정 snapshot 공간을 사용하고, Fly/Haste/Dispel/Vampiric Touch/Slow/Energy Protection/Sleet/Blink가 전용 지속·해제 계약을 갖는다. alpha.58에서 Dispel은 4·5·6써클 유지 상태까지 해제하도록 범위를 확장했다.
+`ThirdCircleSpellService`가 3써클 10종을 전용 소유하고 NPC도 generic damage보다 먼저 같은 역할 경로를 사용한다. Fireball/Lightning은 고정 snapshot 공간을 사용하고, Fly/Haste/Dispel/Vampiric Touch/Slow/Energy Protection/Sleet/Blink가 전용 지속·해제 계약을 갖는다. alpha.59에서 Dispel은 4·5·6·7써클 유지 상태와 Etherealness/Simulacrum 같은 별도 고써클 권한까지 해제하도록 범위를 확장했다.
 
 ## alpha.56 — 4써클 deep pass
 
@@ -47,6 +47,22 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 - `flesh_to_stone`: 플레이어 대상은 기존 유지형 석화 제어를 재사용하고, NPC 경로도 약 18초 이동·공격·Arcane 시전을 봉쇄하는 지속 석화와 석질 저항을 적용한다.
 - `circle_of_death`: 단순 평면 광역기가 아니라 넓은 생명 파동이다. 일반 대상은 피해를 받고, 낮은 체력의 **보통 체급 적은 강한 처형 압박**을 받으며 대형/보스급은 처형 조건에서 제외된다.
 - Dispel/Antimagic/logout/respawn/dimension/server stop에서 6써클 유지 상태를 정리하며 NPC suggestion/Eyebite fear/petrification의 기존 전투 타깃도 복구한다.
+
+## alpha.59 — 7써클 deep pass
+
+`SeventhCircleSpellService`가 7써클 10종을 6써클 다음의 전용 권한층으로 소유하고, player/NPC 모두 generic fallback보다 먼저 같은 주문 역할을 해석한다. 기존에 이미 의미가 강했던 Etherealness/Forcecage/Plane Shift/Simulacrum은 약화해서 재구현하지 않고 각각 `HighUtilitySpellService`, `HighControlSpellService`, `PlanarSpellService`, `SimulacrumService`로 위임한다.
+
+- `delayed_blast_fireball`: release 순간의 고정 snapshot 지면을 유지하고, authored presentation의 지연 충격 시점에 실제 폭발이 일어난다. 거리 감쇠 피해·화상·넉백과 플레이어 시전의 실제 지형 파괴를 같은 중심/범위에 묶었다.
+- `etherealness`: **preserved ethereal phase**. 기존 noPhysics·noGravity·투명화·자유비행과 일반 피해 88% 감쇠, 종료 후 이전 이동/충돌 상태 복원·안전 낙하 계약을 그대로 사용한다. NPC도 일반 피해 88% 감쇠와 위상 상태를 유지한 뒤 원래 상태를 복원한다.
+- `finger_of_death`: release 때 고정한 단일 생명체만 사멸선 대상으로 사용한다. 큰 단일 피해·위더·쇠약과 약한 보통 체급 처형 압박을 주며, 대상이 사라졌다고 다른 적에게 재조준하지 않는다.
+- `fire_storm`: 고정 중심 둘레 **6개 화염 기둥**과 실제 판정을 같은 육각 패턴에 배치한다. 중첩 다단히트 대신 가장 가까운 기둥 기준 피해를 적용하고 플레이어 시전은 각 낙하지점 지형도 파괴한다.
+- `forcecage`: **preserved physical forcecage**. 기존 약 20초 공간 경계·반경 3.1m 계약을 유지한다. 대상은 감옥 밖으로 나갈 수 없지만 감옥 안에서 이동·공격·Arcane 시전까지 마비되지는 않는다. NPC 시전도 같은 공간 봉쇄 역할을 갖는다.
+- `plane_shift`: 플레이어는 **preserved cross-dimension plane shift**. 시선 높이에 따라 End/Nether/Overworld 실제 차원을 전환하고, Nether↔Overworld 8배 좌표 관계와 안전 착지·웅크린 동행자 이동을 유지한다. NPC 전투 AI에는 대상을 때리는 generic damage 대신 **NPC planar disengage role**을 부여해 약 28m 안전 공간 이탈로 처리하며 플레이어의 차원 이동 의미를 퇴행시키지 않는다.
+- `prismatic_spray`: 하나의 넓은 generic cone이 아니라 **seven independent prism rays**. 고정 발사 방향에서 7개의 좁은 광선이 각각 독립 선 판정을 갖고 화염·극저온·전격·위더·암흑·구속·생명 절단의 서로 다른 후유증을 부여한다. 한 대상에 여러 광선이 겹쳐 과증폭되는 것은 차단한다.
+- `reverse_gravity`: **maintained reverse gravity**. 고정 지면에 약 8초간 실제 중력 역전장을 유지하고 새로 들어온 적도 계속 상승시킨다. 원래 noGravity 상태를 저장해 종료·Dispel·Antimagic·lifecycle clear 때 복원하고 Slow Falling을 부여해 해제 즉시 추락사하는 회귀를 막는다.
+- `simulacrum`: **preserved commandable simulacrum**. 조준 생명체와 같은 실제 복제체 1체, 최대 체력 50%, 전투력 약 72%, FOLLOW/GUARD/ASSAULT와 웅크린 G키 명령 계약을 그대로 유지한다. NPC도 실제 복제 엔티티를 만들고 시전자 전투 목표를 지원한다.
+- `teleport`: release 때 고정한 목적지에서 안전한 발판·2블록 공간을 검색하고 가장 가까운 유효 착지점으로 이동한다. 발동 후 시선을 돌려 목적지가 바뀌거나 막힌 블록/공중에 강제로 박히지 않는다.
+- Dispel/Antimagic/logout/respawn/dimension/server stop에서 7써클 전용 상태를 정리하고, player Etherealness/Simulacrum 같은 별도 권한도 함께 해제한다.
 
 ## Direct spells — deep audit order
 
@@ -76,7 +92,7 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 | 3 | `lightning_bolt` | PASS | PASS | alpha.55 PASS · penetrating line + terrain |
 | 3 | `fly` | PASS | PASS | alpha.55 PASS · lifecycle-safe real flight |
 | 3 | `haste` | PASS | PASS | alpha.55 PASS · Arcane tempo accelerator |
-| 3 | `dispel_magic` | PASS | PASS | alpha.58 PASS · custom-state dispel through 6C |
+| 3 | `dispel_magic` | PASS | PASS | alpha.59 PASS · custom-state dispel through 7C |
 | 3 | `vampiric_touch` | PASS | PASS | alpha.55 PASS · actual-damage drain |
 | 3 | `slow` | PASS | PASS | alpha.55 PASS · persistent tempo field |
 | 3 | `protection_from_energy` | PASS | PASS | alpha.55 PASS · energy-only 5-charge ward |
@@ -112,16 +128,16 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 | 6 | `eyebite` | PASS | PASS | alpha.58 PASS · maintained fear + weakness |
 | 6 | `flesh_to_stone` | PASS | PASS | alpha.58 PASS · casting-block petrification |
 | 6 | `circle_of_death` | PASS | PASS | alpha.58 PASS · weak ordinary execution pressure |
-| 7 | `delayed_blast_fireball` | PASS | PASS | next |
-| 7 | `etherealness` | PASS | PASS | next |
-| 7 | `finger_of_death` | PASS | PASS | next |
-| 7 | `fire_storm` | PASS | PASS | next |
-| 7 | `forcecage` | PASS | PASS | next |
-| 7 | `plane_shift` | PASS | PASS | next |
-| 7 | `prismatic_spray` | PASS | PASS | next |
-| 7 | `reverse_gravity` | PASS | PASS | next |
-| 7 | `simulacrum` | PASS | PASS | alpha.52 T FIXED; V/D next |
-| 7 | `teleport` | PASS | PASS | next |
+| 7 | `delayed_blast_fireball` | PASS | PASS | alpha.59 PASS · locked delayed detonation |
+| 7 | `etherealness` | PASS | PASS | alpha.59 PASS · preserved ethereal phase |
+| 7 | `finger_of_death` | PASS | PASS | alpha.59 PASS · locked death ray |
+| 7 | `fire_storm` | PASS | PASS | alpha.59 PASS · six-pillar fire storm |
+| 7 | `forcecage` | PASS | PASS | alpha.59 PASS · preserved physical forcecage |
+| 7 | `plane_shift` | PASS | PASS | alpha.59 PASS · preserved cross-dimension plane shift |
+| 7 | `prismatic_spray` | PASS | PASS | alpha.59 PASS · seven independent prism rays |
+| 7 | `reverse_gravity` | PASS | PASS | alpha.59 PASS · maintained reverse gravity |
+| 7 | `simulacrum` | PASS | PASS | alpha.59 PASS · preserved commandable simulacrum |
+| 7 | `teleport` | PASS | PASS | alpha.59 PASS · locked safe teleport |
 | 8 | `antimagic_field` | PASS | PASS | next |
 | 8 | `clone` | PASS | PASS | alpha.52 T FIXED; V/D next |
 | 8 | `control_weather` | PASS | PASS | next |
@@ -169,4 +185,4 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 ## CI enforcement
 
-`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1~6써클 전용 권한 순서와 NPC parity, player/NPC Globe 1~5써클 경계 차단, Mass Suggestion behavioral retreat, material Disintegrate, physical Move Earth, persistent True Seeing, maintained Eyebite fear, casting-block Petrification, weak-ordinary Circle of Death, Dispel/Antimagic/lifecycle cleanup, 그리고 alpha.49~57의 기존 계약 회귀를 실패 조건으로 둔다.
+`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1~7써클 전용 권한 순서와 NPC parity, player/NPC Globe 1~5써클 경계 차단, Mass Suggestion behavioral retreat, material Disintegrate, physical Move Earth, persistent True Seeing, maintained Eyebite fear, casting-block Petrification, weak-ordinary Circle of Death, alpha.59의 locked delayed detonation / preserved ethereal phase / six-pillar fire storm / preserved physical forcecage / preserved cross-dimension plane shift / seven independent prism rays / maintained reverse gravity / preserved commandable simulacrum / locked safe teleport / NPC planar disengage role, Dispel/Antimagic/lifecycle cleanup, 그리고 alpha.49~58의 기존 계약 회귀를 실패 조건으로 둔다.
