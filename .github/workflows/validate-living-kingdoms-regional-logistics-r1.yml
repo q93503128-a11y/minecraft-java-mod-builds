@@ -1,0 +1,36 @@
+name: Validate Living Kingdoms regional logistics r1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/validate-living-kingdoms-regional-logistics-r1.yml'
+
+concurrency:
+  group: living-kingdoms-regional-logistics-r1-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: projects/living-kingdoms
+
+jobs:
+  compile:
+    name: Java 25 clean compile gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Java 25 clean build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon clean build --stacktrace --console=plain
