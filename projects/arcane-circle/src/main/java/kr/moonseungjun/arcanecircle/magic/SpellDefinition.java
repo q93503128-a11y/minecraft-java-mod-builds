@@ -47,6 +47,8 @@ public record SpellDefinition(
         if (!firstCircle.isBlank()) return firstCircle;
         String sixthCircle = SixthCircleSpellSummary.summary(id);
         if (!sixthCircle.isBlank()) return sixthCircle;
+        String seventhCircle = SeventhCircleSpellSummary.summary(id);
+        if (!seventhCircle.isBlank()) return seventhCircle;
         String effect = SpellEffectSummary.summary(this);
         return effect == null ? "" : effect;
     }
