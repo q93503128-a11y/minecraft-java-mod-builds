@@ -250,7 +250,7 @@ public final class ErdenRegionalEconomyManager {
         if (!settlementData.isBuilt(
                 storageChunkKey(settlement), ErdenRegionalSettlementCatalog.REVISION)) return null;
         if (!level.getBlockState(pos).is(Blocks.BARREL)) {
-            if (!level.getBlockState(pos).isAir() && !level.getBlockState(pos).canBeReplaced()) return null;
+            if (!level.getBlockState(pos).isAir()) return null;
             level.setBlockAndUpdate(pos, Blocks.BARREL.defaultBlockState());
         }
         BlockEntity blockEntity = level.getBlockEntity(pos);
@@ -268,9 +268,14 @@ public final class ErdenRegionalEconomyManager {
         }
         long firstDay = Math.max(oldest + 1L, currentDay - MAX_CATCH_UP_DAYS + 1L);
         for (long day = firstDay; day <= currentDay; day++) {
-            boolean needed = economy.settlements().stream().anyMatch(state -> state.lastProcessedDay() < day);
-            if (!needed) continue;
-            processDay(level, society, economy, day);
+            boolean needed = false;
+            for (ErdenRegionalEconomySavedData.SettlementState state : economy.settlements()) {
+                if (state.lastProcessedDay() < day) {
+                    needed = true;
+                    break;
+                }
+            }
+            if (needed) processDay(level, society, economy, day);
         }
     }
 
@@ -323,11 +328,12 @@ public final class ErdenRegionalEconomyManager {
             long inbound = inbound(economy, target.id(), resource);
             long missing = Math.max(0L, targetReserve - target.stock(resource) - inbound);
             while (missing > 0L) {
+                final ErdenRegionalEconomySavedData.SettlementState finalTarget = target;
                 ErdenRegionalEconomySavedData.SettlementState source = economy.settlements().stream()
-                        .filter(candidate -> !candidate.id().equals(target.id()))
+                        .filter(candidate -> !candidate.id().equals(finalTarget.id()))
                         .filter(candidate -> candidate.stock(resource) > sourceReserve(candidate, resource))
                         .min(Comparator.comparingLong(candidate ->
-                                        manhattan(candidate.x(), candidate.z(), target.x(), target.z()))
+                                        manhattan(candidate.x(), candidate.z(), finalTarget.x(), finalTarget.z()))
                                 .thenComparing(ErdenRegionalEconomySavedData.SettlementState::id))
                         .orElse(null);
                 if (source == null) break;
@@ -382,12 +388,10 @@ public final class ErdenRegionalEconomyManager {
             for (String resource : exportResources(state.industry())) {
                 long amount = Math.max(0L, state.stock(resource) - exportReserve(state, resource));
                 if (amount <= 0L) continue;
-                long accepted = ErdenKingdomSupplyManager.enqueueRegionalSurplus(
+                long accepted = ErdenRegionalSupplyBridge.enqueue(
                         level, capital, "regional:" + state.id(), state.x(), state.z(),
-                        state.industry(), resource, amount, day);
-                if (accepted > 0L) {
-                    state = state.recordExport(resource, accepted, day);
-                }
+                        resource, amount, day);
+                if (accepted > 0L) state = state.recordExport(resource, accepted, day);
             }
             if (state.lastExportDay() < day) state = state.markExportDay(day);
             economy.replaceSettlement(state);
@@ -419,8 +423,13 @@ public final class ErdenRegionalEconomyManager {
         int total = 0;
         for (ErdenRegionalSocietySavedData.Household household : society.households()) {
             if (!household.settlementId().equals(settlementId)) continue;
-            boolean living = household.residents().stream()
-                    .anyMatch(resident -> !society.isDead(resident.id()));
+            boolean living = false;
+            for (ErdenRegionalSocietySavedData.Resident resident : household.residents()) {
+                if (!society.isDead(resident.id())) {
+                    living = true;
+                    break;
+                }
+            }
             if (living) total++;
         }
         return total;
@@ -475,18 +484,13 @@ public final class ErdenRegionalEconomyManager {
             ErdenRegionalEconomySavedData economy,
             String targetId,
             String resource) {
-        return economy.tradeShipments().stream()
-                .filter(shipment -> shipment.targetId().equals(targetId)
-                        && shipment.resource().equals(resource)
-                        && shipment.status().equals("in_transit"))
-                .mapToLong(ErdenRegionalEconomySavedData.TradeShipment::amount)
-                .sum();
-    }
-
-    private static Container container(ServerLevel level, BlockPos pos) {
-        if (!level.hasChunkAt(pos)) return null;
-        BlockEntity entity = level.getBlockEntity(pos);
-        return entity instanceof Container container ? container : null;
+        long total = 0L;
+        for (ErdenRegionalEconomySavedData.TradeShipment shipment : economy.tradeShipments()) {
+            if (shipment.targetId().equals(targetId)
+                    && shipment.resource().equals(resource)
+                    && shipment.status().equals("in_transit")) total += shipment.amount();
+        }
+        return total;
     }
 
     private static boolean fits(
@@ -533,7 +537,8 @@ public final class ErdenRegionalEconomyManager {
     }
 
     private static boolean managedItem(Item item) {
-        return RESOURCES.stream().anyMatch(resource -> resource.item() == item);
+        for (ResourceItem resource : RESOURCES) if (resource.item() == item) return true;
+        return false;
     }
 
     private static void notePhysicalMarket(
@@ -552,9 +557,7 @@ public final class ErdenRegionalEconomyManager {
             ErdenRegionalEconomySavedData economy) {
         if (ciPassed || !isCi()) return;
         validateEconomy(economy);
-        ErdenRegionalEconomySavedData.SettlementState representative = economy.settlement("harvest_crossing");
-        if (representative == null
-                || !CI_PHYSICAL_MARKETS.contains("harvest_crossing")
+        if (!CI_PHYSICAL_MARKETS.contains("harvest_crossing")
                 || economy.materializedStorageCount() < 1
                 || economy.totalProduced() <= 0L
                 || economy.totalConsumed() <= 0L
@@ -574,7 +577,10 @@ public final class ErdenRegionalEconomyManager {
     private static boolean hasRegionalKingdomShipment(ServerLevel level) {
         ErdenKingdomSupplySavedData supply = level.getDataStorage()
                 .computeIfAbsent(ErdenKingdomSupplySavedData.TYPE);
-        return supply.shipments().stream().anyMatch(shipment -> shipment.sourceId().startsWith("regional:"));
+        for (ErdenKingdomSupplySavedData.ShipmentState shipment : supply.shipments()) {
+            if (shipment.sourceId().startsWith("regional:")) return true;
+        }
+        return false;
     }
 
     private static String compactStock(ErdenRegionalEconomySavedData.SettlementState state) {
@@ -610,9 +616,11 @@ public final class ErdenRegionalEconomyManager {
     }
 
     private static ErdenRegionalSettlementCatalog.Settlement settlement(String id) {
-        return ErdenRegionalSettlementCatalog.settlements().stream()
-                .filter(candidate -> candidate.id().equals(id))
-                .findFirst().orElse(null);
+        for (ErdenRegionalSettlementCatalog.Settlement settlement
+                : ErdenRegionalSettlementCatalog.settlements()) {
+            if (settlement.id().equals(id)) return settlement;
+        }
+        return null;
     }
 
     private static long manhattan(int x1, int z1, int x2, int z2) {
