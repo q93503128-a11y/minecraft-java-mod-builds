@@ -28,7 +28,7 @@ def main() -> None:
     role_skills = read("VillageRoleSkillSystem.java")
     relics = read("VillageRelicSystem.java")
     mercenaries = read("VillageMercenarySystem.java")
-    towers = read("VillageTowerSpecializationSystem.java")
+    towers = read("VillagePlacedTurretSystem.java")
 
     assert "mod_version=" in props
 
@@ -71,24 +71,28 @@ def main() -> None:
     wave_traits = re.findall(r"^\s{4}([A-Z][A-Z0-9_]+)\(", trait_block, re.M)
     skill_block = role_skills.split("public enum ActiveSkill", 1)[1]
     active_skills = re.findall(r"^\s{8}([A-Z][A-Z0-9_]+)\(", skill_block, re.M)
+    turret_block = towers.split("public enum TurretType", 1)[1].split("private final String id", 1)[0]
+    turret_types = re.findall(r"^\s{8}([A-Z][A-Z0-9_]+)\(\"", turret_block, re.M)
 
     assert len(offers) == 24, offers
     assert len(archetypes) == 14, archetypes
     assert len(wave_traits) == 12, wave_traits
     assert len(active_skills) == 20, active_skills
+    assert len(turret_types) == 10, turret_types
     assert "Rarity.LEGENDARY" in rarity and "MAX_ENHANCEMENT = 5" in rarity
     assert relics.count("public static final Relic ") == 0 or "WAR_SIGIL" in relics
     assert "BASTION" in mercenaries and "MEDIC" in mercenaries
-    assert "BALLISTA" in towers and "ARCANE" in towers
+    assert "BALLISTA" in towers and "ANTI_AIR" in towers and "BEACON" in towers
+    assert "VillageTowerSpecializationSystem" not in towers
     assert "The campaign never hard-ends" in warfront
     assert "return Math.min(8, 3 + Math.max(0, day - 1) / 2);" in raid
-    print("[PASS] 콘텐츠 감사: 장비 24, 적 14, 보스 변이 6, 웨이브 특성 12, 액티브 기술 20")
+    print("[PASS] 콘텐츠 감사: 장비 24, 적 14, 웨이브 특성 12, 액티브 기술 20, 현행 배치 포탑 10종")
 
     audit = (ROOT / "CONTENT-AUDIT-v0.18.0.md").read_text(encoding="utf-8")
     for token in ["일반 적 병과 10종", "기본 보스 4종", "웨이브 특성 12종",
                   "포탑 4종", "용병 4병과", "유물 11종", "고정 마지막 날은 없으며 무한 진행"]:
         assert token in audit, token
-    print("[PASS] 실제 수량과 장기 반복 구간이 콘텐츠 감사 문서에 기록됩니다")
+    print("[PASS] v0.18.0 당시 수량과 장기 반복 구간은 역사적 콘텐츠 감사 문서로 유지됩니다")
 
 
 if __name__ == "__main__":
