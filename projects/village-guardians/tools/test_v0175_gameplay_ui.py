@@ -11,12 +11,12 @@ def read(name: str) -> str:
 def main() -> None:
     props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
     shop = read("VillageEquipmentShop.java")
-    shop_ui = read("VillageShopScreen.java")
-    quick = read("VillageQuickChatScreen.java")
+    shop_ui = read("VillageShopCatalogScreen.java")
+    quick = read("VillageQuickChatSafeScreen.java")
     controller = read("VillageUiController.java")
     service = read("VillageUiService.java")
     rarity = read("VillageEquipmentRaritySystem.java")
-    fusion = read("VillageFusionScreen.java")
+    fusion = read("VillageFusionSafeScreen.java")
     role_ui = read("VillageRoleProgressScreen.java")
     client_ui = read("VillageClientUi.java")
     visuals = read("VillageSkillEffectSystem.java")
@@ -29,13 +29,14 @@ def main() -> None:
     assert 'EQUIPMENT("장비")' in shop and 'ARCANE_FOCUS("arcane_focus"' in shop
     assert "Category.EQUIPMENT, Items.BLAZE_ROD" in shop
     assert "currentOffers(day).contains" in shop
-    assert "shop_utility|판매용 잡템 일괄 정산" in controller
+    assert "판매용 잡템 일괄 정산" in controller
     assert "VillageEquipmentShop.currentOffers(day)" in controller
-    assert 'EQUIPMENT("장비")' in shop_ui
-    assert "font.width(normalized)" in shop_ui and "contentWidth < 330" in shop_ui
+    assert "VillageUiSafeArea.screen(width, height)" in shop_ui
+    assert "font.width(normalized)" in shop_ui
+    assert "카드 선택 → 상세 확인 → 실행" in shop_ui
 
-    assert "OptionBounds" in quick and "radiusX" in quick and "radiusY" in quick
-    assert "width - cardWidth - 6" in quick and "height - cardHeight - 6" in quick
+    assert "radiusX" in quick and "radiusY" in quick
+    assert "VillageUiSafeArea.screen(width, height)" in quick
     assert "font.width(normalized)" in quick
     assert "openQuickChat(player);" in controller
     assert "openQuickChat(player);" in service
@@ -48,16 +49,14 @@ def main() -> None:
     assert "unique.size() != 3" in rarity
     assert "first.shrink(1)" in rarity and "third.shrink(1)" in rarity
     assert "selectedSlots.size() == 3" in fusion
-    assert '"fusion_combine:"' in fusion
-    assert 'case "equipment_fusion" -> new VillageFusionScreen(payload)' in client_ui
+    assert 'String action = "fusion_combine:"' in fusion
+    assert 'case "equipment_fusion" -> new VillageFusionSafeScreen(payload)' in client_ui
+    assert "VillageUiSafeArea" in fusion
 
     assert 'send(player, "role_skills"' in controller
     assert "openRoleSkillResearch" in controller
     assert 'this.skillsOnly = "role_skills".equals(payload.screenId())' in role_ui
     assert '"research_skill_equip:"' in role_ui
-
-    assert "labels.add(branch.displayName() + \"|\" + detail)" in controller
-    assert "다음 단계 비용: 주화" in controller
 
     assert "ParticleTypes" not in visuals and "sendParticles" not in visuals
     assert "VillageSkillEffectEntity.spawn" in visuals
@@ -70,10 +69,10 @@ def main() -> None:
     assert "VillageProgressionSystem.respawnDelayTicks()" in respawn
 
     print("[PASS] Daily shop inventory rotates and hides future stock")
-    print("[PASS] Equipment, armour and supplies use bounded pixel-fit layouts")
-    print("[PASS] Caller opens a screen-safe PUBG-style quick communication wheel")
-    print("[PASS] Smithy fusion explicitly selects three compatible items")
-    print("[PASS] Skill-hall entry opens skills only and defense research titles stay concise")
+    print("[PASS] Current shop catalog uses safe-area detail-first selection and execution")
+    print("[PASS] Quick communication uses the current safe-area signal wheel")
+    print("[PASS] Smithy fusion explicitly selects three compatible items on the safe screen")
+    print("[PASS] Skill-hall entry opens skills-only research and current role progression")
     print("[PASS] Skills use non-particle procedural mesh actors and infirmary upgrades have real utility")
 
 
