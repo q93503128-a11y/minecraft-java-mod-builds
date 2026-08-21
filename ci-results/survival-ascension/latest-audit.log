@@ -1,2 +1,6 @@
-SOURCE AUDIT FAILED
-- mining contract missing: player.gameMode().destroyBlock(target)
+SOURCE AUDIT PASS
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
+- persistent mining progression 0-100
+- area unlocks 3x3 @10, 5x5 @30, 7x7 @60
+- precision sneak mode and normal destroyBlock pipeline
+- no Project MMO implementation markers
