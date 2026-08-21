@@ -124,7 +124,10 @@ require("VillageEquipmentIdentity.stampRarity" in rarity,
         "Rarity and enhancement writes stamp game-owned equipment identity")
 
 screen = text("VillageRelicScreen.java")
-require("Math.max(120, Math.min(820, width - 16))" in screen and "Math.min(7, summary.size())" in screen,
-        "Relic collection remains bounded on narrow logical resolutions")
+require("VillageUiSafeArea.screen(width, height)" in screen
+        and "safe.width() >= 360 ? 6 : safe.width() >= 290 ? 5 : 4" in screen
+        and "enableScissor" in screen and "mouseScrolled" in screen
+        and "maxLines = safe.height() < 245 ? 2 : 3" in screen,
+        "Relic collection uses responsive columns, clipping and scrolling on narrow logical resolutions")
 
 print("Village Guardians runtime stability contracts passed.")
