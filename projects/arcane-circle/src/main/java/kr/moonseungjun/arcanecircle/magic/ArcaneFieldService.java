@@ -27,7 +27,7 @@ import java.util.WeakHashMap;
  * Server-authoritative sustained magic whose gameplay cannot be represented by a one-shot
  * potion pulse. Time Stop halts non-allied AI/motion/casting; Antimagic continuously clears
  * maintained Arcane state. Lower-circle Freedom only overrides movement-control tiers, never
- * fifth/seventh-circle hard control or the field authorities in this class.
+ * fifth/eighth-circle hard control or the field authorities in this class.
  */
 public final class ArcaneFieldService {
     public static final int TIME_STOP_TICKS = 160;
@@ -64,6 +64,7 @@ public final class ArcaneFieldService {
         if (FourthCircleSpellService.blocksCasting(caster)) return true;
         if (FifthCircleSpellService.blocksCasting(caster)) return true;
         if (SixthCircleSpellService.blocksCasting(caster)) return true;
+        if (EighthCircleSpellService.blocksCasting(caster)) return true;
         if (HighControlSpellService.blocksCasting(caster)) return true;
         for (AntimagicField field : ANTIMAGIC.values()) {
             if (!field.active() || field.level() != caster.level()) continue;
@@ -186,6 +187,7 @@ public final class ArcaneFieldService {
             FifthCircleSpellService.clear(entity);
             SixthCircleSpellService.clear(entity);
             SeventhCircleSpellService.clear(entity);
+            EighthCircleSpellService.clear(entity);
             HighWardSpellService.clear(entity);
             HighControlSpellService.clear(entity);
             suppressMagicEffects(entity);
