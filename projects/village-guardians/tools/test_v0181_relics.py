@@ -49,13 +49,18 @@ def main() -> None:
     print("[PASS] 상태 화면에서 플레이어별 유물 보관함으로 진입할 수 있습니다")
 
     assert "class VillageRelicScreen" in screen
-    assert "columns = contentRight - contentLeft >= 610 ? 2 : 1" in screen
-    assert "enableScissor" in screen and "mouseScrolled" in screen
-    assert "CARD_HEIGHT = 68" in screen and "fit(" in screen
-    assert "Math.min(7, summary.size())" in screen
+    assert "VillageUiSafeArea.screen(width, height)" in screen
+    assert "safe.width() >= 360 ? 6 : safe.width() >= 290 ? 5 : 4" in screen
+    assert "columns = Math.max(1, Math.min(columns, Math.max(1, relics.size())))" in screen
+    assert "enableScissor" in screen and "disableScissor" in screen and "mouseScrolled" in screen
+    assert "safe.height() < 245 ? 51 : 60" in screen
+    assert "safe.height() < 245 ? 17 : 20" in screen
+    assert "fit(name, grid.cellWidth() - 8)" in screen
+    assert "font.split(Component.literal(description)" in screen
+    assert "maxLines = safe.height() < 245 ? 2 : 3" in screen
     assert "actionSpace = action.isBlank() ? 0 : 34" in status
     assert "buttonWidth = Math.min(220" in status
-    print("[PASS] 유물 UI는 좁은 화면 1열·넓은 화면 2열·스크롤·텍스트 제한으로 넘침을 방지합니다")
+    print("[PASS] 유물 UI는 안전영역 폭에 따라 4~6열로 재배치되고 스크롤·텍스트 제한으로 넘침을 방지합니다")
 
     enum_order = [
         "WAR_SIGIL", "HUNTERS_EYE", "WARD_STONE", "ARCANE_HEART", "EXECUTION_EDGE",
