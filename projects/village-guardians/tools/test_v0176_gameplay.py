@@ -7,8 +7,8 @@ JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
 def text(name):
     return (JAVA / name).read_text(encoding="utf-8")
 
-quick = text("VillageQuickChatScreen.java")
-facility = text("VillageFacilityScreen.java")
+quick = text("VillageQuickChatSafeScreen.java")
+detail = text("VillageActionDetailScreen.java")
 rarity = text("VillageEquipmentRaritySystem.java")
 shop = text("VillageEquipmentShop.java")
 controller = text("VillageUiController.java")
@@ -19,11 +19,16 @@ trading = text("VillageTradingSystem.java")
 loot = text("VillageRaidLootSystem.java")
 raid = text("VillageRaidSystem.java")
 result = text("VillageResultScreen.java")
+client = text("VillageClientUi.java")
 
-assert quick.count("int centerWidth = 56") == 2
-assert quick.count("int centerHeight = 18") == 2
-assert 'graphics.centeredText(font, "닫기"' in quick
-assert "facility_info" in facility and "informationSelected" in facility and "shouldShowBody" in facility
+# Current quick communication and detail-first facility surfaces replace the retired fixed-size screens.
+assert "VillageUiSafeArea.screen(width, height)" in quick
+assert "radiusX" in quick and "radiusY" in quick and "insideDiamond" in quick
+assert 'graphics.text(font, "ESC 닫기"' in quick
+assert "VillageUiSafeArea.screen(width, height)" in detail
+assert "confirmationRequired" in detail and "panelWidth < 390" in detail
+assert 'case "building", "management", "funding"' in client
+
 assert "enhanceSelected" in rarity and "EnhancementCandidate" in rarity
 assert "enhancementLevel" in rarity and "createNamed" in rarity
 assert "offer.rarity().displayName()" in controller and "openForgeEnhancement" in controller
@@ -40,4 +45,4 @@ assert "[판매용]" in loot
 assert "sellCandidates" in trading and "sellSelected" in trading
 assert "VillageResultScreen" in result and 'graphics.centeredText(font, "확인"' in result
 assert "VillageEquipmentRaritySystem.createNamed" in shop
-print("Village Guardians v0.17.6 gameplay, UI, item and defeat contracts passed.")
+print("Village Guardians current gameplay, safe UI, item and defeat contracts passed.")
