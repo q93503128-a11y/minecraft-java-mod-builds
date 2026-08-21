@@ -54,7 +54,7 @@ def main() -> None:
     assert "VillageNetwork.sendSkillHud" in hud
     assert "VillageRoleAbilitySystem.activeSkillHud" in hud
     assert "VanillaGuiLayers.OVERLAY_MESSAGE" in overlay
-    assert "graphics.guiHeight() - 92" in overlay
+    assert "graphics.guiHeight() - 98" in overlay
     assert "skillHud" not in hud.split("private static String buildText", 1)[1]
 
     print("[PASS] 회전 검무 rotates only the rendered avatar and repeatedly refreshes motion state")
