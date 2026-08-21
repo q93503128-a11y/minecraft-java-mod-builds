@@ -1,0 +1,68 @@
+name: Debug Village Guardians v0.18.26
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  debug:
+    if: github.event.issue.title == 'Village Guardians v0.18.26 diagnostic'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Diagnose patch tests build
+        working-directory: projects/village-guardians
+        shell: bash
+        run: |
+          set +e
+          python3 tools/apply_v01826_patch.py > /tmp/patch.log 2>&1
+          PATCH=$?
+          if [ "$PATCH" -eq 0 ]; then
+            python3 tools/test_v01826_turret_role_integrity.py > /tmp/newtest.log 2>&1
+            NEWTEST=$?
+            for test in tools/test_*.py; do python3 "$test" >> /tmp/alltests.log 2>&1 || { echo "FAILED:$test" >> /tmp/alltests.log; ALLTEST=1; break; }; done
+            ALLTEST=${ALLTEST:-0}
+            gradle --no-daemon --no-configuration-cache -Pmod_version=0.18.26-alpha.1 clean build --stacktrace --console=plain > /tmp/build.log 2>&1
+            BUILD=$?
+          else
+            NEWTEST=99; ALLTEST=99; BUILD=99
+          fi
+          {
+            echo "patch_status=$PATCH"
+            echo "newtest_status=$NEWTEST"
+            echo "alltests_status=$ALLTEST"
+            echo "build_status=$BUILD"
+            echo "--- patch ---"; tail -120 /tmp/patch.log 2>/dev/null
+            echo "--- newtest ---"; tail -120 /tmp/newtest.log 2>/dev/null
+            echo "--- alltests ---"; tail -220 /tmp/alltests.log 2>/dev/null
+            echo "--- build ---"; tail -260 /tmp/build.log 2>/dev/null
+          } > .ci/v01826-debug.txt
+          exit 0
+      - name: Commit diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/village-guardians/.ci/v01826-debug.txt
+          git commit -m 'ci(village): record v0.18.26 diagnostic [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
