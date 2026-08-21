@@ -1,3 +1,0 @@
-status=RUNNING
-run_id=32441924814
-base_sha=ba4e2c818fc2e931a121b2faee21c35054f4558f
