@@ -22,7 +22,9 @@ required={
  "kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class","kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class",
  "kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class","kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.class",
  "kr/moonseungjun/arcanecircle/magic/FifthCircleSpellService.class","kr/moonseungjun/arcanecircle/magic/SixthCircleSpellService.class",
+ "kr/moonseungjun/arcanecircle/magic/SeventhCircleSpellService.class",
  "kr/moonseungjun/arcanecircle/magic/FirstCircleSpellSummary.class","kr/moonseungjun/arcanecircle/magic/SixthCircleSpellSummary.class",
+ "kr/moonseungjun/arcanecircle/magic/SeventhCircleSpellSummary.class",
  "kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class","kr/moonseungjun/arcanecircle/magic/HighControlSpellService.class",
  "kr/moonseungjun/arcanecircle/magic/HighWardSpellService.class","kr/moonseungjun/arcanecircle/magic/PlanarSpellData.class",
  "kr/moonseungjun/arcanecircle/magic/PlanarSpellService.class","kr/moonseungjun/arcanecircle/magic/SimulacrumService.class",
@@ -56,7 +58,7 @@ with zipfile.ZipFile(jar) as archive:
 
  index=json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
  version=index.get('version')
- if version!='0.12.1-alpha.58': raise SystemExit(f"unexpected alpha.58 package version: {version}")
+ if version!='0.12.1-alpha.59': raise SystemExit(f"unexpected alpha.59 package version: {version}")
  if jar.name!=f'arcanecircle-{version}.jar': raise SystemExit(f"JAR/version mismatch: {jar.name} vs {version}")
  if index.get('implemented_circles')!=list(range(1,10)) or index.get('direct_spells')!=90 or index.get('fusion_spells')!=19:
   raise SystemExit('JAR catalogue is not the full 1-9 circle world')
@@ -89,12 +91,20 @@ with zipfile.ZipFile(jar) as archive:
    'material_disintegrate_ray','npc_parity_invulnerability_globe','behavioral_mass_suggestion','physical_move_earth',
    'piercing_sunbeam','persistent_true_seeing','fixed_freezing_sphere','fear_weakness_eyebite',
    'casting_block_petrification','weak_enemy_circle_of_death'},
+  'seventh_circle_deep_audit':{
+   'locked_delayed_fireball','preserved_ethereal_phase','locked_finger_of_death','six_pillar_fire_storm',
+   'preserved_physical_forcecage','preserved_player_plane_shift','seven_independent_prismatic_rays',
+   'maintained_reverse_gravity','preserved_commandable_simulacrum','locked_safe_teleport'},
  }
  for key,value in expected.items():
   if set(index.get(key,[]))!=value: raise SystemExit(f'{key} mismatch: {sorted(index.get(key,[]))}')
- for circle in ('first','second','third','fourth','fifth','sixth'):
+ for circle in ('first','second','third','fourth','fifth','sixth','seventh'):
   if index.get(f'{circle}_circle_npc_parity') is not True: raise SystemExit(f'{circle} circle NPC parity metadata missing')
 
+ preserved=set(index.get('seventh_circle_preserved_authority',[]))
+ if preserved!={'etherealness','forcecage','plane_shift','simulacrum'}: raise SystemExit('seventh-circle preserved authority mismatch')
+ if index.get('seventh_circle_npc_plane_shift_role')!='safe_planar_disengage_without_target_damage':
+  raise SystemExit('NPC Plane Shift role mismatch')
  utility=set(index.get('high_utility_identity',[]))
  if utility!={'cross_dimension_plane_shift','persistent_demiplane_room','commandable_simulacrum'}: raise SystemExit('high utility metadata mismatch')
  control=set(index.get('high_control_identity',[]))
@@ -120,4 +130,8 @@ print('alpha57_fifth_circle_deep_runtime=PASS')
 print('alpha58_sixth_circle_deep_runtime=PASS')
 print('alpha58_sixth_circle_npc_parity=PASS')
 print('alpha58_globe_suggestion_petrify_authority=PASS')
+print('alpha59_seventh_circle_deep_runtime=PASS')
+print('alpha59_seventh_circle_npc_parity=PASS')
+print('alpha59_preserved_ethereal_forcecage_plane_simulacrum=PASS')
+print('alpha59_prismatic_gravity_lifecycle=PASS')
 print(f'SHA-256: {digest}')

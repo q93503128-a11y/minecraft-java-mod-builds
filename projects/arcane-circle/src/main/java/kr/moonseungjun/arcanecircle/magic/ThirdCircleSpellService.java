@@ -353,11 +353,13 @@ public final class ThirdCircleSpellService {
         FourthCircleSpellService.clear(target);
         FifthCircleSpellService.clear(target);
         SixthCircleSpellService.clear(target);
+        SeventhCircleSpellService.clear(target);
         SpellGameplayService.clear(target);
         HighWardSpellService.clear(target);
         HighControlSpellService.clear(target);
         if (target instanceof ServerPlayer player) {
             HighUtilitySpellService.clear(player);
+            SimulacrumService.clear(player);
             ArcaneLightService.clear(player);
         }
         removeBeneficialMagic(target);
