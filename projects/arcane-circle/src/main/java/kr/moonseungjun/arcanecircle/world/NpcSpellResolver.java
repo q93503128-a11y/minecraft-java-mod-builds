@@ -8,6 +8,7 @@ import kr.moonseungjun.arcanecircle.magic.FifthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FirstCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FourthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.HighWardSpellService;
+import kr.moonseungjun.arcanecircle.magic.NinthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.SecondCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.SeventhCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.SixthCircleSpellService;
@@ -38,7 +39,9 @@ final class NpcSpellResolver {
 
     static boolean execute(ServerLevel level, Mob caster, LivingEntity target,
                            SpellDefinition spell, double range, double power) {
-        if (ArcaneFieldService.blocksCasting(caster) || EighthCircleSpellService.blocksCasting(caster)) {
+        if (ArcaneFieldService.blocksCasting(caster)
+                || EighthCircleSpellService.blocksCasting(caster)
+                || NinthCircleSpellService.blocksCasting(caster)) {
             WorldMagicService.stop(caster);
             return false;
         }
@@ -49,31 +52,28 @@ final class NpcSpellResolver {
         if (FifthCircleSpellService.intercepts(caster, snapshot)) return false;
         if (SixthCircleSpellService.intercepts(caster, spell, snapshot, range)) return false;
         if (HighWardSpellService.intercepts(caster, spell, snapshot, range)) return false;
-        if (FirstCircleSpellService.handles(spell.id())) {
+        if (NinthCircleSpellService.intercepts(caster, snapshot)) return false;
+        if (FirstCircleSpellService.handles(spell.id()))
             return FirstCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        }
-        if (SecondCircleSpellService.handles(spell.id())) {
+        if (SecondCircleSpellService.handles(spell.id()))
             return SecondCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        }
-        if (ThirdCircleSpellService.handles(spell.id())) {
+        if (ThirdCircleSpellService.handles(spell.id()))
             return ThirdCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        }
-        if (FourthCircleSpellService.handles(spell.id())) {
+        if (FourthCircleSpellService.handles(spell.id()))
             return FourthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        }
-        if (FifthCircleSpellService.handles(spell.id())) {
+        if (FifthCircleSpellService.handles(spell.id()))
             return FifthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        }
-        if (SixthCircleSpellService.handles(spell.id())) {
+        if (SixthCircleSpellService.handles(spell.id()))
             return SixthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        }
-        if (SeventhCircleSpellService.handles(spell.id())) {
+        if (SeventhCircleSpellService.handles(spell.id()))
             return SeventhCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        }
-        if (EighthCircleSpellService.handles(spell.id())) {
+        if (EighthCircleSpellService.handles(spell.id()))
             return EighthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        }
-        if ("meteor_swarm".equals(spell.id())) return NpcMeteorBarrageService.schedule(level, caster, snapshot, range, power);
+        // Meteor keeps its seeded staggered scheduler, but each hit resolves through 9C authority.
+        if ("meteor_swarm".equals(spell.id()))
+            return NpcMeteorBarrageService.schedule(level, caster, snapshot, range, power);
+        if (NinthCircleSpellService.handles(spell.id()))
+            return NinthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
 
         Vec3 lockedTarget = snapshot.target();
         return switch (SpellPresentationProfile.profile(spell).motion()) {
