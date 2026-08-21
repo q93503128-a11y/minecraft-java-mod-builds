@@ -1,0 +1,1 @@
+issue-trigger=v0.18.26 flying assault and turret roles
