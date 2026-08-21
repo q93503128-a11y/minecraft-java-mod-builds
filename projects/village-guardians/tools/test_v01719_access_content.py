@@ -79,7 +79,7 @@ def main() -> None:
     assert len(wave_traits) == 12, wave_traits
     assert len(active_skills) == 20, active_skills
     assert len(turret_types) == 10, turret_types
-    assert "Rarity.LEGENDARY" in rarity and "MAX_ENHANCEMENT = 5" in rarity
+    assert "Rarity.LEGENDARY" in rarity and "MAX_ENHANCEMENT = 30" in rarity
     assert relics.count("public static final Relic ") == 0 or "WAR_SIGIL" in relics
     assert "BASTION" in mercenaries and "MEDIC" in mercenaries
     assert "BALLISTA" in towers and "ANTI_AIR" in towers and "BEACON" in towers
