@@ -34,7 +34,7 @@ public final class SpellEffectSummary {
             case "lightning_bolt" -> "고정 직선 관통 번개 · 경로의 복수 대상 타격 + 약한 지형 파손";
             case "fly" -> "30초 실제 자유 비행 · 종료 시 기존 비행 권한 복원 + 안전 낙하";
             case "haste" -> "30초 · 마법진 전개 28% 단축 + 주문 재사용 대기 15% 단축 + 이동 가속";
-            case "dispel_magic" -> "조준 대상의 1~3써클 유지형 강화·제어 마법 제거 · 대상이 없으면 자신의 해로운 상태 정화";
+            case "dispel_magic" -> "조준 대상의 유지형 강화·제어 마법 제거 · 대상이 없으면 자신의 해로운 상태 정화";
             case "vampiric_touch" -> "근거리 생명력 흡수 · 실제로 잃게 한 체력/흡수량의 60%만큼 회복";
             case "slow" -> "9초 지속 시간왜곡 영역 · 적 이동·공격 행동을 반복적으로 둔화";
             case "protection_from_energy" -> "30초 · 5중 공명막이 Arcane/화염/투사체성 충격만 45% 경감 · 3.5초마다 재충전";
@@ -52,16 +52,16 @@ public final class SpellEffectSummary {
             case "freedom_of_movement" -> "26초 · 둔화/속박/동결/강제부양 지속 정화 + 하위 이동 제어의 Arcane 시전 봉쇄 무시";
             case "phantasmal_killer" -> "11초 단일 공포 환상 · 대상이 시전자에게서 실제로 도주하며 주기적 정신 피해";
             // 5C
-            case "cone_of_cold" -> "넓은 전방 냉기 피해 · 강한 동결";
-            case "wall_of_force" -> "12초 지속 역장벽 · 접근/통과 시 지속적으로 밀어냄";
-            case "cloudkill" -> "11초 지속 독성 지대 · 반복 피해·중독·약화";
-            case "telekinesis" -> "대상 피해 후 들어 올리고 강하게 밀침";
-            case "flame_strike" -> "고정 목표에 화염 기둥 낙하 · 광역 피해/화상/지형 파괴";
-            case "hold_monster" -> "조준 대상을 15초간 AI·이동·Arcane 시전 완전 봉쇄";
-            case "mass_cure_wounds" -> "주변 플레이어 다수의 체력 회복";
-            case "passwall" -> "조준 방향의 먼 안전 지점으로 공간 통과";
-            case "dominate_person" -> "조준 대상의 AI·이동·Arcane 시전을 13초간 봉쇄";
-            case "insect_plague" -> "11초 지속 벌레 떼 · 반복 피해·약화";
+            case "cone_of_cold" -> "전방으로 넓어지는 실제 냉기 원뿔 · 피해·화염 소거·강한 동결·이동 압박";
+            case "wall_of_force" -> "12초 실제 역장벽 · 적대 생명체 통과 저지 + 벽을 가로지르는 적대 Arcane 주문 차단";
+            case "cloudkill" -> "11초 이동 독구름 · 시전 방향으로 천천히 전진하며 반복 독성 피해 · 약해진 대상 피해 증폭";
+            case "telekinesis" -> "5초 동안 대상을 시선 앞에 붙잡아 조종 · 종료 순간 현재 시선 방향으로 강하게 투척";
+            case "flame_strike" -> "고정 지점 수직 화염 기둥 · 중심 거리 감쇠 광역 피해·화상·같은 중심 지형 파괴";
+            case "hold_monster" -> "일반 대상 15초 완전 속박 · 초대형/보스급도 약 7초 속박 · 이동/공격/Arcane 시전 봉쇄";
+            case "mass_cure_wounds" -> "주변 자신·아군·소유 길들인 생명체를 동시에 치유 + 짧은 재생";
+            case "passwall" -> "실제 벽에 약 12초 임시 통로 생성 · 내부가 비면 원래 블록을 안전 복원 · 보호 블록은 관통 불가";
+            case "dominate_person" -> "인간형 체급 적을 13초 전투 대리체로 지배 · 주변 위협 공격/비전투 추종 + Arcane 시전 봉쇄";
+            case "insect_plague" -> "11초 고정 곤충떼 영역 · 반복 피해·행동 방해 + 내부 Arcane 집중을 간헐적으로 끊음";
             // 6C
             case "disintegrate" -> "직선 분해 피해 · 광선 경로 실제 블록 파괴";
             case "globe_of_invulnerability" -> "26초 · 반경 약 6m · 외부에서 들어오는 적대 1~5써클 Arcane 주문을 경계면에서 소거 · 6써클 이상/물리 공격은 통과";
