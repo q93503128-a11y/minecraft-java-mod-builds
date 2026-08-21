@@ -8,16 +8,12 @@ def read(name: str) -> str:
     return (JAVA / name).read_text(encoding="utf-8")
 
 def main() -> None:
-    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     attack = read("VillageAttackPlanSystem.java")
     raid = read("VillageRaidSystem.java")
     gate = read("VillageGatePrioritySystem.java")
     guardians = read("VillageGuardians.java")
     old = (ROOT / "tools/test_v01824_defense_action_integrity.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.25-alpha.1" in props
-    assert "0.18.25-alpha.1" in readme and "villageguardians-0.18.25-alpha.1.jar" in readme
     assert 'assert "mod_version=0.18.24-alpha.1" in props' not in old
 
     # Attack-plan ownership is explicit and exposes the two facts generic raid AI needs.

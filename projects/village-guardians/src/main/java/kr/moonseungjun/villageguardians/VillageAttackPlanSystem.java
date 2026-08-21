@@ -62,6 +62,11 @@ public final class VillageAttackPlanSystem {
         ACTIVE_FRONTS.put(mob.getUUID(), front);
         Condition condition = condition(day, wave);
         applyCondition(mob, condition);
+        if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+            BlockPos aerial = spawnOrigin(front, index).above(18 + Math.floorMod(index, 5) * 2);
+            mob.snapTo(aerial.getX() + 0.5, aerial.getY(), aerial.getZ() + 0.5);
+            return;
+        }
         if (front != Front.NORTH) {
             BlockPos spawn = safeSpawn(level, spawnOrigin(front, index));
             mob.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
@@ -103,6 +108,7 @@ public final class VillageAttackPlanSystem {
                 ACTIVE_FRONTS.remove(id);
                 continue;
             }
+            if (VillageEnemyArchetypeSystem.isFlying(mob)) continue;
             Front front = ACTIVE_FRONTS.getOrDefault(id, Front.NORTH);
             if (front == Front.NORTH) continue;
             VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);

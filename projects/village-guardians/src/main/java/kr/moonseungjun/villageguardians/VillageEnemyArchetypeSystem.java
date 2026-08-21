@@ -36,14 +36,27 @@ public final class VillageEnemyArchetypeSystem {
             int index,
             boolean boss,
             VillageWaveTrait trait) {
-        Archetype archetype = boss ? bossForDay(day) : select(day, wave, index, trait);
-        Mob mob = createEntity(level, archetype);
+        boolean flying = !boss && shouldSpawnFlying(day, wave, index, trait);
+        Archetype archetype = boss ? bossForDay(day)
+                : flying ? Archetype.MARKSMAN : select(day, wave, index, trait);
+        Mob mob = flying ? EntityTypes.PHANTOM.create(level, EntitySpawnReason.EVENT) : createEntity(level, archetype);
         return mob == null ? null : new SpawnedEnemy(mob, archetype, boss);
     }
 
     public static Archetype previewArchetype(
             int day, int wave, int index, boolean boss, VillageWaveTrait trait) {
         return boss ? bossForDay(day) : select(day, wave, index, trait);
+    }
+
+    public static boolean isFlying(Mob mob) {
+        return mob != null && mob.getType() == EntityTypes.PHANTOM;
+    }
+
+    private static boolean shouldSpawnFlying(int day, int wave, int index, VillageWaveTrait trait) {
+        if (day < 7) return false;
+        int cadence = trait == VillageWaveTrait.STORMFRONT ? 4 : day >= 13 ? 6 : 9;
+        if (trait == VillageWaveTrait.HUNTERS) cadence = Math.min(cadence, 5);
+        return Math.floorMod(index + wave * 2 + day, cadence) == 0;
     }
 
     public static String combatRole(Archetype archetype) {
@@ -75,13 +88,16 @@ public final class VillageEnemyArchetypeSystem {
             boolean boss) {
         mob.setPersistenceRequired();
         mob.setCanPickUpLoot(false);
-        equip(mob, archetype);
+        if (!isFlying(mob)) equip(mob, archetype);
         applyArchetypeAttributes(mob, archetype, day);
         applyArchetypeEffects(mob, archetype, day, wave);
         trait.applyLongEffects(mob);
-        mob.setCustomName(Component.literal(displayName(archetype, trait, day, wave, boss)));
+        String visibleName = isFlying(mob)
+                ? "§b웨이브 " + wave + " · 하늘 약탈귀 §8[성벽 우회 공중 급습]"
+                : displayName(archetype, trait, day, wave, boss);
+        mob.setCustomName(Component.literal(visibleName));
         mob.setCustomNameVisible(true);
-        if (boss || archetype == Archetype.NECROMANCER || archetype == Archetype.TOWER_HUNTER) {
+        if (isFlying(mob) || boss || archetype == Archetype.NECROMANCER || archetype == Archetype.TOWER_HUNTER) {
             mob.setGlowingTag(true);
         }
         mob.setHealth(mob.getMaxHealth());
@@ -340,6 +356,13 @@ public final class VillageEnemyArchetypeSystem {
     }
 
     private static void applyArchetypeAttributes(Mob mob, Archetype archetype, int day) {
+        if (isFlying(mob)) {
+            var health = mob.getAttribute(Attributes.MAX_HEALTH);
+            if (health != null) health.setBaseValue(Math.min(42.0, 18.0 + Math.max(0, day - 7) * 1.35));
+            var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+            if (attack != null) attack.setBaseValue(Math.min(8.0, 3.0 + Math.max(0, day - 7) * 0.22));
+            return;
+        }
         if (archetype == Archetype.RUSHER) {
             var health = mob.getAttribute(Attributes.MAX_HEALTH);
             if (health != null) health.setBaseValue(Math.min(20.0, 11.0 + Math.max(0, day - 1) * 0.65));
@@ -434,6 +457,11 @@ public final class VillageEnemyArchetypeSystem {
     }
 
     private static void spawnAura(ServerLevel level, Mob mob, Archetype archetype, int count) {
+        if (isFlying(mob)) {
+            level.sendParticles(ParticleTypes.END_ROD, mob.getX(), mob.getY(), mob.getZ(),
+                    Math.max(6, count), 0.7, 0.35, 0.7, 0.035);
+            return;
+        }
         var particle = switch (archetype) {
             case SAPPER, SIEGE_BEAST -> ParticleTypes.SMOKE;
             case HEXER, NECROMANCER, PLAGUE_ARCHON -> ParticleTypes.WITCH;

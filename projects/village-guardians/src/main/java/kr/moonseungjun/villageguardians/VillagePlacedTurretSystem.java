@@ -288,13 +288,7 @@ public final class VillagePlacedTurretSystem {
                 ? nearby
                 : nearby.stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob)).toList();
         if (candidates.isEmpty()) return;
-        Mob target = candidates.stream().min(Comparator.comparingDouble(mob -> mob.distanceToSqr(Vec3.atCenterOf(state.pos())))).orElse(null);
-        if (state.type() == TurretType.ANTI_AIR) {
-            double baseY = VillageCouncilState.villageCenter().map(BlockPos::getY).orElse(state.pos().getY());
-            target = candidates.stream().filter(mob -> mob.getY() > baseY + 6.0)
-                    .min(Comparator.comparingDouble(mob -> mob.distanceToSqr(Vec3.atCenterOf(state.pos()))))
-                    .orElse(target);
-        }
+        Mob target = selectTarget(level, state, candidates);
         if (target == null) return;
         VillageTurretPresentationSystem.aim(level, state,
                 target.position().add(0.0, target.getBbHeight() * 0.55, 0.0));
@@ -328,9 +322,97 @@ public final class VillagePlacedTurretSystem {
                 hit(level, state, target, damage, ParticleTypes.ENCHANT);
                 target.removeEffect(MobEffects.STRENGTH);
                 target.removeEffect(MobEffects.REGENERATION);
+                target.removeEffect(MobEffects.SPEED);
+                target.removeEffect(MobEffects.RESISTANCE);
+                target.removeEffect(MobEffects.ABSORPTION);
             }
+            case ANTI_AIR -> hit(level, state, target,
+                    damage * (VillageEnemyArchetypeSystem.isFlying(target) ? 1.65f : 0.72f), ParticleTypes.CRIT);
             default -> hit(level, state, target, damage, ParticleTypes.CRIT);
         }
+    }
+
+    private static Mob selectTarget(ServerLevel level, TurretState state, List<Mob> candidates) {
+        Vec3 origin = Vec3.atCenterOf(state.pos());
+        return candidates.stream()
+                .max(Comparator.comparingDouble(mob -> targetScore(level, state, mob, origin)))
+                .orElse(null);
+    }
+
+    private static double targetScore(ServerLevel level, TurretState state, Mob mob, Vec3 origin) {
+        VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(mob);
+        double distance = Math.sqrt(Math.max(0.0, mob.position().distanceToSqr(origin)));
+        double score = Math.max(0.0, 80.0 - distance);
+        float maxHealth = Math.max(1.0f, mob.getMaxHealth());
+        float healthRatio = Math.max(0.0f, Math.min(1.0f, mob.getHealth() / maxHealth));
+        int cluster = VillageRaidSystem.activeEnemiesNear(level, mob.position(), 6.0, 10, null).size();
+        boolean flying = VillageEnemyArchetypeSystem.isFlying(mob);
+        switch (state.type()) {
+            case BALLISTA -> {
+                if (archetype != null && VillageEnemyArchetypeSystem.isBoss(archetype)) score += 120.0;
+                if (archetype == VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST
+                        || archetype == VillageEnemyArchetypeSystem.Archetype.SHIELDBREAKER
+                        || archetype == VillageEnemyArchetypeSystem.Archetype.BULWARK) score += 75.0;
+                score += healthRatio * 45.0;
+            }
+            case REPEATER -> {
+                if (archetype == VillageEnemyArchetypeSystem.Archetype.RUSHER) score += 110.0;
+                else if (archetype == VillageEnemyArchetypeSystem.Archetype.GRUNT) score += 55.0;
+                score += (1.0 - healthRatio) * 65.0;
+            }
+            case PIERCER -> {
+                if (isArmoredThreat(archetype, mob)) score += 150.0;
+                if (archetype != null && VillageEnemyArchetypeSystem.isBoss(archetype)) score += 55.0;
+            }
+            case FLAME -> {
+                if (mob.getRemainingFireTicks() <= 0) score += 55.0;
+                score += cluster * 8.0;
+            }
+            case FROST -> {
+                if (!mob.hasEffect(MobEffects.SLOWNESS)) score += 55.0;
+                if (archetype == VillageEnemyArchetypeSystem.Archetype.RUSHER
+                        || archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER
+                        || archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER) score += 115.0;
+            }
+            case CHAIN -> score += cluster * 26.0;
+            case BOMBARD -> score += cluster * 34.0;
+            case NULLIFIER -> {
+                if (isSupportThreat(archetype)) score += 145.0;
+                if (hasDispellableBuff(mob)) score += 90.0;
+            }
+            case ANTI_AIR -> {
+                if (flying) score += 420.0;
+                else if (archetype == VillageEnemyArchetypeSystem.Archetype.MARKSMAN
+                        || isSupportThreat(archetype)) score += 35.0;
+            }
+            default -> { }
+        }
+        if (flying && state.type() != TurretType.ANTI_AIR) score -= 32.0;
+        return score;
+    }
+
+    private static boolean isArmoredThreat(VillageEnemyArchetypeSystem.Archetype type, Mob mob) {
+        if (type == null) return mob.hasEffect(MobEffects.RESISTANCE);
+        return switch (type) {
+            case BULWARK, SHIELDBREAKER, SIEGE_BEAST, IRON_WARLORD, DREAD_KNIGHT -> true;
+            default -> mob.hasEffect(MobEffects.RESISTANCE);
+        };
+    }
+
+    private static boolean isSupportThreat(VillageEnemyArchetypeSystem.Archetype type) {
+        return type == VillageEnemyArchetypeSystem.Archetype.HEXER
+                || type == VillageEnemyArchetypeSystem.Archetype.WAR_CHANTER
+                || type == VillageEnemyArchetypeSystem.Archetype.NECROMANCER
+                || type == VillageEnemyArchetypeSystem.Archetype.PLAGUE_ARCHON
+                || type == VillageEnemyArchetypeSystem.Archetype.IRON_WARLORD;
+    }
+
+    private static boolean hasDispellableBuff(Mob mob) {
+        return mob.hasEffect(MobEffects.STRENGTH)
+                || mob.hasEffect(MobEffects.REGENERATION)
+                || mob.hasEffect(MobEffects.SPEED)
+                || mob.hasEffect(MobEffects.RESISTANCE)
+                || mob.hasEffect(MobEffects.ABSORPTION);
     }
 
     private static float piercingMultiplier(Mob target) {

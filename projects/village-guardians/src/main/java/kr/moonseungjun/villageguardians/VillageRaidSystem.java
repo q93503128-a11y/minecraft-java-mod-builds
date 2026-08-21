@@ -260,6 +260,7 @@ public final class VillageRaidSystem {
         int count = Math.min(requested, capacity);
         int bossCount = Math.min(count, VillageWarfrontSystem.bonusBossCount(day, wave, maxWaves));
         int before = ACTIVE_ENEMIES.size();
+        int flyingSpawned = 0;
         PlayerTeam raidTeam = ensureRaidTeam(server);
         VillageAttackPlanSystem.renderWaveArrival(level, day, wave, count);
 
@@ -286,6 +287,7 @@ public final class VillageRaidSystem {
             ACTIVE_WAVES.put(mob.getUUID(), wave);
             if (level.addFreshEntity(mob)) {
                 ACTIVE_ENEMIES.add(mob.getUUID());
+                if (VillageEnemyArchetypeSystem.isFlying(mob)) flyingSpawned++;
             } else {
                 releaseEnemy(server, mob.getUUID(), mob);
             }
@@ -298,7 +300,8 @@ public final class VillageRaidSystem {
         server.getPlayerList().broadcastSystemMessage(
                 Component.literal("§c[웨이브 " + wave + "/" + maxWaves + "] §f"
                         + currentTrait.displayName() + " · 신규 적 " + spawned
-                        + "명 · 전장 총 " + ACTIVE_ENEMIES.size() + "명" + capped
+                        + "명 · 전장 총 " + ACTIVE_ENEMIES.size() + "명"
+                        + (flyingSpawned > 0 ? " · §b공중 위협 " + flyingSpawned + "기§f" : "") + capped
                         + "\n§7" + currentTrait.description()
                         + "\n§b대응: " + currentTrait.counterHint()), false);
     }
@@ -349,6 +352,11 @@ public final class VillageRaidSystem {
                     level, server, mob, archetype, currentTrait, abilityTicks);
             if (VillageEnemyArchetypeSystem.isBoss(archetype)) {
                 VillageBossAspectSystem.tick(level, server, mob, abilityTicks);
+            }
+
+            if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+                directFlyingEnemy(server, level, mob, archetype, villageCenter);
+                continue;
             }
 
             // Side/rear exterior movement is owned by VillageAttackPlanSystem on the same server tick.
@@ -415,6 +423,55 @@ public final class VillageRaidSystem {
                 VillageEnemyArchetypeSystem.onStructureHit(level, mob, archetype);
             }
         }
+    }
+
+    private static void directFlyingEnemy(
+            MinecraftServer server, ServerLevel level, Mob mob,
+            VillageEnemyArchetypeSystem.Archetype archetype, BlockPos villageCenter) {
+        if (villageCenter == null) return;
+        ServerPlayer player = nearestFlyingPriorityPlayer(server, mob);
+        if (player != null) {
+            mob.setTarget(player);
+            mob.getLookControl().setLookAt(player, 45.0f, 45.0f);
+            mob.getMoveControl().setWantedPosition(player.getX(), player.getY() + 2.5, player.getZ(), 1.28);
+            return;
+        }
+        mob.setTarget(null);
+        VillageProgressionSystem.Building targetBuilding = chooseTarget(
+                villageCenter, mob.blockPosition(), true, archetype);
+        if (targetBuilding == null || targetBuilding == VillageProgressionSystem.Building.WALLS) return;
+        BlockPos target = VillageWorldSystem.buildingCenter(targetBuilding);
+        mob.getLookControl().setLookAt(target.getX() + 0.5, target.getY() + 2.0, target.getZ() + 0.5);
+        mob.getMoveControl().setWantedPosition(target.getX() + 0.5, target.getY() + 9.0, target.getZ() + 0.5, 1.18);
+        boolean attackTick = Math.floorMod(structureAttackTicks + mob.getUUID().hashCode(), STRUCTURE_ATTACK_INTERVAL) == 0;
+        if (!attackTick || mob.position().distanceToSqr(Vec3.atCenterOf(target)) > 14.0 * 14.0) return;
+        int day = VillageCouncilState.currentDay();
+        float multiplier = currentTrait.structureDamageMultiplier()
+                * VillageWarfrontSystem.structureDamageMultiplier(day)
+                * VillageBossAspectSystem.structureMultiplier(mob)
+                * VillageDifficultyTuning.earlyStructureMultiplier(day)
+                * VillageDifficultyTuning.defenderStateStructureMultiplier(server);
+        int damage = Math.max(1, Math.round((4 + wave + Math.min(16, day) * 0.45f) * multiplier));
+        VillageProgressionSystem.damageBuilding(server, targetBuilding, damage);
+        VillageDefenseEffectSystem.structureImpact(level, Vec3.atCenterOf(target), false);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                target.getX() + 0.5, target.getY() + 2.0, target.getZ() + 0.5,
+                9, 0.6, 0.4, 0.6, 0.035);
+    }
+
+    private static ServerPlayer nearestFlyingPriorityPlayer(MinecraftServer server, Mob mob) {
+        ServerPlayer chosen = null;
+        double chosenDistance = 28.0 * 28.0;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()
+                    || VillageRespawnSystem.isDowned(player)) continue;
+            double distance = player.distanceToSqr(mob);
+            if (distance <= chosenDistance && mob.hasLineOfSight(player)) {
+                chosenDistance = distance;
+                chosen = player;
+            }
+        }
+        return chosen;
     }
 
     private static ServerPlayer nearestPriorityPlayer(MinecraftServer server, Mob mob) {

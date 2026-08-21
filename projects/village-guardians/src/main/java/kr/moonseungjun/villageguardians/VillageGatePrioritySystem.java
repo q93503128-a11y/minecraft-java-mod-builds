@@ -44,6 +44,9 @@ public final class VillageGatePrioritySystem {
             if (!mob.isAlive() || !VillageRaidSystem.isActiveEnemy(mob.getUUID())) {
                 continue;
             }
+            if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+                continue;
+            }
             if (VillageAttackPlanSystem.frontOf(mob.getUUID()) != VillageAttackPlanSystem.Front.NORTH
                     || VillageAttackPlanSystem.isInsideFortress(mob.blockPosition())) {
                 continue;
