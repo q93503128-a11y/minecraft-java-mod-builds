@@ -145,7 +145,7 @@ public final class MiningProgression {
                 float targetHardness = targetState.getDestroySpeed(level, target);
                 if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
 
-                player.gameMode().destroyBlock(target);
+                player.gameMode.destroyBlock(target);
             }
         }
     }
