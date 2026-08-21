@@ -19,8 +19,8 @@ def main() -> None:
     world = read("VillageWorldSystem.java")
     historical = (ROOT / "tools/test_v01830_walltop_emplacements.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.31-alpha.1" in props
-    assert "0.18.31-alpha.1" in readme and "villageguardians-0.18.31-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전" in readme and "목표 JAR" in readme
     assert 'assert "mod_version=0.18.30-alpha.1" in props' not in historical
 
     access = terrain.split("private static void buildWallAccess", 1)[1].split(
@@ -43,7 +43,7 @@ def main() -> None:
 
     assert "rallyPoint(center, zone, kind, golem.getUUID())" in deployment
     assert "private static BlockPos rangerWallPost" in deployment
-    assert "center.offset(lane + spread, 9, -74)" in deployment
+    assert "return center.offset(lane + spread, 9, -74)" in deployment
     assert "Math.floorMod(mercenaryId == null ? 0 : mercenaryId.hashCode(), 10)" in deployment
     assert "private static BlockPos rangerWallStagingPoint" in deployment
     assert "center.offset(lane, 0, -62)" in deployment

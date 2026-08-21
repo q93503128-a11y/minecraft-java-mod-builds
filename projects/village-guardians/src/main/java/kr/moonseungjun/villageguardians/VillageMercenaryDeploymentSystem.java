@@ -136,8 +136,10 @@ public final class VillageMercenaryDeploymentSystem {
     /** Actual north-wall walk surface: ten stable slots keep multiple rangers from occupying one block. */
     private static BlockPos rangerWallPost(BlockPos center, UUID mercenaryId) {
         int slot = Math.floorMod(mercenaryId == null ? 0 : mercenaryId.hashCode(), 10);
-        int lane = slot < 5 ? -25 : 25;
-        int spread = slot % 5 - 2;
+        // Keep the stair landing itself open. Rangers approach through the ±25 stairs,
+        // then spread along the north-wall firing line, clear of stair and emplacement traffic.
+        int lane = slot < 5 ? -48 : 48;
+        int spread = (slot % 5 - 2) * 4;
         return center.offset(lane + spread, 9, -74);
     }
 
