@@ -33,6 +33,7 @@ public final class VillageRaidSystem {
     private static final Set<UUID> ACTIVE_ENEMIES = new HashSet<>();
     private static final Map<UUID, VillageEnemyArchetypeSystem.Archetype> ACTIVE_ARCHETYPES = new HashMap<>();
     private static final Map<UUID, Integer> ACTIVE_WAVES = new HashMap<>();
+    private static final Map<UUID, VillageEnemyArchetypeSystem.AerialRole> ACTIVE_AERIAL_ROLES = new HashMap<>();
     private static final Map<UUID, AerialStrike> AERIAL_STRIKES = new HashMap<>();
     private static final int FIRST_WAVE_COUNTDOWN_TICKS = 240;
     private static final int BETWEEN_WAVE_TICKS = 120;
@@ -145,6 +146,7 @@ public final class VillageRaidSystem {
         return ACTIVE_ENEMIES.contains(uuid)
                 || ACTIVE_ARCHETYPES.containsKey(uuid)
                 || ACTIVE_WAVES.containsKey(uuid)
+                || ACTIVE_AERIAL_ROLES.containsKey(uuid)
                 || entity.entityTags().contains(RAID_ENEMY_TAG);
     }
 
@@ -155,6 +157,22 @@ public final class VillageRaidSystem {
 
     public static VillageEnemyArchetypeSystem.Archetype archetypeOf(Mob mob) {
         return mob == null ? null : ACTIVE_ARCHETYPES.get(mob.getUUID());
+    }
+
+    public static VillageEnemyArchetypeSystem.AerialRole aerialRoleOf(Mob mob) {
+        if (mob == null || !VillageEnemyArchetypeSystem.isFlying(mob)) return null;
+        return ACTIVE_AERIAL_ROLES.getOrDefault(mob.getUUID(), VillageEnemyArchetypeSystem.AerialRole.RAIDER);
+    }
+
+    /** Higher values are selected first by dedicated anti-air defenders. */
+    public static int aerialThreatPriority(Mob mob) {
+        VillageEnemyArchetypeSystem.AerialRole role = aerialRoleOf(mob);
+        if (role == null) return 0;
+        return switch (role) {
+            case BOMBARDIER -> 300;
+            case HARRIER -> 220;
+            case RAIDER -> 140;
+        };
     }
 
     public static int waveOf(Mob mob) {
@@ -284,6 +302,13 @@ public final class VillageRaidSystem {
             applyScaling(mob, day, wave, boss);
             VillageEnemyArchetypeSystem.configure(
                     level, mob, spawned.archetype(), currentTrait, day, wave, boss);
+            if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+                VillageEnemyArchetypeSystem.AerialRole aerialRole =
+                        VillageEnemyArchetypeSystem.aerialRole(day, wave, index, currentTrait);
+                ACTIVE_AERIAL_ROLES.put(mob.getUUID(), aerialRole);
+                mob.setCustomName(Component.literal("§b웨이브 " + wave + " · " + aerialRole.displayName()
+                        + " §8[" + aerialRole.combatRole() + " · 성벽 우회]"));
+            }
             if (boss) VillageBossAspectSystem.configure(level, mob, day, wave, index);
             mob.addTag(RAID_ENEMY_TAG);
             VillageWorldSystem.markAllowedGameMob(mob);
@@ -436,14 +461,16 @@ public final class VillageRaidSystem {
             VillageEnemyArchetypeSystem.Archetype archetype, BlockPos villageCenter) {
         if (villageCenter == null) return;
         UUID id = mob.getUUID();
-        // Keep vanilla Phantom's dive target disabled: this system owns aerial movement and impact timing.
+        VillageEnemyArchetypeSystem.AerialRole role = aerialRoleOf(mob);
+        if (role == null) role = VillageEnemyArchetypeSystem.AerialRole.RAIDER;
+        // One owner only: vanilla Phantom targeting and all ground-elite navigation stay disabled.
         mob.setTarget(null);
 
         AerialStrike strike = AERIAL_STRIKES.get(id);
         if (strike != null) {
             if (abilityTicks < strike.impactTick()) {
                 Vec3 dive = strike.point().add(0.0, strike.targetsBuilding() ? 4.5 : 3.0, 0.0);
-                moveFlyingToward(mob, strike.point(), dive, 1.52);
+                moveFlyingToward(mob, strike.point(), dive, aerialDiveSpeed(role));
                 return;
             }
             if (!strike.resolved()) {
@@ -453,24 +480,46 @@ public final class VillageRaidSystem {
             }
             if (abilityTicks < strike.recoveryUntilTick()) {
                 Vec3 recover = strike.point().add(0.0, strike.targetsBuilding() ? 12.5 : 11.0, 0.0);
-                moveFlyingToward(mob, strike.point(), recover, 1.38);
+                moveFlyingToward(mob, strike.point(), recover, aerialRecoverySpeed(role));
                 return;
             }
             AERIAL_STRIKES.remove(id);
         }
 
-        ServerPlayer player = nearestFlyingPriorityPlayer(server, mob);
-        int phase = Math.floorMod(abilityTicks + id.hashCode(), AERIAL_ASSAULT_CADENCE);
-        if (player != null) {
-            if (phase == 0) {
-                beginAerialStrike(level, mob, player.position(), null);
+        int phase = Math.floorMod(abilityTicks + id.hashCode(), aerialCadence(role));
+        // Bombardiers deliberately ignore nearby defenders while an internal facility still exists.
+        if (role == VillageEnemyArchetypeSystem.AerialRole.BOMBARDIER) {
+            VillageProgressionSystem.Building building = chooseTarget(
+                    villageCenter, mob.blockPosition(), true, archetype);
+            if (building != null && building != VillageProgressionSystem.Building.WALLS) {
+                BlockPos targetBlock = VillageWorldSystem.buildingCenter(building);
+                Vec3 target = Vec3.atCenterOf(targetBlock).add(0.0, 1.0, 0.0);
+                double angle = abilityTicks * 0.034 + Math.floorMod(id.hashCode(), 360) * Math.PI / 180.0;
+                Vec3 cruise = target.add(Math.cos(angle) * 9.5, 11.5, Math.sin(angle) * 9.5);
+                if (phase == 0 && mob.position().distanceToSqr(cruise) <= 24.0 * 24.0) {
+                    beginAerialStrike(level, mob, role, target, building);
+                    return;
+                }
+                moveFlyingToward(mob, target, cruise, 1.08);
                 return;
             }
-            double angle = abilityTicks * 0.055 + Math.floorMod(id.hashCode(), 360) * Math.PI / 180.0;
-            double radius = 7.0 + Math.floorMod(id.hashCode(), 4);
-            double altitude = 7.5 + Math.floorMod(id.hashCode() >>> 4, 4);
+        }
+
+        ServerPlayer player = nearestFlyingPriorityPlayer(server, mob, aerialPlayerSearchRange(role));
+        if (player != null) {
+            if (phase == 0) {
+                beginAerialStrike(level, mob, role, player.position(), null);
+                return;
+            }
+            double turn = role == VillageEnemyArchetypeSystem.AerialRole.HARRIER ? 0.078 : 0.055;
+            double angle = abilityTicks * turn + Math.floorMod(id.hashCode(), 360) * Math.PI / 180.0;
+            double radius = role == VillageEnemyArchetypeSystem.AerialRole.HARRIER ? 6.0
+                    : 7.0 + Math.floorMod(id.hashCode(), 4);
+            double altitude = role == VillageEnemyArchetypeSystem.AerialRole.HARRIER ? 6.5
+                    : 7.5 + Math.floorMod(id.hashCode() >>> 4, 4);
             Vec3 cruise = player.position().add(Math.cos(angle) * radius, altitude, Math.sin(angle) * radius);
-            moveFlyingToward(mob, player.position().add(0.0, 1.0, 0.0), cruise, 1.20);
+            moveFlyingToward(mob, player.position().add(0.0, 1.0, 0.0), cruise,
+                    role == VillageEnemyArchetypeSystem.AerialRole.HARRIER ? 1.38 : 1.20);
             return;
         }
 
@@ -482,25 +531,72 @@ public final class VillageRaidSystem {
         double angle = abilityTicks * 0.042 + Math.floorMod(id.hashCode(), 360) * Math.PI / 180.0;
         Vec3 cruise = target.add(Math.cos(angle) * 8.0, 9.5, Math.sin(angle) * 8.0);
         if (phase == 0 && mob.position().distanceToSqr(cruise) <= 22.0 * 22.0) {
-            beginAerialStrike(level, mob, target, targetBuilding);
+            beginAerialStrike(level, mob, role, target, targetBuilding);
             return;
         }
         moveFlyingToward(mob, target, cruise, 1.16);
     }
 
+    private static int aerialCadence(VillageEnemyArchetypeSystem.AerialRole role) {
+        return switch (role) {
+            case BOMBARDIER -> 112;
+            case HARRIER -> 62;
+            case RAIDER -> AERIAL_ASSAULT_CADENCE;
+        };
+    }
+
+    private static int aerialWarningTicks(VillageEnemyArchetypeSystem.AerialRole role) {
+        return switch (role) {
+            case BOMBARDIER -> 24;
+            case HARRIER -> 12;
+            case RAIDER -> AERIAL_WARNING_TICKS;
+        };
+    }
+
+    private static int aerialRecoveryTicks(VillageEnemyArchetypeSystem.AerialRole role) {
+        return switch (role) {
+            case BOMBARDIER -> 44;
+            case HARRIER -> 24;
+            case RAIDER -> AERIAL_RECOVERY_TICKS;
+        };
+    }
+
+    private static double aerialPlayerSearchRange(VillageEnemyArchetypeSystem.AerialRole role) {
+        return role == VillageEnemyArchetypeSystem.AerialRole.HARRIER ? 38.0 : 28.0;
+    }
+
+    private static double aerialDiveSpeed(VillageEnemyArchetypeSystem.AerialRole role) {
+        return switch (role) {
+            case BOMBARDIER -> 1.34;
+            case HARRIER -> 1.78;
+            case RAIDER -> 1.52;
+        };
+    }
+
+    private static double aerialRecoverySpeed(VillageEnemyArchetypeSystem.AerialRole role) {
+        return switch (role) {
+            case BOMBARDIER -> 1.20;
+            case HARRIER -> 1.58;
+            case RAIDER -> 1.38;
+        };
+    }
+
     private static void beginAerialStrike(
-            ServerLevel level, Mob mob, Vec3 point, VillageProgressionSystem.Building building) {
-        int impactTick = abilityTicks + AERIAL_WARNING_TICKS;
+            ServerLevel level, Mob mob, VillageEnemyArchetypeSystem.AerialRole role,
+            Vec3 point, VillageProgressionSystem.Building building) {
+        int impactTick = abilityTicks + aerialWarningTicks(role);
         AerialStrike strike = new AerialStrike(point, building, impactTick,
-                impactTick + AERIAL_RECOVERY_TICKS, false);
+                impactTick + aerialRecoveryTicks(role), false);
         AERIAL_STRIKES.put(mob.getUUID(), strike);
         VillageDefenseEffectSystem.aerialAssaultWarning(level, point, building != null);
         Vec3 dive = point.add(0.0, building == null ? 3.0 : 4.5, 0.0);
-        moveFlyingToward(mob, point, dive, 1.52);
+        moveFlyingToward(mob, point, dive, aerialDiveSpeed(role));
     }
 
     private static void resolveAerialStrike(
             MinecraftServer server, ServerLevel level, Mob mob, AerialStrike strike) {
+        VillageEnemyArchetypeSystem.AerialRole role = aerialRoleOf(mob);
+        if (role == null) role = VillageEnemyArchetypeSystem.AerialRole.RAIDER;
         if (strike.targetsBuilding()) {
             VillageProgressionSystem.Building building = strike.building();
             if (building != null && VillageProgressionSystem.isOperational(building)) {
@@ -510,15 +606,31 @@ public final class VillageRaidSystem {
                         * VillageBossAspectSystem.structureMultiplier(mob)
                         * VillageDifficultyTuning.earlyStructureMultiplier(day)
                         * VillageDifficultyTuning.defenderStateStructureMultiplier(server);
-                int damage = Math.max(1, Math.round((4 + wave + Math.min(16, day) * 0.45f) * multiplier));
+                float roleMultiplier = switch (role) {
+                    case BOMBARDIER -> 1.75f;
+                    case HARRIER -> 0.58f;
+                    case RAIDER -> 1.0f;
+                };
+                int damage = Math.max(1, Math.round((4 + wave + Math.min(16, day) * 0.45f)
+                        * multiplier * roleMultiplier));
                 VillageProgressionSystem.damageBuilding(server, building, damage);
             }
             VillageDefenseEffectSystem.aerialAssaultImpact(level, strike.point(), true);
             return;
         }
 
-        double radiusSquared = AERIAL_PLAYER_STRIKE_RADIUS * AERIAL_PLAYER_STRIKE_RADIUS;
-        float damage = Math.max(2.0f, (float) mob.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        double radius = switch (role) {
+            case BOMBARDIER -> 3.10;
+            case HARRIER -> 2.15;
+            case RAIDER -> AERIAL_PLAYER_STRIKE_RADIUS;
+        };
+        double radiusSquared = radius * radius;
+        float roleMultiplier = switch (role) {
+            case BOMBARDIER -> 0.85f;
+            case HARRIER -> 0.82f;
+            case RAIDER -> 1.0f;
+        };
+        float damage = Math.max(2.0f, (float) mob.getAttributeValue(Attributes.ATTACK_DAMAGE) * roleMultiplier);
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() != level || !player.isAlive() || player.isSpectator()
                     || VillageRespawnSystem.isDowned(player)) continue;
@@ -534,9 +646,9 @@ public final class VillageRaidSystem {
         mob.getMoveControl().setWantedPosition(wanted.x, wanted.y, wanted.z, speed);
     }
 
-    private static ServerPlayer nearestFlyingPriorityPlayer(MinecraftServer server, Mob mob) {
+    private static ServerPlayer nearestFlyingPriorityPlayer(MinecraftServer server, Mob mob, double range) {
         ServerPlayer chosen = null;
-        double chosenDistance = 28.0 * 28.0;
+        double chosenDistance = range * range;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()
                     || VillageRespawnSystem.isDowned(player)) continue;
@@ -682,6 +794,7 @@ public final class VillageRaidSystem {
     private static void releaseEnemy(MinecraftServer server, UUID uuid, Entity entity) {
         ACTIVE_ARCHETYPES.remove(uuid);
         ACTIVE_WAVES.remove(uuid);
+        ACTIVE_AERIAL_ROLES.remove(uuid);
         AERIAL_STRIKES.remove(uuid);
         VillageAttackPlanSystem.forget(uuid);
         VillageEnemyEliteSystem.forget(uuid);
@@ -709,6 +822,7 @@ public final class VillageRaidSystem {
         ACTIVE_ENEMIES.clear();
         ACTIVE_ARCHETYPES.clear();
         ACTIVE_WAVES.clear();
+        ACTIVE_AERIAL_ROLES.clear();
         AERIAL_STRIKES.clear();
         VillageAttackPlanSystem.clearRaidState();
         VillageEnemyEliteSystem.clearRaidState();

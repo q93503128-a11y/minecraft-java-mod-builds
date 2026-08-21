@@ -375,13 +375,16 @@ public final class VillagePlacedTurretSystem {
                         || archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER) score += 115.0;
             }
             case CHAIN -> score += cluster * 26.0;
-            case BOMBARD -> score += cluster * 34.0;
+            case BOMBARD -> {
+                score += cluster * 34.0;
+                score -= pendingBombardOverlapPenalty(mob.position());
+            }
             case NULLIFIER -> {
                 if (isSupportThreat(archetype)) score += 145.0;
                 if (hasDispellableBuff(mob)) score += 90.0;
             }
             case ANTI_AIR -> {
-                if (flying) score += 420.0;
+                if (flying) score += 420.0 + VillageRaidSystem.aerialThreatPriority(mob);
                 else if (archetype == VillageEnemyArchetypeSystem.Archetype.MARKSMAN
                         || isSupportThreat(archetype)) score += 35.0;
             }
@@ -413,6 +416,15 @@ public final class VillagePlacedTurretSystem {
                 || mob.hasEffect(MobEffects.SPEED)
                 || mob.hasEffect(MobEffects.RESISTANCE)
                 || mob.hasEffect(MobEffects.ABSORPTION);
+    }
+
+    private static double pendingBombardOverlapPenalty(Vec3 point) {
+        double penalty = 0.0;
+        for (PendingBombard shot : PENDING_BOMBARDS) {
+            double separation = shot.radius() + 2.0;
+            if (shot.impact().distanceToSqr(point) <= separation * separation) penalty += 190.0;
+        }
+        return Math.min(380.0, penalty);
     }
 
     private static float piercingMultiplier(Mob target) {

@@ -22,12 +22,14 @@ public final class VillageWaveIntelSystem {
             int count = VillageRaidSystem.previewWaveCount(day, wave, players, trait);
             int bosses = VillageRaidSystem.previewBossCount(day, wave, maximum, count);
             Map<VillageEnemyArchetypeSystem.Archetype, Integer> roster = new LinkedHashMap<>();
+            Map<VillageEnemyArchetypeSystem.AerialRole, Integer> aerialRoster = new LinkedHashMap<>();
             List<String> bossLines = new ArrayList<>();
-            int flying = 0;
             for (int index = 0; index < count; index++) {
                 boolean boss = index < bosses;
                 if (VillageEnemyArchetypeSystem.willSpawnFlying(day, wave, index, boss, trait)) {
-                    flying++;
+                    VillageEnemyArchetypeSystem.AerialRole aerialRole =
+                            VillageEnemyArchetypeSystem.aerialRole(day, wave, index, trait);
+                    aerialRoster.merge(aerialRole, 1, Integer::sum);
                     continue;
                 }
                 VillageEnemyArchetypeSystem.Archetype archetype =
@@ -46,10 +48,14 @@ public final class VillageWaveIntelSystem {
                 }
             });
             String direction = VillageAttackPlanSystem.scoutLine(day, wave, count);
-            String air = flying <= 0
+            List<String> airLines = new ArrayList<>();
+            aerialRoster.forEach((role, amount) -> airLines.add(
+                    role.displayName() + " ×" + amount + " · " + role.combatRole()));
+            int flyingCount = aerialRoster.values().stream().mapToInt(Integer::intValue).sum();
+            String air = airLines.isEmpty()
                     ? "없음"
-                    : "하늘 약탈귀 ×" + flying + " · 성벽 우회 · 대공 발사대/성루 명사수 권장";
-            String elite = VillageEnemyEliteSystem.scoutSummary(day, count);
+                    : String.join(" / ", airLines) + " · 성벽 우회 · 대공 발사대/성루 명사수 권장";
+            String elite = VillageEnemyEliteSystem.scoutSummary(day, Math.max(0, count - flyingCount));
             String bossDoctrine = bosses <= 0 ? "없음" : VillageSiegeBossSystem.previewBossMechanic(day);
             String detail = "예상 총 " + count + "명" + (bosses > 0 ? " · 보스 " + bosses + "명" : "")
                     + "\n" + direction

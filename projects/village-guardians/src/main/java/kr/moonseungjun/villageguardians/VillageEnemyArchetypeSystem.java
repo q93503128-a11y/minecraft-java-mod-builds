@@ -29,6 +29,23 @@ public final class VillageEnemyArchetypeSystem {
 
     public record SpawnedEnemy(Mob mob, Archetype archetype, boolean boss) {}
 
+    /** Runtime doctrine for the real flying roster. All roles keep the same Phantom silhouette,
+     * while target ownership, cadence and threat priority are authored by VillageRaidSystem. */
+    public enum AerialRole {
+        RAIDER("하늘 약탈귀", "수호자 급강하"),
+        BOMBARDIER("파성 망령", "내부 시설 폭격"),
+        HARRIER("폭풍 사냥귀", "고속 수호자 추격");
+
+        private final String displayName;
+        private final String combatRole;
+        AerialRole(String displayName, String combatRole) {
+            this.displayName = displayName;
+            this.combatRole = combatRole;
+        }
+        public String displayName() { return displayName; }
+        public String combatRole() { return combatRole; }
+    }
+
     public static SpawnedEnemy create(
             ServerLevel level,
             int day,
@@ -56,6 +73,19 @@ public final class VillageEnemyArchetypeSystem {
     public static boolean willSpawnFlying(
             int day, int wave, int index, boolean boss, VillageWaveTrait trait) {
         return !boss && shouldSpawnFlying(day, wave, index, trait);
+    }
+
+    /** Deterministic flying doctrine; daytime intel and the real spawn loop call this exact selector. */
+    public static AerialRole aerialRole(int day, int wave, int index, VillageWaveTrait trait) {
+        if (day < 10) return AerialRole.RAIDER;
+        int roll = Math.floorMod(day * 31 + wave * 17 + index * 13, 12);
+        if (day >= 13 && (trait == VillageWaveTrait.HUNTERS ? roll >= 6 : roll >= 10)) {
+            return AerialRole.HARRIER;
+        }
+        if (trait == VillageWaveTrait.STORMFRONT ? roll >= 5 : roll >= 8) {
+            return AerialRole.BOMBARDIER;
+        }
+        return AerialRole.RAIDER;
     }
 
     private static boolean shouldSpawnFlying(int day, int wave, int index, VillageWaveTrait trait) {

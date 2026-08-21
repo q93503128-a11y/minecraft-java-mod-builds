@@ -326,6 +326,7 @@ public final class VillageMercenarySystem {
                 .stream().filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))
                 .min(java.util.Comparator
                         .comparingInt((Mob enemy) -> VillageEnemyArchetypeSystem.isFlying(enemy) ? 0 : 1)
+                        .thenComparingInt(enemy -> -VillageRaidSystem.aerialThreatPriority(enemy))
                         .thenComparingDouble(mercenary::distanceToSqr)).orElse(null);
         mercenary.setTarget(null);
         if (target == null) return;

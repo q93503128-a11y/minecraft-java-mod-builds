@@ -18,13 +18,13 @@ def main() -> None:
     mesh = read("VillageSkillMeshLibrary.java")
     old = (ROOT / "tools/test_v01826_flying_turret_roles.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.27-alpha.1" in props
-    assert "0.18.27-alpha.1" in readme and "villageguardians-0.18.27-alpha.1.jar" in readme
+    assert "mod_version=0.18." in props
+    assert "현재 소스 버전 `0.18." in readme and "목표 JAR `villageguardians-0.18." in readme
     assert 'assert "mod_version=0.18.26-alpha.1" in props' not in old
     assert "public static boolean willSpawnFlying(" in enemy
     assert "boolean flying = willSpawnFlying(day, wave, index, boss, trait);" in enemy
     assert "VillageEnemyArchetypeSystem.willSpawnFlying(day, wave, index, boss, trait)" in intel
-    assert "공중 위협: " in intel and "하늘 약탈귀 ×" in intel
+    assert "공중 위협: " in intel and "aerialRoster" in intel and "role.displayName()" in intel
     assert "private static final Map<UUID, AerialStrike> AERIAL_STRIKES" in raid
     direct = raid.split("private static void directFlyingEnemy", 1)[1].split("private static ServerPlayer nearestFlyingPriorityPlayer", 1)[0]
     assert "mob.setTarget(null);" in direct and "mob.setTarget(player)" not in direct

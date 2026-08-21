@@ -720,6 +720,10 @@ public final class VillageRoleAbilitySystem {
             if (event.getSource().getDirectEntity() instanceof AbstractArrow directArrow) {
                 EmpoweredArrowState rapid = RAPID_ARROWS.remove(directArrow.getUUID());
                 if (rapid != null) event.setAmount(event.getAmount() * rapid.power());
+                if (role == VillageRole.RANGER && event.getEntity() instanceof Mob target
+                        && VillageEnemyArchetypeSystem.isFlying(target)) {
+                    event.setAmount(event.getAmount() * 1.18f);
+                }
             }
             TimedScale rally = RALLY_SCALE.get(attacker.getUUID());
             if (rally != null && rally.until() >= attacker.level().getGameTime()) {
@@ -1154,7 +1158,8 @@ public final class VillageRoleAbilitySystem {
                     double forward = Math.max(0.0, to.dot(look));
                     Vec3 closest = origin.add(look.scale(forward));
                     double miss = body.distanceToSqr(closest);
-                    return miss * 6.5 + to.lengthSqr() * 0.010;
+                    double aerialBias = VillageEnemyArchetypeSystem.isFlying(target) ? -18.0 : 0.0;
+                    return miss * 6.5 + to.lengthSqr() * 0.010 + aerialBias;
                 }))
                 .orElse(null);
     }

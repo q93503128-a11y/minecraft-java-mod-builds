@@ -96,6 +96,9 @@ public final class VillageEnemyEliteSystem {
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area,
                 value -> VillageRaidSystem.isRaidEnemy(value) && value.isAlive())) {
             VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(mob);
+            // Flying movement has a single authoritative owner in VillageRaidSystem. Ground elite
+            // doctrines must never re-enable target/navigation AI on Phantom assault units.
+            if (VillageEnemyArchetypeSystem.isFlying(mob)) continue;
             if (archetype == null || VillageEnemyArchetypeSystem.isBoss(archetype) || ACTIVE.containsKey(mob.getUUID())) continue;
             int divisor = VillageCouncilState.currentDay() >= 12 ? 5 : VillageCouncilState.currentDay() >= 9 ? 6 : 8;
             if (Math.floorMod(mob.getUUID().hashCode(), divisor) != 0) continue;
