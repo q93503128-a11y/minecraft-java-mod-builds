@@ -55,7 +55,7 @@ public final class ErdenRegionalSupplyBridge {
         long departureTick = level.getGameTime();
         long arrivalTick = departureTick + Math.max(
                 MIN_TRAVEL_TICKS, (long) routeMetres * TICKS_PER_METRE);
-        supply.addShipment(new ErdenKingdomSupplySavedData.ShipmentState(
+        supply.addProducedShipment(new ErdenKingdomSupplySavedData.ShipmentState(
                 supply.nextShipmentId(day), sourceId, warehouse.id(), resource, amount,
                 departureTick, arrivalTick, "in_transit", "wagon", routeMetres, false));
         return amount;
