@@ -15,7 +15,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.npc.villager.Villager;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -366,11 +365,17 @@ public final class ErdenRegionalSocietyManager {
     }
 
     private static boolean constructedAndLoaded(ServerLevel level, int x, int z) {
-        if (!level.hasChunk(x >> 4, z >> 4)) return false;
-        long key = new ChunkPos(x >> 4, z >> 4).toLong();
+        int chunkX = x >> 4;
+        int chunkZ = z >> 4;
+        if (!level.hasChunk(chunkX, chunkZ)) return false;
+        long key = chunkKey(chunkX, chunkZ);
         ErdenRegionalSettlementSavedData construction = level.getDataStorage()
                 .computeIfAbsent(ErdenRegionalSettlementSavedData.TYPE);
         return construction.isBuilt(key, ErdenRegionalSettlementCatalog.REVISION);
+    }
+
+    private static long chunkKey(int chunkX, int chunkZ) {
+        return ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
     }
 
     private static BlockPos walkableNear(ServerLevel level, int centerX, int centerZ, int slot) {
@@ -441,19 +446,15 @@ public final class ErdenRegionalSocietyManager {
         for (ErdenRegionalSocietySavedData.Resident resident : sample.residents()) {
             sampleNames.add(resident.name());
         }
-        int loadedSample = 0;
-        for (Villager villager : level.getEntitiesOfClass(
+        int loadedSample = level.getEntitiesOfClass(
                 Villager.class,
                 new AABB(sample.homeX() - 48, level.getMinY(), sample.homeZ() - 48,
                         sample.homeX() + 48, level.getMaxY(), sample.homeZ() + 48),
-                candidate -> sampleNames.contains(candidate.getName().getString()))) {
-            loadedSample++;
-        }
+                candidate -> sampleNames.contains(candidate.getName().getString())).size();
         if (loadedSample != sample.residents().size()) return;
 
         boolean physicalHome = hasRegionalStructureNear(level, sample.homeX(), sample.homeZ());
-        boolean physicalWork = level.getBlockState(new BlockPos(
-                work.getX(), work.getY() - 1, work.getZ())).is(Blocks.DIRT_PATH);
+        boolean physicalWork = level.getBlockState(work.below()).is(Blocks.DIRT_PATH);
         boolean distinctWorkplace = home.distSqr(work) > 32.0D * 32.0D;
         ErdenRegionalSettlementCatalog.Settlement remote = settlement("ironvale");
         boolean loadedRouteGuard = remote != null && !routeLoaded(
@@ -632,10 +633,6 @@ public final class ErdenRegionalSocietyManager {
         if (start < 2_000) return "이른 교대";
         if (start >= 7_000) return "늦은 교대";
         return "주간 교대";
-    }
-
-    private static String settlementName(ErdenRegionalSocietySavedData.Household household) {
-        return settlementName(household.settlementId());
     }
 
     private static long positionKey(int x, int z) {
