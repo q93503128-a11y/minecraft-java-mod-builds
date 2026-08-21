@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.58",
+  "version": "0.12.1-alpha.59",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -91,5 +91,14 @@
     "fixed_freezing_sphere","fear_weakness_eyebite","casting_block_petrification",
     "weak_enemy_circle_of_death"
   ],
-  "sixth_circle_npc_parity": true
+  "sixth_circle_npc_parity": true,
+  "seventh_circle_deep_audit": [
+    "locked_delayed_fireball","preserved_ethereal_phase","locked_finger_of_death",
+    "six_pillar_fire_storm","preserved_physical_forcecage","preserved_player_plane_shift",
+    "seven_independent_prismatic_rays","maintained_reverse_gravity","preserved_commandable_simulacrum",
+    "locked_safe_teleport"
+  ],
+  "seventh_circle_preserved_authority": ["etherealness","forcecage","plane_shift","simulacrum"],
+  "seventh_circle_npc_parity": true,
+  "seventh_circle_npc_plane_shift_role": "safe_planar_disengage_without_target_damage"
 }
