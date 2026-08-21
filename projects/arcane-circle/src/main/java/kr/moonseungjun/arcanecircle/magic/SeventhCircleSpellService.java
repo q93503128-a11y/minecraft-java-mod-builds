@@ -15,13 +15,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -90,8 +88,8 @@ public final class SeventhCircleSpellService {
             case "finger_of_death" -> fingerOfDeath(level, caster, target, snapshot, power);
             case "fire_storm" -> fireStorm(level, caster, snapshot, range, power, false);
             case "forcecage" -> npcForcecage(level, caster, target, snapshot);
-            // Player Plane Shift remains the full cross-dimension party transport. An NPC combat caster
-            // instead uses the same self-relocation role as a safe planar disengage and never damages its target.
+            // Player Plane Shift remains full cross-dimension party transport. An NPC combat caster
+            // uses the same self-relocation role as a safe planar disengage and never damages its target.
             case "plane_shift" -> npcPlaneShift(level, caster, target, snapshot);
             case "prismatic_spray" -> prismaticSpray(level, caster, snapshot, range, power);
             case "reverse_gravity" -> reverseGravity(level, caster, snapshot, range, power);
@@ -112,8 +110,9 @@ public final class SeventhCircleSpellService {
 
     /** NPC Etherealness mirrors the player's 88% ordinary-damage phase reduction. */
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity target) || target instanceof ServerPlayer
-                || event.getAmount() <= 0.0F || event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
+        LivingEntity target = event.getEntity();
+        if (target instanceof ServerPlayer || event.getAmount() <= 0.0F
+                || event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
         NpcEtherealState state = NPC_ETHEREAL.get(target.getUUID());
         if (state == null || state.level != target.level() || !state.active()) return;
         event.setAmount(Math.max(0.0F, event.getAmount() * .12F));
@@ -155,7 +154,6 @@ public final class SeventhCircleSpellService {
                                         double range, double power, boolean destructiveTerrain) {
         Vec3 center = snapshot.target();
         double radius = Math.max(9.0, Math.min(13.0, 8.0 + range * .10));
-        boolean hit = false;
         for (LivingEntity target : enemies(level, caster, center, radius, Math.max(6.0, radius * .72))) {
             double distance = Math.sqrt(center.distanceToSqr(target.position()));
             double falloff = Math.max(.42, 1.0 - distance / Math.max(1.0, radius) * .58);
@@ -163,13 +161,12 @@ public final class SeventhCircleSpellService {
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 300));
             Vec3 away = horizontalAway(center, target.position());
             target.push(away.x * (1.15 + falloff * .85), .38 + falloff * .42, away.z * (1.15 + falloff * .85));
-            hit = true;
         }
         if (destructiveTerrain && caster instanceof ServerPlayer player)
             DestructiveMagicService.impact(player, "delayed_blast_fireball", center, radius, power);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.25F, .64F);
-        return hit || destructiveTerrain || true;
+        return true;
     }
 
     private static boolean fingerOfDeath(ServerLevel level, LivingEntity caster, LivingEntity fallback,
@@ -202,7 +199,6 @@ public final class SeventhCircleSpellService {
             pillars.add(center.add(Math.cos(angle) * patternRadius, 0.0, Math.sin(angle) * patternRadius));
         }
 
-        Set<UUID> hit = new HashSet<>();
         AABB field = new AABB(center, center).inflate(patternRadius + pillarRadius + 2.0, 8.0,
                 patternRadius + pillarRadius + 2.0);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, field,
@@ -212,7 +208,6 @@ public final class SeventhCircleSpellService {
             double falloff = Math.max(.58, 1.0 - Math.sqrt(nearest) / pillarRadius * .42);
             ArcaneDamage.hurt(level, caster, target, (float) (power * falloff));
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 260));
-            hit.add(target.getUUID());
         }
 
         if (destructiveTerrain && caster instanceof ServerPlayer player) {
@@ -221,7 +216,7 @@ public final class SeventhCircleSpellService {
         }
         level.playSound(null, BlockPos.containing(center), SoundEvents.BLAZE_SHOOT,
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.15F, .58F);
-        return !hit.isEmpty() || destructiveTerrain || true;
+        return true;
     }
 
     private static boolean prismaticSpray(ServerLevel level, LivingEntity caster, CastTargetSnapshot snapshot,
