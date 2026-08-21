@@ -332,7 +332,7 @@ public final class ErdenRegionalEconomyManager {
                 ErdenRegionalEconomySavedData.SettlementState source = economy.settlements().stream()
                         .filter(candidate -> !candidate.id().equals(finalTarget.id()))
                         .filter(candidate -> candidate.stock(resource) > sourceReserve(candidate, resource))
-                        .min(Comparator.comparingLong(candidate ->
+                        .min(Comparator.<ErdenRegionalEconomySavedData.SettlementState>comparingLong(candidate ->
                                         manhattan(candidate.x(), candidate.z(), finalTarget.x(), finalTarget.z()))
                                 .thenComparing(ErdenRegionalEconomySavedData.SettlementState::id))
                         .orElse(null);
