@@ -1,4 +1,4 @@
-name: Apply Village Guardians v0.18.26 Final Acceptance
+name: Village Guardians v0.18.27 Integration Runner
 
 on:
   issues:
@@ -10,83 +10,48 @@ permissions:
 
 env:
   PROJECT_DIR: projects/village-guardians
-  BUILD_VERSION: 0.18.26-alpha.1
-  EXPECTED_JAR: villageguardians-0.18.26-alpha.1.jar
+  BUILD_VERSION: 0.18.27-alpha.1
+  EXPECTED_JAR: villageguardians-0.18.27-alpha.1.jar
 
 jobs:
   integrate:
-    if: github.event.issue.title == 'Village Guardians v0.18.26 flying assault final acceptance'
-    name: Java 25 / NeoForge 26.2 final acceptance
+    if: github.event.issue.title == 'Village Guardians v0.18.27 accepted runner'
+    name: Java 25 / NeoForge 26.2 aerial combat acceptance
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
-
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-
       - name: Record integration run
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "${PROJECT_DIR}/.ci"
-          printf 'status=RUNNING\nrun_id=%s\nbase_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "${PROJECT_DIR}/.ci/v01826-running.txt"
+          printf 'status=RUNNING\nrun_id=%s\nbase_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "${PROJECT_DIR}/.ci/v01827-running.txt"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "${PROJECT_DIR}/.ci/v01826-running.txt"
-          git commit -m 'ci(village): record v0.18.26 final integration start [skip ci]'
+          git add "${PROJECT_DIR}/.ci/v01827-running.txt"
+          git commit -m 'ci(village): record v0.18.27 integration start [skip ci]'
           for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then break; fi
             git pull --rebase origin main
             if [ "$attempt" -eq 6 ]; then exit 1; fi
             sleep $((attempt * 2))
           done
-
-      - name: Reuse canonical flying assault patch
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          source = Path('.github/workflows/apply-village-guardians-v01826-flying.yml').read_text(encoding='utf-8')
-          start_marker = '      - name: Apply flying assault and turret role patch\n'
-          end_marker = '      - name: Run all deterministic regression contracts\n'
-          block = source.split(start_marker, 1)[1].split(end_marker, 1)[0]
-          run = block.split('        run: |\n', 1)[1]
-          lines = []
-          for line in run.splitlines():
-              lines.append(line[10:] if line.startswith('          ') else line)
-          Path('/tmp/village-v01826-apply.sh').write_text('\n'.join(lines) + '\n', encoding='utf-8')
-          PY
-          cd "${PROJECT_DIR}"
-          bash /tmp/village-v01826-apply.sh
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('tools/test_v01826_flying_turret_roles.py')
-          text = path.read_text(encoding='utf-8')
-          lines = []
-          replaced = False
-          for line in text.splitlines():
-              if 'assert "chooseTarget(' in line:
-                  indent = line[:len(line) - len(line.lstrip())]
-                  lines.append(indent + 'assert "chooseTarget(" in raid and "villageCenter, mob.blockPosition(), true, archetype" in raid')
-                  replaced = True
-              else:
-                  lines.append(line)
-          if not replaced:
-              raise SystemExit('generated v0.18.26 chooseTarget contract not found')
-          path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-          PY
-          git diff --check
-
+      - name: Apply authored aerial combat patch
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: python3 tools/apply_v01827_aerial_combat.py
+      - name: Check source patch
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: git diff --check
       - name: Run all deterministic regression contracts
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -96,11 +61,9 @@ jobs:
             echo "=== $test ==="
             python3 "$test"
           done
-
       - name: Clean Java 25 NeoForge build
         working-directory: ${{ env.PROJECT_DIR }}
         run: gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
-
       - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -111,19 +74,16 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import zipfile
-          jar = Path('build/libs/villageguardians-0.18.26-alpha.1.jar')
+          jar = Path('build/libs/villageguardians-0.18.27-alpha.1.jar')
           with zipfile.ZipFile(jar) as zf:
               names = set(zf.namelist())
               toml = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
           prefix = 'kr/moonseungjun/villageguardians/'
-          for cls in ('VillageEnemyArchetypeSystem.class', 'VillageRaidSystem.class',
-                      'VillageAttackPlanSystem.class', 'VillageGatePrioritySystem.class',
-                      'VillagePlacedTurretSystem.class'):
+          for cls in ('VillageEnemyArchetypeSystem.class', 'VillageRaidSystem.class', 'VillageWaveIntelSystem.class', 'VillageMercenarySystem.class', 'VillageDefenseEffectSystem.class', 'VillageSkillMeshLibrary.class'):
               assert prefix + cls in names
-          assert '0.18.26-alpha.1' in toml
-          print('[PASS] final JAR contains flying assault and turret-role runtime')
+          assert '0.18.27-alpha.1' in toml
+          print('[PASS] final JAR contains authored aerial combat and truthful wave intel runtime')
           PY
-
       - name: Upload verified JAR
         uses: actions/upload-artifact@v4
         with:
@@ -131,25 +91,23 @@ jobs:
           path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
           if-no-files-found: error
           retention-days: 30
-
       - name: Commit verified source to main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add \
-            "${PROJECT_DIR}/gradle.properties" \
-            "${PROJECT_DIR}/README.md" \
+          git add "${PROJECT_DIR}/gradle.properties" "${PROJECT_DIR}/README.md" \
             "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageAttackPlanSystem.java" \
             "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageGatePrioritySystem.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillagePlacedTurretSystem.java" \
-            "${PROJECT_DIR}/tools/test_v01825_multifront_routing_integrity.py" \
-            "${PROJECT_DIR}/tools/test_v01826_flying_turret_roles.py"
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageWaveIntelSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageMercenarySystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageDefenseEffectSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageSkillMeshLibrary.java" \
+            "${PROJECT_DIR}/tools/test_v01826_flying_turret_roles.py" \
+            "${PROJECT_DIR}/tools/test_v01827_aerial_combat_integrity.py"
           git diff --cached --check
-          git commit -m 'feat(village): add flying assaults and turret role targeting [skip ci]'
+          git commit -m 'fix(village): author aerial assault combat phases [skip ci]'
           for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then break; fi
             git pull --rebase origin main
@@ -157,7 +115,6 @@ jobs:
             sleep $((attempt * 2))
           done
           echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
       - name: Record final acceptance metadata
         shell: bash
         run: |
@@ -165,7 +122,7 @@ jobs:
           JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
           SHA=$(sha256sum "$JAR" | awk '{print $1}')
           SIZE=$(stat -c%s "$JAR")
-          cat > "${PROJECT_DIR}/.ci/v01826-final.txt" <<EOF
+          cat > "${PROJECT_DIR}/.ci/v01827-final.txt" <<EOF
           version=${BUILD_VERSION}
           run_id=${GITHUB_RUN_ID}
           source_sha=${SOURCE_SHA}
@@ -173,9 +130,9 @@ jobs:
           jar_sha256=${SHA}
           jar_size=${SIZE}
           EOF
-          rm -f "${PROJECT_DIR}/.ci/v01826-running.txt"
-          git add "${PROJECT_DIR}/.ci/v01826-final.txt" "${PROJECT_DIR}/.ci/v01826-running.txt"
-          git commit -m 'ci(village): record v0.18.26 acceptance [skip ci]'
+          rm -f "${PROJECT_DIR}/.ci/v01827-running.txt"
+          git add "${PROJECT_DIR}/.ci/v01827-final.txt" "${PROJECT_DIR}/.ci/v01827-running.txt"
+          git commit -m 'ci(village): record v0.18.27 acceptance [skip ci]'
           for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then exit 0; fi
             git pull --rebase origin main
