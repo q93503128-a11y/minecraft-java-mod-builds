@@ -14,7 +14,7 @@ public final class SixthCircleSpellSummary {
             case "sunbeam" -> "넓은 직선 관통 태양광 · 복수 대상 피해 + 화상·장기 실명·발광";
             case "true_seeing" -> "60초 진실의 시야 · 주변 은신을 주기적으로 벗기고 생명 반응을 지속 추적";
             case "freezing_sphere" -> "고정 착탄점 대형 극저온 폭발 · 거리 감쇠 냉기 피해 + 화염 소거·초강력 동결·둔화";
-            case "eyebite" -> "단일 정신 피해 + 18초 공포·쇠약·암흑 · 비플레이어 대상은 즉시 전투 거리를 벌리려 함";
+            case "eyebite" -> "단일 정신 피해 + 18초 공포·쇠약·암흑 · 비플레이어 대상은 효과가 끝날 때까지 강제 도주하며 Arcane 시전도 중단";
             case "flesh_to_stone" -> "단일 피해 + 약 18초 완전 석화 · 이동·공격·Arcane 시전 봉쇄 + 석질 육체의 피해 저항";
             case "circle_of_death" -> "대형 생명 파동 · 일반 대상 범위 피해 + 낮은 체력의 보통 체급 적에게 강한 처형 압박 · 대형/보스급은 처형 제외";
             default -> "";
