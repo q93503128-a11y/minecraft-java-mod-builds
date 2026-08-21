@@ -43,10 +43,10 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 - `sunbeam`: 넓은 고정 직선의 복수 대상을 관통해 피해·화상·장기 실명·발광을 준다.
 - `true_seeing`: 플레이어는 기존 60초 반복 reveal을 유지한다. NPC도 60초 동안 주변 적대 생명체의 투명화를 반복 제거하고 발광시킨다.
 - `freezing_sphere`: 하나의 고정 착탄점에 거리 감쇠 냉기 폭발을 적용하고 화염을 끄며 초강력 동결·둔화를 준다.
-- `eyebite`: 단일 정신 피해 뒤 18초 공포·쇠약·암흑·행동 저하를 건다. 비플레이어 대상은 즉시 시전자에게서 거리를 벌리려 한다.
+- `eyebite`: 단일 정신 피해 뒤 18초 공포·쇠약·암흑·행동 저하를 건다. 비플레이어 대상은 효과가 끝날 때까지 타깃을 잃고 시전자에게서 계속 강제 도주하며 Arcane 시전도 중단된다. 종료·해제 시 이전 전투 타깃을 복구한다.
 - `flesh_to_stone`: 플레이어 대상은 기존 유지형 석화 제어를 재사용하고, NPC 경로도 약 18초 이동·공격·Arcane 시전을 봉쇄하는 지속 석화와 석질 저항을 적용한다.
 - `circle_of_death`: 단순 평면 광역기가 아니라 넓은 생명 파동이다. 일반 대상은 피해를 받고, 낮은 체력의 **보통 체급 적은 강한 처형 압박**을 받으며 대형/보스급은 처형 조건에서 제외된다.
-- Dispel/Antimagic/logout/respawn/dimension/server stop에서 6써클 유지 상태를 정리하며 NPC suggestion/petrification의 기존 전투 타깃도 복구한다.
+- Dispel/Antimagic/logout/respawn/dimension/server stop에서 6써클 유지 상태를 정리하며 NPC suggestion/Eyebite fear/petrification의 기존 전투 타깃도 복구한다.
 
 ## Direct spells — deep audit order
 
@@ -109,7 +109,7 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 | 6 | `sunbeam` | PASS | PASS | alpha.58 PASS · piercing radiant line |
 | 6 | `true_seeing` | PASS | PASS | alpha.58 PASS · persistent invisibility reveal |
 | 6 | `freezing_sphere` | PASS | PASS | alpha.58 PASS · fixed cryogenic blast |
-| 6 | `eyebite` | PASS | PASS | alpha.58 PASS · fear + weakness curse |
+| 6 | `eyebite` | PASS | PASS | alpha.58 PASS · maintained fear + weakness |
 | 6 | `flesh_to_stone` | PASS | PASS | alpha.58 PASS · casting-block petrification |
 | 6 | `circle_of_death` | PASS | PASS | alpha.58 PASS · weak ordinary execution pressure |
 | 7 | `delayed_blast_fireball` | PASS | PASS | next |
@@ -169,4 +169,4 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 ## CI enforcement
 
-`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1~6써클 전용 권한 순서와 NPC parity, player/NPC Globe 1~5써클 경계 차단, Mass Suggestion behavioral retreat, material Disintegrate, physical Move Earth, persistent True Seeing, casting-block Petrification, weak-ordinary Circle of Death, Dispel/Antimagic/lifecycle cleanup, 그리고 alpha.49~57의 기존 계약 회귀를 실패 조건으로 둔다.
+`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1~6써클 전용 권한 순서와 NPC parity, player/NPC Globe 1~5써클 경계 차단, Mass Suggestion behavioral retreat, material Disintegrate, physical Move Earth, persistent True Seeing, maintained Eyebite fear, casting-block Petrification, weak-ordinary Circle of Death, Dispel/Antimagic/lifecycle cleanup, 그리고 alpha.49~57의 기존 계약 회귀를 실패 조건으로 둔다.
