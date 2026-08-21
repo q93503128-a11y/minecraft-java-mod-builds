@@ -13,7 +13,7 @@ def require(condition, message):
     print("[PASS]", message)
 
 props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
-require("mod_version=" in props, "v0.18.2-alpha.1 version is active")
+require("mod_version=" in props, "release version property is active")
 
 shop = text("VillageEquipmentShop.java")
 rpg = text("VillageRpgSystem.java")
@@ -89,8 +89,15 @@ require("recoverStrandedAfterRestart" in skilltest
         "Restarted players cannot remain stranded in a dead skill-test session")
 
 local = text("VillageLocalActionSystem.java")
-require('case "hire_mercenary"' in local and "구형 단일 용병 호출은 제거" in local,
-        "Legacy generic mercenary action can no longer spawn obsolete golems")
+legacy_hire = re.search(r'case "hire_mercenary" -> \{.*?return true;\n            \}', local, re.S)
+require(legacy_hire is not None
+        and "VillageMercenaryDeploymentSystem.openCommand(player)" in legacy_hire.group(0)
+        and "VillageMercenarySystem.hire" not in legacy_hire.group(0),
+        "Legacy generic mercenary action only opens the classed command UI and cannot spawn obsolete golems")
+require('action.startsWith("merc_hire:")' in local
+        and "VillageMercenarySystem.hire(player, kind)" in local
+        and "VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)" in local,
+        "Current class-specific mercenary hiring is authoritative and barracks-local")
 
 council = text("VillageCouncilState.java")
 require("onPlayerListChanged" in council and "PlayerLoggedOutEvent" in guardians,
@@ -120,4 +127,4 @@ screen = text("VillageRelicScreen.java")
 require("Math.max(120, Math.min(820, width - 16))" in screen and "Math.min(7, summary.size())" in screen,
         "Relic collection remains bounded on narrow logical resolutions")
 
-print("Village Guardians v0.18.2 runtime stability contracts passed.")
+print("Village Guardians runtime stability contracts passed.")
