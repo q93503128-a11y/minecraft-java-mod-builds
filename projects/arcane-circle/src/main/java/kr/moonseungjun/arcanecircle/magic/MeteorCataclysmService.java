@@ -15,7 +15,8 @@ public final class MeteorCataclysmService {
     private MeteorCataclysmService() {}
 
     public static void crownImpact(ServerPlayer caster, Vec3 barrageCenter, double power, long seed) {
-        if (caster == null || barrageCenter == null || !(caster.level() instanceof ServerLevel level)) return;
+        if (caster == null || barrageCenter == null) return;
+        ServerLevel level = (ServerLevel) caster.level();
         MeteorBarragePattern.Strike crown = MeteorBarragePattern.strike(seed, MeteorBarragePattern.crownIndex());
         Vec3 center = MeteorBarragePattern.position(barrageCenter, crown);
 
