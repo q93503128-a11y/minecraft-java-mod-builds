@@ -89,7 +89,8 @@ need(ninth_summary,'실제 크레이터','단일 생명체만','7겹 프리즘 �
 
 # Preserve the existing strong source-of-truth player semantics rather than replacing them.
 field=text(magic/'ArcaneFieldService.java')
-need(field,'Set.of("time_stop", "wish", "antimagic_field")','TIME_STOP_TICKS = 160','case "wish" -> fulfillWish(player);')
+need(field,'"antimagic_field".equals(spellId)','"time_stop".equals(spellId)','"wish".equals(spellId)',
+     'TIME_STOP_TICKS = 160','case "wish" -> fulfillWish(player);')
 utility=text(magic/'HighUtilitySpellService.java')
 need(utility,'Set.of("clone", "true_polymorph", "maze", "etherealness")','TRUE_POLYMORPH_TICKS = 480','setNoAi(true)')
 buffs=text(magic/'ArcaneBuffRuntime.java')
