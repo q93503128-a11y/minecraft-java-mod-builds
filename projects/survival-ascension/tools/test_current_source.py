@@ -49,7 +49,7 @@ for needle in [
     "if (level >= 30) return 5",
     "if (level >= 10) return 3",
     "player.isShiftKeyDown()",
-    "player.gameMode().destroyBlock(target)",
+    "player.gameMode.destroyBlock(target)",
     "Attributes.BLOCK_BREAK_SPEED",
     "level.getBlockEntity(target) != null",
 ]:
