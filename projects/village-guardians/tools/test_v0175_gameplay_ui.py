@@ -37,7 +37,7 @@ def main() -> None:
 
     assert "radiusX" in quick and "radiusY" in quick
     assert "VillageUiSafeArea.screen(width, height)" in quick
-    assert "font.width(normalized)" in quick
+    assert "font.width(value)" in quick and "value.substring(0, end) + suffix" in quick
     assert "openQuickChat(player);" in controller
     assert "openQuickChat(player);" in service
     key_source = read("VillageClientKeys.java")
