@@ -241,7 +241,9 @@ sim=text(magic/'SimulacrumService.java')
 need(sim,'snapshot.targetEntity(caster).orElse(null)','Attributes.MAX_HEALTH, .50','Attributes.ATTACK_DAMAGE, .72',
      'Mode.FOLLOW','Mode.GUARD','Mode.ASSAULT')
 gameplay=text(magic/'SpellGameplayService.java')
-need(gameplay,'case "control_weather"','duration = 900','case "control_weather" -> useWeatherAuthority(player, state);')
+need(gameplay,'case "control_weather" -> controlWeather(player, range, power);',
+     'case "control_weather" -> 900;','WeatherState state = WEATHER.get(player.getUUID());',
+     'WEATHER_BARRAGES.put(player.getUUID()','state.power(), 12, now')
 
 # Antimagic, Dispel and lifecycle all extend through 8C.
 field=text(magic/'ArcaneFieldService.java')
