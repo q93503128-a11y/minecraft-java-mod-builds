@@ -18,7 +18,8 @@ public final class ErdenRegionalSettlementManager {
     private static final int TICK_BUDGET = 1_600;
     private static final int CI_TICK_BUDGET = 4_000;
     private static final int CI_FORCE_BUDGET = 1;
-    private static final int CI_MAX_IN_FLIGHT = 5;
+    private static final int CI_MAX_IN_FLIGHT = 6;
+    private static final long CI_ECONOMY_PROBE_LEASE_TICKS = 400L;
 
     private static final ArrayDeque<Long> PENDING = new ArrayDeque<>();
     private static final ArrayDeque<Long> CI_REQUESTS = new ArrayDeque<>();
@@ -30,6 +31,7 @@ public final class ErdenRegionalSettlementManager {
     private static ActiveChunk active;
     private static boolean ciRequested;
     private static boolean ciPassed;
+    private static long economyProbeReleaseTick = Long.MIN_VALUE;
 
     private ErdenRegionalSettlementManager() {
     }
@@ -54,6 +56,7 @@ public final class ErdenRegionalSettlementManager {
         if (isCi()) {
             if (!ciRequested) prepareCi(level);
             advanceCi(level);
+            releaseExpiredEconomyProbe(level);
         }
 
         if (active == null) startNext(level);
@@ -94,6 +97,7 @@ public final class ErdenRegionalSettlementManager {
         CI_REQUIRED.clear();
         CI_REQUIRED.addAll(ErdenRegionalSettlementAudit.requiredChunkKeys());
         addRegionalSocietyHomeProbe();
+        addRegionalEconomyStorageProbe();
         CI_REQUESTS.addAll(CI_REQUIRED);
         if (CI_REQUIRED.size() < 3 || CI_REQUIRED.size() > CI_MAX_IN_FLIGHT) {
             throw new IllegalStateException("Invalid regional settlement CI probe count " + CI_REQUIRED.size());
@@ -106,15 +110,27 @@ public final class ErdenRegionalSettlementManager {
     }
 
     private static void addRegionalSocietyHomeProbe() {
-        ErdenRegionalSettlementCatalog.Settlement settlement = ErdenRegionalSettlementCatalog.settlements().stream()
-                .filter(candidate -> candidate.id().equals("harvest_crossing"))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Missing regional society representative settlement"));
+        ErdenRegionalSettlementCatalog.Settlement settlement = representativeSettlement();
         ErdenRegionalSettlementCatalog.BuildingLot lot = settlement.buildings().stream()
                 .filter(candidate -> candidate.role().equals("farmstead_east"))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Missing regional society representative home"));
         CI_REQUIRED.add(pack((settlement.x() + lot.dx()) >> 4, (settlement.z() + lot.dz()) >> 4));
+    }
+
+    private static void addRegionalEconomyStorageProbe() {
+        CI_REQUIRED.add(regionalEconomyStorageProbeKey());
+    }
+
+    private static long regionalEconomyStorageProbeKey() {
+        return ErdenRegionalEconomyManager.storageChunkKey(representativeSettlement());
+    }
+
+    private static ErdenRegionalSettlementCatalog.Settlement representativeSettlement() {
+        return ErdenRegionalSettlementCatalog.settlements().stream()
+                .filter(candidate -> candidate.id().equals("harvest_crossing"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Missing regional representative settlement"));
     }
 
     private static void advanceCi(ServerLevel level) {
@@ -214,7 +230,25 @@ public final class ErdenRegionalSettlementManager {
                 ErdenRegionalSettlementCatalog.TOTAL_BUILDINGS,
                 ErdenRegionalSettlementAudit.representativeId(),
                 ErdenRegionalSettlementBuilder.sourceStyleCount(), CI_REQUIRED.size());
+        long economyProbe = regionalEconomyStorageProbeKey();
+        for (long packed : Set.copyOf(RETAINED)) {
+            if (packed != economyProbe) release(level, packed);
+        }
+        economyProbeReleaseTick = level.getGameTime() + CI_ECONOMY_PROBE_LEASE_TICKS;
+        LivingKingdoms.LOGGER.info(
+                "Retained Erden regional economy storage CI probe chunk={},{} lease_ticks={} transient_ticket=portal persistent_forced_chunks=false",
+                unpackX(economyProbe), unpackZ(economyProbe), CI_ECONOMY_PROBE_LEASE_TICKS);
+    }
+
+    private static void releaseExpiredEconomyProbe(ServerLevel level) {
+        if (!ciPassed || economyProbeReleaseTick == Long.MIN_VALUE
+                || level.getGameTime() < economyProbeReleaseTick) return;
+        int released = RETAINED.size();
         for (long packed : Set.copyOf(RETAINED)) release(level, packed);
+        economyProbeReleaseTick = Long.MIN_VALUE;
+        LivingKingdoms.LOGGER.info(
+                "Released Erden regional economy storage CI probe released={} transient_lease_expired=true persistent_forced_chunks=false",
+                released);
     }
 
     private static void reset(MinecraftServer server) {
@@ -228,6 +262,7 @@ public final class ErdenRegionalSettlementManager {
         active = null;
         ciRequested = false;
         ciPassed = false;
+        economyProbeReleaseTick = Long.MIN_VALUE;
     }
 
     private static void release(ServerLevel level, long packed) {
