@@ -52,8 +52,7 @@ public final class SpellGameplayService {
             "wall_of_fire", "ice_storm", "wall_of_force", "cloudkill", "hold_monster",
             "flame_strike", "dominate_person", "insect_plague", "true_seeing", "flesh_to_stone",
             "globe_of_invulnerability", "mass_suggestion", "move_earth", "circle_of_death",
-            "delayed_blast_fireball", "finger_of_death", "fire_storm", "forcecage", "prismatic_spray",
-            "reverse_gravity", "simulacrum", "teleport",
+            "delayed_blast_fireball", "fire_storm", "forcecage", "reverse_gravity", "simulacrum",
             "clone", "control_weather", "dominate_monster", "earthquake", "incendiary_cloud", "maze", "sunburst",
             "prismatic_wall", "shapechange", "true_polymorph", "weird", "foresight",
             "ice_knife", "wind_wall", "counterspell", "fire_shield", "wall_of_ice",
@@ -86,10 +85,8 @@ public final class SpellGameplayService {
                     "incendiary_cloud", "winter_domain" -> startZone(player, spellId, range, power, snapshot);
             case "wall_of_fire", "wall_of_force", "wind_wall", "wall_of_ice", "prismatic_wall" ->
                     startWall(player, spellId, range, power, snapshot);
-            case "delayed_blast_fireball", "finger_of_death", "fire_storm", "prismatic_spray",
-                    "reverse_gravity", "teleport" ->
-                    SeventhCircleSpellService.execute(player, spellId, range, power, snapshot);
-            case "ice_storm", "flame_strike", "move_earth", "circle_of_death", "earthquake",
+            case "ice_storm", "flame_strike", "move_earth", "circle_of_death",
+                    "delayed_blast_fireball", "fire_storm", "reverse_gravity", "earthquake",
                     "sunburst", "weird" -> areaImpact(player, spellId, range, power, snapshot);
             case "sleep" -> sleep(player, range, snapshot);
             case "hold_person" -> controlSingle(player, spellId, power, snapshot, 180);
@@ -154,7 +151,6 @@ public final class SpellGameplayService {
             case "hold_person" -> 180;
             case "hold_monster" -> 300;
             case "forcecage" -> 400;
-            case "reverse_gravity" -> SeventhCircleSpellService.REVERSE_GRAVITY_TICKS;
             case "true_polymorph" -> 480;
             case "flesh_to_stone" -> 360;
             case "dominate_monster" -> 480;
@@ -449,7 +445,7 @@ public final class SpellGameplayService {
         WEATHER_SPECIAL_READY.put(player.getUUID(), level.getGameTime());
         WEATHER_BARRAGES.remove(player.getUUID());
         ArcaneNoticeService.push(player, Component.literal("§9[기후 조종] §f45초간 실제 폭우·뇌우를 지배합니다. "
-                + "§bG키§f를 누르면 바라본 지점에 12연속 낙뢰를 명령합니다. §7재사용 2.5초"), 110);
+                + "§bG키§f를 누르면 바라본 지점에 12연속 낙뢰를 명령합니다."), 110);
         return true;
     }
     private static boolean shapechange(ServerPlayer player) { ServerLevel level = (ServerLevel) player.level(); int duration = 1800; REDUCTION.put(player.getUUID(), stronger(REDUCTION.get(player.getUUID()), new ReductionWard("shapechange", level.getGameTime() + duration, .35))); player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration, 5)); player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, 3)); player.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 3)); player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, duration, 3)); player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, 2)); player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, 12)); return true; }
