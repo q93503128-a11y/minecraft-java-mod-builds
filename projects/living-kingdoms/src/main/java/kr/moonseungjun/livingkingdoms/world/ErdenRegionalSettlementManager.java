@@ -18,7 +18,7 @@ public final class ErdenRegionalSettlementManager {
     private static final int TICK_BUDGET = 1_600;
     private static final int CI_TICK_BUDGET = 4_000;
     private static final int CI_FORCE_BUDGET = 1;
-    private static final int CI_MAX_IN_FLIGHT = 5;
+    private static final int CI_MAX_IN_FLIGHT = 6;
 
     private static final ArrayDeque<Long> PENDING = new ArrayDeque<>();
     private static final ArrayDeque<Long> CI_REQUESTS = new ArrayDeque<>();
@@ -94,6 +94,7 @@ public final class ErdenRegionalSettlementManager {
         CI_REQUIRED.clear();
         CI_REQUIRED.addAll(ErdenRegionalSettlementAudit.requiredChunkKeys());
         addRegionalSocietyHomeProbe();
+        addRegionalEconomyStorageProbe();
         CI_REQUESTS.addAll(CI_REQUIRED);
         if (CI_REQUIRED.size() < 3 || CI_REQUIRED.size() > CI_MAX_IN_FLIGHT) {
             throw new IllegalStateException("Invalid regional settlement CI probe count " + CI_REQUIRED.size());
@@ -106,15 +107,23 @@ public final class ErdenRegionalSettlementManager {
     }
 
     private static void addRegionalSocietyHomeProbe() {
-        ErdenRegionalSettlementCatalog.Settlement settlement = ErdenRegionalSettlementCatalog.settlements().stream()
-                .filter(candidate -> candidate.id().equals("harvest_crossing"))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Missing regional society representative settlement"));
+        ErdenRegionalSettlementCatalog.Settlement settlement = representativeSettlement();
         ErdenRegionalSettlementCatalog.BuildingLot lot = settlement.buildings().stream()
                 .filter(candidate -> candidate.role().equals("farmstead_east"))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Missing regional society representative home"));
         CI_REQUIRED.add(pack((settlement.x() + lot.dx()) >> 4, (settlement.z() + lot.dz()) >> 4));
+    }
+
+    private static void addRegionalEconomyStorageProbe() {
+        CI_REQUIRED.add(ErdenRegionalEconomyManager.storageChunkKey(representativeSettlement()));
+    }
+
+    private static ErdenRegionalSettlementCatalog.Settlement representativeSettlement() {
+        return ErdenRegionalSettlementCatalog.settlements().stream()
+                .filter(candidate -> candidate.id().equals("harvest_crossing"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Missing regional representative settlement"));
     }
 
     private static void advanceCi(ServerLevel level) {
