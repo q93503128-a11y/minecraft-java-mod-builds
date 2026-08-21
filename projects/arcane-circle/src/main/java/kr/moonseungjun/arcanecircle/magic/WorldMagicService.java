@@ -108,9 +108,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
-        // Etherealness is a true maintained 7C self-state. Its server duration scales with power,
-        // so the release geometry must live for that same authored duration instead of AURA's 28 ticks.
-        if ("etherealness".equals(spell.id())) duration = Math.max(duration, 360 + (int) cast.power());
+        duration = seventhCircleVisualDuration(spell.id(), duration, cast.power());
         send(player, encode("release", player, spell, cast.fusion(), cast.ingredients().size(), center, target,
                 direction, cast.range(), cast.power(), 1.0, duration, impactTicks, snapshot.barrageSeed()));
     }
@@ -139,6 +137,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed())
                 : SpellPresentationProfile.releaseDurationTicks(spell, Math.max(0.0, distance));
+        duration = seventhCircleVisualDuration(spell.id(), duration, power);
         send(caster, encode("release", caster, spell, false, 0, center, snapshot.target(),
                 snapshot.launchDirection(), range, power, 1.0, duration, impact, snapshot.barrageSeed()));
     }
@@ -175,6 +174,16 @@ public final class WorldMagicService {
         NPC_RELEASES.clear();
         PLAYER_CHARGE_SEEDS.clear();
         NPC_CHARGE_SEEDS.clear();
+    }
+
+    private static int seventhCircleVisualDuration(String spellId, int baseDuration, double power) {
+        return switch (spellId) {
+            case "etherealness" -> Math.max(baseDuration,
+                    SeventhCircleSpellService.NPC_ETHEREAL_TICKS + (int) Math.min(240.0, Math.max(0.0, power)));
+            case "forcecage" -> Math.max(baseDuration, SeventhCircleSpellService.NPC_FORCECAGE_TICKS);
+            case "reverse_gravity" -> Math.max(baseDuration, SeventhCircleSpellService.REVERSE_GRAVITY_TICKS);
+            default -> baseDuration;
+        };
     }
 
     private static long chargeSeed(ServerPlayer player, SpellDefinition spell) {
