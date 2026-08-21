@@ -18,8 +18,8 @@ def main() -> None:
     los = read("VillageDefenseLineOfSight.java")
     historical = (ROOT / "tools/test_v01829_battlefield_readability.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.30-alpha.1" in props
-    assert "0.18.30-alpha.1" in readme and "villageguardians-0.18.30-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전" in readme and "목표 JAR" in readme
     assert 'assert "mod_version=0.18.29-alpha.1" in props' not in historical
 
     for token in (

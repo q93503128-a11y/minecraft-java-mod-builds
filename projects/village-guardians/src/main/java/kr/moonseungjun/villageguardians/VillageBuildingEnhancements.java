@@ -93,13 +93,19 @@ final class VillageBuildingEnhancements {
                 }
             }
             placeRailing(level, new BlockPos(x, railY, southOuter));
-            placeRailing(level, new BlockPos(x, railY, southInner));
+            if (!isSideRearStairOpening(offset)) {
+                placeRailing(level, new BlockPos(x, railY, southInner));
+            }
 
             int z = center.getZ() + offset;
             placeRailing(level, new BlockPos(westOuter, railY, z));
-            placeRailing(level, new BlockPos(westInner, railY, z));
+            if (!isSideRearStairOpening(offset)) {
+                placeRailing(level, new BlockPos(westInner, railY, z));
+            }
             placeRailing(level, new BlockPos(eastOuter, railY, z));
-            placeRailing(level, new BlockPos(eastInner, railY, z));
+            if (!isSideRearStairOpening(offset)) {
+                placeRailing(level, new BlockPos(eastInner, railY, z));
+            }
         }
         buildWallTopEmplacements(level, center);
     }
@@ -353,6 +359,10 @@ final class VillageBuildingEnhancements {
 
     private static boolean isNorthStairOpening(int offset) {
         return Math.abs(Math.abs(offset) - 25) <= 3;
+    }
+
+    private static boolean isSideRearStairOpening(int offset) {
+        return Math.abs(Math.abs(offset) - WALL_EMPLACEMENT_LANE) <= 3;
     }
 
     private static void placeRailing(ServerLevel level, BlockPos pos) {

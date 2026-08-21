@@ -11,6 +11,7 @@ import net.minecraft.world.phys.AABB;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /** Lightweight pre-battle rally doctrine: choose a class rally point, then mercenaries auto-fight around it. */
 public final class VillageMercenaryDeploymentSystem {
@@ -87,11 +88,11 @@ public final class VillageMercenaryDeploymentSystem {
         ServerLevel level = server.overworld();
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
-        BlockPos rally = rallyPoint(center, zone, kind);
         AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96,
                 VillageWorldSystem.BATTLEFIELD_RADIUS);
         for (IronGolem golem : level.getEntitiesOfClass(IronGolem.class, area,
                 mob -> VillageMercenarySystem.classOf(mob) == kind && mob.isAlive())) {
+            BlockPos rally = rallyPoint(center, zone, kind, golem.getUUID());
             double leash = switch (kind) {
                 case BASTION -> 18.0;
                 case STRIKER -> 34.0;
@@ -104,8 +105,8 @@ public final class VillageMercenaryDeploymentSystem {
                 boolean accepted = golem.getNavigation().moveTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5,
                         kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 1.18 : 1.02);
                 if (!accepted && zone == Deployment.WALL) {
-                    BlockPos fallback = rallyPoint(center, Deployment.INNER, kind);
-                    golem.getNavigation().moveTo(fallback.getX() + 0.5, fallback.getY(), fallback.getZ() + 0.5, 1.0);
+                    BlockPos staging = rangerWallStagingPoint(center, golem.getUUID());
+                    golem.getNavigation().moveTo(staging.getX() + 0.5, staging.getY(), staging.getZ() + 0.5, 1.0);
                 }
             }
             if (!VillageRaidSystem.isActive()) continue;
@@ -123,12 +124,28 @@ public final class VillageMercenaryDeploymentSystem {
         }
     }
 
-    private static BlockPos rallyPoint(BlockPos center, Deployment zone, VillageMercenarySystem.MercenaryClass kind) {
+    private static BlockPos rallyPoint(
+            BlockPos center, Deployment zone, VillageMercenarySystem.MercenaryClass kind, UUID mercenaryId) {
         return switch (zone) {
             case GATE_FRONT -> center.offset(kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 9 : -9, 0, -58);
             case INNER -> center.offset(kind.ordinal() * 4 - 6, 0, -18);
-            case WALL -> center.offset(kind == VillageMercenarySystem.MercenaryClass.RANGER ? 26 : -26, 10, -69);
+            case WALL -> rangerWallPost(center, mercenaryId);
         };
+    }
+
+    /** Actual north-wall walk surface: ten stable slots keep multiple rangers from occupying one block. */
+    private static BlockPos rangerWallPost(BlockPos center, UUID mercenaryId) {
+        int slot = Math.floorMod(mercenaryId == null ? 0 : mercenaryId.hashCode(), 10);
+        int lane = slot < 5 ? -25 : 25;
+        int spread = slot % 5 - 2;
+        return center.offset(lane + spread, 9, -74);
+    }
+
+    /** If a long path is temporarily rejected, approach the foot of the matching north stair and retry. */
+    private static BlockPos rangerWallStagingPoint(BlockPos center, UUID mercenaryId) {
+        int slot = Math.floorMod(mercenaryId == null ? 0 : mercenaryId.hashCode(), 10);
+        int lane = slot < 5 ? -25 : 25;
+        return center.offset(lane, 0, -62);
     }
 
     private static boolean allowed(VillageMercenarySystem.MercenaryClass kind, Deployment zone) {

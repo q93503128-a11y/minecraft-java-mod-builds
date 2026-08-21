@@ -325,34 +325,50 @@ final class VillageFortressTerrain {
     }
 
     private static void buildWallAccess(ServerLevel level, BlockPos center, int groundY) {
-        for (int side : new int[]{-25, 25}) {
-            for (int step = 0; step < WALL_TOP_Y; step++) {
-                int z = center.getZ() - WALL_RADIUS + 14 - step;
-                int y = groundY + 1 + step;
-                for (int width = -2; width <= 2; width++) {
-                    BlockPos stairPos = new BlockPos(center.getX() + side + width, y, z);
-                    for (int supportY = groundY + 1; supportY < y; supportY++) {
-                        set(level, new BlockPos(stairPos.getX(), supportY, stairPos.getZ()), Blocks.STONE_BRICKS);
-                    }
-                    level.setBlockAndUpdate(
-                            stairPos,
-                            Blocks.STONE_BRICK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH));
-                    for (int clearY = 1; clearY <= 3; clearY++) {
-                        set(level, stairPos.above(clearY), Blocks.AIR);
-                    }
+        // Preserve the original north-gate access lanes while giving the other three walls
+        // their own direct routes. Side/rear lanes align with the authored wall-top defense zones.
+        for (int lane : new int[]{-25, 25}) {
+            buildWallAccessRamp(level, center, groundY, Direction.NORTH, lane);
+        }
+        for (int lane : new int[]{-34, 34}) {
+            buildWallAccessRamp(level, center, groundY, Direction.SOUTH, lane);
+            buildWallAccessRamp(level, center, groundY, Direction.WEST, lane);
+            buildWallAccessRamp(level, center, groundY, Direction.EAST, lane);
+        }
+    }
+
+    private static void buildWallAccessRamp(
+            ServerLevel level, BlockPos center, int groundY, Direction outward, int lane) {
+        Direction sideways = outward.getClockWise();
+        int stairStart = WALL_RADIUS - 14;
+        for (int step = 0; step < WALL_TOP_Y; step++) {
+            BlockPos row = center.relative(outward, stairStart + step).relative(sideways, lane);
+            int y = groundY + 1 + step;
+            for (int width = -2; width <= 2; width++) {
+                BlockPos column = row.relative(sideways, width);
+                BlockPos stairPos = new BlockPos(column.getX(), y, column.getZ());
+                for (int supportY = groundY + 1; supportY < y; supportY++) {
+                    set(level, new BlockPos(stairPos.getX(), supportY, stairPos.getZ()), Blocks.STONE_BRICKS);
+                }
+                level.setBlockAndUpdate(
+                        stairPos,
+                        Blocks.STONE_BRICK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, outward));
+                for (int clearY = 1; clearY <= 3; clearY++) {
+                    set(level, stairPos.above(clearY), Blocks.AIR);
                 }
             }
+        }
 
-            for (int z = -WALL_RADIUS + 1; z <= -WALL_RADIUS + 6; z++) {
-                for (int width = -3; width <= 3; width++) {
-                    BlockPos landing = new BlockPos(
-                            center.getX() + side + width,
-                            groundY + WALL_TOP_Y,
-                            center.getZ() + z);
-                    set(level, landing, Blocks.STONE_BRICKS);
-                    for (int y = 1; y <= 3; y++) {
-                        set(level, landing.above(y), Blocks.AIR);
-                    }
+        int landingStart = WALL_RADIUS - 6;
+        int landingEnd = WALL_RADIUS - 1;
+        for (int distance = landingStart; distance <= landingEnd; distance++) {
+            BlockPos row = center.relative(outward, distance).relative(sideways, lane);
+            for (int width = -3; width <= 3; width++) {
+                BlockPos column = row.relative(sideways, width);
+                BlockPos landing = new BlockPos(column.getX(), groundY + WALL_TOP_Y, column.getZ());
+                set(level, landing, Blocks.STONE_BRICKS);
+                for (int clearY = 1; clearY <= 3; clearY++) {
+                    set(level, landing.above(clearY), Blocks.AIR);
                 }
             }
         }

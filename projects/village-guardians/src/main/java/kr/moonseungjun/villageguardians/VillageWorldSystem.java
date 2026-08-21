@@ -54,7 +54,8 @@ public final class VillageWorldSystem {
         boolean visualRevisionMissing = !level.getBlockState(center.below(4)).is(Blocks.RESPAWN_ANCHOR)
                 || !level.getBlockState(center.below(5)).is(Blocks.AMETHYST_BLOCK)
                 || !level.getBlockState(center.below(6)).is(Blocks.LAPIS_BLOCK)
-                || !level.getBlockState(center.below(7)).is(Blocks.EMERALD_BLOCK);
+                || !level.getBlockState(center.below(7)).is(Blocks.EMERALD_BLOCK)
+                || !level.getBlockState(center.below(8)).is(Blocks.DIAMOND_BLOCK);
         if (!firstBuild && !visualRevisionMissing) return;
 
         generationInProgress = true;
@@ -64,7 +65,7 @@ public final class VillageWorldSystem {
                 VillageProgressionSystem.restoreFacilitiesForMigration();
             } else {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 정비] §f성벽 상부 포좌와 보행로 연결부를 최신 방어 배치로 갱신합니다."));
+                        "§6[마을 정비] §f성벽 4면 접근 계단·포좌와 용병 고지 동선을 최신 방어 배치로 갱신합니다."));
             }
             buildAll(level, center);
             if (!firstBuild) {
@@ -78,7 +79,7 @@ public final class VillageWorldSystem {
             VillagePlacedTurretSystem.initializeServer(server);
             purgeUnauthorizedVillageMobs(server);
             player.sendSystemMessage(Component.literal(
-                    "§a[마을 준비 완료] §f시설과 성벽 상부 포좌, 방어탑이 최신 상태로 적용됐습니다."));
+                    "§a[마을 준비 완료] §f시설과 성벽 4면 접근로·상부 포좌·방어탑이 최신 상태로 적용됐습니다."));
         } finally {
             generationInProgress = false;
         }
@@ -269,6 +270,7 @@ public final class VillageWorldSystem {
         VillageBuildingSignatures.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
         // 26.2 exposes Blocks.COPPER_BLOCK as a weathering collection, so the migration marker uses a stable block.
+        VillageFortressTerrain.set(level, center.below(8), Blocks.DIAMOND_BLOCK);
         VillageFortressTerrain.set(level, center.below(7), Blocks.EMERALD_BLOCK);
         VillageFortressTerrain.set(level, center.below(6), Blocks.LAPIS_BLOCK);
         VillageFortressTerrain.set(level, center.below(5), Blocks.AMETHYST_BLOCK);
