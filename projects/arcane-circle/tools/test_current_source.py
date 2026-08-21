@@ -94,7 +94,8 @@ need(field,'"antimagic_field".equals(spellId)','"time_stop".equals(spellId)','"w
 utility=text(magic/'HighUtilitySpellService.java')
 need(utility,'Set.of("clone", "true_polymorph", "maze", "etherealness")','TRUE_POLYMORPH_TICKS = 480','setNoAi(true)')
 buffs=text(magic/'ArcaneBuffRuntime.java')
-need(buffs,'case "shapechange" -> 1800;','case "foresight" -> 2400;','event.setCanceled(true);','return .50;','return .75;')
+need(buffs,'case "shapechange" -> 1800;','case "foresight" -> 2400;','event.setCanceled(true);',
+     'multiplier = Math.min(multiplier, .50);','multiplier = Math.min(multiplier, .75);')
 player_data=text(magic/'MagicPlayerData.java')
 need(player_data,'if ("wish".equals(cast.spell().id()))','state.mana = effectiveStats(player).maxMana();',
      'state.cooldowns.entrySet().removeIf(entry -> !"wish".equals(entry.getKey()));')
