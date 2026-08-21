@@ -263,8 +263,8 @@ public final class FifthCircleSpellService {
                 if (side == 0.0) side = 1.0;
                 target.push(wall.forward.x * side * .48, .03, wall.forward.z * side * .48);
                 Vec3 motion = target.getDeltaMovement();
-                double into = motion.dot(wall.forward) * side;
-                if (into < 0.0) target.setDeltaMovement(motion.subtract(wall.forward.scale(into)));
+                double normal = motion.dot(wall.forward);
+                if (normal * side < 0.0) target.setDeltaMovement(motion.subtract(wall.forward.scale(normal)));
             }
         }
     }
