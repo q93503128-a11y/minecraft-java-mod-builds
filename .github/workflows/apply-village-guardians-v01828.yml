@@ -42,7 +42,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "${PROJECT_DIR}/.ci/v01828-running.txt"
-          git commit -m 'ci(village): record v0.18.28 integration start [skip ci]'
+          git commit -m 'ci(village): record v0.18.28 integration start [skip ci]' || true
           for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then break; fi
             git pull --rebase origin main
@@ -52,7 +52,9 @@ jobs:
 
       - name: Apply authored air defense migration
         working-directory: ${{ env.PROJECT_DIR }}
-        run: python3 tools/apply_v01828_air_defense.py
+        run: |
+          python3 tools/apply_v01828_air_defense.py
+          python3 tools/apply_v01828_compat.py
 
       - name: Check source patch
         working-directory: ${{ env.PROJECT_DIR }}
