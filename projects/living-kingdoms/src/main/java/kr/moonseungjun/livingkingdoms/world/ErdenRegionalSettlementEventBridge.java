@@ -27,6 +27,7 @@ public final class ErdenRegionalSettlementEventBridge {
         ErdenRegionalRoadManager.onServerTick(event);
         ErdenRegionalSettlementManager.onServerTick(event);
         ErdenRegionalSocietyManager.onServerTick(event);
+        ErdenRegionalShipmentClockGuard.onServerTick(event);
         ErdenRegionalEconomyManager.onServerTick(event);
         ErdenRegionalTransportManager.onServerTick(event);
     }
