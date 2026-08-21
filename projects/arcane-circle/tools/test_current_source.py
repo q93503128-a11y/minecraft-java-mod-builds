@@ -102,6 +102,8 @@ need(fifth,
      'public static final int INSECT_PLAGUE_TICKS = 220;',
      'public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)',
      'return lateral <= wall.halfWidth + .8 && vertical >= -.5 && vertical <= 5.5;',
+     'double normal = motion.dot(wall.forward);',
+     'if (normal * side < 0.0) target.setDeltaMovement(motion.subtract(wall.forward.scale(normal)));',
      'state.center = state.center.add(state.drift.scale(.45));',
      'TELEKINESIS.put(target.getUUID(), new TelekinesisState','target.setNoGravity(state.wasNoGravity);',
      'DestructiveMagicService.impact(player, "flame_strike", center, radius, power)',
@@ -110,6 +112,7 @@ need(fifth,
      'if (level.getBlockState(block.pos).isAir()) level.setBlockAndUpdate(block.pos, block.original);',
      'DOMINATED.put(mob.getUUID(), new DominateState','target.getNavigation().moveTo(owner, 1.10);',
      'SWARM_JAM.put(target.getUUID(), new JamState(level, now + 12L));','interruptCasting(target);')
+assert 'double into = motion.dot(wall.forward) * side;' not in fifth
 assert 'setNoAi(true)' not in fifth
 assert 'ParticleTypes' not in fifth
 
