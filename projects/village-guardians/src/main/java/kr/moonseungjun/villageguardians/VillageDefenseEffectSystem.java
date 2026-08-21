@@ -115,16 +115,33 @@ public final class VillageDefenseEffectSystem {
                 new Vec3(0.0, 0.0, 1.0), 34, 0.0f, "5.0");
     }
 
-    public static void aerialAssaultWarning(ServerLevel level, Vec3 center, boolean structure) {
-        if (level == null || center == null) return;
+    public static void aerialAssaultWarning(
+            ServerLevel level, Vec3 center, VillageEnemyArchetypeSystem.AerialRole role,
+            boolean structure, int warningTicks, double radius) {
+        if (level == null || center == null || role == null) return;
         VillageSkillEffectEntity.spawn(level, null, "raid_aerial_warning", center,
-                new Vec3(0.0, 0.0, 1.0), 18, 0.0f, structure ? "1" : "0");
+                new Vec3(0.0, 0.0, 1.0), Math.max(6, warningTicks), 0.0f,
+                aerialSignalExtra(role, structure, radius));
     }
 
-    public static void aerialAssaultImpact(ServerLevel level, Vec3 center, boolean structure) {
-        if (level == null || center == null) return;
+    public static void aerialAssaultImpact(
+            ServerLevel level, Vec3 center, VillageEnemyArchetypeSystem.AerialRole role,
+            boolean structure, double radius) {
+        if (level == null || center == null || role == null) return;
+        int duration = switch (role) {
+            case BOMBARDIER -> 18;
+            case HARRIER -> 12;
+            case RAIDER -> 16;
+        };
         VillageSkillEffectEntity.spawn(level, null, "raid_aerial_impact", center,
-                new Vec3(0.0, 0.0, 1.0), 16, 0.0f, structure ? "1" : "0");
+                new Vec3(0.0, 0.0, 1.0), duration, 0.0f,
+                aerialSignalExtra(role, structure, radius));
+    }
+
+    private static String aerialSignalExtra(
+            VillageEnemyArchetypeSystem.AerialRole role, boolean structure, double radius) {
+        return String.format(Locale.ROOT, "%d|%d|%.2f", role.ordinal(), structure ? 1 : 0,
+                Math.max(0.0, radius));
     }
 
     public static void raidFrontWarning(ServerLevel level, Vec3 center, boolean mainFront) {

@@ -132,7 +132,7 @@ public final class VillageEnemyArchetypeSystem {
                 ? "§b웨이브 " + wave + " · 하늘 약탈귀 §8[성벽 우회 공중 급습]"
                 : displayName(archetype, trait, day, wave, boss);
         mob.setCustomName(Component.literal(visibleName));
-        mob.setCustomNameVisible(true);
+        mob.setCustomNameVisible(alwaysShowNameplate(archetype, boss, isFlying(mob)));
         if (isFlying(mob) || boss || archetype == Archetype.NECROMANCER || archetype == Archetype.TOWER_HUNTER) {
             mob.setGlowingTag(true);
         }
@@ -166,6 +166,19 @@ public final class VillageEnemyArchetypeSystem {
 
     public static boolean isBoss(Archetype archetype) {
         return archetype.ordinal() >= Archetype.SIEGE_BEAST.ordinal();
+    }
+
+
+    public static boolean isTacticalThreat(Archetype archetype) {
+        if (archetype == null) return false;
+        return switch (archetype) {
+            case SAPPER, SHIELDBREAKER, HEXER, WAR_CHANTER, NECROMANCER, TOWER_HUNTER -> true;
+            default -> isBoss(archetype);
+        };
+    }
+
+    public static boolean alwaysShowNameplate(Archetype archetype, boolean boss, boolean flying) {
+        return flying || boss || isTacticalThreat(archetype);
     }
 
     public static void tickAbility(

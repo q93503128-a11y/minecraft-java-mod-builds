@@ -20,8 +20,8 @@ def main() -> None:
     role = read("VillageRole.java")
     old = (ROOT / "tools/test_v01827_aerial_combat_integrity.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.28-alpha.1" in props
-    assert "0.18.28-alpha.1" in readme and "villageguardians-0.18.28-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전" in readme and "villageguardians-" in readme
     assert 'assert "mod_version=0.18.27-alpha.1" in props' not in old
     assert "enum AerialRole" in enemy
     for token in ("RAIDER", "BOMBARDIER", "HARRIER", "public static AerialRole aerialRole"):

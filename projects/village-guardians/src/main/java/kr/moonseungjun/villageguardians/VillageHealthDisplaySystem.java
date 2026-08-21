@@ -81,9 +81,24 @@ public final class VillageHealthDisplaySystem {
             int current = Math.max(0, (int) Math.ceil(mob.getHealth() / 2.0f));
             int maximum = Math.max(1, (int) Math.ceil(mob.getMaxHealth() / 2.0f));
             mob.setCustomName(Component.literal("§c❤ " + current + "/" + maximum + " §7").append(baseName.copy()));
-            mob.setCustomNameVisible(true);
+            mob.setCustomNameVisible(shouldShowEnemyNameplate(server, mob));
         }
         ENEMY_BASE_NAMES.keySet().removeIf(uuid -> !VillageRaidSystem.isActiveEnemy(uuid));
+    }
+
+    private static boolean shouldShowEnemyNameplate(MinecraftServer server, Mob mob) {
+        VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(mob);
+        if (VillageEnemyArchetypeSystem.alwaysShowNameplate(
+                archetype, VillageRaidSystem.isBossEnemy(mob), VillageEnemyArchetypeSystem.isFlying(mob))) {
+            return true;
+        }
+        double nearbySquared = 22.0 * 22.0;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()
+                    || VillageRespawnSystem.isDowned(player)) continue;
+            if (player.distanceToSqr(mob) <= nearbySquared) return true;
+        }
+        return false;
     }
 
     private static void removeLegacyHealthTeams(MinecraftServer server) {

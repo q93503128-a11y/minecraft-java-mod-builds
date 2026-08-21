@@ -151,24 +151,73 @@ public final class VillageSkillMeshLibrary {
     private static void renderAerialAssault(
             PoseStack.Pose pose, VertexConsumer out, Basis b,
             double age, double progress, String extra, boolean impact) {
-        boolean structure = "1".equals(extra);
+        AerialSignal signal = parseAerialSignal(extra);
+        int role = signal.role();
+        boolean structure = signal.structure();
         double fade = Math.max(0.0, 1.0 - progress);
-        double pulse = 0.92 + Math.sin(age * 0.32) * 0.08;
-        int primary = structure
-                ? rgba(116, 207, 255, (int) ((impact ? 235 : 205) * Math.max(0.28, fade)))
-                : rgba(105, 237, 255, (int) ((impact ? 245 : 220) * Math.max(0.28, fade)));
-        int secondary = rgba(225, 250, 255, (int) (150 * Math.max(0.22, fade)));
-        double radius = impact ? 1.15 + progress * 3.8 : 2.35 * pulse;
-        ring(pose, out, b, radius, 0.055, impact ? 0.15 : 0.095, 56, primary, age * 0.055);
-        ring(pose, out, b, Math.max(0.6, radius * 0.62), 0.085, 0.05, 44, secondary, -age * 0.07);
-        for (int i = 0; i < 4; i++) {
-            double a = i * TAU / 4.0 + (impact ? -age * 0.03 : age * 0.025);
-            chevron(pose, out, b, a, Math.max(0.7, radius * 0.84),
-                    impact ? 0.18 + progress * 0.65 : 0.12, impact ? 0.42 : 0.34, primary);
+        double dangerRadius = structure
+                ? (role == 1 ? 2.65 : role == 2 ? 1.75 : 2.15)
+                : Math.max(0.6, signal.radius());
+        int primary = switch (role) {
+            case 1 -> rgba(139, 121, 255, (int) ((impact ? 245 : 215) * Math.max(0.28, fade)));
+            case 2 -> rgba(91, 232, 255, (int) ((impact ? 250 : 225) * Math.max(0.28, fade)));
+            default -> rgba(116, 207, 255, (int) ((impact ? 238 : 205) * Math.max(0.28, fade)));
+        };
+        int secondary = switch (role) {
+            case 1 -> rgba(231, 218, 255, (int) (160 * Math.max(0.22, fade)));
+            case 2 -> rgba(246, 255, 173, (int) (155 * Math.max(0.22, fade)));
+            default -> rgba(225, 250, 255, (int) (150 * Math.max(0.22, fade)));
+        };
+
+        // The inner warning ring is the actual dodge radius for player-targeted strikes.
+        // Animation is kept on secondary geometry so the gameplay boundary never lies.
+        double primaryRadius = impact ? dangerRadius + progress * (role == 1 ? 3.4 : role == 2 ? 2.2 : 2.8) : dangerRadius;
+        ring(pose, out, b, primaryRadius, 0.055, impact ? 0.15 : 0.105,
+                role == 1 ? 64 : 56, primary, age * (role == 2 ? 0.09 : 0.045));
+        double pulse = 0.92 + Math.sin(age * (role == 2 ? 0.48 : 0.28)) * 0.07;
+        ring(pose, out, b, Math.max(0.55, dangerRadius * 0.66 * pulse), 0.085, 0.05,
+                44, secondary, -age * (role == 2 ? 0.12 : 0.065));
+
+        int markers = role == 1 ? 8 : role == 2 ? 3 : 4;
+        for (int i = 0; i < markers; i++) {
+            double a = i * TAU / markers + age * (role == 2 ? 0.085 : role == 1 ? -0.025 : 0.025);
+            double markerRadius = Math.max(0.65, dangerRadius * (role == 1 ? 0.92 : 0.84));
+            double rise = impact ? 0.18 + progress * (role == 2 ? 0.48 : 0.65) : 0.12;
+            chevron(pose, out, b, a, markerRadius, rise,
+                    role == 1 ? 0.42 : role == 2 ? 0.28 : 0.34, primary);
         }
-        verticalPillar(pose, out, b, impact ? 0.42 : 0.18,
-                impact ? 4.2 * fade + 0.4 : 2.8, withAlpha(primary, impact ? 185 : 105));
+        if (role == 1) {
+            ring(pose, out, b, dangerRadius * 0.82, 0.16, 0.035, 40,
+                    withAlpha(secondary, Math.max(28, (int) (125 * fade))), age * 0.03);
+            verticalPillar(pose, out, b, impact ? 0.55 : 0.24,
+                    impact ? 5.2 * fade + 0.5 : 3.6, withAlpha(primary, impact ? 195 : 120));
+        } else if (role == 2) {
+            verticalPillar(pose, out, b, impact ? 0.30 : 0.12,
+                    impact ? 3.2 * fade + 0.35 : 2.1, withAlpha(primary, impact ? 175 : 92));
+        } else {
+            verticalPillar(pose, out, b, impact ? 0.42 : 0.18,
+                    impact ? 4.2 * fade + 0.4 : 2.8, withAlpha(primary, impact ? 185 : 105));
+        }
     }
+
+    private static AerialSignal parseAerialSignal(String extra) {
+        int role = 0;
+        boolean structure = false;
+        double radius = 2.75;
+        if (extra != null && !extra.isBlank()) {
+            String[] parts = extra.split("\\|", -1);
+            try { role = Math.max(0, Math.min(2, Integer.parseInt(parts[0]))); }
+            catch (NumberFormatException ignored) {}
+            structure = parts.length > 1 && "1".equals(parts[1]);
+            if (parts.length > 2) {
+                try { radius = Math.max(0.0, Double.parseDouble(parts[2])); }
+                catch (NumberFormatException ignored) {}
+            }
+        }
+        return new AerialSignal(role, structure, radius);
+    }
+
+    private record AerialSignal(int role, boolean structure, double radius) {}
 
     private static void renderRaidFrontSignal(
             PoseStack.Pose pose, VertexConsumer out, Basis b,

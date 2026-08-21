@@ -168,6 +168,7 @@ public final class VillageAttackPlanSystem {
     public static AttackPlan preview(int day, int wave, int count) {
         Map<Front, Integer> counts = new java.util.LinkedHashMap<>();
         for (int index = 0; index < Math.max(0, count); index++) {
+            if (!isGroundAssaultIndex(day, wave, count, index)) continue;
             counts.merge(frontForIndex(day, wave, index), 1, Integer::sum);
         }
         Front main = counts.entrySet().stream()
@@ -280,8 +281,19 @@ public final class VillageAttackPlanSystem {
 
     private static Map<Front, Boolean> usedFronts(int day, int wave, int count) {
         Map<Front, Boolean> used = new HashMap<>();
-        for (int i = 0; i < Math.max(0, count); i++) used.put(frontForIndex(day, wave, i), true);
+        for (int i = 0; i < Math.max(0, count); i++) {
+            if (!isGroundAssaultIndex(day, wave, count, i)) continue;
+            used.put(frontForIndex(day, wave, i), true);
+        }
         return used;
+    }
+
+    private static boolean isGroundAssaultIndex(int day, int wave, int count, int index) {
+        VillageWaveTrait trait = VillageWaveTrait.select(day, wave);
+        int bosses = VillageRaidSystem.previewBossCount(
+                day, wave, VillageRaidSystem.previewMaxWaves(day), Math.max(0, count));
+        boolean boss = index >= 0 && index < bosses;
+        return !VillageEnemyArchetypeSystem.willSpawnFlying(day, wave, index, boss, trait);
     }
 
     private static BlockPos spawnOrigin(Front front, int index) {
