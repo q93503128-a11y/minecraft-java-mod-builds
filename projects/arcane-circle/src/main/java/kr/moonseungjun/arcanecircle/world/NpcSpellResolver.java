@@ -3,6 +3,7 @@ package kr.moonseungjun.arcanecircle.world;
 import kr.moonseungjun.arcanecircle.magic.ArcaneDamage;
 import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
+import kr.moonseungjun.arcanecircle.magic.EighthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FifthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FirstCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FourthCircleSpellService;
@@ -37,7 +38,7 @@ final class NpcSpellResolver {
 
     static boolean execute(ServerLevel level, Mob caster, LivingEntity target,
                            SpellDefinition spell, double range, double power) {
-        if (ArcaneFieldService.blocksCasting(caster)) {
+        if (ArcaneFieldService.blocksCasting(caster) || EighthCircleSpellService.blocksCasting(caster)) {
             WorldMagicService.stop(caster);
             return false;
         }
@@ -68,6 +69,9 @@ final class NpcSpellResolver {
         }
         if (SeventhCircleSpellService.handles(spell.id())) {
             return SeventhCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
+        }
+        if (EighthCircleSpellService.handles(spell.id())) {
+            return EighthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
         }
         if ("meteor_swarm".equals(spell.id())) return NpcMeteorBarrageService.schedule(level, caster, snapshot, range, power);
 

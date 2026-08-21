@@ -6,6 +6,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneLightService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
 import kr.moonseungjun.arcanecircle.magic.DestructiveMagicService;
+import kr.moonseungjun.arcanecircle.magic.EighthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FifthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FirstCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FourthCircleSpellService;
@@ -47,7 +48,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.59";
+    public static final String VERSION = "0.12.1-alpha.60";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -130,6 +131,7 @@ public final class ArcaneCircle {
             FifthCircleSpellService.clear(player);
             SixthCircleSpellService.clear(player);
             SeventhCircleSpellService.clear(player);
+            EighthCircleSpellService.clear(player);
             ArcaneFieldService.clear(player.getUUID());
             SimulacrumService.clear(player);
             HighUtilitySpellService.clear(player);
@@ -155,6 +157,7 @@ public final class ArcaneCircle {
         FifthCircleSpellService.clear(player);
         SixthCircleSpellService.clear(player);
         SeventhCircleSpellService.clear(player);
+        EighthCircleSpellService.clear(player);
         ArcaneFieldService.clear(player.getUUID());
         SimulacrumService.clear(player);
         HighUtilitySpellService.clear(player);
@@ -180,6 +183,7 @@ public final class ArcaneCircle {
         FifthCircleSpellService.clear(player);
         SixthCircleSpellService.clear(player);
         SeventhCircleSpellService.clear(player);
+        EighthCircleSpellService.clear(player);
         ArcaneFieldService.clear(player.getUUID());
         SimulacrumService.clear(player);
         HighUtilitySpellService.clear(player);
@@ -207,6 +211,7 @@ public final class ArcaneCircle {
         FifthCircleSpellService.tick(level);
         SixthCircleSpellService.tick(level);
         SeventhCircleSpellService.tick(level);
+        EighthCircleSpellService.tick(level);
         MagicWorldService.tick(player);
         ArcaneEncounterService.tick(player);
         MageGearService.tickMovement(player);
@@ -235,6 +240,7 @@ public final class ArcaneCircle {
         FifthCircleSpellService.clearAll();
         SixthCircleSpellService.clearAll();
         SeventhCircleSpellService.clearAll();
+        EighthCircleSpellService.clearAll();
         SpellGameplayService.clearAll();
         SimulacrumService.clearAll();
         HighUtilitySpellService.clearAll();

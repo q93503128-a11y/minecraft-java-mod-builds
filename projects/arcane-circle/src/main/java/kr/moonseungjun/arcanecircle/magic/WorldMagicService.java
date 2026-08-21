@@ -109,6 +109,7 @@ public final class WorldMagicService {
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
         duration = seventhCircleVisualDuration(spell.id(), duration, cast.power());
+        duration = eighthCircleVisualDuration(spell.id(), duration);
         send(player, encode("release", player, spell, cast.fusion(), cast.ingredients().size(), center, target,
                 direction, cast.range(), cast.power(), 1.0, duration, impactTicks, snapshot.barrageSeed()));
     }
@@ -138,6 +139,7 @@ public final class WorldMagicService {
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed())
                 : SpellPresentationProfile.releaseDurationTicks(spell, Math.max(0.0, distance));
         duration = seventhCircleVisualDuration(spell.id(), duration, power);
+        duration = eighthCircleVisualDuration(spell.id(), duration);
         send(caster, encode("release", caster, spell, false, 0, center, snapshot.target(),
                 snapshot.launchDirection(), range, power, 1.0, duration, impact, snapshot.barrageSeed()));
     }
@@ -182,6 +184,19 @@ public final class WorldMagicService {
                     SeventhCircleSpellService.NPC_ETHEREAL_TICKS + (int) Math.min(240.0, Math.max(0.0, power)));
             case "forcecage" -> Math.max(baseDuration, SeventhCircleSpellService.NPC_FORCECAGE_TICKS);
             case "reverse_gravity" -> Math.max(baseDuration, SeventhCircleSpellService.REVERSE_GRAVITY_TICKS);
+            default -> baseDuration;
+        };
+    }
+
+    private static int eighthCircleVisualDuration(String spellId, int baseDuration) {
+        return switch (spellId) {
+            case "antimagic_field" -> Math.max(baseDuration, EighthCircleSpellService.NPC_ANTIMAGIC_TICKS);
+            case "control_weather" -> Math.max(baseDuration, EighthCircleSpellService.NPC_WEATHER_TICKS);
+            case "dominate_monster" -> Math.max(baseDuration, EighthCircleSpellService.NPC_DOMINATE_TICKS);
+            case "earthquake" -> Math.max(baseDuration, EighthCircleSpellService.EARTHQUAKE_TICKS);
+            case "feeblemind" -> Math.max(baseDuration, EighthCircleSpellService.NPC_FEEBLEMIND_TICKS);
+            case "incendiary_cloud" -> Math.max(baseDuration, EighthCircleSpellService.INCENDIARY_CLOUD_TICKS);
+            case "maze" -> Math.max(baseDuration, EighthCircleSpellService.NPC_MAZE_TICKS);
             default -> baseDuration;
         };
     }

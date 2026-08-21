@@ -30,7 +30,7 @@ public final class SpellKineticsService {
         CastTargetSnapshot targetSnapshot = WorldMagicService.captureSnapshot(player, cast.spell(), cast.range());
         WorldMagicService.release(player, cast, targetSnapshot);
 
-        if (ArcaneFieldService.handles(cast.spell().id())) {
+        if (ArcaneFieldService.handles(cast.spell().id()) && !EighthCircleSpellService.handles(cast.spell().id())) {
             boolean executed = targetSnapshot.executeLocked(player,
                     () -> ArcaneFieldService.executeSpecial(player, cast.spell().id(),
                             cast.range(), cast.power(), targetSnapshot));
@@ -58,6 +58,7 @@ public final class SpellKineticsService {
                 || FifthCircleSpellService.handles(cast.spell().id())
                 || SixthCircleSpellService.handles(cast.spell().id())
                 || SeventhCircleSpellService.handles(cast.spell().id())
+                || EighthCircleSpellService.handles(cast.spell().id())
                 || PlanarSpellService.handles(cast.spell().id()) || SimulacrumService.handles(cast.spell().id())
                 || HighUtilitySpellService.handles(cast.spell().id()) || HighWardSpellService.handles(cast.spell().id())
                 || HighControlSpellService.handles(cast.spell().id()) || SpellGameplayService.handles(cast.spell().id())) {
@@ -133,7 +134,7 @@ public final class SpellKineticsService {
 
     private static boolean executeLocked(ServerPlayer player, CastTargetSnapshot targetSnapshot,
                                          String spellId, double range, double power) {
-        if (ArcaneFieldService.blocksCasting(player)) return false;
+        if (ArcaneFieldService.blocksCasting(player) || EighthCircleSpellService.blocksCasting(player)) return false;
         SpellDefinition spell = SpellCatalog.spell(spellId).orElse(null);
         if (FifthCircleSpellService.intercepts(player, targetSnapshot)) return false;
         if (spell != null && SixthCircleSpellService.intercepts(player, spell, targetSnapshot, range)) return false;
@@ -150,23 +151,28 @@ public final class SpellKineticsService {
                 && !fifthCircleOwned && SixthCircleSpellService.handles(spellId);
         boolean seventhCircleOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
                 && !fifthCircleOwned && !sixthCircleOwned && SeventhCircleSpellService.handles(spellId);
+        boolean eighthCircleOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
+                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && EighthCircleSpellService.handles(spellId);
         boolean planarOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && PlanarSpellService.handles(spellId);
+                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !eighthCircleOwned
+                && PlanarSpellService.handles(spellId);
         boolean simulacrumOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !planarOwned
+                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !eighthCircleOwned && !planarOwned
                 && SimulacrumService.handles(spellId);
         boolean utilityOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !planarOwned && !simulacrumOwned
-                && HighUtilitySpellService.handles(spellId);
+                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !eighthCircleOwned
+                && !planarOwned && !simulacrumOwned && HighUtilitySpellService.handles(spellId);
         boolean wardOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !planarOwned && !simulacrumOwned
-                && !utilityOwned && HighWardSpellService.handles(spellId);
+                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !eighthCircleOwned
+                && !planarOwned && !simulacrumOwned && !utilityOwned && HighWardSpellService.handles(spellId);
         boolean controlOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !planarOwned && !simulacrumOwned
-                && !utilityOwned && !wardOwned && HighControlSpellService.handles(spellId);
+                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !eighthCircleOwned
+                && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned
+                && HighControlSpellService.handles(spellId);
         boolean gameplayOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !planarOwned && !simulacrumOwned
-                && !utilityOwned && !wardOwned && !controlOwned && SpellGameplayService.handles(spellId);
+                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !eighthCircleOwned
+                && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned && !controlOwned
+                && SpellGameplayService.handles(spellId);
         boolean executed = targetSnapshot.executeLocked(player, () -> firstCircleOwned
                 ? FirstCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : secondCircleOwned ? SecondCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
@@ -175,6 +181,7 @@ public final class SpellKineticsService {
                 : fifthCircleOwned ? FifthCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : sixthCircleOwned ? SixthCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : seventhCircleOwned ? SeventhCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
+                : eighthCircleOwned ? EighthCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : planarOwned ? PlanarSpellService.execute(player, spellId)
                 : simulacrumOwned ? SimulacrumService.execute(player, targetSnapshot)
                 : utilityOwned ? HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)
@@ -183,8 +190,8 @@ public final class SpellKineticsService {
                 : gameplayOwned ? SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)
                 : SpellCastingService.executeResolved(player, spellId, range, power));
         if (executed && !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !planarOwned && !simulacrumOwned
-                && !utilityOwned && !wardOwned && !controlOwned && !gameplayOwned) {
+                && !fifthCircleOwned && !sixthCircleOwned && !seventhCircleOwned && !eighthCircleOwned
+                && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned && !controlOwned && !gameplayOwned) {
             DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
         }
         return executed;
@@ -203,7 +210,8 @@ public final class SpellKineticsService {
     public static void tick(ServerPlayer player) {
         List<PendingCast> casts = PENDING.get(player.getUUID());
         if (casts == null || casts.isEmpty()) return;
-        if (!player.isAlive() || player.isSpectator() || ArcaneFieldService.blocksCasting(player)) {
+        if (!player.isAlive() || player.isSpectator()
+                || ArcaneFieldService.blocksCasting(player) || EighthCircleSpellService.blocksCasting(player)) {
             cancel(player);
             return;
         }

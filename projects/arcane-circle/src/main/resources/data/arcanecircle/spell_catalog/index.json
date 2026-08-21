@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.59",
+  "version": "0.12.1-alpha.60",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -100,5 +100,15 @@
   ],
   "seventh_circle_preserved_authority": ["etherealness","forcecage","plane_shift","simulacrum"],
   "seventh_circle_npc_parity": true,
-  "seventh_circle_npc_plane_shift_role": "safe_planar_disengage_without_target_damage"
+  "seventh_circle_npc_plane_shift_role": "safe_planar_disengage_without_target_damage",
+  "eighth_circle_deep_audit": [
+    "preserved_antimagic_field","preserved_living_clone","preserved_control_weather",
+    "preserved_persistent_demiplane","preserved_dominate_monster","maintained_earthquake",
+    "preserved_feeblemind","drifting_incendiary_cloud","preserved_maze_exile","dedicated_sunburst"
+  ],
+  "eighth_circle_preserved_authority": ["antimagic_field","clone","control_weather","demiplane","dominate_monster","feeblemind","maze"],
+  "eighth_circle_npc_parity": true,
+  "eighth_circle_npc_demiplane_role": "timed_pocket_sanctuary_without_persistent_player_room",
+  "eighth_circle_npc_maze_role": "combat_exile_without_cross_dimension_player_relocation",
+  "eighth_circle_npc_dominate_player_role": "casting_and_combat_compulsion"
 }
