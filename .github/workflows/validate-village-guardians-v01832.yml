@@ -1,6 +1,9 @@
 name: Validate Village Guardians v0.18.32 Ranger Traffic
 
 on:
+  push:
+    paths:
+      - 'projects/village-guardians/.v01832-ranger-traffic-trigger'
   issues:
     types: [opened]
 
@@ -10,7 +13,7 @@ permissions:
 
 jobs:
   ranger-wall-traffic-acceptance:
-    if: github.event.issue.title == 'Village Guardians v0.18.32 ranger traffic integrity'
+    if: github.event_name == 'push' || github.event.issue.title == 'Village Guardians v0.18.32 ranger traffic integrity'
     runs-on: ubuntu-24.04
     env:
       PROJECT_DIR: projects/village-guardians
