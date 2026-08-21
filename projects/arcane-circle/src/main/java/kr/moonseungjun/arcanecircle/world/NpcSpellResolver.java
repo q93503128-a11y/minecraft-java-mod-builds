@@ -8,6 +8,7 @@ import kr.moonseungjun.arcanecircle.magic.FirstCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FourthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.HighWardSpellService;
 import kr.moonseungjun.arcanecircle.magic.SecondCircleSpellService;
+import kr.moonseungjun.arcanecircle.magic.SeventhCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.SixthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.ThirdCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
@@ -64,6 +65,9 @@ final class NpcSpellResolver {
         }
         if (SixthCircleSpellService.handles(spell.id())) {
             return SixthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
+        }
+        if (SeventhCircleSpellService.handles(spell.id())) {
+            return SeventhCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
         }
         if ("meteor_swarm".equals(spell.id())) return NpcMeteorBarrageService.schedule(level, caster, snapshot, range, power);
 
