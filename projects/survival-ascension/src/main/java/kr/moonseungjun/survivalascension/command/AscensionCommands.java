@@ -12,7 +12,7 @@ public final class AscensionCommands {
     private AscensionCommands() {}
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("ascension")
+        var root = Commands.literal("ascension")
                 .then(Commands.literal("stats")
                         .executes(context -> showStats(context.getSource().getPlayerOrException())))
                 .then(Commands.literal("mining")
@@ -21,7 +21,8 @@ public final class AscensionCommands {
                                 .then(Commands.argument("level", IntegerArgumentType.integer(0, MiningProgressData.MAX_LEVEL))
                                         .executes(context -> setMiningLevel(
                                                 context.getSource().getPlayerOrException(),
-                                                IntegerArgumentType.getInteger(context, "level"))))))));
+                                                IntegerArgumentType.getInteger(context, "level"))))));
+        event.getDispatcher().register(root);
     }
 
     private static int showStats(ServerPlayer player) {
