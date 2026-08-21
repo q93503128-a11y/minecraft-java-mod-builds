@@ -6,6 +6,11 @@ on:
     paths:
       - 'projects/living-kingdoms/**'
       - '.github/workflows/validate-living-kingdoms-regional-society-r1.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'projects/living-kingdoms/**'
+      - '.github/workflows/validate-living-kingdoms-regional-society-r1.yml'
 
 concurrency:
   group: living-kingdoms-regional-society-r1-${{ github.ref }}
