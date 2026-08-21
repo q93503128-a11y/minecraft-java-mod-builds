@@ -13,9 +13,16 @@ original = module.replace_once
 
 
 def normalized_replace(text: str, old: str, new: str, label: str) -> str:
-    if label in {"intel air detail", "intel report"}:
-        old = old.replace('"\n', '"\\n').replace('명\n주공', '명\\n주공')
-        new = new.replace('"\n', '"\\n').replace('명\n주공', '명\\n주공')
+    # The authored patch source contains Java string literals with \\n. Python evaluates those
+    # escapes while importing the patch module, so reconstruct only those two anchors exactly.
+    if label == "intel air detail":
+        old = '                    + "\\n" + direction\n                    + "\\n공성 병과: "\n'
+        new = ('                    + "\\n" + direction\n'
+               '                    + "\\n공중 위협: " + air\n'
+               '                    + "\\n공성 병과: "\n')
+    elif label == "intel report":
+        old = ('                + players + "명\\n주공·별동대·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."\n')
+        new = ('                + players + "명\\n주공·별동대·공중 위협·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."\n')
     return original(text, old, new, label)
 
 
