@@ -24,16 +24,20 @@ def main() -> None:
     elite = read("VillageEnemyEliteSystem.java")
     aspect = read("VillageBossAspectSystem.java")
 
-    require("version is v0.18.12-alpha.1", "mod_version=" in props)
+    require("version property remains present", "mod_version=" in props)
 
     require("turret LOS starts outside its own three-block visual column",
             "private static Vec3 turretMuzzle" in turret
             and "state.pos().above(2)" in turret
             and "* 0.72" in turret
             and "Vec3.atCenterOf(state.pos().above());" not in turret)
-    require("anti-air targeting chooses nearest valid airborne target",
-            "filter(mob -> mob.getY() > baseY + 6.0)" in turret
-            and ".min(Comparator.comparingDouble" in turret)
+    old_anti_air = ("filter(mob -> mob.getY() > baseY + 6.0)" in turret
+                    and ".min(Comparator.comparingDouble" in turret)
+    role_aware_anti_air = ("private static double targetScore" in turret
+                           and "VillageEnemyArchetypeSystem.isFlying(mob)" in turret
+                           and "if (flying) score += 420.0" in turret)
+    require("anti-air targeting gives an explicit priority to airborne threats",
+            old_anti_air or role_aware_anti_air)
     require("chain turret visuals arc from target to target rather than starburst from tower",
             "Vec3 arcStart = turretMuzzle(state, target);" in turret
             and "hitFrom(level, arcStart, mob" in turret
