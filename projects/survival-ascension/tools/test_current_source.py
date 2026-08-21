@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 import sys
 ROOT = Path(__file__).resolve().parents[1]
-required = ["PROJECT.md","README.md","CHANGELOG.md","THIRD_PARTY_NOTICES.md","build.gradle","gradle.properties","settings.gradle","gradlew","gradle/wrapper/gradle-wrapper.jar","gradle/wrapper/gradle-wrapper.properties","src/main/templates/META-INF/neoforge.mods.toml","src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java","src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java","src/main/java/kr/moonseungjun/survivalascension/client/ClientSkillState.java","src/main/java/kr/moonseungjun/survivalascension/client/SkillHudOverlay.java","src/main/java/kr/moonseungjun/survivalascension/progress/SkillType.java","src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java","src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressData.java","src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressionService.java","src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java","src/main/java/kr/moonseungjun/survivalascension/network/SkillUpdatePayload.java","src/main/java/kr/moonseungjun/survivalascension/network/SkillSnapshotPayload.java","src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java","src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java","src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java","src/main/resources/assets/survivalascension/lang/ko_kr.json","src/main/resources/data/survivalascension/tags/block/valuable_ores.json"]
+required = ["PROJECT.md","README.md","CHANGELOG.md","THIRD_PARTY_NOTICES.md","build.gradle","gradle.properties","settings.gradle","gradlew","gradle/wrapper/gradle-wrapper.jar","gradle/wrapper/gradle-wrapper.properties","src/main/templates/META-INF/neoforge.mods.toml","src/main/resources/META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt","src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java","src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java","src/main/java/kr/moonseungjun/survivalascension/client/ClientSkillState.java","src/main/java/kr/moonseungjun/survivalascension/client/SkillHudOverlay.java","src/main/java/kr/moonseungjun/survivalascension/progress/SkillType.java","src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java","src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressData.java","src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressionService.java","src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java","src/main/java/kr/moonseungjun/survivalascension/network/SkillUpdatePayload.java","src/main/java/kr/moonseungjun/survivalascension/network/SkillSnapshotPayload.java","src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java","src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java","src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java","src/main/resources/assets/survivalascension/lang/ko_kr.json","src/main/resources/data/survivalascension/tags/block/valuable_ores.json"]
 errors=[]
 for rel in required:
     if not (ROOT/rel).exists(): errors.append(f"missing: {rel}")
@@ -31,6 +31,9 @@ for needle in ["GuiGraphicsExtractor","ClientSkillState.lastUpdate","graphics.fi
 notices=(ROOT/"THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
 for needle in ["Skill Proficiencies","MIT License","Copyright (c) 2026 balovich-matje","Project MMO 2.0","reference-only"]:
     if needle not in notices: errors.append(f"third-party notice missing: {needle}")
+jar_notice=(ROOT/"src/main/resources/META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt").read_text(encoding="utf-8")
+for needle in ["MIT License","Copyright (c) 2026 balovich-matje","Permission is hereby granted"]:
+    if needle not in jar_notice: errors.append(f"packaged MIT notice missing: {needle}")
 for path in (ROOT/"src").rglob("*"):
     if not path.is_file() or path.suffix.lower() not in {".java",".json",".toml",".mcmeta",".txt"}: continue
     text=path.read_text(encoding="utf-8",errors="ignore")
@@ -47,4 +50,4 @@ print("- generic 0-100 per-skill XP map with alpha.1 migration")
 print("- mining: tool-scoped speed + 3x3/5x5/7x7")
 print("- woodcutting: tool-scoped speed + 16/48/128/256 connected-log scaling")
 print("- client snapshot/update payloads + recent-skill XP HUD")
-print("- Skill Proficiencies MIT notice retained; Project MMO remains reference-only")
+print("- Skill Proficiencies MIT notice retained in source and packaged JAR; Project MMO remains reference-only")

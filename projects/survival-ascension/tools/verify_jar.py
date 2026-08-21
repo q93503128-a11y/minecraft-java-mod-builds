@@ -9,9 +9,10 @@ with zipfile.ZipFile(jar) as zf:
     if len(names)!=len(set(names)): raise SystemExit("duplicate ZIP entries detected")
     for prefix in ["kr/moonseungjun/survivalascension/","assets/survivalascension/","data/survivalascension/"]:
         if not any(name.startswith(prefix) for name in names): raise SystemExit(f"required JAR prefix missing: {prefix}")
-    if "META-INF/neoforge.mods.toml" not in names: raise SystemExit("META-INF/neoforge.mods.toml missing")
-    for name in ["kr/moonseungjun/survivalascension/SurvivalAscension.class","kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.class","kr/moonseungjun/survivalascension/progress/SkillProgressData.class","kr/moonseungjun/survivalascension/network/SkillNetwork.class","kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.class"]:
-        if name not in names: raise SystemExit(f"required compiled class missing: {name}")
+    for name in ["META-INF/neoforge.mods.toml","META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt","kr/moonseungjun/survivalascension/SurvivalAscension.class","kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.class","kr/moonseungjun/survivalascension/progress/SkillProgressData.class","kr/moonseungjun/survivalascension/network/SkillNetwork.class","kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.class"]:
+        if name not in names: raise SystemExit(f"required JAR entry missing: {name}")
+    notice=zf.read("META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt").decode("utf-8")
+    if "Copyright (c) 2026 balovich-matje" not in notice or "MIT License" not in notice: raise SystemExit("packaged Skill Proficiencies MIT notice invalid")
     forbidden=[name for name in names if name.endswith(".java") or name.startswith("tools/") or name.startswith(".github/")]
     if forbidden: raise SystemExit("development files leaked into JAR: "+", ".join(forbidden[:10]))
     metadata=zf.read("META-INF/neoforge.mods.toml").decode("utf-8")
