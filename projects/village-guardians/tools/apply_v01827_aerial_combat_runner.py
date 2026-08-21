@@ -16,13 +16,13 @@ def normalized_replace(text: str, old: str, new: str, label: str) -> str:
     # Importing the authored patch evaluates Java backslash-n literals inside Python strings.
     # Reconstruct only the two affected Java source anchors exactly.
     if label == "intel air detail":
-        old = '                    + "\\n" + direction\n                    + "\\n공성 병과: "\n'
+        old = '                    + "\\n" + direction\n                    + "\\n공성 병과: "'
         new = ('                    + "\\n" + direction\n'
                '                    + "\\n공중 위협: " + air\n'
-               '                    + "\\n공성 병과: "\n')
+               '                    + "\\n공성 병과: "')
     elif label == "intel report":
-        old = ('                + players + "명\\n주공·별동대·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."\n')
-        new = ('                + players + "명\\n주공·별동대·공중 위협·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."\n')
+        old = '                + players + "명\\n주공·별동대·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."'
+        new = '                + players + "명\\n주공·별동대·공중 위협·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."'
     return original(text, old, new, label)
 
 
