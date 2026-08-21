@@ -1,0 +1,146 @@
+name: Apply Village Guardians v0.18.31 Pretest Hardening
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  BUILD_VERSION: 0.18.31-alpha.1
+  EXPECTED_JAR: villageguardians-0.18.31-alpha.1.jar
+
+jobs:
+  integrate:
+    if: github.event.issue.title == 'Village Guardians v0.18.31 pretest hardening integrity'
+    name: Java 25 / NeoForge 26.2 pretest hardening acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Record integration run
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${PROJECT_DIR}/.ci"
+          printf 'status=RUNNING\nrun_id=%s\nbase_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "${PROJECT_DIR}/.ci/v01831-running.txt"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "${PROJECT_DIR}/.ci/v01831-running.txt"
+          git commit -m 'ci(village): record v0.18.31 integration start [skip ci]' || true
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+
+      - name: Apply authored pretest hardening migration
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: python3 tools/apply_v01831_pretest_hardening.py
+
+      - name: Check source patch
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: git diff --check
+
+      - name: Run all deterministic regression contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in tools/test_*.py; do
+            echo "=== $test ==="
+            python3 "$test"
+          done
+
+      - name: Clean Java 25 NeoForge build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
+
+      - name: Verify runtime JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/${EXPECTED_JAR}"
+          python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jar = Path('build/libs/villageguardians-0.18.31-alpha.1.jar')
+          with zipfile.ZipFile(jar) as zf:
+              names = set(zf.namelist())
+              toml = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
+          prefix = 'kr/moonseungjun/villageguardians/'
+          for cls in ('VillageFortressTerrain.class', 'VillageBuildingEnhancements.class',
+                      'VillageMercenaryDeploymentSystem.class', 'VillageMercenarySystem.class',
+                      'VillageWorldSystem.class', 'VillagePlacedTurretSystem.class'):
+              assert prefix + cls in names
+          assert '0.18.31-alpha.1' in toml
+          print('[PASS] final JAR contains four-side wall access and physical ranger wall deployment runtime')
+          PY
+
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-${{ env.BUILD_VERSION }}
+          path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit verified source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A "${PROJECT_DIR}"
+          git diff --cached --check
+          git commit -m 'fix(village): harden wall access before manual playtest [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Record final acceptance metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          cat > "${PROJECT_DIR}/.ci/v01831-final.txt" <<EOF
+          version=${BUILD_VERSION}
+          run_id=${GITHUB_RUN_ID}
+          source_sha=${SOURCE_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          EOF
+          rm -f "${PROJECT_DIR}/.ci/v01831-running.txt"
+          git add "${PROJECT_DIR}/.ci/v01831-final.txt" "${PROJECT_DIR}/.ci/v01831-running.txt"
+          git commit -m 'ci(village): record v0.18.31 acceptance [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
