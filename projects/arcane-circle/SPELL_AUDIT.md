@@ -1,4 +1,4 @@
-# Arcane Circle — 109 Spell Audit Queue (alpha.59)
+# Arcane Circle — 109 Spell Audit Queue (alpha.60)
 
 이 문서는 주문을 묶어서 '대충 동작'으로 보지 않고 하나씩 추적하기 위한 정본 감사 큐다.
 
@@ -22,7 +22,7 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 ## alpha.55 — 3써클 deep pass
 
-`ThirdCircleSpellService`가 3써클 10종을 전용 소유하고 NPC도 generic damage보다 먼저 같은 역할 경로를 사용한다. Fireball/Lightning은 고정 snapshot 공간을 사용하고, Fly/Haste/Dispel/Vampiric Touch/Slow/Energy Protection/Sleet/Blink가 전용 지속·해제 계약을 갖는다. alpha.59에서 Dispel은 4·5·6·7써클 유지 상태와 Etherealness/Simulacrum 같은 별도 고써클 권한까지 해제하도록 범위를 확장했다.
+`ThirdCircleSpellService`가 3써클 10종을 전용 소유하고 NPC도 generic damage보다 먼저 같은 역할 경로를 사용한다. Fireball/Lightning은 고정 snapshot 공간을 사용하고, Fly/Haste/Dispel/Vampiric Touch/Slow/Energy Protection/Sleet/Blink가 전용 지속·해제 계약을 갖는다. alpha.60에서 Dispel은 4·5·6·7·8써클 유지 상태와 Etherealness/Simulacrum 같은 별도 고써클 권한까지 해제하도록 범위를 확장했다.
 
 ## alpha.56 — 4써클 deep pass
 
@@ -64,6 +64,22 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 - `teleport`: release 때 고정한 목적지에서 안전한 발판·2블록 공간을 검색하고 가장 가까운 유효 착지점으로 이동한다. 발동 후 시선을 돌려 목적지가 바뀌거나 막힌 블록/공중에 강제로 박히지 않는다.
 - Dispel/Antimagic/logout/respawn/dimension/server stop에서 7써클 전용 상태를 정리하고, player Etherealness/Simulacrum 같은 별도 권한도 함께 해제한다.
 
+## alpha.60 — 8써클 deep pass
+
+`EighthCircleSpellService`가 8써클 10종을 7써클 다음의 전용 권한층으로 소유한다. 플레이어에서 이미 의미가 강한 Antimagic Field/Clone/Control Weather/Demiplane/Dominate Monster/Feeblemind/Maze는 재구현하지 않고 기존 전용 서비스에 위임하며, Earthquake/Incendiary Cloud/Sunburst는 generic 범위 피해에서 실제 유지형·전용 판정으로 승격했다. NPC 역시 8써클 전용 경로를 타며 역할상 불가능한 플레이어 전용 의미는 거짓 parity 대신 명시된 전투 역할로 처리한다.
+
+- `antimagic_field`: **preserved antimagic field**. 플레이어의 16초 실제 반마법장과 범위 내 Arcane 시전·유지 상태 지속 소거를 그대로 사용한다. NPC도 이동하는 반마법장을 유지해 안에 들어온 플레이어/NPC의 Arcane 시전과 유지 상태를 계속 끊는다.
+- `clone`: **preserved living clone**. 플레이어의 실제 대상 생명체 복제본·장비/전투 능력 복제 계약을 그대로 사용한다. NPC도 실제 Mob 복제체를 생성해 시전자의 현재 전투 목표를 지원하며 generic 버프나 일회성 부활 효과로 대체하지 않는다.
+- `control_weather`: 기존 45초 실제 폭우·뇌우와 G키 12연속 낙뢰 권한을 보존한다. NPC도 45초 동안 실제 뇌우를 만들고 주변 적대 대상에 주기적인 낙뢰를 호출한다.
+- `demiplane`: 플레이어의 **persistent demiplane**을 보존해 개인 주머니 공간과 귀환점·동행자·방 내부 블록/물품이 유지된다. NPC는 플레이어용 영속 방을 가짜로 만들지 않고 8초간 전장에서 빠져나오는 **NPC pocket-sanctuary role**을 사용한 뒤 기존 전투 상태를 복구한다.
+- `dominate_monster`: 기존 강력한 몬스터 전투 지배를 그대로 사용한다. NPC가 Mob을 지배하면 대상의 전투 목표를 시전자 편으로 재편하고, 플레이어를 대상으로 할 때는 가짜 진영 변경 대신 Arcane 시전 억제·전투 약화를 거는 casting/combat compulsion 역할을 수행한다.
+- `earthquake`: **maintained earthquake**. release 순간 고정된 지점을 중심으로 약 9초간 반복 지진을 유지해 넓은 범위 적에게 주기 피해·수직/외곽 충격을 준다. 플레이어 시전은 최초 충격과 같은 중심/반경의 실제 지형 파괴까지 연결한다.
+- `feeblemind`: 기존 약 35초 주문 회로 붕괴 의미를 보존한다. 대상은 이동 자체가 멈추지는 않지만 극심한 전투 약화와 Arcane 시전 봉쇄를 받으며 NPC 경로도 같은 지속 역할을 갖는다.
+- `incendiary_cloud`: **drifting incendiary cloud**. release 순간 진행 방향을 고정한 약 12초 소이 구름이 천천히 이동하며 내부 적에게 반복 피해와 화상을 준다. 단발 generic 폭발로 끝나지 않는다.
+- `maze`: 플레이어의 **preserved maze exile**을 그대로 유지해 대상 Mob을 약 18초 실제 전투에서 추방했다가 복귀시킨다. NPC 시전은 차원 이동을 거짓 구현하지 않고 대상의 충돌·공격·이동·Arcane 상호작용을 끊는 **NPC combat-exile role**로 18초간 전장에서 격리한 뒤 원래 상태를 복구한다.
+- `sunburst`: **dedicated sunburst**. 고정된 중심의 대형 태양광 폭발이 넓은 범위에 거리 감쇠 생명 피해를 주고 화상·장기 실명·발광을 남긴다.
+- Dispel/Antimagic/logout/respawn/dimension/server stop에서 8써클 전용 유지 상태를 정리하고, 유지형 8C의 월드 연출 시간도 서버 권한 지속시간과 맞춘다.
+
 ## Direct spells — deep audit order
 
 | Circle | Spell | S | R | T/V/D |
@@ -92,7 +108,7 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 | 3 | `lightning_bolt` | PASS | PASS | alpha.55 PASS · penetrating line + terrain |
 | 3 | `fly` | PASS | PASS | alpha.55 PASS · lifecycle-safe real flight |
 | 3 | `haste` | PASS | PASS | alpha.55 PASS · Arcane tempo accelerator |
-| 3 | `dispel_magic` | PASS | PASS | alpha.59 PASS · custom-state dispel through 7C |
+| 3 | `dispel_magic` | PASS | PASS | alpha.60 PASS · custom-state dispel through 8C |
 | 3 | `vampiric_touch` | PASS | PASS | alpha.55 PASS · actual-damage drain |
 | 3 | `slow` | PASS | PASS | alpha.55 PASS · persistent tempo field |
 | 3 | `protection_from_energy` | PASS | PASS | alpha.55 PASS · energy-only 5-charge ward |
@@ -138,16 +154,16 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 | 7 | `reverse_gravity` | PASS | PASS | alpha.59 PASS · maintained reverse gravity |
 | 7 | `simulacrum` | PASS | PASS | alpha.59 PASS · preserved commandable simulacrum |
 | 7 | `teleport` | PASS | PASS | alpha.59 PASS · locked safe teleport |
-| 8 | `antimagic_field` | PASS | PASS | next |
-| 8 | `clone` | PASS | PASS | alpha.52 T FIXED; V/D next |
-| 8 | `control_weather` | PASS | PASS | next |
-| 8 | `demiplane` | PASS | PASS | next |
-| 8 | `dominate_monster` | PASS | PASS | next |
-| 8 | `earthquake` | PASS | PASS | next |
-| 8 | `feeblemind` | PASS | PASS | next |
-| 8 | `incendiary_cloud` | PASS | PASS | next |
-| 8 | `maze` | PASS | PASS | next |
-| 8 | `sunburst` | PASS | PASS | next |
+| 8 | `antimagic_field` | PASS | PASS | alpha.60 PASS · preserved antimagic field |
+| 8 | `clone` | PASS | PASS | alpha.60 PASS · preserved living clone |
+| 8 | `control_weather` | PASS | PASS | alpha.60 PASS · preserved real weather authority |
+| 8 | `demiplane` | PASS | PASS | alpha.60 PASS · persistent demiplane / NPC pocket-sanctuary role |
+| 8 | `dominate_monster` | PASS | PASS | alpha.60 PASS · preserved combat domination |
+| 8 | `earthquake` | PASS | PASS | alpha.60 PASS · maintained earthquake + terrain |
+| 8 | `feeblemind` | PASS | PASS | alpha.60 PASS · preserved spellbreaking feeblemind |
+| 8 | `incendiary_cloud` | PASS | PASS | alpha.60 PASS · drifting incendiary cloud |
+| 8 | `maze` | PASS | PASS | alpha.60 PASS · preserved maze exile / NPC combat-exile role |
+| 8 | `sunburst` | PASS | PASS | alpha.60 PASS · dedicated sunburst |
 | 9 | `meteor_swarm` | PASS | PASS | next |
 | 9 | `power_word_kill` | PASS | PASS | next |
 | 9 | `prismatic_wall` | PASS | PASS | next |
@@ -185,4 +201,4 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 ## CI enforcement
 
-`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1~7써클 전용 권한 순서와 NPC parity, player/NPC Globe 1~5써클 경계 차단, Mass Suggestion behavioral retreat, material Disintegrate, physical Move Earth, persistent True Seeing, maintained Eyebite fear, casting-block Petrification, weak-ordinary Circle of Death, alpha.59의 locked delayed detonation / preserved ethereal phase / six-pillar fire storm / preserved physical forcecage / preserved cross-dimension plane shift / seven independent prism rays / maintained reverse gravity / preserved commandable simulacrum / locked safe teleport / NPC planar disengage role, Dispel/Antimagic/lifecycle cleanup, 그리고 alpha.49~58의 기존 계약 회귀를 실패 조건으로 둔다.
+`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1~8써클 전용 권한 순서와 NPC parity, player/NPC Globe 1~5써클 경계 차단, Mass Suggestion behavioral retreat, material Disintegrate, physical Move Earth, persistent True Seeing, maintained Eyebite fear, casting-block Petrification, weak-ordinary Circle of Death, alpha.59의 locked delayed detonation / preserved ethereal phase / six-pillar fire storm / preserved physical forcecage / preserved cross-dimension plane shift / seven independent prism rays / maintained reverse gravity / preserved commandable simulacrum / locked safe teleport / NPC planar disengage role, alpha.60의 preserved antimagic field / preserved living clone / real Control Weather / persistent demiplane / preserved Dominate Monster / maintained earthquake / preserved Feeblemind / drifting incendiary cloud / preserved maze exile / dedicated sunburst / NPC pocket-sanctuary role / NPC combat-exile role, Dispel/Antimagic/lifecycle cleanup, 그리고 alpha.49~59의 기존 계약 회귀를 실패 조건으로 둔다.
