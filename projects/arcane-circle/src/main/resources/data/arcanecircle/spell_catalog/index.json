@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.57",
+  "version": "0.12.1-alpha.58",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -84,5 +84,12 @@
     "allied_mass_cure","restoring_physical_passwall","person_scale_combat_domination",
     "casting_break_insect_plague"
   ],
-  "fifth_circle_npc_parity": true
+  "fifth_circle_npc_parity": true,
+  "sixth_circle_deep_audit": [
+    "material_disintegrate_ray","npc_parity_invulnerability_globe","behavioral_mass_suggestion",
+    "physical_move_earth","piercing_sunbeam","persistent_true_seeing",
+    "fixed_freezing_sphere","fear_weakness_eyebite","casting_block_petrification",
+    "weak_enemy_circle_of_death"
+  ],
+  "sixth_circle_npc_parity": true
 }
