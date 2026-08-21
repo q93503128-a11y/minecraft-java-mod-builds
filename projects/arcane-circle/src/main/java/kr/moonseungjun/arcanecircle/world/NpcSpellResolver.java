@@ -3,6 +3,7 @@ package kr.moonseungjun.arcanecircle.world;
 import kr.moonseungjun.arcanecircle.magic.ArcaneDamage;
 import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
+import kr.moonseungjun.arcanecircle.magic.DeathDoctrineService;
 import kr.moonseungjun.arcanecircle.magic.EighthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FifthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FirstCircleSpellService;
@@ -53,6 +54,12 @@ final class NpcSpellResolver {
         if (SixthCircleSpellService.intercepts(caster, spell, snapshot, range)) return false;
         if (HighWardSpellService.intercepts(caster, spell, snapshot, range)) return false;
         if (NinthCircleSpellService.intercepts(caster, snapshot)) return false;
+
+        // Alpha.62 resolves the death family before the old circle coordinators so NPC parity
+        // follows the same 6C erosion -> 7C soul rupture -> 9C execution hierarchy as players.
+        if (DeathDoctrineService.handles(spell.id()))
+            return DeathDoctrineService.executeNpc(level, caster, target, spell.id(), range, power, snapshot);
+
         if (FirstCircleSpellService.handles(spell.id()))
             return FirstCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
         if (SecondCircleSpellService.handles(spell.id()))

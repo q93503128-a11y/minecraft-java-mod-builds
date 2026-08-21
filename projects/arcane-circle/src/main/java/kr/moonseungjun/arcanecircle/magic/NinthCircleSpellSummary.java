@@ -1,13 +1,13 @@
 package kr.moonseungjun.arcanecircle.magic;
 
-/** Detailed grimoire mechanics for the ten ninth-circle spells after the alpha.61 deep pass. */
+/** Detailed grimoire mechanics for the ninth-circle authority after the alpha.62 prestige pass. */
 public final class NinthCircleSpellSummary {
     private NinthCircleSpellSummary() {}
 
     public static String summary(String id) {
         return switch (id) {
-            case "meteor_swarm" -> "릴리즈 순간 고정한 하나의 전장에 seeded 연속 운석 폭격을 수행합니다. 각 운석은 보이는 착탄점과 동일한 범위에 거리 감쇠 피해·화상·충격을 주며, 플레이어 시전은 운석 체급에 맞춘 실제 크레이터를 남깁니다.";
-            case "power_word_kill" -> "릴리즈 순간 고정한 단일 생명체만 판정합니다. 현재 체력+흡수량이 권능어의 처형 임계 이하일 때 압도적 사멸 피해를 가하며, 대상이 사라졌다고 다른 적을 재조준하지 않습니다.";
+            case "meteor_swarm" -> "고정한 하나의 전장을 15발의 seeded 운석으로 연속 파쇄한 뒤 마지막 Crown Meteor가 한 박자 늦게 중심권에 낙하합니다. 각 보이는 착탄점은 동일한 피해·화상·충격을 가지며, 플레이어 시전은 일반 크레이터와 별도로 최종 광역 소멸 분지까지 실제 지형에 남깁니다.";
+            case "power_word_kill" -> "9써클의 유일한 법칙 처형입니다. 릴리즈 순간 고정한 단일 생명체의 현재 체력+흡수량이 높은 처형 역치 이하라면 즉시 압도적 사멸 피해를 가합니다. 역치보다 강한 대상도 무효가 되지 않고 대형 직접 피해와 생명 붕괴를 받으며, 대상 소실 시 다른 적으로 재조준하지 않습니다.";
             case "prismatic_wall" -> "20초 동안 7겹 프리즘 전선을 유지합니다. 적은 벽을 몸으로 통과하기 어렵고 층마다 화염·극저온·전격 표식·위더/쇠약·암흑·강제 둔화·생명 충격 중 서로 다른 효과를 받으며, 적대 Arcane 궤적도 실제로 차단합니다.";
             case "shapechange" -> "기존 초월 육체 계약을 보존합니다. 90초 동안 강화·가속·재생과 50% 일반 피해 감쇠를 유지합니다. NPC도 같은 체급의 유지형 초월 육체와 피해 감쇠를 얻습니다.";
             case "time_stop" -> "기존 실제 시간 정지 권한을 보존합니다. 약 8초 동안 고정 범위의 비아군 AI·이동·비생명 이동체·Arcane 시전을 정지시키고 종료 시 원래 AI·속도·중력 상태를 복원합니다. NPC 시전도 같은 시간장 역할을 가집니다.";

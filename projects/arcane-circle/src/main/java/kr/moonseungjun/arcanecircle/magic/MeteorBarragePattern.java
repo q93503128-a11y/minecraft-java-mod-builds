@@ -20,7 +20,9 @@ public final class MeteorBarragePattern {
             new Strike(11.1, 4.1, 42, 1.02, 41), new Strike(-8.7, .9, 45, .76, 33),
             new Strike(3.3, 7.2, 48, .88, 36), new Strike(.1, -2.3, 51, 1.12, 43),
             new Strike(-5.6, -9.2, 55, .84, 34), new Strike(9.5, -8.1, 59, .94, 39),
-            new Strike(-11.4, 8.2, 63, .80, 33), new Strike(5.2, -.8, 68, 1.18, 44)
+            new Strike(-11.4, 8.2, 63, .88, 35),
+            // The final crown meteor is a separate ninth-circle event, not merely strike sixteen.
+            new Strike(0.0, 0.0, 74, 2.04, 58)
     };
     private static final ThreadLocal<Long> ACTIVE_SEED = new ThreadLocal<>();
     private static final double MIN_SEPARATION = 2.15;
@@ -28,6 +30,8 @@ public final class MeteorBarragePattern {
     private MeteorBarragePattern() {}
 
     public static int count() { return BASE_STRIKES.length; }
+    public static int crownIndex() { return BASE_STRIKES.length - 1; }
+    public static boolean isCrownStrike(int index) { return index == crownIndex(); }
 
     public static List<Strike> strikes() {
         Long seed = ACTIVE_SEED.get();
@@ -44,19 +48,30 @@ public final class MeteorBarragePattern {
         int previousTick = 0;
         for (int index = 0; index < BASE_STRIKES.length; index++) {
             Strike base = BASE_STRIKES[index];
+            boolean crown = isCrownStrike(index);
             double rotatedX = base.offsetX() * cos - base.offsetZ() * sin;
             double rotatedZ = base.offsetX() * sin + base.offsetZ() * cos;
-            double x = rotatedX + (random.nextDouble() - .5) * 1.10;
-            double z = rotatedZ + (random.nextDouble() - .5) * 1.10;
-            if (tooClose(result, x, z)) {
+            double jitter = crown ? .36 : 1.10;
+            double x = rotatedX + (random.nextDouble() - .5) * jitter;
+            double z = rotatedZ + (random.nextDouble() - .5) * jitter;
+            if (!crown && tooClose(result, x, z)) {
                 x = rotatedX;
                 z = rotatedZ;
             }
-            double rhythm = index >= 12 ? 1.08 + (index - 12) * .03 : 1.0;
-            double scale = clamp(base.scale() * (.93 + random.nextDouble() * .14) * rhythm, .62, 1.46);
-            double fallHeight = clamp(base.fallHeight() + (random.nextDouble() - .5) * 7.0, 27.0, 48.0);
-            int tick = base.impactTick() + random.nextInt(3) - 1;
-            tick = Math.max(index == 0 ? 16 : previousTick + 2, tick);
+            double scale;
+            double fallHeight;
+            int tick;
+            if (crown) {
+                scale = clamp(base.scale() * (.97 + random.nextDouble() * .06), 1.94, 2.16);
+                fallHeight = clamp(base.fallHeight() + (random.nextDouble() - .5) * 5.0, 54.0, 64.0);
+                tick = Math.max(previousTick + 8, base.impactTick() + random.nextInt(3) - 1);
+            } else {
+                double rhythm = index >= 12 ? 1.08 + (index - 12) * .03 : 1.0;
+                scale = clamp(base.scale() * (.93 + random.nextDouble() * .14) * rhythm, .62, 1.46);
+                fallHeight = clamp(base.fallHeight() + (random.nextDouble() - .5) * 7.0, 27.0, 48.0);
+                tick = base.impactTick() + random.nextInt(3) - 1;
+                tick = Math.max(index == 0 ? 16 : previousTick + 2, tick);
+            }
             previousTick = tick;
             result.add(new Strike(x, z, tick, scale, fallHeight));
         }
@@ -77,8 +92,8 @@ public final class MeteorBarragePattern {
     public static int firstImpactTick(long seed) { return strikes(seed).getFirst().impactTick(); }
     public static int lastImpactTick() { return strikes().getLast().impactTick(); }
     public static int lastImpactTick(long seed) { return strikes(seed).getLast().impactTick(); }
-    public static int durationTicks() { return lastImpactTick() + 12; }
-    public static int durationTicks(long seed) { return lastImpactTick(seed) + 12; }
+    public static int durationTicks() { return lastImpactTick() + 16; }
+    public static int durationTicks(long seed) { return lastImpactTick(seed) + 16; }
 
     public static Vec3 position(Vec3 center, Strike strike) {
         return center.add(strike.offsetX(), 0.0, strike.offsetZ());

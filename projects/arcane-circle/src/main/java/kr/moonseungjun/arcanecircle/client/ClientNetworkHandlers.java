@@ -22,7 +22,7 @@ public final class ClientNetworkHandlers {
         ArcaneClientState.update(payload.snapshot());
         if ("sync".equals(payload.page())) return;
         if ("atlas".equals(payload.page()) || "academy".equals(payload.page())) {
-            Minecraft.getInstance().gui.setScreen(new PrimaryGrimoireScreen(payload.page()));
+            Minecraft.getInstance().gui.setScreen(new ReadableGrimoireScreen(payload.page()));
         } else {
             Minecraft.getInstance().gui.setScreen(new GrimoireScreen(payload.page()));
         }

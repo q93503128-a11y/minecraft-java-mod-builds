@@ -4,6 +4,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
 import kr.moonseungjun.arcanecircle.magic.EighthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
+import kr.moonseungjun.arcanecircle.magic.MeteorCataclysmService;
 import kr.moonseungjun.arcanecircle.magic.NinthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.WorldMagicService;
 import net.minecraft.server.level.ServerLevel;
@@ -63,9 +64,14 @@ public final class NpcMeteorBarrageService {
                 MeteorBarragePattern.Strike strike = MeteorBarragePattern.strike(
                         barrage.targetSnapshot().barrageSeed(), next);
                 if (elapsed < strike.impactTick()) break;
-                NinthCircleSpellService.resolveNpcMeteorImpact(level, caster,
+                boolean executed = NinthCircleSpellService.resolveNpcMeteorImpact(level, caster,
                         barrage.targetSnapshot().target(), barrage.power(), next,
                         barrage.targetSnapshot().barrageSeed());
+                if (executed && MeteorBarragePattern.isCrownStrike(next)) {
+                    MeteorCataclysmService.crownImpactNpc(level, caster,
+                            barrage.targetSnapshot().target(), barrage.power(),
+                            barrage.targetSnapshot().barrageSeed());
+                }
                 next++;
             }
             if (next >= MeteorBarragePattern.count()) iterator.remove();

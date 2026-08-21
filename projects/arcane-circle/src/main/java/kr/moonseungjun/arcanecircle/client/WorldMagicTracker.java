@@ -29,8 +29,8 @@ public final class WorldMagicTracker {
     private static final Map<UUID, Visual> CHARGES = new HashMap<>();
     private static final List<Visual> RELEASES = new ArrayList<>();
     private static final int MAX_VISUALS = 32;
-    private static final int MAX_FRAME = 14500;
-    private static final int MAX_ENTRY = 4000;
+    private static final int MAX_FRAME = 20000;
+    private static final int MAX_ENTRY = 4600;
     private static final double MAX_DISTANCE_SQR = 224.0 * 224.0;
     private static final double DETAIL_DISTANCE_SQR = 96.0 * 96.0;
     private static final double SILHOUETTE_DISTANCE_SQR = 160.0 * 160.0;
@@ -137,6 +137,11 @@ public final class WorldMagicTracker {
             ArcaneWorldMesh authoredBody=MeteorBarragePattern.withSeed(v.seed,
                     ()->ArcaneSpellVisualOverhaul.chargeBody(v.spell,v.direction,targetOffset(v),v.progress,v.range,v.startedAt));
             if(authoredBody.size()>0)entries.add(new RenderEntry(center,authoredBody,color,64,1.0F));
+
+            ArcaneWorldMesh scaleEnvelope=MeteorBarragePattern.withSeed(v.seed,
+                    ()->CircleScaleEnvelope.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.startedAt));
+            if(scaleEnvelope.size()>0)entries.add(new RenderEntry(center,scaleEnvelope,color,72,1.0F));
+
             if(v.spell.circle()>=7){
                 if(!HighCircleMaintenanceOverlay.replacesChargeTimeline(v.spell)){
                     ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
@@ -145,6 +150,9 @@ public final class WorldMagicTracker {
                 }
                 ArcaneWorldMesh staging=HighCircleMaintenanceOverlay.charge(v.spell,v.direction,targetOffset(v),v.progress,v.startedAt,v.seed);
                 if(staging.size()>0)entries.add(new RenderEntry(center,staging,color,102,1.0F));
+                ArcaneWorldMesh prestige=MeteorBarragePattern.withSeed(v.seed,
+                        ()->HighCirclePrestigeOverlay.charge(v.spell,v.direction,targetOffset(v),v.range,v.progress,v.startedAt,v.seed));
+                if(prestige.size()>0)entries.add(new RenderEntry(center,prestige,color,112,1.0F));
             }
         }
         for(Visual v:RELEASES){
@@ -173,6 +181,11 @@ public final class WorldMagicTracker {
                         ()->ArcaneSpellVisualOverhaul.release(v.spell,v.direction,targetOffset(v),v.range,v.power,
                                 age,elapsedSeconds,durationSeconds,v.seed));
                 if(authoredRelease.size()>0)entries.add(new RenderEntry(center,authoredRelease,color,82,opacity));
+
+                ArcaneWorldMesh scaleEnvelope=MeteorBarragePattern.withSeed(v.seed,
+                        ()->CircleScaleEnvelope.release(v.spell,v.direction,targetOffset(v),v.range,elapsedSeconds));
+                if(scaleEnvelope.size()>0)entries.add(new RenderEntry(center,scaleEnvelope,color,86,opacity));
+
                 if(v.spell.circle()>=7){
                     ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
                             ()->AuthoredHighCircleTimeline.release(v.spell,v.direction,targetOffset(v),v.range,
@@ -181,6 +194,10 @@ public final class WorldMagicTracker {
                     ArcaneWorldMesh maintenance=HighCircleMaintenanceOverlay.release(v.spell,v.direction,targetOffset(v),
                             elapsedSeconds,durationSeconds,v.seed);
                     if(maintenance.size()>0)entries.add(new RenderEntry(center,maintenance,color,108,opacity));
+                    ArcaneWorldMesh prestige=MeteorBarragePattern.withSeed(v.seed,
+                            ()->HighCirclePrestigeOverlay.release(v.spell,v.direction,targetOffset(v),v.range,
+                                    elapsedSeconds,durationSeconds,v.seed));
+                    if(prestige.size()>0)entries.add(new RenderEntry(center,prestige,color,114,opacity));
                 }
             }
             if(regalia){
