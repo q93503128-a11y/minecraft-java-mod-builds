@@ -1,12 +1,16 @@
 package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-/** Keeps far-regional settlement streaming isolated from the already crowded central dispatcher. */
+/** Keeps far-regional settlement streaming and village society isolated from the central dispatcher. */
 @EventBusSubscriber(modid = LivingKingdoms.MOD_ID)
 public final class ErdenRegionalSettlementEventBridge {
     private ErdenRegionalSettlementEventBridge() {
@@ -20,5 +24,19 @@ public final class ErdenRegionalSettlementEventBridge {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         ErdenRegionalSettlementManager.onServerTick(event);
+        ErdenRegionalSocietyManager.onServerTick(event);
+    }
+
+    @SubscribeEvent
+    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        ErdenRegionalSocietyManager.handleInteraction(event);
+    }
+
+    @SubscribeEvent
+    public static void onLivingDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof Villager villager
+                && villager.level() instanceof ServerLevel level) {
+            ErdenRegionalSocietyManager.markDeadIfResident(level, villager);
+        }
     }
 }
