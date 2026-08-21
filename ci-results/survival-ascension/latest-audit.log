@@ -4,4 +4,4 @@ SOURCE AUDIT PASS
 - mining: tool-scoped speed + 3x3/5x5/7x7
 - woodcutting: tool-scoped speed + 16/48/128/256 connected-log scaling
 - client snapshot/update payloads + recent-skill XP HUD
-- Skill Proficiencies MIT notice retained; Project MMO remains reference-only
+- Skill Proficiencies MIT notice retained in source and packaged JAR; Project MMO remains reference-only
