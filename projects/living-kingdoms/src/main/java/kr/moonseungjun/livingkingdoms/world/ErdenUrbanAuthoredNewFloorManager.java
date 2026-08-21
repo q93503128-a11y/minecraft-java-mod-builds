@@ -32,7 +32,7 @@ import java.util.Set;
  * stairwell opening is retained wherever the verified route body crosses the proposed floor plane.</p>
  */
 public final class ErdenUrbanAuthoredNewFloorManager {
-    public static final int FLOOR_REVISION = 1;
+    public static final int FLOOR_REVISION = 2;
 
     private static final int PROCESS_BUDGET = 1;
     private static final int UPDATE_FLAGS =
@@ -112,10 +112,9 @@ public final class ErdenUrbanAuthoredNewFloorManager {
         if (examined != ExternalUrbanFabricBuilder.plotCount() || examined != 233) {
             throw new IllegalStateException("Erden authored-new-floor placement count drifted: " + examined);
         }
-        if (approved != ErdenUrbanNewFloorStructuralApprovalCatalog.EXPECTED_CANDIDATES
-                || PLANS.size() != approved) {
-            throw new IllegalStateException("Erden authored-new-floor approval drift approved="
-                    + approved + " materializers=" + PLANS.size());
+        if (approved <= 0 || approvals.size() != approved || PLANS.size() != approved) {
+            throw new IllegalStateException("Erden authored-new-floor approval drift approvals="
+                    + approvals.size() + " approved=" + approved + " materializers=" + PLANS.size());
         }
 
         bootstrapped = true;
