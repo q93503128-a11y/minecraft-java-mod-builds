@@ -30,8 +30,6 @@ public final class SpellKineticsService {
         CastTargetSnapshot targetSnapshot = WorldMagicService.captureSnapshot(player, cast.spell(), cast.range());
         WorldMagicService.release(player, cast, targetSnapshot);
 
-        // Direct field ownership is retained for non-8C/non-9C specials only. 8C/9C must pass
-        // through their circle coordinators so their deep-pass contracts remain auditable.
         if (ArcaneFieldService.handles(cast.spell().id())
                 && !EighthCircleSpellService.handles(cast.spell().id())
                 && !NinthCircleSpellService.handles(cast.spell().id())) {
@@ -42,14 +40,13 @@ public final class SpellKineticsService {
             return executed;
         }
 
-        // Meteor Swarm keeps its authored seeded stagger. Each actual impact is resolved by 9C.
         if ("meteor_swarm".equals(cast.spell().id())) {
             MeteorBarragePattern.Strike first = MeteorBarragePattern.strike(targetSnapshot.barrageSeed(), 0);
             enqueue(player, new PendingCast(cast, growthSnapshot, targetSnapshot,
                     clock(player) + first.impactTick(), 0, MeteorBarragePattern.count(),
                     cast.power(), false, 0));
             ArcaneNoticeService.push(player, Component.literal(
-                    "§6[운석 폭격] §f" + MeteorBarragePattern.count() + "발 연속 낙하"), 75);
+                    "§6[운석 폭격] §f15발 전장 파쇄 후 Crown Meteor 종말 낙하"), 82);
             return true;
         }
 
@@ -149,8 +146,6 @@ public final class SpellKineticsService {
         if (spell != null && HighWardSpellService.intercepts(player, spell, targetSnapshot, range)) return false;
         if (NinthCircleSpellService.intercepts(player, targetSnapshot)) return false;
 
-        // Alpha.62 death doctrine is deliberately resolved before 6C/7C/9C legacy handlers.
-        // This guarantees exactly one execution spell: 9C Power Word Kill.
         if (DeathDoctrineService.handles(spellId)) {
             return targetSnapshot.executeLocked(player,
                     () -> DeathDoctrineService.execute(player, spellId, range, power, targetSnapshot));
@@ -257,6 +252,10 @@ public final class SpellKineticsService {
                         () -> NinthCircleSpellService.meteorImpact(player,
                                 pending.targetSnapshot().target(), pending.pulsePower(),
                                 pending.pulseIndex(), seed));
+                if (executed && MeteorBarragePattern.isCrownStrike(pending.pulseIndex())) {
+                    MeteorCataclysmService.crownImpact(player, pending.targetSnapshot().target(),
+                            pending.pulsePower(), seed);
+                }
             } else {
                 executed = executeLocked(player, pending.targetSnapshot(), pending.cast().spell().id(),
                         pending.cast().range(), pending.pulsePower());
