@@ -3,5 +3,3 @@ Daemon will be stopped at the end of the build
 
 > Configure project :
 Creating Minecraft artifacts without recompilation.
-
-> Task :clean UP-TO-DATE
