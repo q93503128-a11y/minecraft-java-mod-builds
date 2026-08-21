@@ -1,0 +1,3 @@
+workflow=.github/workflows/apply-village-guardians-v01829.yml
+patch=tools/apply_v01829_battlefield_readability.py
+test=tools/test_v01829_battlefield_readability.py
