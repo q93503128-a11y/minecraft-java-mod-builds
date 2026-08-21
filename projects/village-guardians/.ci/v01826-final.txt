@@ -1,0 +1,6 @@
+version=0.18.26-alpha.1
+run_id=32439280648
+source_sha=c37120c23ca54601d67da3249928fa9176efbd05
+jar_name=villageguardians-0.18.26-alpha.1.jar
+jar_sha256=dbbed7eac048ec14f404959d87f1df1c24343fc4069136d91ed4e123ee8cbdb1
+jar_size=946140
