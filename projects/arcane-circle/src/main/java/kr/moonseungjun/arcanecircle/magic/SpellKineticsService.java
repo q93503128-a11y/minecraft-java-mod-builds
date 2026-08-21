@@ -149,6 +149,13 @@ public final class SpellKineticsService {
         if (spell != null && HighWardSpellService.intercepts(player, spell, targetSnapshot, range)) return false;
         if (NinthCircleSpellService.intercepts(player, targetSnapshot)) return false;
 
+        // Alpha.62 death doctrine is deliberately resolved before 6C/7C/9C legacy handlers.
+        // This guarantees exactly one execution spell: 9C Power Word Kill.
+        if (DeathDoctrineService.handles(spellId)) {
+            return targetSnapshot.executeLocked(player,
+                    () -> DeathDoctrineService.execute(player, spellId, range, power, targetSnapshot));
+        }
+
         boolean firstCircleOwned = FirstCircleSpellService.handles(spellId);
         boolean secondCircleOwned = !firstCircleOwned && SecondCircleSpellService.handles(spellId);
         boolean thirdCircleOwned = !firstCircleOwned && !secondCircleOwned && ThirdCircleSpellService.handles(spellId);
