@@ -27,7 +27,7 @@ import java.util.Set;
  * cells, so doors, facade, roof and authored decoration remain authoritative.
  */
 public final class ErdenCitadelInteriorManager {
-    public static final int INTERIOR_REVISION = 2;
+    public static final int INTERIOR_REVISION = 3;
 
     private static final int PROCESS_INTERVAL = 20;
     private static final int PROCESS_BUDGET = 1;
@@ -111,7 +111,7 @@ public final class ErdenCitadelInteriorManager {
                 FAILED_SCANS.remove(zone.id);
                 processed++;
                 LivingKingdoms.LOGGER.info(
-                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} required={} enclosed=true furnishing_connected=true facade_replaced=false",
+                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} required={} enclosed=true furnishing_connected=true unique_fixture_cells=true facade_replaced=false",
                         zone.id, result.anchor.x, result.anchor.floorY + 1, result.anchor.z,
                         result.fixtures, required);
             } catch (Throwable throwable) {
@@ -210,9 +210,12 @@ public final class ErdenCitadelInteriorManager {
         if (anchor == null) return null;
 
         Set<Long> furnishingCells = collectConnectedFurnishingCells(level, site, anchor);
+        Set<Long> claimedFixtureCells = new HashSet<>();
         int fixtures = 0;
         for (Fixture fixture : zone.fixtures) {
-            if (ensureFixture(level, site, anchor, fixture, furnishingCells)) fixtures++;
+            if (ensureFixture(level, site, anchor, fixture, furnishingCells, claimedFixtureCells)) {
+                fixtures++;
+            }
         }
         return new ZoneResult(anchor, fixtures);
     }
@@ -310,7 +313,8 @@ public final class ErdenCitadelInteriorManager {
             RealmSiteLayoutSavedData.RealmSite site,
             Anchor anchor,
             Fixture fixture,
-            Set<Long> furnishingCells) {
+            Set<Long> furnishingCells,
+            Set<Long> claimedFixtureCells) {
         int preferredX = anchor.x + fixture.dx;
         int preferredZ = anchor.z + fixture.dz;
         for (int radius = 0; radius <= FIXTURE_SEARCH_RADIUS; radius++) {
@@ -321,6 +325,8 @@ public final class ErdenCitadelInteriorManager {
                     int z = preferredZ + dz;
                     if (x == anchor.x && z == anchor.z) continue;
                     if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) continue;
+                    long fixtureKey = furnishingKey(x, z);
+                    if (claimedFixtureCells.contains(fixtureKey)) continue;
                     BlockPos floor = new BlockPos(x, anchor.floorY, z);
                     BlockPos feet = floor.above();
                     BlockPos head = feet.above();
@@ -328,10 +334,14 @@ public final class ErdenCitadelInteriorManager {
                     if (!level.getBlockState(head).isAir()) continue;
                     Block current = level.getBlockState(feet).getBlock();
                     if (current == fixture.block
-                            && touchesConnectedFurnishingCell(x, z, furnishingCells)) return true;
+                            && touchesConnectedFurnishingCell(x, z, furnishingCells)) {
+                        claimedFixtureCells.add(fixtureKey);
+                        return true;
+                    }
                     if (!level.getBlockState(feet).isAir()) continue;
-                    if (!furnishingCells.contains(furnishingKey(x, z))) continue;
+                    if (!furnishingCells.contains(fixtureKey)) continue;
                     level.setBlock(feet, fixture.block.defaultBlockState(), UPDATE_FLAGS);
+                    claimedFixtureCells.add(fixtureKey);
                     return true;
                 }
             }
@@ -429,7 +439,7 @@ public final class ErdenCitadelInteriorManager {
         int fixtureCount = SESSION_RESULTS.values().stream().mapToInt(result -> result.fixtures).sum();
         ciPassLogged = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true door_blocks={} perimeter_starts={} walk_nodes={} enclosed=true furnishing_connected=true facade_replaced=false loaded_only=true",
+                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true door_blocks={} perimeter_starts={} walk_nodes={} enclosed=true furnishing_connected=true unique_fixture_cells=true facade_replaced=false loaded_only=true",
                 ZONES.size(), fixtureCount, traversal.doorBlocks, traversal.perimeterStarts,
                 traversal.visitedNodes);
         releaseCiTicket(level);
