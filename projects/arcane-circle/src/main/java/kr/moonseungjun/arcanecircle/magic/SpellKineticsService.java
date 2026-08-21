@@ -55,6 +55,7 @@ public final class SpellKineticsService {
                 || SecondCircleSpellService.handles(cast.spell().id())
                 || ThirdCircleSpellService.handles(cast.spell().id())
                 || FourthCircleSpellService.handles(cast.spell().id())
+                || FifthCircleSpellService.handles(cast.spell().id())
                 || PlanarSpellService.handles(cast.spell().id()) || SimulacrumService.handles(cast.spell().id())
                 || HighUtilitySpellService.handles(cast.spell().id()) || HighWardSpellService.handles(cast.spell().id())
                 || HighControlSpellService.handles(cast.spell().id()) || SpellGameplayService.handles(cast.spell().id())) {
@@ -132,6 +133,7 @@ public final class SpellKineticsService {
                                          String spellId, double range, double power) {
         if (ArcaneFieldService.blocksCasting(player)) return false;
         SpellDefinition spell = SpellCatalog.spell(spellId).orElse(null);
+        if (FifthCircleSpellService.intercepts(player, targetSnapshot)) return false;
         if (spell != null && HighWardSpellService.intercepts(player, spell, targetSnapshot, range)) return false;
 
         boolean firstCircleOwned = FirstCircleSpellService.handles(spellId);
@@ -139,25 +141,28 @@ public final class SpellKineticsService {
         boolean thirdCircleOwned = !firstCircleOwned && !secondCircleOwned && ThirdCircleSpellService.handles(spellId);
         boolean fourthCircleOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned
                 && FourthCircleSpellService.handles(spellId);
+        boolean fifthCircleOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
+                && FifthCircleSpellService.handles(spellId);
         boolean planarOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && PlanarSpellService.handles(spellId);
+                && !fifthCircleOwned && PlanarSpellService.handles(spellId);
         boolean simulacrumOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !planarOwned && SimulacrumService.handles(spellId);
+                && !fifthCircleOwned && !planarOwned && SimulacrumService.handles(spellId);
         boolean utilityOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !planarOwned && !simulacrumOwned && HighUtilitySpellService.handles(spellId);
+                && !fifthCircleOwned && !planarOwned && !simulacrumOwned && HighUtilitySpellService.handles(spellId);
         boolean wardOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !planarOwned && !simulacrumOwned && !utilityOwned && HighWardSpellService.handles(spellId);
+                && !fifthCircleOwned && !planarOwned && !simulacrumOwned && !utilityOwned && HighWardSpellService.handles(spellId);
         boolean controlOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned
+                && !fifthCircleOwned && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned
                 && HighControlSpellService.handles(spellId);
         boolean gameplayOwned = !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned && !controlOwned
+                && !fifthCircleOwned && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned && !controlOwned
                 && SpellGameplayService.handles(spellId);
         boolean executed = targetSnapshot.executeLocked(player, () -> firstCircleOwned
                 ? FirstCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : secondCircleOwned ? SecondCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : thirdCircleOwned ? ThirdCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : fourthCircleOwned ? FourthCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
+                : fifthCircleOwned ? FifthCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : planarOwned ? PlanarSpellService.execute(player, spellId)
                 : simulacrumOwned ? SimulacrumService.execute(player, targetSnapshot)
                 : utilityOwned ? HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)
@@ -166,7 +171,8 @@ public final class SpellKineticsService {
                 : gameplayOwned ? SpellGameplayService.execute(player, spellId, range, power, targetSnapshot)
                 : SpellCastingService.executeResolved(player, spellId, range, power));
         if (executed && !firstCircleOwned && !secondCircleOwned && !thirdCircleOwned && !fourthCircleOwned
-                && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned && !controlOwned && !gameplayOwned) {
+                && !fifthCircleOwned && !planarOwned && !simulacrumOwned && !utilityOwned && !wardOwned
+                && !controlOwned && !gameplayOwned) {
             DestructiveMagicService.applyPhysicalAftermath(player, spellId, targetSnapshot, range, power);
         }
         return executed;
