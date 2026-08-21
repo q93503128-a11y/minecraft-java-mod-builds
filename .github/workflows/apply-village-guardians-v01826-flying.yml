@@ -1,0 +1,554 @@
+name: Apply Village Guardians v0.18.26 Flying Assault
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  BUILD_VERSION: 0.18.26-alpha.1
+  EXPECTED_JAR: villageguardians-0.18.26-alpha.1.jar
+
+jobs:
+  integrate:
+    if: github.event.issue.title == 'Village Guardians v0.18.26 flying assault and turret roles'
+    name: Java 25 / NeoForge 26.2 flying assault acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record integration run
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${PROJECT_DIR}/.ci"
+          printf 'status=RUNNING\nrun_id=%s\nbase_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "${PROJECT_DIR}/.ci/v01826-running.txt"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "${PROJECT_DIR}/.ci/v01826-running.txt"
+          git commit -m 'ci(village): record v0.18.26 integration start [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+
+      - name: Apply flying assault and turret role patch
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('.')
+          java = root / 'src/main/java/kr/moonseungjun/villageguardians'
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, got {count}: {old[:120]!r}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # Release head and historical regression ownership.
+          props = root / 'gradle.properties'
+          replace_once(props, 'mod_version=0.18.25-alpha.1', 'mod_version=0.18.26-alpha.1')
+
+          old_test = root / 'tools/test_v01825_multifront_routing_integrity.py'
+          replace_once(old_test, '    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")\n', '')
+          replace_once(old_test, '    readme = (ROOT / "README.md").read_text(encoding="utf-8")\n', '')
+          replace_once(old_test,
+              '    assert "mod_version=0.18.25-alpha.1" in props\n'
+              '    assert "0.18.25-alpha.1" in readme and "villageguardians-0.18.25-alpha.1.jar" in readme\n', '')
+
+          enemy = java / 'VillageEnemyArchetypeSystem.java'
+          replace_once(
+              enemy,
+              '        Archetype archetype = boss ? bossForDay(day) : select(day, wave, index, trait);\n'
+              '        Mob mob = createEntity(level, archetype);\n'
+              '        return mob == null ? null : new SpawnedEnemy(mob, archetype, boss);\n',
+              '        boolean flying = !boss && shouldSpawnFlying(day, wave, index, trait);\n'
+              '        Archetype archetype = boss ? bossForDay(day)\n'
+              '                : flying ? Archetype.MARKSMAN : select(day, wave, index, trait);\n'
+              '        Mob mob = flying ? EntityTypes.PHANTOM.create(level, EntitySpawnReason.EVENT) : createEntity(level, archetype);\n'
+              '        return mob == null ? null : new SpawnedEnemy(mob, archetype, boss);\n'
+          )
+          replace_once(
+              enemy,
+              '    public static Archetype previewArchetype(\n'
+              '            int day, int wave, int index, boolean boss, VillageWaveTrait trait) {\n'
+              '        return boss ? bossForDay(day) : select(day, wave, index, trait);\n'
+              '    }\n\n',
+              '    public static Archetype previewArchetype(\n'
+              '            int day, int wave, int index, boolean boss, VillageWaveTrait trait) {\n'
+              '        return boss ? bossForDay(day) : select(day, wave, index, trait);\n'
+              '    }\n\n'
+              '    public static boolean isFlying(Mob mob) {\n'
+              '        return mob != null && mob.getType() == EntityTypes.PHANTOM;\n'
+              '    }\n\n'
+              '    private static boolean shouldSpawnFlying(int day, int wave, int index, VillageWaveTrait trait) {\n'
+              '        if (day < 7) return false;\n'
+              '        int cadence = trait == VillageWaveTrait.STORMFRONT ? 4 : day >= 13 ? 6 : 9;\n'
+              '        if (trait == VillageWaveTrait.HUNTERS) cadence = Math.min(cadence, 5);\n'
+              '        return Math.floorMod(index + wave * 2 + day, cadence) == 0;\n'
+              '    }\n\n'
+          )
+          replace_once(enemy, '        mob.setCanPickUpLoot(false);\n        equip(mob, archetype);\n',
+                       '        mob.setCanPickUpLoot(false);\n        if (!isFlying(mob)) equip(mob, archetype);\n')
+          replace_once(
+              enemy,
+              '        mob.setCustomName(Component.literal(displayName(archetype, trait, day, wave, boss)));\n'
+              '        mob.setCustomNameVisible(true);\n'
+              '        if (boss || archetype == Archetype.NECROMANCER || archetype == Archetype.TOWER_HUNTER) {\n',
+              '        String visibleName = isFlying(mob)\n'
+              '                ? "§b웨이브 " + wave + " · 하늘 약탈귀 §8[성벽 우회 공중 급습]"\n'
+              '                : displayName(archetype, trait, day, wave, boss);\n'
+              '        mob.setCustomName(Component.literal(visibleName));\n'
+              '        mob.setCustomNameVisible(true);\n'
+              '        if (isFlying(mob) || boss || archetype == Archetype.NECROMANCER || archetype == Archetype.TOWER_HUNTER) {\n'
+          )
+          replace_once(
+              enemy,
+              '    private static void applyArchetypeAttributes(Mob mob, Archetype archetype, int day) {\n'
+              '        if (archetype == Archetype.RUSHER) {\n',
+              '    private static void applyArchetypeAttributes(Mob mob, Archetype archetype, int day) {\n'
+              '        if (isFlying(mob)) {\n'
+              '            var health = mob.getAttribute(Attributes.MAX_HEALTH);\n'
+              '            if (health != null) health.setBaseValue(Math.min(42.0, 18.0 + Math.max(0, day - 7) * 1.35));\n'
+              '            var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);\n'
+              '            if (attack != null) attack.setBaseValue(Math.min(8.0, 3.0 + Math.max(0, day - 7) * 0.22));\n'
+              '            return;\n'
+              '        }\n'
+              '        if (archetype == Archetype.RUSHER) {\n'
+          )
+          replace_once(
+              enemy,
+              '    private static void spawnAura(ServerLevel level, Mob mob, Archetype archetype, int count) {\n'
+              '        var particle = switch (archetype) {\n',
+              '    private static void spawnAura(ServerLevel level, Mob mob, Archetype archetype, int count) {\n'
+              '        if (isFlying(mob)) {\n'
+              '            level.sendParticles(ParticleTypes.END_ROD, mob.getX(), mob.getY(), mob.getZ(),\n'
+              '                    Math.max(6, count), 0.7, 0.35, 0.7, 0.035);\n'
+              '            return;\n'
+              '        }\n'
+              '        var particle = switch (archetype) {\n'
+          )
+
+          attack = java / 'VillageAttackPlanSystem.java'
+          replace_once(
+              attack,
+              '        Condition condition = condition(day, wave);\n'
+              '        applyCondition(mob, condition);\n'
+              '        if (front != Front.NORTH) {\n',
+              '        Condition condition = condition(day, wave);\n'
+              '        applyCondition(mob, condition);\n'
+              '        if (VillageEnemyArchetypeSystem.isFlying(mob)) {\n'
+              '            BlockPos aerial = spawnOrigin(front, index).above(18 + Math.floorMod(index, 5) * 2);\n'
+              '            mob.snapTo(aerial.getX() + 0.5, aerial.getY(), aerial.getZ() + 0.5);\n'
+              '            return;\n'
+              '        }\n'
+              '        if (front != Front.NORTH) {\n'
+          )
+          replace_once(
+              attack,
+              '            Front front = ACTIVE_FRONTS.getOrDefault(id, Front.NORTH);\n'
+              '            if (front == Front.NORTH) continue;\n',
+              '            if (VillageEnemyArchetypeSystem.isFlying(mob)) continue;\n'
+              '            Front front = ACTIVE_FRONTS.getOrDefault(id, Front.NORTH);\n'
+              '            if (front == Front.NORTH) continue;\n'
+          )
+
+          gate = java / 'VillageGatePrioritySystem.java'
+          replace_once(
+              gate,
+              '            if (!mob.isAlive() || !VillageRaidSystem.isActiveEnemy(mob.getUUID())) {\n'
+              '                continue;\n'
+              '            }\n'
+              '            if (VillageAttackPlanSystem.frontOf(mob.getUUID()) != VillageAttackPlanSystem.Front.NORTH\n',
+              '            if (!mob.isAlive() || !VillageRaidSystem.isActiveEnemy(mob.getUUID())) {\n'
+              '                continue;\n'
+              '            }\n'
+              '            if (VillageEnemyArchetypeSystem.isFlying(mob)) {\n'
+              '                continue;\n'
+              '            }\n'
+              '            if (VillageAttackPlanSystem.frontOf(mob.getUUID()) != VillageAttackPlanSystem.Front.NORTH\n'
+          )
+
+          raid = java / 'VillageRaidSystem.java'
+          replace_once(raid, '        int before = ACTIVE_ENEMIES.size();\n',
+                       '        int before = ACTIVE_ENEMIES.size();\n        int flyingSpawned = 0;\n')
+          replace_once(
+              raid,
+              '            if (level.addFreshEntity(mob)) {\n'
+              '                ACTIVE_ENEMIES.add(mob.getUUID());\n'
+              '            } else {\n',
+              '            if (level.addFreshEntity(mob)) {\n'
+              '                ACTIVE_ENEMIES.add(mob.getUUID());\n'
+              '                if (VillageEnemyArchetypeSystem.isFlying(mob)) flyingSpawned++;\n'
+              '            } else {\n'
+          )
+          replace_once(
+              raid,
+              '                        + currentTrait.displayName() + " · 신규 적 " + spawned\n'
+              '                        + "명 · 전장 총 " + ACTIVE_ENEMIES.size() + "명" + capped\n',
+              '                        + currentTrait.displayName() + " · 신규 적 " + spawned\n'
+              '                        + "명 · 전장 총 " + ACTIVE_ENEMIES.size() + "명"\n'
+              '                        + (flyingSpawned > 0 ? " · §b공중 위협 " + flyingSpawned + "기§f" : "") + capped\n'
+          )
+          replace_once(
+              raid,
+              '            if (VillageEnemyArchetypeSystem.isBoss(archetype)) {\n'
+              '                VillageBossAspectSystem.tick(level, server, mob, abilityTicks);\n'
+              '            }\n\n'
+              '            // Side/rear exterior movement is owned by VillageAttackPlanSystem on the same server tick.\n',
+              '            if (VillageEnemyArchetypeSystem.isBoss(archetype)) {\n'
+              '                VillageBossAspectSystem.tick(level, server, mob, abilityTicks);\n'
+              '            }\n\n'
+              '            if (VillageEnemyArchetypeSystem.isFlying(mob)) {\n'
+              '                directFlyingEnemy(server, level, mob, archetype, villageCenter);\n'
+              '                continue;\n'
+              '            }\n\n'
+              '            // Side/rear exterior movement is owned by VillageAttackPlanSystem on the same server tick.\n'
+          )
+          replace_once(
+              raid,
+              '    private static ServerPlayer nearestPriorityPlayer(MinecraftServer server, Mob mob) {\n',
+              '    private static void directFlyingEnemy(\n'
+              '            MinecraftServer server, ServerLevel level, Mob mob,\n'
+              '            VillageEnemyArchetypeSystem.Archetype archetype, BlockPos villageCenter) {\n'
+              '        if (villageCenter == null) return;\n'
+              '        ServerPlayer player = nearestFlyingPriorityPlayer(server, mob);\n'
+              '        if (player != null) {\n'
+              '            mob.setTarget(player);\n'
+              '            mob.getLookControl().setLookAt(player, 45.0f, 45.0f);\n'
+              '            mob.getMoveControl().setWantedPosition(player.getX(), player.getY() + 2.5, player.getZ(), 1.28);\n'
+              '            return;\n'
+              '        }\n'
+              '        mob.setTarget(null);\n'
+              '        VillageProgressionSystem.Building targetBuilding = chooseTarget(\n'
+              '                villageCenter, mob.blockPosition(), true, archetype);\n'
+              '        if (targetBuilding == null || targetBuilding == VillageProgressionSystem.Building.WALLS) return;\n'
+              '        BlockPos target = VillageWorldSystem.buildingCenter(targetBuilding);\n'
+              '        mob.getLookControl().setLookAt(target.getX() + 0.5, target.getY() + 2.0, target.getZ() + 0.5);\n'
+              '        mob.getMoveControl().setWantedPosition(target.getX() + 0.5, target.getY() + 9.0, target.getZ() + 0.5, 1.18);\n'
+              '        boolean attackTick = Math.floorMod(structureAttackTicks + mob.getUUID().hashCode(), STRUCTURE_ATTACK_INTERVAL) == 0;\n'
+              '        if (!attackTick || mob.position().distanceToSqr(Vec3.atCenterOf(target)) > 14.0 * 14.0) return;\n'
+              '        int day = VillageCouncilState.currentDay();\n'
+              '        float multiplier = currentTrait.structureDamageMultiplier()\n'
+              '                * VillageWarfrontSystem.structureDamageMultiplier(day)\n'
+              '                * VillageBossAspectSystem.structureMultiplier(mob)\n'
+              '                * VillageDifficultyTuning.earlyStructureMultiplier(day)\n'
+              '                * VillageDifficultyTuning.defenderStateStructureMultiplier(server);\n'
+              '        int damage = Math.max(1, Math.round((4 + wave + Math.min(16, day) * 0.45f) * multiplier));\n'
+              '        VillageProgressionSystem.damageBuilding(server, targetBuilding, damage);\n'
+              '        VillageDefenseEffectSystem.structureImpact(level, Vec3.atCenterOf(target), false);\n'
+              '        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,\n'
+              '                target.getX() + 0.5, target.getY() + 2.0, target.getZ() + 0.5,\n'
+              '                9, 0.6, 0.4, 0.6, 0.035);\n'
+              '    }\n\n'
+              '    private static ServerPlayer nearestFlyingPriorityPlayer(MinecraftServer server, Mob mob) {\n'
+              '        ServerPlayer chosen = null;\n'
+              '        double chosenDistance = 28.0 * 28.0;\n'
+              '        for (ServerPlayer player : server.getPlayerList().getPlayers()) {\n'
+              '            if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()\n'
+              '                    || VillageRespawnSystem.isDowned(player)) continue;\n'
+              '            double distance = player.distanceToSqr(mob);\n'
+              '            if (distance <= chosenDistance && mob.hasLineOfSight(player)) {\n'
+              '                chosenDistance = distance;\n'
+              '                chosen = player;\n'
+              '            }\n'
+              '        }\n'
+              '        return chosen;\n'
+              '    }\n\n'
+              '    private static ServerPlayer nearestPriorityPlayer(MinecraftServer server, Mob mob) {\n'
+          )
+
+          turret = java / 'VillagePlacedTurretSystem.java'
+          replace_once(
+              turret,
+              '        Mob target = candidates.stream().min(Comparator.comparingDouble(mob -> mob.distanceToSqr(Vec3.atCenterOf(state.pos())))).orElse(null);\n'
+              '        if (state.type() == TurretType.ANTI_AIR) {\n'
+              '            double baseY = VillageCouncilState.villageCenter().map(BlockPos::getY).orElse(state.pos().getY());\n'
+              '            target = candidates.stream().filter(mob -> mob.getY() > baseY + 6.0)\n'
+              '                    .min(Comparator.comparingDouble(mob -> mob.distanceToSqr(Vec3.atCenterOf(state.pos()))))\n'
+              '                    .orElse(target);\n'
+              '        }\n',
+              '        Mob target = selectTarget(level, state, candidates);\n'
+          )
+          replace_once(
+              turret,
+              '            case NULLIFIER -> {\n'
+              '                hit(level, state, target, damage, ParticleTypes.ENCHANT);\n'
+              '                target.removeEffect(MobEffects.STRENGTH);\n'
+              '                target.removeEffect(MobEffects.REGENERATION);\n'
+              '            }\n'
+              '            default -> hit(level, state, target, damage, ParticleTypes.CRIT);\n',
+              '            case NULLIFIER -> {\n'
+              '                hit(level, state, target, damage, ParticleTypes.ENCHANT);\n'
+              '                target.removeEffect(MobEffects.STRENGTH);\n'
+              '                target.removeEffect(MobEffects.REGENERATION);\n'
+              '                target.removeEffect(MobEffects.SPEED);\n'
+              '                target.removeEffect(MobEffects.RESISTANCE);\n'
+              '                target.removeEffect(MobEffects.ABSORPTION);\n'
+              '            }\n'
+              '            case ANTI_AIR -> hit(level, state, target,\n'
+              '                    damage * (VillageEnemyArchetypeSystem.isFlying(target) ? 1.65f : 0.72f), ParticleTypes.CRIT);\n'
+              '            default -> hit(level, state, target, damage, ParticleTypes.CRIT);\n'
+          )
+          replace_once(
+              turret,
+              '    private static float piercingMultiplier(Mob target) {\n',
+              '    private static Mob selectTarget(ServerLevel level, TurretState state, List<Mob> candidates) {\n'
+              '        Vec3 origin = Vec3.atCenterOf(state.pos());\n'
+              '        return candidates.stream()\n'
+              '                .max(Comparator.comparingDouble(mob -> targetScore(level, state, mob, origin)))\n'
+              '                .orElse(null);\n'
+              '    }\n\n'
+              '    private static double targetScore(ServerLevel level, TurretState state, Mob mob, Vec3 origin) {\n'
+              '        VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(mob);\n'
+              '        double distance = Math.sqrt(Math.max(0.0, mob.position().distanceToSqr(origin)));\n'
+              '        double score = Math.max(0.0, 80.0 - distance);\n'
+              '        float maxHealth = Math.max(1.0f, mob.getMaxHealth());\n'
+              '        float healthRatio = Math.max(0.0f, Math.min(1.0f, mob.getHealth() / maxHealth));\n'
+              '        int cluster = VillageRaidSystem.activeEnemiesNear(level, mob.position(), 6.0, 10, null).size();\n'
+              '        boolean flying = VillageEnemyArchetypeSystem.isFlying(mob);\n'
+              '        switch (state.type()) {\n'
+              '            case BALLISTA -> {\n'
+              '                if (archetype != null && VillageEnemyArchetypeSystem.isBoss(archetype)) score += 120.0;\n'
+              '                if (archetype == VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST\n'
+              '                        || archetype == VillageEnemyArchetypeSystem.Archetype.SHIELDBREAKER\n'
+              '                        || archetype == VillageEnemyArchetypeSystem.Archetype.BULWARK) score += 75.0;\n'
+              '                score += healthRatio * 45.0;\n'
+              '            }\n'
+              '            case REPEATER -> {\n'
+              '                if (archetype == VillageEnemyArchetypeSystem.Archetype.RUSHER) score += 110.0;\n'
+              '                else if (archetype == VillageEnemyArchetypeSystem.Archetype.GRUNT) score += 55.0;\n'
+              '                score += (1.0 - healthRatio) * 65.0;\n'
+              '            }\n'
+              '            case PIERCER -> {\n'
+              '                if (isArmoredThreat(archetype, mob)) score += 150.0;\n'
+              '                if (archetype != null && VillageEnemyArchetypeSystem.isBoss(archetype)) score += 55.0;\n'
+              '            }\n'
+              '            case FLAME -> {\n'
+              '                if (mob.getRemainingFireTicks() <= 0) score += 55.0;\n'
+              '                score += cluster * 8.0;\n'
+              '            }\n'
+              '            case FROST -> {\n'
+              '                if (!mob.hasEffect(MobEffects.SLOWNESS)) score += 55.0;\n'
+              '                if (archetype == VillageEnemyArchetypeSystem.Archetype.RUSHER\n'
+              '                        || archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER\n'
+              '                        || archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER) score += 115.0;\n'
+              '            }\n'
+              '            case CHAIN -> score += cluster * 26.0;\n'
+              '            case BOMBARD -> score += cluster * 34.0;\n'
+              '            case NULLIFIER -> {\n'
+              '                if (isSupportThreat(archetype)) score += 145.0;\n'
+              '                if (hasDispellableBuff(mob)) score += 90.0;\n'
+              '            }\n'
+              '            case ANTI_AIR -> {\n'
+              '                if (flying) score += 420.0;\n'
+              '                else if (archetype == VillageEnemyArchetypeSystem.Archetype.MARKSMAN\n'
+              '                        || isSupportThreat(archetype)) score += 35.0;\n'
+              '            }\n'
+              '            default -> { }\n'
+              '        }\n'
+              '        if (flying && state.type() != TurretType.ANTI_AIR) score -= 32.0;\n'
+              '        return score;\n'
+              '    }\n\n'
+              '    private static boolean isArmoredThreat(VillageEnemyArchetypeSystem.Archetype type, Mob mob) {\n'
+              '        if (type == null) return mob.hasEffect(MobEffects.RESISTANCE);\n'
+              '        return switch (type) {\n'
+              '            case BULWARK, SHIELDBREAKER, SIEGE_BEAST, IRON_WARLORD, DREAD_KNIGHT -> true;\n'
+              '            default -> mob.hasEffect(MobEffects.RESISTANCE);\n'
+              '        };\n'
+              '    }\n\n'
+              '    private static boolean isSupportThreat(VillageEnemyArchetypeSystem.Archetype type) {\n'
+              '        return type == VillageEnemyArchetypeSystem.Archetype.HEXER\n'
+              '                || type == VillageEnemyArchetypeSystem.Archetype.WAR_CHANTER\n'
+              '                || type == VillageEnemyArchetypeSystem.Archetype.NECROMANCER\n'
+              '                || type == VillageEnemyArchetypeSystem.Archetype.PLAGUE_ARCHON\n'
+              '                || type == VillageEnemyArchetypeSystem.Archetype.IRON_WARLORD;\n'
+              '    }\n\n'
+              '    private static boolean hasDispellableBuff(Mob mob) {\n'
+              '        return mob.hasEffect(MobEffects.STRENGTH)\n'
+              '                || mob.hasEffect(MobEffects.REGENERATION)\n'
+              '                || mob.hasEffect(MobEffects.SPEED)\n'
+              '                || mob.hasEffect(MobEffects.RESISTANCE)\n'
+              '                || mob.hasEffect(MobEffects.ABSORPTION);\n'
+              '    }\n\n'
+              '    private static float piercingMultiplier(Mob target) {\n'
+          )
+
+          readme = root / 'README.md'
+          replace_once(readme, '- 현재 소스 버전 `0.18.25-alpha.1`', '- 현재 소스 버전 `0.18.26-alpha.1`')
+          replace_once(readme, '- 목표 JAR `villageguardians-0.18.25-alpha.1.jar`', '- 목표 JAR `villageguardians-0.18.26-alpha.1.jar`')
+          marker = '## 0.18.25 다전선 경로 소유권·돌파 후 침입 정합\n'
+          insert = '''## 0.18.26 공중 습격·포탑 역할 분화\n\n- 7일차부터 실제 비행 적 `하늘 약탈귀`가 웨이브에 섞인다. 폭풍전선/사냥꾼 계열 웨이브에서는 출현 비율이 더 높고, 지상 전선 경로·북문 강제 AI에서 제외되어 성벽을 물리적으로 우회한다.\n- 비행 적은 성 안의 플레이어를 우선 급습하고, 방어자가 없으면 성벽이 아니라 내부 시설 상공으로 이동해 제한된 주기의 공중 타격을 가한다. 성벽은 지상 공세를 강하게 지연시키지만 후반에는 대공 방어를 따로 준비해야 한다.\n- 대공 발사대는 비행 적에 압도적인 타깃 우선순위와 1.65배 대공 피해를 가지며, 비행 표적이 없을 때만 지상 원거리·지원 적을 보조 사격한다.\n- 나머지 포탑도 단순 최근접 사격에서 역할별 위협 점수 방식으로 바뀌었다. 중쇠뇌는 보스/중량 적, 연사포는 러셔/마무리, 관통포는 중장갑, 서리는 공병/고기동, 연쇄/투석은 군집, 억제탑은 버프·지원병을 우선한다.\n- 마법 억제탑은 공격/재생뿐 아니라 속도·저항·흡수까지 제거해 적 지원병의 실제 강화 효과를 끊는다.\n\n'''
+          replace_once(readme, marker, insert + marker)
+
+          test = root / 'tools/test_v01826_flying_turret_roles.py'
+          test.write_text(r'''#!/usr/bin/env python3
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
+
+          def read(name: str) -> str:
+              return (JAVA / name).read_text(encoding="utf-8")
+
+          def main() -> None:
+              props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
+              readme = (ROOT / "README.md").read_text(encoding="utf-8")
+              enemy = read("VillageEnemyArchetypeSystem.java")
+              raid = read("VillageRaidSystem.java")
+              attack = read("VillageAttackPlanSystem.java")
+              gate = read("VillageGatePrioritySystem.java")
+              turret = read("VillagePlacedTurretSystem.java")
+              old = (ROOT / "tools/test_v01825_multifront_routing_integrity.py").read_text(encoding="utf-8")
+
+              assert "mod_version=0.18.26-alpha.1" in props
+              assert "0.18.26-alpha.1" in readme and "villageguardians-0.18.26-alpha.1.jar" in readme
+              assert 'assert "mod_version=0.18.25-alpha.1" in props' not in old
+
+              assert "EntityTypes.PHANTOM.create" in enemy
+              assert "public static boolean isFlying(Mob mob)" in enemy
+              assert "if (day < 7) return false" in enemy
+              assert "VillageWaveTrait.STORMFRONT" in enemy and "VillageWaveTrait.HUNTERS" in enemy
+              assert "하늘 약탈귀" in enemy
+
+              assert "VillageEnemyArchetypeSystem.isFlying(mob)" in attack
+              assert "spawnOrigin(front, index).above(" in attack
+              assert "VillageEnemyArchetypeSystem.isFlying(mob)" in gate
+              assert "directFlyingEnemy(server, level, mob, archetype, villageCenter)" in raid
+              assert "mob.getMoveControl().setWantedPosition" in raid
+              assert "chooseTarget(\n                villageCenter, mob.blockPosition(), true, archetype)" in raid
+              assert "공중 위협" in raid
+
+              assert "Mob target = selectTarget(level, state, candidates);" in turret
+              assert "private static double targetScore" in turret
+              assert "VillageEnemyArchetypeSystem.isFlying(mob)" in turret
+              assert "if (flying) score += 420.0" in turret
+              assert "VillageEnemyArchetypeSystem.isFlying(target) ? 1.65f : 0.72f" in turret
+              assert "cluster * 26.0" in turret and "cluster * 34.0" in turret
+              assert "isArmoredThreat" in turret and "isSupportThreat" in turret
+              for effect in ("STRENGTH", "REGENERATION", "SPEED", "RESISTANCE", "ABSORPTION"):
+                  assert f"target.removeEffect(MobEffects.{effect})" in turret
+
+              print("[PASS] day-7+ flying enemies exist as real PHANTOM raid entities")
+              print("[PASS] flying assault bypasses wall/gate ground routing and attacks defenders/interior facilities")
+              print("[PASS] anti-air turret has a real dedicated target class and strong anti-air multiplier")
+              print("[PASS] nine offensive turret families use role-aware target scoring")
+              print("[PASS] nullifier strips the supported combat buff set")
+              print("[PASS] historical v0.18.25 routing regression is version-independent")
+              print("[PASS] v0.18.26 flying assault and turret-role contract complete")
+
+          if __name__ == "__main__":
+              main()
+          '''.replace('          ', ''), encoding='utf-8')
+          PY
+          git diff --check
+
+      - name: Run all deterministic regression contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in tools/test_*.py; do
+            echo "=== $test ==="
+            python3 "$test"
+          done
+
+      - name: Clean Java 25 NeoForge build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
+
+      - name: Verify runtime JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/${EXPECTED_JAR}"
+          python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jar = Path('build/libs/villageguardians-0.18.26-alpha.1.jar')
+          with zipfile.ZipFile(jar) as zf:
+              names = set(zf.namelist())
+              toml = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
+          prefix = 'kr/moonseungjun/villageguardians/'
+          for cls in ('VillageEnemyArchetypeSystem.class', 'VillageRaidSystem.class',
+                      'VillageAttackPlanSystem.class', 'VillageGatePrioritySystem.class',
+                      'VillagePlacedTurretSystem.class'):
+              assert prefix + cls in names
+          assert '0.18.26-alpha.1' in toml
+          print('[PASS] final JAR contains flying assault and turret-role runtime')
+          PY
+
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-${{ env.BUILD_VERSION }}
+          path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit verified source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            "${PROJECT_DIR}/gradle.properties" \
+            "${PROJECT_DIR}/README.md" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageAttackPlanSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageGatePrioritySystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillagePlacedTurretSystem.java" \
+            "${PROJECT_DIR}/tools/test_v01825_multifront_routing_integrity.py" \
+            "${PROJECT_DIR}/tools/test_v01826_flying_turret_roles.py"
+          git diff --cached --check
+          git commit -m 'feat(village): add flying assaults and turret role targeting [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Record final acceptance metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          cat > "${PROJECT_DIR}/.ci/v01826-final.txt" <<EOF
+          version=${BUILD_VERSION}
+          run_id=${GITHUB_RUN_ID}
+          source_sha=${SOURCE_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          EOF
+          rm -f "${PROJECT_DIR}/.ci/v01826-running.txt"
+          git add "${PROJECT_DIR}/.ci/v01826-final.txt" "${PROJECT_DIR}/.ci/v01826-running.txt"
+          git commit -m 'ci(village): record v0.18.26 acceptance [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
