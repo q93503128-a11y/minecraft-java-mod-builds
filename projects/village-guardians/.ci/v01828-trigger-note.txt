@@ -1,0 +1,1 @@
+v0.18.28 air-defense ecosystem acceptance is staged; issue-triggered runner is authoritative.
