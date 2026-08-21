@@ -41,7 +41,8 @@ for spell in ['disintegrate','globe_of_invulnerability','mass_suggestion','move_
     need(sixth_summary,f'case "{spell}"')
 need(sixth_summary,'실제 물질 파괴','1~5써클 Arcane 주문','실제로 전장에서 후퇴',
      '실제 지형 변형','복수 대상 피해','주변 은신을 주기적으로 벗기고',
-     '초강력 동결','공포·쇠약','Arcane 시전 봉쇄','대형/보스급은 처형 제외')
+     '초강력 동결','효과가 끝날 때까지 강제 도주하며 Arcane 시전도 중단',
+     'Arcane 시전 봉쇄','대형/보스급은 처형 제외')
 
 runtime_files=[
  'FirstCircleSpellService.java','SecondCircleSpellService.java','ThirdCircleSpellService.java',
@@ -128,6 +129,7 @@ need(sixth,
      'public static final int NPC_SUGGESTION_TICKS = 160;',
      'public static final int NPC_TRUE_SEEING_TICKS = 1200;',
      'public static final int NPC_PETRIFY_TICKS = 360;',
+     'private static final Map<UUID, FearState> EYEBITE_FEAR = new HashMap<>();',
      'case "globe_of_invulnerability" -> HighWardSpellService.execute(caster, spellId, range, power, snapshot);',
      'case "mass_suggestion" -> HighControlSpellService.execute(caster, spellId, range, power, snapshot);',
      'case "true_seeing" -> SpellGameplayService.execute(caster, spellId, range, power, snapshot);',
@@ -138,6 +140,10 @@ need(sixth,
      'DestructiveMagicService.impact(player, "move_earth", center, radius, power);',
      'lineDamage(level, caster, start, end, 1.55, power','target.setRemainingFireTicks(0);',
      'target.getTicksRequiredToFreeze() + 520','EYEBITE_TICKS = 360;',
+     'FearState fear = EYEBITE_FEAR.get(caster.getUUID());','tickEyebiteFear(level, now);',
+     'EYEBITE_FEAR.put(mob.getUUID(), state);','applyFear(owner, target, now);',
+     'target.getNavigation().moveTo(destination.x, destination.y, destination.z, 1.22);',
+     'for (FearState state : EYEBITE_FEAR.values()) restoreFear(state);',
      'NPC_SUGGESTIONS.put(target.getUUID(), new RetreatState','NPC_TRUE_SIGHT.put(caster.getUUID()',
      'NPC_PETRIFY.put(target.getUUID(), new PetrifyState','SpellKineticsService.cancel(player);',
      'boolean ordinary = target.getMaxHealth() <= Math.max(80.0, power * 1.55)',
@@ -223,8 +229,8 @@ need(light,'Map<LightKey, Integer> REF_COUNTS','REF_COUNTS.put(key, count + 1)',
 audit=text(root/'SPELL_AUDIT.md')
 assert audit.count('| PASS | PASS |')==109
 need(audit,'alpha.58','material-breaking narrow ray','player/NPC 1~5C boundary denial',
-     'behavioral multi-retreat','persistent invisibility reveal','casting-block petrification',
-     'weak ordinary execution pressure')
+     'behavioral multi-retreat','persistent invisibility reveal','maintained fear + weakness',
+     'casting-block petrification','weak ordinary execution pressure')
 tools=root/'tools'
 assert {p.name for p in tools.iterdir() if p.is_file()}=={'test_current_source.py','verify_jar.py'}
 verify=text(tools/'verify_jar.py')
@@ -246,4 +252,5 @@ print('alpha57_fifth_circle_deep_runtime=PASS')
 print('alpha58_sixth_circle_deep_runtime=PASS')
 print('alpha58_sixth_circle_npc_parity=PASS')
 print('alpha58_globe_suggestion_petrify_authority=PASS')
+print('alpha58_maintained_eyebite_fear=PASS')
 print('alpha49_57_runtime_regressions=PASS')
