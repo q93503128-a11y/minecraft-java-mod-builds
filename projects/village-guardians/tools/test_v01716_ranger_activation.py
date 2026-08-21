@@ -62,11 +62,11 @@ def main() -> None:
     assert "energyBlade" not in slam_mesh
     assert "customArrow" not in slam_mesh
 
-    # Tracking cue is local to the player and the skill row is slightly higher.
+    # Tracking cue is local to the player and the skill row uses the approved low-profile -98 offset.
     assert "player.getEyePosition().add(sight.scale(1.45))" in ability
     focus = block(mesh, "private static void renderRangerFocus", "private static void renderFireImpact")
     assert "b.local(0.0, 0.0, 0.18)" in focus
-    assert "graphics.guiHeight() - 92" in hud
+    assert "graphics.guiHeight() - 98" in hud
 
     for name in ("신속 삼연사", "추적 도탄", "천공 화살비", "성멸 대궁"):
         assert name in skills
