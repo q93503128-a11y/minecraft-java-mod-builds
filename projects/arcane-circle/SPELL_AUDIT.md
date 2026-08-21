@@ -1,4 +1,4 @@
-# Arcane Circle — 109 Spell Audit Queue (alpha.56)
+# Arcane Circle — 109 Spell Audit Queue (alpha.57)
 
 이 문서는 주문을 묶어서 '대충 동작'으로 보지 않고 하나씩 추적하기 위한 정본 감사 큐다.
 
@@ -22,34 +22,27 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 ## alpha.55 — 3써클 deep pass
 
-`ThirdCircleSpellService`가 3써클 10종을 전용 소유하고 NPC도 generic damage보다 먼저 같은 역할 경로를 사용한다.
-
-- `fireball`: 고정 snapshot 착탄점에 중심부가 더 강한 falloff 폭발 + 화상 + 같은 중심의 실제 지형 파괴.
-- `lightning_bolt`: 고정 직선의 복수 대상 관통 타격 + 같은 경로의 약한 지형 파손.
-- `fly`: 실제 자유 비행 권한과 NPC 공중 전투를 갖고 lifecycle에서 원래 중력/비행 권한으로 복구.
-- `haste`: Arcane 시전시간 28% 단축 / 쿨다운 15% 단축.
-- `dispel_magic`: 유지형 마법 상태와 해로운 상태를 해제하는 전용 경로.
-- `vampiric_touch`: 실제로 잃게 한 체력+흡수량을 측정해 60% 회복.
-- `slow`: 9초 persistent tempo field.
-- `protection_from_energy`: Arcane/화염/투사체성 충격만 45% 줄이는 energy-only 5중 공명막.
-- `sleet_storm`: 냉기·동결·암흑·미끄럼 + 내부 적대 Arcane casting denial.
-- `blink`: 최대 약 20m endpoint-safe 공간 도약 + 착지 직후 위상 저항.
+`ThirdCircleSpellService`가 3써클 10종을 전용 소유하고 NPC도 generic damage보다 먼저 같은 역할 경로를 사용한다. Fireball/Lightning은 고정 snapshot 공간을 사용하고, Fly/Haste/Dispel/Vampiric Touch/Slow/Energy Protection/Sleet/Blink가 전용 지속·해제 계약을 갖는다. alpha.57에서 Dispel은 4·5써클 유지 상태까지 해제하도록 범위를 확장했다.
 
 ## alpha.56 — 4써클 deep pass
 
-`FourthCircleSpellService`가 4써클 10종을 전용 소유한다. 플레이어와 NPC가 같은 역할 계약을 사용하며, 일반 피해감소/포션 묶음으로 뭉개던 효과를 전략 주문으로 분리했다.
+`FourthCircleSpellService`가 4써클 10종을 전용 소유한다. Wall of Fire 실제 장벽, 5회 Ice Storm, 전투 Greater Invisibility, two-way Resilient Sphere, 동행 Dimension Door, physical-only Stoneskin, decision scramble Confusion, anti-heal Blight, 하위 이동제어 면역 Freedom, forced-flee Phantasmal Killer를 유지한다. NPC도 같은 역할 경로를 사용한다.
 
-- `wall_of_fire`: 12초 동안 고정된 실제 선형 장벽을 유지하고, 벽을 스치거나 통과하는 적만 반복 피해·연소시킨다.
-- `ice_storm`: 오래 붙는 generic 냉기장이 아니라 고정 목표에 5회의 실제 우박 폭격이 이어진다.
-- `greater_invisibility`: 공격해도 해제되지 않는 전투 은신. 적대 추적을 계속 끊고 hostile direct attack은 45% miss 판정을 받는다.
-- `resilient_sphere`: **two-way isolation**. 구체 내부 대상은 외부 피해를 받지 않고, 내부에서 외부로 가하는 피해도 차단되며 Arcane 시전 역시 봉쇄된다.
-- `dimension_door`: 최대 약 36m 안전 도약. 3m 이내에서 웅크린 플레이어 1명을 동행시켜 Misty Step/Blink와 역할을 분리한다.
-- `stoneskin`: 범용 피해감소가 아니다. 적이 가하는 **physical-only** 비마법 공격만 50% 경감하고 Arcane·화염·환경 피해는 통과한다.
-- `confusion`: 12초 동안 매초 정지/배회/오인 공격/비틀림 중 하나로 의사결정을 섞고 Arcane 시전도 간헐적으로 끊는다. NoAI로 굳히지 않는다.
-- `blight`: 초기 생명 피해 후 8초 추가 drain과 **anti-heal** 80%를 건다.
-- `freedom_of_movement`: 26초 동안 둔화·속박·동결·강제부양을 지속 정화하고 2~3써클 이동 제어의 시전 봉쇄를 무시한다. Antimagic/Time Stop/고써클 제어/Resilient Sphere는 그대로 우선한다.
-- `phantasmal_killer`: 단순 약화가 아니라 11초 동안 대상이 시전자에게서 실제로 **forced flee**하며 주기적 정신 피해를 받는다.
-- logout/respawn/dimension/antimagic/server stop에서 4써클 유지 상태를 정리하며 NPC도 같은 전용 경로를 사용한다.
+## alpha.57 — 5써클 deep pass
+
+`FifthCircleSpellService`가 5써클 10종을 전용 소유한다. 플레이어와 NPC가 같은 역할 계약을 사용하며 기존 generic area/control/teleport 별칭을 전장 제어 주문으로 분리했다.
+
+- `cone_of_cold`: 시전 snapshot 방향을 따라 실제로 넓어지는 냉기 원뿔. 맞은 적의 불을 끄고 강하게 얼리며 전방으로 압박한다.
+- `wall_of_force`: 12초 실제 역장벽. 적대 생명체가 벽을 넘지 못하게 밀어내고, 벽 면을 가로지르는 적대 Arcane 주문 경로도 player/NPC 공통으로 차단한다.
+- `cloudkill`: 고정 독장판이 아니라 11초 동안 시전 방향으로 천천히 이동하는 독성 전선. 체력이 낮은 적에게 피해 압박이 더 강하다.
+- `telekinesis`: 즉시 한 번 밀치는 효과가 아니라 최대 5초 동안 대상을 현재 시선 앞에 붙잡고, 종료 순간 그때의 시선 방향으로 투척한다. 초대형 대상은 저항한다.
+- `flame_strike`: 하나의 고정 중심에 수직 화염 기둥 피해·연소·약한 상승을 적용하고 플레이어 시전은 동일 중심에 실제 지형 파괴를 연결한다.
+- `hold_monster`: NoAI를 사용하지 않는 강제 속박. 일반 대상은 15초, 초대형/보스급은 약 7초로 지속시간 저항을 하며 이동·공격·Arcane 시전을 봉쇄한다.
+- `mass_cure_wounds`: 자신과 실제 아군/소유 길들인 생명체를 동시에 회복하고 짧은 재생을 부여한다.
+- `passwall`: 순간이동이 아니다. 보호 블록/블록 엔티티를 피하면서 실제 벽에 임시 통로를 열고 약 12초 후 통로가 비면 저장한 원본 BlockState로 복원한다. 복원 시 새로 놓인 블록은 덮어쓰지 않는다.
+- `dominate_person`: 인간형 체급의 비플레이어 적을 13초 전투 대리체로 바꾼다. 시전자를 공격하지 않고 주변 위협과 싸우며 비전투 시 따라오고 Arcane 시전은 봉쇄된다.
+- `insect_plague`: 이동하는 Cloudkill과 달리 11초 고정 swarm field. 반복 피해·행동 압박과 함께 내부 적의 Arcane 집중을 간헐적으로 끊는다.
+- logout/respawn/dimension/antimagic/server stop에서 5써클 유지 상태를 정리하고 Telekinesis 중력·기존 타깃·Passwall 원본 블록을 복구한다.
 
 ## Direct spells — deep audit order
 
@@ -79,7 +72,7 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 | 3 | `lightning_bolt` | PASS | PASS | alpha.55 PASS · penetrating line + terrain |
 | 3 | `fly` | PASS | PASS | alpha.55 PASS · lifecycle-safe real flight |
 | 3 | `haste` | PASS | PASS | alpha.55 PASS · Arcane tempo accelerator |
-| 3 | `dispel_magic` | PASS | PASS | alpha.55 PASS · custom-state dispel |
+| 3 | `dispel_magic` | PASS | PASS | alpha.57 PASS · custom-state dispel through 5C |
 | 3 | `vampiric_touch` | PASS | PASS | alpha.55 PASS · actual-damage drain |
 | 3 | `slow` | PASS | PASS | alpha.55 PASS · persistent tempo field |
 | 3 | `protection_from_energy` | PASS | PASS | alpha.55 PASS · energy-only 5-charge ward |
@@ -95,16 +88,16 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 | 4 | `blight` | PASS | PASS | alpha.56 PASS · anti-heal life decay |
 | 4 | `freedom_of_movement` | PASS | PASS | alpha.56 PASS · maintained control immunity |
 | 4 | `phantasmal_killer` | PASS | PASS | alpha.56 PASS · forced flee fear |
-| 5 | `cone_of_cold` | PASS | PASS | next |
-| 5 | `wall_of_force` | PASS | PASS | next |
-| 5 | `cloudkill` | PASS | PASS | next |
-| 5 | `telekinesis` | PASS | PASS | next |
-| 5 | `flame_strike` | PASS | PASS | next |
-| 5 | `hold_monster` | PASS | PASS | next |
-| 5 | `mass_cure_wounds` | PASS | PASS | next |
-| 5 | `passwall` | PASS | PASS | next |
-| 5 | `dominate_person` | PASS | PASS | next |
-| 5 | `insect_plague` | PASS | PASS | next |
+| 5 | `cone_of_cold` | PASS | PASS | alpha.57 PASS · widening freeze cone |
+| 5 | `wall_of_force` | PASS | PASS | alpha.57 PASS · body + Arcane trajectory barrier |
+| 5 | `cloudkill` | PASS | PASS | alpha.57 PASS · drifting poison front |
+| 5 | `telekinesis` | PASS | PASS | alpha.57 PASS · sustained grab + look throw |
+| 5 | `flame_strike` | PASS | PASS | alpha.57 PASS · vertical fixed-center strike |
+| 5 | `hold_monster` | PASS | PASS | alpha.57 PASS · boss-resisted hard control |
+| 5 | `mass_cure_wounds` | PASS | PASS | alpha.57 PASS · allied multi-heal |
+| 5 | `passwall` | PASS | PASS | alpha.57 PASS · real tunnel + safe restore |
+| 5 | `dominate_person` | PASS | PASS | alpha.57 PASS · person-scale combat proxy |
+| 5 | `insect_plague` | PASS | PASS | alpha.57 PASS · fixed swarm + cast interruption |
 | 6 | `disintegrate` | PASS | PASS | next |
 | 6 | `globe_of_invulnerability` | PASS | PASS | next |
 | 6 | `mass_suggestion` | PASS | PASS | next |
@@ -172,4 +165,4 @@ alpha.52에서 S/R 전 109종을 강제했고, alpha.53부터 T/V/D를 써클 �
 
 ## CI enforcement
 
-`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1·2·3·4써클 전용 권한 순서와 NPC parity, 4써클 two-way isolation/physical-only Stoneskin/decision scramble/anti-heal/forced flee/Freedom 우선순위 및 lifecycle cleanup, 그리고 alpha.49~55의 기존 계약 회귀를 실패 조건으로 둔다.
+`tools/test_current_source.py`는 direct 90 + fusion 19 = 109, 효과 요약 ID 일치, 1·2·3·4·5써클 전용 권한 순서와 NPC parity, 5써클 Force Wall player/NPC 주문 차단, Passwall 원본 블록 복원, Telekinesis 중력 복원, boss-resisted Hold, combat-proxy Domination, Insect casting denial, Dispel/Antimagic/lifecycle cleanup, 그리고 alpha.49~56의 기존 계약 회귀를 실패 조건으로 둔다.
