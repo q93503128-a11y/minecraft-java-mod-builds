@@ -45,6 +45,8 @@ public record SpellDefinition(
     public String effectSummary() {
         String firstCircle = FirstCircleSpellSummary.summary(id);
         if (!firstCircle.isBlank()) return firstCircle;
+        String sixthCircle = SixthCircleSpellSummary.summary(id);
+        if (!sixthCircle.isBlank()) return sixthCircle;
         String effect = SpellEffectSummary.summary(this);
         return effect == null ? "" : effect;
     }
