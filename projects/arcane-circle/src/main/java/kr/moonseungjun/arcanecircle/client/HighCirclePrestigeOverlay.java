@@ -133,13 +133,14 @@ final class HighCirclePrestigeOverlay {
 
     private static void executionLaw(ArcaneWorldMesh.Builder m, Vec3 target, Vec3 direction,
                                      double p, double t, int tier) {
-        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
+        Vec3 normal = safe(direction);
+        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(normal);
         double r = tier >= 9 ? 3.25 : 2.15;
         int rings = tier >= 9 ? 9 : 7;
         for (int i = 0; i < rings; i++) {
             double rr = r * (1.0 - i * (tier >= 9 ? .067 : .083));
             double depth = (i - (rings - 1) / 2.0) * (tier >= 9 ? .18 : .11);
-            m.polygon(f, target.add(f.normal().scale(depth)), rr, tier,
+            m.polygon(f, target.add(normal.scale(depth)), rr, tier,
                     t * ((i & 1) == 0 ? .018 : -.014) + i * .11,
                     i % 3 == 0 ? 1.18F : .38F);
         }
@@ -147,7 +148,7 @@ final class HighCirclePrestigeOverlay {
         m.line(target.add(f.up().scale(-r * 1.45)), target.add(f.up().scale(r * 1.45)), 1.16F);
         if (tier >= 9) {
             m.runeRing(f, target, r * 1.18, 18, .18, 0x9A11, t * .012, .52F);
-            m.line(target.subtract(f.normal().scale(6.0)), target.add(f.normal().scale(6.0)), 1.30F);
+            m.line(target.subtract(normal.scale(6.0)), target.add(normal.scale(6.0)), 1.30F);
         }
     }
 
