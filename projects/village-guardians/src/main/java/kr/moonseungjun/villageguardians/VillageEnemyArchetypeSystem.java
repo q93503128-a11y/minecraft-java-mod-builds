@@ -36,7 +36,7 @@ public final class VillageEnemyArchetypeSystem {
             int index,
             boolean boss,
             VillageWaveTrait trait) {
-        boolean flying = !boss && shouldSpawnFlying(day, wave, index, trait);
+        boolean flying = willSpawnFlying(day, wave, index, boss, trait);
         Archetype archetype = boss ? bossForDay(day)
                 : flying ? Archetype.MARKSMAN : select(day, wave, index, trait);
         Mob mob = flying ? EntityTypes.PHANTOM.create(level, EntitySpawnReason.EVENT) : createEntity(level, archetype);
@@ -50,6 +50,12 @@ public final class VillageEnemyArchetypeSystem {
 
     public static boolean isFlying(Mob mob) {
         return mob != null && mob.getType() == EntityTypes.PHANTOM;
+    }
+
+    /** Shared deterministic predicate used by both the real spawn path and daytime intelligence. */
+    public static boolean willSpawnFlying(
+            int day, int wave, int index, boolean boss, VillageWaveTrait trait) {
+        return !boss && shouldSpawnFlying(day, wave, index, trait);
     }
 
     private static boolean shouldSpawnFlying(int day, int wave, int index, VillageWaveTrait trait) {

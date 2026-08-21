@@ -324,7 +324,9 @@ public final class VillageMercenarySystem {
         Mob target = VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), range,
                         18 + Math.min(18, rank / 3), null)
                 .stream().filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))
-                .min(java.util.Comparator.comparingDouble(mercenary::distanceToSqr)).orElse(null);
+                .min(java.util.Comparator
+                        .comparingInt((Mob enemy) -> VillageEnemyArchetypeSystem.isFlying(enemy) ? 0 : 1)
+                        .thenComparingDouble(mercenary::distanceToSqr)).orElse(null);
         mercenary.setTarget(null);
         if (target == null) return;
         float damage = 4.3f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
@@ -494,7 +496,7 @@ public final class VillageMercenarySystem {
     public enum MercenaryClass {
         BASTION("bastion", "방벽 수호병", "높은 생존력과 저지력으로 성문과 시설 앞을 버팁니다."),
         STRIKER("striker", "돌격 집행관", "공격력과 기동성이 높아 전열을 빠르게 정리합니다."),
-        RANGER("ranger", "성루 명사수", "원거리에서 적을 자동 사격하며 후방을 지원합니다."),
+        RANGER("ranger", "성루 명사수", "원거리에서 적을 자동 사격하며 공중 위협을 우선 요격합니다."),
         MEDIC("medic", "전장 치유사", "주변 플레이어와 용병을 주기적으로 회복합니다.");
 
         private final String id;

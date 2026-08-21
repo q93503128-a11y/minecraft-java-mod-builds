@@ -108,6 +108,8 @@ public final class VillageSkillMeshLibrary {
             case "defense_breach_alarm" -> renderDefenseMaintenance(pose, out, basis, age, progress, 4);
             case "raid_front_warning" -> renderRaidFrontSignal(pose, out, basis, age, progress, state.extra, false);
             case "raid_front_arrival" -> renderRaidFrontSignal(pose, out, basis, age, progress, state.extra, true);
+            case "raid_aerial_warning" -> renderAerialAssault(pose, out, basis, age, progress, state.extra, false);
+            case "raid_aerial_impact" -> renderAerialAssault(pose, out, basis, age, progress, state.extra, true);
 
             case "turret_body_ballista" -> renderTurretBody(pose, out, basis, age, state.extra, 0);
             case "turret_body_repeater" -> renderTurretBody(pose, out, basis, age, state.extra, 1);
@@ -144,6 +146,28 @@ public final class VillageSkillMeshLibrary {
             case "boss_storm_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 8);
             default -> renderFallbackRune(pose, out, basis, age, progress);
         }
+    }
+
+    private static void renderAerialAssault(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, String extra, boolean impact) {
+        boolean structure = "1".equals(extra);
+        double fade = Math.max(0.0, 1.0 - progress);
+        double pulse = 0.92 + Math.sin(age * 0.32) * 0.08;
+        int primary = structure
+                ? rgba(116, 207, 255, (int) ((impact ? 235 : 205) * Math.max(0.28, fade)))
+                : rgba(105, 237, 255, (int) ((impact ? 245 : 220) * Math.max(0.28, fade)));
+        int secondary = rgba(225, 250, 255, (int) (150 * Math.max(0.22, fade)));
+        double radius = impact ? 1.15 + progress * 3.8 : 2.35 * pulse;
+        ring(pose, out, b, radius, 0.055, impact ? 0.15 : 0.095, 56, primary, age * 0.055);
+        ring(pose, out, b, Math.max(0.6, radius * 0.62), 0.085, 0.05, 44, secondary, -age * 0.07);
+        for (int i = 0; i < 4; i++) {
+            double a = i * TAU / 4.0 + (impact ? -age * 0.03 : age * 0.025);
+            chevron(pose, out, b, a, Math.max(0.7, radius * 0.84),
+                    impact ? 0.18 + progress * 0.65 : 0.12, impact ? 0.42 : 0.34, primary);
+        }
+        verticalPillar(pose, out, b, impact ? 0.42 : 0.18,
+                impact ? 4.2 * fade + 0.4 : 2.8, withAlpha(primary, impact ? 185 : 105));
     }
 
     private static void renderRaidFrontSignal(

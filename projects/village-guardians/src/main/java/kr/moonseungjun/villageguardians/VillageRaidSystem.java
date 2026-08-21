@@ -11,6 +11,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.PlayerTeam;
@@ -32,11 +33,16 @@ public final class VillageRaidSystem {
     private static final Set<UUID> ACTIVE_ENEMIES = new HashSet<>();
     private static final Map<UUID, VillageEnemyArchetypeSystem.Archetype> ACTIVE_ARCHETYPES = new HashMap<>();
     private static final Map<UUID, Integer> ACTIVE_WAVES = new HashMap<>();
+    private static final Map<UUID, AerialStrike> AERIAL_STRIKES = new HashMap<>();
     private static final int FIRST_WAVE_COUNTDOWN_TICKS = 240;
     private static final int BETWEEN_WAVE_TICKS = 120;
     private static final int FORCED_NEXT_WAVE_TICKS = 20 * 60;
     private static final int MAX_ACTIVE_ENEMIES = 100;
     private static final int STRUCTURE_ATTACK_INTERVAL = 30;
+    private static final int AERIAL_ASSAULT_CADENCE = 90;
+    private static final int AERIAL_WARNING_TICKS = 18;
+    private static final int AERIAL_RECOVERY_TICKS = 34;
+    private static final double AERIAL_PLAYER_STRIKE_RADIUS = 2.75;
     private static final double PLAYER_PRIORITY_RANGE = 16.0;
     private static final String RAID_TEAM_NAME = "vg_raid";
     private static final String RAID_ENEMY_TAG = "villageguardians_raid_enemy";
@@ -429,34 +435,103 @@ public final class VillageRaidSystem {
             MinecraftServer server, ServerLevel level, Mob mob,
             VillageEnemyArchetypeSystem.Archetype archetype, BlockPos villageCenter) {
         if (villageCenter == null) return;
+        UUID id = mob.getUUID();
+        // Keep vanilla Phantom's dive target disabled: this system owns aerial movement and impact timing.
+        mob.setTarget(null);
+
+        AerialStrike strike = AERIAL_STRIKES.get(id);
+        if (strike != null) {
+            if (abilityTicks < strike.impactTick()) {
+                Vec3 dive = strike.point().add(0.0, strike.targetsBuilding() ? 4.5 : 3.0, 0.0);
+                moveFlyingToward(mob, strike.point(), dive, 1.52);
+                return;
+            }
+            if (!strike.resolved()) {
+                resolveAerialStrike(server, level, mob, strike);
+                strike = strike.resolvedCopy();
+                AERIAL_STRIKES.put(id, strike);
+            }
+            if (abilityTicks < strike.recoveryUntilTick()) {
+                Vec3 recover = strike.point().add(0.0, strike.targetsBuilding() ? 12.5 : 11.0, 0.0);
+                moveFlyingToward(mob, strike.point(), recover, 1.38);
+                return;
+            }
+            AERIAL_STRIKES.remove(id);
+        }
+
         ServerPlayer player = nearestFlyingPriorityPlayer(server, mob);
+        int phase = Math.floorMod(abilityTicks + id.hashCode(), AERIAL_ASSAULT_CADENCE);
         if (player != null) {
-            mob.setTarget(player);
-            mob.getLookControl().setLookAt(player, 45.0f, 45.0f);
-            mob.getMoveControl().setWantedPosition(player.getX(), player.getY() + 2.5, player.getZ(), 1.28);
+            if (phase == 0) {
+                beginAerialStrike(level, mob, player.position(), null);
+                return;
+            }
+            double angle = abilityTicks * 0.055 + Math.floorMod(id.hashCode(), 360) * Math.PI / 180.0;
+            double radius = 7.0 + Math.floorMod(id.hashCode(), 4);
+            double altitude = 7.5 + Math.floorMod(id.hashCode() >>> 4, 4);
+            Vec3 cruise = player.position().add(Math.cos(angle) * radius, altitude, Math.sin(angle) * radius);
+            moveFlyingToward(mob, player.position().add(0.0, 1.0, 0.0), cruise, 1.20);
             return;
         }
-        mob.setTarget(null);
+
         VillageProgressionSystem.Building targetBuilding = chooseTarget(
                 villageCenter, mob.blockPosition(), true, archetype);
         if (targetBuilding == null || targetBuilding == VillageProgressionSystem.Building.WALLS) return;
-        BlockPos target = VillageWorldSystem.buildingCenter(targetBuilding);
-        mob.getLookControl().setLookAt(target.getX() + 0.5, target.getY() + 2.0, target.getZ() + 0.5);
-        mob.getMoveControl().setWantedPosition(target.getX() + 0.5, target.getY() + 9.0, target.getZ() + 0.5, 1.18);
-        boolean attackTick = Math.floorMod(structureAttackTicks + mob.getUUID().hashCode(), STRUCTURE_ATTACK_INTERVAL) == 0;
-        if (!attackTick || mob.position().distanceToSqr(Vec3.atCenterOf(target)) > 14.0 * 14.0) return;
-        int day = VillageCouncilState.currentDay();
-        float multiplier = currentTrait.structureDamageMultiplier()
-                * VillageWarfrontSystem.structureDamageMultiplier(day)
-                * VillageBossAspectSystem.structureMultiplier(mob)
-                * VillageDifficultyTuning.earlyStructureMultiplier(day)
-                * VillageDifficultyTuning.defenderStateStructureMultiplier(server);
-        int damage = Math.max(1, Math.round((4 + wave + Math.min(16, day) * 0.45f) * multiplier));
-        VillageProgressionSystem.damageBuilding(server, targetBuilding, damage);
-        VillageDefenseEffectSystem.structureImpact(level, Vec3.atCenterOf(target), false);
-        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
-                target.getX() + 0.5, target.getY() + 2.0, target.getZ() + 0.5,
-                9, 0.6, 0.4, 0.6, 0.035);
+        BlockPos targetBlock = VillageWorldSystem.buildingCenter(targetBuilding);
+        Vec3 target = Vec3.atCenterOf(targetBlock).add(0.0, 1.0, 0.0);
+        double angle = abilityTicks * 0.042 + Math.floorMod(id.hashCode(), 360) * Math.PI / 180.0;
+        Vec3 cruise = target.add(Math.cos(angle) * 8.0, 9.5, Math.sin(angle) * 8.0);
+        if (phase == 0 && mob.position().distanceToSqr(cruise) <= 22.0 * 22.0) {
+            beginAerialStrike(level, mob, target, targetBuilding);
+            return;
+        }
+        moveFlyingToward(mob, target, cruise, 1.16);
+    }
+
+    private static void beginAerialStrike(
+            ServerLevel level, Mob mob, Vec3 point, VillageProgressionSystem.Building building) {
+        int impactTick = abilityTicks + AERIAL_WARNING_TICKS;
+        AerialStrike strike = new AerialStrike(point, building, impactTick,
+                impactTick + AERIAL_RECOVERY_TICKS, false);
+        AERIAL_STRIKES.put(mob.getUUID(), strike);
+        VillageDefenseEffectSystem.aerialAssaultWarning(level, point, building != null);
+        Vec3 dive = point.add(0.0, building == null ? 3.0 : 4.5, 0.0);
+        moveFlyingToward(mob, point, dive, 1.52);
+    }
+
+    private static void resolveAerialStrike(
+            MinecraftServer server, ServerLevel level, Mob mob, AerialStrike strike) {
+        if (strike.targetsBuilding()) {
+            VillageProgressionSystem.Building building = strike.building();
+            if (building != null && VillageProgressionSystem.isOperational(building)) {
+                int day = VillageCouncilState.currentDay();
+                float multiplier = currentTrait.structureDamageMultiplier()
+                        * VillageWarfrontSystem.structureDamageMultiplier(day)
+                        * VillageBossAspectSystem.structureMultiplier(mob)
+                        * VillageDifficultyTuning.earlyStructureMultiplier(day)
+                        * VillageDifficultyTuning.defenderStateStructureMultiplier(server);
+                int damage = Math.max(1, Math.round((4 + wave + Math.min(16, day) * 0.45f) * multiplier));
+                VillageProgressionSystem.damageBuilding(server, building, damage);
+            }
+            VillageDefenseEffectSystem.aerialAssaultImpact(level, strike.point(), true);
+            return;
+        }
+
+        double radiusSquared = AERIAL_PLAYER_STRIKE_RADIUS * AERIAL_PLAYER_STRIKE_RADIUS;
+        float damage = Math.max(2.0f, (float) mob.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() != level || !player.isAlive() || player.isSpectator()
+                    || VillageRespawnSystem.isDowned(player)) continue;
+            if (player.position().distanceToSqr(strike.point()) <= radiusSquared) {
+                player.hurtServer(level, level.damageSources().mobAttack(mob), damage);
+            }
+        }
+        VillageDefenseEffectSystem.aerialAssaultImpact(level, strike.point(), false);
+    }
+
+    private static void moveFlyingToward(Mob mob, Vec3 lookAt, Vec3 wanted, double speed) {
+        mob.getLookControl().setLookAt(lookAt.x, lookAt.y, lookAt.z, 45.0f, 45.0f);
+        mob.getMoveControl().setWantedPosition(wanted.x, wanted.y, wanted.z, speed);
     }
 
     private static ServerPlayer nearestFlyingPriorityPlayer(MinecraftServer server, Mob mob) {
@@ -607,6 +682,7 @@ public final class VillageRaidSystem {
     private static void releaseEnemy(MinecraftServer server, UUID uuid, Entity entity) {
         ACTIVE_ARCHETYPES.remove(uuid);
         ACTIVE_WAVES.remove(uuid);
+        AERIAL_STRIKES.remove(uuid);
         VillageAttackPlanSystem.forget(uuid);
         VillageEnemyEliteSystem.forget(uuid);
         VillageSiegeBossSystem.forget(uuid);
@@ -620,10 +696,20 @@ public final class VillageRaidSystem {
         }
     }
 
+    private record AerialStrike(
+            Vec3 point, VillageProgressionSystem.Building building, int impactTick,
+            int recoveryUntilTick, boolean resolved) {
+        boolean targetsBuilding() { return building != null; }
+        AerialStrike resolvedCopy() {
+            return new AerialStrike(point, building, impactTick, recoveryUntilTick, true);
+        }
+    }
+
     private static void clearState() {
         ACTIVE_ENEMIES.clear();
         ACTIVE_ARCHETYPES.clear();
         ACTIVE_WAVES.clear();
+        AERIAL_STRIKES.clear();
         VillageAttackPlanSystem.clearRaidState();
         VillageEnemyEliteSystem.clearRaidState();
         VillageSiegeBossSystem.clearRaidState();

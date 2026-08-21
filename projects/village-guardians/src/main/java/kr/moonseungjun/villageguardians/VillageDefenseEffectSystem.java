@@ -115,6 +115,18 @@ public final class VillageDefenseEffectSystem {
                 new Vec3(0.0, 0.0, 1.0), 34, 0.0f, "5.0");
     }
 
+    public static void aerialAssaultWarning(ServerLevel level, Vec3 center, boolean structure) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "raid_aerial_warning", center,
+                new Vec3(0.0, 0.0, 1.0), 18, 0.0f, structure ? "1" : "0");
+    }
+
+    public static void aerialAssaultImpact(ServerLevel level, Vec3 center, boolean structure) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "raid_aerial_impact", center,
+                new Vec3(0.0, 0.0, 1.0), 16, 0.0f, structure ? "1" : "0");
+    }
+
     public static void raidFrontWarning(ServerLevel level, Vec3 center, boolean mainFront) {
         if (level == null || center == null) return;
         VillageSkillEffectEntity.spawn(level, null, "raid_front_warning", center,

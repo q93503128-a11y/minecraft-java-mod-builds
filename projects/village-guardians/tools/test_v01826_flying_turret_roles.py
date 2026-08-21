@@ -17,8 +17,8 @@ def main() -> None:
     turret = read("VillagePlacedTurretSystem.java")
     old = (ROOT / "tools/test_v01825_multifront_routing_integrity.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.26-alpha.1" in props
-    assert "0.18.26-alpha.1" in readme and "villageguardians-0.18.26-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "0.18.26 공중 습격·포탑 역할 분화" in readme
     assert 'assert "mod_version=0.18.25-alpha.1" in props' not in old
 
     assert "EntityTypes.PHANTOM.create" in enemy

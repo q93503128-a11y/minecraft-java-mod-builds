@@ -23,8 +23,13 @@ public final class VillageWaveIntelSystem {
             int bosses = VillageRaidSystem.previewBossCount(day, wave, maximum, count);
             Map<VillageEnemyArchetypeSystem.Archetype, Integer> roster = new LinkedHashMap<>();
             List<String> bossLines = new ArrayList<>();
+            int flying = 0;
             for (int index = 0; index < count; index++) {
                 boolean boss = index < bosses;
+                if (VillageEnemyArchetypeSystem.willSpawnFlying(day, wave, index, boss, trait)) {
+                    flying++;
+                    continue;
+                }
                 VillageEnemyArchetypeSystem.Archetype archetype =
                         VillageEnemyArchetypeSystem.previewArchetype(day, wave, index, boss, trait);
                 roster.merge(archetype, 1, Integer::sum);
@@ -41,10 +46,14 @@ public final class VillageWaveIntelSystem {
                 }
             });
             String direction = VillageAttackPlanSystem.scoutLine(day, wave, count);
+            String air = flying <= 0
+                    ? "없음"
+                    : "하늘 약탈귀 ×" + flying + " · 성벽 우회 · 대공 발사대/성루 명사수 권장";
             String elite = VillageEnemyEliteSystem.scoutSummary(day, count);
             String bossDoctrine = bosses <= 0 ? "없음" : VillageSiegeBossSystem.previewBossMechanic(day);
             String detail = "예상 총 " + count + "명" + (bosses > 0 ? " · 보스 " + bosses + "명" : "")
                     + "\n" + direction
+                    + "\n공중 위협: " + air
                     + "\n공성 병과: " + (siege.isEmpty() ? "뚜렷한 전담 병과 없음" : String.join(" · ", siege))
                     + "\n정예: " + elite
                     + "\n보스 전투 구조: " + bossDoctrine
@@ -63,7 +72,7 @@ public final class VillageWaveIntelSystem {
         }
         int players = VillageProgressionSystem.previewRaidPlayerCount(player.level().getServer());
         return "제 " + VillageCouncilState.currentDay() + "일 밤 예정 편성 · 기준 수호자 "
-                + players + "명\n주공·별동대·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."
+                + players + "명\n주공·별동대·공중 위협·전장 상황·웨이브 특성·병과·수량은 낮에 미리 공개됩니다."
                 + " 추가 수호자 1명당 적 수는 약 +30%이며 공격 방향 자체는 인원수로 늘어나지 않습니다.";
     }
 
