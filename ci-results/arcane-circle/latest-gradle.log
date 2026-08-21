@@ -1,7 +1,7 @@
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 92, in <module>
-    need(field,'Set.of("time_stop", "wish", "antimagic_field")','TIME_STOP_TICKS = 160','case "wish" -> fulfillWish(player);')
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 97, in <module>
+    need(buffs,'case "shapechange" -> 1800;','case "foresight" -> 2400;','event.setCanceled(true);','return .50;','return .75;')
   File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 12, in need
     for token in tokens: assert token in body, token
                                 ^^^^^^^^^^^^^
-AssertionError: Set.of("time_stop", "wish", "antimagic_field")
+AssertionError: return .50;
