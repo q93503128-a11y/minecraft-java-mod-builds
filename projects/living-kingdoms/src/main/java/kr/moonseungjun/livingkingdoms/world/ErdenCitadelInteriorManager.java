@@ -27,7 +27,7 @@ import java.util.Set;
  * cells, so doors, facade, roof and authored decoration remain authoritative.
  */
 public final class ErdenCitadelInteriorManager {
-    public static final int INTERIOR_REVISION = 3;
+    public static final int INTERIOR_REVISION = 4;
 
     private static final int PROCESS_INTERVAL = 20;
     private static final int PROCESS_BUDGET = 1;
@@ -111,9 +111,9 @@ public final class ErdenCitadelInteriorManager {
                 FAILED_SCANS.remove(zone.id);
                 processed++;
                 LivingKingdoms.LOGGER.info(
-                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} required={} enclosed=true furnishing_connected=true unique_fixture_cells=true facade_replaced=false",
+                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} required={} connected_cells={} enclosed=true furnishing_connected=true stepped_furnishing=true unique_fixture_cells=true facade_replaced=false",
                         zone.id, result.anchor.x, result.anchor.floorY + 1, result.anchor.z,
-                        result.fixtures, required);
+                        result.fixtures, required, result.connectedCells);
             } catch (Throwable throwable) {
                 LivingKingdoms.LOGGER.error("Unable to furnish Erden citadel zone={}", zone.id, throwable);
             }
@@ -209,15 +209,15 @@ public final class ErdenCitadelInteriorManager {
                 site.centerZ() + zone.offsetZ);
         if (anchor == null) return null;
 
-        Set<Long> furnishingCells = collectConnectedFurnishingCells(level, site, anchor);
+        Map<Long, Integer> furnishingFloors = collectConnectedFurnishingFloors(level, site, anchor);
         Set<Long> claimedFixtureCells = new HashSet<>();
         int fixtures = 0;
         for (Fixture fixture : zone.fixtures) {
-            if (ensureFixture(level, site, anchor, fixture, furnishingCells, claimedFixtureCells)) {
+            if (ensureFixture(level, site, anchor, fixture, furnishingFloors, claimedFixtureCells)) {
                 fixtures++;
             }
         }
-        return new ZoneResult(anchor, fixtures);
+        return new ZoneResult(anchor, fixtures, furnishingFloors.size());
     }
 
     private static Anchor findInteriorAnchor(
@@ -262,16 +262,17 @@ public final class ErdenCitadelInteriorManager {
         return null;
     }
 
-    private static Set<Long> collectConnectedFurnishingCells(
+    private static Map<Long, Integer> collectConnectedFurnishingFloors(
             ServerLevel level,
             RealmSiteLayoutSavedData.RealmSite site,
             Anchor anchor) {
-        Set<Long> cells = new HashSet<>();
-        if (!isOpenFurnishingCell(level, site, anchor, anchor.x, anchor.z)) return cells;
+        Map<Long, Integer> floors = new HashMap<>();
+        if (!isOpenFurnishingCell(level, site, anchor.x, anchor.floorY, anchor.z)) return floors;
 
         ArrayDeque<FloorNode> queue = new ArrayDeque<>();
-        queue.addLast(new FloorNode(anchor.x, anchor.z));
-        cells.add(furnishingKey(anchor.x, anchor.z));
+        queue.addLast(new FloorNode(anchor.x, anchor.floorY, anchor.z));
+        floors.put(furnishingKey(anchor.x, anchor.z), anchor.floorY);
+        int[] verticalOffsets = {0, -1, 1};
         while (!queue.isEmpty()) {
             FloorNode node = queue.removeFirst();
             for (Direction direction : Direction.Plane.HORIZONTAL) {
@@ -281,22 +282,28 @@ public final class ErdenCitadelInteriorManager {
                     continue;
                 }
                 long key = furnishingKey(x, z);
-                if (cells.contains(key) || !isOpenFurnishingCell(level, site, anchor, x, z)) continue;
-                cells.add(key);
-                queue.addLast(new FloorNode(x, z));
+                if (floors.containsKey(key)) continue;
+                for (int verticalOffset : verticalOffsets) {
+                    int floorY = node.floorY + verticalOffset;
+                    if (Math.abs(floorY - anchor.floorY) > 1) continue;
+                    if (!isOpenFurnishingCell(level, site, x, floorY, z)) continue;
+                    floors.put(key, floorY);
+                    queue.addLast(new FloorNode(x, floorY, z));
+                    break;
+                }
             }
         }
-        return cells;
+        return floors;
     }
 
     private static boolean isOpenFurnishingCell(
             ServerLevel level,
             RealmSiteLayoutSavedData.RealmSite site,
-            Anchor anchor,
             int x,
+            int floorY,
             int z) {
         if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) return false;
-        BlockPos floor = new BlockPos(x, anchor.floorY, z);
+        BlockPos floor = new BlockPos(x, floorY, z);
         BlockPos feet = floor.above();
         BlockPos head = feet.above();
         return !level.getBlockState(floor).isAir()
@@ -305,7 +312,7 @@ public final class ErdenCitadelInteriorManager {
                 && level.getBlockState(head).isAir()
                 && level.getFluidState(feet).isEmpty()
                 && level.getFluidState(head).isEmpty()
-                && hasCeiling(level, x, anchor.floorY, z);
+                && hasCeiling(level, x, floorY, z);
     }
 
     private static boolean ensureFixture(
@@ -313,7 +320,7 @@ public final class ErdenCitadelInteriorManager {
             RealmSiteLayoutSavedData.RealmSite site,
             Anchor anchor,
             Fixture fixture,
-            Set<Long> furnishingCells,
+            Map<Long, Integer> furnishingFloors,
             Set<Long> claimedFixtureCells) {
         int preferredX = anchor.x + fixture.dx;
         int preferredZ = anchor.z + fixture.dz;
@@ -327,19 +334,29 @@ public final class ErdenCitadelInteriorManager {
                     if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) continue;
                     long fixtureKey = furnishingKey(x, z);
                     if (claimedFixtureCells.contains(fixtureKey)) continue;
-                    BlockPos floor = new BlockPos(x, anchor.floorY, z);
+
+                    Integer floorY = furnishingFloors.get(fixtureKey);
+                    if (floorY == null) {
+                        Integer existingFloorY = findConnectedExistingFixtureFloor(
+                                level, site, anchor, fixture, x, z, furnishingFloors);
+                        if (existingFloorY != null) {
+                            claimedFixtureCells.add(fixtureKey);
+                            return true;
+                        }
+                        continue;
+                    }
+
+                    BlockPos floor = new BlockPos(x, floorY, z);
                     BlockPos feet = floor.above();
                     BlockPos head = feet.above();
                     if (level.getBlockState(floor).isAir() || !level.getFluidState(floor).isEmpty()) continue;
                     if (!level.getBlockState(head).isAir()) continue;
                     Block current = level.getBlockState(feet).getBlock();
-                    if (current == fixture.block
-                            && touchesConnectedFurnishingCell(x, z, furnishingCells)) {
+                    if (current == fixture.block) {
                         claimedFixtureCells.add(fixtureKey);
                         return true;
                     }
                     if (!level.getBlockState(feet).isAir()) continue;
-                    if (!furnishingCells.contains(fixtureKey)) continue;
                     level.setBlock(feet, fixture.block.defaultBlockState(), UPDATE_FLAGS);
                     claimedFixtureCells.add(fixtureKey);
                     return true;
@@ -349,14 +366,38 @@ public final class ErdenCitadelInteriorManager {
         return false;
     }
 
-    private static boolean touchesConnectedFurnishingCell(
+    private static Integer findConnectedExistingFixtureFloor(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            Anchor anchor,
+            Fixture fixture,
             int x,
             int z,
-            Set<Long> furnishingCells) {
-        if (furnishingCells.contains(furnishingKey(x, z))) return true;
+            Map<Long, Integer> furnishingFloors) {
+        for (int floorY = anchor.floorY - 1; floorY <= anchor.floorY + 1; floorY++) {
+            if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) return null;
+            BlockPos floor = new BlockPos(x, floorY, z);
+            BlockPos feet = floor.above();
+            BlockPos head = feet.above();
+            if (level.getBlockState(feet).getBlock() != fixture.block) continue;
+            if (level.getBlockState(floor).isAir() || !level.getFluidState(floor).isEmpty()) continue;
+            if (!level.getBlockState(head).isAir() || !hasCeiling(level, x, floorY, z)) continue;
+            if (touchesConnectedFurnishingCell(x, floorY, z, furnishingFloors)) return floorY;
+        }
+        return null;
+    }
+
+    private static boolean touchesConnectedFurnishingCell(
+            int x,
+            int floorY,
+            int z,
+            Map<Long, Integer> furnishingFloors) {
+        Integer ownFloor = furnishingFloors.get(furnishingKey(x, z));
+        if (ownFloor != null && Math.abs(ownFloor - floorY) <= 1) return true;
         for (Direction direction : Direction.Plane.HORIZONTAL) {
-            if (furnishingCells.contains(furnishingKey(
-                    x + direction.getStepX(), z + direction.getStepZ()))) return true;
+            Integer adjacentFloor = furnishingFloors.get(furnishingKey(
+                    x + direction.getStepX(), z + direction.getStepZ()));
+            if (adjacentFloor != null && Math.abs(adjacentFloor - floorY) <= 1) return true;
         }
         return false;
     }
@@ -414,9 +455,11 @@ public final class ErdenCitadelInteriorManager {
             }
         }
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_CITADEL_ZONE_WAIT zone={} attempts={} loaded_probe_columns={} anchor_found={} fixtures={} required={}",
+                "LK_ERDEN_CITADEL_ZONE_WAIT zone={} attempts={} loaded_probe_columns={} anchor_found={} fixtures={} connected_cells={} required={}",
                 zone.id, attempts, loadedColumns, result != null,
-                result == null ? 0 : result.fixtures, requiredFixtures(zone));
+                result == null ? 0 : result.fixtures,
+                result == null ? 0 : result.connectedCells,
+                requiredFixtures(zone));
     }
 
     private static void verifyCiIfReady(
@@ -439,7 +482,7 @@ public final class ErdenCitadelInteriorManager {
         int fixtureCount = SESSION_RESULTS.values().stream().mapToInt(result -> result.fixtures).sum();
         ciPassLogged = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true door_blocks={} perimeter_starts={} walk_nodes={} enclosed=true furnishing_connected=true unique_fixture_cells=true facade_replaced=false loaded_only=true",
+                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true door_blocks={} perimeter_starts={} walk_nodes={} enclosed=true furnishing_connected=true stepped_furnishing=true unique_fixture_cells=true facade_replaced=false loaded_only=true",
                 ZONES.size(), fixtureCount, traversal.doorBlocks, traversal.perimeterStarts,
                 traversal.visitedNodes);
         releaseCiTicket(level);
@@ -587,10 +630,10 @@ public final class ErdenCitadelInteriorManager {
     private record Anchor(int x, int floorY, int z) {
     }
 
-    private record ZoneResult(Anchor anchor, int fixtures) {
+    private record ZoneResult(Anchor anchor, int fixtures, int connectedCells) {
     }
 
-    private record FloorNode(int x, int z) {
+    private record FloorNode(int x, int floorY, int z) {
     }
 
     private record WalkNode(int x, int y, int z) {
