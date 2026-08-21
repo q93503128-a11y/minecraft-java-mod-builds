@@ -24,10 +24,10 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 
 /**
- * Server-authoritative sustained magic whose gameplay cannot be represented by one potion pulse.
- * Time Stop actually halts non-allied mob AI and Arcane casting; Antimagic Field continuously
- * suppresses spell-like status effects and Arcane casting. Wish cleanses harmful effects without
- * deleting the player's beneficial buffs.
+ * Server-authoritative sustained magic whose gameplay cannot be represented by a one-shot
+ * potion pulse. Time Stop halts non-allied AI/motion/casting; Antimagic continuously clears
+ * maintained Arcane state. Lower-circle Freedom only overrides movement-control tiers, never
+ * fifth-circle hard control or the field authorities in this class.
  */
 public final class ArcaneFieldService {
     public static final int TIME_STOP_TICKS = 160;
@@ -62,6 +62,7 @@ public final class ArcaneFieldService {
         if (!movementFree && SecondCircleSpellService.blocksCasting(caster)) return true;
         if (!movementFree && ThirdCircleSpellService.blocksCasting(caster)) return true;
         if (FourthCircleSpellService.blocksCasting(caster)) return true;
+        if (FifthCircleSpellService.blocksCasting(caster)) return true;
         if (HighControlSpellService.blocksCasting(caster)) return true;
         for (AntimagicField field : ANTIMAGIC.values()) {
             if (!field.active() || field.level() != caster.level()) continue;
@@ -181,6 +182,7 @@ public final class ArcaneFieldService {
             SecondCircleSpellService.clear(entity);
             ThirdCircleSpellService.clear(entity);
             FourthCircleSpellService.clear(entity);
+            FifthCircleSpellService.clear(entity);
             HighWardSpellService.clear(entity);
             HighControlSpellService.clear(entity);
             suppressMagicEffects(entity);
