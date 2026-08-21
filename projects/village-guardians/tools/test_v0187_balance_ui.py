@@ -2,6 +2,7 @@
 """Regression contracts for v0.18.7 town hall, equipment tooltips and raid easing."""
 
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
@@ -34,10 +35,16 @@ def main() -> None:
     assert "VillageDifficultyTuning.scaleEnemyCount" in raid
     assert "Math.max(1, players) * 2" not in raid
 
-    # Early raid pressure is intentionally below late-game pressure and downed parties get structure grace.
+    # Early player/structure pressure is softened, but a downed party must not receive a free
+    # structure-damage grace period. Death keeps its strategic cost in the current campaign rules.
     assert "0.56f + (d - 1) * 0.04f" in tune
     assert "0.52f + (d - 1) * 0.06f" in tune
-    assert "return 0.30f" in tune
+    defender_state = re.search(
+        r"public static float defenderStateStructureMultiplier\(MinecraftServer server\) \{(.*?)\n    \}",
+        tune,
+        re.S,
+    )
+    assert defender_state is not None and "return 1.0f;" in defender_state.group(1)
     assert "STRUCTURE_ATTACK_INTERVAL = 30" in raid
     assert "earlyStructureMultiplier(day)" in raid
     assert "defenderStateStructureMultiplier(server)" in raid
@@ -65,7 +72,7 @@ def main() -> None:
     assert 'case "victory" -> new VillageVictoryScreen(payload)' in client
 
     print("[PASS] party scaling = solo +30% per extra player")
-    print("[PASS] early player/structure pressure softened with downed-party grace")
+    print("[PASS] early player/structure pressure stays softened without death-state structure grace")
     print("[PASS] graded equipment hover stats are wired")
     print("[PASS] scripted collapse block debris is suppressed")
     print("[PASS] town hall repair/upgrade/function actions fit inside hotbar-safe UI")
