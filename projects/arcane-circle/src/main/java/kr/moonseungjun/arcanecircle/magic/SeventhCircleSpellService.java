@@ -15,13 +15,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -54,6 +52,8 @@ public final class SeventhCircleSpellService {
     private static final Map<UUID, NpcEtherealState> NPC_ETHEREAL = new HashMap<>();
     private static final Map<UUID, NpcCageState> NPC_CAGES = new HashMap<>();
     private static final Map<UUID, NpcCopyState> NPC_COPIES = new HashMap<>();
+    private static final List<GravityField> GRAVITY_FIELDS = new ArrayList<>();
+    private static final Map<UUID, GravityVictim> GRAVITY_VICTIMS = new HashMap<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
 
     private SeventhCircleSpellService() {}
@@ -83,7 +83,7 @@ public final class SeventhCircleSpellService {
                                      SpellDefinition spell, double range, double power,
                                      CastTargetSnapshot snapshot) {
         if (level == null || caster == null || spell == null || snapshot == null
-                || !snapshot.validFor(caster)) return false;
+                || !snapshot.validFor(caster) || !handles(spell.id())) return false;
         return switch (spell.id()) {
             case "delayed_blast_fireball" -> delayedBlast(level, caster, snapshot, range, power, false);
             case "etherealness" -> npcEthereal(level, caster, power);
@@ -108,6 +108,7 @@ public final class SeventhCircleSpellService {
         tickNpcEthereal(level, now);
         tickNpcCages(level, now);
         tickNpcCopies(level);
+        tickReverseGravity(level, now);
     }
 
     /** NPC Etherealness mirrors the player's 88% ordinary-damage phase reduction. */
@@ -119,7 +120,7 @@ public final class SeventhCircleSpellService {
         event.setAmount(Math.max(0.0F, event.getAmount() * .12F));
     }
 
-    /** Clears seventh-circle maintained NPC state affecting or owned by this entity. */
+    /** Clears seventh-circle maintained NPC state and Reverse Gravity state affecting or owned by this entity. */
     public static void clear(LivingEntity subject) {
         if (subject == null) return;
         UUID id = subject.getUUID();
@@ -140,6 +141,10 @@ public final class SeventhCircleSpellService {
             discardNpcCopy(state);
             copies.remove();
         }
+
+        clearGravityOwned(id);
+        GravityVictim victim = GRAVITY_VICTIMS.remove(id);
+        if (victim != null) restoreGravityVictim(victim);
     }
 
     public static void clearAll() {
@@ -148,6 +153,9 @@ public final class SeventhCircleSpellService {
         NPC_CAGES.clear();
         for (NpcCopyState state : new ArrayList<>(NPC_COPIES.values())) discardNpcCopy(state);
         NPC_COPIES.clear();
+        for (GravityVictim victim : new ArrayList<>(GRAVITY_VICTIMS.values())) restoreGravityVictim(victim);
+        GRAVITY_VICTIMS.clear();
+        GRAVITY_FIELDS.clear();
         LAST_TICK.clear();
     }
 
@@ -155,7 +163,6 @@ public final class SeventhCircleSpellService {
                                         double range, double power, boolean destructiveTerrain) {
         Vec3 center = snapshot.target();
         double radius = Math.max(9.0, Math.min(13.0, 8.0 + range * .10));
-        boolean hit = false;
         for (LivingEntity target : enemies(level, caster, center, radius, Math.max(6.0, radius * .72))) {
             double distance = Math.sqrt(center.distanceToSqr(target.position()));
             double falloff = Math.max(.42, 1.0 - distance / Math.max(1.0, radius) * .58);
@@ -163,13 +170,13 @@ public final class SeventhCircleSpellService {
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 300));
             Vec3 away = horizontalAway(center, target.position());
             target.push(away.x * (1.15 + falloff * .85), .38 + falloff * .42, away.z * (1.15 + falloff * .85));
-            hit = true;
         }
         if (destructiveTerrain && caster instanceof ServerPlayer player)
             DestructiveMagicService.impact(player, "delayed_blast_fireball", center, radius, power);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.25F, .64F);
-        return hit || destructiveTerrain || true;
+        // A locked ground blast is a valid cast even when every target escapes before detonation.
+        return snapshot.validFor(caster);
     }
 
     private static boolean fingerOfDeath(ServerLevel level, LivingEntity caster, LivingEntity fallback,
@@ -202,7 +209,6 @@ public final class SeventhCircleSpellService {
             pillars.add(center.add(Math.cos(angle) * patternRadius, 0.0, Math.sin(angle) * patternRadius));
         }
 
-        Set<UUID> hit = new HashSet<>();
         AABB field = new AABB(center, center).inflate(patternRadius + pillarRadius + 2.0, 8.0,
                 patternRadius + pillarRadius + 2.0);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, field,
@@ -212,7 +218,6 @@ public final class SeventhCircleSpellService {
             double falloff = Math.max(.58, 1.0 - Math.sqrt(nearest) / pillarRadius * .42);
             ArcaneDamage.hurt(level, caster, target, (float) (power * falloff));
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 260));
-            hit.add(target.getUUID());
         }
 
         if (destructiveTerrain && caster instanceof ServerPlayer player) {
@@ -221,43 +226,82 @@ public final class SeventhCircleSpellService {
         }
         level.playSound(null, BlockPos.containing(center), SoundEvents.BLAZE_SHOOT,
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.15F, .58F);
-        return !hit.isEmpty() || destructiveTerrain || true;
+        return snapshot.validFor(caster);
     }
 
+    /** Seven authored rays, seven deterministic bands, each ray owns its own narrow hit test. */
     private static boolean prismaticSpray(ServerLevel level, LivingEntity caster, CastTargetSnapshot snapshot,
                                           double range, double power) {
         Vec3 origin = snapshot.launchOrigin();
-        Vec3 direction = snapshot.launchDirection();
+        Vec3 forward = snapshot.launchDirection();
+        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
+        if (right.lengthSqr() < 1.0E-8) right = new Vec3(1.0, 0.0, 0.0);
+        else right = right.normalize();
+        Vec3 up = right.cross(forward);
+        if (up.lengthSqr() < 1.0E-8) up = new Vec3(0.0, 1.0, 0.0);
+        else up = up.normalize();
         double length = Math.max(12.0, range);
-        AABB box = new AABB(origin, origin.add(direction.scale(length))).inflate(length * .38 + 2.0);
-        int affected = 0;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
-                value -> validEnemy(caster, value))) {
-            Vec3 relative = target.getEyePosition().subtract(origin);
-            double projection = relative.dot(direction);
-            if (projection < 0.0 || projection > length) continue;
-            double allowed = 1.20 + projection * .30 + target.getBbWidth() * .55;
-            if (relative.subtract(direction.scale(projection)).lengthSqr() > allowed * allowed) continue;
-            double scale = Math.max(.62, 1.0 - projection / length * .28);
-            ArcaneDamage.hurt(level, caster, target, (float) (power * scale));
-            applyPrismaticCondition(target, Math.floorMod(target.getUUID().hashCode(), 5));
-            affected++;
+        Set<UUID> alreadyHit = new HashSet<>();
+        boolean any = false;
+
+        for (int band = 0; band < 7; band++) {
+            double horizontal = (band - 3) * .105;
+            double vertical = switch (band) {
+                case 0, 6 -> -.035;
+                case 1, 5 -> .045;
+                case 2, 4 -> -.015;
+                default -> .065;
+            };
+            Vec3 ray = forward.add(right.scale(horizontal)).add(up.scale(vertical)).normalize();
+            Vec3 end = origin.add(ray.scale(length));
+            AABB rayBox = new AABB(origin, end).inflate(1.15);
+            LivingEntity chosen = null;
+            double bestProjection = Double.MAX_VALUE;
+            for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, rayBox,
+                    value -> validEnemy(caster, value) && !alreadyHit.contains(value.getUUID()))) {
+                Vec3 relative = target.getEyePosition().subtract(origin);
+                double projection = relative.dot(ray);
+                if (projection < 0.0 || projection > length) continue;
+                double width = .72 + target.getBbWidth() * .52;
+                if (relative.subtract(ray.scale(projection)).lengthSqr() > width * width) continue;
+                if (projection < bestProjection) {
+                    bestProjection = projection;
+                    chosen = target;
+                }
+            }
+            if (chosen == null) continue;
+            alreadyHit.add(chosen.getUUID());
+            double falloff = Math.max(.68, 1.0 - bestProjection / length * .26);
+            ArcaneDamage.hurt(level, caster, chosen, (float) (power * falloff));
+            applyPrismaticCondition(level, caster, chosen, band, power);
+            any = true;
         }
-        return affected > 0;
+        return any;
     }
 
-    private static void applyPrismaticCondition(LivingEntity target, int band) {
+    private static void applyPrismaticCondition(ServerLevel level, LivingEntity caster,
+                                                LivingEntity target, int band, double power) {
         switch (band) {
-            case 0 -> target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 240));
+            case 0 -> target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 260));
             case 1 -> {
-                target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + 360));
+                target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + 420));
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 220, 3, true, false));
             }
-            case 2 -> target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 260, 4, true, false));
-            case 3 -> target.addEffect(new MobEffectInstance(MobEffects.WITHER, 220, 3, true, false));
+            case 2 -> {
+                ArcaneDamage.hurt(level, caster, target, (float) (power * .30));
+                target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 180, 0, true, false));
+                Vec3 away = horizontalAway(caster.position(), target.position());
+                target.push(away.x * .65, .18, away.z * .65);
+            }
+            case 3 -> target.addEffect(new MobEffectInstance(MobEffects.WITHER, 240, 3, true, false));
+            case 4 -> {
+                target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 240, 2, true, false));
+                target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 180, 1, true, false));
+            }
+            case 5 -> target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 180, 6, true, false));
             default -> {
-                target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 220, 2, true, false));
-                target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 220, 0, true, false));
+                ArcaneDamage.hurt(level, caster, target, (float) (power * .55));
+                target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 260, 4, true, false));
             }
         }
     }
@@ -266,14 +310,95 @@ public final class SeventhCircleSpellService {
                                           double range, double power) {
         Vec3 center = snapshot.target();
         double radius = Math.max(10.0, Math.min(15.0, range * .34));
-        int affected = 0;
-        for (LivingEntity target : enemies(level, caster, center, radius, 7.5)) {
+        clearGravityOwned(caster.getUUID());
+        GRAVITY_FIELDS.add(new GravityField(level, caster.getUUID(), center, radius,
+                level.getGameTime() + REVERSE_GRAVITY_TICKS));
+        for (LivingEntity target : enemies(level, caster, center, radius, Math.max(7.5, radius * .72))) {
             ArcaneDamage.hurt(level, caster, target, (float) (power * .34));
-            target.push(0.0, 2.6 + Math.min(1.6, power / 90.0), 0.0);
-            target.addEffect(new MobEffectInstance(MobEffects.LEVITATION, REVERSE_GRAVITY_TICKS, 5, true, false));
-            affected++;
+            captureGravityVictim(level, caster.getUUID(), target);
+            liftGravityVictim(target);
         }
-        return affected > 0;
+        return true;
+    }
+
+    private static void tickReverseGravity(ServerLevel level, long now) {
+        Set<UUID> activeOwners = new HashSet<>();
+        Iterator<GravityField> fields = GRAVITY_FIELDS.iterator();
+        while (fields.hasNext()) {
+            GravityField field = fields.next();
+            if (field.level != level) continue;
+            Entity rawOwner = level.getEntity(field.ownerId);
+            if (!(rawOwner instanceof LivingEntity owner) || !owner.isAlive() || owner.isRemoved()
+                    || now >= field.expiresAt) {
+                fields.remove();
+                continue;
+            }
+            activeOwners.add(field.ownerId);
+            AABB box = new AABB(field.center, field.center).inflate(field.radius, Math.max(8.0, field.radius), field.radius);
+            for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
+                    value -> validEnemy(owner, value)
+                            && field.center.distanceToSqr(value.position()) <= field.radius * field.radius + 9.0)) {
+                captureGravityVictim(level, field.ownerId, target);
+                liftGravityVictim(target);
+            }
+        }
+
+        Iterator<Map.Entry<UUID, GravityVictim>> victims = GRAVITY_VICTIMS.entrySet().iterator();
+        while (victims.hasNext()) {
+            GravityVictim victim = victims.next().getValue();
+            if (victim.level != level) continue;
+            Entity raw = level.getEntity(victim.targetId);
+            boolean stillInside = false;
+            if (raw instanceof LivingEntity target && target.isAlive() && !target.isRemoved()) {
+                for (GravityField field : GRAVITY_FIELDS) {
+                    if (field.level != level || !field.ownerId.equals(victim.ownerId) || now >= field.expiresAt) continue;
+                    if (field.center.distanceToSqr(target.position()) <= field.radius * field.radius + 9.0) {
+                        stillInside = true;
+                        break;
+                    }
+                }
+            }
+            if (stillInside && activeOwners.contains(victim.ownerId)) continue;
+            restoreGravityVictim(victim);
+            victims.remove();
+        }
+    }
+
+    private static void captureGravityVictim(ServerLevel level, UUID ownerId, LivingEntity target) {
+        GravityVictim existing = GRAVITY_VICTIMS.get(target.getUUID());
+        if (existing != null && existing.level == level && existing.ownerId.equals(ownerId)) return;
+        if (existing != null) restoreGravityVictim(existing);
+        GRAVITY_VICTIMS.put(target.getUUID(), new GravityVictim(level, ownerId, target.getUUID(), target.isNoGravity()));
+    }
+
+    private static void liftGravityVictim(LivingEntity target) {
+        target.setNoGravity(true);
+        Vec3 velocity = target.getDeltaMovement();
+        target.setDeltaMovement(velocity.x, Math.max(.46, Math.min(1.05, velocity.y + .10)), velocity.z);
+        target.fallDistance = 0.0F;
+    }
+
+    private static void clearGravityOwned(UUID ownerId) {
+        if (ownerId == null) return;
+        GRAVITY_FIELDS.removeIf(field -> field.ownerId.equals(ownerId));
+        Iterator<Map.Entry<UUID, GravityVictim>> victims = GRAVITY_VICTIMS.entrySet().iterator();
+        while (victims.hasNext()) {
+            GravityVictim victim = victims.next().getValue();
+            if (!victim.ownerId.equals(ownerId)) continue;
+            restoreGravityVictim(victim);
+            victims.remove();
+        }
+    }
+
+    private static void restoreGravityVictim(GravityVictim victim) {
+        Entity raw = victim.level.getEntity(victim.targetId);
+        if (!(raw instanceof LivingEntity target) || target.isRemoved()) return;
+        target.setNoGravity(victim.oldNoGravity);
+        target.fallDistance = 0.0F;
+        Vec3 velocity = target.getDeltaMovement();
+        target.setDeltaMovement(velocity.x, Math.min(.18, velocity.y), velocity.z);
+        target.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 80, 0, true, false));
+        WorldMagicService.cancelRelease(target, "reverse_gravity");
     }
 
     private static boolean npcEthereal(ServerLevel level, Mob caster, double power) {
@@ -376,7 +501,7 @@ public final class SeventhCircleSpellService {
     private static boolean npcSimulacrum(ServerLevel level, Mob caster, LivingEntity target,
                                          CastTargetSnapshot snapshot) {
         LivingEntity locked = targetEntity(level, caster, target, snapshot);
-        Mob source = locked instanceof Mob mob && mob.isAlive() && !mob.isRemoved() ? mob : caster;
+        Mob source = locked instanceof Mob mob && mob.isAlive() && !mob.isRemoved() && !caster.isAlliedTo(mob) ? mob : caster;
         NpcCopyState previous = NPC_COPIES.remove(caster.getUUID());
         if (previous != null) discardNpcCopy(previous);
 
@@ -401,7 +526,7 @@ public final class SeventhCircleSpellService {
         copy.addTag("arcanecircle_npc_simulacrum");
         level.addFreshEntityWithPassengers(copy);
         LivingEntity combatTarget = target != null && target.isAlive() && !caster.isAlliedTo(target) ? target : caster.getTarget();
-        if (combatTarget != null && combatTarget != copy) copy.setTarget(combatTarget);
+        if (combatTarget != null && combatTarget != copy && !caster.isAlliedTo(combatTarget)) copy.setTarget(combatTarget);
         NPC_COPIES.put(caster.getUUID(), new NpcCopyState(level, caster.getUUID(), copy.getUUID()));
         return true;
     }
@@ -493,7 +618,7 @@ public final class SeventhCircleSpellService {
                                              CastTargetSnapshot snapshot) {
         if (snapshot.targetEntityId() != null) {
             Entity raw = level.getEntity(snapshot.targetEntityId());
-            if (raw instanceof LivingEntity living && living.isAlive() && !living.isRemoved()) return living;
+            return raw instanceof LivingEntity living && living.isAlive() && !living.isRemoved() ? living : null;
         }
         return fallback != null && fallback.isAlive() && !fallback.isRemoved() ? fallback : null;
     }
@@ -530,6 +655,36 @@ public final class SeventhCircleSpellService {
             this.oldInvisible = oldInvisible;
         }
         private boolean active() { return level.getGameTime() < expiresAt; }
+    }
+
+    private static final class GravityField {
+        private final ServerLevel level;
+        private final UUID ownerId;
+        private final Vec3 center;
+        private final double radius;
+        private final long expiresAt;
+
+        private GravityField(ServerLevel level, UUID ownerId, Vec3 center, double radius, long expiresAt) {
+            this.level = level;
+            this.ownerId = ownerId;
+            this.center = center;
+            this.radius = radius;
+            this.expiresAt = expiresAt;
+        }
+    }
+
+    private static final class GravityVictim {
+        private final ServerLevel level;
+        private final UUID ownerId;
+        private final UUID targetId;
+        private final boolean oldNoGravity;
+
+        private GravityVictim(ServerLevel level, UUID ownerId, UUID targetId, boolean oldNoGravity) {
+            this.level = level;
+            this.ownerId = ownerId;
+            this.targetId = targetId;
+            this.oldNoGravity = oldNoGravity;
+        }
     }
 
     private record NpcCageState(ServerLevel level, UUID ownerId, UUID targetId, Vec3 anchor, long expiresAt) {}
