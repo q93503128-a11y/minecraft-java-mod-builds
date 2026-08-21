@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.60",
+  "version": "0.12.1-alpha.61",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -18,15 +18,7 @@
   "particle_core_calls": 0,
   "release_geometry": "bounded_primitive_batches",
   "signature_models": ["meteor","tornado","portal","force_cage","barrier_wall","barrier_dome"],
-  "performance_guard": {
-    "voxel_boolean_unions": 0,
-    "charge_primitive_cap": 1400,
-    "release_primitive_cap": 2600,
-    "frame_primitive_cap": 14500,
-    "charge_progress_steps": 20,
-    "terrain_block_changes_per_tick": 720,
-    "terrain_scans_per_tick": 48000
-  },
+  "performance_guard": {"voxel_boolean_unions":0,"charge_primitive_cap":1400,"release_primitive_cap":2600,"frame_primitive_cap":14500,"charge_progress_steps":20,"terrain_block_changes_per_tick":720,"terrain_scans_per_tick":48000},
   "catastrophe_destruction": "visible_footprint_tiled_across_bounded_ticks",
   "maintained_authority_key": "G",
   "mage_residents": true,
@@ -54,61 +46,32 @@
   "grimoire_effect_compendium": true,
   "spell_contract_audit": "109_explicit_summaries_and_runtime_routes",
   "copy_source_targeting": ["simulacrum_target_28","clone_target_32"],
-  "first_circle_deep_audit": [
-    "magic_missile_locked_salvo","fire_bolt_nonhoming_impact","single_beam_ray_of_frost",
-    "reactive_shield","lifecycle_safe_feather_fall","refcounted_real_light",
-    "persistent_grease_slip","weak_target_damage_wake_sleep","physical_thunderwave","regenerating_mage_armor"
-  ],
+  "first_circle_deep_audit": ["magic_missile_locked_salvo","fire_bolt_nonhoming_impact","single_beam_ray_of_frost","reactive_shield","lifecycle_safe_feather_fall","refcounted_real_light","persistent_grease_slip","weak_target_damage_wake_sleep","physical_thunderwave","regenerating_mage_armor"],
   "first_circle_npc_parity": true,
-  "second_circle_deep_audit": [
-    "timed_three_ray_scorching_salvo","safe_misty_step","persistent_web_field",
-    "direct_attack_mirror_images","aggro_breaking_invisibility","line_force_gust",
-    "restricted_hold_person","single_center_shatter","direct_attack_blur","rise_safe_descent_levitate"
-  ],
+  "second_circle_deep_audit": ["timed_three_ray_scorching_salvo","safe_misty_step","persistent_web_field","direct_attack_mirror_images","aggro_breaking_invisibility","line_force_gust","restricted_hold_person","single_center_shatter","direct_attack_blur","rise_safe_descent_levitate"],
   "second_circle_npc_parity": true,
-  "third_circle_deep_audit": [
-    "falloff_fireball_blast","piercing_lightning_line","lifecycle_real_flight",
-    "arcane_tempo_haste","custom_state_dispel_magic","actual_damage_vampiric_drain",
-    "persistent_slow_field","energy_only_recharging_ward","casting_break_sleet_storm","safe_long_blink"
-  ],
+  "third_circle_deep_audit": ["falloff_fireball_blast","piercing_lightning_line","lifecycle_real_flight","arcane_tempo_haste","custom_state_dispel_magic","actual_damage_vampiric_drain","persistent_slow_field","energy_only_recharging_ward","casting_break_sleet_storm","safe_long_blink"],
   "third_circle_npc_parity": true,
-  "fourth_circle_deep_audit": [
-    "persistent_fire_wall","five_pulse_ice_storm","combat_greater_invisibility",
-    "two_way_resilient_sphere","companion_dimension_door","physical_only_stoneskin",
-    "decision_scramble_confusion","anti_heal_blight","movement_control_freedom","forced_flee_phantasmal_killer"
-  ],
+  "fourth_circle_deep_audit": ["persistent_fire_wall","five_pulse_ice_storm","combat_greater_invisibility","two_way_resilient_sphere","companion_dimension_door","physical_only_stoneskin","decision_scramble_confusion","anti_heal_blight","movement_control_freedom","forced_flee_phantasmal_killer"],
   "fourth_circle_npc_parity": true,
-  "fifth_circle_deep_audit": [
-    "widening_cone_of_cold","spell_intercepting_force_wall","drifting_cloudkill_front",
-    "sustained_telekinesis_throw","vertical_flame_strike","boss_resisted_hold_monster",
-    "allied_mass_cure","restoring_physical_passwall","person_scale_combat_domination",
-    "casting_break_insect_plague"
-  ],
+  "fifth_circle_deep_audit": ["widening_cone_of_cold","spell_intercepting_force_wall","drifting_cloudkill_front","sustained_telekinesis_throw","vertical_flame_strike","boss_resisted_hold_monster","allied_mass_cure","restoring_physical_passwall","person_scale_combat_domination","casting_break_insect_plague"],
   "fifth_circle_npc_parity": true,
-  "sixth_circle_deep_audit": [
-    "material_disintegrate_ray","npc_parity_invulnerability_globe","behavioral_mass_suggestion",
-    "physical_move_earth","piercing_sunbeam","persistent_true_seeing",
-    "fixed_freezing_sphere","fear_weakness_eyebite","casting_block_petrification",
-    "weak_enemy_circle_of_death"
-  ],
+  "sixth_circle_deep_audit": ["material_disintegrate_ray","npc_parity_invulnerability_globe","behavioral_mass_suggestion","physical_move_earth","piercing_sunbeam","persistent_true_seeing","fixed_freezing_sphere","fear_weakness_eyebite","casting_block_petrification","weak_enemy_circle_of_death"],
   "sixth_circle_npc_parity": true,
-  "seventh_circle_deep_audit": [
-    "locked_delayed_fireball","preserved_ethereal_phase","locked_finger_of_death",
-    "six_pillar_fire_storm","preserved_physical_forcecage","preserved_player_plane_shift",
-    "seven_independent_prismatic_rays","maintained_reverse_gravity","preserved_commandable_simulacrum",
-    "locked_safe_teleport"
-  ],
+  "seventh_circle_deep_audit": ["locked_delayed_fireball","preserved_ethereal_phase","locked_finger_of_death","six_pillar_fire_storm","preserved_physical_forcecage","preserved_player_plane_shift","seven_independent_prismatic_rays","maintained_reverse_gravity","preserved_commandable_simulacrum","locked_safe_teleport"],
   "seventh_circle_preserved_authority": ["etherealness","forcecage","plane_shift","simulacrum"],
   "seventh_circle_npc_parity": true,
   "seventh_circle_npc_plane_shift_role": "safe_planar_disengage_without_target_damage",
-  "eighth_circle_deep_audit": [
-    "preserved_antimagic_field","preserved_living_clone","preserved_control_weather",
-    "preserved_persistent_demiplane","preserved_dominate_monster","maintained_earthquake",
-    "preserved_feeblemind","drifting_incendiary_cloud","preserved_maze_exile","dedicated_sunburst"
-  ],
+  "eighth_circle_deep_audit": ["preserved_antimagic_field","preserved_living_clone","preserved_control_weather","preserved_persistent_demiplane","preserved_dominate_monster","maintained_earthquake","preserved_feeblemind","drifting_incendiary_cloud","preserved_maze_exile","dedicated_sunburst"],
   "eighth_circle_preserved_authority": ["antimagic_field","clone","control_weather","demiplane","dominate_monster","feeblemind","maze"],
   "eighth_circle_npc_parity": true,
   "eighth_circle_npc_demiplane_role": "timed_pocket_sanctuary_without_persistent_player_room",
   "eighth_circle_npc_maze_role": "combat_exile_without_cross_dimension_player_relocation",
-  "eighth_circle_npc_dominate_player_role": "casting_and_combat_compulsion"
+  "eighth_circle_npc_dominate_player_role": "casting_and_combat_compulsion",
+  "ninth_circle_deep_audit": ["seeded_cratering_meteor_swarm","locked_power_word_kill","seven_layer_physical_prismatic_wall","preserved_shapechange","preserved_time_stop","preserved_true_polymorph","maintained_behavioral_weird","preserved_reality_wish","two_way_safe_gate","preserved_foresight"],
+  "ninth_circle_preserved_authority": ["shapechange","time_stop","true_polymorph","wish","foresight"],
+  "ninth_circle_npc_parity": true,
+  "ninth_circle_npc_true_polymorph_player_role": "combat_and_casting_suppression_without_player_entity_type_swap",
+  "ninth_circle_npc_wish_role": "full_recovery_cleanse_without_player_mana_cooldown_state",
+  "ninth_circle_gate_role": "two_way_same_dimension_safe_entity_portal"
 }
