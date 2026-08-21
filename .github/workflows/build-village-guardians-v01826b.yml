@@ -1,0 +1,101 @@
+name: Build Village Guardians v0.18.26 Turret Role Integrity Corrected
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+env:
+  PROJECT_DIR: projects/village-guardians
+  BUILD_VERSION: 0.18.26-alpha.1
+  EXPECTED_JAR: villageguardians-0.18.26-alpha.1.jar
+
+jobs:
+  build:
+    if: github.event_name != 'issues' || github.event.issue.title == 'Village Guardians v0.18.26 turret role integrity corrected'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Apply corrected patch
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: python3 tools/apply_v01826_patch.py
+      - name: Run regression contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          for test in tools/test_*.py; do python3 "$test"; done
+      - name: Clean build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
+      - name: Verify JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/${EXPECTED_JAR}"
+          python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-${{ env.BUILD_VERSION }}
+          path: ${{ env.PROJECT_DIR }}/build/libs/${{ env.EXPECTED_JAR }}
+          if-no-files-found: error
+          retention-days: 30
+      - name: Commit verified source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f "${PROJECT_DIR}/tools/apply_v01826_patch.py"
+          git add -A "${PROJECT_DIR}"
+          git diff --cached --check
+          git commit -m 'fix(village): specialize turret target selection [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Record acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          mkdir -p "${PROJECT_DIR}/.ci"
+          cat > "${PROJECT_DIR}/.ci/v01826-final.txt" <<EOF
+          version=${BUILD_VERSION}
+          run_id=${GITHUB_RUN_ID}
+          source_sha=${SOURCE_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          EOF
+          git add "${PROJECT_DIR}/.ci/v01826-final.txt"
+          git diff --cached --check
+          git commit -m 'ci(village): record v0.18.26 acceptance [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
