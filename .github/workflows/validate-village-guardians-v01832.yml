@@ -1,0 +1,137 @@
+name: Validate Village Guardians v0.18.32 Ranger Traffic
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  ranger-wall-traffic-acceptance:
+    if: github.event.issue.title == 'Village Guardians v0.18.32 ranger traffic integrity'
+    runs-on: ubuntu-24.04
+    env:
+      PROJECT_DIR: projects/village-guardians
+      BUILD_VERSION: 0.18.32-alpha.1
+      EXPECTED_JAR: villageguardians-0.18.32-alpha.1.jar
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply ranger wall traffic separation
+        run: python3 "${PROJECT_DIR}/tools/apply_v01832_ranger_wall_traffic.py"
+
+      - name: Check authored patch
+        run: git diff --check
+
+      - name: Run deterministic regression contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${PROJECT_DIR}"
+          for test in tools/test_*.py; do
+            echo "=== $test ==="
+            python3 "$test"
+          done
+
+      - name: Clean Java 25 NeoForge build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${PROJECT_DIR}"
+          gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
+
+      - name: Verify runtime JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${PROJECT_DIR}"
+          test -f "build/libs/${EXPECTED_JAR}"
+          python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jar = Path('build/libs/villageguardians-0.18.32-alpha.1.jar')
+          with zipfile.ZipFile(jar) as zf:
+              names = set(zf.namelist())
+              toml = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
+          prefix = 'kr/moonseungjun/villageguardians/'
+          for cls in ('VillageMercenaryDeploymentSystem.class', 'VillageMercenarySystem.class',
+                      'VillageFortressTerrain.class', 'VillagePlacedTurretSystem.class',
+                      'VillageRaidSystem.class'):
+              assert prefix + cls in names
+          assert '0.18.32-alpha.1' in toml
+          print('[PASS] final JAR contains ranger traffic separation and accepted combat owners')
+          PY
+
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.18.32-alpha.1
+          path: projects/village-guardians/build/libs/villageguardians-0.18.32-alpha.1.jar
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit verified source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            "${PROJECT_DIR}/README.md" \
+            "${PROJECT_DIR}/gradle.properties" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageMercenaryDeploymentSystem.java" \
+            "${PROJECT_DIR}/tools/test_v01831_pretest_hardening.py"
+          git diff --cached --check
+          git commit -m 'fix(village): separate ranger posts from wall stairs [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Record final acceptance metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          mkdir -p "${PROJECT_DIR}/.ci"
+          cat > "${PROJECT_DIR}/.ci/v01832-final.txt" <<EOF
+          version=${BUILD_VERSION}
+          run_id=${GITHUB_RUN_ID}
+          source_sha=${SOURCE_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          EOF
+          git add "${PROJECT_DIR}/.ci/v01832-final.txt"
+          git diff --cached --check
+          git commit -m 'ci(village): record v0.18.32 acceptance [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
