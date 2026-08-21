@@ -10,7 +10,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-/** Keeps far-regional settlement streaming and village society isolated from the central dispatcher. */
+/** Keeps far-regional settlement streaming, society and economy isolated from the central dispatcher. */
 @EventBusSubscriber(modid = LivingKingdoms.MOD_ID)
 public final class ErdenRegionalSettlementEventBridge {
     private ErdenRegionalSettlementEventBridge() {
@@ -25,11 +25,17 @@ public final class ErdenRegionalSettlementEventBridge {
     public static void onServerTick(ServerTickEvent.Post event) {
         ErdenRegionalSettlementManager.onServerTick(event);
         ErdenRegionalSocietyManager.onServerTick(event);
+        ErdenRegionalEconomyManager.onServerTick(event);
     }
 
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         ErdenRegionalSocietyManager.handleInteraction(event);
+    }
+
+    @SubscribeEvent
+    public static void onMarketInteract(PlayerInteractEvent.RightClickBlock event) {
+        ErdenRegionalEconomyManager.handleInteraction(event);
     }
 
     @SubscribeEvent
