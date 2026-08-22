@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.infrastructure;
 
+import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -16,6 +17,8 @@ public final class InfrastructureService {
 
     public static void perform(ServerPlayer player, String projectId, String action) {
         if (ACTION_STATUS.equals(action) && ALL_PROJECTS.equals(projectId)) {
+            WorldAscensionData world = WorldAscensionData.get(((ServerLevel) player.level()).getServer());
+            player.sendSystemMessage(Component.literal("§5[월드 승천] §f단계 §d" + world.stage() + "§7/§f2 §7· §d" + world.stageName()));
             for (InfrastructureProject project : InfrastructureProject.values()) sendStatus(player, project);
             return;
         }
