@@ -55,7 +55,8 @@ public final class VillageWorldSystem {
                 || !level.getBlockState(center.below(5)).is(Blocks.AMETHYST_BLOCK)
                 || !level.getBlockState(center.below(6)).is(Blocks.LAPIS_BLOCK)
                 || !level.getBlockState(center.below(7)).is(Blocks.EMERALD_BLOCK)
-                || !level.getBlockState(center.below(8)).is(Blocks.DIAMOND_BLOCK);
+                || !level.getBlockState(center.below(8)).is(Blocks.DIAMOND_BLOCK)
+                || !level.getBlockState(center.below(9)).is(Blocks.GOLD_BLOCK);
         if (!firstBuild && !visualRevisionMissing) return;
 
         generationInProgress = true;
@@ -65,7 +66,7 @@ public final class VillageWorldSystem {
                 VillageProgressionSystem.restoreFacilitiesForMigration();
             } else {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 정비] §f성벽 4면 접근 계단·포좌와 용병 고지 동선을 최신 방어 배치로 갱신합니다."));
+                        "§6[마을 정비] §f성벽 4면 접근 계단·사격구·포좌 동선을 최신 실전 배치로 갱신합니다."));
             }
             buildAll(level, center);
             if (!firstBuild) {
@@ -270,6 +271,7 @@ public final class VillageWorldSystem {
         VillageBuildingSignatures.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
         // 26.2 exposes Blocks.COPPER_BLOCK as a weathering collection, so the migration marker uses a stable block.
+        VillageFortressTerrain.set(level, center.below(9), Blocks.GOLD_BLOCK);
         VillageFortressTerrain.set(level, center.below(8), Blocks.DIAMOND_BLOCK);
         VillageFortressTerrain.set(level, center.below(7), Blocks.EMERALD_BLOCK);
         VillageFortressTerrain.set(level, center.below(6), Blocks.LAPIS_BLOCK);

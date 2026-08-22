@@ -10,15 +10,11 @@ def read(name: str) -> str:
 
 
 def main() -> None:
-    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     deployment = read("VillageMercenaryDeploymentSystem.java")
     mercenary = read("VillageMercenarySystem.java")
     entry = read("VillageGuardians.java")
     old = (ROOT / "tools/test_v01831_pretest_hardening.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.32-alpha.1" in props
-    assert "0.18.32-alpha.1" in readme and "villageguardians-0.18.32-alpha.1.jar" in readme
     assert 'assert "mod_version=0.18.31-alpha.1" in props' not in old
 
     post = deployment.split("private static BlockPos rangerWallPost", 1)[1].split(

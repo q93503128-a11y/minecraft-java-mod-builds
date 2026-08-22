@@ -195,21 +195,20 @@ final class VillageFortressTerrain {
             int startZ,
             boolean north) {
         for (int dx = -WALL_RADIUS; dx <= WALL_RADIUS; dx++) {
-            if (north && Math.abs(dx) <= 15) {
-                continue;
-            }
+            if (north && Math.abs(dx) <= 15) continue;
+            boolean firingBay = isFiringBayOffset(dx);
             for (int offset = 0; offset < WALL_THICKNESS; offset++) {
                 int z = center.getZ() + startZ + offset;
                 for (int y = 1; y <= WALL_TOP_Y; y++) {
-                    Block material = y <= 2 || y >= 8 ? Blocks.STONE_BRICKS : Blocks.COBBLESTONE;
-                    set(level, new BlockPos(center.getX() + dx, groundY + y, z), material);
+                    if (firingBay && y >= 3 && y <= 4) {
+                        set(level, new BlockPos(center.getX() + dx, groundY + y, z), Blocks.AIR);
+                    } else {
+                        Block material = y <= 2 || y >= 8 ? Blocks.STONE_BRICKS : Blocks.COBBLESTONE;
+                        set(level, new BlockPos(center.getX() + dx, groundY + y, z), material);
+                    }
                 }
             }
-            if (Math.floorMod(dx, 6) == 0) {
-                for (int offset = 0; offset < WALL_THICKNESS; offset++) {
-                    int z = center.getZ() + startZ + offset;
-                    set(level, new BlockPos(center.getX() + dx, groundY + 3, z), Blocks.AIR);
-                }
+            if (firingBay) {
                 int stepZ = center.getZ() + (north ? startZ + WALL_THICKNESS : startZ - 1);
                 set(level, new BlockPos(center.getX() + dx, groundY + 1, stepZ), Blocks.STONE_BRICKS);
             }
@@ -224,18 +223,19 @@ final class VillageFortressTerrain {
 
     private static void buildVerticalWall(ServerLevel level, BlockPos center, int groundY, int startX) {
         for (int dz = -WALL_RADIUS; dz <= WALL_RADIUS; dz++) {
+            boolean firingBay = isFiringBayOffset(dz);
             for (int offset = 0; offset < WALL_THICKNESS; offset++) {
                 int x = center.getX() + startX + offset;
                 for (int y = 1; y <= WALL_TOP_Y; y++) {
-                    Block material = y <= 2 || y >= 8 ? Blocks.STONE_BRICKS : Blocks.COBBLESTONE;
-                    set(level, new BlockPos(x, groundY + y, center.getZ() + dz), material);
+                    if (firingBay && y >= 3 && y <= 4) {
+                        set(level, new BlockPos(x, groundY + y, center.getZ() + dz), Blocks.AIR);
+                    } else {
+                        Block material = y <= 2 || y >= 8 ? Blocks.STONE_BRICKS : Blocks.COBBLESTONE;
+                        set(level, new BlockPos(x, groundY + y, center.getZ() + dz), material);
+                    }
                 }
             }
-            if (Math.floorMod(dz, 6) == 0) {
-                for (int offset = 0; offset < WALL_THICKNESS; offset++) {
-                    int x = center.getX() + startX + offset;
-                    set(level, new BlockPos(x, groundY + 3, center.getZ() + dz), Blocks.AIR);
-                }
+            if (firingBay) {
                 int stepX = center.getX() + (startX < 0 ? startX + WALL_THICKNESS : startX - 1);
                 set(level, new BlockPos(stepX, groundY + 1, center.getZ() + dz), Blocks.STONE_BRICKS);
             }
@@ -246,6 +246,11 @@ final class VillageFortressTerrain {
                 set(level, new BlockPos(innerX, groundY + WALL_TOP_Y + 1, center.getZ() + dz), Blocks.STONE_BRICKS);
             }
         }
+    }
+
+    private static boolean isFiringBayOffset(int offset) {
+        int phase = Math.floorMod(offset, 12);
+        return phase == 0 || phase == 1 || phase == 11;
     }
 
     private static void buildDefenderGalleries(ServerLevel level, BlockPos center, int groundY) {
@@ -340,7 +345,20 @@ final class VillageFortressTerrain {
     private static void buildWallAccessRamp(
             ServerLevel level, BlockPos center, int groundY, Direction outward, int lane) {
         Direction sideways = outward.getClockWise();
-        int stairStart = WALL_RADIUS - 14;
+        int stairStart = WALL_RADIUS - 10;
+
+        // 0.18.31 used a solid five-wide wedge beginning four blocks farther into the courtyard.
+        // Clear only that retired inward footprint so existing worlds do not keep the old road block.
+        for (int distance = WALL_RADIUS - 14; distance < stairStart; distance++) {
+            BlockPos row = center.relative(outward, distance).relative(sideways, lane);
+            for (int width = -3; width <= 3; width++) {
+                BlockPos column = row.relative(sideways, width);
+                for (int y = groundY + 1; y <= groundY + 7; y++) {
+                    set(level, new BlockPos(column.getX(), y, column.getZ()), Blocks.AIR);
+                }
+            }
+        }
+
         for (int step = 0; step < WALL_TOP_Y; step++) {
             BlockPos row = center.relative(outward, stairStart + step).relative(sideways, lane);
             int y = groundY + 1 + step;
@@ -348,7 +366,14 @@ final class VillageFortressTerrain {
                 BlockPos column = row.relative(sideways, width);
                 BlockPos stairPos = new BlockPos(column.getX(), y, column.getZ());
                 for (int supportY = groundY + 1; supportY < y; supportY++) {
-                    set(level, new BlockPos(stairPos.getX(), supportY, stairPos.getZ()), Blocks.STONE_BRICKS);
+                    set(level, new BlockPos(stairPos.getX(), supportY, stairPos.getZ()), Blocks.AIR);
+                }
+                // Sparse edge piers keep the staircase visually supported without forming a solid
+                // courtyard barrier. Every other underside cell remains walk-through air.
+                if ((step == 4 || step == 8) && Math.abs(width) == 2) {
+                    for (int supportY = groundY + 1; supportY < y; supportY++) {
+                        set(level, new BlockPos(stairPos.getX(), supportY, stairPos.getZ()), Blocks.STONE_BRICK_WALL);
+                    }
                 }
                 level.setBlockAndUpdate(
                         stairPos,

@@ -45,7 +45,8 @@ def main():
     fortress = read("VillageFortressTerrain.java")
     assert "buildDefenderGalleries" in fortress
     assert "murderHole" in fortress
-    assert "groundY + 3" in fortress and "Math.floorMod(dx, 6) == 0" in fortress
+    assert "isFiringBayOffset" in fortress and "phase == 0 || phase == 1 || phase == 11" in fortress
+    assert "firingBay && y >= 3 && y <= 4" in fortress
 
     turret = read("VillagePlacedTurretSystem.java")
     assert "fieldRepairNearest" in turret and "12.0 * 12.0" in turret

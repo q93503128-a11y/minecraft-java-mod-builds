@@ -105,8 +105,11 @@ def main() -> None:
     assert "ClientPacketDistributor.sendToServer" in quick_safe
     assert '"fusion_combine:"' in fusion_safe
     assert "enableScissor" in fusion_safe and "enableScissor" in command_ui
-    assert 'FACILITIES("시설 관리")' in town_ui and 'ROLES("직업 배치")' in town_ui
-    assert '"repair:" + f.id()' in town_ui and '"upgrade:" + f.id()' in town_ui
+    town_render = town_ui.split("public void extractRenderState", 1)[1].split("private void drawFrame", 1)[0]
+    town_buttons = town_ui.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private String functionAction", 1)[0]
+    assert "drawTabs(" not in town_render
+    assert '"repair:" + f.id()' in town_buttons and '"upgrade:" + f.id()' in town_buttons
+    assert "functionAction" not in town_buttons and "open_funding" not in town_buttons
     assert 'ALL("전체"' in shop_ui and 'SALE("판매"' in shop_ui
     assert "VillageConfirmScreen" in shop_ui
     assert '"facility_info".equals(rawActions[i])' in action_ui
@@ -132,6 +135,9 @@ def main() -> None:
     assert '"manage:"' not in local_body
     assert "openEquipmentShop(player)" in local_body
     assert "수리·강화·포탑 건설은 회관" in controller
+    dashboard = controller.split("public static void openDashboard", 1)[1].split("public static void openRoleAssignment", 1)[0]
+    assert "select_role:" not in dashboard and '"role"' not in dashboard
+    assert "openRoleAssignment" in controller and "직업 배치는 기술 연구소" in controller
     assert "nextEffect" in controller
     assert "upgradeCost" in controller
     assert "repairCost" in controller
@@ -206,7 +212,7 @@ def main() -> None:
 
     print("[PASS] Modal screens suppress vanilla HUD/chat/title and stay inside the hotbar-safe viewport")
     print("[PASS] Production routing uses current town/shop/action/relic/wave surfaces only")
-    print("[PASS] Town hall exposes explicit facility function, repair and upgrade controls")
+    print("[PASS] Town hall exposes repair/upgrade only while facility functions remain location-authoritative")
     print("[PASS] Quick chat, fusion, relic and tactical dossier safeguards remain wired")
     print("[PASS] Existing progression, building, shop, loot, mercenary, research and raid contracts remain wired")
 

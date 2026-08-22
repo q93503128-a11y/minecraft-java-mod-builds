@@ -22,13 +22,6 @@ public final class VillageUiController {
         if (server == null) return;
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
-        VillageRole currentRole = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
-        for (VillageRole role : VillageRole.values()) {
-            actions.add("select_role:" + role.id());
-            labels.add(String.join("|", "role", role.id(), role.displayName(), role.overview(), role.passive(),
-                    role.active(), role.recommended(), currentRole == role ? "current" : "available",
-                    currentRole == role ? VillageRoleSkillSystem.loadoutSummary(player) : ""));
-        }
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
             int level = VillageProgressionSystem.level(building);
             int current = VillageProgressionSystem.durability(building);
@@ -40,7 +33,7 @@ public final class VillageUiController {
             int upgradeCost = canUpgrade ? VillageProgressionSystem.upgradeCost(level) : 0;
             String nextEffect = canUpgrade ? managementEffect(building, level + 1, server) : "";
             String levelText = building == VillageProgressionSystem.Building.TOWN_HALL
-                    ? "행정·보급" : "Lv." + level + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL;
+                    ? "회관 본체" : "Lv." + level + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL;
             actions.add("facility:" + building.id());
             labels.add(String.join("|", "facility", building.id(), building.displayName(), levelText,
                     Integer.toString(current), Integer.toString(maximum), managementEffect(building, level, server),
@@ -49,8 +42,28 @@ public final class VillageUiController {
         String body = "제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName()
                 + " · 공동 보급품 " + VillageProgressionSystem.supplies()
-                + " · " + VillageRaidSystem.status();
+                + " · 회관에서는 시설 수리와 강화만 관리합니다.";
         send(player, "town_hall", "마을 회관", body, actions, labels);
+    }
+
+    public static void openRoleAssignment(ServerPlayer player) {
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            player.sendSystemMessage(Component.literal("§c직업 배치는 기술 연구소 연구대 근처에서만 가능합니다."));
+            return;
+        }
+        VillageRole currentRole = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
+        List<String> actions = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (VillageRole role : VillageRole.values()) {
+            actions.add("select_role:" + role.id());
+            String status = currentRole == role ? "현재 직업" : "배치 가능";
+            labels.add(role.displayName() + " · " + status + "|" + role.overview()
+                    + "\n상시 효과: " + role.passive()
+                    + "\n전투 방식: " + role.active()
+                    + "\n추천 위치: " + role.recommended());
+        }
+        send(player, "building", "직업 배치",
+                "직업 선택은 기술 연구소에서 관리합니다. 시설 수리·강화와 분리된 메뉴입니다.", actions, labels);
     }
 
     public static void openCaller(ServerPlayer player) {
@@ -102,7 +115,7 @@ public final class VillageUiController {
     public static void openRoleProgress(ServerPlayer player) {
         VillageCouncilState.roleOf(player.getUUID()).ifPresentOrElse(
                 role -> openRoleProgress(player, role),
-                () -> player.sendSystemMessage(Component.literal("§c마을 회관에서 직업을 먼저 배치하세요.")));
+                () -> player.sendSystemMessage(Component.literal("§c기술 연구소에서 직업을 먼저 배치하세요.")));
     }
 
     public static void openRoleProgress(ServerPlayer player, VillageRole role) {
@@ -138,7 +151,7 @@ public final class VillageUiController {
     public static void openRoleSkillResearch(ServerPlayer player) {
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         if (role == null) {
-            player.sendSystemMessage(Component.literal("§c마을 회관에서 직업을 먼저 배치하세요."));
+            player.sendSystemMessage(Component.literal("§c기술 연구소에서 직업을 먼저 배치하세요."));
             return;
         }
         if (!VillageLocationRules.isNearSkillHall(player)) {
@@ -440,10 +453,13 @@ public final class VillageUiController {
             return true;
         }
         if (action.startsWith("select_role:")) {
-            if (!requireTownHall(player, "직업 배치는 마을 회관에서만 가능합니다.")) return true;
+            if (!VillageLocationRules.isNearSkillHall(player)) {
+                player.sendSystemMessage(Component.literal("§c직업 배치는 기술 연구소에서만 가능합니다."));
+                return true;
+            }
             VillageRole.parse(action.substring(12)).ifPresentOrElse(role -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageCouncilState.chooseRole(player, role)));
-                openDashboard(player);
+                openRoleAssignment(player);
             }, () -> player.sendSystemMessage(Component.literal("§c알 수 없는 직업입니다.")));
             return true;
         }
@@ -629,6 +645,7 @@ public final class VillageUiController {
                 if (VillageSkillTestSystem.isEnabled(player)) openSkillTestSkillManager(player);
                 else openRoleProgress(player);
             }
+            case "open_role_assignment" -> openRoleAssignment(player);
             case "open_role_skill_research" -> openRoleSkillResearch(player);
             case "open_forge_enhancement" -> openForgeEnhancement(player);
             case "open_fusion" -> openFusion(player);
@@ -691,6 +708,7 @@ public final class VillageUiController {
                     "open_forge_enhancement", "장비 선택 강화|보유한 등급 장비를 골라 개별 강화",
                     "open_fusion", "장비 3개 합성|같은 종류·같은 등급·같은 강화 단계 세 개를 상위 등급으로 합성");
             case SKILL_HALL -> add(actions, labels,
+                    "open_role_assignment", "직업 배치|플레이어 직업 선택·변경",
                     "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 {SKILL1}/{SKILL2} 장착만 관리",
                     "open_defense_research", "마을 방어 연구|용병·포탑·전리품 연구 트리",
                     "open_skill_test", "외부 기술 시험장|야외 시험장으로 이동해 {SKILL1}/{SKILL2}에 기술을 임시 장착하고 실제 모션 시험");
@@ -706,23 +724,23 @@ public final class VillageUiController {
         return switch (building) {
             case WALLS -> "현장에서는 정찰만 확인합니다. 수리·강화·포탑 건설은 회관에서 진행합니다.";
             case SMITHY -> "등급 장비를 하나씩 선택해 강화하고, 같은 종류·등급·강화 단계 장비 세 개를 합성합니다.";
-            case SKILL_HALL -> "직업 기술과 용병·포탑 방어 연구를 담당합니다. 연구소 레벨마다 기술 위력·지속시간이 +5% 상승하고 재사용 효율도 개선됩니다.";
+            case SKILL_HALL -> "직업 배치·직업 기술과 용병·포탑 방어 연구를 담당합니다. 연구소 레벨마다 기술 위력·지속시간이 +5% 상승하고 재사용 효율도 개선됩니다.";
             case INFIRMARY -> "낮 동안 마을 안 플레이어의 체력을 항상 완전히 회복하고, 레벨별 전투 버프를 제공합니다.";
             case BARRACKS -> "다음 밤 적 정찰과 용병 고용, 모든 경험치 획득량 증가 패시브를 담당합니다. 현재 XP +"
                     + (VillageProgressionSystem.experienceMultiplierPercent() - 100) + "%";
             case STOREHOUSE -> "일일 배급 식량·화살·전투 소모품·장비 구매와 전리품 판매를 담당합니다.";
-            case TOWN_HALL -> "직업 배치와 모든 시설 수리·강화·건설을 담당합니다.";
+            case TOWN_HALL -> "모든 시설의 수리와 강화만 담당합니다. 각 시설의 고유 기능은 해당 건물에서 직접 사용합니다.";
         };
     }
 
     private static String managementEffect(VillageProgressionSystem.Building building, int level, MinecraftServer server) {
         int safe = Math.max(0, Math.min(VillageProgressionSystem.MAX_BUILDING_LEVEL, level));
         return switch (building) {
-            case TOWN_HALL -> "직업 배치·시설 수리·강화·공동 보급 조달";
+            case TOWN_HALL -> "시설 수리·강화 지휘";
             case WALLS -> "최대 내구도 " + (1200 + safe * 350) + " · 포탑 설치 단계 " + safe;
             case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 마을 장비 공격 보정 +" + (safe * 4)
                     + "% · 개인 장비 강화·등급 합성";
-            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 기술 위력 +" + (safe * 5) + "% · 지속 +" + (safe * 5) + "% · 재사용 효율 +" + safe + "초 · 마을 방어 연구";
+            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 직업 배치 · 기술 위력 +" + (safe * 5) + "% · 지속 +" + (safe * 5) + "% · 재사용 효율 +" + safe + "초 · 마을 방어 연구";
             case INFIRMARY -> "최대 내구도 " + (520 + safe * 110) + " · 낮 동안 체력 완전 회복"
                     + (safe >= 1 ? " · 피해 저항" : "")
                     + (safe >= 2 ? " · 이동 속도" : "")

@@ -41,26 +41,23 @@ def safe_rect(width: int, height: int) -> tuple[int, int, int, int]:
 def town_geometry(width: int, height: int) -> tuple[int, int, int]:
     safe_left, _, safe_right, _ = safe_rect(width, height)
     safe_width = safe_right - safe_left
-    panel_width = min(820, max(300, safe_width - 12))
-    panel_width = min(panel_width, safe_width)
-    gap = 8
+    panel_width = min(940, max(1, safe_width))
+    gap = 10
     content_width = max(1, panel_width - 28 - gap)
-    list_width = clamp(panel_width * 27 // 100, 110, 205)
-    list_width = min(list_width, max(90, content_width - 120))
+    list_width = clamp(panel_width * 31 // 100, 150, 280)
+    list_width = min(list_width, max(90, content_width - 170))
     detail_width = panel_width - 28 - gap - list_width
     return panel_width, list_width, detail_width
 
 
 def facility_button_widths(detail_width: int) -> list[int]:
     inner = max(1, detail_width - 28)
-    if detail_width < 230:
-        return [inner, inner, inner]
-    gap = 5
-    available = max(3, inner - gap * 2)
-    base = max(1, available // 3)
-    remainder = max(0, available - base * 3)
-    return [base + (1 if remainder > 0 else 0),
-            base + (1 if remainder > 1 else 0), base]
+    if detail_width < 260:
+        return [inner, inner]
+    gap = 7
+    available = max(2, inner - gap)
+    first = available // 2
+    return [first, available - first]
 
 
 def action_geometry(width: int, height: int) -> tuple[int, int, bool]:
@@ -109,9 +106,12 @@ def main() -> None:
     assert not (JAVA / "VillageTownHallScreen.java").exists()
     assert not (JAVA / "VillageShopScreen.java").exists()
 
-    assert 'FACILITIES("시설 관리")' in TOWN and 'ROLES("직업 배치")' in TOWN
-    assert '"repair:" + f.id()' in TOWN and '"upgrade:" + f.id()' in TOWN
-    assert "pane.width() < 230" in TOWN
+    render = TOWN.split("public void extractRenderState", 1)[1].split("private void drawFrame", 1)[0]
+    buttons = TOWN.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private String functionAction", 1)[0]
+    assert "drawTabs(" not in render
+    assert '"repair:" + f.id()' in buttons and '"upgrade:" + f.id()' in buttons
+    assert "functionLabel" not in buttons and "functionAction" not in buttons
+    assert "pane.width() < 260" in buttons
     assert "actionTop" in TOWN and "enableScissor" in TOWN
     assert "Math.max(48, available / count)" not in TOWN
 
@@ -120,8 +120,8 @@ def main() -> None:
         assert detail >= 120, (width, height, detail)
         button_widths = facility_button_widths(detail)
         assert all(value > 0 for value in button_widths)
-        if detail >= 230:
-            assert sum(button_widths) + 10 <= detail - 28, (width, detail, button_widths)
+        if detail >= 260:
+            assert sum(button_widths) + 7 <= detail - 28, (width, detail, button_widths)
         else:
             assert max(button_widths) <= detail - 28, (width, detail, button_widths)
 
@@ -157,7 +157,7 @@ def main() -> None:
     assert "TreeBubble" in ROLE_TREE and "SkillBubble" in ROLE_TREE and "SkillGrid" in ROLE_TREE
 
     print("[PASS] Retired screens cannot re-enter production client routing")
-    print("[PASS] Town-hall function/repair/upgrade buttons stay inside narrow detail panes")
+    print("[PASS] Town-hall repair/upgrade-only controls stay inside calculated narrow detail panes")
     print("[PASS] Short narrow action screens choose side-by-side layout instead of crushed vertical panes")
     print("[PASS] Shop detail/list panes stay valid on short GUI heights and narrow widths")
     print("[PASS] Result modal and active shop/command surfaces use current safe-area UI language")

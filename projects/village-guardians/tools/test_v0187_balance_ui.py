@@ -61,11 +61,14 @@ def main() -> None:
     assert "VillageRaidSystem.isActive()" in debris
     assert "event.setCanceled(true)" in debris
 
-    # Town hall is detail-first and exposes all three building operations in one bounded screen.
-    for token in ("시설 기능", "수리 · ", "강화 · ", '"repair:" + f.id()', '"upgrade:" + f.id()'):
-        assert token in town
+    # Town hall remains detail-first, but production ownership is maintenance-only.
+    buttons = town.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private String functionAction", 1)[0]
+    assert '"repair:" + f.id()' in buttons and '"upgrade:" + f.id()' in buttons
+    assert "functionAction" not in buttons and "open_funding" not in buttons and "open_tower_control" not in buttons
     assert "VillageConfirmScreen" in town
-    assert "selectedFacility" in town and "selectedRole" in town
+    assert "selectedFacility" in town
+    render = town.split("public void extractRenderState", 1)[1].split("private void drawFrame", 1)[0]
+    assert "drawTabs(" not in render
     assert "height / 11" in safe and "38, 56" in safe
 
     # Victory no longer falls back to the generic giant action screen.
@@ -75,7 +78,7 @@ def main() -> None:
     print("[PASS] early player/structure pressure stays softened without death-state structure grace")
     print("[PASS] graded equipment hover stats are wired")
     print("[PASS] scripted collapse block debris is suppressed")
-    print("[PASS] town hall repair/upgrade/function actions fit inside hotbar-safe UI")
+    print("[PASS] town hall repair/upgrade-only actions fit inside hotbar-safe UI")
 
 
 if __name__ == "__main__":

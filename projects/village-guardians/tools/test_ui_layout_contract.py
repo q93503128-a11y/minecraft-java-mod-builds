@@ -46,13 +46,20 @@ def main() -> None:
         assert 38 <= reserve <= 56, (width, height, reserve)
         assert bottom > top + 100, (width, height, top, bottom)
 
-        for max_width, max_height in ((820, 430), (760, 360)):
-            x0, y0, x1, y1 = centered_panel(width, height, max_width, max_height)
-            assert x0 >= left and y0 >= top
-            assert x1 <= right and y1 <= bottom
+        # Generic action screen remains centered; town hall intentionally consumes more of the safe viewport.
+        x0, y0, x1, y1 = centered_panel(width, height, 760, 360)
+        assert x0 >= left and y0 >= top
+        assert x1 <= right and y1 <= bottom
+        town_width = min(940, max(1, right - left))
+        town_height = min(500, max(1, bottom - top))
+        town_left = left + (right - left) // 2 - town_width // 2
+        town_top = top + max(0, ((bottom - top) - town_height) // 2)
+        assert town_left >= left and town_top >= top
+        assert town_left + town_width <= right and town_top + town_height <= bottom
 
     assert "height / 11" in safe_source and "38, 56" in safe_source
-    assert "panelWidth = Math.min(820" in town and "panelHeight = Math.min(430" in town
+    assert "panelWidth = Math.min(940" in town and "panelHeight = Math.min(500" in town
+    assert "panelWidth * 31 / 100" in town and "gap = 10" in town
     assert "panelWidth = Math.min(760" in action and "panelHeight = Math.min(360" in action
     assert "VillageUiSafeArea.screen" in victory
     assert "drawSignalLabel" in quick_source

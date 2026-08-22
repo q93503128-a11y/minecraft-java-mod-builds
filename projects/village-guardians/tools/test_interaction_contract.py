@@ -49,11 +49,15 @@ def main() -> None:
                    "VillageStatusScreen", "VillageUiScreen", "VillageFacilityScreen"):
         assert legacy not in client
 
-    # Town hall list clicks only select. Explicit bottom controls own function/repair/upgrade.
+    # Town hall list only selects a building. Repair/upgrade are the only executable hall actions.
     assert "VillageConfirmScreen" in town
-    assert "FacilityCard" in town and "functionAction(f)" in town
-    assert '"repair:" + f.id()' in town and '"upgrade:" + f.id()' in town
-    assert 'FACILITIES("시설 관리")' in town and 'ROLES("직업 배치")' in town
+    assert "FacilityCard" in town
+    buttons = town.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private String functionAction", 1)[0]
+    assert '"repair:" + f.id()' in buttons and '"upgrade:" + f.id()' in buttons
+    assert "functionAction" not in buttons and "open_funding" not in buttons and "open_tower_control" not in buttons
+    dashboard = controller.split("public static void openDashboard", 1)[1].split("public static void openRoleAssignment", 1)[0]
+    assert "select_role:" not in dashboard and '"role"' not in dashboard
+    assert "openRoleAssignment" in controller and "VillageLocationRules.isNearSkillHall(player)" in controller
 
     for tab in ("ALL(\"전체\"", "EQUIPMENT(\"장비\"", "ARMOR(\"방어구\"",
                 "CONSUMABLE(\"소모품\"", "SALE(\"판매\""):
@@ -89,7 +93,7 @@ def main() -> None:
     assert "maximumEnhancement()" not in tooltip
     assert "대장간에서 확인" in tooltip
 
-    print("[PASS] Facility cards route to explicit function/repair/upgrade controls")
+    print("[PASS] Town-hall facility cards expose repair/upgrade only; local functions remain local")
     print("[PASS] Unknown and legacy menu payloads use the current detail-first surface")
     print("[PASS] Bulk junk sale cannot sweep named combat supplies")
     print("[PASS] Shop exposes daily ration, arrows and tactical consumables without duplicate paid food")

@@ -49,7 +49,8 @@ def main() -> None:
     assert "default -> new VillageActionDetailScreen(payload)" in client
 
     # Known overflow regressions stay fixed.
-    assert "pane.width() < 230" in town and "actionTop" in town
+    assert "pane.width() < 260" in town and "actionTop" in town
+    assert "available / 2" in town and "gap = 7" in town
     assert "Math.max(48, available / count)" not in town
     assert "panelWidth < 390 && panelHeight >= 250" in action
     assert "VillageUiSafeArea.screen" in result and "PANEL = 0xF00B1217" in result

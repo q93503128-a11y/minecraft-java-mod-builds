@@ -120,10 +120,12 @@ def main() -> None:
     walkway_center = wall_top_cross_section[1:-1]
     assert walkway_center == [1, 2, 3]
 
-    stair_z = [-FORTRESS_RADIUS + 14 - step for step in range(9)]
+    stair_z = [-FORTRESS_RADIUS + 10 - step for step in range(9)]
     landing_z = list(range(-FORTRESS_RADIUS + 1, -FORTRESS_RADIUS + 7))
-    assert stair_z[-1] == -FORTRESS_RADIUS + 6
-    assert stair_z[-1] in landing_z
+    assert stair_z[0] == -FORTRESS_RADIUS + 10
+    assert stair_z[-1] == -FORTRESS_RADIUS + 2
+    assert any(z in landing_z for z in stair_z)
+    assert max(stair_z) <= -FORTRESS_RADIUS + 10
 
     return_x, return_z = RETURN_POSITION
     assert return_x * return_x + return_z * return_z <= 18 * 18
