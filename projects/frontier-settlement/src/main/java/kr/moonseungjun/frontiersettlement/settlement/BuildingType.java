@@ -7,7 +7,8 @@ public enum BuildingType {
     LUMBER_CAMP("lumber_camp", "벌목소", 56, 12, 11, 9, 10, 0),
     FARM("farm", "농장", 52, 8, 13, 11, 7, 0),
     QUARRY("quarry", "채석장", 44, 28, 11, 11, 8, 0),
-    MINE("mine", "광산", 68, 44, 11, 11, 9, 0);
+    MINE("mine", "광산", 68, 44, 11, 11, 9, 0),
+    WAREHOUSE("warehouse", "창고", 72, 36, 11, 9, 9, 0);
 
     private final String id;
     private final String displayName;
