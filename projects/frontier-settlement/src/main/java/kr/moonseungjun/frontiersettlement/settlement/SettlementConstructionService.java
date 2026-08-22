@@ -48,6 +48,13 @@ public final class SettlementConstructionService {
             return "광산은 채석장 1곳과 연결된 전초기지 1곳을 만든 뒤 열립니다.";
         }
         if (type == BuildingType.WAREHOUSE && data.buildingCount(BuildingType.FARM) < 1) return "창고는 농장 1곳을 완성하면 열립니다.";
+        if (type == BuildingType.BLACKSMITH && data.buildingCount(BuildingType.MINE) < 1) {
+            return "대장간은 광산 1곳을 완성하면 열립니다.";
+        }
+        if (type == BuildingType.GUARD_POST
+                && SettlementTier.current(data).ordinal() < SettlementTier.VILLAGE.ordinal()) {
+            return "경비초소는 마을 단계에 도달하면 열립니다.";
+        }
         return null;
     }
 
