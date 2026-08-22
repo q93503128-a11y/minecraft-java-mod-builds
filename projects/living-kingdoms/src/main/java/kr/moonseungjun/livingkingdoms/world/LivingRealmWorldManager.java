@@ -11,7 +11,7 @@ import net.minecraft.world.entity.Relative;
 
 import java.util.Set;
 
-/** Entry point for queued realm preparation and final verified player placement. */
+/** Entry point for queued Erden preparation and final verified player placement. */
 public final class LivingRealmWorldManager {
     private LivingRealmWorldManager() {
     }
@@ -24,6 +24,11 @@ public final class LivingRealmWorldManager {
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
         if (realm == null) {
             LivingKingdoms.LOGGER.error("Living Kingdoms realm is not loaded");
+            return false;
+        }
+        if (!PlayableOriginCatalog.DEFAULT_HOMELAND.equals(profile.homelandId())) {
+            LivingKingdoms.LOGGER.error("Rejected inactive homeland placement {} for {}",
+                    profile.homelandId(), player.getUUID());
             return false;
         }
         PlayableOriginCatalog.ResidenceOption residence = PlayableOriginCatalog.residences().get(profile.residenceId());
@@ -45,8 +50,7 @@ public final class LivingRealmWorldManager {
             player.setDeltaMovement(0.0D, 0.0D, 0.0D);
             player.fallDistance = 0.0F;
             player.sendSystemMessage(Component.literal(
-                    "§6[살아있는 왕국] §f" + residence.displayName() + "에서 "
-                            + affiliation(profile.homelandId()) + " 소속으로 삶을 시작합니다."
+                    "§6[살아있는 왕국] §f" + residence.displayName() + "에서 에르덴 왕국 시민으로 삶을 시작합니다."
             ));
         }
         return moved;
@@ -54,13 +58,5 @@ public final class LivingRealmWorldManager {
 
     public static BlockPos homePosition(ServerLevel realm, OriginProfile profile) {
         return SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
-    }
-
-    private static String affiliation(String homelandId) {
-        return switch (homelandId) {
-            case "silvana_forest" -> "실바나 수림 의회";
-            case "kardum_league" -> "카르둠 산악 연맹";
-            default -> "에르덴 왕국 로엔 변경백령";
-        };
     }
 }

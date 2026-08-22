@@ -76,8 +76,11 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
+import net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerSetSpawnEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
@@ -105,6 +108,9 @@ public final class LivingKingdoms {
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(this::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(this::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerSleep);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerSetSpawn);
+        NeoForge.EVENT_BUS.addListener(this::onMobSpawnPlacement);
         NeoForge.EVENT_BUS.addListener(this::onBlockBreakAttempt);
         NeoForge.EVENT_BUS.addListener(this::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
@@ -131,6 +137,7 @@ public final class LivingKingdoms {
         ErdenUrbanAuthoredGroundPlanCatalog.bootstrap();
         ExternalUrbanFabricBuilder.auditFixedFootprintCropCandidates();
         OriginProfileManager.initialize(event.getServer());
+        FantasyWorldRules.audit(event.getServer());
         StarterRealmDiagnostics.runIfRequested(event.getServer());
     }
 
@@ -254,6 +261,18 @@ public final class LivingKingdoms {
             ErdenExteriorLifecycleManager.markDeadIfLifecycleResident(level, villager);
         }
         CrimeManager.handleDeath(event);
+    }
+
+    private void onPlayerSleep(CanPlayerSleepEvent event) {
+        FantasyWorldRules.handleSleep(event);
+    }
+
+    private void onPlayerSetSpawn(PlayerSetSpawnEvent event) {
+        FantasyWorldRules.handleSpawnPoint(event);
+    }
+
+    private void onMobSpawnPlacement(MobSpawnEvent.SpawnPlacementCheck event) {
+        FantasyWorldRules.handleMobSpawn(event);
     }
 
     private void onBlockBreakAttempt(BreakBlockEvent event) {
