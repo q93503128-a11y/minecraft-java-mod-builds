@@ -18,11 +18,16 @@ public final class FrontierSettlementClient {
     public FrontierSettlementClient(IEventBus modBus) {
         SettlementNetwork.setSnapshotSink(ClientSettlementState::accept);
         SettlementNetwork.setPlacementPreviewSink(BuildingPlacementClient::acceptPreview);
+        SettlementNetwork.setRoadPreviewSink(RoadPlacementClient::acceptPreview);
         modBus.addListener(RegisterGuiLayersEvent.class, FrontierSettlementClient::onRegisterGuiLayers);
         modBus.addListener(RegisterKeyMappingsEvent.class, BuildingPlacementClient::registerKeys);
+        modBus.addListener(RegisterKeyMappingsEvent.class, RoadPlacementClient::registerKeys);
         NeoForge.EVENT_BUS.addListener(BuildingPlacementClient::tick);
+        NeoForge.EVENT_BUS.addListener(RoadPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(PlacementGhostRenderer::extract);
         NeoForge.EVENT_BUS.addListener(PlacementGhostRenderer::submit);
+        NeoForge.EVENT_BUS.addListener(RoadGhostRenderer::extract);
+        NeoForge.EVENT_BUS.addListener(RoadGhostRenderer::submit);
     }
 
     private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
