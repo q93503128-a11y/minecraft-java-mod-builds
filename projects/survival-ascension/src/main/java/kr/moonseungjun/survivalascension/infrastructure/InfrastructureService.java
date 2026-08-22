@@ -27,20 +27,19 @@ public final class InfrastructureService {
             player.sendSystemMessage(Component.literal("§c[인프라] §f알 수 없는 프로젝트입니다."));
             return;
         }
-        if (ACTION_STATUS.equals(action)) {
-            sendStatus(player, project);
-            return;
-        }
-        if (ACTION_FUND.equals(action)) {
-            fund(player, project);
-            return;
-        }
+        if (ACTION_STATUS.equals(action)) { sendStatus(player, project); return; }
+        if (ACTION_FUND.equals(action)) { fund(player, project); return; }
         player.sendSystemMessage(Component.literal("§c[인프라] §f알 수 없는 작업입니다."));
     }
 
     private static void fund(ServerPlayer player, InfrastructureProject project) {
         if (player.isCreative() || player.isSpectator()) {
             player.sendSystemMessage(Component.literal("§6[인프라] §f크리에이티브/관전자 상태에서는 공동 프로젝트에 자원을 투입할 수 없습니다."));
+            return;
+        }
+        WorldAscensionData world = WorldAscensionData.get(((ServerLevel) player.level()).getServer());
+        if (world.stage() < project.requiredWorldStage()) {
+            player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + "§f은 월드 승천 §d" + project.requiredWorldStage() + "단계§f부터 건설할 수 있습니다."));
             return;
         }
         InfrastructureData data = InfrastructureData.get(player);
@@ -77,6 +76,11 @@ public final class InfrastructureService {
     }
 
     public static void sendStatus(ServerPlayer player, InfrastructureProject project) {
+        WorldAscensionData world = WorldAscensionData.get(((ServerLevel) player.level()).getServer());
+        if (world.stage() < project.requiredWorldStage()) {
+            player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + " §c잠김 §7· §f월드 승천 " + project.requiredWorldStage() + "단계 필요"));
+            return;
+        }
         InfrastructureData data = InfrastructureData.get(player);
         if (data.isComplete(project)) {
             player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + " §a완공 §7· §f" + project.benefit()));
