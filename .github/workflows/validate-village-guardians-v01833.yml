@@ -35,7 +35,9 @@ jobs:
           gradle-version: '9.2.1'
 
       - name: Apply playtest UI and wall correction
-        run: python3 "${PROJECT_DIR}/tools/apply_v01833_playtest_ui_wall.py"
+        run: |
+          python3 "${PROJECT_DIR}/tools/apply_v01833_playtest_ui_wall.py"
+          python3 "${PROJECT_DIR}/tools/apply_v01833_contract_migration.py"
 
       - name: Check authored patch
         run: git diff --check
@@ -103,6 +105,11 @@ jobs:
             "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageWaveIntelDossierScreen.java" \
             "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageFortressTerrain.java" \
             "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java" \
+            "${PROJECT_DIR}/tools/test_action_layout.py" \
+            "${PROJECT_DIR}/tools/test_fortress_layout.py" \
+            "${PROJECT_DIR}/tools/test_interaction_contract.py" \
+            "${PROJECT_DIR}/tools/test_runtime_safety.py" \
+            "${PROJECT_DIR}/tools/test_ui_layout_contract.py" \
             "${PROJECT_DIR}/tools/test_v01832_ranger_wall_traffic.py" \
             "${PROJECT_DIR}/tools/test_v01833_playtest_ui_wall.py"
           git diff --cached --check
