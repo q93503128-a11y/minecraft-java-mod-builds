@@ -1,7 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- mining/woodcutting/harvesting/combat regressions retained
-- Construction is active with server-authoritative mode selection
-- bulk construction consumes materials, checks placement hooks and uses tick budgets
-- M radial menu includes nested Construction radial
-- Skill Proficiencies, Veinminer++, MineMenu and Building Gadgets 2 notices retained
+- all six skills active
+- Mobility uses server-tracked traversal, vanilla attributes and server-authoritative R dash
+- Lv.60 air dash is limited to once before landing; teleport/flight/riding do not grant traversal XP
+- restricted/copyleft reference mods remain source/asset clean
