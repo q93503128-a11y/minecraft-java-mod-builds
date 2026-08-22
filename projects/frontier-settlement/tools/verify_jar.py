@@ -18,6 +18,7 @@ required = {
     'kr/moonseungjun/frontiersettlement/settlement/BuildingRotation.class',
     'kr/moonseungjun/frontiersettlement/settlement/RotatedBlueprints.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostService.class',
+    'kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostProductionService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementStorageService.class',
     'kr/moonseungjun/frontiersettlement/settlement/WarehouseLayout.class',
