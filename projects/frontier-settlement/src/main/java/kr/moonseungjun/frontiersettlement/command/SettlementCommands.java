@@ -15,6 +15,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementResources;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementTier;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -38,7 +39,8 @@ public final class SettlementCommands {
                         .then(Commands.literal("lumber_camp").executes(context -> build(context, BuildingType.LUMBER_CAMP)))
                         .then(Commands.literal("farm").executes(context -> build(context, BuildingType.FARM)))
                         .then(Commands.literal("quarry").executes(context -> build(context, BuildingType.QUARRY)))
-                        .then(Commands.literal("mine").executes(context -> build(context, BuildingType.MINE)))));
+                        .then(Commands.literal("mine").executes(context -> build(context, BuildingType.MINE)))
+                        .then(Commands.literal("warehouse").executes(context -> build(context, BuildingType.WAREHOUSE)))));
     }
 
     private static int found(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -66,6 +68,7 @@ public final class SettlementCommands {
     private static String lockedReason(SettlementData data, BuildingType type) {
         if (type == BuildingType.FARM && data.houseCount() < 1) return "농장은 주택 1채를 먼저 완성하면 열립니다.";
         if (type == BuildingType.QUARRY && data.lumberCampCount() < 1) return "채석장은 벌목소 1곳을 먼저 완성하면 열립니다.";
+        if (type == BuildingType.WAREHOUSE && data.buildingCount(BuildingType.FARM) < 1) return "창고는 농장 1곳을 완성하면 열립니다.";
         if (type == BuildingType.MINE && (data.buildingCount(BuildingType.QUARRY) < 1 || data.outposts().isEmpty())) {
             return "광산은 채석장 1곳과 연결된 전초기지 1곳을 만든 뒤 열립니다.";
         }
@@ -93,11 +96,13 @@ public final class SettlementCommands {
         SettlementData data = SettlementData.get(player.level().getServer());
         if (!data.founded()) { player.sendSystemMessage(Component.literal("아직 공동 마을이 없습니다. /frontier found")); return 0; }
         SettlementResources r = data.resources();
+        player.sendSystemMessage(Component.literal("마을 단계 | " + SettlementTier.current(data).displayName()));
         player.sendSystemMessage(Component.literal("마을 자원 | 목재 " + r.wood() + " | 석재 " + r.stone() + " | 금속 " + r.metal()
                 + " | 식량 " + r.food() + " | 인구 " + data.population() + " | 주거 " + data.housingCapacity()));
         player.sendSystemMessage(Component.literal("인프라 | 주택 " + data.houseCount() + " | 벌목소 " + data.lumberCampCount()
                 + " | 농장 " + data.buildingCount(BuildingType.FARM) + " | 채석장 " + data.buildingCount(BuildingType.QUARRY)
-                + " | 광산 " + data.buildingCount(BuildingType.MINE) + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
+                + " | 광산 " + data.buildingCount(BuildingType.MINE) + " | 창고 " + data.buildingCount(BuildingType.WAREHOUSE)
+                + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
         if (!data.roads().isEmpty()) {
             RoadSegment last = data.roads().get(data.roads().size() - 1);
             player.sendSystemMessage(Component.literal("최근 도로 끝점 | " + last.end().getX() + ", " + last.end().getY() + ", " + last.end().getZ()));
