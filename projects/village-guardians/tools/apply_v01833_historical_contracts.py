@@ -26,7 +26,21 @@ def main() -> None:
         "v0.18.18 wall firing-port historical contract",
     )
 
-    print("[PATCH] v0.18.33 historical wall contract now accepts practical 3x2 firing bays")
+    replace_once(
+        TOOLS / "test_v0187_balance_ui.py",
+        '''    # Town hall is detail-first and exposes all three building operations in one bounded screen.\n    for token in ("시설 기능", "수리 · ", "강화 · ", '\"repair:\" + f.id()', '\"upgrade:\" + f.id()'):\n        assert token in town\n    assert "VillageConfirmScreen" in town\n    assert "selectedFacility" in town and "selectedRole" in town\n    assert "height / 11" in safe and "38, 56" in safe\n''',
+        '''    # Town hall remains detail-first, but production ownership is maintenance-only.\n    buttons = town.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private String functionAction", 1)[0]\n    assert '\"repair:\" + f.id()' in buttons and '\"upgrade:\" + f.id()' in buttons\n    assert "functionAction" not in buttons and "open_funding" not in buttons and "open_tower_control" not in buttons\n    assert "VillageConfirmScreen" in town\n    assert "selectedFacility" in town\n    render = town.split("public void extractRenderState", 1)[1].split("private void drawFrame", 1)[0]\n    assert "drawTabs(" not in render\n    assert "height / 11" in safe and "38, 56" in safe\n''',
+        "v0.18.7 town-hall operation ownership contract",
+    )
+
+    replace_once(
+        TOOLS / "test_v0187_balance_ui.py",
+        '    print("[PASS] town hall repair/upgrade/function actions fit inside hotbar-safe UI")\n',
+        '    print("[PASS] town hall repair/upgrade-only actions fit inside hotbar-safe UI")\n',
+        "v0.18.7 town-hall pass label",
+    )
+
+    print("[PATCH] v0.18.33 historical contracts accept practical firing bays and maintenance-only town hall")
 
 
 if __name__ == "__main__":
