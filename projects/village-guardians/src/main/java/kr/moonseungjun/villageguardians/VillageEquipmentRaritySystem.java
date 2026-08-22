@@ -130,6 +130,7 @@ public final class VillageEquipmentRaritySystem {
         ItemStack stack = player.getInventory().getItem(slot);
         Rarity rarity = rarityOf(stack);
         if (rarity == null || !isUpgradeable(stack.getItem())) return "게임 전용 등급 장비만 강화할 수 있습니다.";
+        if (stack.getCount() != 1) return "강화할 장비는 해당 슬롯에 1개만 두세요.";
         int current = enhancementLevel(stack);
         int maximum = maximumEnhancement(stack);
         if (current >= maximum) {

@@ -106,6 +106,10 @@ public final class VillageLocalActionSystem {
             VillageMercenaryDeploymentSystem.openClass(player, kind); return true;
         }
         if (action.startsWith("merc_deploy:")) {
+            if (!VillageMercenaryDeploymentSystem.canOpenAt(player)) {
+                player.sendSystemMessage(Component.literal("§c용병 배치는 병영 또는 마을 회관 근처에서만 변경할 수 있습니다."));
+                return true;
+            }
             String[] parts = action.split(":", 3);
             VillageMercenarySystem.MercenaryClass kind = parts.length >= 2
                     ? VillageMercenarySystem.MercenaryClass.fromId(parts[1]) : null;

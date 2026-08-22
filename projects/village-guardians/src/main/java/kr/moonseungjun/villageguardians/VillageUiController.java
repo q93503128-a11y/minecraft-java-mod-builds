@@ -473,10 +473,6 @@ public final class VillageUiController {
             return true;
         }
         if (action.startsWith("role_node:")) {
-            if (!VillageLocationRules.isNearSkillHall(player)) {
-                player.sendSystemMessage(Component.literal("§c직업 성장은 기술 연구소에서만 가능합니다."));
-                return true;
-            }
             String[] parts = action.split(":", 3);
             if (parts.length == 3) VillageRole.parse(parts[1]).ifPresent(role -> {
                 player.sendSystemMessage(Component.literal("§b" + VillageRoleSkillSystem.purchaseNode(player, role, parts[2])));
@@ -537,6 +533,10 @@ public final class VillageUiController {
             return true;
         }
         if (action.startsWith("sell_item:")) {
+            if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+                player.sendSystemMessage(Component.literal("§c보유품 판매는 창고 단말기 근처에서만 가능합니다."));
+                return true;
+            }
             try {
                 int slot = Integer.parseInt(action.substring(10));
                 openResult(player, "보유품 판매 결과", VillageTradingSystem.sellSelected(player, slot),

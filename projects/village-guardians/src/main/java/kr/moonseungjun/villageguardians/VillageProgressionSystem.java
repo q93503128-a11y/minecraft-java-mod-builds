@@ -529,6 +529,7 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized void resetForRestart(MinecraftServer server, boolean fromStart) {
+        if (!gameOver) return;
         gameOver = false;
         VillageRaidSystem.resetAfterRestart(server);
         VillageSkillTestSystem.clearAll(server);

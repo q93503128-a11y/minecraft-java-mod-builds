@@ -21,9 +21,14 @@ public final class VillageMercenaryDeploymentSystem {
 
     public static void reset() { ticks = 0; }
 
+    public static boolean canOpenAt(ServerPlayer player) {
+        return player != null
+                && (VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)
+                || VillageLocationRules.isNearTownHall(player));
+    }
+
     public static void openCommand(ServerPlayer player) {
-        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)
-                && !VillageLocationRules.isNearTownHall(player)) {
+        if (!canOpenAt(player)) {
             player.sendSystemMessage(Component.literal("§c용병 지휘는 병영 또는 마을 회관에서만 가능합니다."));
             return;
         }

@@ -327,7 +327,6 @@ public final class VillageUiService {
             return;
         }
         if (action.startsWith("role_node:")) {
-            if (!requireSkillHall(player, "직업 성장은 기술 연구소에서만 가능합니다.")) return;
             String[] parts = action.split(":", 3);
             if (parts.length == 3) VillageRole.parse(parts[1]).ifPresent(role -> {
                 String result = VillageRoleSkillSystem.purchaseNode(player, role, parts[2]);
@@ -443,8 +442,16 @@ public final class VillageUiService {
                         + " · 이 단말기에서 수리·강화할 수 있습니다."));
                 openBuilding(player, VillageProgressionSystem.Building.WALLS);
             }
-            case "restart_previous" -> VillageProgressionSystem.resetForRestart(server, false);
-            case "restart_start" -> VillageProgressionSystem.resetForRestart(server, true);
+            case "restart_previous" -> {
+                if (!VillageProgressionSystem.isGameOver())
+                    player.sendSystemMessage(Component.literal("§c방어 실패 상태에서만 전투 전 낮으로 되돌릴 수 있습니다."));
+                else VillageProgressionSystem.resetForRestart(server, false);
+            }
+            case "restart_start" -> {
+                if (!VillageProgressionSystem.isGameOver())
+                    player.sendSystemMessage(Component.literal("§c방어 실패 상태에서만 처음부터 다시 시작할 수 있습니다."));
+                else VillageProgressionSystem.resetForRestart(server, true);
+            }
             default -> player.sendSystemMessage(Component.literal("§c알 수 없는 마을 UI 동작입니다."));
         }
     }

@@ -301,10 +301,12 @@ public final class VillageRoleProgressScreen extends Screen {
         if (bubble.learned()) {
             drawInlineButton(graphics, mouseX, mouseY, bubble.firstX(), bubble.buttonY(),
                     bubble.buttonWidth(), bubble.buttonHeight(),
-                    skill.slot() == 0 ? "Z 슬롯 ✓" : "Z 슬롯", true, ACCENT);
+                    skill.slot() == 0 ? VillageClientKeys.skillOneKeyName() + " 슬롯 ✓"
+                            : VillageClientKeys.skillOneKeyName() + " 슬롯", true, ACCENT);
             drawInlineButton(graphics, mouseX, mouseY, bubble.secondX(), bubble.buttonY(),
                     bubble.buttonWidth(), bubble.buttonHeight(),
-                    skill.slot() == 1 ? "X 슬롯 ✓" : "X 슬롯", true, ACCENT);
+                    skill.slot() == 1 ? VillageClientKeys.skillTwoKeyName() + " 슬롯 ✓"
+                            : VillageClientKeys.skillTwoKeyName() + " 슬롯", true, ACCENT);
         } else if (bubble.unlockable()) {
             drawInlineButton(graphics, mouseX, mouseY, bubble.firstX(), bubble.buttonY(),
                     bubble.unlockWidth(), bubble.buttonHeight(), "연구소에서 습득", true, ACCENT);
@@ -390,8 +392,8 @@ public final class VillageRoleProgressScreen extends Screen {
     }
 
     private String shortStatus(SkillEntry skill) {
-        if (skill.slot() == 0) return "Z 슬롯 장착";
-        if (skill.slot() == 1) return "X 슬롯 장착";
+        if (skill.slot() == 0) return VillageClientKeys.skillOneKeyName() + " 슬롯 장착";
+        if (skill.slot() == 1) return VillageClientKeys.skillTwoKeyName() + " 슬롯 장착";
         if (isLearned(skill)) return "습득 완료";
         return skill.status();
     }
