@@ -56,7 +56,8 @@ jobs:
               cat ../../logs/pr-server.log
               exit 1
             fi
-            if grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS revision=1 settlements=6 buildings=60' ../../logs/pr-server.log \
+            if grep -Fq 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' ../../logs/pr-server.log \
+              && grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS revision=1 settlements=6 buildings=60' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_SOCIETY_PASS revision=1 settlements=6 households=48 residents=144 workers=96 dependents=48' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_ECONOMY_PASS revision=1 settlements=6 households=48 markets=6' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_POPULATION_DIAGNOSTIC_PASS households=77 residents=231 workers=154' ../../logs/pr-server.log \
@@ -75,6 +76,27 @@ jobs:
           done
           cat ../../logs/pr-server.log
           test "$passed" -eq 1
+          grep -F 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' ../../logs/pr-server.log \
+            | grep -F 'playable_species=1' \
+            | grep -F 'playable_homelands=1' \
+            | grep -F 'playable_backgrounds=1' \
+            | grep -F 'playable_residences=1' \
+            | grep -F 'sleep_skip=false' \
+            | grep -F 'bed_respawn=false' \
+            | grep -F 'shared_clock=true' \
+            | grep -F 'institutional_defeat=true' \
+            | grep -F 'recovery_fee=8' \
+            | grep -F 'item_loss=false' \
+            | grep -F 'personal_crafting=false' \
+            | grep -F 'vanilla_workstations=false' \
+            | grep -F 'capital_safe=true' \
+            | grep -F 'settlement_safe=true' \
+            | grep -F 'settlements=6' \
+            | grep -F 'road_danger=true' \
+            | grep -F 'wild_danger=true' \
+            | grep -F 'scripted_spawns_preserved=true' \
+            | grep -F 'initial_placement_teleport_only=true' \
+            | grep -F 'multiplayer_world_shared=true'
           grep -F 'LK_ERDEN_REGIONAL_ECONOMY_PASS revision=1 settlements=6 households=48 markets=6' ../../logs/pr-server.log | grep -F 'physical_barrel=true' | grep -F 'player_inventory_authoritative=true' | grep -F 'local_reserve_first=true' | grep -F 'worker_linked=true' | grep -F 'household_consumption=true' | grep -F 'local_trade_escrow=true' | grep -F 'kingdom_supply_escrow=true' | grep -F 'unloaded_aggregate=true' | grep -F 'persistent_forced_chunks=false'
 
       - name: Graphical client audit
@@ -128,6 +150,10 @@ jobs:
           entries="$(mktemp)"
           unzip -Z1 "${jars[0]}" > "$entries"
           test "$(sort "$entries" | uniq -d | wc -l)" -eq 0
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/FantasyWorldRules.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/foundation/PlayableOriginCatalog.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/profile/StarterLoadoutManager.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenFantasyEcologyManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalSocietyManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalEconomyManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalEconomySavedData.class' "$entries"
