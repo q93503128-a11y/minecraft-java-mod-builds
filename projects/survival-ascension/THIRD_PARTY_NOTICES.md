@@ -1,20 +1,21 @@
-# Third-Party Notices
-
-Survival Ascension is a personal Minecraft mod project. Some implementation patterns are reused or adapted from permissively licensed public projects. Restricted projects are reference-only and no restricted source/assets are copied into this project.
+# Third-party notices
 
 ## Skill Proficiencies
 
-Source: `balovich-matje/skill-proficiencies`
-
-Used/adapted in Survival Ascension:
-- generic per-skill XP map / derived-level architecture
-- NeoForge clientbound custom-payload registration pattern
-- client receiver seam that keeps client-only classes out of common server code
-- recent-skill XP HUD layout/behavior pattern
-
+Source project: `balovich-matje/skill-proficiencies`
+Copyright (c) 2026 balovich-matje
 License: MIT License
 
-Copyright (c) 2026 balovich-matje
+Survival Ascension adapts or ports permissively licensed implementation ideas from Skill Proficiencies, including:
+- generic per-skill total-XP storage with levels derived from XP
+- NeoForge clientbound payload registration and client receiver seam
+- recent-skill XP HUD behavior
+- mature-crop classification used to reject immature crop XP
+- multi-skill overview-screen information architecture
+
+The complete MIT notice is also packaged at `META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt` in the runtime JAR.
+
+MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -36,8 +37,4 @@ SOFTWARE.
 
 ## Project MMO 2.0
 
-Source: `Caltinor/Project-MMO-2.0`
-
-License observed in the public repository: All Rights Reserved.
-
-Use in Survival Ascension: reference-only for feature taxonomy, information architecture, and gameplay behavior. No Project MMO source code or image resources are copied into Survival Ascension.
+Project MMO 2.0 is treated as **reference-only** because its repository/content is not permissively licensed for source copying. Survival Ascension may study its public behavior, progression concepts and UI/information organization, but does not copy or bundle Project MMO source code, assets, textures, data files, namespaces or implementation markers.

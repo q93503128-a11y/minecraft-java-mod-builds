@@ -1,12 +1,5 @@
 package kr.moonseungjun.survivalascension.progress;
 
-/**
- * Central balance table for Survival Ascension progression.
- *
- * <p>The "one tuning class, derived levels from total XP" layout is adapted from
- * Skill Proficiencies by balovich-matje (MIT License). Survival Ascension's
- * progression curves and scale milestones are its own.</p>
- */
 public final class SkillTuning {
     public static final int MAX_LEVEL = 100;
 
@@ -68,5 +61,28 @@ public final class SkillTuning {
         return 1;
     }
 
-    private static int clamp(int level) { return Math.max(0, Math.min(MAX_LEVEL, level)); }
+    public static double harvestingSpeedMultiplier(int level) {
+        int clamped = clamp(level);
+        return 1.0D + 0.02D * clamped + 0.0002D * clamped * clamped;
+    }
+
+    public static int harvestingAreaSize(int level) {
+        if (level >= 90) return 9;
+        if (level >= 60) return 7;
+        if (level >= 30) return 5;
+        if (level >= 10) return 3;
+        return 1;
+    }
+
+    public static int masteryTier(int level) {
+        if (level >= 90) return 5;
+        if (level >= 60) return 4;
+        if (level >= 30) return 3;
+        if (level >= 10) return 2;
+        return 1;
+    }
+
+    private static int clamp(int level) {
+        return Math.max(0, Math.min(MAX_LEVEL, level));
+    }
 }

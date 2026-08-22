@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.survivalascension.command.AscensionCommands;
+import kr.moonseungjun.survivalascension.harvesting.HarvestingProgression;
 import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.woodcutting.WoodcuttingProgression;
@@ -13,8 +14,9 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.2.0-alpha.1";
+    public static final String VERSION = "0.3.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
+
     public SurvivalAscension(IEventBus modEventBus) {
         modEventBus.addListener(SkillNetwork::onRegisterPayloads);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onPlayerLoggedIn);
@@ -22,7 +24,9 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(WoodcuttingProgression::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(HarvestingProgression::onBreakSpeed);
+        NeoForge.EVENT_BUS.addListener(HarvestingProgression::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: generic skill engine, mining scale, woodcutting scale, synced HUD", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: mining, woodcutting, harvesting, synced HUD and skills screen", VERSION);
     }
 }
