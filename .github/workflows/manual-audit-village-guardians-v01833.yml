@@ -39,6 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 "${PROJECT_DIR}/tools/apply_v01833_manual_audit_fixes.py" 2>&1 | tee /tmp/vg-manual-patch.log
+          python3 "${PROJECT_DIR}/tools/apply_v01833_manual_audit_compile_fix.py" 2>&1 | tee -a /tmp/vg-manual-patch.log
           git diff --check 2>&1 | tee /tmp/vg-manual-diff.log
 
       - name: Run every deterministic regression contract
@@ -95,7 +96,8 @@ jobs:
               'VillageWaveIntelDossierScreen.class', 'VillageLocalActionSystem.class',
               'VillageUiController.class', 'VillageUiService.class', 'VillageProgressionSystem.class',
               'VillageEquipmentRaritySystem.class', 'VillageRoleProgressScreen.class',
-              'VillageRaidSystem.class', 'VillageFortressTerrain.class', 'VillagePlacedTurretSystem.class'
+              'VillageMercenaryDeploymentSystem.class', 'VillageRaidSystem.class',
+              'VillageFortressTerrain.class', 'VillagePlacedTurretSystem.class'
           )
           for cls in required:
               assert prefix + cls in names, cls
@@ -125,7 +127,8 @@ jobs:
             "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageUiService.java" \
             "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java" \
             "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentRaritySystem.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageRoleProgressScreen.java"
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageRoleProgressScreen.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageMercenaryDeploymentSystem.java"
           git diff --cached --check
           git commit -m 'fix(village): resolve manual audit findings [skip ci]'
           for attempt in 1 2 3 4 5 6; do
