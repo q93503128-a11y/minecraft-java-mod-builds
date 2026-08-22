@@ -88,7 +88,7 @@ public final class DeathDoctrineService {
         return hit || center != null;
     }
 
-    /** Seventh circle: one soul, one overwhelming rupture. No threshold/instant kill is present. */
+    /** Seventh circle: one soul, one overwhelming rupture. No instant-kill gate is present. */
     private static boolean fingerOfDeath(ServerLevel level, LivingEntity caster,
                                          LivingEntity target, double power) {
         if (!enemy(caster, target)) return false;
@@ -109,7 +109,7 @@ public final class DeathDoctrineService {
         return hit;
     }
 
-    /** Ninth circle: the sole death-law execution. Targets outside the threshold still take a 9C catastrophe hit. */
+    /** Ninth circle: the sole death-law execution. Targets outside the law gate still take a 9C catastrophe hit. */
     private static boolean powerWordKill(ServerLevel level, LivingEntity caster,
                                          LivingEntity target, double power) {
         if (!enemy(caster, target)) return false;
