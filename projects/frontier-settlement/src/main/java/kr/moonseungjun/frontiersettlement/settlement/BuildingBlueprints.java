@@ -279,9 +279,7 @@ public final class BuildingBlueprints {
 
         for (int y = 1; y <= 4; y++) {
             for (int x = 0; x < 11; x++) {
-                if (!isWarehouseDoorOpening(x, y, 8)) {
-                    b.put(x, y, 8, warehouseWallState(x, y, 8), Phase.FRAME_AND_WALLS);
-                }
+                if (!isWarehouseDoorOpening(x, y, 8)) b.put(x, y, 8, warehouseWallState(x, y, 8), Phase.FRAME_AND_WALLS);
                 b.put(x, y, 0, warehouseWallState(x, y, 0), Phase.FRAME_AND_WALLS);
             }
             for (int z = 1; z < 8; z++) {
@@ -324,8 +322,6 @@ public final class BuildingBlueprints {
         b.put(5, 1, 8, lowerDoor, Phase.FINISH);
         b.put(5, 2, 8, lowerDoor.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), Phase.FINISH);
 
-        // Storage positions are shared with SettlementStorageService. Keeping one source of truth
-        // prevents invisible inventory slots or a barrel that the HUD counts but the player cannot open.
         for (BlockPos storage : WarehouseLayout.storagePositions(o)) {
             b.putAbsolute(storage, Blocks.BARREL.defaultBlockState(), Phase.FINISH);
         }
@@ -333,8 +329,10 @@ public final class BuildingBlueprints {
         b.put(9, 1, 1, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
         b.put(1, 1, 7, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
         b.put(9, 1, 7, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
-        b.put(5, 3, 2, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
-        b.put(5, 3, 6, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
+        // These two lanterns sit directly on the center-row barrels. They are intentionally not
+        // floating/hanging so neighbour updates cannot pop them into loose item entities.
+        b.put(5, 2, 2, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
+        b.put(5, 2, 6, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
         b.put(5, 1, 4, Blocks.CRAFTING_TABLE.defaultBlockState(), Phase.FINISH);
         return b.build();
     }
