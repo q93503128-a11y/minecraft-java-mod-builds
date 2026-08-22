@@ -32,6 +32,9 @@ public final class AscensionAffixes {
     private static final String PRIMARY = "primary";
     private static final String SCALE = "scale";
     private static final String MASTERY = "mastery";
+    private static final String SECONDARY = "secondary";
+    private static final String UTILITY = "utility";
+    private static final List<String> AFFIX_POOL = List.of(PRIMARY, SCALE, MASTERY, SECONDARY, UTILITY);
 
     private AscensionAffixes() {}
 
@@ -51,22 +54,32 @@ public final class AscensionAffixes {
         int rarity = Math.max(1, Math.min(3, rankId));
         Category category = Category.values()[random.nextInt(4)];
         ItemStack stack = new ItemStack(baseItem(category, rarity));
-        String vanillaName = stack.getHoverName().getString();
+        rollAffixes(stack, random, rarity, category);
+        return stack;
+    }
 
-        List<String> pool = new ArrayList<>(List.of(PRIMARY, SCALE, MASTERY));
+    public static boolean reroll(ItemStack stack, RandomSource random) {
+        int rarity = rarity(stack);
+        Category category = category(stack);
+        if (rarity <= 0 || category == Category.NONE) return false;
+        rollAffixes(stack, random, rarity, category);
+        return true;
+    }
+
+    private static void rollAffixes(ItemStack stack, RandomSource random, int rarity, Category category) {
+        List<String> pool = new ArrayList<>(AFFIX_POOL);
         Collections.shuffle(pool, new java.util.Random(random.nextLong()));
-        List<String> chosen = pool.subList(0, rarity);
+        List<String> chosen = List.copyOf(pool.subList(0, Math.min(rarity, pool.size())));
 
         stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, data -> data.update(tag -> {
             CompoundTag root = new CompoundTag();
             root.putInt(RARITY, rarity);
             root.putString(CATEGORY, category.id);
-            root.putBoolean(PRIMARY, chosen.contains(PRIMARY));
-            root.putBoolean(SCALE, chosen.contains(SCALE));
-            root.putBoolean(MASTERY, chosen.contains(MASTERY));
+            for (String key : AFFIX_POOL) root.putBoolean(key, chosen.contains(key));
             tag.put(ROOT, root);
         }));
 
+        String vanillaName = new ItemStack(stack.getItem()).getHoverName().getString();
         String affixes = chosen.stream().map(key -> affixName(category, key)).reduce((a, b) -> a + "·" + b).orElse("");
         String prefix = switch (rarity) {
             case 1 -> "§b[정예] ";
@@ -74,13 +87,15 @@ public final class AscensionAffixes {
             default -> "§6[신화] ";
         };
         stack.set(DataComponents.CUSTOM_NAME, Component.literal(prefix + affixes + " §f" + vanillaName));
-        return stack;
     }
 
     public static double toolSpeedMultiplier(ItemStack stack) {
         int rarity = rarity(stack);
-        if (rarity <= 0 || !has(stack, PRIMARY) || category(stack) == Category.WEAPON) return 1.0D;
-        return switch (rarity) { case 1 -> 1.12D; case 2 -> 1.25D; default -> 1.40D; };
+        if (rarity <= 0 || category(stack) == Category.WEAPON) return 1.0D;
+        double result = 1.0D;
+        if (has(stack, PRIMARY)) result *= switch (rarity) { case 1 -> 1.12D; case 2 -> 1.25D; default -> 1.40D; };
+        if (has(stack, UTILITY)) result *= switch (rarity) { case 1 -> 1.06D; case 2 -> 1.12D; default -> 1.20D; };
+        return result;
     }
 
     public static double damageMultiplier(ItemStack stack) {
@@ -101,18 +116,24 @@ public final class AscensionAffixes {
     }
 
     public static int adjustMiningVeinLimit(ItemStack stack, int base) {
-        if (base <= 1 || category(stack) != Category.PICKAXE || !has(stack, SCALE)) return base;
+        if (base <= 1 || category(stack) != Category.PICKAXE || !has(stack, SECONDARY)) return base;
         return base + switch (rarity(stack)) { case 1 -> 12; case 2 -> 32; case 3 -> 64; default -> 0; };
     }
 
     public static int adjustWoodcuttingLimit(ItemStack stack, int base) {
-        if (base <= 1 || category(stack) != Category.AXE || !has(stack, SCALE)) return base;
-        return base + switch (rarity(stack)) { case 1 -> 16; case 2 -> 48; case 3 -> 96; default -> 0; };
+        if (base <= 1 || category(stack) != Category.AXE) return base;
+        int bonus = 0;
+        if (has(stack, SCALE)) bonus += switch (rarity(stack)) { case 1 -> 16; case 2 -> 48; case 3 -> 96; default -> 0; };
+        if (has(stack, SECONDARY)) bonus += switch (rarity(stack)) { case 1 -> 8; case 2 -> 24; case 3 -> 64; default -> 0; };
+        return base + bonus;
     }
 
     public static int adjustHarvestArea(ItemStack stack, int base) {
-        if (base <= 1 || category(stack) != Category.HOE || !has(stack, SCALE)) return base;
-        return base + scaleAreaBonus(rarity(stack));
+        if (base <= 1 || category(stack) != Category.HOE) return base;
+        int bonus = 0;
+        if (has(stack, SCALE)) bonus += scaleAreaBonus(rarity(stack));
+        if (has(stack, SECONDARY)) bonus += rarity(stack) >= 3 ? 2 : (rarity(stack) >= 2 ? 2 : 0);
+        return base + bonus;
     }
 
     public static int adjustCleaveTargets(ItemStack stack, int base) {
@@ -121,8 +142,28 @@ public final class AscensionAffixes {
     }
 
     public static double adjustCleaveFraction(ItemStack stack, double base) {
-        if (base <= 0.0D || category(stack) != Category.WEAPON || !has(stack, SCALE)) return base;
+        if (base <= 0.0D || category(stack) != Category.WEAPON || !has(stack, UTILITY)) return base;
         return Math.min(0.85D, base + switch (rarity(stack)) { case 1 -> 0.05D; case 2 -> 0.10D; case 3 -> 0.15D; default -> 0.0D; });
+    }
+
+    public static double eliteDamageMultiplier(ItemStack stack) {
+        int rarity = rarity(stack);
+        if (rarity <= 0 || category(stack) != Category.WEAPON || !has(stack, SECONDARY)) return 1.0D;
+        return switch (rarity) { case 1 -> 1.10D; case 2 -> 1.22D; default -> 1.40D; };
+    }
+
+    public static boolean isAffixGear(ItemStack stack) { return rarity(stack) > 0; }
+
+    public static String rarityName(ItemStack stack) {
+        return switch (rarity(stack)) { case 1 -> "정예"; case 2 -> "승천"; case 3 -> "신화"; default -> "일반"; };
+    }
+
+    public static String affixSummary(ItemStack stack) {
+        Category category = category(stack);
+        if (category == Category.NONE) return "affix 없음";
+        List<String> names = new ArrayList<>();
+        for (String key : AFFIX_POOL) if (has(stack, key)) names.add(affixName(category, key));
+        return names.isEmpty() ? "affix 없음" : String.join(" · ", names);
     }
 
     public static int rarity(ItemStack stack) {
@@ -167,12 +208,14 @@ public final class AscensionAffixes {
     private static String affixName(Category category, String key) {
         if (MASTERY.equals(key)) return "숙련";
         if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : "가속";
+        if (SCALE.equals(key)) return switch (category) {
+            case WEAPON -> "파급"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case HOE -> "광역"; default -> "증폭";
+        };
+        if (SECONDARY.equals(key)) return switch (category) {
+            case WEAPON -> "사냥"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case HOE -> "풍작"; default -> "특화";
+        };
         return switch (category) {
-            case WEAPON -> "파급";
-            case PICKAXE -> "굴착";
-            case AXE -> "연쇄";
-            case HOE -> "광역";
-            default -> "증폭";
+            case WEAPON -> "충격"; case PICKAXE, AXE, HOE -> "정교"; default -> "보조";
         };
     }
 

@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
 Survival Ascension turns survival progression into larger physical actions, then scales enemies and loot back against that growth.
 
-## 0.11.0-alpha.1
+## 0.12.0-alpha.1
 
 ### Six live skills
 - Mining: 3x3 / 5x5 / 7x7 / 9x9 excavation + connected valuable-ore extraction.
@@ -18,23 +18,23 @@ Survival Ascension turns survival progression into larger physical actions, then
 - Elite I / Ascended II / Mythic III scale from nearby players' average six-skill progression.
 - Swift evades, Bulwark counter-pushes, Vampiric heals from real damage, Berserker lunges and gains low-health damage.
 - Spawner-origin mobs are excluded from elite assignment.
-- Elite kills retain rank XP/material rewards.
 
-### Affix equipment
+### Affix equipment + reforge loop
 Apotheosis MIT-inspired rarity/category/affix separation is adapted to Survival Ascension's own 26.2 CustomData system.
 
-- Elite I: 25% affix gear chance, iron base, 1 affix.
-- Ascended II: 65%, diamond base, 2 affixes.
-- Mythic III: 100%, netherite base, 3 affixes.
-- Weapon: Destruction (damage), Cleave (already-unlocked cleave scale), Mastery (Combat XP).
-- Pickaxe: Haste, Excavation/vein scale, Mining Mastery.
-- Axe: Haste, connected-log scale, Woodcutting Mastery.
-- Hoe: Haste, harvest-area scale, Harvesting Mastery.
-- Scale affixes do not unlock 3x3/cleave/chain systems early. The matching skill must unlock the scaled action first.
-- Affix rarity and names are visible directly in the item's custom name.
+- Elite I: 25% affix gear chance, iron base, 1 of 5 affixes.
+- Ascended II: 65%, diamond base, 2 of 5 affixes.
+- Mythic III: 100%, netherite base, 3 of 5 affixes.
+- The five-slot pool is category-specific: primary power, action scale, mastery XP, secondary specialization, utility specialization.
+- Scale affixes never unlock a skill action early; the matching skill must unlock that action first.
+- M -> Equipment opens the MineMenu-derived equipment radial.
+- Reforge preserves the base item/rarity and rerolls its affix combination while consuming survival resources.
+- Reforge costs: Elite = 16 amethyst + 8 iron; Ascended = 32 amethyst + 6 diamonds; Mythic = 64 amethyst + 12 diamonds + 2 netherite scraps.
+- Salvage destroys the held affix item and returns only part of the reforge resources, creating a sink rather than a duplication loop.
+- Creative reforge is free for testing; creative salvage rewards are disabled.
 
 ### Controls
-- M: integrated radial menu.
+- M: integrated radial menu (skills / construction / equipment / guide / unlocks / stats / controls).
 - R: Mobility dash/action.
 - Shift: precision override for scaled work.
 

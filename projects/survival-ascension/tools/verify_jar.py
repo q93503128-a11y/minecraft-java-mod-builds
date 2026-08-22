@@ -25,6 +25,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/SurvivalAscension.class",
         "kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.class",
+        "kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/GuideScreen.class",
         "kr/moonseungjun/survivalascension/client/SkillsScreen.class",
         "kr/moonseungjun/survivalascension/progress/SkillProgressData.class",
@@ -36,6 +37,8 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/mobility/MobilityProgression.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
         "kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class",
+        "kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.class",
+        "kr/moonseungjun/survivalascension/network/EquipmentActionPayload.class",
     ]:
         if name not in names: raise SystemExit(f"required JAR entry missing: {name}")
     for notice, line in [

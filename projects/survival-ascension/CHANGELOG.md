@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.12.0-alpha.1
+- Expanded each affix category from three possible affixes to five while preserving 0.11 CustomData compatibility.
+- Elite / Ascended / Mythic gear now rolls 1 / 2 / 3 affixes from a five-affix pool, so Mythic rerolls remain meaningful instead of always owning every affix.
+- Added category-specific secondary/utility affixes: Hunter/Impact, Vein/Precision, Felling/Precision, Bounty/Precision.
+- Split Mining scale so excavation area and vein capacity can roll independently; Woodcutting and Harvesting can stack primary scale with secondary specialization.
+- Added M -> Equipment nested MineMenu-derived radial with Reforge / Salvage / Gear Info / Back.
+- Added server-authoritative EquipmentAction payload; client requests never directly alter inventory or item data.
+- Reforge preserves the held item's base item and non-affix components while rerolling only the Survival Ascension affix payload.
+- Reforge costs create a high-volume resource sink: Elite 16 amethyst + 8 iron, Ascended 32 amethyst + 6 diamonds, Mythic 64 amethyst + 12 diamonds + 2 netherite scraps.
+- Salvage destroys the held affix gear and returns only a partial material refund; creative salvage rewards are disabled to prevent duplication.
+- Network protocol bumped to 5 and source/JAR audits now require the equipment radial, action payload, reforge service and five-affix contract.
+
 ## 0.11.0-alpha.1
 - Added an Apotheosis-inspired rarity/category/affix loot loop using Minecraft 26.2 CustomData rather than replacing vanilla item classes.
 - Elite I / Ascended II / Mythic III affix gear uses iron / diamond / netherite bases and carries 1 / 2 / 3 distinct affixes.
