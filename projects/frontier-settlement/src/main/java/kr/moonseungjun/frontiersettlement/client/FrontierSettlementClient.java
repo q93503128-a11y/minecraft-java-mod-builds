@@ -7,6 +7,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.common.NeoForge;
 
 @Mod(value = FrontierSettlement.MOD_ID, dist = Dist.CLIENT)
 public final class FrontierSettlementClient {
@@ -15,7 +17,12 @@ public final class FrontierSettlementClient {
 
     public FrontierSettlementClient(IEventBus modBus) {
         SettlementNetwork.setSnapshotSink(ClientSettlementState::accept);
+        SettlementNetwork.setPlacementPreviewSink(BuildingPlacementClient::acceptPreview);
         modBus.addListener(RegisterGuiLayersEvent.class, FrontierSettlementClient::onRegisterGuiLayers);
+        modBus.addListener(RegisterKeyMappingsEvent.class, BuildingPlacementClient::registerKeys);
+        NeoForge.EVENT_BUS.addListener(BuildingPlacementClient::tick);
+        NeoForge.EVENT_BUS.addListener(PlacementGhostRenderer::extract);
+        NeoForge.EVENT_BUS.addListener(PlacementGhostRenderer::submit);
     }
 
     private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
