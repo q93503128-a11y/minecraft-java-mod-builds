@@ -12,7 +12,7 @@ Source project: `kestalkayden/veinminer-plus-plus`
 Copyright (c) 2026 Kestalkayden  
 License: MIT License
 
-Survival Ascension adapts ore-family equivalence matching, bounded connected traversal, normal player destroy-controller handling, and in 0.15 the smart-tree leaf-safety plus tick-drained large-tree work pattern. The smart-tree rule first gathers connected logs and only bulk-fells when leaves are face-adjacent to the origin or gathered log set, protecting ordinary player-built log structures. Full notice: `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt`.
+Survival Ascension adapts ore-family equivalence matching, bounded connected traversal, normal player destroy-controller handling, smart-tree leaf-safety and tick-drained large-tree work. Full notice: `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt`.
 
 ## MineMenu
 Source project: `GirafiStudios/MineMenu`  
@@ -26,42 +26,48 @@ Source project: `Direwolf20-MC/BuildingGadgets2`
 Copyright (c) 2023 Direwolf20-MC  
 License: MIT License
 
-Survival Ascension independently implements Construction after studying Building Gadgets 2's permissively licensed material-backed building, interaction/protection checks, NeoForge placement hooks and tick-distributed work. The 0.15 Builder Foundry volume mode reuses Survival Ascension's existing protected material-backed work queue. Full notice: `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
+Survival Ascension independently implements Construction after studying Building Gadgets 2's permissively licensed material-backed building, interaction/protection checks, NeoForge placement hooks and tick-distributed work. Full notice: `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
 
 ## Mob Champions
 Source project: `wendall911/MobChampions`  
 Copyright (c) 2024 Wendall Cada  
 License: MIT License
 
-Survival Ascension adapts Mob Champions' permissively licensed 26.2 patterns for rank-driven permanent entity attribute modifiers and rank-aware hostile-mob construction. Survival Ascension uses its own progression-scaled spawn probabilities, three-rank curve, four combat traits, reactive patterns, NBT keys and rewards. Full notice: `META-INF/third-party/MOB_CHAMPIONS_MIT.txt`.
+Survival Ascension adapts Mob Champions' permissively licensed 26.2 patterns for rank-driven permanent entity attribute modifiers and rank-aware hostile-mob construction. Full notice: `META-INF/third-party/MOB_CHAMPIONS_MIT.txt`.
 
 ## Apotheosis
 Source project: `Shadows-of-Fire/Apotheosis`  
 Copyright (c) 2018-2025 Stormraven Studios, LLC  
 License: MIT License
 
-Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from Apotheosis. Survival Ascension uses its own Minecraft 26.2 `CustomData` representation, four equipment categories, five-affix pools, 1/2/3 rolled affixes, reforge costs and elite-drop rules. No Apotheosis assets or data files are bundled. Full notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
+Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from Apotheosis. No Apotheosis assets or data files are bundled. Full notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
 
 ## Mekanism
 Source project: `mekanism/Mekanism`  
 Copyright (c) 2017-2025 Aidan C. Brady  
 License: MIT License
 
-Survival Ascension 0.13 adapts the Digital Miner's high-level target-filtered bounded-search idea for the Mining Lv.90 Extract action. The implementation is player/tool/skill based and retains Survival Ascension's own ore-family matching, loaded-chunk bound, normal `destroyBlock` path, block limit, durability, loot and XP rules. No Mekanism assets, machines, energy systems, filters, GUIs, data files or namespaces are bundled. Full notice: `META-INF/third-party/MEKANISM_MIT.txt`.
+Survival Ascension adapts the Digital Miner's high-level target-filtered bounded-search idea for Mining Lv.90 Extract. No Mekanism assets, machines, energy systems, filters, GUIs, data files or namespaces are bundled. Full notice: `META-INF/third-party/MEKANISM_MIT.txt`.
 
 ## Warband
 Source project: `Renasca-Studios/Warband`  
 Copyright (c) 2026 Divesh Gupta  
 License: MIT License
 
-Survival Ascension 0.16 adapts Warband's lightweight tactical-squad concepts: persistent squad membership, shared target focus, explicit combat roles, and a temporary rout window after the leader falls. Survival Ascension uses its own player-progression formation rules, four-role behavior implementation, spawner exclusion, reward economy and Combat Academy integration. Full notice: `META-INF/third-party/WARBAND_MIT.txt`.
+Survival Ascension adapts Warband's lightweight tactical-squad concepts: persistent squad membership, shared target focus, explicit combat roles, and a temporary rout window after the leader falls. Full notice: `META-INF/third-party/WARBAND_MIT.txt`.
+
+## Hostiles Are Too Easy
+Source project: `MinecraftIsTooEasy/HostilesAreTooEasy`  
+License: CC0 1.0 Universal
+
+Survival Ascension 0.17 adapts the project's dynamic-difficulty idea in which world difficulty advances through major progression milestones, including Wither and Ender Dragon kills. Survival Ascension reimplements that concept as modern NeoForge 26.2 world-shared SavedData stages that alter elite frequency/rank odds and tactical-warband size/frequency. No legacy mixins, assets, namespaces, celestial mob implementations or old Minecraft runtime code are bundled. Runtime notice: `META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt`.
 
 ## Create
 Source project: `Creators-of-Create/Create`  
 Code license: MIT  
 Assets license: All Rights Reserved
 
-Survival Ascension studies Create's progression philosophy of turning large material throughput into staged infrastructure and new physical work capabilities. No Create source code, assets, textures, models, sound, data, namespaces, machines or Ponder content are bundled. The shared-project SavedData, funding rules, tunnel jobs, irrigation behavior and Builder Foundry are Survival Ascension implementations.
+Survival Ascension studies Create's progression philosophy of turning large material throughput into staged infrastructure and new physical work capabilities. No Create source code, assets, textures, models, sound, data, namespaces, machines or Ponder content are bundled.
 
 ## MIT License text
 Permission is hereby granted, free of charge, to any person obtaining a copy
