@@ -6,6 +6,7 @@ import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.progress.SkillClientBridge;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -42,9 +43,10 @@ public final class SurvivalAscensionClient {
         while (OPEN_MENU.consumeClick()) {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.player == null || minecraft.level == null) continue;
-            if (minecraft.screen instanceof AscensionRadialMenuScreen) {
+            Screen current = minecraft.gui.screen();
+            if (current instanceof AscensionRadialMenuScreen) {
                 minecraft.gui.setScreen(null);
-            } else if (minecraft.screen == null || minecraft.screen instanceof SkillsScreen || minecraft.screen instanceof GuideScreen) {
+            } else if (current == null || current instanceof SkillsScreen || current instanceof GuideScreen) {
                 minecraft.gui.setScreen(new AscensionRadialMenuScreen());
             }
         }
