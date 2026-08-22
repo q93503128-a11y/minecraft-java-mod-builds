@@ -1,0 +1,1 @@
+player placement/storage invariant missing: selectedCenter.getX() - type.width() / 2
