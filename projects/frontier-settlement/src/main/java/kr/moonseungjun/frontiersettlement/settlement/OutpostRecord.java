@@ -7,7 +7,8 @@ import net.minecraft.core.BlockPos;
 public record OutpostRecord(int id,
                             int centerX, int centerY, int centerZ,
                             int stockX, int stockY, int stockZ,
-                            int roadIndex) {
+                            int roadIndex,
+                            String specialization) {
     public static final Codec<OutpostRecord> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("id").forGetter(OutpostRecord::id),
             Codec.INT.fieldOf("center_x").forGetter(OutpostRecord::centerX),
@@ -16,15 +17,21 @@ public record OutpostRecord(int id,
             Codec.INT.fieldOf("stock_x").forGetter(OutpostRecord::stockX),
             Codec.INT.fieldOf("stock_y").forGetter(OutpostRecord::stockY),
             Codec.INT.fieldOf("stock_z").forGetter(OutpostRecord::stockZ),
-            Codec.INT.fieldOf("road_index").forGetter(OutpostRecord::roadIndex)
+            Codec.INT.fieldOf("road_index").forGetter(OutpostRecord::roadIndex),
+            Codec.STRING.optionalFieldOf("specialization", "general").forGetter(OutpostRecord::specialization)
     ).apply(instance, OutpostRecord::new));
 
-    public BlockPos center() {
-        return new BlockPos(centerX, centerY, centerZ);
-    }
+    public BlockPos center() { return new BlockPos(centerX, centerY, centerZ); }
+    public BlockPos stockpile() { return new BlockPos(stockX, stockY, stockZ); }
 
-    public BlockPos stockpile() {
-        return new BlockPos(stockX, stockY, stockZ);
+    public String specializationDisplayName() {
+        return switch (specialization) {
+            case "mining" -> "광업";
+            case "quarry" -> "채석";
+            case "lumber" -> "벌목";
+            case "agriculture" -> "농업";
+            default -> "일반";
+        };
     }
 
     public boolean protectsXZ(BlockPos pos, int padding) {
