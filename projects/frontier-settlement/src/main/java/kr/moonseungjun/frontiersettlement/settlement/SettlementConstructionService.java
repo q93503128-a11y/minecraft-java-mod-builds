@@ -26,6 +26,7 @@ public final class SettlementConstructionService {
     private static final double BUILDER_WORK_RANGE_SQR = 22.0D;
     private static final int COMMAND_PLACEMENT_DISTANCE = 10;
     private static final int MAX_MAIN_SETTLEMENT_RADIUS = 72;
+    private static final int MAX_PLAYER_PLACEMENT_DISTANCE = 24;
 
     private SettlementConstructionService() {}
 
@@ -36,14 +37,37 @@ public final class SettlementConstructionService {
     public static StartResult start(ServerPlayer player, BuildingType type) {
         Direction facing = player.getDirection();
         BlockPos selectedCenter = player.blockPosition().relative(facing, COMMAND_PLACEMENT_DISTANCE);
-        return startAt(player, type, selectedCenter);
+        BuildingRotation rotation = BuildingRotation.facingPlayerFrom(facing);
+        return startAt(player, type, selectedCenter, rotation.id());
+    }
+
+    public static String lockedReason(SettlementData data, BuildingType type) {
+        if (type == BuildingType.FARM && data.houseCount() < 1) return "농장은 주택 1채를 먼저 완성하면 열립니다.";
+        if (type == BuildingType.QUARRY && data.lumberCampCount() < 1) return "채석장은 벌목소 1곳을 먼저 완성하면 열립니다.";
+        if (type == BuildingType.MINE && (data.buildingCount(BuildingType.QUARRY) < 1 || data.outposts().isEmpty())) {
+            return "광산은 채석장 1곳과 연결된 전초기지 1곳을 만든 뒤 열립니다.";
+        }
+        if (type == BuildingType.WAREHOUSE && data.buildingCount(BuildingType.FARM) < 1) return "창고는 농장 1곳을 완성하면 열립니다.";
+        return null;
     }
 
     public static PlacementCheck checkPlacement(ServerPlayer player, BuildingType type, BlockPos selectedCenter) {
+        return checkPlacement(player, type, selectedCenter, BuildingRotation.NONE.id());
+    }
+
+    public static PlacementCheck checkPlacement(ServerPlayer player, BuildingType type, BlockPos selectedCenter, int rotationId) {
         MinecraftServer server = player.level().getServer();
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return new PlacementCheck(false, BlockPos.ZERO, "공동 마을이 없습니다.");
         if (player.level() != server.overworld()) return new PlacementCheck(false, BlockPos.ZERO, "오버월드에서만 배치할 수 있습니다.");
+        String locked = lockedReason(data, type);
+        if (locked != null) return new PlacementCheck(false, BlockPos.ZERO, locked);
+
+        long pdx = (long) selectedCenter.getX() - player.blockPosition().getX();
+        long pdz = (long) selectedCenter.getZ() - player.blockPosition().getZ();
+        if (pdx * pdx + pdz * pdz > (long) MAX_PLAYER_PLACEMENT_DISTANCE * MAX_PLAYER_PLACEMENT_DISTANCE) {
+            return new PlacementCheck(false, BlockPos.ZERO, "건설 위치는 플레이어 24블록 안에서 지정해 주세요.");
+        }
 
         long dx = (long) selectedCenter.getX() - data.centerPos().getX();
         long dz = (long) selectedCenter.getZ() - data.centerPos().getZ();
@@ -51,24 +75,31 @@ public final class SettlementConstructionService {
             return new PlacementCheck(false, BlockPos.ZERO, "본진 기능 건물은 마을 중심 72블록 안에 배치해 주세요. 먼 지역은 전초기지를 사용합니다.");
         }
 
-        int originX = selectedCenter.getX() - type.width() / 2;
-        int originZ = selectedCenter.getZ() - type.depth() / 2;
+        BuildingRotation rotation = BuildingRotation.fromId(rotationId);
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
+        int originX = selectedCenter.getX() - width / 2;
+        int originZ = selectedCenter.getZ() - depth / 2;
         ServerLevel level = server.overworld();
-        Site site = assessSite(level, originX, originZ, type);
+        Site site = assessSite(level, originX, originZ, type, rotation);
         if (site == null) {
             return new PlacementCheck(false, BlockPos.ZERO,
                     "선택한 부지가 안전하지 않습니다. 높이 차 2블록 이하의 물·나무·기존 건축물이 없는 곳을 선택해 주세요.");
         }
-        if (overlapsInfrastructure(data, site.origin(), type)) {
+        if (overlapsInfrastructure(data, site.origin(), type, rotation)) {
             return new PlacementCheck(false, BlockPos.ZERO, "선택한 부지가 기존 건물·도로·전초기지 또는 공동 창고와 겹칩니다.");
         }
         return new PlacementCheck(true, site.origin(), "배치 가능");
     }
 
     public static StartResult startAt(ServerPlayer player, BuildingType type, BlockPos selectedCenter) {
+        return startAt(player, type, selectedCenter, BuildingRotation.NONE.id());
+    }
+
+    public static StartResult startAt(ServerPlayer player, BuildingType type, BlockPos selectedCenter, int rotationId) {
         MinecraftServer server = player.level().getServer();
         SettlementData data = SettlementData.get(server);
-        if (!data.founded()) return new StartResult(false, "먼저 /frontier found로 공동 마을을 시작해야 합니다.");
+        if (!data.founded()) return new StartResult(false, "먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return new StartResult(false, "건설은 현재 오버월드 공동 마을에서만 시작할 수 있습니다.");
         if (data.construction().active()) {
             BuildingType active = BuildingType.fromId(data.construction().type());
@@ -79,7 +110,7 @@ public final class SettlementConstructionService {
             return new StartResult(false, "현재 인프라 공사가 끝난 뒤 건물을 시작해 주세요.");
         }
 
-        PlacementCheck check = checkPlacement(player, type, selectedCenter);
+        PlacementCheck check = checkPlacement(player, type, selectedCenter, rotationId);
         if (!check.valid()) return new StartResult(false, check.message());
 
         SettlementService.refreshResources(server, data);
@@ -91,24 +122,24 @@ public final class SettlementConstructionService {
         }
 
         ServerLevel level = server.overworld();
-        if (!consumeCost(level, data, type)) {
+        if (!SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)) {
             SettlementService.refreshResources(server, data);
             return new StartResult(false, "공동 창고 자원이 착공 직전에 변경되어 건설을 시작하지 못했습니다. 자원은 차감되지 않았습니다.");
         }
 
-        prepareSite(level, check.origin(), type);
-        data.beginConstruction(type, check.origin());
+        BuildingRotation rotation = BuildingRotation.fromId(rotationId);
+        prepareSite(level, check.origin(), type, rotation);
+        data.beginConstruction(type, check.origin(), rotation);
         ensureBuilder(level, data.centerPos());
         SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
-        return new StartResult(true, type.displayName() + " 착공. 선택한 위치에서 건설 주민이 작업을 시작합니다."
+        return new StartResult(true, type.displayName() + " 착공. 선택한 위치와 방향으로 건설 주민이 작업을 시작합니다."
                 + " (목재 -" + type.woodCost() + ", 석재 -" + type.stoneCost() + ")");
     }
 
     public static boolean tick(MinecraftServer server, SettlementData data) {
         ConstructionState construction = data.construction();
         if (!construction.active()) return false;
-
         BuildingType type = BuildingType.fromId(construction.type());
         if (type == null) {
             data.clearConstruction();
@@ -116,7 +147,7 @@ public final class SettlementConstructionService {
         }
 
         ServerLevel level = server.overworld();
-        List<BuildingBlueprints.Placement> plan = BuildingBlueprints.create(type, construction.origin());
+        List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, construction.origin(), construction.rotation());
         if (construction.step() >= plan.size()) return finishIfValid(server, data, type, plan);
 
         Villager builder = ensureBuilder(level, data.centerPos());
@@ -153,7 +184,11 @@ public final class SettlementConstructionService {
     }
 
     public static int totalSteps(BuildingType type, BlockPos origin) {
-        return BuildingBlueprints.create(type, origin).size();
+        return totalSteps(type, origin, BuildingRotation.NONE.id());
+    }
+
+    public static int totalSteps(BuildingType type, BlockPos origin, int rotationId) {
+        return RotatedBlueprints.create(type, origin, rotationId).size();
     }
 
     private static boolean finishIfValid(MinecraftServer server, SettlementData data, BuildingType type,
@@ -215,12 +250,14 @@ public final class SettlementConstructionService {
         return builders.isEmpty() ? null : builders.getFirst();
     }
 
-    private static Site assessSite(ServerLevel level, int originX, int originZ, BuildingType type) {
-        List<Integer> heights = new ArrayList<>(type.width() * type.depth());
+    private static Site assessSite(ServerLevel level, int originX, int originZ, BuildingType type, BuildingRotation rotation) {
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
+        List<Integer> heights = new ArrayList<>(width * depth);
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
-        for (int x = 0; x < type.width(); x++) {
-            for (int z = 0; z < type.depth(); z++) {
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < depth; z++) {
                 int worldX = originX + x;
                 int worldZ = originZ + z;
                 int height = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, worldX, worldZ);
@@ -236,8 +273,8 @@ public final class SettlementConstructionService {
         int baseY = heights.get(heights.size() / 2);
         BlockPos origin = new BlockPos(originX, baseY, originZ);
 
-        for (int x = -1; x <= type.width(); x++) {
-            for (int z = -1; z <= type.depth(); z++) {
+        for (int x = -1; x <= width; x++) {
+            for (int z = -1; z <= depth; z++) {
                 for (int y = -3; y <= type.clearHeight(); y++) {
                     BlockPos pos = origin.offset(x, y, z);
                     if (level.getBlockEntity(pos) != null) return null;
@@ -251,22 +288,22 @@ public final class SettlementConstructionService {
         return new Site(origin);
     }
 
-    private static boolean overlapsInfrastructure(SettlementData data, BlockPos origin, BuildingType type) {
+    private static boolean overlapsInfrastructure(SettlementData data, BlockPos origin, BuildingType type, BuildingRotation rotation) {
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
         int minX = origin.getX() - 1;
-        int maxX = origin.getX() + type.width();
+        int maxX = origin.getX() + width;
         int minZ = origin.getZ() - 1;
-        int maxZ = origin.getZ() + type.depth();
+        int maxZ = origin.getZ() + depth;
 
         BlockPos stock = data.stockpilePos();
         if (stock.getX() >= minX && stock.getX() <= maxX && stock.getZ() >= minZ && stock.getZ() <= maxZ) return true;
 
         for (BuildingRecord existing : data.buildings()) {
-            BuildingType oldType = existing.buildingType();
-            if (oldType == null) continue;
             int oldMinX = existing.originX() - 1;
-            int oldMaxX = existing.originX() + oldType.width();
+            int oldMaxX = existing.originX() + existing.rotatedWidth();
             int oldMinZ = existing.originZ() - 1;
-            int oldMaxZ = existing.originZ() + oldType.depth();
+            int oldMaxZ = existing.originZ() + existing.rotatedDepth();
             if (minX <= oldMaxX && maxX >= oldMinX && minZ <= oldMaxZ && maxZ >= oldMinZ) return true;
         }
         for (RoadSegment road : data.roads()) {
@@ -307,17 +344,19 @@ public final class SettlementConstructionService {
                 || state.is(Blocks.SNOW_BLOCK);
     }
 
-    private static void prepareSite(ServerLevel level, BlockPos origin, BuildingType type) {
+    private static void prepareSite(ServerLevel level, BlockPos origin, BuildingType type, BuildingRotation rotation) {
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
         for (int y = type.clearHeight(); y >= 0; y--) {
-            for (int x = -1; x <= type.width(); x++) {
-                for (int z = -1; z <= type.depth(); z++) {
+            for (int x = -1; x <= width; x++) {
+                for (int z = -1; z <= depth; z++) {
                     BlockPos pos = origin.offset(x, y, z);
                     if (!level.getBlockState(pos).isAir()) level.setBlock(pos, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
                 }
             }
         }
-        for (int x = 0; x < type.width(); x++) {
-            for (int z = 0; z < type.depth(); z++) {
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < depth; z++) {
                 BlockPos top = origin.offset(x, -1, z);
                 level.setBlock(top, Blocks.COBBLESTONE.defaultBlockState(), DIRECT_BLOCK_UPDATE);
                 for (int down = 2; down <= 4; down++) {
@@ -327,9 +366,5 @@ public final class SettlementConstructionService {
                 }
             }
         }
-    }
-
-    private static boolean consumeCost(ServerLevel level, SettlementData data, BuildingType type) {
-        return SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L);
     }
 }
