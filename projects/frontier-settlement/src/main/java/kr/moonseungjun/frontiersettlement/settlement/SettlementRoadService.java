@@ -14,7 +14,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public final class SettlementRoadService {
@@ -151,7 +150,6 @@ public final class SettlementRoadService {
 
     private static Route assessRoute(ServerLevel level, SettlementData data,
                                      int startX, int startZ, int directionX, int directionZ) {
-        List<Integer> heights = new ArrayList<>(ROAD_LENGTH * ROAD_WIDTH);
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
 
@@ -174,15 +172,13 @@ public final class SettlementRoadService {
                     if (!state.isAir() && !state.canBeReplaced() && !state.is(BlockTags.LEAVES)) return null;
                 }
 
-                heights.add(surfaceY);
                 min = Math.min(min, surfaceY);
                 max = Math.max(max, surfaceY);
             }
         }
         if (max - min > MAX_ROUTE_HEIGHT_VARIANCE) return null;
 
-        Collections.sort(heights);
-        int roadY = heights.get(heights.size() / 2);
+        int roadY = min;
         for (int along = 0; along < ROAD_LENGTH; along++) {
             for (int side = -1; side <= 1; side++) {
                 int x = startX + directionX * along - directionZ * side;
