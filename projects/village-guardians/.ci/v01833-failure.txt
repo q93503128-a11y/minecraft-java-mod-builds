@@ -1,19 +1,146 @@
 version=0.18.33-alpha.1
-run_id=32564620799
-head=e1f4c98b0148f8840aca0e9ba5c49cdefed5f8a3
+run_id=32564696896
+head=58ea257079a342c1653f6178614518a232c312b2
 --- git status ---
+ M projects/village-guardians/.ci/v01833-failure.txt
+ M projects/village-guardians/README.md
+ M projects/village-guardians/gradle.properties
+ M projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageFortressTerrain.java
  M projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageTownHallGridScreen.java
  M projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java
-?? projects/village-guardians/.ci/v01833-failure.txt
+ M projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWaveIntelDossierScreen.java
+ M projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageWorldSystem.java
+ M projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py
+ M projects/village-guardians/tools/test_action_layout.py
+ M projects/village-guardians/tools/test_fortress_layout.py
+ M projects/village-guardians/tools/test_interaction_contract.py
+ M projects/village-guardians/tools/test_runtime_safety.py
+ M projects/village-guardians/tools/test_ui_layout_contract.py
+ M projects/village-guardians/tools/test_v01832_ranger_wall_traffic.py
+?? projects/village-guardians/tools/test_v01833_playtest_ui_wall.py
 --- v01833-patch.log tail ---
+[PATCH-RUNNER] disambiguated wave title replacement target
+[PATCH] Village Guardians 0.18.33 playtest UI/wall correction applied
+[PATCH] v0.18.33 regression contracts migrated to maintenance-only town hall and open wall geometry
+--- v01833-diff.log tail ---
+--- v01833-tests.log tail ---
+[PASS] direct-fire turret and ranger LOS blocks wall-through acquisition and damage
+[PASS] bombard retains its intentional indirect-fire acquisition exception
+[PASS] tower hunters approach at range but damage turrets only at physical attack distance
+[PASS] piercer has a real armored-target damage niche
+[PASS] turret placement/visual/cleanup owns a matching three-block footprint
+[PASS] only the actual mercenary killer receives mercenary progression
+[PASS] all four mercenary classes retain distinct active battlefield behavior
+=== tools/test_v01812_quality_audit.py ===
+[PASS] version property remains present
+[PASS] turret LOS starts outside its own three-block visual column
+[PASS] anti-air targeting gives an explicit priority to airborne threats
+[PASS] chain turret visuals arc from target to target rather than starburst from tower
+[PASS] mercenary deployment uses authoritative saved class map instead of display-name parsing
+[PASS] support mercenaries suppress melee wandering without cancelling rally return
+[PASS] breach colossus can attack the north gate and phase two really attacks faster
+[PASS] siege boss telegraphs and impacts share explicit delayed cast state
+[PASS] elite telegraphs remain readable and share fixed delayed cast state with their impacts
+[PASS] elite pursuit chooses the nearest player instead of player-list order
+[PASS] boss aspects ignore downed targets and telegraph lethal pulses
+[PASS] stormcaller warning and damage share one fixed dodgeable strike point
+=== tools/test_v01813_siege_integration.py ===
+[PASS] version is v0.18.13-alpha.1
+[PASS] raid enemies own authoritative wave metadata before entity join
+[PASS] attack plan no longer parses gameplay state from display names
+[PASS] downed players are excluded from generic raid pursuit and archetype abilities
+[PASS] structure pressure is staggered per attacker instead of one global burst tick
+[PASS] tower hunter owns one coherent nearest placed-turret objective
+[PASS] turret pressure layer no longer fights raid navigation ownership
+[PASS] tower hunter disrupts real placed turrets instead of retired fixed tower kinds
+[PASS] legacy duplicate research bonus firing path is retired
+[PASS] bombard is a delayed snapshot-position shell with real impact resolution
+[PASS] bombard can arc over cover while direct-fire turrets still require LOS
+[PASS] automated defense visuals use synchronized procedural mesh actors
+[PASS] mesh renderer has turret_ballista_shot
+[PASS] mesh renderer has turret_repeater_shot
+[PASS] mesh renderer has turret_piercer_shot
+[PASS] mesh renderer has turret_flame_shot
+[PASS] mesh renderer has turret_frost_shot
+[PASS] mesh renderer has turret_chain_shot
+[PASS] mesh renderer has turret_bombard_arc
+[PASS] mesh renderer has turret_bombard_impact
+[PASS] mesh renderer has turret_nullifier_shot
+[PASS] mesh renderer has turret_antiair_shot
+[PASS] mesh renderer has turret_beacon_pulse
+[PASS] mesh renderer has merc_ranger_shot
+[PASS] mesh renderer has merc_bastion_guard
+[PASS] mesh renderer has merc_striker_pressure
+[PASS] mesh renderer has merc_medic_pulse
+[PASS] mesh renderer has siege_structure_impact
+[PASS] defense mesh fades preserve packed ARGB channels
+[PASS] turret straight-line particle spam is replaced by mesh shot plus impact feedback
+[PASS] four mercenary roles expose synchronized combat feedback
+[PASS] v0.18.13 siege integration contracts complete
+=== tools/test_v01814_persistent_presentation.py ===
+[PASS] version is v0.18.14-alpha.1
+[PASS] turret gameplay state remains SavedData while visual actors are runtime-only
+[PASS] active turrets use invisible collision shells plus mesh bodies
+[PASS] wrecks and dismantles retire turret actors instead of leaving ghosts
+[PASS] turret actors are self-healed and can aim independently of the collision footprint
+[PASS] failed-night and new-game persistence changes immediately rebuild runtime turrets and wall visuals
+[PASS] mesh library renders turret_body_ballista
+[PASS] mesh library renders turret_body_repeater
+[PASS] mesh library renders turret_body_piercer
+[PASS] mesh library renders turret_body_flame
+[PASS] mesh library renders turret_body_frost
+[PASS] mesh library renders turret_body_chain
+[PASS] mesh library renders turret_body_bombard
+[PASS] mesh library renders turret_body_nullifier
+[PASS] mesh library renders turret_body_anti_air
+[PASS] mesh library renders turret_body_beacon
+[PASS] mesh library renders turret_wreck_
+[PASS] turret level and disruption state alter the visible body
+[PASS] owner-follow presentation actors die when their owning mob disappears
+[PASS] elite presentation has elite_aura_grappler
+[PASS] elite presentation has elite_aura_firebrand
+[PASS] elite presentation has elite_aura_assassin
+[PASS] elite presentation has elite_aura_plague_weaver
+[PASS] elite presentation has elite_aura_shock_rider
+[PASS] elite presentation has elite_grapple_line
+[PASS] elite presentation has elite_firebrand_throw
+[PASS] elite presentation has elite_firebrand_impact
+[PASS] elite presentation has elite_plague_warning
+[PASS] elite presentation has elite_plague_impact
+[PASS] grappler traversal is a timed arc rather than one-frame wall teleport
+[PASS] firebrand warning snapshots a dodgeable impact point and resolves later
+[PASS] plague warning and impact share one fixed danger zone
+[PASS] v0.18.14 persistent presentation contracts complete
+=== tools/test_v01815_boss_identity.py ===
+[PASS] version is v0.18.15-alpha.1
+[PASS] boss doctrines genuinely diversify by day wave and actual boss archetype
+[PASS] three consecutive waves can cover all three doctrine slots
+[PASS] boss presence combines aspect and siege doctrine in one persistent owner-follow silhouette
+[PASS] phase two adds a persistent readable boss layer plus transition burst
+[PASS] breach colossus warning and wall damage consume one fixed cast snapshot
+[PASS] bone hierophant ritual uses one fixed world-space zone from warning through buff resolution
+[PASS] black marshal mark cannot jump to another player between warning and impact
+[PASS] bloodbound drain warning and damage share one fixed world-space center
+[PASS] stormcaller keeps fixed dodgeable ground point and now uses mesh warning
+[PASS] boss presence kinds are composed dynamically from doctrine ids
+[PASS] boss procedural presentation includes boss_phase_two_burst
+[PASS] boss procedural presentation includes boss_breach_warning
+[PASS] boss procedural presentation includes boss_breach_windup
+[PASS] boss procedural presentation includes boss_breach_impact
+[PASS] boss procedural presentation includes boss_ritual_warning
+[PASS] boss procedural presentation includes boss_ritual_impact
+[PASS] boss procedural presentation includes boss_duel_mark
+[PASS] boss procedural presentation includes boss_duel_impact
+[PASS] boss procedural presentation includes boss_bloodbound_warning
+[PASS] boss procedural presentation includes boss_bloodbound_impact
+[PASS] boss procedural presentation includes boss_storm_warning
+[PASS] boss presentation follows live owners and rotates with boss facing
+[PASS] v0.18.15 boss identity and cast-state contracts complete
+=== tools/test_v01818_growth_consumables.py ===
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py", line 794, in <module>
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01818_growth_consumables.py", line 73, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py", line 785, in main
-    patch_wave_screen()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py", line 396, in patch_wave_screen
-    text = replace_once(text, '''pane.left() + 13, y + 6,''', '''pane.left() + 13, y + 7,''', "wave title y")
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py", line 18, in replace_once
-    raise RuntimeError(f"{label}: expected one match, found {text.count(old)}")
-RuntimeError: wave title y: expected one match, found 2
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v01818_growth_consumables.py", line 48, in main
+    assert "groundY + 3" in fortress and "Math.floorMod(dx, 6) == 0" in fortress
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
