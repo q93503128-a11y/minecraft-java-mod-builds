@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.19.0-alpha.1
+- Added Stage-2 endgame hostile mutations adapted from Hostiles Are Too Easy's CC0 Celestial Type vocabulary.
+- Natural eligible zombies and skeletons roll an 18% mutation chance only after the server world reaches Endgame / Stage 2; babies and spawner-origin mobs are excluded.
+- Added persistent Withered skeleton mutation: successful health damage to players applies Wither for 80 ticks.
+- Added persistent Phase zombie mutation: after taking player health damage, a ready Phase zombie has a 55% chance to evade laterally/backward, with a 45-tick reaction cooldown.
+- Added persistent Plague zombie mutation: successful health damage to players applies Poison for 120 ticks.
+- Mutation state is stored in entity persistent NBT and can coexist with Elite I / Ascended II / Mythic III rank and tactical Warband role.
+- Player mutation kills grant +10 vanilla XP and have a 35% chance to drop one Echo Shard.
+- No blanket HP multiplier is added by the mutation layer; the feature changes combat behavior/effects instead of creating another health-sponge tier.
+- Extended the Hostiles Are Too Easy CC0 attribution and source/JAR audit contracts to cover the new endgame mutation implementation.
+
 ## 0.18.0-alpha.1
 - Added the fifth world-shared infrastructure project, Ascension Nexus, available only after World Ascension Stage 2 / Endgame.
 - Ascension Nexus costs 4 Nether Stars + 64 Dragon's Breath + 512 Obsidian + 512 Amethyst Shards + 64 Echo Shards.
