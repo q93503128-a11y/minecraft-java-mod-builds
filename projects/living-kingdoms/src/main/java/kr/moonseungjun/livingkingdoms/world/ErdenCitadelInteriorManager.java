@@ -111,7 +111,7 @@ public final class ErdenCitadelInteriorManager {
                 FAILED_SCANS.remove(zone.id);
                 processed++;
                 LivingKingdoms.LOGGER.info(
-                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} required={} connected_cells={} enclosed=true furnishing_connected=true stepped_furnishing=true unique_fixture_cells=true facade_replaced=false",
+                        "Completed Erden citadel zone={} anchor={},{},{} fixtures={} required={} connected_cells={} enclosed=true furnishing_connected=true stepped_furnishing=true unique_fixture_cells=true anchor_prequalified=true facade_replaced=false",
                         zone.id, result.anchor.x, result.anchor.floorY + 1, result.anchor.z,
                         result.fixtures, required, result.connectedCells);
             } catch (Throwable throwable) {
@@ -202,14 +202,16 @@ public final class ErdenCitadelInteriorManager {
             ServerLevel level,
             RealmSiteLayoutSavedData.RealmSite site,
             Zone zone) {
-        Anchor anchor = findInteriorAnchor(
+        AnchorCandidate candidate = findInteriorAnchor(
                 level,
                 site,
+                zone,
                 site.centerX() + zone.offsetX,
                 site.centerZ() + zone.offsetZ);
-        if (anchor == null) return null;
+        if (candidate == null) return null;
 
-        Map<Long, Integer> furnishingFloors = collectConnectedFurnishingFloors(level, site, anchor);
+        Anchor anchor = candidate.anchor;
+        Map<Long, Integer> furnishingFloors = candidate.furnishingFloors;
         Set<Long> claimedFixtureCells = new HashSet<>();
         int fixtures = 0;
         for (Fixture fixture : zone.fixtures) {
@@ -220,27 +222,32 @@ public final class ErdenCitadelInteriorManager {
         return new ZoneResult(anchor, fixtures, furnishingFloors.size());
     }
 
-    private static Anchor findInteriorAnchor(
+    private static AnchorCandidate findInteriorAnchor(
             ServerLevel level,
             RealmSiteLayoutSavedData.RealmSite site,
+            Zone zone,
             int preferredX,
             int preferredZ) {
         int minY = Math.max(level.getMinY() + 1, site.baseY() - 2);
         int maxY = Math.min(level.getMaxY() - 16, site.baseY() + 44);
         for (int radius = 0; radius <= SEARCH_RADIUS; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
-                Anchor top = findVerticalAnchor(level, site, preferredX + dx, preferredZ - radius, minY, maxY);
+                AnchorCandidate top = findVerticalAnchor(
+                        level, site, zone, preferredX + dx, preferredZ - radius, minY, maxY);
                 if (top != null) return top;
                 if (radius > 0) {
-                    Anchor bottom = findVerticalAnchor(level, site, preferredX + dx, preferredZ + radius, minY, maxY);
+                    AnchorCandidate bottom = findVerticalAnchor(
+                            level, site, zone, preferredX + dx, preferredZ + radius, minY, maxY);
                     if (bottom != null) return bottom;
                 }
             }
             for (int dz = -radius + 1; dz < radius; dz++) {
-                Anchor left = findVerticalAnchor(level, site, preferredX - radius, preferredZ + dz, minY, maxY);
+                AnchorCandidate left = findVerticalAnchor(
+                        level, site, zone, preferredX - radius, preferredZ + dz, minY, maxY);
                 if (left != null) return left;
                 if (radius > 0) {
-                    Anchor right = findVerticalAnchor(level, site, preferredX + radius, preferredZ + dz, minY, maxY);
+                    AnchorCandidate right = findVerticalAnchor(
+                            level, site, zone, preferredX + radius, preferredZ + dz, minY, maxY);
                     if (right != null) return right;
                 }
             }
@@ -248,18 +255,95 @@ public final class ErdenCitadelInteriorManager {
         return null;
     }
 
-    private static Anchor findVerticalAnchor(
+    private static AnchorCandidate findVerticalAnchor(
             ServerLevel level,
             RealmSiteLayoutSavedData.RealmSite site,
+            Zone zone,
             int x,
             int z,
             int minY,
             int maxY) {
         if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) return null;
+        int required = requiredFixtures(zone);
         for (int floorY = minY; floorY <= maxY; floorY++) {
-            if (isEnclosedWalkableFloor(level, x, floorY, z)) return new Anchor(x, floorY, z);
+            if (!isEnclosedWalkableFloor(level, x, floorY, z)) continue;
+            Anchor anchor = new Anchor(x, floorY, z);
+            Map<Long, Integer> furnishingFloors = collectConnectedFurnishingFloors(level, site, anchor);
+            if (furnishingFloors.size() < required) continue;
+            if (!canSupportRequiredFixtures(level, site, anchor, zone, furnishingFloors, required)) continue;
+            return new AnchorCandidate(anchor, furnishingFloors);
         }
         return null;
+    }
+
+    /**
+     * Performs the same placement search as {@link #ensureFixture} without mutating the world.
+     * This prevents a tiny enclosed alcove from becoming a permanently reselected zone anchor.
+     */
+    private static boolean canSupportRequiredFixtures(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            Anchor anchor,
+            Zone zone,
+            Map<Long, Integer> furnishingFloors,
+            int required) {
+        Set<Long> claimedFixtureCells = new HashSet<>();
+        int supported = 0;
+        for (Fixture fixture : zone.fixtures) {
+            if (canClaimFixtureCell(
+                    level, site, anchor, fixture, furnishingFloors, claimedFixtureCells)) {
+                supported++;
+                if (supported >= required) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean canClaimFixtureCell(
+            ServerLevel level,
+            RealmSiteLayoutSavedData.RealmSite site,
+            Anchor anchor,
+            Fixture fixture,
+            Map<Long, Integer> furnishingFloors,
+            Set<Long> claimedFixtureCells) {
+        int preferredX = anchor.x + fixture.dx;
+        int preferredZ = anchor.z + fixture.dz;
+        for (int radius = 0; radius <= FIXTURE_SEARCH_RADIUS; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    int x = preferredX + dx;
+                    int z = preferredZ + dz;
+                    if (x == anchor.x && z == anchor.z) continue;
+                    if (!insideCitadel(site, x, z) || !columnLoaded(level, x, z)) continue;
+                    long fixtureKey = furnishingKey(x, z);
+                    if (claimedFixtureCells.contains(fixtureKey)) continue;
+
+                    Integer floorY = furnishingFloors.get(fixtureKey);
+                    if (floorY == null) {
+                        Integer existingFloorY = findConnectedExistingFixtureFloor(
+                                level, site, anchor, fixture, x, z, furnishingFloors);
+                        if (existingFloorY != null) {
+                            claimedFixtureCells.add(fixtureKey);
+                            return true;
+                        }
+                        continue;
+                    }
+
+                    BlockPos floor = new BlockPos(x, floorY, z);
+                    BlockPos feet = floor.above();
+                    BlockPos head = feet.above();
+                    if (level.getBlockState(floor).isAir() || !level.getFluidState(floor).isEmpty()) continue;
+                    if (!level.getBlockState(head).isAir()) continue;
+                    Block current = level.getBlockState(feet).getBlock();
+                    if (current == fixture.block || level.getBlockState(feet).isAir()) {
+                        claimedFixtureCells.add(fixtureKey);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static Map<Long, Integer> collectConnectedFurnishingFloors(
@@ -455,7 +539,7 @@ public final class ErdenCitadelInteriorManager {
             }
         }
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_CITADEL_ZONE_WAIT zone={} attempts={} loaded_probe_columns={} anchor_found={} fixtures={} connected_cells={} required={}",
+                "LK_ERDEN_CITADEL_ZONE_WAIT zone={} attempts={} loaded_probe_columns={} anchor_found={} fixtures={} connected_cells={} required={} anchor_prequalified=true",
                 zone.id, attempts, loadedColumns, result != null,
                 result == null ? 0 : result.fixtures,
                 result == null ? 0 : result.connectedCells,
@@ -482,7 +566,7 @@ public final class ErdenCitadelInteriorManager {
         int fixtureCount = SESSION_RESULTS.values().stream().mapToInt(result -> result.fixtures).sum();
         ciPassLogged = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true door_blocks={} perimeter_starts={} walk_nodes={} enclosed=true furnishing_connected=true stepped_furnishing=true unique_fixture_cells=true facade_replaced=false loaded_only=true",
+                "LK_ERDEN_CITADEL_INTERIOR_PASS zones={} fixtures={} audience_reachable=true door_blocks={} perimeter_starts={} walk_nodes={} enclosed=true furnishing_connected=true stepped_furnishing=true unique_fixture_cells=true anchor_prequalified=true facade_replaced=false loaded_only=true",
                 ZONES.size(), fixtureCount, traversal.doorBlocks, traversal.perimeterStarts,
                 traversal.visitedNodes);
         releaseCiTicket(level);
@@ -628,6 +712,9 @@ public final class ErdenCitadelInteriorManager {
     }
 
     private record Anchor(int x, int floorY, int z) {
+    }
+
+    private record AnchorCandidate(Anchor anchor, Map<Long, Integer> furnishingFloors) {
     }
 
     private record ZoneResult(Anchor anchor, int fixtures, int connectedCells) {
