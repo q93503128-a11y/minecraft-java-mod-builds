@@ -30,12 +30,29 @@ public final class ErdenRegionalCommunityPhysicalAudit {
     private static final long WAIT_LOG_INTERVAL = 200L;
     private static final long PROBE_TIMEOUT_TICKS = 12_000L;
 
+    // Only one destination neighborhood is retained at a time. PROBED records the union for the
+    // final acceptance marker; it never represents live tickets.
     private static final Set<Long> RETAINED = new LinkedHashSet<>();
+    private static final Set<Long> PROBED = new LinkedHashSet<>();
     private static MinecraftServer activeServer;
     private static ActiveBuild activeBuild;
+    private static ProbeStage stage = ProbeStage.HOME;
     private static boolean requested;
+    private static boolean stageRequested;
     private static boolean passed;
     private static boolean failed;
+    private static boolean physicalHomeEvidence;
+    private static boolean physicalSquareEvidence;
+    private static boolean physicalInnEvidence;
+    private static boolean physicalMarketEvidence;
+    private static boolean homeWalkableEvidence;
+    private static boolean squareWalkableEvidence;
+    private static boolean innWalkableEvidence;
+    private static boolean marketWalkableEvidence;
+    private static boolean residentIdentityEvidence;
+    private static boolean loadedRouteGuardEvidence;
+    private static int residentCountEvidence;
+    private static int releasedChunks;
     private static long probeRequestedAt;
     private static long lastWaitLogTick;
 
@@ -69,40 +86,68 @@ public final class ErdenRegionalCommunityPhysicalAudit {
         long marketKey = ErdenRegionalEconomyManager.storageChunkKey(settlement);
 
         // The base regional CI already proves/builds the representative home and physical market.
-        // Wait for that authoritative stream before this focused probe expands only around the
-        // four destination neighborhoods needed by the community acceptance check.
+        // Wait for that authoritative stream before this focused proof begins.
         if (!construction.isBuilt(homeKey, ErdenRegionalSettlementCatalog.REVISION)
                 || !construction.isBuilt(marketKey, ErdenRegionalSettlementCatalog.REVISION)) return;
 
-        if (!requested) requestProbe(level, settlement, household);
+        if (!requested) beginProbe(level);
         if (timedOut(level)) {
             failAndRelease(level, "timeout_before_physical_acceptance");
             return;
         }
-        if (!allLoaded(level)) return;
+        if (!stageRequested) requestStage(level, settlement, household);
+        if (!allLoaded(level)) {
+            logLoadWait(level);
+            return;
+        }
         if (!buildProbe(level, construction)) return;
-        verifyAndFinish(level, society, economy, settlement, household);
+        if (!verifyStage(level, society, economy, settlement, household)) return;
+
+        releasedChunks += releaseCurrentStage(level);
+        stageRequested = false;
+        lastWaitLogTick = Long.MIN_VALUE;
+        if (stage == ProbeStage.MARKET) {
+            finishAcceptance(level);
+            return;
+        }
+        stage = stage.next();
     }
 
-    private static void requestProbe(
-            ServerLevel level,
-            ErdenRegionalSettlementCatalog.Settlement settlement,
-            ErdenRegionalSocietySavedData.Household household) {
+    private static void beginProbe(ServerLevel level) {
         requested = true;
         probeRequestedAt = level.getGameTime();
         lastWaitLogTick = Long.MIN_VALUE;
-
-        addProbeArea(level, household.homeX(), household.homeZ(), DESTINATION_PROBE_RADIUS);
-        addProbeArea(level, settlement.x(), settlement.z(), DESTINATION_PROBE_RADIUS);
-        ErdenRegionalSettlementCatalog.BuildingLot inn =
-                ErdenRegionalCommunityManager.requireLot(settlement, "village_inn");
-        addProbeArea(
-                level, settlement.x() + inn.dx(), settlement.z() + inn.dz(), DESTINATION_PROBE_RADIUS);
-        BlockPos market = ErdenRegionalEconomyManager.storagePosition(settlement);
-        addProbeArea(level, market.getX(), market.getZ(), DESTINATION_PROBE_RADIUS);
         LivingKingdoms.LOGGER.info(
-                "Requested Erden regional community physical CI probe settlement={} chunks={} destination_radius={} transient_ticket=portal persistent_forced_chunks=false",
-                REPRESENTATIVE_ID, RETAINED.size(), DESTINATION_PROBE_RADIUS);
+                "Requested Erden regional community staged physical CI probe settlement={} destinations=4 destination_radius={} max_live_destination_groups=1 transient_ticket=portal persistent_forced_chunks=false",
+                REPRESENTATIVE_ID, DESTINATION_PROBE_RADIUS);
+    }
+
+    private static void requestStage(
+            ServerLevel level,
+            ErdenRegionalSettlementCatalog.Settlement settlement,
+            ErdenRegionalSocietySavedData.Household household) {
+        if (!RETAINED.isEmpty()) {
+            throw new IllegalStateException("Regional community CI retained chunks leaked between stages");
+        }
+        stageRequested = true;
+        switch (stage) {
+            case HOME -> addProbeArea(level, household.homeX(), household.homeZ(), DESTINATION_PROBE_RADIUS);
+            case SQUARE -> addProbeArea(level, settlement.x(), settlement.z(), DESTINATION_PROBE_RADIUS);
+            case INN -> {
+                ErdenRegionalSettlementCatalog.BuildingLot inn =
+                        ErdenRegionalCommunityManager.requireLot(settlement, "village_inn");
+                addProbeArea(
+                        level, settlement.x() + inn.dx(), settlement.z() + inn.dz(),
+                        DESTINATION_PROBE_RADIUS);
+            }
+            case MARKET -> {
+                BlockPos market = ErdenRegionalEconomyManager.storagePosition(settlement);
+                addProbeArea(level, market.getX(), market.getZ(), DESTINATION_PROBE_RADIUS);
+            }
+        }
+        LivingKingdoms.LOGGER.info(
+                "Requested Erden regional community physical stage={} live_chunks={} unique_probe_chunks={} transient_ticket=portal",
+                stage.id(), RETAINED.size(), PROBED.size());
     }
 
     private static void addProbeArea(ServerLevel level, int blockX, int blockZ, int radius) {
@@ -120,6 +165,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
     private static void addProbe(ServerLevel level, int chunkX, int chunkZ) {
         long key = pack(chunkX, chunkZ);
         if (!RETAINED.add(key)) return;
+        PROBED.add(key);
         level.getChunkSource().addTicketAndLoadWithRadius(
                 TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
     }
@@ -130,6 +176,19 @@ public final class ErdenRegionalCommunityPhysicalAudit {
             if (!level.hasChunk(unpackX(key), unpackZ(key))) return false;
         }
         return true;
+    }
+
+    private static void logLoadWait(ServerLevel level) {
+        long now = level.getGameTime();
+        if (lastWaitLogTick != Long.MIN_VALUE && now - lastWaitLogTick < WAIT_LOG_INTERVAL) return;
+        lastWaitLogTick = now;
+        int loaded = 0;
+        for (long key : RETAINED) {
+            if (level.hasChunk(unpackX(key), unpackZ(key))) loaded++;
+        }
+        LivingKingdoms.LOGGER.info(
+                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_LOAD_WAIT stage={} loaded={}/{} unique_probe_chunks={} elapsed_ticks={}",
+                stage.id(), loaded, RETAINED.size(), PROBED.size(), now - probeRequestedAt);
     }
 
     private static boolean buildProbe(
@@ -170,7 +229,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
                 build.plan().appliedWrites());
     }
 
-    private static void verifyAndFinish(
+    private static boolean verifyStage(
             ServerLevel level,
             ErdenRegionalSocietySavedData society,
             ErdenRegionalEconomySavedData economy,
@@ -179,9 +238,26 @@ public final class ErdenRegionalCommunityPhysicalAudit {
         ErdenRegionalSettlementSavedData construction = level.getDataStorage()
                 .computeIfAbsent(ErdenRegionalSettlementSavedData.TYPE);
         for (long key : RETAINED) {
-            if (!construction.isBuilt(key, ErdenRegionalSettlementCatalog.REVISION)) return;
+            if (!construction.isBuilt(key, ErdenRegionalSettlementCatalog.REVISION)) return false;
         }
 
+        ErdenRegionalCommunityManager.ResidentContext context =
+                new ErdenRegionalCommunityManager.ResidentContext(
+                        household, household.residents().getFirst());
+        return switch (stage) {
+            case HOME -> verifyHome(level, society, settlement, household, context);
+            case SQUARE -> verifySquare(level, society, settlement, context);
+            case INN -> verifyInn(level, society, settlement, context);
+            case MARKET -> verifyMarket(level, society, economy, settlement, context);
+        };
+    }
+
+    private static boolean verifyHome(
+            ServerLevel level,
+            ErdenRegionalSocietySavedData society,
+            ErdenRegionalSettlementCatalog.Settlement settlement,
+            ErdenRegionalSocietySavedData.Household household,
+            ErdenRegionalCommunityManager.ResidentContext context) {
         Set<String> expectedNames = new LinkedHashSet<>();
         for (ErdenRegionalSocietySavedData.Resident resident : household.residents()) {
             if (!society.isDead(resident.id())) expectedNames.add(resident.name());
@@ -191,88 +267,125 @@ public final class ErdenRegionalCommunityPhysicalAudit {
                 candidate -> expectedNames.contains(candidate.getName().getString()));
         Set<String> present = new LinkedHashSet<>();
         for (Villager resident : residents) present.add(resident.getName().getString());
-        boolean residentIdentity = expectedNames.size() == EXPECTED_RESIDENTS
-                && present.size() == EXPECTED_RESIDENTS;
 
+        boolean physical = hasStructureNear(level, household.homeX(), household.homeZ(), 12, 24);
+        BlockPos target = ErdenRegionalCommunityManager.activityTarget(
+                level, society, context, ErdenRegionalCommunityManager.Activity.HOME, 0L);
+        boolean walkable = !target.equals(BlockPos.ZERO);
+        BlockPos guardTarget = target.offset(ROUTE_GUARD_DISTANCE, 0, ROUTE_GUARD_DISTANCE);
+        boolean routeGuard = walkable
+                && !ErdenRegionalCommunityManager.routeLoaded(level, target, guardTarget);
+        boolean identity = expectedNames.size() == EXPECTED_RESIDENTS
+                && present.size() == EXPECTED_RESIDENTS;
+        if (!physical || !walkable || !routeGuard || !identity) {
+            logStageWait(level, present.size(), physical, walkable, routeGuard, target);
+            return false;
+        }
+
+        physicalHomeEvidence = true;
+        homeWalkableEvidence = true;
+        loadedRouteGuardEvidence = true;
+        residentIdentityEvidence = true;
+        residentCountEvidence = present.size();
+        return true;
+    }
+
+    private static boolean verifySquare(
+            ServerLevel level,
+            ErdenRegionalSocietySavedData society,
+            ErdenRegionalSettlementCatalog.Settlement settlement,
+            ErdenRegionalCommunityManager.ResidentContext context) {
         int baseY = (int) Math.round(AuthoredContinentDensity.surfaceHeight(settlement.x(), settlement.z()));
-        boolean physicalSquare = level.getBlockState(
+        boolean physical = level.getBlockState(
                 new BlockPos(settlement.x(), baseY, settlement.z())).is(Blocks.WATER)
                 && level.getBlockState(
                 new BlockPos(settlement.x() + 2, baseY, settlement.z() + 2)).is(Blocks.STONE_BRICKS);
+        BlockPos target = ErdenRegionalCommunityManager.activityTarget(
+                level, society, context, ErdenRegionalCommunityManager.Activity.SQUARE, 0L);
+        boolean walkable = !target.equals(BlockPos.ZERO);
+        if (!physical || !walkable) {
+            logStageWait(level, residentCountEvidence, physical, walkable, true, target);
+            return false;
+        }
+        physicalSquareEvidence = true;
+        squareWalkableEvidence = true;
+        return true;
+    }
+
+    private static boolean verifyInn(
+            ServerLevel level,
+            ErdenRegionalSocietySavedData society,
+            ErdenRegionalSettlementCatalog.Settlement settlement,
+            ErdenRegionalCommunityManager.ResidentContext context) {
         ErdenRegionalSettlementCatalog.BuildingLot inn =
                 ErdenRegionalCommunityManager.requireLot(settlement, "village_inn");
         int innX = settlement.x() + inn.dx();
         int innZ = settlement.z() + inn.dz();
-        boolean physicalInn = hasStructureNear(level, innX, innZ, 12, 24);
-        boolean physicalHome = hasStructureNear(level, household.homeX(), household.homeZ(), 12, 24);
-        BlockPos market = ErdenRegionalEconomyManager.storagePosition(settlement);
-        boolean physicalMarket = level.getBlockState(market).is(Blocks.BARREL)
-                && economy.storageMaterialized(REPRESENTATIVE_ID);
-
-        ErdenRegionalCommunityManager.ResidentContext context =
-                new ErdenRegionalCommunityManager.ResidentContext(
-                        household, household.residents().getFirst());
-        BlockPos homeTarget = ErdenRegionalCommunityManager.activityTarget(
-                level, society, context, ErdenRegionalCommunityManager.Activity.HOME, 0L);
-        BlockPos squareTarget = ErdenRegionalCommunityManager.activityTarget(
-                level, society, context, ErdenRegionalCommunityManager.Activity.SQUARE, 0L);
-        BlockPos innTarget = ErdenRegionalCommunityManager.activityTarget(
+        boolean physical = hasStructureNear(level, innX, innZ, 12, 24);
+        BlockPos target = ErdenRegionalCommunityManager.activityTarget(
                 level, society, context, ErdenRegionalCommunityManager.Activity.INN, 0L);
-        BlockPos marketTarget = ErdenRegionalCommunityManager.activityTarget(
-                level, society, context, ErdenRegionalCommunityManager.Activity.MARKET, 0L);
-        boolean destinationsWalkable = !homeTarget.equals(BlockPos.ZERO)
-                && !squareTarget.equals(BlockPos.ZERO)
-                && !innTarget.equals(BlockPos.ZERO)
-                && !marketTarget.equals(BlockPos.ZERO);
-
-        // Do not make the route-guard proof depend on whether the four physical destination probes
-        // happen to load every chunk between home and inn. A deliberately distant, never-retained
-        // endpoint tests the runtime contract directly: routeLoaded must reject a route that leaves
-        // the already-loaded world without itself creating a ticket.
-        BlockPos guardTarget = homeTarget.offset(ROUTE_GUARD_DISTANCE, 0, ROUTE_GUARD_DISTANCE);
-        boolean loadedRouteGuard = destinationsWalkable
-                && !ErdenRegionalCommunityManager.routeLoaded(level, homeTarget, guardTarget);
-
-        if (!residentIdentity || !physicalSquare || !physicalInn || !physicalHome || !physicalMarket
-                || !destinationsWalkable || !loadedRouteGuard) {
-            logWait(
-                    level, present.size(), physicalHome, physicalSquare, physicalInn, physicalMarket,
-                    destinationsWalkable, loadedRouteGuard,
-                    homeTarget, squareTarget, innTarget, marketTarget);
-            return;
+        boolean walkable = !target.equals(BlockPos.ZERO);
+        if (!physical || !walkable) {
+            logStageWait(level, residentCountEvidence, physical, walkable, true, target);
+            return false;
         }
-
-        int released = releaseProbe(level);
-        passed = true;
-        LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_PASS revision={} settlement={} residents={} destinations=4 probe_chunks={} physical_home=true physical_square=true physical_inn=true physical_market=true resident_identity=true destinations_walkable=true transient_probe_released=true navigation_only=true loaded_route_guard=true persistent_forced_chunks=false",
-                ErdenRegionalCommunityManager.COMMUNITY_REVISION,
-                REPRESENTATIVE_ID, present.size(), released);
+        physicalInnEvidence = true;
+        innWalkableEvidence = true;
+        return true;
     }
 
-    private static void logWait(
+    private static boolean verifyMarket(
+            ServerLevel level,
+            ErdenRegionalSocietySavedData society,
+            ErdenRegionalEconomySavedData economy,
+            ErdenRegionalSettlementCatalog.Settlement settlement,
+            ErdenRegionalCommunityManager.ResidentContext context) {
+        BlockPos market = ErdenRegionalEconomyManager.storagePosition(settlement);
+        boolean physical = level.getBlockState(market).is(Blocks.BARREL)
+                && economy.storageMaterialized(REPRESENTATIVE_ID);
+        BlockPos target = ErdenRegionalCommunityManager.activityTarget(
+                level, society, context, ErdenRegionalCommunityManager.Activity.MARKET, 0L);
+        boolean walkable = !target.equals(BlockPos.ZERO);
+        if (!physical || !walkable) {
+            logStageWait(level, residentCountEvidence, physical, walkable, true, target);
+            return false;
+        }
+        physicalMarketEvidence = true;
+        marketWalkableEvidence = true;
+        return true;
+    }
+
+    private static void logStageWait(
             ServerLevel level,
             int residentCount,
-            boolean physicalHome,
-            boolean physicalSquare,
-            boolean physicalInn,
-            boolean physicalMarket,
-            boolean destinationsWalkable,
-            boolean loadedRouteGuard,
-            BlockPos homeTarget,
-            BlockPos squareTarget,
-            BlockPos innTarget,
-            BlockPos marketTarget) {
+            boolean physical,
+            boolean walkable,
+            boolean routeGuard,
+            BlockPos target) {
         long now = level.getGameTime();
         if (lastWaitLogTick != Long.MIN_VALUE && now - lastWaitLogTick < WAIT_LOG_INTERVAL) return;
         lastWaitLogTick = now;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_WAIT residents={}/{} home={} square={} inn={} market={} destinations_walkable={} loaded_route_guard={} home_target={} square_target={} inn_target={} market_target={} retained_chunks={} elapsed_ticks={}",
-                residentCount, EXPECTED_RESIDENTS,
-                physicalHome, physicalSquare, physicalInn, physicalMarket,
-                destinationsWalkable, loadedRouteGuard,
-                homeTarget, squareTarget, innTarget, marketTarget,
-                RETAINED.size(), now - probeRequestedAt);
+                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_WAIT stage={} residents={}/{} physical={} walkable={} loaded_route_guard={} target={} live_chunks={} unique_probe_chunks={} elapsed_ticks={}",
+                stage.id(), residentCount, EXPECTED_RESIDENTS,
+                physical, walkable, routeGuard, target,
+                RETAINED.size(), PROBED.size(), now - probeRequestedAt);
+    }
+
+    private static void finishAcceptance(ServerLevel level) {
+        boolean destinationsWalkable = homeWalkableEvidence && squareWalkableEvidence
+                && innWalkableEvidence && marketWalkableEvidence;
+        if (!physicalHomeEvidence || !physicalSquareEvidence || !physicalInnEvidence
+                || !physicalMarketEvidence || !residentIdentityEvidence
+                || !destinationsWalkable || !loadedRouteGuardEvidence) {
+            failAndRelease(level, "staged_evidence_incomplete");
+            return;
+        }
+        passed = true;
+        LivingKingdoms.LOGGER.info(
+                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_PASS revision={} settlement={} residents={} destinations=4 probe_chunks={} physical_home=true physical_square=true physical_inn=true physical_market=true resident_identity=true destinations_walkable=true transient_probe_released=true staged_probe=true navigation_only=true loaded_route_guard=true persistent_forced_chunks=false",
+                ErdenRegionalCommunityManager.COMMUNITY_REVISION,
+                REPRESENTATIVE_ID, residentCountEvidence, PROBED.size());
     }
 
     private static boolean timedOut(ServerLevel level) {
@@ -280,15 +393,15 @@ public final class ErdenRegionalCommunityPhysicalAudit {
     }
 
     private static void failAndRelease(ServerLevel level, String reason) {
-        int released = releaseProbe(level);
+        releasedChunks += releaseCurrentStage(level);
         failed = true;
         LivingKingdoms.LOGGER.error(
-                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_FAIL revision={} settlement={} reason={} released_chunks={} transient_probe_released=true persistent_forced_chunks=false",
+                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_FAIL revision={} settlement={} stage={} reason={} released_chunks={} unique_probe_chunks={} transient_probe_released=true persistent_forced_chunks=false",
                 ErdenRegionalCommunityManager.COMMUNITY_REVISION,
-                REPRESENTATIVE_ID, reason, released);
+                REPRESENTATIVE_ID, stage.id(), reason, releasedChunks, PROBED.size());
     }
 
-    private static int releaseProbe(ServerLevel level) {
+    private static int releaseCurrentStage(ServerLevel level) {
         int released = RETAINED.size();
         for (long key : Set.copyOf(RETAINED)) {
             level.getChunkSource().removeTicketWithRadius(
@@ -352,12 +465,27 @@ public final class ErdenRegionalCommunityPhysicalAudit {
     private static void reset(MinecraftServer server) {
         activeServer = server;
         activeBuild = null;
+        stage = ProbeStage.HOME;
         requested = false;
+        stageRequested = false;
         passed = false;
         failed = false;
+        physicalHomeEvidence = false;
+        physicalSquareEvidence = false;
+        physicalInnEvidence = false;
+        physicalMarketEvidence = false;
+        homeWalkableEvidence = false;
+        squareWalkableEvidence = false;
+        innWalkableEvidence = false;
+        marketWalkableEvidence = false;
+        residentIdentityEvidence = false;
+        loadedRouteGuardEvidence = false;
+        residentCountEvidence = 0;
+        releasedChunks = 0;
         probeRequestedAt = 0L;
         lastWaitLogTick = Long.MIN_VALUE;
         RETAINED.clear();
+        PROBED.clear();
     }
 
     private static long pack(int chunkX, int chunkZ) {
@@ -374,6 +502,32 @@ public final class ErdenRegionalCommunityPhysicalAudit {
 
     private static boolean isCi() {
         return "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
+    }
+
+    private enum ProbeStage {
+        HOME("home"),
+        SQUARE("square"),
+        INN("inn"),
+        MARKET("market");
+
+        private final String id;
+
+        ProbeStage(String id) {
+            this.id = id;
+        }
+
+        String id() {
+            return id;
+        }
+
+        ProbeStage next() {
+            return switch (this) {
+                case HOME -> SQUARE;
+                case SQUARE -> INN;
+                case INN -> MARKET;
+                case MARKET -> MARKET;
+            };
+        }
     }
 
     private record ActiveBuild(
