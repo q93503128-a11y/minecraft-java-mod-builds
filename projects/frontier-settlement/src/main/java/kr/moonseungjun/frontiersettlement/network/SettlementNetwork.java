@@ -97,7 +97,9 @@ public final class SettlementNetwork {
         if (result.started()) {
             context.reply(RoadPreviewPayload.fromCheck(payload.nonce(), check, true));
         } else {
-            context.reply(new RoadPreviewPayload(payload.nonce(), false, false, check.stoneCost(), check.path(), result.message()));
+            RoadPreviewPayload failed = RoadPreviewPayload.fromCheck(payload.nonce(), check, false);
+            context.reply(new RoadPreviewPayload(payload.nonce(), false, false,
+                    failed.stoneCost(), failed.path(), result.message()));
         }
     }
 
