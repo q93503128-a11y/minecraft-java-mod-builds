@@ -43,6 +43,9 @@ public final class SettlementConstructionService {
             String name = active == null ? data.construction().type() : active.displayName();
             return new StartResult(false, "이미 " + name + " 건설이 진행 중입니다.");
         }
+        if (data.roadConstruction().active()) {
+            return new StartResult(false, "도로 공사가 끝난 뒤 건물을 시작해 주세요.");
+        }
 
         SettlementService.refreshResources(server, data);
         SettlementResources resources = data.resources();
@@ -60,7 +63,7 @@ public final class SettlementConstructionService {
 
         if (!consumeCost(level, data, type)) {
             SettlementService.refreshResources(server, data);
-            return new StartResult(false, "공동 창고 자원이 착공 직전에 변경되어 건설을 시작하지 못했습니다.");
+            return new StartResult(false, "공동 창고 자원이 착공 직전에 변경되어 건설을 시작하지 못했습니다. 자원은 차감되지 않았습니다.");
         }
 
         prepareSite(level, site.origin(), type);
@@ -110,9 +113,6 @@ public final class SettlementConstructionService {
                 continue;
             }
             if (!current.isAir()) {
-                // Never destroy a player-placed or newly appeared obstruction. Construction pauses
-                // instead of replacing it, which also guarantees that the construction loop itself
-                // cannot create item drops by breaking blocks.
                 builder.getNavigation().stop();
                 return false;
             }
@@ -137,8 +137,6 @@ public final class SettlementConstructionService {
         ServerLevel level = server.overworld();
         for (BuildingBlueprints.Placement placement : plan) {
             if (!level.getBlockState(placement.pos()).is(placement.state().getBlock())) {
-                // Do not declare a half-broken building complete. Missing blocks are retried by
-                // rewinding to the first missing planned position rather than silently accepting it.
                 rewindToFirstMissing(data, plan, level);
                 return false;
             }
@@ -242,8 +240,6 @@ public final class SettlementConstructionService {
         int baseY = heights.get(heights.size() / 2);
         BlockPos origin = new BlockPos(originX, baseY, originZ);
 
-        // Include the one-block roof overhang in safety checks. We never clear containers, ores,
-        // player blocks, tree trunks, or fluids. Mild natural terrain bumps up to two blocks are OK.
         for (int x = -1; x <= type.width(); x++) {
             for (int z = -1; z <= type.depth(); z++) {
                 for (int y = -3; y <= type.clearHeight(); y++) {
@@ -282,8 +278,6 @@ public final class SettlementConstructionService {
     }
 
     private static void prepareSite(ServerLevel level, BlockPos origin, BuildingType type) {
-        // Clear top-down and use client-only block updates. This avoids support-neighbour break events,
-        // so construction preparation never turns cleared vegetation/terrain into dropped item entities.
         for (int y = type.clearHeight(); y >= 0; y--) {
             for (int x = -1; x <= type.width(); x++) {
                 for (int z = -1; z <= type.depth(); z++) {
@@ -295,8 +289,6 @@ public final class SettlementConstructionService {
             }
         }
 
-        // Continuous stone foundation at y=-1. If a low spot exists, extend down until terrain is met;
-        // with the two-block site variance cap this guarantees that no floor or roof can visually float.
         for (int x = 0; x < type.width(); x++) {
             for (int z = 0; z < type.depth(); z++) {
                 BlockPos top = origin.offset(x, -1, z);
@@ -312,12 +304,26 @@ public final class SettlementConstructionService {
 
     private static boolean consumeCost(ServerLevel level, SettlementData data, BuildingType type) {
         if (!(level.getBlockEntity(data.stockpilePos()) instanceof Container container)) return false;
-        if (data.resources().wood() < type.woodCost() || data.resources().stone() < type.stoneCost()) return false;
+        if (count(container, true) < type.woodCost() || count(container, false) < type.stoneCost()) return false;
 
         long woodLeft = consume(container, type.woodCost(), true);
         long stoneLeft = consume(container, type.stoneCost(), false);
+        if (woodLeft != 0L || stoneLeft != 0L) return false;
         container.setChanged();
-        return woodLeft == 0L && stoneLeft == 0L;
+        return true;
+    }
+
+    private static long count(Container container, boolean wood) {
+        long total = 0L;
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack stack = container.getItem(slot);
+            if (stack.isEmpty()) continue;
+            boolean match = wood
+                    ? (stack.is(ItemTags.LOGS) || stack.is(ItemTags.PLANKS))
+                    : isStone(stack);
+            if (match) total += stack.getCount();
+        }
+        return total;
     }
 
     private static long consume(Container container, long amount, boolean wood) {
