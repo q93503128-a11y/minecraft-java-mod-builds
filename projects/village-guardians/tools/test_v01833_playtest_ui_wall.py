@@ -55,8 +55,9 @@ def main() -> None:
     assert "int h = 44" in wave and "int h = 40" in wave
     wave_layout = wave.split("private Layout layout()", 1)[1].split("private List<MonsterEntry> currentRoster", 1)[0]
     assert "safe.width() * 26 / 100" in wave_layout
-    assert "rightWidth >= 430" in wave_layout
-    assert "gap = 9" in wave_layout
+    assert "boolean compactHeight = contentHeight < 190" in wave_layout
+    assert "compactHeight || rightWidth >= 430" in wave_layout
+    assert "int gap = compactHeight ? 7 : 9" in wave_layout
 
     horizontal = terrain.split("private static void buildHorizontalWall", 1)[1].split("private static void buildVerticalWall", 1)[0]
     vertical = terrain.split("private static void buildVerticalWall", 1)[1].split("private static void buildDefenderGalleries", 1)[0]
@@ -96,7 +97,7 @@ def main() -> None:
     print("[PASS] town hall is maintenance-only and critical facility values no longer share one clipped line")
     print("[PASS] repair/upgrade buttons use calculated two-action geometry and production role tabs are gone")
     print("[PASS] player role assignment moved to the skill hall instead of disappearing with the town-hall cleanup")
-    print("[PASS] wave briefing uses wrapped header text, larger rows and width-aware dossier labels")
+    print("[PASS] wave briefing uses wrapped header text, larger rows and compact-height-aware spacing")
     print("[PASS] wall firing bays are three-wide/two-high above a solid two-block base")
     print("[PASS] wall stairs retract four blocks and clear the retired solid courtyard wedge")
     print("[PASS] existing worlds receive the new combat-geometry migration marker")
