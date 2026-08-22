@@ -9,22 +9,12 @@ import net.minecraft.world.item.Items;
 public final class SettlementInventory {
     private SettlementInventory() {}
 
-    public static long countWood(Container container) {
-        return count(container, SettlementInventory::isWood);
-    }
-
-    public static long countStone(Container container) {
-        return count(container, SettlementInventory::isStone);
-    }
-
-    public static long countFood(Container container) {
-        return count(container, SettlementInventory::isFood);
-    }
+    public static long countWood(Container container) { return count(container, SettlementInventory::isWood); }
+    public static long countStone(Container container) { return count(container, SettlementInventory::isStone); }
+    public static long countFood(Container container) { return count(container, SettlementInventory::isFood); }
 
     public static boolean consume(Container container, long wood, long stone, long food) {
-        if (countWood(container) < wood || countStone(container) < stone || countFood(container) < food) {
-            return false;
-        }
+        if (countWood(container) < wood || countStone(container) < stone || countFood(container) < food) return false;
         consumeMatching(container, wood, SettlementInventory::isWood);
         consumeMatching(container, stone, SettlementInventory::isStone);
         consumeMatching(container, food, SettlementInventory::isFood);
@@ -35,7 +25,6 @@ public final class SettlementInventory {
     public static ItemStack insert(Container container, ItemStack stack) {
         if (stack.isEmpty()) return ItemStack.EMPTY;
         ItemStack remaining = stack.copy();
-
         for (int slot = 0; slot < container.getContainerSize() && !remaining.isEmpty(); slot++) {
             ItemStack current = container.getItem(slot);
             if (current.isEmpty() || !ItemStack.isSameItemSameComponents(current, remaining)) continue;
@@ -45,14 +34,12 @@ public final class SettlementInventory {
             current.grow(move);
             remaining.shrink(move);
         }
-
         for (int slot = 0; slot < container.getContainerSize() && !remaining.isEmpty(); slot++) {
             if (!container.getItem(slot).isEmpty()) continue;
             int move = Math.min(remaining.getMaxStackSize(), remaining.getCount());
             container.setItem(slot, remaining.copyWithCount(move));
             remaining.shrink(move);
         }
-
         container.setChanged();
         return remaining;
     }
@@ -68,11 +55,19 @@ public final class SettlementInventory {
                 || stack.is(Items.COBBLED_DEEPSLATE)
                 || stack.is(Items.ANDESITE)
                 || stack.is(Items.DIORITE)
-                || stack.is(Items.GRANITE);
+                || stack.is(Items.GRANITE)
+                || stack.is(Items.TUFF);
     }
 
     public static boolean isFood(ItemStack stack) {
-        return stack.get(DataComponents.FOOD) != null;
+        if (stack.get(DataComponents.FOOD) != null) return true;
+        // Settlement food represents staple reserves, not only items the player can eat directly.
+        // Wheat is the important bridge: the starter farm can sustain population growth without
+        // forcing the player to manually craft every loaf. Common crop staples are grouped with it.
+        return stack.is(Items.WHEAT)
+                || stack.is(Items.CARROT)
+                || stack.is(Items.POTATO)
+                || stack.is(Items.BEETROOT);
     }
 
     private static long count(Container container, java.util.function.Predicate<ItemStack> predicate) {
