@@ -77,8 +77,10 @@ public final class AdvancedBuildingBlueprints {
         b.put(3, 1, 2, Blocks.SMITHING_TABLE.defaultBlockState(), BuildingBlueprints.Phase.FINISH);
         b.put(6, 1, 2, Blocks.BLAST_FURNACE.defaultBlockState(), BuildingBlueprints.Phase.FINISH);
         b.put(6, 1, 3, Blocks.CAULDRON.defaultBlockState(), BuildingBlueprints.Phase.FINISH);
+        // Solid masonry rises continuously from the floor and deliberately replaces roof pieces
+        // through the roof plane. No lantern or decoration may replace the chimney's base.
         for (int y = 1; y <= 7; y++) {
-            b.put(7, y, 1, y <= 4 ? Blocks.BRICKS.defaultBlockState() : Blocks.BRICK_WALL.defaultBlockState(),
+            b.put(7, y, 2, y <= 4 ? Blocks.BRICKS.defaultBlockState() : Blocks.BRICK_WALL.defaultBlockState(),
                     y <= 4 ? BuildingBlueprints.Phase.FRAME_AND_WALLS : BuildingBlueprints.Phase.ROOF);
         }
         int[][] lamps = {{1,1},{7,1},{1,7},{7,7},{4,2},{4,6}};
