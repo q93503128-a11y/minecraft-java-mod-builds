@@ -49,6 +49,13 @@ License: MIT License
 
 Survival Ascension 0.13 adapts the Digital Miner's high-level target-filtered bounded-search idea for the Mining Lv.90 Extract action. The implementation is player/tool/skill based and retains Survival Ascension's own ore-family matching, loaded-chunk bound, normal `destroyBlock` path, block limit, durability, loot and XP rules. No Mekanism assets, machines, energy systems, filters, GUIs, data files or namespaces are bundled. Full notice: `META-INF/third-party/MEKANISM_MIT.txt`.
 
+## Warband
+Source project: `Renasca-Studios/Warband`  
+Copyright (c) 2026 Divesh Gupta  
+License: MIT License
+
+Survival Ascension 0.16 adapts Warband's lightweight tactical-squad concepts: persistent squad membership, shared target focus, explicit combat roles, and a temporary rout window after the leader falls. Survival Ascension uses its own player-progression formation rules, four-role behavior implementation, spawner exclusion, reward economy and Combat Academy integration. Full notice: `META-INF/third-party/WARBAND_MIT.txt`.
+
 ## Create
 Source project: `Creators-of-Create/Create`  
 Code license: MIT  
