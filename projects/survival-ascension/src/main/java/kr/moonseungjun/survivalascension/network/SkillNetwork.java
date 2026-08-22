@@ -5,6 +5,8 @@ package kr.moonseungjun.survivalascension.network;
 import kr.moonseungjun.survivalascension.construction.ConstructionMode;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import kr.moonseungjun.survivalascension.equipment.EquipmentReforgeService;
+import kr.moonseungjun.survivalascension.mining.MiningMode;
+import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -14,7 +16,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class SkillNetwork {
-    private static final String PROTOCOL = "5";
+    private static final String PROTOCOL = "6";
     private static volatile Consumer<SkillUpdatePayload> updateSink = payload -> {};
     private static volatile Consumer<SkillSnapshotPayload> snapshotSink = payload -> {};
     private SkillNetwork() {}
@@ -25,9 +27,11 @@ public final class SkillNetwork {
         registrar.playToClient(SkillSnapshotPayload.TYPE, SkillSnapshotPayload.CODEC, (payload, context) -> snapshotSink.accept(payload));
         registrar.playToServer(ConstructionModePayload.TYPE, ConstructionModePayload.CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        ConstructionProgression.setMode(player, ConstructionMode.fromId(payload.modeId()));
-                    }
+                    if (context.player() instanceof ServerPlayer player) ConstructionProgression.setMode(player, ConstructionMode.fromId(payload.modeId()));
+                }));
+        registrar.playToServer(MiningModePayload.TYPE, MiningModePayload.CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) MiningProgression.setMode(player, MiningMode.fromId(payload.modeId()));
                 }));
         registrar.playToServer(MobilityActionPayload.TYPE, MobilityActionPayload.CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
