@@ -7,11 +7,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.npc.villager.Villager;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -36,11 +33,6 @@ public final class SettlementConstructionService {
     public record PlacementCheck(boolean valid, BlockPos origin, String message) {}
     private record Site(BlockPos origin) {}
 
-    /**
-     * Temporary command seam. The final client placement UI will call startAt with its selected
-     * ghost-preview center. For now the player simply faces the intended area and the command uses
-     * a point ten blocks ahead, so the game no longer chooses a random nearby lot on its own.
-     */
     public static StartResult start(ServerPlayer player, BuildingType type) {
         Direction facing = player.getDirection();
         BlockPos selectedCenter = player.blockPosition().relative(facing, COMMAND_PLACEMENT_DISTANCE);
@@ -338,37 +330,6 @@ public final class SettlementConstructionService {
     }
 
     private static boolean consumeCost(ServerLevel level, SettlementData data, BuildingType type) {
-        if (!(level.getBlockEntity(data.stockpilePos()) instanceof Container container)) return false;
-        if (count(container, true) < type.woodCost() || count(container, false) < type.stoneCost()) return false;
-        long woodLeft = consume(container, type.woodCost(), true);
-        long stoneLeft = consume(container, type.stoneCost(), false);
-        if (woodLeft != 0L || stoneLeft != 0L) return false;
-        container.setChanged();
-        return true;
-    }
-
-    private static long count(Container container, boolean wood) {
-        long total = 0L;
-        for (int slot = 0; slot < container.getContainerSize(); slot++) {
-            ItemStack stack = container.getItem(slot);
-            if (stack.isEmpty()) continue;
-            boolean match = wood ? (stack.is(ItemTags.LOGS) || stack.is(ItemTags.PLANKS)) : SettlementInventory.isStone(stack);
-            if (match) total += stack.getCount();
-        }
-        return total;
-    }
-
-    private static long consume(Container container, long amount, boolean wood) {
-        long left = amount;
-        for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {
-            ItemStack stack = container.getItem(slot);
-            if (stack.isEmpty()) continue;
-            boolean match = wood ? (stack.is(ItemTags.LOGS) || stack.is(ItemTags.PLANKS)) : SettlementInventory.isStone(stack);
-            if (!match) continue;
-            int take = (int) Math.min(left, stack.getCount());
-            stack.shrink(take);
-            left -= take;
-        }
-        return left;
+        return SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L);
     }
 }
