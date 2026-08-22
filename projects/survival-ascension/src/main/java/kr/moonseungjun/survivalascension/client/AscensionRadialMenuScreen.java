@@ -26,13 +26,11 @@ import org.joml.Matrix3x2f;
 public final class AscensionRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
             new Entry("숙련", "레벨 · XP · 현재 효과", new ItemStack(Items.EXPERIENCE_BOTTLE), Action.SKILLS),
-            new Entry("채굴", "자동 · 굴착 · 광맥 · 추출", new ItemStack(Items.DIAMOND_PICKAXE), Action.MINING),
+            new Entry("채굴", "자동 · 굴착 · 광맥 · 추출 · 터널", new ItemStack(Items.DIAMOND_PICKAXE), Action.MINING),
             new Entry("건축", "선 · 벽 · 바닥 배치 모드", new ItemStack(Items.BRICKS), Action.CONSTRUCTION),
             new Entry("장비", "희귀 장비 정보 · 재련 · 분해", new ItemStack(Items.ANVIL), Action.EQUIPMENT),
-            new Entry("가이드", "모드 핵심 규칙과 사용법", new ItemStack(Items.WRITTEN_BOOK), Action.GUIDE),
-            new Entry("해금표", "Lv.10/30/60/90 변화", new ItemStack(Items.NETHER_STAR), Action.UNLOCKS),
-            new Entry("통계", "현재 숙련 전체 요약", new ItemStack(Items.SPYGLASS), Action.STATS),
-            new Entry("조작", "키와 정밀 모드 설명", new ItemStack(Items.COMPASS), Action.CONTROLS),
+            new Entry("인프라", "공동 자원 투입 · 대형 기능 해금", new ItemStack(Items.BEACON), Action.INFRASTRUCTURE),
+            new Entry("가이드", "가이드 · 해금표 · 통계 · 조작", new ItemStack(Items.WRITTEN_BOOK), Action.GUIDE),
             new Entry("닫기", "게임으로 돌아가기", new ItemStack(Items.BARRIER), Action.CLOSE)
     };
     private static final int ITEM_COUNT = ENTRIES.length;
@@ -79,10 +77,8 @@ public final class AscensionRadialMenuScreen extends Screen {
             case MINING -> this.minecraft.gui.setScreen(new MiningRadialMenuScreen());
             case CONSTRUCTION -> this.minecraft.gui.setScreen(new ConstructionRadialMenuScreen());
             case EQUIPMENT -> this.minecraft.gui.setScreen(new EquipmentRadialMenuScreen());
+            case INFRASTRUCTURE -> this.minecraft.gui.setScreen(new InfrastructureRadialMenuScreen());
             case GUIDE -> this.minecraft.gui.setScreen(new GuideScreen(this, GuideScreen.Page.OVERVIEW));
-            case UNLOCKS -> this.minecraft.gui.setScreen(new GuideScreen(this, GuideScreen.Page.UNLOCKS));
-            case STATS -> this.minecraft.gui.setScreen(new GuideScreen(this, GuideScreen.Page.STATS));
-            case CONTROLS -> this.minecraft.gui.setScreen(new GuideScreen(this, GuideScreen.Page.CONTROLS));
             case CLOSE -> this.minecraft.gui.setScreen(null);
         }
     }
@@ -103,7 +99,7 @@ public final class AscensionRadialMenuScreen extends Screen {
     }
 
     private record Entry(String title, String detail, ItemStack icon, Action action) {}
-    private enum Action { SKILLS, MINING, CONSTRUCTION, EQUIPMENT, GUIDE, UNLOCKS, STATS, CONTROLS, CLOSE }
+    private enum Action { SKILLS, MINING, CONSTRUCTION, EQUIPMENT, INFRASTRUCTURE, GUIDE, CLOSE }
 
     private record WheelElement(RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2f pose,
                                 int x, int y, int selected, ScreenRectangle scissorArea,
