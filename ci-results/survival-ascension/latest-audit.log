@@ -1,7 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- all six skills active
-- Mobility remains server-authoritative
-- elite world scales from nearby six-skill progression
-- three persistent ranks + four traits + spawner anti-farm contract present
-- Mob Champions MIT notice packaged; restricted/copyleft reference mods remain source/asset clean
+- all six skills active; Mobility remains server-authoritative
+- progression-scaled elite ranks + four persistent traits retained
+- Swift evade / Bulwark counter-push / Berserker lunge / Vampiric heal contracts present
+- rank reaction cooldowns and tangible gold/emerald/diamond rewards present
+- spawner anti-farm + Mob Champions MIT notice retained
