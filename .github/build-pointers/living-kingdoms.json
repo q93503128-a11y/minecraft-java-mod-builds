@@ -2,7 +2,7 @@
   "run_id": "32577276870",
   "run_number": "798",
   "commit_sha": "941f0e50d2198730852464c1089224934aa67f09",
-  "job_status": "in_progress",
-  "log_artifact_id": "",
-  "build_artifact_id": ""
+  "job_status": "success",
+  "log_artifact_id": "9476912852",
+  "build_artifact_id": "9476913240"
 }
