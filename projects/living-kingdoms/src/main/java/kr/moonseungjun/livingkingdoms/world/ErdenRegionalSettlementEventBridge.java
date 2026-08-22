@@ -10,7 +10,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-/** Keeps far-regional settlement, road, society, economy and freight streaming isolated from the central dispatcher. */
+/** Keeps far-regional settlement, road, society, economy, government and freight streaming isolated from the central dispatcher. */
 @EventBusSubscriber(modid = LivingKingdoms.MOD_ID)
 public final class ErdenRegionalSettlementEventBridge {
     private ErdenRegionalSettlementEventBridge() {
@@ -29,16 +29,19 @@ public final class ErdenRegionalSettlementEventBridge {
         ErdenRegionalSocietyManager.onServerTick(event);
         ErdenRegionalShipmentClockGuard.onServerTick(event);
         ErdenRegionalEconomyManager.onServerTick(event);
+        ErdenRegionalGovernanceManager.onServerTick(event);
         ErdenRegionalTransportManager.onServerTick(event);
     }
 
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        ErdenRegionalGovernanceManager.handleOfficialInteraction(event);
         ErdenRegionalSocietyManager.handleInteraction(event);
     }
 
     @SubscribeEvent
     public static void onMarketInteract(PlayerInteractEvent.RightClickBlock event) {
+        ErdenRegionalGovernanceManager.handleLedgerInteraction(event);
         ErdenRegionalEconomyManager.handleInteraction(event);
     }
 
@@ -46,6 +49,7 @@ public final class ErdenRegionalSettlementEventBridge {
     public static void onLivingDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof Villager villager
                 && villager.level() instanceof ServerLevel level) {
+            ErdenRegionalGovernanceManager.markDeadIfGuard(level, villager);
             ErdenRegionalSocietyManager.markDeadIfResident(level, villager);
         }
     }
