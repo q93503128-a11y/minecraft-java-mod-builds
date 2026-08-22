@@ -26,6 +26,7 @@ public final class MiningRadialMenuScreen extends Screen {
             new Entry("굴착", "Lv.10 · 항상 시선 평면 광역", new ItemStack(Items.STONE), MiningMode.PLANE, false),
             new Entry("광맥", "Lv.30 · 연결된 같은 광석만", new ItemStack(Items.DIAMOND_ORE), MiningMode.VEIN, false),
             new Entry("추출", "Lv.90 · 주변 같은 광석 비연결 탐색", new ItemStack(Items.NETHER_STAR), MiningMode.EXTRACT, false),
+            new Entry("터널", "Lv.90 + 채석장 네트워크 · 5×5×8", new ItemStack(Items.NETHERITE_PICKAXE), MiningMode.BORE, false),
             new Entry("뒤로", "통합 메뉴로 돌아가기", new ItemStack(Items.ARROW), MiningMode.AUTO, true)
     };
     private static final int ITEM_COUNT = ENTRIES.length;
