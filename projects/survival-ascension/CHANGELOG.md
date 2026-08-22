@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.16.0-alpha.1
+- Added tactical hostile warbands adapted from the MIT-licensed Warband project.
+- Warbands can form around players whose average level across the six live skills is at least 30; formation chance scales with player progression and is rate-limited per player.
+- Natural hostile mobs form 3-6 member squads. Spawner-marked mobs are excluded from formation to reduce repeatable reward-farm abuse.
+- Added persistent squad roles: Leader / Bruiser / Hunter / Support.
+- Squad members share a nearby player target. Bruisers lunge from midrange, Hunters strafe/reposition, and Supports heal nearby wounded squad members.
+- Killing the Leader sets an 8-second rout window on surviving squad members, temporarily clearing their target and pushing them away from the player.
+- Player Leader kills drop 1-4 Echo Shards based on Combat level, creating a progression-bound hostile-combat resource.
+- Added the fourth world-shared infrastructure project, Combat Academy: 512 iron + 256 gold + 128 emerald + 128 redstone + 32 echo shards.
+- Combat Academy + Combat Lv.90 upgrades a ready sprint direct-melee hit into a 360-degree shockwave: 5.5-block radius, up to 12 hostile targets, 45% scaled-primary damage, outward knockback, 60-tick cooldown.
+- A shockwave replaces the normal cleave for that triggering hit instead of stacking both area effects, preventing duplicate amplification.
+- Elite ranks and tactical warband roles can coexist, allowing high-progression encounters such as Mythic leaders or support elites.
+- Added packaged Warband MIT notice and source/JAR audit requirements for spawner exclusion, role behaviors, rout state, Echo Shard reward and Combat Academy gating.
+
 ## 0.15.0-alpha.1
 - Reworked Woodcutting bulk felling around Veinminer++ MIT smart-tree safety: connected logs are gathered first and a bulk job is only created when leaves are face-adjacent to the origin or gathered log set.
 - Plain player-built log structures without attached leaves now stay single-block even at high Woodcutting levels.
