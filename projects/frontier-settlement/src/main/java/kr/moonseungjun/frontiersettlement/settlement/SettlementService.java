@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -32,13 +32,14 @@ public final class SettlementService {
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        SettlementData data = SettlementData.get(player.getServer());
-        if (data.founded()) refreshResources(player.getServer(), data);
+        MinecraftServer server = player.level().getServer();
+        SettlementData data = SettlementData.get(server);
+        if (data.founded()) refreshResources(server, data);
         sync(player, data);
     }
 
     public static boolean found(ServerPlayer founder) {
-        MinecraftServer server = founder.getServer();
+        MinecraftServer server = founder.level().getServer();
         SettlementData data = SettlementData.get(server);
         if (data.founded()) return false;
         if (founder.level() != server.overworld()) return false;
@@ -119,8 +120,10 @@ public final class SettlementService {
     }
 
     private static void spawnBuilder(ServerLevel level, BlockPos pos) {
-        Villager builder = new Villager(EntityType.VILLAGER, level);
-        builder.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        Villager builder = new Villager(EntityTypes.VILLAGER, level);
+        builder.setPos(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
+        builder.setYRot(0.0F);
+        builder.setXRot(0.0F);
         builder.setCustomName(net.minecraft.network.chat.Component.literal("건설 주민"));
         builder.setCustomNameVisible(true);
         builder.setPersistenceRequired();

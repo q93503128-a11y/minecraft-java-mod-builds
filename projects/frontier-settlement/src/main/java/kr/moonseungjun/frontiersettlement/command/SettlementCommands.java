@@ -2,12 +2,14 @@ package kr.moonseungjun.frontiersettlement.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementResources;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
@@ -22,14 +24,15 @@ public final class SettlementCommands {
                 .then(Commands.literal("rescan").executes(SettlementCommands::rescan)));
     }
 
-    private static int found(CommandContext<CommandSourceStack> context) throws Exception {
+    private static int found(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        SettlementData data = SettlementData.get(player.getServer());
+        MinecraftServer server = player.level().getServer();
+        SettlementData data = SettlementData.get(server);
         if (data.founded()) {
             player.sendSystemMessage(Component.literal("이미 공동 마을이 세워져 있습니다."));
             return 0;
         }
-        if (player.level() != player.getServer().overworld()) {
+        if (player.level() != server.overworld()) {
             player.sendSystemMessage(Component.literal("alpha.1에서는 오버월드에서 마을을 시작해 주세요."));
             return 0;
         }
@@ -41,9 +44,9 @@ public final class SettlementCommands {
         return 1;
     }
 
-    private static int status(CommandContext<CommandSourceStack> context) throws Exception {
+    private static int status(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        SettlementData data = SettlementData.get(player.getServer());
+        SettlementData data = SettlementData.get(player.level().getServer());
         if (!data.founded()) {
             player.sendSystemMessage(Component.literal("아직 공동 마을이 없습니다. /frontier found"));
             return 0;
@@ -55,12 +58,13 @@ public final class SettlementCommands {
         return 1;
     }
 
-    private static int rescan(CommandContext<CommandSourceStack> context) throws Exception {
+    private static int rescan(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        SettlementData data = SettlementData.get(player.getServer());
+        MinecraftServer server = player.level().getServer();
+        SettlementData data = SettlementData.get(server);
         if (!data.founded()) return 0;
-        SettlementService.refreshResources(player.getServer(), data);
-        SettlementService.broadcast(player.getServer(), data);
+        SettlementService.refreshResources(server, data);
+        SettlementService.broadcast(server, data);
         return status(context);
     }
 }

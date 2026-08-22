@@ -4,24 +4,21 @@ import kr.moonseungjun.frontiersettlement.FrontierSettlement;
 import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 
-@EventBusSubscriber(modid = FrontierSettlement.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@Mod(value = FrontierSettlement.MOD_ID, dist = Dist.CLIENT)
 public final class FrontierSettlementClient {
-    private FrontierSettlementClient() {}
+    private static final Identifier RESOURCE_LAYER =
+            Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "settlement_resources");
 
-    @SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event) {
+    public FrontierSettlementClient(IEventBus modBus) {
         SettlementNetwork.setSnapshotSink(ClientSettlementState::accept);
+        modBus.addListener(RegisterGuiLayersEvent.class, FrontierSettlementClient::onRegisterGuiLayers);
     }
 
-    @SubscribeEvent
-    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
-        event.registerAboveAll(
-                Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "settlement_resources"),
-                SettlementHudOverlay::render);
+    private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAboveAll(RESOURCE_LAYER, SettlementHudOverlay::render);
     }
 }
