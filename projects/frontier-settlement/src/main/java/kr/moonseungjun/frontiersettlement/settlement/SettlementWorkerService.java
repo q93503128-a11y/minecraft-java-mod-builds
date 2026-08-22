@@ -100,8 +100,7 @@ public final class SettlementWorkerService {
     }
 
     private static boolean consumeArrivalFood(ServerLevel level, SettlementData data) {
-        if (!(level.getBlockEntity(data.stockpilePos()) instanceof Container container)) return false;
-        return SettlementInventory.consume(container, 0L, 0L, ARRIVAL_FOOD_COST);
+        return SettlementStorageService.consume(level, data, 0L, 0L, ARRIVAL_FOOD_COST);
     }
 
     private static void finishArrival(MinecraftServer server, SettlementData data) {
@@ -123,7 +122,7 @@ public final class SettlementWorkerService {
     private static void workLumber(ServerLevel level, SettlementData data,
                                    Villager worker, BuildingRecord camp) {
         ItemStack carried = worker.getMainHandItem();
-        if (!carried.isEmpty()) { deliverToMainStockpile(level, data, worker, carried); return; }
+        if (!carried.isEmpty()) { deliverToTownStorage(level, data, worker, carried); return; }
         BlockPos target = findTree(level, data, camp.workCenter());
         if (target == null) { move(worker, camp.workCenter(), 0.7D); return; }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
@@ -136,7 +135,7 @@ public final class SettlementWorkerService {
     private static void workFarm(ServerLevel level, SettlementData data,
                                  Villager worker, BuildingRecord farm) {
         ItemStack carried = worker.getMainHandItem();
-        if (!carried.isEmpty()) { deliverToMainStockpile(level, data, worker, carried); return; }
+        if (!carried.isEmpty()) { deliverToTownStorage(level, data, worker, carried); return; }
         if (worker.distanceToSqr(farm.workCenter().getX() + 0.5D, farm.workCenter().getY(), farm.workCenter().getZ() + 0.5D) > 64.0D) {
             move(worker, farm.workCenter(), 0.75D); return;
         }
@@ -159,7 +158,7 @@ public final class SettlementWorkerService {
     private static void workQuarry(ServerLevel level, SettlementData data,
                                    Villager worker, BuildingRecord quarry) {
         ItemStack carried = worker.getMainHandItem();
-        if (!carried.isEmpty()) { deliverToMainStockpile(level, data, worker, carried); return; }
+        if (!carried.isEmpty()) { deliverToTownStorage(level, data, worker, carried); return; }
         BlockPos target = findExposedStone(level, data, quarry.workCenter(), 14);
         if (target == null) { move(worker, quarry.workCenter(), 0.7D); return; }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 9.0D) {
@@ -172,7 +171,7 @@ public final class SettlementWorkerService {
     private static void workMine(ServerLevel level, SettlementData data,
                                  Villager worker, BuildingRecord mine) {
         ItemStack carried = worker.getMainHandItem();
-        if (!carried.isEmpty()) { deliverToMainStockpile(level, data, worker, carried); return; }
+        if (!carried.isEmpty()) { deliverToTownStorage(level, data, worker, carried); return; }
         BlockPos work = mine.workCenter();
         if (worker.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > 16.0D) {
             move(worker, work, 0.75D); return;
@@ -204,7 +203,7 @@ public final class SettlementWorkerService {
                 move(worker, roadStart, 0.9D); return;
             }
         }
-        deliverToMainStockpile(level, data, worker, carried);
+        deliverToTownStorage(level, data, worker, carried);
     }
 
     private static ItemStack takeFirstStack(Container container, int maxCount) {
@@ -220,14 +219,14 @@ public final class SettlementWorkerService {
         return ItemStack.EMPTY;
     }
 
-    private static void deliverToMainStockpile(ServerLevel level, SettlementData data,
-                                               Villager worker, ItemStack carried) {
-        BlockPos stock = data.stockpilePos();
-        if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D) > 9.0D) {
-            move(worker, stock, 0.85D); return;
+    private static void deliverToTownStorage(ServerLevel level, SettlementData data,
+                                             Villager worker, ItemStack carried) {
+        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D) > 9.0D) {
+            move(worker, target, 0.85D);
+            return;
         }
-        if (!(level.getBlockEntity(stock) instanceof Container container)) return;
-        ItemStack remaining = SettlementInventory.insert(container, carried);
+        ItemStack remaining = SettlementStorageService.insert(level, data, carried);
         worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
     }
 
