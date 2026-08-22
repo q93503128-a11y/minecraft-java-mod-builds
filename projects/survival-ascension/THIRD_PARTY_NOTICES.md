@@ -40,7 +40,14 @@ Source project: `Shadows-of-Fire/Apotheosis`
 Copyright (c) 2018-2025 Stormraven Studios, LLC  
 License: MIT License
 
-Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from Apotheosis. Survival Ascension uses its own compact Minecraft 26.2 `CustomData` representation, four equipment categories, three affix slots, values, names and elite-drop rules. No Apotheosis assets or data files are bundled. Full notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
+Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from Apotheosis. Survival Ascension uses its own Minecraft 26.2 `CustomData` representation, four equipment categories, five-affix pools, 1/2/3 rolled affixes, reforge costs and elite-drop rules. No Apotheosis assets or data files are bundled. Full notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
+
+## Mekanism
+Source project: `mekanism/Mekanism`  
+Copyright (c) 2017-2025 Aidan C. Brady  
+License: MIT License
+
+Survival Ascension 0.13 adapts the Digital Miner's high-level target-filtered bounded-search idea for the Mining Lv.90 Extract action. The implementation is player/tool/skill based and retains Survival Ascension's own ore-family matching, loaded-chunk bound, normal `destroyBlock` path, block limit, durability, loot and XP rules. No Mekanism assets, machines, energy systems, filters, GUIs, data files or namespaces are bundled. Full notice: `META-INF/third-party/MEKANISM_MIT.txt`.
 
 ## MIT License text
 Permission is hereby granted, free of charge, to any person obtaining a copy
