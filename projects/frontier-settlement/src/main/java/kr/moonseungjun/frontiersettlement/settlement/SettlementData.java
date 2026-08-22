@@ -9,6 +9,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class SettlementData extends SavedData {
     public static final SavedDataType<SettlementData> TYPE = new SavedDataType<>(
             Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "settlement"),
@@ -26,6 +29,8 @@ public final class SettlementData extends SavedData {
                     Codec.INT.optionalFieldOf("housing_capacity", 0).forGetter(data -> data.housingCapacity),
                     Codec.INT.optionalFieldOf("house_count", 0).forGetter(data -> data.houseCount),
                     Codec.INT.optionalFieldOf("lumber_camp_count", 0).forGetter(data -> data.lumberCampCount),
+                    RoadSegment.CODEC.listOf().optionalFieldOf("roads", List.<RoadSegment>of()).forGetter(data -> data.roads),
+                    RoadConstructionState.CODEC.optionalFieldOf("road_construction", RoadConstructionState.EMPTY).forGetter(data -> data.roadConstruction),
                     ConstructionState.CODEC.optionalFieldOf("construction", ConstructionState.EMPTY).forGetter(data -> data.construction)
             ).apply(instance, SettlementData::new))
     );
@@ -42,17 +47,20 @@ public final class SettlementData extends SavedData {
     private int housingCapacity;
     private int houseCount;
     private int lumberCampCount;
+    private List<RoadSegment> roads;
+    private RoadConstructionState roadConstruction;
     private ConstructionState construction;
 
     public SettlementData() {
         this(false, 0, 0, 0, 0, 0, 0, SettlementResources.ZERO,
-                0, 0, 0, 0, ConstructionState.EMPTY);
+                0, 0, 0, 0, List.of(), RoadConstructionState.EMPTY, ConstructionState.EMPTY);
     }
 
     public SettlementData(boolean founded, int centerX, int centerY, int centerZ,
                           int stockX, int stockY, int stockZ,
                           SettlementResources resources, int population,
                           int housingCapacity, int houseCount, int lumberCampCount,
+                          List<RoadSegment> roads, RoadConstructionState roadConstruction,
                           ConstructionState construction) {
         this.founded = founded;
         this.centerX = centerX;
@@ -66,6 +74,8 @@ public final class SettlementData extends SavedData {
         this.housingCapacity = housingCapacity;
         this.houseCount = houseCount;
         this.lumberCampCount = lumberCampCount;
+        this.roads = List.copyOf(roads);
+        this.roadConstruction = roadConstruction;
         this.construction = construction;
     }
 
@@ -81,6 +91,8 @@ public final class SettlementData extends SavedData {
     public int housingCapacity() { return housingCapacity; }
     public int houseCount() { return houseCount; }
     public int lumberCampCount() { return lumberCampCount; }
+    public List<RoadSegment> roads() { return roads; }
+    public RoadConstructionState roadConstruction() { return roadConstruction; }
     public ConstructionState construction() { return construction; }
 
     public void found(BlockPos center, BlockPos stockpile) {
@@ -96,6 +108,8 @@ public final class SettlementData extends SavedData {
         this.housingCapacity = 0;
         this.houseCount = 0;
         this.lumberCampCount = 0;
+        this.roads = List.of();
+        this.roadConstruction = RoadConstructionState.EMPTY;
         this.construction = ConstructionState.EMPTY;
         setDirty();
     }
@@ -138,6 +152,38 @@ public final class SettlementData extends SavedData {
     public void clearConstruction() {
         if (!construction.active()) return;
         construction = ConstructionState.EMPTY;
+        setDirty();
+    }
+
+    public void beginRoadConstruction(BlockPos start, int directionX, int directionZ, int length) {
+        roadConstruction = new RoadConstructionState(
+                start.getX(), start.getY(), start.getZ(), directionX, directionZ, length, 0);
+        setDirty();
+    }
+
+    public void advanceRoadConstruction() {
+        if (!roadConstruction.active()) return;
+        roadConstruction = roadConstruction.advance();
+        setDirty();
+    }
+
+    public void replaceRoadConstructionStep(int step) {
+        if (!roadConstruction.active()) return;
+        roadConstruction = roadConstruction.withStep(step);
+        setDirty();
+    }
+
+    public void completeRoad(RoadSegment segment) {
+        List<RoadSegment> next = new ArrayList<>(roads);
+        next.add(segment);
+        roads = List.copyOf(next);
+        roadConstruction = RoadConstructionState.EMPTY;
+        setDirty();
+    }
+
+    public void clearRoadConstruction() {
+        if (!roadConstruction.active()) return;
+        roadConstruction = RoadConstructionState.EMPTY;
         setDirty();
     }
 }
