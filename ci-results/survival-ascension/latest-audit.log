@@ -1,7 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- generic 0-100 per-skill XP map with alpha.1 migration
-- mining: tool-scoped speed + 3x3/5x5/7x7
-- woodcutting: tool-scoped speed + 16/48/128/256 connected-log scaling
-- client snapshot/update payloads + recent-skill XP HUD
-- Skill Proficiencies MIT notice retained in source and packaged JAR; Project MMO remains reference-only
+- mining + woodcutting regression contracts retained
+- harvesting: mature-only XP + hoe speed + 3x3/5x5/7x7/9x9 normal-destroy scaling
+- K-key six-skill overview screen + mastery tiers I-V
+- Skill Proficiencies MIT notice retained; Project MMO remains reference-only
