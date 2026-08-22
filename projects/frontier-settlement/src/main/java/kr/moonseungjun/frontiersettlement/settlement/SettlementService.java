@@ -25,8 +25,13 @@ public final class SettlementService {
             if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);
         }
 
-        SettlementWorkerService.tick(server, data);
-        SettlementOutpostProductionService.tick(server, data);
+        SettlementCoreService.tick(server, data);
+        if (SettlementResidentRoutineService.isRestTime(server.overworld())) {
+            SettlementResidentRoutineService.tick(server, data);
+        } else {
+            SettlementWorkerService.tick(server, data);
+            SettlementOutpostProductionService.tick(server, data);
+        }
         SettlementBenefitService.tick(server, data);
 
         if (tick % 20 == 0 && refreshResources(server, data)) {
@@ -83,7 +88,8 @@ public final class SettlementService {
     public static void sync(ServerPlayer player, SettlementData data) {
         SettlementResources r = data.resources();
         SettlementNetwork.sendSnapshot(player, new SettlementSnapshotPayload(
-                data.founded(), r.wood(), r.stone(), r.metal(), r.food(), data.population()));
+                data.founded(), r.wood(), r.stone(), r.metal(), r.food(), data.population(),
+                SettlementTier.current(data).displayName()));
     }
 
     public static void broadcast(MinecraftServer server, SettlementData data) {
