@@ -133,7 +133,11 @@ public final class SettlementData extends SavedData {
     }
 
     public void beginConstruction(BuildingType type, BlockPos origin) {
-        this.construction = new ConstructionState(type.id(), origin.getX(), origin.getY(), origin.getZ(), 0);
+        beginConstruction(type, origin, BuildingRotation.NONE);
+    }
+
+    public void beginConstruction(BuildingType type, BlockPos origin, BuildingRotation rotation) {
+        this.construction = new ConstructionState(type.id(), origin.getX(), origin.getY(), origin.getZ(), rotation.id(), 0);
         setDirty();
     }
 
@@ -147,15 +151,19 @@ public final class SettlementData extends SavedData {
         if (!construction.active()) return;
         this.construction = new ConstructionState(
                 construction.type(), construction.originX(), construction.originY(),
-                construction.originZ(), Math.max(0, step));
+                construction.originZ(), construction.rotation(), Math.max(0, step));
         setDirty();
     }
 
     public void completeConstruction(BuildingType type) {
-        completeConstruction(type, construction.origin());
+        completeConstruction(type, construction.origin(), construction.buildingRotation());
     }
 
     public void completeConstruction(BuildingType type, BlockPos origin) {
+        completeConstruction(type, origin, BuildingRotation.NONE);
+    }
+
+    public void completeConstruction(BuildingType type, BlockPos origin, BuildingRotation rotation) {
         switch (type) {
             case HOUSE -> houseCount++;
             case LUMBER_CAMP -> lumberCampCount++;
@@ -164,7 +172,7 @@ public final class SettlementData extends SavedData {
         housingCapacity += type.housingGain();
 
         List<BuildingRecord> nextBuildings = new ArrayList<>(buildings());
-        nextBuildings.add(new BuildingRecord(type.id(), origin.getX(), origin.getY(), origin.getZ()));
+        nextBuildings.add(new BuildingRecord(type.id(), origin.getX(), origin.getY(), origin.getZ(), rotation.id()));
         infrastructure = new SettlementInfrastructureState(
                 nextBuildings, roads(), roadConstruction(), outposts(), outpostConstruction());
         construction = ConstructionState.EMPTY;
