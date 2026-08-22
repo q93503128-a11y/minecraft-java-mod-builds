@@ -26,6 +26,7 @@ import org.joml.Matrix3x2f;
 public final class AscensionRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
             new Entry("숙련", "레벨 · XP · 현재 효과", new ItemStack(Items.EXPERIENCE_BOTTLE), Action.SKILLS),
+            new Entry("채굴", "자동 · 굴착 · 광맥 · 추출", new ItemStack(Items.DIAMOND_PICKAXE), Action.MINING),
             new Entry("건축", "선 · 벽 · 바닥 배치 모드", new ItemStack(Items.BRICKS), Action.CONSTRUCTION),
             new Entry("장비", "희귀 장비 정보 · 재련 · 분해", new ItemStack(Items.ANVIL), Action.EQUIPMENT),
             new Entry("가이드", "모드 핵심 규칙과 사용법", new ItemStack(Items.WRITTEN_BOOK), Action.GUIDE),
@@ -38,15 +39,7 @@ public final class AscensionRadialMenuScreen extends Screen {
     private static final double ANGLE_PER_ITEM = 360.0D / ITEM_COUNT;
     private static final float OUTER_RADIUS = 80.0F;
     private static final float INNER_RADIUS = 60.0F;
-
-    private static final int MENU_R = 0;
-    private static final int MENU_G = 0;
-    private static final int MENU_B = 0;
-    private static final int MENU_A = 153;
-    private static final int SELECT_R = 255;
-    private static final int SELECT_G = 0;
-    private static final int SELECT_B = 0;
-    private static final int SELECT_A = 153;
+    private static final int MENU_A = 153, SELECT_A = 153;
 
     public AscensionRadialMenuScreen() { super(Component.literal("Survival Ascension")); }
     @Override public boolean isPauseScreen() { return false; }
@@ -57,22 +50,16 @@ public final class AscensionRadialMenuScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
-        int centerX = this.width / 2;
-        int centerY = this.height / 2;
-        int selected = selectedIndex();
+        int centerX = this.width / 2, centerY = this.height / 2, selected = selectedIndex();
         Matrix3x2f capturedPose = new Matrix3x2f(graphics.pose());
         ScreenRectangle scissor = graphics.peekScissorStack();
-        graphics.submitGuiElementRenderState(new WheelElement(RenderPipelines.GUI, TextureSetup.noTexture(), capturedPose,
-                centerX, centerY, selected, scissor));
-
+        graphics.submitGuiElementRenderState(new WheelElement(RenderPipelines.GUI, TextureSetup.noTexture(), capturedPose, centerX, centerY, selected, scissor));
         for (int i = 0; i < ITEM_COUNT; i++) {
             double angle = Math.toRadians(ANGLE_PER_ITEM * i + 90.0D);
             double radius = Math.sqrt(2.0D * 61.5D * 61.5D);
-            int iconX = (int) Math.round(centerX - radius * Math.cos(angle)) - 8;
-            int iconY = (int) Math.round(centerY + radius * Math.sin(angle)) - 8;
-            graphics.item(ENTRIES[i].icon(), iconX, iconY);
+            graphics.item(ENTRIES[i].icon(), (int) Math.round(centerX - radius * Math.cos(angle)) - 8,
+                    (int) Math.round(centerY + radius * Math.sin(angle)) - 8);
         }
-
         Entry entry = ENTRIES[selected];
         graphics.text(this.font, entry.title(), centerX - this.font.width(entry.title()) / 2, centerY - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, entry.detail(), centerX - this.font.width(entry.detail()) / 2, centerY + 8, 0xFFB8B8B8, false);
@@ -80,8 +67,7 @@ public final class AscensionRadialMenuScreen extends Screen {
         graphics.text(this.font, caption, centerX - this.font.width(caption) / 2, centerY - 102, 0xFFE0E0E0, true);
     }
 
-    @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+    @Override public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() != 0) return false;
         activate(ENTRIES[selectedIndex()].action());
         return true;
@@ -90,6 +76,7 @@ public final class AscensionRadialMenuScreen extends Screen {
     private void activate(Action action) {
         switch (action) {
             case SKILLS -> this.minecraft.gui.setScreen(new SkillsScreen(this));
+            case MINING -> this.minecraft.gui.setScreen(new MiningRadialMenuScreen());
             case CONSTRUCTION -> this.minecraft.gui.setScreen(new ConstructionRadialMenuScreen());
             case EQUIPMENT -> this.minecraft.gui.setScreen(new EquipmentRadialMenuScreen());
             case GUIDE -> this.minecraft.gui.setScreen(new GuideScreen(this, GuideScreen.Page.OVERVIEW));
@@ -101,18 +88,14 @@ public final class AscensionRadialMenuScreen extends Screen {
     }
 
     private static int selectedIndex() {
-        double mouseAngle = getMouseAngle() - ANGLE_PER_ITEM / 2.0D;
-        mouseAngle = correctAngle(360.0D - mouseAngle);
-        return Mth.clamp((int) Math.floor(mouseAngle / ANGLE_PER_ITEM), 0, ITEM_COUNT - 1);
+        double angle = correctAngle(360.0D - (getMouseAngle() - ANGLE_PER_ITEM / 2.0D));
+        return Mth.clamp((int) Math.floor(angle / ANGLE_PER_ITEM), 0, ITEM_COUNT - 1);
     }
-
     private static double getMouseAngle() {
         Minecraft minecraft = Minecraft.getInstance();
-        double originX = minecraft.getWindow().getScreenWidth() * 0.5D;
-        double originY = minecraft.getWindow().getScreenHeight() * 0.5D;
-        return correctAngle(-Math.toDegrees(Math.atan2(minecraft.mouseHandler.xpos() - originX, minecraft.mouseHandler.ypos() - originY)));
+        double ox = minecraft.getWindow().getScreenWidth() * 0.5D, oy = minecraft.getWindow().getScreenHeight() * 0.5D;
+        return correctAngle(-Math.toDegrees(Math.atan2(minecraft.mouseHandler.xpos() - ox, minecraft.mouseHandler.ypos() - oy)));
     }
-
     private static double correctAngle(double angle) {
         while (angle < 0.0D) angle += 360.0D;
         while (angle >= 360.0D) angle -= 360.0D;
@@ -120,7 +103,7 @@ public final class AscensionRadialMenuScreen extends Screen {
     }
 
     private record Entry(String title, String detail, ItemStack icon, Action action) {}
-    private enum Action { SKILLS, CONSTRUCTION, EQUIPMENT, GUIDE, UNLOCKS, STATS, CONTROLS, CLOSE }
+    private enum Action { SKILLS, MINING, CONSTRUCTION, EQUIPMENT, GUIDE, UNLOCKS, STATS, CONTROLS, CLOSE }
 
     private record WheelElement(RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2f pose,
                                 int x, int y, int selected, ScreenRectangle scissorArea,
@@ -129,8 +112,7 @@ public final class AscensionRadialMenuScreen extends Screen {
                              int x, int y, int selected, ScreenRectangle scissorArea) {
             this(pipeline, textureSetup, pose, x, y, selected, scissorArea, boundsFor(x, y, pose, scissorArea));
         }
-        @Override
-        public void buildVertices(VertexConsumer vertexConsumer) {
+        @Override public void buildVertices(VertexConsumer vertexConsumer) {
             for (int i = 0; i < ITEM_COUNT; i++) {
                 double current = Math.toRadians(correctAngle(ANGLE_PER_ITEM * i + 90.0D + ANGLE_PER_ITEM / 2.0D));
                 double next = Math.toRadians(correctAngle(ANGLE_PER_ITEM * (i + 1) + 90.0D + ANGLE_PER_ITEM / 2.0D));
@@ -141,14 +123,11 @@ public final class AscensionRadialMenuScreen extends Screen {
                 float p1ox = x + outer * Mth.cos((float) current), p1oy = y + outer * Mth.sin((float) current);
                 float p2ox = x + outer * Mth.cos((float) next), p2oy = y + outer * Mth.sin((float) next);
                 float p2ix = x + inner * Mth.cos((float) next), p2iy = y + inner * Mth.sin((float) next);
-                int r = hovered ? SELECT_R : MENU_R;
-                int g = hovered ? SELECT_G : MENU_G;
-                int b = hovered ? SELECT_B : MENU_B;
-                int a = hovered ? SELECT_A : MENU_A;
-                vertexConsumer.addVertexWith2DPose(pose, p1ox, p1oy).setColor(r, g, b, a);
-                vertexConsumer.addVertexWith2DPose(pose, p1ix, p1iy).setColor(r, g, b, a);
-                vertexConsumer.addVertexWith2DPose(pose, p2ix, p2iy).setColor(r, g, b, a);
-                vertexConsumer.addVertexWith2DPose(pose, p2ox, p2oy).setColor(r, g, b, a);
+                int r = hovered ? 255 : 0, a = hovered ? SELECT_A : MENU_A;
+                vertexConsumer.addVertexWith2DPose(pose, p1ox, p1oy).setColor(r, 0, 0, a);
+                vertexConsumer.addVertexWith2DPose(pose, p1ix, p1iy).setColor(r, 0, 0, a);
+                vertexConsumer.addVertexWith2DPose(pose, p2ix, p2iy).setColor(r, 0, 0, a);
+                vertexConsumer.addVertexWith2DPose(pose, p2ox, p2oy).setColor(r, 0, 0, a);
             }
         }
         private static ScreenRectangle boundsFor(int x, int y, Matrix3x2f pose, ScreenRectangle scissor) {
