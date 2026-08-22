@@ -13,6 +13,9 @@ required = [
     JAVA / 'settlement/BuildingType.java',
     JAVA / 'settlement/BuildingBlueprints.java',
     JAVA / 'settlement/SettlementConstructionService.java',
+    JAVA / 'settlement/RoadSegment.java',
+    JAVA / 'settlement/RoadConstructionState.java',
+    JAVA / 'settlement/SettlementRoadService.java',
     JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'client/SettlementHudOverlay.java',
 ]
@@ -25,13 +28,20 @@ for token in (
     'minecraft_version=26.2',
     'neo_version=26.2.0.38-beta',
     'mod_id=frontier_settlement',
-    'mod_version=0.1.0-alpha.2',
+    'mod_version=0.1.0-alpha.3',
 ):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
 
 service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
-for token in ('Blocks.BARREL', 'getTickCount()', 'ItemTags.LOGS', 'SettlementConstructionService.tick'):
+for token in (
+    'Blocks.BARREL',
+    'getTickCount()',
+    'ItemTags.LOGS',
+    'SettlementConstructionService.tick',
+    'SettlementRoadService.tick',
+    'data.roadConstruction().active()',
+):
     if token not in service:
         raise SystemExit(f'core settlement invariant missing: {token}')
 
@@ -47,6 +57,9 @@ for token in (
     'DIRECT_BLOCK_UPDATE = 2',
     'data.beginConstruction(type, site.origin())',
     'consumeCost(level, data, type)',
+    'count(container, true) < type.woodCost()',
+    'count(container, false) < type.stoneCost()',
+    'data.roadConstruction().active()',
 ):
     if token not in construction:
         raise SystemExit(f'construction safety invariant missing: {token}')
@@ -77,10 +90,39 @@ if blueprints.count('Blocks.LANTERN.defaultBlockState()') < 8:
 if blueprints.count('Blocks.GLASS.defaultBlockState()') < 2:
     raise SystemExit('both starter blueprints must retain glazed window logic')
 
+road = (JAVA / 'settlement/SettlementRoadService.java').read_text(encoding='utf-8')
+for token in (
+    'ROAD_LENGTH = 16',
+    'ROAD_WIDTH = 3',
+    'ROAD_STONE_COST = 24L',
+    'MAX_ROUTE_HEIGHT_VARIANCE = 1',
+    'data.houseCount() < 1 || data.lumberCampCount() < 1',
+    'distanceSqr < 25L || distanceSqr > 1024L',
+    'max - min > MAX_ROUTE_HEIGHT_VARIANCE',
+    'overlapsExistingRoad',
+    'prepareRoute(level, route)',
+    'DIRECT_BLOCK_UPDATE = 2',
+    'Blocks.GRAVEL.defaultBlockState()',
+    'Blocks.COBBLESTONE.defaultBlockState()',
+    'if (!current.isAir()',
+    'countStone(container) < ROAD_STONE_COST',
+    'data.beginRoadConstruction',
+    'data.completeRoad(new RoadSegment',
+):
+    if token not in road:
+        raise SystemExit(f'road safety invariant missing: {token}')
+if 'destroyBlock(' in road or 'dropResources(' in road:
+    raise SystemExit('road construction must not use drop-producing block destruction paths')
+
 saved = (JAVA / 'settlement/SettlementData.java').read_text(encoding='utf-8')
 for token in (
     'server.getDataStorage().computeIfAbsent(TYPE)',
     'ConstructionState.CODEC',
+    'RoadSegment.CODEC.listOf()',
+    'RoadConstructionState.CODEC',
+    'road_construction',
+    'beginRoadConstruction',
+    'completeRoad',
     'housing_capacity',
     'house_count',
     'lumber_camp_count',
@@ -88,4 +130,9 @@ for token in (
     if token not in saved:
         raise SystemExit(f'persistent settlement invariant missing: {token}')
 
-print('Frontier Settlement alpha.2 source audit: PASS')
+commands = (JAVA / 'command/SettlementCommands.java').read_text(encoding='utf-8')
+for token in ('Commands.literal("road")', 'SettlementRoadService.start', '도로 공사 중'):
+    if token not in commands:
+        raise SystemExit(f'road command/status invariant missing: {token}')
+
+print('Frontier Settlement alpha.3 source audit: PASS')
