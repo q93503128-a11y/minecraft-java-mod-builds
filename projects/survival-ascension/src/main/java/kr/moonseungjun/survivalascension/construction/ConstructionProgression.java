@@ -41,8 +41,7 @@ import java.util.UUID;
 
 public final class ConstructionProgression {
     private static final int GLOBAL_BLOCK_BUDGET_PER_TICK = 64;
-    private static final int MAX_PENDING_BLOCKS_PER_PLAYER = 256;
-    private static final int VOLUME_SIZE = 5;
+    private static final int MAX_PENDING_BLOCKS_PER_PLAYER = 512;
     private static final Map<UUID, ConstructionMode> MODES = new HashMap<>();
     private static final Map<UUID, Integer> PENDING_COUNTS = new HashMap<>();
     private static final Deque<BuildJob> JOBS = new ArrayDeque<>();
@@ -189,7 +188,8 @@ public final class ConstructionProgression {
         }
 
         if (mode == ConstructionMode.VOLUME) {
-            int half = VOLUME_SIZE / 2;
+            int volumeSize = level >= 100 ? 7 : 5;
+            int half = volumeSize / 2;
             for (int dx = -half; dx <= half; dx++) {
                 for (int dy = -half; dy <= half; dy++) {
                     for (int dz = -half; dz <= half; dz++) {
@@ -239,6 +239,7 @@ public final class ConstructionProgression {
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 3×3 · 선 배치 9블록"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 5×5 · 선 배치 17블록"));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 9×9 · 선 33블록. 건축 공방 완공 시 입체 5×5×5 추가."));
+        if (oldLevel < 100 && newLevel >= 100) player.sendSystemMessage(Component.literal("§6[건축 숙련 VI] §f선 49 · 벽/바닥 11×11 · 건축 공방 입체 7×7×7"));
     }
 
     private enum PlaceResult { PLACED, SKIPPED, OUT_OF_MATERIAL }
