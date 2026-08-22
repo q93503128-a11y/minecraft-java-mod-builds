@@ -40,7 +40,15 @@ def main() -> None:
         "v0.18.7 town-hall pass label",
     )
 
-    print("[PATCH] v0.18.33 historical contracts accept practical firing bays and maintenance-only town hall")
+    replace_once(
+        TOOLS / "test_v0188_risk_ui_cleanup.py",
+        '    assert "pane.width() < 230" in town and "actionTop" in town\n',
+        '    assert "pane.width() < 260" in town and "actionTop" in town\n'
+        '    assert "available / 2" in town and "gap = 7" in town\n',
+        "v0.18.8 responsive town-hall width contract",
+    )
+
+    print("[PATCH] v0.18.33 historical contracts accept practical firing bays and maintenance-only responsive town hall")
 
 
 if __name__ == "__main__":
