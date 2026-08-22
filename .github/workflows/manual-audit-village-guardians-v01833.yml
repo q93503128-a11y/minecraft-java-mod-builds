@@ -1,0 +1,202 @@
+name: Manual Audit Village Guardians v0.18.33
+
+on:
+  push:
+    paths:
+      - 'projects/village-guardians/.v01833-manual-audit-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  manual-source-audit:
+    runs-on: ubuntu-24.04
+    env:
+      PROJECT_DIR: projects/village-guardians
+      BUILD_VERSION: 0.18.33-alpha.1
+      EXPECTED_JAR: villageguardians-0.18.33-alpha.1.jar
+
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply confirmed manual-audit corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "${PROJECT_DIR}/tools/apply_v01833_manual_audit_fixes.py" 2>&1 | tee /tmp/vg-manual-patch.log
+          git diff --check 2>&1 | tee /tmp/vg-manual-diff.log
+
+      - name: Run every deterministic regression contract
+        shell: bash
+        run: |
+          set -uo pipefail
+          : > /tmp/vg-manual-failed-tests.txt
+          failed=0
+          {
+            cd "${PROJECT_DIR}"
+            for test in tools/test_*.py; do
+              echo "=== $test ==="
+              if python3 "$test"; then
+                :
+              else
+                echo "$test" >> /tmp/vg-manual-failed-tests.txt
+                failed=1
+              fi
+            done
+            if [ "$failed" -ne 0 ]; then
+              echo "=== FAILED TEST FILES ==="
+              cat /tmp/vg-manual-failed-tests.txt
+              exit 1
+            fi
+          } 2>&1 | tee /tmp/vg-manual-tests.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Clean Java 25 NeoForge build
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            cd "${PROJECT_DIR}"
+            gradle --no-daemon --no-configuration-cache -Pmod_version=${BUILD_VERSION} clean build --stacktrace --console=plain
+          } 2>&1 | tee /tmp/vg-manual-build.log
+
+      - name: Verify runtime JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            cd "${PROJECT_DIR}"
+            test -f "build/libs/${EXPECTED_JAR}"
+            python3 tools/verify_jar.py "build/libs/${EXPECTED_JAR}"
+            python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jar = Path('build/libs/villageguardians-0.18.33-alpha.1.jar')
+          with zipfile.ZipFile(jar) as zf:
+              names = set(zf.namelist())
+              toml = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
+          prefix = 'kr/moonseungjun/villageguardians/'
+          required = (
+              'VillageWaveIntelDossierScreen.class', 'VillageLocalActionSystem.class',
+              'VillageUiController.class', 'VillageUiService.class', 'VillageProgressionSystem.class',
+              'VillageEquipmentRaritySystem.class', 'VillageRoleProgressScreen.class',
+              'VillageRaidSystem.class', 'VillageFortressTerrain.class', 'VillagePlacedTurretSystem.class'
+          )
+          for cls in required:
+              assert prefix + cls in names, cls
+          assert '0.18.33-alpha.1' in toml
+          print('[PASS] verified JAR contains manual-audit corrected runtime owners')
+          PY
+          } 2>&1 | tee /tmp/vg-manual-verify.log
+
+      - name: Upload verified manual-audit JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.18.33-alpha.1-manual-audit
+          path: projects/village-guardians/build/libs/villageguardians-0.18.33-alpha.1.jar
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit verified corrected source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageWaveIntelDossierScreen.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageLocalActionSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageUiService.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentRaritySystem.java" \
+            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageRoleProgressScreen.java"
+          git diff --cached --check
+          git commit -m 'fix(village): resolve manual audit findings [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git pull --rebase origin main
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            sleep $((attempt * 2))
+          done
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Record manual-audit acceptance metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          SIZE=$(stat -c%s "$JAR")
+          mkdir -p "${PROJECT_DIR}/.ci"
+          cat > "${PROJECT_DIR}/.ci/v01833-manual-audit.txt" <<EOF
+          version=${BUILD_VERSION}
+          run_id=${GITHUB_RUN_ID}
+          source_sha=${SOURCE_SHA}
+          jar_name=${EXPECTED_JAR}
+          jar_sha256=${SHA}
+          jar_size=${SIZE}
+          audit=manual-source-review-plus-full-regression
+          EOF
+          git add "${PROJECT_DIR}/.ci/v01833-manual-audit.txt"
+          if git ls-files --error-unmatch "${PROJECT_DIR}/.ci/v01833-manual-audit-failure.txt" >/dev/null 2>&1; then
+            git rm -f "${PROJECT_DIR}/.ci/v01833-manual-audit-failure.txt"
+          fi
+          git diff --cached --check
+          git commit -m 'ci(village): record v0.18.33 manual audit acceptance [skip ci]'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Record manual-audit failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          git clean -fd "${PROJECT_DIR}/build" || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p "${PROJECT_DIR}/.ci"
+          OUT="${PROJECT_DIR}/.ci/v01833-manual-audit-failure.txt"
+          {
+            echo "version=${BUILD_VERSION}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "head=$(git rev-parse HEAD)"
+            if [ -s /tmp/vg-manual-failed-tests.txt ]; then
+              echo "--- failed test files ---"
+              cat /tmp/vg-manual-failed-tests.txt
+            fi
+            for log in /tmp/vg-manual-patch.log /tmp/vg-manual-diff.log /tmp/vg-manual-tests.log /tmp/vg-manual-build.log /tmp/vg-manual-verify.log; do
+              if [ -f "$log" ]; then
+                echo "--- $(basename "$log") tail ---"
+                tail -n 180 "$log"
+              fi
+            done
+          } > "$OUT"
+          git add "$OUT"
+          git commit -m 'ci(village): record v0.18.33 manual audit failure [skip ci]' || true
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
