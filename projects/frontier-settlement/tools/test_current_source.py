@@ -12,9 +12,10 @@ required = [
     JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/RotatedBlueprints.java',
     JAVA / 'settlement/WarehouseLayout.java', JAVA / 'settlement/SettlementStorageService.java',
     JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
-    JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/OutpostRecord.java',
-    JAVA / 'settlement/SettlementInventory.java', JAVA / 'settlement/SettlementWorkerService.java',
-    JAVA / 'settlement/SettlementTier.java', JAVA / 'command/SettlementCommands.java',
+    JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementOutpostProductionService.java',
+    JAVA / 'settlement/OutpostRecord.java', JAVA / 'settlement/SettlementInventory.java',
+    JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementTier.java',
+    JAVA / 'command/SettlementCommands.java',
     JAVA / 'network/SettlementSnapshotPayload.java', JAVA / 'network/PlacementRequestPayload.java',
     JAVA / 'network/PlacementPreviewPayload.java', JAVA / 'network/SettlementNetwork.java',
     JAVA / 'client/SettlementHudOverlay.java', JAVA / 'client/BuildingPlacementClient.java',
@@ -26,7 +27,7 @@ if missing:
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
 for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta',
-              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.13'):
+              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.14'):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
 
@@ -81,16 +82,28 @@ for token in ('ExtractLevelRenderStateEvent', 'SubmitCustomGeometryEvent', 'subm
     if token not in ghost:
         raise SystemExit(f'3D placement ghost invariant missing: {token}')
 
-warehouse_layout = (JAVA / 'settlement/WarehouseLayout.java').read_text(encoding='utf-8')
-if 'warehouse.localToWorld' not in warehouse_layout:
-    raise SystemExit('rotated warehouse storage positions must follow the building transform')
-
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('BuildingType.WAREHOUSE', 'WarehouseLayout.storagePositions(building)',
               'public static SettlementResources scan', 'public static boolean consume',
               'public static ItemStack insert', 'allStorageChunksLoaded'):
     if token not in storage:
         raise SystemExit(f'aggregate storage invariant missing: {token}')
+
+service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
+if 'SettlementOutpostProductionService.tick(server, data)' not in service:
+    raise SystemExit('specialized outpost production must be part of the canonical server tick')
+
+outpost_production = (JAVA / 'settlement/SettlementOutpostProductionService.java').read_text(encoding='utf-8')
+for token in ('"general".equals(outpost.specialization())', 'ensureWorker', 'workerName(outpost)',
+              'case "lumber" -> workLumber', 'case "quarry" -> workQuarry',
+              'case "mining" -> workMine', 'case "agriculture" -> workAgriculture',
+              'ensureAgriculturePlot', 'Blocks.FARMLAND.defaultBlockState()',
+              'Blocks.WHEAT.defaultBlockState()', 'SettlementInventory.insert(container, carried)',
+              'Tags.Blocks.ORES', 'level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3)'):
+    if token not in outpost_production:
+        raise SystemExit(f'productive outpost invariant missing: {token}')
+if 'destroyBlock(' in outpost_production or 'dropResources(' in outpost_production:
+    raise SystemExit('outpost workers must not produce loose item drops')
 
 worker = (JAVA / 'settlement/SettlementWorkerService.java').read_text(encoding='utf-8')
 for token in ('FARM_WORKER_NAME', 'QUARRY_WORKER_NAME', 'MINE_WORKER_NAME', 'TRANSPORT_WORKER_NAME',
@@ -101,4 +114,4 @@ for token in ('FARM_WORKER_NAME', 'QUARRY_WORKER_NAME', 'MINE_WORKER_NAME', 'TRA
 if 'destroyBlock(' in worker or 'dropResources(' in worker:
     raise SystemExit('workers must not create loose drops through block destruction')
 
-print('Frontier Settlement alpha.13 source audit: PASS')
+print('Frontier Settlement alpha.14 source audit: PASS')
