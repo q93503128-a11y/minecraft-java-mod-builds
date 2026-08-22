@@ -1,1 +1,1 @@
-persistent settlement invariant missing: case FARM, QUARRY, MINE -> { }
+missing canonical property: mod_version=0.1.0-alpha.11
