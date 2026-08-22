@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.14.0-alpha.1
+- Added world-shared infrastructure projects persisted through a new `infrastructure_v1` SavedData; multiplayer contributions share the same server-world progress.
+- Added M -> Infrastructure MineMenu-derived radial with Quarry Network / Irrigation Works / Status / Back.
+- Funding is server-authoritative and consumes only currently required materials from the player's real inventory; creative/spectator funding is rejected.
+- Quarry Network costs 1024 cobblestone, 256 iron, 128 redstone and 32 diamonds.
+- Completing Quarry Network plus Mining Lv.90 unlocks Tunnel mining mode: a 5x5 cross-section across 8 blocks of depth.
+- Tunnel work is tick-budgeted at 12 blocks per player per tick, 64 globally, with at most 256 pending targets per player.
+- Tunnel secondary breaks use normal `player.gameMode.destroyBlock`, exclude block entities/unloaded chunks/unharvestable or excessively hard targets, and are guarded against recursive tunnel scheduling while still awarding normal per-block Mining XP.
+- Irrigation Works costs 512 copper, 128 iron, 128 redstone, 128 glass and 32 slimeballs.
+- Completing Irrigation Works plus Harvesting Lv.30 enables automatic replant for wheat, carrots, potatoes, beetroot and nether wart harvested with a hoe.
+- Replant consumes one real matching seed/crop item per block and rechecks loaded chunk, replaceability, survival, `mayInteract` and the NeoForge placement hook before planting.
+- Melon and pumpkin are not replanted because their stems already persist and regrow fruit.
+- Simplified the M main wheel from nine entries to seven: Skills / Mining / Construction / Equipment / Infrastructure / Guide / Close. Unlocks, Stats and Controls remain as Guide tabs.
+- Network protocol bumped to 7; source/JAR audits now enforce infrastructure persistence, funding safety, tunnel recursion protection and seed-backed replant rules.
+- Studied Create's staged infrastructure/resource-throughput progression as a design reference. Create code is MIT and its assets are All Rights Reserved; 0.14 bundles neither Create code nor assets.
+
 ## 0.13.0-alpha.1
 - Added M -> Mining nested MineMenu-derived radial with Auto / Plane / Vein / Extract / Back.
 - Mining mode selection is server-authoritative, persisted on the player, and server-revalidated against Mining level.
