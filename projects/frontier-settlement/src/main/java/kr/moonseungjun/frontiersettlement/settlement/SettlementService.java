@@ -9,8 +9,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -18,16 +16,20 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 public final class SettlementService {
-    private static final String BUILDER_TAG = "frontier_settlement_builder";
-
     private SettlementService() {}
 
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
-        if (server.getTickCount() % 20 != 0) return;
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return;
-        if (refreshResources(server, data)) broadcast(server, data);
+
+        int tick = server.getTickCount();
+        if (tick % 5 == 0 && data.construction().active()) {
+            SettlementConstructionService.tick(server, data);
+        }
+        if (tick % 20 == 0 && refreshResources(server, data)) {
+            broadcast(server, data);
+        }
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -50,8 +52,8 @@ public final class SettlementService {
         if (stockpile == null) return false;
 
         level.setBlock(stockpile, Blocks.BARREL.defaultBlockState(), 3);
-        spawnBuilder(level, center.offset(1, 0, 1));
         data.found(center, stockpile);
+        SettlementConstructionService.ensureBuilder(level, center);
         refreshResources(server, data);
         broadcast(server, data);
         return true;
@@ -117,19 +119,6 @@ public final class SettlementService {
             if (level.getBlockState(candidate).isAir()) return candidate;
         }
         return null;
-    }
-
-    private static void spawnBuilder(ServerLevel level, BlockPos pos) {
-        Villager builder = new Villager(EntityTypes.VILLAGER, level);
-        builder.setPos(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
-        builder.setYRot(0.0F);
-        builder.setXRot(0.0F);
-        builder.setCustomName(net.minecraft.network.chat.Component.literal("건설 주민"));
-        builder.setCustomNameVisible(true);
-        builder.setPersistenceRequired();
-        builder.setNoAi(true);
-        builder.addTag(BUILDER_TAG);
-        level.addFreshEntity(builder);
     }
 
     public static void sync(ServerPlayer player, SettlementData data) {
