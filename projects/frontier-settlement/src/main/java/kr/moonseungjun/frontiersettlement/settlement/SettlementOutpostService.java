@@ -34,7 +34,6 @@ public final class SettlementOutpostService {
         }
     }
 
-    /** Legacy debug seam. Normal play uses checkPlacement/startAt through the placement payload. */
     public static StartResult start(ServerPlayer player) {
         SettlementData data = SettlementData.get(player.level().getServer());
         int roadIndex = latestUnclaimedRoad(data);
@@ -52,14 +51,12 @@ public final class SettlementOutpostService {
         }
 
         int roadIndex = nearestUnclaimedRoad(data, selected);
-        if (roadIndex < 0) {
-            return PlacementCheck.invalid("사용하지 않은 완성 도로 끝을 가리켜 주세요.");
-        }
+        if (roadIndex < 0) return PlacementCheck.invalid("사용하지 않은 완성 도로 끝을 가리켜 주세요.");
 
         RoadSegment road = data.roads().get(roadIndex);
         BlockPos roadEnd = road.end();
-        long playerDistance = player.blockPosition().distSqr(roadEnd);
-        if (playerDistance > (long) MAX_PLAYER_DISTANCE_FROM_ROAD_END * MAX_PLAYER_DISTANCE_FROM_ROAD_END) {
+        double playerDistance = player.blockPosition().distSqr(roadEnd);
+        if (playerDistance > (double) MAX_PLAYER_DISTANCE_FROM_ROAD_END * MAX_PLAYER_DISTANCE_FROM_ROAD_END) {
             return new PlacementCheck(false, roadIndex, gateFor(road), road.directionX(), road.directionZ(),
                     "general", "전초기지를 세울 도로 끝에서 48블록 안으로 이동해 주세요.");
         }
@@ -98,7 +95,7 @@ public final class SettlementOutpostService {
         RoadSegment road = data.roads().get(roadIndex);
         BlockPos gate = gateFor(road);
         if (player.blockPosition().distSqr(road.end())
-                > (long) MAX_PLAYER_DISTANCE_FROM_ROAD_END * MAX_PLAYER_DISTANCE_FROM_ROAD_END) {
+                > (double) MAX_PLAYER_DISTANCE_FROM_ROAD_END * MAX_PLAYER_DISTANCE_FROM_ROAD_END) {
             return new StartResult(false, "선택한 도로 끝에서 48블록 안으로 이동해 주세요.");
         }
 
@@ -240,12 +237,12 @@ public final class SettlementOutpostService {
     }
 
     private static int nearestUnclaimedRoad(SettlementData data, BlockPos selected) {
-        long bestDistance = (long) MAX_TARGET_DISTANCE_FROM_ROAD_END * MAX_TARGET_DISTANCE_FROM_ROAD_END + 1L;
+        double bestDistance = (double) MAX_TARGET_DISTANCE_FROM_ROAD_END * MAX_TARGET_DISTANCE_FROM_ROAD_END + 1.0D;
         int bestIndex = -1;
         for (int i = 0; i < data.roads().size(); i++) {
             if (isRoadClaimed(data, i)) continue;
-            long distance = selected.distSqr(data.roads().get(i).end());
-            if (distance <= (long) MAX_TARGET_DISTANCE_FROM_ROAD_END * MAX_TARGET_DISTANCE_FROM_ROAD_END
+            double distance = selected.distSqr(data.roads().get(i).end());
+            if (distance <= (double) MAX_TARGET_DISTANCE_FROM_ROAD_END * MAX_TARGET_DISTANCE_FROM_ROAD_END
                     && distance < bestDistance) {
                 bestDistance = distance;
                 bestIndex = i;
