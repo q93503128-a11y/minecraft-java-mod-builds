@@ -22,6 +22,7 @@ import java.util.List;
 
 public final class SettlementConstructionService {
     static final String BUILDER_TAG = "frontier_settlement_builder";
+    private static final String BUILDER_NAME = "건설 주민";
     private static final int DIRECT_BLOCK_UPDATE = 2;
     private static final int NORMAL_BLOCK_UPDATE = 3;
     private static final double BUILDER_WORK_RANGE_SQR = 22.0D;
@@ -147,7 +148,7 @@ public final class SettlementConstructionService {
         Villager builder = findBuilder(level, data.centerPos());
         if (builder != null) {
             builder.getNavigation().stop();
-            builder.setCustomName(Component.literal("건설 주민"));
+            builder.setCustomName(Component.literal(BUILDER_NAME));
         }
         SettlementService.broadcast(server, data);
         return true;
@@ -164,7 +165,6 @@ public final class SettlementConstructionService {
             }
         }
         if (missing < 0) return;
-        ConstructionState current = data.construction();
         data.replaceConstructionStep(missing);
     }
 
@@ -180,7 +180,7 @@ public final class SettlementConstructionService {
         builder.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         builder.setYRot(0.0F);
         builder.setXRot(0.0F);
-        builder.setCustomName(Component.literal("건설 주민"));
+        builder.setCustomName(Component.literal(BUILDER_NAME));
         builder.setCustomNameVisible(true);
         builder.setPersistenceRequired();
         builder.setNoAi(false);
@@ -194,7 +194,8 @@ public final class SettlementConstructionService {
                 center.getX() - 96.0D, center.getY() - 48.0D, center.getZ() - 96.0D,
                 center.getX() + 97.0D, center.getY() + 49.0D, center.getZ() + 97.0D);
         List<Villager> builders = level.getEntitiesOfClass(Villager.class, search,
-                villager -> villager.getTags().contains(BUILDER_TAG));
+                villager -> villager.getCustomName() != null
+                        && BUILDER_NAME.equals(villager.getCustomName().getString()));
         return builders.isEmpty() ? null : builders.getFirst();
     }
 
