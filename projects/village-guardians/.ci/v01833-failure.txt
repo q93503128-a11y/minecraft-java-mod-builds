@@ -1,0 +1,19 @@
+version=0.18.33-alpha.1
+run_id=32564620799
+head=e1f4c98b0148f8840aca0e9ba5c49cdefed5f8a3
+--- git status ---
+ M projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageTownHallGridScreen.java
+ M projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java
+?? projects/village-guardians/.ci/v01833-failure.txt
+--- v01833-patch.log tail ---
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py", line 794, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py", line 785, in main
+    patch_wave_screen()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py", line 396, in patch_wave_screen
+    text = replace_once(text, '''pane.left() + 13, y + 6,''', '''pane.left() + 13, y + 7,''', "wave title y")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_playtest_ui_wall.py", line 18, in replace_once
+    raise RuntimeError(f"{label}: expected one match, found {text.count(old)}")
+RuntimeError: wave title y: expected one match, found 2
