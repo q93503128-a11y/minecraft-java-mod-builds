@@ -23,6 +23,7 @@ with zipfile.ZipFile(jar) as zf:
         "META-INF/third-party/MOB_CHAMPIONS_MIT.txt",
         "META-INF/third-party/APOTHEOSIS_MIT.txt",
         "META-INF/third-party/MEKANISM_MIT.txt",
+        "META-INF/third-party/WARBAND_MIT.txt",
         "kr/moonseungjun/survivalascension/SurvivalAscension.class",
         "kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.class",
@@ -42,6 +43,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/construction/ConstructionProgression.class",
         "kr/moonseungjun/survivalascension/mobility/MobilityProgression.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
+        "kr/moonseungjun/survivalascension/elite/WarbandDirector.class",
         "kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class",
         "kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.class",
         "kr/moonseungjun/survivalascension/network/EquipmentActionPayload.class",
@@ -59,6 +61,7 @@ with zipfile.ZipFile(jar) as zf:
         ("META-INF/third-party/MOB_CHAMPIONS_MIT.txt", "Copyright (c) 2024 Wendall Cada"),
         ("META-INF/third-party/APOTHEOSIS_MIT.txt", "Copyright (c) 2018-2025 Stormraven Studios, LLC"),
         ("META-INF/third-party/MEKANISM_MIT.txt", "Copyright (c) 2017-2025 Aidan C. Brady"),
+        ("META-INF/third-party/WARBAND_MIT.txt", "Copyright (c) 2026 Divesh Gupta"),
     ]:
         text = zf.read(notice).decode("utf-8")
         if line not in text or "MIT" not in text: raise SystemExit(f"invalid packaged notice: {notice}")
