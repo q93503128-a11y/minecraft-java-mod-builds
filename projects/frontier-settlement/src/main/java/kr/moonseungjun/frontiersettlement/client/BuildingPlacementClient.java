@@ -49,7 +49,7 @@ public final class BuildingPlacementClient {
     public static void tick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) {
-            deactivate();
+            cancel();
             return;
         }
 
@@ -58,6 +58,7 @@ public final class BuildingPlacementClient {
             preview = null;
             refreshTicks = 0;
             if (active) {
+                RoadPlacementClient.cancel();
                 rotation = BuildingRotation.facingPlayerFrom(minecraft.player.getDirection());
                 target = resolveTarget(minecraft);
             }
@@ -87,9 +88,7 @@ public final class BuildingPlacementClient {
         }
 
         while (CONFIRM.consumeClick()) {
-            if (preview != null && preview.valid() && previewMatchesSelection()) {
-                send(true);
-            }
+            if (preview != null && preview.valid() && previewMatchesSelection()) send(true);
         }
     }
 
@@ -111,7 +110,7 @@ public final class BuildingPlacementClient {
         lastAcceptedNonce = next.nonce();
         if (!active) return;
         preview = next;
-        if (next.confirmed()) deactivate();
+        if (next.confirmed()) cancel();
     }
 
     private static boolean previewMatchesSelection() {
@@ -142,7 +141,7 @@ public final class BuildingPlacementClient {
                 + " | 회전 " + (rotation.id() * 90) + "° | " + state;
     }
 
-    private static void deactivate() {
+    public static void cancel() {
         active = false;
         preview = null;
         refreshTicks = 0;
