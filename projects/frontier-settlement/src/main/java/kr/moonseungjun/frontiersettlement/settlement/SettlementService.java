@@ -3,11 +3,9 @@ package kr.moonseungjun.frontiersettlement.settlement;
 import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
 import kr.moonseungjun.frontiersettlement.network.SettlementSnapshotPayload;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -27,7 +25,11 @@ public final class SettlementService {
         if (tick % 5 == 0) {
             if (data.construction().active()) SettlementConstructionService.tick(server, data);
             if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);
+            if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);
         }
+
+        SettlementWorkerService.tick(server, data);
+
         if (tick % 20 == 0 && refreshResources(server, data)) {
             broadcast(server, data);
         }
@@ -69,35 +71,15 @@ public final class SettlementService {
             return data.updateResources(SettlementResources.ZERO);
         }
 
-        long wood = 0L;
-        long stone = 0L;
+        long wood = SettlementInventory.countWood(container);
+        long stone = SettlementInventory.countStone(container);
+        long food = SettlementInventory.countFood(container);
         long metal = 0L;
-        long food = 0L;
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             ItemStack stack = container.getItem(slot);
-            if (stack.isEmpty()) continue;
-            long count = stack.getCount();
-            if (stack.is(ItemTags.LOGS) || stack.is(ItemTags.PLANKS)) {
-                wood += count;
-            } else if (isStone(stack)) {
-                stone += count;
-            } else if (isMetal(stack)) {
-                metal += count;
-            } else if (stack.get(DataComponents.FOOD) != null) {
-                food += count;
-            }
+            if (!stack.isEmpty() && isMetal(stack)) metal += stack.getCount();
         }
         return data.updateResources(new SettlementResources(wood, stone, metal, food));
-    }
-
-    private static boolean isStone(ItemStack stack) {
-        return stack.is(Items.STONE)
-                || stack.is(Items.COBBLESTONE)
-                || stack.is(Items.DEEPSLATE)
-                || stack.is(Items.COBBLED_DEEPSLATE)
-                || stack.is(Items.ANDESITE)
-                || stack.is(Items.DIORITE)
-                || stack.is(Items.GRANITE);
     }
 
     private static boolean isMetal(ItemStack stack) {
