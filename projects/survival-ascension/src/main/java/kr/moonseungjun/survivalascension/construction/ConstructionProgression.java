@@ -6,6 +6,8 @@ package kr.moonseungjun.survivalascension.construction;
  * NeoForge placement hooks, and tick-budgeted bulk work.
  */
 
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
@@ -40,6 +42,7 @@ import java.util.UUID;
 public final class ConstructionProgression {
     private static final int GLOBAL_BLOCK_BUDGET_PER_TICK = 64;
     private static final int MAX_PENDING_BLOCKS_PER_PLAYER = 256;
+    private static final int VOLUME_SIZE = 5;
     private static final Map<UUID, ConstructionMode> MODES = new HashMap<>();
     private static final Map<UUID, Integer> PENDING_COUNTS = new HashMap<>();
     private static final Deque<BuildJob> JOBS = new ArrayDeque<>();
@@ -50,9 +53,15 @@ public final class ConstructionProgression {
     public static void setMode(ServerPlayer player, ConstructionMode requested) {
         int level = SkillProgressData.get(player).level(player, SkillType.CONSTRUCTION);
         ConstructionMode resolved = requested.requiredLevel() <= level ? requested : ConstructionMode.SINGLE;
+        if (resolved == ConstructionMode.VOLUME && !InfrastructureData.get(player).isComplete(InfrastructureProject.BUILDER_FOUNDRY)) {
+            resolved = ConstructionMode.SINGLE;
+            player.sendSystemMessage(Component.literal("§6[건축] §f입체 모드는 §eM→인프라→건축 공방§f 완공이 필요합니다."));
+        }
         MODES.put(player.getUUID(), resolved);
         if (resolved != requested) {
-            player.sendSystemMessage(Component.literal("§6[건축] §f" + requested.koreanName() + " 모드는 Lv." + requested.requiredLevel() + "부터 사용할 수 있습니다."));
+            if (requested != ConstructionMode.VOLUME || level < requested.requiredLevel()) {
+                player.sendSystemMessage(Component.literal("§6[건축] §f" + requested.koreanName() + " 모드는 Lv." + requested.requiredLevel() + "부터 사용할 수 있습니다."));
+            }
         } else {
             player.sendSystemMessage(Component.literal("§6[건축] §f배치 모드: §e" + resolved.koreanName()));
         }
@@ -73,6 +82,7 @@ public final class ConstructionProgression {
 
         int level = SkillProgressData.get(player).level(player, SkillType.CONSTRUCTION);
         ConstructionMode mode = MODES.getOrDefault(uuid, ConstructionMode.SINGLE);
+        if (mode == ConstructionMode.VOLUME && !InfrastructureData.get(player).isComplete(InfrastructureProject.BUILDER_FOUNDRY)) mode = ConstructionMode.SINGLE;
         if (mode == ConstructionMode.SINGLE || mode.requiredLevel() > level) return;
 
         List<BlockPos> targets = computeTargets(player, event.getPos(), mode, level);
@@ -178,6 +188,19 @@ public final class ConstructionProgression {
             return targets;
         }
 
+        if (mode == ConstructionMode.VOLUME) {
+            int half = VOLUME_SIZE / 2;
+            for (int dx = -half; dx <= half; dx++) {
+                for (int dy = -half; dy <= half; dy++) {
+                    for (int dz = -half; dz <= half; dz++) {
+                        BlockPos pos = center.offset(dx, dy, dz);
+                        if (!pos.equals(center)) targets.add(pos);
+                    }
+                }
+            }
+            return targets;
+        }
+
         int size = SkillTuning.constructionPlaneSize(level);
         if (size <= 1) return targets;
         int half = size / 2;
@@ -215,7 +238,7 @@ public final class ConstructionProgression {
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§6[건축 해금] §f선 배치 · 최대 5블록"));
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 3×3 · 선 배치 9블록"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 5×5 · 선 배치 17블록"));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 9×9 · 선 배치 33블록"));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 9×9 · 선 33블록. 건축 공방 완공 시 입체 5×5×5 추가."));
     }
 
     private enum PlaceResult { PLACED, SKIPPED, OUT_OF_MATERIAL }
