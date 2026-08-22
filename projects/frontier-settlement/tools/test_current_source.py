@@ -16,6 +16,7 @@ required = [
     JAVA / 'settlement/RoadSegment.java', JAVA / 'settlement/SettlementOutpostService.java',
     JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementBenefitService.java',
     JAVA / 'settlement/SettlementCoreService.java', JAVA / 'settlement/SettlementResidentRoutineService.java',
+    JAVA / 'settlement/SettlementTierInfrastructureService.java',
     JAVA / 'settlement/OutpostBlueprints.java', JAVA / 'settlement/OutpostConstructionState.java',
     JAVA / 'settlement/OutpostRecord.java', JAVA / 'settlement/SettlementInventory.java',
     JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementTier.java',
@@ -33,13 +34,12 @@ if missing:
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
 for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta',
-              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.18'):
+              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.19'):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
 
 core = (JAVA / 'settlement/SettlementCoreService.java').read_text(encoding='utf-8')
 for token in ('MAX_PLACEMENTS_PER_TICK = 6', 'SettlementTier.current(data)',
-              'addFloor(placements, center, 1, Blocks.COARSE_DIRT.defaultBlockState())',
               'SettlementTier.HAMLET.ordinal()', 'SettlementTier.VILLAGE.ordinal()',
               'SettlementTier.FRONTIER_TOWN.ordinal()', 'SettlementTier.DOMAIN.ordinal()',
               'addLampRing', 'canSafelyReplace', 'isNaturalGround', 'level.setBlock'):
@@ -55,6 +55,23 @@ for token in ('time >= 13000L && time < 23000L', 'TOWN_WORKER_NAMES',
     if token not in routine:
         raise SystemExit(f'resident routine invariant missing: {token}')
 
+infrastructure = (JAVA / 'settlement/SettlementTierInfrastructureService.java').read_text(encoding='utf-8')
+for token in ('SettlementTier.FRONTIER_TOWN.ordinal()', 'SettlementTier.DOMAIN',
+              'data.buildingCount(BuildingType.WAREHOUSE) > 0',
+              'data.buildingCount(BuildingType.BLACKSMITH) > 0',
+              '!SettlementResidentRoutineService.isRestTime(level)',
+              'int carryLimit = tier == SettlementTier.DOMAIN ? 48 : 32',
+              'double moveSpeed = tier == SettlementTier.DOMAIN ? 1.15D : 1.05D',
+              'topUpMatching(container, carried, carryLimit)',
+              'SettlementStorageService.findDepositTarget',
+              'int reinforcementsPerPost = tier == SettlementTier.DOMAIN ? 2 : 1',
+              'BuildingType.GUARD_POST', 'new IronGolem(EntityTypes.IRON_GOLEM, level)',
+              'guard.setPersistenceRequired()', 'guard.setPlayerCreated(true)'):
+    if token not in infrastructure:
+        raise SystemExit(f'tier infrastructure invariant missing: {token}')
+if 'destroyBlock(' in infrastructure or 'dropResources(' in infrastructure:
+    raise SystemExit('tier infrastructure must not create loose block drops')
+
 snapshot = (JAVA / 'network/SettlementSnapshotPayload.java').read_text(encoding='utf-8')
 for token in ('int population, String tier', 'buf.writeUtf(payload.tier())', 'buf.readUtf()'):
     if token not in snapshot:
@@ -68,6 +85,8 @@ building_type = (JAVA / 'settlement/BuildingType.java').read_text(encoding='utf-
 for token in ('BLACKSMITH("blacksmith", "대장간"', 'GUARD_POST("guard_post", "경비초소"'):
     if token not in building_type:
         raise SystemExit(f'advanced building type missing: {token}')
+if 'CART_DEPOT(' in building_type or 'BARRACKS(' in building_type:
+    raise SystemExit('alpha.19 must keep management surface small by upgrading existing building families')
 
 blueprints = (JAVA / 'settlement/BuildingBlueprints.java').read_text(encoding='utf-8')
 if 'case BLACKSMITH, GUARD_POST -> AdvancedBuildingBlueprints.create(type, origin)' not in blueprints:
@@ -112,6 +131,7 @@ for token in ('SettlementCoreService.tick(server, data)',
               'SettlementResidentRoutineService.tick(server, data)',
               'SettlementWorkerService.tick(server, data)',
               'SettlementOutpostProductionService.tick(server, data)',
+              'SettlementTierInfrastructureService.tick(server, data)',
               'SettlementBenefitService.tick(server, data)',
               'SettlementTier.current(data).displayName()'):
     if token not in service:
@@ -148,8 +168,9 @@ for path in JAVA.rglob('*.java'):
     text = path.read_text(encoding='utf-8')
     if path.name in {'SettlementConstructionService.java', 'SettlementRoadService.java',
                      'SettlementOutpostService.java', 'SettlementWorkerService.java',
-                     'SettlementOutpostProductionService.java', 'SettlementCoreService.java'}:
+                     'SettlementOutpostProductionService.java', 'SettlementCoreService.java',
+                     'SettlementTierInfrastructureService.java'}:
         if 'destroyBlock(' in text or 'dropResources(' in text:
             raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.18 source audit: PASS')
+print('Frontier Settlement alpha.19 source audit: PASS')
