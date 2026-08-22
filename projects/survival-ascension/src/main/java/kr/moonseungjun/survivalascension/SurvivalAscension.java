@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.17.0-alpha.1";
+    public static final String VERSION = "0.18.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -54,6 +54,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: six skills + tactical warbands + boss-driven world ascension", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: six skills + tactical warbands + boss-driven world ascension + Ascension Nexus", VERSION);
     }
 }
