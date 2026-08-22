@@ -55,12 +55,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          : > /tmp/v01833-failed-tests.txt
+          failed=0
           {
             cd "${PROJECT_DIR}"
             for test in tools/test_*.py; do
               echo "=== $test ==="
-              python3 "$test"
+              if python3 "$test"; then
+                :
+              else
+                echo "$test" >> /tmp/v01833-failed-tests.txt
+                failed=1
+              fi
             done
+            if [ "$failed" -ne 0 ]; then
+              echo "=== FAILED TEST FILES ==="
+              cat /tmp/v01833-failed-tests.txt
+              exit 1
+            fi
           } 2>&1 | tee /tmp/v01833-tests.log
 
       - name: Clean Java 25 NeoForge build
@@ -128,7 +140,8 @@ jobs:
             "${PROJECT_DIR}/tools/test_v01818_growth_consumables.py" \
             "${PROJECT_DIR}/tools/test_v01832_ranger_wall_traffic.py" \
             "${PROJECT_DIR}/tools/test_v01833_playtest_ui_wall.py" \
-            "${PROJECT_DIR}/tools/test_v0187_balance_ui.py"
+            "${PROJECT_DIR}/tools/test_v0187_balance_ui.py" \
+            "${PROJECT_DIR}/tools/test_v0188_risk_ui_cleanup.py"
           git diff --cached --check
           git commit -m 'fix(village): correct playtest UI and wall combat geometry [skip ci]'
           for attempt in 1 2 3 4 5 6; do
@@ -183,10 +196,14 @@ jobs:
             echo "head=$(git rev-parse HEAD)"
             echo "--- git status ---"
             git status --short
+            if [ -s /tmp/v01833-failed-tests.txt ]; then
+              echo "--- failed test files ---"
+              cat /tmp/v01833-failed-tests.txt
+            fi
             for log in /tmp/v01833-patch.log /tmp/v01833-diff.log /tmp/v01833-tests.log /tmp/v01833-build.log /tmp/v01833-verify.log; do
               if [ -f "$log" ]; then
                 echo "--- $(basename "$log") tail ---"
-                tail -n 120 "$log"
+                tail -n 160 "$log"
               fi
             done
           } > "$OUT"
