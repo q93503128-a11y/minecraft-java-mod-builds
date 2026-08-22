@@ -25,6 +25,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
             new Entry("채석장 네트워크", "조약돌1024 · 철256 · 레드스톤128 · 다이아32", new ItemStack(Items.RAIL), InfrastructureProject.QUARRY_NETWORK, Action.FUND),
             new Entry("관개 시설", "구리512 · 철128 · 레드스톤128 · 유리128 · 슬라임32", new ItemStack(Items.WATER_BUCKET), InfrastructureProject.IRRIGATION_WORKS, Action.FUND),
             new Entry("건축 공방", "석재벽돌1024 · 철256 · 구리256 · 레드스톤128 · 흑요석64", new ItemStack(Items.SMITHING_TABLE), InfrastructureProject.BUILDER_FOUNDRY, Action.FUND),
+            new Entry("전투 훈련장", "철512 · 금256 · 에메랄드128 · 레드스톤128 · 메아리32", new ItemStack(Items.IRON_SWORD), InfrastructureProject.COMBAT_ACADEMY, Action.FUND),
             new Entry("진행도", "공동 프로젝트 전체 진행도 확인", new ItemStack(Items.MAP), null, Action.STATUS),
             new Entry("뒤로", "통합 메뉴로 돌아가기", new ItemStack(Items.ARROW), null, Action.BACK)
     };
