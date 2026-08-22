@@ -2,6 +2,8 @@ package kr.moonseungjun.survivalascension.network;
 
 /* Client receiver seam adapted from Skill Proficiencies, Copyright (c) 2026 balovich-matje, MIT. */
 
+import kr.moonseungjun.survivalascension.construction.ConstructionMode;
+import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -10,7 +12,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class SkillNetwork {
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     private static volatile Consumer<SkillUpdatePayload> updateSink = payload -> {};
     private static volatile Consumer<SkillSnapshotPayload> snapshotSink = payload -> {};
     private SkillNetwork() {}
@@ -19,6 +21,12 @@ public final class SkillNetwork {
         PayloadRegistrar registrar = event.registrar(PROTOCOL);
         registrar.playToClient(SkillUpdatePayload.TYPE, SkillUpdatePayload.CODEC, (payload, context) -> updateSink.accept(payload));
         registrar.playToClient(SkillSnapshotPayload.TYPE, SkillSnapshotPayload.CODEC, (payload, context) -> snapshotSink.accept(payload));
+        registrar.playToServer(ConstructionModePayload.TYPE, ConstructionModePayload.CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        ConstructionProgression.setMode(player, ConstructionMode.fromId(payload.modeId()));
+                    }
+                }));
     }
 
     public static void installClientReceivers(Consumer<SkillUpdatePayload> updates, Consumer<SkillSnapshotPayload> snapshots) {

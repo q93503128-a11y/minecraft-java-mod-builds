@@ -1,9 +1,6 @@
 package kr.moonseungjun.survivalascension.client;
 
-/*
- * Page navigation and skill-help information architecture follow the MIT-licensed
- * Skill Proficiencies skills screen: Copyright (c) 2026 balovich-matje.
- */
+/* Page navigation and skill-help information architecture follow Skill Proficiencies MIT. */
 
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
 import kr.moonseungjun.survivalascension.progress.SkillType;
@@ -19,7 +16,6 @@ import java.util.Locale;
 
 public final class GuideScreen extends Screen {
     public enum Page { OVERVIEW, UNLOCKS, STATS, CONTROLS }
-
     private final Screen parent;
     private final Page page;
 
@@ -41,20 +37,13 @@ public final class GuideScreen extends Screen {
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).bounds(this.width / 2 - 60, this.height - 30, 120, 20).build());
     }
 
-    private void open(Page target) {
-        if (target != this.page) this.minecraft.gui.setScreen(new GuideScreen(this.parent, target));
-    }
-
-    @Override
-    public void onClose() {
-        this.minecraft.gui.setScreen(this.parent);
-    }
+    private void open(Page target) { if (target != this.page) this.minecraft.gui.setScreen(new GuideScreen(this.parent, target)); }
+    @Override public void onClose() { this.minecraft.gui.setScreen(this.parent); }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         graphics.text(this.font, this.title, (this.width - this.font.width(this.title)) / 2, 14, 0xFFFFFFFF, true);
-
         int left = Math.max(18, this.width / 2 - 190);
         int y = 64;
         for (Line line : lines()) {
@@ -80,7 +69,8 @@ public final class GuideScreen extends Screen {
                 h("벌목"), p("도끼로 통나무를 베며 성장. 레벨에 따라 연결된 통나무를 한 번에 처리."),
                 h("농사"), p("완전히 익은 작물만 경험치. 괭이를 들면 고레벨에서 넓은 밭을 한 번에 수확."),
                 h("전투"), p("직접 처치로 성장. 피해가 오르고 고레벨 근접 공격은 주변 적대몹에 파급."),
-                p("파괴형 능력이 부담스러우면 웅크린 채 작업하면 정밀 모드가 우선됩니다.")
+                h("건축"), p("블록을 놓아 성장. M→건축에서 단일/선/벽/바닥을 선택하고 실제 인벤토리 재료를 사용해 대량 배치."),
+                p("Shift를 누르면 채굴·벌목·농사·건축 모두 정밀 단일 작업이 우선됩니다.")
         );
     }
 
@@ -90,8 +80,9 @@ public final class GuideScreen extends Screen {
                 h("벌목"), p("Lv.10 16로그  ·  Lv.30 48로그  ·  Lv.60 128로그  ·  Lv.90 256로그"),
                 h("농사"), p("Lv.10 3×3  ·  Lv.30 5×5  ·  Lv.60 7×7  ·  Lv.90 9×9"),
                 h("전투"), p("Lv.30 파급2체  ·  Lv.60 파급4체  ·  Lv.90 파급8체"),
+                h("건축"), p("Lv.10 선5  ·  Lv.30 선9 + 벽/바닥3×3  ·  Lv.60 선17 + 5×5  ·  Lv.90 선33 + 9×9"),
                 p("숙련 등급 I / II / III / IV / V는 Lv.0 / 10 / 30 / 60 / 90 구간과 대응합니다."),
-                p("건축과 기동은 다음 성장 계통으로 확장됩니다.")
+                p("기동은 다음 성장 계통으로 확장됩니다.")
         );
     }
 
@@ -111,10 +102,11 @@ public final class GuideScreen extends Screen {
 
     private static List<Line> controlLines() {
         return List.of(
-                h("M · 통합 메뉴"), p("숙련 / 가이드 / 해금표 / 통계 / 조작을 한 곳에서 엽니다."),
-                h("마우스 · 라디얼 선택"), p("M 메뉴에서 원하는 방향을 가리킨 뒤 좌클릭하여 선택합니다."),
-                h("Shift · 정밀 모드"), p("채굴·벌목·농사의 광역/연쇄 효과를 끄고 한 블록만 처리합니다."),
-                h("경고"), p("고레벨 채굴은 매우 넓은 범위를 파괴합니다. 건축물 주변에서는 Shift 정밀 모드를 사용하세요."),
+                h("M · 통합 메뉴"), p("숙련 / 건축 / 가이드 / 해금표 / 통계 / 조작을 한 곳에서 엽니다."),
+                h("마우스 · 라디얼 선택"), p("M 메뉴에서 방향을 가리킨 뒤 좌클릭. 건축을 고르면 두 번째 라디얼에서 배치 방식을 고릅니다."),
+                h("Shift · 정밀 모드"), p("채굴·벌목·농사 광역 효과를 끄며, 건축에서는 선택한 대량 배치 모드보다 단일 설치를 우선합니다."),
+                h("건축 안전"), p("대량 설치는 실제 재료를 소비하고 보호 이벤트를 확인하며 서버 틱에 나눠 처리합니다."),
+                h("경고"), p("고레벨 작업은 매우 넓습니다. 건축물 주변에서는 Shift 정밀 모드를 사용하세요."),
                 p("K 직접 숙련 단축키는 제거되고 M 통합 메뉴로 합쳐집니다.")
         );
     }
@@ -125,7 +117,7 @@ public final class GuideScreen extends Screen {
             case WOODCUTTING -> "연쇄 " + SkillTuning.woodcuttingLogLimit(level) + "로그";
             case HARVESTING -> SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level) + " 수확";
             case COMBAT -> String.format(Locale.ROOT, "피해 %.2f× / 파급 %d체", SkillTuning.combatDamageMultiplier(level), SkillTuning.combatCleaveTargetLimit(level));
-            case CONSTRUCTION -> "개발 중";
+            case CONSTRUCTION -> "선 " + SkillTuning.constructionLineLength(level) + " / 면 " + SkillTuning.constructionPlaneSize(level) + "×" + SkillTuning.constructionPlaneSize(level);
             case MOBILITY -> "개발 중";
         };
     }

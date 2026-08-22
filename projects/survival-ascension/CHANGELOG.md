@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0-alpha.1
+- Activated Construction as the fifth live skill.
+- Added M -> Construction nested radial with Single / Line / Wall / Floor / Back.
+- Added level-gated build scale: line 5/9/17/33 and wall/floor 3x3/5x5/9x9.
+- Added real inventory material consumption for secondary placements.
+- Added server-authoritative construction-mode networking and server-side level validation.
+- Added mayInteract + NeoForge placement-hook protection checks before bulk placement.
+- Added a global tick budget and per-player pending cap so high-level 9x9 construction is distributed across server ticks.
+- Shift now forces precision single placement for Construction too.
+- Added Building Gadgets 2 MIT attribution for placement-safety/work-queue reference patterns.
+
 ## 0.6.0-alpha.1
 - Replaced the direct K skills shortcut with M as the integrated menu key.
 - Added a six-segment radial menu adapting MineMenu's MIT-licensed current radial interaction/presentation, including its ring proportions, mouse-angle selection, live-world overlay and default black/red visual palette.

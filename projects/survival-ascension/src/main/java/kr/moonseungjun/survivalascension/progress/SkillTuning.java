@@ -108,6 +108,21 @@ public final class SkillTuning {
         return 0.0D;
     }
 
+    public static int constructionLineLength(int level) {
+        if (level >= 90) return 33;
+        if (level >= 60) return 17;
+        if (level >= 30) return 9;
+        if (level >= 10) return 5;
+        return 1;
+    }
+
+    public static int constructionPlaneSize(int level) {
+        if (level >= 90) return 9;
+        if (level >= 60) return 5;
+        if (level >= 30) return 3;
+        return 1;
+    }
+
     public static int masteryTier(int level) {
         if (level >= 90) return 5;
         if (level >= 60) return 4;

@@ -24,7 +24,16 @@ import net.minecraft.world.item.Items;
 import org.joml.Matrix3x2f;
 
 public final class AscensionRadialMenuScreen extends Screen {
-    private static final int ITEM_COUNT = 6;
+    private static final Entry[] ENTRIES = {
+            new Entry("숙련", "레벨 · XP · 현재 효과", new ItemStack(Items.EXPERIENCE_BOTTLE), Action.SKILLS),
+            new Entry("건축", "선 · 벽 · 바닥 배치 모드", new ItemStack(Items.BRICKS), Action.CONSTRUCTION),
+            new Entry("가이드", "모드 핵심 규칙과 사용법", new ItemStack(Items.WRITTEN_BOOK), Action.GUIDE),
+            new Entry("해금표", "Lv.10/30/60/90 변화", new ItemStack(Items.NETHER_STAR), Action.UNLOCKS),
+            new Entry("통계", "현재 숙련 전체 요약", new ItemStack(Items.SPYGLASS), Action.STATS),
+            new Entry("조작", "키와 정밀 모드 설명", new ItemStack(Items.COMPASS), Action.CONTROLS),
+            new Entry("닫기", "게임으로 돌아가기", new ItemStack(Items.BARRIER), Action.CLOSE)
+    };
+    private static final int ITEM_COUNT = ENTRIES.length;
     private static final double ANGLE_PER_ITEM = 360.0D / ITEM_COUNT;
     private static final float OUTER_RADIUS = 80.0F;
     private static final float INNER_RADIUS = 60.0F;
@@ -38,28 +47,15 @@ public final class AscensionRadialMenuScreen extends Screen {
     private static final int SELECT_B = 0;
     private static final int SELECT_A = 153;
 
-    private static final Entry[] ENTRIES = {
-            new Entry("숙련", "레벨 · XP · 현재 효과", new ItemStack(Items.EXPERIENCE_BOTTLE), Action.SKILLS),
-            new Entry("가이드", "모드 핵심 규칙과 사용법", new ItemStack(Items.WRITTEN_BOOK), Action.GUIDE),
-            new Entry("해금표", "Lv.10/30/60/90 변화", new ItemStack(Items.NETHER_STAR), Action.UNLOCKS),
-            new Entry("통계", "현재 숙련 전체 요약", new ItemStack(Items.SPYGLASS), Action.STATS),
-            new Entry("조작", "키와 정밀 모드 설명", new ItemStack(Items.COMPASS), Action.CONTROLS),
-            new Entry("닫기", "게임으로 돌아가기", new ItemStack(Items.BARRIER), Action.CLOSE)
-    };
-
     public AscensionRadialMenuScreen() {
         super(Component.literal("Survival Ascension"));
     }
 
     @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
+    public boolean isPauseScreen() { return false; }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        // MineMenu-style overlay: keep the live world visible behind the wheel.
-    }
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {}
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -104,6 +100,7 @@ public final class AscensionRadialMenuScreen extends Screen {
     private void activate(Action action) {
         switch (action) {
             case SKILLS -> this.minecraft.gui.setScreen(new SkillsScreen(this));
+            case CONSTRUCTION -> this.minecraft.gui.setScreen(new ConstructionRadialMenuScreen());
             case GUIDE -> this.minecraft.gui.setScreen(new GuideScreen(this, GuideScreen.Page.OVERVIEW));
             case UNLOCKS -> this.minecraft.gui.setScreen(new GuideScreen(this, GuideScreen.Page.UNLOCKS));
             case STATS -> this.minecraft.gui.setScreen(new GuideScreen(this, GuideScreen.Page.STATS));
@@ -137,7 +134,7 @@ public final class AscensionRadialMenuScreen extends Screen {
     }
 
     private record Entry(String title, String detail, ItemStack icon, Action action) {}
-    private enum Action { SKILLS, GUIDE, UNLOCKS, STATS, CONTROLS, CLOSE }
+    private enum Action { SKILLS, CONSTRUCTION, GUIDE, UNLOCKS, STATS, CONTROLS, CLOSE }
 
     private record WheelElement(
             RenderPipeline pipeline,

@@ -30,6 +30,16 @@ Survival Ascension adapts the current MineMenu radial-menu interaction and prese
 
 The complete notice is packaged at `META-INF/third-party/MINEMENU_MIT.txt`.
 
+## Building Gadgets 2
+
+Source project: `Direwolf20-MC/BuildingGadgets2`
+Copyright (c) 2023 Direwolf20-MC
+License: MIT License
+
+Survival Ascension independently implements its Construction skill after studying Building Gadgets 2's permissively licensed placement-safety and bulk-work patterns: inventory-backed building, interaction/protection checks, NeoForge placement hooks and server-tick-distributed work. Survival Ascension does not bundle Building Gadgets assets or gadget content.
+
+The complete notice is packaged at `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -53,3 +63,7 @@ SOFTWARE.
 ## Project MMO 2.0
 
 Project MMO 2.0 remains **reference-only**. Survival Ascension may study public behavior, progression concepts and information organization, but does not copy or bundle Project MMO source, assets, textures, data, namespaces or implementation markers.
+
+## Other restricted/reference-only mods
+
+Handwerk, NeoEnchant+ and other custom-license/ARR projects are used only for behavior and UX study unless their exact license explicitly permits reuse. No restricted source or assets are bundled.

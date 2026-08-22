@@ -44,7 +44,7 @@ public final class SurvivalAscensionClient {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.player == null || minecraft.level == null) continue;
             Screen current = minecraft.gui.screen();
-            if (current instanceof AscensionRadialMenuScreen) {
+            if (current instanceof AscensionRadialMenuScreen || current instanceof ConstructionRadialMenuScreen) {
                 minecraft.gui.setScreen(null);
             } else if (current == null || current instanceof SkillsScreen || current instanceof GuideScreen) {
                 minecraft.gui.setScreen(new AscensionRadialMenuScreen());
