@@ -6,9 +6,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Container;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -64,31 +61,8 @@ public final class SettlementService {
 
     public static boolean refreshResources(MinecraftServer server, SettlementData data) {
         if (!data.founded()) return false;
-        ServerLevel level = server.overworld();
-        BlockPos pos = data.stockpilePos();
-        if (!level.hasChunkAt(pos)) return false;
-        if (!(level.getBlockEntity(pos) instanceof Container container)) {
-            return data.updateResources(SettlementResources.ZERO);
-        }
-
-        long wood = SettlementInventory.countWood(container);
-        long stone = SettlementInventory.countStone(container);
-        long food = SettlementInventory.countFood(container);
-        long metal = 0L;
-        for (int slot = 0; slot < container.getContainerSize(); slot++) {
-            ItemStack stack = container.getItem(slot);
-            if (!stack.isEmpty() && isMetal(stack)) metal += stack.getCount();
-        }
-        return data.updateResources(new SettlementResources(wood, stone, metal, food));
-    }
-
-    private static boolean isMetal(ItemStack stack) {
-        return stack.is(Items.IRON_INGOT)
-                || stack.is(Items.RAW_IRON)
-                || stack.is(Items.COPPER_INGOT)
-                || stack.is(Items.RAW_COPPER)
-                || stack.is(Items.GOLD_INGOT)
-                || stack.is(Items.RAW_GOLD);
+        SettlementResources next = SettlementStorageService.scan(server.overworld(), data);
+        return data.updateResources(next);
     }
 
     private static BlockPos findStockpilePosition(ServerLevel level, BlockPos center) {
