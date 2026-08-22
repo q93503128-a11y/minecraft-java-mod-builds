@@ -1,6 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
 - all six skills active
-- Mobility uses server-tracked traversal, vanilla attributes and server-authoritative R dash
-- Lv.60 air dash is limited to once before landing; teleport/flight/riding do not grant traversal XP
-- restricted/copyleft reference mods remain source/asset clean
+- Mobility remains server-authoritative
+- elite world scales from nearby six-skill progression
+- three persistent ranks + four traits + spawner anti-farm contract present
+- Mob Champions MIT notice packaged; restricted/copyleft reference mods remain source/asset clean
