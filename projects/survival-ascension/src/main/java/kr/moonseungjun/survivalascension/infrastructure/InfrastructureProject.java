@@ -31,6 +31,15 @@ public enum InfrastructureProject {
                     new Requirement(Items.COPPER_INGOT, "구리 주괴", 256),
                     new Requirement(Items.REDSTONE, "레드스톤", 128),
                     new Requirement(Items.OBSIDIAN, "흑요석", 64)
+            )),
+    COMBAT_ACADEMY(
+            "combat_academy", "전투 훈련장", "전투 Lv.90 질주 충격파 · 반경 5.5블록 최대 12체",
+            List.of(
+                    new Requirement(Items.IRON_INGOT, "철 주괴", 512),
+                    new Requirement(Items.GOLD_INGOT, "금 주괴", 256),
+                    new Requirement(Items.EMERALD, "에메랄드", 128),
+                    new Requirement(Items.REDSTONE, "레드스톤", 128),
+                    new Requirement(Items.ECHO_SHARD, "메아리 조각", 32)
             ));
 
     private final String id;
