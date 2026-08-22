@@ -28,6 +28,8 @@ public final class SpellKineticsService {
         SpellArchetype.Mode mode = SpellArchetype.mode(cast.spell().id());
         int circle = Math.max(1, Math.min(9, cast.spell().circle()));
         CastTargetSnapshot targetSnapshot = WorldMagicService.captureSnapshot(player, cast.spell(), cast.range());
+        if ("meteor_swarm".equals(cast.spell().id()))
+            MeteorBarragePattern.rememberRange(targetSnapshot.barrageSeed(), cast.range());
         WorldMagicService.release(player, cast, targetSnapshot);
 
         if (ArcaneFieldService.handles(cast.spell().id())
@@ -149,6 +151,11 @@ public final class SpellKineticsService {
         if (spell != null && HighWardSpellService.intercepts(player, spell, targetSnapshot, range)) return false;
         if (NinthCircleSpellService.intercepts(player, targetSnapshot)) return false;
 
+        if ("world_sunder".equals(spellId)) {
+            return targetSnapshot.executeLocked(player,
+                    () -> Alpha65NinthCircleRuntime.worldSunder(player, range, power, targetSnapshot));
+        }
+
         if (DeathDoctrineService.handles(spellId)) {
             return targetSnapshot.executeLocked(player,
                     () -> DeathDoctrineService.execute(player, spellId, range, power, targetSnapshot));
@@ -200,7 +207,7 @@ public final class SpellKineticsService {
                 : sixthCircleOwned ? SixthCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : seventhCircleOwned ? SeventhCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
                 : eighthCircleOwned ? EighthCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
-                : ninthCircleOwned ? NinthCircleSpellService.execute(player, spellId, range, power, targetSnapshot)
+                : ninthCircleOwned ? Alpha65NinthCircleRuntime.executeOrDelegate(player, spellId, range, power, targetSnapshot)
                 : planarOwned ? PlanarSpellService.execute(player, spellId)
                 : simulacrumOwned ? SimulacrumService.execute(player, targetSnapshot)
                 : utilityOwned ? HighUtilitySpellService.execute(player, spellId, range, power, targetSnapshot)
@@ -254,11 +261,13 @@ public final class SpellKineticsService {
                 double range = pending.cast().range();
                 executed = pending.targetSnapshot().executeLocked(player,
                         () -> MeteorBarragePattern.withContext(seed, range,
-                                () -> NinthCircleSpellService.meteorImpact(player,
+                                () -> Alpha65NinthCircleRuntime.meteorImpact(player,
                                         pending.targetSnapshot().target(), pending.pulsePower(),
                                         pending.pulseIndex(), seed)));
                 if (executed && MeteorBarragePattern.isCrownStrike(range, pending.pulseIndex())) {
-                    MeteorCataclysmService.crownImpact(player, pending.targetSnapshot().target(),
+                    Vec3 grounded = Alpha65NinthCircleRuntime.groundedBarrageCenter(
+                            (ServerLevel) player.level(), pending.targetSnapshot().target());
+                    MeteorCataclysmService.crownImpact(player, grounded,
                             range, pending.pulsePower(), seed);
                 }
             } else {
