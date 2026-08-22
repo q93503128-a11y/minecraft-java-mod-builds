@@ -8,7 +8,9 @@ public enum BuildingType {
     FARM("farm", "농장", 52, 8, 13, 11, 7, 0),
     QUARRY("quarry", "채석장", 44, 28, 11, 11, 8, 0),
     MINE("mine", "광산", 68, 44, 11, 11, 9, 0),
-    WAREHOUSE("warehouse", "창고", 72, 36, 11, 9, 10, 0);
+    WAREHOUSE("warehouse", "창고", 72, 36, 11, 9, 10, 0),
+    BLACKSMITH("blacksmith", "대장간", 80, 52, 9, 9, 9, 0),
+    GUARD_POST("guard_post", "경비초소", 64, 48, 9, 9, 8, 0);
 
     private final String id;
     private final String displayName;
