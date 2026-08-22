@@ -59,6 +59,16 @@ public final class SettlementStorageService {
         return true;
     }
 
+    public static boolean consumeMetal(ServerLevel level, SettlementData data, long amount) {
+        if (amount <= 0L) return true;
+        List<BlockPos> positions = storagePositions(data);
+        if (!allStorageChunksLoaded(level, positions)) return false;
+        SettlementResources resources = scan(level, data);
+        if (resources.metal() < amount) return false;
+        remove(level, positions, amount, SettlementStorageService::isMetal);
+        return true;
+    }
+
     public static ItemStack insert(ServerLevel level, SettlementData data, ItemStack stack) {
         if (stack.isEmpty()) return ItemStack.EMPTY;
         ItemStack remaining = stack.copy();
