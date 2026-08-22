@@ -14,15 +14,18 @@ required = [
     JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
     JAVA / 'settlement/RoadConstructionState.java', JAVA / 'settlement/RoadSegment.java',
     JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementOutpostProductionService.java',
+    JAVA / 'settlement/OutpostBlueprints.java', JAVA / 'settlement/OutpostConstructionState.java',
     JAVA / 'settlement/OutpostRecord.java', JAVA / 'settlement/SettlementInventory.java',
     JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementTier.java',
     JAVA / 'command/SettlementCommands.java',
     JAVA / 'network/SettlementSnapshotPayload.java', JAVA / 'network/PlacementRequestPayload.java',
     JAVA / 'network/PlacementPreviewPayload.java', JAVA / 'network/RoadPlacementRequestPayload.java',
-    JAVA / 'network/RoadPreviewPayload.java', JAVA / 'network/SettlementNetwork.java',
+    JAVA / 'network/RoadPreviewPayload.java', JAVA / 'network/OutpostPlacementRequestPayload.java',
+    JAVA / 'network/OutpostPreviewPayload.java', JAVA / 'network/SettlementNetwork.java',
     JAVA / 'client/SettlementHudOverlay.java', JAVA / 'client/BuildingPlacementClient.java',
     JAVA / 'client/PlacementGhostRenderer.java', JAVA / 'client/RoadPlacementClient.java',
-    JAVA / 'client/RoadGhostRenderer.java', JAVA / 'client/FrontierSettlementClient.java',
+    JAVA / 'client/RoadGhostRenderer.java', JAVA / 'client/OutpostPlacementClient.java',
+    JAVA / 'client/OutpostGhostRenderer.java', JAVA / 'client/FrontierSettlementClient.java',
 ]
 missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing:
@@ -30,7 +33,7 @@ if missing:
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
 for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta',
-              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.15'):
+              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.16'):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
 
@@ -67,33 +70,57 @@ for token in ('MAX_ROUTE_LENGTH = 96', 'public static RouteCheck checkRoute', 'p
 if 'destroyBlock(' in road or 'dropResources(' in road:
     raise SystemExit('road preparation must not create loose drops')
 
+outpost = (JAVA / 'settlement/SettlementOutpostService.java').read_text(encoding='utf-8')
+for token in ('public static PlacementCheck checkPlacement', 'public static StartResult startAt',
+              'MAX_TARGET_DISTANCE_FROM_ROAD_END = 8', 'MAX_PLAYER_DISTANCE_FROM_ROAD_END = 48',
+              'nearestUnclaimedRoad', 'isRoadClaimed', 'gateFor(road)', 'assessSite',
+              'SettlementStorageService.consume(level, data, WOOD_COST, STONE_COST, 0L)',
+              'specializationDisplayName'):
+    if token not in outpost:
+        raise SystemExit(f'authoritative outpost placement invariant missing: {token}')
+if 'destroyBlock(' in outpost or 'dropResources(' in outpost:
+    raise SystemExit('outpost construction must not create loose item drops')
+
 network = (JAVA / 'network/SettlementNetwork.java').read_text(encoding='utf-8')
-for token in ('PROTOCOL = "3"', 'playToServer(PlacementRequestPayload.TYPE',
+for token in ('PROTOCOL = "4"', 'playToServer(PlacementRequestPayload.TYPE',
               'playToClient(PlacementPreviewPayload.TYPE', 'playToServer(RoadPlacementRequestPayload.TYPE',
-              'playToClient(RoadPreviewPayload.TYPE', 'SettlementRoadService.checkRoute',
-              'SettlementRoadService.startAt'):
+              'playToClient(RoadPreviewPayload.TYPE', 'playToServer(OutpostPlacementRequestPayload.TYPE',
+              'playToClient(OutpostPreviewPayload.TYPE', 'SettlementOutpostService.checkPlacement',
+              'SettlementOutpostService.startAt'):
     if token not in network:
         raise SystemExit(f'placement networking invariant missing: {token}')
 
 building_client = (JAVA / 'client/BuildingPlacementClient.java').read_text(encoding='utf-8')
 for token in ('GLFW.GLFW_KEY_B', 'GLFW.GLFW_KEY_N', 'GLFW.GLFW_KEY_R', 'GLFW.GLFW_KEY_ENTER',
-              'RoadPlacementClient.cancel()', 'public static void cancel()'):
+              'RoadPlacementClient.cancel()', 'OutpostPlacementClient.cancel()', 'public static void cancel()'):
     if token not in building_client:
         raise SystemExit(f'building client invariant missing: {token}')
 
 road_client = (JAVA / 'client/RoadPlacementClient.java').read_text(encoding='utf-8')
 for token in ('GLFW.GLFW_KEY_J', 'GLFW.GLFW_KEY_ENTER', 'GLFW.GLFW_KEY_BACKSPACE',
-              'BuildingPlacementClient.cancel()', 'ClientPacketDistributor.sendToServer',
-              'RoadPlacementRequestPayload', 'ghostBlocks()', 'next.confirmed()'):
+              'BuildingPlacementClient.cancel()', 'OutpostPlacementClient.cancel()',
+              'ClientPacketDistributor.sendToServer', 'RoadPlacementRequestPayload', 'ghostBlocks()', 'next.confirmed()'):
     if token not in road_client:
         raise SystemExit(f'road planning client invariant missing: {token}')
 
-for renderer_name in ('PlacementGhostRenderer.java', 'RoadGhostRenderer.java'):
+outpost_client = (JAVA / 'client/OutpostPlacementClient.java').read_text(encoding='utf-8')
+for token in ('GLFW.GLFW_KEY_K', 'GLFW.GLFW_KEY_ENTER', 'BuildingPlacementClient.cancel()',
+              'RoadPlacementClient.cancel()', 'OutpostPlacementRequestPayload',
+              'ClientPacketDistributor.sendToServer', 'next.confirmed()'):
+    if token not in outpost_client:
+        raise SystemExit(f'outpost planning client invariant missing: {token}')
+
+for renderer_name in ('PlacementGhostRenderer.java', 'RoadGhostRenderer.java', 'OutpostGhostRenderer.java'):
     renderer = (JAVA / 'client' / renderer_name).read_text(encoding='utf-8')
     for token in ('ExtractLevelRenderStateEvent', 'SubmitCustomGeometryEvent', 'submitShapeOutline',
                   'VALID_COLOR', 'INVALID_COLOR'):
         if token not in renderer:
             raise SystemExit(f'3D ghost invariant missing in {renderer_name}: {token}')
+
+outpost_renderer = (JAVA / 'client/OutpostGhostRenderer.java').read_text(encoding='utf-8')
+for token in ('OutpostBlueprints.create(state)', 'preview.roadIndex() < 0', 'preview.valid()'):
+    if token not in outpost_renderer:
+        raise SystemExit(f'outpost ghost alignment invariant missing: {token}')
 
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('BuildingType.WAREHOUSE', 'WarehouseLayout.storagePositions(building)',
@@ -119,4 +146,4 @@ worker = (JAVA / 'settlement/SettlementWorkerService.java').read_text(encoding='
 if 'destroyBlock(' in worker or 'dropResources(' in worker:
     raise SystemExit('workers must not create loose drops through block destruction')
 
-print('Frontier Settlement alpha.15 source audit: PASS')
+print('Frontier Settlement alpha.16 source audit: PASS')
