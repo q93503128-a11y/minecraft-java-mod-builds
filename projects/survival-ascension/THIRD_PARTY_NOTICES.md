@@ -28,6 +28,13 @@ License: MIT License
 
 Survival Ascension independently implements Construction after studying Building Gadgets 2's permissively licensed material-backed building, interaction/protection checks, NeoForge placement hooks and tick-distributed work. Full notice: `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
 
+## Mob Champions
+Source project: `wendall911/MobChampions`  
+Copyright (c) 2024 Wendall Cada  
+License: MIT License
+
+Survival Ascension adapts Mob Champions' permissively licensed 26.2 patterns for rank-driven permanent entity attribute modifiers and rank-aware hostile-mob construction. Survival Ascension uses its own progression-scaled spawn probabilities, three rank curve, four combat traits, NBT keys and rewards. Full notice: `META-INF/third-party/MOB_CHAMPIONS_MIT.txt`.
+
 ## MIT License text
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +61,7 @@ Project MMO 2.0 is **reference-only**. No source, assets, textures, data, namesp
 Source project: `alRex-U/ParCool`  
 License: LGPL-3.0
 
-ParCool is **reference-only** for Survival Ascension 0.8. Its public movement vocabulary (fast run, roll, vault, wall movement and related terrain-interaction ideas) was studied to identify what makes traversal mechanically interesting. Survival Ascension's Mobility implementation is independent and uses vanilla/NeoForge 26.2 attributes plus its own server-authoritative dash logic. No ParCool source, animations, assets or namespace are copied or bundled.
+ParCool is **reference-only** for Survival Ascension. Its public movement vocabulary was studied to identify what makes traversal mechanically interesting. Survival Ascension's Mobility implementation is independent and uses vanilla/NeoForge 26.2 attributes plus its own server-authoritative dash logic. No ParCool source, animations, assets or namespace are copied or bundled.
 
 ## Other restricted/reference-only mods
 Handwerk, NeoEnchant+ and other custom-license/ARR projects are used only for behavior and UX study unless their exact license explicitly permits reuse. No restricted source or assets are bundled.

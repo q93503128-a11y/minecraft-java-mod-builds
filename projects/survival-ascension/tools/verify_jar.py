@@ -20,6 +20,7 @@ with zipfile.ZipFile(jar) as zf:
         "META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt",
         "META-INF/third-party/MINEMENU_MIT.txt",
         "META-INF/third-party/BUILDING_GADGETS_2_MIT.txt",
+        "META-INF/third-party/MOB_CHAMPIONS_MIT.txt",
         "kr/moonseungjun/survivalascension/SurvivalAscension.class",
         "kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.class",
@@ -32,6 +33,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/network/ConstructionModePayload.class",
         "kr/moonseungjun/survivalascension/mobility/MobilityProgression.class",
         "kr/moonseungjun/survivalascension/network/MobilityActionPayload.class",
+        "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
     ]:
         if name not in names: raise SystemExit(f"required JAR entry missing: {name}")
     for notice, line in [
@@ -39,6 +41,7 @@ with zipfile.ZipFile(jar) as zf:
         ("META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt", "Copyright (c) 2026 Kestalkayden"),
         ("META-INF/third-party/MINEMENU_MIT.txt", "Copyright (c) 2013 Dylan Miller"),
         ("META-INF/third-party/BUILDING_GADGETS_2_MIT.txt", "Copyright (c) 2023 Direwolf20-MC"),
+        ("META-INF/third-party/MOB_CHAMPIONS_MIT.txt", "Copyright (c) 2024 Wendall Cada"),
     ]:
         text = zf.read(notice).decode("utf-8")
         if line not in text or "MIT" not in text: raise SystemExit(f"invalid packaged notice: {notice}")

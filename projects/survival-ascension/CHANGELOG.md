@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0-alpha.1
+- Added progression-scaled elite hostile mobs so the world grows with player power instead of remaining static.
+- Nearby players' average level across all six skills drives elite spawn chance and higher-rank odds.
+- Added three persistent ranks: Elite I, Ascended II, Mythic III.
+- Rank bonuses combine max health, armor, movement speed, attack damage and knockback resistance instead of health-only scaling.
+- Added four persistent combat traits: Swift, Bulwark, Vampiric and Berserker.
+- Berserkers gain additional low-health damage; Vampiric elites heal from actual health damage dealt to players.
+- Mythic spawns announce themselves to nearby players and mythic kills grant additional vanilla XP.
+- Spawner-origin mobs are excluded from elite assignment to prevent repeatable elite-reward farms.
+- Elite rank/trait data uses persistent entity NBT and permanent attribute modifiers.
+- Adapted rank/permanent-attribute patterns from Mob Champions 26.2 under MIT and packaged its notice.
+
 ## 0.8.0-alpha.1
 - Activated Mobility as the sixth live skill.
 - Added server-tracked on-foot sprint-distance XP; teleport, flight, swimming and riding do not count.

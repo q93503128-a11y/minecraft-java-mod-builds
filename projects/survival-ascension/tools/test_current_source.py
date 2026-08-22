@@ -8,6 +8,7 @@ required = [
     "gradle/wrapper/gradle-wrapper.jar", "gradle/wrapper/gradle-wrapper.properties", "src/main/templates/META-INF/neoforge.mods.toml",
     "src/main/resources/META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt", "src/main/resources/META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt",
     "src/main/resources/META-INF/third-party/MINEMENU_MIT.txt", "src/main/resources/META-INF/third-party/BUILDING_GADGETS_2_MIT.txt",
+    "src/main/resources/META-INF/third-party/MOB_CHAMPIONS_MIT.txt",
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.java",
@@ -17,15 +18,17 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/network/MobilityActionPayload.java",
     "src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java",
 ]
 errors=[]
 for rel in required:
     if not (ROOT / rel).exists(): errors.append(f"missing: {rel}")
 props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
-for needle in ["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.8.0-alpha.1"]:
+for needle in ["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.9.0-alpha.1"]:
     if needle not in props: errors.append(f"gradle.properties missing {needle}")
 main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
-for needle in ['VERSION = "0.8.0-alpha.1"',"ConstructionProgression::onBlockPlaced","MobilityProgression::onPlayerTick"]:
+for needle in ['VERSION = "0.9.0-alpha.1"',"ConstructionProgression::onBlockPlaced","MobilityProgression::onPlayerTick",
+               "EliteMobSystem::onFinalizeSpawn","EliteMobSystem::onDamagePre","EliteMobSystem::onDamagePost","EliteMobSystem::onLivingDeath"]:
     if needle not in main: errors.append(f"main registration missing: {needle}")
 client=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java").read_text(encoding="utf-8")
 for needle in ["InputConstants.KEY_M","InputConstants.KEY_R",'key.survivalascension.mobility_action',"MobilityActionPayload"]:
@@ -36,6 +39,20 @@ for needle in ['PROTOCOL = "4"',"registrar.playToServer(MobilityActionPayload.TY
 mobility=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java").read_text(encoding="utf-8")
 for needle in ["Attributes.MOVEMENT_SPEED","Attributes.STEP_HEIGHT","Attributes.SAFE_FALL_DISTANCE","DASH_READY_TICK","AIR_DASH_USED","distance <= 1.75D","player.hurtMarked = true"]:
     if needle not in mobility: errors.append(f"mobility safety contract missing: {needle}")
+elite=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java").read_text(encoding="utf-8")
+for needle in ["FinalizeSpawnEvent","contains(\"SPAWNER\")","averageSkillLevel","Rank.MYTHIC_III","Trait.VAMPIRIC","Trait.BERSERKER",
+               "getPersistentData()","addPermanentModifier","Attributes.MAX_HEALTH","Attributes.ARMOR","Attributes.MOVEMENT_SPEED","Attributes.ATTACK_DAMAGE","Attributes.KNOCKBACK_RESISTANCE"]:
+    if needle not in elite: errors.append(f"elite-world contract missing: {needle}")
+for trait in ["SWIFT", "BULWARK", "VAMPIRIC", "BERSERKER"]:
+    if trait not in elite: errors.append(f"elite trait missing: {trait}")
+for rank in ["ELITE_I", "ASCENDED_II", "MYTHIC_III"]:
+    if rank not in elite: errors.append(f"elite rank missing: {rank}")
+notice=(ROOT/"src/main/resources/META-INF/third-party/MOB_CHAMPIONS_MIT.txt").read_text(encoding="utf-8")
+if "Copyright (c) 2024 Wendall Cada" not in notice or "MIT License" not in notice:
+    errors.append("Mob Champions MIT notice invalid")
+third=(ROOT/"THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+if "Mob Champions" not in third or "wendall911/MobChampions" not in third:
+    errors.append("Mob Champions attribution missing")
 for forbidden in ["alrex.parcool", "com.alrex", "parcool.client", "parcool.common"]:
     for path in (ROOT/"src").rglob("*.java"):
         if forbidden in path.read_text(encoding="utf-8",errors="ignore").lower(): errors.append(f"ParCool LGPL implementation marker leaked: {path.relative_to(ROOT)}")
@@ -52,6 +69,7 @@ if errors:
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
 print("- all six skills active")
-print("- Mobility uses server-tracked traversal, vanilla attributes and server-authoritative R dash")
-print("- Lv.60 air dash is limited to once before landing; teleport/flight/riding do not grant traversal XP")
-print("- restricted/copyleft reference mods remain source/asset clean")
+print("- Mobility remains server-authoritative")
+print("- elite world scales from nearby six-skill progression")
+print("- three persistent ranks + four traits + spawner anti-farm contract present")
+print("- Mob Champions MIT notice packaged; restricted/copyleft reference mods remain source/asset clean")
