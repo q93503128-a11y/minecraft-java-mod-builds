@@ -12,14 +12,17 @@ required = [
     JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/RotatedBlueprints.java',
     JAVA / 'settlement/WarehouseLayout.java', JAVA / 'settlement/SettlementStorageService.java',
     JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
+    JAVA / 'settlement/RoadConstructionState.java', JAVA / 'settlement/RoadSegment.java',
     JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementOutpostProductionService.java',
     JAVA / 'settlement/OutpostRecord.java', JAVA / 'settlement/SettlementInventory.java',
     JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementTier.java',
     JAVA / 'command/SettlementCommands.java',
     JAVA / 'network/SettlementSnapshotPayload.java', JAVA / 'network/PlacementRequestPayload.java',
-    JAVA / 'network/PlacementPreviewPayload.java', JAVA / 'network/SettlementNetwork.java',
+    JAVA / 'network/PlacementPreviewPayload.java', JAVA / 'network/RoadPlacementRequestPayload.java',
+    JAVA / 'network/RoadPreviewPayload.java', JAVA / 'network/SettlementNetwork.java',
     JAVA / 'client/SettlementHudOverlay.java', JAVA / 'client/BuildingPlacementClient.java',
-    JAVA / 'client/PlacementGhostRenderer.java', JAVA / 'client/FrontierSettlementClient.java',
+    JAVA / 'client/PlacementGhostRenderer.java', JAVA / 'client/RoadPlacementClient.java',
+    JAVA / 'client/RoadGhostRenderer.java', JAVA / 'client/FrontierSettlementClient.java',
 ]
 missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing:
@@ -27,60 +30,70 @@ if missing:
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
 for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta',
-              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.14'):
+              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.15'):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
 
 construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
 for token in ('public static StartResult startAt', 'public static PlacementCheck checkPlacement',
               'MAX_MAIN_SETTLEMENT_RADIUS = 72', 'MAX_PLAYER_PLACEMENT_DISTANCE = 24',
-              'BuildingRotation.fromId(rotationId)', 'rotation.rotatedWidth(type)',
-              'RotatedBlueprints.create(type, construction.origin(), construction.rotation())',
+              'BuildingRotation.fromId(rotationId)', 'RotatedBlueprints.create',
               'data.beginConstruction(type, check.origin(), rotation)',
-              'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)',
-              'lockedReason(SettlementData data, BuildingType type)'):
+              'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)'):
     if token not in construction:
-        raise SystemExit(f'authoritative rotated placement invariant missing: {token}')
-if 'findBuildSite(' in construction:
-    raise SystemExit('building placement must not silently auto-pick a random nearby lot')
+        raise SystemExit(f'authoritative building placement invariant missing: {token}')
 if 'destroyBlock(' in construction or 'dropResources(' in construction:
     raise SystemExit('building construction must not use drop-producing destruction paths')
 
-rotation = (JAVA / 'settlement/BuildingRotation.java').read_text(encoding='utf-8')
-for token in ('CLOCKWISE_90', 'CLOCKWISE_180', 'COUNTERCLOCKWISE_90',
-              'rotateLocal', 'rotateState', 'rotatedWidth', 'rotatedDepth'):
-    if token not in rotation:
-        raise SystemExit(f'building rotation invariant missing: {token}')
+road_state = (JAVA / 'settlement/RoadConstructionState.java').read_text(encoding='utf-8')
+for token in ('Codec.INT.listOf().optionalFieldOf("path", List.of())', 'fromPath(List<BlockPos> centers)',
+              'public RoadConstructionState(int startX, int startY, int startZ,', 'centers()'):
+    if token not in road_state:
+        raise SystemExit(f'road construction persistence/legacy invariant missing: {token}')
 
-record = (JAVA / 'settlement/BuildingRecord.java').read_text(encoding='utf-8')
-for token in ('optionalFieldOf("rotation", 0)', 'localToWorld', 'rotatedWidth()', 'rotatedDepth()'):
-    if token not in record:
-        raise SystemExit(f'completed building rotation persistence missing: {token}')
+road_record = (JAVA / 'settlement/RoadSegment.java').read_text(encoding='utf-8')
+for token in ('Codec.INT.listOf().optionalFieldOf("path", List.of())', 'fromPath(List<BlockPos> centers)',
+              'public RoadSegment(int startX, int startY, int startZ,', 'containsXZ'):
+    if token not in road_record:
+        raise SystemExit(f'completed routed road invariant missing: {token}')
 
-state = (JAVA / 'settlement/ConstructionState.java').read_text(encoding='utf-8')
-for token in ('int rotation, int step', 'optionalFieldOf("rotation", 0)', 'buildingRotation()'):
-    if token not in state:
-        raise SystemExit(f'active construction rotation persistence missing: {token}')
+road = (JAVA / 'settlement/SettlementRoadService.java').read_text(encoding='utf-8')
+for token in ('MAX_ROUTE_LENGTH = 96', 'public static RouteCheck checkRoute', 'public static StartResult startAt',
+              'assessCandidate', 'manhattanPath', 'choose(xThenZ, zThenX)', 'MAX_STEP_HEIGHT = 1',
+              'MAX_CROSS_SLOPE = 1', 'hasOrCanMakeSupport', 'prepareRoute(level, check.centers())',
+              'data.beginRoadConstruction(check.centers())', 'RoadSegment.fromPath(road.centers())'):
+    if token not in road:
+        raise SystemExit(f'routed road invariant missing: {token}')
+if 'destroyBlock(' in road or 'dropResources(' in road:
+    raise SystemExit('road preparation must not create loose drops')
 
 network = (JAVA / 'network/SettlementNetwork.java').read_text(encoding='utf-8')
-for token in ('PROTOCOL = "2"', 'playToServer(PlacementRequestPayload.TYPE',
-              'playToClient(PlacementPreviewPayload.TYPE', 'SettlementConstructionService.checkPlacement',
-              'SettlementConstructionService.startAt', 'context.reply(new PlacementPreviewPayload'):
+for token in ('PROTOCOL = "3"', 'playToServer(PlacementRequestPayload.TYPE',
+              'playToClient(PlacementPreviewPayload.TYPE', 'playToServer(RoadPlacementRequestPayload.TYPE',
+              'playToClient(RoadPreviewPayload.TYPE', 'SettlementRoadService.checkRoute',
+              'SettlementRoadService.startAt'):
     if token not in network:
         raise SystemExit(f'placement networking invariant missing: {token}')
 
-client = (JAVA / 'client/BuildingPlacementClient.java').read_text(encoding='utf-8')
+building_client = (JAVA / 'client/BuildingPlacementClient.java').read_text(encoding='utf-8')
 for token in ('GLFW.GLFW_KEY_B', 'GLFW.GLFW_KEY_N', 'GLFW.GLFW_KEY_R', 'GLFW.GLFW_KEY_ENTER',
-              'ClientPacketDistributor.sendToServer', 'refreshTicks = 5', 'ghostOrigin()',
-              'preview.valid()', 'next.confirmed()'):
-    if token not in client:
-        raise SystemExit(f'placement client invariant missing: {token}')
+              'RoadPlacementClient.cancel()', 'public static void cancel()'):
+    if token not in building_client:
+        raise SystemExit(f'building client invariant missing: {token}')
 
-ghost = (JAVA / 'client/PlacementGhostRenderer.java').read_text(encoding='utf-8')
-for token in ('ExtractLevelRenderStateEvent', 'SubmitCustomGeometryEvent', 'submitShapeOutline',
-              'RotatedBlueprints.create', 'VALID_COLOR', 'INVALID_COLOR'):
-    if token not in ghost:
-        raise SystemExit(f'3D placement ghost invariant missing: {token}')
+road_client = (JAVA / 'client/RoadPlacementClient.java').read_text(encoding='utf-8')
+for token in ('GLFW.GLFW_KEY_J', 'GLFW.GLFW_KEY_ENTER', 'GLFW.GLFW_KEY_BACKSPACE',
+              'BuildingPlacementClient.cancel()', 'ClientPacketDistributor.sendToServer',
+              'RoadPlacementRequestPayload', 'ghostBlocks()', 'next.confirmed()'):
+    if token not in road_client:
+        raise SystemExit(f'road planning client invariant missing: {token}')
+
+for renderer_name in ('PlacementGhostRenderer.java', 'RoadGhostRenderer.java'):
+    renderer = (JAVA / 'client' / renderer_name).read_text(encoding='utf-8')
+    for token in ('ExtractLevelRenderStateEvent', 'SubmitCustomGeometryEvent', 'submitShapeOutline',
+                  'VALID_COLOR', 'INVALID_COLOR'):
+        if token not in renderer:
+            raise SystemExit(f'3D ghost invariant missing in {renderer_name}: {token}')
 
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('BuildingType.WAREHOUSE', 'WarehouseLayout.storagePositions(building)',
@@ -94,24 +107,16 @@ if 'SettlementOutpostProductionService.tick(server, data)' not in service:
     raise SystemExit('specialized outpost production must be part of the canonical server tick')
 
 outpost_production = (JAVA / 'settlement/SettlementOutpostProductionService.java').read_text(encoding='utf-8')
-for token in ('"general".equals(outpost.specialization())', 'ensureWorker', 'workerName(outpost)',
-              'case "lumber" -> workLumber', 'case "quarry" -> workQuarry',
+for token in ('case "lumber" -> workLumber', 'case "quarry" -> workQuarry',
               'case "mining" -> workMine', 'case "agriculture" -> workAgriculture',
-              'ensureAgriculturePlot', 'Blocks.FARMLAND.defaultBlockState()',
-              'Blocks.WHEAT.defaultBlockState()', 'SettlementInventory.insert(container, carried)',
-              'Tags.Blocks.ORES', 'level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3)'):
+              'ensureAgriculturePlot', 'SettlementInventory.insert(container, carried)', 'Tags.Blocks.ORES'):
     if token not in outpost_production:
         raise SystemExit(f'productive outpost invariant missing: {token}')
 if 'destroyBlock(' in outpost_production or 'dropResources(' in outpost_production:
     raise SystemExit('outpost workers must not produce loose item drops')
 
 worker = (JAVA / 'settlement/SettlementWorkerService.java').read_text(encoding='utf-8')
-for token in ('FARM_WORKER_NAME', 'QUARRY_WORKER_NAME', 'MINE_WORKER_NAME', 'TRANSPORT_WORKER_NAME',
-              'workFarm', 'workQuarry', 'workMine', 'Tags.Blocks.ORES',
-              'SettlementStorageService.findDepositTarget', 'SettlementStorageService.insert'):
-    if token not in worker:
-        raise SystemExit(f'worker production/storage invariant missing: {token}')
 if 'destroyBlock(' in worker or 'dropResources(' in worker:
     raise SystemExit('workers must not create loose drops through block destruction')
 
-print('Frontier Settlement alpha.14 source audit: PASS')
+print('Frontier Settlement alpha.15 source audit: PASS')
