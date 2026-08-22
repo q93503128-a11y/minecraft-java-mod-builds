@@ -17,6 +17,8 @@ import java.util.List;
 public final class SettlementOutpostService {
     public static final long WOOD_COST = 72L;
     public static final long STONE_COST = 48L;
+    public static final int MAX_TARGET_DISTANCE_FROM_ROAD_END = 8;
+    public static final int MAX_PLAYER_DISTANCE_FROM_ROAD_END = 48;
     private static final int DIRECT_BLOCK_UPDATE = 2;
     private static final int NORMAL_BLOCK_UPDATE = 3;
     private static final double BUILDER_WORK_RANGE_SQR = 22.0D;
@@ -24,8 +26,64 @@ public final class SettlementOutpostService {
     private SettlementOutpostService() {}
 
     public record StartResult(boolean started, String message) {}
+    public record PlacementCheck(boolean valid, int roadIndex, BlockPos gate,
+                                 int directionX, int directionZ,
+                                 String specialization, String message) {
+        public static PlacementCheck invalid(String message) {
+            return new PlacementCheck(false, -1, BlockPos.ZERO, 0, 0, "general", message);
+        }
+    }
 
+    /** Legacy debug seam. Normal play uses checkPlacement/startAt through the placement payload. */
     public static StartResult start(ServerPlayer player) {
+        SettlementData data = SettlementData.get(player.level().getServer());
+        int roadIndex = latestUnclaimedRoad(data);
+        if (roadIndex < 0) return new StartResult(false, "연결되지 않은 완성 도로가 필요합니다.");
+        return startAt(player, roadIndex);
+    }
+
+    public static PlacementCheck checkPlacement(ServerPlayer player, BlockPos selected) {
+        MinecraftServer server = player.level().getServer();
+        SettlementData data = SettlementData.get(server);
+        if (!data.founded()) return PlacementCheck.invalid("먼저 공동 마을을 시작해야 합니다.");
+        if (player.level() != server.overworld()) return PlacementCheck.invalid("전초기지는 오버월드에만 건설할 수 있습니다.");
+        if (data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()) {
+            return PlacementCheck.invalid("현재 공사가 끝난 뒤 전초기지를 배치해 주세요.");
+        }
+
+        int roadIndex = nearestUnclaimedRoad(data, selected);
+        if (roadIndex < 0) {
+            return PlacementCheck.invalid("사용하지 않은 완성 도로 끝을 가리켜 주세요.");
+        }
+
+        RoadSegment road = data.roads().get(roadIndex);
+        BlockPos roadEnd = road.end();
+        long playerDistance = player.blockPosition().distSqr(roadEnd);
+        if (playerDistance > (long) MAX_PLAYER_DISTANCE_FROM_ROAD_END * MAX_PLAYER_DISTANCE_FROM_ROAD_END) {
+            return new PlacementCheck(false, roadIndex, gateFor(road), road.directionX(), road.directionZ(),
+                    "general", "전초기지를 세울 도로 끝에서 48블록 안으로 이동해 주세요.");
+        }
+
+        BlockPos gate = gateFor(road);
+        ServerLevel level = server.overworld();
+        if (!assessSite(level, data, roadIndex, gate, road.directionX(), road.directionZ())) {
+            return new PlacementCheck(false, roadIndex, gate, road.directionX(), road.directionZ(),
+                    "general", "도로 끝의 9×9 부지가 안전하지 않습니다. 물·기존 건축물·큰 경사를 피해주세요.");
+        }
+
+        BlockPos center = outpostCenter(gate, road.directionX(), road.directionZ());
+        String specialization = detectSpecialization(level, center);
+        SettlementService.refreshResources(server, data);
+        if (data.resources().wood() < WOOD_COST || data.resources().stone() < STONE_COST) {
+            return new PlacementCheck(false, roadIndex, gate, road.directionX(), road.directionZ(), specialization,
+                    "전초기지 필요 자원: 목재 " + WOOD_COST + " · 석재 " + STONE_COST);
+        }
+
+        return new PlacementCheck(true, roadIndex, gate, road.directionX(), road.directionZ(), specialization,
+                "배치 가능 · " + specializationDisplayName(specialization) + " 후보");
+    }
+
+    public static StartResult startAt(ServerPlayer player, int roadIndex) {
         MinecraftServer server = player.level().getServer();
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return new StartResult(false, "먼저 공동 마을을 시작해야 합니다.");
@@ -33,21 +91,26 @@ public final class SettlementOutpostService {
         if (data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()) {
             return new StartResult(false, "현재 공사가 끝난 뒤 전초기지를 시작해 주세요.");
         }
-
-        int roadIndex = latestUnclaimedRoad(data);
-        if (roadIndex < 0) return new StartResult(false, "연결되지 않은 완성 도로가 필요합니다. 먼저 개척 도로를 완성해 주세요.");
+        if (roadIndex < 0 || roadIndex >= data.roads().size() || isRoadClaimed(data, roadIndex)) {
+            return new StartResult(false, "선택한 도로는 전초기지에 연결할 수 없습니다.");
+        }
 
         RoadSegment road = data.roads().get(roadIndex);
-        BlockPos gate = road.end().offset(road.directionX(), 0, road.directionZ());
+        BlockPos gate = gateFor(road);
+        if (player.blockPosition().distSqr(road.end())
+                > (long) MAX_PLAYER_DISTANCE_FROM_ROAD_END * MAX_PLAYER_DISTANCE_FROM_ROAD_END) {
+            return new StartResult(false, "선택한 도로 끝에서 48블록 안으로 이동해 주세요.");
+        }
+
         ServerLevel level = server.overworld();
         if (!assessSite(level, data, roadIndex, gate, road.directionX(), road.directionZ())) {
-            return new StartResult(false, "도로 끝의 9×9 전초기지 부지가 안전하지 않습니다. 물·기존 건축물·큰 경사를 피한 도로를 사용해 주세요.");
+            return new StartResult(false, "도로 끝의 전초기지 부지가 더 이상 안전하지 않습니다.");
         }
 
         SettlementService.refreshResources(server, data);
         if (!SettlementStorageService.consume(level, data, WOOD_COST, STONE_COST, 0L)) {
             SettlementService.refreshResources(server, data);
-            return new StartResult(false, "전초기지 필요 자원: 목재 " + WOOD_COST + ", 석재 " + STONE_COST + ". 자원이 부족해 착공하지 않았습니다.");
+            return new StartResult(false, "전초기지 필요 자원이 부족하거나 착공 직전에 재고가 변경되었습니다. 자원은 부분 차감되지 않습니다.");
         }
 
         prepareSite(level, gate, road.directionX(), road.directionZ());
@@ -123,6 +186,14 @@ public final class SettlementOutpostService {
         return true;
     }
 
+    private static BlockPos gateFor(RoadSegment road) {
+        return road.end().offset(road.directionX(), 0, road.directionZ());
+    }
+
+    private static BlockPos outpostCenter(BlockPos gate, int directionX, int directionZ) {
+        return gate.offset(directionX * 4, 0, directionZ * 4);
+    }
+
     private static String detectSpecialization(ServerLevel level, BlockPos center) {
         int ores = 0;
         int logs = 0;
@@ -148,18 +219,43 @@ public final class SettlementOutpostService {
         return "general";
     }
 
+    public static String specializationDisplayName(String specialization) {
+        return switch (specialization) {
+            case "mining" -> "광업";
+            case "lumber" -> "벌목";
+            case "agriculture" -> "농업";
+            case "quarry" -> "채석";
+            default -> "일반";
+        };
+    }
+
     private static boolean isStone(BlockState state) {
         return state.is(Blocks.STONE) || state.is(Blocks.DEEPSLATE) || state.is(Blocks.ANDESITE)
                 || state.is(Blocks.DIORITE) || state.is(Blocks.GRANITE) || state.is(Blocks.TUFF);
     }
 
     private static int latestUnclaimedRoad(SettlementData data) {
-        for (int i = data.roads().size() - 1; i >= 0; i--) {
-            int roadIndex = i;
-            boolean used = data.outposts().stream().anyMatch(outpost -> outpost.roadIndex() == roadIndex);
-            if (!used) return i;
-        }
+        for (int i = data.roads().size() - 1; i >= 0; i--) if (!isRoadClaimed(data, i)) return i;
         return -1;
+    }
+
+    private static int nearestUnclaimedRoad(SettlementData data, BlockPos selected) {
+        long bestDistance = (long) MAX_TARGET_DISTANCE_FROM_ROAD_END * MAX_TARGET_DISTANCE_FROM_ROAD_END + 1L;
+        int bestIndex = -1;
+        for (int i = 0; i < data.roads().size(); i++) {
+            if (isRoadClaimed(data, i)) continue;
+            long distance = selected.distSqr(data.roads().get(i).end());
+            if (distance <= (long) MAX_TARGET_DISTANCE_FROM_ROAD_END * MAX_TARGET_DISTANCE_FROM_ROAD_END
+                    && distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = i;
+            }
+        }
+        return bestIndex;
+    }
+
+    private static boolean isRoadClaimed(SettlementData data, int roadIndex) {
+        return data.outposts().stream().anyMatch(outpost -> outpost.roadIndex() == roadIndex);
     }
 
     private static boolean assessSite(ServerLevel level, SettlementData data, int roadIndex,
