@@ -46,10 +46,10 @@ public final class BuildingBlueprints {
         // partially built windows never detach or visually disconnect while construction is active.
         for (int y = 1; y <= 4; y++) {
             for (int x = 0; x < 9; x++) {
-                if (!isHouseOpening(x, y, 0)) {
+                if (!isHouseDoorOpening(x, y, 0)) {
                     b.put(x, y, 0, houseWallState(x, y, 0), Phase.FRAME_AND_WALLS);
                 }
-                if (!isHouseOpening(x, y, 8)) {
+                if (!isHouseDoorOpening(x, y, 8)) {
                     b.put(x, y, 8, houseWallState(x, y, 8), Phase.FRAME_AND_WALLS);
                 }
             }
@@ -115,10 +115,8 @@ public final class BuildingBlueprints {
         return b.build();
     }
 
-    private static boolean isHouseOpening(int x, int y, int z) {
-        if (z == 8 && x == 4 && (y == 1 || y == 2)) return true;
-        if ((z == 0 || z == 8) && (x == 2 || x == 6) && (y == 2 || y == 3)) return true;
-        return false;
+    private static boolean isHouseDoorOpening(int x, int y, int z) {
+        return z == 8 && x == 4 && (y == 1 || y == 2);
     }
 
     private static BlockState houseWallState(int x, int y, int z) {
