@@ -5,6 +5,7 @@ package kr.moonseungjun.survivalascension.network;
 import kr.moonseungjun.survivalascension.construction.ConstructionMode;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import kr.moonseungjun.survivalascension.equipment.EquipmentReforgeService;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureService;
 import kr.moonseungjun.survivalascension.mining.MiningMode;
 import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
@@ -16,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class SkillNetwork {
-    private static final String PROTOCOL = "6";
+    private static final String PROTOCOL = "7";
     private static volatile Consumer<SkillUpdatePayload> updateSink = payload -> {};
     private static volatile Consumer<SkillSnapshotPayload> snapshotSink = payload -> {};
     private SkillNetwork() {}
@@ -40,6 +41,10 @@ public final class SkillNetwork {
         registrar.playToServer(EquipmentActionPayload.TYPE, EquipmentActionPayload.CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) EquipmentReforgeService.perform(player, payload.action());
+                }));
+        registrar.playToServer(InfrastructureActionPayload.TYPE, InfrastructureActionPayload.CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) InfrastructureService.perform(player, payload.projectId(), payload.action());
                 }));
     }
 
