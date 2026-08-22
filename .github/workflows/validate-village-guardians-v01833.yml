@@ -127,7 +127,8 @@ jobs:
             "${PROJECT_DIR}/tools/test_ui_layout_contract.py" \
             "${PROJECT_DIR}/tools/test_v01818_growth_consumables.py" \
             "${PROJECT_DIR}/tools/test_v01832_ranger_wall_traffic.py" \
-            "${PROJECT_DIR}/tools/test_v01833_playtest_ui_wall.py"
+            "${PROJECT_DIR}/tools/test_v01833_playtest_ui_wall.py" \
+            "${PROJECT_DIR}/tools/test_v0187_balance_ui.py"
           git diff --cached --check
           git commit -m 'fix(village): correct playtest UI and wall combat geometry [skip ci]'
           for attempt in 1 2 3 4 5 6; do
