@@ -16,7 +16,8 @@ public final class AscensionCommands {
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("ascension")
-                .then(Commands.literal("stats").executes(context -> showStats(context.getSource())))
+                .then(Commands.literal("stats")
+                        .executes(context -> showStats(context.getSource().getPlayerOrException())))
                 .then(skillSetLevelNode("mining", SkillType.MINING))
                 .then(skillSetLevelNode("woodcutting", SkillType.WOODCUTTING))
                 .then(skillSetLevelNode("harvesting", SkillType.HARVESTING)));
@@ -28,20 +29,21 @@ public final class AscensionCommands {
                 .then(Commands.literal("setlevel")
                         .then(Commands.argument("level", IntegerArgumentType.integer(0, SkillTuning.MAX_LEVEL))
                                 .executes(context -> setLevel(
-                                        context.getSource(), skill, IntegerArgumentType.getInteger(context, "level")))));
+                                        context.getSource().getPlayerOrException(),
+                                        skill,
+                                        IntegerArgumentType.getInteger(context, "level")))));
     }
 
-    private static int showStats(CommandSourceStack source) {
-        ServerPlayer player = source.getPlayerOrException();
+    private static int showStats(ServerPlayer player) {
         SkillProgressData data = SkillProgressData.get(player);
-        source.sendSuccess(() -> Component.literal("§6[Survival Ascension] §f숙련 현황"), false);
-        sendSkillLine(source, data, player, SkillType.MINING);
-        sendSkillLine(source, data, player, SkillType.WOODCUTTING);
-        sendSkillLine(source, data, player, SkillType.HARVESTING);
+        player.sendSystemMessage(Component.literal("§6[Survival Ascension] §f숙련 현황"));
+        sendSkillLine(player, data, SkillType.MINING);
+        sendSkillLine(player, data, SkillType.WOODCUTTING);
+        sendSkillLine(player, data, SkillType.HARVESTING);
         return 1;
     }
 
-    private static void sendSkillLine(CommandSourceStack source, SkillProgressData data, ServerPlayer player, SkillType skill) {
+    private static void sendSkillLine(ServerPlayer player, SkillProgressData data, SkillType skill) {
         int level = data.level(player, skill);
         long xp = data.xp(player, skill);
         long into = SkillTuning.xpIntoLevel(xp);
@@ -56,13 +58,12 @@ public final class AscensionCommands {
                     + " | 속도 " + String.format(java.util.Locale.ROOT, "%.2f×", SkillTuning.harvestingSpeedMultiplier(level));
             default -> "준비 중";
         };
-        source.sendSuccess(() -> Component.literal("§e" + skill.koreanName() + " §fLv." + level + " §7(" + progress + ") §8- §f" + extra), false);
+        player.sendSystemMessage(Component.literal("§e" + skill.koreanName() + " §fLv." + level + " §7(" + progress + ") §8- §f" + extra));
     }
 
-    private static int setLevel(CommandSourceStack source, SkillType skill, int level) {
-        ServerPlayer player = source.getPlayerOrException();
+    private static int setLevel(ServerPlayer player, SkillType skill, int level) {
         SkillProgressionService.setLevel(player, skill, level);
-        source.sendSuccess(() -> Component.literal("§6[Survival Ascension] §f" + skill.koreanName() + " 레벨을 §e" + level + "§f로 설정했습니다."), false);
+        player.sendSystemMessage(Component.literal("§6[Survival Ascension] §f" + skill.koreanName() + " 레벨을 §e" + level + "§f로 설정했습니다."));
         return 1;
     }
 }
