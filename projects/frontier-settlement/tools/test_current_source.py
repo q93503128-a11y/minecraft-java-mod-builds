@@ -88,7 +88,7 @@ if 'warehouse.localToWorld' not in warehouse_layout:
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('BuildingType.WAREHOUSE', 'WarehouseLayout.storagePositions(building)',
               'public static SettlementResources scan', 'public static boolean consume',
-              'public static ItemStack insert', 'allStorageLoaded'):
+              'public static ItemStack insert', 'allStorageChunksLoaded'):
     if token not in storage:
         raise SystemExit(f'aggregate storage invariant missing: {token}')
 
