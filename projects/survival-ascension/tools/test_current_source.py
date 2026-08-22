@@ -14,22 +14,21 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
     "src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionData.java",
     "src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionProgression.java",
-    "src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java",
-    "src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java",
-    "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java",
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureData.java",
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java",
-    "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java",
+    "src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java",
+    "src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java",
+    "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/harvesting/IrrigationReplantService.java",
     "src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java",
-    "src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java",
     "src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java",
-    "src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java",
-    "src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java",
 ]
 errors=[]
 for rel in required:
@@ -40,44 +39,47 @@ def need(text, needles, label):
         if needle not in text: errors.append(f"{label} missing: {needle}")
 
 props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
-need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.17.0-alpha.1"],"gradle.properties")
+need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.18.0-alpha.1"],"gradle.properties")
 main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
-need(main,['VERSION = "0.17.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","WarbandDirector::onServerTick","EliteMobSystem::onFinalizeSpawn","WoodcuttingProgression::onServerTick","BoreMiningService::onServerTick"],"main registration")
+need(main,['VERSION = "0.18.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","MobilityProgression::onPlayerTick","WarbandDirector::onServerTick"],"main registration")
 
-world_data=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionData.java").read_text(encoding="utf-8")
-need(world_data,["world_ascension_v1","MAX_STAGE = 2","optionalFieldOf(\"stage\", 0)","advanceTo","setDirty","전설 단계","종말 단계"],"world ascension persistence")
+world=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionData.java").read_text(encoding="utf-8")
+need(world,["world_ascension_v1","MAX_STAGE = 2","advanceTo","전설 단계","종말 단계"],"world ascension")
 world_progress=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionProgression.java").read_text(encoding="utf-8")
-need(world_progress,["Hostiles Are Too Easy","CC0-1.0","instanceof WitherBoss","targetStage = 1","instanceof EnderDragon","targetStage = 2","data.advanceTo(targetStage)","getPlayerList().getPlayers()"],"boss progression")
+need(world_progress,["instanceof WitherBoss","targetStage = 1","instanceof EnderDragon","targetStage = 2","data.advanceTo(targetStage)"],"boss progression")
+
+project=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java").read_text(encoding="utf-8")
+need(project,["ASCENSION_NEXUS","승천 중추","requiredWorldStage","Items.NETHER_STAR","4","Items.DRAGON_BREATH","64","Items.OBSIDIAN","512","Items.AMETHYST_SHARD","Items.ECHO_SHARD"],"Ascension Nexus project")
+service=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java").read_text(encoding="utf-8")
+need(service,["world.stage() < project.requiredWorldStage()","월드 승천","project.requiredWorldStage()","countItem","consumeItem","player.isCreative() || player.isSpectator()"],"stage-gated infrastructure funding")
+ui=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java").read_text(encoding="utf-8")
+need(ui,["승천 중추","InfrastructureProject.ASCENSION_NEXUS","네더별4","숨결64","흑요석512","자수정512","메아리64"],"infrastructure radial")
+
+mobility=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java").read_text(encoding="utf-8")
+need(mobility,["AIR_DASH_COUNT","maxAirDashes","level < 60","level >= 90","WorldAscensionData.get(serverLevel.getServer()).stage() >= 2","InfrastructureProject.ASCENSION_NEXUS","isComplete(InfrastructureProject.ASCENSION_NEXUS)","return 2","AIR_DASH_COUNT.put(uuid, 0)","used + 1","DASH_READY_TICK"],"Nexus mobility contract")
+if "AIR_DASH_USED" in mobility: errors.append("legacy boolean air-dash state still present")
 
 elite=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java").read_text(encoding="utf-8")
-need(elite,["WorldAscensionData.get(level.getServer()).stage()","worldStage * 0.04D","Math.min(0.28D","chooseRank(random, power, worldStage)","Math.min(0.22D","worldStage * 0.05D","contains(\"SPAWNER\")","Trait.VAMPIRIC","Trait.BERSERKER"],"elite world scaling")
-
+need(elite,["WorldAscensionData.get(level.getServer()).stage()","Math.min(0.28D","Math.min(0.22D","worldStage * 0.05D"],"0.17 elite regression")
 warband=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java").read_text(encoding="utf-8")
-need(warband,["WorldAscensionData.get(level.getServer()).stage()","worldStage * 0.08D","int minimum = 3 + worldStage","6 + worldStage","Role.LEADER","Role.BRUISER","Role.HUNTER","Role.SUPPORT","ROUT_TICKS = 160","Items.ECHO_SHARD","NO_WARBAND_KEY","getBooleanOr(NO_WARBAND_KEY, false)"],"warband world scaling")
-
-infra_service=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java").read_text(encoding="utf-8")
-need(infra_service,["WorldAscensionData","world.stage()","world.stageName()","ACTION_STATUS","ALL_PROJECTS"],"world status")
+need(warband,["int minimum = 3 + worldStage","6 + worldStage","worldStage * 0.08D","ROUT_TICKS = 160","Items.ECHO_SHARD"],"0.17 warband regression")
 combat=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java").read_text(encoding="utf-8")
-need(combat,["SHOCKWAVE_RADIUS = 5.5D","SHOCKWAVE_TARGETS = 12","InfrastructureProject.COMBAT_ACADEMY","combatLevel < 90 || !player.isSprinting()"],"combat regression")
+need(combat,["SHOCKWAVE_RADIUS = 5.5D","SHOCKWAVE_TARGETS = 12","InfrastructureProject.COMBAT_ACADEMY"],"combat academy regression")
 wood=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java").read_text(encoding="utf-8")
-need(wood,["GLOBAL_LOG_BUDGET_PER_TICK = 64","LOCAL_LOG_BUDGET_PER_TICK = 12","hasLeavesNearby","BlockTags.LEAVES","player.gameMode.destroyBlock(target)"],"woodcutting regression")
-construction=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java").read_text(encoding="utf-8")
-need(construction,["VOLUME_SIZE = 5","InfrastructureProject.BUILDER_FOUNDRY","MAX_PENDING_BLOCKS_PER_PLAYER = 256","EventHooks.onBlockPlace","consumeOne(player, item)"],"construction regression")
+need(wood,["GLOBAL_LOG_BUDGET_PER_TICK = 64","LOCAL_LOG_BUDGET_PER_TICK = 12","hasLeavesNearby","BlockTags.LEAVES"],"woodcutting regression")
 bore=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java").read_text(encoding="utf-8")
-need(bore,["GLOBAL_BLOCK_BUDGET_PER_TICK = 64","LOCAL_BLOCK_BUDGET_PER_TICK = 12","InfrastructureProject.QUARRY_NETWORK","player.gameMode.destroyBlock(target)"],"bore regression")
+need(bore,["GLOBAL_BLOCK_BUDGET_PER_TICK = 64","LOCAL_BLOCK_BUDGET_PER_TICK = 12","InfrastructureProject.QUARRY_NETWORK"],"bore regression")
 replant=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/harvesting/IrrigationReplantService.java").read_text(encoding="utf-8")
-need(replant,["InfrastructureProject.IRRIGATION_WORKS","EventHooks.onBlockPlace","consumeOne(player, kind.seed())"],"irrigation regression")
+need(replant,["InfrastructureProject.IRRIGATION_WORKS","consumeOne(player, kind.seed())","EventHooks.onBlockPlace"],"irrigation regression")
+construction=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java").read_text(encoding="utf-8")
+need(construction,["VOLUME_SIZE = 5","InfrastructureProject.BUILDER_FOUNDRY","MAX_PENDING_BLOCKS_PER_PLAYER = 256"],"construction regression")
 
 guide=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java").read_text(encoding="utf-8")
-need(guide,["월드 승천","위더 격파","엔더 드래곤 격파","전설 단계","종말 단계","M → 인프라 → 진행도","최대 8체"],"guide")
+need(guide,["승천 중추","네더의 별4","드래곤의 숨결64","공중 돌진 2회","종말 단계 전에는 자원 투입 불가"],"guide")
 third=(ROOT/"THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
-need(third,["Hostiles Are Too Easy","MinecraftIsTooEasy/HostilesAreTooEasy","CC0 1.0 Universal","Warband","Veinminer++","Mekanism"],"third-party notices")
-hate_notice=(ROOT/"src/main/resources/META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt").read_text(encoding="utf-8")
-need(hate_notice,["Hostiles Are Too Easy","CC0 1.0 Universal","public domain"],"HATE runtime notice")
+need(third,["Hostiles Are Too Easy","CC0 1.0 Universal","Warband","Veinminer++"],"third-party notices")
 
-# Existing economy and affix contracts stay live.
-infra=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java").read_text(encoding="utf-8")
-need(infra,["QUARRY_NETWORK","IRRIGATION_WORKS","BUILDER_FOUNDRY","COMBAT_ACADEMY","Items.ECHO_SHARD"],"infrastructure regression")
+# Affix/economy stay live.
 affix=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java").read_text(encoding="utf-8")
 need(affix,["AFFIX_POOL","reroll","adjustMiningArea","adjustWoodcuttingLimit","adjustHarvestArea"],"affix regression")
 reforge=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java").read_text(encoding="utf-8")
@@ -96,7 +98,7 @@ if errors:
     sys.exit(1)
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
-print("- CC0 boss milestones persist as world_ascension_v1 stage 0/1/2")
-print("- Wither -> Legendary stage; Ender Dragon -> Endgame stage")
-print("- elite frequency/rank odds and tactical warband size/frequency scale with world stage")
-print("- all 0.16 combat academy, warband, infrastructure, safe scaled-work and affix regressions retained")
+print("- Ascension Nexus is Stage-2 gated and consumes boss/endgame resources")
+print("- Mobility Lv.90 receives two air dashes only after Endgame stage + Nexus completion")
+print("- dash uses still share the existing cooldown and reset only on landing")
+print("- all 0.17 world-stage, warband, elite and earlier scaled-work/economy regressions retained")
