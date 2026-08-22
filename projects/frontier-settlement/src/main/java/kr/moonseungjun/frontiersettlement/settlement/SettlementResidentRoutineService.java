@@ -20,7 +20,9 @@ public final class SettlementResidentRoutineService {
     private SettlementResidentRoutineService() {}
 
     public static boolean isRestTime(ServerLevel level) {
-        long time = Math.floorMod(level.getDayTime(), 24000L);
+        var defaultClock = level.dimensionType().defaultClock();
+        if (defaultClock.isEmpty()) return false;
+        long time = Math.floorMod(level.clockManager().getTotalTicks(defaultClock.get()), 24000L);
         return time >= 13000L && time < 23000L;
     }
 
