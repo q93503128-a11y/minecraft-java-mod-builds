@@ -24,8 +24,9 @@ public final class SettlementService {
         if (!data.founded()) return;
 
         int tick = server.getTickCount();
-        if (tick % 5 == 0 && data.construction().active()) {
-            SettlementConstructionService.tick(server, data);
+        if (tick % 5 == 0) {
+            if (data.construction().active()) SettlementConstructionService.tick(server, data);
+            if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);
         }
         if (tick % 20 == 0 && refreshResources(server, data)) {
             broadcast(server, data);
