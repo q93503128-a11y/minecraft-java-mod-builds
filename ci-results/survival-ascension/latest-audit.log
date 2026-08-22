@@ -1,6 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- CC0 boss milestones persist as world_ascension_v1 stage 0/1/2
-- Wither -> Legendary stage; Ender Dragon -> Endgame stage
-- elite frequency/rank odds and tactical warband size/frequency scale with world stage
-- all 0.16 combat academy, warband, infrastructure, safe scaled-work and affix regressions retained
+- Ascension Nexus is Stage-2 gated and consumes boss/endgame resources
+- Mobility Lv.90 receives two air dashes only after Endgame stage + Nexus completion
+- dash uses still share the existing cooldown and reset only on landing
+- all 0.17 world-stage, warband, elite and earlier scaled-work/economy regressions retained
