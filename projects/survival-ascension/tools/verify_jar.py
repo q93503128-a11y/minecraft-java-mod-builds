@@ -30,6 +30,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/world/WorldAscensionProgression.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
         "kr/moonseungjun/survivalascension/elite/WarbandDirector.class",
+        "kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.class",
         "kr/moonseungjun/survivalascension/combat/CombatProgression.class",
         "kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.class",
