@@ -31,6 +31,7 @@ public final class ErdenRegionalSettlementEventBridge {
         ErdenRegionalEconomyManager.onServerTick(event);
         ErdenRegionalGovernanceManager.onServerTick(event);
         ErdenRegionalRoadSecurityManager.onServerTick(event);
+        ErdenRegionalGuardCombatManager.onServerTick(event);
         ErdenRegionalTransportManager.onServerTick(event);
     }
 
