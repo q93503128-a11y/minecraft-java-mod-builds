@@ -290,6 +290,12 @@ public final class ErdenTransportSavedData extends SavedData {
         setDirty();
     }
 
+    /** Records economic return after a physical authoritative job already failed in the road runtime. */
+    public void recordAuthoritativeReturn(long amount) {
+        totalReturned += Math.max(0L, amount);
+        setDirty();
+    }
+
     public void pruneTerminalJobs(long oldestTick) {
         if (jobs.removeIf(job -> job.terminal() && job.phaseTick() < oldestTick)) setDirty();
     }
