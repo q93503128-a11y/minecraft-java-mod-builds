@@ -8,7 +8,6 @@ import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -61,7 +60,6 @@ public final class BuildingPlacementClient {
             if (active) {
                 rotation = BuildingRotation.facingPlayerFrom(minecraft.player.getDirection());
                 target = resolveTarget(minecraft);
-                minecraft.player.displayClientMessage(Component.literal("건설 모드: N 건물 변경 · R 회전 · Enter 확정 · B 종료"), true);
             }
         }
         if (!active) return;
@@ -91,9 +89,6 @@ public final class BuildingPlacementClient {
         while (CONFIRM.consumeClick()) {
             if (preview != null && preview.valid() && previewMatchesSelection()) {
                 send(true);
-            } else {
-                minecraft.player.displayClientMessage(Component.literal(
-                        preview == null ? "배치 위치를 확인하는 중입니다." : preview.message()), true);
             }
         }
     }
@@ -116,11 +111,7 @@ public final class BuildingPlacementClient {
         lastAcceptedNonce = next.nonce();
         if (!active) return;
         preview = next;
-        if (next.confirmed()) {
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player != null) minecraft.player.displayClientMessage(Component.literal(next.message()), true);
-            deactivate();
-        }
+        if (next.confirmed()) deactivate();
     }
 
     private static boolean previewMatchesSelection() {
