@@ -3,7 +3,7 @@ name: Validate Village Guardians v0.18.33 Playtest Fix
 on:
   push:
     paths:
-      - '.github/village-guardians-v01833.trigger'
+      - 'projects/village-guardians/.v01833-playtest-trigger'
 
 permissions:
   contents: write
