@@ -3,7 +3,7 @@ package kr.moonseungjun.survivalascension.elite;
 /*
  * Rank-driven permanent attribute construction is adapted from Mob Champions.
  * Copyright (c) 2024 Wendall Cada, MIT License.
- * Survival Ascension uses its own rank probabilities, traits, progression coupling and rewards.
+ * Survival Ascension uses its own rank probabilities, traits, progression coupling, reactions and rewards.
  */
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
@@ -21,7 +21,11 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -31,6 +35,7 @@ import java.util.List;
 public final class EliteMobSystem {
     private static final String RANK_KEY = "survivalascension_elite_rank";
     private static final String TRAIT_KEY = "survivalascension_elite_trait";
+    private static final String REACTION_READY_KEY = "survivalascension_elite_reaction_ready";
 
     private static final Identifier HEALTH_ID = id("elite_health");
     private static final Identifier ARMOR_ID = id("elite_armor");
@@ -49,9 +54,7 @@ public final class EliteMobSystem {
         if (!(mob instanceof Enemy) || mob instanceof EnderDragon || mob instanceof WitherBoss || mob.isBaby()) return;
         if (!(mob.level() instanceof ServerLevel level)) return;
         if (isElite(mob)) return;
-
-        String spawnReason = event.getSpawnType().name();
-        if (spawnReason.contains("SPAWNER")) return;
+        if (event.getSpawnType().name().contains("SPAWNER")) return;
 
         List<ServerPlayer> nearby = level.getEntitiesOfClass(ServerPlayer.class, mob.getBoundingBox().inflate(96.0D),
                 player -> !player.isSpectator());
@@ -75,8 +78,7 @@ public final class EliteMobSystem {
     public static void onDamagePre(LivingDamageEvent.Pre event) {
         if (!(event.getSource().getEntity() instanceof Mob attacker) || !isElite(attacker)) return;
         if (trait(attacker) != Trait.BERSERKER || attacker.getHealth() > attacker.getMaxHealth() * 0.5F) return;
-        Rank rank = rank(attacker);
-        float multiplier = switch (rank) {
+        float multiplier = switch (rank(attacker)) {
             case ELITE_I -> 1.25F;
             case ASCENDED_II -> 1.40F;
             case MYTHIC_III -> 1.60F;
@@ -86,17 +88,29 @@ public final class EliteMobSystem {
     }
 
     public static void onDamagePost(LivingDamageEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer)) return;
-        if (!(event.getSource().getEntity() instanceof Mob attacker) || !isElite(attacker)) return;
-        if (trait(attacker) != Trait.VAMPIRIC || event.getHealthDamage() <= 0.0F || !attacker.isAlive()) return;
-        float fraction = switch (rank(attacker)) {
-            case ELITE_I -> 0.18F;
-            case ASCENDED_II -> 0.28F;
-            case MYTHIC_III -> 0.40F;
-            default -> 0.0F;
-        };
-        float heal = Math.min(attacker.getMaxHealth() * 0.08F, event.getHealthDamage() * fraction);
-        if (heal > 0.0F) attacker.heal(heal);
+        if (event.getSource().getEntity() instanceof Mob attacker
+                && event.getEntity() instanceof ServerPlayer
+                && isElite(attacker)
+                && trait(attacker) == Trait.VAMPIRIC
+                && event.getHealthDamage() > 0.0F
+                && attacker.isAlive()) {
+            float fraction = switch (rank(attacker)) {
+                case ELITE_I -> 0.18F;
+                case ASCENDED_II -> 0.28F;
+                case MYTHIC_III -> 0.40F;
+                default -> 0.0F;
+            };
+            float heal = Math.min(attacker.getMaxHealth() * 0.08F, event.getHealthDamage() * fraction);
+            if (heal > 0.0F) attacker.heal(heal);
+        }
+
+        if (event.getEntity() instanceof Mob defender
+                && event.getSource().getEntity() instanceof ServerPlayer player
+                && isElite(defender)
+                && defender.isAlive()
+                && event.getHealthDamage() > 0.0F) {
+            reactToPlayerHit(defender, player);
+        }
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
@@ -110,8 +124,11 @@ public final class EliteMobSystem {
             default -> 0;
         };
         if (vanillaXp > 0) player.giveExperiencePoints(vanillaXp);
+        if (event.getEntity() instanceof Mob mob && mob.level() instanceof ServerLevel level) {
+            dropRankReward(level, mob, rank);
+        }
         if (rank == Rank.MYTHIC_III) {
-            player.sendSystemMessage(Component.literal("§6[신화 처치] §f추가 경험치 §e+" + vanillaXp));
+            player.sendSystemMessage(Component.literal("§6[신화 처치] §f추가 경험치 §e+" + vanillaXp + " §7+ 신화급 전리품"));
         }
     }
 
@@ -121,6 +138,77 @@ public final class EliteMobSystem {
 
     public static int rankId(net.minecraft.world.entity.LivingEntity entity) {
         return entity.getPersistentData().getIntOr(RANK_KEY, 0);
+    }
+
+    private static void reactToPlayerHit(Mob defender, ServerPlayer player) {
+        if (!(defender.level() instanceof ServerLevel level)) return;
+        CompoundTag data = defender.getPersistentData();
+        long now = level.getGameTime();
+        if (now < data.getLongOr(REACTION_READY_KEY, 0L)) return;
+
+        Rank rank = rank(defender);
+        Trait trait = trait(defender);
+        int cooldown = switch (rank) {
+            case ELITE_I -> 60;
+            case ASCENDED_II -> 45;
+            case MYTHIC_III -> 30;
+            default -> 80;
+        };
+        boolean reacted = false;
+        Vec3 horizontal = defender.position().subtract(player.position()).multiply(1.0D, 0.0D, 1.0D);
+        if (horizontal.lengthSqr() > 1.0E-5D) horizontal = horizontal.normalize();
+
+        switch (trait) {
+            case SWIFT -> {
+                if (horizontal.lengthSqr() > 0.0D) {
+                    double sideSign = level.getRandom().nextBoolean() ? 1.0D : -1.0D;
+                    Vec3 side = new Vec3(-horizontal.z, 0.0D, horizontal.x).scale(sideSign);
+                    double sidePower = switch (rank) { case ELITE_I -> 0.42D; case ASCENDED_II -> 0.55D; case MYTHIC_III -> 0.70D; default -> 0.0D; };
+                    Vec3 impulse = horizontal.scale(0.20D).add(side.scale(sidePower));
+                    defender.setDeltaMovement(impulse.x, Math.max(0.08D, defender.getDeltaMovement().y), impulse.z);
+                    defender.hurtMarked = true;
+                    reacted = true;
+                }
+            }
+            case BULWARK -> {
+                Vec3 push = player.position().subtract(defender.position()).multiply(1.0D, 0.0D, 1.0D);
+                if (push.lengthSqr() > 1.0E-5D) {
+                    push = push.normalize();
+                    double power = switch (rank) { case ELITE_I -> 0.65D; case ASCENDED_II -> 0.90D; case MYTHIC_III -> 1.15D; default -> 0.0D; };
+                    player.setDeltaMovement(player.getDeltaMovement().add(push.x * power, 0.24D, push.z * power));
+                    player.hurtMarked = true;
+                    reacted = true;
+                }
+            }
+            case BERSERKER -> {
+                if (defender.getHealth() <= defender.getMaxHealth() * 0.5F && horizontal.lengthSqr() > 0.0D) {
+                    Vec3 toward = horizontal.scale(-1.0D);
+                    double power = switch (rank) { case ELITE_I -> 0.50D; case ASCENDED_II -> 0.68D; case MYTHIC_III -> 0.85D; default -> 0.0D; };
+                    defender.setDeltaMovement(toward.x * power, Math.max(0.08D, defender.getDeltaMovement().y), toward.z * power);
+                    defender.hurtMarked = true;
+                    reacted = true;
+                }
+            }
+            case VAMPIRIC -> { }
+        }
+        if (reacted) data.putLong(REACTION_READY_KEY, now + cooldown);
+    }
+
+    private static void dropRankReward(ServerLevel level, Mob mob, Rank rank) {
+        RandomSource random = level.getRandom();
+        switch (rank) {
+            case ELITE_I -> spawnItem(level, mob, new ItemStack(Items.GOLD_NUGGET, 2 + random.nextInt(3)));
+            case ASCENDED_II -> spawnItem(level, mob, new ItemStack(Items.EMERALD, 1 + random.nextInt(2)));
+            case MYTHIC_III -> {
+                spawnItem(level, mob, new ItemStack(Items.DIAMOND, 1));
+                spawnItem(level, mob, new ItemStack(Items.EMERALD, 2 + random.nextInt(3)));
+            }
+            default -> { }
+        }
+    }
+
+    private static void spawnItem(ServerLevel level, Mob mob, ItemStack stack) {
+        level.addFreshEntity(new ItemEntity(level, mob.getX(), mob.getY() + 0.5D, mob.getZ(), stack));
     }
 
     private static double averageSkillLevel(ServerPlayer player) {

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.0-alpha.1
+- Upgraded elite traits from mostly passive modifiers into reactive combat patterns.
+- Swift elites perform rank-scaled lateral evasions after player hits.
+- Bulwark elites counter-push the attacking player instead of only stacking armor.
+- Berserker elites lunge back toward attackers while below half health, in addition to low-health damage amplification.
+- Vampiric elites retain real post-mitigation player-damage healing.
+- Added persistent reaction cooldowns: Elite I 60 ticks, Ascended II 45, Mythic III 30.
+- Added tangible rank loot: Elite I gold nuggets, Ascended II emeralds, Mythic III diamond + emerald bundle.
+- Existing rank XP rewards, progression-scaled spawn odds and spawner anti-farm rules remain intact.
+- Majrusz's Progressive Difficulty was studied only as a progression/difficulty-design reference because no explicit reuse license was adopted.
+
 ## 0.9.0-alpha.1
 - Added progression-scaled elite hostile mobs so the world grows with player power instead of remaining static.
 - Nearby players' average level across all six skills drives elite spawn chance and higher-rank odds.

@@ -24,10 +24,10 @@ errors=[]
 for rel in required:
     if not (ROOT / rel).exists(): errors.append(f"missing: {rel}")
 props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
-for needle in ["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.9.0-alpha.1"]:
+for needle in ["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.10.0-alpha.1"]:
     if needle not in props: errors.append(f"gradle.properties missing {needle}")
 main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
-for needle in ['VERSION = "0.9.0-alpha.1"',"ConstructionProgression::onBlockPlaced","MobilityProgression::onPlayerTick",
+for needle in ['VERSION = "0.10.0-alpha.1"',"ConstructionProgression::onBlockPlaced","MobilityProgression::onPlayerTick",
                "EliteMobSystem::onFinalizeSpawn","EliteMobSystem::onDamagePre","EliteMobSystem::onDamagePost","EliteMobSystem::onLivingDeath"]:
     if needle not in main: errors.append(f"main registration missing: {needle}")
 client=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java").read_text(encoding="utf-8")
@@ -40,13 +40,17 @@ mobility=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mobility/Mobilit
 for needle in ["Attributes.MOVEMENT_SPEED","Attributes.STEP_HEIGHT","Attributes.SAFE_FALL_DISTANCE","DASH_READY_TICK","AIR_DASH_USED","distance <= 1.75D","player.hurtMarked = true"]:
     if needle not in mobility: errors.append(f"mobility safety contract missing: {needle}")
 elite=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java").read_text(encoding="utf-8")
-for needle in ["FinalizeSpawnEvent","contains(\"SPAWNER\")","averageSkillLevel","Rank.MYTHIC_III","Trait.VAMPIRIC","Trait.BERSERKER",
-               "getPersistentData()","addPermanentModifier","Attributes.MAX_HEALTH","Attributes.ARMOR","Attributes.MOVEMENT_SPEED","Attributes.ATTACK_DAMAGE","Attributes.KNOCKBACK_RESISTANCE"]:
-    if needle not in elite: errors.append(f"elite-world contract missing: {needle}")
+for needle in ["FinalizeSpawnEvent","contains(\"SPAWNER\")","averageSkillLevel","Rank.MYTHIC_III","getPersistentData()","addPermanentModifier",
+               "Attributes.MAX_HEALTH","Attributes.ARMOR","Attributes.MOVEMENT_SPEED","Attributes.ATTACK_DAMAGE","Attributes.KNOCKBACK_RESISTANCE",
+               "REACTION_READY_KEY","getLongOr(REACTION_READY_KEY","reactToPlayerHit","defender.hurtMarked = true","player.hurtMarked = true",
+               "dropRankReward","Items.GOLD_NUGGET","Items.EMERALD","Items.DIAMOND","new ItemEntity"]:
+    if needle not in elite: errors.append(f"reactive elite-world contract missing: {needle}")
 for trait in ["SWIFT", "BULWARK", "VAMPIRIC", "BERSERKER"]:
     if trait not in elite: errors.append(f"elite trait missing: {trait}")
 for rank in ["ELITE_I", "ASCENDED_II", "MYTHIC_III"]:
     if rank not in elite: errors.append(f"elite rank missing: {rank}")
+for cooldown in ["case ELITE_I -> 60", "case ASCENDED_II -> 45", "case MYTHIC_III -> 30"]:
+    if cooldown not in elite: errors.append(f"elite reaction cooldown missing: {cooldown}")
 notice=(ROOT/"src/main/resources/META-INF/third-party/MOB_CHAMPIONS_MIT.txt").read_text(encoding="utf-8")
 if "Copyright (c) 2024 Wendall Cada" not in notice or "MIT License" not in notice:
     errors.append("Mob Champions MIT notice invalid")
@@ -68,8 +72,8 @@ if errors:
     sys.exit(1)
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
-print("- all six skills active")
-print("- Mobility remains server-authoritative")
-print("- elite world scales from nearby six-skill progression")
-print("- three persistent ranks + four traits + spawner anti-farm contract present")
-print("- Mob Champions MIT notice packaged; restricted/copyleft reference mods remain source/asset clean")
+print("- all six skills active; Mobility remains server-authoritative")
+print("- progression-scaled elite ranks + four persistent traits retained")
+print("- Swift evade / Bulwark counter-push / Berserker lunge / Vampiric heal contracts present")
+print("- rank reaction cooldowns and tangible gold/emerald/diamond rewards present")
+print("- spawner anti-farm + Mob Champions MIT notice retained")

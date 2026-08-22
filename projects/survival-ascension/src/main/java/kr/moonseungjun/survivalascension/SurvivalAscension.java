@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.9.0-alpha.1";
+    public static final String VERSION = "0.10.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -41,6 +41,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: six live skills + progression-scaled elite world", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: six live skills + reactive elite world", VERSION);
     }
 }
