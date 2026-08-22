@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.world;
 
+import kr.moonseungjun.arcanecircle.magic.Alpha65NinthCircleRuntime;
 import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
 import kr.moonseungjun.arcanecircle.magic.EighthCircleSpellService;
@@ -11,6 +12,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -68,11 +70,13 @@ public final class NpcMeteorBarrageService {
                 MeteorBarragePattern.Strike strike = MeteorBarragePattern.strike(seed, barrage.range(), strikeIndex);
                 if (elapsed < strike.impactTick()) break;
                 boolean executed = MeteorBarragePattern.withContext(seed, barrage.range(),
-                        () -> NinthCircleSpellService.resolveNpcMeteorImpact(level, caster,
+                        () -> Alpha65NinthCircleRuntime.meteorImpactNpc(level, caster,
                                 barrage.targetSnapshot().target(), barrage.power(), strikeIndex, seed));
                 if (executed && MeteorBarragePattern.isCrownStrike(barrage.range(), strikeIndex)) {
+                    Vec3 grounded = Alpha65NinthCircleRuntime.groundedBarrageCenter(level,
+                            barrage.targetSnapshot().target());
                     MeteorCataclysmService.crownImpactNpc(level, caster,
-                            barrage.targetSnapshot().target(), barrage.range(), barrage.power(), seed);
+                            grounded, barrage.range(), barrage.power(), seed);
                 }
                 next++;
             }
