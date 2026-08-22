@@ -46,6 +46,7 @@ public final class HarvestingProgression {
         BlockState state = event.getState();
         if (!isMatureHarvest(state)) return;
         ItemStack tool = player.getMainHandItem();
+        if (tool.is(ItemTags.HOES)) IrrigationReplantService.scheduleIfEligible(player, level, center, state);
         if (!player.isCreative() && !player.isSpectator()) {
             int xp = Math.max(1, (int) Math.ceil(XP_PER_HARVEST * AscensionAffixes.xpMultiplier(tool)));
             announceMilestones(player, SkillProgressionService.award(player, SkillType.HARVESTING, xp));
@@ -84,7 +85,7 @@ public final class HarvestingProgression {
         if (!result.leveledUp()) return;
         int oldLevel = result.oldLevel(), newLevel = result.newLevel();
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§a[농사] §f3×3 광역 수확 해금! 웅크리면 1×1로 수확합니다."));
-        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§a[농사] §f광역 수확이 §e5×5§f로 확장됩니다."));
+        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§a[농사] §f광역 수확이 §e5×5§f로 확장됩니다. 관개 시설 완공 시 씨앗 소비 자동 재파종도 활성화됩니다."));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§a[농사] §f광역 수확이 §e7×7§f로 확장됩니다."));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§a[농사] §f광역 수확이 §e9×9§f로 확장됩니다."));
     }
