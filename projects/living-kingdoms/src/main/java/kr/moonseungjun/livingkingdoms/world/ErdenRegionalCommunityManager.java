@@ -36,10 +36,17 @@ public final class ErdenRegionalCommunityManager {
     public static final int EXPECTED_HOUSEHOLDS = 48;
     public static final int EXPECTED_RESIDENTS = 144;
 
-    private static final int ROUTINE_INTERVAL = 80;
+    // Community runs after Society in the bridge. 20 divides Society's 60-tick routine interval,
+    // so every off-duty "return home" decision is deterministically superseded on that same tick.
+    private static final int ROUTINE_INTERVAL = 20;
     private static final int NAVIGATION_BUDGET = 10;
     private static final int ROUTE_LOAD_SAMPLE = 8;
     private static final long WHEAT_DAY_RESERVE_PER_HOUSEHOLD = 2L;
+    private static final int[][] SQUARE_OFFSETS = {
+            {-8, -8}, {0, -8}, {8, -8},
+            {-8, 0},           {8, 0},
+            {-8, 8},  {0, 8}, {8, 8}
+    };
 
     private static MinecraftServer activeServer;
     private static boolean planLogged;
@@ -114,7 +121,7 @@ public final class ErdenRegionalCommunityManager {
         }
         planLogged = true;
         LivingKingdoms.LOGGER.info(
-                "Prepared Erden regional community revision={} settlements={} households={} residents={} modes={} work_priority=true family_schedule=true rest_day_social=true shortage_aware=true navigation_only=true no_chunk_loading=true",
+                "Prepared Erden regional community revision={} settlements={} households={} residents={} modes={} work_priority=true off_duty_precedence=true family_schedule=true rest_day_social=true shortage_aware=true fluid_safe_targets=true navigation_only=true no_chunk_loading=true",
                 COMMUNITY_REVISION, EXPECTED_SETTLEMENTS, EXPECTED_HOUSEHOLDS,
                 EXPECTED_RESIDENTS, Activity.values().length);
     }
@@ -247,9 +254,9 @@ public final class ErdenRegionalCommunityManager {
                         context.resident().bedSlot()) : BlockPos.ZERO;
             }
             case SQUARE -> {
-                int spread = stableCycle(context.resident().id(), day, 9);
-                int x = settlement.x() + (spread % 3 - 1) * 5;
-                int z = settlement.z() + (spread / 3 - 1) * 5;
+                int index = stableCycle(context.resident().id(), day, SQUARE_OFFSETS.length);
+                int x = settlement.x() + SQUARE_OFFSETS[index][0];
+                int z = settlement.z() + SQUARE_OFFSETS[index][1];
                 yield constructedAndLoaded(level, x, z)
                         ? walkableNear(level, x, z, context.resident().bedSlot()) : BlockPos.ZERO;
             }
@@ -371,7 +378,7 @@ public final class ErdenRegionalCommunityManager {
 
         ciPassed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_REGIONAL_COMMUNITY_PASS revision={} settlements={} households={} residents={} activity_modes={} family_suppers={} work_preserved=true breakfast_home=true market_errands=true children_square=true elder_neighboring=true family_supper=true inn_gathering=true rest_day_social=true shortage_aware=true deterministic_schedule=true navigation_only=true loaded_route_guard=true no_chunk_loading=true persistent_forced_chunks=false",
+                "LK_ERDEN_REGIONAL_COMMUNITY_PASS revision={} settlements={} households={} residents={} activity_modes={} family_suppers={} work_preserved=true off_duty_precedence=true breakfast_home=true market_errands=true children_square=true elder_neighboring=true family_supper=true inn_gathering=true rest_day_social=true shortage_aware=true deterministic_schedule=true fluid_safe_targets=true navigation_only=true loaded_route_guard=true no_chunk_loading=true persistent_forced_chunks=false",
                 COMMUNITY_REVISION, EXPECTED_SETTLEMENTS, EXPECTED_HOUSEHOLDS,
                 EXPECTED_RESIDENTS, modes.size(), familySuppers);
     }
@@ -425,6 +432,7 @@ public final class ErdenRegionalCommunityManager {
             for (int y : candidates) {
                 BlockPos feet = new BlockPos(x, y, z);
                 if (!level.getBlockState(feet.below()).isAir()
+                        && level.getFluidState(feet.below()).isEmpty()
                         && level.getBlockState(feet).isAir()
                         && level.getBlockState(feet.above()).isAir()) return y;
             }
