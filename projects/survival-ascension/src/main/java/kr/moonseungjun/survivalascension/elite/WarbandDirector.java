@@ -10,6 +10,7 @@ package kr.moonseungjun.survivalascension.elite;
 import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
+import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -115,12 +116,13 @@ public final class WarbandDirector {
     private static void tryFormWarband(ServerPlayer player, ServerLevel level) {
         double power = averageSkillLevel(player);
         if (power < 30.0D) return;
+        int worldStage = WorldAscensionData.get(level.getServer()).stage();
         long now = level.getGameTime();
         CompoundTag playerData = player.getPersistentData();
         if (now < playerData.getLongOr(PLAYER_NEXT_FORMATION_KEY, 0L)) return;
         playerData.putLong(PLAYER_NEXT_FORMATION_KEY, now + 600L);
 
-        double chance = Math.min(0.50D, 0.12D + Math.max(0.0D, power - 30.0D) * 0.006D);
+        double chance = Math.min(0.68D, 0.12D + Math.max(0.0D, power - 30.0D) * 0.006D + worldStage * 0.08D);
         if (level.getRandom().nextDouble() >= chance) return;
 
         List<Mob> existing = level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(COORDINATION_RADIUS),
@@ -128,17 +130,19 @@ public final class WarbandDirector {
         if (!existing.isEmpty()) return;
 
         List<Mob> candidates = level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(FORMATION_RADIUS),
-                mob -> eligibleCandidate(mob));
-        if (candidates.size() < 3) return;
+                WarbandDirector::eligibleCandidate);
+        int minimum = 3 + worldStage;
+        if (candidates.size() < minimum) return;
         candidates.sort(Comparator.comparingDouble(player::distanceToSqr));
 
-        int desired = Math.max(3, Math.min(6, 3 + (int) Math.floor((power - 30.0D) / 20.0D)));
+        int desired = Math.max(minimum, Math.min(6 + worldStage,
+                3 + worldStage + (int) Math.floor((power - 30.0D) / 20.0D)));
         int size = Math.min(desired, candidates.size());
         String squadId = UUID.randomUUID().toString();
-        Role[] pattern = { Role.LEADER, Role.BRUISER, Role.HUNTER, Role.SUPPORT, Role.BRUISER, Role.HUNTER };
+        Role[] pattern = { Role.LEADER, Role.BRUISER, Role.HUNTER, Role.SUPPORT, Role.BRUISER, Role.HUNTER, Role.SUPPORT, Role.BRUISER };
         for (int i = 0; i < size; i++) assign(candidates.get(i), squadId, pattern[i]);
 
-        player.sendSystemMessage(Component.literal("§4[적 전술 분대] §f" + size + "체가 협동 전투를 시작합니다."), true);
+        player.sendSystemMessage(Component.literal("§4[적 전술 분대] §f" + size + "체가 협동 전투를 시작합니다. §7· 월드 승천 " + worldStage), true);
     }
 
     private static boolean eligibleCandidate(Mob mob) {
