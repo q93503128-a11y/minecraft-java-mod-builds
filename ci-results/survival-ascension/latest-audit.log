@@ -1,6 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- mining: 3x3/5x5/7x7/9x9 terrain excavation + 24/64/128 connected ore mastery
-- woodcutting + harvesting regression contracts retained
-- K-key six-skill overview shows Mining vein capacity
-- Skill Proficiencies + Veinminer++ MIT notices retained; Project MMO remains reference-only
+- mining/woodcutting/harvesting regression contracts retained
+- combat: kill XP + smooth damage scaling + hostile-only melee cleave 2/4/8
+- combat cleave recursion and ranged exclusion guards present
+- third-party MIT notices retained; Project MMO remains reference-only
