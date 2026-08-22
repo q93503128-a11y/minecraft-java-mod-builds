@@ -28,13 +28,16 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.class",
+        "kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/GuideScreen.class",
         "kr/moonseungjun/survivalascension/client/SkillsScreen.class",
         "kr/moonseungjun/survivalascension/mining/MiningProgression.class",
         "kr/moonseungjun/survivalascension/mining/MiningMode.class",
+        "kr/moonseungjun/survivalascension/mining/BoreMiningService.class",
         "kr/moonseungjun/survivalascension/network/MiningModePayload.class",
         "kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.class",
         "kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.class",
+        "kr/moonseungjun/survivalascension/harvesting/IrrigationReplantService.class",
         "kr/moonseungjun/survivalascension/combat/CombatProgression.class",
         "kr/moonseungjun/survivalascension/construction/ConstructionProgression.class",
         "kr/moonseungjun/survivalascension/mobility/MobilityProgression.class",
@@ -42,6 +45,10 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class",
         "kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.class",
         "kr/moonseungjun/survivalascension/network/EquipmentActionPayload.class",
+        "kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.class",
+        "kr/moonseungjun/survivalascension/infrastructure/InfrastructureData.class",
+        "kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.class",
+        "kr/moonseungjun/survivalascension/network/InfrastructureActionPayload.class",
     ]:
         if name not in names: raise SystemExit(f"required JAR entry missing: {name}")
     for notice, line in [
