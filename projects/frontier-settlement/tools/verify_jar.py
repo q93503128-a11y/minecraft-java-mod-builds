@@ -22,6 +22,7 @@ required = {
     'kr/moonseungjun/frontiersettlement/settlement/RoadSegment.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostProductionService.class',
+    'kr/moonseungjun/frontiersettlement/settlement/OutpostBlueprints.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementStorageService.class',
     'kr/moonseungjun/frontiersettlement/settlement/WarehouseLayout.class',
@@ -31,10 +32,14 @@ required = {
     'kr/moonseungjun/frontiersettlement/network/PlacementPreviewPayload.class',
     'kr/moonseungjun/frontiersettlement/network/RoadPlacementRequestPayload.class',
     'kr/moonseungjun/frontiersettlement/network/RoadPreviewPayload.class',
+    'kr/moonseungjun/frontiersettlement/network/OutpostPlacementRequestPayload.class',
+    'kr/moonseungjun/frontiersettlement/network/OutpostPreviewPayload.class',
     'kr/moonseungjun/frontiersettlement/client/BuildingPlacementClient.class',
     'kr/moonseungjun/frontiersettlement/client/PlacementGhostRenderer.class',
     'kr/moonseungjun/frontiersettlement/client/RoadPlacementClient.class',
     'kr/moonseungjun/frontiersettlement/client/RoadGhostRenderer.class',
+    'kr/moonseungjun/frontiersettlement/client/OutpostPlacementClient.class',
+    'kr/moonseungjun/frontiersettlement/client/OutpostGhostRenderer.class',
     'kr/moonseungjun/frontiersettlement/client/SettlementHudOverlay.class',
 }
 with zipfile.ZipFile(jar) as zf:
