@@ -5,10 +5,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.npc.villager.Villager;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -67,7 +64,7 @@ public final class SettlementRoadService {
         if (data.resources().stone() < ROAD_STONE_COST) {
             return new StartResult(false, "도로 필요 석재 " + ROAD_STONE_COST + " | 현재 석재 " + data.resources().stone());
         }
-        if (!consumeStone(level, data)) {
+        if (!SettlementStorageService.consume(level, data, 0L, ROAD_STONE_COST, 0L)) {
             SettlementService.refreshResources(server, data);
             return new StartResult(false, "공동 창고 자원이 착공 직전에 변경되어 도로를 시작하지 못했습니다. 자원은 차감되지 않았습니다.");
         }
@@ -253,6 +250,7 @@ public final class SettlementRoadService {
                 || state.is(Blocks.ANDESITE)
                 || state.is(Blocks.DIORITE)
                 || state.is(Blocks.GRANITE)
+                || state.is(Blocks.TUFF)
                 || state.is(Blocks.SAND)
                 || state.is(Blocks.RED_SAND)
                 || state.is(Blocks.GRAVEL)
@@ -269,40 +267,5 @@ public final class SettlementRoadService {
             case 2 -> new int[] {0, -1};
             default -> new int[] {1, 0};
         };
-    }
-
-    private static boolean consumeStone(ServerLevel level, SettlementData data) {
-        if (!(level.getBlockEntity(data.stockpilePos()) instanceof Container container)) return false;
-        if (countStone(container) < ROAD_STONE_COST) return false;
-
-        long left = ROAD_STONE_COST;
-        for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {
-            ItemStack stack = container.getItem(slot);
-            if (stack.isEmpty() || !isStone(stack)) continue;
-            int take = (int) Math.min(left, stack.getCount());
-            stack.shrink(take);
-            left -= take;
-        }
-        container.setChanged();
-        return left == 0L;
-    }
-
-    private static long countStone(Container container) {
-        long count = 0L;
-        for (int slot = 0; slot < container.getContainerSize(); slot++) {
-            ItemStack stack = container.getItem(slot);
-            if (!stack.isEmpty() && isStone(stack)) count += stack.getCount();
-        }
-        return count;
-    }
-
-    private static boolean isStone(ItemStack stack) {
-        return stack.is(Items.STONE)
-                || stack.is(Items.COBBLESTONE)
-                || stack.is(Items.DEEPSLATE)
-                || stack.is(Items.COBBLED_DEEPSLATE)
-                || stack.is(Items.ANDESITE)
-                || stack.is(Items.DIORITE)
-                || stack.is(Items.GRANITE);
     }
 }
