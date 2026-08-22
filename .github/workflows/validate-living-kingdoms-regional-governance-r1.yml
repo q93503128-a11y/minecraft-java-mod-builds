@@ -56,6 +56,7 @@ jobs:
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_REGIONAL_GOVERNANCE_PASS revision=1 councils=6 officials=12 guard_posts=12 alive_guards=12' ../../logs/regional-governance-server.log \
+              && grep -Fq 'LK_ERDEN_REGIONAL_GOVERNANCE_PHYSICAL_PASS revision=1 settlement=harvest_crossing guards=2 equipped_guards=2 billet_guards=2' ../../logs/regional-governance-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_ROAD_SECURITY_PASS revision=1 waystations=4 assigned_settlements=6 covered_waystations=4' ../../logs/regional-governance-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS revision=1 settlements=6 buildings=60' ../../logs/regional-governance-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_SOCIETY_PASS revision=1 settlements=6 households=48 residents=144 workers=96 dependents=48' ../../logs/regional-governance-server.log \
@@ -92,6 +93,16 @@ jobs:
             | grep -F 'aggregate_when_unloaded=true' \
             | grep -F 'persistent_forced_chunks=false'
 
+          grep -F 'LK_ERDEN_REGIONAL_GOVERNANCE_PHYSICAL_PASS revision=1 settlement=harvest_crossing guards=2 equipped_guards=2 billet_guards=2' ../../logs/regional-governance-server.log \
+            | grep -F 'probe_chunks=9' \
+            | grep -F 'physical_watch_house=true' \
+            | grep -F 'roster_entity_identity=true' \
+            | grep -F 'persistent_equipment=true' \
+            | grep -F 'transient_probe_released=true' \
+            | grep -F 'navigation_runtime_wired=true' \
+            | grep -F 'combat_runtime_wired=true' \
+            | grep -F 'persistent_forced_chunks=false'
+
           grep -F 'LK_ERDEN_REGIONAL_ROAD_SECURITY_PASS revision=1 waystations=4 assigned_settlements=6 covered_waystations=4' ../../logs/regional-governance-server.log \
             | grep -F 'village_guard_roster=true' \
             | grep -F 'aggregate_road_watch=true' \
@@ -114,7 +125,9 @@ jobs:
           test "$(sort "$entries" | uniq -d | wc -l)" -eq 0
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalGovernanceSavedData.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalGovernanceManager.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalGovernancePhysicalAudit.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalRoadSecurityManager.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalGuardCombatManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalTransportManager.class' "$entries"
           unzip -p "$jar" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.12"'
 
