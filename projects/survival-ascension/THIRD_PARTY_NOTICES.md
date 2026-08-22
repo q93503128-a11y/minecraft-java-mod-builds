@@ -60,7 +60,7 @@ Survival Ascension adapts Warband's lightweight tactical-squad concepts: persist
 Source project: `MinecraftIsTooEasy/HostilesAreTooEasy`  
 License: CC0 1.0 Universal
 
-Survival Ascension 0.17 adapts the project's dynamic-difficulty idea in which world difficulty advances through major progression milestones, including Wither and Ender Dragon kills. Survival Ascension reimplements that concept as modern NeoForge 26.2 world-shared SavedData stages that alter elite frequency/rank odds and tactical-warband size/frequency. No legacy mixins, assets, namespaces, celestial mob implementations or old Minecraft runtime code are bundled. Runtime notice: `META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt`.
+Survival Ascension 0.17 adapts the project's boss/progression-driven dynamic difficulty as modern NeoForge 26.2 world-shared SavedData stages. Survival Ascension 0.19 also adapts the CC0 Celestial Type vocabulary for Withered skeletons and Phase / Plague zombies, but reimplements those ideas with its own 26.2 spawn events, persistent NBT, reaction cooldowns, effect durations, rewards and stage gating. No legacy mixins, assets, renderer code, namespaces or old Minecraft runtime code are bundled. Runtime notice: `META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt`.
 
 ## Create
 Source project: `Creators-of-Create/Create`  
