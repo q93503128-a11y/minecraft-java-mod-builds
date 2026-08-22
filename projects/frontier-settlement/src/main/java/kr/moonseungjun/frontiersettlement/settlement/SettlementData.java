@@ -24,14 +24,17 @@ public final class SettlementData extends SavedData {
                     Codec.INT.optionalFieldOf("stock_x", 0).forGetter(data -> data.stockX),
                     Codec.INT.optionalFieldOf("stock_y", 0).forGetter(data -> data.stockY),
                     Codec.INT.optionalFieldOf("stock_z", 0).forGetter(data -> data.stockZ),
-                    SettlementResources.CODEC.optionalFieldOf("resources", SettlementResources.ZERO).forGetter(data -> data.resources),
+                    SettlementResources.CODEC.optionalFieldOf("resources", SettlementResources.ZERO)
+                            .forGetter(data -> data.resources),
                     Codec.INT.optionalFieldOf("population", 0).forGetter(data -> data.population),
                     Codec.INT.optionalFieldOf("housing_capacity", 0).forGetter(data -> data.housingCapacity),
                     Codec.INT.optionalFieldOf("house_count", 0).forGetter(data -> data.houseCount),
                     Codec.INT.optionalFieldOf("lumber_camp_count", 0).forGetter(data -> data.lumberCampCount),
-                    RoadSegment.CODEC.listOf().optionalFieldOf("roads", List.<RoadSegment>of()).forGetter(data -> data.roads),
-                    RoadConstructionState.CODEC.optionalFieldOf("road_construction", RoadConstructionState.EMPTY).forGetter(data -> data.roadConstruction),
-                    ConstructionState.CODEC.optionalFieldOf("construction", ConstructionState.EMPTY).forGetter(data -> data.construction)
+                    SettlementInfrastructureState.CODEC
+                            .optionalFieldOf("infrastructure", SettlementInfrastructureState.EMPTY)
+                            .forGetter(data -> data.infrastructure),
+                    ConstructionState.CODEC.optionalFieldOf("construction", ConstructionState.EMPTY)
+                            .forGetter(data -> data.construction)
             ).apply(instance, SettlementData::new))
     );
 
@@ -47,20 +50,19 @@ public final class SettlementData extends SavedData {
     private int housingCapacity;
     private int houseCount;
     private int lumberCampCount;
-    private List<RoadSegment> roads;
-    private RoadConstructionState roadConstruction;
+    private SettlementInfrastructureState infrastructure;
     private ConstructionState construction;
 
     public SettlementData() {
         this(false, 0, 0, 0, 0, 0, 0, SettlementResources.ZERO,
-                0, 0, 0, 0, List.of(), RoadConstructionState.EMPTY, ConstructionState.EMPTY);
+                0, 0, 0, 0, SettlementInfrastructureState.EMPTY, ConstructionState.EMPTY);
     }
 
     public SettlementData(boolean founded, int centerX, int centerY, int centerZ,
                           int stockX, int stockY, int stockZ,
                           SettlementResources resources, int population,
                           int housingCapacity, int houseCount, int lumberCampCount,
-                          List<RoadSegment> roads, RoadConstructionState roadConstruction,
+                          SettlementInfrastructureState infrastructure,
                           ConstructionState construction) {
         this.founded = founded;
         this.centerX = centerX;
@@ -74,8 +76,7 @@ public final class SettlementData extends SavedData {
         this.housingCapacity = housingCapacity;
         this.houseCount = houseCount;
         this.lumberCampCount = lumberCampCount;
-        this.roads = List.copyOf(roads);
-        this.roadConstruction = roadConstruction;
+        this.infrastructure = infrastructure;
         this.construction = construction;
     }
 
@@ -91,8 +92,11 @@ public final class SettlementData extends SavedData {
     public int housingCapacity() { return housingCapacity; }
     public int houseCount() { return houseCount; }
     public int lumberCampCount() { return lumberCampCount; }
-    public List<RoadSegment> roads() { return roads; }
-    public RoadConstructionState roadConstruction() { return roadConstruction; }
+    public List<BuildingRecord> buildings() { return infrastructure.buildings(); }
+    public List<RoadSegment> roads() { return infrastructure.roads(); }
+    public RoadConstructionState roadConstruction() { return infrastructure.roadConstruction(); }
+    public List<OutpostRecord> outposts() { return infrastructure.outposts(); }
+    public OutpostConstructionState outpostConstruction() { return infrastructure.outpostConstruction(); }
     public ConstructionState construction() { return construction; }
 
     public void found(BlockPos center, BlockPos stockpile) {
@@ -108,8 +112,7 @@ public final class SettlementData extends SavedData {
         this.housingCapacity = 0;
         this.houseCount = 0;
         this.lumberCampCount = 0;
-        this.roads = List.of();
-        this.roadConstruction = RoadConstructionState.EMPTY;
+        this.infrastructure = SettlementInfrastructureState.EMPTY;
         this.construction = ConstructionState.EMPTY;
         setDirty();
     }
@@ -135,16 +138,26 @@ public final class SettlementData extends SavedData {
     public void replaceConstructionStep(int step) {
         if (!construction.active()) return;
         this.construction = new ConstructionState(
-                construction.type(), construction.originX(), construction.originY(), construction.originZ(), Math.max(0, step));
+                construction.type(), construction.originX(), construction.originY(),
+                construction.originZ(), Math.max(0, step));
         setDirty();
     }
 
     public void completeConstruction(BuildingType type) {
+        completeConstruction(type, construction.origin());
+    }
+
+    public void completeConstruction(BuildingType type, BlockPos origin) {
         switch (type) {
             case HOUSE -> houseCount++;
             case LUMBER_CAMP -> lumberCampCount++;
         }
         housingCapacity += type.housingGain();
+
+        List<BuildingRecord> nextBuildings = new ArrayList<>(buildings());
+        nextBuildings.add(new BuildingRecord(type.id(), origin.getX(), origin.getY(), origin.getZ()));
+        infrastructure = new SettlementInfrastructureState(
+                nextBuildings, roads(), roadConstruction(), outposts(), outpostConstruction());
         construction = ConstructionState.EMPTY;
         setDirty();
     }
@@ -156,34 +169,89 @@ public final class SettlementData extends SavedData {
     }
 
     public void beginRoadConstruction(BlockPos start, int directionX, int directionZ, int length) {
-        roadConstruction = new RoadConstructionState(
+        RoadConstructionState next = new RoadConstructionState(
                 start.getX(), start.getY(), start.getZ(), directionX, directionZ, length, 0);
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), next, outposts(), outpostConstruction());
         setDirty();
     }
 
     public void advanceRoadConstruction() {
-        if (!roadConstruction.active()) return;
-        roadConstruction = roadConstruction.advance();
+        if (!roadConstruction().active()) return;
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), roadConstruction().advance(), outposts(), outpostConstruction());
         setDirty();
     }
 
     public void replaceRoadConstructionStep(int step) {
-        if (!roadConstruction.active()) return;
-        roadConstruction = roadConstruction.withStep(step);
+        if (!roadConstruction().active()) return;
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), roadConstruction().withStep(step), outposts(), outpostConstruction());
         setDirty();
     }
 
     public void completeRoad(RoadSegment segment) {
-        List<RoadSegment> next = new ArrayList<>(roads);
-        next.add(segment);
-        roads = List.copyOf(next);
-        roadConstruction = RoadConstructionState.EMPTY;
+        List<RoadSegment> nextRoads = new ArrayList<>(roads());
+        nextRoads.add(segment);
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), nextRoads, RoadConstructionState.EMPTY, outposts(), outpostConstruction());
         setDirty();
     }
 
     public void clearRoadConstruction() {
-        if (!roadConstruction.active()) return;
-        roadConstruction = RoadConstructionState.EMPTY;
+        if (!roadConstruction().active()) return;
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), RoadConstructionState.EMPTY, outposts(), outpostConstruction());
+        setDirty();
+    }
+
+    public void beginOutpostConstruction(int roadIndex, BlockPos gate, int directionX, int directionZ) {
+        OutpostConstructionState next = new OutpostConstructionState(
+                roadIndex, gate.getX(), gate.getY(), gate.getZ(), directionX, directionZ, 0);
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), roadConstruction(), outposts(), next);
+        setDirty();
+    }
+
+    public void advanceOutpostConstruction() {
+        if (!outpostConstruction().active()) return;
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), roadConstruction(), outposts(), outpostConstruction().advance());
+        setDirty();
+    }
+
+    public void replaceOutpostConstructionStep(int step) {
+        if (!outpostConstruction().active()) return;
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), roadConstruction(), outposts(), outpostConstruction().withStep(step));
+        setDirty();
+    }
+
+    public void completeOutpost(OutpostRecord outpost) {
+        List<OutpostRecord> nextOutposts = new ArrayList<>(outposts());
+        nextOutposts.add(outpost);
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), roadConstruction(), nextOutposts, OutpostConstructionState.EMPTY);
+        setDirty();
+    }
+
+    public void clearOutpostConstruction() {
+        if (!outpostConstruction().active()) return;
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), roadConstruction(), outposts(), OutpostConstructionState.EMPTY);
+        setDirty();
+    }
+
+    public void addPopulation(int amount) {
+        if (amount <= 0) return;
+        population += amount;
+        setDirty();
+    }
+
+    public void setPopulation(int nextPopulation) {
+        int normalized = Math.max(1, nextPopulation);
+        if (population == normalized) return;
+        population = normalized;
         setDirty();
     }
 }
