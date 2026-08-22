@@ -33,6 +33,7 @@ public final class BuildingBlueprints {
             case QUARRY -> quarry(origin);
             case MINE -> mine(origin);
             case WAREHOUSE -> warehouse(origin);
+            case BLACKSMITH, GUARD_POST -> AdvancedBuildingBlueprints.create(type, origin);
         };
     }
 
