@@ -1,7 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- six-skill, reactive elite, affix, reforge and selectable mining regressions retained
-- world-shared infrastructure funding persists through SavedData
-- Quarry Network gates tick-budgeted 5x5x8 tunnel mining without recursive rescheduling
-- Irrigation Works gates Lv.30 seed-backed protected auto-replant with no free-seed path
-- M radial is reduced to seven top-level entries; guide subpages remain inside Guide
+- Veinminer++ MIT smart-tree safety prevents plain log structures from bulk-felling
+- Woodcutting 16/48/128/256 work is tick-drained at 12/player and 64/global
+- Builder Foundry gates Lv.90 5x5x5 material-backed protected volume construction
+- 0.14 shared infrastructure, tunnel, irrigation, elite, affix and reforge regressions retained
