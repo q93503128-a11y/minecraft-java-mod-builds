@@ -135,7 +135,8 @@ public final class AdvancedBuildingBlueprints {
         }
         b.put(4, 1, 4, Blocks.BARREL.defaultBlockState(), BuildingBlueprints.Phase.FINISH);
         b.put(3, 1, 4, Blocks.CRAFTING_TABLE.defaultBlockState(), BuildingBlueprints.Phase.FINISH);
-        int[][] lamps = {{1,1},{7,1},{1,7},{7,7},{4,2},{4,6}};
+        // Lighting sits between structural posts, never in a post's bottom block.
+        int[][] lamps = {{2,2},{6,2},{2,6},{6,6},{4,2},{4,6}};
         for (int[] p : lamps) b.put(p[0], 1, p[1], Blocks.LANTERN.defaultBlockState(), BuildingBlueprints.Phase.FINISH);
         return b.build();
     }
