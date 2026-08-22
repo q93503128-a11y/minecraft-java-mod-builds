@@ -10,7 +10,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-/** Keeps far-regional settlement, road, society, economy, government and freight streaming isolated from the central dispatcher. */
+/** Keeps far-regional settlement, road, society, economy, government, security and freight streaming isolated from the central dispatcher. */
 @EventBusSubscriber(modid = LivingKingdoms.MOD_ID)
 public final class ErdenRegionalSettlementEventBridge {
     private ErdenRegionalSettlementEventBridge() {
@@ -30,6 +30,7 @@ public final class ErdenRegionalSettlementEventBridge {
         ErdenRegionalShipmentClockGuard.onServerTick(event);
         ErdenRegionalEconomyManager.onServerTick(event);
         ErdenRegionalGovernanceManager.onServerTick(event);
+        ErdenRegionalRoadSecurityManager.onServerTick(event);
         ErdenRegionalTransportManager.onServerTick(event);
     }
 
