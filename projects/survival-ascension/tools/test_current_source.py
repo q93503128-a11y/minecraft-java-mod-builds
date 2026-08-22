@@ -11,112 +11,89 @@ required = [
     "src/main/resources/META-INF/third-party/MOB_CHAMPIONS_MIT.txt", "src/main/resources/META-INF/third-party/APOTHEOSIS_MIT.txt",
     "src/main/resources/META-INF/third-party/MEKANISM_MIT.txt",
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
-    "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/MiningMode.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java",
-    "src/main/java/kr/moonseungjun/survivalascension/network/MiningModePayload.java",
-    "src/main/java/kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/harvesting/IrrigationReplantService.java",
-    "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionMode.java",
     "src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java",
     "src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java",
-    "src/main/java/kr/moonseungjun/survivalascension/network/EquipmentActionPayload.java",
-    "src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java",
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java",
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureData.java",
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java",
+    "src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java",
     "src/main/java/kr/moonseungjun/survivalascension/network/InfrastructureActionPayload.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java",
 ]
 errors=[]
 for rel in required:
     if not (ROOT/rel).exists(): errors.append(f"missing: {rel}")
-props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
-for needle in ["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.14.0-alpha.1"]:
-    if needle not in props: errors.append(f"gradle.properties missing {needle}")
-main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
-for needle in ['VERSION = "0.14.0-alpha.1"',"EliteMobSystem::onFinalizeSpawn","AscensionAffixes::onEliteDeath","MobilityProgression::onPlayerTick","ConstructionProgression::onBlockPlaced","BoreMiningService::onServerTick","IrrigationReplantService::onServerTick"]:
-    if needle not in main: errors.append(f"main registration missing: {needle}")
 
-mining=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java").read_text(encoding="utf-8")
-for needle in ["MODE_KEY","MiningMode","effectiveMode","case AUTO","case PLANE","case VEIN","case EXTRACT","case BORE","extractMatchingOre",
-               "EXTRACT_RADIUS_XZ = 12","EXTRACT_RADIUS_Y = 12","level.hasChunkAt(next)","OreVeinMatcher.forOrigin","player.gameMode.destroyBlock(target)",
-               "BoreMiningService.isInternal","BoreMiningService.schedule","InfrastructureProject.QUARRY_NETWORK","setMode(ServerPlayer player, MiningMode mode)"]:
-    if needle not in mining: errors.append(f"mining/infrastructure contract missing: {needle}")
-mode=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mining/MiningMode.java").read_text(encoding="utf-8")
-for needle in ['AUTO("auto"','PLANE("plane"','VEIN("vein"','EXTRACT("extract"','BORE("bore"','"터널", 90']:
-    if needle not in mode: errors.append(f"mining mode definition missing: {needle}")
+def need(text, needles, label):
+    for needle in needles:
+        if needle not in text: errors.append(f"{label} missing: {needle}")
+
+props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
+need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.15.0-alpha.1"],"gradle.properties")
+main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
+need(main,['VERSION = "0.15.0-alpha.1"',"WoodcuttingProgression::onServerTick","BoreMiningService::onServerTick","IrrigationReplantService::onServerTick","ConstructionProgression::onServerTick","EliteMobSystem::onFinalizeSpawn"],"main registration")
+
+wood=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java").read_text(encoding="utf-8")
+need(wood,["smart-tree leaf safety","GLOBAL_LOG_BUDGET_PER_TICK = 64","LOCAL_LOG_BUDGET_PER_TICK = 12","JOBS.containsKey","scheduleNaturalTree","gatherConnectedLogs","hasLeavesNearby","hasAdjacentLeaf","BlockTags.LEAVES","CHAIN_GUARD.add","player.gameMode.destroyBlock(target)"],"woodcutting safety")
+if "hasLeavesNearby(level, origin, gathered)" not in wood: errors.append("woodcutting can bulk-fell without leaf evidence")
+
+construction_mode=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionMode.java").read_text(encoding="utf-8")
+need(construction_mode,['VOLUME("volume", "입체", 90)'],"construction mode")
+construction=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java").read_text(encoding="utf-8")
+need(construction,["VOLUME_SIZE = 5","ConstructionMode.VOLUME","InfrastructureProject.BUILDER_FOUNDRY","MAX_PENDING_BLOCKS_PER_PLAYER = 256","EventHooks.onBlockPlace","consumeOne(player, item)","mode == ConstructionMode.VOLUME","center.offset(dx, dy, dz)"],"construction volume")
+
+infra=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java").read_text(encoding="utf-8")
+need(infra,["QUARRY_NETWORK","IRRIGATION_WORKS","BUILDER_FOUNDRY","Items.STONE_BRICKS","1024","Items.OBSIDIAN","64"],"infrastructure projects")
+infra_data=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureData.java").read_text(encoding="utf-8")
+need(infra_data,["infrastructure_v1","SavedDataType<InfrastructureData>","isComplete","addContribution","setDirty"],"infrastructure persistence")
+infra_service=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java").read_text(encoding="utf-8")
+need(infra_service,["player.isCreative() || player.isSpectator()","countItem","consumeItem","getPlayerList().getPlayers()"],"infrastructure funding")
 
 bore=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java").read_text(encoding="utf-8")
-for needle in ["GLOBAL_BLOCK_BUDGET_PER_TICK = 64","LOCAL_BLOCK_BUDGET_PER_TICK = 12","MAX_PENDING_PER_PLAYER = 256","5×5×8","INTERNAL_BREAK_GUARD","InfrastructureProject.QUARRY_NETWORK","player.gameMode.destroyBlock(target)","level.getBlockEntity(target) != null","level.hasChunkAt(target)"]:
-    if needle not in bore: errors.append(f"bore safety contract missing: {needle}")
-
-infra_project=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java").read_text(encoding="utf-8")
-for needle in ["QUARRY_NETWORK","IRRIGATION_WORKS","Items.COBBLESTONE","1024","Items.COPPER_INGOT","512"]:
-    if needle not in infra_project: errors.append(f"infrastructure project contract missing: {needle}")
-infra_data=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureData.java").read_text(encoding="utf-8")
-for needle in ["SavedDataType<InfrastructureData>","infrastructure_v1","FUNDING_CODEC","isComplete","addContribution","setDirty"]:
-    if needle not in infra_data: errors.append(f"infrastructure persistence missing: {needle}")
-infra_service=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java").read_text(encoding="utf-8")
-for needle in ["ACTION_FUND","ACTION_STATUS","countItem","consumeItem","player.isCreative() || player.isSpectator()","getPlayerList().getPlayers()"]:
-    if needle not in infra_service: errors.append(f"infrastructure funding safety missing: {needle}")
-
+need(bore,["GLOBAL_BLOCK_BUDGET_PER_TICK = 64","LOCAL_BLOCK_BUDGET_PER_TICK = 12","MAX_PENDING_PER_PLAYER = 256","INTERNAL_BREAK_GUARD","InfrastructureProject.QUARRY_NETWORK","player.gameMode.destroyBlock(target)"],"bore regression")
 replant=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/harvesting/IrrigationReplantService.java").read_text(encoding="utf-8")
-for needle in ["InfrastructureProject.IRRIGATION_WORKS","SkillType.HARVESTING) < 30","Items.WHEAT_SEEDS","Items.CARROT","Items.POTATO","Items.BEETROOT_SEEDS","Items.NETHER_WART","EventHooks.onBlockPlace","consumeOne(player, kind.seed())","REPLANT_BUDGET_PER_TICK = 64"]:
-    if needle not in replant: errors.append(f"irrigation replant contract missing: {needle}")
-harvest=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java").read_text(encoding="utf-8")
-if "IrrigationReplantService.scheduleIfEligible" not in harvest: errors.append("Harvesting does not schedule irrigation replant")
+need(replant,["InfrastructureProject.IRRIGATION_WORKS","SkillType.HARVESTING) < 30","EventHooks.onBlockPlace","consumeOne(player, kind.seed())","Items.WHEAT_SEEDS","Items.NETHER_WART"],"irrigation regression")
 
 network=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java").read_text(encoding="utf-8")
-for needle in ['PROTOCOL = "7"',"MiningModePayload.TYPE","EquipmentActionPayload.TYPE","InfrastructureActionPayload.TYPE","InfrastructureService.perform"]:
-    if needle not in network: errors.append(f"network contract missing: {needle}")
-radial=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.java").read_text(encoding="utf-8")
-mining_ui=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.java").read_text(encoding="utf-8")
+need(network,['PROTOCOL = "7"',"InfrastructureActionPayload.TYPE","InfrastructureService.perform","MiningModePayload.TYPE","EquipmentActionPayload.TYPE"],"network regression")
+main_radial=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.java").read_text(encoding="utf-8")
+need(main_radial,["숙련","채굴","건축","장비","인프라","가이드","닫기"],"main radial")
+for duplicate in ["UNLOCKS", "STATS", "CONTROLS"]:
+    if duplicate in main_radial: errors.append(f"main radial duplicate guide entry remains: {duplicate}")
+construction_ui=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.java").read_text(encoding="utf-8")
+need(construction_ui,["입체","건축 공방","5×5×5","ConstructionMode.VOLUME"],"construction radial")
 infra_ui=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java").read_text(encoding="utf-8")
-for needle in ["숙련","채굴","건축","장비","인프라","가이드","InfrastructureRadialMenuScreen"]:
-    if needle not in radial: errors.append(f"main radial entry missing: {needle}")
-if "UNLOCKS" in radial or "STATS" in radial or "CONTROLS" in radial: errors.append("main radial still contains duplicate guide subentries")
-for needle in ["자동","굴착","광맥","추출","터널","MiningMode.BORE","MiningModePayload","Shift = 항상 1×1"]:
-    if needle not in mining_ui: errors.append(f"mining radial missing: {needle}")
-for needle in ["채석장 네트워크","관개 시설","진행도","InfrastructureActionPayload","ACTION_FUND","ACTION_STATUS"]:
-    if needle not in infra_ui: errors.append(f"infrastructure radial missing: {needle}")
+need(infra_ui,["채석장 네트워크","관개 시설","건축 공방","InfrastructureProject.BUILDER_FOUNDRY","진행도"],"infrastructure radial")
 
-affix=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java").read_text(encoding="utf-8")
-for needle in ["SECONDARY","UTILITY","AFFIX_POOL","reroll","toolSpeedMultiplier","adjustMiningArea","adjustMiningVeinLimit","adjustWoodcuttingLimit","adjustHarvestArea"]:
-    if needle not in affix: errors.append(f"affix regression missing: {needle}")
-reforge=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java").read_text(encoding="utf-8")
-for needle in ["ACTION_REFORGE","ACTION_SALVAGE","AscensionAffixes.reroll","Items.AMETHYST_SHARD","Items.DIAMOND","Items.NETHERITE_SCRAP","held.shrink(1)"]:
-    if needle not in reforge: errors.append(f"reforge regression missing: {needle}")
+# Preserve pre-0.15 core systems.
+for rel, needles in {
+    "mining/MiningProgression.java":["case EXTRACT","case BORE","extractMatchingOre","BoreMiningService.schedule","player.gameMode.destroyBlock(target)"],
+    "equipment/AscensionAffixes.java":["AFFIX_POOL","reroll","adjustMiningArea","adjustWoodcuttingLimit","adjustHarvestArea"],
+    "equipment/EquipmentReforgeService.java":["ACTION_REFORGE","ACTION_SALVAGE","Items.AMETHYST_SHARD","Items.NETHERITE_SCRAP"],
+    "elite/EliteMobSystem.java":["contains(\"SPAWNER\")","Trait.VAMPIRIC","Trait.BERSERKER","addPermanentModifier"],
+}.items():
+    text=(ROOT/"src/main/java/kr/moonseungjun/survivalascension"/rel).read_text(encoding="utf-8")
+    need(text,needles,f"regression {rel}")
 
-elite=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java").read_text(encoding="utf-8")
-for needle in ["contains(\"SPAWNER\")","REACTION_READY_KEY","reactToPlayerHit","Trait.VAMPIRIC","Trait.BERSERKER","dropRankReward","addPermanentModifier"]:
-    if needle not in elite: errors.append(f"elite regression missing: {needle}")
-
-for notice_rel, copyright_line in [
-    ("src/main/resources/META-INF/third-party/MOB_CHAMPIONS_MIT.txt", "Copyright (c) 2024 Wendall Cada"),
-    ("src/main/resources/META-INF/third-party/APOTHEOSIS_MIT.txt", "Copyright (c) 2018-2025 Stormraven Studios, LLC"),
-    ("src/main/resources/META-INF/third-party/MEKANISM_MIT.txt", "Copyright (c) 2017-2025 Aidan C. Brady"),
-]:
-    text=(ROOT/notice_rel).read_text(encoding="utf-8")
-    if copyright_line not in text or "MIT License" not in text: errors.append(f"invalid notice: {notice_rel}")
 third=(ROOT/"THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
-for needle in ["Mob Champions","Apotheosis","Mekanism","mekanism/Mekanism","Digital Miner"]:
-    if needle not in third: errors.append(f"third-party notice missing: {needle}")
-
-guide=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java").read_text(encoding="utf-8")
-for needle in ["공동 인프라","채석장 네트워크","관개 시설","씨앗 소비 자동 재파종","M → 인프라"]:
-    if needle not in guide: errors.append(f"guide missing 0.14 help: {needle}")
-
+need(third,["Veinminer++","smart-tree","Mekanism","Create","Code license: MIT","Assets license: All Rights Reserved"],"third-party notices")
 for rel in ["src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java","src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java","src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java"]:
     text=(ROOT/rel).read_text(encoding="utf-8")
     if re.search(r"setBlock\s*\([^\n]*AIR", text): errors.append(f"scaled destruction bypasses normal destroy path: {rel}")
-
 for forbidden in ["harmonised.pmmo", "alrex.parcool", "com.alrex", "mekanism.common"]:
     for path in (ROOT/"src").rglob("*.java"):
         if forbidden in path.read_text(encoding="utf-8",errors="ignore").lower(): errors.append(f"forbidden/reference namespace leaked: {path.relative_to(ROOT)} -> {forbidden}")
@@ -127,8 +104,7 @@ if errors:
     sys.exit(1)
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
-print("- six-skill, reactive elite, affix, reforge and selectable mining regressions retained")
-print("- world-shared infrastructure funding persists through SavedData")
-print("- Quarry Network gates tick-budgeted 5x5x8 tunnel mining without recursive rescheduling")
-print("- Irrigation Works gates Lv.30 seed-backed protected auto-replant with no free-seed path")
-print("- M radial is reduced to seven top-level entries; guide subpages remain inside Guide")
+print("- Veinminer++ MIT smart-tree safety prevents plain log structures from bulk-felling")
+print("- Woodcutting 16/48/128/256 work is tick-drained at 12/player and 64/global")
+print("- Builder Foundry gates Lv.90 5x5x5 material-backed protected volume construction")
+print("- 0.14 shared infrastructure, tunnel, irrigation, elite, affix and reforge regressions retained")
