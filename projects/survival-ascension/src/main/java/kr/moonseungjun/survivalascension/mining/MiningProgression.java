@@ -2,6 +2,8 @@ package kr.moonseungjun.survivalascension.mining;
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.progress.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -46,9 +48,9 @@ public final class MiningProgression {
         SkillProgressionService.syncAll(player);
         if (data.markIntroduced(player)) {
             player.sendSystemMessage(Component.literal("§6[Survival Ascension] §f행동으로 숙련을 올리면 작업 규모 자체가 커집니다."));
-            player.sendSystemMessage(Component.literal("§b채굴 §fLv.10 3×3 · Lv.30 광맥 · Lv.60 7×7 · Lv.90 9×9+추출 모드"));
-            player.sendSystemMessage(Component.literal("§a벌목 §fLv.10부터 연쇄 벌목  §7| §2농사 §fLv.10부터 광역 수확"));
-            player.sendSystemMessage(Component.literal("§7M 메뉴에서 채굴 모드를 고를 수 있고, 웅크리면 항상 1×1 정밀 작업합니다."));
+            player.sendSystemMessage(Component.literal("§b채굴 §fLv.10 3×3 · Lv.30 광맥 · Lv.60 7×7 · Lv.90 9×9+추출"));
+            player.sendSystemMessage(Component.literal("§6인프라 §f공동 자원을 투입해 채석장 네트워크·관개 시설 같은 후반 행동을 해금합니다."));
+            player.sendSystemMessage(Component.literal("§7M 메뉴에서 모드/인프라를 고를 수 있고, 웅크리면 항상 정밀 작업합니다."));
         }
     }
 
@@ -81,6 +83,7 @@ public final class MiningProgression {
             int xp = Math.max(1, (int) Math.ceil(xpForBlock(centerState, level, center) * AscensionAffixes.xpMultiplier(tool)));
             announceMilestones(player, SkillProgressionService.award(player, SkillType.MINING, xp));
         }
+        if (BoreMiningService.isInternal(player)) return;
         if (AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
 
         int miningLevel = SkillProgressData.get(player).level(player, SkillType.MINING);
@@ -104,6 +107,7 @@ public final class MiningProgression {
                 case EXTRACT -> {
                     if (centerState.is(VALUABLE_ORES) && veinLimit > 1) extractMatchingOre(player, level, center, centerState, veinLimit);
                 }
+                case BORE -> BoreMiningService.schedule(player, level, center, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
             }
         } finally {
             AREA_BREAK_GUARD.remove(player.getUUID());
@@ -116,6 +120,10 @@ public final class MiningProgression {
             player.sendSystemMessage(Component.literal("§c[채굴] §f" + mode.koreanName() + " 모드는 채굴 Lv." + mode.requiredLevel() + " 필요"));
             return;
         }
+        if (mode == MiningMode.BORE && !InfrastructureData.get(player).isComplete(InfrastructureProject.QUARRY_NETWORK)) {
+            player.sendSystemMessage(Component.literal("§c[채굴] §f터널 모드는 §eM→인프라→채석장 네트워크§f 완공이 필요합니다."));
+            return;
+        }
         player.getPersistentData().putString(MODE_KEY, mode.id());
         player.sendSystemMessage(Component.literal("§b[채굴 모드] §f" + mode.koreanName() + "§f 선택"));
     }
@@ -126,10 +134,12 @@ public final class MiningProgression {
 
     private static MiningMode effectiveMode(ServerPlayer player, int level) {
         MiningMode selected = getMode(player);
-        return level >= selected.requiredLevel() ? selected : MiningMode.AUTO;
+        if (level < selected.requiredLevel()) return MiningMode.AUTO;
+        if (selected == MiningMode.BORE && !InfrastructureData.get(player).isComplete(InfrastructureProject.QUARRY_NETWORK)) return MiningMode.AUTO;
+        return selected;
     }
 
-    private static boolean isValidPickaxeBreak(ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state, ItemStack tool) {
+    static boolean isValidPickaxeBreak(ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state, ItemStack tool) {
         if (state.isAir() || tool.isEmpty() || !tool.is(ItemTags.PICKAXES) || !state.is(BlockTags.MINEABLE_WITH_PICKAXE)) return false;
         if (state.getDestroySpeed(level, pos) < 0.0F) return false;
         return state.canHarvestBlock(level, pos, player);
@@ -147,7 +157,7 @@ public final class MiningProgression {
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f3×3 굴착 + M→채굴→굴착 모드"));
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f5×5 + 연결 광맥 24 + 광맥 전용 모드"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f7×7 + 연결 광맥 64"));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f9×9 + 광맥 128 + §e추출 모드§f: 반경 내 같은 광석을 비연결 상태에서도 탐색"));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f9×9 + 광맥128 + 추출. 채석장 네트워크 완공 시 5×5×8 터널 모드 추가."));
     }
 
     private static void breakConnectedOre(ServerPlayer player, ServerLevel level, BlockPos origin, BlockState originState, int limit) {
@@ -174,12 +184,7 @@ public final class MiningProgression {
         }
     }
 
-    /*
-     * Target-filtered bounded search is adapted from the Digital Miner design in Mekanism (MIT).
-     * No Mekanism assets, machine implementation, energy system, filters, or GUI are bundled.
-     * Survival Ascension searches only already-loaded nearby blocks, requires Lv.90, keeps normal destroyBlock handling,
-     * tool harvest checks, block-entity exclusion, skill XP, durability, enchantment/loot behavior, and a hard block limit.
-     */
+    /* Target-filtered bounded search adapted from the Digital Miner design in Mekanism (MIT). */
     private static void extractMatchingOre(ServerPlayer player, ServerLevel level, BlockPos origin, BlockState originState, int limit) {
         OreVeinMatcher matcher = OreVeinMatcher.forOrigin(originState);
         List<BlockPos> candidates = new ArrayList<>();
