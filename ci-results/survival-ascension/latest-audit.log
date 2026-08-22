@@ -1,7 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- six-skill, reactive elite, affix and reforge regressions retained
-- M -> Mining exposes Auto/Plane/Vein/Extract with server-side level validation
-- Lv.90 Extract is bounded to loaded chunks and normal destroyBlock semantics
-- Shift precision override remains global for mining modes
-- Mekanism MIT notice packaged; Mekanism namespace/assets/machine code are not bundled
+- six-skill, reactive elite, affix, reforge and selectable mining regressions retained
+- world-shared infrastructure funding persists through SavedData
+- Quarry Network gates tick-budgeted 5x5x8 tunnel mining without recursive rescheduling
+- Irrigation Works gates Lv.30 seed-backed protected auto-replant with no free-seed path
+- M radial is reduced to seven top-level entries; guide subpages remain inside Guide
