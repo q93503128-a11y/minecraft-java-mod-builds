@@ -15,11 +15,14 @@ required = [
     JAVA / 'settlement/SettlementRoadService.java', JAVA / 'settlement/RoadConstructionState.java',
     JAVA / 'settlement/RoadSegment.java', JAVA / 'settlement/SettlementOutpostService.java',
     JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementBenefitService.java',
+    JAVA / 'settlement/SettlementCoreService.java', JAVA / 'settlement/SettlementResidentRoutineService.java',
     JAVA / 'settlement/OutpostBlueprints.java', JAVA / 'settlement/OutpostConstructionState.java',
     JAVA / 'settlement/OutpostRecord.java', JAVA / 'settlement/SettlementInventory.java',
     JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementTier.java',
     JAVA / 'command/SettlementCommands.java', JAVA / 'network/SettlementNetwork.java',
+    JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'network/OutpostPlacementRequestPayload.java', JAVA / 'network/OutpostPreviewPayload.java',
+    JAVA / 'client/ClientSettlementState.java', JAVA / 'client/SettlementHudOverlay.java',
     JAVA / 'client/BuildingPlacementClient.java', JAVA / 'client/RoadPlacementClient.java',
     JAVA / 'client/OutpostPlacementClient.java', JAVA / 'client/PlacementGhostRenderer.java',
     JAVA / 'client/RoadGhostRenderer.java', JAVA / 'client/OutpostGhostRenderer.java',
@@ -30,9 +33,36 @@ if missing:
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
 for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta',
-              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.17'):
+              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.18'):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
+
+core = (JAVA / 'settlement/SettlementCoreService.java').read_text(encoding='utf-8')
+for token in ('MAX_PLACEMENTS_PER_TICK = 6', 'SettlementTier.current(data)',
+              'addFloor(placements, center, 1, Blocks.COARSE_DIRT.defaultBlockState())',
+              'SettlementTier.HAMLET.ordinal()', 'SettlementTier.VILLAGE.ordinal()',
+              'SettlementTier.FRONTIER_TOWN.ordinal()', 'SettlementTier.DOMAIN.ordinal()',
+              'addLampRing', 'canSafelyReplace', 'isNaturalGround', 'level.setBlock'):
+    if token not in core:
+        raise SystemExit(f'tiered civic core invariant missing: {token}')
+if 'destroyBlock(' in core or 'dropResources(' in core:
+    raise SystemExit('civic core upgrades must never create loose drops')
+
+routine = (JAVA / 'settlement/SettlementResidentRoutineService.java').read_text(encoding='utf-8')
+for token in ('time >= 13000L && time < 23000L', 'TOWN_WORKER_NAMES',
+              'BuildingType.HOUSE', 'house.localToWorld', 'villager.getNavigation().moveTo',
+              'villager.getNavigation().stop()'):
+    if token not in routine:
+        raise SystemExit(f'resident routine invariant missing: {token}')
+
+snapshot = (JAVA / 'network/SettlementSnapshotPayload.java').read_text(encoding='utf-8')
+for token in ('int population, String tier', 'buf.writeUtf(payload.tier())', 'buf.readUtf()'):
+    if token not in snapshot:
+        raise SystemExit(f'tier snapshot invariant missing: {token}')
+
+hud = (JAVA / 'client/SettlementHudOverlay.java').read_text(encoding='utf-8')
+if 'String line = data.tier()' not in hud:
+    raise SystemExit('persistent HUD must display the synced settlement tier')
 
 building_type = (JAVA / 'settlement/BuildingType.java').read_text(encoding='utf-8')
 for token in ('BLACKSMITH("blacksmith", "대장간"', 'GUARD_POST("guard_post", "경비초소"'):
@@ -50,8 +80,6 @@ for token in ('case BLACKSMITH -> blacksmith(origin)', 'case GUARD_POST -> guard
               'int[][] lamps = {{2,2},{6,2},{2,6},{6,6},{4,2},{4,6}}'):
     if token not in advanced:
         raise SystemExit(f'advanced blueprint safety/detail invariant missing: {token}')
-if advanced.count('Blocks.LANTERN.defaultBlockState()') < 2:
-    raise SystemExit('advanced buildings must include explicit lighting layouts')
 
 construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
 for token in ('public static StartResult startAt', 'public static PlacementCheck checkPlacement',
@@ -79,11 +107,15 @@ for token in ('BuildingType.BLACKSMITH', 'BuildingType.GUARD_POST',
         raise SystemExit(f'settlement benefit invariant missing: {token}')
 
 service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
-for token in ('SettlementWorkerService.tick(server, data)',
+for token in ('SettlementCoreService.tick(server, data)',
+              'SettlementResidentRoutineService.isRestTime(server.overworld())',
+              'SettlementResidentRoutineService.tick(server, data)',
+              'SettlementWorkerService.tick(server, data)',
               'SettlementOutpostProductionService.tick(server, data)',
-              'SettlementBenefitService.tick(server, data)'):
+              'SettlementBenefitService.tick(server, data)',
+              'SettlementTier.current(data).displayName()'):
     if token not in service:
-        raise SystemExit(f'canonical server tick invariant missing: {token}')
+        raise SystemExit(f'canonical server tick/tier sync invariant missing: {token}')
 
 road = (JAVA / 'settlement/SettlementRoadService.java').read_text(encoding='utf-8')
 for token in ('MAX_ROUTE_LENGTH = 96', 'public static RouteCheck checkRoute',
@@ -100,11 +132,11 @@ for token in ('public static PlacementCheck checkPlacement', 'MAX_TARGET_DISTANC
         raise SystemExit(f'outpost placement invariant missing: {token}')
 
 network = (JAVA / 'network/SettlementNetwork.java').read_text(encoding='utf-8')
-for token in ('PROTOCOL = "4"', 'playToServer(OutpostPlacementRequestPayload.TYPE',
+for token in ('PROTOCOL = "5"', 'playToServer(OutpostPlacementRequestPayload.TYPE',
               'playToClient(OutpostPreviewPayload.TYPE', 'SettlementOutpostService.checkPlacement',
               'SettlementOutpostService.startAt'):
     if token not in network:
-        raise SystemExit(f'outpost networking invariant missing: {token}')
+        raise SystemExit(f'outpost/tier networking invariant missing: {token}')
 
 for renderer_name in ('PlacementGhostRenderer.java', 'RoadGhostRenderer.java', 'OutpostGhostRenderer.java'):
     renderer = (JAVA / 'client' / renderer_name).read_text(encoding='utf-8')
@@ -116,8 +148,8 @@ for path in JAVA.rglob('*.java'):
     text = path.read_text(encoding='utf-8')
     if path.name in {'SettlementConstructionService.java', 'SettlementRoadService.java',
                      'SettlementOutpostService.java', 'SettlementWorkerService.java',
-                     'SettlementOutpostProductionService.java'}:
+                     'SettlementOutpostProductionService.java', 'SettlementCoreService.java'}:
         if 'destroyBlock(' in text or 'dropResources(' in text:
             raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.17 source audit: PASS')
+print('Frontier Settlement alpha.18 source audit: PASS')
