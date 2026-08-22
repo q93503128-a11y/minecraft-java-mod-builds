@@ -1,0 +1,13 @@
+Hostiles Are Too Easy
+Source: https://github.com/MinecraftIsTooEasy/HostilesAreTooEasy
+License: CC0 1.0 Universal
+
+The upstream project dedicates the work to the public domain under CC0 1.0 Universal.
+Survival Ascension adapts its boss-driven dynamic-difficulty progression concept for a modern
+Minecraft 26.2 world-stage system. No upstream assets, mixins, namespaces, or legacy Minecraft
+runtime code are bundled.
+
+CC0 1.0 summary notice:
+To the extent possible under law, the person who associated CC0 with the work has waived all
+copyright and related or neighboring rights to the work worldwide. The work is provided as-is,
+without warranties. See the upstream LICENSE for the complete CC0 1.0 Universal legal code.
