@@ -16,7 +16,7 @@ public final class SixthCircleSpellSummary {
             case "freezing_sphere" -> "고정 착탄점 대형 극저온 폭발 · 거리 감쇠 냉기 피해 + 화염 소거·초강력 동결·둔화";
             case "eyebite" -> "단일 정신 피해 + 18초 공포·쇠약·암흑 · 비플레이어 대상은 효과가 끝날 때까지 강제 도주하며 Arcane 시전도 중단";
             case "flesh_to_stone" -> "단일 피해 + 약 18초 완전 석화 · 이동·공격·Arcane 시전 봉쇄 + 석질 육체의 피해 저항";
-            case "circle_of_death" -> "대형 생명 침식 영역 · 다수의 현재 생명력과 전투력을 동시에 깎는 6써클 군세 제압기 · 즉사/처형 권능 없음";
+            case "circle_of_death" -> "대형 생명 침식 영역 · 다수의 현재 생명력과 전투력을 동시에 깎는 6써클 군세 제압기 · 처형 판정은 전혀 없고 즉사 권능도 없습니다.";
             default -> "";
         };
     }
