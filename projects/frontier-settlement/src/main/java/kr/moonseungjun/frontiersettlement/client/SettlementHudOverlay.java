@@ -14,7 +14,7 @@ public final class SettlementHudOverlay {
         SettlementSnapshotPayload data = ClientSettlementState.snapshot();
         if (!data.founded()) return;
 
-        String line = "마을   목재 " + data.wood()
+        String line = data.tier() + "   목재 " + data.wood()
                 + "   석재 " + data.stone()
                 + "   금속 " + data.metal()
                 + "   식량 " + data.food()
@@ -38,7 +38,7 @@ public final class SettlementHudOverlay {
         } else if (OutpostPlacementClient.active()) {
             drawModePanel(graphics, minecraft, x, y + 23,
                     OutpostPlacementClient.statusLine(),
-                    "K 종료   도로 끝을 가리키기   Enter 전초기지 건설");
+                    "K 종료   도로 끝 조준   Enter 전초기지 건설");
         }
     }
 
