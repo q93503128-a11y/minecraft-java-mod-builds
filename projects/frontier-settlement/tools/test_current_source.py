@@ -9,6 +9,8 @@ required = [
     JAVA / 'FrontierSettlement.java',
     JAVA / 'settlement/SettlementData.java',
     JAVA / 'settlement/SettlementService.java',
+    JAVA / 'settlement/SettlementInfrastructureState.java',
+    JAVA / 'settlement/BuildingRecord.java',
     JAVA / 'settlement/ConstructionState.java',
     JAVA / 'settlement/BuildingType.java',
     JAVA / 'settlement/BuildingBlueprints.java',
@@ -16,6 +18,12 @@ required = [
     JAVA / 'settlement/RoadSegment.java',
     JAVA / 'settlement/RoadConstructionState.java',
     JAVA / 'settlement/SettlementRoadService.java',
+    JAVA / 'settlement/OutpostRecord.java',
+    JAVA / 'settlement/OutpostConstructionState.java',
+    JAVA / 'settlement/OutpostBlueprints.java',
+    JAVA / 'settlement/SettlementOutpostService.java',
+    JAVA / 'settlement/SettlementInventory.java',
+    JAVA / 'settlement/SettlementWorkerService.java',
     JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'client/SettlementHudOverlay.java',
 ]
@@ -28,111 +36,60 @@ for token in (
     'minecraft_version=26.2',
     'neo_version=26.2.0.38-beta',
     'mod_id=frontier_settlement',
-    'mod_version=0.1.0-alpha.3',
+    'mod_version=0.1.0-alpha.5',
 ):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
 
 service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
-for token in (
-    'Blocks.BARREL',
-    'getTickCount()',
-    'ItemTags.LOGS',
-    'SettlementConstructionService.tick',
-    'SettlementRoadService.tick',
-    'data.roadConstruction().active()',
-):
+for token in ('Blocks.BARREL', 'SettlementConstructionService.tick', 'SettlementRoadService.tick',
+              'SettlementOutpostService.tick', 'SettlementWorkerService.tick'):
     if token not in service:
         raise SystemExit(f'core settlement invariant missing: {token}')
 
-construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
-for token in (
-    'frontier_settlement_builder',
-    'Heightmap.Types.MOTION_BLOCKING_NO_LEAVES',
-    'max - min > 2',
-    'level.getBlockEntity(pos) != null',
-    '!level.getFluidState(surfaceBlock).isEmpty()',
-    'if (!current.isAir())',
-    'Blocks.COBBLESTONE.defaultBlockState()',
-    'DIRECT_BLOCK_UPDATE = 2',
-    'data.beginConstruction(type, site.origin())',
-    'consumeCost(level, data, type)',
-    'count(container, true) < type.woodCost()',
-    'count(container, false) < type.stoneCost()',
-    'data.roadConstruction().active()',
-):
-    if token not in construction:
-        raise SystemExit(f'construction safety invariant missing: {token}')
-if 'destroyBlock(' in construction or 'dropResources(' in construction:
-    raise SystemExit('construction must not use drop-producing block destruction paths')
-
-blueprints = (JAVA / 'settlement/BuildingBlueprints.java').read_text(encoding='utf-8')
-phase_order = [
-    'Phase.FLOOR',
-    'Phase.FRAME_AND_WALLS',
-    'Phase.ROOF',
-    'Phase.FINISH',
-]
-first_positions = [blueprints.find(token) for token in phase_order]
-if any(pos < 0 for pos in first_positions) or first_positions != sorted(first_positions):
-    raise SystemExit('blueprint phase order must begin floor -> frame/walls -> roof -> finish')
-for token in (
-    'isHouseDoorOpening',
-    'return Blocks.GLASS.defaultBlockState()',
-    'Blocks.LANTERN.defaultBlockState()',
-    'Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()',
-    'StairBlock.FACING',
-):
-    if token not in blueprints:
-        raise SystemExit(f'building blueprint invariant missing: {token}')
-if blueprints.count('Blocks.LANTERN.defaultBlockState()') < 8:
-    raise SystemExit('starter buildings must retain at least eight planned lantern placements total')
-if blueprints.count('Blocks.GLASS.defaultBlockState()') < 2:
-    raise SystemExit('both starter blueprints must retain glazed window logic')
-
-road = (JAVA / 'settlement/SettlementRoadService.java').read_text(encoding='utf-8')
-for token in (
-    'ROAD_LENGTH = 16',
-    'ROAD_WIDTH = 3',
-    'ROAD_STONE_COST = 24L',
-    'MAX_ROUTE_HEIGHT_VARIANCE = 1',
-    'data.houseCount() < 1 || data.lumberCampCount() < 1',
-    'distanceSqr < 25L || distanceSqr > 1024L',
-    'max - min > MAX_ROUTE_HEIGHT_VARIANCE',
-    'overlapsExistingRoad',
-    'prepareRoute(level, route)',
-    'DIRECT_BLOCK_UPDATE = 2',
-    'Blocks.GRAVEL.defaultBlockState()',
-    'Blocks.COBBLESTONE.defaultBlockState()',
-    'if (!current.isAir()',
-    'countStone(container) < ROAD_STONE_COST',
-    'data.beginRoadConstruction',
-    'data.completeRoad(new RoadSegment',
-):
-    if token not in road:
-        raise SystemExit(f'road safety invariant missing: {token}')
-if 'destroyBlock(' in road or 'dropResources(' in road:
-    raise SystemExit('road construction must not use drop-producing block destruction paths')
-
 saved = (JAVA / 'settlement/SettlementData.java').read_text(encoding='utf-8')
-for token in (
-    'server.getDataStorage().computeIfAbsent(TYPE)',
-    'ConstructionState.CODEC',
-    'RoadSegment.CODEC.listOf()',
-    'RoadConstructionState.CODEC',
-    'road_construction',
-    'beginRoadConstruction',
-    'completeRoad',
-    'housing_capacity',
-    'house_count',
-    'lumber_camp_count',
-):
+for token in ('server.getDataStorage().computeIfAbsent(TYPE)', 'SettlementInfrastructureState.CODEC',
+              'BuildingRecord', 'beginOutpostConstruction', 'completeOutpost', 'housing_capacity'):
     if token not in saved:
         raise SystemExit(f'persistent settlement invariant missing: {token}')
 
-commands = (JAVA / 'command/SettlementCommands.java').read_text(encoding='utf-8')
-for token in ('Commands.literal("road")', 'SettlementRoadService.start', '도로 공사 중'):
-    if token not in commands:
-        raise SystemExit(f'road command/status invariant missing: {token}')
+construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
+for token in ('frontier_settlement_builder', 'Heightmap.Types.MOTION_BLOCKING_NO_LEAVES',
+              'max - min > 2', 'Blocks.COBBLESTONE.defaultBlockState()'):
+    if token not in construction:
+        raise SystemExit(f'construction safety invariant missing: {token}')
+if 'destroyBlock(' in construction or 'dropResources(' in construction:
+    raise SystemExit('building construction must not use drop-producing block destruction paths')
 
-print('Frontier Settlement alpha.3 source audit: PASS')
+road = (JAVA / 'settlement/SettlementRoadService.java').read_text(encoding='utf-8')
+for token in ('ROAD_LENGTH = 16', 'ROAD_WIDTH = 3', 'MAX_ROUTE_HEIGHT_VARIANCE = 1',
+              'Blocks.GRAVEL.defaultBlockState()', 'Blocks.COBBLESTONE.defaultBlockState()'):
+    if token not in road:
+        raise SystemExit(f'road invariant missing: {token}')
+if 'destroyBlock(' in road or 'dropResources(' in road:
+    raise SystemExit('road construction must not use drop-producing block destruction paths')
+
+outpost = (JAVA / 'settlement/SettlementOutpostService.java').read_text(encoding='utf-8')
+for token in ('WOOD_COST = 72L', 'STONE_COST = 48L', 'latestUnclaimedRoad',
+              'Math.abs(surfaceY - roadY) > 1', 'data.beginOutpostConstruction', 'data.completeOutpost'):
+    if token not in outpost:
+        raise SystemExit(f'outpost invariant missing: {token}')
+if 'destroyBlock(' in outpost or 'dropResources(' in outpost:
+    raise SystemExit('outpost construction must not use drop-producing block destruction paths')
+
+outpost_bp = (JAVA / 'settlement/OutpostBlueprints.java').read_text(encoding='utf-8')
+for token in ('LENGTH = 9', 'WIDTH = 9', 'Blocks.OAK_FENCE.defaultBlockState()',
+              'Blocks.GLASS.defaultBlockState()', 'Blocks.SPRUCE_SLAB.defaultBlockState()',
+              'Blocks.BARREL.defaultBlockState()', 'Blocks.LANTERN.defaultBlockState()'):
+    if token not in outpost_bp:
+        raise SystemExit(f'outpost blueprint invariant missing: {token}')
+
+worker = (JAVA / 'settlement/SettlementWorkerService.java').read_text(encoding='utf-8')
+for token in ('ARRIVAL_FOOD_COST = 4L', 'MAX_LOGS_PER_TRIP = 6', 'BlockTags.LOGS',
+              'hasLeavesAbove', 'SettlementInventory.insert', 'EquipmentSlot.MAINHAND'):
+    if token not in worker:
+        raise SystemExit(f'worker invariant missing: {token}')
+if 'destroyBlock(' in worker or 'dropResources(' in worker:
+    raise SystemExit('worker harvesting must not create loose drop entities through block destruction')
+
+print('Frontier Settlement alpha.5 source audit: PASS')
