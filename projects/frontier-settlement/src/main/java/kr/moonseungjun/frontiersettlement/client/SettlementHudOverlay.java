@@ -35,6 +35,10 @@ public final class SettlementHudOverlay {
                     : "J 종료   Backspace 시작점 재선택   Enter 확정";
             drawModePanel(graphics, minecraft, x, y + 23,
                     RoadPlacementClient.statusLine(), controls);
+        } else if (OutpostPlacementClient.active()) {
+            drawModePanel(graphics, minecraft, x, y + 23,
+                    OutpostPlacementClient.statusLine(),
+                    "K 종료   도로 끝을 가리키기   Enter 전초기지 건설");
         }
     }
 
