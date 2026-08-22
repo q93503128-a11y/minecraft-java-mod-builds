@@ -23,10 +23,11 @@ permissions:
 env:
   PROJECT_DIR: projects/living-kingdoms
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
+  LIVING_KINGDOMS_CI_FANTASY_ECOLOGY_TEST: '1'
 
 jobs:
   gameplay-rules:
-    name: Java 25 / Erden gameplay rules / JAR
+    name: Java 25 / Erden gameplay rules / ecology / JAR
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -58,11 +59,12 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
           passed=0
           for attempt in $(seq 1 900); do
-            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError|Erden gameplay rules lock was violated|Erden settlement safety catalog drifted' "$log"; then
+            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError|Erden gameplay rules lock was violated|Erden settlement safety catalog drifted|Erden ecology entered civic settlement' "$log"; then
               cat "$log"
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' "$log" \
+              && grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3' "$log" \
               && grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS revision=1 settlements=6 buildings=60' "$log" \
               && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log"; then
               passed=1
@@ -97,6 +99,11 @@ jobs:
             | grep -F 'scripted_spawns_preserved=true' \
             | grep -F 'initial_placement_teleport_only=true' \
             | grep -F 'multiplayer_world_shared=true'
+          grep -F 'LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3' "$log" \
+            | grep -F 'capital_spawn=false' \
+            | grep -F 'settlement_spawn=false' \
+            | grep -F 'player_loaded_runtime=true' \
+            | grep -F 'ci_tickets_released=true'
 
       - name: JAR gameplay rules verification
         working-directory: ${{ env.PROJECT_DIR }}
