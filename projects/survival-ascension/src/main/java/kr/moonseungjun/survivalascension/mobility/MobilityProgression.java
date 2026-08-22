@@ -6,13 +6,17 @@ package kr.moonseungjun.survivalascension.mobility;
  */
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
 import kr.moonseungjun.survivalascension.progress.SkillType;
+import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -31,7 +35,7 @@ public final class MobilityProgression {
     private static final Identifier SAFE_FALL_ID = Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "mobility_safe_fall");
     private static final Map<UUID, TraversalState> TRAVERSAL = new HashMap<>();
     private static final Map<UUID, Long> DASH_READY_TICK = new HashMap<>();
-    private static final Map<UUID, Boolean> AIR_DASH_USED = new HashMap<>();
+    private static final Map<UUID, Integer> AIR_DASH_COUNT = new HashMap<>();
 
     private MobilityProgression() {}
 
@@ -40,7 +44,7 @@ public final class MobilityProgression {
         int level = SkillProgressData.get(player).level(player, SkillType.MOBILITY);
         applyAttributes(player, level);
         UUID uuid = player.getUUID();
-        if (player.onGround()) AIR_DASH_USED.put(uuid, false);
+        if (player.onGround()) AIR_DASH_COUNT.put(uuid, 0);
         trackTraversal(player);
     }
 
@@ -48,7 +52,7 @@ public final class MobilityProgression {
         UUID uuid = event.getEntity().getUUID();
         TRAVERSAL.remove(uuid);
         DASH_READY_TICK.remove(uuid);
-        AIR_DASH_USED.remove(uuid);
+        AIR_DASH_COUNT.remove(uuid);
     }
 
     public static void performAction(ServerPlayer player) {
@@ -60,8 +64,11 @@ public final class MobilityProgression {
 
         boolean airborne = !player.onGround();
         if (airborne) {
-            if (level < 60 || AIR_DASH_USED.getOrDefault(player.getUUID(), false)) return;
-            AIR_DASH_USED.put(player.getUUID(), true);
+            if (level < 60) return;
+            int used = AIR_DASH_COUNT.getOrDefault(player.getUUID(), 0);
+            int allowed = maxAirDashes(player, level);
+            if (used >= allowed) return;
+            AIR_DASH_COUNT.put(player.getUUID(), used + 1);
         }
 
         Vec3 look = player.getLookAngle();
@@ -76,6 +83,17 @@ public final class MobilityProgression {
         player.resetFallDistance();
         DASH_READY_TICK.put(player.getUUID(), now + SkillTuning.mobilityDashCooldownTicks(level));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.MOBILITY, airborne ? 5L : 3L));
+    }
+
+    private static int maxAirDashes(ServerPlayer player, int level) {
+        if (level < 60) return 0;
+        if (level >= 90
+                && player.level() instanceof ServerLevel serverLevel
+                && WorldAscensionData.get(serverLevel.getServer()).stage() >= 2
+                && InfrastructureData.get(player).isComplete(InfrastructureProject.ASCENSION_NEXUS)) {
+            return 2;
+        }
+        return 1;
     }
 
     private static void trackTraversal(ServerPlayer player) {
@@ -124,7 +142,7 @@ public final class MobilityProgression {
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§d[기동 해금] §f1블록 단차 자동 넘기기 + 낙하 안전 강화"));
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§d[기동 해금] §fR · 지상 돌진"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§d[기동 해금] §f공중에서 R을 한 번 더 사용할 수 있습니다."));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§d[기동 해금] §f극한 돌진 · 더 긴 거리와 짧은 재사용 대기시간"));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§d[기동 해금] §f극한 돌진 · 종말 단계 승천 중추 완공 시 공중 돌진 2회"));
     }
 
     private record TraversalState(ResourceKey<Level> dimension, double x, double z, double bank) {}
