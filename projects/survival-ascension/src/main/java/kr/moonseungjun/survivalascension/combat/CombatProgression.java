@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.combat;
 
+import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
@@ -10,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
@@ -21,7 +23,6 @@ import java.util.UUID;
 
 public final class CombatProgression {
     private static final Set<UUID> CLEAVE_GUARD = new HashSet<>();
-
     private CombatProgression() {}
 
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
@@ -29,14 +30,17 @@ public final class CombatProgression {
         if (event.getEntity() == player || event.getAmount() <= 0.0F) return;
         if (CLEAVE_GUARD.contains(player.getUUID())) return;
 
+        ItemStack weapon = player.getMainHandItem();
         int level = SkillProgressData.get(player).level(player, SkillType.COMBAT);
-        float scaledDamage = (float) (event.getAmount() * SkillTuning.combatDamageMultiplier(level));
+        float scaledDamage = (float) (event.getAmount() * SkillTuning.combatDamageMultiplier(level) * AscensionAffixes.damageMultiplier(weapon));
         event.setAmount(scaledDamage);
 
         if (event.getSource().getDirectEntity() != player || !(event.getEntity() instanceof Enemy)) return;
         double radius = SkillTuning.combatCleaveRadius(level);
-        int targetLimit = SkillTuning.combatCleaveTargetLimit(level);
-        double fraction = SkillTuning.combatCleaveFraction(level);
+        int baseTargets = SkillTuning.combatCleaveTargetLimit(level);
+        double baseFraction = SkillTuning.combatCleaveFraction(level);
+        int targetLimit = AscensionAffixes.adjustCleaveTargets(weapon, baseTargets);
+        double fraction = AscensionAffixes.adjustCleaveFraction(weapon, baseFraction);
         if (radius <= 0.0D || targetLimit <= 0 || fraction <= 0.0D) return;
         if (!(event.getEntity().level() instanceof ServerLevel serverLevel)) return;
 
@@ -44,11 +48,7 @@ public final class CombatProgression {
         List<LivingEntity> nearby = serverLevel.getEntitiesOfClass(
                 LivingEntity.class,
                 primary.getBoundingBox().inflate(radius),
-                candidate -> candidate != primary
-                        && candidate != player
-                        && candidate.isAlive()
-                        && candidate instanceof Enemy
-                        && !player.isAlliedTo(candidate));
+                candidate -> candidate != primary && candidate != player && candidate.isAlive() && candidate instanceof Enemy && !player.isAlliedTo(candidate));
         nearby.sort(Comparator.comparingDouble(primary::distanceToSqr));
 
         float cleaveDamage = Math.max(1.0F, (float) (scaledDamage * fraction));
@@ -65,12 +65,10 @@ public final class CombatProgression {
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
-        if (event.isCanceled()) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (event.isCanceled() || !(event.getSource().getEntity() instanceof ServerPlayer player)) return;
         LivingEntity victim = event.getEntity();
         if (victim == player || victim instanceof Player) return;
-
-        int xp = xpForKill(victim);
+        int xp = Math.max(1, (int) Math.ceil(xpForKill(victim) * AscensionAffixes.xpMultiplier(player.getMainHandItem())));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.COMBAT, xp));
     }
 
@@ -82,19 +80,10 @@ public final class CombatProgression {
 
     private static void announceMilestones(ServerPlayer player, SkillProgressData.AddXpResult result) {
         if (!result.leveledUp()) return;
-        int oldLevel = result.oldLevel();
-        int newLevel = result.newLevel();
-        if (oldLevel < 10 && newLevel >= 10) {
-            player.sendSystemMessage(Component.literal("§c[전투 해금] §f전투 숙련 피해 성장이 본격적으로 시작됩니다."));
-        }
-        if (oldLevel < 30 && newLevel >= 30) {
-            player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 I · 주변 적 2체까지 연쇄 타격"));
-        }
-        if (oldLevel < 60 && newLevel >= 60) {
-            player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 II · 반경/대상이 크게 확장됩니다."));
-        }
-        if (oldLevel < 90 && newLevel >= 90) {
-            player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 III · 주변 적 최대 8체까지 타격"));
-        }
+        int oldLevel = result.oldLevel(), newLevel = result.newLevel();
+        if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§c[전투 해금] §f전투 숙련 피해 성장이 본격적으로 시작됩니다."));
+        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 I · 주변 적 2체까지 연쇄 타격"));
+        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 II · 반경/대상이 크게 확장됩니다."));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 III · 주변 적 최대 8체까지 타격"));
     }
 }

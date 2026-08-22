@@ -33,7 +33,14 @@ Source project: `wendall911/MobChampions`
 Copyright (c) 2024 Wendall Cada  
 License: MIT License
 
-Survival Ascension adapts Mob Champions' permissively licensed 26.2 patterns for rank-driven permanent entity attribute modifiers and rank-aware hostile-mob construction. Survival Ascension uses its own progression-scaled spawn probabilities, three rank curve, four combat traits, NBT keys and rewards. Full notice: `META-INF/third-party/MOB_CHAMPIONS_MIT.txt`.
+Survival Ascension adapts Mob Champions' permissively licensed 26.2 patterns for rank-driven permanent entity attribute modifiers and rank-aware hostile-mob construction. Survival Ascension uses its own progression-scaled spawn probabilities, three-rank curve, four combat traits, reactive patterns, NBT keys and rewards. Full notice: `META-INF/third-party/MOB_CHAMPIONS_MIT.txt`.
+
+## Apotheosis
+Source project: `Shadows-of-Fire/Apotheosis`  
+Copyright (c) 2018-2025 Stormraven Studios, LLC  
+License: MIT License
+
+Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from Apotheosis. Survival Ascension uses its own compact Minecraft 26.2 `CustomData` representation, four equipment categories, three affix slots, values, names and elite-drop rules. No Apotheosis assets or data files are bundled. Full notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
 
 ## MIT License text
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -62,6 +69,11 @@ Source project: `alRex-U/ParCool`
 License: LGPL-3.0
 
 ParCool is **reference-only** for Survival Ascension. Its public movement vocabulary was studied to identify what makes traversal mechanically interesting. Survival Ascension's Mobility implementation is independent and uses vanilla/NeoForge 26.2 attributes plus its own server-authoritative dash logic. No ParCool source, animations, assets or namespace are copied or bundled.
+
+## Majrusz's Progressive Difficulty
+Source project: `Majrusz/MajruszsProgressiveDifficultyMod`
+
+Studied only as a progression/difficulty design reference. Survival Ascension does not bundle or copy its source/assets under the current policy.
 
 ## Other restricted/reference-only mods
 Handwerk, NeoEnchant+ and other custom-license/ARR projects are used only for behavior and UX study unless their exact license explicitly permits reuse. No restricted source or assets are bundled.

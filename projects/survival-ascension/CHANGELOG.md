@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.11.0-alpha.1
+- Added an Apotheosis-inspired rarity/category/affix loot loop using Minecraft 26.2 CustomData rather than replacing vanilla item classes.
+- Elite I / Ascended II / Mythic III affix gear uses iron / diamond / netherite bases and carries 1 / 2 / 3 distinct affixes.
+- Elite ranks gain an additional affix-gear drop chance of 25% / 65% / 100% while retaining existing material and XP rewards.
+- Weapon affixes: Destruction boosts direct Combat damage, Cleave expands already-unlocked cleave targets/fraction, Mastery boosts Combat XP.
+- Pickaxe affixes: Haste boosts break speed, Excavation expands already-unlocked area/vein extraction, Mastery boosts Mining XP.
+- Axe affixes: Haste boosts log break speed, Chain expands already-unlocked connected-log limits, Mastery boosts Woodcutting XP.
+- Hoe affixes: Haste boosts crop break speed, Area expands already-unlocked harvest area, Mastery boosts Harvesting XP.
+- Scale affixes never unlock a skill's scaled action early; they only enlarge actions already unlocked by skill progression.
+- Affix data is stored in item CustomData and remains visible through rarity + affix names in the item's custom display name.
+- Added packaged Apotheosis MIT attribution.
+
 ## 0.10.0-alpha.1
 - Upgraded elite traits from mostly passive modifiers into reactive combat patterns.
 - Swift elites perform rank-scaled lateral evasions after player hits.

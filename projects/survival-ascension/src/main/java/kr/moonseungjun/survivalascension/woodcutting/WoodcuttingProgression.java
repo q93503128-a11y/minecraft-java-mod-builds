@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.woodcutting;
 
+import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.progress.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -20,11 +21,15 @@ public final class WoodcuttingProgression {
         if (event.isCanceled() || !(event.getPlayer() instanceof ServerPlayer player) || !(event.getLevel() instanceof ServerLevel level)) return;
         BlockPos center = event.getPos();
         BlockState centerState = event.getState();
-        if (!isValidLogBreak(player, level, center, centerState, player.getMainHandItem())) return;
-        if (!player.isCreative() && !player.isSpectator()) announceMilestones(player, SkillProgressionService.award(player, SkillType.WOODCUTTING, xpForLog(centerState, level, center)));
+        ItemStack tool = player.getMainHandItem();
+        if (!isValidLogBreak(player, level, center, centerState, tool)) return;
+        if (!player.isCreative() && !player.isSpectator()) {
+            int xp = Math.max(1, (int) Math.ceil(xpForLog(centerState, level, center) * AscensionAffixes.xpMultiplier(tool)));
+            announceMilestones(player, SkillProgressionService.award(player, SkillType.WOODCUTTING, xp));
+        }
         if (CHAIN_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
         int skillLevel = SkillProgressData.get(player).level(player, SkillType.WOODCUTTING);
-        int limit = SkillTuning.woodcuttingLogLimit(skillLevel);
+        int limit = AscensionAffixes.adjustWoodcuttingLimit(tool, SkillTuning.woodcuttingLogLimit(skillLevel));
         if (limit <= 1) return;
         CHAIN_GUARD.add(player.getUUID());
         try { fellConnectedLogs(player, level, center, limit); }

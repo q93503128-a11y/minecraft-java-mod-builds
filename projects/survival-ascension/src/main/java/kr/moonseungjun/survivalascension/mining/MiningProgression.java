@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.mining;
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.progress.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -54,12 +55,12 @@ public final class MiningProgression {
         BlockState state = event.getState();
         if (tool.is(ItemTags.PICKAXES) && state.is(BlockTags.MINEABLE_WITH_PICKAXE)) {
             int level = player instanceof ServerPlayer sp ? SkillProgressData.get(sp).level(sp, SkillType.MINING) : SkillClientBridge.level(SkillType.MINING);
-            event.setNewSpeed((float) (event.getOriginalSpeed() * SkillTuning.miningSpeedMultiplier(level)));
+            event.setNewSpeed((float) (event.getOriginalSpeed() * SkillTuning.miningSpeedMultiplier(level) * AscensionAffixes.toolSpeedMultiplier(tool)));
             return;
         }
         if (tool.is(ItemTags.AXES) && state.is(BlockTags.LOGS)) {
             int level = player instanceof ServerPlayer sp ? SkillProgressData.get(sp).level(sp, SkillType.WOODCUTTING) : SkillClientBridge.level(SkillType.WOODCUTTING);
-            event.setNewSpeed((float) (event.getOriginalSpeed() * SkillTuning.woodcuttingSpeedMultiplier(level)));
+            event.setNewSpeed((float) (event.getOriginalSpeed() * SkillTuning.woodcuttingSpeedMultiplier(level) * AscensionAffixes.toolSpeedMultiplier(tool)));
         }
     }
 
@@ -67,15 +68,17 @@ public final class MiningProgression {
         if (event.isCanceled() || !(event.getPlayer() instanceof ServerPlayer player) || !(event.getLevel() instanceof ServerLevel level)) return;
         BlockState centerState = event.getState();
         BlockPos center = event.getPos();
-        if (!isValidPickaxeBreak(player, level, center, centerState, player.getMainHandItem())) return;
+        ItemStack tool = player.getMainHandItem();
+        if (!isValidPickaxeBreak(player, level, center, centerState, tool)) return;
         if (!player.isCreative() && !player.isSpectator()) {
-            announceMilestones(player, SkillProgressionService.award(player, SkillType.MINING, xpForBlock(centerState, level, center)));
+            int xp = Math.max(1, (int) Math.ceil(xpForBlock(centerState, level, center) * AscensionAffixes.xpMultiplier(tool)));
+            announceMilestones(player, SkillProgressionService.award(player, SkillType.MINING, xp));
         }
         if (AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
 
         int miningLevel = SkillProgressData.get(player).level(player, SkillType.MINING);
         if (centerState.is(VALUABLE_ORES)) {
-            int veinLimit = SkillTuning.miningVeinLimit(miningLevel);
+            int veinLimit = AscensionAffixes.adjustMiningVeinLimit(tool, SkillTuning.miningVeinLimit(miningLevel));
             if (veinLimit > 1) {
                 AREA_BREAK_GUARD.add(player.getUUID());
                 try { breakConnectedOre(player, level, center, centerState, veinLimit); }
@@ -84,7 +87,7 @@ public final class MiningProgression {
             }
         }
 
-        int size = SkillTuning.miningAreaSize(miningLevel);
+        int size = AscensionAffixes.adjustMiningArea(tool, SkillTuning.miningAreaSize(miningLevel));
         if (size <= 1) return;
         float centerHardness = Math.max(0.0F, centerState.getDestroySpeed(level, center));
         AREA_BREAK_GUARD.add(player.getUUID());
@@ -113,10 +116,6 @@ public final class MiningProgression {
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f9×9 광역 채굴 + 같은 광맥 최대 128개 추적"));
     }
 
-    /*
-     * Bounded 26-connected flood-fill adapted from Veinminer++ (MIT, Kestalkayden 2026).
-     * Survival Ascension keeps its own skill gates, ore eligibility, normal destroy path and XP rules.
-     */
     private static void breakConnectedOre(ServerPlayer player, ServerLevel level, BlockPos origin, BlockState originState, int limit) {
         OreVeinMatcher matcher = OreVeinMatcher.forOrigin(originState);
         Queue<BlockPos> frontier = new ArrayDeque<>();
@@ -133,9 +132,7 @@ public final class MiningProgression {
                         if (dx == 0 && dy == 0 && dz == 0) continue;
                         BlockPos next = current.offset(dx, dy, dz).immutable();
                         if (!visited.add(next)) continue;
-                        if (Math.abs(next.getX() - origin.getX()) > 12
-                                || Math.abs(next.getY() - origin.getY()) > 24
-                                || Math.abs(next.getZ() - origin.getZ()) > 12) continue;
+                        if (Math.abs(next.getX() - origin.getX()) > 12 || Math.abs(next.getY() - origin.getY()) > 24 || Math.abs(next.getZ() - origin.getZ()) > 12) continue;
                         BlockState state = level.getBlockState(next);
                         if (!state.is(VALUABLE_ORES) || !matcher.matches(state)) continue;
                         if (level.getBlockEntity(next) != null) continue;
