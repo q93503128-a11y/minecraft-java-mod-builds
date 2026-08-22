@@ -41,12 +41,15 @@ public final class SpellKineticsService {
         }
 
         if ("meteor_swarm".equals(cast.spell().id())) {
-            MeteorBarragePattern.Strike first = MeteorBarragePattern.strike(targetSnapshot.barrageSeed(), 0);
+            long seed = targetSnapshot.barrageSeed();
+            MeteorBarragePattern.rememberRange(seed, cast.range());
+            MeteorBarragePattern.Strike first = MeteorBarragePattern.strike(seed, cast.range(), 0);
+            int total = MeteorBarragePattern.count(cast.range());
             enqueue(player, new PendingCast(cast, growthSnapshot, targetSnapshot,
-                    clock(player) + first.impactTick(), 0, MeteorBarragePattern.count(),
+                    clock(player) + first.impactTick(), 0, total,
                     cast.power(), false, 0));
             ArcaneNoticeService.push(player, Component.literal(
-                    "§6[운석 폭격] §f15발 전장 파쇄 후 Crown Meteor 종말 낙하"), 82);
+                    "§6[도시 낙성] §f" + (total - 1) + "발 범위연동 운석 후 Crown Meteor 종말 낙하"), 96);
             return true;
         }
 
@@ -248,13 +251,15 @@ public final class SpellKineticsService {
             boolean executed;
             if (meteor) {
                 long seed = pending.targetSnapshot().barrageSeed();
+                double range = pending.cast().range();
                 executed = pending.targetSnapshot().executeLocked(player,
-                        () -> NinthCircleSpellService.meteorImpact(player,
-                                pending.targetSnapshot().target(), pending.pulsePower(),
-                                pending.pulseIndex(), seed));
-                if (executed && MeteorBarragePattern.isCrownStrike(pending.pulseIndex())) {
+                        () -> MeteorBarragePattern.withContext(seed, range,
+                                () -> NinthCircleSpellService.meteorImpact(player,
+                                        pending.targetSnapshot().target(), pending.pulsePower(),
+                                        pending.pulseIndex(), seed)));
+                if (executed && MeteorBarragePattern.isCrownStrike(range, pending.pulseIndex())) {
                     MeteorCataclysmService.crownImpact(player, pending.targetSnapshot().target(),
-                            pending.pulsePower(), seed);
+                            range, pending.pulsePower(), seed);
                 }
             } else {
                 executed = executeLocked(player, pending.targetSnapshot(), pending.cast().spell().id(),
@@ -268,8 +273,9 @@ public final class SpellKineticsService {
             } else if (meteor) {
                 int nextIndex = pending.pulseIndex() + 1;
                 long seed = pending.targetSnapshot().barrageSeed();
-                int gap = Math.max(1, MeteorBarragePattern.strike(seed, nextIndex).impactTick()
-                        - MeteorBarragePattern.strike(seed, pending.pulseIndex()).impactTick());
+                double range = pending.cast().range();
+                int gap = Math.max(1, MeteorBarragePattern.strike(seed, range, nextIndex).impactTick()
+                        - MeteorBarragePattern.strike(seed, range, pending.pulseIndex()).impactTick());
                 pending.advanceMeteor(now + gap, remaining, any, nextIndex);
             } else {
                 pending.advance(now + pending.interval(), remaining, any);

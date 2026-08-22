@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-/** Staggered NPC Meteor Swarm scheduler using the same seeded pattern as player/server/client paths. */
+/** Range-scaled NPC Meteor Swarm scheduler using the same seeded cityfall pattern as player/client paths. */
 public final class NpcMeteorBarrageService {
     private static final int MAX_ACTIVE_BARRAGES = 24;
     private static final List<Barrage> ACTIVE = new ArrayList<>();
@@ -34,6 +34,7 @@ public final class NpcMeteorBarrageService {
                 || NinthCircleSpellService.blocksCasting(caster)
                 || targetSnapshot == null || !targetSnapshot.validFor(caster)) return false;
         while (ACTIVE.size() >= MAX_ACTIVE_BARRAGES) ACTIVE.removeFirst();
+        MeteorBarragePattern.rememberRange(targetSnapshot.barrageSeed(), range);
         ACTIVE.add(new Barrage(level, caster.getUUID(), targetSnapshot, range, power,
                 level.getGameTime(), 0));
         return true;
@@ -60,21 +61,22 @@ public final class NpcMeteorBarrageService {
             }
             long elapsed = now - barrage.startedAt();
             int next = barrage.nextStrike();
-            while (next < MeteorBarragePattern.count()) {
-                MeteorBarragePattern.Strike strike = MeteorBarragePattern.strike(
-                        barrage.targetSnapshot().barrageSeed(), next);
+            int count = MeteorBarragePattern.count(barrage.range());
+            while (next < count) {
+                int strikeIndex = next;
+                long seed = barrage.targetSnapshot().barrageSeed();
+                MeteorBarragePattern.Strike strike = MeteorBarragePattern.strike(seed, barrage.range(), strikeIndex);
                 if (elapsed < strike.impactTick()) break;
-                boolean executed = NinthCircleSpellService.resolveNpcMeteorImpact(level, caster,
-                        barrage.targetSnapshot().target(), barrage.power(), next,
-                        barrage.targetSnapshot().barrageSeed());
-                if (executed && MeteorBarragePattern.isCrownStrike(next)) {
+                boolean executed = MeteorBarragePattern.withContext(seed, barrage.range(),
+                        () -> NinthCircleSpellService.resolveNpcMeteorImpact(level, caster,
+                                barrage.targetSnapshot().target(), barrage.power(), strikeIndex, seed));
+                if (executed && MeteorBarragePattern.isCrownStrike(barrage.range(), strikeIndex)) {
                     MeteorCataclysmService.crownImpactNpc(level, caster,
-                            barrage.targetSnapshot().target(), barrage.power(),
-                            barrage.targetSnapshot().barrageSeed());
+                            barrage.targetSnapshot().target(), barrage.range(), barrage.power(), seed);
                 }
                 next++;
             }
-            if (next >= MeteorBarragePattern.count()) iterator.remove();
+            if (next >= count) iterator.remove();
             else barrage.nextStrike(next);
         }
     }

@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.63",
+  "version": "0.12.1-alpha.64",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -43,7 +43,16 @@
   "presentation_scale_grammar": {"1-2":"hand_scale_immediate","3-4":"combat_space","5-6":"multi_plane_grand_magic","7":"fortress_planar_authority","8":"regional_reality_authority","9":"world_law_catastrophe"},
   "high_circle_prestige": ["seven_circle_fortress_scale","eight_circle_regional_scale","nine_circle_world_law_scale","precision_spells_use_dense_compact_seals","catastrophes_use_world_footprints"],
   "death_doctrine": {"circle_of_death":"wide_life_erosion_no_execution","finger_of_death":"single_target_soul_rupture_no_threshold_execution","power_word_kill":"exclusive_ninth_circle_execution_with_fallback_life_collapse"},
-  "crown_meteor": "fifteenth_barrage_then_delayed_sixteenth_crown_cataclysm",
+  "crown_meteor": "range_scaled_cityfall_barrage_then_delayed_crown_cataclysm",
+  "ninth_circle_divine_scale_phase": "meteor_cityfall_foundation",
+  "meteor_cityfall": {
+    "baseline_radius": 112,
+    "baseline_strikes": 49,
+    "range_scaled": true,
+    "projectile_scaling": ["count","spacing","body_scale","fall_height"],
+    "terminal_shock": "full_cityfall_radius_with_inner_lethal_core",
+    "terrain": "budgeted_citywide_crater_lattice"
+  },
   "grimoire_ui": "primary_book_style_restored_for_atlas_and_academy",
   "high_utility_identity": ["cross_dimension_plane_shift","persistent_demiplane_room","commandable_simulacrum"],
   "high_control_identity": ["behavioral_mass_suggestion","physical_forcecage","temporary_dominate_monster","spellbreaking_feeblemind"],
@@ -73,7 +82,7 @@
   "eighth_circle_npc_demiplane_role": "timed_pocket_sanctuary_without_persistent_player_room",
   "eighth_circle_npc_maze_role": "combat_exile_without_cross_dimension_player_relocation",
   "eighth_circle_npc_dominate_player_role": "casting_and_combat_compulsion",
-  "ninth_circle_deep_audit": ["crown_cataclysm_meteor_swarm","exclusive_execution_power_word_kill","seven_layer_physical_prismatic_wall","preserved_shapechange","preserved_time_stop","preserved_true_polymorph","maintained_behavioral_weird","preserved_reality_wish","two_way_safe_gate","preserved_foresight"],
+  "ninth_circle_deep_audit": ["range_scaled_cityfall_meteor_swarm","exclusive_execution_power_word_kill","seven_layer_physical_prismatic_wall","preserved_shapechange","preserved_time_stop","preserved_true_polymorph","maintained_behavioral_weird","preserved_reality_wish","two_way_safe_gate","preserved_foresight"],
   "ninth_circle_preserved_authority": ["shapechange","time_stop","true_polymorph","wish","foresight"],
   "ninth_circle_npc_parity": true,
   "ninth_circle_npc_true_polymorph_player_role": "combat_and_casting_suppression_without_player_entity_type_swap",

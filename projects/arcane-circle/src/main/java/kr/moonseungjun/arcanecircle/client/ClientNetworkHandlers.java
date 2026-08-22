@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.client;
 
+import kr.moonseungjun.arcanecircle.magic.MeteorBarragePattern;
 import kr.moonseungjun.arcanecircle.network.GrimoireSnapshotPayload;
 import kr.moonseungjun.arcanecircle.network.WorldMagicPayload;
 import net.minecraft.client.Minecraft;
@@ -15,6 +16,7 @@ public final class ClientNetworkHandlers {
     }
 
     private static void handleWorldMagic(WorldMagicPayload payload, IPayloadContext context) {
+        MeteorBarragePattern.rememberPayload(payload.state());
         WorldMagicTracker.accept(payload);
     }
 

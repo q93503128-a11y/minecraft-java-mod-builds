@@ -37,7 +37,11 @@ public record SpellDefinition(
     }
 
     /** Short authored identity/lore text belongs on normal browsing surfaces. */
-    public String description() { return description; }
+    public String description() {
+        if ("meteor_swarm".equals(id))
+            return "하늘 전체를 낙성 회로로 바꾸어 도시권을 수십 발의 거대 운석과 Crown Meteor로 붕괴시킨다.";
+        return description;
+    }
 
     /** Detailed, testable mechanics belong in the dedicated effect compendium. */
     public String effectSummary() {

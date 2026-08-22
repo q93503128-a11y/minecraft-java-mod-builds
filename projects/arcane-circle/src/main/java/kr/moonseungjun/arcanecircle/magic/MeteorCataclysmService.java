@@ -11,71 +11,88 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/** Alpha.62 terminal ninth-circle Meteor Swarm catastrophe, invoked only for the crown strike. */
+/** alpha.64 terminal ninth-circle cityfall catastrophe, invoked only for the delayed Crown Meteor. */
 public final class MeteorCataclysmService {
     private MeteorCataclysmService() {}
 
-    public static void crownImpact(ServerPlayer caster, Vec3 barrageCenter, double power, long seed) {
+    public static void crownImpact(ServerPlayer caster, Vec3 barrageCenter, double range, double power, long seed) {
         if (caster == null || barrageCenter == null) return;
         ServerLevel level = (ServerLevel) caster.level();
-        Vec3 center = crownCenter(barrageCenter, seed);
-        entityCatastrophe(level, caster, center, power);
-        terrainCatastrophe(caster, center, power);
+        Vec3 center = crownCenter(barrageCenter, range, seed);
+        entityCatastrophe(level, caster, center, range, power);
+        terrainCatastrophe(caster, center, range, power);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
-                SoundSource.PLAYERS, 2.0F, .30F);
+                SoundSource.PLAYERS, 3.0F, .22F);
+        int radius = (int) Math.round(NinthCircleMagnitude.meteorFieldRadius(range));
         ArcaneNoticeService.push(caster, Component.literal(
-                "§4[메테오 스트라이크 · 종말 낙하] §fCrown Meteor가 착탄해 중심 지역을 소멸 분지로 붕괴시켰습니다."), 110);
+                "§4[메테오 스트라이크 · 도시 종말] §fCrown Meteor가 착탄했습니다. 약 "
+                        + radius + "m 권역이 연쇄 붕괴합니다."), 135);
     }
 
-    /** NPCs receive the same terminal combat catastrophe; player-owned terrain mutation stays player-only. */
-    public static void crownImpactNpc(ServerLevel level, Mob caster, Vec3 barrageCenter, double power, long seed) {
+    /** NPCs receive the same city-scale combat catastrophe; player-owned terrain mutation stays player-only. */
+    public static void crownImpactNpc(ServerLevel level, Mob caster, Vec3 barrageCenter,
+                                      double range, double power, long seed) {
         if (level == null || caster == null || barrageCenter == null || !caster.isAlive()) return;
-        Vec3 center = crownCenter(barrageCenter, seed);
-        entityCatastrophe(level, caster, center, power);
+        Vec3 center = crownCenter(barrageCenter, range, seed);
+        entityCatastrophe(level, caster, center, range, power);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
-                SoundSource.HOSTILE, 2.0F, .30F);
+                SoundSource.HOSTILE, 3.0F, .22F);
     }
 
-    private static Vec3 crownCenter(Vec3 barrageCenter, long seed) {
-        MeteorBarragePattern.Strike crown = MeteorBarragePattern.strike(seed, MeteorBarragePattern.crownIndex());
+    private static Vec3 crownCenter(Vec3 barrageCenter, double range, long seed) {
+        MeteorBarragePattern.Strike crown = MeteorBarragePattern.strike(seed, range,
+                MeteorBarragePattern.crownIndex(range));
         return MeteorBarragePattern.position(barrageCenter, crown);
     }
 
-    private static void entityCatastrophe(ServerLevel level, LivingEntity caster, Vec3 center, double power) {
-        double killRadius = 19.0;
-        AABB box = new AABB(center, center).inflate(killRadius, 12.0, killRadius);
+    private static void entityCatastrophe(ServerLevel level, LivingEntity caster, Vec3 center,
+                                          double range, double power) {
+        double lethalRadius = NinthCircleMagnitude.crownLethalRadius(range);
+        double shockRadius = NinthCircleMagnitude.crownShockRadius(range);
+        double vertical = Math.max(42.0, shockRadius * .54);
+        AABB box = new AABB(center, center).inflate(shockRadius, vertical, shockRadius);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
                 value -> value != caster && value.isAlive() && !value.isRemoved() && !caster.isAlliedTo(value))) {
-            double distance = Math.sqrt(center.distanceToSqr(target.position()));
-            if (distance > killRadius + target.getBbWidth()) continue;
-            double falloff = Math.max(.32, 1.0 - distance / killRadius * .68);
-            double amount = power * (1.42 * falloff) + Math.min(power * .70, target.getMaxHealth() * .18 * falloff);
+            double dx = target.getX() - center.x;
+            double dz = target.getZ() - center.z;
+            double distance = Math.sqrt(dx * dx + dz * dz);
+            if (distance > shockRadius + target.getBbWidth()) continue;
+            double shock = Math.max(.12, 1.0 - distance / Math.max(1.0, shockRadius));
+            double inner = distance <= lethalRadius ? 1.0 : Math.max(.0,
+                    1.0 - (distance - lethalRadius) / Math.max(1.0, shockRadius - lethalRadius));
+            double amount = power * (.58 + 1.62 * shock + .82 * inner)
+                    + Math.min(power * 1.05, target.getMaxHealth() * (.10 + .30 * inner) * Math.max(.30, shock));
             ArcaneDamage.hurt(level, caster, target, (float) Math.max(1.0, amount));
-            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 260));
-            Vec3 flat = target.position().subtract(center);
-            flat = new Vec3(flat.x, 0.0, flat.z);
+            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 320 + (int) (280 * shock)));
+            Vec3 flat = new Vec3(dx, 0.0, dz);
             if (flat.lengthSqr() > 1.0E-8) flat = flat.normalize();
-            target.push(flat.x * (1.15 + falloff * 1.35), .82 + falloff * 1.15,
-                    flat.z * (1.15 + falloff * 1.35));
+            double blast = .90 + shock * 3.25 + inner * 1.25;
+            target.push(flat.x * blast, .65 + shock * 1.75 + inner * .80, flat.z * blast);
         }
     }
 
-    private static void terrainCatastrophe(ServerPlayer caster, Vec3 center, double power) {
-        // One dense basin plus two staggered fracture rings. DestructiveMagicService tiles the
-        // oversized footprint across later ticks, preserving the hard block-edit budget.
-        DestructiveMagicService.impact(caster, "meteor_swarm", center.add(0, -1.0, 0),
-                22.0, power * 2.30);
-        for (int i = 0; i < 12; i++) {
-            double a = i * Math.PI * 2.0 / 12.0 + .17;
-            double distance = 10.5 + (i % 3) * 2.2;
-            Vec3 fracture = center.add(Math.cos(a) * distance, -.65 - .22 * (i % 2), Math.sin(a) * distance);
-            DestructiveMagicService.impact(caster, "meteor_swarm", fracture,
-                    9.0 + (i % 2) * 1.6, power * (1.35 - .04 * (i % 3)));
-        }
-        for (int i = 0; i < 8; i++) {
-            double a = i * Math.PI / 4.0 + .39;
-            Vec3 outer = center.add(Math.cos(a) * 22.0, -.32, Math.sin(a) * 22.0);
-            DestructiveMagicService.impact(caster, "meteor_swarm", outer, 6.8, power * .88);
+    private static void terrainCatastrophe(ServerPlayer caster, Vec3 center, double range, double power) {
+        double field = NinthCircleMagnitude.meteorFieldRadius(range);
+        // Each local crater remains inside DestructiveMagicService's per-cell safety cap.  The city
+        // footprint is a lattice of bounded craters queued across later ticks, never one giant
+        // synchronous sphere scan.
+        DestructiveMagicService.impact(caster, "meteor_swarm", center.add(0, -1.4, 0),
+                22.0, power * 2.75);
+
+        double[] fractions = {.24, .47, .70, .92};
+        int[] points = {8, 12, 16, 20};
+        for (int ring = 0; ring < fractions.length; ring++) {
+            int count = points[ring];
+            double distance = field * fractions[ring];
+            for (int i = 0; i < count; i++) {
+                double a = i * Math.PI * 2.0 / count + ring * .31;
+                double wobble = 1.0 + .055 * Math.sin(i * 2.17 + ring);
+                Vec3 fracture = center.add(Math.cos(a) * distance * wobble,
+                        -.55 - .18 * ((i + ring) % 3), Math.sin(a) * distance * wobble);
+                double localRadius = 17.0 - ring * 1.8 + (i % 3) * .65;
+                double localPower = power * (1.42 - ring * .15 + (i % 4 == 0 ? .10 : 0.0));
+                DestructiveMagicService.impact(caster, "meteor_swarm", fracture, localRadius, localPower);
+            }
         }
     }
 }
