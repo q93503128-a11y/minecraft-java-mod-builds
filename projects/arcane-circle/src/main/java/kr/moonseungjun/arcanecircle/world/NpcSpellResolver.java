@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.world;
 
+import kr.moonseungjun.arcanecircle.magic.Alpha65NinthCircleRuntime;
 import kr.moonseungjun.arcanecircle.magic.ArcaneDamage;
 import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.CastTargetSnapshot;
@@ -55,8 +56,6 @@ final class NpcSpellResolver {
         if (HighWardSpellService.intercepts(caster, spell, snapshot, range)) return false;
         if (NinthCircleSpellService.intercepts(caster, snapshot)) return false;
 
-        // Alpha.62 resolves the death family before the old circle coordinators so NPC parity
-        // follows the same 6C erosion -> 7C soul rupture -> 9C execution hierarchy as players.
         if (DeathDoctrineService.handles(spell.id()))
             return DeathDoctrineService.executeNpc(level, caster, target, spell.id(), range, power, snapshot);
 
@@ -76,11 +75,10 @@ final class NpcSpellResolver {
             return SeventhCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
         if (EighthCircleSpellService.handles(spell.id()))
             return EighthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
-        // Meteor keeps its seeded staggered scheduler, but each hit resolves through 9C authority.
         if ("meteor_swarm".equals(spell.id()))
             return NpcMeteorBarrageService.schedule(level, caster, snapshot, range, power);
         if (NinthCircleSpellService.handles(spell.id()))
-            return NinthCircleSpellService.executeNpc(level, caster, target, spell, range, power, snapshot);
+            return Alpha65NinthCircleRuntime.executeNpcOrDelegate(level, caster, target, spell, range, power, snapshot);
 
         Vec3 lockedTarget = snapshot.target();
         return switch (SpellPresentationProfile.profile(spell).motion()) {
