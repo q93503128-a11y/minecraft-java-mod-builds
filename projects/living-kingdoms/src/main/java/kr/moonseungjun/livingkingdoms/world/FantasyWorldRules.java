@@ -168,8 +168,8 @@ public final class FantasyWorldRules {
      * Scripted/command/spawner encounters are intentionally not blocked.
      */
     public static void handleMobSpawn(MobSpawnEvent.SpawnPlacementCheck event) {
-        if (!(event.getLevel() instanceof ServerLevel level)
-                || !level.dimension().equals(StarterRealmManager.REALM_KEY)
+        ServerLevel level = event.getLevel().getLevel();
+        if (!level.dimension().equals(StarterRealmManager.REALM_KEY)
                 || event.getEntityType().getCategory() != MobCategory.MONSTER
                 || !AMBIENT_HOSTILE_SPAWN_REASONS.contains(event.getSpawnType().name())
                 || !insideCivilianSafetyZone(event.getPos())) {
