@@ -60,6 +60,7 @@ public final class BuildingPlacementClient {
             refreshTicks = 0;
             if (active) {
                 rotation = BuildingRotation.facingPlayerFrom(minecraft.player.getDirection());
+                target = resolveTarget(minecraft);
                 minecraft.player.displayClientMessage(Component.literal("건설 모드: N 건물 변경 · R 회전 · Enter 확정 · B 종료"), true);
             }
         }
@@ -98,9 +99,7 @@ public final class BuildingPlacementClient {
     }
 
     private static BlockPos resolveTarget(Minecraft minecraft) {
-        if (minecraft.hitResult instanceof BlockHitResult hit) {
-            return hit.getBlockPos().above();
-        }
+        if (minecraft.hitResult instanceof BlockHitResult hit) return hit.getBlockPos().above();
         return minecraft.player.blockPosition().relative(minecraft.player.getDirection(), 10);
     }
 
@@ -134,6 +133,15 @@ public final class BuildingPlacementClient {
     public static BuildingType selectedType() { return BuildingType.values()[selectedIndex]; }
     public static BuildingRotation rotation() { return rotation; }
     public static PlacementPreviewPayload preview() { return previewMatchesSelection() ? preview : null; }
+
+    public static BlockPos ghostOrigin() {
+        PlacementPreviewPayload p = preview();
+        if (p != null && p.valid()) return p.origin();
+        BuildingType type = selectedType();
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
+        return new BlockPos(target.getX() - width / 2, target.getY(), target.getZ() - depth / 2);
+    }
 
     public static String statusLine() {
         if (!active) return "";
