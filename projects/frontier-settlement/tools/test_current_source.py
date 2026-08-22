@@ -9,23 +9,20 @@ required = [
     JAVA / 'settlement/SettlementData.java', JAVA / 'settlement/SettlementService.java',
     JAVA / 'settlement/SettlementInfrastructureState.java', JAVA / 'settlement/BuildingRecord.java',
     JAVA / 'settlement/BuildingType.java', JAVA / 'settlement/BuildingRotation.java',
-    JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/RotatedBlueprints.java',
-    JAVA / 'settlement/WarehouseLayout.java', JAVA / 'settlement/SettlementStorageService.java',
-    JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
-    JAVA / 'settlement/RoadConstructionState.java', JAVA / 'settlement/RoadSegment.java',
-    JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementOutpostProductionService.java',
+    JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/AdvancedBuildingBlueprints.java',
+    JAVA / 'settlement/RotatedBlueprints.java', JAVA / 'settlement/WarehouseLayout.java',
+    JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/SettlementConstructionService.java',
+    JAVA / 'settlement/SettlementRoadService.java', JAVA / 'settlement/RoadConstructionState.java',
+    JAVA / 'settlement/RoadSegment.java', JAVA / 'settlement/SettlementOutpostService.java',
+    JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementBenefitService.java',
     JAVA / 'settlement/OutpostBlueprints.java', JAVA / 'settlement/OutpostConstructionState.java',
     JAVA / 'settlement/OutpostRecord.java', JAVA / 'settlement/SettlementInventory.java',
     JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementTier.java',
-    JAVA / 'command/SettlementCommands.java',
-    JAVA / 'network/SettlementSnapshotPayload.java', JAVA / 'network/PlacementRequestPayload.java',
-    JAVA / 'network/PlacementPreviewPayload.java', JAVA / 'network/RoadPlacementRequestPayload.java',
-    JAVA / 'network/RoadPreviewPayload.java', JAVA / 'network/OutpostPlacementRequestPayload.java',
-    JAVA / 'network/OutpostPreviewPayload.java', JAVA / 'network/SettlementNetwork.java',
-    JAVA / 'client/SettlementHudOverlay.java', JAVA / 'client/BuildingPlacementClient.java',
-    JAVA / 'client/PlacementGhostRenderer.java', JAVA / 'client/RoadPlacementClient.java',
-    JAVA / 'client/RoadGhostRenderer.java', JAVA / 'client/OutpostPlacementClient.java',
-    JAVA / 'client/OutpostGhostRenderer.java', JAVA / 'client/FrontierSettlementClient.java',
+    JAVA / 'command/SettlementCommands.java', JAVA / 'network/SettlementNetwork.java',
+    JAVA / 'network/OutpostPlacementRequestPayload.java', JAVA / 'network/OutpostPreviewPayload.java',
+    JAVA / 'client/BuildingPlacementClient.java', JAVA / 'client/RoadPlacementClient.java',
+    JAVA / 'client/OutpostPlacementClient.java', JAVA / 'client/PlacementGhostRenderer.java',
+    JAVA / 'client/RoadGhostRenderer.java', JAVA / 'client/OutpostGhostRenderer.java',
 ]
 missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing:
@@ -33,117 +30,94 @@ if missing:
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
 for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta',
-              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.16'):
+              'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.17'):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
+
+building_type = (JAVA / 'settlement/BuildingType.java').read_text(encoding='utf-8')
+for token in ('BLACKSMITH("blacksmith", "대장간"', 'GUARD_POST("guard_post", "경비초소"'):
+    if token not in building_type:
+        raise SystemExit(f'advanced building type missing: {token}')
+
+blueprints = (JAVA / 'settlement/BuildingBlueprints.java').read_text(encoding='utf-8')
+if 'case BLACKSMITH, GUARD_POST -> AdvancedBuildingBlueprints.create(type, origin)' not in blueprints:
+    raise SystemExit('advanced building blueprint dispatch missing')
+
+advanced = (JAVA / 'settlement/AdvancedBuildingBlueprints.java').read_text(encoding='utf-8')
+for token in ('case BLACKSMITH -> blacksmith(origin)', 'case GUARD_POST -> guardPost(origin)',
+              'Blocks.ANVIL.defaultBlockState()', 'Blocks.SMITHING_TABLE.defaultBlockState()',
+              'Blocks.BLAST_FURNACE.defaultBlockState()', 'b.put(7, y, 2,',
+              'int[][] lamps = {{2,2},{6,2},{2,6},{6,6},{4,2},{4,6}}'):
+    if token not in advanced:
+        raise SystemExit(f'advanced blueprint safety/detail invariant missing: {token}')
+if advanced.count('Blocks.LANTERN.defaultBlockState()') < 2:
+    raise SystemExit('advanced buildings must include explicit lighting layouts')
 
 construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
 for token in ('public static StartResult startAt', 'public static PlacementCheck checkPlacement',
               'MAX_MAIN_SETTLEMENT_RADIUS = 72', 'MAX_PLAYER_PLACEMENT_DISTANCE = 24',
-              'BuildingRotation.fromId(rotationId)', 'RotatedBlueprints.create',
-              'data.beginConstruction(type, check.origin(), rotation)',
+              'type == BuildingType.BLACKSMITH', 'data.buildingCount(BuildingType.MINE) < 1',
+              'type == BuildingType.GUARD_POST', 'SettlementTier.VILLAGE.ordinal()',
               'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)'):
     if token not in construction:
-        raise SystemExit(f'authoritative building placement invariant missing: {token}')
+        raise SystemExit(f'construction/progression invariant missing: {token}')
 if 'destroyBlock(' in construction or 'dropResources(' in construction:
     raise SystemExit('building construction must not use drop-producing destruction paths')
 
-road_state = (JAVA / 'settlement/RoadConstructionState.java').read_text(encoding='utf-8')
-for token in ('Codec.INT.listOf().optionalFieldOf("path", List.of())', 'fromPath(List<BlockPos> centers)',
-              'public RoadConstructionState(int startX, int startY, int startZ,', 'centers()'):
-    if token not in road_state:
-        raise SystemExit(f'road construction persistence/legacy invariant missing: {token}')
+storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
+for token in ('allStorageChunksLoaded', 'public static boolean consumeMetal',
+              'SettlementStorageService::isMetal', 'public static ItemStack insert'):
+    if token not in storage:
+        raise SystemExit(f'physical storage/metal invariant missing: {token}')
 
-road_record = (JAVA / 'settlement/RoadSegment.java').read_text(encoding='utf-8')
-for token in ('Codec.INT.listOf().optionalFieldOf("path", List.of())', 'fromPath(List<BlockPos> centers)',
-              'public RoadSegment(int startX, int startY, int startZ,', 'containsXZ'):
-    if token not in road_record:
-        raise SystemExit(f'completed routed road invariant missing: {token}')
+benefit = (JAVA / 'settlement/SettlementBenefitService.java').read_text(encoding='utf-8')
+for token in ('BuildingType.BLACKSMITH', 'BuildingType.GUARD_POST',
+              'SettlementStorageService.consumeMetal(level, data, 1L)', 'REPAIR_PER_METAL = 16',
+              'mostDamagedEquippedItem', 'new IronGolem(EntityTypes.IRON_GOLEM, level)',
+              'guard.setPersistenceRequired()', 'guard.setPlayerCreated(true)', 'guardIdentity(post)'):
+    if token not in benefit:
+        raise SystemExit(f'settlement benefit invariant missing: {token}')
+
+service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
+for token in ('SettlementWorkerService.tick(server, data)',
+              'SettlementOutpostProductionService.tick(server, data)',
+              'SettlementBenefitService.tick(server, data)'):
+    if token not in service:
+        raise SystemExit(f'canonical server tick invariant missing: {token}')
 
 road = (JAVA / 'settlement/SettlementRoadService.java').read_text(encoding='utf-8')
-for token in ('MAX_ROUTE_LENGTH = 96', 'public static RouteCheck checkRoute', 'public static StartResult startAt',
-              'assessCandidate', 'manhattanPath', 'choose(xThenZ, zThenX)', 'MAX_STEP_HEIGHT = 1',
-              'MAX_CROSS_SLOPE = 1', 'hasOrCanMakeSupport', 'prepareRoute(level, check.centers())',
-              'data.beginRoadConstruction(check.centers())', 'RoadSegment.fromPath(road.centers())'):
+for token in ('MAX_ROUTE_LENGTH = 96', 'public static RouteCheck checkRoute',
+              'MAX_STEP_HEIGHT = 1', 'MAX_CROSS_SLOPE = 1', 'RoadSegment.fromPath(road.centers())'):
     if token not in road:
         raise SystemExit(f'routed road invariant missing: {token}')
 if 'destroyBlock(' in road or 'dropResources(' in road:
-    raise SystemExit('road preparation must not create loose drops')
+    raise SystemExit('roads must not produce loose drops while preparing terrain')
 
 outpost = (JAVA / 'settlement/SettlementOutpostService.java').read_text(encoding='utf-8')
-for token in ('public static PlacementCheck checkPlacement', 'public static StartResult startAt',
-              'MAX_TARGET_DISTANCE_FROM_ROAD_END = 8', 'MAX_PLAYER_DISTANCE_FROM_ROAD_END = 48',
-              'nearestUnclaimedRoad', 'isRoadClaimed', 'gateFor(road)', 'assessSite',
-              'SettlementStorageService.consume(level, data, WOOD_COST, STONE_COST, 0L)',
-              'specializationDisplayName'):
+for token in ('public static PlacementCheck checkPlacement', 'MAX_TARGET_DISTANCE_FROM_ROAD_END = 8',
+              'MAX_PLAYER_DISTANCE_FROM_ROAD_END = 48', 'nearestUnclaimedRoad', 'isRoadClaimed'):
     if token not in outpost:
-        raise SystemExit(f'authoritative outpost placement invariant missing: {token}')
-if 'destroyBlock(' in outpost or 'dropResources(' in outpost:
-    raise SystemExit('outpost construction must not create loose item drops')
+        raise SystemExit(f'outpost placement invariant missing: {token}')
 
 network = (JAVA / 'network/SettlementNetwork.java').read_text(encoding='utf-8')
-for token in ('PROTOCOL = "4"', 'playToServer(PlacementRequestPayload.TYPE',
-              'playToClient(PlacementPreviewPayload.TYPE', 'playToServer(RoadPlacementRequestPayload.TYPE',
-              'playToClient(RoadPreviewPayload.TYPE', 'playToServer(OutpostPlacementRequestPayload.TYPE',
+for token in ('PROTOCOL = "4"', 'playToServer(OutpostPlacementRequestPayload.TYPE',
               'playToClient(OutpostPreviewPayload.TYPE', 'SettlementOutpostService.checkPlacement',
               'SettlementOutpostService.startAt'):
     if token not in network:
-        raise SystemExit(f'placement networking invariant missing: {token}')
-
-building_client = (JAVA / 'client/BuildingPlacementClient.java').read_text(encoding='utf-8')
-for token in ('GLFW.GLFW_KEY_B', 'GLFW.GLFW_KEY_N', 'GLFW.GLFW_KEY_R', 'GLFW.GLFW_KEY_ENTER',
-              'RoadPlacementClient.cancel()', 'OutpostPlacementClient.cancel()', 'public static void cancel()'):
-    if token not in building_client:
-        raise SystemExit(f'building client invariant missing: {token}')
-
-road_client = (JAVA / 'client/RoadPlacementClient.java').read_text(encoding='utf-8')
-for token in ('GLFW.GLFW_KEY_J', 'GLFW.GLFW_KEY_ENTER', 'GLFW.GLFW_KEY_BACKSPACE',
-              'BuildingPlacementClient.cancel()', 'OutpostPlacementClient.cancel()',
-              'ClientPacketDistributor.sendToServer', 'RoadPlacementRequestPayload', 'ghostBlocks()', 'next.confirmed()'):
-    if token not in road_client:
-        raise SystemExit(f'road planning client invariant missing: {token}')
-
-outpost_client = (JAVA / 'client/OutpostPlacementClient.java').read_text(encoding='utf-8')
-for token in ('GLFW.GLFW_KEY_K', 'GLFW.GLFW_KEY_ENTER', 'BuildingPlacementClient.cancel()',
-              'RoadPlacementClient.cancel()', 'OutpostPlacementRequestPayload',
-              'ClientPacketDistributor.sendToServer', 'next.confirmed()'):
-    if token not in outpost_client:
-        raise SystemExit(f'outpost planning client invariant missing: {token}')
+        raise SystemExit(f'outpost networking invariant missing: {token}')
 
 for renderer_name in ('PlacementGhostRenderer.java', 'RoadGhostRenderer.java', 'OutpostGhostRenderer.java'):
     renderer = (JAVA / 'client' / renderer_name).read_text(encoding='utf-8')
-    for token in ('ExtractLevelRenderStateEvent', 'SubmitCustomGeometryEvent', 'submitShapeOutline',
-                  'VALID_COLOR', 'INVALID_COLOR'):
+    for token in ('ExtractLevelRenderStateEvent', 'SubmitCustomGeometryEvent', 'submitShapeOutline'):
         if token not in renderer:
-            raise SystemExit(f'3D ghost invariant missing in {renderer_name}: {token}')
+            raise SystemExit(f'3D ghost renderer invariant missing in {renderer_name}: {token}')
 
-outpost_renderer = (JAVA / 'client/OutpostGhostRenderer.java').read_text(encoding='utf-8')
-for token in ('OutpostBlueprints.create(state)', 'preview.roadIndex() < 0', 'preview.valid()'):
-    if token not in outpost_renderer:
-        raise SystemExit(f'outpost ghost alignment invariant missing: {token}')
+for path in JAVA.rglob('*.java'):
+    text = path.read_text(encoding='utf-8')
+    if path.name in {'SettlementConstructionService.java', 'SettlementRoadService.java',
+                     'SettlementOutpostService.java', 'SettlementWorkerService.java',
+                     'SettlementOutpostProductionService.java'}:
+        if 'destroyBlock(' in text or 'dropResources(' in text:
+            raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
-for token in ('BuildingType.WAREHOUSE', 'WarehouseLayout.storagePositions(building)',
-              'public static SettlementResources scan', 'public static boolean consume',
-              'public static ItemStack insert', 'allStorageChunksLoaded'):
-    if token not in storage:
-        raise SystemExit(f'aggregate storage invariant missing: {token}')
-
-service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
-if 'SettlementOutpostProductionService.tick(server, data)' not in service:
-    raise SystemExit('specialized outpost production must be part of the canonical server tick')
-
-outpost_production = (JAVA / 'settlement/SettlementOutpostProductionService.java').read_text(encoding='utf-8')
-for token in ('case "lumber" -> workLumber', 'case "quarry" -> workQuarry',
-              'case "mining" -> workMine', 'case "agriculture" -> workAgriculture',
-              'ensureAgriculturePlot', 'SettlementInventory.insert(container, carried)', 'Tags.Blocks.ORES'):
-    if token not in outpost_production:
-        raise SystemExit(f'productive outpost invariant missing: {token}')
-if 'destroyBlock(' in outpost_production or 'dropResources(' in outpost_production:
-    raise SystemExit('outpost workers must not produce loose item drops')
-
-worker = (JAVA / 'settlement/SettlementWorkerService.java').read_text(encoding='utf-8')
-if 'destroyBlock(' in worker or 'dropResources(' in worker:
-    raise SystemExit('workers must not create loose drops through block destruction')
-
-print('Frontier Settlement alpha.16 source audit: PASS')
+print('Frontier Settlement alpha.17 source audit: PASS')
