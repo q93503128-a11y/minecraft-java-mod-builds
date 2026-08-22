@@ -3,6 +3,7 @@ package kr.moonseungjun.frontiersettlement.network;
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,9 +14,10 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.function.Consumer;
 
 public final class SettlementNetwork {
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     private static Consumer<SettlementSnapshotPayload> snapshotSink = payload -> {};
     private static Consumer<PlacementPreviewPayload> placementPreviewSink = payload -> {};
+    private static Consumer<RoadPreviewPayload> roadPreviewSink = payload -> {};
 
     private SettlementNetwork() {}
 
@@ -25,8 +27,12 @@ public final class SettlementNetwork {
                 (payload, context) -> snapshotSink.accept(payload));
         registrar.playToClient(PlacementPreviewPayload.TYPE, PlacementPreviewPayload.CODEC,
                 (payload, context) -> placementPreviewSink.accept(payload));
+        registrar.playToClient(RoadPreviewPayload.TYPE, RoadPreviewPayload.CODEC,
+                (payload, context) -> roadPreviewSink.accept(payload));
         registrar.playToServer(PlacementRequestPayload.TYPE, PlacementRequestPayload.CODEC,
                 SettlementNetwork::handlePlacementRequest);
+        registrar.playToServer(RoadPlacementRequestPayload.TYPE, RoadPlacementRequestPayload.CODEC,
+                SettlementNetwork::handleRoadPlacementRequest);
     }
 
     private static void handlePlacementRequest(PlacementRequestPayload payload,
@@ -75,12 +81,36 @@ public final class SettlementNetwork {
                 payload.rotation(), result.message()));
     }
 
+    private static void handleRoadPlacementRequest(RoadPlacementRequestPayload payload,
+                                                   net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        BlockPos start = new BlockPos(payload.startX(), payload.startY(), payload.startZ());
+        BlockPos end = new BlockPos(payload.endX(), payload.endY(), payload.endZ());
+        SettlementRoadService.RouteCheck check = SettlementRoadService.checkRoute(player, start, end);
+        if (!payload.confirm() || !check.valid()) {
+            context.reply(RoadPreviewPayload.fromCheck(payload.nonce(), check, false));
+            return;
+        }
+
+        SettlementRoadService.StartResult result = SettlementRoadService.startAt(player, start, end);
+        player.sendSystemMessage(Component.literal(result.message()));
+        if (result.started()) {
+            context.reply(RoadPreviewPayload.fromCheck(payload.nonce(), check, true));
+        } else {
+            context.reply(new RoadPreviewPayload(payload.nonce(), false, false, check.stoneCost(), check.path(), result.message()));
+        }
+    }
+
     public static void setSnapshotSink(Consumer<SettlementSnapshotPayload> sink) {
         snapshotSink = sink == null ? payload -> {} : sink;
     }
 
     public static void setPlacementPreviewSink(Consumer<PlacementPreviewPayload> sink) {
         placementPreviewSink = sink == null ? payload -> {} : sink;
+    }
+
+    public static void setRoadPreviewSink(Consumer<RoadPreviewPayload> sink) {
+        roadPreviewSink = sink == null ? payload -> {} : sink;
     }
 
     public static void sendSnapshot(ServerPlayer player, SettlementSnapshotPayload payload) {
