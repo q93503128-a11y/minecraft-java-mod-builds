@@ -54,6 +54,7 @@ public final class RoadPlacementClient {
             refreshTicks = 0;
             if (active) {
                 BuildingPlacementClient.cancel();
+                OutpostPlacementClient.cancel();
                 target = resolveTarget(minecraft);
             }
         }
