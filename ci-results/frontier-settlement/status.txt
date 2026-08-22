@@ -1,7 +1,7 @@
 status=failure
-source_sha=de1ccfb8b4932666330b9d060766460a11f29a11
-run_id=32576739181
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32576739181
+source_sha=1882a24e01f280b8227d67ecec507a0f94b233ad
+run_id=32576774072
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32576774072
 version=0.1.0-alpha.12
 minecraft=26.2
 neoforge=26.2.0.38-beta
