@@ -29,14 +29,16 @@ public final class SettlementTierInfrastructureService {
         SettlementTier tier = SettlementTier.current(data);
         if (tier.ordinal() < SettlementTier.FRONTIER_TOWN.ordinal()) return;
 
+        ServerLevel level = server.overworld();
         int tick = server.getTickCount();
-        if (tick % LOGISTICS_INTERVAL_TICKS == 0
+        if (!SettlementResidentRoutineService.isRestTime(level)
+                && tick % LOGISTICS_INTERVAL_TICKS == 0
                 && data.buildingCount(BuildingType.WAREHOUSE) > 0) {
-            reinforcePhysicalLogistics(server.overworld(), data, tier);
+            reinforcePhysicalLogistics(level, data, tier);
         }
         if (tick % GARRISON_INTERVAL_TICKS == 0
                 && data.buildingCount(BuildingType.BLACKSMITH) > 0) {
-            maintainTierGarrison(server.overworld(), data, tier);
+            maintainTierGarrison(level, data, tier);
         }
     }
 
