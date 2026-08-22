@@ -27,6 +27,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
     private static final int EXPECTED_RESIDENTS = 3;
     private static final int DESTINATION_PROBE_RADIUS = 16;
     private static final int ROUTE_GUARD_DISTANCE = 32_768;
+    private static final long TICKET_REFRESH_INTERVAL = 40L;
     private static final long WAIT_LOG_INTERVAL = 200L;
     private static final long PROBE_TIMEOUT_TICKS = 12_000L;
 
@@ -54,6 +55,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
     private static int residentCountEvidence;
     private static int releasedChunks;
     private static long probeRequestedAt;
+    private static long lastTicketRefreshTick;
     private static long lastWaitLogTick;
 
     private ErdenRegionalCommunityPhysicalAudit() {
@@ -96,6 +98,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
             return;
         }
         if (!stageRequested) requestStage(level, settlement, household);
+        refreshStageTickets(level);
         if (!allLoaded(level)) {
             logLoadWait(level);
             return;
@@ -105,6 +108,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
 
         releasedChunks += releaseCurrentStage(level);
         stageRequested = false;
+        lastTicketRefreshTick = Long.MIN_VALUE;
         lastWaitLogTick = Long.MIN_VALUE;
         if (stage == ProbeStage.MARKET) {
             finishAcceptance(level);
@@ -116,10 +120,11 @@ public final class ErdenRegionalCommunityPhysicalAudit {
     private static void beginProbe(ServerLevel level) {
         requested = true;
         probeRequestedAt = level.getGameTime();
+        lastTicketRefreshTick = Long.MIN_VALUE;
         lastWaitLogTick = Long.MIN_VALUE;
         LivingKingdoms.LOGGER.info(
-                "Requested Erden regional community staged physical CI probe settlement={} destinations=4 destination_radius={} max_live_destination_groups=1 transient_ticket=portal persistent_forced_chunks=false",
-                REPRESENTATIVE_ID, DESTINATION_PROBE_RADIUS);
+                "Requested Erden regional community staged physical CI probe settlement={} destinations=4 destination_radius={} max_live_destination_groups=1 transient_ticket=portal refresh_ticks={} refreshed_until_verification=true persistent_forced_chunks=false",
+                REPRESENTATIVE_ID, DESTINATION_PROBE_RADIUS, TICKET_REFRESH_INTERVAL);
     }
 
     private static void requestStage(
@@ -130,6 +135,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
             throw new IllegalStateException("Regional community CI retained chunks leaked between stages");
         }
         stageRequested = true;
+        lastTicketRefreshTick = level.getGameTime();
         switch (stage) {
             case HOME -> addProbeArea(level, household.homeX(), household.homeZ(), DESTINATION_PROBE_RADIUS);
             case SQUARE -> addProbeArea(level, settlement.x(), settlement.z(), DESTINATION_PROBE_RADIUS);
@@ -146,8 +152,8 @@ public final class ErdenRegionalCommunityPhysicalAudit {
             }
         }
         LivingKingdoms.LOGGER.info(
-                "Requested Erden regional community physical stage={} live_chunks={} unique_probe_chunks={} transient_ticket=portal",
-                stage.id(), RETAINED.size(), PROBED.size());
+                "Requested Erden regional community physical stage={} live_chunks={} unique_probe_chunks={} transient_ticket=portal refresh_ticks={} refreshed_until_verification=true",
+                stage.id(), RETAINED.size(), PROBED.size(), TICKET_REFRESH_INTERVAL);
     }
 
     private static void addProbeArea(ServerLevel level, int blockX, int blockZ, int radius) {
@@ -168,6 +174,18 @@ public final class ErdenRegionalCommunityPhysicalAudit {
         PROBED.add(key);
         level.getChunkSource().addTicketAndLoadWithRadius(
                 TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
+    }
+
+    private static void refreshStageTickets(ServerLevel level) {
+        if (!stageRequested || RETAINED.isEmpty()) return;
+        long now = level.getGameTime();
+        if (lastTicketRefreshTick != Long.MIN_VALUE
+                && now - lastTicketRefreshTick < TICKET_REFRESH_INTERVAL) return;
+        lastTicketRefreshTick = now;
+        for (long key : RETAINED) {
+            level.getChunkSource().addTicketAndLoadWithRadius(
+                    TicketType.PORTAL, new ChunkPos(unpackX(key), unpackZ(key)), 0);
+        }
     }
 
     private static boolean allLoaded(ServerLevel level) {
@@ -383,9 +401,9 @@ public final class ErdenRegionalCommunityPhysicalAudit {
         }
         passed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_PASS revision={} settlement={} residents={} destinations=4 probe_chunks={} physical_home=true physical_square=true physical_inn=true physical_market=true resident_identity=true destinations_walkable=true transient_probe_released=true staged_probe=true navigation_only=true loaded_route_guard=true persistent_forced_chunks=false",
+                "LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_PASS revision={} settlement={} residents={} destinations=4 probe_chunks={} physical_home=true physical_square=true physical_inn=true physical_market=true resident_identity=true destinations_walkable=true transient_probe_released=true staged_probe=true refreshed_until_verification=true refresh_ticks={} navigation_only=true loaded_route_guard=true persistent_forced_chunks=false",
                 ErdenRegionalCommunityManager.COMMUNITY_REVISION,
-                REPRESENTATIVE_ID, residentCountEvidence, PROBED.size());
+                REPRESENTATIVE_ID, residentCountEvidence, PROBED.size(), TICKET_REFRESH_INTERVAL);
     }
 
     private static boolean timedOut(ServerLevel level) {
@@ -409,6 +427,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
             RETAINED.remove(key);
         }
         activeBuild = null;
+        lastTicketRefreshTick = Long.MIN_VALUE;
         return released;
     }
 
@@ -483,6 +502,7 @@ public final class ErdenRegionalCommunityPhysicalAudit {
         residentCountEvidence = 0;
         releasedChunks = 0;
         probeRequestedAt = 0L;
+        lastTicketRefreshTick = Long.MIN_VALUE;
         lastWaitLogTick = Long.MIN_VALUE;
         RETAINED.clear();
         PROBED.clear();
