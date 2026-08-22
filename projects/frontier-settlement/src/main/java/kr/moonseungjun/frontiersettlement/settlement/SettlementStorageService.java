@@ -26,12 +26,16 @@ public final class SettlementStorageService {
     }
 
     public static SettlementResources scan(ServerLevel level, SettlementData data) {
+        List<BlockPos> positions = storagePositions(data);
+        // Never overwrite the confirmed ledger with a partial scan while players are exploring far
+        // from the town. Costs are likewise blocked until all physical town storage is loaded.
+        if (!allStorageChunksLoaded(level, positions)) return data.resources();
+
         long wood = 0L;
         long stone = 0L;
         long metal = 0L;
         long food = 0L;
-        for (BlockPos pos : storagePositions(data)) {
-            if (!level.hasChunkAt(pos)) continue;
+        for (BlockPos pos : positions) {
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             wood += SettlementInventory.countWood(container);
             stone += SettlementInventory.countStone(container);
@@ -45,11 +49,13 @@ public final class SettlementStorageService {
     }
 
     public static boolean consume(ServerLevel level, SettlementData data, long wood, long stone, long food) {
+        List<BlockPos> positions = storagePositions(data);
+        if (!allStorageChunksLoaded(level, positions)) return false;
         SettlementResources resources = scan(level, data);
         if (resources.wood() < wood || resources.stone() < stone || resources.food() < food) return false;
-        remove(level, data, wood, SettlementInventory::isWood);
-        remove(level, data, stone, SettlementInventory::isStone);
-        remove(level, data, food, SettlementInventory::isFood);
+        remove(level, positions, wood, SettlementInventory::isWood);
+        remove(level, positions, stone, SettlementInventory::isStone);
+        remove(level, positions, food, SettlementInventory::isFood);
         return true;
     }
 
@@ -74,6 +80,13 @@ public final class SettlementStorageService {
         return data.stockpilePos();
     }
 
+    private static boolean allStorageChunksLoaded(ServerLevel level, List<BlockPos> positions) {
+        for (BlockPos pos : positions) {
+            if (!level.hasChunkAt(pos)) return false;
+        }
+        return true;
+    }
+
     private static boolean hasRoom(Container container, ItemStack incoming) {
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             ItemStack current = container.getItem(slot);
@@ -83,11 +96,11 @@ public final class SettlementStorageService {
         return false;
     }
 
-    private static void remove(ServerLevel level, SettlementData data, long amount, Predicate<ItemStack> predicate) {
+    private static void remove(ServerLevel level, List<BlockPos> positions,
+                               long amount, Predicate<ItemStack> predicate) {
         long left = amount;
-        for (BlockPos pos : storagePositions(data)) {
+        for (BlockPos pos : positions) {
             if (left <= 0L) break;
-            if (!level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {
                 ItemStack stack = container.getItem(slot);
