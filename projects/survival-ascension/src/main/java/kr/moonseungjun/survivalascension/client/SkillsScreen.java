@@ -74,5 +74,5 @@ public final class SkillsScreen extends Screen {
         return targets <= 0 ? "잠김" : targets + "체 / " + String.format(Locale.ROOT, "%.1f블록", SkillTuning.combatCleaveRadius(level));
     }
     private static String format(double value) { return String.format(Locale.ROOT, "%.2f×", value); }
-    private static String roman(int tier) { return switch (tier) { case 5 -> "V"; case 4 -> "IV"; case 3 -> "III"; case 2 -> "II"; default -> "I"; }; }
+    private static String roman(int tier) { return switch (tier) { case 6 -> "VI"; case 5 -> "V"; case 4 -> "IV"; case 3 -> "III"; case 2 -> "II"; default -> "I"; }; }
 }
