@@ -9,6 +9,7 @@ package kr.moonseungjun.survivalascension.elite;
 import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
+import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -61,11 +62,12 @@ public final class EliteMobSystem {
         if (nearby.isEmpty()) return;
 
         double power = nearby.stream().mapToDouble(EliteMobSystem::averageSkillLevel).average().orElse(0.0D);
+        int worldStage = WorldAscensionData.get(level.getServer()).stage();
         RandomSource random = level.getRandom();
-        double eliteChance = Math.min(0.16D, 0.025D + power * 0.00135D);
+        double eliteChance = Math.min(0.28D, 0.025D + power * 0.00135D + worldStage * 0.04D);
         if (random.nextDouble() >= eliteChance) return;
 
-        Rank rank = chooseRank(random, power);
+        Rank rank = chooseRank(random, power, worldStage);
         Trait trait = Trait.values()[random.nextInt(Trait.values().length)];
         applyElite(mob, rank, trait);
 
@@ -218,10 +220,10 @@ public final class EliteMobSystem {
         return total / (double) SkillType.values().length;
     }
 
-    private static Rank chooseRank(RandomSource random, double power) {
+    private static Rank chooseRank(RandomSource random, double power, int worldStage) {
         double roll = random.nextDouble();
-        double mythicChance = Math.min(0.13D, 0.015D + power * 0.00115D);
-        double ascendedChance = Math.min(0.42D, 0.10D + power * 0.0032D);
+        double mythicChance = Math.min(0.22D, 0.015D + power * 0.00115D + worldStage * 0.04D);
+        double ascendedChance = Math.min(0.50D, 0.10D + power * 0.0032D + worldStage * 0.05D);
         if (roll < mythicChance) return Rank.MYTHIC_III;
         if (roll < mythicChance + ascendedChance) return Rank.ASCENDED_II;
         return Rank.ELITE_I;
