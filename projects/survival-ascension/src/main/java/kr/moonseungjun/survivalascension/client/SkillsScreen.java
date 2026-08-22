@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import java.util.Locale;
 
 public final class SkillsScreen extends Screen {
-    private static final int PANEL_WIDTH = 320;
+    private static final int PANEL_WIDTH = 360;
     private static final int ROW_HEIGHT = 31;
     private static final int PANEL_HEIGHT = 222;
 
@@ -32,7 +32,7 @@ public final class SkillsScreen extends Screen {
         int top = Math.max(10, (this.height - PANEL_HEIGHT) / 2);
         graphics.fill(left - 8, top - 8, left + PANEL_WIDTH + 8, top + PANEL_HEIGHT, 0xE0181818);
         graphics.text(this.font, this.title, left, top, 0xFFFFFFFF, true);
-        graphics.text(this.font, "K 숙련 화면 · 웅크리기 = 광역 작업 정밀 모드", left, top + 13, 0xFFAAAAAA, false);
+        graphics.text(this.font, "K 숙련 화면 · 웅크리기 = 광역/광맥 작업 정밀 모드", left, top + 13, 0xFFAAAAAA, false);
 
         int y = top + 29;
         for (SkillType skill : SkillType.values()) {
@@ -71,8 +71,8 @@ public final class SkillsScreen extends Screen {
 
     private static String detail(SkillType skill, int level) {
         return switch (skill) {
-            case MINING -> "작업 " + SkillTuning.miningAreaSize(level) + "×" + SkillTuning.miningAreaSize(level)
-                    + " · 속도 " + format(SkillTuning.miningSpeedMultiplier(level));
+            case MINING -> "굴착 " + SkillTuning.miningAreaSize(level) + "×" + SkillTuning.miningAreaSize(level)
+                    + " · 광맥 " + veinText(level) + " · 속도 " + format(SkillTuning.miningSpeedMultiplier(level));
             case WOODCUTTING -> "연쇄 로그 " + SkillTuning.woodcuttingLogLimit(level)
                     + " · 속도 " + format(SkillTuning.woodcuttingSpeedMultiplier(level));
             case HARVESTING -> "성숙 작물 " + SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level)
@@ -81,6 +81,11 @@ public final class SkillsScreen extends Screen {
             case CONSTRUCTION -> "준비 중 · 건축 체급 성장 시스템 예약";
             case MOBILITY -> "준비 중 · 이동 체급 성장 시스템 예약";
         };
+    }
+
+    private static String veinText(int level) {
+        int limit = SkillTuning.miningVeinLimit(level);
+        return limit <= 1 ? "잠김" : "최대 " + limit;
     }
 
     private static String format(double value) {

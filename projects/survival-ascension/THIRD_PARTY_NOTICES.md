@@ -13,9 +13,24 @@ Survival Ascension adapts or ports permissively licensed implementation ideas fr
 - mature-crop classification used to reject immature crop XP
 - multi-skill overview-screen information architecture
 
-The complete MIT notice is also packaged at `META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt` in the runtime JAR.
+The complete MIT notice is packaged at `META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt` in the runtime JAR.
 
-MIT License
+## Veinminer++
+
+Source project: `kestalkayden/veinminer-plus-plus`
+Copyright (c) 2026 Kestalkayden
+License: MIT License
+
+Survival Ascension adapts permissively licensed implementation patterns from Veinminer++ for the Mining mastery layer, specifically:
+- ore-family equivalence tags so stone/deepslate variants can belong to one vein
+- bounded 26-connected flood-fill traversal
+- normal player destroy-controller handling for secondary mined blocks
+
+Survival Ascension does not copy Veinminer++ configuration screens, keybind scheme, renderer, voiding system, player settings, namespaces or bundled assets. Its skill gates, XP rules, precision mode and action-scale progression remain Survival Ascension systems.
+
+The complete MIT notice is packaged at `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt` in the runtime JAR.
+
+## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

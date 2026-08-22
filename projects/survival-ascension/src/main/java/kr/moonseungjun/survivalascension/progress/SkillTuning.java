@@ -42,9 +42,17 @@ public final class SkillTuning {
     }
 
     public static int miningAreaSize(int level) {
+        if (level >= 90) return 9;
         if (level >= 60) return 7;
         if (level >= 30) return 5;
         if (level >= 10) return 3;
+        return 1;
+    }
+
+    public static int miningVeinLimit(int level) {
+        if (level >= 90) return 128;
+        if (level >= 60) return 64;
+        if (level >= 30) return 24;
         return 1;
     }
 

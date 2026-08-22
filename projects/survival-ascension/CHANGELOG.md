@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0-alpha.1
+- Expanded Mining terrain excavation to 9x9 at level 90.
+- Added level-gated connected ore-vein extraction: 24 blocks at Lv.30, 64 at Lv.60, and 128 at Lv.90.
+- Valuable ores now prefer vein extraction over flat area excavation so high-level mining changes behavior instead of only increasing radius.
+- Added ore-family equivalence so touching stone/deepslate variants of major ores can be treated as the same vein.
+- Kept precision sneak mode as an explicit 1x1 override for both area and vein mining.
+- Kept all secondary ore breaks on `ServerPlayerGameMode.destroyBlock` for normal drops, durability and event handling.
+- Adapted MIT-licensed Veinminer++ ore matching and bounded flood-fill patterns with packaged attribution.
+- Updated the K skill screen and `/ascension stats` to show current vein capacity.
+
 ## 0.3.0-alpha.1
 - Activated Harvesting progression with mature-crop-only XP to prevent immature crop XP farming.
 - Added hoe-scoped harvest speed scaling and 3x3/5x5/7x7/9x9 area harvesting at levels 10/30/60/90.

@@ -16,8 +16,7 @@ public final class AscensionCommands {
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("ascension")
-                .then(Commands.literal("stats")
-                        .executes(context -> showStats(context.getSource().getPlayerOrException())))
+                .then(Commands.literal("stats").executes(context -> showStats(context.getSource().getPlayerOrException())))
                 .then(skillSetLevelNode("mining", SkillType.MINING))
                 .then(skillSetLevelNode("woodcutting", SkillType.WOODCUTTING))
                 .then(skillSetLevelNode("harvesting", SkillType.HARVESTING)));
@@ -29,8 +28,7 @@ public final class AscensionCommands {
                 .then(Commands.literal("setlevel")
                         .then(Commands.argument("level", IntegerArgumentType.integer(0, SkillTuning.MAX_LEVEL))
                                 .executes(context -> setLevel(
-                                        context.getSource().getPlayerOrException(),
-                                        skill,
+                                        context.getSource().getPlayerOrException(), skill,
                                         IntegerArgumentType.getInteger(context, "level")))));
     }
 
@@ -50,7 +48,8 @@ public final class AscensionCommands {
         long next = SkillTuning.xpForNextLevel(level);
         String progress = level >= SkillTuning.MAX_LEVEL ? "MAX" : into + "/" + next + " XP";
         String extra = switch (skill) {
-            case MINING -> "범위 " + SkillTuning.miningAreaSize(level) + "×" + SkillTuning.miningAreaSize(level)
+            case MINING -> "굴착 " + SkillTuning.miningAreaSize(level) + "×" + SkillTuning.miningAreaSize(level)
+                    + " | 광맥 " + (SkillTuning.miningVeinLimit(level) <= 1 ? "잠김" : "최대 " + SkillTuning.miningVeinLimit(level))
                     + " | 속도 " + String.format(java.util.Locale.ROOT, "%.2f×", SkillTuning.miningSpeedMultiplier(level));
             case WOODCUTTING -> "연결 로그 " + SkillTuning.woodcuttingLogLimit(level)
                     + " | 속도 " + String.format(java.util.Locale.ROOT, "%.2f×", SkillTuning.woodcuttingSpeedMultiplier(level));
