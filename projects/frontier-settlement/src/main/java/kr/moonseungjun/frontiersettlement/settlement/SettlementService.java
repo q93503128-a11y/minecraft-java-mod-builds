@@ -32,6 +32,7 @@ public final class SettlementService {
             SettlementWorkerService.tick(server, data);
             SettlementOutpostProductionService.tick(server, data);
         }
+        SettlementTierInfrastructureService.tick(server, data);
         SettlementBenefitService.tick(server, data);
 
         if (tick % 20 == 0 && refreshResources(server, data)) {
