@@ -32,8 +32,9 @@ import java.util.UUID;
  * <p>Normal play never force-loads ecology chunks. A player must already be travelling through a
  * matching loaded region before one of the registered Living Kingdoms species can materialise.
  * Northern forest uplands carry silver harts, western mineral hills carry ash hounds, and the
- * Silver River outside the capital carries river wisps. Population caps are local to the player
- * rather than global, so a 48x40 km realm does not accumulate thousands of unattended entities.</p>
+ * Silver River outside the capital carries river wisps. The walled capital and authored regional
+ * settlements are excluded civic safety zones. Population caps are local to the player rather than
+ * global, so a 48x40 km realm does not accumulate thousands of unattended entities.</p>
  */
 public final class ErdenFantasyEcologyManager {
     public static final int ECOLOGY_REVISION = 1;
@@ -171,7 +172,7 @@ public final class ErdenFantasyEcologyManager {
             int px = player.blockPosition().getX();
             int pz = player.blockPosition().getZ();
             Species wanted = speciesAt(px, pz);
-            if (wanted == Species.NONE || insideCapital(px, pz)) continue;
+            if (wanted == Species.NONE || insideCivilianSafetyZone(px, pz)) continue;
             if (localCount(level, player, wanted) >= LOCAL_SPECIES_CAP) continue;
             long seed = player.getUUID().getLeastSignificantBits()
                     ^ Long.rotateLeft(player.getUUID().getMostSignificantBits(), 17)
@@ -182,7 +183,7 @@ public final class ErdenFantasyEcologyManager {
                 double angle = ((mixed >>> 24) & 0xffffL) / 65535.0D * Math.PI * 2.0D;
                 int x = px + (int) Math.round(Math.cos(angle) * distance);
                 int z = pz + (int) Math.round(Math.sin(angle) * distance);
-                if (speciesAt(x, z) != wanted || insideCapital(x, z)
+                if (speciesAt(x, z) != wanted || insideCivilianSafetyZone(x, z)
                         || !level.hasChunk(x >> 4, z >> 4)) continue;
                 if (spawn(level, wanted, x, z, EntitySpawnReason.NATURAL, false) != null) break;
             }
@@ -208,7 +209,7 @@ public final class ErdenFantasyEcologyManager {
             int z,
             EntitySpawnReason reason,
             boolean diagnostic) {
-        if (species == Species.NONE || insideCapital(x, z) || !insideKingdom(x, z)) return null;
+        if (species == Species.NONE || insideCivilianSafetyZone(x, z) || !insideKingdom(x, z)) return null;
         int groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         if (groundY <= level.getMinY() || groundY >= level.getMaxY() - 8) return null;
         Entity entity = switch (species) {
@@ -237,7 +238,7 @@ public final class ErdenFantasyEcologyManager {
     }
 
     static Species speciesAt(int x, int z) {
-        if (!insideKingdom(x, z) || insideCapital(x, z)) return Species.NONE;
+        if (!insideKingdom(x, z) || insideCivilianSafetyZone(x, z)) return Species.NONE;
         if (Math.abs(z) >= 1_200
                 && AuthoredContinentDensity.silverRiverStrength(x, z) >= 0.72D) {
             return Species.RIVER_WISP;
@@ -255,6 +256,10 @@ public final class ErdenFantasyEcologyManager {
         double nx = (x + 250.0D) / 24_000.0D;
         double nz = (z - 150.0D) / 20_000.0D;
         return nx * nx + nz * nz <= 1.02D;
+    }
+
+    private static boolean insideCivilianSafetyZone(int x, int z) {
+        return insideCapital(x, z) || ErdenRegionalSettlementCatalog.settlementAt(x, z) != null;
     }
 
     private static boolean insideCapital(int x, int z) {
@@ -280,6 +285,11 @@ public final class ErdenFantasyEcologyManager {
         for (Sample sample : CI_SAMPLES) {
             if (!level.hasChunk(sample.x() >> 4, sample.z() >> 4)) return;
         }
+        for (ErdenRegionalSettlementCatalog.Settlement settlement : ErdenRegionalSettlementCatalog.settlements()) {
+            if (speciesAt(settlement.x(), settlement.z()) != Species.NONE) {
+                throw new IllegalStateException("Erden ecology entered civic settlement " + settlement.id());
+            }
+        }
         for (Sample sample : CI_SAMPLES) {
             if (speciesAt(sample.x(), sample.z()) != sample.species()) {
                 throw new IllegalStateException(
@@ -293,7 +303,7 @@ public final class ErdenFantasyEcologyManager {
         ciPrepared = CI_ENTITIES.size() == CI_SAMPLES.size();
         if (ciPrepared) {
             LivingKingdoms.LOGGER.info(
-                    "Prepared Erden fantasy ecology CI samples=3 bounded_chunks={} northern_forest=true western_hills=true silver_river=true capital_excluded=true normal_force_load=false",
+                    "Prepared Erden fantasy ecology CI samples=3 bounded_chunks={} northern_forest=true western_hills=true silver_river=true capital_excluded=true settlements_excluded=true normal_force_load=false",
                     CI_TICKETS.size());
         }
     }
@@ -340,7 +350,7 @@ public final class ErdenFantasyEcologyManager {
         }
         CI_TICKETS.clear();
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3 silver_hart=true ash_hound=true river_wisp=true actual_custom_entity_types=true actual_entity_instances=true hart_player_avoidance=true hart_herding=true ash_hound_untameable=true ash_hound_night_pack=true river_wisp_no_item_courier=true river_bound_navigation=true northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false player_loaded_runtime=true local_species_cap={} forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true ci_ticket_refreshes={} timeout_safe_refresh=true",
+                "LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3 silver_hart=true ash_hound=true river_wisp=true actual_custom_entity_types=true actual_entity_instances=true hart_player_avoidance=true hart_herding=true ash_hound_untameable=true ash_hound_night_pack=true river_wisp_no_item_courier=true river_bound_navigation=true northern_forest_spawn=true western_hill_spawn=true silver_river_spawn=true capital_spawn=false settlement_spawn=false player_loaded_runtime=true local_species_cap={} forced_citywide=false ci_sample_chunks=3 ci_tickets_released=true ci_ticket_refreshes={} timeout_safe_refresh=true",
                 LOCAL_SPECIES_CAP, ciTicketRefreshes);
     }
 
