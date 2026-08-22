@@ -28,10 +28,6 @@ public final class CombatProgression {
     private static final Set<UUID> CLEAVE_GUARD = new HashSet<>();
     private static final Set<UUID> SHOCKWAVE_GUARD = new HashSet<>();
     private static final String SHOCKWAVE_READY_KEY = "survivalascension_combat_shockwave_ready";
-    private static final double SHOCKWAVE_RADIUS = 5.5D;
-    private static final int SHOCKWAVE_TARGETS = 12;
-    private static final double SHOCKWAVE_FRACTION = 0.45D;
-    private static final int SHOCKWAVE_COOLDOWN_TICKS = 60;
 
     private CombatProgression() {}
 
@@ -83,22 +79,26 @@ public final class CombatProgression {
         if (combatLevel < 90 || !player.isSprinting()) return false;
         if (!InfrastructureData.get(player).isComplete(InfrastructureProject.COMBAT_ACADEMY)) return false;
         long now = level.getGameTime();
+        int cooldown = combatLevel >= 100 ? 50 : 60;
         if (now < player.getPersistentData().getLongOr(SHOCKWAVE_READY_KEY, 0L)) return false;
 
-        player.getPersistentData().putLong(SHOCKWAVE_READY_KEY, now + SHOCKWAVE_COOLDOWN_TICKS);
+        double radius = combatLevel >= 100 ? 6.5D : 5.5D;
+        int targetLimit = combatLevel >= 100 ? 16 : 12;
+        double fraction = combatLevel >= 100 ? 0.55D : 0.45D;
+        player.getPersistentData().putLong(SHOCKWAVE_READY_KEY, now + cooldown);
         List<LivingEntity> nearby = level.getEntitiesOfClass(
                 LivingEntity.class,
-                player.getBoundingBox().inflate(SHOCKWAVE_RADIUS),
+                player.getBoundingBox().inflate(radius),
                 candidate -> candidate != primary && candidate != player && candidate.isAlive() && candidate instanceof Enemy && !player.isAlliedTo(candidate));
         nearby.sort(Comparator.comparingDouble(player::distanceToSqr));
 
-        float shockDamage = Math.max(1.0F, (float) (scaledDamage * SHOCKWAVE_FRACTION));
+        float shockDamage = Math.max(1.0F, (float) (scaledDamage * fraction));
         UUID uuid = player.getUUID();
         SHOCKWAVE_GUARD.add(uuid);
         try {
             int hit = 0;
             for (LivingEntity candidate : nearby) {
-                if (hit >= SHOCKWAVE_TARGETS) break;
+                if (hit >= targetLimit) break;
                 if (!candidate.hurtServer(level, event.getSource(), shockDamage)) continue;
                 Vec3 push = candidate.position().subtract(player.position()).multiply(1.0D, 0.0D, 1.0D);
                 if (push.lengthSqr() > 1.0E-5D) {
@@ -135,5 +135,6 @@ public final class CombatProgression {
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 I · 주변 적 2체까지 연쇄 타격"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 II · 반경/대상이 크게 확장됩니다."));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 파급 III · 전투 훈련장 완공 시 질주 공격이 360° 충격파로 승격"));
+        if (oldLevel < 100 && newLevel >= 100) player.sendSystemMessage(Component.literal("§c[전투 숙련 VI] §f파급 10체/5블록 · 훈련장 충격파 6.5블록/16체"));
     }
 }
