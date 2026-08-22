@@ -49,6 +49,13 @@ License: MIT License
 
 Survival Ascension 0.13 adapts the Digital Miner's high-level target-filtered bounded-search idea for the Mining Lv.90 Extract action. The implementation is player/tool/skill based and retains Survival Ascension's own ore-family matching, loaded-chunk bound, normal `destroyBlock` path, block limit, durability, loot and XP rules. No Mekanism assets, machines, energy systems, filters, GUIs, data files or namespaces are bundled. Full notice: `META-INF/third-party/MEKANISM_MIT.txt`.
 
+## Create
+Source project: `Creators-of-Create/Create`  
+Code license: MIT License  
+Assets license: All Rights Reserved
+
+Survival Ascension 0.14 studies Create's progression philosophy of turning large material throughput into staged infrastructure and new physical work capabilities. No Create source code, assets, textures, models, sound, data, namespaces, machines or Ponder content are bundled in 0.14. The shared-project SavedData, funding rules, tunnel jobs and irrigation behavior are Survival Ascension implementations.
+
 ## MIT License text
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
