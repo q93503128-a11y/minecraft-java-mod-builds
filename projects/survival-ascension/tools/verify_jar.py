@@ -22,14 +22,17 @@ with zipfile.ZipFile(jar) as zf:
         "META-INF/third-party/BUILDING_GADGETS_2_MIT.txt",
         "META-INF/third-party/MOB_CHAMPIONS_MIT.txt",
         "META-INF/third-party/APOTHEOSIS_MIT.txt",
+        "META-INF/third-party/MEKANISM_MIT.txt",
         "kr/moonseungjun/survivalascension/SurvivalAscension.class",
         "kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.class",
+        "kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/GuideScreen.class",
         "kr/moonseungjun/survivalascension/client/SkillsScreen.class",
-        "kr/moonseungjun/survivalascension/progress/SkillProgressData.class",
         "kr/moonseungjun/survivalascension/mining/MiningProgression.class",
+        "kr/moonseungjun/survivalascension/mining/MiningMode.class",
+        "kr/moonseungjun/survivalascension/network/MiningModePayload.class",
         "kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.class",
         "kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.class",
         "kr/moonseungjun/survivalascension/combat/CombatProgression.class",
@@ -48,6 +51,7 @@ with zipfile.ZipFile(jar) as zf:
         ("META-INF/third-party/BUILDING_GADGETS_2_MIT.txt", "Copyright (c) 2023 Direwolf20-MC"),
         ("META-INF/third-party/MOB_CHAMPIONS_MIT.txt", "Copyright (c) 2024 Wendall Cada"),
         ("META-INF/third-party/APOTHEOSIS_MIT.txt", "Copyright (c) 2018-2025 Stormraven Studios, LLC"),
+        ("META-INF/third-party/MEKANISM_MIT.txt", "Copyright (c) 2017-2025 Aidan C. Brady"),
     ]:
         text = zf.read(notice).decode("utf-8")
         if line not in text or "MIT" not in text: raise SystemExit(f"invalid packaged notice: {notice}")
