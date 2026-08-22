@@ -45,8 +45,7 @@ public final class SettlementOutpostService {
         }
 
         SettlementService.refreshResources(server, data);
-        if (!(level.getBlockEntity(data.stockpilePos()) instanceof Container container)) return new StartResult(false, "공동 창고를 찾을 수 없습니다.");
-        if (!SettlementInventory.consume(container, WOOD_COST, STONE_COST, 0L)) {
+        if (!SettlementStorageService.consume(level, data, WOOD_COST, STONE_COST, 0L)) {
             SettlementService.refreshResources(server, data);
             return new StartResult(false, "전초기지 필요 자원: 목재 " + WOOD_COST + ", 석재 " + STONE_COST + ". 자원이 부족해 착공하지 않았습니다.");
         }
@@ -225,7 +224,7 @@ public final class SettlementOutpostService {
         return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT)
                 || state.is(Blocks.PODZOL) || state.is(Blocks.ROOTED_DIRT) || state.is(Blocks.STONE)
                 || state.is(Blocks.ANDESITE) || state.is(Blocks.DIORITE) || state.is(Blocks.GRANITE)
-                || state.is(Blocks.SAND) || state.is(Blocks.RED_SAND) || state.is(Blocks.GRAVEL)
-                || state.is(Blocks.CLAY) || state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK);
+                || state.is(Blocks.TUFF) || state.is(Blocks.SAND) || state.is(Blocks.RED_SAND)
+                || state.is(Blocks.GRAVEL) || state.is(Blocks.CLAY) || state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK);
     }
 }
