@@ -88,7 +88,7 @@ def main() -> None:
             assert pane[0] >= safe[0] and pane[2] <= safe[2], (dims, safe, pane)
             assert pane[1] >= safe[1] and pane[3] <= safe[3], (dims, safe, pane)
         assert overview[3] <= monsters[1]
-        if compact or (dossier[1] == monsters[1]):
+        if compact or dossier[1] == monsters[1]:
             assert monsters[2] <= dossier[0]
         else:
             assert monsters[3] <= dossier[1]
@@ -130,7 +130,7 @@ def main() -> None:
     assert role_screen.count("VillageClientKeys.skillTwoKeyName()") >= 2
 
     # The retired paid-food route is compatibility-only: it must remain a no-op if a stale action reaches it.
-    buy_food = block(progression, "public static synchronized String buyFood", "public static synchronized String claimDailyBread")
+    buy_food = block(progression, "public static synchronized String buyFood", "public static synchronized String improveForgeRank")
     assert "유료 일반 식량은 일일 배급 식량으로 통합" in buy_food
     assert "spendCoins" not in buy_food and "giveOrDrop" not in buy_food
 
