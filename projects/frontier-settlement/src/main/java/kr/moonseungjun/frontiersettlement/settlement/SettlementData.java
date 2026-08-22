@@ -193,6 +193,14 @@ public final class SettlementData extends SavedData {
         setDirty();
     }
 
+    public void beginRoadConstruction(List<BlockPos> centers) {
+        RoadConstructionState next = RoadConstructionState.fromPath(centers);
+        if (!next.active()) return;
+        infrastructure = new SettlementInfrastructureState(
+                buildings(), roads(), next, outposts(), outpostConstruction());
+        setDirty();
+    }
+
     public void advanceRoadConstruction() {
         if (!roadConstruction().active()) return;
         infrastructure = new SettlementInfrastructureState(
