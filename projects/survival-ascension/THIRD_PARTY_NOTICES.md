@@ -12,7 +12,7 @@ Source project: `kestalkayden/veinminer-plus-plus`
 Copyright (c) 2026 Kestalkayden  
 License: MIT License
 
-Survival Ascension adapts ore-family equivalence matching, bounded connected traversal, and normal player destroy-controller handling. Full notice: `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt`.
+Survival Ascension adapts ore-family equivalence matching, bounded connected traversal, normal player destroy-controller handling, and in 0.15 the smart-tree leaf-safety plus tick-drained large-tree work pattern. The smart-tree rule first gathers connected logs and only bulk-fells when leaves are face-adjacent to the origin or gathered log set, protecting ordinary player-built log structures. Full notice: `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt`.
 
 ## MineMenu
 Source project: `GirafiStudios/MineMenu`  
@@ -26,7 +26,7 @@ Source project: `Direwolf20-MC/BuildingGadgets2`
 Copyright (c) 2023 Direwolf20-MC  
 License: MIT License
 
-Survival Ascension independently implements Construction after studying Building Gadgets 2's permissively licensed material-backed building, interaction/protection checks, NeoForge placement hooks and tick-distributed work. Full notice: `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
+Survival Ascension independently implements Construction after studying Building Gadgets 2's permissively licensed material-backed building, interaction/protection checks, NeoForge placement hooks and tick-distributed work. The 0.15 Builder Foundry volume mode reuses Survival Ascension's existing protected material-backed work queue. Full notice: `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
 
 ## Mob Champions
 Source project: `wendall911/MobChampions`  
@@ -51,10 +51,10 @@ Survival Ascension 0.13 adapts the Digital Miner's high-level target-filtered bo
 
 ## Create
 Source project: `Creators-of-Create/Create`  
-Code license: MIT License  
+Code license: MIT  
 Assets license: All Rights Reserved
 
-Survival Ascension 0.14 studies Create's progression philosophy of turning large material throughput into staged infrastructure and new physical work capabilities. No Create source code, assets, textures, models, sound, data, namespaces, machines or Ponder content are bundled in 0.14. The shared-project SavedData, funding rules, tunnel jobs and irrigation behavior are Survival Ascension implementations.
+Survival Ascension studies Create's progression philosophy of turning large material throughput into staged infrastructure and new physical work capabilities. No Create source code, assets, textures, models, sound, data, namespaces, machines or Ponder content are bundled. The shared-project SavedData, funding rules, tunnel jobs, irrigation behavior and Builder Foundry are Survival Ascension implementations.
 
 ## MIT License text
 Permission is hereby granted, free of charge, to any person obtaining a copy
