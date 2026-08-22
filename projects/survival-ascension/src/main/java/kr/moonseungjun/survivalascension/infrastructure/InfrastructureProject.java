@@ -22,6 +22,15 @@ public enum InfrastructureProject {
                     new Requirement(Items.REDSTONE, "레드스톤", 128),
                     new Requirement(Items.GLASS, "유리", 128),
                     new Requirement(Items.SLIME_BALL, "슬라임볼", 32)
+            )),
+    BUILDER_FOUNDRY(
+            "builder_foundry", "건축 공방", "건축 Lv.90 입체 채우기 5×5×5",
+            List.of(
+                    new Requirement(Items.STONE_BRICKS, "석재 벽돌", 1024),
+                    new Requirement(Items.IRON_INGOT, "철 주괴", 256),
+                    new Requirement(Items.COPPER_INGOT, "구리 주괴", 256),
+                    new Requirement(Items.REDSTONE, "레드스톤", 128),
+                    new Requirement(Items.OBSIDIAN, "흑요석", 64)
             ));
 
     private final String id;
