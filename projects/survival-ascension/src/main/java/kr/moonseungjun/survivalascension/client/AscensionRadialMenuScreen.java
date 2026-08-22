@@ -3,6 +3,7 @@ package kr.moonseungjun.survivalascension.client;
 /*
  * Radial interaction geometry and presentation are adapted from MineMenu.
  * MineMenu: Copyright (c) 2013 Dylan Miller, MIT License.
+ * 26.2 GUI render-state submission follows the current public radial pattern used by JustDireThings.
  * See THIRD_PARTY_NOTICES.md and META-INF/third-party/MINEMENU_MIT.txt.
  */
 
@@ -28,7 +29,6 @@ public final class AscensionRadialMenuScreen extends Screen {
     private static final float OUTER_RADIUS = 80.0F;
     private static final float INNER_RADIUS = 60.0F;
 
-    // MineMenu's default visual values: translucent black wheel, translucent red selection.
     private static final int MENU_R = 0;
     private static final int MENU_G = 0;
     private static final int MENU_B = 0;
@@ -65,20 +65,16 @@ public final class AscensionRadialMenuScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null || minecraft.options.hideGui) return;
+        if (minecraft.level == null) return;
 
         int centerX = this.width / 2;
         int centerY = this.height / 2;
         int selected = selectedIndex();
-        graphics.guiRenderState.addGuiElement(new WheelElement(
-                RenderPipelines.GUI,
-                TextureSetup.noTexture(),
-                graphics.pose(),
-                centerX,
-                centerY,
-                selected,
-                null
-        ));
+        Matrix3x2f capturedPose = new Matrix3x2f(graphics.pose());
+        ScreenRectangle scissor = graphics.peekScissorStack();
+        graphics.submitGuiElementRenderState(new WheelElement(
+                RenderPipelines.GUI, TextureSetup.noTexture(), capturedPose,
+                centerX, centerY, selected, scissor));
 
         for (int i = 0; i < ITEM_COUNT; i++) {
             double angle = Math.toRadians(ANGLE_PER_ITEM * i + 90.0D);
@@ -93,7 +89,8 @@ public final class AscensionRadialMenuScreen extends Screen {
         int detailX = centerX - this.font.width(entry.detail()) / 2;
         graphics.text(this.font, entry.title(), titleX, centerY - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, entry.detail(), detailX, centerY + 8, 0xFFB8B8B8, false);
-        graphics.text(this.font, "M · 통합 메뉴", centerX - this.font.width("M · 통합 메뉴") / 2,
+        String caption = "M · 통합 메뉴";
+        graphics.text(this.font, caption, centerX - this.font.width(caption) / 2,
                 centerY - 102, 0xFFE0E0E0, true);
     }
 
@@ -140,10 +137,7 @@ public final class AscensionRadialMenuScreen extends Screen {
     }
 
     private record Entry(String title, String detail, ItemStack icon, Action action) {}
-
-    private enum Action {
-        SKILLS, GUIDE, UNLOCKS, STATS, CONTROLS, CLOSE
-    }
+    private enum Action { SKILLS, GUIDE, UNLOCKS, STATS, CONTROLS, CLOSE }
 
     private record WheelElement(
             RenderPipeline pipeline,
