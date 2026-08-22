@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.0-alpha.1
+- Reworked Woodcutting bulk felling around Veinminer++ MIT smart-tree safety: connected logs are gathered first and a bulk job is only created when leaves are face-adjacent to the origin or gathered log set.
+- Plain player-built log structures without attached leaves now stay single-block even at high Woodcutting levels.
+- Replaced synchronous 16/48/128/256-log chain destruction with tick-drained jobs: 12 logs/player/tick and 64 logs globally/tick.
+- Woodcutting queued breaks retain normal `player.gameMode.destroyBlock`, tool checks, block-entity exclusion, normal drops/durability and per-block skill XP; an internal guard prevents recursive jobs.
+- Added the third shared infrastructure project, Builder Foundry: 1024 stone bricks + 256 iron + 256 copper + 128 redstone + 64 obsidian.
+- Completing Builder Foundry plus Construction Lv.90 unlocks Volume mode in M -> Construction.
+- Volume fills a 5x5x5 cube centered on the player's placed block, excluding the already-placed origin (max 124 secondary placements).
+- Volume reuses the existing material-backed protected Construction queue: real inventory blocks, mayInteract, NeoForge placement hook, survival checks, 256 pending/player cap and tick-distributed placement.
+- Construction and Infrastructure radials now expose Volume and Builder Foundry respectively.
+- Extended the existing Veinminer++ MIT attribution to cover smart-tree safety and tick-drained large-tree work.
+
 ## 0.14.0-alpha.1
 - Added world-shared infrastructure projects persisted through a new `infrastructure_v1` SavedData; multiplayer contributions share the same server-world progress.
 - Added M -> Infrastructure MineMenu-derived radial with Quarry Network / Irrigation Works / Status / Back.
