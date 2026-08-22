@@ -15,9 +15,9 @@ def need(body,*tokens):
 gradle=text(root/'gradle.properties')
 main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=json.loads(text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle,'mod_version=0.12.1-alpha.62')
-need(main,'VERSION = "0.12.1-alpha.62"')
-assert index['version']=='0.12.1-alpha.62'
+need(gradle,'mod_version=0.12.1-alpha.63')
+need(main,'VERSION = "0.12.1-alpha.63"')
+assert index['version']=='0.12.1-alpha.63'
 assert index['implemented_circles']==list(range(1,10))
 assert index['direct_spells']==90 and index['fusion_spells']==19
 
@@ -199,19 +199,17 @@ need(tracker,
      'HighCirclePrestigeOverlay.charge(',
      'HighCirclePrestigeOverlay.release(')
 
-# Readability-first atlas/academy and named five-slot loadout.
-readable=text(client/'ReadableGrimoireScreen.java')
+# alpha.63 restores the established book UI for atlas/academy instead of the alpha.62 experimental cards.
+primary=text(client/'PrimaryGrimoireScreen.java')
 handlers=text(client/'ClientNetworkHandlers.java')
-need(handlers,'new ReadableGrimoireScreen(payload.page())')
-need(readable,
+need(handlers,'new PrimaryGrimoireScreen(payload.page())')
+assert 'new ReadableGrimoireScreen(payload.page())' not in handlers
+need(primary,
      'for (int slot = 0; slot < 5; slot++) drawSlot',
-     'ArcaneClientState.cooldownRemainingTicks(slot)',
-     'ArcaneClientState.cooldownFraction(slot)',
      'private List<String> wrap(String value, int pixels, int maxLines)',
      'private String fit(String value, int pixels)',
-     'Rect academyText()','Rect join()','Rect joinAction()',
-     'current == inspectedTradition ? "가입 완료" : "소속 등록"',
-     'case 7 -> "요새·차원 권능"','case 8 -> "지역·현실 지배"','default -> "세계법칙·재앙"')
+     'Rect academyInfo()','Rect join()',
+     'current == inspectedTradition ? "현재 소속" : "소속 등록"')
 
 # Preserve Dispel/Antimagic/lifecycle cleanup for high-circle state.
 control=text(magic/'HighControlSpellService.java')
@@ -234,7 +232,7 @@ assert index['death_doctrine']=={
  'finger_of_death':'single_target_soul_rupture_no_threshold_execution',
  'power_word_kill':'exclusive_ninth_circle_execution_with_fallback_life_collapse'}
 assert index['crown_meteor']=='fifteenth_barrage_then_delayed_sixteenth_crown_cataclysm'
-assert index['grimoire_ui']=='readable_two_pane_cards_with_named_loadout_slots'
+assert index['grimoire_ui']=='primary_book_style_restored_for_atlas_and_academy'
 assert set(index['ninth_circle_deep_audit'])=={
  'crown_cataclysm_meteor_swarm','exclusive_execution_power_word_kill','seven_layer_physical_prismatic_wall',
  'preserved_shapechange','preserved_time_stop','preserved_true_polymorph','maintained_behavioral_weird',
@@ -255,16 +253,16 @@ tools=root/'tools'
 assert {p.name for p in tools.iterdir() if p.is_file()}=={'test_current_source.py','verify_jar.py'}
 verify=text(tools/'verify_jar.py')
 need(verify,
-     '0.12.1-alpha.62','DeathDoctrineService.class','MeteorCataclysmService.class',
-     'HighCirclePrestigeOverlay.class','CircleScaleEnvelope.class','ReadableGrimoireScreen.class',
-     'alpha62_circle_scale_hierarchy=PASS','alpha62_high_circle_prestige=PASS','alpha62_crown_meteor=PASS')
+     '0.12.1-alpha.63','DeathDoctrineService.class','MeteorCataclysmService.class',
+     'HighCirclePrestigeOverlay.class','CircleScaleEnvelope.class','PrimaryGrimoireScreen.class',
+     'alpha63_primary_grimoire_restore=PASS','alpha62_high_circle_prestige=PASS','alpha62_crown_meteor=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
 print('alpha53_60_circle_regression_anchors=PASS')
 print('alpha61_ninth_circle_authority_preserved=PASS')
-print('alpha62_readable_grimoire=PASS')
+print('alpha63_primary_grimoire_restore=PASS')
 print('alpha62_circle_scale_hierarchy=PASS')
 print('alpha62_high_circle_prestige=PASS')
 print('alpha62_death_doctrine=PASS')

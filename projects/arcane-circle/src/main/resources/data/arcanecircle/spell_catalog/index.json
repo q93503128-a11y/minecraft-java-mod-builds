@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.62",
+  "version": "0.12.1-alpha.63",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -44,7 +44,7 @@
   "high_circle_prestige": ["seven_circle_fortress_scale","eight_circle_regional_scale","nine_circle_world_law_scale","precision_spells_use_dense_compact_seals","catastrophes_use_world_footprints"],
   "death_doctrine": {"circle_of_death":"wide_life_erosion_no_execution","finger_of_death":"single_target_soul_rupture_no_threshold_execution","power_word_kill":"exclusive_ninth_circle_execution_with_fallback_life_collapse"},
   "crown_meteor": "fifteenth_barrage_then_delayed_sixteenth_crown_cataclysm",
-  "grimoire_ui": "readable_two_pane_cards_with_named_loadout_slots",
+  "grimoire_ui": "primary_book_style_restored_for_atlas_and_academy",
   "high_utility_identity": ["cross_dimension_plane_shift","persistent_demiplane_room","commandable_simulacrum"],
   "high_control_identity": ["behavioral_mass_suggestion","physical_forcecage","temporary_dominate_monster","spellbreaking_feeblemind"],
   "high_ward_identity": ["globe_blocks_hostile_circle_1_to_5_spells","circle_6_plus_and_physical_pass_through","player_and_npc_cast_interception"],

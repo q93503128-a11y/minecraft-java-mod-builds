@@ -64,7 +64,7 @@ with zipfile.ZipFile(jar) as archive:
 
     index=json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version=index.get('version')
-    if version!='0.12.1-alpha.62': raise SystemExit(f'unexpected alpha.62 package version: {version}')
+    if version!='0.12.1-alpha.63': raise SystemExit(f'unexpected alpha.63 package version: {version}')
     if jar.name!=f'arcanecircle-{version}.jar': raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles')!=list(range(1,10)) or index.get('direct_spells')!=90 or index.get('fusion_spells')!=19:
         raise SystemExit('catalogue is not full 1-9 / 90+19')
@@ -83,8 +83,8 @@ with zipfile.ZipFile(jar) as archive:
     if death.get('power_word_kill')!='exclusive_ninth_circle_execution_with_fallback_life_collapse': raise SystemExit('9C death role mismatch')
     if index.get('crown_meteor')!='fifteenth_barrage_then_delayed_sixteenth_crown_cataclysm':
         raise SystemExit('Crown Meteor metadata missing')
-    if index.get('grimoire_ui')!='readable_two_pane_cards_with_named_loadout_slots':
-        raise SystemExit('readable grimoire metadata missing')
+    if index.get('grimoire_ui')!='primary_book_style_restored_for_atlas_and_academy':
+        raise SystemExit('primary grimoire restore metadata missing')
 
     expected9={
       'crown_cataclysm_meteor_swarm','exclusive_execution_power_word_kill','seven_layer_physical_prismatic_wall',
@@ -105,8 +105,8 @@ with zipfile.ZipFile(jar) as archive:
 
 digest=hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name+'.sha256').write_text(f'{digest}  {jar.name}\n',encoding='utf-8')
-print(f'Arcane Circle alpha.62 JAR verification: PASS ({len(names)} entries)')
-print('alpha62_readable_grimoire=PASS')
+print(f'Arcane Circle alpha.63 JAR verification: PASS ({len(names)} entries)')
+print('alpha63_primary_grimoire_restore=PASS')
 print('alpha62_circle_scale_hierarchy=PASS')
 print('alpha62_high_circle_prestige=PASS')
 print('alpha62_death_doctrine=PASS')
