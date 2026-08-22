@@ -1,6 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- Warband MIT tactical squads use progression-gated 3-6 member formations with four active roles
-- spawner-marked mobs cannot join warbands; leader death causes an 8-second rout and Echo Shard reward
-- Combat Academy gates Lv.90 sprint shockwave: 5.5 radius, 12 targets, 60-tick cooldown
-- Veinminer++ smart-tree/tick-drain, Builder Foundry volume, tunnel, irrigation, elite, affix and reforge regressions retained
+- CC0 boss milestones persist as world_ascension_v1 stage 0/1/2
+- Wither -> Legendary stage; Ender Dragon -> Endgame stage
+- elite frequency/rank odds and tactical warband size/frequency scale with world stage
+- all 0.16 combat academy, warband, infrastructure, safe scaled-work and affix regressions retained
