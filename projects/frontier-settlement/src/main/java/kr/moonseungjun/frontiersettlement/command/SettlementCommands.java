@@ -5,9 +5,12 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
 import kr.moonseungjun.frontiersettlement.settlement.ConstructionState;
+import kr.moonseungjun.frontiersettlement.settlement.RoadConstructionState;
+import kr.moonseungjun.frontiersettlement.settlement.RoadSegment;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementResources;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -25,6 +28,7 @@ public final class SettlementCommands {
                 .then(Commands.literal("found").executes(SettlementCommands::found))
                 .then(Commands.literal("status").executes(SettlementCommands::status))
                 .then(Commands.literal("rescan").executes(SettlementCommands::rescan))
+                .then(Commands.literal("road").executes(SettlementCommands::road))
                 .then(Commands.literal("build")
                         .then(Commands.literal("house").executes(context -> build(context, BuildingType.HOUSE)))
                         .then(Commands.literal("lumber_camp").executes(context -> build(context, BuildingType.LUMBER_CAMP)))));
@@ -47,13 +51,20 @@ public final class SettlementCommands {
             return 0;
         }
         player.sendSystemMessage(Component.literal("공동 개척지가 시작되었습니다. 건설 주민 1명과 공동 창고가 배치되었습니다."));
-        player.sendSystemMessage(Component.literal("창고에 목재·석재를 넣은 뒤 /frontier build house 또는 /frontier build lumber_camp 로 건설을 시험할 수 있습니다."));
+        player.sendSystemMessage(Component.literal("창고에 목재·석재를 넣어 주택과 벌목소를 완성하면 첫 개척 도로가 열립니다."));
         return 1;
     }
 
     private static int build(CommandContext<CommandSourceStack> context, BuildingType type) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         SettlementConstructionService.StartResult result = SettlementConstructionService.start(player, type);
+        player.sendSystemMessage(Component.literal(result.message()));
+        return result.started() ? 1 : 0;
+    }
+
+    private static int road(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        SettlementRoadService.StartResult result = SettlementRoadService.start(player);
         player.sendSystemMessage(Component.literal(result.message()));
         return result.started() ? 1 : 0;
     }
@@ -70,8 +81,14 @@ public final class SettlementCommands {
                 + " | 석재 " + r.stone() + " | 금속 " + r.metal()
                 + " | 식량 " + r.food() + " | 인구 " + data.population()
                 + " | 주거 " + data.housingCapacity()));
-        player.sendSystemMessage(Component.literal("건물 | 주택 " + data.houseCount()
-                + " | 벌목소 " + data.lumberCampCount()));
+        player.sendSystemMessage(Component.literal("인프라 | 주택 " + data.houseCount()
+                + " | 벌목소 " + data.lumberCampCount() + " | 도로 " + data.roads().size()));
+
+        if (!data.roads().isEmpty()) {
+            RoadSegment last = data.roads().get(data.roads().size() - 1);
+            player.sendSystemMessage(Component.literal("최근 도로 끝점 | "
+                    + last.end().getX() + ", " + last.end().getY() + ", " + last.end().getZ()));
+        }
 
         ConstructionState construction = data.construction();
         if (construction.active()) {
@@ -82,6 +99,13 @@ public final class SettlementCommands {
                 player.sendSystemMessage(Component.literal("공사 중 | " + type.displayName() + " " + percent + "% ("
                         + construction.step() + "/" + total + ")"));
             }
+        }
+
+        RoadConstructionState road = data.roadConstruction();
+        if (road.active()) {
+            int total = SettlementRoadService.totalSteps(road);
+            int percent = total <= 0 ? 0 : Math.min(100, road.step() * 100 / total);
+            player.sendSystemMessage(Component.literal("도로 공사 중 | " + percent + "% (" + road.step() + "/" + total + ")"));
         }
         return 1;
     }
