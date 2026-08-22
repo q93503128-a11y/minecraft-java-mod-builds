@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.18.0-alpha.1
+- Added the fifth world-shared infrastructure project, Ascension Nexus, available only after World Ascension Stage 2 / Endgame.
+- Ascension Nexus costs 4 Nether Stars + 64 Dragon's Breath + 512 Obsidian + 512 Amethyst Shards + 64 Echo Shards.
+- Server-authoritative infrastructure funding now supports per-project world-stage prerequisites and rejects contributions before the required stage.
+- Completing Ascension Nexus plus Mobility Lv.90 upgrades the existing air dash from one use per airtime to two uses per airtime.
+- Both air-dash uses retain the normal Mobility cooldown; landing resets the usage counter and the project does not grant flight.
+- M -> Infrastructure now exposes Ascension Nexus and its boss/endgame-resource costs.
+- Source audit now enforces Stage-2 gating, exact Nexus resource sinks, two-air-dash conditions, landing reset and preservation of all 0.17 world-stage regressions.
+
+## 0.17.0-alpha.1
+- Added world-shared boss-driven ascension adapted from Hostiles Are Too Easy's CC0 progression concept.
+- Added `world_ascension_v1` SavedData with monotonic Stage 0 Awakening / Stage 1 Legendary / Stage 2 Endgame progression.
+- First Wither defeat advances the server world to Stage 1; first Ender Dragon defeat advances it to Stage 2.
+- M -> Infrastructure -> Status reports the canonical server world stage.
+- World stage now scales elite spawn chance and Ascended II / Mythic III rank odds without applying a blanket global HP multiplier.
+- Tactical warbands scale from 3-6 members at Stage 0 to 4-7 at Stage 1 and 5-8 at Stage 2, with formation chance also increasing by stage.
+- Existing elite traits, Warband roles, rout behavior, Echo Shard economy, affix loot and Combat Academy progression remain intact.
+- Packaged Hostiles Are Too Easy CC0 notice and added source/JAR audit requirements for boss progression and world-stage coupling.
+
 ## 0.16.0-alpha.1
 - Added tactical hostile warbands adapted from the MIT-licensed Warband project.
 - Warbands can form around players whose average level across the six live skills is at least 30; formation chance scales with player progression and is rate-limited per player.
