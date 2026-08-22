@@ -2,37 +2,23 @@
 
 Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
-Survival Ascension makes survival progression increase the *scale of actions*, not only their numeric stats.
+Survival Ascension makes survival progression increase the scale of actions, not only numeric stats.
 
-## 0.5.0-alpha.1
+## 0.6.0-alpha.1
 
-### Mining
-- 3x3 / 5x5 / 7x7 / 9x9 terrain excavation at Lv.10 / 30 / 60 / 90
-- connected valuable-ore extraction: 24 / 64 / 128 blocks at Lv.30 / 60 / 90
-- sneak keeps precision 1x1
+### Progression
+- Mining: 3x3 / 5x5 / 7x7 / 9x9 excavation and connected valuable-ore extraction.
+- Woodcutting: connected-log felling up to 16 / 48 / 128 / 256.
+- Harvesting: mature-only XP and 3x3 / 5x5 / 7x7 / 9x9 hoe harvesting.
+- Combat: kill XP, damage growth to ~1.8x, hostile-only melee cleave 2 / 4 / 8 targets.
 
-### Woodcutting
-- connected logs: 16 / 48 / 128 / 256 at Lv.10 / 30 / 60 / 90
-
-### Harvesting
-- mature-only XP and 3x3 / 5x5 / 7x7 / 9x9 hoe harvesting
-
-### Combat
-- kills award Combat XP; hostile mobs are weighted much higher than passive mobs
-- outgoing player damage scales smoothly to about 1.8x at Lv.100
-- melee cleave unlocks at Lv.30 / 60 / 90
-- cleave hits up to 2 / 4 / 8 nearby hostile enemies with 25% / 42% / 60% propagated damage
-- cleave radius grows to 1.75 / 2.75 / 4.0 blocks
-- ranged attacks receive the damage multiplier but never trigger melee cleave
-- recursion guard prevents cleave damage from creating another cleave chain
-
-### Shared progression/UI
-- Mining, Woodcutting, Harvesting and Combat are active
-- Construction and Mobility remain reserved
-- K opens the synchronized six-skill overview
-- `/ascension stats`
-- `/ascension mining|woodcutting|harvesting|combat setlevel <0..100>`
+### M radial menu
+- K direct skills key is replaced by M as the integrated menu key.
+- MineMenu MIT radial geometry/presentation is adapted for the six-direction menu.
+- Entries: Skills, Guide, Unlocks, Stats, Controls, Close.
+- The live world remains visible behind the radial wheel.
+- Guide/skills screens use native Minecraft UI patterns adapted from Skill Proficiencies MIT.
 
 ## Third-party source policy
 
-Permissively licensed source may be reused when its license is preserved. Skill Proficiencies and Veinminer++ MIT notices are packaged in the runtime JAR. Restricted/ARR projects remain reference-only. See `THIRD_PARTY_NOTICES.md`.
+Permissively licensed source may be reused with preserved notices. Skill Proficiencies, Veinminer++ and MineMenu MIT notices are packaged in the runtime JAR. Restricted/ARR projects remain reference-only. See `THIRD_PARTY_NOTICES.md`.

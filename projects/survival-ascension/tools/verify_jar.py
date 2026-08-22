@@ -15,27 +15,28 @@ with zipfile.ZipFile(jar) as zf:
         "META-INF/neoforge.mods.toml",
         "META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt",
         "META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt",
+        "META-INF/third-party/MINEMENU_MIT.txt",
         "kr/moonseungjun/survivalascension/SurvivalAscension.class",
+        "kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.class",
+        "kr/moonseungjun/survivalascension/client/GuideScreen.class",
         "kr/moonseungjun/survivalascension/client/SkillsScreen.class",
         "kr/moonseungjun/survivalascension/progress/SkillProgressData.class",
         "kr/moonseungjun/survivalascension/mining/MiningProgression.class",
-        "kr/moonseungjun/survivalascension/mining/OreVeinMatcher.class",
-        "kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.class",
-        "kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.class",
         "kr/moonseungjun/survivalascension/combat/CombatProgression.class",
     ]:
         if name not in names: raise SystemExit(f"required JAR entry missing: {name}")
-    for notice, copyright_line in [
+    for notice, line in [
         ("META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt", "Copyright (c) 2026 balovich-matje"),
         ("META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt", "Copyright (c) 2026 Kestalkayden"),
+        ("META-INF/third-party/MINEMENU_MIT.txt", "Copyright (c) 2013 Dylan Miller"),
     ]:
         text = zf.read(notice).decode("utf-8")
-        if copyright_line not in text or "MIT License" not in text: raise SystemExit(f"invalid packaged notice: {notice}")
+        if line not in text or "MIT" not in text: raise SystemExit(f"invalid packaged notice: {notice}")
     forbidden = [name for name in names if name.endswith(".java") or name.startswith("tools/") or name.startswith(".github/")]
     if forbidden: raise SystemExit("development files leaked into JAR: " + ", ".join(forbidden[:10]))
     metadata = zf.read("META-INF/neoforge.mods.toml").decode("utf-8")
     if 'modId="survivalascension"' not in metadata: raise SystemExit("wrong mod id in metadata")
-    if 'version="0.5.0-alpha.1"' not in metadata: raise SystemExit("wrong mod version in metadata")
+    if 'version="0.6.0-alpha.1"' not in metadata: raise SystemExit("wrong mod version in metadata")
 
 sha = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + ".sha256").write_text(f"{sha}  {jar.name}\n", encoding="utf-8")

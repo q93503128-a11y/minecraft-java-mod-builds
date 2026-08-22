@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.5.0-alpha.1";
+    public static final String VERSION = "0.6.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -30,6 +30,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: mining, woodcutting, harvesting, combat, synced HUD and skills screen", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: progression systems + M radial menu", VERSION);
     }
 }

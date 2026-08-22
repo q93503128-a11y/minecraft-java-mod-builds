@@ -6,14 +6,9 @@ Source project: `balovich-matje/skill-proficiencies`
 Copyright (c) 2026 balovich-matje
 License: MIT License
 
-Survival Ascension adapts or ports permissively licensed implementation ideas from Skill Proficiencies, including:
-- generic per-skill total-XP storage with levels derived from XP
-- NeoForge clientbound payload registration and client receiver seam
-- recent-skill XP HUD behavior
-- mature-crop classification used to reject immature crop XP
-- multi-skill overview-screen information architecture
+Survival Ascension adapts permissively licensed Skill Proficiencies patterns for generic per-skill XP storage, NeoForge clientbound sync, recent-skill XP HUD behavior, mature-crop classification, and the native skill/help-screen information architecture.
 
-The complete MIT notice is packaged at `META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt` in the runtime JAR.
+The complete notice is packaged at `META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt`.
 
 ## Veinminer++
 
@@ -21,14 +16,19 @@ Source project: `kestalkayden/veinminer-plus-plus`
 Copyright (c) 2026 Kestalkayden
 License: MIT License
 
-Survival Ascension adapts permissively licensed implementation patterns from Veinminer++ for the Mining mastery layer, specifically:
-- ore-family equivalence tags so stone/deepslate variants can belong to one vein
-- bounded 26-connected flood-fill traversal
-- normal player destroy-controller handling for secondary mined blocks
+Survival Ascension adapts ore-family equivalence matching, bounded 26-connected flood-fill traversal, and normal player destroy-controller handling for secondary mined blocks.
 
-Survival Ascension does not copy Veinminer++ configuration screens, keybind scheme, renderer, voiding system, player settings, namespaces or bundled assets. Its skill gates, XP rules, precision mode and action-scale progression remain Survival Ascension systems.
+The complete notice is packaged at `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt`.
 
-The complete MIT notice is packaged at `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt` in the runtime JAR.
+## MineMenu
+
+Source project: `GirafiStudios/MineMenu`
+Copyright (c) 2013 Dylan Miller
+License: MIT License
+
+Survival Ascension adapts the current MineMenu radial-menu interaction and presentation model, including the 60/80 inner/outer ring proportions, mouse-angle segment selection, selected-segment expansion, icon placement around the wheel, live-world overlay behavior, and MineMenu's default translucent black/red menu palette. Menu entries and application behavior are Survival Ascension-specific.
+
+The complete notice is packaged at `META-INF/third-party/MINEMENU_MIT.txt`.
 
 ## MIT License text
 
@@ -52,4 +52,4 @@ SOFTWARE.
 
 ## Project MMO 2.0
 
-Project MMO 2.0 is treated as **reference-only** because its repository/content is not permissively licensed for source copying. Survival Ascension may study its public behavior, progression concepts and UI/information organization, but does not copy or bundle Project MMO source code, assets, textures, data files, namespaces or implementation markers.
+Project MMO 2.0 remains **reference-only**. Survival Ascension may study public behavior, progression concepts and information organization, but does not copy or bundle Project MMO source, assets, textures, data, namespaces or implementation markers.

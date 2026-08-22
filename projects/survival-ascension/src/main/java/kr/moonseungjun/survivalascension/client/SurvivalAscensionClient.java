@@ -19,8 +19,8 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(value = SurvivalAscension.MOD_ID, dist = Dist.CLIENT)
 public final class SurvivalAscensionClient {
     private static final Identifier SKILL_XP_LAYER = Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "skill_xp");
-    private static final KeyMapping OPEN_SKILLS = new KeyMapping(
-            "key.survivalascension.skills", InputConstants.KEY_K, KeyMapping.Category.MISC);
+    private static final KeyMapping OPEN_MENU = new KeyMapping(
+            "key.survivalascension.menu", InputConstants.KEY_M, KeyMapping.Category.MISC);
 
     public SurvivalAscensionClient(IEventBus modBus) {
         SkillNetwork.installClientReceivers(ClientSkillState::onUpdate, ClientSkillState::onSnapshot);
@@ -35,14 +35,17 @@ public final class SurvivalAscensionClient {
     }
 
     private static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-        event.register(OPEN_SKILLS);
+        event.register(OPEN_MENU);
     }
 
     private static void onClientTick(ClientTickEvent.Pre event) {
-        while (OPEN_SKILLS.consumeClick()) {
+        while (OPEN_MENU.consumeClick()) {
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player != null && minecraft.level != null) {
-                minecraft.gui.setScreen(new SkillsScreen());
+            if (minecraft.player == null || minecraft.level == null) continue;
+            if (minecraft.screen instanceof AscensionRadialMenuScreen) {
+                minecraft.gui.setScreen(null);
+            } else if (minecraft.screen == null || minecraft.screen instanceof SkillsScreen || minecraft.screen instanceof GuideScreen) {
+                minecraft.gui.setScreen(new AscensionRadialMenuScreen());
             }
         }
     }
