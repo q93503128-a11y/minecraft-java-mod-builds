@@ -5,6 +5,7 @@ import kr.moonseungjun.survivalascension.combat.CombatProgression;
 import kr.moonseungjun.survivalascension.command.AscensionCommands;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
+import kr.moonseungjun.survivalascension.elite.EndgameMutationSystem;
 import kr.moonseungjun.survivalascension.elite.WarbandDirector;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.harvesting.HarvestingProgression;
@@ -48,12 +49,15 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(EndgameMutationSystem::onFinalizeSpawn);
+        NeoForge.EVENT_BUS.addListener(EndgameMutationSystem::onDamagePost);
+        NeoForge.EVENT_BUS.addListener(EndgameMutationSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(WarbandDirector::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(WarbandDirector::onServerTick);
         NeoForge.EVENT_BUS.addListener(WarbandDirector::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: six skills + tactical warbands + boss-driven world ascension + Ascension Nexus", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: six skills + tactical warbands + world ascension + endgame mutations", VERSION);
     }
 }
