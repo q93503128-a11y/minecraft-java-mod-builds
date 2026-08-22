@@ -14,6 +14,9 @@ required = {
     'kr/moonseungjun/frontiersettlement/FrontierSettlement.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementData.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementService.class',
+    'kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostService.class',
+    'kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.class',
+    'kr/moonseungjun/frontiersettlement/settlement/OutpostBlueprints.class',
     'kr/moonseungjun/frontiersettlement/network/SettlementSnapshotPayload.class',
     'kr/moonseungjun/frontiersettlement/client/SettlementHudOverlay.class',
 }
