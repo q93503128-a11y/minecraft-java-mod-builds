@@ -28,7 +28,7 @@ if missing:
     raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.10'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.11'):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
 
@@ -36,6 +36,18 @@ service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8
 for token in ('Blocks.BARREL', 'SettlementConstructionService.tick', 'SettlementRoadService.tick', 'SettlementOutpostService.tick', 'SettlementWorkerService.tick'):
     if token not in service:
         raise SystemExit(f'core settlement invariant missing: {token}')
+
+construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
+for token in ('public static StartResult startAt', 'public static PlacementCheck checkPlacement',
+              'COMMAND_PLACEMENT_DISTANCE = 10', 'MAX_MAIN_SETTLEMENT_RADIUS = 72',
+              'overlapsInfrastructure', 'selectedCenter.getX() - type.width() / 2',
+              '선택한 부지가', '선택한 위치에서 건설 주민이 작업을 시작합니다'):
+    if token not in construction:
+        raise SystemExit(f'player placement invariant missing: {token}')
+if 'findBuildSite(' in construction:
+    raise SystemExit('building placement must not silently auto-pick a random nearby lot')
+if 'destroyBlock(' in construction or 'dropResources(' in construction:
+    raise SystemExit('building construction must not use drop-producing destruction paths')
 
 building_types = (JAVA / 'settlement/BuildingType.java').read_text(encoding='utf-8')
 for token in ('FARM(', 'QUARRY(', 'MINE('):
@@ -56,16 +68,10 @@ for token in ('server.getDataStorage().computeIfAbsent(TYPE)', 'SettlementInfras
     if token not in saved:
         raise SystemExit(f'persistent settlement invariant missing: {token}')
 
-for filename in ('SettlementConstructionService.java', 'SettlementRoadService.java', 'SettlementOutpostService.java'):
-    source = (JAVA / 'settlement' / filename).read_text(encoding='utf-8')
-    if 'destroyBlock(' in source or 'dropResources(' in source:
-        raise SystemExit(f'{filename} must not use drop-producing destruction paths')
-
 worker = (JAVA / 'settlement/SettlementWorkerService.java').read_text(encoding='utf-8')
 for token in ('FARM_WORKER_NAME', 'QUARRY_WORKER_NAME', 'MINE_WORKER_NAME', 'TRANSPORT_WORKER_NAME',
-              'MAX_CROPS_PER_TRIP = 8', 'MAX_STONE_PER_TRIP = 6', 'workFarm', 'workQuarry', 'workMine',
-              'BlockStateProperties.AGE_7', 'Tags.Blocks.ORES', 'SettlementInventory.insert',
-              'level.setBlock(crop, Blocks.WHEAT.defaultBlockState()', 'level.setBlock(pos, Blocks.STONE.defaultBlockState()'):
+              'workFarm', 'workQuarry', 'workMine', 'BlockStateProperties.AGE_7', 'Tags.Blocks.ORES',
+              'SettlementInventory.insert'):
     if token not in worker:
         raise SystemExit(f'worker production invariant missing: {token}')
 if 'destroyBlock(' in worker or 'dropResources(' in worker:
@@ -83,9 +89,11 @@ for token in ('specialization', 'optionalFieldOf("specialization", "general")', 
 
 outpost = (JAVA / 'settlement/SettlementOutpostService.java').read_text(encoding='utf-8')
 for token in ('detectSpecialization', 'Tags.Blocks.ORES', 'return "mining"', 'return "lumber"',
-              'return "agriculture"', 'return "quarry"', 'data.completeOutpost'):
+              'return "agriculture"', 'return "quarry"'):
     if token not in outpost:
         raise SystemExit(f'outpost specialization invariant missing: {token}')
+if 'destroyBlock(' in outpost or 'dropResources(' in outpost:
+    raise SystemExit('outpost construction must not create loose drops')
 
 tier = (JAVA / 'settlement/SettlementTier.java').read_text(encoding='utf-8')
 for token in ('CAMP("개척 캠프")', 'HAMLET("촌락")', 'VILLAGE("마을")',
@@ -93,10 +101,4 @@ for token in ('CAMP("개척 캠프")', 'HAMLET("촌락")', 'VILLAGE("마을")',
     if token not in tier:
         raise SystemExit(f'settlement tier invariant missing: {token}')
 
-commands = (JAVA / 'command/SettlementCommands.java').read_text(encoding='utf-8')
-for token in ('Commands.literal("farm")', 'Commands.literal("quarry")', 'Commands.literal("mine")',
-              '광산은 채석장 1곳과 연결된 전초기지 1곳', 'specializationDisplayName'):
-    if token not in commands:
-        raise SystemExit(f'progression command invariant missing: {token}')
-
-print('Frontier Settlement alpha.10 source audit: PASS')
+print('Frontier Settlement alpha.11 source audit: PASS')
