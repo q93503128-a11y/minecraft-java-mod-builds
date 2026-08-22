@@ -27,6 +27,7 @@ required = {
     'kr/moonseungjun/frontiersettlement/settlement/SettlementBenefitService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementCoreService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementResidentRoutineService.class',
+    'kr/moonseungjun/frontiersettlement/settlement/SettlementTierInfrastructureService.class',
     'kr/moonseungjun/frontiersettlement/settlement/OutpostBlueprints.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementStorageService.class',
