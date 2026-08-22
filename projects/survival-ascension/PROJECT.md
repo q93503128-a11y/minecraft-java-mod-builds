@@ -1,56 +1,46 @@
 # Survival Ascension
 
-- Slug: `survival-ascension`
-- Mod ID: `survivalascension`
-- Namespace: `survivalascension`
-- Mod version: `0.4.0-alpha.1`
+- Mod version: `0.5.0-alpha.1`
 - Minecraft: `26.2`
 - Java: `25`
-- Loader: `NeoForge`
-- Loader version: `26.2.0.38-beta`
-- Gradle: `9.2.1`
-- Build plugin: `net.neoforged.moddev 2.0.143`
-- Final JAR: `survivalascension-0.4.0-alpha.1.jar`
-- Existing-world compatibility: 기존 26.2 월드에 추가 가능. 기존 `mining_progress_v1` SavedData와 0.1~0.3 공용 스킬 맵을 그대로 이어간다.
-- Required dependencies: Minecraft 26.2, NeoForge 26.2.0.38-beta 이상
-- Optional external mods: 없음
-- Datagen task: `NOT IMPLEMENTED`
-- GameTest task: `NOT IMPLEMENTED`
-- Server/client smoke-test: canonical CI에서는 아직 `NOT RUN`
+- Loader: `NeoForge 26.2.0.38-beta`
+- Final JAR: `survivalascension-0.5.0-alpha.1.jar`
+- Existing-world compatibility: 기존 `mining_progress_v1` SavedData와 0.1~0.4 공용 스킬 XP 맵을 그대로 이어간다.
 
 ## 정체성
 
-Survival Ascension은 바닐라 서바이벌의 성장 체급을 크게 확장한다. 수치만 조금 커지는 성장보다 숙련이 쌓일수록 한 번에 처리하는 작업 단위 자체가 커지고, 같은 도구라도 고숙련에서 작업 방식 자체가 달라지는 것을 핵심으로 한다.
+바닐라 서바이벌에서 수치만 조금 강해지는 대신, 숙련이 오를수록 한 번의 행동이 처리하는 물리적 범위와 영향력이 커지는 성장 모드다.
 
 ## 현재 활성 숙련
 
 ### 채굴
-- 곡괭이 전용 속도 성장
-- 일반 지형: Lv.10 3×3 / Lv.30 5×5 / Lv.60 7×7 / Lv.90 9×9 굴착
-- 가치 광석: Lv.30부터 평면 굴착 대신 연결 광맥 추적이 우선
-- 광맥 한도: Lv.30 24 / Lv.60 64 / Lv.90 128개
-- 철·구리·금 및 주요 오버월드 광석은 돌/심층암 변종을 하나의 광석군으로 인식
-- 웅크리기 1×1 정밀 모드
+- 일반 지형: Lv.10 3×3 / Lv.30 5×5 / Lv.60 7×7 / Lv.90 9×9
+- 가치 광석: Lv.30/60/90에 연결 광맥 최대 24/64/128개
+- 웅크리기 정밀 1×1
 
 ### 벌목
-- 도끼 + 통나무 행동 기반 XP
-- Lv.10/30/60/90에 연결 통나무 16/48/128/256개
-- 웅크리기 단일 통나무 모드
+- Lv.10/30/60/90 연결 통나무 16/48/128/256개
+- 웅크리기 단일 통나무
 
 ### 농사
-- 완전히 익은 작물·네더와트, 멜론, 호박만 XP
-- 괭이 사용 시 농사 숙련에 따라 수확속도 증가
-- Lv.10 3×3 / Lv.30 5×5 / Lv.60 7×7 / Lv.90 9×9 광역 수확
-- 손 수확은 바닐라 크기를 유지하고 웅크리면 항상 정밀 모드
+- 성숙 작물만 XP
+- Lv.10/30/60/90 광역 수확 3×3/5×5/7×7/9×9
+
+### 전투
+- 플레이어가 직접 처치한 생물로 전투 XP 획득. 적대몹 XP 가중치가 높고 비적대 생물은 낮다.
+- 전투 레벨에 따라 플레이어가 가하는 피해가 완만하게 증가하며 Lv.100에서 약 1.8×.
+- 직접 근접공격은 Lv.30/60/90에 파급 공격을 해금한다.
+- 파급 대상 수: 2 / 4 / 8체, 반경: 1.75 / 2.75 / 4.0블록.
+- 파급은 주변 `Enemy` 대상에만 적용해 주민·동물에 무차별 전파하지 않는다.
+- 투사체는 피해 성장만 적용되고 근접 파급은 발생하지 않는다.
 
 ## 공용 성장/UI
 
-- 채굴·벌목·농사·전투·건축·기동 6개 슬롯을 하나의 XP 맵에 저장
-- K키 숙련 화면에서 전체 슬롯, 레벨, 숙련 등급, 활성 능력과 XP 진행도를 확인
-- 채굴 행은 현재 굴착 크기와 광맥 추적 한도를 함께 표시
-- 숙련 등급 I~V를 공용 기반으로 두어 이후 실제 도구 티어/인챈트/콘텐츠 해금이 같은 규칙을 사용하도록 확장
-- 광역 파괴·광맥 추적·벌목·수확은 `ServerPlayerGameMode.destroyBlock`을 사용해 정상 드랍·내구도·이벤트 경로를 통과
+- 채굴·벌목·농사·전투가 활성. 건축·기동은 다음 단계 예약.
+- K 숙련 화면에서 6개 슬롯과 XP/레벨/현재 효과를 확인.
+- `/ascension stats`
+- `/ascension mining|woodcutting|harvesting|combat setlevel <0..100>`
 
 ## 외부 코드 정책
 
-Skill Proficiencies의 MIT 허용 범위는 고지를 보존하고 필요한 구조를 포팅한다. Veinminer++의 MIT 허용 범위에서는 광석군 동치 판정과 bounded flood-fill 패턴을 채굴 숙련에 맞게 포팅하며 고지를 런타임 JAR에 포함한다. Project MMO 2.0과 같은 제한/ARR 소스는 기능 및 UI 구조 참고만 하고 코드·리소스·에셋은 복제하지 않는다.
+Skill Proficiencies와 Veinminer++의 MIT 허용 부분만 고지와 함께 포팅한다. Project MMO 2.0 같은 제한/ARR 소스는 기능 참고만 하며 코드·리소스·에셋을 복제하지 않는다.

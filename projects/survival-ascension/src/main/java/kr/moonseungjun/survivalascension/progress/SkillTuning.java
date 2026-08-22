@@ -82,6 +82,32 @@ public final class SkillTuning {
         return 1;
     }
 
+    public static double combatDamageMultiplier(int level) {
+        int clamped = clamp(level);
+        return 1.0D + 0.006D * clamped + 0.00002D * clamped * clamped;
+    }
+
+    public static double combatCleaveRadius(int level) {
+        if (level >= 90) return 4.0D;
+        if (level >= 60) return 2.75D;
+        if (level >= 30) return 1.75D;
+        return 0.0D;
+    }
+
+    public static int combatCleaveTargetLimit(int level) {
+        if (level >= 90) return 8;
+        if (level >= 60) return 4;
+        if (level >= 30) return 2;
+        return 0;
+    }
+
+    public static double combatCleaveFraction(int level) {
+        if (level >= 90) return 0.60D;
+        if (level >= 60) return 0.42D;
+        if (level >= 30) return 0.25D;
+        return 0.0D;
+    }
+
     public static int masteryTier(int level) {
         if (level >= 90) return 5;
         if (level >= 60) return 4;

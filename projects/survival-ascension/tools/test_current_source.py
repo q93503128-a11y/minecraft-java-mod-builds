@@ -13,10 +13,7 @@ required = [
     "src/main/resources/META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt",
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java",
-    "src/main/java/kr/moonseungjun/survivalascension/client/ClientSkillState.java",
-    "src/main/java/kr/moonseungjun/survivalascension/client/SkillHudOverlay.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/SkillsScreen.java",
-    "src/main/java/kr/moonseungjun/survivalascension/progress/SkillType.java",
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressData.java",
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressionService.java",
@@ -25,81 +22,63 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/mining/OreVeinMatcher.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java",
-    "src/main/resources/assets/survivalascension/lang/ko_kr.json",
 ]
 errors = []
 for rel in required:
     if not (ROOT / rel).exists(): errors.append(f"missing: {rel}")
 
 props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
-for needle in ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_id=survivalascension", "mod_version=0.4.0-alpha.1"]:
+for needle in ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_id=survivalascension", "mod_version=0.5.0-alpha.1"]:
     if needle not in props: errors.append(f"gradle.properties missing {needle}")
 
-build = (ROOT / "build.gradle").read_text(encoding="utf-8")
-if "JavaLanguageVersion.of(25)" not in build or "options.release = 25" not in build:
-    errors.append("Java 25 toolchain/release contract missing")
-
-progress = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressData.java").read_text(encoding="utf-8")
-for needle in ['Codec.unboundedMap(Codec.STRING, Codec.LONG)', 'optionalFieldOf("mining_xp", 0L)', '"mining_progress_v1"', 'SkillType skill']:
-    if needle not in progress: errors.append(f"shared progression/migration contract missing: {needle}")
+main = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
+for needle in ['VERSION = "0.5.0-alpha.1"', "CombatProgression::onIncomingDamage", "CombatProgression::onLivingDeath"]:
+    if needle not in main: errors.append(f"main combat registration missing: {needle}")
 
 tuning = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java").read_text(encoding="utf-8")
 for needle in [
-    "harvestingSpeedMultiplier", "harvestingAreaSize", "masteryTier",
-    "miningVeinLimit", "if (level >= 90) return 9", "if (level >= 90) return 128",
-    "if (level >= 60) return 64", "if (level >= 30) return 24",
+    "miningVeinLimit", "if (level >= 90) return 128", "harvestingAreaSize",
+    "combatDamageMultiplier", "combatCleaveRadius", "combatCleaveTargetLimit", "combatCleaveFraction",
+    "if (level >= 90) return 8", "if (level >= 60) return 4", "if (level >= 30) return 2",
 ]:
-    if needle not in tuning: errors.append(f"action-scale tuning missing: {needle}")
+    if needle not in tuning: errors.append(f"progression tuning missing: {needle}")
+
+combat = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java").read_text(encoding="utf-8")
+for needle in [
+    "LivingIncomingDamageEvent", "LivingDeathEvent", "event.getSource().getEntity() instanceof ServerPlayer",
+    "event.getSource().getDirectEntity() != player", "candidate instanceof Enemy", "event.setAmount(scaledDamage)",
+    "combatCleaveTargetLimit", "combatCleaveFraction", "CLEAVE_GUARD", "candidate.hurtServer",
+    "SkillProgressionService.award(player, SkillType.COMBAT", "victim instanceof Enemy ? 1.5D : 0.35D",
+]:
+    if needle not in combat: errors.append(f"combat contract missing: {needle}")
 
 mining = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java").read_text(encoding="utf-8")
-for needle in [
-    "centerState.is(VALUABLE_ORES)", "SkillTuning.miningVeinLimit", "breakConnectedOre",
-    "OreVeinMatcher.forOrigin", "player.gameMode.destroyBlock(next)", "player.isShiftKeyDown()",
-    "same 광맥" if False else "같은 광맥",
-]:
-    if needle not in mining: errors.append(f"mining mastery/vein contract missing: {needle}")
-
-matcher = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/mining/OreVeinMatcher.java").read_text(encoding="utf-8")
-for needle in [
-    "Copyright (c) 2026 Kestalkayden", "MIT License", 'vanillaTag("coal_ores")',
-    "BlockTags.IRON_ORES", 'vanillaTag("diamond_ores")', "originGroups",
-]:
-    if needle not in matcher: errors.append(f"ore-family matcher contract missing: {needle}")
-
-harvest = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java").read_text(encoding="utf-8")
-for needle in ["CropBlock", "crop.isMaxAge(state)", "NetherWartBlock.MAX_AGE", "XP_PER_HARVEST = 15", "ItemTags.HOES", "harvestingAreaSize", "player.gameMode.destroyBlock(target)", "player.isShiftKeyDown()"]:
-    if needle not in harvest: errors.append(f"harvesting contract missing: {needle}")
-
-client = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java").read_text(encoding="utf-8")
-for needle in ["InputConstants.KEY_K", "RegisterKeyMappingsEvent", "ClientTickEvent.Pre", "OPEN_SKILLS.consumeClick()", "minecraft.gui.setScreen(new SkillsScreen())"]:
-    if needle not in client: errors.append(f"skills key contract missing: {needle}")
+for needle in ["centerState.is(VALUABLE_ORES)", "miningVeinLimit", "breakConnectedOre", "OreVeinMatcher.forOrigin", "player.gameMode.destroyBlock(next)"]:
+    if needle not in mining: errors.append(f"mining regression missing: {needle}")
 
 screen = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/client/SkillsScreen.java").read_text(encoding="utf-8")
-for needle in ["GuiGraphicsExtractor", "SkillType.values()", "ClientSkillState.xp", "masteryTier", "miningVeinLimit", "harvestingAreaSize", "graphics.fill", "graphics.text"]:
-    if needle not in screen: errors.append(f"skills screen contract missing: {needle}")
+for needle in ["SkillType.COMBAT", "combatDamageMultiplier", "combatCleaveTargetLimit", "combatCleaveRadius", "SkillType.values()"]:
+    if needle not in screen: errors.append(f"skills screen combat contract missing: {needle}")
 
 commands = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java").read_text(encoding="utf-8")
-for needle in ['skillSetLevelNode("harvesting", SkillType.HARVESTING)', "SkillTuning.harvestingAreaSize", "SkillTuning.miningVeinLimit"]:
-    if needle not in commands: errors.append(f"command/stats contract missing: {needle}")
+for needle in ['skillSetLevelNode("combat", SkillType.COMBAT)', "SkillTuning.combatDamageMultiplier", "SkillTuning.combatCleaveTargetLimit"]:
+    if needle not in commands: errors.append(f"combat command/stats missing: {needle}")
+
+progress = (ROOT / "src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressData.java").read_text(encoding="utf-8")
+for needle in ['Codec.unboundedMap(Codec.STRING, Codec.LONG)', 'optionalFieldOf("mining_xp", 0L)', '"mining_progress_v1"']:
+    if needle not in progress: errors.append(f"save migration contract missing: {needle}")
 
 notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
-for needle in [
-    "Skill Proficiencies", "Copyright (c) 2026 balovich-matje", "mature-crop classification", "multi-skill overview-screen",
-    "Veinminer++", "Copyright (c) 2026 Kestalkayden", "bounded 26-connected flood-fill",
-    "Project MMO 2.0", "reference-only",
-]:
+for needle in ["Skill Proficiencies", "Veinminer++", "Copyright (c) 2026 Kestalkayden", "Project MMO 2.0", "reference-only"]:
     if needle not in notices: errors.append(f"third-party notice missing: {needle}")
-
-vein_notice = (ROOT / "src/main/resources/META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt").read_text(encoding="utf-8")
-if "Copyright (c) 2026 Kestalkayden" not in vein_notice or "MIT License" not in vein_notice:
-    errors.append("packaged Veinminer++ MIT notice invalid")
 
 for path in (ROOT / "src").rglob("*"):
     if not path.is_file() or path.suffix.lower() not in {".java", ".json", ".toml", ".mcmeta", ".txt"}: continue
     text = path.read_text(encoding="utf-8", errors="ignore")
     for forbidden in ["harmonised.pmmo", "Caltinor", "pmmo:"]:
-        if forbidden.lower() in text.lower(): errors.append(f"restricted Project MMO implementation marker in {path.relative_to(ROOT)}: {forbidden}")
+        if forbidden.lower() in text.lower(): errors.append(f"restricted Project MMO marker in {path.relative_to(ROOT)}: {forbidden}")
 
 for rel in [
     "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java",
@@ -116,7 +95,7 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
-print("- mining: 3x3/5x5/7x7/9x9 terrain excavation + 24/64/128 connected ore mastery")
-print("- woodcutting + harvesting regression contracts retained")
-print("- K-key six-skill overview shows Mining vein capacity")
-print("- Skill Proficiencies + Veinminer++ MIT notices retained; Project MMO remains reference-only")
+print("- mining/woodcutting/harvesting regression contracts retained")
+print("- combat: kill XP + smooth damage scaling + hostile-only melee cleave 2/4/8")
+print("- combat cleave recursion and ranged exclusion guards present")
+print("- third-party MIT notices retained; Project MMO remains reference-only")

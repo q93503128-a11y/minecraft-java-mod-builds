@@ -19,7 +19,8 @@ public final class AscensionCommands {
                 .then(Commands.literal("stats").executes(context -> showStats(context.getSource().getPlayerOrException())))
                 .then(skillSetLevelNode("mining", SkillType.MINING))
                 .then(skillSetLevelNode("woodcutting", SkillType.WOODCUTTING))
-                .then(skillSetLevelNode("harvesting", SkillType.HARVESTING)));
+                .then(skillSetLevelNode("harvesting", SkillType.HARVESTING))
+                .then(skillSetLevelNode("combat", SkillType.COMBAT)));
     }
 
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> skillSetLevelNode(String literal, SkillType skill) {
@@ -27,8 +28,7 @@ public final class AscensionCommands {
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("setlevel")
                         .then(Commands.argument("level", IntegerArgumentType.integer(0, SkillTuning.MAX_LEVEL))
-                                .executes(context -> setLevel(
-                                        context.getSource().getPlayerOrException(), skill,
+                                .executes(context -> setLevel(context.getSource().getPlayerOrException(), skill,
                                         IntegerArgumentType.getInteger(context, "level")))));
     }
 
@@ -38,6 +38,7 @@ public final class AscensionCommands {
         sendSkillLine(player, data, SkillType.MINING);
         sendSkillLine(player, data, SkillType.WOODCUTTING);
         sendSkillLine(player, data, SkillType.HARVESTING);
+        sendSkillLine(player, data, SkillType.COMBAT);
         return 1;
     }
 
@@ -50,15 +51,18 @@ public final class AscensionCommands {
         String extra = switch (skill) {
             case MINING -> "굴착 " + SkillTuning.miningAreaSize(level) + "×" + SkillTuning.miningAreaSize(level)
                     + " | 광맥 " + (SkillTuning.miningVeinLimit(level) <= 1 ? "잠김" : "최대 " + SkillTuning.miningVeinLimit(level))
-                    + " | 속도 " + String.format(java.util.Locale.ROOT, "%.2f×", SkillTuning.miningSpeedMultiplier(level));
-            case WOODCUTTING -> "연결 로그 " + SkillTuning.woodcuttingLogLimit(level)
-                    + " | 속도 " + String.format(java.util.Locale.ROOT, "%.2f×", SkillTuning.woodcuttingSpeedMultiplier(level));
+                    + " | 속도 " + fmt(SkillTuning.miningSpeedMultiplier(level));
+            case WOODCUTTING -> "연결 로그 " + SkillTuning.woodcuttingLogLimit(level) + " | 속도 " + fmt(SkillTuning.woodcuttingSpeedMultiplier(level));
             case HARVESTING -> "범위 " + SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level)
-                    + " | 속도 " + String.format(java.util.Locale.ROOT, "%.2f×", SkillTuning.harvestingSpeedMultiplier(level));
+                    + " | 속도 " + fmt(SkillTuning.harvestingSpeedMultiplier(level));
+            case COMBAT -> "피해 " + fmt(SkillTuning.combatDamageMultiplier(level))
+                    + " | 파급 " + (SkillTuning.combatCleaveTargetLimit(level) <= 0 ? "잠김" : SkillTuning.combatCleaveTargetLimit(level) + "체");
             default -> "준비 중";
         };
         player.sendSystemMessage(Component.literal("§e" + skill.koreanName() + " §fLv." + level + " §7(" + progress + ") §8- §f" + extra));
     }
+
+    private static String fmt(double value) { return String.format(java.util.Locale.ROOT, "%.2f×", value); }
 
     private static int setLevel(ServerPlayer player, SkillType skill, int level) {
         SkillProgressionService.setLevel(player, skill, level);

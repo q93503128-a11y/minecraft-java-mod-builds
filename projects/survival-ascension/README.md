@@ -2,39 +2,36 @@
 
 Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
-Survival Ascension expands vanilla survival by making the *scale of actions* grow with the player instead of only adding small numeric upgrades.
+Survival Ascension makes survival progression increase the *scale of actions*, not only their numeric stats.
 
-## 0.4.0-alpha.1
+## 0.5.0-alpha.1
 
 ### Mining
-- persistent level 0-100 progression
-- pickaxe-scoped speed growth
-- terrain excavation: Lv.10 3x3, Lv.30 5x5, Lv.60 7x7, Lv.90 9x9
-- valuable ores switch from flat excavation to connected-vein extraction at Lv.30+
-- connected ore caps: 24 / 64 / 128 at Lv.30 / 60 / 90
-- common stone/deepslate ore variants are treated as one ore family
-- sneak: precision 1x1 and disables automatic vein extraction
-- all secondary breaks remain on the normal player destroy controller
+- 3x3 / 5x5 / 7x7 / 9x9 terrain excavation at Lv.10 / 30 / 60 / 90
+- connected valuable-ore extraction: 24 / 64 / 128 blocks at Lv.30 / 60 / 90
+- sneak keeps precision 1x1
 
 ### Woodcutting
-- axe + log actions award Woodcutting XP
-- connected-log limits: 16 / 48 / 128 / 256 at Lv.10 / 30 / 60 / 90
-- sneak: precision single-log mode
+- connected logs: 16 / 48 / 128 / 256 at Lv.10 / 30 / 60 / 90
 
 ### Harvesting
-- only mature crops, mature nether wart, melons and pumpkins award Harvesting XP
-- hoe harvest speed scales with Harvesting level
-- hoe area harvest: 3x3 @10, 5x5 @30, 7x7 @60, 9x9 @90
-- hand harvesting remains vanilla-sized; sneak forces precision harvesting
+- mature-only XP and 3x3 / 5x5 / 7x7 / 9x9 hoe harvesting
+
+### Combat
+- kills award Combat XP; hostile mobs are weighted much higher than passive mobs
+- outgoing player damage scales smoothly to about 1.8x at Lv.100
+- melee cleave unlocks at Lv.30 / 60 / 90
+- cleave hits up to 2 / 4 / 8 nearby hostile enemies with 25% / 42% / 60% propagated damage
+- cleave radius grows to 1.75 / 2.75 / 4.0 blocks
+- ranged attacks receive the damage multiplier but never trigger melee cleave
+- recursion guard prevents cleave damage from creating another cleave chain
 
 ### Shared progression/UI
-- six skill slots: Mining, Woodcutting, Harvesting, Combat, Construction, Mobility
-- K opens a synchronized six-skill overview screen
-- Mining now shows excavation scale, vein cap, speed and XP progress together
-- five generic mastery tiers provide the shared foundation for later true tool-tier, enchantment and content unlocks
-- recent-skill XP bar and level-up feedback remain active
+- Mining, Woodcutting, Harvesting and Combat are active
+- Construction and Mobility remain reserved
+- K opens the synchronized six-skill overview
 - `/ascension stats`
-- `/ascension mining|woodcutting|harvesting setlevel <0..100>`
+- `/ascension mining|woodcutting|harvesting|combat setlevel <0..100>`
 
 ## Third-party source policy
 
