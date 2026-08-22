@@ -14,6 +14,7 @@ import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.woodcutting.WoodcuttingProgression;
+import kr.moonseungjun.survivalascension.world.WorldAscensionProgression;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -50,8 +51,9 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WarbandDirector::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(WarbandDirector::onServerTick);
         NeoForge.EVENT_BUS.addListener(WarbandDirector::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: six skills + tactical warbands + shared infrastructure", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: six skills + tactical warbands + boss-driven world ascension", VERSION);
     }
 }
