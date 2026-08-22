@@ -19,15 +19,20 @@ public final class FrontierSettlementClient {
         SettlementNetwork.setSnapshotSink(ClientSettlementState::accept);
         SettlementNetwork.setPlacementPreviewSink(BuildingPlacementClient::acceptPreview);
         SettlementNetwork.setRoadPreviewSink(RoadPlacementClient::acceptPreview);
+        SettlementNetwork.setOutpostPreviewSink(OutpostPlacementClient::acceptPreview);
         modBus.addListener(RegisterGuiLayersEvent.class, FrontierSettlementClient::onRegisterGuiLayers);
         modBus.addListener(RegisterKeyMappingsEvent.class, BuildingPlacementClient::registerKeys);
         modBus.addListener(RegisterKeyMappingsEvent.class, RoadPlacementClient::registerKeys);
+        modBus.addListener(RegisterKeyMappingsEvent.class, OutpostPlacementClient::registerKeys);
         NeoForge.EVENT_BUS.addListener(BuildingPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(RoadPlacementClient::tick);
+        NeoForge.EVENT_BUS.addListener(OutpostPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(PlacementGhostRenderer::extract);
         NeoForge.EVENT_BUS.addListener(PlacementGhostRenderer::submit);
         NeoForge.EVENT_BUS.addListener(RoadGhostRenderer::extract);
         NeoForge.EVENT_BUS.addListener(RoadGhostRenderer::submit);
+        NeoForge.EVENT_BUS.addListener(OutpostGhostRenderer::extract);
+        NeoForge.EVENT_BUS.addListener(OutpostGhostRenderer::submit);
     }
 
     private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
