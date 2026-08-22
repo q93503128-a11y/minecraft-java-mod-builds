@@ -42,6 +42,7 @@ jobs:
             python3 "${PROJECT_DIR}/tools/prepare_v01833_patch_runner.py"
             python3 "${PROJECT_DIR}/tools/apply_v01833_playtest_ui_wall.py"
             python3 "${PROJECT_DIR}/tools/apply_v01833_contract_migration.py"
+            python3 "${PROJECT_DIR}/tools/apply_v01833_historical_contracts.py"
           } 2>&1 | tee /tmp/v01833-patch.log
 
       - name: Check authored patch
@@ -124,6 +125,7 @@ jobs:
             "${PROJECT_DIR}/tools/test_interaction_contract.py" \
             "${PROJECT_DIR}/tools/test_runtime_safety.py" \
             "${PROJECT_DIR}/tools/test_ui_layout_contract.py" \
+            "${PROJECT_DIR}/tools/test_v01818_growth_consumables.py" \
             "${PROJECT_DIR}/tools/test_v01832_ranger_wall_traffic.py" \
             "${PROJECT_DIR}/tools/test_v01833_playtest_ui_wall.py"
           git diff --cached --check
