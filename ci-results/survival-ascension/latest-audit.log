@@ -1,7 +1,8 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
 - six-skill + reactive elite regressions retained
-- Elite/Ascended/Mythic affix gear: 1/2/3 affixes and 25/65/100% rank drop contract
-- weapon/pickaxe/axe/hoe affixes are wired into damage, scale, speed and XP
-- scale affixes cannot bypass skill unlock gates
+- Elite/Ascended/Mythic affix gear now rolls 1/2/3 of five affixes
+- M -> Equipment radial exposes server-authoritative reforge and salvage
+- reforge consumes substantial amethyst/diamond/netherite resources; salvage is partial refund only
+- affix scale bonuses still cannot bypass skill unlock gates
 - Apotheosis and Mob Champions MIT notices packaged
