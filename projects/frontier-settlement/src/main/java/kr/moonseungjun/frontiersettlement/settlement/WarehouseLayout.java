@@ -20,6 +20,10 @@ public final class WarehouseLayout {
     }
 
     public static List<BlockPos> storagePositions(BuildingRecord warehouse) {
-        return storagePositions(warehouse.origin());
+        List<BlockPos> result = new ArrayList<>(STORAGE_OFFSETS.length);
+        for (int[] offset : STORAGE_OFFSETS) {
+            result.add(warehouse.localToWorld(offset[0], offset[1], offset[2]));
+        }
+        return result;
     }
 }
