@@ -26,7 +26,7 @@ import java.util.UUID;
 public final class BoreMiningService {
     private static final int GLOBAL_BLOCK_BUDGET_PER_TICK = 64;
     private static final int LOCAL_BLOCK_BUDGET_PER_TICK = 12;
-    private static final int MAX_PENDING_PER_PLAYER = 256;
+    private static final int MAX_PENDING_PER_PLAYER = 512;
     private static final Map<UUID, Integer> PENDING_COUNTS = new HashMap<>();
     private static final Deque<BoreJob> JOBS = new ArrayDeque<>();
     private static final Set<UUID> INTERNAL_BREAK_GUARD = new HashSet<>();
@@ -34,7 +34,8 @@ public final class BoreMiningService {
     private BoreMiningService() {}
 
     public static boolean schedule(ServerPlayer player, ServerLevel level, BlockPos center, float originHardness) {
-        if (SkillProgressData.get(player).level(player, SkillType.MINING) < 90) return false;
+        int skillLevel = SkillProgressData.get(player).level(player, SkillType.MINING);
+        if (skillLevel < 90) return false;
         if (!InfrastructureData.get(player).isComplete(InfrastructureProject.QUARRY_NETWORK)) {
             player.sendSystemMessage(Component.literal("§6[채굴] §f터널 모드는 공동 인프라 §e채석장 네트워크§f 완공이 필요합니다."));
             return false;
@@ -45,12 +46,15 @@ public final class BoreMiningService {
             return false;
         }
 
+        int crossSection = skillLevel >= 100 ? 7 : 5;
+        int depthLimit = skillLevel >= 100 ? 10 : 8;
+        int half = crossSection / 2;
         Direction direction = horizontalDirection(player);
         Deque<BlockPos> targets = new ArrayDeque<>();
-        for (int depth = 0; depth < 8; depth++) {
+        for (int depth = 0; depth < depthLimit; depth++) {
             BlockPos base = center.relative(direction, depth);
-            for (int horizontal = -2; horizontal <= 2; horizontal++) {
-                for (int vertical = -2; vertical <= 2; vertical++) {
+            for (int horizontal = -half; horizontal <= half; horizontal++) {
+                for (int vertical = -half; vertical <= half; vertical++) {
                     BlockPos target = direction.getAxis() == Direction.Axis.X
                             ? base.offset(0, vertical, horizontal)
                             : base.offset(horizontal, vertical, 0);
@@ -64,7 +68,7 @@ public final class BoreMiningService {
         float maxHardness = originHardness <= 0.0F ? 6.0F : originHardness * 1.75F + 1.0F;
         JOBS.addLast(new BoreJob(uuid, level.dimension(), targets, maxHardness));
         PENDING_COUNTS.put(uuid, targets.size());
-        player.sendSystemMessage(Component.literal("§b[터널 굴착] §f5×5×8 작업을 서버 틱에 분산 처리합니다."));
+        player.sendSystemMessage(Component.literal("§b[터널 굴착] §f" + crossSection + "×" + crossSection + "×" + depthLimit + " 작업을 서버 틱에 분산 처리합니다."));
         return true;
     }
 
