@@ -118,6 +118,13 @@ public final class SettlementData extends SavedData {
         setDirty();
     }
 
+    public void replaceConstructionStep(int step) {
+        if (!construction.active()) return;
+        this.construction = new ConstructionState(
+                construction.type(), construction.originX(), construction.originY(), construction.originZ(), Math.max(0, step));
+        setDirty();
+    }
+
     public void completeConstruction(BuildingType type) {
         switch (type) {
             case HOUSE -> houseCount++;
