@@ -1,6 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
-- Veinminer++ MIT smart-tree safety prevents plain log structures from bulk-felling
-- Woodcutting 16/48/128/256 work is tick-drained at 12/player and 64/global
-- Builder Foundry gates Lv.90 5x5x5 material-backed protected volume construction
-- 0.14 shared infrastructure, tunnel, irrigation, elite, affix and reforge regressions retained
+- Warband MIT tactical squads use progression-gated 3-6 member formations with four active roles
+- spawner-marked mobs cannot join warbands; leader death causes an 8-second rout and Echo Shard reward
+- Combat Academy gates Lv.90 sprint shockwave: 5.5 radius, 12 targets, 60-tick cooldown
+- Veinminer++ smart-tree/tick-drain, Builder Foundry volume, tunnel, irrigation, elite, affix and reforge regressions retained
