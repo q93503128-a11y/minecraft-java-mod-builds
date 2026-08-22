@@ -39,6 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           {
+            python3 "${PROJECT_DIR}/tools/prepare_v01833_patch_runner.py"
             python3 "${PROJECT_DIR}/tools/apply_v01833_playtest_ui_wall.py"
             python3 "${PROJECT_DIR}/tools/apply_v01833_contract_migration.py"
           } 2>&1 | tee /tmp/v01833-patch.log
