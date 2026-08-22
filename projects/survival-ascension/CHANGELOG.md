@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.13.0-alpha.1
+- Added M -> Mining nested MineMenu-derived radial with Auto / Plane / Vein / Extract / Back.
+- Mining mode selection is server-authoritative, persisted on the player, and server-revalidated against Mining level.
+- Auto preserves the previous behavior: valuable ore prioritizes connected vein extraction, other blocks use view-aligned area excavation.
+- Plane (Lv.10) forces view-aligned excavation even on ore; Vein (Lv.30) expands only connected same-family valuable ore.
+- Extract (Lv.90) performs a target-filtered bounded search for the same valuable ore family within X/Z ±12 and Y ±12, even when deposits are not connected.
+- Extract only examines loaded chunks, excludes block entities and unharvestable targets, and uses the existing skill/affix vein limit as its hard destruction cap.
+- All Extract targets still go through the normal player destroy controller, preserving durability, enchantment/loot behavior, events and per-block skill XP.
+- Shift continues to force 1x1 precision regardless of the selected Mining mode.
+- Adapted the target-filtered bounded-search idea from Mekanism's MIT-licensed Digital Miner design and packaged the Mekanism MIT notice; no Mekanism assets/machines/energy/GUI are bundled.
+- Network protocol bumped to 6 and in-game guide/help text now documents Mining modes.
+
 ## 0.12.0-alpha.1
 - Expanded each affix category from three possible affixes to five while preserving 0.11 CustomData compatibility.
 - Elite / Ascended / Mythic gear now rolls 1 / 2 / 3 affixes from a five-affix pool, so Mythic rerolls remain meaningful instead of always owning every affix.
