@@ -40,7 +40,9 @@ public final class SettlementCommands {
                         .then(Commands.literal("farm").executes(context -> build(context, BuildingType.FARM)))
                         .then(Commands.literal("quarry").executes(context -> build(context, BuildingType.QUARRY)))
                         .then(Commands.literal("mine").executes(context -> build(context, BuildingType.MINE)))
-                        .then(Commands.literal("warehouse").executes(context -> build(context, BuildingType.WAREHOUSE)))));
+                        .then(Commands.literal("warehouse").executes(context -> build(context, BuildingType.WAREHOUSE)))
+                        .then(Commands.literal("blacksmith").executes(context -> build(context, BuildingType.BLACKSMITH)))
+                        .then(Commands.literal("guard_post").executes(context -> build(context, BuildingType.GUARD_POST)))));
     }
 
     private static int found(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -58,21 +60,11 @@ public final class SettlementCommands {
         ServerPlayer player = context.getSource().getPlayerOrException();
         SettlementData data = SettlementData.get(player.level().getServer());
         if (data.outpostConstruction().active()) { player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 건물을 시작해 주세요.")); return 0; }
-        String locked = lockedReason(data, type);
+        String locked = SettlementConstructionService.lockedReason(data, type);
         if (locked != null) { player.sendSystemMessage(Component.literal(locked)); return 0; }
         SettlementConstructionService.StartResult result = SettlementConstructionService.start(player, type);
         player.sendSystemMessage(Component.literal(result.message()));
         return result.started() ? 1 : 0;
-    }
-
-    private static String lockedReason(SettlementData data, BuildingType type) {
-        if (type == BuildingType.FARM && data.houseCount() < 1) return "농장은 주택 1채를 먼저 완성하면 열립니다.";
-        if (type == BuildingType.QUARRY && data.lumberCampCount() < 1) return "채석장은 벌목소 1곳을 먼저 완성하면 열립니다.";
-        if (type == BuildingType.WAREHOUSE && data.buildingCount(BuildingType.FARM) < 1) return "창고는 농장 1곳을 완성하면 열립니다.";
-        if (type == BuildingType.MINE && (data.buildingCount(BuildingType.QUARRY) < 1 || data.outposts().isEmpty())) {
-            return "광산은 채석장 1곳과 연결된 전초기지 1곳을 만든 뒤 열립니다.";
-        }
-        return null;
     }
 
     private static int road(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -102,6 +94,7 @@ public final class SettlementCommands {
         player.sendSystemMessage(Component.literal("인프라 | 주택 " + data.houseCount() + " | 벌목소 " + data.lumberCampCount()
                 + " | 농장 " + data.buildingCount(BuildingType.FARM) + " | 채석장 " + data.buildingCount(BuildingType.QUARRY)
                 + " | 광산 " + data.buildingCount(BuildingType.MINE) + " | 창고 " + data.buildingCount(BuildingType.WAREHOUSE)
+                + " | 대장간 " + data.buildingCount(BuildingType.BLACKSMITH) + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST)
                 + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
         if (!data.roads().isEmpty()) {
             RoadSegment last = data.roads().get(data.roads().size() - 1);
