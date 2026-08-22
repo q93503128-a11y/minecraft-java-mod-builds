@@ -99,6 +99,14 @@ public final class SettlementData extends SavedData {
     public OutpostConstructionState outpostConstruction() { return infrastructure.outpostConstruction(); }
     public ConstructionState construction() { return construction; }
 
+    public int buildingCount(BuildingType type) {
+        int count = 0;
+        for (BuildingRecord building : buildings()) {
+            if (type.id().equals(building.type())) count++;
+        }
+        return count;
+    }
+
     public void found(BlockPos center, BlockPos stockpile) {
         this.founded = true;
         this.centerX = center.getX();
@@ -151,6 +159,7 @@ public final class SettlementData extends SavedData {
         switch (type) {
             case HOUSE -> houseCount++;
             case LUMBER_CAMP -> lumberCampCount++;
+            case FARM, QUARRY, MINE -> { }
         }
         housingCapacity += type.housingGain();
 
