@@ -52,7 +52,7 @@ jobs:
 
           passed=0
           for attempt in $(seq 1 1400); do
-            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError|Invalid Erden regional' ../../logs/regional-community-server.log; then
+            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|LK_ERDEN_REGIONAL_COMMUNITY_PHYSICAL_FAIL|Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError|Invalid Erden regional' ../../logs/regional-community-server.log; then
               cat ../../logs/regional-community-server.log
               exit 1
             fi
