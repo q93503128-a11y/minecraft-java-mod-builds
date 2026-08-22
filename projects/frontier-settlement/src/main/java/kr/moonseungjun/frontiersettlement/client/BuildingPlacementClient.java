@@ -59,6 +59,7 @@ public final class BuildingPlacementClient {
             refreshTicks = 0;
             if (active) {
                 RoadPlacementClient.cancel();
+                OutpostPlacementClient.cancel();
                 rotation = BuildingRotation.facingPlayerFrom(minecraft.player.getDirection());
                 target = resolveTarget(minecraft);
             }
