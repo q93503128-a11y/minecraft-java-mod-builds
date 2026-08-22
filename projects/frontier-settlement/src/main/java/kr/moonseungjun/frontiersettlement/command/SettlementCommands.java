@@ -5,10 +5,13 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
 import kr.moonseungjun.frontiersettlement.settlement.ConstructionState;
+import kr.moonseungjun.frontiersettlement.settlement.OutpostConstructionState;
+import kr.moonseungjun.frontiersettlement.settlement.OutpostRecord;
 import kr.moonseungjun.frontiersettlement.settlement.RoadConstructionState;
 import kr.moonseungjun.frontiersettlement.settlement.RoadSegment;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementResources;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
@@ -29,6 +32,7 @@ public final class SettlementCommands {
                 .then(Commands.literal("status").executes(SettlementCommands::status))
                 .then(Commands.literal("rescan").executes(SettlementCommands::rescan))
                 .then(Commands.literal("road").executes(SettlementCommands::road))
+                .then(Commands.literal("outpost").executes(SettlementCommands::outpost))
                 .then(Commands.literal("build")
                         .then(Commands.literal("house").executes(context -> build(context, BuildingType.HOUSE)))
                         .then(Commands.literal("lumber_camp").executes(context -> build(context, BuildingType.LUMBER_CAMP)))));
@@ -38,25 +42,17 @@ public final class SettlementCommands {
         ServerPlayer player = context.getSource().getPlayerOrException();
         MinecraftServer server = player.level().getServer();
         SettlementData data = SettlementData.get(server);
-        if (data.founded()) {
-            player.sendSystemMessage(Component.literal("이미 공동 마을이 세워져 있습니다."));
-            return 0;
-        }
-        if (player.level() != server.overworld()) {
-            player.sendSystemMessage(Component.literal("현재는 오버월드에서 마을을 시작해 주세요."));
-            return 0;
-        }
-        if (!SettlementService.found(player)) {
-            player.sendSystemMessage(Component.literal("주변에 공동 창고를 둘 빈 공간이 없습니다."));
-            return 0;
-        }
-        player.sendSystemMessage(Component.literal("공동 개척지가 시작되었습니다. 건설 주민 1명과 공동 창고가 배치되었습니다."));
-        player.sendSystemMessage(Component.literal("창고에 목재·석재를 넣어 주택과 벌목소를 완성하면 첫 개척 도로가 열립니다."));
+        if (data.founded()) { player.sendSystemMessage(Component.literal("이미 공동 마을이 세워져 있습니다.")); return 0; }
+        if (player.level() != server.overworld()) { player.sendSystemMessage(Component.literal("현재는 오버월드에서 마을을 시작해 주세요.")); return 0; }
+        if (!SettlementService.found(player)) { player.sendSystemMessage(Component.literal("주변에 공동 창고를 둘 빈 공간이 없습니다.")); return 0; }
+        player.sendSystemMessage(Component.literal("공동 개척지가 시작되었습니다. 주택과 벌목소 → 도로 → 전초기지 순으로 확장하세요."));
         return 1;
     }
 
     private static int build(CommandContext<CommandSourceStack> context, BuildingType type) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        SettlementData data = SettlementData.get(player.level().getServer());
+        if (data.outpostConstruction().active()) { player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 건물을 시작해 주세요.")); return 0; }
         SettlementConstructionService.StartResult result = SettlementConstructionService.start(player, type);
         player.sendSystemMessage(Component.literal(result.message()));
         return result.started() ? 1 : 0;
@@ -64,7 +60,16 @@ public final class SettlementCommands {
 
     private static int road(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        SettlementData data = SettlementData.get(player.level().getServer());
+        if (data.outpostConstruction().active()) { player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 도로를 시작해 주세요.")); return 0; }
         SettlementRoadService.StartResult result = SettlementRoadService.start(player);
+        player.sendSystemMessage(Component.literal(result.message()));
+        return result.started() ? 1 : 0;
+    }
+
+    private static int outpost(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        SettlementOutpostService.StartResult result = SettlementOutpostService.start(player);
         player.sendSystemMessage(Component.literal(result.message()));
         return result.started() ? 1 : 0;
     }
@@ -72,41 +77,20 @@ public final class SettlementCommands {
     private static int status(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         SettlementData data = SettlementData.get(player.level().getServer());
-        if (!data.founded()) {
-            player.sendSystemMessage(Component.literal("아직 공동 마을이 없습니다. /frontier found"));
-            return 0;
-        }
+        if (!data.founded()) { player.sendSystemMessage(Component.literal("아직 공동 마을이 없습니다. /frontier found")); return 0; }
         SettlementResources r = data.resources();
-        player.sendSystemMessage(Component.literal("마을 자원 | 목재 " + r.wood()
-                + " | 석재 " + r.stone() + " | 금속 " + r.metal()
-                + " | 식량 " + r.food() + " | 인구 " + data.population()
-                + " | 주거 " + data.housingCapacity()));
-        player.sendSystemMessage(Component.literal("인프라 | 주택 " + data.houseCount()
-                + " | 벌목소 " + data.lumberCampCount() + " | 도로 " + data.roads().size()));
-
-        if (!data.roads().isEmpty()) {
-            RoadSegment last = data.roads().get(data.roads().size() - 1);
-            player.sendSystemMessage(Component.literal("최근 도로 끝점 | "
-                    + last.end().getX() + ", " + last.end().getY() + ", " + last.end().getZ()));
-        }
-
+        player.sendSystemMessage(Component.literal("마을 자원 | 목재 " + r.wood() + " | 석재 " + r.stone() + " | 금속 " + r.metal()
+                + " | 식량 " + r.food() + " | 인구 " + data.population() + " | 주거 " + data.housingCapacity()));
+        player.sendSystemMessage(Component.literal("인프라 | 주택 " + data.houseCount() + " | 벌목소 " + data.lumberCampCount()
+                + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
+        if (!data.roads().isEmpty()) { RoadSegment last = data.roads().get(data.roads().size() - 1); player.sendSystemMessage(Component.literal("최근 도로 끝점 | " + last.end().getX() + ", " + last.end().getY() + ", " + last.end().getZ())); }
+        if (!data.outposts().isEmpty()) { OutpostRecord last = data.outposts().get(data.outposts().size() - 1); player.sendSystemMessage(Component.literal("최근 전초기지 | " + last.centerX() + ", " + last.centerY() + ", " + last.centerZ())); }
         ConstructionState construction = data.construction();
-        if (construction.active()) {
-            BuildingType type = BuildingType.fromId(construction.type());
-            if (type != null) {
-                int total = SettlementConstructionService.totalSteps(type, construction.origin());
-                int percent = total <= 0 ? 0 : Math.min(100, construction.step() * 100 / total);
-                player.sendSystemMessage(Component.literal("공사 중 | " + type.displayName() + " " + percent + "% ("
-                        + construction.step() + "/" + total + ")"));
-            }
-        }
-
+        if (construction.active()) { BuildingType type = BuildingType.fromId(construction.type()); if (type != null) { int total = SettlementConstructionService.totalSteps(type, construction.origin()); int percent = total <= 0 ? 0 : Math.min(100, construction.step() * 100 / total); player.sendSystemMessage(Component.literal("공사 중 | " + type.displayName() + " " + percent + "%")); }}
         RoadConstructionState road = data.roadConstruction();
-        if (road.active()) {
-            int total = SettlementRoadService.totalSteps(road);
-            int percent = total <= 0 ? 0 : Math.min(100, road.step() * 100 / total);
-            player.sendSystemMessage(Component.literal("도로 공사 중 | " + percent + "% (" + road.step() + "/" + total + ")"));
-        }
+        if (road.active()) { int total = SettlementRoadService.totalSteps(road); int percent = total <= 0 ? 0 : Math.min(100, road.step() * 100 / total); player.sendSystemMessage(Component.literal("도로 공사 중 | " + percent + "%")); }
+        OutpostConstructionState outpost = data.outpostConstruction();
+        if (outpost.active()) { int total = SettlementOutpostService.totalSteps(outpost); int percent = total <= 0 ? 0 : Math.min(100, outpost.step() * 100 / total); player.sendSystemMessage(Component.literal("전초기지 공사 중 | " + percent + "%")); }
         return 1;
     }
 
