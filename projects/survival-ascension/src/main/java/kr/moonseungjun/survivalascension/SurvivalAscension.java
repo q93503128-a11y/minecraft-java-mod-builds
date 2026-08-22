@@ -7,6 +7,8 @@ import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.harvesting.HarvestingProgression;
+import kr.moonseungjun.survivalascension.harvesting.IrrigationReplantService;
+import kr.moonseungjun.survivalascension.mining.BoreMiningService;
 import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
@@ -19,7 +21,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.13.0-alpha.1";
+    public static final String VERSION = "0.14.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -28,9 +30,11 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(MiningProgression::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(BoreMiningService::onServerTick);
         NeoForge.EVENT_BUS.addListener(WoodcuttingProgression::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(HarvestingProgression::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(HarvestingProgression::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(IrrigationReplantService::onServerTick);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
@@ -43,6 +47,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: six skills + elite gear economy + selectable mining scale", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: six skills + shared infrastructure + elite gear economy", VERSION);
     }
 }
