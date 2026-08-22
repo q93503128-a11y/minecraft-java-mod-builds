@@ -34,8 +34,9 @@ public final class PlacementGhostRenderer {
         BuildingType type = BuildingType.fromId(preview.buildingType());
         if (type == null) return;
 
+        BlockPos ghostOrigin = preview.valid() ? preview.origin() : BuildingPlacementClient.ghostOrigin();
         List<BuildingBlueprints.Placement> blueprint = RotatedBlueprints.create(
-                type, preview.origin(), preview.rotation());
+                type, ghostOrigin, preview.rotation());
         List<BlockPos> blocks = new ArrayList<>(blueprint.size());
         for (BuildingBlueprints.Placement placement : blueprint) blocks.add(placement.pos());
         event.getRenderState().setRenderData(DATA_KEY, new GhostState(blocks, preview.valid()));
