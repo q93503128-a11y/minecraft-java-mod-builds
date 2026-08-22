@@ -1,6 +1,6 @@
 version=0.18.33-alpha.1
-run_id=32564785871
-head=d888bbd788de4080a305ff16caec39b63b66d573
+run_id=32564863277
+head=d867a94e8029ce04b4d836754103b22f74c391e9
 --- git status ---
  M projects/village-guardians/.ci/v01833-failure.txt
  M projects/village-guardians/README.md
@@ -18,20 +18,15 @@ head=d888bbd788de4080a305ff16caec39b63b66d573
  M projects/village-guardians/tools/test_ui_layout_contract.py
  M projects/village-guardians/tools/test_v01818_growth_consumables.py
  M projects/village-guardians/tools/test_v01832_ranger_wall_traffic.py
+ M projects/village-guardians/tools/test_v0187_balance_ui.py
 ?? projects/village-guardians/tools/test_v01833_playtest_ui_wall.py
 --- v01833-patch.log tail ---
 [PATCH-RUNNER] disambiguated wave title replacement target
 [PATCH] Village Guardians 0.18.33 playtest UI/wall correction applied
 [PATCH] v0.18.33 regression contracts migrated to maintenance-only town hall and open wall geometry
-[PATCH] v0.18.33 historical wall contract now accepts practical 3x2 firing bays
+[PATCH] v0.18.33 historical contracts accept practical firing bays and maintenance-only town hall
 --- v01833-diff.log tail ---
 --- v01833-tests.log tail ---
-[PASS] siege mutation packets revalidate town-hall locality server-side
-[PASS] persistent wall/turret maintenance is day-only and game-over safe
-[PASS] emergency field repair remains usable as a combat consumable
-[PASS] turret upgrades preserve existing damage instead of granting a free full repair
-[PASS] release/version documentation and historical test ownership are current
-[PASS] v0.18.24 defense action integrity contract complete
 === tools/test_v01825_multifront_routing_integrity.py ===
 [PASS] side/rear exterior attackers have one navigation owner
 [PASS] global north-gate priority cannot collapse multi-front assaults
@@ -139,10 +134,16 @@ Village Guardians runtime stability contracts passed.
 [PASS] existing worlds receive the new combat-geometry migration marker
 [PASS] v0.18.33 playtest UI/wall contract complete
 === tools/test_v0187_balance_ui.py ===
+[PASS] party scaling = solo +30% per extra player
+[PASS] early player/structure pressure stays softened without death-state structure grace
+[PASS] graded equipment hover stats are wired
+[PASS] scripted collapse block debris is suppressed
+[PASS] town hall repair/upgrade-only actions fit inside hotbar-safe UI
+=== tools/test_v0188_risk_ui_cleanup.py ===
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0187_balance_ui.py", line 82, in <module>
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0188_risk_ui_cleanup.py", line 72, in <module>
     main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0187_balance_ui.py", line 66, in main
-    assert token in town
-           ^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/test_v0188_risk_ui_cleanup.py", line 52, in main
+    assert "pane.width() < 230" in town and "actionTop" in town
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
