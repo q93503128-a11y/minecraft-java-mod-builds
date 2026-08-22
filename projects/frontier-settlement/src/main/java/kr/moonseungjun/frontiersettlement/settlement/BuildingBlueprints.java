@@ -32,6 +32,7 @@ public final class BuildingBlueprints {
             case FARM -> farm(origin);
             case QUARRY -> quarry(origin);
             case MINE -> mine(origin);
+            case WAREHOUSE -> warehouse(origin);
         };
     }
 
@@ -166,7 +167,6 @@ public final class BuildingBlueprints {
 
     private static List<Placement> farm(BlockPos o) {
         BlueprintBuilder b = new BlueprintBuilder(o);
-        // Paths and a compact service shed make the farm readable without turning it into a huge flat rectangle.
         for (int x = 0; x < 13; x++) {
             for (int z = 0; z < 11; z++) {
                 boolean path = x == 0 || x == 12 || z == 0 || z == 10 || x == 6;
@@ -174,12 +174,10 @@ public final class BuildingBlueprints {
                 else b.put(x, 0, z, Blocks.FARMLAND.defaultBlockState(), Phase.FLOOR);
             }
         }
-        // Irrigation strips divide the two crop beds and guarantee nearby hydrated farmland.
         for (int z = 2; z <= 8; z += 3) {
             b.put(3, 0, z, Blocks.WATER.defaultBlockState(), Phase.FLOOR);
             b.put(9, 0, z, Blocks.WATER.defaultBlockState(), Phase.FLOOR);
         }
-        // Fence boundary with open front gate area.
         for (int x = 0; x < 13; x++) {
             if (x < 5 || x > 7) {
                 b.put(x, 1, 0, Blocks.OAK_FENCE.defaultBlockState(), Phase.FRAME_AND_WALLS);
@@ -190,13 +188,11 @@ public final class BuildingBlueprints {
             b.put(0, 1, z, Blocks.OAK_FENCE.defaultBlockState(), Phase.FRAME_AND_WALLS);
             b.put(12, 1, z, Blocks.OAK_FENCE.defaultBlockState(), Phase.FRAME_AND_WALLS);
         }
-        // Four stout lamp posts; lanterns sit on full log supports and cannot pop during construction.
         int[][] lamps = new int[][] {{1,1},{11,1},{1,9},{11,9}};
         for (int[] lamp : lamps) {
             b.put(lamp[0], 1, lamp[1], Blocks.STRIPPED_OAK_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
             b.put(lamp[0], 2, lamp[1], Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
         }
-        // Seed the field after all terrain work is finished. Farmer AI subsequently harvests and replants it.
         for (int x = 1; x < 12; x++) {
             if (x == 6) continue;
             for (int z = 1; z < 10; z++) {
@@ -211,7 +207,6 @@ public final class BuildingBlueprints {
 
     private static List<Placement> quarry(BlockPos o) {
         BlueprintBuilder b = new BlueprintBuilder(o);
-        // Perimeter work deck around a recessed central stone pad.
         for (int x = 0; x < 11; x++) {
             for (int z = 0; z < 11; z++) {
                 if (x <= 1 || x >= 9 || z <= 1 || z >= 9) b.put(x, 0, z, Blocks.COBBLESTONE.defaultBlockState(), Phase.FLOOR);
@@ -226,7 +221,6 @@ public final class BuildingBlueprints {
             b.put(x, 4, 1, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
             b.put(x, 4, 9, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
         }
-        // Two supported lean-to roof strips leave the center visually open as a quarry rather than a house.
         for (int z = 0; z <= 3; z++) {
             for (int x = 0; x < 11; x++) b.put(x, 5, z, Blocks.SPRUCE_SLAB.defaultBlockState(), Phase.ROOF);
         }
@@ -247,7 +241,6 @@ public final class BuildingBlueprints {
         for (int x = 0; x < 11; x++) {
             for (int z = 0; z < 11; z++) b.put(x, 0, z, Blocks.COBBLESTONE.defaultBlockState(), Phase.FLOOR);
         }
-        // A heavy mine-head frame. The central 5x7 bay stays open for workers and later shaft expansion.
         int[][] posts = new int[][] {{1,1},{9,1},{1,9},{9,9},{3,3},{7,3},{3,9},{7,9}};
         for (int[] post : posts) {
             for (int y = 1; y <= 5; y++) b.put(post[0], y, post[1], Blocks.STRIPPED_DARK_OAK_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
@@ -278,6 +271,84 @@ public final class BuildingBlueprints {
         return b.build();
     }
 
+    private static List<Placement> warehouse(BlockPos o) {
+        BlueprintBuilder b = new BlueprintBuilder(o);
+        for (int x = 0; x < 11; x++) {
+            for (int z = 0; z < 9; z++) b.put(x, 0, z, Blocks.SPRUCE_PLANKS.defaultBlockState(), Phase.FLOOR);
+        }
+
+        for (int y = 1; y <= 4; y++) {
+            for (int x = 0; x < 11; x++) {
+                if (!isWarehouseDoorOpening(x, y, 8)) {
+                    b.put(x, y, 8, warehouseWallState(x, y, 8), Phase.FRAME_AND_WALLS);
+                }
+                b.put(x, y, 0, warehouseWallState(x, y, 0), Phase.FRAME_AND_WALLS);
+            }
+            for (int z = 1; z < 8; z++) {
+                b.put(0, y, z, warehouseWallState(0, y, z), Phase.FRAME_AND_WALLS);
+                b.put(10, y, z, warehouseWallState(10, y, z), Phase.FRAME_AND_WALLS);
+            }
+        }
+
+        int[][] posts = new int[][] {{0,0},{5,0},{10,0},{0,8},{5,8},{10,8}};
+        for (int[] post : posts) {
+            for (int y = 1; y <= 4; y++) b.put(post[0], y, post[1], Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
+        }
+        for (int x = 0; x < 11; x++) {
+            b.put(x, 4, 0, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
+            b.put(x, 4, 8, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
+        }
+        for (int layer = 0; layer < 5; layer++) {
+            int y = 5 + layer;
+            for (int x = 1 + layer; x <= 9 - layer; x++) {
+                b.put(x, y, 0, Blocks.OAK_PLANKS.defaultBlockState(), Phase.FRAME_AND_WALLS);
+                b.put(x, y, 8, Blocks.OAK_PLANKS.defaultBlockState(), Phase.FRAME_AND_WALLS);
+            }
+        }
+        b.put(5, 9, 0, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
+        b.put(5, 9, 8, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState(), Phase.FRAME_AND_WALLS);
+
+        BlockState leftRoof = Blocks.SPRUCE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.EAST);
+        BlockState rightRoof = Blocks.SPRUCE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.WEST);
+        for (int z = -1; z <= 9; z++) {
+            for (int layer = 0; layer < 6; layer++) {
+                b.put(-1 + layer, 4 + layer, z, leftRoof, Phase.ROOF);
+                b.put(11 - layer, 4 + layer, z, rightRoof, Phase.ROOF);
+            }
+            b.put(5, 10, z, Blocks.SPRUCE_SLAB.defaultBlockState(), Phase.ROOF);
+        }
+
+        BlockState lowerDoor = Blocks.SPRUCE_DOOR.defaultBlockState()
+                .setValue(DoorBlock.FACING, Direction.SOUTH)
+                .setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER);
+        b.put(5, 1, 8, lowerDoor, Phase.FINISH);
+        b.put(5, 2, 8, lowerDoor.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), Phase.FINISH);
+
+        // Storage positions are shared with SettlementStorageService. Keeping one source of truth
+        // prevents invisible inventory slots or a barrel that the HUD counts but the player cannot open.
+        for (BlockPos storage : WarehouseLayout.storagePositions(o)) {
+            b.putAbsolute(storage, Blocks.BARREL.defaultBlockState(), Phase.FINISH);
+        }
+        b.put(1, 1, 1, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
+        b.put(9, 1, 1, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
+        b.put(1, 1, 7, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
+        b.put(9, 1, 7, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
+        b.put(5, 3, 2, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
+        b.put(5, 3, 6, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
+        b.put(5, 1, 4, Blocks.CRAFTING_TABLE.defaultBlockState(), Phase.FINISH);
+        return b.build();
+    }
+
+    private static boolean isWarehouseDoorOpening(int x, int y, int z) {
+        return z == 8 && x == 5 && (y == 1 || y == 2);
+    }
+
+    private static BlockState warehouseWallState(int x, int y, int z) {
+        boolean frontBackWindow = (z == 0 || z == 8) && (x == 2 || x == 8) && (y == 2 || y == 3);
+        boolean sideWindow = (x == 0 || x == 10) && (z == 2 || z == 6) && (y == 2 || y == 3);
+        return frontBackWindow || sideWindow ? Blocks.GLASS.defaultBlockState() : Blocks.OAK_PLANKS.defaultBlockState();
+    }
+
     private static final class BlueprintBuilder {
         private final BlockPos origin;
         private final Map<BlockPos, Placement> placements = new LinkedHashMap<>();
@@ -285,7 +356,10 @@ public final class BuildingBlueprints {
         private BlueprintBuilder(BlockPos origin) { this.origin = origin; }
 
         private void put(int x, int y, int z, BlockState state, Phase phase) {
-            BlockPos absolute = origin.offset(x, y, z);
+            putAbsolute(origin.offset(x, y, z), state, phase);
+        }
+
+        private void putAbsolute(BlockPos absolute, BlockState state, Phase phase) {
             placements.remove(absolute);
             placements.put(absolute, new Placement(absolute, state, phase));
         }
