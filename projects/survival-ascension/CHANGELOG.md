@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0-alpha.1
+- Activated Mobility as the sixth live skill.
+- Added server-tracked on-foot sprint-distance XP; teleport, flight, swimming and riding do not count.
+- Added modest continuous movement-speed growth through vanilla movement-speed attributes.
+- Lv.10 unlocks 1-block step traversal and increased safe-fall distance.
+- Lv.30 unlocks the R ground dash with a server-authoritative cooldown.
+- Lv.60 unlocks one R air dash before landing and improves traversal attributes.
+- Lv.90 upgrades dash power/cooldown, step height and safe-fall distance again.
+- Movement impulses and cooldowns are validated on the server; the client only sends the action request.
+- Studied ParCool's public parkour/action vocabulary as reference-only; no LGPL ParCool source or assets are copied or bundled.
+
 ## 0.7.0-alpha.1
 - Activated Construction as the fifth live skill.
 - Added M -> Construction nested radial with Single / Line / Wall / Floor / Back.
@@ -13,11 +24,9 @@
 
 ## 0.6.0-alpha.1
 - Replaced the direct K skills shortcut with M as the integrated menu key.
-- Added a six-segment radial menu adapting MineMenu's MIT-licensed current radial interaction/presentation, including its ring proportions, mouse-angle selection, live-world overlay and default black/red visual palette.
+- Added the MineMenu MIT-derived radial interaction/presentation.
 - Added Skills, Guide, Unlocks, Stats, Controls and Close radial entries.
-- Added in-game guide pages so core mechanics and level unlocks no longer require a book item or external documentation.
-- Reworked skill-screen navigation around native Minecraft screen patterns adapted from Skill Proficiencies MIT.
-- Added packaged MineMenu MIT attribution.
+- Added in-game guide pages and Skill Proficiencies MIT-derived native skill/help information architecture.
 
 ## 0.5.0-alpha.1
 - Activated Combat as the fourth live skill.

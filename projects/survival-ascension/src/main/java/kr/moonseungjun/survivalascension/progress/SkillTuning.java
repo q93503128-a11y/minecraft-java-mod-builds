@@ -40,7 +40,6 @@ public final class SkillTuning {
         int clamped = clamp(level);
         return 1.0D + 0.03D * clamped + 0.0004D * clamped * clamped;
     }
-
     public static int miningAreaSize(int level) {
         if (level >= 90) return 9;
         if (level >= 60) return 7;
@@ -48,7 +47,6 @@ public final class SkillTuning {
         if (level >= 10) return 3;
         return 1;
     }
-
     public static int miningVeinLimit(int level) {
         if (level >= 90) return 128;
         if (level >= 60) return 64;
@@ -60,7 +58,6 @@ public final class SkillTuning {
         int clamped = clamp(level);
         return 1.0D + 0.025D * clamped + 0.00025D * clamped * clamped;
     }
-
     public static int woodcuttingLogLimit(int level) {
         if (level >= 90) return 256;
         if (level >= 60) return 128;
@@ -73,7 +70,6 @@ public final class SkillTuning {
         int clamped = clamp(level);
         return 1.0D + 0.02D * clamped + 0.0002D * clamped * clamped;
     }
-
     public static int harvestingAreaSize(int level) {
         if (level >= 90) return 9;
         if (level >= 60) return 7;
@@ -86,21 +82,18 @@ public final class SkillTuning {
         int clamped = clamp(level);
         return 1.0D + 0.006D * clamped + 0.00002D * clamped * clamped;
     }
-
     public static double combatCleaveRadius(int level) {
         if (level >= 90) return 4.0D;
         if (level >= 60) return 2.75D;
         if (level >= 30) return 1.75D;
         return 0.0D;
     }
-
     public static int combatCleaveTargetLimit(int level) {
         if (level >= 90) return 8;
         if (level >= 60) return 4;
         if (level >= 30) return 2;
         return 0;
     }
-
     public static double combatCleaveFraction(int level) {
         if (level >= 90) return 0.60D;
         if (level >= 60) return 0.42D;
@@ -115,12 +108,41 @@ public final class SkillTuning {
         if (level >= 10) return 5;
         return 1;
     }
-
     public static int constructionPlaneSize(int level) {
         if (level >= 90) return 9;
         if (level >= 60) return 5;
         if (level >= 30) return 3;
         return 1;
+    }
+
+    public static double mobilitySpeedMultiplier(int level) {
+        int clamped = clamp(level);
+        return 1.0D + 0.0015D * clamped + 0.000005D * clamped * clamped;
+    }
+    public static double mobilityStepHeight(int level) {
+        if (level >= 90) return 1.5D;
+        if (level >= 60) return 1.25D;
+        if (level >= 10) return 1.0D;
+        return 0.6D;
+    }
+    public static double mobilitySafeFallDistance(int level) {
+        if (level >= 90) return 12.0D;
+        if (level >= 60) return 8.0D;
+        if (level >= 30) return 6.0D;
+        if (level >= 10) return 4.0D;
+        return 3.0D;
+    }
+    public static double mobilityDashPower(int level) {
+        if (level >= 90) return 1.55D;
+        if (level >= 60) return 1.25D;
+        if (level >= 30) return 0.95D;
+        return 0.0D;
+    }
+    public static int mobilityDashCooldownTicks(int level) {
+        if (level >= 90) return 24;
+        if (level >= 60) return 40;
+        if (level >= 30) return 60;
+        return Integer.MAX_VALUE;
     }
 
     public static int masteryTier(int level) {
@@ -131,7 +153,5 @@ public final class SkillTuning {
         return 1;
     }
 
-    private static int clamp(int level) {
-        return Math.max(0, Math.min(MAX_LEVEL, level));
-    }
+    private static int clamp(int level) { return Math.max(0, Math.min(MAX_LEVEL, level)); }
 }

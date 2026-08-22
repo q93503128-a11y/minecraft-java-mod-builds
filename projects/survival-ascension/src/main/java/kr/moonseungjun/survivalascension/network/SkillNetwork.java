@@ -4,6 +4,7 @@ package kr.moonseungjun.survivalascension.network;
 
 import kr.moonseungjun.survivalascension.construction.ConstructionMode;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
+import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -12,7 +13,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class SkillNetwork {
-    private static final String PROTOCOL = "3";
+    private static final String PROTOCOL = "4";
     private static volatile Consumer<SkillUpdatePayload> updateSink = payload -> {};
     private static volatile Consumer<SkillSnapshotPayload> snapshotSink = payload -> {};
     private SkillNetwork() {}
@@ -26,6 +27,10 @@ public final class SkillNetwork {
                     if (context.player() instanceof ServerPlayer player) {
                         ConstructionProgression.setMode(player, ConstructionMode.fromId(payload.modeId()));
                     }
+                }));
+        registrar.playToServer(MobilityActionPayload.TYPE, MobilityActionPayload.CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) MobilityProgression.performAction(player);
                 }));
     }
 

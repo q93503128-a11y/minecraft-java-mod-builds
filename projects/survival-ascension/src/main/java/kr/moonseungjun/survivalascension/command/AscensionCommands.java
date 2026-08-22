@@ -21,7 +21,8 @@ public final class AscensionCommands {
                 .then(skillSetLevelNode("woodcutting", SkillType.WOODCUTTING))
                 .then(skillSetLevelNode("harvesting", SkillType.HARVESTING))
                 .then(skillSetLevelNode("combat", SkillType.COMBAT))
-                .then(skillSetLevelNode("construction", SkillType.CONSTRUCTION)));
+                .then(skillSetLevelNode("construction", SkillType.CONSTRUCTION))
+                .then(skillSetLevelNode("mobility", SkillType.MOBILITY)));
     }
 
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> skillSetLevelNode(String literal, SkillType skill) {
@@ -36,11 +37,7 @@ public final class AscensionCommands {
     private static int showStats(ServerPlayer player) {
         SkillProgressData data = SkillProgressData.get(player);
         player.sendSystemMessage(Component.literal("§6[Survival Ascension] §f숙련 현황"));
-        sendSkillLine(player, data, SkillType.MINING);
-        sendSkillLine(player, data, SkillType.WOODCUTTING);
-        sendSkillLine(player, data, SkillType.HARVESTING);
-        sendSkillLine(player, data, SkillType.COMBAT);
-        sendSkillLine(player, data, SkillType.CONSTRUCTION);
+        for (SkillType skill : SkillType.values()) sendSkillLine(player, data, skill);
         return 1;
     }
 
@@ -61,7 +58,10 @@ public final class AscensionCommands {
                     + " | 파급 " + (SkillTuning.combatCleaveTargetLimit(level) <= 0 ? "잠김" : SkillTuning.combatCleaveTargetLimit(level) + "체");
             case CONSTRUCTION -> "선 " + SkillTuning.constructionLineLength(level)
                     + " | 면 " + SkillTuning.constructionPlaneSize(level) + "×" + SkillTuning.constructionPlaneSize(level);
-            default -> "준비 중";
+            case MOBILITY -> "이속 " + fmt(SkillTuning.mobilitySpeedMultiplier(level))
+                    + " | 단차 " + String.format(java.util.Locale.ROOT, "%.2f", SkillTuning.mobilityStepHeight(level))
+                    + " | 안전낙하 " + String.format(java.util.Locale.ROOT, "%.0f", SkillTuning.mobilitySafeFallDistance(level))
+                    + " | R " + (level < 30 ? "잠김" : SkillTuning.mobilityDashCooldownTicks(level) / 20.0D + "초");
         };
         player.sendSystemMessage(Component.literal("§e" + skill.koreanName() + " §fLv." + level + " §7(" + progress + ") §8- §f" + extra));
     }

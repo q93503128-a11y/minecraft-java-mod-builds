@@ -5,7 +5,6 @@ import hashlib, re, sys, zipfile
 if len(sys.argv) != 2: raise SystemExit("usage: verify_jar.py <jar>")
 jar = Path(sys.argv[1]).resolve()
 if not jar.is_file() or jar.stat().st_size == 0: raise SystemExit(f"missing/empty jar: {jar}")
-
 match = re.fullmatch(r"survivalascension-(.+)\.jar", jar.name)
 if not match: raise SystemExit(f"unexpected jar name: {jar.name}")
 expected_version = match.group(1)
@@ -30,8 +29,9 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/mining/MiningProgression.class",
         "kr/moonseungjun/survivalascension/combat/CombatProgression.class",
         "kr/moonseungjun/survivalascension/construction/ConstructionProgression.class",
-        "kr/moonseungjun/survivalascension/construction/ConstructionMode.class",
         "kr/moonseungjun/survivalascension/network/ConstructionModePayload.class",
+        "kr/moonseungjun/survivalascension/mobility/MobilityProgression.class",
+        "kr/moonseungjun/survivalascension/network/MobilityActionPayload.class",
     ]:
         if name not in names: raise SystemExit(f"required JAR entry missing: {name}")
     for notice, line in [

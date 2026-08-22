@@ -1,47 +1,34 @@
 # Third-party notices
 
 ## Skill Proficiencies
-
-Source project: `balovich-matje/skill-proficiencies`
-Copyright (c) 2026 balovich-matje
+Source project: `balovich-matje/skill-proficiencies`  
+Copyright (c) 2026 balovich-matje  
 License: MIT License
 
-Survival Ascension adapts permissively licensed Skill Proficiencies patterns for generic per-skill XP storage, NeoForge clientbound sync, recent-skill XP HUD behavior, mature-crop classification, and the native skill/help-screen information architecture.
-
-The complete notice is packaged at `META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt`.
+Survival Ascension adapts permissively licensed patterns for generic per-skill XP storage, NeoForge sync, recent-skill XP HUD behavior, crop classification, and skill/help-screen information architecture. Full notice: `META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt`.
 
 ## Veinminer++
-
-Source project: `kestalkayden/veinminer-plus-plus`
-Copyright (c) 2026 Kestalkayden
+Source project: `kestalkayden/veinminer-plus-plus`  
+Copyright (c) 2026 Kestalkayden  
 License: MIT License
 
-Survival Ascension adapts ore-family equivalence matching, bounded 26-connected flood-fill traversal, and normal player destroy-controller handling for secondary mined blocks.
-
-The complete notice is packaged at `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt`.
+Survival Ascension adapts ore-family equivalence matching, bounded connected traversal, and normal player destroy-controller handling. Full notice: `META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt`.
 
 ## MineMenu
-
-Source project: `GirafiStudios/MineMenu`
-Copyright (c) 2013 Dylan Miller
+Source project: `GirafiStudios/MineMenu`  
+Copyright (c) 2013 Dylan Miller  
 License: MIT License
 
-Survival Ascension adapts the current MineMenu radial-menu interaction and presentation model, including the 60/80 inner/outer ring proportions, mouse-angle segment selection, selected-segment expansion, icon placement around the wheel, live-world overlay behavior, and MineMenu's default translucent black/red menu palette. Menu entries and application behavior are Survival Ascension-specific.
-
-The complete notice is packaged at `META-INF/third-party/MINEMENU_MIT.txt`.
+Survival Ascension adapts MineMenu's radial interaction/presentation model, including the 60/80 ring proportions, mouse-angle segment selection, selected-segment expansion, icon placement, live-world overlay, and translucent black/red palette. Full notice: `META-INF/third-party/MINEMENU_MIT.txt`.
 
 ## Building Gadgets 2
-
-Source project: `Direwolf20-MC/BuildingGadgets2`
-Copyright (c) 2023 Direwolf20-MC
+Source project: `Direwolf20-MC/BuildingGadgets2`  
+Copyright (c) 2023 Direwolf20-MC  
 License: MIT License
 
-Survival Ascension independently implements its Construction skill after studying Building Gadgets 2's permissively licensed placement-safety and bulk-work patterns: inventory-backed building, interaction/protection checks, NeoForge placement hooks and server-tick-distributed work. Survival Ascension does not bundle Building Gadgets assets or gadget content.
-
-The complete notice is packaged at `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
+Survival Ascension independently implements Construction after studying Building Gadgets 2's permissively licensed material-backed building, interaction/protection checks, NeoForge placement hooks and tick-distributed work. Full notice: `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
 
 ## MIT License text
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -61,9 +48,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ## Project MMO 2.0
+Project MMO 2.0 is **reference-only**. No source, assets, textures, data, namespaces or implementation markers are copied or bundled.
 
-Project MMO 2.0 remains **reference-only**. Survival Ascension may study public behavior, progression concepts and information organization, but does not copy or bundle Project MMO source, assets, textures, data, namespaces or implementation markers.
+## ParCool
+Source project: `alRex-U/ParCool`  
+License: LGPL-3.0
+
+ParCool is **reference-only** for Survival Ascension 0.8. Its public movement vocabulary (fast run, roll, vault, wall movement and related terrain-interaction ideas) was studied to identify what makes traversal mechanically interesting. Survival Ascension's Mobility implementation is independent and uses vanilla/NeoForge 26.2 attributes plus its own server-authoritative dash logic. No ParCool source, animations, assets or namespace are copied or bundled.
 
 ## Other restricted/reference-only mods
-
 Handwerk, NeoEnchant+ and other custom-license/ARR projects are used only for behavior and UX study unless their exact license explicitly permits reuse. No restricted source or assets are bundled.
