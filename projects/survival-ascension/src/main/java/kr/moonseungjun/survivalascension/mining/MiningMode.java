@@ -4,7 +4,8 @@ public enum MiningMode {
     AUTO("auto", "자동", 0),
     PLANE("plane", "굴착", 10),
     VEIN("vein", "광맥", 30),
-    EXTRACT("extract", "추출", 90);
+    EXTRACT("extract", "추출", 90),
+    BORE("bore", "터널", 90);
 
     private final String id;
     private final String koreanName;
