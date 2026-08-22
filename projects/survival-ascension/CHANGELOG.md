@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.20.0-alpha.1
+- Added final Lv.100 `Mastery VI` tier across all six active skills instead of leaving Lv.91-100 as mostly numeric progression.
+- Mining Lv.100: 11x11 excavation, 192 connected/extract ore cap, and Quarry Network tunnel grows from 5x5x8 to 7x7x10.
+- Woodcutting Lv.100: natural-tree chain cap grows from 256 to 384 logs while retaining leaf safety and tick-drained work.
+- Harvesting Lv.100: mature-crop area grows from 9x9 to 11x11 while irrigation still consumes real seeds/crops.
+- Combat Lv.100: cleave grows to 10 targets / 5-block radius / 70%; Combat Academy sprint shockwave becomes 6.5 radius / 16 targets / 55% with a 50-tick cooldown.
+- Construction Lv.100: line 49, wall/floor 11x11, Builder Foundry Volume 7x7x7. Pending cap raised to 512 but global placement remains 64 blocks/tick with the same material and protection checks.
+- Mobility Lv.100: step height 2.0, safe fall 16, dash power 1.80 and 16-tick cooldown. Stage-2 Ascension Nexus raises the Lv.100 air-dash allowance to three uses per airtime.
+- Skills screen now renders Mastery VI and Guide documents all Lv.100 capstones.
+- Large capstones keep the existing synchronous safety model: Mining 12/player + 64/global blocks/tick; Construction remains protected and tick-distributed.
+- Source audit now enforces exact Mastery VI scale values while preserving Stage-2 mutations, world ascension, warbands, elites, equipment economy and infrastructure regressions.
+
 ## 0.19.0-alpha.1
 - Added Stage-2 endgame hostile mutations adapted from Hostiles Are Too Easy's CC0 Celestial Type vocabulary.
 - Natural eligible zombies and skeletons roll an 18% mutation chance only after the server world reaches Endgame / Stage 2; babies and spawner-origin mobs are excluded.
