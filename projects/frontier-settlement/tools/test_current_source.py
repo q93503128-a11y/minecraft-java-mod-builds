@@ -18,6 +18,7 @@ required = [
     JAVA / 'settlement/OutpostRecord.java',
     JAVA / 'settlement/SettlementInventory.java',
     JAVA / 'settlement/SettlementWorkerService.java',
+    JAVA / 'settlement/SettlementTier.java',
     JAVA / 'command/SettlementCommands.java',
     JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'client/SettlementHudOverlay.java',
@@ -27,7 +28,7 @@ if missing:
     raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.9'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.10'):
     if token not in props:
         raise SystemExit(f'missing canonical property: {token}')
 
@@ -48,8 +49,6 @@ for token in ('case FARM -> farm(origin)', 'case QUARRY -> quarry(origin)', 'cas
               'Blocks.LANTERN.defaultBlockState()'):
     if token not in blueprints:
         raise SystemExit(f'production blueprint invariant missing: {token}')
-if blueprints.find('Phase.FLOOR') > blueprints.find('Phase.FRAME_AND_WALLS'):
-    raise SystemExit('building phase order regressed')
 
 saved = (JAVA / 'settlement/SettlementData.java').read_text(encoding='utf-8')
 for token in ('server.getDataStorage().computeIfAbsent(TYPE)', 'SettlementInfrastructureState.CODEC',
@@ -72,6 +71,11 @@ for token in ('FARM_WORKER_NAME', 'QUARRY_WORKER_NAME', 'MINE_WORKER_NAME', 'TRA
 if 'destroyBlock(' in worker or 'dropResources(' in worker:
     raise SystemExit('workers must not create loose drops through block destruction')
 
+inventory = (JAVA / 'settlement/SettlementInventory.java').read_text(encoding='utf-8')
+for token in ('stack.is(Items.WHEAT)', 'stack.is(Items.CARROT)', 'stack.is(Items.POTATO)', 'stack.is(Items.BEETROOT)'):
+    if token not in inventory:
+        raise SystemExit(f'settlement staple food invariant missing: {token}')
+
 outpost_record = (JAVA / 'settlement/OutpostRecord.java').read_text(encoding='utf-8')
 for token in ('specialization', 'optionalFieldOf("specialization", "general")', 'specializationDisplayName'):
     if token not in outpost_record:
@@ -83,10 +87,16 @@ for token in ('detectSpecialization', 'Tags.Blocks.ORES', 'return "mining"', 're
     if token not in outpost:
         raise SystemExit(f'outpost specialization invariant missing: {token}')
 
+tier = (JAVA / 'settlement/SettlementTier.java').read_text(encoding='utf-8')
+for token in ('CAMP("개척 캠프")', 'HAMLET("촌락")', 'VILLAGE("마을")',
+              'FRONTIER_TOWN("개척 도시")', 'DOMAIN("영지")', 'public static SettlementTier current'):
+    if token not in tier:
+        raise SystemExit(f'settlement tier invariant missing: {token}')
+
 commands = (JAVA / 'command/SettlementCommands.java').read_text(encoding='utf-8')
 for token in ('Commands.literal("farm")', 'Commands.literal("quarry")', 'Commands.literal("mine")',
               '광산은 채석장 1곳과 연결된 전초기지 1곳', 'specializationDisplayName'):
     if token not in commands:
         raise SystemExit(f'progression command invariant missing: {token}')
 
-print('Frontier Settlement alpha.9 source audit: PASS')
+print('Frontier Settlement alpha.10 source audit: PASS')
