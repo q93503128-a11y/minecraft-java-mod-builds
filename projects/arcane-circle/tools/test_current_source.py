@@ -78,7 +78,7 @@ need(first,
      'dx * dx + dz * dz > allowed * allowed',
      'ArcaneBuffRuntime.clearSpell(subject, "shield")', 'ArcaneBuffRuntime.clearSpell(subject, "mage_armor")',
      'MageGearService.clearStableDescent(id)', 'ArcaneLightService.clear(subject)',
-     'cancelSleepReleaseIfIdle', 'resolveNpcWard(target, event)')
+     'cancelSleepReleaseIfIdle', 'previous != null && !previous.ownerId.equals(ownerId)', 'resolveNpcWard(target, event)')
 need(light, 'public static void illuminate(LivingEntity owner, int durationTicks)',
      'public static boolean clear(LivingEntity owner)', 'public static void tickNpc(ServerLevel level)')
 need(buff, 'STATES.remove(new BuffKey(player.getUUID(), "shield"));',

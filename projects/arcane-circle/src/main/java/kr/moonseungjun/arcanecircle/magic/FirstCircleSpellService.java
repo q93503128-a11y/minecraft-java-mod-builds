@@ -454,6 +454,8 @@ public final class FirstCircleSpellService {
                 Math.min(40.0, Math.max(24.0, 20.0 + Math.max(0.0, power) * 2.0)));
         SLEEP.put(target.getUUID(), state);
         enforceSleep(target);
+        if (previous != null && !previous.ownerId.equals(ownerId))
+            cancelSleepReleaseIfIdle(previous.level, previous.ownerId);
     }
 
     private static void tickSleep(ServerLevel level, long now) {
