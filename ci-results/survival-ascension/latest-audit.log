@@ -1,8 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.34 integrates industrial batches, infrastructure funding and equipment reforge/awakening with nearby physical Barrel logistics
-- stock resolution is inventory-first then nearest usable depot; same-dimension32/active-outpost64, loaded real Barrel and mayInteract boundaries remain
-- matcher-backed production supports tag inputs without virtual/global storage
-- Apex/Trial entry costs and industrial dispatch remain player-carried by design
-- no new SavedData, packet, GUI, remote dimension access or chunk force-load
-- 0.33 complication,0.32 nine-sortie,0.31 recovery,0.30 outpost,0.29 depot and mastery/encounter regressions retained
+- 0.35 adds explicit main-inventory bulk offload into the existing nearby physical Barrel network
+- slots9..35 only; hotbar0..8/equipment/offhand preserved; authored bulk-material whitelist only
+- nearest usable Barrel first, merge-before-empty, same components, slot acceptance and finite stack capacity respected
+- full/partial capacity preserves every unaccepted source remainder; no automatic pickup/tick routing
+- 0.34 integrated inputs,0.33 complications,0.32 nine sorties,0.31 recovery,0.30 outpost and older regressions retained
