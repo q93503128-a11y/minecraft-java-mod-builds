@@ -68,7 +68,10 @@ assert index['global_progression_audit'] == {
 assert index['deferred_damage_attribution']['mode'] == 'server_authoritative_arcane_damage_ledger'
 assert index['deferred_damage_attribution']['per_cast_mastery_cap'] == 30
 assert index['deferred_damage_attribution']['per_cast_insight_cap'] == 8
-assert len(index['deferred_damage_attribution']['tracked_spells']) == 20
+assert index['deferred_damage_attribution']['growth_snapshot'] == 'range_scaled_player_center_envelope_covering_authoritative_high_circle_footprint'
+assert index['deferred_damage_attribution']['meteor_cityfall_snapshot'] == 'cast_range_plus_full_range_scaled_cityfall_radius_covered'
+assert index['deferred_damage_attribution']['control_weather_credit'] == '45s_automatic_and_g_key_lightning_server_attributed'
+assert len(index['deferred_damage_attribution']['tracked_spells']) == 21
 need(text(magic / 'ArcaneDamage.java'),
      'if (caster instanceof ServerPlayer player) return hurt(level, player, target, amount);',
      'public static boolean hurtAttributed(', 'CombatGrowthService.recordAttributed(')
@@ -82,6 +85,8 @@ need(text(world / 'ArcaneQuestData.java'), 'public void recordCombatImpact(Serve
 need(main, 'CombatGrowthService.clear(player.getUUID());', 'SpellCastingService.tickDeferredCombat(player);', 'CombatGrowthService.clearAll();')
 need(text(magic / 'SeventhCircleSpellService.java'), '"delayed_blast_fireball"', 'hurtAttributed(level, caster, target, damage')
 need(text(magic / 'NinthCircleSpellService.java'), 'hurtAttributed(level, owner, target', '"prismatic_wall"', '"weird"')
+need(growth, '"control_weather"', 'case "control_weather" -> 900;', 'range * 2.65 + 10.0')
+need(text(magic / 'SpellGameplayService.java'), 'state.power() * .16), "control_weather"', 'barrage.power() * .44), "control_weather"')
 assert index['global_curve_preserved'] == {
     'same_circle_cast_ticks': [6, 10, 16, 26, 42, 68, 105, 155, 220],
     'base_max_mana': [100, 180, 300, 480, 750, 1150, 1800, 2800, 4500],

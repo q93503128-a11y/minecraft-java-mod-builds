@@ -129,8 +129,14 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit('alpha.75 deferred damage attribution metadata missing')
     if deferred.get('per_cast_mastery_cap') != 30 or deferred.get('per_cast_insight_cap') != 8:
         raise SystemExit('alpha.75 deferred combat cap drift')
-    if len(deferred.get('tracked_spells', [])) != 20:
+    if len(deferred.get('tracked_spells', [])) != 21:
         raise SystemExit('alpha.75 deferred spell coverage drift')
+    if deferred.get('growth_snapshot') != 'range_scaled_player_center_envelope_covering_authoritative_high_circle_footprint':
+        raise SystemExit('alpha.75 wide growth snapshot contract missing')
+    if deferred.get('meteor_cityfall_snapshot') != 'cast_range_plus_full_range_scaled_cityfall_radius_covered':
+        raise SystemExit('alpha.75 meteor cityfall growth coverage missing')
+    if deferred.get('control_weather_credit') != '45s_automatic_and_g_key_lightning_server_attributed':
+        raise SystemExit('alpha.75 Control Weather deferred credit missing')
 
     expected1 = {
         'shield': '8.5s_two_reactive_barriers_player_npc_same_damage_contract',

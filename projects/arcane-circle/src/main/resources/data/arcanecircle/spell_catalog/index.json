@@ -631,11 +631,15 @@
       "fire_storm",
       "earthquake",
       "incendiary_cloud",
+      "control_weather",
       "prismatic_wall",
       "weird",
       "fire_shield",
       "wall_of_ice",
       "winter_domain"
-    ]
+    ],
+    "growth_snapshot": "range_scaled_player_center_envelope_covering_authoritative_high_circle_footprint",
+    "meteor_cityfall_snapshot": "cast_range_plus_full_range_scaled_cityfall_radius_covered",
+    "control_weather_credit": "45s_automatic_and_g_key_lightning_server_attributed"
   }
 }
