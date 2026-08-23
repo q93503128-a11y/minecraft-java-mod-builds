@@ -2,6 +2,7 @@ package kr.moonseungjun.arcanecircle.world;
 
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.CombatGrowthService;
+import kr.moonseungjun.arcanecircle.magic.MagicPlayerData;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellWorldLore;
 import kr.moonseungjun.arcanecircle.registry.ModItems;
@@ -44,6 +45,12 @@ public final class ArcaneEconomyService {
         AcademyOfferCatalog.Offer offer = AcademyOfferCatalog.offer(offerId).orElse(null);
         if (offer == null) {
             ArcaneNoticeService.push(player, Component.literal("§c[학원 상점] §f존재하지 않는 거래입니다."));
+            return false;
+        }
+        int mageCircle = MagicPlayerData.get(((ServerLevel) player.level()).getServer()).state(player).circle();
+        if (offer.circle() > mageCircle) {
+            ArcaneNoticeService.push(player, Component.literal("§c[학원 상점] §f" + offer.circle()
+                    + "써클 거래는 현재 " + mageCircle + "써클 마력핵으로 구매할 수 없습니다."));
             return false;
         }
         long price = priceFor(player, offer);

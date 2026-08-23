@@ -90,8 +90,8 @@ with zipfile.ZipFile(jar) as archive:
 
     index = json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version = index.get('version')
-    if version != '0.12.1-alpha.74':
-        raise SystemExit(f'unexpected alpha.74 package version: {version}')
+    if version != '0.12.1-alpha.75':
+        raise SystemExit(f'unexpected alpha.75 package version: {version}')
     if jar.name != f'arcanecircle-{version}.jar':
         raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles') != list(range(1, 10)) or index.get('direct_spells') != 90 or index.get('fusion_spells') != 19:
@@ -101,6 +101,27 @@ with zipfile.ZipFile(jar) as archive:
     for c in ('first','second','third','fourth','fifth','sixth','seventh','eighth','ninth'):
         if index.get(f'{c}_circle_npc_parity') is not True:
             raise SystemExit(f'{c} NPC parity metadata missing')
+
+
+    expected_global = {
+        'successful_cast_mastery_floor': 1,
+        'combat_mastery_acceleration': 'existing_hostile_damage_and_kill_score_up_to_30_per_cast',
+        'circle_insight_source': 'hostile_combat_only',
+        'passive_livestock_progression': 'blocked',
+        'combat_arcana_source': 'same_hostile_combat_snapshot_as_insight',
+        'fusion_registration': 'non_damage_and_maintained_fusions_are_reachable_by_successful_use',
+        'academy_purchase_gate': 'server_authoritative_current_circle_or_lower',
+        'high_circle_spellbook_rarity': 'circle_4_to_9_epic',
+    }
+    if index.get('global_progression_audit') != expected_global:
+        raise SystemExit('alpha.75 global progression audit metadata mismatch')
+    curve = index.get('global_curve_preserved', {})
+    if curve.get('same_circle_cast_ticks') != [6,10,16,26,42,68,105,155,220]:
+        raise SystemExit('alpha.75 same-circle cast curve drift')
+    if curve.get('base_max_mana') != [100,180,300,480,750,1150,1800,2800,4500]:
+        raise SystemExit('alpha.75 mana curve drift')
+    if curve.get('equipment_mana_cost_floor') != 0.10 or curve.get('equipment_cooldown_floor') != 0.10:
+        raise SystemExit('alpha.75 equipment floor drift')
 
 
     expected1 = {
@@ -252,7 +273,11 @@ with zipfile.ZipFile(jar) as archive:
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
-print('Arcane Circle alpha.74 JAR verification: PASS')
+print('Arcane Circle alpha.75 JAR verification: PASS')
+print('alpha75_successful_use_mastery_floor=PASS')
+print('alpha75_hostile_only_insight_economy=PASS')
+print('alpha75_academy_server_circle_gate=PASS')
+print('alpha75_global_curve_preserved=PASS')
 print('alpha74_first_circle_value_pass_1=PASS')
 print('alpha74_first_circle_player_npc_ward_parity=PASS')
 print('alpha74_first_circle_light_npc_world_parity=PASS')

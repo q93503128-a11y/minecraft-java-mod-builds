@@ -158,7 +158,7 @@ public final class ModItems {
             Rarity rarity = switch (spell.circle()) {
                 case 2 -> Rarity.UNCOMMON;
                 case 3 -> Rarity.RARE;
-                case 4, 5 -> Rarity.EPIC;
+                case 4, 5, 6, 7, 8, 9 -> Rarity.EPIC;
                 default -> Rarity.COMMON;
             };
             String itemId = SpellCatalog.bookItemId(spell.id());

@@ -352,10 +352,11 @@ public final class MagicPlayerData extends SavedData {
         MageState state = state(player);
         CombatGrowthService.Impact result = impact == null ? CombatGrowthService.Impact.NONE : impact;
         int beforeMastery = state.mastery.getOrDefault(cast.spell().id(), 0);
-        int masteryGain = result.meaningful() ? Math.max(1, result.masteryGain()) : 0;
+        int masteryGain = masteryGainFor(result);
         int afterMastery = Math.min(100000, beforeMastery + masteryGain);
-        if (masteryGain > 0) state.mastery.put(cast.spell().id(), afterMastery);
-        // Circle insight comes from meaningful combat, not from merely pressing a spell key.
+        state.mastery.put(cast.spell().id(), afterMastery);
+        // Every successfully resolved spell earns one practice point. Real hostile combat is the
+        // accelerated mastery path and remains the only source of circle insight.
         if (result.meaningful()) state.insight = Math.min(1_000_000,
                 state.insight + Math.max(0, result.insightGain()));
 
@@ -376,6 +377,11 @@ public final class MagicPlayerData extends SavedData {
         }
         setDirty();
         return new CastProgress(new CircleAdvance(previousCircle, state.circle), mastery);
+    }
+
+    public static int masteryGainFor(CombatGrowthService.Impact impact) {
+        CombatGrowthService.Impact result = impact == null ? CombatGrowthService.Impact.NONE : impact;
+        return result.meaningful() ? Math.max(1, result.masteryGain()) : 1;
     }
 
     public CastProgress completeCast(ServerPlayer player, CastPreparation cast,

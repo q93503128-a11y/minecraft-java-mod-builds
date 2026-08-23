@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.74",
+  "version": "0.12.1-alpha.75",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -563,5 +563,48 @@
   },
   "first_circle_dispel_scope": "all_owned_or_attached_circle_1_maintenance",
   "first_circle_visual_hitbox_lifetime_sync": "grease_sleep_exact_footprints_and_maintained_release_cleanup",
-  "first_circle_npc_terrain_safety": "thunderwave_keeps_combat_wave_but_skips_npc_world_edit"
+  "first_circle_npc_terrain_safety": "thunderwave_keeps_combat_wave_but_skips_npc_world_edit",
+  "global_progression_audit": {
+    "successful_cast_mastery_floor": 1,
+    "combat_mastery_acceleration": "existing_hostile_damage_and_kill_score_up_to_30_per_cast",
+    "circle_insight_source": "hostile_combat_only",
+    "passive_livestock_progression": "blocked",
+    "combat_arcana_source": "same_hostile_combat_snapshot_as_insight",
+    "fusion_registration": "non_damage_and_maintained_fusions_are_reachable_by_successful_use",
+    "academy_purchase_gate": "server_authoritative_current_circle_or_lower",
+    "high_circle_spellbook_rarity": "circle_4_to_9_epic"
+  },
+  "global_curve_preserved": {
+    "same_circle_cast_ticks": [
+      6,
+      10,
+      16,
+      26,
+      42,
+      68,
+      105,
+      155,
+      220
+    ],
+    "base_max_mana": [
+      100,
+      180,
+      300,
+      480,
+      750,
+      1150,
+      1800,
+      2800,
+      4500
+    ],
+    "equipment_mana_cost_floor": 0.1,
+    "equipment_cooldown_floor": 0.1,
+    "progression_layers_after_equipment_floor": [
+      "circle_gap",
+      "mastery",
+      "tradition"
+    ],
+    "zero_cooldown_below_ticks": 2,
+    "zero_cast_below_ticks": 1
+  }
 }

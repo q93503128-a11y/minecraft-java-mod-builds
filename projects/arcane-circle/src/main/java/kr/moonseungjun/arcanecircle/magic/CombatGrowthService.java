@@ -17,8 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Measures real health changes caused during one cast window. Progress is intentionally
- * logarithmic and tightly capped so one weak mob or a large area spell cannot skip circles.
+ * Measures real health changes caused to actual combatants during one cast window. Passive
+ * livestock cannot feed insight/economy; progress stays logarithmic and tightly capped so one
+ * weak mob or a large area spell cannot skip circles.
  */
 public final class CombatGrowthService {
     private static final List<EquipmentSlot> THREAT_SLOTS = List.of(
@@ -171,6 +172,7 @@ public final class CombatGrowthService {
     private static boolean validTarget(ServerPlayer player, Mob mob) {
         if (!mob.isAlive() || mob.isRemoved()) return false;
         if (mob instanceof TamableAnimal tame && tame.isTame() && tame.isOwnedBy(player)) return false;
-        return player.getTeam() == null || mob.getTeam() == null || !player.isAlliedTo(mob);
+        if (player.isAlliedTo(mob)) return false;
+        return mob instanceof Enemy || ArcaneMageService.isMage(mob) || mob.getTarget() == player;
     }
 }

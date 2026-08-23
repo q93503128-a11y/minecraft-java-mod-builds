@@ -501,6 +501,7 @@ public final class SpellCastingService {
                 .recordCast(player, impact, spell.circle(), cast.fusion());
         MagicPlayerData.MageState state = data.state(player);
         MagicPlayerData.EffectiveStats stats = data.effectiveStats(player);
+        int masteryGain = MagicPlayerData.masteryGainFor(impact);
 
         if (cast.fusion() && progress.mastery().changed()) {
             String chain = displayChain(cast.ingredients(), " §7× §b");
@@ -510,7 +511,8 @@ public final class SpellCastingService {
             ArcaneNoticeService.push(player, Component.literal("§b" + spell.name() + " §f완료 · 마력 "
                     + (int) state.mana() + "/" + stats.maxMana() + " · 쿨 "
                     + (cast.cooldownTicks() <= 0 ? "없음" : String.format("%.1f",
-                    ArcaneBuffRuntime.adjustCooldownTicks(player, cast.cooldownTicks()) / 20.0) + "초")));
+                    ArcaneBuffRuntime.adjustCooldownTicks(player, cast.cooldownTicks()) / 20.0) + "초")
+                    + " · 숙련 +" + masteryGain));
         }
 
         if (impact.meaningful()) {

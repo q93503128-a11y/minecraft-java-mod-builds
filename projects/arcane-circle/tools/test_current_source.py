@@ -21,9 +21,9 @@ def need(body, *tokens):
 gradle = text(root / 'gradle.properties')
 main = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index = json.loads(text(root / 'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle, 'mod_version=0.12.1-alpha.74')
-need(main, 'VERSION = "0.12.1-alpha.74"')
-assert index['version'] == '0.12.1-alpha.74'
+need(gradle, 'mod_version=0.12.1-alpha.75')
+need(main, 'VERSION = "0.12.1-alpha.75"')
+assert index['version'] == '0.12.1-alpha.75'
 assert index['implemented_circles'] == list(range(1, 10))
 assert index['direct_spells'] == 90 and index['fusion_spells'] == 19
 
@@ -34,6 +34,55 @@ spells = direct | fusions
 assert (len(direct), len(fusions), len(spells)) == (90, 19, 109)
 summary = text(magic / 'SpellEffectSummary.java')
 assert set(re.findall(r'case "([a-z0-9_]+)"', summary)) == spells
+
+
+# Alpha.75 integrated progression / economy authority pass.
+player_data = text(magic / 'MagicPlayerData.java')
+growth = text(magic / 'CombatGrowthService.java')
+casting = text(magic / 'SpellCastingService.java')
+economy = text(world / 'ArcaneEconomyService.java')
+items = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/registry/ModItems.java')
+need(player_data,
+     'int masteryGain = masteryGainFor(result);',
+     'return result.meaningful() ? Math.max(1, result.masteryGain()) : 1;',
+     'Every successfully resolved spell earns one practice point',
+     'remains the only source of circle insight')
+need(casting, 'int masteryGain = MagicPlayerData.masteryGainFor(impact);', '" · 숙련 +" + masteryGain')
+need(growth,
+     'mob instanceof Enemy || ArcaneMageService.isMage(mob) || mob.getTarget() == player',
+     'Passive livestock cannot feed insight/economy')
+need(economy,
+     'int mageCircle = MagicPlayerData.get(', 'if (offer.circle() > mageCircle)',
+     '써클 거래는 현재', '써클 마력핵으로 구매할 수 없습니다.')
+need(items, 'case 4, 5, 6, 7, 8, 9 -> Rarity.EPIC;')
+assert index['global_progression_audit'] == {
+    'successful_cast_mastery_floor': 1,
+    'combat_mastery_acceleration': 'existing_hostile_damage_and_kill_score_up_to_30_per_cast',
+    'circle_insight_source': 'hostile_combat_only',
+    'passive_livestock_progression': 'blocked',
+    'combat_arcana_source': 'same_hostile_combat_snapshot_as_insight',
+    'fusion_registration': 'non_damage_and_maintained_fusions_are_reachable_by_successful_use',
+    'academy_purchase_gate': 'server_authoritative_current_circle_or_lower',
+    'high_circle_spellbook_rarity': 'circle_4_to_9_epic',
+}
+assert index['global_curve_preserved'] == {
+    'same_circle_cast_ticks': [6, 10, 16, 26, 42, 68, 105, 155, 220],
+    'base_max_mana': [100, 180, 300, 480, 750, 1150, 1800, 2800, 4500],
+    'equipment_mana_cost_floor': 0.10,
+    'equipment_cooldown_floor': 0.10,
+    'progression_layers_after_equipment_floor': ['circle_gap', 'mastery', 'tradition'],
+    'zero_cooldown_below_ticks': 2,
+    'zero_cast_below_ticks': 1,
+}
+need(player_data,
+     'double circleMana = Math.pow(0.72, masteryGap);',
+     'double circleCooldown = Math.pow(0.62, masteryGap);',
+     'double equipmentCostMultiplier = Math.max(0.10,',
+     'double equipmentCooldownMultiplier = Math.max(0.10,',
+     'rawCooldown < 2.0')
+need(text(magic / 'SpellCastingService.java'),
+     'int[] sameCircleTicks = {0, 6, 10, 16, 26, 42, 68, 105, 155, 220};',
+     'return raw < 1.0 ? 0 : Math.max(1, (int) Math.round(raw));')
 need(text(magic / 'SpellDefinition.java'), 'SecondCircleSpellSummary.summary(id)', 'ThirdCircleSpellSummary.summary(id)', 'FourthCircleSpellSummary.summary(id)', 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')
 
 circle_specs = {
@@ -428,13 +477,17 @@ need(main,
      'Alpha65NinthCircleRuntime.clear(player);', 'Alpha65NinthCircleRuntime.tick(level);', 'Alpha65NinthCircleRuntime.clearAll();')
 verify = text(root / 'tools/verify_jar.py')
 need(verify,
-     '0.12.1-alpha.74', 'FirstCircleAuthorityOverlay.class', 'SecondCircleSpellSummary.class', 'SecondCircleAuthorityOverlay.class', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
+     '0.12.1-alpha.75', 'FirstCircleAuthorityOverlay.class', 'SecondCircleSpellSummary.class', 'SecondCircleAuthorityOverlay.class', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
      'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',
      'alpha69_sixth_circle_value_pass_1=PASS', 'alpha68_seventh_circle_value_pass_1=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
+print('alpha75_successful_use_mastery_floor=PASS')
+print('alpha75_hostile_only_insight_economy=PASS')
+print('alpha75_academy_server_circle_gate=PASS')
+print('alpha75_global_curve_preserved=PASS')
 print('alpha74_first_circle_player_npc_ward_parity=PASS')
 print('alpha74_first_circle_light_npc_world_parity=PASS')
 print('alpha74_first_circle_grease_sleep_exact_footprints=PASS')
