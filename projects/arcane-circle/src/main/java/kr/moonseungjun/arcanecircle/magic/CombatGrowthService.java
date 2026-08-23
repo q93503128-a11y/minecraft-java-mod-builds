@@ -36,7 +36,7 @@ public final class CombatGrowthService {
             "scorching_ray", "sleet_storm", "wall_of_fire", "ice_storm", "blight",
             "phantasmal_killer", "cloudkill", "flame_strike", "insect_plague", "sunbeam",
             "freezing_sphere", "delayed_blast_fireball", "fire_storm", "earthquake",
-            "incendiary_cloud", "prismatic_wall", "weird", "fire_shield", "wall_of_ice",
+            "incendiary_cloud", "control_weather", "prismatic_wall", "weird", "fire_shield", "wall_of_ice",
             "winter_domain");
     private static final Map<DeferredKey, DeferredWindow> DEFERRED = new HashMap<>();
 
@@ -68,7 +68,12 @@ public final class CombatGrowthService {
     }
 
     public static Snapshot capture(ServerPlayer player, double range) {
-        double radius = Math.min(72.0, Math.max(10.0, range + 7.0));
+        // Pre-release growth capture must contain every entity that the locked spell can legitimately
+        // reach later. Small/medium spells keep a compact envelope; long-range 7-9C authority scales
+        // up far enough to include Meteor Swarm's full cityfall radius at the maximum authored range.
+        double radius = range >= 60.0
+                ? Math.min(300.0, Math.max(10.0, range * 2.65 + 10.0))
+                : Math.min(120.0, Math.max(10.0, range * 1.55 + 8.0));
         AABB box = player.getBoundingBox().inflate(radius, Math.max(8.0, radius * 0.45), radius);
         List<Sample> samples = new ArrayList<>();
         for (Mob mob : player.level().getEntitiesOfClass(Mob.class, box, mob -> validTarget(player, mob))) {
@@ -95,6 +100,7 @@ public final class CombatGrowthService {
             case "fire_storm" -> 70;
             case "earthquake" -> 180;
             case "incendiary_cloud" -> 240;
+            case "control_weather" -> 900;
             case "prismatic_wall" -> 400;
             case "weird" -> 300;
             case "fire_shield" -> 620;
