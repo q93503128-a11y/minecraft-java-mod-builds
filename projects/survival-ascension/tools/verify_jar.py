@@ -36,6 +36,9 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionIncident.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.class",
+        "kr/moonseungjun/survivalascension/apex/ApexArchetype.class",
+        "kr/moonseungjun/survivalascension/apex/ApexHuntData.class",
+        "kr/moonseungjun/survivalascension/apex/ApexHuntSystem.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
         "kr/moonseungjun/survivalascension/elite/WarbandDirector.class",
         "kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.class",
@@ -88,5 +91,6 @@ sha = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + ".sha256").write_text(f"{sha}  {jar.name}\n", encoding="utf-8")
 print("JAR VERIFY PASS")
 print(f"version={expected_version}")
+print("apex_runtime=present")
 print(f"size={jar.stat().st_size}")
 print(f"sha256={sha}")
