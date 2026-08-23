@@ -1,8 +1,7 @@
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 16, in <module>
-    need(gradle,'mod_version=0.12.1-alpha.65'); need(main,'VERSION = "0.12.1-alpha.65"')
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 62, in <module>
+    need(control,'DOMINATE_TICKS = 1200','FEEBLEMIND_TICKS = 1800','power * .65',
   File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 12, in need
     for token in tokens: assert token in body, token
                                 ^^^^^^^^^^^^^
-AssertionError: mod_version=0.12.1-alpha.65
+AssertionError: mob.getBoundingBox().inflate(28.0)
