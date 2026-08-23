@@ -25,12 +25,14 @@ with zipfile.ZipFile(jar) as zf:
         "META-INF/third-party/MEKANISM_MIT.txt",
         "META-INF/third-party/WARBAND_MIT.txt",
         "META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt",
+        "META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt",
         "kr/moonseungjun/survivalascension/SurvivalAscension.class",
         "kr/moonseungjun/survivalascension/world/WorldAscensionData.class",
         "kr/moonseungjun/survivalascension/world/WorldAscensionProgression.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
         "kr/moonseungjun/survivalascension/elite/WarbandDirector.class",
         "kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.class",
+        "kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.class",
         "kr/moonseungjun/survivalascension/combat/CombatProgression.class",
         "kr/moonseungjun/survivalascension/client/AscensionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.class",
@@ -64,6 +66,7 @@ with zipfile.ZipFile(jar) as zf:
         ("META-INF/third-party/MEKANISM_MIT.txt", "Copyright (c) 2017-2025 Aidan C. Brady"),
         ("META-INF/third-party/WARBAND_MIT.txt", "Copyright (c) 2026 Divesh Gupta"),
         ("META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt", "CC0 1.0 Universal"),
+        ("META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt", "Copyright (c) 2020 Brennan Ward"),
     ]:
         text = zf.read(notice).decode("utf-8")
         if line not in text: raise SystemExit(f"invalid packaged notice: {notice}")
