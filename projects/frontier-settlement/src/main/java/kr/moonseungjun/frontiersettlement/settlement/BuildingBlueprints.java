@@ -34,6 +34,7 @@ public final class BuildingBlueprints {
             case MINE -> mine(origin);
             case WAREHOUSE -> warehouse(origin);
             case BLACKSMITH, GUARD_POST -> AdvancedBuildingBlueprints.create(type, origin);
+            case MARKET -> MarketBuildingBlueprint.create(origin);
         };
     }
 
@@ -330,8 +331,6 @@ public final class BuildingBlueprints {
         b.put(9, 1, 1, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
         b.put(1, 1, 7, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
         b.put(9, 1, 7, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
-        // These two lanterns sit directly on the center-row barrels. They are intentionally not
-        // floating/hanging so neighbour updates cannot pop them into loose item entities.
         b.put(5, 2, 2, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
         b.put(5, 2, 6, Blocks.LANTERN.defaultBlockState(), Phase.FINISH);
         b.put(5, 1, 4, Blocks.CRAFTING_TABLE.defaultBlockState(), Phase.FINISH);
