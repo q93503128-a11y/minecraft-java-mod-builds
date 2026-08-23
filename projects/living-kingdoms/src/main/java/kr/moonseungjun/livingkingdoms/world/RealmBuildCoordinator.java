@@ -39,10 +39,7 @@ public final class RealmBuildCoordinator {
             return;
         }
         if (RealmSitePlanner.isBuilt(realm, profile.homelandId())) {
-            LivingRealmWorldManager.finishPlacement(player, profile);
-            StarterNpcManager.ensureForPlayer(player, profile);
-            send(player, profile.homelandId(), "complete", 100,
-                    "왕국 준비가 끝났습니다. 선택한 거주지로 이동합니다.", true, false);
+            queueFinalPlacement(player, profile);
             return;
         }
 
@@ -288,26 +285,47 @@ public final class RealmBuildCoordinator {
             if (site == null) throw new IllegalStateException("Authored homeland site disappeared before completion");
             ConstructionDebrisCleaner.cleanConstructionCompletion(job.realm, homelandId, site);
             RealmSitePlanner.markBuilt(job.realm, homelandId);
-            for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
-                ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
-                if (player == null) continue;
-                OriginProfileManager.profile(playerId).ifPresent(profile -> {
-                    if (profile.homelandId().equals(homelandId)) {
-                        LivingRealmWorldManager.finishPlacement(player, profile);
-                        StarterNpcManager.ensureForPlayer(player, profile);
-                    }
-                });
-            }
+
+            Set<UUID> waitingPlayers = Set.copyOf(job.waitingPlayers);
             synchronized (job) {
                 job.finished = true;
-                setStatus(job, "complete", 100, "왕국 준비가 끝났습니다. 선택한 거주지로 이동합니다.");
+                setStatus(job, "complete", 100, "왕국 건설이 끝났습니다. 거주지 안전 상태를 확인합니다.");
             }
-            broadcast(homelandId, job, true, false, true);
             notifyCompletions(job, null);
             JOBS.remove(homelandId, job);
+
+            for (UUID playerId : waitingPlayers) {
+                ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
+                if (player == null) continue;
+                OriginProfile profile = OriginProfileManager.profile(playerId).orElse(null);
+                if (profile == null || !profile.homelandId().equals(homelandId)) {
+                    send(player, homelandId, "failed", 99,
+                            "시민 기록을 확인하지 못했습니다. 다시 접속해 주십시오.", false, true);
+                    continue;
+                }
+                queueFinalPlacement(player, profile);
+            }
         } catch (Throwable throwable) {
             failBuild(homelandId, job, throwable);
         }
+    }
+
+    private static void queueFinalPlacement(ServerPlayer player, OriginProfile profile) {
+        send(player, profile.homelandId(), "entry", 99,
+                "왕도 시민구 거주지를 불러오고 안전한 입구를 확인하고 있습니다.", false, false);
+        LivingRealmWorldManager.finishPlacementWhenReady(player, profile, moved -> {
+            if (moved) {
+                StarterNpcManager.ensureForPlayer(player, profile);
+                send(player, profile.homelandId(), "complete", 100,
+                        "왕국 준비가 끝났습니다. 시민구 거주지에 도착했습니다.", true, false);
+            } else {
+                player.sendSystemMessage(Component.literal(
+                        "§c[왕국 입국 실패] §f거주지 청크 또는 안전한 입구를 확인하지 못했습니다."
+                ));
+                send(player, profile.homelandId(), "failed", 99,
+                        "거주지 안전 검증에 실패했습니다. 서버 로그를 확인하십시오.", false, true);
+            }
+        });
     }
 
     private static void failBuild(String homelandId, BuildJob job, Throwable failure) {
