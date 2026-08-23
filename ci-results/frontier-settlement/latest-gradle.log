@@ -10,13 +10,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.43s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.58s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
 [1m*** Started working on [4mdownloadServer[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.03s
 [1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.00s
+ [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -25,55 +25,23 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.59s
+Total runtime: 2.11s
 
 
 > Task :compileJava
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:66: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:87: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:97: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:107: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:114: error: cannot find symbol
-        if (workshop == null || workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP
-                                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:131: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/BuildingBlueprints.java:29: error: the switch expression does not cover all possible input values
+        return switch (type) {
+               ^
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:206: error: incompatible types: Stream<Reference<Enchantment>> cannot be converted to Stream<Holder<Enchantment>>
                         .filter(forged::supportsEnchantment));
                                ^
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:314: error: cannot find symbol
-            if (workshop.buildingType() == BuildingType.ADVANCED_WORKSHOP
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
-8 errors
+2 errors
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787492237650.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787492279799.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/build/reports/problems/problems-report.html
 
@@ -82,48 +50,16 @@ FAILURE: Build failed with an exception.
 * What went wrong:
 Execution failed for task ':compileJava'.
 > Compilation failed; see the compiler output below.
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/BuildingBlueprints.java:29: error: the switch expression does not cover all possible input values
+          return switch (type) {
+                 ^
   Note: Recompile with -Xlint:deprecation for details.
   /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:206: error: incompatible types: Stream<Reference<Enchantment>> cannot be converted to Stream<Holder<Enchantment>>
                           .filter(forged::supportsEnchantment));
                                  ^
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:66: error: cannot find symbol
-              if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                         ^
-    symbol:   variable ADVANCED_WORKSHOP
-    location: class BuildingType
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:87: error: cannot find symbol
-              if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                         ^
-    symbol:   variable ADVANCED_WORKSHOP
-    location: class BuildingType
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:97: error: cannot find symbol
-              if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                         ^
-    symbol:   variable ADVANCED_WORKSHOP
-    location: class BuildingType
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:107: error: cannot find symbol
-              if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                         ^
-    symbol:   variable ADVANCED_WORKSHOP
-    location: class BuildingType
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:114: error: cannot find symbol
-          if (workshop == null || workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP
-                                                                         ^
-    symbol:   variable ADVANCED_WORKSHOP
-    location: class BuildingType
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:131: error: cannot find symbol
-              if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                         ^
-    symbol:   variable ADVANCED_WORKSHOP
-    location: class BuildingType
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:314: error: cannot find symbol
-              if (workshop.buildingType() == BuildingType.ADVANCED_WORKSHOP
-                                                         ^
-    symbol:   variable ADVANCED_WORKSHOP
-    location: class BuildingType
   Note: Some input files use or override a deprecated API.
   Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
-  8 errors
+  2 errors
 
 * Try:
 > Check your code and dependencies to fix the compilation error(s)
@@ -165,48 +101,16 @@ org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':compile
 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
 Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Compilation failed; see the compiler output below.
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/BuildingBlueprints.java:29: error: the switch expression does not cover all possible input values
+        return switch (type) {
+               ^
 Note: Recompile with -Xlint:deprecation for details.
 /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:206: error: incompatible types: Stream<Reference<Enchantment>> cannot be converted to Stream<Holder<Enchantment>>
                         .filter(forged::supportsEnchantment));
                                ^
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:66: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:87: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:97: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:107: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:114: error: cannot find symbol
-        if (workshop == null || workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP
-                                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:131: error: cannot find symbol
-            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementAdvancedWorkshopService.java:314: error: cannot find symbol
-            if (workshop.buildingType() == BuildingType.ADVANCED_WORKSHOP
-                                                       ^
-  symbol:   variable ADVANCED_WORKSHOP
-  location: class BuildingType
 Note: Some input files use or override a deprecated API.
 Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
-8 errors
+2 errors
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
 	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
@@ -335,5 +239,5 @@ Note: Some messages have been simplified; recompile with -Xdiags:verbose to get 
 	... 30 more
 
 
-BUILD FAILED in 18s
+BUILD FAILED in 25s
 3 actionable tasks: 2 executed, 1 up-to-date
