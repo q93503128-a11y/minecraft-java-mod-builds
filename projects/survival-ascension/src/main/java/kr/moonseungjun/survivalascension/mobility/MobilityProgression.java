@@ -6,6 +6,7 @@ package kr.moonseungjun.survivalascension.mobility;
  */
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
@@ -91,6 +92,7 @@ public final class MobilityProgression {
                 && player.level() instanceof ServerLevel serverLevel
                 && WorldAscensionData.get(serverLevel.getServer()).stage() >= 2
                 && InfrastructureData.get(player).isComplete(InfrastructureProject.ASCENSION_NEXUS)) {
+            if (level >= 100 && ExpeditionProgression.hasFieldMastery(player)) return 4;
             return level >= 100 ? 3 : 2;
         }
         return 1;
@@ -143,7 +145,10 @@ public final class MobilityProgression {
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§d[기동 해금] §fR · 지상 돌진"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§d[기동 해금] §f공중에서 R을 한 번 더 사용할 수 있습니다."));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§d[기동 해금] §f극한 돌진 · 종말 단계 승천 중추 완공 시 공중 돌진 2회"));
-        if (oldLevel < 100 && newLevel >= 100) player.sendSystemMessage(Component.literal("§d[기동 숙련 VI] §f2블록 단차 · 16블록 안전 낙하 · 중추 완공 시 공중 돌진 3회"));
+        if (oldLevel < 100 && newLevel >= 100) {
+            String dashes = ExpeditionProgression.hasFieldMastery(player) ? "4회" : "3회";
+            player.sendSystemMessage(Component.literal("§d[기동 숙련 VI] §f2블록 단차 · 16블록 안전 낙하 · 중추 완공 시 공중 돌진 " + dashes));
+        }
     }
 
     private record TraversalState(ResourceKey<Level> dimension, double x, double z, double bank) {}
