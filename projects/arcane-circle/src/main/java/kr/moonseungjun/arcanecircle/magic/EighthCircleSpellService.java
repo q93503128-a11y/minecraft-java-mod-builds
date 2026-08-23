@@ -24,7 +24,6 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,16 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-/**
- * Alpha.60 eighth-circle authority.
- *
- * Already-strong player meanings are delegated instead of being replaced:
- * Antimagic Field -> ArcaneFieldService, Clone/Maze -> HighUtilitySpellService,
- * Control Weather -> SpellGameplayService, Demiplane -> PlanarSpellService,
- * Dominate Monster/Feeblemind -> HighControlSpellService.
- * Earthquake, Incendiary Cloud and Sunburst receive dedicated regional combat authority here.
- * NPCs receive role-equivalent maintained states rather than falling through to generic damage.
- */
+/** Eighth-circle regional/reality authority with player and NPC role parity. */
 public final class EighthCircleSpellService {
     private static final Set<String> HANDLED = Set.of(
             "antimagic_field", "clone", "control_weather", "demiplane", "dominate_monster",
@@ -50,11 +40,12 @@ public final class EighthCircleSpellService {
     public static final int NPC_ANTIMAGIC_TICKS = ArcaneFieldService.ANTIMAGIC_TICKS;
     public static final int NPC_WEATHER_TICKS = 900;
     public static final int NPC_DEMIPLANE_TICKS = 160;
-    public static final int NPC_DOMINATE_TICKS = 480;
+    public static final int NPC_CLONE_TICKS = 1800;
+    public static final int NPC_DOMINATE_TICKS = 1200;
     public static final int EARTHQUAKE_TICKS = 180;
-    public static final int NPC_FEEBLEMIND_TICKS = 700;
+    public static final int NPC_FEEBLEMIND_TICKS = 1800;
     public static final int INCENDIARY_CLOUD_TICKS = 240;
-    public static final int NPC_MAZE_TICKS = 360;
+    public static final int NPC_MAZE_TICKS = 480;
 
     private static final Map<UUID, NpcAntimagicState> NPC_ANTIMAGIC = new HashMap<>();
     private static final Map<UUID, NpcWeatherState> NPC_WEATHER = new HashMap<>();
@@ -99,20 +90,17 @@ public final class EighthCircleSpellService {
             case "antimagic_field" -> npcAntimagic(level, caster, range);
             case "clone" -> npcClone(level, caster, target);
             case "control_weather" -> npcControlWeather(level, caster, range, power);
-            // NPCs cannot own a persistent player pocket room, so this is a timed pocket-sanctuary role.
             case "demiplane" -> npcDemiplane(level, caster);
             case "dominate_monster" -> npcDominate(level, caster, target, snapshot);
             case "earthquake" -> earthquake(level, caster, snapshot, range, power, false);
             case "feeblemind" -> npcFeeblemind(level, caster, target, snapshot);
             case "incendiary_cloud" -> incendiaryCloud(level, caster, snapshot, range, power);
-            // Against a player, NPC Maze performs true combat exile semantics without cross-dimension relocation.
             case "maze" -> npcMaze(level, caster, target, snapshot);
             case "sunburst" -> sunburst(level, caster, snapshot, range, power);
             default -> false;
         };
     }
 
-    /** NPC Antimagic, Feeblemind and Maze are first-class Arcane casting blockers. */
     public static boolean blocksCasting(LivingEntity caster) {
         if (caster == null || !caster.isAlive()) return false;
         long now = caster.level() instanceof ServerLevel level ? level.getGameTime() : Long.MAX_VALUE;
@@ -139,7 +127,7 @@ public final class EighthCircleSpellService {
         tickNpcDominate(level, now);
         tickNpcFeeblemind(level, now);
         tickNpcMaze(level, now);
-        tickNpcClones(level);
+        tickNpcClones(level, now);
         tickEarthquakes(level, now);
         tickIncendiaryClouds(level, now);
     }
@@ -147,14 +135,12 @@ public final class EighthCircleSpellService {
     public static void clear(LivingEntity subject) {
         if (subject == null) return;
         UUID id = subject.getUUID();
-
         NpcAntimagicState anti = NPC_ANTIMAGIC.remove(id);
         if (anti != null) cancelOwnerVisual(anti.level, anti.ownerId, "antimagic_field");
         NpcWeatherState weather = NPC_WEATHER.remove(id);
         if (weather != null) cancelOwnerVisual(weather.level, weather.ownerId, "control_weather");
         NpcPocketState pocket = NPC_DEMIPLANE.remove(id);
         if (pocket != null) restoreNpcDemiplane(pocket);
-
         removeDominateRelated(id);
         removeFeeblemindRelated(id);
         removeMazeRelated(id);
@@ -356,11 +342,12 @@ public final class EighthCircleSpellService {
         copy.addTag("arcanecircle_npc_clone");
         level.addFreshEntityWithPassengers(copy);
         if (target != null && target.isAlive() && !caster.isAlliedTo(target)) copy.setTarget(target);
-        NPC_CLONES.put(caster.getUUID(), new NpcCloneState(level, caster.getUUID(), copy.getUUID()));
+        NPC_CLONES.put(caster.getUUID(), new NpcCloneState(level, caster.getUUID(), copy.getUUID(),
+                level.getGameTime() + NPC_CLONE_TICKS));
         return true;
     }
 
-    private static void tickNpcClones(ServerLevel level) {
+    private static void tickNpcClones(ServerLevel level, long now) {
         Iterator<Map.Entry<UUID, NpcCloneState>> iterator = NPC_CLONES.entrySet().iterator();
         while (iterator.hasNext()) {
             NpcCloneState state = iterator.next().getValue();
@@ -368,7 +355,8 @@ public final class EighthCircleSpellService {
             Entity rawOwner = level.getEntity(state.ownerId);
             Entity rawCopy = level.getEntity(state.copyId);
             if (!(rawOwner instanceof Mob owner) || !owner.isAlive() || owner.isRemoved()
-                    || !(rawCopy instanceof Mob copy) || !copy.isAlive() || copy.isRemoved()) {
+                    || !(rawCopy instanceof Mob copy) || !copy.isAlive() || copy.isRemoved()
+                    || now >= state.expiresAt) {
                 discardNpcClone(state);
                 iterator.remove();
                 continue;
@@ -483,16 +471,17 @@ public final class EighthCircleSpellService {
             if (target instanceof Mob mob) {
                 LivingEntity current = mob.getTarget();
                 if (current == owner || (current != null && owner.isAlliedTo(current))) mob.setTarget(null);
-                Mob threat = level.getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(22.0),
+                Mob threat = level.getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(28.0),
                                 candidate -> candidate != mob && candidate != owner && candidate.isAlive() && !candidate.isRemoved()
                                         && !owner.isAlliedTo(candidate))
                         .stream().min(Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
                 if (threat != null) mob.setTarget(threat);
-                else if (mob.distanceToSqr(owner) > 20.0) mob.getNavigation().moveTo(owner, 1.08);
+                else if (mob.distanceToSqr(owner) > 20.0) mob.getNavigation().moveTo(owner, 1.12);
+                mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 10, 0, true, false));
             } else if (target instanceof ServerPlayer player) {
                 suppressPlayerCasting(player);
-                player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 10, 4, true, false));
-                player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 10, 1, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 10, 6, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 10, 2, true, false));
             }
         }
     }
@@ -527,9 +516,10 @@ public final class EighthCircleSpellService {
     }
 
     private static void applyNpcFeeblemind(LivingEntity target) {
-        target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 12, 5, true, false));
-        target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 12, 4, true, false));
-        target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 12, 0, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 12, 7, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 12, 6, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 12, 2, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 12, 1, true, false));
         if (target instanceof ServerPlayer player) suppressPlayerCasting(player);
         else if (target instanceof Mob mob) WorldMagicService.stop(mob);
     }
@@ -620,6 +610,10 @@ public final class EighthCircleSpellService {
             target.noPhysics = state.oldNoPhysics;
             target.fallDistance = 0.0F;
             target.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 60, 0, true, false));
+            target.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 120, 1, true, false));
+            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 3, true, false));
+            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 3, true, false));
+            target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, true, false));
             if (target instanceof Mob mob) mob.setTarget(living(state.level, state.oldTargetId));
         }
         cancelOwnerVisual(state.level, state.ownerId, "maze");
@@ -752,124 +746,80 @@ public final class EighthCircleSpellService {
     }
 
     private static final class EarthquakeField {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final Vec3 center;
-        private final double radius;
-        private final double power;
-        private final long expiresAt;
-        private long nextPulse;
+        private final ServerLevel level; private final UUID ownerId; private final Vec3 center;
+        private final double radius, power; private final long expiresAt; private long nextPulse;
         private EarthquakeField(ServerLevel level, UUID ownerId, Vec3 center, double radius, double power,
                                 long expiresAt, long nextPulse) {
-            this.level = level; this.ownerId = ownerId; this.center = center; this.radius = radius;
-            this.power = power; this.expiresAt = expiresAt; this.nextPulse = nextPulse;
+            this.level=level; this.ownerId=ownerId; this.center=center; this.radius=radius;
+            this.power=power; this.expiresAt=expiresAt; this.nextPulse=nextPulse;
         }
     }
 
     private static final class IncendiaryCloudField {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private Vec3 center;
-        private final Vec3 drift;
-        private final double radius;
-        private final double power;
-        private final long expiresAt;
-        private long nextPulse;
+        private final ServerLevel level; private final UUID ownerId; private Vec3 center;
+        private final Vec3 drift; private final double radius, power; private final long expiresAt; private long nextPulse;
         private IncendiaryCloudField(ServerLevel level, UUID ownerId, Vec3 center, Vec3 drift, double radius,
                                      double power, long expiresAt, long nextPulse) {
-            this.level = level; this.ownerId = ownerId; this.center = center; this.drift = drift;
-            this.radius = radius; this.power = power; this.expiresAt = expiresAt; this.nextPulse = nextPulse;
+            this.level=level; this.ownerId=ownerId; this.center=center; this.drift=drift;
+            this.radius=radius; this.power=power; this.expiresAt=expiresAt; this.nextPulse=nextPulse;
         }
     }
 
     private static final class NpcWeatherState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final double radius;
-        private final double power;
-        private final long expiresAt;
-        private long nextPulse;
+        private final ServerLevel level; private final UUID ownerId; private final double radius, power;
+        private final long expiresAt; private long nextPulse;
         private NpcWeatherState(ServerLevel level, UUID ownerId, double radius, double power, long expiresAt, long nextPulse) {
-            this.level = level; this.ownerId = ownerId; this.radius = radius; this.power = power;
-            this.expiresAt = expiresAt; this.nextPulse = nextPulse;
+            this.level=level; this.ownerId=ownerId; this.radius=radius; this.power=power;
+            this.expiresAt=expiresAt; this.nextPulse=nextPulse;
         }
     }
 
     private static final class NpcAntimagicState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final double radius;
-        private final long expiresAt;
+        private final ServerLevel level; private final UUID ownerId; private final double radius; private final long expiresAt;
         private NpcAntimagicState(ServerLevel level, UUID ownerId, double radius, long expiresAt) {
-            this.level = level; this.ownerId = ownerId; this.radius = radius; this.expiresAt = expiresAt;
+            this.level=level; this.ownerId=ownerId; this.radius=radius; this.expiresAt=expiresAt;
         }
     }
 
     private static final class NpcPocketState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final long expiresAt;
-        private final boolean oldInvisible;
-        private final boolean oldInvulnerable;
-        private final boolean oldNoGravity;
-        private final boolean oldSilent;
-        private final boolean oldNoPhysics;
-        private final UUID oldTargetId;
-        private final Vec3 anchor;
+        private final ServerLevel level; private final UUID ownerId; private final long expiresAt;
+        private final boolean oldInvisible, oldInvulnerable, oldNoGravity, oldSilent, oldNoPhysics;
+        private final UUID oldTargetId; private final Vec3 anchor;
         private NpcPocketState(ServerLevel level, UUID ownerId, long expiresAt, boolean oldInvisible,
                                boolean oldInvulnerable, boolean oldNoGravity, boolean oldSilent,
                                boolean oldNoPhysics, UUID oldTargetId, Vec3 anchor) {
-            this.level = level; this.ownerId = ownerId; this.expiresAt = expiresAt; this.oldInvisible = oldInvisible;
-            this.oldInvulnerable = oldInvulnerable; this.oldNoGravity = oldNoGravity; this.oldSilent = oldSilent;
-            this.oldNoPhysics = oldNoPhysics; this.oldTargetId = oldTargetId; this.anchor = anchor;
+            this.level=level; this.ownerId=ownerId; this.expiresAt=expiresAt; this.oldInvisible=oldInvisible;
+            this.oldInvulnerable=oldInvulnerable; this.oldNoGravity=oldNoGravity; this.oldSilent=oldSilent;
+            this.oldNoPhysics=oldNoPhysics; this.oldTargetId=oldTargetId; this.anchor=anchor;
         }
     }
 
     private static final class NpcDominateState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final UUID targetId;
-        private final long expiresAt;
-        private final UUID oldTargetId;
+        private final ServerLevel level; private final UUID ownerId, targetId; private final long expiresAt; private final UUID oldTargetId;
         private NpcDominateState(ServerLevel level, UUID ownerId, UUID targetId, long expiresAt, UUID oldTargetId) {
-            this.level = level; this.ownerId = ownerId; this.targetId = targetId;
-            this.expiresAt = expiresAt; this.oldTargetId = oldTargetId;
+            this.level=level; this.ownerId=ownerId; this.targetId=targetId; this.expiresAt=expiresAt; this.oldTargetId=oldTargetId;
         }
     }
 
     private static final class NpcFeeblemindState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final UUID targetId;
-        private final long expiresAt;
+        private final ServerLevel level; private final UUID ownerId, targetId; private final long expiresAt;
         private NpcFeeblemindState(ServerLevel level, UUID ownerId, UUID targetId, long expiresAt) {
-            this.level = level; this.ownerId = ownerId; this.targetId = targetId; this.expiresAt = expiresAt;
+            this.level=level; this.ownerId=ownerId; this.targetId=targetId; this.expiresAt=expiresAt;
         }
     }
 
     private static final class NpcMazeState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final UUID targetId;
-        private final long expiresAt;
-        private final Vec3 anchor;
-        private final float yaw;
-        private final float pitch;
-        private final boolean oldInvisible;
-        private final boolean oldInvulnerable;
-        private final boolean oldNoGravity;
-        private final boolean oldSilent;
-        private final boolean oldNoPhysics;
+        private final ServerLevel level; private final UUID ownerId, targetId; private final long expiresAt; private final Vec3 anchor;
+        private final float yaw, pitch; private final boolean oldInvisible, oldInvulnerable, oldNoGravity, oldSilent, oldNoPhysics;
         private final UUID oldTargetId;
         private NpcMazeState(ServerLevel level, UUID ownerId, UUID targetId, long expiresAt, Vec3 anchor,
                              float yaw, float pitch, boolean oldInvisible, boolean oldInvulnerable,
                              boolean oldNoGravity, boolean oldSilent, boolean oldNoPhysics, UUID oldTargetId) {
-            this.level = level; this.ownerId = ownerId; this.targetId = targetId; this.expiresAt = expiresAt;
-            this.anchor = anchor; this.yaw = yaw; this.pitch = pitch; this.oldInvisible = oldInvisible;
-            this.oldInvulnerable = oldInvulnerable; this.oldNoGravity = oldNoGravity; this.oldSilent = oldSilent;
-            this.oldNoPhysics = oldNoPhysics; this.oldTargetId = oldTargetId;
+            this.level=level; this.ownerId=ownerId; this.targetId=targetId; this.expiresAt=expiresAt; this.anchor=anchor;
+            this.yaw=yaw; this.pitch=pitch; this.oldInvisible=oldInvisible; this.oldInvulnerable=oldInvulnerable;
+            this.oldNoGravity=oldNoGravity; this.oldSilent=oldSilent; this.oldNoPhysics=oldNoPhysics; this.oldTargetId=oldTargetId;
         }
     }
 
-    private record NpcCloneState(ServerLevel level, UUID ownerId, UUID copyId) {}
+    private record NpcCloneState(ServerLevel level, UUID ownerId, UUID copyId, long expiresAt) {}
 }
