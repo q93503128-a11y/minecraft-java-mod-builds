@@ -5,6 +5,7 @@ public enum ConstructionMode {
     LINE("line", "선", 10),
     WALL("wall", "벽", 30),
     FLOOR("floor", "바닥", 30),
+    CAUSEWAY("causeway", "도로/교량", 60),
     VOLUME("volume", "입체", 90);
 
     private final String id;

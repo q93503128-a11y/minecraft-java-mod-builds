@@ -41,6 +41,15 @@ public enum InfrastructureProject {
                     new Requirement(Items.REDSTONE, "레드스톤", 128),
                     new Requirement(Items.ECHO_SHARD, "메아리 조각", 32)
             )),
+    CIVIL_WORKS(
+            "civil_works", "토목 공사소", "전설 단계 · 건축 Lv.60 3폭 도로/교량 17칸 → Lv.90 33 · Lv.100 49 · 현장 숙련 65", 1,
+            List.of(
+                    new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048),
+                    new Requirement(Items.COBBLESTONE, "조약돌", 1536),
+                    new Requirement(Items.GRAVEL, "자갈", 1536),
+                    new Requirement(Items.IRON_INGOT, "철 주괴", 256),
+                    new Requirement(Items.COPPER_INGOT, "구리 주괴", 256)
+            )),
     INDUSTRIAL_WORKS(
             "industrial_works", "산업 가공소", "전설 단계 · 채굴·벌목·농사·정밀자원을 4계통 대량 생산망으로 연결", 1,
             List.of(

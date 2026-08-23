@@ -75,6 +75,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.class",
         "kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.class",
         "kr/moonseungjun/survivalascension/harvesting/IrrigationReplantService.class",
+        "kr/moonseungjun/survivalascension/construction/ConstructionMode.class",
         "kr/moonseungjun/survivalascension/construction/ConstructionProgression.class",
         "kr/moonseungjun/survivalascension/mobility/MobilityProgression.class",
         "kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class",
@@ -109,6 +110,8 @@ sha = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + ".sha256").write_text(f"{sha}  {jar.name}\n", encoding="utf-8")
 print("JAR VERIFY PASS")
 print(f"version={expected_version}")
+print("civil_works_runtime=present")
+print("protected_causeway_construction_runtime=present")
 print("physical_commissioning_runtime=present")
 print("physical_warehouse_runtime=present")
 print("outpost_fortification_runtime=present")

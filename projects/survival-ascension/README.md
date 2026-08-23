@@ -4,101 +4,75 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.41.0-alpha.1 — Civil Works Causeways / 토목 공사소·도로 교량 시공
+0.41 moves back from combat escalation to the core loop: large gathering and physical storage now feed a large engineering sink that leaves useful infrastructure in the world.
+
+### Civil Works project
+New Stage1 infrastructure project `CIVIL_WORKS / 토목 공사소`:
+- Stone Bricks `2048`
+- Cobblestone `1536`
+- Gravel `1536`
+- Iron Ingots `256`
+- Copper Ingots `256`
+
+Funding uses the retained 0.34 resolver: player inventory first, then nearest usable physical logistics Barrels. No virtual warehouse or remote universal payment is added.
+
+The finalizable funding call also reuses the 0.36 physical commissioning contract. Within4 of the player there must be an owned registered Barrel, and inside radius6 of that anchor the loaded world must contain:
+- Stone Bricks48
+- Scaffolding16
+- Iron Blocks4
+- Stonecutters2
+- Crafting Table1
+
+The site is checked before the final material call consumes anything. As with existing commissioning sites, this is one-time proof of a real yard; dismantling it later does not disable the completed project.
+
+### Road / bridge construction mode
+After Civil Works is complete, Construction Lv60 unlocks `도로/교량` in the existing Construction radial.
+
+Place the first ordinary BlockItem while the mode is selected. The same block is then queued forward in the player's horizontal look direction as a flat three-wide deck:
+- Lv60: `3 × 17`
+- Lv90: `3 × 33`
+- Lv100: `3 × 49`
+- Lv100 + all nine expedition regions / Field Mastery: `3 × 65`
+
+The mode is deliberately forward-only instead of centering around the first block, so repeated placements naturally extend roads, raised causeways and bridges across real terrain. It does not auto-level terrain, delete obstacles, create supports from nowhere or choose another block palette.
+
+### Existing Construction engine only
+0.41 does not add a second builder engine. Causeway targets enter the same `ConstructionProgression` queue and retain:
+- global budget64 placed attempts/tick;
+- player-local budget8/tick;
+- max512 queued blocks/player;
+- player inventory + usable real physical logistics material consumption;
+- `level.mayInteract` protection;
+- NeoForge `EventHooks.onBlockPlace`;
+- block survival/replacement checks;
+- Shift precision override.
+
+0.41 also makes bulk placement explicitly loaded-only with `level.hasChunkAt(target)` before block-state/protection work. Unloaded road segments are skipped; no `getChunk`, ticket or force-load is used.
+
+### External reference boundary
+The causeway work extends the already-noticed Building Gadgets 2 MIT design/code-study boundary: material-backed bulk placement, protection checks and tick-distributed work. Survival Ascension's Civil Works funding, physical commissioning yard, three-wide forward geometry and field-logistics integration are its own code. No Building Gadgets assets, item models, GUI assets, templates or namespaces are bundled.
+
 ## 0.40.0-alpha.1 — Physical Siege Breachers / 물리 공성 파괴자
 0.39 made a player-built wall matter through collision and pathing. 0.40 lets the unique final bastion wave answer that infrastructure physically instead of merely receiving more health or damage.
 
-### Bastion-only wall breaking
-Only siege mobs tagged as wave `4` are eligible, which makes this behavior exclusive to the four-wave Bastion encounter. Normal three-wave Outpost Defense does not gain block destruction.
+Only siege mobs tagged as wave4 are eligible, so normal three-wave Outpost Defense does not gain block destruction. Ravagers may break one eligible fortification at most every30 ticks and Vindicators every60 ticks. They target only vanilla `WALLS`, Iron Bars or Nether Brick Fence inside the physical fortification annulus radius6..12 and generally forward toward the anchor.
 
-Eligible breakers:
-- Ravager: one successful fortification break per `30` ticks at most;
-- Vindicator: one successful fortification break per `60` ticks at most.
-
-They search only a tiny local area around themselves while approaching the outpost and may destroy only the same blocks that qualify as physical fortification:
-- vanilla `WALLS` tag blocks;
-- Iron Bars;
-- Nether Brick Fence;
-- only while the block lies inside the outpost fortification annulus radius `6..12`.
-
-The target must also be in front of the attacker toward the outpost anchor. This prevents the system from chewing arbitrary scenery behind the wave.
-
-### Protection and world-safety contract
-A break is allowed only if all of the following remain true:
-- the owning player still has an active defense runtime;
-- the attacker carries the matching siege-owner tag and bastion-only wave4 tag;
-- the outpost is same-dimension, owner-within64 and still physically operational;
-- the candidate position is already loaded;
-- `EventHooks.canEntityGrief(level, mob)` allows mob griefing;
-- the owning player's `level.mayInteract(owner, pos)` protection gate allows interaction;
-- the block itself allows entity destruction;
-- NeoForge `EventHooks.onEntityDestroyBlock` is not canceled;
-- the target has no block entity.
-
-Destroyed fortification uses ordinary `destroyBlock(..., true, mob)` drops, so the wall material falls into the world and can be picked up and rebuilt with the existing Construction system. Barrels, beds, crafting/furnace blocks and arbitrary terrain are never selected by this breacher service.
-
-No new SavedData, packet, client coordinate, custom block, custom item, chunk ticket, `getChunk` or force-load is added.
-
-### Why this exists
-The final bastion wave now creates a real physical failure mode: a wall that stops pathing can be opened by heavy/sapper attackers, after which the existing radius6 breach-pressure objective becomes much harder to hold. Construction mastery therefore matters both before and during defense without adding a generic armor percentage or second auto-builder.
+Every break still requires loaded terrain, `EventHooks.canEntityGrief`, owner `mayInteract`, block entity-destroy permission and `EventHooks.onEntityDestroyBlock`. Destroyed fortification drops normally for physical repair. No arbitrary terrain/storage/anchor destruction or force-load is added.
 
 ## 0.39.0-alpha.1 — Physical Bastion Defense / 물리 요새 방어
-0.38 made the outpost itself worth defending. 0.39 makes the player's large construction scale matter inside that defense loop without adding a second auto-builder or a passive flat armor percentage.
+A distributed wall ring around an active outpost admits the optional four-wave Bastion defense. The server scans radius6..12, Y-3..+4 and requires at least12 fortified x/z columns in each NE/NW/SE/SW quadrant. Valid materials are `WALLS`, Iron Bars and Nether Brick Fence. Same-column vertical stacking counts once.
 
-Use `M -> Infrastructure -> 산업 가공소 -> 요새 방어전` while within4 blocks of an active owned outpost anchor.
-
-### Physical fortification rule
-The server scans the already-loaded world around the actual outpost anchor:
-- horizontal annulus radius `6..12`;
-- vertical allowance anchor Y `-3..+4`;
-- accepted defensive material: blocks in the vanilla `WALLS` tag, Iron Bars, or Nether Brick Fence;
-- the annulus is split into NE / NW / SE / SW quadrants;
-- each quadrant requires at least `12` fortified x/z columns;
-- total practical minimum is `48` columns;
-- multiple wall blocks stacked in the same x/z column count only once.
-
-This prevents one tall pile in a corner from satisfying the structure. The wall is not converted into virtual durability and the mod gives no passive damage reduction. Its real collision and mob path obstruction are the defense benefit.
-
-The structure is not saved as a new claim. Removing the wall simply means the next validation fails.
-
-### Bastion defense
-A valid physical fortification ring admits a harder optional siege:
-- field-supply cost `2`;
-- `4` authored waves;
-- total deadline `6000` ticks / 5 minutes;
-- same 3-second regroup window;
-- same owner radius64 and real Barrel + Bed + Campfire + Crafting Table + Furnace-family outpost requirement;
-- same breach radius6 / breach limit200;
-- fortification quadrants are revalidated between waves;
-- failure does not refund the two supply charges.
-
-Normal 0.38 defense remains unchanged at supply1 / 3 waves / 4 minutes.
-
-### Difficulty without blanket HP inflation
-Bastion waves increase pressure through more simultaneous ranged/melee/disruption/heavy roles and additional Ravagers at the final wave. No bastion-only `MAX_HEALTH`, `ATTACK_DAMAGE`, armor or generic damage-reduction multiplier is added.
-
-### Rewards
-Stage1 bastion completion: Combat mastery XP650 + Construction mastery XP250 + Diamond4 + Amethyst32 + Echo6 + vanilla XP220.
-
-Stage2 bastion completion: Combat mastery XP900 + Construction mastery XP350 + Diamond6 + Echo10 + Dragon Breath4 + Netherite Scrap1 + vanilla XP320.
-
-Nearby surviving allies inside48 receive vanilla XP70. These are encounter rewards, not permanent flat character multipliers.
-
-### Runtime boundaries
-- uses the existing Industrial Works action payload; no protocol bump;
-- no new SavedData ID or fortification flag;
-- no automatic construction or block replacement;
-- no client coordinate trust;
-- no chunk ticket / `getChunk` / force-load;
-- normal 0.38 encounter overlap and Field Recovery exclusions remain shared by both defense modes.
+Bastion costs supply2, lasts6000 ticks, revalidates the physical ring between waves and retains breach radius6/limit200. Normal Outpost Defense remains supply1/3 waves/4800 ticks. Difficulty is composition-driven rather than a bastion-only blanket HP/attack multiplier.
 
 ## 0.38.0-alpha.1 — Defendable Physical Outposts / 전초 방어전
-Active real outposts can host a three-wave defense. Siege mobs advance toward the real anchor; enemies inside6 generate breach pressure and200 fails the defense. The owner must remain within64 and keep the actual outpost structure operational. Stage scaling changes mob composition rather than adding a siege-only blanket HP multiplier.
+Active real outposts can host a three-wave defense. Siege mobs advance toward the real anchor; enemies inside6 generate breach pressure and200 fails the defense. The owner must remain within64 and keep the actual outpost structure operational.
 
 ## 0.37.0-alpha.1 — Physical Warehouse Clusters / 물리 창고군
-Each registered depot Barrel remains an anchor and may explicitly link up to8 additional real Barrels inside radius6. `field_depots_v1` is retained with optional `warehouse_links`; unloaded satellites are skipped/preserved and loaded-invalid links prune individually.
+Each registered Barrel remains an anchor and may explicitly link up to8 additional real Barrels inside radius6. `field_depots_v1` keeps optional `warehouse_links`; unloaded satellites are skipped/preserved and loaded-invalid links prune individually.
 
 ## 0.36.0-alpha.1 — Physical Commissioning Sites / 물리 준공 현장
-Industrial Works, Apex Tracking Post and Ascension Nexus require a real bounded commissioning site before a finalizable funding call can cross completion. Existing completed worlds remain compatible.
+Industrial Works, Apex Tracking Post and Ascension Nexus require a real bounded commissioning site before a finalizable funding call can cross completion. 0.41 extends this existing engine to Civil Works. Existing completed projects remain compatible.
 
 ## Retained field loop
 - 0.34 Integrated Logistics Backbone: stationary sinks consume inventory first, then nearest usable real logistics Barrels.
@@ -116,10 +90,10 @@ After Lv100 + all nine expedition regions:
 - Woodcutting 448 logs
 - Harvest 13×13
 - Combat shockwave 7.5 radius / 20 targets
-- Construction line65 / plane13×13
+- Construction line65 / plane13×13 / road-bridge deck3×65
 - Mobility air dash4
 
 Large work remains tick-budgeted and uses normal protection/material paths. Shift remains the precision override.
 
 ## External references
-0.40 keeps the existing permissive-code/reference-only policy in `THIRD_PARTY_NOTICES.md`. The new breacher implementation is independent Survival Ascension code and does not bundle another mod's source, assets, AI goals or configuration data.
+Permissive-code and reference-only boundaries are documented in `THIRD_PARTY_NOTICES.md`. 0.41 adds no third-party assets or dependency and keeps Building Gadgets 2 under its existing MIT notice.

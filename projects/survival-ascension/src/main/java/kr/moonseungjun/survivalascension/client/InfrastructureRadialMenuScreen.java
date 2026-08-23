@@ -26,6 +26,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
             new Entry("관개 시설", "구리512 · 철128 · 레드스톤128 · 유리128 · 슬라임32", new ItemStack(Items.WATER_BUCKET), InfrastructureProject.IRRIGATION_WORKS, Action.FUND),
             new Entry("건축 공방", "석재벽돌1024 · 철256 · 구리256 · 레드스톤128 · 흑요석64", new ItemStack(Items.SMITHING_TABLE), InfrastructureProject.BUILDER_FOUNDRY, Action.FUND),
             new Entry("전투 훈련장", "철512 · 금256 · 에메랄드128 · 레드스톤128 · 메아리32", new ItemStack(Items.IRON_SWORD), InfrastructureProject.COMBAT_ACADEMY, Action.FUND),
+            new Entry("토목 공사소", "전설 · 석재벽돌2048 + 조약돌1536 + 자갈1536 + 금속", new ItemStack(Items.SCAFFOLDING), InfrastructureProject.CIVIL_WORKS, Action.FUND),
             new Entry("산업 가공소", "전설 · 대량재료 + 마지막 실제 배럴 준공 현장", new ItemStack(Items.BLAST_FURNACE), InfrastructureProject.INDUSTRIAL_WORKS, Action.OPEN_PRODUCTION),
             new Entry("정점 추적소", "전설 · 대량재료 + 등록 배럴 기반 추적소 준공 현장", new ItemStack(Items.SPYGLASS), InfrastructureProject.APEX_TRACKING_POST, Action.FUND),
             new Entry("승천 중추", "종말 · 대량재료 + 등록 배럴 기반 중추 준공 현장", new ItemStack(Items.END_CRYSTAL), InfrastructureProject.ASCENSION_NEXUS, Action.FUND),
@@ -56,7 +57,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
         Entry entry = ENTRIES[selected];
         graphics.text(this.font, entry.title(), cx - this.font.width(entry.title()) / 2, cy - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, entry.detail(), cx - this.font.width(entry.detail()) / 2, cy + 8, 0xFFB8B8B8, false);
-        String caption = "공동 진행 · 전설/종말 최종 준공은 실제 현장까지 서버 검증";
+        String caption = "대량 자원 → 실제 준공 현장 → 월드에 남는 작업 체급";
         graphics.text(this.font, caption, cx - this.font.width(caption) / 2, cy - 102, 0xFFE0E0E0, true);
     }
 

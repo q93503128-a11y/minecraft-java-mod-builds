@@ -17,13 +17,20 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Explicit commissioning-site validation for the three large stage-1/2 infrastructure projects.
+ * Explicit commissioning-site validation for large infrastructure projects.
  * The scan only touches already-loaded blocks around a real Barrel anchor and never force-loads chunks.
  */
 public final class InfrastructureSiteService {
     public static final int ANCHOR_RADIUS = 4;
     public static final int SITE_RADIUS = 6;
 
+    private static final SiteProfile CIVIL_SITE = new SiteProfile(true, List.of(
+            new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 48),
+            new SiteRequirement(Blocks.SCAFFOLDING, "비계", 16),
+            new SiteRequirement(Blocks.IRON_BLOCK, "철 블록", 4),
+            new SiteRequirement(Blocks.STONECUTTER, "석재 절단기", 2),
+            new SiteRequirement(Blocks.CRAFTING_TABLE, "작업대", 1)
+    ));
     private static final SiteProfile INDUSTRIAL_SITE = new SiteProfile(false, List.of(
             new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 48),
             new SiteRequirement(Blocks.IRON_BLOCK, "철 블록", 4),
@@ -52,10 +59,6 @@ public final class InfrastructureSiteService {
         return profile(project) != null;
     }
 
-    /**
-     * Called only when the current funding action could finish every remaining material requirement.
-     * Failure consumes no funding material in that action.
-     */
     public static boolean validateForFinalFunding(ServerPlayer player, InfrastructureProject project) {
         SiteProfile profile = profile(project);
         if (profile == null) return true;
@@ -173,6 +176,7 @@ public final class InfrastructureSiteService {
 
     private static SiteProfile profile(InfrastructureProject project) {
         return switch (project) {
+            case CIVIL_WORKS -> CIVIL_SITE;
             case INDUSTRIAL_WORKS -> INDUSTRIAL_SITE;
             case APEX_TRACKING_POST -> APEX_SITE;
             case ASCENSION_NEXUS -> NEXUS_SITE;

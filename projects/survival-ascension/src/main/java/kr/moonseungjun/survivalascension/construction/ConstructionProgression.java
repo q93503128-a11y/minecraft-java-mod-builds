@@ -43,6 +43,7 @@ import java.util.UUID;
 public final class ConstructionProgression {
     private static final int GLOBAL_BLOCK_BUDGET_PER_TICK = 64;
     private static final int MAX_PENDING_BLOCKS_PER_PLAYER = 512;
+    private static final int CAUSEWAY_WIDTH = 3;
     private static final Map<UUID, ConstructionMode> MODES = new HashMap<>();
     private static final Map<UUID, Integer> PENDING_COUNTS = new HashMap<>();
     private static final Deque<BuildJob> JOBS = new ArrayDeque<>();
@@ -57,13 +58,21 @@ public final class ConstructionProgression {
             resolved = ConstructionMode.SINGLE;
             player.sendSystemMessage(Component.literal("§6[건축] §f입체 모드는 §eM→인프라→건축 공방§f 완공이 필요합니다."));
         }
+        if (resolved == ConstructionMode.CAUSEWAY && !InfrastructureData.get(player).isComplete(InfrastructureProject.CIVIL_WORKS)) {
+            resolved = ConstructionMode.SINGLE;
+            player.sendSystemMessage(Component.literal("§6[건축] §f도로/교량 모드는 §e월드 승천 1단계 + M→인프라→토목 공사소§f 완공이 필요합니다."));
+        }
         MODES.put(player.getUUID(), resolved);
         if (resolved != requested) {
-            if (requested != ConstructionMode.VOLUME || level < requested.requiredLevel()) {
+            if ((requested != ConstructionMode.VOLUME && requested != ConstructionMode.CAUSEWAY) || level < requested.requiredLevel()) {
                 player.sendSystemMessage(Component.literal("§6[건축] §f" + requested.koreanName() + " 모드는 Lv." + requested.requiredLevel() + "부터 사용할 수 있습니다."));
             }
         } else {
             player.sendSystemMessage(Component.literal("§6[건축] §f배치 모드: §e" + resolved.koreanName()));
+            if (resolved == ConstructionMode.CAUSEWAY) {
+                int length = ExpeditionProgression.hasFieldMastery(player) && level >= 100 ? 65 : SkillTuning.constructionLineLength(level);
+                player.sendSystemMessage(Component.literal("§7바라보는 수평 방향으로 §e3폭 × " + length + "칸§7의 실제 도로/교량 바닥을 시공합니다. Shift는 단일 배치."));
+            }
         }
     }
 
@@ -83,6 +92,7 @@ public final class ConstructionProgression {
         int level = SkillProgressData.get(player).level(player, SkillType.CONSTRUCTION);
         ConstructionMode mode = MODES.getOrDefault(uuid, ConstructionMode.SINGLE);
         if (mode == ConstructionMode.VOLUME && !InfrastructureData.get(player).isComplete(InfrastructureProject.BUILDER_FOUNDRY)) mode = ConstructionMode.SINGLE;
+        if (mode == ConstructionMode.CAUSEWAY && !InfrastructureData.get(player).isComplete(InfrastructureProject.CIVIL_WORKS)) mode = ConstructionMode.SINGLE;
         if (mode == ConstructionMode.SINGLE || mode.requiredLevel() > level) return;
 
         List<BlockPos> targets = computeTargets(player, event.getPos(), mode, level);
@@ -136,6 +146,7 @@ public final class ConstructionProgression {
     }
 
     private static PlaceResult tryPlace(ServerPlayer player, ServerLevel level, BlockState state, BlockPos target) {
+        if (!level.hasChunkAt(target)) return PlaceResult.SKIPPED;
         if (!level.mayInteract(player, target)) return PlaceResult.SKIPPED;
         if (!level.getBlockState(target).canBeReplaced()) return PlaceResult.SKIPPED;
         if (!state.canSurvive(level, target)) return PlaceResult.SKIPPED;
@@ -163,9 +174,11 @@ public final class ConstructionProgression {
 
     private static List<BlockPos> computeTargets(ServerPlayer player, BlockPos center, ConstructionMode mode, int level) {
         List<BlockPos> targets = new ArrayList<>();
-        double xLook = Math.abs(player.getLookAngle().x);
-        double zLook = Math.abs(player.getLookAngle().z);
-        boolean lookingMostlyX = xLook >= zLook;
+        double xLook = player.getLookAngle().x;
+        double zLook = player.getLookAngle().z;
+        double absXLook = Math.abs(xLook);
+        double absZLook = Math.abs(zLook);
+        boolean lookingMostlyX = absXLook >= absZLook;
         boolean fieldMastery = level >= 100 && ExpeditionProgression.hasFieldMastery(player);
 
         if (mode == ConstructionMode.LINE) {
@@ -174,6 +187,25 @@ public final class ConstructionProgression {
             for (int offset = -half; offset <= half; offset++) {
                 BlockPos pos = lookingMostlyX ? center.offset(0, 0, offset) : center.offset(offset, 0, 0);
                 if (!pos.equals(center)) targets.add(pos);
+            }
+            return targets;
+        }
+
+        if (mode == ConstructionMode.CAUSEWAY) {
+            int length = fieldMastery ? 65 : SkillTuning.constructionLineLength(level);
+            int forwardX = lookingMostlyX ? (xLook >= 0.0D ? 1 : -1) : 0;
+            int forwardZ = lookingMostlyX ? 0 : (zLook >= 0.0D ? 1 : -1);
+            int sideX = lookingMostlyX ? 0 : 1;
+            int sideZ = lookingMostlyX ? 1 : 0;
+            int halfWidth = CAUSEWAY_WIDTH / 2;
+            for (int distance = 0; distance < length; distance++) {
+                for (int lateral = -halfWidth; lateral <= halfWidth; lateral++) {
+                    BlockPos pos = center.offset(
+                            forwardX * distance + sideX * lateral,
+                            0,
+                            forwardZ * distance + sideZ * lateral);
+                    if (!pos.equals(center)) targets.add(pos);
+                }
             }
             return targets;
         }
@@ -228,10 +260,10 @@ public final class ConstructionProgression {
         int newLevel = result.newLevel();
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§6[건축 해금] §f선 배치 · 최대 5블록"));
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 3×3 · 선 배치 9블록"));
-        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 5×5 · 선 배치 17블록"));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 9×9 · 선 33블록. 건축 공방 완공 시 입체 5×5×5 추가."));
+        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§6[건축 숙련 IV] §f벽/바닥 5×5 · 선17 · 전설 단계 토목 공사소 완공 시 3폭 도로/교량17"));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 9×9 · 선/도로 33블록. 건축 공방 완공 시 입체 5×5×5 추가."));
         if (oldLevel < 100 && newLevel >= 100) {
-            String field = ExpeditionProgression.hasFieldMastery(player) ? "선 65 · 벽/바닥 13×13" : "선 49 · 벽/바닥 11×11";
+            String field = ExpeditionProgression.hasFieldMastery(player) ? "선/도로 65 · 벽/바닥 13×13" : "선/도로 49 · 벽/바닥 11×11";
             player.sendSystemMessage(Component.literal("§6[건축 숙련 VI] §f" + field + " · 건축 공방 입체 7×7×7"));
         }
     }

@@ -1,155 +1,122 @@
 # Survival Ascension
 
-- Mod version: `0.40.0-alpha.1`
+- Mod version: `0.41.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: all existing SavedData IDs remain unchanged. 0.40 adds no migration and no new persistent structure state; breacher cooldowns live only on authored siege-mob persistent NBT while the active encounter exists.
+- Existing-world compatibility: all existing SavedData IDs remain unchanged. 0.41 adds one new `InfrastructureProject` key inside the existing `infrastructure_v1` unbounded funding map; old saves simply have zero contribution for `civil_works` until funded. No migration or new SavedData ID is required.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, bases, expeditions and behavior-driven enemies must consume it again. Shift remains the precision/single-action safety override.
 
-## 0.40 Physical Siege Breachers / 물리 공성 파괴자
+## 0.41 Civil Works Causeways / 토목 공사소·도로 교량 시공
 ### Purpose
-0.39 made player-built fortification a real pathing object, but a sufficiently thick wall could still turn the hardest bastion wave into passive pathfinding abuse. 0.40 gives only the unique final Bastion wave a tightly bounded infrastructure response: heavy/sapper attackers can physically open the qualifying wall itself.
+0.38–0.40 gave physical construction a combat use. 0.41 returns to the other half of the game's identity: the huge material throughput from Mining/Woodcutting/Harvesting must be able to become persistent useful world infrastructure without adding a second blueprint/auto-builder game.
 
-This is not a global mob-griefing overhaul and does not change ordinary hostile mobs or the retained three-wave Outpost Defense.
+### Stage1 project
+`InfrastructureProject.CIVIL_WORKS` requires World Ascension Stage1 and consumes:
+- Stone Bricks2048
+- Cobblestone1536
+- Gravel1536
+- Iron256
+- Copper256
 
-### Eligibility
-`OutpostSiegeBreachService` runs only while `OutpostSiegeSystem.isActive(owner)` and only considers mobs whose existing siege NBT says:
-- matching `survivalascension_outpost_siege_owner`;
-- `survivalascension_outpost_siege_wave >= 4`.
+`InfrastructureData` remains `infrastructure_v1`; its map is keyed by project id + requirement index, so the new project is naturally absent/zero on old worlds.
 
-Because normal Outpost Defense has only three waves, the rule is Bastion-only without adding another packet or SavedData flag.
+Funding keeps the 0.34 inventory-first + nearest real logistics Barrel resolver. The project does not create a virtual stockpile.
 
-Breaker roles:
-- `EntityType.RAVAGER`: break cooldown `30` ticks;
-- `EntityType.VINDICATOR`: break cooldown `60` ticks.
+### Physical civil yard commissioning
+The finalizable Civil Works funding action reuses `InfrastructureSiteService` before any final-call project material is consumed.
 
-Other siege mobs remain ordinary combat/pathing roles.
+Required anchor:
+- an owned registered physical logistics Barrel within4.
 
-### Physical target boundary
-A breaker searches only a `2`-block horizontal / Y-1..+2 local neighborhood around itself.
+Required loaded blocks inside radius6:
+- Stone Bricks48
+- Scaffolding16
+- Iron Blocks4
+- Stonecutters2
+- Crafting Table1
 
-A candidate must:
-- be inside the same physical fortification annulus radius6..12 around an owned operational outpost;
-- be a vanilla `WALLS` tag block, Iron Bars or Nether Brick Fence;
-- contain no block entity;
-- lie generally forward from the mob toward the outpost anchor.
+The same loaded-only, `mayInteract`, real Barrel Container rules as 0.36 apply. This is one-time commissioning proof, not a permanent maintenance chore.
 
-The service does not target the Barrel anchor, Bed, Campfire, Crafting Table, Furnace-family camp, storage barrels, terrain, doors, chests or arbitrary player builds.
+### ConstructionMode.CAUSEWAY
+New construction mode:
+`CAUSEWAY("causeway", "도로/교량", 60)`.
 
-### Protection chain
-Before `destroyBlock(..., true, mob)` the server requires:
-1. same-dimension owned outpost and owner within64;
-2. `OutpostService.isRecoveryOperational` for that outpost;
-3. already-loaded candidate position only;
-4. `EventHooks.canEntityGrief(level, mob)`;
-5. `level.mayInteract(owner, pos)`;
-6. `state.canEntityDestroy(level, pos, mob)`;
-7. `EventHooks.onEntityDestroyBlock(mob, pos, state)` not canceled.
+Server gate:
+- Construction level >=60;
+- `InfrastructureProject.CIVIL_WORKS` complete.
 
-The destroyed fortification drops normally. This deliberately allows immediate manual or Construction-mastery repair instead of silently deleting invested materials.
+Client entry:
+`M -> 건축 -> 도로/교량`.
 
-### Performance / lifecycle
-- service ticks once per5 server ticks;
-- scans only players with an active defense runtime;
-- only nearby mobs within96 of that owner are considered;
-- only Ravager/Vindicator with matching wave4 siege tags enter target search;
-- each owner has max3 outposts and target search is a tiny local cube;
-- no chunk load, chunk ticket or background world scan.
+The first player-placed ordinary BlockItem supplies the deck BlockState. Target geometry is always a flat three-wide strip extending forward from that first block in the player's dominant horizontal look direction.
 
-### Gameplay effect
-The final Bastion wave now has an infrastructure-vs-counter-infrastructure loop:
-- walls initially obstruct the anchor-directed wave;
-- Ravagers/Vindicators that reach the wall can open holes;
-- holes expose the radius6 breach-pressure objective;
-- dropped blocks and existing large-scale Construction let the defender physically respond.
+Length follows the existing Construction line scale:
+- Lv60:17
+- Lv90:33
+- Lv100:49
+- Lv100 + Field Mastery:65
 
-No breacher-only health, damage, armor, player debuff or permanent stat reward is added.
+The initial row is widened around the manually placed center block, and each following row is three blocks wide. At Field Mastery the whole operation is at most194 queued targets after excluding the manually placed center, well under the existing512 pending cap.
 
-## 0.39 Physical Bastion Defense / 물리 요새 방어
-### Purpose
-0.38 proved the physical outpost itself could be a combat objective. 0.39 closes the remaining construction gap: large construction scale now creates a defensive structure that the battle actually uses, without auto-building a second structure system or awarding a permanent generic defense stat.
+### Existing queue / materials / protection
+No second construction engine exists. `CAUSEWAY` enters the same `ConstructionProgression.BuildJob` queue.
 
-### Explicit action
-`ProductionService.ACTION_BASTION_SIEGE = "bastion_siege"` reuses the existing Industrial Works action payload.
+Retained limits:
+- global64 attempts/tick;
+- local8 attempts/tick/player job rotation;
+- max512 pending targets/player.
 
-`M -> Infrastructure -> 산업 가공소 -> 요새 방어전` requires:
-- survival/non-spectator;
-- completed Industrial Works;
-- active owned outpost anchor within4;
-- no active Regional Incident / Expedition Operation / Apex Hunt / Ascension Trial;
-- valid distributed physical fortification ring;
-- two stored field-supply charges.
+Every queued target now explicitly checks `level.hasChunkAt(target)` before touching block state. It then retains:
+1. `level.mayInteract(player, target)`;
+2. replaceability;
+3. placed-state survival;
+4. real BlockItem material availability through `FieldDepotService`;
+5. NeoForge `EventHooks.onBlockPlace`;
+6. actual `setBlockAndUpdate`;
+7. consume one real item from player-first / physical logistics stock, with rollback if consumption loses a race.
 
-The first bastion wave must spawn successfully before the two supply charges are consumed.
+Unloaded, protected, blocked or invalid targets are skipped. No chunk ticket, `getChunk`, force-load, terrain deletion or free support blocks are introduced.
 
-### Physical fortification scan
-`OutpostFortificationService` defines:
-- `INNER_RADIUS = 6`
-- `OUTER_RADIUS = 12`
-- `VERTICAL_DOWN = 3`
-- `VERTICAL_UP = 4`
-- `MIN_COLUMNS_PER_QUADRANT = 12`
-- `MIN_TOTAL_COLUMNS = 48`
+### Precision / world consequence
+Shift still prevents all bulk placement for that action. Causeway does not auto-sculpt terrain; it lays a same-height deck. This intentionally creates raised roads and bridges and makes terrain preparation a physical concern instead of silently editing the world.
 
-Accepted defensive blocks:
-- any block in `BlockTags.WALLS`;
-- `Blocks.IRON_BARS`;
-- `Blocks.NETHER_BRICK_FENCE`.
+## 0.40 Physical Siege Breachers retained
+Only Bastion wave4 tagged Ravager/Vindicator can damage qualifying fortification. Ravager cooldown30, Vindicator60. Targeting remains local, annulus6..12 only, forward toward anchor, with `mobGriefing` + owner protection + block destroyability + NeoForge destroy-event checks. Normal three-wave defense is non-destructive.
 
-The annulus is split into NE/NW/SE/SW. A fortified x/z coordinate counts once even if the wall is several blocks tall, so a few tall pillars cannot inflate the requirement. Each quadrant independently needs12 columns.
-
-Scanning is server-side and already-loaded-only via `level.hasChunkAt`. There is no `getChunk`, ticket or force-load.
-
-### Why no fortification SavedData
-The player's wall itself is the truth. 0.39 stores no `fortified=true` bit and gives no passive armor percentage. If the player tears the wall down, later validation sees that immediately. This avoids stale virtual state and keeps the build visible in the world.
-
-### Bastion encounter
-`OutpostSiegeSystem` has two modes:
-- OUTPOST: retained 3 waves / 4800 ticks / supply1;
-- BASTION: 4 waves / 6000 ticks / supply2.
-
-Both retain owner64, real-outpost validation, anchor-directed attackers, engage16, breach6/200, loaded TRIGGERED spawns, common overlap exclusion and Field Recovery death exclusion.
-
-Bastion mode revalidates all four physical fortification quadrants between waves. The wall's ordinary collision/pathfinding obstruction is its real combat value; there is no bastion-only HP, attack, armor or damage-reduction modifier.
-
-### Rewards
-Stage1: Combat XP650 + Construction XP250 + Diamond4 + Amethyst32 + Echo6 + vanilla XP220.
-
-Stage2: Combat XP900 + Construction XP350 + Diamond6 + Echo10 + Dragon Breath4 + Netherite Scrap1 + vanilla XP320.
-
-Nearby surviving allies within48 gain vanilla XP70. No permanent generic combat stat is awarded.
+## 0.39 Physical Bastion Defense retained
+Physical fortification uses radius6..12, Y-3..+4 and NE/NW/SE/SW minimum12 unique x/z columns each. Bastion remains supply2 / four waves /6000 ticks, revalidating the wall between waves. No passive defense percentage.
 
 ## 0.38 Defendable Physical Outposts retained
-Normal three-wave defense remains supply1 / 4 minutes. Siege mobs advance toward the actual anchor rather than following a distant kiting player. Owner death, invalid mode/dimension, >64 distance, broken real outpost, breach pressure200 or timeout fails without refund.
+Normal three-wave defense remains supply1 /4800 ticks with owner64, anchor-directed attackers and breach radius6/limit200.
 
 ## 0.37 Physical Warehouse Clusters retained
-`field_depots_v1` keeps optional `warehouse_links`. Each anchor may link max8 real Barrels inside6, no link supply charge. Loaded interactable real Containers join the nearest-first resolver; no virtual capacity or force-load.
+`field_depots_v1` keeps max3 anchors/player, max8 satellite Barrels/anchor inside6. Real Container contents, loaded-only, no automatic pickup routing or virtual capacity.
 
-## 0.36 Physical Commissioning Sites retained
-Industrial Works / Apex Tracking Post / Ascension Nexus finalizable funding requires a real bounded commissioning site. Validation occurs before final-call material consumption; already-completed worlds remain accepted.
+## 0.36 Physical Commissioning retained
+Civil Works now joins Industrial Works / Apex Tracking Post / Ascension Nexus in the same one-time commissioning engine. Existing completed projects remain grandfathered.
 
 ## 0.35 / 0.34 logistics retained
-High-volume offload scans only main inventory9..35 and preserves hotbar/equipment. Shared sink resolution remains inventory-first then nearest usable physical Barrel. Apex/Trial admission stays player-carried.
+High-volume offload scans main inventory slots9..35. Shared stationary material sinks use inventory first, then nearest usable real anchor/warehouse Barrel. Apex/Trial admission stays player-carried.
 
 ## 0.33 / 0.32 expedition operations retained
-One active operation/player, launched at active regional outpost; cross authored range, complete two validated actions, return to exact origin. New operations receive DEEP_FRONT / FORWARD_SHIFT / HOT_EXTRACTION. Death/dimension/game-mode/deadline fails without refund.
+Active regional outpost -> supply1 -> cross range -> two real validated objectives -> exact-origin return. One complication per newly started sortie. No force-load.
 
 ## 0.31 Field Recovery retained
-One prepaid ordinary-death token at active outpost, same-dimension96. Incident/Apex/Trial/Outpost/Bastion defense deaths do not consume it. Safe return validates actual loaded outpost and standing space; no ordinary fast travel or force-load.
+One prepaid ordinary-death return within96; Incident/Apex/Trial/Outpost/Bastion deaths remain excluded.
 
 ## 0.30 Physical Outposts retained
-Owned registered Barrel + Bed + Campfire + Crafting Table + Furnace-family within5. Upgrade cost supply2 + Iron32 + Gold8 + Coal32. Active owner-nearby outpost extends logistics to64 and suppresses NATURAL hostiles within24 only; TRIGGERED encounter mobs remain valid.
+Owned registered Barrel + Bed/Campfire/Crafting/Furnace-family within5. Owner-nearby activation64, logistics64, NATURAL-hostile safety24.
 
 ## Production retained
-METALWORKS / TIMBERWORKS / PROVISIONS / PRECISION remain. A complete four-line cycle grants supply1; buffers/supply cap3. Physical dispatch remains Gold32 + Amethyst16 + Echo2 to the player.
+METALWORKS / TIMBERWORKS / PROVISIONS / PRECISION remain. One full four-line cycle grants supply1, cap3.
 
 ## Mastery / Field Mastery retained
 Lv100 base: Mining11×11+vein192, Wood384, Harvest11×11, Construction49/11×11, combat6.5/16, air dash3.
-After all nine regions: Quarry7×7×12, Wood448, Harvest13×13, Construction65/13×13, combat7.5/20, air dash4.
+After all nine regions: Quarry7×7×12, Wood448, Harvest13×13, Construction65/13×13 plus Causeway3×65, combat7.5/20, air dash4.
 
 ## External-source policy
-0.40 keeps the existing permissive-code/reference-only split. The new breacher implementation is independent Survival Ascension code; no other mod's AI goal, block-breaking source, assets or configuration are bundled.
+Building Gadgets 2 remains the permissively licensed Construction code/design reference already declared in `THIRD_PARTY_NOTICES.md`: material-backed bulk placement, protection hooks and tick-distributed work. 0.41's Civil Works project, physical yard, forward three-wide geometry and physical logistics integration are independent Survival Ascension code. No new external assets or dependency are bundled.

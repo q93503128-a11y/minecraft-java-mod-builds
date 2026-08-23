@@ -23,10 +23,11 @@ import org.joml.Matrix3x2f;
 public final class ConstructionRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
             new Entry("단일", "한 블록씩 정확하게 배치", new ItemStack(Items.BRICKS), ConstructionMode.SINGLE, false),
-            new Entry("선", "Lv.10 · 5/9/17/33블록", new ItemStack(Items.OAK_PLANKS), ConstructionMode.LINE, false),
+            new Entry("선", "Lv.10 · 5/9/17/33/49 · 현장65", new ItemStack(Items.OAK_PLANKS), ConstructionMode.LINE, false),
             new Entry("벽", "Lv.30 · 3×3 → 5×5 → 9×9", new ItemStack(Items.STONE_BRICKS), ConstructionMode.WALL, false),
             new Entry("바닥", "Lv.30 · 3×3 → 5×5 → 9×9", new ItemStack(Items.SMOOTH_STONE_SLAB), ConstructionMode.FLOOR, false),
-            new Entry("입체", "Lv.90 + 건축 공방 · 5×5×5", new ItemStack(Items.OBSIDIAN), ConstructionMode.VOLUME, false),
+            new Entry("도로/교량", "Lv.60 + 토목 공사소 · 3폭 × 17/33/49/65", new ItemStack(Items.STONE_BRICKS), ConstructionMode.CAUSEWAY, false),
+            new Entry("입체", "Lv.90 + 건축 공방 · 5×5×5 → 7×7×7", new ItemStack(Items.OBSIDIAN), ConstructionMode.VOLUME, false),
             new Entry("뒤로", "통합 메뉴로 돌아가기", new ItemStack(Items.ARROW), ConstructionMode.SINGLE, true)
     };
     private static final int ITEM_COUNT = ENTRIES.length;
@@ -57,7 +58,7 @@ public final class ConstructionRadialMenuScreen extends Screen {
         String detail = unlocked ? entry.detail() : "건축 Lv." + entry.mode().requiredLevel() + " 필요";
         graphics.text(this.font, title, cx - this.font.width(title) / 2, cy - 5, unlocked ? 0xFFFFFFFF : 0xFFFF7777, true);
         graphics.text(this.font, detail, cx - this.font.width(detail) / 2, cy + 8, 0xFFB8B8B8, false);
-        String caption = "건축 Lv." + level + " · Shift = 강제 단일";
+        String caption = "건축 Lv." + level + " · Shift = 강제 단일 · 도로/교량은 진행 방향 시공";
         graphics.text(this.font, caption, cx - this.font.width(caption) / 2, cy - 102, 0xFFE0E0E0, true);
     }
 
