@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.23.0-alpha.1
+- Added per-player `expedition_v1` SavedData with nine stage-gated vanilla-biome expedition regions: Woodland, Arid, Wetland, Highlands, Ocean, Deep, Frozen, Nether and End.
+- Stage 0 exposes five Overworld regions, Stage 1 unlocks Deep/Frozen/Nether, and Stage 2 unlocks End. Creative and spectator movement cannot claim discoveries or rewards.
+- Each region grants one-time skill XP appropriate to its terrain instead of being a disconnected checklist: Woodcutting/Construction/Harvesting/Mobility/Mining/Combat all participate.
+- Added per-player milestone rewards: four Stage-0 regions, a Stage-1 seven-region milestone requiring Deep+Nether, and a final Stage-2 nine-region completion. Persistent milestone bits prevent re-entry or multiplayer duplication.
+- Completing all nine regions at Stage 2 unlocks `Field Mastery`, a final Lv.100 physical-action scale layer rather than another flat stat multiplier.
+- Field Mastery Mining extends the Quarry Network tunnel from 7x7x10 to 7x7x12. Pending capacity rises to 640 only to hold one job; destruction remains 12 blocks/player/tick and 64 globally.
+- Field Mastery Woodcutting extends the natural-tree limit from 384 to 448 logs while preserving smart-tree foliage safety and the existing 12/player, 64/global tick drain.
+- Field Mastery Harvesting extends mature-crop harvesting from 11x11 to 13x13. Bulk harvesting was converted from synchronous area destruction to a bounded 12/player, 64/global tick-drained queue with a 384 pending cap.
+- Field Mastery Combat extends the Combat Academy sprint shockwave from 6.5 radius/16 targets to 7.5/20 while retaining the existing 55% damage fraction and 50-tick cooldown.
+- Field Mastery Construction extends line 49->65 and wall/floor 11x11->13x13. Builder Foundry volume stays 7x7x7 and retains real-material, protection-hook, 512-pending and 64-global placement contracts.
+- Field Mastery Mobility extends Stage-2 Ascension Nexus Lv.100 air dashes from three to four per airtime; landing reset and the existing dash cooldown remain unchanged.
+- `/ascension stats` now reports expedition progress and the discovered-region summary; login reports existing expedition progress without adding another generic rectangular GUI.
+- Existing Mastery VI remains the normal Lv.100 baseline. Field Mastery does not unlock actions before Lv.100 and Shift remains the precision override.
+- Studied Lootr's per-player exploration-reward fairness as a design reference. Repurposed Structures and Explorer's/Nature's Compass are reference-only for vanilla-world exploration motivation; no LGPL/CC-BY-NC-SA source or assets are bundled.
+- Extended source/JAR audits for the new SavedData, stage gates, one-time rewards, six Field Mastery action upgrades and tick-budget safety while retaining the 0.22 doctrine-trial/awakened-Mythic regressions.
+
 ## 0.22.0-alpha.1
 - Added randomized Ascension Trial tactical doctrines: `쇄도 / 추격 / 봉쇄`. Each doctrine uses different vanilla-mob role mixtures instead of replaying the same four fixed waves.
 - 쇄도 emphasizes Husk/Vindicator/Wither Skeleton/Ravager melee pressure, 추격 mixes Spider/Enderman/mobile melee pressure and actively drives distant pursuit mobs back toward the owner, and 봉쇄 emphasizes Skeleton/Stray/Pillager/Witch ranged-control pressure.
