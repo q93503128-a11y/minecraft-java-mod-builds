@@ -6,6 +6,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionServi
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementWatchtowerService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementWorkshopService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -56,6 +57,7 @@ public final class SettlementNetwork {
         String specialLock = null;
         if (type == BuildingType.WORKSHOP) specialLock = SettlementWorkshopService.lockedReason(data);
         else if (type == BuildingType.CART_STATION) specialLock = SettlementCartStationService.lockedReason(data);
+        else if (type == BuildingType.WATCHTOWER) specialLock = SettlementWatchtowerService.lockedReason(data);
         if (specialLock != null) {
             context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
                     0, 0, 0, payload.rotation(), specialLock));
