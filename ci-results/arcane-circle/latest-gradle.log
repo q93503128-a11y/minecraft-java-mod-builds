@@ -10,13 +10,13 @@ Creating Minecraft artifacts without recompilation.
 Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
 [1m*** Started working on [4mdownloadManifest[0m[0m
   ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.56s
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.47s
 [1m*** Started working on [4mdownloadJson[0m[0m
  [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadServer[0m[0m
 [1m*** Started working on [4mdownloadClient[0m[0m
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
+[1m*** Started working on [4mdownloadServer[0m[0m
  [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.04s
 [1m*** Started working on [4mpreProcessJar[0m[0m
  [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
 [1m*** Started working on [4mbinaryPatch[0m[0m
@@ -25,21 +25,26 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 2.21s
+Total runtime: 1.69s
 
 
 > Task :compileJava
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/client/FourthCircleAuthorityOverlay.java:16: error: cannot find symbol
-        double radius = FourthCircleSpellService.iceStormRadius(range);
-                                                ^
-  symbol:   method iceStormRadius(double)
-  location: class FourthCircleSpellService
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.java:165: error: no suitable method found for playSound(<null>,BlockPos,Reference<SoundEvent>,target ins[...]STILE,float,float)
+                    terror.level.playSound(null, target.blockPosition(), SoundEvents.SOUL_ESCAPE,
+                                ^
+    method Level.playSound(@org.jspecify.annotations.Nullable Entity,BlockPos,SoundEvent,SoundSource,float,float) is not applicable
+      (argument mismatch; Reference<SoundEvent> cannot be converted to SoundEvent)
+    method Level.playSound(@org.jspecify.annotations.Nullable Entity,double,double,double,SoundEvent,SoundSource) is not applicable
+      (argument mismatch; BlockPos cannot be converted to double)
+    method Level.playSound(@org.jspecify.annotations.Nullable Entity,Entity,SoundEvent,SoundSource,float,float) is not applicable
+      (argument mismatch; BlockPos cannot be converted to Entity)
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
 1 error
 
 > Task :compileJava FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787465648182.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787466013284.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/reports/problems/problems-report.html
 
@@ -48,13 +53,18 @@ FAILURE: Build failed with an exception.
 * What went wrong:
 Execution failed for task ':compileJava'.
 > Compilation failed; see the compiler output below.
+  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.java:165: error: no suitable method found for playSound(<null>,BlockPos,Reference<SoundEvent>,target ins[...]STILE,float,float)
+                      terror.level.playSound(null, target.blockPosition(), SoundEvents.SOUL_ESCAPE,
+                                  ^
+      method Level.playSound(@org.jspecify.annotations.Nullable Entity,BlockPos,SoundEvent,SoundSource,float,float) is not applicable
+        (argument mismatch; Reference<SoundEvent> cannot be converted to SoundEvent)
+      method Level.playSound(@org.jspecify.annotations.Nullable Entity,double,double,double,SoundEvent,SoundSource) is not applicable
+        (argument mismatch; BlockPos cannot be converted to double)
+      method Level.playSound(@org.jspecify.annotations.Nullable Entity,Entity,SoundEvent,SoundSource,float,float) is not applicable
+        (argument mismatch; BlockPos cannot be converted to Entity)
   Note: Recompile with -Xlint:deprecation for details.
   Note: Some input files use or override a deprecated API.
-  /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/client/FourthCircleAuthorityOverlay.java:16: error: cannot find symbol
-          double radius = FourthCircleSpellService.iceStormRadius(range);
-                                                  ^
-    symbol:   method iceStormRadius(double)
-    location: class FourthCircleSpellService
+  Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
   1 error
 
 * Try:
@@ -97,13 +107,18 @@ org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':compile
 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
 Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Compilation failed; see the compiler output below.
+/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.java:165: error: no suitable method found for playSound(<null>,BlockPos,Reference<SoundEvent>,target ins[...]STILE,float,float)
+                    terror.level.playSound(null, target.blockPosition(), SoundEvents.SOUL_ESCAPE,
+                                ^
+    method Level.playSound(@org.jspecify.annotations.Nullable Entity,BlockPos,SoundEvent,SoundSource,float,float) is not applicable
+      (argument mismatch; Reference<SoundEvent> cannot be converted to SoundEvent)
+    method Level.playSound(@org.jspecify.annotations.Nullable Entity,double,double,double,SoundEvent,SoundSource) is not applicable
+      (argument mismatch; BlockPos cannot be converted to double)
+    method Level.playSound(@org.jspecify.annotations.Nullable Entity,Entity,SoundEvent,SoundSource,float,float) is not applicable
+      (argument mismatch; BlockPos cannot be converted to Entity)
 Note: Recompile with -Xlint:deprecation for details.
 Note: Some input files use or override a deprecated API.
-/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/client/FourthCircleAuthorityOverlay.java:16: error: cannot find symbol
-        double radius = FourthCircleSpellService.iceStormRadius(range);
-                                                ^
-  symbol:   method iceStormRadius(double)
-  location: class FourthCircleSpellService
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
 1 error
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
 	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
