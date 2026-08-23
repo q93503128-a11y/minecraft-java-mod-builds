@@ -40,7 +40,8 @@ Intent is expressed physically wherever possible:
 - market sale: eligible relic in market barrel;
 - normal workshop repair: eligible damaged external weapon in service barrel;
 - advanced forging: eligible external weapon + expedition relic in advanced commission barrel;
-- construction office, cart station, watchtower and barracks operate without separate management dashboards.
+- construction office, cart station, watchtower and barracks operate without separate management dashboards;
+- Alpha.40 coast/river fishing is inferred from loaded world geography and needs no specialization menu.
 
 ## 3. Multiplayer authority
 
@@ -69,7 +70,7 @@ The saved starter stockpile position is authoritative and must not be casually d
 
 Functional settlement buildings use official blueprints. Player/vanilla buildings remain welcome visually but are not scanned or registered as functional settlement buildings.
 
-Original target remains roughly **15–20 meaningful building families**. Alpha.39 reaches **15 functional families**, but the number alone is not completion because original territory, simulation, trade and UI breadth remains unfinished.
+Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families** and Alpha.40 keeps that number while deepening territory specialization; the number alone is not completion because original territory, simulation, trade and UI breadth remains unfinished.
 
 Current families:
 
@@ -146,7 +147,7 @@ Actual time saved depends on town layout and must be evaluated in real play rath
 
 Vanilla villager trading/professions are not settlement-progression authority.
 
-Implemented role families include builder, logger, farmer, quarry worker, miner, normal workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, market merchant presentation and road-bound transport.
+Implemented role families include builder, logger, farmer, quarry worker, miner, coast/river fishing worker, normal workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, market merchant presentation and road-bound transport.
 
 Defense role separation:
 
@@ -170,7 +171,7 @@ Current soldier body is an Iron Golem proxy. Humanoid soldier visuals, external 
 
 Normal production jobs should fill automatically from appropriate settlement conditions. Loaded areas show physical movement/work. Do not force-load chunks solely to keep animations running.
 
-Construction-office and Alpha.39 advanced-forging specialists are currently building-bound service NPCs and do not inflate civilian population/housing. The normal workshop artisan remains a civilian job. A future citizen-assignment cleanup may unify this distinction, but must not accidentally double-count population or create free tier progression.
+Construction-office and Alpha.39 advanced-forging specialists are currently building-bound service NPCs and do not inflate civilian population/housing. The normal workshop artisan remains a civilian job. Alpha.40 fishing workers follow the existing outpost-production service-unit convention and likewise do not inflate civilian population. A future citizen-assignment cleanup may unify these distinctions, but must not accidentally double-count population or create free tier progression.
 
 No family/children simulation in planned scope.
 
@@ -202,6 +203,15 @@ Alpha.27 tagged road logistics remains the single authority for outpost transpor
 
 A future wagon entity may be presentation/vehicle behavior only and must not become a duplicate economy simulation.
 
+### Alpha.40 fishing-trade cargo rule
+
+- only an otherwise-general outpost may gain the current dynamic fishing overlay;
+- qualification is evaluated from already-loaded local world state: radius12, at least24 open surface-water columns and a safe dry bank;
+- fishing produces ordinary cod/salmon ItemStacks into the existing outpost stockpile;
+- because fish are food items, existing Alpha.27 logistics transports them without a new route controller;
+- `수변교역` currently means this catch participates in the existing physical outpost→road→town economy, not that emeralds or trade points are generated remotely;
+- no forced chunks or offline fishing simulation.
+
 ## 8. Roads, outposts and territory
 
 Roads/outposts are the spatial-growth layer. Progression must not become endlessly enlarging one flat central base.
@@ -226,18 +236,19 @@ Large ravine bridges, tunnels, retaining walls and monumental civil engineering 
 
 No early teleport network; roads/logistics must retain meaning.
 
-Implemented outpost specializations:
+Implemented outpost specializations / overlays:
 
 - lumber;
 - quarry;
 - mining;
-- agriculture.
+- agriculture;
+- Alpha.40 coast/river fishing-trade overlay for qualifying general outposts.
 
 Still required by original scope:
 
-- coast/river fishing/trade specialization;
 - dangerous-region military outpost;
 - better biome-aware specialization with companion worldgen;
+- richer coast/river presentation such as dedicated pier/harbor/waterborne merchant behavior if it adds value without duplicate economy authority;
 - coarse unloaded simulation that does not violate physical item authority.
 
 tier-visible public works may make established territory more readable, but only in loaded safe locations and without overwriting player work or generating farmable free blocks.
@@ -374,6 +385,21 @@ Role split is fixed:
 
 This closes the first original high-tier-crafting placement family, not every future recipe/specialized-production possibility.
 
+### Alpha.40 coast/river fishing-trade outpost
+
+- no new building family or specialization-management screen;
+- qualifying otherwise-general outposts are recognized dynamically from loaded shoreline geometry;
+- radius12 scan requires at least24 open surface-water columns and a safe dry bank;
+- one outpost-assigned fishing villager carries a visible fishing rod in the off hand;
+- worker walks to the bank, waits on a 140-tick work cadence, then produces 1–3 real cod/salmon ItemStacks only if the water remains valid/loaded;
+- catch is carried back to the existing physical outpost stockpile;
+- existing food-cargo rule and the single road-transport authority move fish to town/cart-station storage;
+- status reports loaded fishing-trade outpost count and effective recent-outpost role;
+- no remote emerald generation, abstract trade points, teleport cargo, global water scan or force-load;
+- unloading or losing a qualifying shoreline pauses the overlay rather than simulating catches.
+
+The current waterborne trade identity comes from the catch entering the established physical logistics economy. Dedicated docks, boats, water merchants and direct fish-market contracts remain later optional breadth.
+
 ## 12. UI and controls
 
 Reference hierarchy from original design remains:
@@ -394,7 +420,7 @@ Normal gameplay controls remain:
 
 Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per feature.
 
-Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.39 reports advanced commissions through existing `/frontier status`; no new crafting dashboard is added.
+Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.40 reports advanced commissions and loaded waterborne specialization through existing `/frontier status`; no new crafting/fishing dashboard is added.
 
 ## 13. Engineering rules
 
@@ -417,7 +443,7 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 14. Current playable slice after Alpha.39
+## 14. Current playable slice after Alpha.40
 
 The playable slice now includes:
 
@@ -429,13 +455,13 @@ The playable slice now includes:
 - physical construction material staging and supply runner;
 - paced loaded town production;
 - physical roads with one-block stair adaptation and bounded short-water bridges;
-- physical specialized outposts;
+- physical specialized outposts plus Alpha.40 loaded coast/river fishing-trade overlay;
 - persisted road-bound transport;
 - loaded-only remote production/logistics;
 - tier growth and safe public works;
 - external material/relic/weapon recognition;
 - physical market and normal staffed repair workshop;
-- Alpha.39 explicit rare-material advanced forging;
+- explicit rare-material advanced forging;
 - road-adjacent cart-station freight hub;
 - climbable watchtower loaded response;
 - supplied barracks regular garrison.
@@ -446,12 +472,12 @@ This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md
 
 Unless real-play regression overrides them:
 
-1. coast/river fishing and trade outpost specialization;
-2. dangerous-region military outpost specialization;
-3. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test;
-4. coarse unloaded production/logistics simulation that preserves physical-item authority;
-5. Jade provider / Xaero integration and compact building/progress/notification UX;
-6. external structure/boss discovery feeding progression more directly;
+1. dangerous-region military outpost specialization;
+2. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test;
+3. coarse unloaded production/logistics simulation that preserves physical-item authority;
+4. Jade provider / Xaero integration and compact building/progress/notification UX;
+5. external structure/boss discovery feeding progression more directly;
+6. richer coast/river presentation/trade only if it remains physical and does not duplicate road logistics;
 7. broader high-tier recipe/specialized crafting only where exploration materials justify it;
 8. humanoid/weaponized soldier presentation if it improves the Better Combat / Weapons Expanded stack;
 9. medium-terrain construction support such as explicit retaining/terrain-work intent;
@@ -468,6 +494,8 @@ Automated CI is not a substitute for Minecraft play. Test, in order:
 - construction-office runner source selection, physical carrying, office staging and builder preference;
 - road stairs/short bridge navigation;
 - road -> outpost -> specialization production -> transport -> cart station;
+- place an otherwise-general outpost near a real river/coast, verify `어업·수변교역`, visible rod/bank movement, fish stockpile deposit and road transport;
+- verify small puddles/unloaded shorelines do not create remote fishing production;
 - external dungeon/loot -> choose market sale vs normal repair vs advanced-forging commission;
 - advanced workshop external-weapon compatibility, relic/metal no-loss failure behavior and completed enchanted weapon retrieval;
 - guard post -> watchtower -> barracks response and replacement cost;
