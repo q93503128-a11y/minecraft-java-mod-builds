@@ -33,6 +33,7 @@ public final class SettlementCommands {
                         .then(Commands.literal("construction_office").executes(c -> build(c, BuildingType.CONSTRUCTION_OFFICE)))
                         .then(Commands.literal("blacksmith").executes(c -> build(c, BuildingType.BLACKSMITH)))
                         .then(Commands.literal("workshop").executes(c -> build(c, BuildingType.WORKSHOP)))
+                        .then(Commands.literal("advanced_workshop").executes(c -> build(c, BuildingType.ADVANCED_WORKSHOP)))
                         .then(Commands.literal("guard_post").executes(c -> build(c, BuildingType.GUARD_POST)))
                         .then(Commands.literal("watchtower").executes(c -> build(c, BuildingType.WATCHTOWER)))
                         .then(Commands.literal("barracks").executes(c -> build(c, BuildingType.BARRACKS)))
@@ -53,6 +54,7 @@ public final class SettlementCommands {
         if(data.outpostConstruction().active()){player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 건물을 시작해 주세요."));return 0;}
         String locked;
         if(type==BuildingType.WORKSHOP) locked=SettlementWorkshopService.lockedReason(data);
+        else if(type==BuildingType.ADVANCED_WORKSHOP) locked=SettlementAdvancedWorkshopService.lockedReason(data);
         else if(type==BuildingType.CART_STATION) locked=SettlementCartStationService.lockedReason(data);
         else if(type==BuildingType.WATCHTOWER) locked=SettlementWatchtowerService.lockedReason(data);
         else if(type==BuildingType.BARRACKS) locked=SettlementBarracksService.lockedReason(data);
@@ -72,8 +74,9 @@ public final class SettlementCommands {
         SettlementResources r=data.resources();
         player.sendSystemMessage(Component.literal("마을 단계 | "+SettlementTier.current(data).displayName()));
         player.sendSystemMessage(Component.literal("마을 자원 | 목재 "+r.wood()+" | 석재 "+r.stone()+" | 금속 "+r.metal()+" | 식량 "+r.food()+" | 인구 "+data.population()+" | 주거 "+data.housingCapacity()));
-        player.sendSystemMessage(Component.literal("인프라 | 주택 "+data.houseCount()+" | 벌목소 "+data.lumberCampCount()+" | 농장 "+data.buildingCount(BuildingType.FARM)+" | 채석장 "+data.buildingCount(BuildingType.QUARRY)+" | 광산 "+data.buildingCount(BuildingType.MINE)+" | 창고 "+data.buildingCount(BuildingType.WAREHOUSE)+" | 건설소 "+data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)+" | 대장간 "+data.buildingCount(BuildingType.BLACKSMITH)+" | 작업장 "+data.buildingCount(BuildingType.WORKSHOP)+" | 경비초소 "+data.buildingCount(BuildingType.GUARD_POST)+" | 감시탑 "+data.buildingCount(BuildingType.WATCHTOWER)+" | 병영 "+data.buildingCount(BuildingType.BARRACKS)+" | 시장 "+data.buildingCount(BuildingType.MARKET)+" | 수레 정거장 "+data.buildingCount(BuildingType.CART_STATION)+" | 도로 "+data.roads().size()+" | 전초기지 "+data.outposts().size()));
+        player.sendSystemMessage(Component.literal("인프라 | 주택 "+data.houseCount()+" | 벌목소 "+data.lumberCampCount()+" | 농장 "+data.buildingCount(BuildingType.FARM)+" | 채석장 "+data.buildingCount(BuildingType.QUARRY)+" | 광산 "+data.buildingCount(BuildingType.MINE)+" | 창고 "+data.buildingCount(BuildingType.WAREHOUSE)+" | 건설소 "+data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)+" | 대장간 "+data.buildingCount(BuildingType.BLACKSMITH)+" | 작업장 "+data.buildingCount(BuildingType.WORKSHOP)+" | 고급 제작소 "+data.buildingCount(BuildingType.ADVANCED_WORKSHOP)+" | 경비초소 "+data.buildingCount(BuildingType.GUARD_POST)+" | 감시탑 "+data.buildingCount(BuildingType.WATCHTOWER)+" | 병영 "+data.buildingCount(BuildingType.BARRACKS)+" | 시장 "+data.buildingCount(BuildingType.MARKET)+" | 수레 정거장 "+data.buildingCount(BuildingType.CART_STATION)+" | 도로 "+data.roads().size()+" | 전초기지 "+data.outposts().size()));
         if(data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)>0){SettlementConstructionOfficeService.SupplySnapshot supply=SettlementConstructionOfficeService.snapshot(server.overworld(),data);player.sendSystemMessage(Component.literal("건설 보급 | 집결 목재 "+supply.wood()+" | 석재 "+supply.stone()+" | 보급 주민 "+supply.runners()));}
+        if(data.buildingCount(BuildingType.ADVANCED_WORKSHOP)>0){player.sendSystemMessage(Component.literal("고급 제작 | 준비 의뢰 "+SettlementAdvancedWorkshopService.readyCommissionCount(server.overworld(),data)+" | 1회 유물 "+SettlementAdvancedWorkshopService.RELIC_COST+" + 금속 "+SettlementAdvancedWorkshopService.METAL_COST+" | 강화력 "+SettlementAdvancedWorkshopService.ENCHANTMENT_POWER));}
         if(SettlementBarracksService.militaryStateLoaded(server.overworld(),data)) player.sendSystemMessage(Component.literal("군사 | 주둔병 "+SettlementBarracksService.loadedSoldierCount(server.overworld(),data)+" / "+SettlementBarracksService.militaryCapacity(data)+" | 충원비 1명당 식량 "+SettlementBarracksService.RECRUIT_FOOD_COST+" 금속 "+SettlementBarracksService.RECRUIT_METAL_COST));
         else player.sendSystemMessage(Component.literal("군사 | 병영 주변 청크가 로드되면 주둔병 상태를 확인합니다."));
         player.sendSystemMessage(Component.literal("물류 | 운송 1회 적재 "+SettlementOutpostLogisticsService.transportBatchSize(data)+" | 수레 정거장 화물 배럴 "+(data.buildingCount(BuildingType.CART_STATION)*4)));
