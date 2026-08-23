@@ -8,445 +8,422 @@ import net.minecraft.world.phys.Vec3;
 import java.util.List;
 
 /**
- * High-circle prestige layer. The alpha.64 pass preserves the accepted silhouettes from alpha.62
- * but makes giant arrays information-dense: multiple border bands, rune belts, chords, satellite
- * seals and radial bindings grow with occupied space instead of stretching one empty circle.
+ * Alpha.65 ninth-circle individual prestige layer.
+ *
+ * IMPORTANT: this class deliberately has no generic high-circle scaffold, no shared grand-array
+ * appearance and no default magic-circle fallback. Every rendered spell below owns a separately
+ * authored spatial grammar. Seventh/eighth-circle presentation remains in their existing authored
+ * timeline/cinematic layers instead of receiving a common ornament pass.
  */
 final class HighCirclePrestigeOverlay {
+    private static final int CHARGE_BUDGET = 2200;
+    private static final int RELEASE_BUDGET = 2400;
+
     private HighCirclePrestigeOverlay() {}
 
     static ArcaneWorldMesh charge(SpellDefinition spell, Vec3 direction, Vec3 target, double range,
                                   double progress, long startedAtNanos, long seed) {
-        ArcaneWorldMesh.Builder m = ArcaneWorldMesh.detailBuilder(2200);
-        if (spell == null || spell.circle() < 7) return m.build();
+        ArcaneWorldMesh.Builder m = ArcaneWorldMesh.detailBuilder(CHARGE_BUDGET);
+        if (spell == null || spell.circle() != 9) return m.build();
         double p = clamp(progress, 0.0, 1.0);
         double t = Math.max(0.0, (System.nanoTime() - startedAtNanos) / 1_000_000_000.0);
         switch (spell.id()) {
-            case "meteor_swarm" -> meteorCrown(m, target, range, p, t, seed, false);
-            case "power_word_kill" -> executionLaw(m, target, direction, p, t, 9);
-            case "finger_of_death" -> executionLaw(m, target, direction, p, t, 7);
-            case "fire_storm" -> fireStormDominion(m, target, p, t);
-            case "reverse_gravity" -> gravityCathedral(m, target, p, t);
-            case "plane_shift" -> planarTransit(m, direction, target, p, t);
-            case "forcecage" -> forceCitadel(m, target, direction, p, t);
-            case "prismatic_spray" -> prismaticFan(m, direction, p, t);
-            case "time_stop" -> temporalLaw(m, range, p, t);
-            case "wish" -> realityRewrite(m, p, t);
-            case "gate" -> worldGate(m, direction, target, p, t);
-            case "world_sunder" -> worldAxis(m, direction, target, range, p, t);
-            case "earthquake" -> regionalFault(m, target, range, p, t);
-            case "sunburst" -> solarJudgment(m, target, p, t);
-            case "control_weather" -> weatherThrone(m, target, range, p, t);
-            case "prismatic_wall" -> prismAuthority(m, direction, target, range, p, t);
-            default -> tierScaffold(m, spell, direction, target, range, p, t);
+            case "meteor_swarm" -> meteorArtillery(m, target, range, p, t, seed, false);
+            case "power_word_kill" -> executionJudgment(m, target, direction, p, t, false);
+            case "prismatic_wall" -> sevenLawWall(m, direction, target, range, p, t, false);
+            case "shapechange" -> mythicBody(m, direction, p, t, false);
+            case "time_stop" -> frozenClockwork(m, range, p, t, false);
+            case "true_polymorph" -> morphBlueprint(m, direction, target, p, t, false);
+            case "weird" -> nightmareVerdict(m, target, range, p, t, false);
+            case "wish" -> realityManuscript(m, direction, p, t, false);
+            case "gate" -> pairedWorldDoor(m, direction, target, p, t, false);
+            case "foresight" -> causalityFan(m, direction, p, t, false);
+            default -> { }
         }
         return m.build();
     }
 
     static ArcaneWorldMesh release(SpellDefinition spell, Vec3 direction, Vec3 target, double range,
                                    double elapsedSeconds, double durationSeconds, long seed) {
-        ArcaneWorldMesh.Builder m = ArcaneWorldMesh.detailBuilder(2000);
-        if (spell == null || spell.circle() < 7) return m.build();
+        ArcaneWorldMesh.Builder m = ArcaneWorldMesh.detailBuilder(RELEASE_BUDGET);
+        if (spell == null || spell.circle() != 9) return m.build();
         double t = Math.max(0.0, elapsedSeconds);
-        double life = spell.circle() == 7 ? 2.0 : spell.circle() == 8 ? 2.8 : 4.6;
-        double early = clamp(1.0 - t / life, 0.0, 1.0);
-        if (early <= 0.0 && spell.circle() < 9) return m.build();
+        double life = Math.max(.05, durationSeconds);
+        double p = clamp(1.0 - t / life, 0.0, 1.0);
         switch (spell.id()) {
-            case "meteor_swarm" -> meteorCrown(m, target, range, 1.0, t, seed, true);
-            case "power_word_kill" -> executionLaw(m, target, direction, Math.max(.18, early), t, 9);
-            case "finger_of_death" -> executionLaw(m, target, direction, Math.max(.12, early), t, 7);
-            case "fire_storm" -> fireStormDominion(m, target, Math.max(.20, early), t);
-            case "reverse_gravity" -> gravityCathedral(m, target, 1.0, t);
-            case "plane_shift" -> planarTransit(m, direction, target, Math.max(.18, early), t);
-            case "forcecage" -> forceCitadel(m, target, direction, 1.0, t);
-            case "prismatic_spray" -> prismaticFan(m, direction, Math.max(.18, early), t);
-            case "time_stop" -> temporalLaw(m, range, 1.0, t);
-            case "wish" -> realityRewrite(m, Math.max(.15, early), t);
-            case "gate" -> worldGate(m, direction, target, 1.0, t);
-            case "world_sunder" -> worldAxis(m, direction, target, range, Math.max(.20, early), t);
-            case "earthquake" -> regionalFault(m, target, range, Math.max(.20, early), t);
-            case "sunburst" -> solarJudgment(m, target, Math.max(.15, early), t);
-            case "control_weather" -> weatherThrone(m, target, range, 1.0, t);
-            case "prismatic_wall" -> prismAuthority(m, direction, target, range, 1.0, t);
-            default -> tierScaffold(m, spell, direction, target, range, Math.max(.12, early), t);
+            case "meteor_swarm" -> meteorArtillery(m, target, range, 1.0, t, seed, true);
+            case "power_word_kill" -> executionJudgment(m, target, direction, Math.max(.08, p), t, true);
+            case "prismatic_wall" -> sevenLawWall(m, direction, target, range, 1.0, t, true);
+            case "shapechange" -> mythicBody(m, direction, 1.0, t, true);
+            case "time_stop" -> frozenClockwork(m, range, 1.0, t, true);
+            case "true_polymorph" -> morphBlueprint(m, direction, target, Math.max(.12, p), t, true);
+            case "weird" -> nightmareVerdict(m, target, range, 1.0, t, true);
+            case "wish" -> realityManuscript(m, direction, Math.max(.10, p), t, true);
+            case "gate" -> pairedWorldDoor(m, direction, target, 1.0, t, true);
+            case "foresight" -> causalityFan(m, direction, 1.0, t, true);
+            default -> { }
         }
         return m.build();
     }
 
-    private static void tierScaffold(ArcaneWorldMesh.Builder m, SpellDefinition spell, Vec3 direction,
-                                     Vec3 target, double range, double p, double t) {
-        Vec3 anchor = targetAnchor(spell) ? target : Vec3.ZERO;
-        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
-        int c = spell.circle();
-        double r = switch (c) {
-            case 7 -> 4.2 + Math.min(2.6, range * .040);
-            case 8 -> 7.2 + Math.min(4.0, range * .050);
-            default -> 11.2 + Math.min(5.8, range * .055);
-        };
-        m.brokenBand(g, anchor, r * .80, r, 66 + c * 5, c, 1.14F, (float)(.18 + .17 * p));
-        m.polygon(g, anchor, r * .69, c, t * (c == 9 ? .008 : .018), c == 9 ? .94F : .76F);
-        m.runeRing(g, anchor, r * .90, c == 7 ? 10 : c == 8 ? 14 : 18,
-                .18 + .025 * (c - 7), spell.id().hashCode(), -t * .010, .48F);
-        denseGrandArray(m, g, anchor, r, c, spell.id().hashCode(), t, (float)(.18 + .12 * p));
-        double tower = c == 7 ? 2.8 : c == 8 ? 5.2 : 8.2;
-        int pillars = c;
-        for (int i = 0; i < pillars; i++) {
-            double a = i * Math.PI * 2.0 / pillars;
-            Vec3 foot = anchor.add(g.point(a, r * .72));
-            m.line(foot, foot.add(0, tower + .45 * (i % 3), 0), i % 3 == 0 ? 1.02F : .36F);
-        }
-        Vec3 hub = anchor.add(0, tower * .58, 0);
-        m.circle(f, hub, r * (c == 9 ? .36 : .28), 38 + c * 3, .48F);
-        if (c == 9) m.line(anchor, anchor.add(0, tower + 2.0, 0), 1.20F);
-    }
-
-    private static void denseGrandArray(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis basis, Vec3 center,
-                                        double radius, int tier, int seed, double rotation, float alpha) {
-        if (radius < 5.0) return;
-        int runes = Math.max(tier * 3, Math.min(72, (int)Math.round(radius * 1.15)));
-        int spokes = tier >= 9 ? 18 : tier >= 8 ? 16 : 14;
-        m.brokenBand(basis, center, radius * .91, radius * .955, 96 + tier * 8, tier, 1.06F, alpha * .66F);
-        m.brokenBand(basis, center, radius * .74, radius * .785, 84 + tier * 6, tier - 1, .88F, alpha * .48F);
-        m.brokenBand(basis, center, radius * .57, radius * .615, 72 + tier * 5, tier - 2, .78F, alpha * .38F);
-        m.runeRing(basis, center, radius * .972, runes, Math.max(.16, radius * .012),
-                seed ^ 0x51A71, -rotation * .70, .38F);
-        m.runeRing(basis, center, radius * .805, Math.max(tier * 2, runes / 2),
-                Math.max(.13, radius * .009), seed ^ 0x19C3D, rotation * .46, .28F);
-        m.runeChords(basis, center, radius * .52, tier * 2, Math.max(3, tier - 2), rotation * .31, .24F);
-        for (int i = 0; i < spokes; i++) {
-            double a = rotation * .12 + i * Math.PI * 2.0 / spokes;
-            Vec3 inner = center.add(basis.point(a, radius * .18));
-            Vec3 outer = center.add(basis.point(a + ((i & 1) == 0 ? .018 : -.018), radius * .88));
-            m.line(inner, outer, i % tier == 0 ? .72F : .22F, 1.0F, alpha * .86F);
-            if (i % 3 == 0) {
-                Vec3 node = center.add(basis.point(a, radius * .68));
-                double nodeRadius = Math.max(.28, Math.min(1.35, radius * .035));
-                m.circle(basis, node, nodeRadius, 18, .34F);
-                m.diamond(basis, node, nodeRadius * .58, a, 1.08F, alpha * .64F);
-            }
-        }
-    }
-
-    private static void meteorCrown(ArcaneWorldMesh.Builder m, Vec3 target, double range,
-                                    double p, double t, long seed, boolean release) {
+    /** Meteor: a celestial artillery map — constellation ports and trajectories, not a generic circle. */
+    private static void meteorArtillery(ArcaneWorldMesh.Builder m, Vec3 groundOffset, double range,
+                                        double p, double t, long seed, boolean release) {
         ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
         double field = NinthCircleMagnitude.meteorFieldRadius(range);
-        double crownRadius = NinthCircleMagnitude.cityfallCrownRadius(range);
-        Vec3 ground = target.add(0, .06, 0);
-        Vec3 sky = target.add(0, NinthCircleMagnitude.cityfallSkyHeight(range), 0);
-        double fade = release ? clamp(1.0 - t / 7.5, .10, 1.0) : Math.max(.14, p);
-        m.brokenBand(g, ground, field * .965, field, 180, 11, 1.18F, (float)(.15 * fade));
-        m.brokenBand(g, ground, field * .865, field * .90, 162, 9, .88F, (float)(.10 * fade));
-        m.runeRing(g, ground, field * .982, Math.min(72, Math.max(36, (int)Math.round(field * .46))),
-                Math.max(.45, field * .008), 0xC17F411, -t * .0025, .34F);
-        m.brokenBand(g, sky, crownRadius * .86, crownRadius, 168, 9, 1.22F, (float)(.23 * fade));
-        m.star(g, sky, crownRadius * .78, crownRadius * .36, 9, t * .004, 1.10F);
-        m.circle(g, sky, crownRadius * .58, 96, .56F);
-        denseGrandArray(m, g, sky, crownRadius, 9, 0x4D37E0, t, (float)(.24 * fade));
+        double skyY = Math.min(26.0, 12.0 + field * .08);
+        Vec3 skyHub = new Vec3(0, skyY, 0);
+        Vec3 ground = groundOffset;
+        double mapRadius = Math.min(42.0, field * .34);
         List<MeteorBarragePattern.Strike> strikes = MeteorBarragePattern.strikes(seed, range);
         int ordinary = Math.max(1, strikes.size() - 1);
-        int visible = release ? ordinary : Math.max(7, Math.min(ordinary, (int)Math.ceil(ordinary * (.12 + .88 * p))));
-        int stride = visible >= ordinary ? 1 : Math.max(1, ordinary / visible);
+        int visible = release ? ordinary : Math.max(6, (int) Math.ceil(ordinary * (.10 + .90 * p)));
+        int stride = Math.max(1, ordinary / Math.max(1, visible));
+
+        // Three offset nine-point constellations identify this as a targeting observatory, not a seal.
+        for (int arm = 0; arm < 3; arm++) {
+            double rot = arm * Math.PI * 2.0 / 3.0 + (arm == 1 ? .18 : -.08);
+            double outer = mapRadius * (1.0 - arm * .12);
+            for (int i = 0; i < 9; i++) {
+                double a = rot + i * Math.PI * 2.0 / 9.0;
+                Vec3 node = skyHub.add(g.point(a, outer));
+                Vec3 next = skyHub.add(g.point(rot + (i + 1) * Math.PI * 2.0 / 9.0, outer));
+                m.line(node, next, arm == 0 ? .72F : .34F);
+                if ((i + arm) % 3 == 0) m.diamond(g, node, .42 + arm * .10, a, 1.06F, .24F);
+            }
+        }
+        m.star(g, skyHub, mapRadius * .58, mapRadius * .16, 9, -t * .004, 1.16F);
+        m.runeChords(g, skyHub, mapRadius * .48, 18, 7, t * .003, .30F);
+
         int shown = 0;
         for (int i = 0; i < ordinary && shown < visible; i += stride, shown++) {
             MeteorBarragePattern.Strike s = strikes.get(i);
-            Vec3 port = sky.add(s.offsetX(), 0, s.offsetZ());
-            double size = .34 + s.scale() * .18;
-            m.diamond(g, port, size, i * .37, i % 9 == 0 ? 1.30F : .80F, (float)(.26 * fade));
-            m.circle(g, port, size * 1.42, 14, i % 9 == 0 ? .74F : .26F);
-            m.line(port, port.add(0, -(release ? 12.0 + s.scale() * 2.5 : 3.0 + 14.0 * p), 0),
-                    i % 9 == 0 ? 1.02F : .28F, 1.0F, (float)(.72 * fade));
+            double qx = s.offsetX() / Math.max(1.0, field);
+            double qz = s.offsetZ() / Math.max(1.0, field);
+            Vec3 port = skyHub.add(qx * mapRadius, 0, qz * mapRadius);
+            double node = .28 + s.scale() * .13;
+            m.diamond(g, port, node, i * .37, i % 11 == 0 ? 1.26F : .62F, .26F);
+            Vec3 projected = ground.add(s.offsetX(), 0, s.offsetZ());
+            Vec3 vector = projected.subtract(port);
+            double lineFraction = release ? 1.0 : .12 + .70 * p;
+            m.line(port, port.add(vector.scale(lineFraction)), i % 11 == 0 ? .82F : .28F);
         }
-        MeteorBarragePattern.Strike crownStrike = strikes.getLast();
-        Vec3 crown = sky.add(crownStrike.offsetX(), 0, crownStrike.offsetZ());
-        double crownNode = Math.max(6.5, crownStrike.scale() * 1.75);
-        m.circle(g, crown, crownNode, 72, 1.44F);
-        m.polygon(g, crown, crownNode * .82, 9, -t * .006, .88F);
-        m.runeRing(g, crown, crownNode * .94, 27, Math.max(.24, crownNode * .045), 0xC20A9, t * .009, .58F);
-        m.line(crown, target.add(0, release ? 1.0 : field * .18, 0), 1.65F);
+
+        // Crown is a distinct descending nine-bladed key at the map center.
+        double crownSize = 3.2 + NinthCircleMagnitude.crownScale(range) * .72;
+        Vec3 crown = skyHub.add(0, 3.0, 0);
+        m.star(g, crown, crownSize, crownSize * .32, 9, t * .009, 1.46F);
+        m.polygon(g, crown.add(0, -.42, 0), crownSize * .68, 9, -t * .007, .92F);
+        m.line(crown, ground.add(0, release ? .2 : 3.0 + (1.0 - p) * 6.0, 0), 1.58F);
     }
 
-    private static void executionLaw(ArcaneWorldMesh.Builder m, Vec3 target, Vec3 direction,
-                                     double p, double t, int tier) {
+    /** Power Word Kill: compact judicial planes that close like an execution guillotine. */
+    private static void executionJudgment(ArcaneWorldMesh.Builder m, Vec3 target, Vec3 direction,
+                                          double p, double t, boolean release) {
         Vec3 normal = safe(direction);
         ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(normal);
-        double r = tier >= 9 ? 4.8 : 2.55;
-        int rings = tier >= 9 ? 9 : 7;
-        for (int i = 0; i < rings; i++) {
-            double rr = r * (1.0 - i * (tier >= 9 ? .058 : .080));
-            double depth = (i - (rings - 1) / 2.0) * (tier >= 9 ? .28 : .13);
-            m.polygon(f, target.add(normal.scale(depth)), rr, tier,
-                    t * ((i & 1) == 0 ? .014 : -.011) + i * .11, i % 3 == 0 ? 1.22F : .38F);
+        Vec3 mark = target.lengthSqr() > 1.0E-6 ? target : Vec3.ZERO;
+        double close = release ? Math.max(.04, 1.0 - Math.min(1.0, t * 2.2)) : 1.0 - p * .52;
+        double r = 3.1;
+        for (int blade = 0; blade < 9; blade++) {
+            double a = blade * Math.PI * 2.0 / 9.0;
+            Vec3 outer = mark.add(f.point(a, r * (1.0 + close * .42)));
+            Vec3 inner = mark.add(f.point(a + .035, r * (.16 + close * .18)));
+            m.line(outer, inner, blade % 3 == 0 ? 1.42F : .56F);
+            m.diamond(f, outer, .32, a, 1.18F, .24F);
         }
-        m.line(target.add(f.right().scale(-r * 1.55)), target.add(f.right().scale(r * 1.55)), 1.20F);
-        m.line(target.add(f.up().scale(-r * 1.55)), target.add(f.up().scale(r * 1.55)), 1.20F);
-        if (tier >= 9) {
-            m.runeRing(f, target, r * 1.32, 36, .24, 0x9A11, t * .010, .58F);
-            m.runeChords(f, target, r * .92, 18, 7, -t * .006, .34F);
-            for (int i = 0; i < 9; i++) {
-                double a = i * Math.PI * 2.0 / 9.0;
-                m.diamond(f, target.add(f.point(a, r * 1.12)), .34, a, 1.14F, .24F);
-            }
-            m.line(target.subtract(normal.scale(9.0)), target.add(normal.scale(9.0)), 1.38F);
+        for (int plane = -2; plane <= 2; plane++) {
+            Vec3 c = mark.add(normal.scale(plane * .32 * close));
+            m.polygon(f, c, r * (.58 - Math.abs(plane) * .045), 9,
+                    plane * .13, plane == 0 ? 1.32F : .42F);
         }
+        m.runeGlyph(f, mark, .72, 0xDEAD09, 0, 1.54F);
+        m.line(mark.add(f.up().scale(r * 1.42)), mark.add(f.up().scale(-r * 1.42)), 1.64F);
     }
 
-    private static void fireStormDominion(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t) {
-        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        Vec3 sky = target.add(0, 28.0, 0);
-        double r = 14.5;
-        m.brokenBand(g, sky, r * .80, r, 92, 7, 1.18F, .22F);
-        m.polygon(g, sky, r * .68, 7, t * .012, .74F);
-        denseGrandArray(m, g, sky, r, 7, 0xF173, t, .16F);
-        for (int i = 0; i < 6; i++) {
-            double a = i * Math.PI / 3.0;
-            Vec3 port = sky.add(g.point(a, r * .62));
-            Vec3 floor = target.add(g.point(a, 5.0));
-            m.circle(g, port, 1.25, 28, i % 2 == 0 ? 1.10F : .52F);
-            m.line(port, floor.add(0, 1.0, 0), i % 2 == 0 ? 1.12F : .44F);
-            m.brokenBand(g, floor, 2.7, 3.4, 30, 5, .72F, .18F);
-        }
-    }
-
-    private static void gravityCathedral(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t) {
-        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        ArcaneWorldMesh.Basis x = ArcaneWorldMesh.Basis.facing(new Vec3(1, 0, 0));
-        double r = 10.8;
-        m.brokenBand(g, target, r * .80, r, 82, 7, 1.10F, .20F);
-        m.polygon(g, target, r * .67, 7, -t * .018, .62F);
-        denseGrandArray(m, g, target, r, 7, 0x6A17, -t, .14F);
-        for (int i = 0; i < 7; i++) {
-            double a = i * Math.PI * 2.0 / 7.0;
-            Vec3 foot = target.add(g.point(a, r * .68));
-            m.line(foot, foot.add(0, 13.5, 0), i % 2 == 0 ? .82F : .34F);
-        }
-        Vec3 high = target.add(0, 13.5, 0);
-        m.circle(x, high, 4.5, 52, .70F);
-        m.circle(g, high, r * .54, 58, .44F);
-    }
-
-    private static void planarTransit(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target, double p, double t) {
-        Vec3 normal = safe(direction);
-        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(normal);
-        double r = 5.4;
-        for (int i = 0; i < 7; i++) {
-            double depth = (i - 3) * .28;
-            Vec3 center = normal.scale(depth).add(0, 1.0, 0);
-            m.polygon(f, center, r * (1.0 - Math.abs(i - 3) * .035), 7,
-                    t * ((i & 1) == 0 ? .018 : -.016) + i * .09, i == 3 ? 1.18F : .42F);
-        }
-        m.runeRing(f, new Vec3(0,1.0,0), r * .92, 21, .20, 0x71A6E, -t * .011, .36F);
-        if (target.lengthSqr() > 4.0) {
-            Vec3 far = target.add(0, 1.0, 0);
-            m.circle(f, far, r * 1.12, 62, .86F);
-            m.runeRing(f, far, r * .98, 21, .20, 0x71A6F, t * .010, .34F);
-            for (int i = 0; i < 7; i++) {
-                double a = i * Math.PI * 2.0 / 7.0;
-                m.line(f.point(a, r * .80).add(0, 1.0, 0), far.add(f.point(a + .08, r * .90)),
-                        i % 2 == 0 ? .56F : .24F, 1.0F, .40F);
-            }
-        }
-    }
-
-    private static void forceCitadel(ArcaneWorldMesh.Builder m, Vec3 target, Vec3 direction, double p, double t) {
-        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
+    /** Prismatic Wall: seven independent vertical laws; no enclosing circle. */
+    private static void sevenLawWall(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target,
+                                     double range, double p, double t, boolean release) {
         ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
-        double r = 4.4;
-        m.brokenBand(g, target, r * .82, r, 58, 7, 1.08F, .18F);
-        for (int i = 0; i < 7; i++) {
-            double a = i * Math.PI * 2.0 / 7.0;
-            Vec3 foot = target.add(g.point(a, r * .72));
-            Vec3 top = foot.add(0, 6.0, 0);
-            m.line(foot, top, i % 2 == 0 ? .86F : .34F);
-            m.line(top, target.add(0, 6.8, 0), .28F);
+        Vec3 right = f.right();
+        double width = Math.max(18.0, Math.min(38.0, range * .62));
+        double height = 14.0;
+        for (int law = 0; law < 7; law++) {
+            double x0 = -width * .5 + width * law / 7.0;
+            double x1 = -width * .5 + width * (law + 1) / 7.0;
+            Vec3 a = target.add(right.scale(x0));
+            Vec3 b = target.add(right.scale(x1));
+            Vec3 at = a.add(0, height, 0);
+            Vec3 bt = b.add(0, height, 0);
+            m.line(a, at, law == 3 ? 1.38F : .66F);
+            m.line(at, bt, law == 3 ? 1.18F : .48F);
+            m.line(bt, b, law == 3 ? 1.38F : .66F);
+            for (int glyph = 0; glyph < 5; glyph++) {
+                double y = 1.5 + glyph * (height - 3.0) / 4.0;
+                Vec3 c = target.add(right.scale((x0 + x1) * .5)).add(0, y, 0);
+                m.runeGlyph(f, c, .34 + law * .012, law * 131 + glyph * 17, t * .006 + law * .11, .40F);
+                if (glyph < 4) m.line(c, c.add(right.scale((law % 2 == 0 ? 1 : -1) * width / 26.0)).add(0, 1.8, 0), .28F);
+            }
         }
-        m.polygon(f, target.add(0, 3.0, 0), r * .58, 7, t * .015, .48F);
-        m.runeRing(g, target, r * .92, 21, .16, 0xF0ACE, -t*.008, .34F);
+        // Cross-law braces make a woven wall rather than seven disconnected bars.
+        for (int row = 1; row <= 4; row++) {
+            double y = row * height / 5.0;
+            Vec3 a = target.add(right.scale(-width * .5)).add(0, y, 0);
+            Vec3 b = target.add(right.scale(width * .5)).add(0, y + (row % 2 == 0 ? .5 : -.5), 0);
+            m.line(a, b, row == 2 ? .82F : .34F);
+        }
     }
 
-    private static void prismaticFan(ArcaneWorldMesh.Builder m, Vec3 direction, double p, double t) {
-        Vec3 normal = safe(direction);
-        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(normal);
-        double r = 4.2;
-        m.arc(f, normal.scale(.8), r, -Math.PI * .42, Math.PI * .84, 56, 1.08F);
-        for (int i = 0; i < 7; i++) {
-            double q = (i - 3) / 3.0;
-            Vec3 root = normal.scale(.65).add(f.right().scale(q * .28));
-            Vec3 end = normal.scale(5.0 + i * .16).add(f.right().scale(q * 3.6)).add(f.up().scale((i % 2) * .28));
-            m.line(root, end, i == 3 ? 1.18F : .48F);
-            m.diamond(f, end, .30, i * .34, 1.10F, .20F);
+    /** Shapechange: a mythic anatomy diagram—spine, ribs, horns, wings and four limb chains. */
+    private static void mythicBody(ArcaneWorldMesh.Builder m, Vec3 direction, double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
+        double grow = .45 + .55 * p;
+        Vec3 pelvis = new Vec3(0, .55, 0);
+        Vec3 chest = new Vec3(0, 1.75 + .55 * grow, 0);
+        Vec3 skull = new Vec3(0, 3.15 + .85 * grow, 0);
+        m.line(pelvis, skull, 1.34F);
+        for (int rib = 0; rib < 5; rib++) {
+            double q = rib / 4.0;
+            Vec3 c = pelvis.add(skull.subtract(pelvis).scale(.24 + q * .48));
+            double span = (.72 + Math.sin(q * Math.PI) * 1.15) * grow;
+            Vec3 l = c.add(f.right().scale(-span));
+            Vec3 r = c.add(f.right().scale(span));
+            m.line(l, c.add(f.normal().scale(.22)), .46F);
+            m.line(c.add(f.normal().scale(.22)), r, .46F);
         }
-        m.runeChords(f, normal.scale(.8), r * .88, 14, 5, t*.009, .28F);
+        for (int side : new int[]{-1, 1}) {
+            Vec3 shoulder = chest.add(f.right().scale(side * .65));
+            Vec3 wingJoint = shoulder.add(f.right().scale(side * (1.3 + 1.4 * grow))).add(f.up().scale(.65));
+            Vec3 wingTip = chest.add(f.right().scale(side * (3.1 + 2.4 * grow))).add(f.up().scale(.10));
+            m.line(chest, shoulder, .62F);
+            m.line(shoulder, wingJoint, 1.12F);
+            m.line(wingJoint, wingTip, 1.28F);
+            for (int vane = 1; vane <= 4; vane++) {
+                double q = vane / 4.0;
+                Vec3 base = wingJoint.add(wingTip.subtract(wingJoint).scale(q));
+                Vec3 feather = base.add(f.up().scale(-(.55 + q * 1.45) * grow));
+                m.line(base, feather, .36F);
+            }
+            Vec3 hip = pelvis.add(f.right().scale(side * .42));
+            Vec3 knee = hip.add(f.right().scale(side * .48)).add(0, -1.0, 0);
+            Vec3 claw = knee.add(f.right().scale(side * .22)).add(f.normal().scale(.35)).add(0, -.95, 0);
+            m.line(hip, knee, .82F); m.line(knee, claw, .82F);
+            Vec3 hornBase = skull.add(f.right().scale(side * .28));
+            Vec3 hornTip = skull.add(f.right().scale(side * .85)).add(0, .95 + .35 * grow, 0).subtract(f.normal().scale(.30));
+            m.line(hornBase, hornTip, 1.04F);
+        }
+        m.polygon(f, skull, .58 + .16 * grow, 6, t * .018, .72F);
     }
 
-    private static void temporalLaw(ArcaneWorldMesh.Builder m, double range, double p, double t) {
+    /** Time Stop: frozen clock architecture whose hands cease motion on release. */
+    private static void frozenClockwork(ArcaneWorldMesh.Builder m, double range, double p, double t, boolean release) {
         ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
         ArcaneWorldMesh.Basis x = ArcaneWorldMesh.Basis.facing(new Vec3(1, 0, 0));
         ArcaneWorldMesh.Basis z = ArcaneWorldMesh.Basis.facing(new Vec3(0, 0, 1));
         double r = Math.max(20.0, Math.min(48.0, range * .75));
-        m.brokenBand(g, Vec3.ZERO, r * .965, r, 156, 9, 1.22F, .19F);
-        m.brokenBand(g, Vec3.ZERO, r * .79, r * .84, 132, 9, .92F, .13F);
-        m.polygon(g, Vec3.ZERO, r * .72, 12, 0, .94F);
-        denseGrandArray(m, g, Vec3.ZERO, r, 9, 0x710E, t, .16F);
-        Vec3 hub = new Vec3(0, Math.min(11.0, r * .22), 0);
-        double clock = Math.min(8.0, r * .19);
-        m.circle(x, hub, clock, 72, .78F);
-        m.circle(z, hub, clock, 72, .48F);
-        for (int i = 0; i < 12; i++) {
-            double a = i * Math.PI / 6.0;
-            Vec3 base = g.point(a, r * .72);
-            m.line(base, base.add(0, Math.min(16.0, r * .33), 0), i % 3 == 0 ? 1.16F : .38F);
+        double h = Math.min(12.0, 5.5 + r * .13);
+        for (int hour = 0; hour < 12; hour++) {
+            double a = hour * Math.PI / 6.0;
+            Vec3 foot = g.point(a, r * .92);
+            Vec3 top = foot.add(0, h + (hour % 3) * .55, 0);
+            m.line(foot, top, hour % 3 == 0 ? 1.24F : .46F);
+            m.diamond(g, top, .42, a, 1.10F, .24F);
+            if (hour % 2 == 0) m.line(top, new Vec3(0, h * .62, 0), .24F);
         }
-        m.line(hub, hub.add(g.point(-Math.PI / 2.0, clock * .86)), 1.34F);
-        m.line(hub, hub.add(g.point(1.88, clock * .64)), .88F);
-    }
-
-    private static void realityRewrite(ArcaneWorldMesh.Builder m, double p, double t) {
-        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        double r = 11.5;
-        Vec3[] levels = {Vec3.ZERO, new Vec3(0, 3.2, 0), new Vec3(0, 6.4, 0), new Vec3(0, 9.6, 0)};
-        for (int layer = 0; layer < levels.length; layer++) {
-            double rr = r * (1.0 - layer * .12);
-            m.polygon(g, levels[layer], rr, 9, t * ((layer & 1) == 0 ? .007 : -.006) + layer * .09,
-                    layer == 0 ? 1.20F : .58F);
-            m.runeRing(g, levels[layer], rr * .88, 18 + layer * 3, .24, 0x5715 + layer * 91, t * .005, .42F);
-            if (layer == 0) denseGrandArray(m, g, levels[layer], rr, 9, 0x5715, t, .15F);
+        Vec3 hub = new Vec3(0, h * .62, 0);
+        double dial = Math.min(7.5, r * .18);
+        m.circle(x, hub, dial, 72, 1.04F);
+        m.circle(z, hub, dial * .82, 64, .56F);
+        for (int mark = 0; mark < 12; mark++) {
+            double a = mark * Math.PI / 6.0;
+            Vec3 a0 = hub.add(x.point(a, dial * .80));
+            Vec3 a1 = hub.add(x.point(a, dial * .98));
+            m.line(a0, a1, mark % 3 == 0 ? .92F : .36F);
         }
-        for (int i = 0; i < 9; i++) {
-            double a = i * Math.PI * 2.0 / 9.0;
-            Vec3 low = g.point(a, r * .72);
-            Vec3 high = levels[3].add(g.point(a + .12, r * .45));
-            m.line(low, high, i % 3 == 0 ? 1.12F : .40F);
+        double second = release ? -Math.PI / 2.0 : -Math.PI / 2.0 + t * .38;
+        double minute = release ? 1.86 : 1.86 + t * .045;
+        m.line(hub, hub.add(x.point(second, dial * .84)), 1.52F);
+        m.line(hub, hub.add(x.point(minute, dial * .62)), 1.02F);
+        // Radius marker is angular, not a rune circle: four frozen cross-axes show actual field size.
+        for (int axis = 0; axis < 4; axis++) {
+            double a = axis * Math.PI / 2.0;
+            Vec3 edge = g.point(a, r);
+            m.line(g.point(a, r * .72), edge, axis % 2 == 0 ? .84F : .48F);
+            m.line(edge.add(g.point(a + Math.PI / 2.0, -1.2)), edge.add(g.point(a + Math.PI / 2.0, 1.2)), .62F);
         }
     }
 
-    private static void worldGate(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target, double p, double t) {
+    /** True Polymorph: two offset anatomical blueprints connected by rewriting correspondences. */
+    private static void morphBlueprint(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target,
+                                       double p, double t, boolean release) {
         ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
-        gateFrame(m, f, Vec3.ZERO.add(0, 2.0, 0), 7.2, t);
-        gateFrame(m, f, target.add(0, 2.0, 0), 9.0, -t);
-        for (int i = 0; i < 9; i++) {
-            double a = i * Math.PI * 2.0 / 9.0;
-            Vec3 a0 = f.point(a, 6.5).add(0, 2.0, 0);
-            Vec3 a1 = target.add(f.point(a + .08, 8.1)).add(0, 2.0, 0);
-            m.line(a0, a1, i % 3 == 0 ? .98F : .30F, i % 3 == 0 ? 1.0F : .70F, .36F);
+        Vec3 c = target.lengthSqr() > 1.0E-6 ? target : Vec3.ZERO;
+        double separation = 2.2 + .8 * p;
+        Vec3 oldForm = c.add(f.right().scale(-separation));
+        Vec3 newForm = c.add(f.right().scale(separation));
+        double oldScale = release ? Math.max(.28, 1.0 - Math.min(1.0, t * 1.6) * .72) : 1.0;
+        double newScale = release ? 1.18 : .42 + .58 * p;
+        drawHumanoidBlueprint(m, f, oldForm, oldScale, false);
+        drawHumanoidBlueprint(m, f, newForm, newScale, true);
+        for (int link = -3; link <= 3; link++) {
+            double y = link * .48;
+            Vec3 a = oldForm.add(0, y, 0);
+            Vec3 b = newForm.add(0, y + Math.sin(link * 1.7) * .18, 0);
+            m.line(a, b, link == 0 ? 1.08F : .34F);
+            m.diamond(f, a.add(b.subtract(a).scale(.5)), .18 + .02 * Math.abs(link), link * .31 + t * .014, .82F, .20F);
+        }
+        m.runeGlyph(f, c, .58, 0xB10E, t * .012, 1.20F);
+    }
+
+    private static void drawHumanoidBlueprint(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis f,
+                                              Vec3 c, double s, boolean transformed) {
+        Vec3 head = c.add(0, 1.55 * s, 0), chest = c.add(0, .65 * s, 0), hip = c.add(0, -.35 * s, 0);
+        m.polygon(f, head, .34 * s, transformed ? 7 : 6, transformed ? .18 : 0, transformed ? 1.04F : .54F);
+        m.line(head, hip, transformed ? .92F : .46F);
+        double arm = (transformed ? 1.22 : .88) * s;
+        m.line(chest.add(f.right().scale(-arm)), chest.add(f.right().scale(arm)), transformed ? .86F : .42F);
+        m.line(hip, hip.add(f.right().scale(-.48 * s)).add(0, -.95 * s, 0), transformed ? .82F : .40F);
+        m.line(hip, hip.add(f.right().scale(.48 * s)).add(0, -.95 * s, 0), transformed ? .82F : .40F);
+        if (transformed) {
+            m.line(head.add(f.right().scale(-.16 * s)), head.add(f.right().scale(-.56 * s)).add(0, .62 * s, 0), .64F);
+            m.line(head.add(f.right().scale(.16 * s)), head.add(f.right().scale(.56 * s)).add(0, .62 * s, 0), .64F);
         }
     }
 
-    private static void gateFrame(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis f, Vec3 center, double radius, double t) {
-        m.circle(f, center, radius, 88, 1.20F);
-        m.polygon(f, center, radius * .82, 9, t * .010, .66F);
-        m.runeRing(f, center, radius * .94, 27, .28, center.hashCode(), -t * .008, .44F);
-        m.runeRing(f, center, radius * .70, 18, .20, center.hashCode() ^ 0x71, t * .006, .30F);
-        m.runeChords(f, center, radius * .58, 18, 7, -t * .004, .25F);
-    }
-
-    private static void worldAxis(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target,
-                                  double range, double p, double t) {
+    /** Weird: fractured inward-facing nightmare perimeter plus a central verdict eye. */
+    private static void nightmareVerdict(ArcaneWorldMesh.Builder m, Vec3 target, double range,
+                                         double p, double t, boolean release) {
         ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        Vec3 d = horizontal(direction);
-        Vec3 right = new Vec3(-d.z, 0, d.x);
-        double length = Math.max(42.0, Math.min(104.0, range * 1.06));
-        double half = length * .5;
-        Vec3 a = target.subtract(d.scale(half));
-        Vec3 b = target.add(d.scale(half));
-        m.line(a, b, 1.62F);
-        m.line(a.add(right.scale(3.6)), b.add(right.scale(-3.6)), .62F);
-        m.line(a.add(right.scale(-3.6)), b.add(right.scale(3.6)), .62F);
-        for (int i = -6; i <= 6; i++) {
-            Vec3 node = target.add(d.scale(i * half / 6.0));
-            double rr = 3.4 + (6 - Math.abs(i)) * .62;
-            m.brokenBand(g, node, rr * .72, rr, 40, 5, i == 0 ? 1.22F : .54F, .22F);
-            m.runeRing(g, node, rr * .86, 9, .15, 0xA115 + i*31, t*.006, .26F);
-            m.line(node, node.add(0, 3.0 + (6 - Math.abs(i)) * .55, 0), i == 0 ? 1.24F : .36F);
+        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(new Vec3(0, 0, 1));
+        Vec3 c = target;
+        double r = Math.max(18.0, Math.min(34.0, range * .52));
+        int fractures = 21;
+        for (int i = 0; i < fractures; i++) {
+            double a = i * Math.PI * 2.0 / fractures;
+            double wobble = 1.0 + .055 * Math.sin(i * 2.17 + t * .14);
+            Vec3 outer = c.add(g.point(a, r * wobble));
+            Vec3 kink = c.add(g.point(a + ((i & 1) == 0 ? .08 : -.07), r * (.72 + .06 * (i % 3))));
+            Vec3 fang = c.add(g.point(a - .03, r * (.50 + .04 * (i % 4)))).add(0, 2.5 + (i % 3) * .65, 0);
+            m.line(outer, kink, i % 3 == 0 ? 1.12F : .44F);
+            m.line(kink, fang, i % 4 == 0 ? .88F : .34F);
+            if (i % 3 == 0) m.shard(fang, new Vec3(0, -1, 0), ArcaneWorldMesh.Basis.facing(new Vec3(0, -1, 0)), 1.0 + .18 * (i % 4), .15, 1.12F, .24F);
+        }
+        Vec3 eye = c.add(0, 5.5, 0);
+        m.polygon(f, eye, 4.2, 6, 0, 1.16F);
+        m.arc(f, eye, 3.1, -.82, 1.64, 42, .72F);
+        m.arc(f, eye, 3.1, Math.PI - .82, 1.64, 42, .72F);
+        m.diamond(f, eye, 1.15, t * .012, 1.42F, .30F);
+        double verdict = release ? clamp(t / 15.0, 0.0, 1.0) : p;
+        for (int mark = 0; mark < 15; mark++) {
+            double a = mark * Math.PI * 2.0 / 15.0;
+            Vec3 pos = c.add(g.point(a, r * .34));
+            double h = .35 + 3.2 * (mark / 14.0 <= verdict ? 1.0 : .18);
+            m.line(pos, pos.add(0, h, 0), mark / 14.0 <= verdict ? .86F : .22F);
         }
     }
 
-    private static void regionalFault(ArcaneWorldMesh.Builder m, Vec3 target, double range, double p, double t) {
-        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        double r = Math.max(18.0, Math.min(34.0, range * .58));
-        m.brokenBand(g, target, r * .82, r, 112, 8, 1.14F, .20F);
-        denseGrandArray(m, g, target, r, 8, 0xEA871, t, .13F);
-        for (int i = 0; i < 16; i++) {
-            double a = i * Math.PI / 8.0 + Math.sin(i * 1.7) * .09;
-            Vec3 inner = target.add(g.point(a, r * .12));
-            Vec3 outer = target.add(g.point(a + .06 * ((i & 1) == 0 ? 1 : -1), r * (.72 + .15 * (i % 3) / 2.0)));
-            m.line(inner, outer, i % 4 == 0 ? 1.20F : .46F);
-        }
-        for (int i = 0; i < 8; i++) {
-            Vec3 node = target.add(g.point(i * Math.PI / 4.0, r * .54));
-            m.brokenBand(g, node, 2.8, 3.6, 28, 4, .62F, .16F);
-        }
-    }
-
-    private static void solarJudgment(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t) {
-        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        Vec3 sky = target.add(0, 26.0, 0);
-        double r = 13.0;
-        m.starPlate(g, sky, r, r * .46, 12, t * .008, 1.20F, .10F);
-        m.brokenBand(g, sky, r * .78, r, 100, 8, 1.24F, .18F);
-        denseGrandArray(m, g, sky, r, 8, 0x501A, t, .13F);
-        for (int i = 0; i < 12; i++) {
-            Vec3 ray = sky.add(g.point(i * Math.PI / 6.0, r * .58));
-            m.line(ray, target.add(g.point(i * Math.PI / 6.0, 4.5)), i % 3 == 0 ? 1.00F : .34F);
-        }
-    }
-
-    private static void weatherThrone(ArcaneWorldMesh.Builder m, Vec3 target, double range, double p, double t) {
-        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
-        Vec3 sky = target.add(0, 34.0, 0);
-        double r = Math.max(15.0, Math.min(25.0, range * .38));
-        m.brokenBand(g, sky, r * .82, r, 118, 8, 1.12F, .18F);
-        m.polygon(g, sky, r * .68, 8, t * .010, .68F);
-        m.runeRing(g, sky, r * .90, 24, .30, 0xC10D, -t * .007, .40F);
-        denseGrandArray(m, g, sky, r, 8, 0xC10D, -t, .13F);
-        for (int i = 0; i < 8; i++) {
-            double a = i * Math.PI / 4.0;
-            Vec3 cloud = sky.add(g.point(a, r * .76));
-            m.helix(cloud, new Vec3(0, -1, 0), ArcaneWorldMesh.Basis.facing(new Vec3(0, -1, 0)),
-                    14.0 + (i % 3) * 3.0, .70, 3, 24, i % 2 == 0 ? .72F : .30F, true);
-        }
-    }
-
-    private static void prismAuthority(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target,
-                                       double range, double p, double t) {
+    /** Wish: four manuscript planes whose strokes are rewritten into one new reality line. */
+    private static void realityManuscript(ArcaneWorldMesh.Builder m, Vec3 direction,
+                                          double p, double t, boolean release) {
         ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
-        double width = Math.max(18.0, Math.min(38.0, range * .62));
-        double height = 14.0;
-        Vec3 right = f.right();
-        for (int layer = 0; layer < 7; layer++) {
-            double x = -width * .5 + width * (layer + .5) / 7.0;
-            Vec3 base = target.add(right.scale(x));
-            m.line(base, base.add(0, height, 0), layer == 3 ? 1.22F : .48F);
-            m.diamond(f, base.add(0, height + 1.1, 0), .56, layer * .33, 1.10F, .22F);
-            for (int rune = 0; rune < 5; rune++) {
-                Vec3 glyph = base.add(0, 1.6 + rune * (height - 3.2) / 4.0, 0);
-                m.runeGlyph(f, glyph, .34, layer * 97 + rune * 13, t*.006 + layer*.11, .30F);
+        double width = 7.5, height = 4.8;
+        for (int page = 0; page < 4; page++) {
+            double depth = (page - 1.5) * .72;
+            Vec3 c = f.normal().scale(depth).add(0, 1.5 + page * .55, 0);
+            Vec3 left = c.add(f.right().scale(-width * (1.0 - page * .08) * .5));
+            Vec3 right = c.add(f.right().scale(width * (1.0 - page * .08) * .5));
+            Vec3 lu = left.add(f.up().scale(height * .5)), ld = left.add(f.up().scale(-height * .5));
+            Vec3 ru = right.add(f.up().scale(height * .5)), rd = right.add(f.up().scale(-height * .5));
+            m.line(lu, ru, page == 0 ? 1.08F : .42F); m.line(ru, rd, .34F);
+            m.line(rd, ld, .42F); m.line(ld, lu, .34F);
+            for (int row = 0; row < 5; row++) {
+                double y = -.32 + row * .16;
+                double erase = release ? clamp(t * .55 - page * .12, 0, 1) : p * .35;
+                Vec3 a = c.add(f.right().scale(-width * .34 + erase * width * .18)).add(f.up().scale(y * height));
+                Vec3 b = c.add(f.right().scale(width * (.20 + .05 * ((row + page) % 3)))).add(f.up().scale(y * height + .12 * Math.sin(row + page)));
+                m.line(a, b, row == 2 ? .72F : .28F);
             }
+            m.runeGlyph(f, c.add(f.right().scale(width * .34)), .36, 0x5715 + page * 97, t * .006, .60F);
         }
-        Vec3 lowA = target.add(right.scale(-width * .5));
-        Vec3 lowB = target.add(right.scale(width * .5));
-        Vec3 highA = lowA.add(0,height,0);
-        Vec3 highB = lowB.add(0,height,0);
-        m.line(lowA, lowB, 1.22F);
-        m.line(highA, highB, 1.22F);
-        m.runeRing(f, target.add(0,height*.5,0), Math.min(8.5, width*.22), 21, .20, 0x7A11, t*.005, .30F);
+        Vec3 origin = new Vec3(0, 1.5, 0), rewritten = origin.add(f.up().scale(5.2));
+        m.line(origin, rewritten, 1.46F);
+        m.star(f, rewritten, 1.35, .42, 9, -t * .008, 1.28F);
     }
 
-    private static boolean targetAnchor(SpellDefinition spell) {
-        return switch (spell.sigilAnchor()) {
-            case TARGET, GROUND_TARGET -> true;
-            default -> false;
-        };
+    /** Gate: two physical doorway frames and a perspective corridor between them. */
+    private static void pairedWorldDoor(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target,
+                                        double p, double t, boolean release) {
+        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
+        Vec3 near = new Vec3(0, 2.25, 0);
+        Vec3 far = target.add(0, 2.25, 0);
+        double nearW = 3.4, nearH = 4.5;
+        double farW = 4.2, farH = 5.2;
+        drawDoorFrame(m, f, near, nearW, nearH, t, 0x61A7);
+        if (target.lengthSqr() > 8.0) drawDoorFrame(m, f, far, farW, farH, -t, 0xB37E);
+        if (target.lengthSqr() > 8.0) {
+            int rails = 9;
+            for (int i = 0; i < rails; i++) {
+                double q = (i - 4) / 4.0;
+                Vec3 a = near.add(f.right().scale(q * nearW)).add(f.up().scale((1.0 - Math.abs(q)) * nearH * .82));
+                Vec3 b = far.add(f.right().scale(q * farW)).add(f.up().scale((1.0 - Math.abs(q)) * farH * .82));
+                m.line(a, b, i == 4 ? .94F : .28F, i == 4 ? 1.0F : .72F, .40F);
+            }
+            Vec3 floorNearL = near.add(f.right().scale(-nearW)).add(f.up().scale(-nearH));
+            Vec3 floorNearR = near.add(f.right().scale(nearW)).add(f.up().scale(-nearH));
+            Vec3 floorFarL = far.add(f.right().scale(-farW)).add(f.up().scale(-farH));
+            Vec3 floorFarR = far.add(f.right().scale(farW)).add(f.up().scale(-farH));
+            m.line(floorNearL, floorFarL, .62F); m.line(floorNearR, floorFarR, .62F);
+        }
+    }
+
+    private static void drawDoorFrame(ArcaneWorldMesh.Builder m, ArcaneWorldMesh.Basis f, Vec3 c,
+                                      double w, double h, double t, int seed) {
+        Vec3 l0 = c.add(f.right().scale(-w)).add(f.up().scale(-h));
+        Vec3 l1 = c.add(f.right().scale(-w)).add(f.up().scale(h));
+        Vec3 r0 = c.add(f.right().scale(w)).add(f.up().scale(-h));
+        Vec3 r1 = c.add(f.right().scale(w)).add(f.up().scale(h));
+        m.line(l0, l1, 1.34F); m.line(r0, r1, 1.34F); m.line(l1, r1, 1.34F);
+        m.line(l0, r0, .56F);
+        for (int rung = 1; rung <= 7; rung++) {
+            double y = -h + rung * h * 2.0 / 8.0;
+            Vec3 l = c.add(f.right().scale(-w)).add(f.up().scale(y));
+            Vec3 r = c.add(f.right().scale(w)).add(f.up().scale(y + (rung % 2 == 0 ? .18 : -.18)));
+            m.line(l, r, rung == 4 ? .72F : .22F);
+        }
+        m.runeGlyph(f, c, .72, seed, t * .008, 1.10F);
+        m.diamond(f, c.add(f.up().scale(h + .72)), .48, t * .011, 1.12F, .24F);
+    }
+
+    /** Foresight: one eye and multiple already-calculated future trajectories. */
+    private static void causalityFan(ArcaneWorldMesh.Builder m, Vec3 direction,
+                                     double p, double t, boolean release) {
+        Vec3 forward = safe(direction);
+        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(forward);
+        Vec3 eye = forward.scale(.82).add(0, 1.0, 0);
+        m.arc(f, eye, 1.25, -.92, 1.84, 44, 1.10F);
+        m.arc(f, eye, 1.25, Math.PI - .92, 1.84, 44, 1.10F);
+        m.diamond(f, eye, .40, 0, 1.34F, .28F);
+        int futures = 9;
+        for (int path = 0; path < futures; path++) {
+            double q = (path - 4) / 4.0;
+            Vec3 start = eye.add(f.right().scale(q * .22));
+            Vec3 mid = forward.scale(4.5 + path * .32).add(f.right().scale(q * (2.0 + p * 2.4))).add(f.up().scale(Math.sin(path * .8) * .45));
+            Vec3 end = forward.scale(9.0 + path * .55).add(f.right().scale(q * (4.0 + p * 4.5))).add(f.up().scale(Math.sin(path * 1.7) * .8));
+            m.line(start, mid, path == 4 ? 1.08F : .32F);
+            m.line(mid, end, path == 4 ? 1.22F : .42F);
+            m.diamond(f, end, path == 4 ? .34 : .18, path * .27, path == 4 ? 1.16F : .66F, .20F);
+        }
+        // Three discarded futures cross out while the central one stays continuous.
+        for (int path : new int[]{1, 3, 7}) {
+            double q = (path - 4) / 4.0;
+            Vec3 c = forward.scale(7.0 + path * .35).add(f.right().scale(q * (3.2 + p * 3.4)));
+            m.line(c.add(f.right().scale(-.45)).add(f.up().scale(-.45)), c.add(f.right().scale(.45)).add(f.up().scale(.45)), .52F);
+            m.line(c.add(f.right().scale(-.45)).add(f.up().scale(.45)), c.add(f.right().scale(.45)).add(f.up().scale(-.45)), .52F);
+        }
     }
 
     private static Vec3 safe(Vec3 value) {
         return value == null || value.lengthSqr() < 1.0E-8 ? new Vec3(0, 0, 1) : value.normalize();
-    }
-
-    private static Vec3 horizontal(Vec3 value) {
-        Vec3 d = value == null ? Vec3.ZERO : new Vec3(value.x, 0, value.z);
-        return d.lengthSqr() < 1.0E-8 ? new Vec3(0, 0, 1) : d.normalize();
     }
 
     private static double clamp(double value, double minimum, double maximum) {
