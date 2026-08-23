@@ -6,6 +6,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.Container;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -20,14 +21,28 @@ import net.neoforged.neoforge.common.Tags;
 
 import java.util.List;
 
-/** Physical local production for specialized outposts. One resident outpost worker is bundled with
- * each specialized outpost, so the player never has to assign jobs or routes manually. */
+/**
+ * Physical local production for specialized outposts.
+ *
+ * Alpha.28 keeps the specializations deliberately different:
+ * - lumber and quarry consume nearby visible world resources;
+ * - mining consumes finite underground ore while the worker performs readable work at the minehead;
+ * - agriculture is renewable through vanilla crop growth, but its plot is established only once;
+ * - unloaded outposts and resource chunks are never force-loaded for simulation.
+ */
 public final class SettlementOutpostProductionService {
+    public static final String PRODUCTION_WORKER_TAG = "frontier_settlement_outpost_production_worker";
+    public static final String PRODUCTION_OUTPOST_TAG_PREFIX = "frontier_settlement_outpost_production_";
+
     private static final int TREE_RADIUS = 18;
     private static final int QUARRY_RADIUS = 16;
-    private static final int MAX_LOGS = 6;
-    private static final int MAX_STONE = 6;
-    private static final int MAX_CROPS = 8;
+    private static final int MAX_LOGS = 4;
+    private static final int MAX_STONE = 3;
+    private static final int MAX_CROPS = 4;
+    private static final int LUMBER_WORK_PERIOD_TICKS = 100;
+    private static final int QUARRY_WORK_PERIOD_TICKS = 80;
+    private static final int MINING_WORK_PERIOD_TICKS = 160;
+    private static final int AGRICULTURE_WORK_PERIOD_TICKS = 120;
 
     private SettlementOutpostProductionService() {}
 
@@ -35,21 +50,45 @@ public final class SettlementOutpostProductionService {
         if (server.getTickCount() % 10 != 0) return;
         ServerLevel level = server.overworld();
         for (OutpostRecord outpost : data.outposts()) {
-            if ("general".equals(outpost.specialization())) continue;
-            if ("agriculture".equals(outpost.specialization())) ensureAgriculturePlot(level, data, outpost);
+            if ("general".equals(outpost.specialization()) || !outpostLoaded(level, outpost)) continue;
+            if ("agriculture".equals(outpost.specialization()) && pristineLegacyAgriculturePlot(level, data, outpost)) {
+                initializeSpecializationSite(level, data, outpost);
+            }
             Villager worker = ensureWorker(level, outpost);
             if (worker != null) work(level, data, outpost, worker);
         }
     }
 
+    /** Called when a new specialized outpost becomes authoritative. Only agriculture needs a fixed worksite. */
+    public static void initializeSpecializationSite(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        if (!"agriculture".equals(outpost.specialization()) || !outpostLoaded(level, outpost)) return;
+        initializeAgriculturePlot(level, data, outpost);
+    }
+
+    private static boolean outpostLoaded(ServerLevel level, OutpostRecord outpost) {
+        return level.hasChunkAt(outpost.center()) && level.hasChunkAt(outpost.stockpile());
+    }
+
     private static Villager ensureWorker(ServerLevel level, OutpostRecord outpost) {
-        String name = workerName(outpost);
+        if (!outpostLoaded(level, outpost)) return null;
+        String assignmentTag = productionTag(outpost.id());
         AABB search = new AABB(
                 outpost.centerX() - 48.0D, outpost.centerY() - 32.0D, outpost.centerZ() - 48.0D,
                 outpost.centerX() + 49.0D, outpost.centerY() + 33.0D, outpost.centerZ() + 49.0D);
-        List<Villager> found = level.getEntitiesOfClass(Villager.class, search,
+        List<Villager> assigned = level.getEntitiesOfClass(Villager.class, search,
+                villager -> villager.entityTags().contains(PRODUCTION_WORKER_TAG)
+                        && villager.entityTags().contains(assignmentTag));
+        if (!assigned.isEmpty()) return assigned.getFirst();
+
+        String name = workerName(outpost);
+        List<Villager> legacy = level.getEntitiesOfClass(Villager.class, search,
                 villager -> villager.getCustomName() != null && name.equals(villager.getCustomName().getString()));
-        if (!found.isEmpty()) return found.getFirst();
+        if (!legacy.isEmpty()) {
+            Villager worker = legacy.getFirst();
+            worker.addTag(PRODUCTION_WORKER_TAG);
+            worker.addTag(assignmentTag);
+            return worker;
+        }
 
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = outpost.center().above();
@@ -58,8 +97,14 @@ public final class SettlementOutpostProductionService {
         worker.setCustomNameVisible(true);
         worker.setPersistenceRequired();
         worker.setNoAi(false);
+        worker.addTag(PRODUCTION_WORKER_TAG);
+        worker.addTag(assignmentTag);
         level.addFreshEntity(worker);
         return worker;
+    }
+
+    private static String productionTag(int outpostId) {
+        return PRODUCTION_OUTPOST_TAG_PREFIX + outpostId;
     }
 
     private static String workerName(OutpostRecord outpost) {
@@ -91,6 +136,10 @@ public final class SettlementOutpostProductionService {
 
     private static void deliver(ServerLevel level, OutpostRecord outpost, Villager worker, ItemStack carried) {
         BlockPos stock = outpost.stockpile();
+        if (!level.hasChunkAt(stock)) {
+            worker.getNavigation().stop();
+            return;
+        }
         if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D) > 9.0D) {
             move(worker, stock, 0.82D);
             return;
@@ -109,8 +158,12 @@ public final class SettlementOutpostProductionService {
             move(worker, target, 0.8D);
             return;
         }
+        if (!workDue(level, outpost, LUMBER_WORK_PERIOD_TICKS)) return;
         ItemStack harvested = harvestVerticalTrunk(level, data, target);
-        if (!harvested.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+        if (!harvested.isEmpty()) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+        }
     }
 
     private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, Villager worker) {
@@ -123,59 +176,118 @@ public final class SettlementOutpostProductionService {
             move(worker, target, 0.78D);
             return;
         }
+        if (!workDue(level, outpost, QUARRY_WORK_PERIOD_TICKS)) return;
         ItemStack harvested = harvestStoneCluster(level, data, target);
-        if (!harvested.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+        if (!harvested.isEmpty()) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+        }
     }
 
     private static void workMine(ServerLevel level, SettlementData data, OutpostRecord outpost, Villager worker) {
-        BlockPos home = outpost.center().above();
-        if (worker.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) > 16.0D) {
-            move(worker, home, 0.72D);
+        BlockPos minehead = outpost.center().above();
+        if (worker.distanceToSqr(minehead.getX() + 0.5D, minehead.getY(), minehead.getZ() + 0.5D) > 9.0D) {
+            move(worker, minehead, 0.72D);
             return;
         }
+        if (!workDue(level, outpost, MINING_WORK_PERIOD_TICKS)) return;
         BlockPos ore = findOreBelow(level, data, outpost.center());
         if (ore == null) return;
         ItemStack mined = mineOre(level, ore);
-        if (!mined.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, mined);
+        if (!mined.isEmpty()) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            worker.setItemSlot(EquipmentSlot.MAINHAND, mined);
+        }
     }
 
     private static void workAgriculture(ServerLevel level, SettlementData data, OutpostRecord outpost, Villager worker) {
+        BlockPos firstMature = findMatureCrop(level, data, outpost);
+        if (firstMature == null) {
+            move(worker, outpost.center().above(), 0.6D);
+            return;
+        }
+        if (worker.distanceToSqr(firstMature.getX() + 0.5D, firstMature.getY(), firstMature.getZ() + 0.5D) > 9.0D) {
+            move(worker, firstMature, 0.72D);
+            return;
+        }
+        if (!workDue(level, outpost, AGRICULTURE_WORK_PERIOD_TICKS)) return;
+
         int harvested = 0;
         for (int forward = 1; forward <= 3 && harvested < MAX_CROPS; forward++) {
             for (int side : new int[] {-2, -1, 1, 2}) {
                 BlockPos crop = local(data, outpost, forward, side, 1);
+                if (!level.hasChunkAt(crop)) continue;
                 BlockState state = level.getBlockState(crop);
-                if (!state.is(Blocks.WHEAT) || !state.hasProperty(BlockStateProperties.AGE_7)
-                        || state.getValue(BlockStateProperties.AGE_7) < 7) continue;
-                if (worker.distanceToSqr(crop.getX() + 0.5D, crop.getY(), crop.getZ() + 0.5D) > 9.0D) {
-                    move(worker, crop, 0.72D);
-                    return;
-                }
+                if (!isMatureWheat(state)) continue;
+                if (worker.distanceToSqr(crop.getX() + 0.5D, crop.getY(), crop.getZ() + 0.5D) > 9.0D) continue;
                 level.setBlock(crop, Blocks.WHEAT.defaultBlockState(), 3);
                 harvested++;
                 if (harvested >= MAX_CROPS) break;
             }
         }
-        if (harvested > 0) worker.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.WHEAT, harvested));
-        else move(worker, outpost.center().above(), 0.6D);
+        if (harvested > 0) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            worker.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.WHEAT, harvested));
+        }
     }
 
-    public static void ensureAgriculturePlot(ServerLevel level, SettlementData data, OutpostRecord outpost) {
-        if (!"agriculture".equals(outpost.specialization())) return;
-        BlockPos water = local(data, outpost, 3, 0, 0);
-        BlockState waterBase = level.getBlockState(water);
-        if (waterBase.is(Blocks.COARSE_DIRT) || waterBase.is(Blocks.DIRT) || waterBase.is(Blocks.GRASS_BLOCK)
-                || waterBase.is(Blocks.FARMLAND)) {
-            level.setBlock(water, Blocks.WATER.defaultBlockState(), 3);
+    private static BlockPos findMatureCrop(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        for (int forward = 1; forward <= 3; forward++) {
+            for (int side : new int[] {-2, -1, 1, 2}) {
+                BlockPos crop = local(data, outpost, forward, side, 1);
+                if (level.hasChunkAt(crop) && isMatureWheat(level.getBlockState(crop))) return crop;
+            }
         }
+        return null;
+    }
+
+    private static boolean isMatureWheat(BlockState state) {
+        return state.is(Blocks.WHEAT) && state.hasProperty(BlockStateProperties.AGE_7)
+                && state.getValue(BlockStateProperties.AGE_7) >= 7;
+    }
+
+    private static boolean workDue(ServerLevel level, OutpostRecord outpost, int periodTicks) {
+        long periodSlots = Math.max(1L, periodTicks / 10L);
+        long currentSlot = level.getGameTime() / 10L;
+        return Math.floorMod(currentSlot + outpost.id() * 3L, periodSlots) == 0L;
+    }
+
+    private static boolean pristineLegacyAgriculturePlot(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        BlockPos water = local(data, outpost, 3, 0, 0);
+        if (!level.hasChunkAt(water)) return false;
+        BlockState waterBase = level.getBlockState(water);
+        if (!waterBase.is(Blocks.COARSE_DIRT)) return false;
         for (int forward = 1; forward <= 3; forward++) {
             for (int side : new int[] {-2, -1, 1, 2}) {
                 BlockPos soil = local(data, outpost, forward, side, 0);
+                BlockPos crop = soil.above();
+                if (!level.hasChunkAt(soil) || !level.hasChunkAt(crop)) return false;
+                if (!level.getBlockState(soil).is(Blocks.COARSE_DIRT) || !level.getBlockState(crop).isAir()) return false;
+            }
+        }
+        return true;
+    }
+
+    private static void initializeAgriculturePlot(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        BlockPos water = local(data, outpost, 3, 0, 0);
+        if (!level.hasChunkAt(water)) return;
+        BlockState waterBase = level.getBlockState(water);
+        if (waterBase.is(Blocks.WATER)) return;
+        if (!waterBase.is(Blocks.COARSE_DIRT) && !waterBase.is(Blocks.DIRT)
+                && !waterBase.is(Blocks.GRASS_BLOCK) && !waterBase.is(Blocks.FARMLAND)) return;
+        if (level.getBlockEntity(water) != null || !waterBase.getFluidState().isEmpty()) return;
+
+        level.setBlock(water, Blocks.WATER.defaultBlockState(), 3);
+        for (int forward = 1; forward <= 3; forward++) {
+            for (int side : new int[] {-2, -1, 1, 2}) {
+                BlockPos soil = local(data, outpost, forward, side, 0);
+                BlockPos crop = soil.above();
+                if (!level.hasChunkAt(soil) || !level.hasChunkAt(crop)) continue;
                 BlockState existing = level.getBlockState(soil);
+                if (level.getBlockEntity(soil) != null || !existing.getFluidState().isEmpty()) continue;
                 if (existing.is(Blocks.COARSE_DIRT) || existing.is(Blocks.DIRT) || existing.is(Blocks.GRASS_BLOCK)) {
                     level.setBlock(soil, Blocks.FARMLAND.defaultBlockState(), 3);
                 }
-                BlockPos crop = soil.above();
                 if (level.getBlockState(soil).is(Blocks.FARMLAND) && level.getBlockState(crop).isAir()) {
                     level.setBlock(crop, Blocks.WHEAT.defaultBlockState(), 3);
                 }
@@ -184,7 +296,9 @@ public final class SettlementOutpostProductionService {
     }
 
     private static BlockPos local(SettlementData data, OutpostRecord outpost, int forward, int side, int y) {
-        if (outpost.roadIndex() < 0 || outpost.roadIndex() >= data.roads().size()) return outpost.center().offset(side, y, forward - 4);
+        if (outpost.roadIndex() < 0 || outpost.roadIndex() >= data.roads().size()) {
+            return outpost.center().offset(side, y, forward - 4);
+        }
         RoadSegment road = data.roads().get(outpost.roadIndex());
         BlockPos gate = road.end().offset(road.directionX(), 0, road.directionZ());
         int x = gate.getX() + road.directionX() * forward - road.directionZ() * side;
@@ -200,6 +314,7 @@ public final class SettlementOutpostProductionService {
                 if (dx * dx + dz * dz > radius * radius) continue;
                 for (int y = center.getY() - 4; y <= center.getY() + 10; y++) {
                     BlockPos pos = new BlockPos(center.getX() + dx, y, center.getZ() + dz);
+                    if (!level.hasChunkAt(pos)) continue;
                     BlockState state = level.getBlockState(pos);
                     if (!state.is(BlockTags.LOGS) || isProtected(data, pos) || !hasLeavesAbove(level, pos)) continue;
                     double distance = pos.distSqr(center);
@@ -215,7 +330,8 @@ public final class SettlementOutpostProductionService {
         for (int y = 1; y <= 8; y++) {
             for (int dx = -2; dx <= 2; dx++) {
                 for (int dz = -2; dz <= 2; dz++) {
-                    if (level.getBlockState(trunk.offset(dx, y, dz)).is(BlockTags.LEAVES)) return true;
+                    BlockPos pos = trunk.offset(dx, y, dz);
+                    if (level.hasChunkAt(pos) && level.getBlockState(pos).is(BlockTags.LEAVES)) return true;
                 }
             }
         }
@@ -230,6 +346,7 @@ public final class SettlementOutpostProductionService {
         int count = 0;
         for (int y = 0; y < 10 && count < MAX_LOGS; y++) {
             BlockPos pos = base.above(y);
+            if (!level.hasChunkAt(pos)) break;
             BlockState state = level.getBlockState(pos);
             if (!state.is(BlockTags.LOGS) || state.getBlock().asItem() != item || isProtected(data, pos)) {
                 if (count > 0) break;
@@ -249,6 +366,7 @@ public final class SettlementOutpostProductionService {
                 if (dx * dx + dz * dz > radius * radius) continue;
                 for (int y = center.getY() - 5; y <= center.getY() + 4; y++) {
                     BlockPos pos = new BlockPos(center.getX() + dx, y, center.getZ() + dz);
+                    if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.above())) continue;
                     BlockState state = level.getBlockState(pos);
                     if (!isQuarryStone(state) || isProtected(data, pos) || !level.getBlockState(pos.above()).isAir()) continue;
                     double distance = pos.distSqr(center);
@@ -268,8 +386,10 @@ public final class SettlementOutpostProductionService {
         for (int dx = -1; dx <= 1 && count < MAX_STONE; dx++) {
             for (int dz = -1; dz <= 1 && count < MAX_STONE; dz++) {
                 BlockPos pos = base.offset(dx, 0, dz);
+                if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.above())) continue;
                 BlockState state = level.getBlockState(pos);
-                if (state.getBlock().asItem() != item || !isQuarryStone(state) || isProtected(data, pos)) continue;
+                if (state.getBlock().asItem() != item || !isQuarryStone(state) || isProtected(data, pos)
+                        || !level.getBlockState(pos.above()).isAir()) continue;
                 level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
                 count++;
             }
@@ -290,6 +410,7 @@ public final class SettlementOutpostProductionService {
                     for (int dz = -radius; dz <= radius; dz++) {
                         if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
                         BlockPos pos = new BlockPos(center.getX() + dx, y, center.getZ() + dz);
+                        if (!level.hasChunkAt(pos)) continue;
                         if (level.getBlockState(pos).is(Tags.Blocks.ORES) && !isProtected(data, pos)) return pos;
                     }
                 }
@@ -299,6 +420,7 @@ public final class SettlementOutpostProductionService {
     }
 
     private static ItemStack mineOre(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos)) return ItemStack.EMPTY;
         BlockState state = level.getBlockState(pos);
         if (!state.is(Tags.Blocks.ORES)) return ItemStack.EMPTY;
         ItemStack result;
