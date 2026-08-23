@@ -1,5 +1,6 @@
 JAR VERIFY PASS
-version=0.35.0-alpha.1
+version=0.36.0-alpha.1
+physical_commissioning_runtime=present
 expedition_operation_runtime=present
 expedition_complication_runtime=present
 apex_runtime=present
@@ -7,5 +8,5 @@ production_runtime=present
 field_depot_runtime=present
 outpost_runtime=present
 field_recovery_runtime=present
-size=427542
-sha256=ed3fd7f8f2037ab6f315a52058a15da10f597d673fd83baf95f6066701f2dc07
+size=439058
+sha256=14df4335d895679f160460171cc8e135e151b6c4291d16f6a18a12180b99f2f7

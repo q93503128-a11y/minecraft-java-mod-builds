@@ -1,7 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.35 adds explicit main-inventory bulk offload into the existing nearby physical Barrel network
-- slots9..35 only; hotbar0..8/equipment/offhand preserved; authored bulk-material whitelist only
-- nearest usable Barrel first, merge-before-empty, same components, slot acceptance and finite stack capacity respected
-- full/partial capacity preserves every unaccepted source remainder; no automatic pickup/tick routing
-- 0.34 integrated inputs,0.33 complications,0.32 nine sorties,0.31 recovery,0.30 outpost and older regressions retained
+- 0.36 gates only finalizable Industrial/Apex/Nexus funding behind explicit real loaded commissioning sites
+- Industrial uses a nearby real Barrel; Apex/Nexus require an owned registered Barrel; site radius6 and mayInteract are authoritative
+- site validation happens before the final funding call consumes any project material; existing completed projects remain compatible
+- no new SavedData/packet/background tick/chunk force-load; commissioning is explicit and bounded
+- 0.35 offload,0.34 integrated logistics,0.33 complications,0.32 sorties,0.31 recovery,0.30 outposts and older regressions retained
