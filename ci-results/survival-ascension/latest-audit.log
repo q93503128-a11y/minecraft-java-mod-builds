@@ -1,8 +1,3 @@
-SOURCE AUDIT PASS
-- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.33 adds exactly one persistent DEEP_FRONT/FORWARD_SHIFT/HOT_EXTRACTION complication to each new sortie
-- 0.32 active sorties migrate as NONE; optional fields retain expedition_operations_v1 compatibility
-- all nine operation profiles,96/128/160 outbound gates,48-block base work gate and8-block physical return remain locked
-- complication gates reuse validated expedition actions; no teleport, client destination or chunk force-load is introduced
-- operation death/dimension/time/game-mode failures and Apex/Trial mutual exclusion are enforced
-- 0.31 recovery,0.30 outpost,0.29 Barrel logistics, directives/incidents,Apex/Trial and mastery regressions retained
+SOURCE AUDIT FAILED
+- README canon missing: countMatching
+- README canon missing: consumeMatching
