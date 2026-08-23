@@ -58,6 +58,7 @@ public final class HarvestingProgression {
         BlockPos center = event.getPos();
         BlockState state = event.getState();
         if (!isMatureHarvest(state)) return;
+        ExpeditionProgression.recordSkillAction(player, SkillType.HARVESTING, 1);
         ItemStack tool = player.getMainHandItem();
         if (tool.is(ItemTags.HOES)) IrrigationReplantService.scheduleIfEligible(player, level, center, state);
         if (!player.isCreative() && !player.isSpectator()) {
