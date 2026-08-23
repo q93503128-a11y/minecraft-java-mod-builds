@@ -6,6 +6,7 @@ import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
 import kr.moonseungjun.survivalascension.production.FieldDepotData;
 import kr.moonseungjun.survivalascension.production.FieldDepotService;
+import kr.moonseungjun.survivalascension.production.FieldRecoveryData;
 import kr.moonseungjun.survivalascension.production.OutpostData;
 import kr.moonseungjun.survivalascension.production.OutpostService;
 import kr.moonseungjun.survivalascension.production.ProductionData;
@@ -72,12 +73,15 @@ public final class AscensionCommands {
         ProductionData production = ProductionData.get(player);
         FieldDepotData depots = FieldDepotData.get(player);
         OutpostData outposts = OutpostData.get(player);
+        FieldRecoveryData recovery = FieldRecoveryData.get(player);
+        String recoveryState = recovery.pending(player) != null ? "복귀 대기" : (recovery.armed(player) != null ? "계약 준비" : "미설정");
         player.sendSystemMessage(Component.literal("§3[산업 생산망] §f누적 사이클 §b" + production.cycles(player)
                 + " §7· 현장 보급권 §e" + production.supplyCharges(player) + "/" + ProductionData.MAX_SUPPLY_CHARGES
                 + " §7· 물류 거점 §f" + depots.count(player) + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER
                 + " §7(사용 가능 §a" + FieldDepotService.activeDepotCount(player) + "§7)"
                 + " §7· 전초기지 §2" + outposts.count(player) + "§7/§f" + OutpostData.MAX_OUTPOSTS_PER_PLAYER
-                + " §7(활성 §a" + OutpostService.activeCount(player) + "§7)"));
+                + " §7(활성 §a" + OutpostService.activeCount(player) + "§7)"
+                + " §7· 현장 복귀 §a" + recoveryState + "§7/성공 " + recovery.recoveries(player)));
         return 1;
     }
 
