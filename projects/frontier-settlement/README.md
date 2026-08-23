@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.38
+## Current version: 0.1.0-alpha.39
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -29,11 +29,11 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.38 adds no new gameplay key, construction-management dashboard or manual hauling-route UI.
+Alpha.39 adds no new gameplay key, crafting dashboard or manual job-priority UI.
 
 ## Functional building families
 
-Current functional families: **14**.
+Current functional families: **15**.
 
 - house;
 - lumber camp;
@@ -41,16 +41,17 @@ Current functional families: **14**.
 - quarry;
 - mine;
 - warehouse;
-- **construction office**;
+- construction office;
 - blacksmith;
 - workshop;
+- **advanced workshop**;
 - guard post;
 - watchtower;
 - barracks;
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. Advanced workshop remains the largest unfinished placement family, together with later territory/outpost specializations.
+The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: coast/river trade-fishing, dangerous-region military specialization, richer high-tier crafting, unloaded simulation and companion/UI integration remain unfinished.
 
 ## Physical construction
 
@@ -71,7 +72,7 @@ Roads and outposts likewise use physical grading and real hauled resources.
 
 ## Residents, production and road logistics
 
-- builder, logger, farmer, quarry worker, miner, workshop artisan, construction supply runner, guards/service behavior and transport roles are implemented;
+- builder, logger, farmer, quarry worker, miner, workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior and transport roles are implemented;
 - loaded town production is paced and bounded;
 - outpost production is specialization-specific and loaded-chunk only;
 - transport workers are persistently assigned to one outpost;
@@ -169,7 +170,7 @@ Alpha.38 closes the original construction-office family without adding an abstra
 - office material barrels join the same physical settlement ItemStack ledger;
 - for construction wood/stone they are ordered ahead of ordinary town storage, so the existing builder naturally prefers nearby staged stock;
 - automated non-construction cargo such as food/metal/random loot is kept out of the dedicated material bays;
-- one persistent office-assigned **construction supply runner** keeps the bays stocked only while a building project is active;
+- one persistent office-assigned construction supply runner keeps the bays stocked only while a building project is active;
 - the runner uses loaded ordinary settlement storage as source, physically walks to it, extracts a real wood/stone stack, carries up to 32 items in hand and walks back before depositing;
 - target staged reserve is 96 wood + 96 stone per office;
 - source search is bounded to 24 blocks and checked along loaded corridor points; no chunk force-load or teleport inventory transfer is introduced;
@@ -179,6 +180,27 @@ Alpha.38 closes the original construction-office family without adding an abstra
 - the existing `SettlementConstructionService` remains the only authority that grades terrain, consumes staged project cost and places blueprint blocks.
 
 This is a logistics/readability improvement, not a claimed fixed percentage speed buff. Actual travel-time gains depend on settlement layout and require real-play pacing validation.
+
+## Alpha.39 — advanced workshop / rare-material forging
+
+Alpha.39 adds the first real high-tier crafting loop instead of turning rare exploration loot into another currency number.
+
+- new `ADVANCED_WORKSHOP` functional building;
+- unlock: **frontier-town tier + one workshop + one market**;
+- cost: wood 168 / stone 120;
+- 15×11 physical stone/timber forging hall with protected commission barrel, smithing table, anvil, enchanting table, grindstone and blast furnace;
+- the commission barrel is deliberately **not** generic settlement storage: the player explicitly chooses what to commission by placing an eligible weapon and relic there;
+- a forgeable commission requires one recognized, currently unenchanted external damageable weapon plus **1 expedition relic**;
+- one building-bound advanced forging specialist physically walks to loaded shared settlement storage and carries real metal back to the commission barrel;
+- one forge consumes **4 real metal + 1 real relic**;
+- the system first builds and validates a compatible level-30 enchanting-table result; if the external weapon supports no valid enchantment, no metal or relic is consumed;
+- on success the same weapon is fully repaired and receives the generated compatible enchantments;
+- ordinary shared storage is never scanned for a weapon/relic commission, so market sale intent and advanced-forging intent cannot silently steal from each other;
+- no hard companion class/item dependency is introduced; eligible external weapons still come through the existing soft recognition seam;
+- no force-load, teleport inventory transfer or abstract crafting points;
+- `/frontier status` reports ready commissions and the 1 relic / 4 metal recipe.
+
+Role separation is intentional: **market = relic→trade value, workshop = metal→repair, advanced workshop = external weapon + relic + metal→high-tier forge**. The current advanced specialist is a building-bound visible service NPC rather than a civilian population slot; broader citizen-job reconciliation remains later cleanup. Alpha.39 is the first high-tier forge path, not a claim that every future specialized recipe/crafting family is complete.
 
 ## External content stack
 
@@ -192,10 +214,10 @@ The lock deliberately remains `candidate_runtime_lock` until the full client/ser
 
 Canonical CI performs:
 
-1. the complete established Alpha.23–37 source audit plus Alpha.38 construction-office extension;
+1. the complete established Alpha.23–38 source audit plus Alpha.39 advanced-forging extension;
 2. Java 25 clean Gradle build;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on construction-supply pathfinding, construction pacing, garrison combat, stair/bridge appearance, balance or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on advanced-forging balance, external-weapon enchant compatibility breadth, construction-supply pathfinding, garrison combat, stair/bridge appearance or full companion-stack runtime compatibility. Those still require real Minecraft play.
