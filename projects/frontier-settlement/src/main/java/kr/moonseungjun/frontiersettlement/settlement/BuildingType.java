@@ -10,6 +10,7 @@ public enum BuildingType {
     MINE("mine", "광산", 68, 44, 11, 11, 9, 0, "채석장 + 전초기지 필요"),
     WAREHOUSE("warehouse", "창고", 72, 36, 11, 9, 10, 0, "농장 1곳 필요"),
     BLACKSMITH("blacksmith", "대장간", 80, 52, 9, 9, 9, 0, "광산 1곳 필요"),
+    WORKSHOP("workshop", "작업장", 88, 44, 11, 9, 10, 0, "대장간 1곳 필요"),
     GUARD_POST("guard_post", "경비초소", 64, 48, 9, 9, 8, 0, "마을 단계 필요"),
     MARKET("market", "시장", 96, 48, 11, 11, 8, 0, "마을 단계 필요");
 
