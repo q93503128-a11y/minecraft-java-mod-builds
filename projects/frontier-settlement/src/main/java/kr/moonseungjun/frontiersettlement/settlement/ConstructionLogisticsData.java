@@ -48,6 +48,10 @@ public final class ConstructionLogisticsData extends SavedData {
 
     public boolean active() { return active; }
 
+    public ConstructionState identity() {
+        return active ? new ConstructionState(type, originX, originY, originZ, rotation, 0) : ConstructionState.EMPTY;
+    }
+
     public boolean matches(ConstructionState state) {
         return active
                 && type.equals(state.type())
