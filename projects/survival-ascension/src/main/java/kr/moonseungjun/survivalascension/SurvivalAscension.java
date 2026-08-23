@@ -69,6 +69,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: persistent multi-task expeditions + two-way-isolated rare regional incidents + Lv.100 Field Mastery", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: persistent multi-task expeditions + rare regional incidents with two-way Trial isolation + Lv.100 Field Mastery", VERSION);
     }
 }
