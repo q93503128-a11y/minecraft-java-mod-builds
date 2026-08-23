@@ -1,160 +1,160 @@
 # Frontier Settlement
 
-Minecraft Java 26.2 / NeoForge 26.2 cooperative settlement-growth mod.
+Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-Canonical direction: see `CANONICAL_PLAN.md`.
+Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.30
+## Current version: 0.1.0-alpha.32
 
-Frontier Settlement currently provides a server-authoritative shared settlement vertical slice covering founding, building, population/workers, roads, outposts, tier growth and compact world-space controls.
+Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
-### Shared settlement
+The current implementation is a broad playable alpha, not the final 1.0 scope. Do not call it complete while original v0.2 `부분/미구현` items remain.
+
+## Core loop
+
+`survival -> settlement growth -> better exploration -> external exploration / conquest -> NPCs / resources / technology -> settlement growth`
 
 - one shared settlement per world/server;
-- pioneer marker survival founding;
-- physical shared storage with cached wood / stone / metal / food HUD ledger;
-- shared population, housing, buildings, roads and outposts;
-- server-authored one-line next-goal guidance rather than a separate quest screen.
+- server-authoritative resources/buildings/population/roads/outposts;
+- actual Minecraft ItemStacks remain resource authority;
+- repeated hauling/production/job assignment is automated;
+- players keep exploring, fighting and choosing where the settlement expands.
 
-### Compact interaction model
+## Controls
 
-Normal gameplay is unified around:
+Normal play remains compact:
 
-- `B` — settlement palette;
-- `R` — rotate building placement;
+- `B` — settlement building/infrastructure palette;
+- `R` — rotate active building placement;
 - `Enter` — confirm active building/road/outpost placement;
-- `Backspace` — reset the current road start selection.
+- `Backspace` — reset/cancel the current road-start step.
 
-Old fragmented N/J/K gameplay keys are not used. Important vanilla controls remain untouched.
+No extra market hotkey or separate shop dashboard was added in Alpha.32.
 
-### Buildings and workers
+## Functional building families
 
-Functional building families currently include house, lumber camp, farm, quarry, mine, warehouse, blacksmith and guard post.
+Current functional families: **9**.
 
-- building placement uses world-space validation and rotation;
-- building unlocks follow settlement growth rather than one giant menu;
-- custom worker roles handle logging, farming, quarrying, mining and transport;
-- housing/food/workplaces drive population growth;
-- vanilla villager profession trading is not the progression system.
+- house;
+- lumber camp;
+- farm;
+- quarry;
+- mine;
+- warehouse;
+- blacksmith;
+- guard post;
+- **market**.
 
-### Safe construction rules
+The original v0.2 target remains roughly 15–20 meaningful families, with workshop, construction office, cart station, watchtower, barracks and advanced workshop still on the completion track.
 
-Construction rejects unsafe overlaps and unsuitable terrain instead of silently destroying player work.
+## Physical building / road / outpost construction
 
-- footprint height variation is limited;
-- fluids, block entities, tree trunks and protected/non-natural obstructions reject the site;
-- terrain preparation uses direct no-drop block updates rather than drop-producing destruction;
-- foundations are supported;
-- roof blocks are ordered after structural support;
-- completed enclosed buildings include deliberate windows and lighting;
-- a newly introduced wrong obstruction pauses construction instead of being overwritten.
+Building approval does not instantly mutate the world or delete the full project cost.
 
-### Alpha.23 — physical building construction logistics
+New building flow:
 
-- approving a building validates the full physical wood/stone requirement but does not instantly delete the whole cost;
-- a temporary physical construction supply barrel is created beside the work site;
-- the builder walks to an actually loaded settlement storage container;
-- the builder extracts a real matching item stack and visibly carries it in the main hand;
-- carried resources are deposited into the site supply barrel in batches;
-- construction waits until all currently required physical materials are staged;
-- building cost is consumed gradually from the site barrel as blueprint steps are placed;
-- if staged material disappears, work pauses/re-hauls instead of creating resources from nothing;
-- active construction blocks and the supply barrel are protected from accidental breaking;
-- leftover items are returned to settlement storage when possible.
+`approval -> physical grading -> real material hauling -> foundation/frame/walls/roof/finish -> completion`
 
-### Alpha.24 — phase-readable building work
+- builder visits loaded work cells and grades only validated natural/replaceable terrain;
+- shallow support uses coarse dirt rather than free recoverable economic material;
+- real wood/stone stacks are extracted from loaded settlement storage in bounded batches;
+- a protected physical site barrel stages materials;
+- cost is consumed gradually as blueprint work proceeds;
+- unsafe new obstructions pause work instead of being silently destroyed;
+- no `destroyBlock` / loose-drop construction path;
+- save migration preserves older active projects.
 
-- construction guidance reports hauling, foundation, frame/walls, roof, interior/finish or final validation;
-- the active builder is protected from ordinary damage while carrying/placing settlement construction resources, then returns to normal vulnerability when the job finishes;
-- temporary wooden work towers provide closer high-wall/roof work positions when the surrounding site is safe;
-- scaffold pieces are only claimed where every required position is replaceable and free of fluids/block entities;
-- scaffold ownership is persisted in `ConstructionState`, so restart/reconnect recovery and cleanup do not infer ownership from visual shape;
-- if all scaffold approaches are blocked, construction falls back safely rather than deleting an obstruction or deadlocking;
-- the builder performs a visible main-hand swing when a blueprint block is placed;
-- construction-barrel pressure handling returns removable surplus to settlement storage.
+Roads use physical grading, stone hauling and paving. Outposts use physical grading, wood/stone hauling and blueprint construction.
 
-### Alpha.25 — physical road grading and stone hauling
+## Residents, production and logistics
 
-- road approval validates the full stone requirement but no longer deletes it instantly;
-- newly approved routed roads begin with a persisted worker grading phase before surface paving;
-- the construction worker walks the planned 3-wide footprint, clears only route-safe material with no-drop updates, fills shallow validated support gaps, and establishes a walkable graded base;
-- old active road saves from Alpha.24 remain compatible;
-- after grading, the worker extracts actual stone-family stacks from loaded settlement storage in batches and visibly carries them to the active work front;
-- the project stone cost is consumed gradually from the carried physical stack as road placements advance;
-- surplus carried stone is returned to physical settlement storage before completion;
-- active road transaction blocks are protected from break/rebuild exploits.
+- builder, logger, farmer, quarry worker, miner, guard and transport roles are implemented;
+- loaded town production is paced and bounded rather than instant;
+- remote outpost production is specialization-specific and loaded-chunk only;
+- lumber/quarry/mining consume actual finite nearby world resources where appropriate;
+- agriculture uses actual vanilla crop growth;
+- transport workers are persistently assigned to one outpost;
+- transport follows persisted road-center waypoints;
+- unloaded route boundaries pause transport instead of force-loading or teleporting;
+- higher tiers add non-destructive tier-visible road public works and garrison benefits.
 
-### Alpha.26 — physical outpost construction
+Alpha.27 tagged road logistics remains the only outpost-transport authority.
 
-- approval validates wood 72 / stone 48 without deleting it up front;
-- a persisted grading phase walks the 9×9 site and performs only validated shallow earthwork;
-- the builder then extracts actual wood/stone-family stacks from loaded settlement storage and carries them to the work front;
-- blueprint material cost is consumed gradually from the carried physical stack;
-- work pauses on shortages or new obstructions rather than generating resources or overwriting player changes;
-- old pre-Alpha.26 active outpost saves remain on their prepaid construction path;
-- completion detects lumber / quarry / mining / agriculture specialization and activates local production.
+## Alpha.31 — external content becomes a Frontier input
 
-### Alpha.27 — road-bound outpost logistics
+Alpha.31 changed external mods from a passive recommendation list into a data-driven content source.
 
-- every transport villager is permanently assigned to one outpost with settlement-owned entity tags and a visible `운송 주민 #<id>` identity;
-- old generic transport villagers migrate without charging arrival food again;
-- transport no longer pairs generic villagers with `outposts[i]` through UUID sorting;
-- routes reconstruct from persisted `RoadSegment.centers()` and follow chained/branched roads toward the settlement;
-- outbound and inbound trips advance through short road waypoints so L-corners remain meaningful;
-- an unloaded next segment pauses the worker without force-loading it;
-- only fully loaded routes are used for migration, missing-worker replacement and authoritative population reconciliation;
-- stockpile extraction is specialization-filtered so unrelated player junk stays in the outpost chest.
+Frontier now exposes additive item tags for:
 
-### Alpha.28 — distinct physical outpost production
+- settlement wood;
+- settlement stone;
+- settlement metal;
+- settlement food;
+- expedition relics.
 
-Alpha.28 makes specialization affect actual work cadence and local resource behavior instead of only changing the output item category.
+It also understands conventional `c:` material tags where applicable, so compatible external materials can enter the same physical settlement economy without Java hard dependencies.
 
-- production only runs when the outpost and its required local chunks are already loaded; no production path force-loads remote territory;
-- each production worker is persistently tagged to its own outpost, with legacy visible-name workers adopted into the tag identity instead of duplicated;
-- lumber work is limited to nearby natural trees with leaf canopies, requires the worker to walk to the trunk, performs a visible swing, and removes at most 4 logs per roughly 5-second work cycle;
-- quarry work is limited to exposed nearby stone, requires physical approach and a swing, removes at most 3 exposed blocks per roughly 4-second cycle, and no longer hollows hidden adjacent stone beneath intact ground;
-- mining work has a readable minehead cycle and performs one finite underground ore extraction roughly every 8 seconds;
-- mined ore remains physically depleted in the world by replacement with ordinary stone, so a mining site is not an infinite abstract generator;
-- agriculture uses vanilla crop growth as the renewable specialization and harvests at most 4 mature wheat per roughly 6-second work cycle;
-- the agriculture plot is initialized only from the pristine completed coarse-dirt floor; once established, missing crops/farmland are not magically recreated every production tick;
-- full stockpiles naturally stall local production because workers keep carrying undelivered output instead of deleting or abstracting it.
+`/frontier status` can report physical expedition relics and recognized external weapons found in loaded settlement storage. The first recognized external weapon namespace is Weapons Expanded.
 
-### Alpha.29 — tier-visible settlement growth and authority cleanup
+No companion loader class is required merely to boot Frontier or classify a physical item: missing companions degrade to no matching content rather than a startup failure.
 
-- Alpha.27 tagged road logistics is the single transport authority at every tier; the hidden high-tier generic-name/UUID transport backend is gone;
-- `FRONTIER_TOWN` and `DOMAIN` add deterministic settlement-owned road-shoulder lighting along already-built loaded roads, densifying from 16-block to aligned 8-block spacing;
-- road public works only use clear loaded shoulders, skip fluids/block entities and protected footprints, and are protected from break-and-respawn drop farming;
-- civic-core public works are protected across tier changes;
-- higher tiers retain stronger guard-post garrisons on loaded guard posts;
-- night routines understand transport assignment tags and production-worker tags instead of relying on the legacy generic transport name;
-- town workers return to houses, loaded outpost production workers return to their outpost shelter, and remote haulers between safe anchors stop rather than receiving cross-territory night paths.
+## Alpha.32 — physical market / exploration-to-settlement bridge
 
-### Alpha.30 — test-readiness physical consistency pass
+Alpha.32 adds the original-design **market** as the first real consumer of external exploration content.
 
-Alpha.30 is a manual code/gameplay-readiness pass before the next bundled real-play test. It closes the largest remaining inconsistencies rather than adding a new control surface.
+- market unlocks at the `VILLAGE` settlement tier;
+- cost: wood 96 / stone 48;
+- physical 11×11 open market blueprint with covered stalls and civic pavilion;
+- one dedicated protected trade barrel is part of the completed market;
+- one visible tagged `방문 상인` works at each loaded market during the daytime;
+- **ordinary shared settlement storage is never auto-sold**;
+- only items the player deliberately puts in the market trade barrel can be sold;
+- only `frontier_settlement:expedition_relics` are eligible;
+- one relic is processed per readable trade cycle;
+- payment is a real emerald ItemStack inserted into the same barrel;
+- if the barrel cannot accept the payout, the transaction does not consume the relic;
+- no abstract trade currency, teleport delivery or new shop UI was added.
 
-- a newly approved building no longer clears terrain, creates a barrel or generates a free cobblestone foundation at approval time;
-- new building construction begins with a persisted `건물 부지 정리` phase in which the actual builder walks the footprint and one-block apron, validates each loaded cell and clears only safe natural/replaceable material;
-- shallow foundation support now uses coarse dirt rather than recoverable cobblestone and never uses loose-drop destruction;
-- after grading, the existing physical transaction resumes: the builder creates the protected work crate when its loaded site is usable, hauls real wood/stone in batches, consumes project cost gradually and builds at the existing readable pace;
-- old pre-Alpha.30 active building saves keep their small legacy step and resume on the already-prepared construction path instead of being re-graded or double-charged;
-- the authoritative starter settlement barrel is protected from normal breaking so destroying one fixed saved storage coordinate cannot softlock early progression;
-- main-settlement logger / farmer / quarry / miner work is now bounded similarly to outpost production: roughly 5s / 6s / 4s / 8s work cycles with 4 / 4 / 3 collection caps where applicable;
-- town workers only inspect already-loaded work/resource cells, successful work uses a visible hand swing, and quarry cluster harvesting only removes individually exposed stone cells;
-- town mining only consumes already-loaded real ore and remains finite;
-- blacksmith repair and ordinary guard maintenance skip unloaded work centers so unloaded infrastructure is not treated as a missing active entity target;
-- no new gameplay key, dashboard or micromanagement layer was added.
+Baseline relic values currently include Echo Shard, Heart of the Sea, Enchanted Golden Apple, Heavy Core, Trial Key, Ominous Trial Key and Ominous Bottle. Future external dungeon loot can join through the additive relic tag rather than a new Java branch for every mod.
 
-Alpha.30 has automated source/build/JAR validation, but it is not a claim that the new grading/navigation/pacing has already passed hands-on Minecraft play. Those qualities remain the next real-play focus.
+This closes only the first market/merchant loop. Broader high-tier trading and specialist crafting remain future original-scope work.
 
-### Validation
+## External content stack
 
-The canonical GitHub Actions workflow performs:
+`COMPANION_LOCK.json` is the exact candidate lock for the next fresh-world compatibility test. `COMPANION_MODS.md` explains the strategy and `EXTERNAL_CONTENT_REGISTER.md` records reuse/license boundaries.
+
+Current candidate stack includes:
+
+- Terralith + Lithostitched;
+- Dungeons and Taverns;
+- Repurposed Structures;
+- Better Combat + Cloth Config + Player Animation Library;
+- Weapons Expanded;
+- Lootr;
+- Sophisticated Backpacks + Sophisticated Core;
+- Jade;
+- Xaero's Minimap.
+
+The lock deliberately remains `candidate_runtime_lock` until the full client/server set is actually launched together. World-generation entries must be installed before creating that test world.
+
+External content policy:
+
+- use official dependency JARs/packs where they already solve a problem well;
+- reuse MIT/LGPL/clear public-license code/data only with required attribution and compatibility review;
+- ARR/ND/custom-restricted assets stay dependency/reference-only;
+- public GitHub visibility by itself is not permission to copy assets or code;
+- Frontier should spend development time connecting strong external content to settlement growth, not recreating dozens of dungeons, mobs and weapons.
+
+## Validation
+
+Canonical CI performs:
 
 1. source audit;
 2. Java 25 clean Gradle build;
 3. runtime JAR verification;
-4. deliverable artifact upload;
-5. canonical CI-result recording back to `ci-results/frontier-settlement/`.
+4. artifact upload;
+5. result recording to `ci-results/frontier-settlement/`.
 
-Real in-game visual quality, navigation behavior and pacing must still be judged through actual play/screenshots; CI cannot prove those presentation qualities.
+Alpha.32 code checkpoint `62ece48b90d4f36575194fd3dea7863edf0f61bd` passed source audit, Java25 build and JAR verification in run `32631924968` before this documentation update.
+
+Automated validation proves source/build/JAR consistency, not hands-on navigation, visual quality or full companion-stack runtime compatibility. Those still require real Minecraft play.
