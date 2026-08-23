@@ -46,7 +46,8 @@ public final class FieldDepotService {
         FieldDepotData depots = FieldDepotData.get(player);
         if (depots.owns(player, dimension, barrel)) {
             depots.remove(player, dimension, barrel);
-            player.sendSystemMessage(Component.literal("§3[현장 물류 해제] §f배럴 거점 연결을 해제했습니다. §7보급권은 반환되지 않습니다."));
+            OutpostService.onDepotRemoved(player, dimension, barrel);
+            player.sendSystemMessage(Component.literal("§3[현장 물류 해제] §f배럴 거점 연결을 해제했습니다. §7전초기지 승격도 함께 해제되며 보급권/승격 재료는 반환되지 않습니다."));
             return;
         }
         if (depots.count(player) >= FieldDepotData.MAX_DEPOTS_PER_PLAYER) {
@@ -84,7 +85,7 @@ public final class FieldDepotService {
         List<FieldDepotData.DepotEntry> depots = data.depots(player);
         int active = activeDepotCount(player);
         player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 §e" + depots.size() + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER
-                + " §7· 현재 사용 가능 §a" + active + " §7· 반경 " + SUPPLY_RADIUS + "블록"));
+                + " §7· 현재 사용 가능 §a" + active + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));
         if (depots.isEmpty()) {
             player.sendSystemMessage(Component.literal("  §7- 4블록 내 배럴에서 '물류 거점 연결'을 선택하면 보급권1로 등록합니다."));
             return;
@@ -93,52 +94,58 @@ public final class FieldDepotService {
         for (FieldDepotData.DepotEntry depot : depots) {
             BlockPos pos = depot.pos();
             boolean sameDimension = depot.dimension().equals(currentDimension);
+            boolean outpost = OutpostService.isOutpost(player, depot);
             String state = sameDimension && isUsableBarrel(player, depot) ? "§a사용 가능" : "§8비활성/미로딩";
             player.sendSystemMessage(Component.literal("  §7- §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
-                    + " §7· " + state + (sameDimension ? "" : " §7· 다른 차원")));
+                    + " §7· " + (outpost ? "§2전초기지 §7· " : "") + state + (sameDimension ? "" : " §7· 다른 차원")));
         }
     }
 
-    public static boolean hasMaterial(ServerPlayer player, Item item) {
-        if (hasInPlayer(player, item)) return true;
-        for (Container container : usableContainers(player)) {
-            for (int slot = 0; slot < container.getContainerSize(); slot++) {
-                if (container.getItem(slot).is(item)) return true;
-            }
-        }
-        return false;
-    }
+    public static boolean hasMaterial(ServerPlayer player, Item item) { return countMaterial(player, item) > 0; }
 
-    public static boolean consumeOne(ServerPlayer player, Item item) {
+    public static int countMaterial(ServerPlayer player, Item item) {
+        int found = 0;
         for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (!stack.is(item)) continue;
-            stack.shrink(1);
-            player.getInventory().setChanged();
-            return true;
+            if (stack.is(item)) found += stack.getCount();
         }
         for (Container container : usableContainers(player)) {
             for (int slot = 0; slot < container.getContainerSize(); slot++) {
                 ItemStack stack = container.getItem(slot);
-                if (!stack.is(item)) continue;
-                stack.shrink(1);
-                container.setChanged();
-                return true;
+                if (stack.is(item)) found += stack.getCount();
             }
         }
-        return false;
+        return found;
     }
 
-    public static int activeDepotCount(ServerPlayer player) {
-        return usableContainers(player).size();
-    }
+    public static boolean consumeOne(ServerPlayer player, Item item) { return consume(player, item, 1); }
 
-    private static boolean hasInPlayer(ServerPlayer player, Item item) {
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            if (player.getInventory().getItem(slot).is(item)) return true;
+    public static boolean consume(ServerPlayer player, Item item, int amount) {
+        if (amount <= 0 || countMaterial(player, item) < amount) return false;
+        int remaining = amount;
+        for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (!stack.is(item)) continue;
+            int take = Math.min(remaining, stack.getCount());
+            stack.shrink(take);
+            remaining -= take;
         }
-        return false;
+        player.getInventory().setChanged();
+        for (Container container : usableContainers(player)) {
+            for (int slot = 0; slot < container.getContainerSize() && remaining > 0; slot++) {
+                ItemStack stack = container.getItem(slot);
+                if (!stack.is(item)) continue;
+                int take = Math.min(remaining, stack.getCount());
+                stack.shrink(take);
+                remaining -= take;
+            }
+            container.setChanged();
+            if (remaining <= 0) break;
+        }
+        return remaining == 0;
     }
+
+    public static int activeDepotCount(ServerPlayer player) { return usableContainers(player).size(); }
 
     private static List<Container> usableContainers(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
@@ -147,14 +154,15 @@ public final class FieldDepotService {
         List<FieldDepotData.DepotEntry> depots = new ArrayList<>(data.depots(player));
         depots.sort(Comparator.comparingDouble(depot -> depot.pos().distSqr(player.blockPosition())));
         List<Container> out = new ArrayList<>();
-        double maxDistance = SUPPLY_RADIUS * SUPPLY_RADIUS;
         for (FieldDepotData.DepotEntry depot : depots) {
             if (!depot.dimension().equals(dimension)) continue;
+            int radius = OutpostService.isActiveForLogistics(player, depot) ? OutpostService.EXTENDED_SUPPLY_RADIUS : SUPPLY_RADIUS;
             BlockPos pos = depot.pos();
-            if (pos.distSqr(player.blockPosition()) > maxDistance) continue;
+            if (pos.distSqr(player.blockPosition()) > radius * radius) continue;
             if (!level.hasChunkAt(pos)) continue;
             if (!level.getBlockState(pos).is(Blocks.BARREL)) {
                 data.remove(player, depot);
+                OutpostService.onDepotRemoved(player, depot.dimension(), pos);
                 continue;
             }
             if (!level.mayInteract(player, pos)) continue;
@@ -167,11 +175,13 @@ public final class FieldDepotService {
     private static boolean isUsableBarrel(ServerPlayer player, FieldDepotData.DepotEntry depot) {
         ServerLevel level = (ServerLevel) player.level();
         if (!depot.dimension().equals(level.dimension().toString())) return false;
+        int radius = OutpostService.isActiveForLogistics(player, depot) ? OutpostService.EXTENDED_SUPPLY_RADIUS : SUPPLY_RADIUS;
         BlockPos pos = depot.pos();
-        if (pos.distSqr(player.blockPosition()) > SUPPLY_RADIUS * SUPPLY_RADIUS) return false;
+        if (pos.distSqr(player.blockPosition()) > radius * radius) return false;
         if (!level.hasChunkAt(pos)) return false;
         if (!level.getBlockState(pos).is(Blocks.BARREL)) {
             FieldDepotData.get(player).remove(player, depot);
+            OutpostService.onDepotRemoved(player, depot.dimension(), pos);
             return false;
         }
         return level.mayInteract(player, pos) && level.getBlockEntity(pos) instanceof Container;
