@@ -44,11 +44,14 @@ public final class SettlementCoreService {
     }
 
     private static List<Placement> desired(SettlementData data) {
+        return desired(data, SettlementTier.current(data));
+    }
+
+    private static List<Placement> desired(SettlementData data, SettlementTier tier) {
         // The civic core is anchored to the physical pioneer marker. The stockpile may sit a few
         // blocks away and remains an ordinary physical container rather than becoming the town center.
         BlockPos center = data.centerPos();
         LinkedHashMap<BlockPos, Placement> placements = new LinkedHashMap<>();
-        SettlementTier tier = SettlementTier.current(data);
 
         addFloor(placements, center, 1, Blocks.COARSE_DIRT.defaultBlockState());
         addCampMarker(placements, center);
@@ -145,12 +148,16 @@ public final class SettlementCoreService {
 
         BlockPos pos = event.getPos();
         BlockState current = level.getBlockState(pos);
-        for (Placement placement : desired(data)) {
-            if (!placement.pos().equals(pos)) continue;
-            if (!current.is(placement.state().getBlock())) return;
-            event.setCanceled(true);
-            event.setNotifyClient(true);
-            return;
+        // Protect the matching civic state from every tier, not only the current tier. A temporary
+        // population drop must not turn formerly automatic public works into recoverable free items.
+        for (SettlementTier tier : SettlementTier.values()) {
+            for (Placement placement : desired(data, tier)) {
+                if (!placement.pos().equals(pos)) continue;
+                if (!current.is(placement.state().getBlock())) continue;
+                event.setCanceled(true);
+                event.setNotifyClient(true);
+                return;
+            }
         }
     }
 
