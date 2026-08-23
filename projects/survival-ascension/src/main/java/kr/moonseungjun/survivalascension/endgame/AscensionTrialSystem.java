@@ -27,6 +27,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
@@ -130,11 +131,30 @@ public final class AscensionTrialSystem {
         for (UUID owner : finished) ACTIVE.remove(owner);
     }
 
+    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof Mob mob)) return;
+        String ownerText = mob.getPersistentData().getStringOr(TRIAL_OWNER_KEY, "");
+        if (ownerText.isEmpty()) return;
+
+        UUID ownerId;
+        try {
+            ownerId = UUID.fromString(ownerText);
+        } catch (IllegalArgumentException ignored) {
+            event.setCanceled(true);
+            return;
+        }
+
+        Trial active = ACTIVE.get(ownerId);
+        if (active == null || active.level != level || !active.mobIds.contains(mob.getUUID())) {
+            event.setCanceled(true);
+        }
+    }
+
     private static boolean tickTrial(MinecraftServer server, Trial trial) {
         long now = trial.level.getGameTime();
         ServerPlayer owner = server.getPlayerList().getPlayer(trial.owner);
         boolean ownerValid = owner != null && owner.isAlive() && !owner.isSpectator()
-                && owner.level() == trial.level && owner.distanceToSqr(trial.center.getCenter()) <= PLAYER_RADIUS * PLAYER_RADIUS;
+                && owner.level() == trial.level && distanceToCenterSqr(owner, trial.center) <= PLAYER_RADIUS * PLAYER_RADIUS;
         if (ownerValid) trial.ownerAbsentTicks = 0;
         else trial.ownerAbsentTicks += 5;
         syncBossBarPlayers(server, trial);
@@ -191,8 +211,7 @@ public final class AscensionTrialSystem {
         int target = WAVE_COUNTS[trial.wave - 1];
         Set<UUID> spawned = new HashSet<>();
         for (int i = 0; i < target; i++) {
-            EntityType<? extends Mob> type = waveType(trial.wave, i);
-            Mob mob = spawnOne(trial.level, trial.center, type, i, target);
+            Mob mob = spawnOne(trial.level, trial.center, waveTypeId(trial.wave, i), i, target);
             if (mob == null) continue;
             mob.setPersistenceRequired();
             mob.getPersistentData().putString(TRIAL_OWNER_KEY, trial.owner.toString());
@@ -209,13 +228,14 @@ public final class AscensionTrialSystem {
         }
         trial.mobIds.clear();
         trial.mobIds.addAll(spawned);
-        trial.waveSpawnCount = spawned.size();
         trial.waveDeadline = trial.level.getGameTime() + WAVE_TIMEOUT_TICKS;
         trial.bossBar.setProgress(1.0F);
         return true;
     }
 
-    private static Mob spawnOne(ServerLevel level, BlockPos center, EntityType<? extends Mob> type, int index, int count) {
+    private static Mob spawnOne(ServerLevel level, BlockPos center, String typeId, int index, int count) {
+        EntityType<?> type = EntityType.byString(typeId).orElse(null);
+        if (type == null) return null;
         for (int attempt = 0; attempt < 10; attempt++) {
             double angle = Math.PI * 2.0D * (index + attempt * 0.37D) / Math.max(1, count);
             int radius = 8 + level.getRandom().nextInt(7);
@@ -224,8 +244,9 @@ public final class AscensionTrialSystem {
             BlockPos base = center.offset(dx, 0, dz);
             BlockPos pos = findOpenSpawn(level, base);
             if (pos == null) continue;
-            Mob mob = type.spawn(level, pos, EntitySpawnReason.TRIGGERED);
-            if (mob != null) return mob;
+            Entity entity = type.spawn(level, pos, EntitySpawnReason.TRIGGERED);
+            if (entity instanceof Mob mob) return mob;
+            if (entity != null) entity.discard();
         }
         return null;
     }
@@ -252,26 +273,26 @@ public final class AscensionTrialSystem {
         return open;
     }
 
-    private static EntityType<? extends Mob> waveType(int wave, int index) {
+    private static String waveTypeId(int wave, int index) {
         return switch (wave) {
-            case 1 -> index % 2 == 0 ? EntityType.ZOMBIE : EntityType.SKELETON;
+            case 1 -> index % 2 == 0 ? "minecraft:zombie" : "minecraft:skeleton";
             case 2 -> switch (index % 5) {
-                case 0, 1 -> EntityType.HUSK;
-                case 2, 3 -> EntityType.STRAY;
-                default -> EntityType.WITCH;
+                case 0, 1 -> "minecraft:husk";
+                case 2, 3 -> "minecraft:stray";
+                default -> "minecraft:witch";
             };
             case 3 -> switch (index % 5) {
-                case 0, 1 -> EntityType.WITHER_SKELETON;
-                case 2 -> EntityType.VINDICATOR;
-                case 3 -> EntityType.PILLAGER;
-                default -> EntityType.WITCH;
+                case 0, 1 -> "minecraft:wither_skeleton";
+                case 2 -> "minecraft:vindicator";
+                case 3 -> "minecraft:pillager";
+                default -> "minecraft:witch";
             };
             default -> switch (index) {
-                case 0 -> EntityType.RAVAGER;
-                case 1, 2 -> EntityType.EVOKER;
-                case 3, 4, 5 -> EntityType.VINDICATOR;
-                case 6, 7, 8 -> EntityType.WITHER_SKELETON;
-                default -> EntityType.WITCH;
+                case 0 -> "minecraft:ravager";
+                case 1, 2 -> "minecraft:evoker";
+                case 3, 4, 5 -> "minecraft:vindicator";
+                case 6, 7, 8 -> "minecraft:wither_skeleton";
+                default -> "minecraft:witch";
             };
         };
     }
@@ -284,7 +305,7 @@ public final class AscensionTrialSystem {
             if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
             alive.add(id);
             if (owner != null && mob.getTarget() == null) mob.setTarget(owner);
-            if (mob.distanceToSqr(trial.center.getCenter()) > RECALL_RADIUS * RECALL_RADIUS) {
+            if (distanceToCenterSqr(mob, trial.center) > RECALL_RADIUS * RECALL_RADIUS) {
                 mob.getNavigation().moveTo(trial.center.getX() + 0.5D, trial.center.getY(), trial.center.getZ() + 0.5D, 1.25D);
             }
         }
@@ -296,7 +317,7 @@ public final class AscensionTrialSystem {
         Set<ServerPlayer> shouldSee = new HashSet<>();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() == trial.level && player.isAlive() && !player.isSpectator()
-                    && player.distanceToSqr(trial.center.getCenter()) <= PLAYER_RADIUS * PLAYER_RADIUS) {
+                    && distanceToCenterSqr(player, trial.center) <= PLAYER_RADIUS * PLAYER_RADIUS) {
                 shouldSee.add(player);
                 if (!trial.bossBar.getPlayers().contains(player)) trial.bossBar.addPlayer(player);
             }
@@ -316,7 +337,7 @@ public final class AscensionTrialSystem {
         }
         for (ServerPlayer player : trial.level.getServer().getPlayerList().getPlayers()) {
             if (player == owner || player.level() != trial.level || !player.isAlive() || player.isSpectator()) continue;
-            if (player.distanceToSqr(trial.center.getCenter()) <= 48.0D * 48.0D) {
+            if (distanceToCenterSqr(player, trial.center) <= 48.0D * 48.0D) {
                 player.giveExperiencePoints(80);
                 player.sendSystemMessage(Component.literal("§5[승천 시련] §f협동 완료 보상 경험치 §d+80"));
             }
@@ -370,6 +391,13 @@ public final class AscensionTrialSystem {
         if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
 
+    private static double distanceToCenterSqr(Entity entity, BlockPos center) {
+        double dx = entity.getX() - (center.getX() + 0.5D);
+        double dy = entity.getY() - (center.getY() + 0.5D);
+        double dz = entity.getZ() - (center.getZ() + 0.5D);
+        return dx * dx + dy * dy + dz * dz;
+    }
+
     private static final class Trial {
         final UUID owner;
         final ServerLevel level;
@@ -377,7 +405,6 @@ public final class AscensionTrialSystem {
         final ServerBossEvent bossBar;
         final Set<UUID> mobIds = new HashSet<>();
         int wave;
-        int waveSpawnCount;
         long waveDeadline;
         long nextWaveTick;
         int ownerAbsentTicks;
