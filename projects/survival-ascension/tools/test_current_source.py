@@ -71,7 +71,6 @@ need(main, ['VERSION = "0.26.0-alpha.1"', "ExpeditionIncidentSystem::onPlayerTic
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "network protocol")
 
-# 0.25 persistent directive regressions
 action = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java")
 need(action, ["LOGS_FELLED", "BLOCKS_BUILT", "CROPS_HARVESTED", "TRAVEL_DISTANCE", "OCEAN_VOYAGE",
               "BLOCKS_MINED", "HOSTILES_KILLED", "DASHES_USED"], "expedition actions")
@@ -93,7 +92,6 @@ need(progression, ["public static ExpeditionRegion currentRegion", "ExpeditionDi
                    "ExpeditionIncidentSystem.recordAction(player, action, amount)", "ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount)",
                    "grantIncidentBonus", "data.claimRegionReward", "data.claimMilestone"], "expedition progression")
 
-# 0.26 rare incidents
 incident = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncident.java")
 for marker in ["WOODLAND_AMBUSH", "WOODLAND_RUSH", "ARID_AMBUSH", "ARID_RUSH", "WETLAND_AMBUSH", "WETLAND_RUSH",
                "HIGHLANDS_AMBUSH", "HIGHLANDS_RUSH", "OCEAN_AMBUSH", "OCEAN_RUSH", "DEEP_AMBUSH", "DEEP_RUSH",
@@ -115,7 +113,6 @@ need(incident_system, ["CHECK_INTERVAL_TICKS = 600", "START_CHANCE = 0.10D", "ST
 commands = read("src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java")
 need(commands, ["사건 해결", "expedition.incidentResolved(player, region)"], "incident stats")
 
-# Core physical-scale safety regressions
 tuning = read("src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java")
 need(tuning, ["if (level >= 100) return 11;", "if (level >= 100) return 192;", "if (level >= 100) return 384;",
               "if (level >= 100) return 49;", "if (level >= 100) return 2.0D;", "if (level >= 100) return 16.0D;"], "Mastery VI tuning")
@@ -136,7 +133,6 @@ need(combat, ["fieldMastery ? 7.5D", "fieldMastery ? 20", "combatLevel >= 100 ? 
 mobility = read("src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java")
 need(mobility, ["ExpeditionProgression.recordAction(player, ExpeditionAction.DASHES_USED, 1)", "return 4;", "DASH_READY_TICK", "AIR_DASH_COUNT"], "mobility action validation")
 
-# Endgame/economy regressions
 world = read("src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionData.java")
 need(world, ["world_ascension_v1", "MAX_STAGE = 2"], "world ascension")
 trial = read("src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java")
@@ -144,7 +140,7 @@ need(trial, ["TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "START_COOLDOWN_TIC
              "maybeReinforce", "EntitySpawnReason.TRIGGERED", "ServerBossEvent", "removeStaleServerTrials"], "Ascension Trial")
 if '"minecraft:evoker"' in trial: errors.append("Ascension Trial must not directly spawn evokers")
 mutation = read("src/main/java/kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.java")
-need(mutation, ["MUTATION_CHANCE = 0.18D", "Mutation.WITHERED", "Mutation.PHASE", "Mutation.PLAGUE", "contains(\"SPAWNER\")"], "endgame mutations")
+need(mutation, ["MUTATION_CHANCE = 0.18D", "Mutation.WITHERED", "Mutation.PHASE", "Mutation.PLAGUE", 'contains("SPAWNER")'], "endgame mutations")
 warband = read("src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java")
 need(warband, ["ROUT_TICKS = 160", "3 + worldStage", "6 + worldStage"], "warband")
 affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
@@ -152,7 +148,6 @@ need(affix, ['AWAKENED = "awakened"', "canAwaken", "currentAffixes(stack).size()
 reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
 need(reforge, ["ACTION_AWAKEN", "AscensionAffixes.canAwaken(held)", "Items.AMETHYST_SHARD, 256", "Items.DRAGON_BREATH, 16"], "awakening economy")
 
-# Documentation/reference policy
 project = read("PROJECT.md")
 readme = read("README.md")
 need(project, ["0.26 희귀 현장 사건", "incident_rewards", "Enhanced Celestials Tweaks(MIT)", "Majrusz's Progressive Difficulty"], "PROJECT canon")
