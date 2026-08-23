@@ -95,6 +95,13 @@ License: GNU Lesser General Public License version 3 (LGPL-3.0)
 
 Survival Ascension studies only the high-level product goal of reducing repetitive travel after death. 0.31 does not create or copy a corpse container/entity and does not preserve, move or expose dropped inventory through a Corpse-style system. Field recovery is independent Survival Ascension SavedData plus server-side death qualification and safe post-respawn teleport. No Corpse source code, inventory-storage/transfer implementation, entity, GUI, data, assets, configuration or namespace are copied or bundled.
 
+## Heracles — design reference only for 0.32
+Source project: `terrarium-earth/Heracles`  
+Copyright (c) 2023 Terrarium Earth  
+License: MIT License
+
+Survival Ascension studies only the product-level idea that multi-step repeatable tasks should keep explicit objective and completion state. The 0.32 operation system is independent Survival Ascension code built around owned physical outposts, stage-specific outbound range gates, existing validated ExpeditionAction hooks, exact-origin return, per-player persistence and its own rewards. No Heracles quest data, quest trees, editor, UI, source structures, assets, configuration, import formats or namespace are copied or bundled.
+
 ## Silent Gear — design reference only for 0.27
 Source project: Silent Gear  
 Current project license: MIT
