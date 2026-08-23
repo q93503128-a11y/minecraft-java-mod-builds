@@ -1,5 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25
 - Lv.100 mastery VI scale and existing tick/protection/material contracts retained
-- Stage-2 Ascension Trial adds paid four-wave repeatable endgame with boss-bar state, timeout, overlap, stale-server and restart-orphan guards
+- Stage-2 Ascension Trial now varies by tactical doctrine and adds one bounded mid-wave reinforcement without HP-only scaling
+- Mythic III awakening validates exact three-affix source state before resource consumption, preserves unlock gates, and keeps four-affix rerolls expensive
 - world stages, mutations, Nexus, warbands, elites and equipment economy regressions retained
