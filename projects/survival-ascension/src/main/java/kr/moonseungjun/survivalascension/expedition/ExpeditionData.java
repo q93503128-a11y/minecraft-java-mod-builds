@@ -24,12 +24,13 @@ public final class ExpeditionData extends SavedData {
     private static final Codec<Map<String, Integer>> PROGRESS_CODEC = Codec.unboundedMap(Codec.STRING, Codec.INT);
 
     private record PlayerEntry(String uuid, int discoveredMask, int completedMask,
-                               Map<String, Integer> progress, int milestoneMask) {
+                               Map<String, Integer> progress, int regionRewardMask, int milestoneMask) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
                 Codec.INT.optionalFieldOf("discovered", 0).forGetter(PlayerEntry::discoveredMask),
                 Codec.INT.optionalFieldOf("completed", 0).forGetter(PlayerEntry::completedMask),
                 PROGRESS_CODEC.optionalFieldOf("progress", Map.of()).forGetter(PlayerEntry::progress),
+                Codec.INT.optionalFieldOf("region_rewards", -1).forGetter(PlayerEntry::regionRewardMask),
                 Codec.INT.optionalFieldOf("milestones", 0).forGetter(PlayerEntry::milestoneMask)
         ).apply(instance, PlayerEntry::new));
     }
@@ -45,12 +46,17 @@ public final class ExpeditionData extends SavedData {
     private static final class State {
         int discoveredMask;
         int completedMask;
+        int regionRewardMask;
         int milestoneMask;
         final Map<String, Integer> progress = new HashMap<>();
 
-        State(int discoveredMask, int completedMask, Map<String, Integer> progress, int milestoneMask) {
+        State(int discoveredMask, int completedMask, Map<String, Integer> progress,
+              int regionRewardMask, int milestoneMask) {
             this.discoveredMask = discoveredMask & ALL_REGIONS_MASK;
             this.milestoneMask = milestoneMask & (MILESTONE_OVERWORLD | MILESTONE_LEGENDARY | MILESTONE_MASTER);
+            this.regionRewardMask = regionRewardMask < 0
+                    ? this.discoveredMask
+                    : regionRewardMask & ALL_REGIONS_MASK;
             int migratedCompleted = completedMask & ALL_REGIONS_MASK;
             if ((this.milestoneMask & MILESTONE_MASTER) != 0) migratedCompleted = ALL_REGIONS_MASK;
             this.completedMask = migratedCompleted;
@@ -72,14 +78,16 @@ public final class ExpeditionData extends SavedData {
 
     private ExpeditionData(List<PlayerEntry> entries) {
         for (PlayerEntry entry : entries) {
-            players.put(entry.uuid(), new State(entry.discoveredMask(), entry.completedMask(), entry.progress(), entry.milestoneMask()));
+            players.put(entry.uuid(), new State(entry.discoveredMask(), entry.completedMask(), entry.progress(),
+                    entry.regionRewardMask(), entry.milestoneMask()));
         }
     }
 
     private List<PlayerEntry> entries() {
         List<PlayerEntry> out = new ArrayList<>(players.size());
         players.forEach((uuid, state) -> out.add(new PlayerEntry(
-                uuid, state.discoveredMask, state.completedMask, Map.copyOf(state.progress), state.milestoneMask)));
+                uuid, state.discoveredMask, state.completedMask, Map.copyOf(state.progress),
+                state.regionRewardMask, state.milestoneMask)));
         return out;
     }
 
@@ -90,7 +98,7 @@ public final class ExpeditionData extends SavedData {
         String key = player.getUUID().toString();
         State state = players.get(key);
         if (state == null) {
-            state = new State(0, 0, Map.of(), 0);
+            state = new State(0, 0, Map.of(), 0, 0);
             players.put(key, state);
             setDirty();
         }
@@ -135,6 +143,14 @@ public final class ExpeditionData extends SavedData {
         if (completedNow) state.completedMask |= region.bit();
         setDirty();
         return new ProgressResult(oldProgress, newProgress, completedNow);
+    }
+
+    public boolean claimRegionReward(ServerPlayer player, ExpeditionRegion region) {
+        State state = state(player);
+        if ((state.regionRewardMask & region.bit()) != 0) return false;
+        state.regionRewardMask |= region.bit();
+        setDirty();
+        return true;
     }
 
     public int count(ServerPlayer player) { return Integer.bitCount(state(player).discoveredMask); }
