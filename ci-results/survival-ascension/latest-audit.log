@@ -1,7 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.40 Bastion final-wave Ravager/Vindicator breachers are bounded to real fortification blocks
-- mobGriefing + owner protection + block destroyability + NeoForge destroy hook precede every break
-- normal 3-wave defense stays non-destructive; broken wall material drops for physical repair
-- 0.39 fortification and 0.38/0.37/0.36/0.35/0.34/0.33/0.32 contracts remain
-- no new SavedData/packet/client coordinate/getChunk/ticket/force-load
+- 0.41 Civil Works consumes a large Stage1 material sink plus a real registered-Barrel commissioning yard
+- Construction Lv60+ causeway uses existing protected queue for 3-wide forward physical roads/bridges at 17/33/49/65 length
+- causeway targets are loaded-only and retain player-first/physical-depot materials, mayInteract, placement hooks and 64-global/8-local tick budgets
+- 0.40 breachers,0.39 fortification,0.38 defense,0.37 warehouse,0.36 commissioning and older progression contracts remain
+- no new SavedData ID, packet, client coordinate, second builder engine, getChunk, ticket or force-load

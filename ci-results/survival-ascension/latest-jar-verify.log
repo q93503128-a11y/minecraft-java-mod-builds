@@ -1,5 +1,7 @@
 JAR VERIFY PASS
-version=0.40.0-alpha.1
+version=0.41.0-alpha.1
+civil_works_runtime=present
+protected_causeway_construction_runtime=present
 physical_commissioning_runtime=present
 physical_warehouse_runtime=present
 outpost_fortification_runtime=present
@@ -12,5 +14,5 @@ production_runtime=present
 field_depot_runtime=present
 outpost_runtime=present
 field_recovery_runtime=present
-size=475896
-sha256=39ea39f63dff6864cdd0a61647d89837ff1361a7480d6121627df65729893ae0
+size=477055
+sha256=53bed941499b403abcf4a77d3e63be7f13075477414873a153131cf942cfda93
