@@ -30,9 +30,10 @@ public final class ProductionRadialMenuScreen extends Screen {
             new Entry("정밀 부품 배치", "레드128 · 자수정64 · 금32 · 석영64", new ItemStack(Items.COMPARATOR), "precision", Action.PRODUCE),
             new Entry("물류 거점 연결", "4블록 내 배럴 등록/해제 · 등록 보급권1 · 최대3", new ItemStack(Items.BARREL), "", Action.DEPOT),
             new Entry("전초기지 승격", "등록 배럴+침대+모닥불+작업대+화로 · 보급권2/철32/금8/석탄32", new ItemStack(Items.CAMPFIRE), "", Action.OUTPOST),
+            new Entry("원정 작전", "완수 지역 전초에서 보급권1 · 전진선 돌파→현지 작업→같은 전초 귀환", new ItemStack(Items.SPYGLASS), "", Action.OPERATION),
             new Entry("현장 복귀 계약", "활성 전초기지에서 보급권1 · 일반 사망 96블록 내 1회 복귀", new ItemStack(Items.COMPASS), "", Action.RECOVERY),
             new Entry("현장 보급 출고", "보급권1 → 금32 · 자수정16 · 메아리2", new ItemStack(Items.MINECART), "", Action.DISPATCH),
-            new Entry("생산 현황", "4계통 버퍼 · 보급권 · 물류/전초/복귀 상태", new ItemStack(Items.WRITABLE_BOOK), "", Action.STATUS),
+            new Entry("생산 현황", "생산·보급권·물류·전초·복귀·원정 작전 상태", new ItemStack(Items.WRITABLE_BOOK), "", Action.STATUS),
             new Entry("뒤로", "인프라 메뉴로 돌아가기", new ItemStack(Items.ARROW), "", Action.BACK)
     };
     private static final int ITEM_COUNT = ENTRIES.length;
@@ -59,7 +60,7 @@ public final class ProductionRadialMenuScreen extends Screen {
         Entry entry = ENTRIES[selected];
         graphics.text(this.font, entry.title(), cx - this.font.width(entry.title()) / 2, cy - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, entry.detail(), cx - this.font.width(entry.detail()) / 2, cy + 8, 0xFFB8B8B8, false);
-        String caption = "생산 → 보급권 → 배럴 물류 → 전초기지 → 사망 후 현장 복귀";
+        String caption = "생산 → 물류 → 전초기지 → 원정 작전 → 현장 복귀";
         graphics.text(this.font, caption, cx - this.font.width(caption) / 2, cy - 102, 0xFFE0E0E0, true);
     }
 
@@ -73,6 +74,7 @@ public final class ProductionRadialMenuScreen extends Screen {
             case DISPATCH -> ProductionService.ACTION_DISPATCH;
             case DEPOT -> ProductionService.ACTION_DEPOT_TOGGLE;
             case OUTPOST -> ProductionService.ACTION_OUTPOST_UPGRADE;
+            case OPERATION -> ProductionService.ACTION_FIELD_OPERATION;
             case RECOVERY -> ProductionService.ACTION_FIELD_RECOVERY;
             case PRODUCE -> ProductionService.ACTION_PREFIX + entry.programId();
             case BACK -> "";
@@ -85,7 +87,7 @@ public final class ProductionRadialMenuScreen extends Screen {
     private static int selectedIndex() { double a=correctAngle(360-(getMouseAngle()-ANGLE_PER_ITEM/2)); return Mth.clamp((int)Math.floor(a/ANGLE_PER_ITEM),0,ITEM_COUNT-1); }
     private static double getMouseAngle(){Minecraft m=Minecraft.getInstance();double ox=m.getWindow().getScreenWidth()*.5,oy=m.getWindow().getScreenHeight()*.5;return correctAngle(-Math.toDegrees(Math.atan2(m.mouseHandler.xpos()-ox,m.mouseHandler.ypos()-oy)));}
     private static double correctAngle(double a){while(a<0)a+=360;while(a>=360)a-=360;return a;}
-    private enum Action { FUND, PRODUCE, DEPOT, OUTPOST, RECOVERY, DISPATCH, STATUS, BACK }
+    private enum Action { FUND, PRODUCE, DEPOT, OUTPOST, OPERATION, RECOVERY, DISPATCH, STATUS, BACK }
     private record Entry(String title,String detail,ItemStack icon,String programId,Action action){}
     private record WheelElement(RenderPipeline pipeline,TextureSetup textureSetup,Matrix3x2f pose,int x,int y,int selected,ScreenRectangle scissorArea,ScreenRectangle bounds) implements GuiElementRenderState{
         private WheelElement(RenderPipeline p,TextureSetup t,Matrix3x2f pose,int x,int y,int s,ScreenRectangle a){this(p,t,pose,x,y,s,a,boundsFor(x,y,pose,a));}
