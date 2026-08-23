@@ -71,6 +71,7 @@ public final class AscensionTrialSystem {
             return;
         }
         MinecraftServer server = level.getServer();
+        removeStaleServerTrials(server);
         if (WorldAscensionData.get(server).stage() < 2) {
             player.sendSystemMessage(Component.literal("§5[승천 시련] §f월드 승천 §d2단계§f가 필요합니다."));
             return;
@@ -122,6 +123,7 @@ public final class AscensionTrialSystem {
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
+        removeStaleServerTrials(event.getServer());
         if (++ticker < 5) return;
         ticker = 0;
         if (ACTIVE.isEmpty()) return;
@@ -293,9 +295,9 @@ public final class AscensionTrialSystem {
             };
             default -> switch (index) {
                 case 0 -> "minecraft:ravager";
-                case 1, 2 -> "minecraft:evoker";
-                case 3, 4, 5 -> "minecraft:vindicator";
-                case 6, 7, 8 -> "minecraft:wither_skeleton";
+                case 1, 2, 3 -> "minecraft:vindicator";
+                case 4, 5 -> "minecraft:wither_skeleton";
+                case 6, 7 -> "minecraft:pillager";
                 default -> "minecraft:witch";
             };
         };
@@ -357,6 +359,19 @@ public final class AscensionTrialSystem {
         trial.mobIds.clear();
         if (owner != null) owner.sendSystemMessage(Component.literal("§c[승천 시련 실패] §f" + reason + " §7· 입장 재료는 반환되지 않습니다."));
         closeBossBar(trial);
+    }
+
+    private static void removeStaleServerTrials(MinecraftServer server) {
+        if (ACTIVE.isEmpty()) return;
+        List<UUID> stale = new ArrayList<>();
+        for (Map.Entry<UUID, Trial> entry : ACTIVE.entrySet()) {
+            Trial trial = entry.getValue();
+            if (trial.level.getServer() != server) {
+                closeBossBar(trial);
+                stale.add(entry.getKey());
+            }
+        }
+        for (UUID owner : stale) ACTIVE.remove(owner);
     }
 
     private static void closeBossBar(Trial trial) {
