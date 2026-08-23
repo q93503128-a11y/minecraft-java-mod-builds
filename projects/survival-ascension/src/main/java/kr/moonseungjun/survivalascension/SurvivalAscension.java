@@ -9,6 +9,7 @@ import kr.moonseungjun.survivalascension.elite.EndgameMutationSystem;
 import kr.moonseungjun.survivalascension.elite.WarbandDirector;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.harvesting.HarvestingProgression;
 import kr.moonseungjun.survivalascension.harvesting.IrrigationReplantService;
 import kr.moonseungjun.survivalascension.mining.BoreMiningService;
@@ -25,7 +26,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.22.0-alpha.1";
+    public static final String VERSION = "0.23.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -39,6 +40,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WoodcuttingProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(HarvestingProgression::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(HarvestingProgression::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(HarvestingProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(IrrigationReplantService::onServerTick);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
@@ -46,6 +48,8 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
@@ -61,6 +65,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: mastery VI + protocol 8 + tactical doctrine trials/reinforcements + validated awakened mythic endgame", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: mastery VI + tactical warbands + doctrine trials + awakened mythic + nine-region expeditions + field mastery", VERSION);
     }
 }
