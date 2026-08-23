@@ -114,6 +114,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
+        duration = sixthCircleVisualDuration(spell.id(), duration);
         duration = seventhCircleVisualDuration(spell.id(), duration, cast.power());
         duration = eighthCircleVisualDuration(spell.id(), duration);
         send(player, encode("release", player, spell, cast.fusion(), cast.ingredients().size(), center, target,
@@ -144,6 +145,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), range)
                 : SpellPresentationProfile.releaseDurationTicks(spell, Math.max(0.0, distance));
+        duration = sixthCircleVisualDuration(spell.id(), duration);
         duration = seventhCircleVisualDuration(spell.id(), duration, power);
         duration = eighthCircleVisualDuration(spell.id(), duration);
         send(caster, encode("release", caster, spell, false, 0, center, snapshot.target(),
@@ -182,6 +184,15 @@ public final class WorldMagicService {
         NPC_RELEASES.clear();
         PLAYER_CHARGE_SEEDS.clear();
         NPC_CHARGE_SEEDS.clear();
+    }
+
+    private static int sixthCircleVisualDuration(String spellId, int baseDuration) {
+        return switch (spellId) {
+            case "mass_suggestion" -> Math.max(baseDuration, SixthCircleSpellService.NPC_SUGGESTION_TICKS);
+            case "sunbeam" -> Math.max(baseDuration, SixthCircleSpellService.SUNBEAM_TICKS);
+            case "freezing_sphere" -> Math.max(baseDuration, SixthCircleSpellService.FREEZING_SPHERE_TICKS);
+            default -> baseDuration;
+        };
     }
 
     private static int seventhCircleVisualDuration(String spellId, int baseDuration, double power) {
