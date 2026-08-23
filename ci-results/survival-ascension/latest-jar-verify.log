@@ -1,0 +1,6 @@
+JAR VERIFY PASS
+version=0.28.0-alpha.1
+apex_runtime=present
+production_runtime=present
+size=347637
+sha256=8eccf48d81441fc1daec2c30f3255a37a546a2ce99291ca01294cc7b01565cd5

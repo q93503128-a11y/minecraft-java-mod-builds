@@ -1,4 +1,7 @@
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/survival-ascension/tools/test_current_source.py", line 148
-    need(commands, ["ProductionData.get(player)", '"§3[산업 생산망]", "production.cycles(player)", "production.supplyCharges(player)"],
-                                                  ^
-SyntaxError: unterminated string literal (detected at line 148)
+SOURCE AUDIT PASS
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8
+- Industrial Works has four atomic material lines, per-player bounded buffers and production_v1 persistence
+- four-line cycles normalize into max3 supply charges; dispatch produces Gold32 + Amethyst16 + Echo2
+- queued complete sets normalize after dispatch, preventing full-buffer deadlock
+- expeditions, regional incidents, nine Apex patterns, Trials, Mastery VI and Field Mastery regressions retained
+- scaled destroy/material/protection safety and third-party namespace boundaries retained
