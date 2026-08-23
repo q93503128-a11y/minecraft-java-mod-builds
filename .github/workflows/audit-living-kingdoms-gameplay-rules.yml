@@ -62,6 +62,12 @@ jobs:
             src/main/java/kr/moonseungjun/livingkingdoms/world/RealmBuildCoordinator.java
           grep -F 'if (moved)' \
             src/main/java/kr/moonseungjun/livingkingdoms/world/RealmBuildCoordinator.java
+          grep -F 'STARTING_RESIDENTIAL_ROLE = "residential_middle_south_04"' \
+            src/main/java/kr/moonseungjun/livingkingdoms/world/SafeResidenceLocator.java
+          ! grep -F 'SPRUCE_PLANKS' \
+            src/main/java/kr/moonseungjun/livingkingdoms/world/SafeResidenceLocator.java
+          ! grep -Eq '카르둠|실바나' \
+            src/main/java/kr/moonseungjun/livingkingdoms/client/RealmCodexScreen.java
 
       - name: Fresh Erden gameplay rules audit
         working-directory: ${{ env.PROJECT_DIR }}
@@ -120,8 +126,11 @@ jobs:
             | grep -F 'initial_placement_teleport_only=true' \
             | grep -F 'multiplayer_world_shared=true'
           grep -F 'LK_ERDEN_RESIDENCE_PHYSICAL_PASS ' "$log" \
+            | grep -F 'authored_role=residential_middle_south_04' \
             | grep -F 'loaded_probe_chunks=9' \
             | grep -F 'walkable=true' \
+            | grep -F 'existing_authored_walkable=true' \
+            | grep -F 'no_residence_block_carving=true' \
             | grep -F 'bounded_fallback=true' \
             | grep -F 'transient_ticket_released=true' \
             | grep -F 'ticket_radius=1' \
