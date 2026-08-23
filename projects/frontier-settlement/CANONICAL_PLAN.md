@@ -2,7 +2,7 @@
 
 This file is the repository-side implementation authority for Frontier Settlement. Read it together with `ORIGINAL_DESIGN_v0.2.md`, current `main` source, `COMPLETION_GAP_AUDIT.md`, companion lock/register, README and CI results before continuing development.
 
-`ORIGINAL_DESIGN_v0.2.md` is the scope ceiling/foundation. This file may make that design more concrete, but it must not silently shrink unfinished original requirements to match whatever is currently implemented.
+`ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must not silently shrink unfinished original requirements to match whatever is currently implemented.
 
 ## 1. Product identity
 
@@ -32,11 +32,15 @@ Primary direct interactions remain approximately:
 2. choose a building and its position/rotation;
 3. choose an outpost location;
 4. choose road start/end and only necessary route guidance;
-5. explore/fight and decide which rare/external loot to commit to settlement progression or trade.
+5. explore/fight and decide which rare/external loot to commit to settlement progression, trade or crafting.
 
 Do not grow the project into tax rates, dozens of happiness stats, family schedules, per-worker priority tables, giant research menus or manual hauling routes.
 
-Market sale intent is expressed by putting an eligible relic in the market barrel. Workshop maintenance intent is expressed by putting an eligible weapon in the workshop service barrel. Cart-station logistics, road terrain adaptation, watchtower defense, barracks recruitment and Alpha.38 construction-office supply staging require no separate player-management dashboard.
+Intent is expressed physically wherever possible:
+- market sale: eligible relic in market barrel;
+- normal workshop repair: eligible damaged external weapon in service barrel;
+- advanced forging: eligible external weapon + expedition relic in advanced commission barrel;
+- construction office, cart station, watchtower and barracks operate without separate management dashboards.
 
 ## 3. Multiplayer authority
 
@@ -65,9 +69,9 @@ The saved starter stockpile position is authoritative and must not be casually d
 
 Functional settlement buildings use official blueprints. Player/vanilla buildings remain welcome visually but are not scanned or registered as functional settlement buildings.
 
-Original target remains roughly **15–20 meaningful building families**.
+Original target remains roughly **15–20 meaningful building families**. Alpha.39 reaches **15 functional families**, but the number alone is not completion because original territory, simulation, trade and UI breadth remains unfinished.
 
-Current Alpha.38 functional families: **14**.
+Current families:
 
 - house;
 - lumber camp;
@@ -78,13 +82,14 @@ Current Alpha.38 functional families: **14**.
 - construction office;
 - blacksmith;
 - workshop;
+- advanced workshop;
 - guard post;
 - watchtower;
 - barracks;
 - market;
 - cart station.
 
-The largest original placement-family gap is now the advanced workshop / high-tier crafting layer. Town center currently exists through civic-core progression rather than a separate placement family. Later territory specializations remain unfinished.
+Town center currently exists through civic-core progression rather than a separate placement family. Later territory specializations remain unfinished.
 
 Construction UX:
 
@@ -112,7 +117,7 @@ Terrain rules:
 - roof before support and visually floating foundations are invalid;
 - enclosed completed buildings need deliberate windows/lighting.
 
-Construction presentation invariant: the builder walks from actual settlement storage carrying real wood/stone stacks and visibly stages/uses them at the site.
+Construction presentation invariant: builder walks from actual settlement storage carrying real wood/stone stacks and visibly stages/uses them at the site.
 
 Tall structures reuse persisted scaffold/building workflow; no instant-placement exception.
 
@@ -128,11 +133,11 @@ The construction office is a physical logistics accelerator, not an abstract bui
 - automated non-wood/stone deposits avoid dedicated construction bays;
 - one persistent office-assigned construction supply runner services each loaded office;
 - runner works only with a building project active, physically walks to bounded loaded ordinary storage, extracts real wood/stone, carries max32 and physically returns before insertion;
-- target staging reserve is 96 wood + 96 stone;
+- target staging reserve is96 wood +96 stone;
 - source radius is bounded to24 and sampled corridor positions must already be loaded;
 - night/no-project behavior returns the runner home;
 - construction supply runners are service units, not civilian population/housing;
-- no force-load, teleport inventory transfer, virtual construction points or `SettlementConstructionService.tick` duplication;
+- no force-load, teleport inventory transfer, virtual construction points or duplicate construction tick;
 - `SettlementConstructionService` remains the only authority for grading and blueprint placement.
 
 Actual time saved depends on town layout and must be evaluated in real play rather than claimed as a fixed percentage.
@@ -141,7 +146,7 @@ Actual time saved depends on town layout and must be evaluated in real play rath
 
 Vanilla villager trading/professions are not settlement-progression authority.
 
-Implemented role families include builder, logger, farmer, quarry worker, miner, workshop artisan, construction supply runner, guards/service behavior, market merchant presentation and road-bound transport.
+Implemented role families include builder, logger, farmer, quarry worker, miner, normal workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, market merchant presentation and road-bound transport.
 
 Defense role separation:
 
@@ -163,7 +168,9 @@ Alpha.37 barracks rules:
 
 Current soldier body is an Iron Golem proxy. Humanoid soldier visuals, external weapon loadouts, formations and class variety remain later presentation/combat-depth work.
 
-Job slots should fill automatically from appropriate settlement conditions. Loaded areas show physical movement/work. Do not force-load chunks solely to keep animations running.
+Normal production jobs should fill automatically from appropriate settlement conditions. Loaded areas show physical movement/work. Do not force-load chunks solely to keep animations running.
+
+Construction-office and Alpha.39 advanced-forging specialists are currently building-bound service NPCs and do not inflate civilian population/housing. The normal workshop artisan remains a civilian job. A future citizen-assignment cleanup may unify this distinction, but must not accidentally double-count population or create free tier progression.
 
 No family/children simulation in planned scope.
 
@@ -175,7 +182,8 @@ Resources remain physical Minecraft items. HUD numbers are a cached view, not au
 - construction consumes real ItemStacks;
 - avoid every-tick scanning of arbitrary player chests;
 - use tags/categories so compatible external materials can participate;
-- warehouses, cart-station freight bays and construction-office material bays add real physical storage positions rather than abstract capacity currency.
+- warehouses, cart-station freight bays and construction-office material bays add real physical storage positions rather than abstract capacity currency;
+- opt-in service/commission barrels are not generic shared storage unless their specific system explicitly says so.
 
 Distant logistics remains spatial. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual cargo and pause at unloaded route boundaries rather than teleporting or force-loading.
 
@@ -206,7 +214,7 @@ Alpha.35 bounded terrain adaptation:
 
 - one-block longitudinal rise becomes actual cobblestone stair road pieces;
 - short water runs between dry banks may become 3-wide stone-brick deck;
-- max automatic water span 6 centerline blocks;
+- max automatic water span6 centerline blocks;
 - bank height difference max1;
 - water stays in place;
 - no free log/cobblestone support generation;
@@ -250,7 +258,7 @@ Watchtower rules:
 - 7×7 physical tower, wood96/stone72, clear height14;
 - normal grading/hauling/scaffold build;
 - one tagged response guard per loaded tower;
-- roughly40-block loaded Monster response cadence100 ticks;
+- roughly40-block loaded Monster response;
 - creepers excluded from forced targeting;
 - no global radar or chunk force-load.
 
@@ -325,7 +333,7 @@ The lock stays `candidate_runtime_lock` until all entries launch together in the
 ### Alpha.36 watchtower
 - tall climbable physical tower;
 - tower-assigned loaded response guard;
-- no new key/global radar/force load.
+- no new key/global radar/force-load.
 
 ### Alpha.37 barracks
 - supplied 3-slot regular garrison;
@@ -339,6 +347,32 @@ The lock stays `candidate_runtime_lock` until all entries launch together in the
 - one loaded physical supply runner per office;
 - max32 carried stack, target96/96 reserve, source radius24;
 - existing builder remains sole construction authority.
+
+### Alpha.39 advanced workshop
+
+The first high-tier crafting loop is deliberately separate from market sale and ordinary repair.
+
+- `ADVANCED_WORKSHOP`: 15×11, wood168/stone120, clear height14;
+- unlock: frontier-town + one normal workshop + one market;
+- protected dedicated commission barrel stays outside generic shared storage;
+- commission input is explicit player intent: one recognized, currently unenchanted external damageable weapon + one expedition relic;
+- one building-bound advanced forging specialist physically fetches real metal from loaded shared settlement storage;
+- forge cost: relic1 + metal4;
+- compatible enchanting-table result uses power30;
+- valid enchant output is constructed/checked **before** metal or relic mutation;
+- failed/incompatible enchant attempt consumes nothing;
+- success fully repairs the same weapon and applies the generated compatible enchantments;
+- no hard Weapons Expanded item/class reference, no auto-scan of shared storage for commissions, no teleport inventory or chunk force-load.
+
+Role split is fixed:
+
+`market = relic -> trade value`
+
+`normal workshop = metal -> external weapon repair`
+
+`advanced workshop = external weapon + relic + metal -> high-tier forge`
+
+This closes the first original high-tier-crafting placement family, not every future recipe/specialized-production possibility.
 
 ## 12. UI and controls
 
@@ -360,7 +394,7 @@ Normal gameplay controls remain:
 
 Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per feature.
 
-Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.38 adds construction-office status to existing `/frontier status`, not a new dashboard.
+Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.39 reports advanced commissions through existing `/frontier status`; no new crafting dashboard is added.
 
 ## 13. Engineering rules
 
@@ -383,16 +417,16 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 14. Current playable slice after Alpha.38
+## 14. Current playable slice after Alpha.39
 
 The playable slice now includes:
 
 - one shared authoritative settlement;
 - protected founding stockpile and civic core;
 - compact B/R/Enter/Backspace interaction;
-- **14 functional building families**;
+- **15 functional building families**;
 - physical site grading and construction hauling;
-- Alpha.38 physical construction material staging and supply runner;
+- physical construction material staging and supply runner;
 - paced loaded town production;
 - physical roads with one-block stair adaptation and bounded short-water bridges;
 - physical specialized outposts;
@@ -400,7 +434,8 @@ The playable slice now includes:
 - loaded-only remote production/logistics;
 - tier growth and safe public works;
 - external material/relic/weapon recognition;
-- physical market and staffed workshop;
+- physical market and normal staffed repair workshop;
+- Alpha.39 explicit rare-material advanced forging;
 - road-adjacent cart-station freight hub;
 - climbable watchtower loaded response;
 - supplied barracks regular garrison.
@@ -411,16 +446,18 @@ This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md
 
 Unless real-play regression overrides them:
 
-1. advanced workshop / high-tier crafting tied to external rare materials and expedition outcomes;
-2. coast/river fishing/trade outpost specialization;
-3. dangerous-region military outpost specialization;
-4. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test;
-5. coarse unloaded production/logistics simulation that preserves physical-item authority;
-6. Jade provider / Xaero integration and compact building/progress/notification UX;
-7. external structure/boss discovery feeding progression more directly;
+1. coast/river fishing and trade outpost specialization;
+2. dangerous-region military outpost specialization;
+3. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test;
+4. coarse unloaded production/logistics simulation that preserves physical-item authority;
+5. Jade provider / Xaero integration and compact building/progress/notification UX;
+6. external structure/boss discovery feeding progression more directly;
+7. broader high-tier recipe/specialized crafting only where exploration materials justify it;
 8. humanoid/weaponized soldier presentation if it improves the Better Combat / Weapons Expanded stack;
 9. medium-terrain construction support such as explicit retaining/terrain-work intent;
 10. long survival/multiplayer acceptance and balance/pathfinding audit.
+
+Do not add meaningless building families merely to raise the count above15.
 
 ## 16. Real-play acceptance focus
 
@@ -431,7 +468,8 @@ Automated CI is not a substitute for Minecraft play. Test, in order:
 - construction-office runner source selection, physical carrying, office staging and builder preference;
 - road stairs/short bridge navigation;
 - road -> outpost -> specialization production -> transport -> cart station;
-- external dungeon/loot -> market/workshop loop;
+- external dungeon/loot -> choose market sale vs normal repair vs advanced-forging commission;
+- advanced workshop external-weapon compatibility, relic/metal no-loss failure behavior and completed enchanted weapon retrieval;
 - guard post -> watchtower -> barracks response and replacement cost;
 - day/night routines and loaded/unloaded boundaries;
 - two-player shared state/storage/construction/logistics;
