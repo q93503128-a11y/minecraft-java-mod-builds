@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.mining;
 
+import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
@@ -26,7 +27,7 @@ import java.util.UUID;
 public final class BoreMiningService {
     private static final int GLOBAL_BLOCK_BUDGET_PER_TICK = 64;
     private static final int LOCAL_BLOCK_BUDGET_PER_TICK = 12;
-    private static final int MAX_PENDING_PER_PLAYER = 512;
+    private static final int MAX_PENDING_PER_PLAYER = 640;
     private static final Map<UUID, Integer> PENDING_COUNTS = new HashMap<>();
     private static final Deque<BoreJob> JOBS = new ArrayDeque<>();
     private static final Set<UUID> INTERNAL_BREAK_GUARD = new HashSet<>();
@@ -46,8 +47,9 @@ public final class BoreMiningService {
             return false;
         }
 
+        boolean fieldMastery = skillLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
         int crossSection = skillLevel >= 100 ? 7 : 5;
-        int depthLimit = skillLevel >= 100 ? 10 : 8;
+        int depthLimit = fieldMastery ? 12 : (skillLevel >= 100 ? 10 : 8);
         int half = crossSection / 2;
         Direction direction = horizontalDirection(player);
         Deque<BlockPos> targets = new ArrayDeque<>();
