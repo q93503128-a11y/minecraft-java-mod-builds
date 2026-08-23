@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.37
+## Current version: 0.1.0-alpha.38
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -29,11 +29,11 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.37 adds no new gameplay key or separate military dashboard.
+Alpha.38 adds no new gameplay key, construction-management dashboard or manual hauling-route UI.
 
 ## Functional building families
 
-Current functional families: **13**.
+Current functional families: **14**.
 
 - house;
 - lumber camp;
@@ -41,15 +41,16 @@ Current functional families: **13**.
 - quarry;
 - mine;
 - warehouse;
+- **construction office**;
 - blacksmith;
 - workshop;
 - guard post;
 - watchtower;
-- **barracks**;
+- barracks;
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. Construction office and advanced workshop remain major unfinished placement families, together with later territory specializations.
+The original v0.2 target remains roughly 15–20 meaningful families. Advanced workshop remains the largest unfinished placement family, together with later territory/outpost specializations.
 
 ## Physical construction
 
@@ -70,7 +71,7 @@ Roads and outposts likewise use physical grading and real hauled resources.
 
 ## Residents, production and road logistics
 
-- builder, logger, farmer, quarry worker, miner, workshop artisan, guards/service behavior and transport roles are implemented;
+- builder, logger, farmer, quarry worker, miner, workshop artisan, construction supply runner, guards/service behavior and transport roles are implemented;
 - loaded town production is paced and bounded;
 - outpost production is specialization-specific and loaded-chunk only;
 - transport workers are persistently assigned to one outpost;
@@ -86,8 +87,6 @@ Frontier exposes additive physical-item tags for settlement wood/stone/metal/foo
 
 ## Alpha.32 — physical market
 
-The market connects exploration loot back into settlement value:
-
 - dedicated protected trade barrel;
 - ordinary shared storage is never auto-sold;
 - only deliberately deposited `frontier_settlement:expedition_relics` are eligible;
@@ -96,8 +95,6 @@ The market connects exploration loot back into settlement value:
 - full output safely stalls instead of deleting goods.
 
 ## Alpha.33 — staffed workshop
-
-The workshop connects external weapons to settlement support:
 
 - workshop unlocks after the blacksmith;
 - dedicated protected service barrel;
@@ -148,26 +145,40 @@ This does not claim large ravine bridges, tunnels, retaining walls or arbitrary 
 
 ## Alpha.37 — supplied barracks / regular garrison
 
-Alpha.37 closes the first original-design barracks slice and removes the old free high-tier reinforcement shortcut.
-
 - new `BARRACKS` functional building;
 - unlock: **frontier-town tier + one watchtower + one blacksmith**;
 - cost: wood 144 / stone 112;
 - 15×11 physical barracks with enclosed quarters/armory, three visible bunk stations and a rear drill yard;
 - one barracks owns **3 persistent military slots**;
-- military capacity is separate from civilian `population` and `housingCapacity`, so soldiers cannot accelerate population-based tier progression and civilians cannot occupy military bunks;
-- one missing loaded slot is considered for automatic recruitment every 600 ticks;
-- each recruited garrison unit costs **8 real food + 2 real metal** from fully loaded shared physical storage;
-- food and metal are checked together before mutation so recruitment cannot partially consume one category and fail on the other;
-- soldiers receive persistent barracks-coordinate and slot tags rather than UUID-order pairing;
-- loaded garrison patrol checks ordinary hostile `Monster` entities around its barracks, while creepers are excluded from forced pursuit;
+- military capacity is separate from civilian population/housing;
+- each recruited unit costs **8 real food + 2 real metal**;
 - unloaded barracks/patrol areas are not interpreted as missing soldiers and no chunks are force-loaded;
-- tagged barracks combat proxies drop no iron/resources on death, preventing the military system from becoming an iron farm;
-- a killed unit therefore costs real settlement supplies again when its slot is later refilled;
-- `/frontier status` reports loaded garrison count/capacity and the recruitment cost;
-- the old frontier-town/domain **free tier garrison reinforcement backend was removed**; `SettlementTierInfrastructureService` now owns tier-visible public works only.
+- tagged barracks combat proxies drop no iron/resources on death;
+- old free frontier-town/domain reinforcement backend is removed.
 
-The current regular soldier combat body is an **Iron Golem proxy**. Alpha.37 does not claim final humanoid soldier visuals, equipment/loadouts, formation behavior or class variety; those remain presentation/combat-depth work, especially if external combat/weapon content is used later.
+The current regular soldier combat body is an **Iron Golem proxy**. Humanoid soldier visuals/equipment/formations remain later presentation/combat-depth work.
+
+## Alpha.38 — construction office / physical material staging
+
+Alpha.38 closes the original construction-office family without adding an abstract construction-speed percentage or a second builder authority.
+
+- new `CONSTRUCTION_OFFICE` functional building;
+- unlock: **village tier + one warehouse**;
+- cost: wood 112 / stone 64;
+- 13×9 physical office/work yard with four protected material barrels, work tables, tools and visible construction supplies;
+- office material barrels join the same physical settlement ItemStack ledger;
+- for construction wood/stone they are ordered ahead of ordinary town storage, so the existing builder naturally prefers nearby staged stock;
+- automated non-construction cargo such as food/metal/random loot is kept out of the dedicated material bays;
+- one persistent office-assigned **construction supply runner** keeps the bays stocked only while a building project is active;
+- the runner uses loaded ordinary settlement storage as source, physically walks to it, extracts a real wood/stone stack, carries up to 32 items in hand and walks back before depositing;
+- target staged reserve is 96 wood + 96 stone per office;
+- source search is bounded to 24 blocks and checked along loaded corridor points; no chunk force-load or teleport inventory transfer is introduced;
+- at night or when no building project exists the runner returns to its office instead of performing background logistics;
+- the runner is a construction service unit like the original dedicated builder and does **not** inflate civilian population/housing;
+- `/frontier status` reports staged wood/stone and loaded supply-runner count;
+- the existing `SettlementConstructionService` remains the only authority that grades terrain, consumes staged project cost and places blueprint blocks.
+
+This is a logistics/readability improvement, not a claimed fixed percentage speed buff. Actual travel-time gains depend on settlement layout and require real-play pacing validation.
 
 ## External content stack
 
@@ -181,10 +192,10 @@ The lock deliberately remains `candidate_runtime_lock` until the full client/ser
 
 Canonical CI performs:
 
-1. source audit;
+1. the complete established Alpha.23–37 source audit plus Alpha.38 construction-office extension;
 2. Java 25 clean Gradle build;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on pathfinding, garrison combat/pacing, stair/bridge appearance, balance or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on construction-supply pathfinding, construction pacing, garrison combat, stair/bridge appearance, balance or full companion-stack runtime compatibility. Those still require real Minecraft play.
