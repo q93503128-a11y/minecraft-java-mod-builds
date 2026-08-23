@@ -49,7 +49,7 @@ public final class SettlementConstructionLogisticsService {
         builder.setInvulnerable(true);
 
         if (construction.step() == 0) {
-            return stageMaterials(level, data, builder, site, stage, type);
+            return stageMaterials(data, builder, site, stage, type);
         }
         return hasExpectedMaterials(site, type, construction.step(), totalSteps(type, construction));
     }
@@ -100,7 +100,7 @@ public final class SettlementConstructionLogisticsService {
         };
     }
 
-    private static boolean stageMaterials(ServerLevel level, SettlementData data, Villager builder,
+    private static boolean stageMaterials(SettlementData data, Villager builder,
                                           Container site, BlockPos stage, BuildingType type) {
         long wood = SettlementInventory.countWood(site);
         long stone = SettlementInventory.countStone(site);
@@ -221,23 +221,19 @@ public final class SettlementConstructionLogisticsService {
     }
 
     private static void cleanupFinishedSite(ServerLevel level, SettlementData data, ConstructionLogisticsData logistics) {
-        ConstructionState identity = new ConstructionState("", 0, 0, 0, 0, 0);
-        // Reconstruct the finished build identity from the logistics record through the last active
-        // construction when possible. If there is no active build, scan for the nearby temporary
-        // barrel is intentionally avoided; a player-owned barrel must never be guessed and deleted.
-        if (data.construction().active() && logistics.matches(data.construction())) identity = data.construction();
-
-        if (identity.active()) {
-            BuildingType type = BuildingType.fromId(identity.type());
-            BlockPos stage = type == null ? null : stagingPosition(type, identity);
-            if (stage != null && level.getBlockEntity(stage) instanceof Container container) {
-                drainReservedMaterials(container);
-                if (containerIsEmpty(container)) level.setBlock(stage, Blocks.AIR.defaultBlockState(), 2);
-            }
+        ConstructionState identity = logistics.identity();
+        BuildingType type = BuildingType.fromId(identity.type());
+        BlockPos stage = type == null ? null : stagingPosition(type, identity);
+        if (stage != null && level.getBlockEntity(stage) instanceof Container container) {
+            drainReservedMaterials(container);
+            if (containerIsEmpty(container)) level.setBlock(stage, Blocks.AIR.defaultBlockState(), 2);
         }
 
         Villager builder = SettlementConstructionService.ensureBuilder(level, data.centerPos());
-        if (builder != null) builder.setInvulnerable(false);
+        if (builder != null) {
+            builder.getNavigation().stop();
+            builder.setInvulnerable(false);
+        }
         logistics.clear();
     }
 
