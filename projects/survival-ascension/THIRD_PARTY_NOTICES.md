@@ -62,6 +62,13 @@ License: CC0 1.0 Universal
 
 Survival Ascension 0.17 adapts the project's boss/progression-driven dynamic difficulty as modern NeoForge 26.2 world-shared SavedData stages. Survival Ascension 0.19 also adapts the CC0 Celestial Type vocabulary for Withered skeletons and Phase / Plague zombies, but reimplements those ideas with its own 26.2 spawn events, persistent NBT, reaction cooldowns, effect durations, rewards and stage gating. No legacy mixins, assets, renderer code, namespaces or old Minecraft runtime code are bundled. Runtime notice: `META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt`.
 
+## Gateways to Eternity
+Source project: `Shadows-of-Fire/GatewaysToEternity`  
+Copyright (c) 2020 Brennan Ward  
+License: MIT License
+
+Survival Ascension 0.21 adapts the encounter lifecycle of timed sequential waves, inter-wave setup, boss-bar status and completion rewards. It uses its own Ascension Nexus gate, resource costs, mob compositions and failure rules. Full notice: `META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt`.
+
 ## Create
 Source project: `Creators-of-Create/Create`  
 Code license: MIT  
@@ -74,8 +81,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
