@@ -99,19 +99,23 @@ public final class SettlementConstructionOfficeService {
             return;
         }
 
-        Predicate<ItemStack> wanted = missingWood >= missingStone ? SettlementInventory::isWood : SettlementInventory::isStone;
-        int missing = missingWood >= missingStone ? missingWood : missingStone;
+        boolean wantWood = missingWood >= missingStone;
+        Predicate<ItemStack> wanted = wantWood ? SettlementInventory::isWood : SettlementInventory::isStone;
+        int missing = wantWood ? missingWood : missingStone;
         BlockPos source = nearestOrdinarySource(level, data, office.workCenter(), wanted);
         if (source == null) {
-            Predicate<ItemStack> alternate = wanted == SettlementInventory::isWood
-                    ? SettlementInventory::isStone : SettlementInventory::isWood;
-            source = nearestOrdinarySource(level, data, office.workCenter(), alternate);
+            wantWood = !wantWood;
+            wanted = wantWood ? SettlementInventory::isWood : SettlementInventory::isStone;
+            missing = wantWood ? missingWood : missingStone;
+            if (missing <= 0) {
+                moveOrStop(runner, home, 0.72D);
+                return;
+            }
+            source = nearestOrdinarySource(level, data, office.workCenter(), wanted);
             if (source == null) {
                 moveOrStop(runner, home, 0.72D);
                 return;
             }
-            wanted = alternate;
-            missing = wanted == SettlementInventory::isWood ? missingWood : missingStone;
         }
 
         if (runner.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
@@ -119,7 +123,8 @@ public final class SettlementConstructionOfficeService {
             runner.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.86D);
             return;
         }
-        ItemStack extracted = SettlementStorageService.extract(level, source, wanted, Math.min(HAUL_BATCH_SIZE, Math.max(1, missing)));
+        ItemStack extracted = SettlementStorageService.extract(level, source, wanted,
+                Math.min(HAUL_BATCH_SIZE, Math.max(1, missing)));
         if (!extracted.isEmpty()) runner.setItemSlot(EquipmentSlot.MAINHAND, extracted);
     }
 
