@@ -28,11 +28,9 @@ public final class ExpeditionProgression {
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.isCreative() || player.isSpectator()) return;
-        if (player.tickCount % 20 != 0 || !(player.level() instanceof ServerLevel level)) return;
+        if (player.tickCount % 20 != 0 || !(player.level() instanceof ServerLevel)) return;
 
-        int worldStage = WorldAscensionData.get(level.getServer()).stage();
-        Holder<Biome> biome = level.getBiome(player.blockPosition());
-        ExpeditionRegion current = matchingRegion(biome, worldStage);
+        ExpeditionRegion current = currentRegion(player);
         if (current != null) ensureDiscovered(player, current);
         trackOceanVoyage(player, current);
     }
@@ -56,16 +54,28 @@ public final class ExpeditionProgression {
         return WorldAscensionData.get(level.getServer()).stage() >= 2 && ExpeditionData.get(player).isMasterSurveyComplete(player);
     }
 
+    public static ExpeditionRegion currentRegion(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return null;
+        int worldStage = WorldAscensionData.get(level.getServer()).stage();
+        return matchingRegion(level.getBiome(player.blockPosition()), worldStage);
+    }
+
     public static void recordSkillAction(ServerPlayer player, SkillType skill, int amount) {
         recordAction(player, ExpeditionAction.fromSkill(skill), amount);
     }
 
     public static void recordAction(ServerPlayer player, ExpeditionAction action, int amount) {
-        if (amount <= 0 || player.isCreative() || player.isSpectator() || !(player.level() instanceof ServerLevel level)) return;
-        int worldStage = WorldAscensionData.get(level.getServer()).stage();
-        ExpeditionRegion region = matchingRegion(level.getBiome(player.blockPosition()), worldStage);
+        if (amount <= 0 || player.isCreative() || player.isSpectator() || !(player.level() instanceof ServerLevel)) return;
+        ExpeditionRegion region = currentRegion(player);
         if (region == null) return;
         ensureDiscovered(player, region);
+        addObjectiveProgress(player, region, action, amount);
+        ExpeditionIncidentSystem.recordAction(player, action, amount);
+    }
+
+    public static void grantIncidentBonus(ServerPlayer player, ExpeditionRegion region, ExpeditionAction action, int amount) {
+        if (amount <= 0 || player.isCreative() || player.isSpectator()) return;
+        if (currentRegion(player) != region) return;
         addObjectiveProgress(player, region, action, amount);
     }
 
@@ -82,8 +92,9 @@ public final class ExpeditionProgression {
         double dz = pos.z - old.z;
         double distance = Math.sqrt(dx * dx + dz * dz);
         if (distance < 0.25D || distance > 24.0D) return;
-        addObjectiveProgress(player, ExpeditionRegion.OCEAN, ExpeditionAction.OCEAN_VOYAGE,
-                Math.max(1, (int) Math.floor(distance)));
+        int amount = Math.max(1, (int) Math.floor(distance));
+        addObjectiveProgress(player, ExpeditionRegion.OCEAN, ExpeditionAction.OCEAN_VOYAGE, amount);
+        ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);
     }
 
     private static ExpeditionRegion matchingRegion(Holder<Biome> biome, int worldStage) {
