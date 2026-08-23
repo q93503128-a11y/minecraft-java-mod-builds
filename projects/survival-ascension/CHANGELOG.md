@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.22.0-alpha.1
+- Added randomized Ascension Trial tactical doctrines: `쇄도 / 추격 / 봉쇄`. Each doctrine uses different vanilla-mob role mixtures instead of replaying the same four fixed waves.
+- 쇄도 emphasizes Husk/Vindicator/Wither Skeleton/Ravager melee pressure, 추격 mixes Spider/Enderman/mobile melee pressure and actively drives distant pursuit mobs back toward the owner, and 봉쇄 emphasizes Skeleton/Stray/Pillager/Witch ranged-control pressure.
+- Each wave can trigger exactly one doctrine-specific reinforcement when roughly half of the initial force remains. Reinforcements do not extend the 60-second wave timer, preventing a free reward/time loop.
+- Doctrine variation adds no blanket HP multiplier; existing Stage-2 mutations, Elite ranks and Warband roles remain the systems that can stack additional behaviors and roles on normal triggered trial spawns.
+- Kept Evokers out of trial composition so summon-produced Vex cannot escape the tracked encounter lifecycle.
+- Added `M -> Equipment -> 신화 각성` inside the existing MineMenu-derived radial. No new rectangular equipment GUI was introduced.
+- Normal Mythic III equipment remains 3-affix. One-time awakening preserves those three affixes and adds one missing affix, producing a 4-affix `각성 신화` item.
+- Mythic awakening consumes 256 Amethyst Shards + 24 Diamonds + 8 Netherite Scraps + 64 Echo Shards + 16 Dragon's Breath, turning large resource throughput and Stage-2 combat resources into a final equipment sink.
+- Awakened Mythic rerolls preserve four affixes and cost 128 Amethyst Shards + 16 Diamonds + 4 Netherite Scraps + 16 Echo Shards per reroll.
+- Added strict awakening validation: only a valid non-awakened Mythic III item containing exactly three known affixes can consume awakening materials, preventing malformed CustomData from eating the full resource cost.
+- Existing skill unlock guards remain unchanged, so the fourth affix cannot unlock excavation, cleave, harvest, chain-felling or other scaled actions before their skill level unlocks them.
+- Awakening reuses the existing affix CustomData and vanilla base equipment; no new custom item registry, texture or model dependency was added.
+- Extended in-game Guide, source audit, JAR verification, README/PROJECT canon and Gateways to Eternity MIT attribution for doctrines, bounded reinforcement and awakened Mythic contracts.
+
 ## 0.21.0-alpha.1
 - Added the repeatable Stage-2 `Ascension Trial` endgame loop behind the completed Ascension Nexus instead of ending progression after infrastructure completion.
 - Re-selecting a completed Nexus consumes 32 Echo Shards + 64 Amethyst Shards + 8 Dragon's Breath from the real survival inventory and opens four timed combat waves.
