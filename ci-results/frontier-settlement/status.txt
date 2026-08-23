@@ -1,8 +1,8 @@
 status=cancelled
-source_sha=4d7e5587b75457f3eda407eaa0283121695ac6a0
-run_id=32606885167
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32606885167
-version=unknown
+source_sha=f8a0a9c8b8a38e9256f5e7801e016a5d85597a58
+run_id=32606905508
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32606905508
+version=0.1.0-alpha.20
 minecraft=26.2
 neoforge=26.2.0.38-beta
 java=25
