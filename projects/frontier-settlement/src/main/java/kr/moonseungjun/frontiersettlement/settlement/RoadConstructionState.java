@@ -82,7 +82,6 @@ public record RoadConstructionState(int startX, int startY, int startZ,
      * logical cursor; legacy prepaid roads intentionally report completion so SettlementRoadService
      * enters its cost-free final validation/repair path instead of charging their stone a second time.
      */
-    @Override
     public int step() {
         if (physicalPaving()) return step - PAVE_STEP_OFFSET;
         if (legacyPrepaidPaving()) return Integer.MAX_VALUE;
@@ -102,7 +101,7 @@ public record RoadConstructionState(int startX, int startY, int startZ,
         if (hasPath()) {
             List<BlockPos> centers = new ArrayList<>(path.size() / 3);
             for (int i = 0; i + 2 < path.size(); i += 3) {
-                centers.add(new BlockPos(path.get(i), path.get(i + 1), path.get(i + 2));
+                centers.add(new BlockPos(path.get(i), path.get(i + 1), path.get(i + 2)));
             }
             return List.copyOf(centers);
         }
