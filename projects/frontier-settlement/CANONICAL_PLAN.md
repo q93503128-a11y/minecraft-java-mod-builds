@@ -108,6 +108,8 @@ Job slots should fill automatically when housing, food and relevant workplaces p
 
 Loaded areas should show physical work. Unloaded areas use coarse simulation where appropriate; do not force-load chunks just to keep worker animations running.
 
+Night routines should preserve the same authority model as daytime work. Town workers may return to housing, outpost workers may return to their local shelter, and remote haulers may stop between anchors; night behavior must not introduce a second navigation system that overrides road logistics.
+
 No family/children simulation in the planned scope.
 
 ## 7. Resources and logistics
@@ -124,6 +126,8 @@ Construction should visibly communicate logistics. The builder walks from actual
 
 Distant outpost logistics should remain spatial and physical. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual output stacks, and pause at unloaded route boundaries rather than teleporting or force-loading the territory. Worker absence/replacement must never confuse an unloaded entity with a dead one.
 
+Alpha.27 tagged road logistics is the single authority for outpost transport. Higher settlement tiers may improve the surrounding infrastructure or capacity later, but must not reintroduce generic-name/UUID pairing or a second navigation controller for transport workers.
+
 Specialized outpost production follows the same physical rule. Loaded workers must visibly approach local work, real nearby resources are finite where appropriate, and renewable production should come from an actual renewable world process such as crop growth rather than a timer that creates abstract items. Production must not force-load remote chunks.
 
 ## 8. Roads, outposts and territory
@@ -139,6 +143,8 @@ Road planning should avoid destructive tunneling, cliffs and reckless terrain da
 No early teleport network. Roads and logistics must matter.
 
 Outposts connect distant resources and exploration back to the shared settlement and should become specialized territory nodes rather than duplicate mini-towns. Lumber, quarry and mining sites may deplete locally and create pressure to expand or restore the landscape; agriculture is the first deliberately renewable specialization through physical vanilla crop growth.
+
+Tier-visible public works may make established territory more readable, but they must stay non-destructive: loaded chunks only, clear road shoulders only, no overwriting player containers/fluids/buildings/outposts, and no recoverable free-block farming from automatically maintained infrastructure.
 
 ## 9. Combat and exploration
 
@@ -209,9 +215,9 @@ Development sequence:
 
 Do not force-push over concurrent work. Other work shares the repository and CI result bots may advance `main`; always re-read `main` before committing and rebase only the Frontier Settlement changes.
 
-## 13. Current playable slice after Alpha.28
+## 13. Current playable slice after Alpha.29
 
-Alpha.28 preserves the shared-settlement loop and extends the physical-work model through buildings, roads, outpost construction, road-connected logistics and distinct local production:
+Alpha.29 preserves the shared-settlement loop and extends the physical-work model through buildings, roads, outpost construction, road-connected logistics, distinct local production and visible tier growth:
 
 - one shared server settlement and territory state;
 - physical shared storage with cached HUD ledger;
@@ -231,22 +237,28 @@ Alpha.28 preserves the shared-settlement loop and extends the physical-work mode
 - transport pauses at unloaded route boundaries and carries only appropriate specialization output;
 - each specialized production worker is persistently tagged to its own outpost and legacy visible-name workers are adopted rather than duplicated;
 - outpost production only examines already-loaded chunks and never force-loads remote resource areas;
-- lumber workers physically approach nearby natural trees and harvest at a throttled cadence, so forests visibly deplete instead of producing abstract wood every half-second;
-- quarry workers physically approach exposed stone and only remove exposed cells, avoiding hidden hollowing beneath intact terrain;
-- mining workers perform a readable minehead cycle and consume finite actual underground ore at a much slower cadence;
-- agriculture is renewable through vanilla wheat growth, with a one-time outpost plot instead of continuous magical replant/repair;
+- lumber workers physically approach nearby natural trees and harvest at a throttled cadence;
+- quarry workers physically approach exposed stone and only remove exposed cells;
+- mining workers perform a readable minehead cycle and consume finite actual underground ore;
+- agriculture is renewable through vanilla wheat growth, with a one-time outpost plot instead of continuous magical repair;
 - full local stockpiles naturally stall workers carrying undelivered output, preserving storage pressure;
+- Alpha.27 road logistics remains the single authority for outpost transport at every tier; the old high-tier generic-name/UUID transport backend is gone;
+- frontier-town and domain tiers add deterministic settlement-owned lighting on safe loaded road shoulders, with denser spacing at domain tier;
+- public road lights skip protected footprints, fluids, block entities and unloaded chunks;
+- civic-core and tier-public-work blocks are protected from break-and-respawn drop exploits;
+- higher tiers reinforce loaded guard posts without touching transport navigation;
+- town, transport and outpost-production villagers now have tag-aware night routines, while remote haulers between safe rest anchors stop instead of receiving cross-territory night paths;
 - active building/road/outpost transaction blocks remain protected from break-and-rebuild resource exploits.
 
 ## 14. Near-term priorities
 
-After Alpha.28 automated validation is stable, keep the sequence narrow:
+After Alpha.29 automated validation is stable, keep the sequence narrow:
 
-1. inspect real screenshots/gameplay for scaffold navigation, road turns, outpost grading/build pacing, transport adherence, production-worker movement, quarry holes, forest depletion, crop readability, unload/reload pauses and stockpile pressure;
-2. fix real-play root causes before adding breadth if those tests expose navigation, terrain-damage, duplication, migration or visual-quality problems;
-3. decide from play whether depleted lumber/quarry sites need explicit recovery mechanics or whether depletion should intentionally push further territorial expansion; do not add abstract regeneration merely to keep a node infinite;
-4. tune production/trip rates only from actual play pacing, keeping specialization differences obvious and physical;
-5. after the building/road/outpost/logistics/production spatial loop feels good, expand exploration/conquest inputs and additional meaningful building families;
+1. inspect real screenshots/gameplay for civic-core appearance, road-lamp spacing/shoulder placement, night worker movement, guard density, transport adherence, production-worker movement, quarry holes, forest depletion, crop readability and unload/reload pauses;
+2. fix real-play root causes before adding breadth if those tests expose navigation, visual clutter, terrain damage, duplication, migration or public-works placement problems;
+3. if tier progression still feels too subtle in real play, improve the physical distinction between village / frontier town / domain through existing buildings, public-space dressing and NPC behavior before adding another dashboard or hotkey;
+4. decide from play whether depleted lumber/quarry sites need explicit recovery mechanics or whether depletion should intentionally push further territorial expansion; do not add abstract regeneration merely to keep a node infinite;
+5. after the building/road/outpost/logistics/production/tier spatial loop feels good, expand exploration/conquest inputs and additional meaningful building families;
 6. keep UI/controls compact while expanding simulation depth behind the scenes.
 
 Real-play observations override assumptions in this file. If screenshots or symptoms expose a problem, fix the root cause before adding more content.
