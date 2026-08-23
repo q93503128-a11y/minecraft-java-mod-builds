@@ -60,7 +60,7 @@ assert 'ItemStack' not in utility and 'EquipmentSlot' not in utility
 
 control=text(magic/'HighControlSpellService.java')
 need(control,'DOMINATE_TICKS = 1200','FEEBLEMIND_TICKS = 1800','power * .65',
-     'mob.getBoundingBox().inflate(28.0)','target.getNavigation().moveTo(owner, 1.12)',
+     'target.getBoundingBox().inflate(28.0)','target.getNavigation().moveTo(owner, 1.12)',
      'MobEffects.WEAKNESS, 12, 7','MobEffects.MINING_FATIGUE, 12, 6','MobEffects.SLOWNESS, 12, 2')
 
 summary8=text(magic/'EighthCircleSpellSummary.java')
