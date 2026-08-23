@@ -14,7 +14,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Physical workshop maintenance for companion weapons.
@@ -32,6 +34,7 @@ public final class SettlementWorkshopService {
     private static final int SERVICE_PERIOD_TICKS = 100;
     private static final int REPAIR_PER_METAL = 64;
     private static final double INTERACTION_RANGE_SQR = 9.0D;
+    private static final double ASSIGNMENT_SEARCH_RADIUS = 192.0D;
 
     private SettlementWorkshopService() {}
 
@@ -51,10 +54,56 @@ public final class SettlementWorkshopService {
             if (!level.hasChunkAt(work) || !level.hasChunkAt(cratePos)) continue;
             if (!(level.getBlockEntity(cratePos) instanceof Container crate)) continue;
 
-            Villager worker = ensureWorker(level, workshop);
+            Villager worker = findAssignedWorker(level, data, workshop);
             if (worker == null) continue;
             runService(server, level, data, workshop, cratePos, crate, worker);
         }
+    }
+
+    /** Population reconciliation/spawning is allowed only when all local workshop evidence is visible. */
+    public static boolean allAssignmentsLoaded(ServerLevel level, SettlementData data) {
+        if (!SettlementStorageService.storageAvailable(level, data)) return false;
+        for (BuildingRecord workshop : data.buildings()) {
+            if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
+            if (!level.hasChunkAt(workshop.workCenter()) || !level.hasChunkAt(WorkshopLayout.serviceCrate(workshop))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
+        Set<java.util.UUID> ids = new HashSet<>();
+        for (BuildingRecord workshop : data.buildings()) {
+            if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
+            Villager worker = findAssignedWorker(level, data, workshop);
+            if (worker != null) ids.add(worker.getUUID());
+        }
+        return ids.size();
+    }
+
+    public static BuildingRecord firstMissingLoadedAssignment(ServerLevel level, SettlementData data) {
+        if (!allAssignmentsLoaded(level, data)) return null;
+        for (BuildingRecord workshop : data.buildings()) {
+            if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
+            if (findAssignedWorker(level, data, workshop) == null) return workshop;
+        }
+        return null;
+    }
+
+    public static void spawnAssignedWorker(ServerLevel level, BuildingRecord workshop) {
+        if (workshop == null || workshop.buildingType() != BuildingType.WORKSHOP
+                || !level.hasChunkAt(workshop.workCenter())) return;
+        Villager worker = new Villager(EntityTypes.VILLAGER, level);
+        BlockPos spawn = workshop.workCenter();
+        worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
+        worker.setCustomName(Component.literal(WORKER_NAME));
+        worker.setCustomNameVisible(true);
+        worker.setPersistenceRequired();
+        worker.setNoAi(false);
+        worker.addTag(WORKSHOP_WORKER_TAG);
+        worker.addTag(assignmentTag(workshop));
+        level.addFreshEntity(worker);
     }
 
     private static void runService(MinecraftServer server, ServerLevel level, SettlementData data,
@@ -152,25 +201,17 @@ public final class SettlementWorkshopService {
         if (remaining.isEmpty()) worker.getNavigation().stop();
     }
 
-    private static Villager ensureWorker(ServerLevel level, BuildingRecord workshop) {
+    private static Villager findAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         String assignment = assignmentTag(workshop);
-        AABB area = new AABB(workshop.workCenter()).inflate(48.0D, 24.0D, 48.0D);
+        BlockPos center = data.centerPos();
+        AABB area = new AABB(
+                center.getX() - ASSIGNMENT_SEARCH_RADIUS, center.getY() - 96.0D, center.getZ() - ASSIGNMENT_SEARCH_RADIUS,
+                center.getX() + ASSIGNMENT_SEARCH_RADIUS + 1.0D, center.getY() + 97.0D,
+                center.getZ() + ASSIGNMENT_SEARCH_RADIUS + 1.0D);
         List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
                 villager -> villager.entityTags().contains(WORKSHOP_WORKER_TAG)
                         && villager.entityTags().contains(assignment));
-        if (!assigned.isEmpty()) return assigned.getFirst();
-
-        Villager worker = new Villager(EntityTypes.VILLAGER, level);
-        BlockPos spawn = workshop.workCenter();
-        worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
-        worker.setCustomName(Component.literal(WORKER_NAME));
-        worker.setCustomNameVisible(true);
-        worker.setPersistenceRequired();
-        worker.setNoAi(false);
-        worker.addTag(WORKSHOP_WORKER_TAG);
-        worker.addTag(assignment);
-        level.addFreshEntity(worker);
-        return worker;
+        return assigned.isEmpty() ? null : assigned.getFirst();
     }
 
     private static String assignmentTag(BuildingRecord workshop) {
