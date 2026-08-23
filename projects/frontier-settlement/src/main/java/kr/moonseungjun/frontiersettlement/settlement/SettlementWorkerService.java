@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -28,9 +29,13 @@ public final class SettlementWorkerService {
     private static final String MINE_WORKER_NAME = "광산 주민";
     private static final long ARRIVAL_FOOD_COST = 4L;
     private static final int TREE_SEARCH_RADIUS = 18;
-    private static final int MAX_LOGS_PER_TRIP = 6;
-    private static final int MAX_CROPS_PER_TRIP = 8;
-    private static final int MAX_STONE_PER_TRIP = 6;
+    private static final int MAX_LOGS_PER_TRIP = 4;
+    private static final int MAX_CROPS_PER_TRIP = 4;
+    private static final int MAX_STONE_PER_TRIP = 3;
+    private static final int LUMBER_WORK_PERIOD_TICKS = 100;
+    private static final int FARM_WORK_PERIOD_TICKS = 120;
+    private static final int QUARRY_WORK_PERIOD_TICKS = 80;
+    private static final int MINING_WORK_PERIOD_TICKS = 160;
 
     private SettlementWorkerService() {}
 
@@ -59,7 +64,11 @@ public final class SettlementWorkerService {
         List<BuildingRecord> buildings = buildings(data, type);
         List<Villager> workers = workersByName(level, data.centerPos(), workerName);
         int count = Math.min(buildings.size(), workers.size());
-        for (int i = 0; i < count; i++) work.run(level, data, workers.get(i), buildings.get(i));
+        for (int i = 0; i < count; i++) {
+            BuildingRecord building = buildings.get(i);
+            if (!level.hasChunkAt(building.workCenter())) continue;
+            work.run(level, data, workers.get(i), building);
+        }
     }
 
     private static void tryAttractWorker(MinecraftServer server, ServerLevel level, SettlementData data) {
@@ -94,8 +103,10 @@ public final class SettlementWorkerService {
                                       BuildingType type, String workerName, int existingWorkers) {
         List<BuildingRecord> available = buildings(data, type);
         if (existingWorkers >= available.size()) return false;
+        BuildingRecord target = available.get(existingWorkers);
+        if (!level.hasChunkAt(target.workCenter())) return true;
         if (!consumeArrivalFood(level, data)) return true;
-        spawnWorker(level, available.get(existingWorkers).workCenter(), workerName);
+        spawnWorker(level, target.workCenter(), workerName);
         finishArrival(server, data);
         return true;
     }
@@ -111,6 +122,7 @@ public final class SettlementWorkerService {
     }
 
     private static void spawnWorker(ServerLevel level, BlockPos spawn, String name) {
+        if (!level.hasChunkAt(spawn)) return;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         worker.setCustomName(Component.literal(name));
@@ -129,8 +141,12 @@ public final class SettlementWorkerService {
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
             move(worker, target, 0.8D); return;
         }
+        if (!workDue(level, camp, LUMBER_WORK_PERIOD_TICKS)) return;
         ItemStack harvested = harvestVerticalTrunk(level, data, target);
-        if (!harvested.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+        if (!harvested.isEmpty()) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+        }
     }
 
     private static void workFarm(ServerLevel level, SettlementData data,
@@ -140,12 +156,14 @@ public final class SettlementWorkerService {
         if (worker.distanceToSqr(farm.workCenter().getX() + 0.5D, farm.workCenter().getY(), farm.workCenter().getZ() + 0.5D) > 64.0D) {
             move(worker, farm.workCenter(), 0.75D); return;
         }
+        if (!workDue(level, farm, FARM_WORK_PERIOD_TICKS)) return;
         int harvested = 0;
         BuildingType type = farm.buildingType();
         if (type == null) return;
         for (int x = 0; x < type.width() && harvested < MAX_CROPS_PER_TRIP; x++) {
             for (int z = 0; z < type.depth() && harvested < MAX_CROPS_PER_TRIP; z++) {
                 BlockPos crop = farm.origin().offset(x, 1, z);
+                if (!level.hasChunkAt(crop)) continue;
                 BlockState state = level.getBlockState(crop);
                 if (!state.is(Blocks.WHEAT) || !state.hasProperty(BlockStateProperties.AGE_7)
                         || state.getValue(BlockStateProperties.AGE_7) < 7) continue;
@@ -153,7 +171,10 @@ public final class SettlementWorkerService {
                 harvested++;
             }
         }
-        if (harvested > 0) worker.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.WHEAT, harvested));
+        if (harvested > 0) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            worker.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.WHEAT, harvested));
+        }
     }
 
     private static void workQuarry(ServerLevel level, SettlementData data,
@@ -165,8 +186,12 @@ public final class SettlementWorkerService {
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 9.0D) {
             move(worker, target, 0.78D); return;
         }
+        if (!workDue(level, quarry, QUARRY_WORK_PERIOD_TICKS)) return;
         ItemStack stone = harvestStoneCluster(level, data, target);
-        if (!stone.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, stone);
+        if (!stone.isEmpty()) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            worker.setItemSlot(EquipmentSlot.MAINHAND, stone);
+        }
     }
 
     private static void workMine(ServerLevel level, SettlementData data,
@@ -177,15 +202,30 @@ public final class SettlementWorkerService {
         if (worker.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > 16.0D) {
             move(worker, work, 0.75D); return;
         }
+        if (!workDue(level, mine, MINING_WORK_PERIOD_TICKS)) return;
         BlockPos ore = findOreBelow(level, data, work);
         if (ore == null) return;
         ItemStack mined = mineOre(level, ore);
-        if (!mined.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, mined);
+        if (!mined.isEmpty()) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            worker.setItemSlot(EquipmentSlot.MAINHAND, mined);
+        }
+    }
+
+    private static boolean workDue(ServerLevel level, BuildingRecord building, int periodTicks) {
+        long periodSlots = Math.max(1L, periodTicks / 10L);
+        long currentSlot = level.getGameTime() / 10L;
+        long salt = (long) building.originX() * 31L + (long) building.originY() * 7L + (long) building.originZ() * 17L;
+        return Math.floorMod(currentSlot + salt, periodSlots) == 0L;
     }
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
                                              Villager worker, ItemStack carried) {
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        if (!level.hasChunkAt(target)) {
+            worker.getNavigation().stop();
+            return;
+        }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D) > 9.0D) {
             move(worker, target, 0.85D);
             return;
@@ -208,6 +248,7 @@ public final class SettlementWorkerService {
                 int z = center.getZ() + dz;
                 for (int y = center.getY() - 4; y <= center.getY() + 10; y++) {
                     BlockPos pos = new BlockPos(x, y, z);
+                    if (!level.hasChunkAt(pos)) continue;
                     BlockState state = level.getBlockState(pos);
                     if (!state.is(BlockTags.LOGS) || isProtected(data, pos) || !hasLeavesAbove(level, pos)) continue;
                     double distance = pos.distSqr(center);
@@ -223,7 +264,8 @@ public final class SettlementWorkerService {
         for (int y = 1; y <= 8; y++) {
             for (int dx = -2; dx <= 2; dx++) {
                 for (int dz = -2; dz <= 2; dz++) {
-                    if (level.getBlockState(trunk.offset(dx, y, dz)).is(BlockTags.LEAVES)) return true;
+                    BlockPos pos = trunk.offset(dx, y, dz);
+                    if (level.hasChunkAt(pos) && level.getBlockState(pos).is(BlockTags.LEAVES)) return true;
                 }
             }
         }
@@ -231,6 +273,7 @@ public final class SettlementWorkerService {
     }
 
     private static ItemStack harvestVerticalTrunk(ServerLevel level, SettlementData data, BlockPos base) {
+        if (!level.hasChunkAt(base)) return ItemStack.EMPTY;
         BlockState first = level.getBlockState(base);
         if (!first.is(BlockTags.LOGS)) return ItemStack.EMPTY;
         Item item = first.getBlock().asItem();
@@ -238,6 +281,7 @@ public final class SettlementWorkerService {
         int count = 0;
         for (int y = 0; y < 10 && count < MAX_LOGS_PER_TRIP; y++) {
             BlockPos pos = base.above(y);
+            if (!level.hasChunkAt(pos)) break;
             BlockState state = level.getBlockState(pos);
             if (!state.is(BlockTags.LOGS) || state.getBlock().asItem() != item || isProtected(data, pos)) {
                 if (count > 0) break;
@@ -257,6 +301,7 @@ public final class SettlementWorkerService {
                 if (dx * dx + dz * dz > radius * radius) continue;
                 for (int y = center.getY() - 4; y <= center.getY() + 3; y++) {
                     BlockPos pos = new BlockPos(center.getX() + dx, y, center.getZ() + dz);
+                    if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.above())) continue;
                     BlockState state = level.getBlockState(pos);
                     if (!isQuarryStone(state) || isProtected(data, pos) || !level.getBlockState(pos.above()).isAir()) continue;
                     double distance = pos.distSqr(center);
@@ -268,6 +313,7 @@ public final class SettlementWorkerService {
     }
 
     private static ItemStack harvestStoneCluster(ServerLevel level, SettlementData data, BlockPos base) {
+        if (!level.hasChunkAt(base)) return ItemStack.EMPTY;
         BlockState first = level.getBlockState(base);
         if (!isQuarryStone(first)) return ItemStack.EMPTY;
         Item item = first.getBlock().asItem();
@@ -276,8 +322,10 @@ public final class SettlementWorkerService {
         for (int dx = -1; dx <= 1 && count < MAX_STONE_PER_TRIP; dx++) {
             for (int dz = -1; dz <= 1 && count < MAX_STONE_PER_TRIP; dz++) {
                 BlockPos pos = base.offset(dx, 0, dz);
+                if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.above())) continue;
                 BlockState state = level.getBlockState(pos);
-                if (state.getBlock().asItem() != item || !isQuarryStone(state) || isProtected(data, pos)) continue;
+                if (state.getBlock().asItem() != item || !isQuarryStone(state) || isProtected(data, pos)
+                        || !level.getBlockState(pos.above()).isAir()) continue;
                 level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
                 count++;
             }
@@ -298,6 +346,7 @@ public final class SettlementWorkerService {
                     for (int dz = -radius; dz <= radius; dz++) {
                         if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
                         BlockPos pos = new BlockPos(center.getX() + dx, y, center.getZ() + dz);
+                        if (!level.hasChunkAt(pos)) continue;
                         if (level.getBlockState(pos).is(Tags.Blocks.ORES) && !isProtected(data, pos)) return pos;
                     }
                 }
@@ -307,6 +356,7 @@ public final class SettlementWorkerService {
     }
 
     private static ItemStack mineOre(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos)) return ItemStack.EMPTY;
         BlockState state = level.getBlockState(pos);
         if (!state.is(Tags.Blocks.ORES)) return ItemStack.EMPTY;
         ItemStack result;
