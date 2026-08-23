@@ -4,43 +4,51 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
 Survival Ascension turns progression into larger physical actions, then makes world stages, expeditions, infrastructure, behavior-driven enemies, production, logistics and physical field bases consume that larger output again.
 
-## 0.30.0-alpha.1 — Physical Field Outposts
-0.30 upgrades the 0.29 Barrel logistics node into a real, player-built forward base instead of another invisible menu perk.
+## 0.31.0-alpha.1 — Death-bound Field Recovery
+0.31 gives physical outposts a real expedition-recovery role without turning them into ordinary waystones or free fast travel.
 
-### Upgrade a real depot into an outpost
-From `M -> Infrastructure -> 산업 가공소 -> 전초기지 승격`:
-- Stand within 4 blocks of one of your registered Barrel field depots.
-- The Barrel must have, within 5 blocks, at least one Bed, Campfire/Soul Campfire, Crafting Table and Furnace/Blast Furnace/Smoker.
-- Upgrade cost: 2 stored field-supply charges + Iron Ingots32 + Gold Ingots8 + Coal32.
-- Upgrade material counts combine player inventory and currently usable linked Barrel stock.
-- The outpost is persisted in new independent `outpost_v1` and remains tied to that depot position.
-- Unlinking the underlying field depot also removes the outpost upgrade without refund.
+### Prepaid one-use recovery contract
+From `M -> Infrastructure -> 산업 가공소 -> 현장 복귀 계약`:
+- Stand within 4 blocks of one of your **active** outposts.
+- First arming consumes 1 stored field-supply charge in advance.
+- The contract stores exactly one outpost recovery point in independent `field_recovery_v1`.
+- If a paid contract is already armed, moving it to another active outpost is free; this moves the already-paid one-use token instead of creating another charge.
+- Selecting the same outpost again only reports that it is already armed.
 
-### Active outpost rules
-An upgraded outpost is active only while all of these are true:
-- owner is online, not spectator and in the same dimension;
-- owner is within 64 blocks of the outpost Barrel;
-- the Barrel chunk is already loaded and still contains the registered Barrel;
-- `mayInteract` succeeds;
-- the physical Bed/Campfire/Crafting/Furnace structure is still present.
+### Death qualification
+A recovery is queued only when all of these are true at death time:
+- the player has an armed one-use contract;
+- death happens in the same dimension as the armed outpost;
+- death is within 96 blocks of that outpost anchor;
+- the outpost record still exists and the real Barrel/camp structure is operational and interactable;
+- the player is **not** currently in a Regional Incident, Apex Hunt or Ascension Trial.
 
-No chunk force-loading is added. Breaking a required camp block disables the benefits immediately; rebuilding it reactivates the already-upgraded outpost.
+Incident/Apex/Trial deaths do not consume the contract, so field recovery cannot become a boss-fight extra life. Ordinary movement and exploration are also untouched: there is no button that teleports a living player to an arbitrary outpost.
 
-### Extended field logistics
-- Ordinary field depot: 32-block supply radius.
-- Active outpost depot: 64-block supply radius.
-- Bulk Construction and irrigation still consume real player/Barrel stacks, player-first and nearest-depot-first.
-- Existing placement protection, material rollback, queue/tick limits and crop safety remain unchanged.
+### Respawn recovery and failure safety
+After a qualifying death the prepaid token moves from `armed` to `pending`. On respawn the server attempts to return the player to a safe standing position around the target outpost.
+- The destination dimension and outpost are resolved server-side from saved state.
+- The destination chunk must already be loaded; no chunk ticket or force-load is added.
+- Barrel, camp structure and `mayInteract` checks are repeated.
+- The arrival scan requires a sturdy floor, empty body/head collision spaces and no fluid.
+- The token is consumed only **after** `ServerPlayer.teleportTo` reports success.
+- Failed destination validation or teleport preserves the pending token.
+- A pending token can be retried. If its old target is unavailable and the player stands within 4 blocks of another active outpost, it can be rearmed there without another supply-charge cost.
+- Successful recovery clears motion/fall state and increments a lifetime recovery counter.
 
-### Natural hostile safe zone
-While the owner is actively using the outpost, natural hostile spawning within 24 blocks of the outpost is canceled server-side.
-- Only `NATURAL` hostile spawns are suppressed.
-- `TRIGGERED` spawns are deliberately untouched, so Regional Incidents, Apex Hunts and the Ascension Trial still attack normally.
-- Spawners, command/event spawns and explicit encounter mobs are not converted into a free safe-zone exploit.
+`/ascension stats` and Industrial Works status now report `미설정 / 계약 준비 / 복귀 대기` plus lifetime successful recoveries.
 
-`/ascension stats` now reports registered/usable depots plus upgraded/active outposts.
+No new packet schema was added; the existing string-based `InfrastructureActionPayload(projectId, action)` carries the recovery action, so network protocol remains `8`.
 
-No new packet schema was added; the existing `InfrastructureActionPayload(projectId, action)` carries the outpost upgrade action, so network protocol remains `8`.
+## 0.30 — Physical Field Outposts
+- Upgrade an owned registered Barrel depot while within4 blocks.
+- Physical camp within5 requires an interactable Bed, Campfire/Soul Campfire, Crafting Table and Furnace/Blast Furnace/Smoker.
+- Cost: supply charges2 + Iron32 + Gold8 + Coal32.
+- `outpost_v1` is independent SavedData and remains tied to the exact depot coordinate.
+- Active only while owner is same-dimension/within64, anchor chunk is loaded, Barrel exists/interactable and the real camp structure remains valid.
+- Ordinary depot supply radius32; active outpost depot radius64.
+- Active outpost suppresses only `NATURAL` hostile spawns within24; `TRIGGERED` Incident/Apex/Trial spawns remain untouched.
+- No force-loaded chunks.
 
 ## 0.29 — Physical Field Depots
 - Register a real vanilla Barrel within4 blocks for one field-supply charge; max3/player and one owner per physical position.
@@ -55,7 +63,7 @@ No new packet schema was added; the existing `InfrastructureActionPayload(projec
 - Four atomic large-batch lines: Raw Iron/Copper/Coal, logs/cobblestone/iron, crops, and redstone/amethyst/gold/quartz.
 - `production_v1` stores per-player line buffers, lifetime cycles and supply charges.
 - One cycle requires one batch from all four lines. Buffers and supply charges are capped at3.
-- One charge may be dispatched as Gold32 + Amethyst16 + Echo2, used to register a depot, or invested toward an outpost upgrade.
+- One charge may be dispatched as Gold32 + Amethyst16 + Echo2, used to register a depot, or invested toward an outpost/recovery contract.
 
 ## 0.27 — Apex Hunts
 - Stage-1 `정점 추적소`: Iron512 + Gold256 + Amethyst256 + Echo32 + Nether Star1.
@@ -87,7 +95,9 @@ At Lv.100 and after the nine-region completion:
 - Mythic III gear can be awakened once from exactly3 affixes to4 affixes with large resource costs.
 
 ## External references
-- MineColonies is reference-only for 0.30's high-level idea that a forward settlement should combine physical facilities, supply and local defense. Current public releases are GPLv3; no MineColonies source, blueprints, citizens, building data, UI, assets, research, raid code or namespaces are copied.
+- Waystones (`TwelveIterations/Waystones`) current 26.2 branch is All Rights Reserved. 0.31 studies only the product tradeoff around return/teleport convenience and deliberately rejects always-available outpost fast travel. No Waystones code, blocks, items, menus, data, assets or namespaces are copied.
+- Corpse (`denmeh/Corpse`) is LGPL-3.0. 0.31 studies only the high-level goal of reducing repetitive death-recovery travel; no Corpse source, corpse entity/container, inventory-storage logic, assets, data or namespace are copied.
+- MineColonies remains GPLv3 reference-only for 0.30's physical forward-base product lesson; no implementation/content is copied.
 - Create's current repository license split remains code MIT / `src/main/resources/assets/` All Rights Reserved. 0.28–0.30 use only high-level throughput/logistics concepts; no Create logistics implementation/assets/data are bundled.
 - Building Gadgets 2 remains the MIT reference for material-backed protected Construction behavior; field depot/outpost storage resolution is independent Survival Ascension code.
 - Other permissive adaptations and reference-only projects are documented in `THIRD_PARTY_NOTICES.md` and packaged notices.
