@@ -1,0 +1,58 @@
+name: Arcane alpha75 recovery dispatcher
+
+on:
+  workflow_run:
+    workflows: ['Build Arcane Circle']
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  finalize:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Commit final alpha.75 source and restore canonical workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .github/arcane-alpha75-wide-credit.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 .github/arcane-alpha75-wide-credit.py
+          rm -f .github/workflows/arcane-alpha75-recovery.yml
+          git show 29422e45315841170807d7f69b7c4743d9a8fd2e^:.github/workflows/build-arcane-circle.yml > .github/workflows/build-arcane-circle.yml
+          git diff --check
+          git add -A
+          git commit -m 'Finalize Arcane alpha.75 integrated combat credit [skip ci]'
+          pushed=0
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then pushed=1; break; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          test "$pushed" -eq 1
+          echo "FINAL_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Dispatch canonical Arcane build on final main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/build-arcane-circle.yml/dispatches" \
+            -d '{"ref":"main"}'
+          echo "Dispatched canonical Build Arcane Circle for $FINAL_SOURCE_SHA"
