@@ -3,6 +3,7 @@ package kr.moonseungjun.frontiersettlement.network;
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementBarracksService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCartStationService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionOfficeService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
@@ -40,7 +41,11 @@ public final class SettlementNetwork {
         if(!(context.player() instanceof ServerPlayer player))return; BuildingType type=BuildingType.fromId(payload.buildingType());
         if(type==null){context.reply(new PlacementPreviewPayload(payload.nonce(),payload.buildingType(),false,false,0,0,0,payload.rotation(),"알 수 없는 건물입니다."));return;}
         SettlementData data=SettlementData.get(player.level().getServer()); String lock=null;
-        if(type==BuildingType.WORKSHOP)lock=SettlementWorkshopService.lockedReason(data); else if(type==BuildingType.CART_STATION)lock=SettlementCartStationService.lockedReason(data); else if(type==BuildingType.WATCHTOWER)lock=SettlementWatchtowerService.lockedReason(data); else if(type==BuildingType.BARRACKS)lock=SettlementBarracksService.lockedReason(data);
+        if(type==BuildingType.WORKSHOP)lock=SettlementWorkshopService.lockedReason(data);
+        else if(type==BuildingType.CART_STATION)lock=SettlementCartStationService.lockedReason(data);
+        else if(type==BuildingType.WATCHTOWER)lock=SettlementWatchtowerService.lockedReason(data);
+        else if(type==BuildingType.BARRACKS)lock=SettlementBarracksService.lockedReason(data);
+        else if(type==BuildingType.CONSTRUCTION_OFFICE)lock=SettlementConstructionOfficeService.lockedReason(data);
         if(lock!=null){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),lock));return;}
         if(data.construction().active()||data.roadConstruction().active()||data.outpostConstruction().active()){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),"현재 공사가 끝난 뒤 새 건물을 배치해 주세요."));return;}
         BlockPos center=new BlockPos(payload.centerX(),payload.centerY(),payload.centerZ());
