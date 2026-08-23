@@ -1,4 +1,5 @@
 JAR VERIFY PASS
-version=0.26.0-alpha.1
-size=292606
-sha256=d8d96ea73b588eec8d7d1387b22e64dab698a896fc2fa36eb46b33aedb5cfa30
+version=0.27.0-alpha.1
+apex_runtime=present
+size=321335
+sha256=5ef0fe63cffc7b830d22b7156f1dd5d9da96868b1965c83adada6ec20b23c35b
