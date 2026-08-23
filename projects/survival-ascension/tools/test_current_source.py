@@ -45,7 +45,7 @@ def need(text, needles, label):
 props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
 need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.21.0-alpha.1"],"gradle.properties")
 main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
-need(main,['VERSION = "0.21.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","WarbandDirector::onServerTick","EndgameMutationSystem::onFinalizeSpawn","EndgameMutationSystem::onDamagePost","EndgameMutationSystem::onLivingDeath","AscensionTrialSystem::onServerTick"],"main registration")
+need(main,['VERSION = "0.21.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","WarbandDirector::onServerTick","EndgameMutationSystem::onFinalizeSpawn","EndgameMutationSystem::onDamagePost","EndgameMutationSystem::onLivingDeath","AscensionTrialSystem::onServerTick","AscensionTrialSystem::onEntityJoin"],"main registration")
 
 tuning=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java").read_text(encoding="utf-8")
 need(tuning,[
@@ -81,9 +81,10 @@ need(trial,[
     "Gateways to Eternity", "ECHO_SHARD_COST = 32", "AMETHYST_COST = 64", "DRAGON_BREATH_COST = 8",
     "TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "START_COOLDOWN_TICKS = 2400", "EXCLUSION_RADIUS = 96.0D",
     "InfrastructureProject.ASCENSION_NEXUS", "WorldAscensionData.get(server).stage() < 2", "EntitySpawnReason.TRIGGERED",
-    "ServerBossEvent", "EntityType.RAVAGER", "EntityType.EVOKER", "EntityType.WITHER_SKELETON",
+    "ServerBossEvent", "EntityType.byString(typeId)", '"minecraft:ravager"', '"minecraft:evoker"', '"minecraft:wither_skeleton"',
     "AscensionAffixes.createEliteDrop(trial.level.getRandom(), 3)", "Items.NETHERITE_SCRAP, 2", "Items.DIAMOND, 4",
-    "입장 재료는 반환되지 않습니다"
+    "onEntityJoin(EntityJoinLevelEvent event)", "TRIAL_OWNER_KEY", "active.mobIds.contains(mob.getUUID())", "event.setCanceled(true)",
+    "distanceToCenterSqr", "입장 재료는 반환되지 않습니다"
 ],"Ascension Trial")
 
 mobility=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java").read_text(encoding="utf-8")
@@ -105,7 +106,7 @@ construction=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/construction
 need(construction,["MAX_PENDING_BLOCKS_PER_PLAYER = 512","level >= 100 ? 7 : 5","InfrastructureProject.BUILDER_FOUNDRY","[건축 숙련 VI]"],"mastery VI construction")
 
 guide=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java").read_text(encoding="utf-8")
-need(guide,["숙련 VI","Lv.100 11×11+광맥192","Lv.100 384","Lv.100 파급10/5블록","입체7³","Lv.100은 3회","종말 변이"],"guide")
+need(guide,["숙련 VI","Lv.100 11×11+광맥192","Lv.100 384","Lv.100 파급10/5블록","입체7³","Lv.100은 3회","종말 변이","승천 시련"],"guide")
 third=(ROOT/"THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
 need(third,["Hostiles Are Too Easy","CC0 1.0 Universal","0.19","Warband","Veinminer++","Gateways to Eternity","Copyright (c) 2020 Brennan Ward"],"third-party notices")
 
@@ -128,5 +129,5 @@ if errors:
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
 print("- Lv.100 mastery VI scale and existing tick/protection/material contracts retained")
-print("- Stage-2 Ascension Trial adds paid four-wave repeatable endgame with boss-bar state, timeout and overlap guards")
+print("- Stage-2 Ascension Trial adds paid four-wave repeatable endgame with boss-bar state, timeout, overlap and restart-orphan guards")
 print("- world stages, mutations, Nexus, warbands, elites and equipment economy regressions retained")
