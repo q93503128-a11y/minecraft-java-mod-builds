@@ -1,1 +1,1 @@
-alpha.29 tier public-works invariant missing: DOMAIN_LAMP_SPACING = 10
+alpha.29 civic-core protection invariant missing: desired(data, SettlementTier tier)
