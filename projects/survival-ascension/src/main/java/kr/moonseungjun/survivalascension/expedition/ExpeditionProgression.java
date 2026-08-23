@@ -104,11 +104,14 @@ public final class ExpeditionProgression {
         ExpeditionData.ProgressResult result = data.addProgress(player, region, amount);
         if (result.newProgress() == result.oldProgress()) return;
         if (result.completedNow()) {
-            SkillProgressionService.award(player, region.rewardSkill(), region.skillXp());
+            boolean rewardGranted = data.claimRegionReward(player, region);
+            if (rewardGranted) SkillProgressionService.award(player, region.rewardSkill(), region.skillXp());
+            String rewardText = rewardGranted
+                    ? " §7· " + region.rewardSkill().koreanName() + " 숙련 XP +" + region.skillXp()
+                    : " §7· 기존 0.23 발견 보상 승계";
             player.sendSystemMessage(Component.literal("§a[원정 완수] §f" + region.koreanName() + " · " + region.objectiveName()
                     + " §e" + region.objectiveTarget() + "/" + region.objectiveTarget()
-                    + " §7· " + region.rewardSkill().koreanName() + " 숙련 XP +" + region.skillXp()
-                    + " §7· 완수 " + data.countCompleted(player) + "/9"));
+                    + rewardText + " §7· 완수 " + data.countCompleted(player) + "/9"));
             checkMilestones(player, data, WorldAscensionData.get(((ServerLevel) player.level()).getServer()).stage());
             return;
         }
