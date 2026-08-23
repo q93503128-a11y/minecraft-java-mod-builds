@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
     public static final String VERSION = "0.29.0-alpha.1";
+    // 0.29 canonical contract: field logistics use loaded vanilla Barrel inventory, never virtual or force-loaded stock.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
