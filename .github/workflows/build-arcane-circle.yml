@@ -31,28 +31,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply alpha.75 integrated combat-credit patch once
-        shell: bash
-        run: |
-          set -euo pipefail
-          if test -f .github/arcane-alpha75-wide-credit.py; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            python3 .github/arcane-alpha75-wide-credit.py
-            git show HEAD^:.github/workflows/build-arcane-circle.yml > .github/workflows/build-arcane-circle.yml
-            git diff --check
-            git add -A
-            git commit -m 'Finalize Arcane alpha.75 integrated combat credit [skip ci]'
-            pushed=0
-            for attempt in 1 2 3 4 5 6; do
-              if git push origin HEAD:main; then pushed=1; break; fi
-              git fetch origin main
-              git rebase origin/main
-              sleep $((attempt * 2))
-            done
-            test "$pushed" -eq 1
-          fi
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
