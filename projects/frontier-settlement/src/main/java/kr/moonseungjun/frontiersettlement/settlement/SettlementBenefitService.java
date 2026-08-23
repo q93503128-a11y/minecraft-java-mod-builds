@@ -36,6 +36,7 @@ public final class SettlementBenefitService {
         boolean changed = false;
         for (BuildingRecord blacksmith : buildings(data, BuildingType.BLACKSMITH)) {
             BlockPos work = blacksmith.workCenter();
+            if (!level.hasChunkAt(work)) continue;
             for (ServerPlayer player : level.players()) {
                 if (player.blockPosition().distSqr(work) > BLACKSMITH_RADIUS_SQR) continue;
                 ItemStack damaged = mostDamagedEquippedItem(player);
@@ -69,6 +70,7 @@ public final class SettlementBenefitService {
     private static void maintainGuards(ServerLevel level, SettlementData data) {
         for (BuildingRecord post : buildings(data, BuildingType.GUARD_POST)) {
             BlockPos center = post.workCenter();
+            if (!level.hasChunkAt(center)) continue;
             String identity = guardIdentity(post);
             AABB search = new AABB(center).inflate(16.0D, 8.0D, 16.0D);
             List<IronGolem> existing = level.getEntitiesOfClass(IronGolem.class, search,
