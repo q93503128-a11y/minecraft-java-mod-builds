@@ -12,6 +12,8 @@ if not jar.is_file():
 
 required = {
     'kr/moonseungjun/frontiersettlement/FrontierSettlement.class',
+    'kr/moonseungjun/frontiersettlement/content/FrontierContent.class',
+    'kr/moonseungjun/frontiersettlement/content/PioneerMarkerItem.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementData.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.class',
@@ -48,12 +50,15 @@ required = {
     'kr/moonseungjun/frontiersettlement/client/OutpostPlacementClient.class',
     'kr/moonseungjun/frontiersettlement/client/OutpostGhostRenderer.class',
     'kr/moonseungjun/frontiersettlement/client/SettlementHudOverlay.class',
+    'assets/frontier_settlement/items/pioneer_marker.json',
+    'assets/frontier_settlement/lang/ko_kr.json',
+    'data/frontier_settlement/recipe/pioneer_marker.json',
 }
 with zipfile.ZipFile(jar) as zf:
     names = set(zf.namelist())
     missing = sorted(required - names)
     if missing:
-        raise SystemExit('JAR missing classes: ' + ', '.join(missing))
+        raise SystemExit('JAR missing runtime entries: ' + ', '.join(missing))
     if any(name.endswith('.java') for name in names):
         raise SystemExit('runtime JAR unexpectedly contains Java source')
 
