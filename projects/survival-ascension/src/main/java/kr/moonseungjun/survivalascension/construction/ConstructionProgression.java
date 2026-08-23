@@ -115,7 +115,10 @@ public final class ConstructionProgression {
                 BlockPos target = job.next();
                 removePending(job.playerId, 1);
                 PlaceResult result = tryPlace(player, level, job.state, target);
-                if (result == PlaceResult.PLACED) job.placed++;
+                if (result == PlaceResult.PLACED) {
+                    job.placed++;
+                    ExpeditionProgression.recordSkillAction(player, SkillType.CONSTRUCTION, 1);
+                }
                 if (result == PlaceResult.OUT_OF_MATERIAL) {
                     removePending(job.playerId, job.remaining());
                     job.clear();
