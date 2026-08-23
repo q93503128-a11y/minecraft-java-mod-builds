@@ -107,7 +107,6 @@ public final class HighUtilitySpellService {
         if (old != null) discardClone(old);
         Entity rawClone = source.getType().create(level, EntitySpawnReason.EVENT);
         if (!(rawClone instanceof Mob clone)) return false;
-
         Vec3 look = player.getLookAngle();
         Vec3 right = new Vec3(-look.z, 0.0, look.x);
         right = right.lengthSqr() < 1.0E-8 ? new Vec3(1.0, 0.0, 0.0) : right.normalize();
@@ -401,7 +400,7 @@ public final class HighUtilitySpellService {
 
     private static Mob targetMob(ServerPlayer player, CastTargetSnapshot snapshot) {
         LivingEntity target = snapshot.targetEntity(player).orElse(null);
-        if (!(target instanceof Mob mob) || !mob.isAlive() || mob.isRemoved() || mob.getTags().contains("arcanecircle_clone")) return null;
+        if (!(target instanceof Mob mob) || !mob.isAlive() || mob.isRemoved()) return null;
         return POLYMORPHS.containsKey(mob.getUUID()) || MAZES.containsKey(mob.getUUID()) ? null : mob;
     }
 
