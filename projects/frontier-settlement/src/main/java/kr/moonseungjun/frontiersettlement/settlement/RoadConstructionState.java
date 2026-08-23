@@ -10,14 +10,18 @@ import java.util.List;
 public record RoadConstructionState(int startX, int startY, int startZ,
                                     int directionX, int directionZ,
                                     int length, int step,
-                                    List<Integer> path) {
+                                    List<Integer> path,
+                                    List<Integer> profile) {
     /**
      * Phase markers live inside the existing persisted step field so older saves decode unchanged.
      * Small steps are Alpha.24-or-earlier prepaid paving, 1M+ is grading, and 2M+ is Alpha.25 physical paving.
+     * Alpha.35 adds an optional per-center profile; absent/short profiles decode as ordinary road.
      */
     public static final int GRADE_STEP_OFFSET = 1_000_000;
     public static final int PAVE_STEP_OFFSET = 2_000_000;
-    public static final RoadConstructionState EMPTY = new RoadConstructionState(0, 0, 0, 0, 0, 0, 0, List.of());
+    public static final int PROFILE_NORMAL = 0;
+    public static final int PROFILE_BRIDGE = 1;
+    public static final RoadConstructionState EMPTY = new RoadConstructionState(0, 0, 0, 0, 0, 0, 0, List.of(), List.of());
 
     public static final Codec<RoadConstructionState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.optionalFieldOf("start_x", 0).forGetter(RoadConstructionState::startX),
@@ -27,15 +31,25 @@ public record RoadConstructionState(int startX, int startY, int startZ,
             Codec.INT.optionalFieldOf("direction_z", 0).forGetter(RoadConstructionState::directionZ),
             Codec.INT.optionalFieldOf("length", 0).forGetter(RoadConstructionState::length),
             Codec.INT.optionalFieldOf("step", 0).forGetter(RoadConstructionState::encodedStep),
-            Codec.INT.listOf().optionalFieldOf("path", List.of()).forGetter(RoadConstructionState::path)
+            Codec.INT.listOf().optionalFieldOf("path", List.of()).forGetter(RoadConstructionState::path),
+            Codec.INT.listOf().optionalFieldOf("profile", List.of()).forGetter(RoadConstructionState::profile)
     ).apply(instance, RoadConstructionState::new));
 
     public RoadConstructionState(int startX, int startY, int startZ,
                                  int directionX, int directionZ, int length, int step) {
-        this(startX, startY, startZ, directionX, directionZ, length, step, List.of());
+        this(startX, startY, startZ, directionX, directionZ, length, step, List.of(), List.of());
+    }
+
+    public RoadConstructionState(int startX, int startY, int startZ,
+                                 int directionX, int directionZ, int length, int step, List<Integer> path) {
+        this(startX, startY, startZ, directionX, directionZ, length, step, path, List.of());
     }
 
     public static RoadConstructionState fromPath(List<BlockPos> centers) {
+        return fromPath(centers, List.of());
+    }
+
+    public static RoadConstructionState fromPath(List<BlockPos> centers, List<Integer> profile) {
         if (centers == null || centers.size() < 2) return EMPTY;
         BlockPos first = centers.get(0);
         BlockPos last = centers.get(centers.size() - 1);
@@ -48,8 +62,14 @@ public record RoadConstructionState(int startX, int startY, int startZ,
             encoded.add(center.getY());
             encoded.add(center.getZ());
         }
+        List<Integer> normalizedProfile = new ArrayList<>(centers.size());
+        for (int i = 0; i < centers.size(); i++) {
+            int value = profile != null && i < profile.size() ? profile.get(i) : PROFILE_NORMAL;
+            normalizedProfile.add(value == PROFILE_BRIDGE ? PROFILE_BRIDGE : PROFILE_NORMAL);
+        }
         return new RoadConstructionState(first.getX(), first.getY(), first.getZ(),
-                directionX, directionZ, centers.size(), GRADE_STEP_OFFSET, List.copyOf(encoded));
+                directionX, directionZ, centers.size(), GRADE_STEP_OFFSET,
+                List.copyOf(encoded), List.copyOf(normalizedProfile));
     }
 
     public boolean active() {
@@ -113,12 +133,23 @@ public record RoadConstructionState(int startX, int startY, int startZ,
         return List.copyOf(legacy);
     }
 
+    public boolean bridgeAt(int centerIndex) {
+        return centerIndex >= 0 && profile != null && centerIndex < profile.size()
+                && profile.get(centerIndex) == PROFILE_BRIDGE;
+    }
+
+    public int bridgeCenterCount() {
+        int count = 0;
+        for (int i = 0; i < centers().size(); i++) if (bridgeAt(i)) count++;
+        return count;
+    }
+
     public RoadConstructionState advance() {
-        return new RoadConstructionState(startX, startY, startZ, directionX, directionZ, length, step + 1, path);
+        return new RoadConstructionState(startX, startY, startZ, directionX, directionZ, length, step + 1, path, profile);
     }
 
     public RoadConstructionState withStep(int nextStep) {
         int encoded = grading() && nextStep == 0 ? PAVE_STEP_OFFSET : Math.max(0, nextStep);
-        return new RoadConstructionState(startX, startY, startZ, directionX, directionZ, length, encoded, path);
+        return new RoadConstructionState(startX, startY, startZ, directionX, directionZ, length, encoded, path, profile);
     }
 }
