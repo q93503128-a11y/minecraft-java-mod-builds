@@ -38,6 +38,7 @@ public final class BuildingBlueprints {
             case WATCHTOWER -> WatchtowerBuildingBlueprint.create(origin);
             case BARRACKS -> BarracksBuildingBlueprint.create(origin);
             case WORKSHOP -> WorkshopBuildingBlueprint.create(origin);
+            case ADVANCED_WORKSHOP -> AdvancedWorkshopBuildingBlueprint.create(origin);
             case MARKET -> MarketBuildingBlueprint.create(origin);
             case CART_STATION -> CartStationBuildingBlueprint.create(origin);
         };
