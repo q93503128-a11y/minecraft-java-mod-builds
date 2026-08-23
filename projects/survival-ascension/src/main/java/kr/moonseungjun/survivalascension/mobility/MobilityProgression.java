@@ -122,6 +122,7 @@ public final class MobilityProgression {
             int units = (int) Math.floor(bank / 6.0D);
             bank -= units * 6.0D;
             announceMilestones(player, SkillProgressionService.award(player, SkillType.MOBILITY, units * 2L));
+            ExpeditionProgression.recordSkillAction(player, SkillType.MOBILITY, units * 6);
         }
         TRAVERSAL.put(uuid, new TraversalState(dimension, pos.x, pos.z, bank));
     }
