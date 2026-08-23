@@ -6,6 +6,7 @@ package kr.moonseungjun.survivalascension.woodcutting;
  */
 
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.progress.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -33,6 +34,7 @@ import java.util.UUID;
 public final class WoodcuttingProgression {
     private static final int GLOBAL_LOG_BUDGET_PER_TICK = 64;
     private static final int LOCAL_LOG_BUDGET_PER_TICK = 12;
+    private static final int FIELD_MASTERY_LOG_LIMIT = 448;
     private static final Set<UUID> CHAIN_GUARD = new HashSet<>();
     private static final Map<UUID, FellJob> JOBS = new HashMap<>();
 
@@ -50,7 +52,9 @@ public final class WoodcuttingProgression {
         }
         if (CHAIN_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
         int skillLevel = SkillProgressData.get(player).level(player, SkillType.WOODCUTTING);
-        int limit = AscensionAffixes.adjustWoodcuttingLimit(tool, SkillTuning.woodcuttingLogLimit(skillLevel));
+        int baseLimit = SkillTuning.woodcuttingLogLimit(skillLevel);
+        if (skillLevel >= 100 && ExpeditionProgression.hasFieldMastery(player)) baseLimit = FIELD_MASTERY_LOG_LIMIT;
+        int limit = AscensionAffixes.adjustWoodcuttingLimit(tool, baseLimit);
         if (limit <= 1 || JOBS.containsKey(player.getUUID())) return;
         scheduleNaturalTree(player, level, center, limit);
     }
@@ -166,6 +170,10 @@ public final class WoodcuttingProgression {
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§a[벌목 해금] §f자연 나무 연결 로그 최대 48개 일괄 벌목"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§a[벌목 해금] §f자연 나무 연결 로그 최대 128개 일괄 벌목"));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§a[벌목 해금] §f자연 나무 연결 로그 최대 256개 · 대형 작업은 서버 틱 분산"));
+        if (oldLevel < 100 && newLevel >= 100) {
+            String cap = ExpeditionProgression.hasFieldMastery(player) ? "448" : "384";
+            player.sendSystemMessage(Component.literal("§a[벌목 숙련 VI] §f자연 나무 연결 로그 최대 " + cap + "개 · 서버 틱 분산"));
+        }
     }
 
     private static final class FellJob {
