@@ -25,13 +25,10 @@ Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-
  [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
 [1m*** Started working on [4mapplyDevTransforms[0m[0m
  [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.19s
+Total runtime: 1.46s
 
 
-> Task :compileJava
-Note: Some input files use or override a deprecated API.
-Note: Recompile with -Xlint:deprecation for details.
-
+> Task :compileJava FROM-CACHE
 > Task :processResources
 > Task :classes
 > Task :jarJar NO-SOURCE
@@ -43,9 +40,7 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :test NO-SOURCE
 > Task :check UP-TO-DATE
 > Task :build
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787491614175.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787491694268.json
 
-[Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/build/reports/problems/problems-report.html
-
-BUILD SUCCESSFUL in 39s
-5 actionable tasks: 4 executed, 1 up-to-date
+BUILD SUCCESSFUL in 11s
+5 actionable tasks: 3 executed, 1 from cache, 1 up-to-date
