@@ -291,7 +291,7 @@ for forbidden in ('SettlementStorageService.extract(', 'SettlementStorageService
 
 commands = (JAVA / 'command/SettlementCommands.java').read_text(encoding='utf-8')
 for token in ('SettlementExternalContentService.snapshot', '탐험 연동 | 유물', '외부 무기',
-              'Commands.literal("market")', 'BuildingType.MARKET', '시장 "):
+              'Commands.literal("market")', 'BuildingType.MARKET', ' | 시장 '):
     if token not in commands: raise SystemExit(f'alpha.32 command/status invariant missing: {token}')
 
 palette = (JAVA / 'client/BuildingPaletteScreen.java').read_text(encoding='utf-8')
