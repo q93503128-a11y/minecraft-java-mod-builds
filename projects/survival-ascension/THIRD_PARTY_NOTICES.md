@@ -26,7 +26,7 @@ Source project: `Direwolf20-MC/BuildingGadgets2`
 Copyright (c) 2023 Direwolf20-MC  
 License: MIT License
 
-Survival Ascension independently implements Construction after studying Building Gadgets 2's permissively licensed material-backed building, interaction/protection checks, NeoForge placement hooks and tick-distributed work. 0.29's linked-Barrel material resolver is new Survival Ascension code; no Building Gadgets storage/network implementation is copied. Full notice: `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
+Survival Ascension independently implements Construction after studying Building Gadgets 2's permissively licensed material-backed building, interaction/protection checks, NeoForge placement hooks and tick-distributed work. 0.29+ linked-Barrel/outpost material resolution is new Survival Ascension code; no Building Gadgets storage/network implementation is copied. Full notice: `META-INF/third-party/BUILDING_GADGETS_2_MIT.txt`.
 
 ## Mob Champions
 Source project: `wendall911/MobChampions`  
@@ -69,13 +69,19 @@ License: MIT License
 
 Survival Ascension adapts timed sequential-wave encounter lifecycle, boss-bar status and wave-changing modifier concepts into its own Ascension Trial doctrines, costs, vanilla compositions and failure rules. Full notice: `META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt`.
 
-## Create — design reference for 0.28–0.29
+## Create — design reference for 0.28–0.30
 Source project: `Creators-of-Create/Create`  
 Current repository `LICENSE.md`: code MIT; all files under `./src/main/resources/assets/` All Rights Reserved.
 
-Survival Ascension 0.28 studies only the high-level product philosophy of turning large throughput into multi-input processing stages and logistics value. 0.29 additionally studies the product-level stock-backed request/local-restocking idea visible in Create's modern logistics system: stock can be summarized/requested and local restocking can pull from linked inventory rather than requiring every item in the player's hand.
+Survival Ascension 0.28 studies only the high-level product philosophy of turning large throughput into multi-input processing stages and logistics value. 0.29 additionally studies stock-backed request/local-restocking ideas. 0.30 keeps the same server-authoritative logistics boundary: all depot/outpost actions are revalidated against actual blocks, loaded chunks and `mayInteract`, rather than trusting client coordinates or UI state.
 
-The Survival Ascension implementation is independent: `field_depots_v1`, vanilla Barrel block positions, same-dimension/radius checks, loaded-chunk-only container access, `mayInteract`, and player-first exact-item consumption. No Create logistics source implementation, Packager/Stock Link/Stock Ticker/Requester code, package formats, blocks, assets, textures, models, sounds, recipes, processing data, machines, GUI/data, namespaces or Ponder content are copied or bundled. Because no substantial Create software portion is incorporated, no new Create runtime payload is added.
+The Survival Ascension implementation is independent: `field_depots_v1`, `outpost_v1`, vanilla Barrel coordinates, physical camp-block detection, same-dimension/radius checks, loaded-chunk-only container access and player-first exact-item consumption. No Create logistics source implementation, Packager/Stock Link/Stock Ticker/Requester code, package formats, blocks, assets, textures, models, sounds, recipes, processing data, machines, GUI/data, namespaces or Ponder content are copied or bundled.
+
+## MineColonies — reference only for 0.30
+Source project: MineColonies  
+Current public release pages: GNU General Public License version 3 (GPLv3)
+
+Survival Ascension studies only the high-level product lesson that a forward settlement becomes meaningful when physical facilities, supply and local defense are combined. The 0.30 outpost is independent Survival Ascension code using a registered vanilla Barrel plus nearby Bed/Campfire/Crafting/Furnace blocks, owner-nearby activation and a NATURAL-hostile-only spawn filter. No MineColonies source code, citizens/workers, builders/couriers, blueprints, structures, claims, research tree, raids, quests, GUI, assets, data files or namespaces are copied or bundled.
 
 ## Silent Gear — design reference only for 0.27
 Source project: Silent Gear  
