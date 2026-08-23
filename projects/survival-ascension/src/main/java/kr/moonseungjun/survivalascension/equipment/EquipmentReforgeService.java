@@ -48,6 +48,10 @@ public final class EquipmentReforgeService {
             player.sendSystemMessage(Component.literal("§5[신화 각성] §f이미 각성한 장비입니다."));
             return;
         }
+        if (!AscensionAffixes.canAwaken(held)) {
+            player.sendSystemMessage(Component.literal("§c[신화 각성] §faffix 데이터가 정상적인 3-affix 신화 장비가 아닙니다. 재료는 소비하지 않았습니다."));
+            return;
+        }
         MaterialCost[] costs = awakeningCosts();
         if (!player.isCreative() && !hasAll(player, costs)) {
             player.sendSystemMessage(Component.literal("§c[신화 각성] §f재료 부족 · " + join(costs)));
@@ -55,7 +59,7 @@ public final class EquipmentReforgeService {
         }
         if (!player.isCreative()) consumeAll(player, costs);
         if (!AscensionAffixes.awaken(held, player.level().getRandom())) {
-            player.sendSystemMessage(Component.literal("§c[신화 각성] §f장비 각성에 실패했습니다. 장비 상태를 다시 확인하세요."));
+            player.sendSystemMessage(Component.literal("§c[신화 각성] §f검증 이후 장비 상태가 바뀌어 각성을 중단했습니다."));
             return;
         }
         player.getInventory().setChanged();
