@@ -38,7 +38,6 @@ for filename,ids in circle_specs.items():
     for spell in ids: need(body,f'"{spell}"')
     need(body,'public static boolean executeNpc(')
 
-# Established circle semantics remain anchored.
 need(text(magic/'FirstCircleSpellService.java'),'sleepEligible(target, power)','ArcaneLightService.illuminate(player, 1800)')
 need(text(magic/'SecondCircleSpellService.java'),'new RaySalvo(level, caster.getUUID(), target.getUUID()','holdEligible(target)')
 need(text(magic/'ThirdCircleSpellService.java'),'ArcaneDamage.isResolving()','SLEET_ZONES.add(new SleetZone')
@@ -49,14 +48,13 @@ need(text(magic/'SeventhCircleSpellService.java'),'case "plane_shift" -> PlanarS
 need(text(magic/'EighthCircleSpellService.java'),'EARTHQUAKES.add(new EarthquakeField','INCENDIARY_CLOUDS.add(new IncendiaryCloudField')
 
 ninth=text(magic/'NinthCircleSpellService.java')
-need(ninth,'private static final Set<String> HANDLED = Set.of(','case "shapechange", "foresight" -> ArcaneBuffRuntime.apply(caster, spellId, power, range);','case "time_stop", "wish" -> ArcaneFieldService.executeSpecial(caster, spellId, range, power, snapshot);','case "true_polymorph" -> HighUtilitySpellService.execute(caster, spellId, range, power, snapshot);','public static final int PRISMATIC_WALL_TICKS = 400;','public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)')
+need(ninth,'private static final Set<String> HANDLED = Set.of(','case "shapechange", "foresight" -> ArcaneBuffRuntime.apply(caster, spellId, power, range);','case "time_stop", "wish" -> ArcaneFieldService.executeSpecial(caster, spellId, range, power, snapshot);','case "true_polymorph" -> HighUtilitySpellService.execute(caster, spellId, range, power, snapshot);','public static final int PRISMATIC_WALL_TICKS = 400;','public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)','double halfWidth = Math.max(13.0, Math.min(26.0, range * .32));')
 assert 'ParticleTypes' not in ninth
 
 death=text(magic/'DeathDoctrineService.java'); need(death,'Set.of("circle_of_death", "finger_of_death", "power_word_kill")','double threshold = Math.max(180.0, power * 1.24);','boolean executed = pool <= threshold;')
 circle_section=death[death.index('private static boolean circleOfDeath'):death.index('private static boolean fingerOfDeath')]; finger_section=death[death.index('private static boolean fingerOfDeath'):death.index('private static boolean powerWordKill')]
 assert 'threshold' not in circle_section and 'executed' not in circle_section and 'threshold' not in finger_section and 'executed' not in finger_section
 
-# Alpha.64 cityfall magnitude remains but alpha.65 grounds every authoritative impact.
 magnitude=text(magic/'NinthCircleMagnitude.java')
 need(magnitude,'BASE_METEOR_CAST_RANGE = 72.0','BASE_METEOR_CITY_RADIUS = 112.0','return clamp(Math.max(110.0, range * 1.5555555556), 110.0, 168.0);','return clampInt((int) Math.round(31.0 + field * .16), 49, 61);')
 pattern=text(magic/'MeteorBarragePattern.java')
@@ -67,27 +65,27 @@ ground=text(magic/'GroundTargetResolver.java')
 need(ground,'public static Vec3 surface(ServerLevel level, Vec3 desired)','public static Optional<BlockPos> safeStanding','level.getMaxY() - 2','validStanding(level','horizontalDistanceSqr')
 
 alpha65=text(magic/'Alpha65NinthCircleRuntime.java')
-need(alpha65,'WEIRD_ESCAPE_TICKS = 300','GATE_TICKS = 600','case "gate" -> gate(level, caster, snapshot, range);','case "weird" -> weird(level, caster, snapshot.target(), range, power);','GroundTargetResolver.surface(level, nominal)','captureNightmareVictims(field, caster)','value -> value != owner && value.isAlive()','if (!insideNightmare(field, target))','float fatal = Math.max(4096.0F','GroundTargetResolver.safeStanding(level, requested, 18)','processGateEndpoint(level, gate, gate.source','public static boolean worldSunder','double along = flat.dot(forward)','double lateral = Math.abs(flat.dot(right))','for (int i = -6; i <= 6; i++)')
-# Never regress to the wrong nested Relative type; NeoForge 26.2 uses net.minecraft.world.entity.Relative.
+need(alpha65,'WEIRD_ESCAPE_TICKS = 300','GATE_TICKS = 600','case "gate" -> gate(level, caster, snapshot, range);','case "weird" -> weird(level, caster, snapshot.target(), range, power);','GroundTargetResolver.surface(level, nominal)','captureNightmareVictims(field, caster)','value -> value != owner && value.isAlive()','if (!insideNightmare(field, target))','float fatal = Math.max(4096.0F','GroundTargetResolver.safeStanding(level, requested, 18)','caster.position().add(forward.scale(2.6))','processGateEndpoint(level, gate, gate.source','public static boolean worldSunder','double along = flat.dot(forward)','double lateral = Math.abs(flat.dot(right))','for (int i = -6; i <= 6; i++)')
 assert 'TeleportTransition.Relative' not in alpha65
 need(alpha65,'Set.<Relative>of()')
 
 kinetics=text(magic/'SpellKineticsService.java')
-need(kinetics,'MeteorBarragePattern.rememberRange(targetSnapshot.barrageSeed(), cast.range())','Alpha65NinthCircleRuntime.worldSunder(player, range, power, targetSnapshot)','Alpha65NinthCircleRuntime.executeOrDelegate(player, spellId, range, power, targetSnapshot)','Alpha65NinthCircleRuntime.meteorImpact(player','Alpha65NinthCircleRuntime.groundedBarrageCenter')
+need(kinetics,'import net.minecraft.world.phys.Vec3;','MeteorBarragePattern.rememberRange(targetSnapshot.barrageSeed(), cast.range())','Alpha65NinthCircleRuntime.worldSunder(player, range, power, targetSnapshot)','Alpha65NinthCircleRuntime.executeOrDelegate(player, spellId, range, power, targetSnapshot)','Alpha65NinthCircleRuntime.meteorImpact(player','Alpha65NinthCircleRuntime.groundedBarrageCenter')
 world_magic=text(magic/'WorldMagicService.java')
 need(world_magic,'GroundTargetResolver.surface((ServerLevel) caster.level(), around)','GroundTargetResolver.safeStanding(level, desired, 10)','MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed(), cast.range())','MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())')
 assert 'scale(Math.min(3.0, range))' not in world_magic
 
+gameplay=text(magic/'SpellGameplayService.java')
+need(gameplay,'case "weird" -> Alpha65NinthCircleRuntime.WEIRD_ESCAPE_TICKS;','case "gate" -> Alpha65NinthCircleRuntime.GATE_TICKS;','case "prismatic_wall" -> 400;','case "true_polymorph" -> 480;')
+
 npc_resolver=text(world/'NpcSpellResolver.java'); need(npc_resolver,'Alpha65NinthCircleRuntime.executeNpcOrDelegate')
 npc_meteor=text(world/'NpcMeteorBarrageService.java'); need(npc_meteor,'Alpha65NinthCircleRuntime.meteorImpactNpc','Alpha65NinthCircleRuntime.groundedBarrageCenter')
 
-# Shared visual overlays are forbidden. Every 9C identity is an explicit branch/method.
 prestige=text(client/'HighCirclePrestigeOverlay.java')
 assert 'denseGrandArray' not in prestige and 'tierScaffold' not in prestige
-need(prestige,'spell.circle() != 9','case "meteor_swarm" -> meteorArtillery','case "power_word_kill" -> executionJudgment','case "prismatic_wall" -> sevenLawWall','case "shapechange" -> mythicBody','case "time_stop" -> frozenClockwork','case "true_polymorph" -> morphBlueprint','case "weird" -> nightmareVerdict','case "wish" -> realityManuscript','case "gate" -> pairedWorldDoor','case "foresight" -> causalityFan','private static void meteorArtillery','private static void executionJudgment','private static void sevenLawWall','private static void mythicBody','private static void frozenClockwork','private static void morphBlueprint','private static void nightmareVerdict','private static void realityManuscript','private static void pairedWorldDoor','private static void causalityFan')
+need(prestige,'spell.circle() != 9','case "meteor_swarm" -> meteorArtillery','case "power_word_kill" -> executionJudgment','case "prismatic_wall" -> sevenLawWall','case "shapechange" -> mythicBody','case "time_stop" -> frozenClockwork','case "true_polymorph" -> morphBlueprint','case "weird" -> nightmareVerdict','case "wish" -> realityManuscript','case "gate" -> pairedWorldDoor','case "foresight" -> causalityFan','private static void meteorArtillery','private static void executionJudgment','private static void sevenLawWall','private static void mythicBody','private static void frozenClockwork','private static void morphBlueprint','private static void nightmareVerdict','private static void realityManuscript','private static void pairedWorldDoor','private static void causalityFan','double width = Math.max(26.0, Math.min(52.0, range * .64));','Vec3 near = forward.scale(2.6).add(0, 2.25, 0);')
 assert 'default -> tier' not in prestige and 'ParticleTypes' not in prestige
 
-# Grimoire: list/detail/slot rectangles are mutually separated; effect rows are selectable and own a detail pane.
 primary=text(client/'PrimaryGrimoireScreen.java')
 need(primary,'Rect slotStrip()','Rect browserMain()','Rect browserListViewport()','Rect browserDetail()','Rect effectListViewport()','Rect effectDetail()','inspectedSpellId = spells.get(i).id();','drawEffectCompendium(g, l, mouseX, mouseY)','"개요"','"실제 효과 / 판정"','s.effectSummary()','왼쪽 주문을 클릭하면 이 설명이 바뀝니다.')
 assert 'if (effects) return false;' not in primary
@@ -115,4 +113,6 @@ print('catalog_90_direct_19_fusion=PASS'); print('all_109_explicit_effect_summar
 print('alpha65_ground_target_contract=PASS'); print('alpha65_meteor_surface_per_strike=PASS'); print('alpha65_gate_safe_ground_pair=PASS')
 print('alpha65_weird_escape_or_die=PASS'); print('alpha65_world_sunder_horizontal_fault=PASS')
 print('alpha65_individual_ninth_circle_visuals=PASS'); print('alpha65_common_grand_array_forbidden=PASS')
+print('alpha65_prismatic_wall_visual_hitbox_match=PASS'); print('alpha65_gate_visual_source_match=PASS')
+print('alpha65_weird_gate_visual_lifetime_match=PASS')
 print('alpha65_grimoire_slot_isolation_and_effect_detail=PASS'); print('alpha65_lifecycle=PASS')
