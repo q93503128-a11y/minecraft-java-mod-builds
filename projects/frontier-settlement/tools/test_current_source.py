@@ -165,13 +165,16 @@ for forbidden in ('TRANSPORT_WORKER_NAME', 'workTransport(', 'takeFirstStack('):
 
 core = (JAVA / 'settlement/SettlementCoreService.java').read_text(encoding='utf-8')
 for token in ('level.getBlockEntity(placement.pos())', 'BreakBlockEvent', 'event.setCanceled(true)',
-              'event.setNotifyClient(true)', 'desired(data)'):
+              'event.setNotifyClient(true)', 'desired(data)', 'desired(data, SettlementTier tier)',
+              'for (SettlementTier tier : SettlementTier.values())'):
     if token not in core: raise SystemExit(f'alpha.29 civic-core protection invariant missing: {token}')
 
 tier_infra = (JAVA / 'settlement/SettlementTierInfrastructureService.java').read_text(encoding='utf-8')
-for token in ('FRONTIER_TOWN_LAMP_SPACING = 16', 'DOMAIN_LAMP_SPACING = 10',
+for token in ('FRONTIER_TOWN_LAMP_SPACING = 16', 'DOMAIN_LAMP_SPACING = 8', 'LAMP_START_OFFSET = 8',
               'maintainRoadPublicWorks(', 'lampSite(', 'level.hasChunkAt(', 'protectedXZ(',
-              'maintainTierGarrison(', 'BreakBlockEvent', 'event.setCanceled(true)'):
+              'maintainTierGarrison(', 'BreakBlockEvent', 'event.setCanceled(true)',
+              'matchesLampPlan(', 'matchesLampPlan(level, data, pos, block, DOMAIN_LAMP_SPACING)',
+              'matchesLampPlan(level, data, pos, block, FRONTIER_TOWN_LAMP_SPACING)'):
     if token not in tier_infra: raise SystemExit(f'alpha.29 tier public-works invariant missing: {token}')
 for forbidden in ('TRANSPORT_WORKER_NAME', 'transportWorkers(', 'topUpMatching(', 'Comparator.comparing'):
     if forbidden in tier_infra: raise SystemExit(f'legacy tier transport authority remains: {forbidden}')
