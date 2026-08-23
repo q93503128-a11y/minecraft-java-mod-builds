@@ -124,6 +124,10 @@ public final class AscensionTrialSystem {
         player.sendSystemMessage(Component.literal("§5[승천 시련] §f4개 웨이브를 제한시간 안에 격파하세요. §7각 웨이브 중반에 교리별 증원이 도착합니다."));
     }
 
+    public static boolean isActive(ServerPlayer player) {
+        return ACTIVE.containsKey(player.getUUID());
+    }
+
     public static void onServerTick(ServerTickEvent.Pre event) {
         removeStaleServerTrials(event.getServer());
         if (++ticker < 5) return;
