@@ -5,6 +5,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LightBlock;
@@ -27,12 +29,12 @@ public final class ArcaneLightService {
 
     private ArcaneLightService() {}
 
-    public static void illuminate(ServerPlayer player, int durationTicks) {
-        ServerLevel level = (ServerLevel) player.level();
+    public static void illuminate(LivingEntity owner, int durationTicks) {
+        if (!(owner.level() instanceof ServerLevel level)) return;
         long now = level.getGameTime();
-        LightState state = ACTIVE.computeIfAbsent(player.getUUID(), ignored -> new LightState());
+        LightState state = ACTIVE.computeIfAbsent(owner.getUUID(), ignored -> new LightState());
         state.untilTick = Math.max(state.untilTick, now + Math.max(20, durationTicks));
-        refresh(player, state);
+        refresh(owner, state);
     }
 
     public static void tick(ServerPlayer player) {
@@ -47,9 +49,33 @@ public final class ArcaneLightService {
         if (player.tickCount % REFRESH_INTERVAL == 0) refresh(player, state);
     }
 
-    public static void clear(ServerPlayer player) {
-        LightState state = ACTIVE.remove(player.getUUID());
-        if (state != null) clear(player, state);
+    public static boolean clear(LivingEntity owner) {
+        if (owner == null || !(owner.level() instanceof ServerLevel level)) return false;
+        LightState state = ACTIVE.remove(owner.getUUID());
+        if (state == null) return false;
+        clear(level.getServer(), state);
+        state.positions.clear();
+        state.dimension = null;
+        return true;
+    }
+
+    /** NPC Light is real world illumination too; players keep their direct per-player refresh path. */
+    public static void tickNpc(ServerLevel level) {
+        long now = level.getGameTime();
+        java.util.Iterator<Map.Entry<UUID, LightState>> iterator = ACTIVE.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, LightState> entry = iterator.next();
+            LightState state = entry.getValue();
+            if (state.dimension != null && !state.dimension.equals(level.dimension())) continue;
+            Entity raw = level.getEntity(entry.getKey());
+            if (raw instanceof ServerPlayer) continue;
+            if (!(raw instanceof LivingEntity owner) || !owner.isAlive() || owner.isRemoved() || now >= state.untilTick) {
+                clear(level.getServer(), state);
+                iterator.remove();
+                continue;
+            }
+            if (owner.tickCount % REFRESH_INTERVAL == 0) refresh(owner, state);
+        }
     }
 
     public static void clearAll(MinecraftServer server) {
@@ -60,7 +86,7 @@ public final class ArcaneLightService {
         REF_COUNTS.clear();
     }
 
-    private static void refresh(ServerPlayer player, LightState state) {
+    private static void refresh(LivingEntity player, LightState state) {
         ServerLevel level = (ServerLevel) player.level();
         MinecraftServer server = level.getServer();
         if (state.dimension != null && !state.dimension.equals(level.dimension())) {
@@ -125,7 +151,7 @@ public final class ArcaneLightService {
         }
     }
 
-    private static void clear(ServerPlayer player, LightState state) {
+    private static void clear(LivingEntity player, LightState state) {
         clear(((ServerLevel) player.level()).getServer(), state);
         state.positions.clear();
         state.dimension = null;

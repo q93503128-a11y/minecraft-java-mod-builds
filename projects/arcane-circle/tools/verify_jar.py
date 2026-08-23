@@ -25,6 +25,7 @@ required = {
     'META-INF/THIRD_PARTY_NOTICES.md',
     'kr/moonseungjun/arcanecircle/ArcaneCircle.class',
     'kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class',
+    'kr/moonseungjun/arcanecircle/client/FirstCircleAuthorityOverlay.class',
     'kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/SecondCircleSpellSummary.class',
     'kr/moonseungjun/arcanecircle/client/SecondCircleAuthorityOverlay.class',
@@ -89,8 +90,8 @@ with zipfile.ZipFile(jar) as archive:
 
     index = json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version = index.get('version')
-    if version != '0.12.1-alpha.73':
-        raise SystemExit(f'unexpected alpha.73 package version: {version}')
+    if version != '0.12.1-alpha.74':
+        raise SystemExit(f'unexpected alpha.74 package version: {version}')
     if jar.name != f'arcanecircle-{version}.jar':
         raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles') != list(range(1, 10)) or index.get('direct_spells') != 90 or index.get('fusion_spells') != 19:
@@ -101,6 +102,26 @@ with zipfile.ZipFile(jar) as archive:
         if index.get(f'{c}_circle_npc_parity') is not True:
             raise SystemExit(f'{c} NPC parity metadata missing')
 
+
+    expected1 = {
+        'shield': '8.5s_two_reactive_barriers_player_npc_same_damage_contract',
+        'light': '90s_five_point_refcounted_real_light_player_npc',
+        'grease': '8s_single_owner_exact_radius_slip_field',
+        'sleep': '7s_exact_radius_weak_target_aoe_player_npc_damage_wake',
+        'mage_armor': '36s_four_regenerating_plates_player_npc_same_damage_contract',
+    }
+    if index.get('first_circle_value_pass_1') != expected1:
+        raise SystemExit(f'alpha.74 first-circle value metadata mismatch: {index.get("first_circle_value_pass_1")}')
+    roles1 = index.get('first_circle_role_audit', {})
+    expected_roles1 = {'magic_missile','fire_bolt','ray_of_frost','shield','feather_fall','light','grease','sleep','thunderwave','mage_armor'}
+    if set(roles1) != expected_roles1 or len(set(roles1.values())) != 10:
+        raise SystemExit('alpha.74 first-circle role separation contract missing')
+    if index.get('first_circle_dispel_scope') != 'all_owned_or_attached_circle_1_maintenance':
+        raise SystemExit('alpha.74 first-circle dispel scope missing')
+    if index.get('first_circle_visual_hitbox_lifetime_sync') != 'grease_sleep_exact_footprints_and_maintained_release_cleanup':
+        raise SystemExit('alpha.74 first-circle visual/hitbox contract missing')
+    if index.get('first_circle_npc_terrain_safety') != 'thunderwave_keeps_combat_wave_but_skips_npc_world_edit':
+        raise SystemExit('alpha.74 first-circle NPC terrain safety missing')
 
     expected2 = {
         'misty_step': '12m_line_of_sight_safe_reposition_no_solid_geometry_phase',
@@ -231,7 +252,14 @@ with zipfile.ZipFile(jar) as archive:
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
-print('Arcane Circle alpha.73 JAR verification: PASS')
+print('Arcane Circle alpha.74 JAR verification: PASS')
+print('alpha74_first_circle_value_pass_1=PASS')
+print('alpha74_first_circle_player_npc_ward_parity=PASS')
+print('alpha74_first_circle_light_npc_world_parity=PASS')
+print('alpha74_first_circle_grease_sleep_exact_footprints=PASS')
+print('alpha74_first_circle_dispel_lifecycle=PASS')
+print('alpha74_first_circle_role_separation=PASS')
+print('alpha74_first_circle_npc_parity=PASS')
 print('alpha73_second_circle_value_pass_1=PASS')
 print('alpha73_scorching_ray_full_salvo_visual_window=PASS')
 print('alpha73_misty_step_line_of_sight_role_boundary=PASS')

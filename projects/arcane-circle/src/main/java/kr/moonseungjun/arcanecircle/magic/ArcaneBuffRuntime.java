@@ -177,6 +177,10 @@ public final class ArcaneBuffRuntime {
             shield.charges--;
             amount -= (float) Math.max(3.0, 2.0 + shield.power * .18);
             chime(player, 1.35F + shield.charges * .12F);
+            if (shield.charges <= 0) {
+                STATES.remove(new BuffKey(player.getUUID(), "shield"));
+                WorldMagicService.cancelRelease(player, "shield");
+            }
         }
 
         double multiplier = 1.0;

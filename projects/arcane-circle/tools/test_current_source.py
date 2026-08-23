@@ -21,9 +21,9 @@ def need(body, *tokens):
 gradle = text(root / 'gradle.properties')
 main = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index = json.loads(text(root / 'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle, 'mod_version=0.12.1-alpha.73')
-need(main, 'VERSION = "0.12.1-alpha.73"')
-assert index['version'] == '0.12.1-alpha.73'
+need(gradle, 'mod_version=0.12.1-alpha.74')
+need(main, 'VERSION = "0.12.1-alpha.74"')
+assert index['version'] == '0.12.1-alpha.74'
 assert index['implemented_circles'] == list(range(1, 10))
 assert index['direct_spells'] == 90 and index['fusion_spells'] == 19
 
@@ -60,6 +60,51 @@ need(text(magic / 'ThirdCircleSpellService.java'), 'ArcaneDamage.isResolving()',
 need(text(magic / 'FourthCircleSpellService.java'), 'FIRE_WALLS.add(new FireWall', 'ICE_STORMS.add(new IceStorm')
 need(text(magic / 'FifthCircleSpellService.java'), 'public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)', 'DOMINATED.put')
 
+
+# Alpha.74 first-circle authority/value pass.
+first = text(magic / 'FirstCircleSpellService.java')
+first_summary = text(magic / 'FirstCircleSpellSummary.java')
+first_authority = text(client / 'FirstCircleAuthorityOverlay.java')
+light = text(magic / 'ArcaneLightService.java')
+buff = text(magic / 'ArcaneBuffRuntime.java')
+mage_gear = text(magic / 'MageGearService.java')
+tracker_1 = text(client / 'WorldMagicTracker.java')
+need(first,
+     'NPC_SHIELD = new HashMap<>()', 'NPC_MAGE_ARMOR = new HashMap<>()',
+     'case "shield" -> npcShield(level, caster, power);', 'case "mage_armor" -> npcMageArmor(level, caster, power);',
+     'ArcaneLightService.illuminate(caster, 1800)', 'sleepNpc(level, caster, range, power, snapshot.target())',
+     'public static double greaseRadius(double range)', 'public static double sleepRadius(double range)',
+     'GREASE.removeIf(zone -> zone.ownerId.equals(ownerId));',
+     'dx * dx + dz * dz > allowed * allowed',
+     'ArcaneBuffRuntime.clearSpell(subject, "shield")', 'ArcaneBuffRuntime.clearSpell(subject, "mage_armor")',
+     'MageGearService.clearStableDescent(id)', 'ArcaneLightService.clear(subject)',
+     'cancelSleepReleaseIfIdle', 'resolveNpcWard(target, event)')
+need(light, 'public static void illuminate(LivingEntity owner, int durationTicks)',
+     'public static boolean clear(LivingEntity owner)', 'public static void tickNpc(ServerLevel level)')
+need(buff, 'STATES.remove(new BuffKey(player.getUUID(), "shield"));',
+     'WorldMagicService.cancelRelease(player, "shield");')
+need(mage_gear, 'public static boolean clearStableDescent(UUID id)')
+need(first_summary, '플레이어/NPC 동일 규칙', '플레이어/NPC 모두 실제 월드 광원',
+     '재시전 시 이전 장판 교체', '플레이어/NPC 동일 반경')
+need(first_authority, '"grease".equals(spell.id())', 'FirstCircleSpellService.greaseRadius(range)',
+     '"sleep".equals(spell.id())', 'FirstCircleSpellService.sleepRadius(range)')
+need(tracker_1, 'if(v.spell.circle()==1){', 'FirstCircleAuthorityOverlay.release(')
+assert main.index('SpellGameplayService::onIncomingDamage') < main.index('FirstCircleSpellService::onIncomingDamage')
+expected1 = {
+    'shield': '8.5s_two_reactive_barriers_player_npc_same_damage_contract',
+    'light': '90s_five_point_refcounted_real_light_player_npc',
+    'grease': '8s_single_owner_exact_radius_slip_field',
+    'sleep': '7s_exact_radius_weak_target_aoe_player_npc_damage_wake',
+    'mage_armor': '36s_four_regenerating_plates_player_npc_same_damage_contract',
+}
+assert index['first_circle_value_pass_1'] == expected1
+roles1 = index['first_circle_role_audit']
+assert set(roles1) == {'magic_missile','fire_bolt','ray_of_frost','shield','feather_fall','light','grease','sleep','thunderwave','mage_armor'}
+assert len(set(roles1.values())) == 10
+assert index['first_circle_dispel_scope'] == 'all_owned_or_attached_circle_1_maintenance'
+assert index['first_circle_visual_hitbox_lifetime_sync'] == 'grease_sleep_exact_footprints_and_maintained_release_cleanup'
+assert index['first_circle_npc_terrain_safety'] == 'thunderwave_keeps_combat_wave_but_skips_npc_world_edit'
+assert index['first_circle_npc_parity'] is True
 
 # Alpha.73 second-circle authority/value pass.
 second = text(magic / 'SecondCircleSpellService.java')
@@ -383,13 +428,19 @@ need(main,
      'Alpha65NinthCircleRuntime.clear(player);', 'Alpha65NinthCircleRuntime.tick(level);', 'Alpha65NinthCircleRuntime.clearAll();')
 verify = text(root / 'tools/verify_jar.py')
 need(verify,
-     '0.12.1-alpha.73', 'SecondCircleSpellSummary.class', 'SecondCircleAuthorityOverlay.class', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
+     '0.12.1-alpha.74', 'FirstCircleAuthorityOverlay.class', 'SecondCircleSpellSummary.class', 'SecondCircleAuthorityOverlay.class', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
      'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',
      'alpha69_sixth_circle_value_pass_1=PASS', 'alpha68_seventh_circle_value_pass_1=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
+print('alpha74_first_circle_player_npc_ward_parity=PASS')
+print('alpha74_first_circle_light_npc_world_parity=PASS')
+print('alpha74_first_circle_grease_sleep_exact_footprints=PASS')
+print('alpha74_first_circle_dispel_lifecycle=PASS')
+print('alpha74_first_circle_role_audit=PASS')
+print('alpha74_first_circle_value_pass_1=PASS')
 print('alpha73_scorching_ray_full_salvo_visual_window=PASS')
 print('alpha73_misty_step_line_of_sight_role_boundary=PASS')
 print('alpha73_levitate_apex_hover_authority=PASS')

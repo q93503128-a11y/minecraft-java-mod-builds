@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.73",
+  "version": "0.12.1-alpha.74",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -223,16 +223,16 @@
     "clone_target_32"
   ],
   "first_circle_deep_audit": [
-    "magic_missile_locked_salvo",
+    "magic_missile_locked_precision_burst",
     "fire_bolt_nonhoming_impact",
     "single_beam_ray_of_frost",
-    "reactive_shield",
-    "lifecycle_safe_feather_fall",
-    "refcounted_real_light",
-    "persistent_grease_slip",
-    "weak_target_damage_wake_sleep",
-    "physical_thunderwave",
-    "regenerating_mage_armor"
+    "player_npc_two_charge_reactive_shield",
+    "dispel_safe_feather_fall",
+    "player_npc_refcounted_real_light",
+    "single_owner_exact_radius_grease_slip",
+    "player_npc_exact_radius_damage_wake_sleep",
+    "physical_thunderwave_with_npc_terrain_safety",
+    "player_npc_regenerating_mage_armor"
   ],
   "first_circle_npc_parity": true,
   "second_circle_deep_audit": [
@@ -534,5 +534,34 @@
   "second_circle_visual_lifetime_sync": "maintained_server_effects_and_release_vfx_aligned",
   "second_circle_dispel_visual_cleanup": true,
   "second_circle_npc_terrain_safety": "gust_and_shatter_keep_combat_authority_but_skip_npc_world_edit",
-  "second_circle_scorching_ray_visual_ticks": 20
+  "second_circle_scorching_ray_visual_ticks": 20,
+  "first_circle_preserved_authority": [
+    "magic_missile",
+    "fire_bolt",
+    "ray_of_frost",
+    "feather_fall",
+    "thunderwave"
+  ],
+  "first_circle_value_pass_1": {
+    "shield": "8.5s_two_reactive_barriers_player_npc_same_damage_contract",
+    "light": "90s_five_point_refcounted_real_light_player_npc",
+    "grease": "8s_single_owner_exact_radius_slip_field",
+    "sleep": "7s_exact_radius_weak_target_aoe_player_npc_damage_wake",
+    "mage_armor": "36s_four_regenerating_plates_player_npc_same_damage_contract"
+  },
+  "first_circle_role_audit": {
+    "magic_missile": "locked_single_target_precision_burst",
+    "fire_bolt": "nonhoming_impact_burn_projectile",
+    "ray_of_frost": "instant_single_beam_freeze_slow",
+    "shield": "two_charge_reactive_flat_absorption",
+    "feather_fall": "temporary_safe_descent_and_fall_reset",
+    "light": "mobile_refcounted_real_world_illumination",
+    "grease": "single_fixed_slip_and_movement_disruption_zone",
+    "sleep": "weak_target_damage_break_area_incapacitation",
+    "thunderwave": "directional_damage_knockback_physical_wave",
+    "mage_armor": "long_regenerating_plate_damage_smoothing"
+  },
+  "first_circle_dispel_scope": "all_owned_or_attached_circle_1_maintenance",
+  "first_circle_visual_hitbox_lifetime_sync": "grease_sleep_exact_footprints_and_maintained_release_cleanup",
+  "first_circle_npc_terrain_safety": "thunderwave_keeps_combat_wave_but_skips_npc_world_edit"
 }

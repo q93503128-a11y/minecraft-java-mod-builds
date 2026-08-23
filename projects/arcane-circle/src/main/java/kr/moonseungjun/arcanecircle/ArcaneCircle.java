@@ -50,7 +50,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.73";
+    public static final String VERSION = "0.12.1-alpha.74";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -65,7 +65,6 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(RpgScaleService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(MageGearService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneVitalityService::onIncomingDamage);
-        NeoForge.EVENT_BUS.addListener(FirstCircleSpellService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(SecondCircleSpellService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ThirdCircleSpellService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(FourthCircleSpellService::onIncomingDamage);
@@ -73,6 +72,9 @@ public final class ArcaneCircle {
         NeoForge.EVENT_BUS.addListener(NinthCircleSpellService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(HighUtilitySpellService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(SpellGameplayService::onIncomingDamage);
+        // First-circle wake/ward resolution runs after higher-priority interceptors so a fully
+        // negated trajectory does not consume a 1C ward or wake Sleep.
+        NeoForge.EVENT_BUS.addListener(FirstCircleSpellService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneMageService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ArcaneEncounterService::onDeath);
         NeoForge.EVENT_BUS.addListener(ArcaneVitalityService::onHeal);

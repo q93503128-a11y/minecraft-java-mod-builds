@@ -2,6 +2,7 @@ package kr.moonseungjun.arcanecircle.magic;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -32,12 +33,18 @@ public final class FirstCircleSpellService {
     private static final Set<String> HANDLED = Set.of(
             "magic_missile", "fire_bolt", "ray_of_frost", "shield", "feather_fall",
             "light", "grease", "sleep", "thunderwave", "mage_armor");
-    private static final int SLEEP_TICKS = 140;
-    private static final int GREASE_TICKS = 160;
+    public static final int SLEEP_TICKS = 140;
+    public static final int GREASE_TICKS = 160;
+    public static final int SHIELD_TICKS = 170;
+    public static final int MAGE_ARMOR_TICKS = 720;
+    private static final int MAGE_ARMOR_RECHARGE_TICKS = 90;
     private static final int GREASE_PULSE = 4;
 
     private static final List<GreaseZone> GREASE = new ArrayList<>();
     private static final Map<UUID, SleepState> SLEEP = new HashMap<>();
+    private static final Map<UUID, NpcWardState> NPC_SHIELD = new HashMap<>();
+    private static final Map<UUID, NpcWardState> NPC_MAGE_ARMOR = new HashMap<>();
+    private static final Map<UUID, NpcTimedState> NPC_FEATHER_FALL = new HashMap<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
 
     private FirstCircleSpellService() {}
@@ -86,29 +93,25 @@ public final class FirstCircleSpellService {
                 if (hit) frost(target, 100, 120);
                 yield hit;
             }
-            case "shield" -> {
-                caster.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 170, 1, true, false));
-                yield true;
-            }
+            case "shield" -> npcShield(level, caster, power);
             case "feather_fall" -> {
                 caster.fallDistance = 0.0F;
                 caster.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 120, 0, true, false));
+                NPC_FEATHER_FALL.put(caster.getUUID(), new NpcTimedState(level, caster.getUUID(), level.getGameTime() + 120));
                 yield true;
             }
             case "light" -> {
                 caster.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 1800, 0, true, false));
+                ArcaneLightService.illuminate(caster, 1800);
                 yield true;
             }
             case "grease" -> {
                 addGrease(level, caster.getUUID(), snapshot.target(), SpellMetrics.effectRadius("grease", range, 1));
                 yield true;
             }
-            case "sleep" -> sleepNpc(level, caster, designatedTarget, power);
+            case "sleep" -> sleepNpc(level, caster, range, power, snapshot.target());
             case "thunderwave" -> thunderwave(level, caster, range, power, snapshot);
-            case "mage_armor" -> {
-                caster.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 720, 0, true, false));
-                yield true;
-            }
+            case "mage_armor" -> npcMageArmor(level, caster, power);
             default -> false;
         };
     }
@@ -120,35 +123,90 @@ public final class FirstCircleSpellService {
         if (previous != null && previous == now) return;
         tickGrease(level, now);
         tickSleep(level, now);
+        tickNpcWards(level, now);
+        tickNpcFeatherFall(level, now);
+        ArcaneLightService.tickNpc(level);
     }
 
-    /** Any real hit wakes Sleep before the incoming damage is resolved. */
+    /** Resolve 1C NPC wards late, then wake Sleep only when damage still survives interception. */
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
-        if (event == null || event.getAmount() <= 0.0F) return;
-        SleepState state = SLEEP.remove(event.getEntity().getUUID());
-        if (state != null) restoreSleep(state);
+        if (event == null || event.getAmount() <= 0.0F || event.isCanceled()) return;
+        LivingEntity target = event.getEntity();
+        if (!(target instanceof ServerPlayer) && !event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            resolveNpcWard(target, event);
+            if (event.isCanceled() || event.getAmount() <= 0.0F) return;
+        }
+        SleepState state = SLEEP.remove(target.getUUID());
+        if (state != null) {
+            restoreSleep(state);
+            cancelSleepReleaseIfIdle(state.level, state.ownerId);
+        }
     }
 
-    /** Dispel Magic wakes a sleeping subject without deleting fields that subject happens to own. */
+    /** Third-circle Dispel clears every maintained 1C authority owned by or attached to the subject. */
     public static boolean dispel(LivingEntity subject) {
-        if (subject == null) return false;
-        SleepState state = SLEEP.remove(subject.getUUID());
-        if (state == null) return false;
-        restoreSleep(state);
-        return true;
+        return clearMaintained(subject);
     }
 
-    public static void clear(LivingEntity owner) {
-        if (owner != null) clear(owner.getUUID());
+    public static void clear(LivingEntity subject) {
+        clearMaintained(subject);
+    }
+
+    private static boolean clearMaintained(LivingEntity subject) {
+        if (subject == null) return false;
+        UUID id = subject.getUUID();
+        boolean changed = false;
+        Set<String> cancel = new java.util.HashSet<>();
+
+        if (GREASE.removeIf(zone -> zone.ownerId.equals(id))) { changed = true; cancel.add("grease"); }
+
+        Iterator<Map.Entry<UUID, SleepState>> ownedSleep = SLEEP.entrySet().iterator();
+        while (ownedSleep.hasNext()) {
+            SleepState state = ownedSleep.next().getValue();
+            if (!state.ownerId.equals(id)) continue;
+            restoreSleep(state);
+            ownedSleep.remove();
+            changed = true;
+            cancel.add("sleep");
+        }
+        SleepState received = SLEEP.remove(id);
+        if (received != null) {
+            restoreSleep(received);
+            cancelSleepReleaseIfIdle(received.level, received.ownerId);
+            changed = true;
+        }
+
+        if (NPC_SHIELD.remove(id) != null) { changed = true; cancel.add("shield"); }
+        if (NPC_MAGE_ARMOR.remove(id) != null) { changed = true; cancel.add("mage_armor"); }
+        if (NPC_FEATHER_FALL.remove(id) != null) {
+            subject.removeEffect(MobEffects.SLOW_FALLING);
+            changed = true;
+            cancel.add("feather_fall");
+        }
+
+        if (ArcaneBuffRuntime.clearSpell(subject, "shield")) changed = true;
+        if (ArcaneBuffRuntime.clearSpell(subject, "mage_armor")) changed = true;
+        if (subject instanceof ServerPlayer player && MageGearService.clearStableDescent(id)) {
+            player.removeEffect(MobEffects.SLOW_FALLING);
+            WorldMagicService.cancelRelease(player, "feather_fall");
+            changed = true;
+        }
+        if (ArcaneLightService.clear(subject)) { cancel.add("light"); changed = true; }
+
+        for (String spellId : cancel) WorldMagicService.cancelRelease(subject, spellId);
+        return changed;
     }
 
     public static void clear(UUID ownerId) {
         if (ownerId == null) return;
         GREASE.removeIf(zone -> zone.ownerId.equals(ownerId));
+        NPC_SHIELD.remove(ownerId);
+        NPC_MAGE_ARMOR.remove(ownerId);
+        NPC_FEATHER_FALL.remove(ownerId);
         Iterator<Map.Entry<UUID, SleepState>> iterator = SLEEP.entrySet().iterator();
         while (iterator.hasNext()) {
             SleepState state = iterator.next().getValue();
-            if (!state.ownerId.equals(ownerId)) continue;
+            if (!state.ownerId.equals(ownerId) && !state.target.getUUID().equals(ownerId)) continue;
             restoreSleep(state);
             iterator.remove();
         }
@@ -158,6 +216,9 @@ public final class FirstCircleSpellService {
         for (SleepState state : SLEEP.values()) restoreSleep(state);
         SLEEP.clear();
         GREASE.clear();
+        NPC_SHIELD.clear();
+        NPC_MAGE_ARMOR.clear();
+        NPC_FEATHER_FALL.clear();
         LAST_TICK.clear();
     }
 
@@ -196,29 +257,39 @@ public final class FirstCircleSpellService {
         return true;
     }
 
+    public static double greaseRadius(double range) {
+        return Math.max(2.5, Math.min(8.0, SpellMetrics.effectRadius("grease", range, 1)));
+    }
+
+    public static double sleepRadius(double range) {
+        return Math.max(3.5, SpellMetrics.effectRadius("sleep", range, 1));
+    }
+
     private static boolean grease(ServerPlayer player, double range, CastTargetSnapshot snapshot) {
-        addGrease((ServerLevel) player.level(), player.getUUID(), snapshot.target(), SpellMetrics.effectRadius("grease", range, 1));
+        addGrease((ServerLevel) player.level(), player.getUUID(), snapshot.target(), greaseRadius(range));
         return true;
     }
 
     private static boolean sleep(ServerPlayer player, double range, double power, CastTargetSnapshot snapshot) {
-        ServerLevel level = (ServerLevel) player.level();
-        Vec3 center = snapshot.target();
-        double radius = Math.max(3.5, SpellMetrics.effectRadius("sleep", range, 1));
+        return sleepArea((ServerLevel) player.level(), player, range, power, snapshot.target());
+    }
+
+    private static boolean sleepNpc(ServerLevel level, Mob caster, double range, double power, Vec3 center) {
+        return sleepArea(level, caster, range, power, center);
+    }
+
+    private static boolean sleepArea(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
+        double radius = sleepRadius(range);
         int affected = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(center, center).inflate(radius, Math.max(3.5, radius * .65), radius), value -> enemy(player, value))) {
-            if (!sleepEligible(target, power)) continue;
-            putToSleep(level, player.getUUID(), target, power);
+                new AABB(center, center).inflate(radius, Math.max(3.5, radius * .65), radius), value -> enemy(caster, value))) {
+            double allowed = radius + target.getBbWidth() * .5;
+            double dx = target.getX() - center.x, dz = target.getZ() - center.z;
+            if (dx * dx + dz * dz > allowed * allowed || !sleepEligible(target, power)) continue;
+            putToSleep(level, caster.getUUID(), target, power);
             affected++;
         }
         return affected > 0;
-    }
-
-    private static boolean sleepNpc(ServerLevel level, Mob caster, LivingEntity target, double power) {
-        if (!enemy(caster, target) || !sleepEligible(target, power)) return false;
-        putToSleep(level, caster.getUUID(), target, power);
-        return true;
     }
 
     private static boolean thunderwave(ServerPlayer player, double range, double power, CastTargetSnapshot snapshot) {
@@ -244,6 +315,87 @@ public final class FirstCircleSpellService {
         return hit;
     }
 
+    private static boolean npcShield(ServerLevel level, Mob caster, double power) {
+        NPC_SHIELD.put(caster.getUUID(), new NpcWardState(level, caster.getUUID(), level.getGameTime() + SHIELD_TICKS, power, 2, 0L));
+        return true;
+    }
+
+    private static boolean npcMageArmor(ServerLevel level, Mob caster, double power) {
+        long now = level.getGameTime();
+        NPC_MAGE_ARMOR.put(caster.getUUID(), new NpcWardState(level, caster.getUUID(), now + MAGE_ARMOR_TICKS, power, 4, now + MAGE_ARMOR_RECHARGE_TICKS));
+        return true;
+    }
+
+    private static void resolveNpcWard(LivingEntity target, LivingIncomingDamageEvent event) {
+        if (!(target.level() instanceof ServerLevel level)) return;
+        long now = level.getGameTime();
+        float amount = event.getAmount();
+        NpcWardState shield = NPC_SHIELD.get(target.getUUID());
+        if (shield != null && shield.level == level && shield.expiresAt > now && shield.charges > 0) {
+            shield.charges--;
+            amount -= (float) Math.max(3.0, 2.0 + shield.power * .18);
+            if (shield.charges <= 0) {
+                NPC_SHIELD.remove(target.getUUID());
+                WorldMagicService.cancelRelease(target, "shield");
+            }
+        }
+        NpcWardState armor = NPC_MAGE_ARMOR.get(target.getUUID());
+        if (armor != null && armor.level == level && armor.expiresAt > now) {
+            amount = (float) Math.max(0.0, amount * (armor.charges > 0 ? .68 : .84) - .8);
+            if (armor.charges > 0) {
+                armor.charges--;
+                if (armor.nextChargeAt <= now) armor.nextChargeAt = now + MAGE_ARMOR_RECHARGE_TICKS;
+            }
+        }
+        if (amount <= .05F) event.setCanceled(true); else event.setAmount(amount);
+    }
+
+    private static void tickNpcWards(ServerLevel level, long now) {
+        Iterator<Map.Entry<UUID, NpcWardState>> shields = NPC_SHIELD.entrySet().iterator();
+        while (shields.hasNext()) {
+            NpcWardState state = shields.next().getValue();
+            if (state.level != level) continue;
+            Entity raw = level.getEntity(state.entityId);
+            if (!(raw instanceof LivingEntity living) || !living.isAlive() || living.isRemoved() || now >= state.expiresAt) {
+                if (raw instanceof LivingEntity living) WorldMagicService.cancelRelease(living, "shield");
+                shields.remove();
+            }
+        }
+        Iterator<Map.Entry<UUID, NpcWardState>> armor = NPC_MAGE_ARMOR.entrySet().iterator();
+        while (armor.hasNext()) {
+            NpcWardState state = armor.next().getValue();
+            if (state.level != level) continue;
+            Entity raw = level.getEntity(state.entityId);
+            if (!(raw instanceof LivingEntity living) || !living.isAlive() || living.isRemoved() || now >= state.expiresAt) {
+                if (raw instanceof LivingEntity living) WorldMagicService.cancelRelease(living, "mage_armor");
+                armor.remove();
+                continue;
+            }
+            if (state.charges < 4 && now >= state.nextChargeAt) {
+                state.charges++;
+                state.nextChargeAt = now + MAGE_ARMOR_RECHARGE_TICKS;
+            }
+        }
+    }
+
+    private static void tickNpcFeatherFall(ServerLevel level, long now) {
+        Iterator<Map.Entry<UUID, NpcTimedState>> iterator = NPC_FEATHER_FALL.entrySet().iterator();
+        while (iterator.hasNext()) {
+            NpcTimedState state = iterator.next().getValue();
+            if (state.level != level) continue;
+            Entity raw = level.getEntity(state.entityId);
+            if (!(raw instanceof LivingEntity living) || !living.isAlive() || living.isRemoved() || now >= state.expiresAt) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private static void cancelSleepReleaseIfIdle(ServerLevel level, UUID ownerId) {
+        if (SLEEP.values().stream().anyMatch(state -> state.ownerId.equals(ownerId))) return;
+        Entity raw = level.getEntity(ownerId);
+        if (raw instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "sleep");
+    }
+
     private static void frost(LivingEntity target, int slowTicks, int freezeBonus) {
         target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, slowTicks, 2, true, false));
         target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + freezeBonus));
@@ -260,6 +412,7 @@ public final class FirstCircleSpellService {
 
     private static void addGrease(ServerLevel level, UUID ownerId, Vec3 center, double radius) {
         long now = level.getGameTime();
+        GREASE.removeIf(zone -> zone.ownerId.equals(ownerId));
         GREASE.add(new GreaseZone(level, ownerId, center, Math.max(2.5, Math.min(8.0, radius)), now + GREASE_TICKS, now));
     }
 
@@ -277,6 +430,9 @@ public final class FirstCircleSpellService {
             zone.nextPulse = now + GREASE_PULSE;
             AABB box = new AABB(zone.center, zone.center).inflate(zone.radius, 3.2, zone.radius);
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(owner, value))) {
+                double allowed = zone.radius + target.getBbWidth() * .5;
+                double dx = target.getX() - zone.center.x, dz = target.getZ() - zone.center.z;
+                if (dx * dx + dz * dz > allowed * allowed) continue;
                 double angle = Math.toRadians(Math.floorMod(target.getUUID().hashCode() + (int) now * 23, 360));
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 12, 1, true, false));
                 target.push(Math.cos(angle) * .10, 0.0, Math.sin(angle) * .10);
@@ -301,6 +457,7 @@ public final class FirstCircleSpellService {
     }
 
     private static void tickSleep(ServerLevel level, long now) {
+        Set<UUID> finishedOwners = new java.util.HashSet<>();
         Iterator<Map.Entry<UUID, SleepState>> iterator = SLEEP.entrySet().iterator();
         while (iterator.hasNext()) {
             SleepState state = iterator.next().getValue();
@@ -311,10 +468,12 @@ public final class FirstCircleSpellService {
                     || !target.isAlive() || target.isRemoved() || target.level() != level || now >= state.expiresAt) {
                 restoreSleep(state);
                 iterator.remove();
+                finishedOwners.add(state.ownerId);
                 continue;
             }
             enforceSleep(target);
         }
+        for (UUID ownerId : finishedOwners) cancelSleepReleaseIfIdle(level, ownerId);
     }
 
     private static void enforceSleep(LivingEntity target) {
@@ -356,6 +515,21 @@ public final class FirstCircleSpellService {
     private static boolean enemy(LivingEntity owner, LivingEntity target) {
         return owner != null && target != null && target != owner && target.isAlive() && !target.isRemoved()
                 && owner.level() == target.level() && !owner.isAlliedTo(target);
+    }
+
+    private static final class NpcWardState {
+        final ServerLevel level; final UUID entityId; final long expiresAt; final double power; int charges; long nextChargeAt;
+        NpcWardState(ServerLevel level, UUID entityId, long expiresAt, double power, int charges, long nextChargeAt) {
+            this.level = level; this.entityId = entityId; this.expiresAt = expiresAt; this.power = power;
+            this.charges = charges; this.nextChargeAt = nextChargeAt;
+        }
+    }
+
+    private static final class NpcTimedState {
+        final ServerLevel level; final UUID entityId; final long expiresAt;
+        NpcTimedState(ServerLevel level, UUID entityId, long expiresAt) {
+            this.level = level; this.entityId = entityId; this.expiresAt = expiresAt;
+        }
     }
 
     private static final class GreaseZone {

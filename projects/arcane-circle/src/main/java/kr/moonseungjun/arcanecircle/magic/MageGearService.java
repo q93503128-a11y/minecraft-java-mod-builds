@@ -152,6 +152,7 @@ public final class MageGearService {
     }
 
     public static void grantStableDescent(ServerPlayer player,int ticks){long now=((ServerLevel)player.level()).getServer().overworld().getGameTime();STABLE_DESCENT_UNTIL.merge(player.getUUID(),now+Math.max(1,ticks),Math::max);}
+    public static boolean clearStableDescent(UUID id){return id!=null&&STABLE_DESCENT_UNTIL.remove(id)!=null;}
 
     /**
      * Armor landing protection changes only incoming FALL damage. A fully protected soft landing
