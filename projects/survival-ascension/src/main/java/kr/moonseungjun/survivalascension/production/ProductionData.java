@@ -122,11 +122,14 @@ public final class ProductionData extends SavedData {
     public int cycles(ServerPlayer player) { return state(player).cycles; }
     public int supplyCharges(ServerPlayer player) { return state(player).supplyCharges; }
 
-    public boolean consumeSupplyCharge(ServerPlayer player) {
+    public boolean consumeSupplyCharge(ServerPlayer player) { return consumeSupplyCharges(player, 1); }
+
+    public boolean consumeSupplyCharges(ServerPlayer player, int amount) {
+        if (amount <= 0) return false;
         State state = state(player);
-        if (state.supplyCharges <= 0) return false;
-        state.supplyCharges--;
-        // Freeing a supply slot immediately drains any already-complete four-line sets into that slot.
+        if (state.supplyCharges < amount) return false;
+        state.supplyCharges -= amount;
+        // Freeing supply slots immediately drains any already-complete four-line sets into those slots.
         normalizeCycles(state);
         setDirty();
         return true;
