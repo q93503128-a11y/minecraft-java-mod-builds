@@ -46,6 +46,8 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/production/FieldDepotService.class",
         "kr/moonseungjun/survivalascension/production/OutpostData.class",
         "kr/moonseungjun/survivalascension/production/OutpostService.class",
+        "kr/moonseungjun/survivalascension/production/FieldRecoveryData.class",
+        "kr/moonseungjun/survivalascension/production/FieldRecoveryService.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
         "kr/moonseungjun/survivalascension/elite/WarbandDirector.class",
         "kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.class",
@@ -103,5 +105,6 @@ print("apex_runtime=present")
 print("production_runtime=present")
 print("field_depot_runtime=present")
 print("outpost_runtime=present")
+print("field_recovery_runtime=present")
 print(f"size={jar.stat().st_size}")
 print(f"sha256={sha}")
