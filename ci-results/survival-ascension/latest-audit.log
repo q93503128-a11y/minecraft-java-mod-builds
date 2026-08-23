@@ -1,7 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.28 production, 0.29 real-Barrel logistics and 0.30 physical outposts remain bounded and non-force-loading
-- 0.31 field_recovery_v1 is prepaid one-use, same-dimension96 death-bound and challenge-excluded
-- pending recovery survives failed validation/teleport and is consumed only after successful safe return
-- no general outpost fast travel; no client-supplied destination; no forced chunk load
-- Trial four-wave/reward, TRIGGERED encounters, Mastery VI, Field Mastery and Awakened Mythic regressions retained
+- 0.32 expedition_operations_v1 persists one out-and-back sortie with exact origin, deadline and bounded progress
+- all nine operation profiles,96/128/160 outbound gates,48-block work gate and8-block physical return are locked
+- operation actions reuse validated expedition hooks; no teleport, client destination or chunk force-load is introduced
+- operation death/dimension/time/game-mode failures and Apex/Trial mutual exclusion are enforced
+- 0.31 recovery,0.30 outpost,0.29 Barrel logistics, directives/incidents,Apex/Trial and mastery regressions retained
