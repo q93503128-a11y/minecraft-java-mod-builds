@@ -74,8 +74,8 @@ for token in ('BlockPos center = data.centerPos()', 'MAX_PLACEMENTS_PER_TICK = 6
         raise SystemExit(f'civic core invariant missing: {token}')
 
 routine = (JAVA / 'settlement/SettlementResidentRoutineService.java').read_text(encoding='utf-8')
-for token in ('ClockManager', 'getTotalTicks(defaultClock)', 'time >= 13000L && time < 23000L',
-              'BuildingType.HOUSE', 'house.localToWorld'):
+for token in ('level.dimensionType().defaultClock()', 'level.clockManager().getTotalTicks(defaultClock.get())',
+              'time >= 13000L && time < 23000L', 'BuildingType.HOUSE', 'house.localToWorld'):
     if token not in routine:
         raise SystemExit(f'resident routine invariant missing: {token}')
 
