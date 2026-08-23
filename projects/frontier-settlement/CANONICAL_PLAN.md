@@ -219,6 +219,7 @@ Alpha.25 preserves the shared-settlement loop and now makes both buildings and r
 - worker jobs and housing/population progression;
 - roads, productive outposts and tier progression toward a domain;
 - safe building blueprints with no-drop terrain preparation;
+- builder walks from actual settlement storage carrying real wood/stone stacks;
 - building construction uses real storage extraction, visible carried stacks, an on-site supply barrel and gradual material consumption;
 - building construction exposes hauling / foundation / frame-walls / roof / finish phases and uses persisted, owned temporary work scaffolds for high work when safe;
 - road approval validates the full stone requirement but does not instantly delete it;
@@ -228,7 +229,7 @@ Alpha.25 preserves the shared-settlement loop and now makes both buildings and r
 - active road/building transaction blocks are protected from break-and-rebuild resource exploits;
 - long road jobs keep tracking the dedicated tagged construction worker across the settlement-to-work corridor rather than spawning duplicate builders when the worker travels beyond the original town search radius;
 - shallow road earthwork uses soil-like fill rather than generating free recoverable stone beneath completed roads;
-- old active road saves remain compatible and resume their already-prepared paving state rather than being re-graded;
+- old active road saves remain compatible and resume their already-prepared paving state without being re-graded or charged the original prepaid stone cost a second time;
 - building and road workers perform visible placement swings and return to normal vulnerability when the active job completes.
 
 ## 14. Near-term priorities
