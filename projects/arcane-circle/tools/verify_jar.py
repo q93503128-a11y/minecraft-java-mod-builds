@@ -23,7 +23,7 @@ with zipfile.ZipFile(jar) as archive:
     if packaged!=staff_recipes: raise SystemExit(f'staff recipe set mismatch: {sorted(packaged)}')
     index=json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version=index.get('version')
-    if version!='0.12.1-alpha.66': raise SystemExit(f'unexpected alpha.66 package version: {version}')
+    if version!='0.12.1-alpha.67': raise SystemExit(f'unexpected alpha.67 package version: {version}')
     if jar.name!=f'arcanecircle-{version}.jar': raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles')!=list(range(1,10)) or index.get('direct_spells')!=90 or index.get('fusion_spells')!=19: raise SystemExit('catalogue is not full 1-9 / 90+19')
     if index.get('spell_contract_audit')!='109_explicit_summaries_and_runtime_routes': raise SystemExit('109-spell audit metadata missing')
@@ -36,6 +36,17 @@ with zipfile.ZipFile(jar) as archive:
         'feeblemind':'90s_total_arcane_shutdown_and_severe_combat_degradation',
         'maze':'24s_total_battlefield_exile_plus_6s_aftershock'}
     if value!=expected: raise SystemExit(f'alpha.66 eighth-circle value metadata mismatch: {value}')
+    value2=index.get('eighth_circle_value_pass_2',{})
+    expected2={
+        'earthquake':'9s_regional_fault_disaster_with_budgeted_player_terrain_and_unstable_ground',
+        'incendiary_cloud':'12s_moving_firefront_with_scorched_wake_route_denial',
+        'sunburst':'12s_solar_revelation_purification_and_darkness_denial_domain'}
+    if value2!=expected2: raise SystemExit(f'alpha.67 eighth-circle value metadata mismatch: {value2}')
+    roles=index.get('eighth_circle_role_audit',{})
+    expected_roles={'antimagic_field','clone','control_weather','demiplane','dominate_monster','earthquake','feeblemind','incendiary_cloud','maze','sunburst'}
+    if set(roles)!=expected_roles or len(set(roles.values()))!=10: raise SystemExit('alpha.67 eighth-circle role separation contract missing')
+    if index.get('eighth_circle_npc_terrain_safety')!='earthquake_keeps_movement_disaster_but_skips_npc_world_damage':
+        raise SystemExit('alpha.67 NPC earthquake terrain safety contract missing')
     if index.get('eighth_circle_preserved_authority')!=['antimagic_field','control_weather','demiplane']:
         raise SystemExit('alpha.66 preserved eighth-circle authority mismatch')
     city=index.get('meteor_cityfall',{})
@@ -61,13 +72,18 @@ with zipfile.ZipFile(jar) as archive:
 
 digest=hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name+'.sha256').write_text(f'{digest}  {jar.name}\n',encoding='utf-8')
-print('Arcane Circle alpha.66 JAR verification: PASS')
+print('Arcane Circle alpha.67 JAR verification: PASS')
+print('alpha67_eighth_circle_value_pass_2=PASS')
+print('alpha67_earthquake_fault_disaster=PASS')
+print('alpha67_incendiary_firefront_wake=PASS')
+print('alpha67_sunburst_solar_domain=PASS')
+print('alpha67_eighth_circle_role_separation=PASS')
+print('alpha67_eighth_circle_npc_parity=PASS')
 print('alpha66_eighth_circle_value_pass=PASS')
 print('alpha66_bound_clone=PASS')
 print('alpha66_dominate_faction_theft=PASS')
 print('alpha66_feeblemind_arcane_shutdown=PASS')
 print('alpha66_maze_exile_aftershock=PASS')
-print('alpha66_eighth_circle_npc_parity=PASS')
 print('alpha65_grounded_meteor=PASS')
 print('alpha65_gate_safe_ground_pair=PASS')
 print('alpha65_weird_escape_or_die=PASS')
