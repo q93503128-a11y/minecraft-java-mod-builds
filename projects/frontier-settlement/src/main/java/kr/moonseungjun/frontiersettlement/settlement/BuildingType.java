@@ -12,6 +12,7 @@ public enum BuildingType {
     CONSTRUCTION_OFFICE("construction_office", "건설소", 112, 64, 13, 9, 12, 0, "창고 + 마을 단계 필요"),
     BLACKSMITH("blacksmith", "대장간", 80, 52, 9, 9, 9, 0, "광산 1곳 필요"),
     WORKSHOP("workshop", "작업장", 88, 44, 11, 9, 10, 0, "대장간 1곳 필요"),
+    ADVANCED_WORKSHOP("advanced_workshop", "고급 제작소", 168, 120, 15, 11, 14, 0, "작업장 + 시장 + 개척 도시 단계 필요"),
     GUARD_POST("guard_post", "경비초소", 64, 48, 9, 9, 8, 0, "마을 단계 필요"),
     WATCHTOWER("watchtower", "감시탑", 96, 72, 7, 7, 14, 0, "경비초소 1곳 필요"),
     BARRACKS("barracks", "병영", 144, 112, 15, 11, 10, 0, "감시탑 + 개척 도시 단계 필요"),
