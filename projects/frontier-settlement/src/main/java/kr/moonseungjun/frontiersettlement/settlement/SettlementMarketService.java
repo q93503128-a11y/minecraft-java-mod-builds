@@ -65,15 +65,10 @@ public final class SettlementMarketService {
             int payout = tradeValue(goods);
             if (payout <= 0 || !hasEmeraldRoom(container, slot, goods.getCount() == 1, payout)) return;
 
-            ItemStack sold = goods.copyWithCount(1);
             goods.shrink(1);
             if (goods.isEmpty()) container.setItem(slot, ItemStack.EMPTY);
             ItemStack remainder = SettlementInventory.insert(container, new ItemStack(Items.EMERALD, payout));
-            if (!remainder.isEmpty()) {
-                // Defensive rollback. The preflight room check should make this unreachable.
-                SettlementInventory.insert(container, sold);
-                return;
-            }
+            if (!remainder.isEmpty()) throw new IllegalStateException("market payout capacity changed during same-tick trade");
             container.setChanged();
             trader.swing(InteractionHand.MAIN_HAND);
             return;
@@ -92,12 +87,13 @@ public final class SettlementMarketService {
     }
 
     private static boolean hasEmeraldRoom(Container container, int sourceSlot, boolean sourceWillEmpty, int payout) {
-        int room = sourceWillEmpty ? Items.EMERALD.getDefaultMaxStackSize() : 0;
+        int emeraldStackSize = new ItemStack(Items.EMERALD).getMaxStackSize();
+        int room = sourceWillEmpty ? emeraldStackSize : 0;
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             if (slot == sourceSlot && sourceWillEmpty) continue;
             ItemStack current = container.getItem(slot);
             if (current.isEmpty()) {
-                room += Items.EMERALD.getDefaultMaxStackSize();
+                room += emeraldStackSize;
             } else if (current.is(Items.EMERALD)) {
                 room += current.getMaxStackSize() - current.getCount();
             }
