@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.35`
+현재 구현 기준: `0.1.0-alpha.36`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -30,9 +30,9 @@
 | 실제 아이템이 자원 권위 | 완료 | ItemStack/물리 컨테이너 |
 | HUD 목재/석재/금속/식량/인구 | 완료 | compact HUD |
 | 외부 모드 재료 범주/태그 수용 | 완료/부분 | additive Frontier + `c:` 태그. 풀 companion 실플레이는 미검증 |
-| 대량 저장 | 완료/부분 | 창고 + Alpha.34 수레 정거장 화물 배럴. 장기 대규모 운용 검증 필요 |
-| 전체 상자 매틱 과잉 스캔 금지 | 완료/부분 | 정해진 settlement storage만 저빈도 갱신 |
-| 멀티 창고 인출/HUD 즉시성 | 부분 | 코드 경로 존재, 실제 2인 장시간 검증 필요 |
+| 대량 저장 | 완료/부분 | 창고 + 수레 정거장 화물 배럴 |
+| 전체 상자 매틱 과잉 스캔 금지 | 완료/부분 | 정해진 settlement storage만 갱신 |
+| 멀티 창고/HUD 장시간 정합 | 부분 | 코드 경로 존재, 실제 2인 장시간 검증 필요 |
 
 ## 3. 건설 / 지형 공사
 
@@ -47,8 +47,9 @@
 | 선택 영역 절토/성토 후반 보조 | 미구현 | 없음 |
 | 부지→운반→기초→골조→벽→지붕→마감 | 완료 | persisted physical phases |
 | 승인 순간 전체 비용 삭제 금지 | 완료 | 실제 배치 진척과 자재 소비 연결 |
+| 높은 건물 물리 시공 | 완료/부분 | Alpha.36 감시탑이 기존 persisted scaffold로 시공. 실동선 검증 필요 |
 
-## 4. 주민 / 생산
+## 4. 주민 / 생산 / 방어
 
 | 요구사항 | 상태 | 현재 |
 | --- | --- | --- |
@@ -58,14 +59,17 @@
 | 광부 | 완료 | 실제 유한 광석 작업 |
 | 채석공 | 완료 | 노출 석재 작업 |
 | 대장장이 | 부분 | 수리 기능은 있으나 주민/제작 연출 약함 |
-| 작업장 전문 제작자 | 부분 | Alpha.33 외부 무기 물리 정비 장인. 제작 레시피/고급 제작은 미완 |
-| 경비병 | 부분 | 경비 기능/고티어 garrison, 병사 계층 미완 |
+| 작업장 전문 제작자 | 부분 | 외부 무기 물리 정비 장인. 고급 제작은 미완 |
+| 근거리 경비 | 완료/부분 | 경비초소 + 기존 경비 기능 |
+| 감시/장거리 대응 | **완료/부분** | Alpha.36 감시탑별 response golem, 40블록 loaded 위협 탐지. 알림/실전 검증 남음 |
 | 운송업자 | 완료 | 전초별 영구 태그 + 도로 물류 |
-| 상인 | 부분 | 시장 방문 상인/물리 판매 구현, 구매·고급 교역 미완 |
-| 병사 | 미구현 | 병영/군사 주민 체계 없음 |
-| 로드 지역 실제 이동·작업 | 완료 | 주요 생산/운송/시장/작업장 |
+| 상인 | 부분 | 시장 방문 상인/물리 판매, 구매·고급 교역 미완 |
+| 정식 병사 | 미구현 | 병영/군사 주민 체계 없음 |
+| 로드 지역 실제 이동·작업 | 완료 | 주요 생산/운송/시장/작업장/방어 |
 | 언로드 저빈도 논리 시뮬레이션 | 미구현 | 현재 안전 정지, coarse 생산/물류 없음 |
-| 자동 직업 배치 | 완료/부분 | 주 생산/운송/작업장 자동화. 본진 동일 역할 영구 귀속은 실플레이 추가 검증 필요 |
+| 자동 직업 배치 | 완료/부분 | 주요 역할 자동화. 본진 동일 역할 장기 귀속 추가 검증 필요 |
+
+Alpha.36 감시탑은 병영을 대신하지 않는다. 감시 경비는 인구로 계산하지 않는 방어 유닛이고, 정식 병사/다수 병력은 병영 단계에 남겨 둔다.
 
 ## 5. 성장 단계
 
@@ -73,14 +77,14 @@
 | --- | --- | --- |
 | 개척 캠프 | 창고·주택·벌목·소농장 | 완료 |
 | 촌락 | 채석·광산·대장간·경비 | 완료/부분 |
-| 마을 | 도로·다리·시장·첫 전초 | **완료/부분** — 도로/시장/전초/수레 정거장 + Alpha.35 자동 소계단/짧은 수로교 완료. 실동선 검증 남음 |
-| 개척 도시 | 병영·고급 제작·여러 전초 | 부분 — 여러 전초 가능, 병영/고급 제작 미구현 |
-| 영지 | 전문 거점·후반 방어·고급 교역 | 부분 — 생산/도로망/공공사업 일부, 후반 방어·고급 교역 미완 |
+| 마을 | 도로·다리·시장·첫 전초 | 완료/부분 — 도로/시장/전초/정거장 + 작은 계단/교량 구현, 실동선 검증 남음 |
+| 개척 도시 | 병영·고급 제작·여러 전초 | 부분 — 여러 전초/감시탑 가능, 병영·고급 제작 미구현 |
+| 영지 | 전문 거점·후반 방어·고급 교역 | 부분 — 생산/도로망/공공사업/감시망 일부, 후반 군사·교역 미완 |
 
 ## 6. 건물/인프라 계열
 
 원본 목표: 약 `15~20개 계열`.
-현재 functional `BuildingType`: **11개** + 도로 + 전초기지.
+현재 functional `BuildingType`: **12개** + 도로 + 전초기지.
 
 | 원본 계열 | 상태 |
 | --- | --- |
@@ -95,11 +99,11 @@
 | 대장간 | 완료/부분 |
 | 작업장 | 완료/부분 — 외부 무기 정비 완료, 일반/특수 제작 확장 여지 |
 | 도로 | 완료 |
-| 작은 다리 | **완료/부분** — Alpha.35 최대 6칸 수로 3폭 석재 데크. 대형/협곡/장식 교량은 미완 |
+| 작은 다리 | 완료/부분 — 최대 6칸 수로 3폭 석재 데크. 대형/협곡 교량은 미완 |
 | 전초기지 중심 | 완료 |
-| 수레 정거장 | 완료/부분 — Alpha.34 물리 화물 허브, 4배럴, 도로 인접 배치, 운송 적재 16→32. 이동 수레 엔티티는 아직 없음 |
+| 수레 정거장 | 완료/부분 — 4배럴 물리 허브, 운송 적재 16→32. 이동 wagon은 없음 |
 | 경비초소 | 완료 |
-| 감시탑 | 미구현 |
+| **감시탑** | **완료/부분** — Alpha.36 7×7/높이 14, 탑별 loaded response guard. 경보 UI/실전 검증 남음 |
 | 병영 | 미구현 |
 | 시장 | 완료/부분 — 유물→실물 에메랄드, 구매/고급 교역 미완 |
 | 고급 제작소 | 미구현 |
@@ -111,11 +115,11 @@
 | 산악 광산 거점 | 완료 | mining specialization |
 | 숲 벌목 거점 | 완료 | lumber specialization |
 | 평야 농업 거점 | 완료 | agriculture specialization |
-| 채석 거점 | 추가 구현 완료 | quarry specialization |
+| 채석 거점 | 완료 | quarry specialization |
 | 해안/강 어업·교역 | 미구현 | 수변 전문화 없음 |
 | 위험 지역 군사 거점 | 미구현 | 군사 전문화 없음 |
 | 연결 전 독립 재고 | 완료 | outpost stockpile |
-| 연결 후 실제/논리 수레·운송 | 부분 강화 | 도로 운송 주민 + Alpha.34 본진 화물 정거장. 실제 이동 수레 차량은 없음 |
+| 연결 후 실제 운송 | 부분 강화 | 도로 운송 주민 + 본진 화물 정거장 |
 | 순간이동 금지 | 완료 | 도로 기반 이동, 정거장도 teleport 없음 |
 
 ## 8. 도로 / 토목
@@ -125,62 +129,23 @@
 | 시작·끝·필요 시 경로 선택 | 완료/부분 — 실제 경로 UX 추가 검증 필요 |
 | 실제 주민 grading/paving | 완료 |
 | 건물 회피 | 완료/부분 |
-| 급경사 회피 | 부분 — 2블록 이상 급단차 거부, 대형 토목 우회는 미완 |
-| 작은 계단 자동 포함 | **완료/부분** — Alpha.35 1블록 종단 경사는 낮은 쪽 조약돌 계단으로 자동 변환. 방향/동선 실플레이 검증 필요 |
-| 작은 교량 자동 포함 | **완료/부분** — Alpha.35 양쪽 둑이 있는 최대 6칸 물길을 3폭 stone-brick deck으로 자동 처리. 대형 교량은 미완 |
+| 급경사 회피 | 부분 — 2블록 이상 급단차 거부, 대형 토목 우회 미완 |
+| 작은 계단 자동 포함 | 완료/부분 — 1블록 종단 경사를 실제 cobblestone stair로 처리 |
+| 작은 교량 자동 포함 | 완료/부분 — 최대 6칸 물길, 3폭 stone-brick deck |
 | 도로가 실제 물류 의미를 가짐 | 완료 — 전초 운송 + 정거장 위치/효율에 직접 영향 |
 
-Alpha.35는 bridge profile을 active road state에 optional로 저장한다. 이전 저장은 profile이 없어도 일반 도로로 호환된다. 교량 아래 물을 지우거나 무료 log/cobblestone 기둥을 생성하지 않으며, 계단/교량은 기존 실제 석재 운반 비용에 추가된다.
+Alpha.35 bridge profile은 active road state에 optional 저장된다. 이전 저장은 profile이 없어도 일반 도로로 호환된다. 물을 지우거나 무료 support를 만들지 않고 계단/교량은 실제 석재 비용을 추가한다.
 
-## 9. Alpha.31~35 외부 콘텐츠 / 성장 연결
+## 9. Alpha.31~36 성장 연결
 
-### Alpha.31
+- **Alpha.31**: 외부 재료/relic/Weapons Expanded 인식, soft integration.
+- **Alpha.32**: 전용 시장 배럴의 relic만 실물 emerald로 교역.
+- **Alpha.33**: 작업장 장인이 실제 금속을 운반해 외부 무기 정비.
+- **Alpha.34**: 수레 정거장 4화물 배럴, 운송 16→32, 기존 transport authority 유지.
+- **Alpha.35**: 자동 cobblestone stair + bounded stone-brick small bridge, 실제 석재 비용.
+- **Alpha.36**: 경비초소 후 감시탑 해금, physical tall build, tower-assigned loaded response guard, 40블록 탐지, creeper 강제추격 제외, force-load 없음.
 
-- additive settlement material tags;
-- `c:` 호환 재료 태그;
-- expedition relic tag;
-- 공동 저장소의 실제 relic/external weapon 인식;
-- Weapons Expanded namespace bridge;
-- companion 없이도 Frontier 부팅 가능한 soft integration.
-
-### Alpha.32
-
-- 시장이 `expedition_relics`를 실제 소비;
-- 공유 창고 자동 판매 금지;
-- 전용 물리 배럴에 플레이어가 넣은 것만 거래;
-- 실물 emerald payout;
-- tagged visiting merchant;
-- output full 시 안전 정지/롤백.
-
-### Alpha.33
-
-- 작업장 + 전용 서비스 배럴;
-- 외부 무기만 opt-in 정비;
-- 주민이 실제 금속 1개를 공동 저장소에서 운반;
-- 1금속당 내구도 64 수리;
-- 주거/식량/인구 규칙 반영;
-- 남은 금속은 물리적으로 반환.
-
-### Alpha.34
-
-- 수레 정거장 + 4개 물리 화물 배럴;
-- 마을 단계 + 도로/전초 조건;
-- 도로에서 12블록 안 배치;
-- 기존 전초 운송 주민의 town-side 도착 목표로 사용;
-- 운송 1회 적재 16→32;
-- 정거장 포화 시 일반 settlement storage fallback;
-- 두 번째 transport AI/tick 없음.
-
-### Alpha.35
-
-- 1블록 높이 변화에 실제 cobblestone stair road piece;
-- 최대 6칸 물길에 3폭 stone-brick small bridge deck;
-- 은행 높이 차 1블록 이하만 허용;
-- 물/보호 블록/위험 유체 보존;
-- bridge/stair 추가 석재 비용;
-- 기존 road builder/physical hauling/transport authority 재사용.
-
-### 전체 companion 런타임
+## 10. 전체 companion 런타임
 
 `COMPANION_LOCK.json`에는 Terralith/Lithostitched, DnT, Repurposed Structures, Better Combat 및 의존 라이브러리, Weapons Expanded, Lootr, Sophisticated, Jade, Xaero를 고정했다.
 
@@ -188,52 +153,33 @@ Alpha.35는 bridge profile을 active road state에 optional로 저장한다. 이
 
 | 외부 축 | Frontier 연결 상태 |
 | --- | --- |
-| Terralith | 부분 — 태그/바이옴 기반 전초 판정 보강 미완; Alpha.35 실제 지형/수로 road 회귀 필요 |
-| Dungeons and Taverns | 부분 — relic 시장 소비 가능, 구조물 발견 자체 progression 미연결 |
+| Terralith | 부분 — 태그/바이옴 기반 전초 판정 보강 미완 |
+| Dungeons and Taverns | 부분 — relic 시장 소비 가능, 구조물 발견 progression 미연결 |
 | Repurposed Structures | 부분 — 탐험 콘텐츠 공급, 발견 progression 미연결 |
 | Better Combat | 외부/후보검증 — 풀스택 회귀 필요 |
-| Weapons Expanded | 부분 강화 — 외부 무기 인식 + 작업장 정비, 제작/경비 활용 미완 |
-| Lootr | 외부/후보검증 — 멀티 던전 보상, 풀스택 확인 필요 |
+| Weapons Expanded | 부분 강화 — 외부 무기 인식 + 작업장 정비 |
+| Lootr | 외부/후보검증 — 멀티 던전 보상 풀스택 확인 필요 |
 | Sophisticated Backpacks | 외부/후보검증 — 창고 오인 회귀 필요 |
 | Jade | 미구현 연동 — Frontier provider 없음 |
 | Xaero | 미구현 연동 — waypoint/API 연결 없음 |
-| 추가 몬스터 | 후보 — baseline stack 안정 후 도입 |
-
-## 10. 마을 성장 보상
-
-| 요구사항 | 상태 |
-| --- | --- |
-| 기초 자원 자동 생산 | 완료 |
-| 대량 저장 | 완료/부분 — warehouse + freight station |
-| 자동 건설/토목 | 완료/부분 — 건물/도로/전초 + Alpha.35 소계단/짧은 수로교. 중대형 토목은 미완 |
-| 장비 수리 | 완료/부분 — blacksmith + Alpha.33 external weapon workshop |
-| 장비 제작 지원 | 부분/미구현 |
-| 고급 제작 | 미구현 |
-| 경비/안전한 거점 | 완료/부분 |
-| 희귀 자원·교역 | 부분 — relic→emerald 시장, 구매/고급 교역 미완 |
-| 장거리 물류 가치 | 완료/부분 — 도로/전초/운송 + Alpha.34 freight hub, 이동 wagon 표현 미완 |
-| 후반 던전/보스와 성장 연결 | 부분 — 물리 relic bridge는 있으나 발견/보스/해금 연계 미완 |
+| 추가 몬스터 | 후보 — baseline 안정 후 도입. Alpha.36 `Monster` 기반 감시 반응도 함께 검증 필요 |
 
 ## 11. UI 정본
 
 | 화면 | 원본 레퍼런스 | 상태 |
 | --- | --- | --- |
 | 상시 자원 HUD | Against the Storm | 완료/부분 — compact HUD, polishing 필요 |
-| 건물 배치 | Manor Lords + MineColonies | 완료/부분 — world ghost/rotation/validation 존재 |
+| 건물 배치 | Manor Lords + MineColonies | 완료/부분 — world ghost/rotation/validation |
 | 건설 진행/재료 상태 | MineColonies | 부분 — 물리 과정은 있으나 명확한 상태 패널 부족 |
-| 도로/전초 배치 | Manor Lords 계열 | 완료/부분 — Alpha.35 높이 profile은 preview 중심선에 반영되나 stair/bridge 외형 프리뷰 실검증 필요 |
+| 도로/전초 배치 | Manor Lords 계열 | 완료/부분 |
 | 영지 개요 | Frostpunk 2 secondary | 미구현/보류 |
-| 작은 알림/상태 변화 | 원본 요구 | 미구현/부분 |
+| 작은 알림/상태 변화 | 원본 요구 | 미구현/부분 — 감시탑 위협 알림도 아직 없음 |
 
 ## 12. 아직 큰 미완성 축
 
-다음 항목이 남아 있으므로 현재 버전을 전체 완성으로 부르지 않는다.
-
 - 건설소;
-- 감시탑;
-- 병영/병사;
+- 병영/정식 병사;
 - 고급 제작소/희귀 재료 제작;
-- 중대형 지형 토목/대형 교량/옹벽;
 - 강/해안 어업·교역 전초;
 - 위험 지역 군사 전초;
 - 언로드 저빈도 논리 시뮬레이션;
@@ -245,10 +191,10 @@ Alpha.35는 bridge profile을 active road state에 optional로 저장한다. 이
 
 ## 13. 다음 작업 우선순위
 
-1. Alpha.35 최종 source audit / Java25 clean build / JAR verify를 최종 source/docs SHA로 고정.
-2. full `COMPANION_LOCK` fresh-world runtime test에서 Terralith 지형 + DnT/Repurposed 구조물 + Better Combat/Weapons Expanded 조합을 실제 검증.
-3. 감시탑/병영 또는 건설소를 추가하되 새 직접 조작은 늘리지 않기.
-4. 고급 제작소에 외부 희귀 재료를 연결해 별도 아이템 생태계를 재발명하지 않기.
+1. Alpha.36 최종 source audit / Java25 clean build / JAR verify를 최종 source/docs SHA로 고정.
+2. 병영/정식 병사 체계를 구현해 경비초소→감시탑→병영 방어 성장선을 완성.
+3. 건설소와 고급 제작소를 추가하되 직접 조작을 늘리지 않기.
+4. 고급 제작에 외부 희귀 재료를 연결해 별도 아이템 생태계를 재발명하지 않기.
 5. 강/해안 교역·어업 및 위험 지역 군사 전초 전문화.
-6. 언로드 coarse simulation과 UI 남은 축을 닫기.
-7. Alpha.35 계단 방향/교량 접속/건설 주민 동선 포함 전체 실플레이 acceptance.
+6. full `COMPANION_LOCK` fresh-world runtime test.
+7. 언로드 coarse simulation과 UI 남은 축을 닫고 전체 실플레이 acceptance.
