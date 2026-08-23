@@ -81,11 +81,13 @@ need(trial,[
     "Gateways to Eternity", "ECHO_SHARD_COST = 32", "AMETHYST_COST = 64", "DRAGON_BREATH_COST = 8",
     "TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "START_COOLDOWN_TICKS = 2400", "EXCLUSION_RADIUS = 96.0D",
     "InfrastructureProject.ASCENSION_NEXUS", "WorldAscensionData.get(server).stage() < 2", "EntitySpawnReason.TRIGGERED",
-    "ServerBossEvent", "BuiltInRegistries.ENTITY_TYPE.containsKey(identifier)", "BuiltInRegistries.ENTITY_TYPE.getValue(identifier)", '"minecraft:ravager"', '"minecraft:evoker"', '"minecraft:wither_skeleton"',
+    "ServerBossEvent", "BuiltInRegistries.ENTITY_TYPE.containsKey(identifier)", "BuiltInRegistries.ENTITY_TYPE.getValue(identifier)", '"minecraft:ravager"', '"minecraft:pillager"', '"minecraft:wither_skeleton"',
     "AscensionAffixes.createEliteDrop(trial.level.getRandom(), 3)", "Items.NETHERITE_SCRAP, 2", "Items.DIAMOND, 4",
     "onEntityJoin(EntityJoinLevelEvent event)", "TRIAL_OWNER_KEY", "active.mobIds.contains(mob.getUUID())", "event.setCanceled(true)",
-    "distanceToCenterSqr", "입장 재료는 반환되지 않습니다"
+    "removeStaleServerTrials(server)", "trial.level.getServer() != server", "distanceToCenterSqr", "입장 재료는 반환되지 않습니다"
 ],"Ascension Trial")
+if '"minecraft:evoker"' in trial:
+    errors.append("Ascension Trial must not spawn untracked summon-producing evokers")
 
 mobility=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java").read_text(encoding="utf-8")
 need(mobility,["AIR_DASH_COUNT","maxAirDashes","WorldAscensionData.get(serverLevel.getServer()).stage() >= 2","InfrastructureProject.ASCENSION_NEXUS","return level >= 100 ? 3 : 2","AIR_DASH_COUNT.put(uuid, 0)","DASH_READY_TICK","[기동 숙련 VI]"],"mastery VI mobility")
@@ -129,5 +131,5 @@ if errors:
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
 print("- Lv.100 mastery VI scale and existing tick/protection/material contracts retained")
-print("- Stage-2 Ascension Trial adds paid four-wave repeatable endgame with boss-bar state, timeout, overlap and restart-orphan guards")
+print("- Stage-2 Ascension Trial adds paid four-wave repeatable endgame with boss-bar state, timeout, overlap, stale-server and restart-orphan guards")
 print("- world stages, mutations, Nexus, warbands, elites and equipment economy regressions retained")
