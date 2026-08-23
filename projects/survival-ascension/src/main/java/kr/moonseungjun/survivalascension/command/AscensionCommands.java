@@ -45,14 +45,17 @@ public final class AscensionCommands {
 
         ExpeditionData expedition = ExpeditionData.get(player);
         String stage = WorldAscensionData.get(((ServerLevel) player.level()).getServer()).stageName();
+        int incidentsResolved = 0;
+        for (ExpeditionRegion region : ExpeditionRegion.values()) if (expedition.incidentResolved(player, region)) incidentsResolved++;
         player.sendSystemMessage(Component.literal("§2[원정] §f발견 §e" + expedition.count(player) + "/9 §7· 완수 §a"
-                + expedition.countCompleted(player) + "/9 §7· " + stage
+                + expedition.countCompleted(player) + "/9 §7· 사건 해결 §6" + incidentsResolved + "/9 §7· " + stage
                 + (expedition.isMasterSurveyComplete(player) ? " §6· 현장 숙련 해방" : "")));
         player.sendSystemMessage(Component.literal(expedition.summary(player)));
         for (ExpeditionRegion region : ExpeditionRegion.values()) {
             if (!expedition.isDiscovered(player, region) || expedition.isComplete(player, region)) continue;
             player.sendSystemMessage(Component.literal("§e" + region.koreanName() + " §7· §f"
-                    + expedition.directiveSummary(player, region)));
+                    + expedition.directiveSummary(player, region)
+                    + (expedition.incidentResolved(player, region) ? " §6· 사건 해결 완료" : "")));
         }
         return 1;
     }
