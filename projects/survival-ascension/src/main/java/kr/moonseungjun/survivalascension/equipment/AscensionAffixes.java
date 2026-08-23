@@ -68,15 +68,20 @@ public final class AscensionAffixes {
         return true;
     }
 
-    public static boolean awaken(ItemStack stack, RandomSource random) {
-        if (rarity(stack) != 3 || isAwakened(stack)) return false;
-        Category category = category(stack);
-        if (category == Category.NONE) return false;
+    public static boolean canAwaken(ItemStack stack) {
+        return rarity(stack) == 3
+                && !isAwakened(stack)
+                && category(stack) != Category.NONE
+                && currentAffixes(stack).size() == 3;
+    }
 
+    public static boolean awaken(ItemStack stack, RandomSource random) {
+        if (!canAwaken(stack)) return false;
+        Category category = category(stack);
         List<String> chosen = currentAffixes(stack);
         List<String> missing = new ArrayList<>();
         for (String key : AFFIX_POOL) if (!chosen.contains(key)) missing.add(key);
-        if (missing.isEmpty()) return false;
+        if (missing.size() != 2) return false;
         chosen.add(missing.get(random.nextInt(missing.size())));
         writeAffixes(stack, 3, category, chosen, true);
         return true;
