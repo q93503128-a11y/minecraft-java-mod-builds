@@ -48,7 +48,7 @@ Stage2, 30 minutes:
 ### Outbound/work/return rules
 - Range is measured from the saved origin outpost anchor.
 - Stage-specific range must be reached before any operation task progress may be recorded.
-- After the range line is reached, task actions count only while the player is at least48 blocks from the origin outpost and current `ExpeditionProgression.currentRegion(player)` equals the operation region.
+- `WORK_RADIUS = 48`: after the range line is reached, task actions count only while the player is at least48 blocks from the origin outpost and current `ExpeditionProgression.currentRegion(player)` equals the operation region.
 - Operation progress reuses the same server-authoritative actions already feeding expedition directives/incidents: natural smart-tree logs, successful protected/material-backed Construction placements, mature crops, legitimate travel, ocean voyage, valid pickaxe mining, hostile kills and validated successful dash uses.
 - No raw client movement, inventory click, fake placement or near-base work is accepted.
 - Completing both field objectives only changes the operation to return-ready state; reward is not granted remotely.
