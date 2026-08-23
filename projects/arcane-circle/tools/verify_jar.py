@@ -84,7 +84,7 @@ with zipfile.ZipFile(jar) as archive:
     index = json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version = index.get('version')
     if version != '0.12.1-alpha.70':
-        raise SystemExit(f'unexpected alpha.69 package version: {version}')
+        raise SystemExit(f'unexpected alpha.70 package version: {version}')
     if jar.name != f'arcanecircle-{version}.jar':
         raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles') != list(range(1, 10)) or index.get('direct_spells') != 90 or index.get('fusion_spells') != 19:
@@ -96,15 +96,15 @@ with zipfile.ZipFile(jar) as archive:
             raise SystemExit(f'{c} NPC parity metadata missing')
 
     expected5 = {
-    'flame_strike': '4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses',
-    'dominate_person': '30s_person_scale_combat_asset_control',
-}
-if index.get('fifth_circle_value_pass_1') != expected5:
-    raise SystemExit(f'alpha.70 fifth-circle value metadata mismatch: {index.get("fifth_circle_value_pass_1")}')
-roles5 = index.get('fifth_circle_role_audit', {})
-expected_roles5 = {'cone_of_cold','wall_of_force','cloudkill','telekinesis','flame_strike','hold_monster','mass_cure_wounds','passwall','dominate_person','insect_plague'}
-if set(roles5) != expected_roles5 or len(set(roles5.values())) != 10:
-    raise SystemExit('alpha.70 fifth-circle role separation contract missing')
+        'flame_strike': '4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses',
+        'dominate_person': '30s_person_scale_combat_asset_control',
+    }
+    if index.get('fifth_circle_value_pass_1') != expected5:
+        raise SystemExit(f'alpha.70 fifth-circle value metadata mismatch: {index.get("fifth_circle_value_pass_1")}')
+    roles5 = index.get('fifth_circle_role_audit', {})
+    expected_roles5 = {'cone_of_cold','wall_of_force','cloudkill','telekinesis','flame_strike','hold_monster','mass_cure_wounds','passwall','dominate_person','insect_plague'}
+    if set(roles5) != expected_roles5 or len(set(roles5.values())) != 10:
+        raise SystemExit('alpha.70 fifth-circle role separation contract missing')
 
     expected6 = {
         'mass_suggestion': '20s_group_retreat_and_arcane_suppression',
