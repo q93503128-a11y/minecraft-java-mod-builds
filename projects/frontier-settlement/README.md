@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.34
+## Current version: 0.1.0-alpha.35
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -29,7 +29,7 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.34 adds no new gameplay key or separate logistics dashboard.
+Alpha.35 adds no new gameplay key or separate road-management dashboard.
 
 ## Functional building families
 
@@ -45,9 +45,9 @@ Current functional families: **11**.
 - workshop;
 - guard post;
 - market;
-- **cart station**.
+- cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. Construction office, watchtower, barracks and advanced workshop remain unfinished, together with small road stairs/bridges and later territory specializations.
+The original v0.2 target remains roughly 15–20 meaningful families. Construction office, watchtower, barracks and advanced workshop remain unfinished, together with later territory specializations.
 
 ## Physical construction
 
@@ -120,7 +120,27 @@ Alpha.34 closes the first original-design cart-station slice without introducing
 - if station barrels are full, delivery falls back to other valid settlement storage rather than deleting cargo;
 - no teleport cargo, chunk force-load, abstract freight points or second logistics AI was added.
 
-The current station is a **physical freight depot**, not yet a moving wagon entity. A future visual wagon must remain presentation layered on top of the single road-logistics authority rather than becoming another simulation backend.
+The current station is a physical freight depot, not yet a moving wagon entity. A future visual wagon must remain presentation layered on top of the single road-logistics authority.
+
+## Alpha.35 — automatic road stairs and small bridges
+
+Alpha.35 closes the original v0.2 **small road stairs / small bridge** requirement for ordinary short terrain obstacles without turning roads into destructive terraforming.
+
+- one-block longitudinal height changes are represented with actual **cobblestone stair** road pieces on the low side;
+- the route assessor detects bounded water runs between dry banks;
+- an automatic small bridge can span at most **6 centerline blocks** of water;
+- both banks must be present and differ by at most one block;
+- bridge deck stays 3 blocks wide like the road and uses **stone-brick deck blocks**;
+- water below a bridge is not deleted or filled;
+- bridge grading does not generate free cobblestone/log supports;
+- stairs and bridge centers add real stone cost to the existing physical hauling transaction;
+- the builder still hauls actual settlement stone and visibly paves the route;
+- bridge/stair construction uses the existing `RoadConstructionState` and the existing road builder; there is no second road backend;
+- bridge profile is optional persisted construction data, so older saved road projects decode as ordinary roads;
+- completed road centerlines remain ordinary `RoadSegment` paths, preserving Alpha.27 transport compatibility;
+- fluids other than the specifically accepted short water crossing, block entities, unsafe headroom, deep unsupported ordinary road cells and large height jumps remain rejected.
+
+This is intentionally a **small bridge** implementation. It does not claim large ravine bridges, monumental bridge architecture, tunnels, retaining-wall systems or arbitrary mountain roads.
 
 ## External content stack
 
@@ -150,4 +170,4 @@ Canonical CI performs:
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on pathfinding, visual quality, balance or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on pathfinding, stair orientation, bridge appearance, balance or full companion-stack runtime compatibility. Those still require real Minecraft play.
