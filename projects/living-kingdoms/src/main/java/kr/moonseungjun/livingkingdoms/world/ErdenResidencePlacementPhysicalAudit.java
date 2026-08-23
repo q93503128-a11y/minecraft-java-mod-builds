@@ -7,9 +7,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /** CI-only physical proof for the real first-player Erden residence destination. */
+@EventBusSubscriber(modid = LivingKingdoms.MOD_ID)
 public final class ErdenResidencePlacementPhysicalAudit {
     private static final int TICKET_RADIUS = 1;
     private static final int REFRESH_INTERVAL = 40;
@@ -24,6 +27,7 @@ public final class ErdenResidencePlacementPhysicalAudit {
     private ErdenResidencePlacementPhysicalAudit() {
     }
 
+    @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         if (!enabled() || passed) return;
         MinecraftServer server = event.getServer();
