@@ -19,6 +19,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementResources;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementTier;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementWatchtowerService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementWorkshopService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -49,6 +50,7 @@ public final class SettlementCommands {
                         .then(Commands.literal("blacksmith").executes(context -> build(context, BuildingType.BLACKSMITH)))
                         .then(Commands.literal("workshop").executes(context -> build(context, BuildingType.WORKSHOP)))
                         .then(Commands.literal("guard_post").executes(context -> build(context, BuildingType.GUARD_POST)))
+                        .then(Commands.literal("watchtower").executes(context -> build(context, BuildingType.WATCHTOWER)))
                         .then(Commands.literal("market").executes(context -> build(context, BuildingType.MARKET)))
                         .then(Commands.literal("cart_station").executes(context -> build(context, BuildingType.CART_STATION)))));
     }
@@ -71,6 +73,7 @@ public final class SettlementCommands {
         String locked;
         if (type == BuildingType.WORKSHOP) locked = SettlementWorkshopService.lockedReason(data);
         else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
+        else if (type == BuildingType.WATCHTOWER) locked = SettlementWatchtowerService.lockedReason(data);
         else locked = SettlementConstructionService.lockedReason(data, type);
         if (locked != null) { player.sendSystemMessage(Component.literal(locked)); return 0; }
         if (type == BuildingType.CART_STATION) {
@@ -111,8 +114,8 @@ public final class SettlementCommands {
                 + " | 농장 " + data.buildingCount(BuildingType.FARM) + " | 채석장 " + data.buildingCount(BuildingType.QUARRY)
                 + " | 광산 " + data.buildingCount(BuildingType.MINE) + " | 창고 " + data.buildingCount(BuildingType.WAREHOUSE)
                 + " | 대장간 " + data.buildingCount(BuildingType.BLACKSMITH) + " | 작업장 " + data.buildingCount(BuildingType.WORKSHOP)
-                + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST) + " | 시장 " + data.buildingCount(BuildingType.MARKET)
-                + " | 수레 정거장 " + data.buildingCount(BuildingType.CART_STATION)
+                + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST) + " | 감시탑 " + data.buildingCount(BuildingType.WATCHTOWER)
+                + " | 시장 " + data.buildingCount(BuildingType.MARKET) + " | 수레 정거장 " + data.buildingCount(BuildingType.CART_STATION)
                 + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
         player.sendSystemMessage(Component.literal("물류 | 운송 1회 적재 "
                 + SettlementOutpostLogisticsService.transportBatchSize(data)
