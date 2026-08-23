@@ -20,10 +20,23 @@ public final class SettlementStorageService {
         Set<BlockPos> positions = new LinkedHashSet<>();
         positions.add(data.stockpilePos());
         for (BuildingRecord building : data.buildings()) {
-            if (building.buildingType() != BuildingType.WAREHOUSE) continue;
-            positions.addAll(WarehouseLayout.storagePositions(building));
+            if (building.buildingType() == BuildingType.WAREHOUSE) {
+                positions.addAll(WarehouseLayout.storagePositions(building));
+            } else if (building.buildingType() == BuildingType.CART_STATION) {
+                positions.addAll(CartStationLayout.freightPositions(building));
+            }
         }
         return new ArrayList<>(positions);
+    }
+
+    public static List<BlockPos> cartStationFreightPositions(SettlementData data) {
+        List<BlockPos> positions = new ArrayList<>();
+        for (BuildingRecord building : data.buildings()) {
+            if (building.buildingType() == BuildingType.CART_STATION) {
+                positions.addAll(CartStationLayout.freightPositions(building));
+            }
+        }
+        return positions;
     }
 
     public static SettlementResources scan(ServerLevel level, SettlementData data) {
@@ -79,11 +92,16 @@ public final class SettlementStorageService {
         ItemStack remaining = stack.copy();
         for (BlockPos pos : storagePositions(data)) {
             if (remaining.isEmpty()) break;
-            if (!level.hasChunkAt(pos)) continue;
-            if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
-            remaining = SettlementInventory.insert(container, remaining);
+            remaining = insertAt(level, pos, remaining);
         }
         return remaining;
+    }
+
+    public static ItemStack insertAt(ServerLevel level, BlockPos pos, ItemStack stack) {
+        if (stack.isEmpty()) return ItemStack.EMPTY;
+        if (!level.hasChunkAt(pos)) return stack.copy();
+        if (!(level.getBlockEntity(pos) instanceof Container container)) return stack.copy();
+        return SettlementInventory.insert(container, stack.copy());
     }
 
     public static BlockPos findDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
@@ -93,6 +111,16 @@ public final class SettlementStorageService {
             if (hasRoom(container, stack)) return pos;
         }
         return data.stockpilePos();
+    }
+
+    /** Outpost deliveries prefer a visible cart-station freight bay before ordinary town storage. */
+    public static BlockPos findLogisticsDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
+        for (BlockPos pos : cartStationFreightPositions(data)) {
+            if (!level.hasChunkAt(pos)) continue;
+            if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+            if (hasRoom(container, stack)) return pos;
+        }
+        return findDepositTarget(level, data, stack);
     }
 
     public static BlockPos findExtractionTarget(ServerLevel level, SettlementData data, Predicate<ItemStack> predicate) {
