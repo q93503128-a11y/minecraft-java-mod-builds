@@ -44,6 +44,7 @@ required = [
     JAVA / 'settlement/WorkshopBuildingBlueprint.java', JAVA / 'settlement/SettlementCartStationService.java',
     JAVA / 'settlement/CartStationLayout.java', JAVA / 'settlement/CartStationBuildingBlueprint.java',
     JAVA / 'settlement/SettlementWatchtowerService.java', JAVA / 'settlement/WatchtowerBuildingBlueprint.java',
+    JAVA / 'settlement/SettlementBarracksService.java', JAVA / 'settlement/BarracksBuildingBlueprint.java',
     JAVA / 'settlement/BuildingType.java', JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/AdvancedBuildingBlueprints.java',
     JAVA / 'settlement/SettlementTier.java', JAVA / 'network/SettlementNetwork.java', JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'client/ClientSettlementState.java', JAVA / 'client/FrontierSettlementClient.java',
@@ -63,7 +64,7 @@ if missing:
 
 props = text(ROOT / 'gradle.properties')
 must(props, ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement',
-             'mod_version=0.1.0-alpha.36'), 'canonical property')
+             'mod_version=0.1.0-alpha.37'), 'canonical property')
 
 plan = text(ROOT / 'CANONICAL_PLAN.md')
 must(plan, ('survival -> settlement growth', 'One world/server has one shared settlement',
@@ -87,8 +88,8 @@ must(register, ('DEPENDENCY', 'REFERENCE', 'CODE_REUSE', 'ASSET_REUSE', 'Weapons
 lock = json.loads(text(ROOT / 'COMPANION_LOCK.json'))
 if lock.get('target', {}).get('minecraft') != '26.2' or lock.get('target', {}).get('loader') != 'neoforge':
     raise SystemExit('companion lock target drifted from 26.2 NeoForge')
-if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.36':
-    raise SystemExit('companion lock Frontier version drifted from alpha.36')
+if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.37':
+    raise SystemExit('companion lock Frontier version drifted from alpha.37')
 lock_ids = {entry.get('id') for entry in lock.get('entries', [])}
 for required_mod in ('terralith', 'dungeons_and_taverns', 'repurposed_structures', 'better_combat', 'weapons_expanded',
                      'lootr', 'sophisticated_backpacks', 'jade', 'xaeros_minimap', 'lithostitched'):
@@ -99,19 +100,20 @@ entry = text(JAVA / 'FrontierSettlement.java')
 must(entry, ('SettlementConstructionService::onBreakBlock', 'SettlementRoadService::onBreakBlock',
              'SettlementOutpostService::onBreakBlock', 'SettlementCoreService::onBreakBlock',
              'SettlementTierInfrastructureService::onBreakBlock', 'SettlementMarketService::onBreakBlock',
-             'SettlementWorkshopService::onBreakBlock', 'SettlementCartStationService::onBreakBlock'),
-     'active infrastructure protection')
+             'SettlementWorkshopService::onBreakBlock', 'SettlementCartStationService::onBreakBlock',
+             'SettlementBarracksService::onLivingDrops'), 'active infrastructure / barracks event protection')
 
 service = text(JAVA / 'settlement/SettlementService.java')
 for token in ('SettlementConstructionService.tick(server, data)', 'SettlementRoadService.tick(server, data)',
               'SettlementOutpostService.tick(server, data)', 'SettlementMarketService.tick(server, data)',
-              'SettlementWorkshopService.tick(server, data)'):
+              'SettlementWorkshopService.tick(server, data)', 'SettlementBarracksService.tick(server, data)'):
     if service.count(token) != 1:
         raise SystemExit(f'server tick authority must have exactly one call: {token}')
 forbid(service, ('SettlementCartStationService.tick(', 'SettlementWatchtowerService.tick('),
        'passive building service introduced a second server authority')
 must(service, ('SettlementWorkshopService.lockedReason(data)', 'SettlementCartStationService.lockedReason(data)',
-               'type == BuildingType.WATCHTOWER', 'SettlementWatchtowerService.lockedReason(data)'),
+               'type == BuildingType.WATCHTOWER', 'SettlementWatchtowerService.lockedReason(data)',
+               'type == BuildingType.BARRACKS', 'SettlementBarracksService.lockedReason(data)'),
      'special building unlock mask invariant')
 
 construction_state = text(JAVA / 'settlement/ConstructionState.java')
@@ -127,8 +129,8 @@ must(road_state, ('GRADE_STEP_OFFSET = 1_000_000', 'PAVE_STEP_OFFSET = 2_000_000
      'alpha.35 road profile persistence')
 settlement_data = text(JAVA / 'settlement/SettlementData.java')
 must(settlement_data, ('beginRoadConstruction(List<BlockPos> centers, List<Integer> profile)',
-                       'RoadConstructionState.fromPath(centers, profile)', 'WATCHTOWER'),
-     'profiled road/watchtower save authority')
+                       'RoadConstructionState.fromPath(centers, profile)', 'WATCHTOWER', 'BARRACKS'),
+     'profiled road/watchtower/barracks save authority')
 
 outpost_state = text(JAVA / 'settlement/OutpostConstructionState.java')
 must(outpost_state, ('GRADE_STEP_OFFSET = 1_000_000', 'BUILD_STEP_OFFSET = 2_000_000',
@@ -139,13 +141,15 @@ building_type = text(JAVA / 'settlement/BuildingType.java')
 must(building_type, ('MARKET("market", "시장", 96, 48, 11, 11, 8, 0',
                      'WORKSHOP("workshop", "작업장", 88, 44, 11, 9, 10, 0',
                      'CART_STATION("cart_station", "수레 정거장", 104, 56, 13, 9, 8, 0',
-                     'WATCHTOWER("watchtower", "감시탑", 96, 72, 7, 7, 14, 0'),
+                     'WATCHTOWER("watchtower", "감시탑", 96, 72, 7, 7, 14, 0',
+                     'BARRACKS("barracks", "병영", 144, 112, 15, 11, 10, 0'),
      'functional building definition')
 blueprints = text(JAVA / 'settlement/BuildingBlueprints.java')
 must(blueprints, ('case MARKET -> MarketBuildingBlueprint.create(origin);',
                   'case WORKSHOP -> WorkshopBuildingBlueprint.create(origin);',
                   'case CART_STATION -> CartStationBuildingBlueprint.create(origin);',
-                  'case WATCHTOWER -> WatchtowerBuildingBlueprint.create(origin);'), 'functional blueprint routing')
+                  'case WATCHTOWER -> WatchtowerBuildingBlueprint.create(origin);',
+                  'case BARRACKS -> BarracksBuildingBlueprint.create(origin);'), 'functional blueprint routing')
 
 watch_blueprint = text(JAVA / 'settlement/WatchtowerBuildingBlueprint.java')
 must(watch_blueprint, ('Blocks.LADDER.defaultBlockState()', 'LadderBlock.FACING', 'Blocks.BELL.defaultBlockState()',
@@ -156,6 +160,25 @@ must(watch_blueprint, ('Blocks.LADDER.defaultBlockState()', 'LadderBlock.FACING'
 watch_service = text(JAVA / 'settlement/SettlementWatchtowerService.java')
 must(watch_service, ('lockedReason(SettlementData data)', 'data.buildingCount(BuildingType.GUARD_POST) < 1',
                      '감시탑은 경비초소 1곳을 먼저 완성하면 열립니다.'), 'alpha.36 watchtower progression')
+
+barracks_blueprint = text(JAVA / 'settlement/BarracksBuildingBlueprint.java')
+must(barracks_blueprint, ('Blocks.STONE_BRICKS.defaultBlockState()', 'Blocks.IRON_DOOR.defaultBlockState()',
+                          'Blocks.SMITHING_TABLE.defaultBlockState()', 'Blocks.GRINDSTONE.defaultBlockState()',
+                          'Blocks.TARGET.defaultBlockState()', 'Blocks.BELL.defaultBlockState()',
+                          'Blocks.SPRUCE_SLAB.defaultBlockState()', 'BuildingBlueprints.Phase.ROOF',
+                          'BuildingBlueprints.Phase.FINISH'), 'alpha.37 physical barracks blueprint')
+
+barracks = text(JAVA / 'settlement/SettlementBarracksService.java')
+must(barracks, ('SOLDIER_TAG = "frontier_settlement_barracks_soldier"', 'BARRACKS_ASSIGNMENT_PREFIX',
+                'SOLDIER_SLOT_PREFIX', 'SOLDIERS_PER_BARRACKS = 3', 'RECRUIT_FOOD_COST = 8L',
+                'RECRUIT_METAL_COST = 2L', 'RECRUIT_INTERVAL_TICKS = 600', 'SettlementTier.FRONTIER_TOWN',
+                'BuildingType.WATCHTOWER', 'BuildingType.BLACKSMITH', 'SettlementStorageService.storageAvailable(level, data)',
+                'SettlementStorageService.consumeMetalAndFood(level, data, RECRUIT_METAL_COST, RECRUIT_FOOD_COST)',
+                'firstMissingLoadedAssignment(', 'militaryCapacity(', 'loadedSoldierCount(', 'militaryStateLoaded(',
+                'level.hasChunkAt(', 'Monster.class', '!(monster instanceof Creeper)', 'soldier.addTag(SOLDIER_TAG)',
+                'event.getDrops().clear()'), 'alpha.37 supplied barracks garrison')
+forbid(barracks, ('forceChunk', 'setChunkForced', 'data.addPopulation(', 'data.setPopulation(',
+       'barracks must not force-load or inflate civilian population')
 
 construction = text(JAVA / 'settlement/SettlementConstructionService.java')
 must(construction, ('HAUL_BATCH_SIZE = 16', 'SettlementStorageService.findExtractionTarget', 'EquipmentSlot.MAINHAND',
@@ -235,8 +258,10 @@ must(core, ('BreakBlockEvent', 'event.setCanceled(true)', 'event.setNotifyClient
 
 tier_infra = text(JAVA / 'settlement/SettlementTierInfrastructureService.java')
 must(tier_infra, ('FRONTIER_TOWN_LAMP_SPACING = 16', 'DOMAIN_LAMP_SPACING = 8', 'maintainRoadPublicWorks(',
-                  'level.hasChunkAt(', 'maintainTierGarrison(', 'BreakBlockEvent'), 'tier public works')
-forbid(tier_infra, ('TRANSPORT_WORKER_NAME', 'transportWorkers(', 'topUpMatching('), 'legacy tier transport authority remains')
+                  'level.hasChunkAt(', 'BreakBlockEvent'), 'tier public works')
+forbid(tier_infra, ('maintainTierGarrison(', 'maintainReinforcement(', 'reinforcementIdentity(',
+                    'TRANSPORT_WORKER_NAME', 'transportWorkers(', 'topUpMatching('),
+       'legacy free tier garrison or transport authority remains')
 
 benefit = text(JAVA / 'settlement/SettlementBenefitService.java')
 must(benefit, ('WATCH_GUARD_TAG = "frontier_settlement_watch_guard"',
@@ -259,8 +284,9 @@ must(inventory, ('ExternalContentTags.SETTLEMENT_WOOD', 'ExternalContentTags.C_S
 storage = text(JAVA / 'settlement/SettlementStorageService.java')
 must(storage, ('storageAvailable(ServerLevel level, SettlementData data)', 'findExtractionTarget(', 'findDepositTarget(',
                'extract(', 'isMetalStack(ItemStack stack)', 'BuildingType.CART_STATION',
-               'CartStationLayout.freightPositions(building)', 'findLogisticsDepositTarget(', 'insertAt('),
-     'physical storage/cart hub invariant')
+               'CartStationLayout.freightPositions(building)', 'findLogisticsDepositTarget(', 'insertAt(',
+               'consumeMetalAndFood(ServerLevel level, SettlementData data, long metal, long food)',
+               'resources.metal() < metal || resources.food() < food'), 'physical storage/cart/barracks supply invariant')
 
 external = text(JAVA / 'settlement/SettlementExternalContentService.java')
 must(external, ('SettlementStorageService.storageAvailable(level, data)', 'ExternalContentTags.EXPEDITION_RELICS',
@@ -295,22 +321,23 @@ forbid(cart_service, ('void tick(', 'getNavigation().moveTo(', 'spawnAssignedWor
 
 guidance = text(JAVA / 'settlement/SettlementGuidanceService.java')
 must(guidance, ('BuildingType.MARKET', 'BuildingType.CART_STATION', 'BuildingType.WORKSHOP', 'BuildingType.GUARD_POST',
-                'BuildingType.WATCHTOWER', '감시망'), 'guidance progression')
+                'BuildingType.WATCHTOWER', 'BuildingType.BARRACKS', '주둔 병력'), 'guidance progression')
 
 commands = text(JAVA / 'command/SettlementCommands.java')
 must(commands, ('Commands.literal("market")', 'Commands.literal("workshop")', 'Commands.literal("cart_station")',
-                 'Commands.literal("watchtower")', 'BuildingType.WATCHTOWER', 'SettlementWatchtowerService.lockedReason(data)',
-                 '감시탑', 'SettlementExternalContentService.snapshot',
-                 'SettlementOutpostLogisticsService.transportBatchSize(data)', '운송 1회 적재'),
-     'command/status integration')
+                 'Commands.literal("watchtower")', 'Commands.literal("barracks")', 'BuildingType.WATCHTOWER',
+                 'BuildingType.BARRACKS', 'SettlementBarracksService.lockedReason(data)', '감시탑', '병영', '군사 | 주둔병',
+                 'SettlementExternalContentService.snapshot', 'SettlementOutpostLogisticsService.transportBatchSize(data)',
+                 '운송 1회 적재'), 'command/status integration')
 network = text(JAVA / 'network/SettlementNetwork.java')
 must(network, ('PROTOCOL = "7"', 'SettlementWorkshopService.lockedReason(data)',
-               'SettlementCartStationService.lockedReason(data)', 'type == BuildingType.WATCHTOWER',
-               'SettlementWatchtowerService.lockedReason(data)'), 'network server guards')
+               'SettlementCartStationService.lockedReason(data)', 'BuildingType.WATCHTOWER',
+               'SettlementWatchtowerService.lockedReason(data)', 'BuildingType.BARRACKS',
+               'SettlementBarracksService.lockedReason(data)'), 'network server guards')
 palette = text(JAVA / 'client/BuildingPaletteScreen.java')
 must(palette, ('BuildingType.MARKET', 'BuildingType.WORKSHOP', 'BuildingType.CART_STATION',
-               'BuildingType.GUARD_POST', 'BuildingType.WATCHTOWER', '물류·교역', '방어', '인프라'),
-     'compact palette')
+               'BuildingType.GUARD_POST', 'BuildingType.WATCHTOWER', 'BuildingType.BARRACKS',
+               'innerY+186', '물류·교역', '방어', '인프라'), 'compact palette')
 
 placement = text(JAVA / 'client/BuildingPlacementClient.java')
 must(placement, ('GLFW.GLFW_KEY_B', 'GLFW.GLFW_KEY_R', 'GLFW.GLFW_KEY_ENTER', 'GLFW.GLFW_KEY_BACKSPACE'),
@@ -330,10 +357,10 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
              JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementWorkerService.java',
              JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementOutpostLogisticsService.java',
              JAVA / 'settlement/SettlementTierInfrastructureService.java', JAVA / 'settlement/SettlementBenefitService.java',
-             JAVA / 'settlement/SettlementMarketService.java', JAVA / 'settlement/SettlementWorkshopService.java',
-             JAVA / 'settlement/SettlementCartStationService.java'):
+             JAVA / 'settlement/SettlementBarracksService.java', JAVA / 'settlement/SettlementMarketService.java',
+             JAVA / 'settlement/SettlementWorkshopService.java', JAVA / 'settlement/SettlementCartStationService.java'):
     source = text(path)
     if 'destroyBlock(' in source or 'dropResources(' in source:
         raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.36 source audit: PASS')
+print('Frontier Settlement alpha.37 source audit: PASS')
