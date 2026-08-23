@@ -13,8 +13,8 @@ def need(body,*tokens):
 
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=json.loads(text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle,'mod_version=0.12.1-alpha.66'); need(main,'VERSION = "0.12.1-alpha.66"')
-assert index['version']=='0.12.1-alpha.66' and index['implemented_circles']==list(range(1,10))
+need(gradle,'mod_version=0.12.1-alpha.67'); need(main,'VERSION = "0.12.1-alpha.67"')
+assert index['version']=='0.12.1-alpha.67' and index['implemented_circles']==list(range(1,10))
 assert index['direct_spells']==90 and index['fusion_spells']==19
 
 catalog=text(magic/'SpellCatalog.java')
@@ -47,10 +47,21 @@ need(text(magic/'SixthCircleSpellService.java'),'DestructiveMagicService.ray(pla
 need(text(magic/'SeventhCircleSpellService.java'),'case "plane_shift" -> PlanarSpellService.execute(caster, spellId);','for (int band = 0; band < 7; band++)')
 
 eighth=text(magic/'EighthCircleSpellService.java')
-need(eighth,'EARTHQUAKES.add(new EarthquakeField','INCENDIARY_CLOUDS.add(new IncendiaryCloudField',
+need(eighth,'EARTHQUAKES.add(new EarthquakeField','INCENDIARY_CLOUDS.add(field)','SUNBURSTS.add(field)',
      'NPC_CLONE_TICKS = 1800','NPC_DOMINATE_TICKS = 1200','NPC_FEEBLEMIND_TICKS = 1800','NPC_MAZE_TICKS = 480',
+     'SUNBURST_TICKS = 240','INCENDIARY_DRIFT_PER_TICK = .16','MAX_INCENDIARY_WAKE_ZONES = 16',
      'new NpcCloneState(level, caster.getUUID(), copy.getUUID(),','now >= state.expiresAt',
-     'MobEffects.WEAKNESS, 12, 7','MobEffects.MINING_FATIGUE, 12, 6','MobEffects.NAUSEA, 120, 1')
+     'MobEffects.WEAKNESS, 12, 7','MobEffects.MINING_FATIGUE, 12, 6','MobEffects.NAUSEA, 120, 1',
+     'return Math.max(16.0, Math.min(28.0, range * .46));',
+     'DestructiveMagicService.quakeField(player, center, radius, power);',
+     'MobEffects.SLOWNESS, 16, 3','mob.getNavigation().stop()',
+     'field.wake.add(new ScorchedZone','pulseScorchedWake(level, owner, field)',
+     'target.removeEffect(MobEffects.INVISIBILITY)','target.removeEffect(MobEffects.DARKNESS)',
+     'target.removeEffect(MobEffects.WITHER)','tickSunbursts(level, now)','clearSunburstRelated(id)')
+
+destructive=text(magic/'DestructiveMagicService.java')
+need(destructive,'public static int quakeField(ServerPlayer player, Vec3 center, double requestedRadius, double power)',
+     'outer faults arrive over subsequent ticks','for (int i = 0; i < 12; i++)')
 
 utility=text(magic/'HighUtilitySpellService.java')
 need(utility,'CLONE_TICKS = 1800','MAZE_TICKS = 480','private static final Map<UUID, CloneState> CLONES',
@@ -64,7 +75,8 @@ need(control,'DOMINATE_TICKS = 1200','FEEBLEMIND_TICKS = 1800','power * .65',
      'MobEffects.WEAKNESS, 12, 7','MobEffects.MINING_FATIGUE, 12, 6','MobEffects.SLOWNESS, 12, 2')
 
 summary8=text(magic/'EighthCircleSpellSummary.java')
-need(summary8,'90초간 실제 복제','60초 동안 탈취','90초 동안 붕괴','24초간 전장에서 완전히 추방','6초 동안')
+need(summary8,'90초간 실제 복제','60초 동안 탈취','90초 동안 붕괴','24초간 전장에서 완전히 추방','6초 동안',
+     '실제 재난 지대','소각 회랑','태양 법칙 영역','투명화와 암흑을 계속 강제로 제거')
 
 ninth=text(magic/'NinthCircleSpellService.java')
 need(ninth,'private static final Set<String> HANDLED = Set.of(','case "shapechange", "foresight" -> ArcaneBuffRuntime.apply(caster, spellId, power, range);','case "time_stop", "wish" -> ArcaneFieldService.executeSpecial(caster, spellId, range, power, snapshot);','case "true_polymorph" -> HighUtilitySpellService.execute(caster, spellId, range, power, snapshot);','public static final int PRISMATIC_WALL_TICKS = 400;','public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)','double halfWidth = Math.max(13.0, Math.min(26.0, range * .32));')
@@ -91,7 +103,7 @@ need(alpha65,'Set.<Relative>of()')
 kinetics=text(magic/'SpellKineticsService.java')
 need(kinetics,'import net.minecraft.world.phys.Vec3;','MeteorBarragePattern.rememberRange(targetSnapshot.barrageSeed(), cast.range())','Alpha65NinthCircleRuntime.worldSunder(player, range, power, targetSnapshot)','Alpha65NinthCircleRuntime.executeOrDelegate(player, spellId, range, power, targetSnapshot)','Alpha65NinthCircleRuntime.meteorImpact(player','Alpha65NinthCircleRuntime.groundedBarrageCenter')
 world_magic=text(magic/'WorldMagicService.java')
-need(world_magic,'GroundTargetResolver.surface((ServerLevel) caster.level(), around)','GroundTargetResolver.safeStanding(level, desired, 10)','MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed(), cast.range())','MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())','EighthCircleSpellService.NPC_DOMINATE_TICKS','EighthCircleSpellService.NPC_FEEBLEMIND_TICKS','EighthCircleSpellService.NPC_MAZE_TICKS')
+need(world_magic,'GroundTargetResolver.surface((ServerLevel) caster.level(), around)','GroundTargetResolver.safeStanding(level, desired, 10)','MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed(), cast.range())','MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())','EighthCircleSpellService.NPC_DOMINATE_TICKS','EighthCircleSpellService.NPC_FEEBLEMIND_TICKS','EighthCircleSpellService.NPC_MAZE_TICKS','EighthCircleSpellService.SUNBURST_TICKS')
 assert 'scale(Math.min(3.0, range))' not in world_magic
 
 gameplay=text(magic/'SpellGameplayService.java')
@@ -104,6 +116,11 @@ prestige=text(client/'HighCirclePrestigeOverlay.java')
 assert 'denseGrandArray' not in prestige and 'tierScaffold' not in prestige
 need(prestige,'spell.circle() != 9','case "meteor_swarm" -> meteorArtillery','case "power_word_kill" -> executionJudgment','case "prismatic_wall" -> sevenLawWall','case "shapechange" -> mythicBody','case "time_stop" -> frozenClockwork','case "true_polymorph" -> morphBlueprint','case "weird" -> nightmareVerdict','case "wish" -> realityManuscript','case "gate" -> pairedWorldDoor','case "foresight" -> causalityFan','private static void meteorArtillery','private static void executionJudgment','private static void sevenLawWall','private static void mythicBody','private static void frozenClockwork','private static void morphBlueprint','private static void nightmareVerdict','private static void realityManuscript','private static void pairedWorldDoor','private static void causalityFan','double width = Math.max(26.0, Math.min(52.0, range * .64));','Vec3 near = forward.scale(2.6).add(0, 2.25, 0);')
 assert 'default -> tier' not in prestige and 'ParticleTypes' not in prestige
+
+timeline=text(client/'AuthoredHighCircleTimeline.java')
+need(timeline,'EighthCircleSpellService.earthquakeRadius(range)','EighthCircleSpellService.incendiaryRadius(range)',
+     'EighthCircleSpellService.INCENDIARY_DRIFT_PER_TICK*20.0','front.subtract(forward.scale(d))',
+     'EighthCircleSpellService.sunburstRadius(range)','ring(m,g,target,full*.96,72')
 
 primary=text(client/'PrimaryGrimoireScreen.java')
 need(primary,'Rect slotStrip()','Rect browserMain()','Rect browserListViewport()','Rect browserDetail()','Rect effectListViewport()','Rect effectDetail()','inspectedSpellId = spells.get(i).id();','drawEffectCompendium(g, l, mouseX, mouseY)','"개요"','"실제 효과 / 판정"','s.effectSummary()','왼쪽 주문을 클릭하면 이 설명이 바뀝니다.')
@@ -130,14 +147,24 @@ assert value['clone']=='90s_single_bound_combat_copy_no_equipment_duplication'
 assert value['dominate_monster']=='60s_enemy_combat_asset_theft'
 assert value['feeblemind']=='90s_total_arcane_shutdown_and_severe_combat_degradation'
 assert value['maze']=='24s_total_battlefield_exile_plus_6s_aftershock'
+value2=index['eighth_circle_value_pass_2']
+assert value2=={
+ 'earthquake':'9s_regional_fault_disaster_with_budgeted_player_terrain_and_unstable_ground',
+ 'incendiary_cloud':'12s_moving_firefront_with_scorched_wake_route_denial',
+ 'sunburst':'12s_solar_revelation_purification_and_darkness_denial_domain'}
+roles=index['eighth_circle_role_audit']; assert set(roles)=={'antimagic_field','clone','control_weather','demiplane','dominate_monster','earthquake','feeblemind','incendiary_cloud','maze','sunburst'}
+assert len(set(roles.values()))==10
+assert index['eighth_circle_npc_terrain_safety']=='earthquake_keeps_movement_disaster_but_skips_npc_world_damage'
 
 need(text(magic/'HighControlSpellService.java'),'NinthCircleSpellService.clear(subject);'); need(text(magic/'ThirdCircleSpellService.java'),'HighControlSpellService.clear(target);'); need(text(magic/'ArcaneFieldService.java'),'HighControlSpellService.clear(entity);')
-verify=text(root/'tools/verify_jar.py'); need(verify,'0.12.1-alpha.66','Alpha65NinthCircleRuntime.class','GroundTargetResolver.class','alpha65_grounded_meteor=PASS','alpha66_eighth_circle_value_pass=PASS')
+verify=text(root/'tools/verify_jar.py'); need(verify,'0.12.1-alpha.67','Alpha65NinthCircleRuntime.class','GroundTargetResolver.class','alpha65_grounded_meteor=PASS','alpha67_eighth_circle_value_pass_2=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS'); print('all_109_explicit_effect_summaries=PASS'); print('alpha53_65_regression_anchors=PASS')
 print('alpha66_bound_clone=PASS'); print('alpha66_dominate_faction_theft=PASS'); print('alpha66_feeblemind_arcane_shutdown=PASS')
 print('alpha66_maze_exile_aftershock=PASS'); print('alpha66_eighth_circle_npc_parity=PASS'); print('alpha66_eighth_circle_value_pass=PASS')
+print('alpha67_earthquake_fault_disaster=PASS'); print('alpha67_incendiary_firefront_wake=PASS'); print('alpha67_sunburst_solar_domain=PASS')
+print('alpha67_eighth_circle_visual_hitbox_lifetime_sync=PASS'); print('alpha67_eighth_circle_role_audit=PASS'); print('alpha67_eighth_circle_value_pass_2=PASS')
 print('alpha65_ground_target_contract=PASS'); print('alpha65_meteor_surface_per_strike=PASS'); print('alpha65_gate_safe_ground_pair=PASS')
 print('alpha65_weird_escape_or_die=PASS'); print('alpha65_world_sunder_horizontal_fault=PASS')
 print('alpha65_individual_ninth_circle_visuals=PASS'); print('alpha65_common_grand_array_forbidden=PASS')
