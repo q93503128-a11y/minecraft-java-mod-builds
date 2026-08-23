@@ -8,7 +8,9 @@ RES = ROOT / 'src/main/resources'
 
 required = [
     ROOT / 'build.gradle', ROOT / 'gradle.properties', ROOT / 'PROJECT.md', ROOT / 'CANONICAL_PLAN.md', ROOT / 'README.md',
+    ROOT / 'ORIGINAL_DESIGN_v0.2.md', ROOT / 'COMPLETION_GAP_AUDIT.md', ROOT / 'COMPANION_MODS.md', ROOT / 'EXTERNAL_CONTENT_REGISTER.md',
     JAVA / 'FrontierSettlement.java', JAVA / 'content/FrontierContent.java', JAVA / 'content/PioneerMarkerItem.java',
+    JAVA / 'compat/ExternalContentTags.java',
     JAVA / 'settlement/SettlementData.java', JAVA / 'settlement/ConstructionState.java', JAVA / 'settlement/RoadConstructionState.java',
     JAVA / 'settlement/OutpostConstructionState.java', JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/SettlementGuidanceService.java',
     JAVA / 'settlement/SettlementCoreService.java', JAVA / 'settlement/SettlementResidentRoutineService.java',
@@ -16,7 +18,7 @@ required = [
     JAVA / 'settlement/SettlementRoadService.java', JAVA / 'settlement/SettlementOutpostService.java',
     JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementOutpostLogisticsService.java',
     JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementBenefitService.java',
-    JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/BuildingType.java',
+    JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/SettlementExternalContentService.java', JAVA / 'settlement/BuildingType.java',
     JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/AdvancedBuildingBlueprints.java', JAVA / 'settlement/SettlementTier.java',
     JAVA / 'network/SettlementNetwork.java', JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'client/ClientSettlementState.java', JAVA / 'client/FrontierSettlementClient.java',
@@ -24,12 +26,17 @@ required = [
     JAVA / 'client/RoadPlacementClient.java', JAVA / 'client/OutpostPlacementClient.java', JAVA / 'client/SettlementHudOverlay.java',
     RES / 'assets/frontier_settlement/items/pioneer_marker.json', RES / 'assets/frontier_settlement/lang/ko_kr.json',
     RES / 'data/frontier_settlement/recipe/pioneer_marker.json',
+    RES / 'data/frontier_settlement/tags/item/settlement_wood.json',
+    RES / 'data/frontier_settlement/tags/item/settlement_stone.json',
+    RES / 'data/frontier_settlement/tags/item/settlement_metal.json',
+    RES / 'data/frontier_settlement/tags/item/settlement_food.json',
+    RES / 'data/frontier_settlement/tags/item/expedition_relics.json',
 ]
 missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.30'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.31'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
@@ -40,6 +47,19 @@ for token in ('survival -> settlement growth', 'One world/server has one shared 
               'Transport workers belong to a specific outpost', 'pause at unloaded route boundaries',
               'tier-visible public works', 'single authority for outpost transport'):
     if token not in plan: raise SystemExit(f'canonical plan invariant missing: {token}')
+
+original = (ROOT / 'ORIGINAL_DESIGN_v0.2.md').read_text(encoding='utf-8')
+for token in ('외부 모드팩 연동 방향', '15~20개 계열', '작은 다리', '수레 정거장', '감시탑', '병영', '시장', '고급 제작소'):
+    if token not in original: raise SystemExit(f'original v0.2 scope invariant missing: {token}')
+
+companion = (ROOT / 'COMPANION_MODS.md').read_text(encoding='utf-8')
+for token in ('외부 콘텐츠는 **Frontier의 폭을 빠르게 늘리는 핵심 개발 수단**',
+              'Repurposed Structures', 'Lootr', 'Weapons Expanded', 'Better Combat', 'Terralith'):
+    if token not in companion: raise SystemExit(f'external-content strategy invariant missing: {token}')
+
+register = (ROOT / 'EXTERNAL_CONTENT_REGISTER.md').read_text(encoding='utf-8')
+for token in ('DEPENDENCY', 'REFERENCE', 'CODE_REUSE', 'ASSET_REUSE', 'Weapons Expanded', 'Lootr'):
+    if token not in register: raise SystemExit(f'external-content register invariant missing: {token}')
 
 entry = (JAVA / 'FrontierSettlement.java').read_text(encoding='utf-8')
 for token in ('SettlementConstructionService::onBreakBlock', 'SettlementRoadService::onBreakBlock',
@@ -211,9 +231,42 @@ benefit = (JAVA / 'settlement/SettlementBenefitService.java').read_text(encoding
 for token in ('if (!level.hasChunkAt(work)) continue;', 'if (!level.hasChunkAt(center)) continue;'):
     if token not in benefit: raise SystemExit(f'alpha.30 loaded-guard invariant missing: {token}')
 
+external_tags = (JAVA / 'compat/ExternalContentTags.java').read_text(encoding='utf-8')
+for token in ('SETTLEMENT_WOOD', 'SETTLEMENT_STONE', 'SETTLEMENT_METAL', 'SETTLEMENT_FOOD',
+              'EXPEDITION_RELICS', 'C_INGOTS', 'C_RAW_MATERIALS', 'C_STONES', 'C_COBBLESTONES', 'C_FOODS'):
+    if token not in external_tags: raise SystemExit(f'alpha.31 external tag invariant missing: {token}')
+
+inventory = (JAVA / 'settlement/SettlementInventory.java').read_text(encoding='utf-8')
+for token in ('ExternalContentTags.SETTLEMENT_WOOD', 'ExternalContentTags.C_STONES',
+              'ExternalContentTags.C_COBBLESTONES', 'ExternalContentTags.SETTLEMENT_STONE',
+              'ExternalContentTags.C_FOODS', 'ExternalContentTags.SETTLEMENT_FOOD'):
+    if token not in inventory: raise SystemExit(f'alpha.31 external material classification missing: {token}')
+
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
-for token in ('storageAvailable(ServerLevel level, SettlementData data)', 'findExtractionTarget(', 'findDepositTarget(', 'extract('):
-    if token not in storage: raise SystemExit(f'physical storage invariant missing: {token}')
+for token in ('storageAvailable(ServerLevel level, SettlementData data)', 'findExtractionTarget(', 'findDepositTarget(', 'extract(',
+              'ExternalContentTags.C_INGOTS', 'ExternalContentTags.C_RAW_MATERIALS', 'ExternalContentTags.SETTLEMENT_METAL'):
+    if token not in storage: raise SystemExit(f'physical/external storage invariant missing: {token}')
+
+external = (JAVA / 'settlement/SettlementExternalContentService.java').read_text(encoding='utf-8')
+for token in ('SettlementStorageService.storageAvailable(level, data)', 'ExternalContentTags.EXPEDITION_RELICS',
+              'BuiltInRegistries.ITEM.getKey', 'EXTERNAL_WEAPON_NAMESPACES', '"weaponsexpanded"',
+              'stack.isDamageableItem()', 'FrontierSettlement.MOD_ID'):
+    if token not in external: raise SystemExit(f'alpha.31 companion-content bridge missing: {token}')
+if 'ModList' in external:
+    raise SystemExit('external-content bridge must not require companion loader classes just to read physical content')
+
+commands = (JAVA / 'command/SettlementCommands.java').read_text(encoding='utf-8')
+for token in ('SettlementExternalContentService.snapshot', '탐험 연동 | 유물', '외부 무기'):
+    if token not in commands: raise SystemExit(f'alpha.31 external-content status missing: {token}')
+
+for tag_name in ('settlement_wood', 'settlement_stone', 'settlement_metal', 'settlement_food', 'expedition_relics'):
+    tag = json.loads((RES / f'data/frontier_settlement/tags/item/{tag_name}.json').read_text(encoding='utf-8'))
+    if tag.get('replace') is not False or not tag.get('values'):
+        raise SystemExit(f'alpha.31 data tag must be additive and non-empty: {tag_name}')
+
+relic_tag = json.loads((RES / 'data/frontier_settlement/tags/item/expedition_relics.json').read_text(encoding='utf-8'))
+for token in ('minecraft:echo_shard', 'minecraft:heart_of_the_sea', 'minecraft:heavy_core'):
+    if token not in relic_tag['values']: raise SystemExit(f'expedition relic baseline missing: {token}')
 
 snapshot = (JAVA / 'network/SettlementSnapshotPayload.java').read_text(encoding='utf-8')
 for token in ('int buildingUnlockMask, String nextGoal', 'buf.writeUtf(payload.nextGoal())', 'buf.readUtf()'):
@@ -243,4 +296,4 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.30 source audit: PASS')
+print('Frontier Settlement alpha.31 source audit: PASS')
