@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,6 +43,8 @@ public final class SeventhCircleSpellService {
     public static final int DELAYED_BLAST_VISUAL_TICKS = 90;
     public static final int FIRE_STORM_SEQUENCE_TICKS = 48;
     public static final int FIRE_STORM_VISUAL_TICKS = 70;
+    public static final double TELEPORT_GATHER_RADIUS = 7.0;
+    public static final int TELEPORT_MAX_COMPANIONS = 6;
     private static final int FIRE_STORM_STRIKE_INTERVAL = 8;
     private static final double FORCECAGE_RADIUS = 3.1;
     private static final double FORCECAGE_DOWN = .75;
@@ -586,7 +589,7 @@ public final class SeventhCircleSpellService {
                 : caster.position().subtract(target.position());
         away = horizontalDirection(away);
         Vec3 desired = caster.position().add(away.scale(28.0));
-        return teleport(level, caster, desired, false);
+        return teleportSingle(level, caster, desired, false);
     }
 
     private static boolean npcSimulacrum(ServerLevel level, Mob caster, LivingEntity target,
@@ -656,27 +659,84 @@ public final class SeventhCircleSpellService {
         to.setBaseValue(Math.max(minimum, from.getBaseValue() * factor));
     }
 
+    /**
+     * Seventh-circle Teleport is same-dimension tactical group relocation. Nearby crouching players
+     * explicitly opt in, while allied non-player entities are carried automatically. NPC casters
+     * use the same group meaning for nearby allies. Plane Shift remains cross-dimension transport.
+     */
     private static boolean teleport(ServerLevel level, LivingEntity caster, Vec3 desired, boolean playerNotice) {
         BlockPos destination = findSafe(level, desired, 16);
         if (destination == null) return false;
-        double x = destination.getX() + .5;
-        double y = destination.getY();
-        double z = destination.getZ() + .5;
+
+        List<LivingEntity> companions = level.getEntitiesOfClass(LivingEntity.class,
+                        caster.getBoundingBox().inflate(TELEPORT_GATHER_RADIUS), value -> value != caster
+                                && value.isAlive() && !value.isRemoved() && teleportCompanion(caster, value))
+                .stream().sorted(Comparator.comparingDouble(caster::distanceToSqr))
+                .limit(TELEPORT_MAX_COMPANIONS).toList();
+
         Vec3 from = caster.position();
-        if (caster instanceof ServerPlayer player) {
-            player.teleportTo(x, y, z);
-            if (playerNotice) ArcaneNoticeService.push(player, Component.literal("§5[텔레포트] §f고정된 목적지의 안전한 착지점으로 이동했습니다."), 55);
-        } else {
-            caster.snapTo(x, y, z, caster.getYRot(), caster.getXRot());
+        Set<BlockPos> occupied = new HashSet<>();
+        occupied.add(destination);
+        moveEntity(caster, destination);
+
+        int movedCompanions = 0;
+        for (int i = 0; i < companions.size(); i++) {
+            double angle = Math.PI * 2.0 * i / Math.max(1, companions.size());
+            double radius = i < 3 ? 2.6 : 4.2;
+            Vec3 candidate = new Vec3(destination.getX() + .5 + Math.cos(angle) * radius,
+                    destination.getY(), destination.getZ() + .5 + Math.sin(angle) * radius);
+            BlockPos safe = findSafe(level, candidate, 8, occupied);
+            if (safe == null) continue;
+            moveEntity(companions.get(i), safe);
+            occupied.add(safe);
+            movedCompanions++;
         }
+
+        level.playSound(null, BlockPos.containing(from), SoundEvents.ENDERMAN_TELEPORT,
+                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.0F, .72F);
+        level.playSound(null, destination, SoundEvents.ENDERMAN_TELEPORT,
+                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.05F, 1.08F);
+        if (playerNotice && caster instanceof ServerPlayer player) {
+            ArcaneNoticeService.push(player, Component.literal("§5[텔레포트] §f전술 공간 접힘 완료"
+                    + (movedCompanions == 0 ? "" : " · 동행자 " + movedCompanions + "명 재배치")), 64);
+        }
+        return true;
+    }
+
+    private static boolean teleportSingle(ServerLevel level, LivingEntity caster, Vec3 desired, boolean playerNotice) {
+        BlockPos destination = findSafe(level, desired, 16);
+        if (destination == null) return false;
+        Vec3 from = caster.position();
+        moveEntity(caster, destination);
         level.playSound(null, BlockPos.containing(from), SoundEvents.ENDERMAN_TELEPORT,
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .9F, .78F);
         level.playSound(null, destination, SoundEvents.ENDERMAN_TELEPORT,
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .9F, 1.06F);
+        if (playerNotice && caster instanceof ServerPlayer player)
+            ArcaneNoticeService.push(player, Component.literal("§5[텔레포트] §f고정된 목적지의 안전한 착지점으로 이동했습니다."), 55);
         return true;
     }
 
+    private static boolean teleportCompanion(LivingEntity caster, LivingEntity candidate) {
+        if (candidate instanceof ServerPlayer player) return !player.isSpectator() && player.isCrouching();
+        return caster.isAlliedTo(candidate);
+    }
+
+    private static void moveEntity(LivingEntity entity, BlockPos destination) {
+        entity.stopRiding();
+        double x = destination.getX() + .5;
+        double y = destination.getY();
+        double z = destination.getZ() + .5;
+        if (entity instanceof ServerPlayer player) player.teleportTo(x, y, z);
+        else entity.snapTo(x, y, z, entity.getYRot(), entity.getXRot());
+        entity.fallDistance = 0.0F;
+    }
+
     private static BlockPos findSafe(ServerLevel level, Vec3 desired, int verticalSearch) {
+        return findSafe(level, desired, verticalSearch, Set.of());
+    }
+
+    private static BlockPos findSafe(ServerLevel level, Vec3 desired, int verticalSearch, Set<BlockPos> occupied) {
         int baseX = (int) Math.floor(desired.x);
         int baseZ = (int) Math.floor(desired.z);
         int baseY = (int) Math.floor(Math.max(level.getMinY() + 2, Math.min(level.getMaxY() - 3, desired.y)));
@@ -688,6 +748,7 @@ public final class SeventhCircleSpellService {
                     for (int y : ys) {
                         if (y <= level.getMinY() + 1 || y >= level.getMaxY() - 2) continue;
                         BlockPos feet = new BlockPos(baseX + dx, y, baseZ + dz);
+                        if (occupied.contains(feet)) continue;
                         if (!level.getBlockState(feet.below()).blocksMotion()) continue;
                         if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
                         return feet;
