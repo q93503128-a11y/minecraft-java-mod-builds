@@ -119,7 +119,8 @@ public final class SettlementData extends SavedData {
         switch (type) {
             case HOUSE -> houseCount++;
             case LUMBER_CAMP -> lumberCampCount++;
-            case FARM, QUARRY, MINE, WAREHOUSE, BLACKSMITH, WORKSHOP, CART_STATION, GUARD_POST, WATCHTOWER, BARRACKS, MARKET -> { }
+            case FARM, QUARRY, MINE, WAREHOUSE, CONSTRUCTION_OFFICE, BLACKSMITH, WORKSHOP,
+                    CART_STATION, GUARD_POST, WATCHTOWER, BARRACKS, MARKET -> { }
         }
         housingCapacity += type.housingGain();
         List<BuildingRecord> next = new ArrayList<>(buildings());
