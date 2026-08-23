@@ -1,8 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.40 final Bastion wave adds bounded Ravager/Vindicator physical fortification breachers
-- breachers obey loaded-only, mobGriefing, owner mayInteract, block destroyability and NeoForge destroy hook
-- only qualifying wall/iron-bars/nether-fence blocks in radius6..12 can be broken; normal 3-wave defense remains non-destructive
-- destroyed defenses drop material for real Construction repair; no blanket combat stats or auto-builder
-- 0.39 fortification,0.38 defense,0.37 warehouse,0.36 commissioning,0.35 offload,0.34 inputs,0.33/0.32 operations retained
-- no new SavedData/packet/client coordinates/getChunk/tickets/force-load
+- 0.40 Bastion final-wave Ravager/Vindicator breachers are bounded to real fortification blocks
+- mobGriefing + owner protection + block destroyability + NeoForge destroy hook precede every break
+- normal 3-wave defense stays non-destructive; broken wall material drops for physical repair
+- 0.39 fortification and 0.38/0.37/0.36/0.35/0.34/0.33/0.32 contracts remain
+- no new SavedData/packet/client coordinate/getChunk/ticket/force-load
